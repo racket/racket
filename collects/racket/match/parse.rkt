@@ -10,67 +10,73 @@
          (for-template (only-in "runtime.rkt" matchable?)
                        scheme/base))
 
-(provide parse/cert)
+(provide parse)
 
 (define (ht-pat-transform p)
   (syntax-case p ()
     [(a b) #'(list a b)]
     [x (identifier? #'x) #'x]))
 
+(define orig-insp (current-code-inspector))
+
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax
-(define (parse/cert stx cert)
-  (define (parse stx) (parse/cert stx cert))
-  (syntax-case* stx (not var struct box cons list vector ? and or quote app
-                     regexp pregexp list-rest list-no-order hash-table
-                     quasiquote mcons list* mlist)
+(define (parse stx)
+  (define (rearm new-stx) (syntax-rearm new-stx stx))
+  (define (rearm+parse new-stx) (parse (rearm new-stx)))
+  (define disarmed-stx (syntax-disarm stx orig-insp))
+  (syntax-case* disarmed-stx (not var struct box cons list vector ? and or quote app
+                                  regexp pregexp list-rest list-no-order hash-table
+                                  quasiquote mcons list* mlist)
                 (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(expander args ...)
      (and (identifier? #'expander)
-          (match-expander? (syntax-local-value (cert #'expander)
+          (match-expander? (syntax-local-value #'expander
                                                (lambda () #f))))
      (match-expander-transform
-      parse/cert cert #'expander stx match-expander-match-xform
+      rearm+parse #'expander disarmed-stx match-expander-match-xform
       "This expander only works with the legacy match syntax")]
     [(var v)
      (identifier? #'v)
-     (make-Var #'v)]
+     (make-Var (rearm #'v))]
     [(and p ...)
-     (make-And (map parse (syntax->list #'(p ...))))]
+     (make-And (map rearm+parse (syntax->list #'(p ...))))]
     [(or)
      (make-Not (make-Dummy stx))]
     [(or p ps ...)
-     (let ([ps (map parse (syntax->list #'(p ps ...)))])
+     (let ([ps (map rearm+parse (syntax->list #'(p ps ...)))])
        (all-vars ps stx)
        (make-Or ps))]
     [(not p ...)
      ;; nots are conjunctions of negations
-     (let ([ps (map (compose make-Not parse) (syntax->list #'(p ...)))])
+     (let ([ps (map (compose make-Not rearm+parse) (syntax->list #'(p ...)))])
        (make-And ps))]
     [(regexp r)
      (trans-match #'matchable?
-                  #'(lambda (e) (regexp-match r e))
+                  (rearm #'(lambda (e) (regexp-match r e)))
                   (make-Pred #'values))]
     [(regexp r p)
      (trans-match #'matchable? #'(lambda (e) (regexp-match r e)) (parse #'p))]
     [(pregexp r)
      (trans-match #'matchable?
-                  #'(lambda (e)
-                      (regexp-match (if (pregexp? r) r (pregexp r)) e))
+                  (rearm
+                   #'(lambda (e)
+                       (regexp-match (if (pregexp? r) r (pregexp r)) e)))
                   (make-Pred #'values))]
     [(pregexp r p)
      (trans-match #'matchable?
-                  #'(lambda (e)
-                      (regexp-match (if (pregexp? r) r (pregexp r)) e))
-                  (parse #'p))]
+                  (rearm 
+                   #'(lambda (e)
+                       (regexp-match (if (pregexp? r) r (pregexp r)) e)))
+                  (rearm+parse #'p))]
     [(box e) (make-Box (parse #'e))]
     [(vector es ...)
      (ormap ddk? (syntax->list #'(es ...)))
      (trans-match #'vector?
                   #'vector->list
-                  (parse (syntax/loc stx (list es ...))))]
+                  (rearm+parse (syntax/loc stx (list es ...))))]
     [(vector es ...)
-     (make-Vector (map parse (syntax->list #'(es ...))))]
+     (make-Vector (map rearm+parse (syntax->list #'(es ...))))]
     [(hash-table p ... dd)
      (ddk? #'dd)
      (trans-match
@@ -78,7 +84,7 @@
       #'(lambda (e) (hash-map e list))
       (with-syntax ([(elems ...)
                      (map ht-pat-transform (syntax->list #'(p ...)))])
-        (parse (syntax/loc stx (list-no-order elems ... dd)))))]
+        (rearm+parse (syntax/loc stx (list-no-order elems ... dd)))))]
     [(hash-table p ...)
      (ormap ddk? (syntax->list #'(p ...)))
      (raise-syntax-error
@@ -90,7 +96,7 @@
                   (with-syntax ([(elems ...)
                                  (map ht-pat-transform
                                       (syntax->list #'(p ...)))])
-                    (parse (syntax/loc stx (list-no-order elems ...)))))]
+                    (rearm+parse (syntax/loc stx (list-no-order elems ...)))))]
     [(hash-table . _)
      (raise-syntax-error 'match "syntax error in hash-table pattern" stx)]
     [(list-no-order p ... lp dd)
@@ -99,7 +105,7 @@
             [min (if (number? count) count #f)]
             [max (if (number? count) count #f)]
             [ps (syntax->list #'(p ...))])
-       (make-GSeq (cons (list (parse #'lp))
+       (make-GSeq (cons (list (rearm+parse #'lp))
                         (for/list ([p ps]) (list (parse p))))
                   (cons min (map (lambda _ 1) ps))
                   (cons max (map (lambda _ 1) ps))
@@ -115,7 +121,7 @@
       (ormap (lambda (e) (and (ddk? e) e)) (syntax->list #'(p ...))))]
     [(list-no-order p ...)
      (let ([ps (syntax->list #'(p ...))])
-       (make-GSeq (for/list ([p ps]) (list (parse p)))
+       (make-GSeq (for/list ([p ps]) (list (rearm+parse p)))
                   (map (lambda _ 1) ps)
                   (map (lambda _ 1) ps)
                   ;; all of these patterns get bound to only one thing
@@ -132,48 +138,48 @@
      (raise-syntax-error 'match "incorrect use of ... in pattern" stx #'..)]
     [(list p .. . rest)
      (ddk? #'..)
-     (dd-parse parse #'p #'.. (syntax/loc stx (list . rest)))]
+     (dd-parse rearm+parse #'p #'.. (syntax/loc stx (list . rest)))]
     [(mlist p .. . rest)
      (ddk? #'..)
-     (dd-parse parse #'p #'.. (syntax/loc stx (list . rest)) #:mutable #t)]
+     (dd-parse rearm+parse #'p #'.. (syntax/loc stx (list . rest)) #:mutable #t)]
     [(list e es ...)
-     (make-Pair (parse #'e) (parse (syntax/loc stx (list es ...))))]
+     (make-Pair (rearm+parse #'e) (rearm+parse (syntax/loc stx (list es ...))))]
     [(mlist e es ...)
-     (make-MPair (parse #'e) (parse (syntax/loc stx (mlist es ...))))]
+     (make-MPair (rearm+parse #'e) (rearm+parse (syntax/loc stx (mlist es ...))))]
     [(list* . rest)
-     (parse (syntax/loc stx (list-rest . rest)))]
+     (rearm+parse (syntax/loc stx (list-rest . rest)))]
     [(list-rest e)
-     (parse #'e)]
+     (rearm+parse #'e)]
     [(list-rest p dd . rest)
      (ddk? #'dd)
-     (dd-parse parse #'p #'dd (syntax/loc stx (list-rest . rest)))]
+     (dd-parse rearm+parse #'p #'dd (syntax/loc stx (list-rest . rest)))]
     [(list-rest e . es)
-     (make-Pair (parse #'e) (parse (syntax/loc #'es (list-rest . es))))]
-    [(cons e1 e2) (make-Pair (parse #'e1) (parse #'e2))]
-    [(mcons e1 e2) (make-MPair (parse #'e1) (parse #'e2))]
+     (make-Pair (rearm+parse #'e) (rearm+parse (syntax/loc #'es (list-rest . es))))]
+    [(cons e1 e2) (make-Pair (rearm+parse #'e1) (rearm+parse #'e2))]
+    [(mcons e1 e2) (make-MPair (rearm+parse #'e1) (rearm+parse #'e2))]
     [(struct s pats)
-     (parse-struct stx cert parse #'s #'pats)]
+     (parse-struct disarmed-stx rearm+parse #'s #'pats)]
     [(s . pats)
      (and (identifier? #'s) (struct-info? (syntax-local-value #'s (lambda () #f))))
-     (parse-struct stx cert parse #'s #'pats)]
+     (parse-struct disarmed-stx rearm+parse #'s #'pats)]
     [(? p q1 qs ...)
-     (make-And (cons (make-Pred (cert #'p))
-                     (map parse (syntax->list #'(q1 qs ...)))))]
+     (make-And (cons (make-Pred (rearm #'p))
+                     (map rearm+parse (syntax->list #'(q1 qs ...)))))]
     [(? p)
-     (make-Pred (cert #'p))]
+     (make-Pred (rearm #'p))]
     [(app f p)
-     (make-App #'f (parse (cert #'p)))]
+     (make-App #'f (rearm+parse #'p))]
     [(quasiquote p)
-     (parse-quasi #'p cert parse/cert)]
+     (parse-quasi #'p rearm+parse)]
     [(quasiquote . _)
      (raise-syntax-error 'match "illegal use of quasiquote")]
     [(quote . _)
-     (parse-quote stx parse)]
+     (parse-quote disarmed-stx rearm+parse)]
     [x
      (identifier? #'x)
-     (parse-id #'x)]
+     (parse-id (rearm #'x))]
     [v
      (or (parse-literal (syntax-e #'v))
-         (raise-syntax-error 'match "syntax error in pattern" stx))]))
+         (raise-syntax-error 'match "syntax error in pattern" disarmed-stx))]))
 
 ;; (trace parse)

@@ -15,10 +15,10 @@
 ; defun : syntax[1] -> (values syntax?[2] (listof syntax?)[3])
 ; defunctionalizes the first syntax, returning the second and the lifted lambdas [3]
 (define (defun stx)  
-  (recertify
+  (rearm
    stx
    (kernel-syntax-case
-       stx (transformer?)
+       (disarm stx) (transformer?)
      [(begin be ...)
       (let-values ([(nbes) (defun* (syntax->list #'(be ...)))])
         (quasisyntax/loc stx (begin #,@nbes)))]

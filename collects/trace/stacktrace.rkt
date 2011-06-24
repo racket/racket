@@ -115,8 +115,7 @@
                         stx
                         ;(syntax->datum stx)
                         )]))]) 
-      (syntax-recertify
-       (kernel-syntax-case stx trans?-expr
+       (kernel-syntax-case (syntax-disarm stx insp) trans?-expr
          [var-stx
           (identifier? (syntax var-stx))
           stx]
@@ -156,10 +155,7 @@
           (error 'expr-iterator "unknown expression (phase ~s): ~s ~s" 
                  trans?-expr
                  stx
-                 (syntax->datum stx))])
-       stx
-       insp
-       #f)))
+                 (syntax->datum stx))])))
   
   (define (arglist-flatten arglist)
     (let loop ([remaining arglist]

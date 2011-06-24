@@ -9,7 +9,6 @@ static int mark_comp_info_MARK(void *p, struct NewGC *gc) {
   Scheme_Compile_Info *i = (Scheme_Compile_Info *)p;
   
   gcMARK2(i->value_name, gc);
-  gcMARK2(i->certs, gc);
   gcMARK2(i->observer, gc);
 
   return
@@ -20,7 +19,6 @@ static int mark_comp_info_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Compile_Info *i = (Scheme_Compile_Info *)p;
   
   gcFIXUP2(i->value_name, gc);
-  gcFIXUP2(i->certs, gc);
   gcFIXUP2(i->observer, gc);
 
   return

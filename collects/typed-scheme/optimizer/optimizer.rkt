@@ -14,7 +14,7 @@
 (define-syntax-class opt-expr
   #:commit
   (pattern e:opt-expr*
-           #:with opt (syntax-recertify #'e.opt this-syntax (current-code-inspector) #f)))
+           #:with opt #'e.opt))
 
 (define-syntax-class opt-expr*
   #:commit

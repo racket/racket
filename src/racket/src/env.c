@@ -90,7 +90,6 @@ static Scheme_Object *id_intdef_remove(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_get_shadower(int argc, Scheme_Object *argv[]);
-static Scheme_Object *local_certify(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_exports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_definitions(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_imports(int argc, Scheme_Object *argv[]);
@@ -626,7 +625,6 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-introduce", local_introduce, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("make-syntax-introducer", make_introducer, 0, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-make-delta-introducer", local_make_delta_introduce, 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("syntax-local-certifier", local_certify, 0, 1, env);
 
   GLOBAL_PRIM_W_ARITY("syntax-local-module-exports", local_module_exports, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-module-defined-identifiers", local_module_definitions, 0, 0, env);
@@ -706,9 +704,13 @@ static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client 
 void scheme_prepare_env_renames(Scheme_Env *env, int kind)
 {
   if (!env->rename_set) {
-    Scheme_Object *rns;
+    Scheme_Object *rns, *insp;
 
-    rns = scheme_make_module_rename_set(kind, NULL);
+    insp = env->insp;
+    if (!insp)
+      insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+
+    rns = scheme_make_module_rename_set(kind, NULL, insp);
     env->rename_set = rns;
   }
 }
@@ -1219,7 +1221,6 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
                                     env->module->self_modidx,
                                     n,
                                     env->mod_phase,
-                                    NULL,
                                     NULL,
                                     NULL,
                                     0);
@@ -1751,15 +1752,12 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
 
   menv = NULL;
 
-  sym = scheme_stx_activate_certs(sym);
-
   while (1) {
     v = scheme_lookup_binding(sym, env,
 			      (SCHEME_NULL_FOR_UNBOUND
 			       + SCHEME_RESOLVE_MODIDS
 			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
-			      scheme_current_thread->current_local_certs, 
 			      scheme_current_thread->current_local_modidx, 
 			      &menv, NULL, NULL);
 
@@ -1784,8 +1782,7 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
     v = SCHEME_PTR_VAL(v);
     if (scheme_is_rename_transformer(v)) {
       sym = scheme_rename_transformer_id(v);
-      sym = scheme_transfer_srcloc(scheme_stx_cert(sym, scheme_false, menv, sym, NULL, 1),
-                                   v);
+      sym = scheme_transfer_srcloc(sym, v);
       renamed = 1;
       menv = NULL;
       SCHEME_USE_FUEL(1);
@@ -2149,7 +2146,6 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
   Scheme_Object *introducers = scheme_null, *mappers = scheme_null;
   int renamed = 0;
   Scheme_Comp_Env *env;
-  Scheme_Object *certs;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -2161,10 +2157,6 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
 
   sym = argv[0];
 
-  sym = scheme_stx_activate_certs(sym);
-
-  certs = scheme_current_thread->current_local_certs;
-
   while (1) {
     binder = NULL;
 
@@ -2173,7 +2165,6 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
 			       + SCHEME_RESOLVE_MODIDS
 			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
-			      certs, 
 			      scheme_current_thread->current_local_modidx, 
 			      NULL, NULL, &binder);
     
@@ -2202,10 +2193,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
     
     v = SCHEME_PTR_VAL(v);
     if (scheme_is_rename_transformer(v)) {
-      certs = scheme_stx_extract_certs(sym, certs);
-
       sym = scheme_rename_transformer_id(v);
-      sym = scheme_stx_activate_certs(sym);
 
       v = SCHEME_PTR2_VAL(v);
       if (!SCHEME_FALSEP(v))
@@ -2223,78 +2211,14 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
   }
 }
 
-static Scheme_Object *
-certifier(void *_data, int argc, Scheme_Object **argv)
+Scheme_Object *scheme_get_local_inspector()
 {
-  Scheme_Object *s, **cert_data = (Scheme_Object **)_data;
-  Scheme_Object *mark = scheme_false;
+  Scheme_Thread *p = scheme_current_thread;
 
-  s = argv[0];
-  if (!SCHEME_STXP(s))
-    scheme_wrong_type("certifier", "syntax", 0, argc, argv);
-
-  if (argc > 2) {
-    if (SCHEME_TRUEP(argv[2])) {
-      if (SCHEME_CLSD_PRIMP(argv[2])
-	  && (((Scheme_Closed_Primitive_Proc *)argv[2])->prim_val == introducer_proc))
-	mark = (Scheme_Object *)((Scheme_Closed_Primitive_Proc *)argv[2])->data;
-      else {
-	scheme_wrong_type("certifier", 
-			  "procedure from make-syntax-introducer or #f", 
-			  2, argc, argv);
-	return NULL;
-      }
-    }
-  }
-
-  if (cert_data[0] || cert_data[1] || cert_data[2]) {
-    int as_active = SCHEME_TRUEP(cert_data[3]);
-    s = scheme_stx_cert(s, mark, 
-			(Scheme_Env *)(cert_data[1] ? cert_data[1] : cert_data[2]),
-			cert_data[0],
-			((argc > 1) && SCHEME_TRUEP(argv[1])) ? argv[1] : NULL,
-			as_active);
-    if (cert_data[1] && cert_data[2] && !SAME_OBJ(cert_data[1], cert_data[2])) {
-      /* Have module we're expanding, in addition to module that bound
-	 the expander. */
-      s = scheme_stx_cert(s, mark, (Scheme_Env *)cert_data[2],
-			  NULL,
-			  ((argc > 1) && SCHEME_TRUEP(argv[1])) ? argv[1] : NULL,
-			  as_active);
-    }
-  }
-
-  return s;
-}
-
-static Scheme_Object *
-local_certify(int argc, Scheme_Object *argv[])
-{
-  Scheme_Object **cert_data;
-  Scheme_Env *menv;
-  int active = 0;
-
-  if (!scheme_current_thread->current_local_env)
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
-		     "syntax-local-certifier: not currently transforming");
-  menv = scheme_current_thread->current_local_menv;
-
-  if (argc)
-    active = SCHEME_TRUEP(argv[0]);
-
-  cert_data = MALLOC_N(Scheme_Object*, 4);
-  cert_data[0] = scheme_current_thread->current_local_certs;
-  /* Module that bound the macro we're now running: */
-  cert_data[1] = (Scheme_Object *)((menv && menv->module) ? menv : NULL);
-  /* Module that we're currently expanding: */
-  menv = scheme_current_thread->current_local_env->genv;
-  cert_data[2] = (Scheme_Object *)((menv && menv->module) ? menv : NULL);
-  cert_data[3] = (active ? scheme_true : scheme_false);
-
-  return scheme_make_closed_prim_w_arity(certifier,
-					 cert_data,
-					 "certifier",
-					 1, 3);
+  if (p->current_local_menv)
+    return p->current_local_menv->module->insp;
+  else
+    return scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 }
 
 static Scheme_Object *

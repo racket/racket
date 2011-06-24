@@ -13,6 +13,7 @@
 
 (provide cpp
          InsideRacket
+         guide.scrbl
          (all-from-out scribble/manual)
          (for-label (all-from-out racket/base
                                   racket/contract
@@ -22,3 +23,6 @@
 
 (define InsideRacket
   (other-manual '(lib "scribblings/inside/inside.scrbl")))
+
+(define guide.scrbl
+  '(lib "scribblings/guide/guide.scrbl"))

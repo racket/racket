@@ -91,15 +91,16 @@
 			       (map list
 				    (syntax->list #'(param ...))
 				    (syntax->list #'(val ...))))])
-	   (syntax/loc stx
-	     (with-continuation-mark
-		 parameterization-key
-		 (extend-parameterization
-		  (continuation-mark-set-first #f parameterization-key)
-		  p/v ...)
-	       (let ()
-		 expr1
-		 expr ...))))])))
+           (syntax-protect
+            (syntax/loc stx
+              (with-continuation-mark
+                  parameterization-key
+                  (extend-parameterization
+                   (continuation-mark-set-first #f parameterization-key)
+                   p/v ...)
+                (let ()
+                  expr1
+                  expr ...)))))])))
 
   (define-syntax parameterize*
     (syntax-rules ()
@@ -128,15 +129,16 @@
     (lambda (stx)
       (syntax-case stx ()
 	[(_ bool-expr expr1 expr ...)
-	 (syntax/loc stx
-	   (with-continuation-mark
-	       break-enabled-key
-	       (make-thread-cell (and bool-expr #t))
-	     (begin
-	       (check-for-break)
-	       (let ()
-		 expr1
-		 expr ...))))])))
+         (syntax-protect
+          (syntax/loc stx
+            (with-continuation-mark
+                break-enabled-key
+                (make-thread-cell (and bool-expr #t))
+              (begin
+                (check-for-break)
+                (let ()
+                  expr1
+                  expr ...)))))])))
   
   (define-values (struct:break-paramz make-break-paramz break-paramz? break-paramz-ref break-paramz-set!)
     (make-struct-type 'break-parameterization #f 1 0 #f))
@@ -244,22 +246,23 @@
 									    (syntax->list #'(pred ...))))]
 				[(handler-name ...) (generate-temporaries (map (lambda (x) 'with-handlers-handler) 
 									       (syntax->list #'(handler ...))))])
-		    (quasisyntax/loc stx
-		      (let-values ([(pred-name) pred] ...
-                                   [(handler-name) handler] ...)
-                        ;; Capture current break parameterization, so we can use it to
-                        ;;  evaluate the body
-                        (let ([bpz (continuation-mark-set-first #f break-enabled-key)])
-                          (call-handled-body
-                           bpz
-                           (lambda (e)
-                             (#,(if disable-break?
-                                    #'select-handler/no-breaks
-                                    #'select-handler/breaks-as-is)
-                              e bpz
-                              (list (cons pred-name handler-name) ...)))
-                           (lambda ()
-                             expr1 expr ...))))))])))])
+                    (syntax-protect
+                     (quasisyntax/loc stx
+                       (let-values ([(pred-name) pred] ...
+                                    [(handler-name) handler] ...)
+                         ;; Capture current break parameterization, so we can use it to
+                         ;;  evaluate the body
+                         (let ([bpz (continuation-mark-set-first #f break-enabled-key)])
+                           (call-handled-body
+                            bpz
+                            (lambda (e)
+                              (#,(if disable-break?
+                                     #'select-handler/no-breaks
+                                     #'select-handler/breaks-as-is)
+                               e bpz
+                               (list (cons pred-name handler-name) ...)))
+                            (lambda ()
+                              expr1 expr ...)))))))])))])
       (values (wh #t) (wh #f))))
 
   (define (call-with-exception-handler exnh thunk)

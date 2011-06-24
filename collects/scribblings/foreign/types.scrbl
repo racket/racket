@@ -1,5 +1,13 @@
 #lang scribble/doc
-@(require "utils.rkt" (for-label scheme/match))
+@(require "utils.rkt" 
+          (for-label scheme/match)
+          (for-syntax racket/base)
+          scribble/racket)
+
+@(define-syntax _float*
+   (make-element-id-transformer
+     (lambda (stx)
+       #'@racketidfont{_float*})))
 
 @title[#:tag "types" #:style 'toc]{C Types}
 
@@ -671,13 +679,14 @@ with a function call.
 
 @defform[(define-fun-syntax id transformer-expr)]{
 
-Binds @racket[id] as a @tech{custom function type}. The type is
-expanded by applying the procedure produced by
-@racket[transformer-expr] to a use of the @tech{custom function
-type}.
+Binds @racket[id] as a @tech{custom function type} as well as a syntax
+transformer (i.e, macro). The type is expanded by applying the
+procedure produced by @scheme[transformer-expr] to a use of the
+@tech{custom function type}.
 
-For instance, the following defines a new type that automatically coerces
-the input number to an inexact form which is compatible with the _float type.
+For instance, the following defines a new type that automatically
+coerces the input number to an inexact form which is compatible with
+the @racket[_float] type.
 
 @racketblock[
 (define-fun-syntax _float*

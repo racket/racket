@@ -17,6 +17,7 @@
              racket/private/map ; shadows #%kernel bindings
              racket/private/kernstruct
              racket/private/promise
+             racket/private/cert
              (only racket/private/cond old-cond)
              (only racket/private/list assq assv assoc) ; shadows #%kernel bindings
              racket/tcp
@@ -37,6 +38,7 @@
              (rename old-cond cond)
              define-struct let-struct
              identifier? ;; from racket/private/stx
+             (all-from racket/private/cert)
              (all-from racket/private/qqstx)
              (all-from racket/private/define)
              (all-from racket/private/kernstruct)

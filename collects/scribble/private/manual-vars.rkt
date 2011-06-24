@@ -22,19 +22,12 @@
 
 (define-syntax (with-togetherable-racket-variables stx)
   (syntax-case stx ()
-    [(_ . rest)
-     (let ([result (syntax/loc stx
-                     (with-togetherable-racket-variables* . rest))]
-           [ctx (syntax-local-context)])
-       (if (and (pair? ctx) (deftogether-tag? (car ctx)))
-           ;; Make it transparent, so deftogether is allowed to pull it apart
-           (syntax-property result
-                            'certify-mode
-                            'transparent)
-           ;; Otherwise, don't make it transparent, because that
-           ;; removes certificates that will be needed on the `letrec-syntaxes'
-           ;; that we introduce later.
-           result))]))
+    [(_ lits vars decl)
+     (with-syntax ([vars (syntax-property #'vars 'taint-mode 'none)])
+       (syntax-property
+        #'(with-togetherable-racket-variables* lits vars decl)
+        'taint-mode
+        'transparent))]))
 
 (define-syntax-rule (with-togetherable-racket-variables* . rest)
   (with-racket-variables . rest))

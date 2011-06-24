@@ -79,7 +79,7 @@ static Scheme_Object *write_local(Scheme_Object *obj);
 static Scheme_Object *read_local(Scheme_Object *obj);
 static Scheme_Object *read_local_unbox(Scheme_Object *obj);
 static Scheme_Object *write_resolve_prefix(Scheme_Object *obj);
-static Scheme_Object *read_resolve_prefix(Scheme_Object *obj, Scheme_Object *insp);
+static Scheme_Object *read_resolve_prefix(Scheme_Object *obj);
 
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj);
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj);
@@ -155,7 +155,7 @@ void scheme_init_marshal(Scheme_Env *env)
   scheme_install_type_writer(scheme_local_unbox_type, write_local);
   scheme_install_type_reader(scheme_local_unbox_type, read_local_unbox);
   scheme_install_type_writer(scheme_resolve_prefix_type, write_resolve_prefix);
-  scheme_install_type_reader2(scheme_resolve_prefix_type, read_resolve_prefix);
+  scheme_install_type_reader(scheme_resolve_prefix_type, read_resolve_prefix);
 
   scheme_install_type_writer(scheme_module_type, write_module);
   scheme_install_type_reader(scheme_module_type, read_module);
@@ -1032,7 +1032,7 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   return tv;
 }
 
-static Scheme_Object *read_resolve_prefix(Scheme_Object *obj, Scheme_Object *insp)
+static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp;
   Scheme_Object *tv, *sv, **a, *stx;
@@ -1065,8 +1065,7 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj, Scheme_Object *ins
   rp->num_toplevels = (int)SCHEME_VEC_SIZE(tv);
   rp->num_stxes = (int)SCHEME_VEC_SIZE(sv);
   rp->num_lifts = (int)i;
-  if (uses_unsafe)
-    rp->uses_unsafe = insp;
+  rp->uses_unsafe = scheme_true;
 
   i = rp->num_toplevels;
   a = MALLOC_N(Scheme_Object *, i);
@@ -1195,20 +1194,6 @@ static Scheme_Object *write_module(Scheme_Object *obj)
         v = scheme_false;
       l = cons(v, l);
 
-      if (pt->provide_insps) {
-        v = scheme_make_vector(count, scheme_false);
-        for (i = 0; i < count; i++) {
-          if (pt->provide_insps[i]) {
-            if (SCHEME_PAIRP(pt->provide_insps[i]))
-              SCHEME_VEC_ELS(v)[i] = scheme_void;
-            else
-              SCHEME_VEC_ELS(v)[i] = scheme_true;
-          }
-        }
-      } else
-        v = scheme_false;
-      l = cons(v, l);
-
       l = cons(pt->phase_index, l);
       cnt++;
     }
@@ -1318,8 +1303,8 @@ static int check_requires_ok(Scheme_Object *l)
 static Scheme_Object *read_module(Scheme_Object *obj)
 {
   Scheme_Module *m;
-  Scheme_Object *ie, *nie, *insp;
-  Scheme_Object *eesp, *esp, *esn, *esph, *es, *esnom, *einsp, *e, *nve, *ne, **v;
+  Scheme_Object *ie, *nie;
+  Scheme_Object *eesp, *esp, *esn, *esph, *es, *esnom, *e, *nve, *ne, **v;
   Scheme_Module_Exports *me;
   Scheme_Module_Phase_Exports *pt;
   char *ps, *sps;
@@ -1483,10 +1468,6 @@ static Scheme_Object *read_module(Scheme_Object *obj)
     }
 
     if (!SCHEME_PAIRP(obj)) return_NULL();
-    einsp = SCHEME_CAR(obj);
-    obj = SCHEME_CDR(obj);
-
-    if (!SCHEME_PAIRP(obj)) return_NULL();
     esph = SCHEME_CAR(obj);
     obj = SCHEME_CDR(obj);
 
@@ -1560,24 +1541,6 @@ static Scheme_Object *read_module(Scheme_Object *obj)
       }
     }
     pt->provide_src_phases = sps;
-
-    if (SCHEME_FALSEP(einsp)) {
-      pt->provide_insps = NULL;
-    } else {
-      if (!SCHEME_VECTORP(einsp) || (SCHEME_VEC_SIZE(einsp) != count)) return_NULL();
-      insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-      v = MALLOC_N(Scheme_Object *, count);
-      for (i = 0; i < count; i++) {
-        if (SCHEME_TRUEP(SCHEME_VEC_ELS(einsp)[i])) {
-          if (SCHEME_VOIDP(SCHEME_VEC_ELS(einsp)[i])) {
-            e = cons(scheme_false, insp);
-            v[i] = e;
-          } else
-            v[i] = insp;
-        }
-      }
-      pt->provide_insps = v;
-    }
   }
 
   count = me->rt->num_provides;

@@ -72,10 +72,14 @@
 (define %true
   (lambda (fk) fk))
 
+(define-for-syntax orig-insp (current-code-inspector))
+
 (define-syntax (%is stx)
   (syntax-case stx ()
     [(%is v e)
-     (with-syntax ([fe (local-expand #'e 'expression empty)])
+     (with-syntax ([fe (syntax-disarm 
+                        (local-expand #'e 'expression empty)
+                        orig-insp)])
        (syntax/loc stx
          (lambda (__fk)
            ((%= v (%is/fk fe __fk)) __fk))))]))

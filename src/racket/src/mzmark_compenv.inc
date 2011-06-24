@@ -13,7 +13,6 @@ static int mark_comp_env_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->base.prefix, gc);
   gcMARK2(e->base.next, gc);
   gcMARK2(e->base.values, gc);
-  gcMARK2(e->base.certs, gc);
   gcMARK2(e->base.renames, gc);
   gcMARK2(e->base.uid, gc);
   gcMARK2(e->base.uids, gc);
@@ -41,7 +40,6 @@ static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->base.prefix, gc);
   gcFIXUP2(e->base.next, gc);
   gcFIXUP2(e->base.values, gc);
-  gcFIXUP2(e->base.certs, gc);
   gcFIXUP2(e->base.renames, gc);
   gcFIXUP2(e->base.uid, gc);
   gcFIXUP2(e->base.uids, gc);

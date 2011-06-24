@@ -143,7 +143,7 @@
                                        e (stx-car exprs) phase)))
                           (loop (stx-cdr exprs)))))])
       (if (syntax? exprs)
-          (certify exprs new)
+          (rearm exprs new)
           new)))
   
   (define (insert-at-tail se sexpr phase)
@@ -175,11 +175,11 @@
          (insert-at-tail* se sexpr phase)]
         
         [(begin0 body ...)
-         (certify sexpr (syntax (begin0 body ... e)))]
+         (rearm sexpr (syntax (begin0 body ... e)))]
         
         [(if test then else)
          ;; WARNING: se inserted twice!
-         (certify
+         (rearm
           sexpr
           (rebuild
            sexpr
@@ -252,8 +252,11 @@
   
   (define orig-inspector (current-code-inspector))
   
-  (define (certify orig new)
-    (syntax-recertify new orig orig-inspector #f))
+  (define (rearm orig new)
+    (syntax-rearm new orig))
+  
+  (define (disarm orig)
+    (syntax-disarm orig orig-inspector))
   
   (define (rebuild expr replacements)
     (let loop ([expr expr] [same-k (lambda () expr)] [diff-k (lambda (x) x)])
@@ -304,7 +307,7 @@
   (define (make-annotate top? name)
     (lambda (expr phase)
       (test-coverage-point
-       (kernel-syntax-case/phase expr phase
+       (kernel-syntax-case/phase (disarm expr) phase
          [_
           (identifier? expr)
           (let ([b (identifier-binding expr phase)])
@@ -348,14 +351,14 @@
                             (loop (cdr (syntax-e stx))
                                   obj))]
                      [else obj]))])
-            (certify
+            (rearm
              expr
              (rebuild 
               expr 
               (list (cons #'rhs with-coverage)))))]
          [(begin . exprs)
           top?
-          (certify
+          (rearm
            expr
            (annotate-seq expr
                          (syntax exprs)
@@ -367,7 +370,7 @@
                                     (one-name #'(name ...))
                                     (syntax rhs)
                                     (add1 phase)))])
-            (certify
+            (rearm
              expr
              (rebuild expr (list (cons #'rhs marked)))))]
          
@@ -378,30 +381,32 @@
                                     (one-name (syntax (name ...)))
                                     (syntax rhs)
                                     (add1 phase)))])
-            (certify
+            (rearm
              expr
              (rebuild expr (list (cons #'rhs marked)))))]
          
-         [(module name init-import (__plain-module-begin body ...))
-          ;; Just wrap body expressions
-          (let ([bodys (syntax->list (syntax (body ...)))]
-                [mb (list-ref (syntax->list expr) 3)])
-            (let ([bodyl (map (lambda (b)
-                                (annotate-top b 0))
-                              bodys)])
-              (certify
-               expr
-               (rebuild
-                expr
-                (list (cons
-                       mb
-                       (certify
-                        mb
-                        (rebuild mb (map cons bodys bodyl)))))))))]
+         [(module name init-import mb)
+          (syntax-case (disarm #'mb) ()
+            [(__plain-module-begin body ...)
+             ;; Just wrap body expressions
+             (let ([bodys (syntax->list (syntax (body ...)))])
+               (let ([bodyl (map (lambda (b)
+                                   (annotate-top b 0))
+                                 bodys)]
+                     [mb #'mb])
+                 (rearm
+                  expr
+                  (rebuild
+                   expr
+                   (list (cons
+                          mb
+                          (rearm
+                           mb
+                           (rebuild mb (map cons bodys bodyl)))))))))])]
          
          [(#%expression e)
           top?
-          (certify expr #`(#%expression #,(annotate (syntax e) phase)))]
+          (rearm expr #`(#%expression #,(annotate (syntax e) phase)))]
          
          ;; No way to wrap
          [(#%require i ...) expr]
@@ -417,7 +422,7 @@
          
          ;; Wrap body, also a profile point
          [(#%plain-lambda args . body)
-          (certify
+          (rearm
            expr
            (keep-lambda-properties
             expr
@@ -433,7 +438,7 @@
                                 name expr clause body phase))
                              (syntax->list (syntax (body ...)))
                              clauses)])
-              (certify
+              (rearm
                expr
                (keep-lambda-properties
                 expr
@@ -442,14 +447,14 @@
          ;; Wrap RHSs and body
          [(let-values ([vars rhs] ...) . body)
           (with-mark expr
-                     (certify
+                     (rearm
                       expr
                       (annotate-let expr phase
                                     (syntax (vars ...))
                                     (syntax (rhs ...))
                                     (syntax body))))]
          [(letrec-values ([vars rhs] ...) . body)
-          (let ([fm (certify
+          (let ([fm (rearm
                      expr
                      (annotate-let expr phase
                                    (syntax (vars ...))
@@ -471,24 +476,24 @@
                           phase)])
             ;; set! might fail on undefined variable, or too many values:
             (with-mark expr
-                       (certify
+                       (rearm
                         expr
                         (rebuild expr (list (cons #'rhs new-rhs))))))]
          
          ;; Wrap subexpressions only
          [(begin e)
           ;; Single expression: no mark
-          (certify
+          (rearm
            expr
            #`(begin #,(annotate (syntax e) phase)))]
          [(begin . body)
           (with-mark expr
-                     (certify
+                     (rearm
                       expr
                       (annotate-seq expr #'body annotate phase)))]
          [(begin0 . body)
           (with-mark expr
-                     (certify
+                     (rearm
                       expr
                       (annotate-seq expr #'body annotate phase)))]
          [(if tst thn els)
@@ -496,7 +501,7 @@
                 [w-thn (annotate (syntax thn) phase)]
                 [w-els (annotate (syntax els) phase)])
             (with-mark expr
-                       (certify
+                       (rearm
                         expr
                         (rebuild expr (list (cons #'tst w-tst)
                                             (cons #'thn w-thn)
@@ -505,13 +510,13 @@
           (let ([w-tst (annotate (syntax tst) phase)]
                 [w-thn (annotate (syntax thn) phase)])
             (with-mark expr
-                       (certify
+                       (rearm
                         expr
                         (rebuild expr (list (cons #'tst w-tst)
                                             (cons #'thn w-thn))))))]
          [(with-continuation-mark . body)
           (with-mark expr
-                     (certify
+                     (rearm
                       expr
                       (annotate-seq expr (syntax body)
                                     annotate phase)))]
@@ -531,7 +536,7 @@
             ;; It's (void):
             expr]
            [else
-            (with-mark expr (certify
+            (with-mark expr (rearm
                              expr
                              (annotate-seq expr (syntax body)
                                            annotate phase)))])]

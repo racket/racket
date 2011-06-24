@@ -208,7 +208,7 @@
                                [vars-seen (listof (cons/c identifier?
                                                           identifier?))])))
 
-(define-struct match-expander (match-xform legacy-xform macro-xform certifier)
+(define-struct match-expander (match-xform legacy-xform macro-xform)
 #|  #:property prop:procedure (lambda (me stx)
                               (define xf (match-expander-macro-xform me))
                               (define xf* (if (set!-transformer? xf)

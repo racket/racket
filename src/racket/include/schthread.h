@@ -149,6 +149,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *cached_mod_beg_stx_;
   struct Scheme_Object *cached_dv_stx_;
   struct Scheme_Object *cached_ds_stx_;
+  struct Scheme_Object *cached_dvs_stx_;
   int cached_stx_phase_;
   struct Scheme_Cont *offstack_cont_;
   struct Scheme_Overflow *offstack_overflow_;
@@ -326,6 +327,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Hash_Table *loaded_extensions_;
   struct Scheme_Hash_Table *fullpath_loaded_extensions_;
   Scheme_Sleep_Proc scheme_place_sleep_;
+  struct Scheme_Bucket_Table *taint_intern_table_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -480,6 +482,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define cached_mod_beg_stx XOA (scheme_get_thread_local_variables()->cached_mod_beg_stx_)
 #define cached_dv_stx XOA (scheme_get_thread_local_variables()->cached_dv_stx_)
 #define cached_ds_stx XOA (scheme_get_thread_local_variables()->cached_ds_stx_)
+#define cached_dvs_stx XOA (scheme_get_thread_local_variables()->cached_dvs_stx_)
 #define cached_stx_phase XOA (scheme_get_thread_local_variables()->cached_stx_phase_)
 #define offstack_cont XOA (scheme_get_thread_local_variables()->offstack_cont_)
 #define offstack_overflow XOA (scheme_get_thread_local_variables()->offstack_overflow_)
@@ -655,6 +658,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define loaded_extensions XOA (scheme_get_thread_local_variables()->loaded_extensions_)
 #define fullpath_loaded_extensions XOA (scheme_get_thread_local_variables()->fullpath_loaded_extensions_)
 #define scheme_place_sleep XOA (scheme_get_thread_local_variables()->scheme_place_sleep_)
+#define taint_intern_table XOA (scheme_get_thread_local_variables()->taint_intern_table_)
 
 /* **************************************** */
 

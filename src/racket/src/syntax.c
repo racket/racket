@@ -47,9 +47,6 @@ ROSYM static Scheme_Object *nominal_id_symbol;
 
 READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 READ_ONLY static Scheme_Object *empty_simplified;
-READ_ONLY static Scheme_Object *no_nested_inactive_certs;
-READ_ONLY static Scheme_Object *no_nested_active_certs;
-READ_ONLY static Scheme_Object *no_nested_certs;
 
 THREAD_LOCAL_DECL(static Scheme_Object *nominal_ipair_cache);
 THREAD_LOCAL_DECL(static Scheme_Object *mark_id);
@@ -60,7 +57,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *unsealed_dependencies);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *id_marks_ht); /* a cache */
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *than_id_marks_ht); /* a cache */
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *interned_skip_ribs);
-
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *taint_intern_table);
 
 static Scheme_Object *syntax_p(int argc, Scheme_Object **argv);
 
@@ -73,6 +70,7 @@ static Scheme_Object *syntax_pos(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_span(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_to_list(int argc, Scheme_Object **argv);
+static Scheme_Object *syntax_tainted_p(int argc, Scheme_Object **argv);
 
 static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_property(int argc, Scheme_Object **argv);
@@ -92,23 +90,21 @@ static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
 
-static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv);
-
-static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active);
+static Scheme_Object *syntax_arm(int argc, Scheme_Object **argv);
+static Scheme_Object *syntax_disarm(int argc, Scheme_Object **argv);
+static Scheme_Object *syntax_rearm(int argc, Scheme_Object **argv);
+static Scheme_Object *syntax_taint(int argc, Scheme_Object **argv);
 
 static Scheme_Object *write_free_id_info_prefix(Scheme_Object *obj);
-static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj, Scheme_Object *insp);
+static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj);
+
+static Scheme_Object *raw_stx_content(Scheme_Object *o);
+static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp, int need_clone);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
 
-static int includes_mark(Scheme_Object *wraps, Scheme_Object *mark);
-static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks);
-static struct Scheme_Cert *cons_cert(Scheme_Object *mark, Scheme_Object *modidx, 
-				     Scheme_Object *insp, Scheme_Object *key, 
-				     struct Scheme_Cert *next_cert);
-static void phase_shift_certs(Scheme_Object *o, Scheme_Object *owner_wraps, int len);
 static void preemptive_chunk(Scheme_Stx *stx);
 
 #define CONS scheme_make_pair
@@ -116,6 +112,8 @@ static void preemptive_chunk(Scheme_Stx *stx);
 
 #define HAS_SUBSTX(obj) (SCHEME_PAIRP(obj) || SCHEME_VECTORP(obj) || SCHEME_BOXP(obj) || prefab_p(obj) || SCHEME_HASHTRP(obj))
 #define HAS_CHAPERONE_SUBSTX(obj) (HAS_SUBSTX(obj) || (SCHEME_NP_CHAPERONEP(obj) && HAS_SUBSTX(SCHEME_CHAPERONE_VAL(obj))))
+
+#define SCHEME_INSPECTORP(obj) SAME_TYPE(scheme_inspector_type, SCHEME_TYPE(obj))
 
 XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 {
@@ -139,9 +137,7 @@ typedef struct Module_Renames {
                                           (cons modidx exportname) OR
                                           (cons modidx nominal_modidx) OR
                                           (list* modidx exportname nominal_modidx_plus_phase nominal_exportname) OR
-                                          (list* modidx mod-phase exportname nominal_modidx_plus_phase nominal_exportname) OR
-                                          (cons insp localname) OR
-                                          (cons (cons insp insp) localname)
+                                          (list* modidx mod-phase exportname nominal_modidx_plus_phase nominal_exportname)
                             nominal_modix_plus_phase -> nominal_modix | (cons nominal_modix import_phase_plus_nominal_phase)
                             import_phase_plus_nominal_phase -> import-phase-index | (cons import-phase-index nom-phase) */
   Scheme_Hash_Table *nomarshal_ht; /* like ht, but dropped on marshal */
@@ -159,6 +155,7 @@ typedef struct Module_Renames {
                                             id => resolve id (but cache if possible; never appears after simplifying)
                                             (box (cons sym #f)) => top-level binding
                                             (box (cons sym sym)) => lexical binding */
+  Scheme_Object *insp; /* code inspector to enable access to imports */
 } Module_Renames;
 
 static void unmarshal_rename(Module_Renames *mrn,
@@ -172,45 +169,8 @@ typedef struct Module_Renames_Set {
   Module_Renames *rt, *et;
   Scheme_Hash_Table *other_phases;
   Scheme_Object *share_marked_names; /* a Module_Renames_Set */
+  Scheme_Object *insp; /* code inspector to enable access to imports */
 } Module_Renames_Set;
-
-typedef struct Scheme_Cert {
-  Scheme_Inclhash_Object iso;
-  Scheme_Object *mark;
-  Scheme_Object *modidx;
-  Scheme_Object *insp;
-  Scheme_Object *key;
-  Scheme_Object *mapped; /* Indicates which mark+key combinations are in
-			    this chain. The table is created for every 16
-			    items in the list. For a power of 2, all items
-			    in the rest of the chain are in the table, and
-			    the "next" pointer is NULL. For 2^n + 2^m, then
-                            2^m items are in the table, and so on. Overall, the
-			    chain's total size if O(n * lg n) for a chain of
-			    length n, and lookup for a mark+key pair is
-			    O(lg n). */
-  int depth;
-  struct Scheme_Cert *next;
-} Scheme_Cert;
-
-#define CERT_NO_KEY(c) (MZ_OPT_HASH_KEY(&(c)->iso) & 0x1)
-#define CERT_SET_NO_KEY(c) (MZ_OPT_HASH_KEY(&(c)->iso) |= 0x1)
-
-/* Certs encoding:
-    - NULL: no inactive or active certs; 
-            maybe inactive certs in nested parts
-    - rcons(c1, c2): active certs c1 (maybe NULL), inactive certs c2 (maybe NULL); 
-            maybe inactive certs in nested parts 
-    Use flags 0x1 and 02 to indicate no inactive or active certs in nested parts */
-#define ACTIVE_CERTS(stx) ((Scheme_Cert *)((stx)->certs ? (SCHEME_RPAIRP((stx)->certs) ? SCHEME_CAR((stx)->certs) : (stx)->certs) : NULL))
-#define INACTIVE_CERTS(stx) ((Scheme_Cert *)((stx)->certs ? (SCHEME_RPAIRP((stx)->certs) ? SCHEME_CDR((stx)->certs) : NULL) : NULL))
-static Scheme_Object *stx_strip_certs(Scheme_Object *o, Scheme_Cert **cp, int active);
-
-#define SCHEME_NO_INACTIVE_SUBS_P(obj) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) & 0x1)
-#define SCHEME_NO_ACTIVE_SUBS_P(obj) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) & 0x2)
-#define SCHEME_SET_NO_X_SUBS(obj, flag) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) |= flag)
-#define SCHEME_SET_NO_INACTIVE_SUBS(obj) SCHEME_SET_NO_X_SUBS(obj, 0x1)
-#define SCHEME_SET_NO_ACTIVE_SUBS(obj) SCHEME_SET_NO_X_SUBS(obj, 0x2)
 
 #define SCHEME_RENAME_LEN(vec)  ((SCHEME_VEC_SIZE(vec) - 2) >> 1)
 
@@ -231,6 +191,13 @@ typedef struct Scheme_Lexical_Rib {
 
 #define SCHEME_PRUNEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_prune_context_type))
 
+/* A `taints' field is one of
+    - NULL => clean
+    - #t => tainted, and taint propagated to children, if any)
+    - (void) => tainted, and taint needs to be propagated to children
+    - <insp> => clean, but inspector needs to be proagated to children
+    - (list <insp/#f> <insp> ...+) [interned] => armed; first inspector is to propagate */
+
 XFORM_NONGCING static int is_member(Scheme_Object *a, Scheme_Object *l)
 {
   while (SCHEME_PAIRP(l)) {
@@ -241,14 +208,6 @@ XFORM_NONGCING static int is_member(Scheme_Object *a, Scheme_Object *l)
   return 0;
 }
 
-static int is_rename_inspector_info(Scheme_Object *v)
-{
-  return (SAME_TYPE(SCHEME_TYPE(v), scheme_inspector_type)
-          || (SCHEME_PAIRP(v)
-              && SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(v)), scheme_inspector_type)
-              && SAME_TYPE(SCHEME_TYPE(SCHEME_CDR(v)), scheme_inspector_type)));
-}
-
 /* Wraps:
 
    A wrap is a list of wrap-elems and wrap-chunks. A wrap-chunk is a
@@ -257,9 +216,6 @@ static int is_rename_inspector_info(Scheme_Object *v)
    Each wrap-elem has one of several shapes:
 
    - A wrap-elem <+num> is a mark
-
-   - A wrap-elem <-num> is a certificate-only mark (doesn't conttribute to
-       id equivalence)
 
    - A wrap-elem (vector <sym> <ht> <stx> ..._0 <recur-state> ..._0) is a lexical rename
                          env  (sym   var      <var-resolved>:
@@ -313,7 +269,7 @@ static int is_rename_inspector_info(Scheme_Object *v)
          simple lexical renames (not ribs) and marks, only, and it's
          inserted into a chain heuristically
 
-   - A wrap-elem (box (vector <num> <midx> <midx> <export-registry>))
+   - A wrap-elem (box (vector <num> <midx> <midx> <export-registry> <insp>))
          is a phase shift by <num>, remapping the first <midx> to the 
          second <midx>; the <export-registry> part is for finding
          modules to unmarshal import renamings
@@ -323,7 +279,8 @@ static int is_rename_inspector_info(Scheme_Object *v)
 
   The lazy_prefix field of a syntax object keeps track of how many of
   the first wraps (items and chunks in the list) need to be propagated
-  to sub-syntax.  */
+  to sub-syntax. It is set to -1 to mean no wraps to propagate, but
+  some taints to propagate. */
 
 #define IS_POSMARK(x) (SCHEME_INTP(x) ? (SCHEME_INT_VAL(x) >= 0) : SCHEME_BIGPOS(x))
 #define SCHEME_MARKP(x) (SCHEME_INTP(x) || SCHEME_BIGNUMP(x))
@@ -460,7 +417,6 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("syntax-source"  , syntax_src    , 1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("syntax->list"   , syntax_to_list, 1, 1, 1, env);
 
-
   GLOBAL_IMMED_PRIM("syntax-original?"                 , syntax_original_p         , 1, 1, env);
   GLOBAL_IMMED_PRIM("syntax-property"                  , syntax_property           , 2, 3, env);
   GLOBAL_IMMED_PRIM("syntax-property-symbol-keys"      , syntax_property_keys      , 1, 1, env);
@@ -484,7 +440,12 @@ void scheme_init_stx(Scheme_Env *env)
 
 
   GLOBAL_NONCM_PRIM("syntax-source-module"             , syntax_src_module         , 1, 2, env);
-  GLOBAL_IMMED_PRIM("syntax-recertify"                 , syntax_recertify          , 4, 4, env);
+
+  GLOBAL_FOLDING_PRIM("syntax-tainted?", syntax_tainted_p, 1, 1, 1, env);
+  GLOBAL_IMMED_PRIM("syntax-arm"                 , syntax_arm                , 1, 3, env);
+  GLOBAL_IMMED_PRIM("syntax-disarm"              , syntax_disarm             , 2, 2, env);
+  GLOBAL_IMMED_PRIM("syntax-rearm"               , syntax_rearm              , 2, 3, env);
+  GLOBAL_IMMED_PRIM("syntax-taint"               , syntax_taint              , 1,1, env);
 
   REGISTER_SO(source_symbol);
   REGISTER_SO(share_symbol);
@@ -517,19 +478,8 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(empty_simplified);
   empty_simplified = scheme_make_vector(2, scheme_false);
 
-  REGISTER_SO(no_nested_inactive_certs);
-  REGISTER_SO(no_nested_active_certs);
-  REGISTER_SO(no_nested_certs);
-  no_nested_inactive_certs = scheme_make_raw_pair(NULL, NULL);
-  no_nested_active_certs = scheme_make_raw_pair(NULL, NULL);
-  no_nested_certs = scheme_make_raw_pair(NULL, NULL);
-  SCHEME_SET_NO_INACTIVE_SUBS(no_nested_inactive_certs);
-  SCHEME_SET_NO_ACTIVE_SUBS(no_nested_active_certs);
-  SCHEME_SET_NO_INACTIVE_SUBS(no_nested_certs);
-  SCHEME_SET_NO_ACTIVE_SUBS(no_nested_certs);
-
   scheme_install_type_writer(scheme_free_id_info_type, write_free_id_info_prefix);
-  scheme_install_type_reader2(scheme_free_id_info_type, read_free_id_info_prefix);
+  scheme_install_type_reader(scheme_free_id_info_type, read_free_id_info_prefix);
 }
 
 void scheme_init_stx_places(int initial_main_os_thread) {
@@ -540,6 +490,7 @@ void scheme_init_stx_places(int initial_main_os_thread) {
   REGISTER_SO(than_id_marks_ht);
   REGISTER_SO(interned_skip_ribs);
   REGISTER_SO(unsealed_dependencies);
+  REGISTER_SO(taint_intern_table);
   
   if (!initial_main_os_thread) {
     REGISTER_SO(mark_id);
@@ -549,6 +500,7 @@ void scheme_init_stx_places(int initial_main_os_thread) {
   }
 
   interned_skip_ribs = scheme_make_weak_equal_table();
+  taint_intern_table = scheme_make_weak_equal_table();
 }
 
 /*========================================================================*/
@@ -568,6 +520,42 @@ Scheme_Object *scheme_make_stx(Scheme_Object *val,
   stx->srcloc = srcloc;
   stx->wraps = scheme_null;
   stx->props = props;
+
+  return (Scheme_Object *)stx;
+}
+
+Scheme_Object *clone_stx(Scheme_Object *to)
+{
+  Scheme_Stx *stx = (Scheme_Stx *)to;
+  Scheme_Object *wraps, *modinfo_cache;
+  Scheme_Object *taints;
+  intptr_t lazy_prefix;
+  int dp;
+
+  wraps = stx->wraps;
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+    modinfo_cache = NULL;
+    lazy_prefix = stx->u.lazy_prefix;
+    dp = STX_KEY(stx) & STX_ARMED_FLAG;
+  } else {
+    modinfo_cache = stx->u.modinfo_cache;
+    lazy_prefix = 0;
+    dp = 0;
+  }
+  taints = stx->taints;
+
+  stx = (Scheme_Stx *)scheme_make_stx(stx->val, 
+                                      stx->srcloc,
+                                      stx->props);
+
+  stx->wraps = wraps;
+  if (modinfo_cache)
+    stx->u.modinfo_cache = modinfo_cache;
+  else
+    stx->u.lazy_prefix = lazy_prefix; /* same as NULL modinfo if no SUBSTX */
+  stx->taints = taints;
+  if (dp)
+    STX_KEY(stx) |= STX_ARMED_FLAG;
 
   return (Scheme_Object *)stx;
 }
@@ -615,9 +603,6 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
   Scheme_Stx *nstx = (Scheme_Stx *)naya;
   Scheme_Stx *ostx = (Scheme_Stx *)old;
   Scheme_Object *ne, *oe, *e1, *e2;
-  Scheme_Object *certs;
-  Scheme_Object *wraps, *modinfo_cache;
-  intptr_t lazy_prefix;
 
   if (nstx->props) {
     if (SAME_OBJ(nstx->props, STX_SRCTAG)) {
@@ -755,27 +740,8 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
   }
 
   /* Clone nstx, keeping wraps, changing props to ne */
-
-  wraps = nstx->wraps;
-  if (STX_KEY(nstx) & STX_SUBSTX_FLAG) {
-    modinfo_cache = NULL;
-    lazy_prefix = nstx->u.lazy_prefix;
-  } else {
-    modinfo_cache = nstx->u.modinfo_cache;
-    lazy_prefix = 0;
-  }
-
-  certs = nstx->certs;
-
-  nstx = (Scheme_Stx *)scheme_make_stx(nstx->val, nstx->srcloc, ne);
-
-  nstx->wraps = wraps;
-  if (modinfo_cache)
-    nstx->u.modinfo_cache = modinfo_cache;
-  else
-    nstx->u.lazy_prefix = lazy_prefix;
-
-  nstx->certs = certs;
+  nstx = (Scheme_Stx *)clone_stx((Scheme_Object *)nstx);
+  nstx->props = ne;
 
   return (Scheme_Object *)nstx;
 }
@@ -826,8 +792,11 @@ static int maybe_add_chain_cache(Scheme_Stx *stx)
     p = scheme_make_pair((Scheme_Object *)ht, stx->wraps);
     stx->wraps = p;
     
-    if (STX_KEY(stx) & STX_SUBSTX_FLAG)
+    if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+      if (stx->u.lazy_prefix < 0)
+        stx->u.lazy_prefix = 0;
       stx->u.lazy_prefix++;
+    }
 
     return 1;
   }
@@ -945,22 +914,22 @@ Scheme_Object *scheme_new_mark()
   return mark_id;
 }
 
-static Scheme_Object *negate_mark(Scheme_Object *n)
-{
-  return scheme_bin_minus(scheme_make_integer(0), n);
-}
-
 Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *wraps;
-  Scheme_Object *certs;
+  Scheme_Object *taints;
   intptr_t lp;
+  int dp;
 
-  if (STX_KEY(stx) & STX_SUBSTX_FLAG)
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     lp = stx->u.lazy_prefix;
-  else
+    if (lp < 0) lp = 0;
+    dp = STX_KEY(stx) & STX_ARMED_FLAG;
+  } else {
     lp = 1;
+    dp = 0;
+  }
 
   wraps = stx->wraps;
   if (SCHEME_PAIRP(wraps)
@@ -976,13 +945,21 @@ Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
     wraps = CONS(m, wraps);
   }
 
-  certs = stx->certs;
+  taints = stx->taints;
   stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
   stx->wraps = wraps;
-  stx->certs = certs;
+  stx->taints = taints;
 
-  if (STX_KEY(stx) & STX_SUBSTX_FLAG)
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+    if (!lp && stx->taints && (SCHEME_VOIDP(stx->taints) 
+                               || SCHEME_INSPECTORP(stx->taints) 
+                               || (SCHEME_PAIRP(stx->taints)
+                                   && SCHEME_INSPECTORP(SCHEME_CAR(stx->taints)))))
+      lp = -1;
     stx->u.lazy_prefix = lp;
+    if (dp)
+      STX_KEY(stx) |= STX_ARMED_FLAG;
+  }
   /* else cache should stay zeroed */
 
   return (Scheme_Object *)stx;
@@ -1205,7 +1182,7 @@ static int same_phase(Scheme_Object *a, Scheme_Object *b)
     return scheme_eqv(a, b);
 }
 
-Scheme_Object *scheme_make_module_rename_set(int kind, Scheme_Object *share_marked_names)
+Scheme_Object *scheme_make_module_rename_set(int kind, Scheme_Object *share_marked_names, Scheme_Object *insp)
 {
   Module_Renames_Set *mrns;
   Scheme_Object *mk;
@@ -1220,6 +1197,7 @@ Scheme_Object *scheme_make_module_rename_set(int kind, Scheme_Object *share_mark
   mrns->kind = kind;
   mrns->share_marked_names = share_marked_names;
   mrns->set_identity = mk;
+  mrns->insp = insp;
 
   return (Scheme_Object *)mrns;
 }
@@ -1268,7 +1246,7 @@ Scheme_Object *scheme_get_module_rename_from_set(Scheme_Object *set, Scheme_Obje
     else
       marked_names = NULL;
 
-    mrn = (Module_Renames *)scheme_make_module_rename(phase, mrns->kind, marked_names);
+    mrn = (Module_Renames *)scheme_make_module_rename(phase, mrns->kind, marked_names, mrns->insp);
 
     scheme_add_module_rename_to_set(set, (Scheme_Object *)mrn);
   }
@@ -1297,7 +1275,8 @@ Scheme_Hash_Table *scheme_get_module_rename_marked_names(Scheme_Object *set, Sch
   return NULL;
 }
 
-Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *marked_names)
+Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *marked_names, 
+                                         Scheme_Object *insp)
 {
   Module_Renames *mr;
   Scheme_Hash_Table *ht;
@@ -1317,6 +1296,7 @@ Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_
   mr->marked_names = marked_names;
   mr->shared_pes = scheme_null;
   mr->unmarshal_info = scheme_null;
+  mr->insp = insp;
 
   return (Scheme_Object *)mr;
 }
@@ -1365,7 +1345,6 @@ Scheme_Object *scheme_extend_module_rename(Scheme_Object *mrn,
                                            intptr_t mod_phase,             /* phase of source defn */
                                            Scheme_Object *src_phase_index, /* nominal import phase */
                                            Scheme_Object *nom_phase,   /* nominal export phase */
-                                           Scheme_Object *insp,        /* inspector for re-export */
                                            int mode)         /* 1 => can be reconstructed from unmarshal info
                                                                 2 => free-id=? renaming
                                                                 3 => return info */
@@ -1421,9 +1400,6 @@ Scheme_Object *scheme_extend_module_rename(Scheme_Object *mrn,
     elem = CONS(modname, elem);
   }
 
-  if (insp)
-    elem = CONS(insp, elem);
-  
   if (mode == 1) {
     if (!((Module_Renames *)mrn)->nomarshal_ht) {
       Scheme_Hash_Table *ht;
@@ -1483,8 +1459,7 @@ void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info)
 
 static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 				    Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                    int do_pes, int do_unm,
-                                    Scheme_Object *new_insp)
+                                    int do_pes, int do_unm)
 {
   Scheme_Hash_Table *ht, *hts, *drop_ht;
   Scheme_Object *v;
@@ -1549,16 +1524,7 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
       if (hts->vals[i]) {
 	v = hts->vals[i];
 	if (old_midx) {
-          Scheme_Object *insp = NULL;
-
-          if (SCHEME_PAIRP(v) && is_rename_inspector_info(SCHEME_CAR(v))) {
-            insp = SCHEME_CAR(v);
-            if (new_insp) insp = new_insp;
-            v = SCHEME_CDR(v);
-          } else
-            insp = NULL;
-
-	  /* Shift the modidx part */
+          /* Shift the modidx part */
 	  if (SCHEME_PAIRP(v)) {
 	    if (SCHEME_PAIRP(SCHEME_CDR(v))) {
 	      /* (list* modidx [mod-phase] exportname nominal_modidx+index nominal_exportname) */
@@ -1596,9 +1562,6 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 	    /* modidx */
 	    v = scheme_modidx_shift(v, old_midx, new_midx);
 	  }
-
-          if (insp)
-            v = CONS(insp, v);
 	}
 	scheme_hash_set(ht, hts->keys[i], v);
 	if (drop_ht)
@@ -1616,7 +1579,7 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 
 void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest, int do_unm)
 {
-  do_append_module_rename(src, dest, NULL, NULL, 1, do_unm, NULL);
+  do_append_module_rename(src, dest, NULL, NULL, 1, do_unm);
 }
 
 void scheme_append_rename_set_to_env(Scheme_Object *_mrns, Scheme_Env *env)
@@ -1730,7 +1693,7 @@ Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx)
       rns = v;
     } else if (SCHEME_RENAMESP(v)) {
       if (!rns)
-        rns = scheme_make_module_rename_set(((Module_Renames *)v)->kind, NULL);
+        rns = scheme_make_module_rename_set(((Module_Renames *)v)->kind, NULL, NULL);
       scheme_add_module_rename_to_set(rns, v);
     } else {
       scheme_signal_error("can't convert syntax to rename (non-rename in wrap)");
@@ -1752,10 +1715,10 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn,
 
   nmrn = scheme_make_module_rename(((Module_Renames *)mrn)->phase, 
                                    mzMOD_RENAME_NORMAL, 
-                                   NULL);
+                                   NULL, new_insp);
 
   /* use "append" to copy most info: */
-  do_append_module_rename(mrn, nmrn, old_midx, new_midx, 0, 0, new_insp);
+  do_append_module_rename(mrn, nmrn, old_midx, new_midx, 0, 0);
 
   /* Manually copy unmarshal_infos, where we have to shift anyway: */
 
@@ -1808,7 +1771,7 @@ Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *_mrns,
   Scheme_Object *mrn, *mrns2;
   int i;
 
-  mrns2 = scheme_make_module_rename_set(mrns->kind, NULL);
+  mrns2 = scheme_make_module_rename_set(mrns->kind, NULL, new_insp);
   if (mrns->rt) {
     mrn = scheme_stx_shift_rename((Scheme_Object *)mrns->rt, old_midx, new_midx, new_insp);
     scheme_add_module_rename_to_set(mrns2, mrn);
@@ -1865,8 +1828,9 @@ Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *wraps;
-  Scheme_Object *certs;
+  Scheme_Object *taints;
   intptr_t lp;
+  int dp;
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG)
     preemptive_chunk(stx);
@@ -1877,21 +1841,27 @@ Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename)
   maybe_add_chain_cache(stx);
 
   wraps = CONS(rename, stx->wraps);
-  if (STX_KEY(stx) & STX_SUBSTX_FLAG)
-    lp = stx->u.lazy_prefix + 1;
-  else
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+    lp = stx->u.lazy_prefix;
+    if (lp < 0)
+      lp = 1;
+    else
+      lp++;
+    dp = STX_KEY(stx) & STX_ARMED_FLAG;
+  } else {
     lp = 0;
+    dp = 0;
+  }
 
-  certs = stx->certs;
+  taints = stx->taints;
   stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
   stx->wraps = wraps;
-  stx->certs = certs;
+  stx->taints = taints;
 
   stx->u.lazy_prefix = lp; /* same as zeroing cache if no SUBSTX */
+  if (dp)
+    STX_KEY(stx) |= STX_ARMED_FLAG;
 
-  if (stx->certs)
-    phase_shift_certs((Scheme_Object *)stx, stx->wraps, 1);
-  
   return (Scheme_Object *)stx;
 }
 
@@ -1914,8 +1884,9 @@ void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, intptr_t i)
 
 Scheme_Object *scheme_delayed_rename(Scheme_Object **o, intptr_t i)
 {
-  Scheme_Object *rename;
+  Scheme_Object *rename, *v;
   Resolve_Prefix *rp;
+  int added = 0;
 
   rename = o[0];
 
@@ -1923,10 +1894,24 @@ Scheme_Object *scheme_delayed_rename(Scheme_Object **o, intptr_t i)
 
   rp = (Resolve_Prefix *)o[1];
 
-  if (SCHEME_INTP(rp->stxes[i]))
-    scheme_load_delayed_syntax(rp, i);
+  v = rp->stxes[i];
 
-  return scheme_add_rename(rp->stxes[i], rename);
+  if (SCHEME_INTP(v)) {
+    scheme_load_delayed_syntax(rp, i);
+    v = rp->stxes[i];
+  }
+
+  v = scheme_add_rename(v, rename);
+  
+  /* Phase shift... */
+  rename = SCHEME_BOX_VAL(rename);
+  rename = SCHEME_VEC_ELS(rename)[4];
+  if (!SCHEME_FALSEP(rename)) {
+    /* need to propagate the inspector for dye packs, too */
+    (void)set_false_insp((Scheme_Object *)v, rename, added);
+  }
+
+  return v;
 }
 
 Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib)
@@ -2032,7 +2017,10 @@ static Scheme_Object *extract_module_free_id_binding(Scheme_Object *mrn,
     result = scheme_box(CONS(SCHEME_STX_VAL(orig_id), scheme_false));
   else if (SAME_OBJ(modname, scheme_undefined))
     result = scheme_box(CONS(SCHEME_STX_VAL(orig_id), lex_env));
-  else
+  else {
+    /* dropping rename_insp means that a free-id=? re-export loses
+       some permissions (that it really shouldn't have been giving out
+       anyway */
     result = scheme_extend_module_rename(mrn,
                                          modname,
                                          id,                 /* name in local context */
@@ -2042,8 +2030,8 @@ static Scheme_Object *extract_module_free_id_binding(Scheme_Object *mrn,
                                          SCHEME_INT_VAL(mod_phase), /* phase of source defn */
                                          src_phase_index,    /* nominal import phase */
                                          nominal_src_phase,  /* nominal export phase */
-                                         rename_insp,
                                          3);
+  }
 
   if (*_sealed) {
     /* cache the result */
@@ -2147,9 +2135,9 @@ void scheme_install_free_id_rename(Scheme_Object *id,
 }
 
 Scheme_Object *scheme_stx_phase_shift_as_rename(intptr_t shift, Scheme_Object *old_midx, Scheme_Object *new_midx,
-						Scheme_Hash_Table *export_registry)
+						Scheme_Hash_Table *export_registry, Scheme_Object *insp)
 {
-  if (shift || new_midx || export_registry) {
+  if (shift || new_midx || export_registry || insp) {
     Scheme_Object *vec;
     
     if (last_phase_shift
@@ -2157,18 +2145,20 @@ Scheme_Object *scheme_stx_phase_shift_as_rename(intptr_t shift, Scheme_Object *o
 	&& (SCHEME_VEC_ELS(vec)[0] == scheme_make_integer(shift))
 	&& (SCHEME_VEC_ELS(vec)[1] == (new_midx ? old_midx : scheme_false))
 	&& (SCHEME_VEC_ELS(vec)[2] == (new_midx ? new_midx : scheme_false))
-	&& (SCHEME_VEC_ELS(vec)[3] == (export_registry ? (Scheme_Object *)export_registry : scheme_false))) {
+	&& (SCHEME_VEC_ELS(vec)[3] == (export_registry ? (Scheme_Object *)export_registry : scheme_false))
+        && (SCHEME_VEC_ELS(vec)[4] == (insp ? insp : scheme_false))) {
       /* use the old one */
     } else {
-      vec = scheme_make_vector(4, NULL);
+      vec = scheme_make_vector(5, NULL);
       SCHEME_VEC_ELS(vec)[0] = scheme_make_integer(shift);
       SCHEME_VEC_ELS(vec)[1] = (new_midx ? old_midx : scheme_false);
       SCHEME_VEC_ELS(vec)[2] = (new_midx ? new_midx : scheme_false);
       SCHEME_VEC_ELS(vec)[3] = (export_registry ? (Scheme_Object *)export_registry : scheme_false);
+      SCHEME_VEC_ELS(vec)[4] = (insp ? insp : scheme_false);
 
       last_phase_shift = scheme_box(vec);
     }
-    
+
     return last_phase_shift;
   } else
     return NULL;
@@ -2176,14 +2166,15 @@ Scheme_Object *scheme_stx_phase_shift_as_rename(intptr_t shift, Scheme_Object *o
 
 Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, intptr_t shift,
 				      Scheme_Object *old_midx, Scheme_Object *new_midx,
-				      Scheme_Hash_Table *export_registry)
+				      Scheme_Hash_Table *export_registry,
+                                      Scheme_Object *insp)
 /* Shifts the phase on a syntax object in a module. A 0 shift might be
    used just to re-direct relative module paths. new_midx might be
    NULL to shift without redirection. And so on. */
 {
   Scheme_Object *ps;
 
-  ps = scheme_stx_phase_shift_as_rename(shift, old_midx, new_midx, export_registry);
+  ps = scheme_stx_phase_shift_as_rename(shift, old_midx, new_midx, export_registry, insp);
   if (ps)
     return scheme_add_rename(stx, ps);  
   else
@@ -2193,106 +2184,6 @@ Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, intptr_t shift,
 void scheme_clear_shift_cache(void)
 {
   last_phase_shift = NULL;
-}
-
-static void phase_shift_certs(Scheme_Object *o, Scheme_Object *owner_wraps, int len)
-     /* Mutates o to change its certs, in the case that the first len
-	elements of owner_wraps includes any phase-shifting (i.e.,
-	modidx-shifting) elements. */
-{
-  Scheme_Object *l, *a, *modidx_shift_to = NULL, *modidx_shift_from = NULL, *vec, *src, *dest;
-  int i, j, cnt;
-
-  for (i = 0, l = owner_wraps; i < len; i++, l = SCHEME_CDR(l)) {
-    a = SCHEME_CAR(l);
-    if (SAME_TYPE(SCHEME_TYPE(a), scheme_wrap_chunk_type)) {
-      cnt = ((Wrap_Chunk *)a)->len;
-      for (j = 0; j < cnt; j++) {
-	if (SCHEME_BOXP(((Wrap_Chunk *)a)->a[j])) {
-	  vec = SCHEME_BOX_VAL(((Wrap_Chunk *)a)->a[j]);
-	  src = SCHEME_VEC_ELS(vec)[1];
-	  dest = SCHEME_VEC_ELS(vec)[2];
-	  if (!modidx_shift_to) {
-	    modidx_shift_to = dest;
-	  } else if (!SAME_OBJ(modidx_shift_from, dest)) {
-	    modidx_shift_to = scheme_modidx_shift(dest,
-						  modidx_shift_from,
-						  modidx_shift_to);
-	  }
-	  modidx_shift_from = src;
-	}
-      }
-    } else if (SCHEME_BOXP(a)) {
-      vec = SCHEME_BOX_VAL(a);
-      src = SCHEME_VEC_ELS(vec)[1];
-      dest = SCHEME_VEC_ELS(vec)[2];
-      if (!modidx_shift_to) {
-	modidx_shift_to = dest;
-      } else if (!SAME_OBJ(modidx_shift_from, dest)) {
-	modidx_shift_to = scheme_modidx_shift(dest,
-					      modidx_shift_from,
-					      modidx_shift_to);
-      }
-      modidx_shift_from = src;
-    }
-  }
-
-  if (modidx_shift_from) {
-    Scheme_Cert *certs, *acerts, *icerts, *first = NULL, *last = NULL, *c;
-    Scheme_Object *nc;
-    int i;
-
-    acerts = ACTIVE_CERTS(((Scheme_Stx *)o));
-    icerts = INACTIVE_CERTS(((Scheme_Stx *)o));
-    
-    /* Clone certs list, phase-shifting each cert */
-    for (i = 0; i < 2; i++) {
-      int changed = 0;
-      
-      certs = (i ? acerts : icerts);
-
-      first = last = NULL;
-      while (certs) {
-        a = scheme_modidx_shift(certs->modidx, modidx_shift_from, modidx_shift_to);
-        if (!SAME_OBJ(a, certs->modidx)) changed++;
-        c = cons_cert(certs->mark, a, certs->insp, certs->key, NULL);
-        c->mapped = certs->mapped;
-        c->depth = certs->depth;
-        if (first)
-          last->next = c;
-        else
-          first = c;
-        last = c;
-        certs = certs->next;
-      }
-
-      if (changed) {
-        if (i)
-          acerts = first;
-        else
-          icerts = first;
-      }
-    }
-
-    /* Even if icerts is NULL, may preserve the pair in ->certs, 
-       to indicate no nested inactive certs: */
-    {
-      int no_ia_sub = (SCHEME_RPAIRP(((Scheme_Stx *)o)->certs)
-                       && SCHEME_NO_INACTIVE_SUBS_P(((Scheme_Stx *)o)->certs));
-      int no_a_sub = (SCHEME_RPAIRP(((Scheme_Stx *)o)->certs)
-                      && SCHEME_NO_ACTIVE_SUBS_P(((Scheme_Stx *)o)->certs));
-      if (icerts || no_ia_sub || no_a_sub) {
-        nc = scheme_make_raw_pair((Scheme_Object *)acerts, (Scheme_Object *)icerts);
-        if (no_ia_sub)
-          SCHEME_SET_NO_INACTIVE_SUBS(nc);
-        if (no_a_sub)
-          SCHEME_SET_NO_ACTIVE_SUBS(nc);
-      } else
-        nc = (Scheme_Object *)acerts;
-      
-      ((Scheme_Stx *)o)->certs = nc;
-    }
-  }
 }
 
 static Scheme_Object *make_chunk(int len, Scheme_Object *owner_wraps)
@@ -2420,6 +2311,7 @@ static void preemptive_chunk(Scheme_Stx *stx)
      in any case, and nodes in the wraps are still shared. */
 
   wl_count = stx->u.lazy_prefix;
+  if (wl_count < 0) wl_count = 0;
 
   if (wl_count > PREEMPTIVE_CHUNK_THRESHOLD) {
     /* Chunk it */
@@ -2467,7 +2359,7 @@ static Scheme_Object *propagate_wraps(Scheme_Object *o,
   if (len < 128) {
     Scheme_Stx *stx = (Scheme_Stx *)o;
     Scheme_Object *p1 = owner_wraps;
-    Scheme_Object *certs;
+    Scheme_Object *taints;
 
     /* Find list after |wl| items in owner_wraps: */
     for (i = 0; i < len; i++) {
@@ -2479,20 +2371,29 @@ static Scheme_Object *propagate_wraps(Scheme_Object *o,
       /* So, we can use owner_wraps directly instead of building
 	 new wraps. */
       intptr_t lp;
+      int dp;
 
-      if (STX_KEY(stx) & STX_SUBSTX_FLAG)
-	lp = stx->u.lazy_prefix + len;
-      else
+      if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+	lp = stx->u.lazy_prefix;
+        if (len) {
+          if (lp < 0)
+            lp = len;
+          else
+            lp += len;
+        }
+        dp = STX_KEY(stx) & STX_ARMED_FLAG;
+      } else {
 	lp = 0;
+        dp = 0;
+      }
 
-      certs = stx->certs;
+      taints = stx->taints;
       stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
       stx->wraps = owner_wraps;
       stx->u.lazy_prefix = lp; /* same as zeroing cache if no SUBSTX */
-      stx->certs = certs;
-
-      if (stx->certs)
-	phase_shift_certs((Scheme_Object *)stx, owner_wraps, len);
+      if (dp)
+        STX_KEY(stx) |= STX_ARMED_FLAG;
+      stx->taints = taints;
 
       return (Scheme_Object *)stx;
     }
@@ -2521,453 +2422,313 @@ static Scheme_Object *propagate_wraps(Scheme_Object *o,
   } else
     o = scheme_add_rename(o, ml);
 
-  if (((Scheme_Stx *)o)->certs)
-    phase_shift_certs(o, owner_wraps, len);
-
   return o;
 }
 
-int scheme_stx_certified(Scheme_Object *stx, Scheme_Object *extra_certs, 
-			 Scheme_Object *home_modidx, Scheme_Object *home_insp)
+static Scheme_Object *taint_intern(Scheme_Object *v)
 {
-  Scheme_Cert *certs = ACTIVE_CERTS((Scheme_Stx *)stx);
-  Scheme_Object *cert_modidx, *a, *b;
+  Scheme_Bucket *b;
 
-  do {
-    while (certs) {
-      if (!scheme_module_protected_wrt(home_insp, certs->insp)) {
-	if (home_modidx) {
-	  if (SCHEME_FALSEP(certs->modidx))
-	    cert_modidx = home_modidx;
-	  else
-	    cert_modidx = certs->modidx;
-	  
-	  a = scheme_module_resolve(home_modidx, 0);
-	  b = scheme_module_resolve(cert_modidx, 0);
-	} else
-	  a = b = NULL;
-	
-	if (SAME_OBJ(a, b)) {
-	  /* Found a certification. Does this identifier have the
-	     associated mark? */
-	  if (includes_mark(((Scheme_Stx *)stx)->wraps, certs->mark))
-	    return 1;
-	}
-      }
-      certs = certs->next;
-    }
-    if (extra_certs) {
-      certs = (Scheme_Cert *)extra_certs;
-      extra_certs = NULL;
-    }
-  } while (certs);
+  b = scheme_bucket_from_table(taint_intern_table, (const char *)v);
+  if (b->val)
+    v = b->val;
+  else
+    b->val = v;
 
+  return v;
+}
+
+static int is_tainted(Scheme_Object *v)
+{
+  v = ((Scheme_Stx *)v)->taints; 
+  if (!v) return 0;
+  if (SCHEME_VOIDP(v) || SAME_OBJ(v, scheme_true)) return 1;
   return 0;
 }
 
-static Scheme_Cert *cons_cert(Scheme_Object *mark, Scheme_Object *modidx, 
-			      Scheme_Object *insp, Scheme_Object *key, 
-			      Scheme_Cert *next_cert)
+static int is_clean(Scheme_Object *v)
 {
-  Scheme_Cert *cert;
-
-  cert = MALLOC_ONE_RT(Scheme_Cert);
-  cert->iso.so.type = scheme_certifications_type;
-  cert->mark = mark;
-  cert->modidx = modidx;
-  cert->insp = insp;
-  cert->key = key;
-  cert->next = next_cert;
-  cert->depth = (next_cert ? next_cert->depth + 1 : 1);
-
-  if (!key && (!next_cert || CERT_NO_KEY(next_cert))) {
-    CERT_SET_NO_KEY(cert);
-  }
-
-  return cert;
+  v = ((Scheme_Stx *)v)->taints; 
+  if (!v) return 1;
+  if (SCHEME_INSPECTORP(v)) return 1;  
+  return 0;
 }
 
-#ifdef DO_STACK_CHECK
-static void make_mapped(Scheme_Cert *cert);
-static Scheme_Object *make_mapped_k(void)
+static int is_armed(Scheme_Object *v)
 {
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Cert *cert = (Scheme_Cert *)p->ku.k.p1;
-
-  p->ku.k.p1 = NULL;
-
-  make_mapped(cert);
-
-  return scheme_void;
-}
-#endif
-
-static void make_mapped(Scheme_Cert *cert)
-{
-  Scheme_Cert *stop, *c2;
-  Scheme_Object *pr;
-  Scheme_Hash_Table *ht;
-
-  if (cert->mapped)
-    return;
-
-#ifdef DO_STACK_CHECK
-  {
-# include "mzstkchk.h"
-    {
-      Scheme_Thread *p = scheme_current_thread;
-      p->ku.k.p1 = (void *)cert;
-      scheme_handle_stack_overflow(make_mapped_k);
-      return;
-    }
-  }
-#endif
-  SCHEME_USE_FUEL(1);
-
-  if (cert->depth == 16) {
-    stop = NULL;
-  } else {
-    for (stop = cert->next; 
-	 stop && ((stop->depth & cert->depth) != stop->depth); 
-	 stop = stop->next) {
-    }
-    if (stop)
-      make_mapped(stop);
-  }
-
-  /* Check whether an `eq?' table will work: */
-  for (c2 = cert; c2 != stop; c2 = c2->next) {
-    if (c2->key)
-      break;
-    if (!SCHEME_INTP(c2->mark))
-      break;
-  }
-
-  if (c2 == stop)
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-  else
-    ht = scheme_make_hash_table_equal();
-
-  pr = scheme_make_raw_pair((Scheme_Object *)ht, (Scheme_Object *)stop);
-  cert->mapped = pr;
-
-  for (; cert != stop; cert = cert->next) {
-    if (cert->key)
-      pr = scheme_make_pair(cert->mark, cert->key);
-    else
-      pr = cert->mark;
-    scheme_hash_set_atomic(ht, pr, scheme_true);
-  }
+  v = ((Scheme_Stx *)v)->taints; 
+  if (!v) return 0;
+  if (SCHEME_PAIRP(v)) return 1;
+  return 0;
 }
 
-static int cert_in_chain(Scheme_Object *mark, Scheme_Object *key, Scheme_Cert *cert)
+int scheme_stx_is_tainted(Scheme_Object *v)
 {
-  Scheme_Object *hkey = key ? NULL : mark;
-  Scheme_Hash_Table *ht;
+  return is_tainted(v);
+}
 
-  while (cert) {
-    if (!(cert->depth & 0xF)) {
-      make_mapped(cert);
+int scheme_stx_is_clean(Scheme_Object *v)
+{
+  return is_clean(v);
+}
 
-      ht = (Scheme_Hash_Table *)SCHEME_CAR(cert->mapped);
-      cert = (Scheme_Cert *)SCHEME_CDR(cert->mapped);
+static int has_taint_arming(Scheme_Object *l, Scheme_Object *t, Scheme_Object *false_insp)
+{ 
+  Scheme_Object *a;
 
-      if (!hkey)
-	hkey = scheme_make_pair(mark, key);
-
-      if (scheme_hash_get_atomic(ht, hkey))
-	return 1;
-    } else if (SAME_OBJ(cert->mark, mark)
-	       && SAME_OBJ(cert->key, key)) {
+  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    a = SCHEME_CAR(l);
+    if (SCHEME_FALSEP(a)) a = false_insp;
+    if (SAME_OBJ(a, t))
       return 1;
-    } else
-      cert = cert->next;
   }
-
   return 0;
 }
 
-static Scheme_Cert *append_certs(Scheme_Cert *a, Scheme_Cert *b)
+static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone)
 {
-  Scheme_Cert *c;
-
-  if (!a) return b;
-  if (!b) return a;
+  Scheme_Stx *stx;
   
-  if (a->depth < b->depth) {
-    c = a;
-    a = b;
-    b = c;
-  }
-
-  c = a;
-  if (b->depth > (a->depth >> 1)) {
-    /* There's a good chance that b shares a tail with a, 
-       so check for that, and b is large enough relative to
-       a that it's worth iterating down to b's depth in a: */
-    while (c->depth > b->depth) {
-      c = c->next;
-    }
-  }
-
-  for (; b; b = b->next) {
-    if (b == c) break;
-    if (!cert_in_chain(b->mark, b->key, a))
-      a = cons_cert(b->mark, b->modidx, b->insp, b->key, a);
-    c = c->next;
-  }
-
-  return a;
-}
-
-static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Object *use_key, int active)
-{
-  Scheme_Cert *orig_certs, *cl, *now_certs, *next_certs, *check_tail;
-  Scheme_Stx *stx = (Scheme_Stx *)o, *res;
-  Scheme_Object *pr;
-  int shortcut;
-
-  if (!stx->certs) {
-    if (!certs)
-      return (Scheme_Object *)stx;
-
-    if (use_key) {
-      for (cl = certs; cl; cl = cl->next) {
-	if (!SAME_OBJ(cl->key, use_key))
-	  break;
-      }
-    } else
-      cl = NULL;
-
-    if (!cl) {
-      res = (Scheme_Stx *)scheme_make_stx(stx->val, 
-					  stx->srcloc,
-					  stx->props);
-      res->wraps = stx->wraps;
-      res->u.lazy_prefix = stx->u.lazy_prefix;
-      if (active)
-	res->certs = (Scheme_Object *)certs;
-      else {
-	pr = scheme_make_raw_pair(NULL, (Scheme_Object *)certs);
-	res->certs = pr;
-      }
-      return (Scheme_Object *)res;
-    }
-  }
-
-  if (active)
-    orig_certs = ACTIVE_CERTS(stx);
-  else
-    orig_certs = INACTIVE_CERTS(stx);
-  now_certs = orig_certs;
-
-  shortcut = 0;
-  if (now_certs && certs && !use_key && CERT_NO_KEY(certs)) {
-    if (now_certs->depth < certs->depth) {
-      /* We can add now_certs onto certs, instead of the other
-         way around. */
-      now_certs = certs;
-      certs = orig_certs;
-    }
-  }
-
-  check_tail = now_certs;
-  if (check_tail && certs
-      && (certs->depth  > (check_tail->depth >> 1))) {
-    while (check_tail->depth > certs->depth) {
-      check_tail = check_tail->next;
-    }
-  }
-  
-  for (; certs; certs = next_certs) {
-    next_certs = certs->next;
-    if (check_tail && (check_tail->depth > certs->depth))
-      check_tail = check_tail->next;
-    if (SAME_OBJ(certs, check_tail)) {
-      /* tails match --- no need to keep checking */
-      break;
-    }
-    if (!cert_in_chain(certs->mark, use_key, now_certs)) {
-      if (!now_certs && !use_key && (shortcut || CERT_NO_KEY(certs))) {
-        now_certs = certs;
-        next_certs = NULL;
-      } else {
-        now_certs = cons_cert(certs->mark, certs->modidx, certs->insp, use_key, 
-                              now_certs);
-      }
-    }
-  }
-
-  if (!SAME_OBJ(now_certs, orig_certs)) {
-    res = (Scheme_Stx *)scheme_make_stx(stx->val, 
-                                        stx->srcloc,
-                                        stx->props);
-    res->wraps = stx->wraps;
-    res->u.lazy_prefix = stx->u.lazy_prefix;
-    if (!active) {
-      pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)orig_certs);
-      res->certs = pr;
-      if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
-        if (SCHEME_NO_INACTIVE_SUBS_P(stx->certs))
-          SCHEME_SET_NO_INACTIVE_SUBS(pr);
-        if (SCHEME_NO_ACTIVE_SUBS_P(stx->certs))
-          SCHEME_SET_NO_ACTIVE_SUBS(pr);
-      }
-    } else if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
-      pr = scheme_make_raw_pair((Scheme_Object *)orig_certs, SCHEME_CDR(stx->certs));
-      res->certs = pr;
-      if (SCHEME_NO_INACTIVE_SUBS_P(stx->certs))
-        SCHEME_SET_NO_INACTIVE_SUBS(pr);
-      if (SCHEME_NO_ACTIVE_SUBS_P(stx->certs))
-        SCHEME_SET_NO_ACTIVE_SUBS(pr);
-    } else
-      res->certs = (Scheme_Object *)orig_certs;
-    stx = res;
-
-    if (!active) {
-      SCHEME_CDR(stx->certs) = (Scheme_Object *)now_certs;
-    } else if (stx->certs && SCHEME_RPAIRP(stx->certs))
-      SCHEME_CAR(stx->certs) = (Scheme_Object *)now_certs;
-    else
-      stx->certs = (Scheme_Object *)now_certs;
-  }
-
-  return (Scheme_Object *)stx;
-}
-
-Scheme_Object *scheme_stx_add_inactive_certs(Scheme_Object *o, Scheme_Object *certs)
-  /* Also lifts existing inactive certs to the top. */
-{
-  o = lift_inactive_certs(o, 0);
-
-  return add_certs(o, (Scheme_Cert *)certs, NULL, 0);
-}
-
-Scheme_Object *scheme_stx_propagate_inactive_certs(Scheme_Object *o, Scheme_Object *orig)
-{
-  Scheme_Cert *certs;
-
-  certs = INACTIVE_CERTS((Scheme_Stx *)orig);
-
-  if (certs)
-    return scheme_stx_add_inactive_certs(o, (Scheme_Object *)certs);
-  else
+  if (is_tainted(o))
     return o;
+
+  if (need_clone)
+    o = clone_stx(o);
+  stx = (Scheme_Stx *)o;
+  stx->taints = scheme_void; /* taint to propagate */
+
+  /* Set lazy_prefix to indicate taint to propagate: */
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+    if (!stx->u.lazy_prefix)
+      stx->u.lazy_prefix = -1;
+    if (STX_KEY(stx) & STX_ARMED_FLAG)
+      STX_KEY(stx) -= STX_ARMED_FLAG;
+  }
+  
+  return o;
 }
 
-Scheme_Object *scheme_stx_extract_certs(Scheme_Object *o, Scheme_Object *base_certs)
+static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp, int need_clone)
 {
-  return (Scheme_Object *)append_certs((Scheme_Cert *)base_certs,
-                                       ACTIVE_CERTS((Scheme_Stx *)o));
+  Scheme_Stx *stx;
+
+  if (is_tainted(o))
+    return o;
+  if (is_armed(o) && SCHEME_TRUEP(SCHEME_CAR(((Scheme_Stx *)o)->taints)))
+    return o;
+
+  if (need_clone)
+    o = clone_stx(o);
+  stx = (Scheme_Stx *)o;
+  if (stx->taints)
+    false_insp = taint_intern(scheme_make_pair(false_insp, SCHEME_CDR(stx->taints)));
+  stx->taints = false_insp;
+
+  /* Set lazy_prefix to indicate inspector to propagate: */
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+    if (!stx->u.lazy_prefix)
+      stx->u.lazy_prefix = -1;
+  }
+  
+  return o;
 }
 
-Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env *menv, 
-			       Scheme_Object *plus_stx_or_certs, Scheme_Object *key, 
-			       int active)
-     /* If `name' is module-bound, add the module's certification.
-	Also copy any certifications from plus_stx.
-	If active and mark is non-NULL, make inactive certificates active.
-        Existing inactive are lifted when adding from plus_stx_or_certs. */
+static Scheme_Object *do_add_taint_armings_to_stx(Scheme_Object *o, Scheme_Object *taint_armings, int many, int need_clone)
+/* If `many', `taint_armings' should be taint-interned. */
 {
-  if (mark && active) {
-    o = scheme_stx_activate_certs(o);
-  }
+  Scheme_Object *l, *taints, *new_taints, *false_insp, *alt_false_insp, *a;
+  Scheme_Stx *stx;
 
-  if (plus_stx_or_certs) {
-    Scheme_Cert *certs;
-    if (SCHEME_STXP(plus_stx_or_certs))
-      certs = ACTIVE_CERTS((Scheme_Stx *)plus_stx_or_certs);
-    else
-      certs = (Scheme_Cert *)plus_stx_or_certs;
-    if (certs) {
-      if (!active)
-        o = lift_inactive_certs(o, 0);
-      o = add_certs(o, certs, key, active);
-    }
-    /* Also copy over inactive certs, if any */
-    if (SCHEME_STXP(plus_stx_or_certs)) {
-      o = lift_inactive_certs(o, 0);
-      o = add_certs(o, INACTIVE_CERTS((Scheme_Stx *)plus_stx_or_certs), key, 0);
-    }
-  }
-
-  if (menv && !menv->module->no_cert) {
-    Scheme_Stx *stx = (Scheme_Stx *)o, *res;
-    Scheme_Cert *cert;
-
-    res = (Scheme_Stx *)scheme_make_stx(stx->val, 
-					stx->srcloc,
-					stx->props);
-    res->wraps = stx->wraps;
-    res->u.lazy_prefix = stx->u.lazy_prefix;
-
-    if (SCHEME_FALSEP(mark)) {
-      /* Need to invent a certificate-only mark and apply it */
-      mark = scheme_new_mark();
-      mark = negate_mark(mark);
-      res = (Scheme_Stx *)scheme_add_remove_mark((Scheme_Object *)res, mark);
-    }
-
-    if (active)
-      cert = ACTIVE_CERTS(stx);
-    else
-      cert = INACTIVE_CERTS(stx);
-
-    cert = cons_cert(mark, menv->link_midx ? menv->link_midx : menv->module->me->src_modidx, 
-                     menv->module->insp, key, cert);
-
-    if (active) {
-      if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
-	Scheme_Object *pr;
-	pr = scheme_make_raw_pair((Scheme_Object *)cert, SCHEME_CDR(stx->certs));
-	res->certs = pr;
-        if (SCHEME_NO_INACTIVE_SUBS_P(stx->certs))
-          SCHEME_SET_NO_INACTIVE_SUBS(pr);
-        if (SCHEME_NO_ACTIVE_SUBS_P(stx->certs))
-          SCHEME_SET_NO_ACTIVE_SUBS(pr);
-      } else
-	res->certs = (Scheme_Object *)cert;
+  taints = ((Scheme_Stx *)o)->taints;
+  if (taints) {
+    if (SAME_OBJ(taints, scheme_true) || SCHEME_VOIDP(taints))
+      /* tainted */
+      return o;
+    else if (SCHEME_INSPECTORP(taints)) {
+      false_insp = taints;
+      taints = NULL;
     } else {
-      Scheme_Object *pr;
-      pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)cert);
-      res->certs = pr;
-      if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
-        if (SCHEME_NO_INACTIVE_SUBS_P(stx->certs))
-          SCHEME_SET_NO_INACTIVE_SUBS(pr);
-        if (SCHEME_NO_ACTIVE_SUBS_P(stx->certs))
-          SCHEME_SET_NO_ACTIVE_SUBS(pr);
+      false_insp = SCHEME_CAR(taints);
+      taints = SCHEME_CDR(taints);
+    }
+  } else
+    false_insp = scheme_true; /* block future attempts to propagate a false_insp */
+
+  if (!taints) {
+    if (many)
+      new_taints = taint_armings;
+    else {
+      new_taints = taint_intern(scheme_make_pair(taint_armings, scheme_null));
+      new_taints = taint_intern(scheme_make_pair(false_insp, new_taints));
+    }
+  } else {
+    new_taints = taints;
+
+    if (many) {
+      alt_false_insp = SCHEME_CAR(taint_armings);
+      taint_armings = SCHEME_CDR(taint_armings);
+    } else
+      alt_false_insp = scheme_false;
+
+    for (l = taint_armings; !SCHEME_NULLP(l); ) {
+      a = many ? SCHEME_CAR(l) : l;
+      if (SCHEME_FALSEP(a)) a = alt_false_insp;
+      if (!has_taint_arming(new_taints, a, false_insp)) {
+        new_taints = taint_intern(scheme_make_pair(a, new_taints));
+      }
+      if (many)
+        l = SCHEME_CDR(l);
+      else
+        l = scheme_null;
+    }
+
+    if (SAME_OBJ(taints, new_taints))
+      return o;
+
+    new_taints = taint_intern(scheme_make_pair(false_insp, new_taints));
+  }
+
+  if (need_clone)
+    o = clone_stx(o);
+  stx = (Scheme_Stx *)o;
+  stx->taints = new_taints;
+  
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG)
+    STX_KEY(stx) |= STX_ARMED_FLAG;
+  
+  return o;
+}
+
+static Scheme_Object *add_taint_arming_to_stx(Scheme_Object *o, Scheme_Object *taint, int need_clone)
+{
+  return do_add_taint_armings_to_stx(o, taint, 0, need_clone);
+}
+
+static Scheme_Object *add_taint_armings_to_stx(Scheme_Object *o, Scheme_Object *taints, int need_clone)
+{
+  return do_add_taint_armings_to_stx(o, taints, 1, need_clone);
+}
+
+Scheme_Object *scheme_stx_taint(Scheme_Object *o)
+{
+  return add_taint_to_stx(o, 1);
+}
+
+Scheme_Object *scheme_stx_taint_arm(Scheme_Object *o, Scheme_Object *insp)
+{
+  if (is_tainted(o))
+    return o;
+  else
+    return add_taint_arming_to_stx(o, insp, 1);
+}
+
+Scheme_Object *scheme_stx_taint_rearm(Scheme_Object *o, Scheme_Object *copy_from)
+{
+  if (is_tainted(o) || is_clean(copy_from))
+    return o;
+  else if (is_tainted(copy_from))
+    return add_taint_to_stx(o, 1);
+  else
+    return add_taint_armings_to_stx(o, ((Scheme_Stx *)copy_from)->taints, 1);
+}
+
+ static int is_same_or_subinspector(Scheme_Object *sub, Scheme_Object *sup, Scheme_Object *false_insp)
+{
+  if (SCHEME_FALSEP(sub)) sub = false_insp;
+  if (SAME_OBJ(sub, sup)) return 1;
+  return scheme_is_subinspector(sub, sup);
+}
+
+Scheme_Object *scheme_stx_taint_disarm(Scheme_Object *o, Scheme_Object *insp)
+{
+  Scheme_Object *l, *l2, *a, *taint_armings, *false_insp;
+  
+  if (is_tainted(o) || is_clean(o))
+    return o;
+
+  taint_armings = ((Scheme_Stx *)o)->taints;
+  false_insp = SCHEME_CAR(taint_armings);
+  taint_armings = SCHEME_CDR(taint_armings);
+
+  if (insp) {
+    for (l = taint_armings; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      a = SCHEME_CAR(l);
+      if (is_same_or_subinspector(a, insp, false_insp)) {
+        break;
       }
     }
-    
-    o = (Scheme_Object *)res;
+    if (SCHEME_NULLP(l))
+      return o;
+
+    l2 = scheme_null;
+    for (l = taint_armings; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      a = SCHEME_CAR(l);
+      if (!is_same_or_subinspector(a, insp, false_insp)) {
+        l2 = taint_intern(scheme_make_pair(a, l2));
+      }
+    }
+  } else
+    l2 = scheme_null;
+
+  o = clone_stx(o);
+
+  if (SCHEME_NULLP(l2)) {
+    if (SCHEME_INSPECTORP(false_insp))
+      ((Scheme_Stx *)o)->taints = false_insp;
+    else
+      ((Scheme_Stx *)o)->taints = NULL;
+    if (STX_KEY(((Scheme_Stx *)o)) & STX_ARMED_FLAG)
+      STX_KEY(((Scheme_Stx *)o)) -= STX_ARMED_FLAG;
+  } else {
+    l2 = taint_intern(scheme_make_pair(false_insp, l2));    
+    ((Scheme_Stx *)o)->taints = l2;
   }
 
   return o;
 }
 
-Scheme_Object *scheme_stx_content(Scheme_Object *o)
-     /* Propagates wraps while getting a syntax object's content. */
+static Scheme_Object *stx_content(Scheme_Object *o, int add_taint, int keep)
+ /* Propagates wraps and taints while getting a syntax object's content. */
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
 
-  /* The fast-past tests are duplicated in jit.c. */
+  /* The fast-path tests are duplicated in jit.c. */
 
-  if ((STX_KEY(stx) & STX_SUBSTX_FLAG) && stx->u.lazy_prefix) {
+  if ((STX_KEY(stx) & STX_SUBSTX_FLAG) && (stx->u.lazy_prefix || add_taint)) {
     Scheme_Object *v = stx->val, *result;
-    Scheme_Object *here_wraps;
+    Scheme_Object *here_wraps, *false_insp;
     Scheme_Object *ml = NULL;
     int wl_count = 0;
 
     here_wraps = stx->wraps;
     wl_count = stx->u.lazy_prefix;
     stx->u.lazy_prefix = 0;
+    if (wl_count < 0) {
+      wl_count = 0;
+      if (add_taint) {
+        false_insp = NULL;
+      } else {
+        false_insp = stx->taints;
+        if (SCHEME_PAIRP(false_insp))
+          false_insp = SCHEME_CAR(false_insp);
+        if (!SCHEME_INSPECTORP(false_insp))
+          false_insp = NULL;
+      }
+    } else
+      false_insp = NULL;
 
     if (SCHEME_PAIRP(v)) {
       Scheme_Object *last = NULL, *first = NULL;
 
       while (SCHEME_PAIRP(v)) {
 	Scheme_Object *p;
-	result = propagate_wraps(SCHEME_CAR(v), wl_count, &ml, here_wraps);
+        result = SCHEME_CAR(v);
+        if (wl_count)
+          result = propagate_wraps(result, wl_count, &ml, here_wraps);
+        if (add_taint)
+          result = add_taint_to_stx(result, 1);
+        else if (false_insp)
+          result = set_false_insp(result, false_insp, 1);
 	p = scheme_make_pair(result, scheme_null);
 	if (last)
 	  SCHEME_CDR(last) = p;
@@ -2977,7 +2738,13 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
 	v = SCHEME_CDR(v);
       }
       if (!SCHEME_NULLP(v)) {
-	result = propagate_wraps(v, wl_count, &ml, here_wraps);
+        result = v;
+        if (wl_count)
+          result = propagate_wraps(result, wl_count, &ml, here_wraps);
+        if (add_taint)
+          result = add_taint_to_stx(result, 1);
+        else if (false_insp)
+          result = set_false_insp(result, false_insp, 1);
 	if (last)
 	  SCHEME_CDR(last) = result;
 	else
@@ -2985,7 +2752,13 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
       }
       v = first;
     } else if (SCHEME_BOXP(v)) {
-      result = propagate_wraps(SCHEME_BOX_VAL(v), wl_count, &ml, here_wraps);
+      result = SCHEME_BOX_VAL(v);
+      if (wl_count)
+        result = propagate_wraps(result, wl_count, &ml, here_wraps);
+      if (add_taint)
+        result = add_taint_to_stx(result, 1);
+      else if (false_insp)
+        result = set_false_insp(result, false_insp, 1);
       v = scheme_box(result);
     } else if (SCHEME_VECTORP(v)) {
       Scheme_Object *v2;
@@ -2994,7 +2767,13 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
       v2 = scheme_make_vector(size, NULL);
       
       for (i = 0; i < size; i++) {
-	result = propagate_wraps(SCHEME_VEC_ELS(v)[i], wl_count, &ml, here_wraps);
+        result = SCHEME_VEC_ELS(v)[i];
+        if (wl_count)
+          result = propagate_wraps(result, wl_count, &ml, here_wraps);
+        if (add_taint)
+          result = add_taint_to_stx(result, 1);
+        else if (false_insp)
+          result = set_false_insp(result, false_insp, 1);
 	SCHEME_VEC_ELS(v2)[i] = result;
       }
       
@@ -3009,7 +2788,12 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
       i = scheme_hash_tree_next(ht, -1);
       while (i != -1) {
         scheme_hash_tree_index(ht, i, &key, &val);
-        val = propagate_wraps(val, wl_count, &ml, here_wraps);
+        if (wl_count)
+          val = propagate_wraps(val, wl_count, &ml, here_wraps);
+        if (add_taint)
+          val = add_taint_to_stx(val, 1);
+        else if (false_insp)
+          val = set_false_insp(val, false_insp, 1);
         ht2 = scheme_hash_tree_set(ht2, key, val);
         i = scheme_hash_tree_next(ht, i);
       }
@@ -3024,21 +2808,63 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
       
       size = s->stype->num_slots;
       for (i = 0; i < size; i++) {
-        r = propagate_wraps(s->slots[i], wl_count, &ml, here_wraps);
+        r = s->slots[i];
+        if (wl_count)
+          r = propagate_wraps(r, wl_count, &ml, here_wraps);
+        if (add_taint)
+          r = add_taint_to_stx(r, 1);
+        else if (false_insp)
+          r = set_false_insp(r, false_insp, 1);
         s->slots[i] = r;
       }
 
       v = (Scheme_Object *)s;
     }
 
+    if (!keep) 
+      return v;
+
     stx->val = v;
+    if (add_taint) {
+      /* if we're setting taints and `keep' is 1, we must be propagating
+         taints to touch; change "taints" to "propagated" or "none": */
+      stx->taints = scheme_true;
+    } else if (false_insp) {
+      /* If we're propagating an inspector with no dye packs,
+         we're now done propagating. */
+      if (!SCHEME_PAIRP(stx->taints))
+        stx->taints = NULL;
+    }
   }
 
   return stx->val;
 }
 
+static Scheme_Object *raw_stx_content(Scheme_Object *o)
+{
+  Scheme_Object *taints = ((Scheme_Stx *)o)->taints;
+  if (SCHEME_VOIDP(taints))
+    return stx_content(o, 1, 1);
+  else
+    return stx_content(o, 0, 1);
+}
+
+Scheme_Object *scheme_stx_content(Scheme_Object *o)
+/* Propagates wraps while getting a syntax object's content. */
+{
+  Scheme_Stx *stx = (Scheme_Stx *)o;
+
+  if (!(STX_KEY(stx) & STX_ARMED_FLAG) || !is_armed((Scheme_Object *)stx))
+    return raw_stx_content(o);
+
+  /* force propagation: */
+  raw_stx_content(o);
+
+  /* return tainted content */
+  return stx_content(o, 1, 0);
+}
+
 Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx)
-/* Does not include negative marks */
 {
   WRAP_POS awl;
   Scheme_Object *acur_mark, *p, *marks = scheme_null;
@@ -3052,7 +2878,7 @@ Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx)
       if (WRAP_POS_END_P(awl))
 	break;
       p = WRAP_POS_FIRST(awl);
-      if (SCHEME_NUMBERP(p) && IS_POSMARK(p)) {
+      if (SCHEME_NUMBERP(p)) {
 	if (acur_mark) {
 	  if (SAME_OBJ(acur_mark, p)) {
 	    acur_mark = NULL;
@@ -3126,289 +2952,6 @@ Scheme_Object *scheme_stx_strip_module_context(Scheme_Object *_stx)
     stx->wraps = v;
     return (Scheme_Object *)stx;
   }
-}
-
-#ifdef DO_STACK_CHECK
-static Scheme_Object *stx_strip_certs_k(void)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
-  Scheme_Cert **cp = (Scheme_Cert **)p->ku.k.p2;
-  int active = p->ku.k.i1;
-
-  p->ku.k.p1 = NULL;
-  p->ku.k.p2 = NULL;
-
-  return stx_strip_certs(o, cp, active);
-}
-#endif
-
-static Scheme_Object *stx_strip_certs(Scheme_Object *o, Scheme_Cert **cp, int active)
-{
-#ifdef DO_STACK_CHECK
-  {
-# include "mzstkchk.h"
-    {
-      Scheme_Thread *p = scheme_current_thread;
-      Scheme_Cert **_cp;
-      _cp = MALLOC_N(Scheme_Cert*, 1);
-      *_cp = *cp;
-      p->ku.k.p1 = (void *)o;
-      p->ku.k.p2 = (void *)_cp;
-      p->ku.k.i1 = active;
-      o = scheme_handle_stack_overflow(stx_strip_certs_k);
-      *cp = *_cp;
-      return o;
-    }
-  }
-#endif
-  SCHEME_USE_FUEL(1);
-
-  if (SCHEME_PAIRP(o)) {
-    Scheme_Object *a, *d;
-    a = stx_strip_certs(SCHEME_CAR(o), cp, active);
-    d = stx_strip_certs(SCHEME_CDR(o), cp, active);
-    if (SAME_OBJ(a, SCHEME_CAR(o))
-	&& SAME_OBJ(d, SCHEME_CDR(o)))
-      return o;
-    return ICONS(a, d);
-  } else if (SCHEME_NULLP(o)) {
-    return o;
-  } else if (SCHEME_BOXP(o)) {
-    Scheme_Object *c;
-    c = stx_strip_certs(SCHEME_BOX_VAL(o), cp, active);
-    if (SAME_OBJ(c, SCHEME_BOX_VAL(o)))
-      return o;
-    o = scheme_box(c);
-    SCHEME_SET_IMMUTABLE(o);
-    return o;
-  } else if (SCHEME_VECTORP(o)) {
-    Scheme_Object *e = NULL, *v2;
-    int size = SCHEME_VEC_SIZE(o), i, j;
-    
-    for (i = 0; i < size; i++) {
-      e = stx_strip_certs(SCHEME_VEC_ELS(o)[i], cp, active);
-      if (!SAME_OBJ(e, SCHEME_VEC_ELS(o)[i]))
-	break;
-    }
-
-    if (i == size)
-      return o;
-
-    v2 = scheme_make_vector(size, NULL);
-    
-    for (j = 0; j < i; j++) {
-      SCHEME_VEC_ELS(v2)[j] = SCHEME_VEC_ELS(o)[j];
-    }
-    SCHEME_VEC_ELS(v2)[i] = e;
-    for (i++; i < size; i++) {
-      e = stx_strip_certs(SCHEME_VEC_ELS(o)[i], cp, active);
-      SCHEME_VEC_ELS(v2)[i] = e;
-    }
-
-    SCHEME_SET_IMMUTABLE(v2);
-    return v2;
-  } else if (SCHEME_HASHTRP(o)) {
-    Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)o, *ht2;
-    Scheme_Object *key = NULL, *val, *e, *jkey;
-    int i, j;
-    
-    j = scheme_hash_tree_next(ht, -1);
-    while (j != -1) {
-      scheme_hash_tree_index(ht, j, &key, &val);
-      e = stx_strip_certs(val, cp, active);
-      if (!SAME_OBJ(e, val))
-        break;
-      j = scheme_hash_tree_next(ht, j);
-    }
-
-    if (j == -1)
-      return o;
-    jkey = key;
-
-    ht2 = scheme_make_hash_tree(SCHEME_HASHTR_FLAGS(ht) & 0x3);
-    
-    i = scheme_hash_tree_next(ht, -1);
-    while (i != j) {
-      scheme_hash_tree_index(ht, i, &key, &val);
-      ht2 = scheme_hash_tree_set(ht2, key, val);
-      i = scheme_hash_tree_next(ht, i);
-    }
-    ht2 = scheme_hash_tree_set(ht2, key, e);
-    i = scheme_hash_tree_next(ht, i);
-    while (i != -1) {
-      scheme_hash_tree_index(ht, i, &key, &val);
-      val = stx_strip_certs(val, cp, active);
-      ht2 = scheme_hash_tree_set(ht2, key, val);
-      i = scheme_hash_tree_next(ht, i);
-    }
-    
-    return (Scheme_Object *)ht2;
-  } else if (prefab_p(o)) {
-    Scheme_Object *e = NULL;
-    Scheme_Structure *s = (Scheme_Structure *)o;
-    int i, size = s->stype->num_slots;
-
-    for (i = 0; i < size; i++) {
-      e = stx_strip_certs(s->slots[i], cp, active);
-      if (!SAME_OBJ(e, s->slots[i]))
-	break;
-    }
-
-    if (i == size)
-      return o;
-
-    s = (Scheme_Structure *)scheme_clone_prefab_struct_instance(s);
-    s->slots[i] = e;
-    
-    for (i++; i < size; i++) {
-      e = stx_strip_certs(s->slots[i], cp, active);
-      s->slots[i] = e;
-    }
-    
-    return (Scheme_Object *)s;
-  } else if (SCHEME_STXP(o)) {
-    Scheme_Stx *stx = (Scheme_Stx *)o;
-
-    if ((!active && INACTIVE_CERTS(stx))
-        || (active && ACTIVE_CERTS(stx))) {
-      Scheme_Object *np, *v;
-      Scheme_Stx *res;
-      Scheme_Cert *certs;
-
-      if ((!active && SCHEME_NO_INACTIVE_SUBS_P(stx->certs))
-          || (active && stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_NO_ACTIVE_SUBS_P(stx->certs))) {
-        /* No sub-object has other [in]active certs */
-        v = stx->val;
-      } else {
-        v = stx_strip_certs(stx->val, cp, active);
-      }
-
-      res = (Scheme_Stx *)scheme_make_stx(v, 
-					  stx->srcloc,
-					  stx->props);
-      res->wraps = stx->wraps;
-      res->u.lazy_prefix = stx->u.lazy_prefix;
-      if (!active) {
-        if (!ACTIVE_CERTS(stx)) {
-          if (stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_NO_ACTIVE_SUBS_P(stx->certs))
-            np = no_nested_certs;
-          else
-            np = no_nested_inactive_certs;
-        } else {
-          np = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), NULL);
-          SCHEME_SET_NO_INACTIVE_SUBS(np);
-          if (stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_NO_ACTIVE_SUBS_P(stx->certs))
-            SCHEME_SET_NO_ACTIVE_SUBS(np);
-        }
-      } else {
-        if (!INACTIVE_CERTS(stx)) {
-          if (stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_NO_INACTIVE_SUBS_P(stx->certs))
-            np = no_nested_certs;
-          else
-            np = no_nested_active_certs;
-        } else {
-          np = scheme_make_raw_pair(NULL, (Scheme_Object *)INACTIVE_CERTS(stx));
-          SCHEME_SET_NO_ACTIVE_SUBS(np);
-          if (SCHEME_NO_INACTIVE_SUBS_P(stx->certs))
-            SCHEME_SET_NO_INACTIVE_SUBS(np);
-        }
-      }
-      res->certs = np;
-
-      certs = append_certs((active ? ACTIVE_CERTS(stx) : INACTIVE_CERTS(stx)), *cp);
-      *cp = certs;
-
-      return (Scheme_Object *)res;
-    } else if (stx->certs 
-               && SCHEME_RPAIRP(stx->certs) 
-               && (active
-                   ? SCHEME_NO_ACTIVE_SUBS_P(stx->certs)
-                   : SCHEME_NO_INACTIVE_SUBS_P(stx->certs))) {
-      /* Explicit pair, but no [in]active certs anywhere in this object. */
-      return (Scheme_Object *)stx;
-    } else {
-      Scheme_Stx *res;
-      Scheme_Object *prev;
-
-      o = stx_strip_certs(stx->val, cp, active);
-
-      if (!SAME_OBJ(o, stx->val)) {
-	res = (Scheme_Stx *)scheme_make_stx(o, 
-					    stx->srcloc,
-					    stx->props);
-	res->wraps = stx->wraps;
-	res->u.lazy_prefix = stx->u.lazy_prefix;
-      } else {
-        /* No new syntax object, but record the absence of certificates in 
-           sub-parts: */
-        res = stx;
-      }
-
-      prev = stx->certs;
-      if (!active) {
-        if (ACTIVE_CERTS(stx)) {
-          Scheme_Object *np;
-          np = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), NULL);
-          res->certs = np;
-          SCHEME_SET_NO_INACTIVE_SUBS(np);
-          if (prev && SCHEME_RPAIRP(prev) && SCHEME_NO_ACTIVE_SUBS_P(prev))
-            SCHEME_SET_NO_ACTIVE_SUBS(np);
-        } else if (prev && SCHEME_RPAIRP(prev) && SCHEME_NO_ACTIVE_SUBS_P(prev))
-          res->certs = no_nested_certs;
-        else
-          res->certs = no_nested_inactive_certs;
-      } else {
-        if (INACTIVE_CERTS(stx)) {
-          Scheme_Object *np;
-          np = scheme_make_raw_pair(NULL, (Scheme_Object *)INACTIVE_CERTS(stx));
-          res->certs = np;
-          SCHEME_SET_NO_ACTIVE_SUBS(np);
-          if (prev && SCHEME_RPAIRP(prev) && SCHEME_NO_INACTIVE_SUBS_P(prev))
-            SCHEME_SET_NO_INACTIVE_SUBS(np);
-        } else if (prev && SCHEME_RPAIRP(prev) && SCHEME_NO_INACTIVE_SUBS_P(prev))
-          res->certs = no_nested_certs;
-        else
-          res->certs = no_nested_active_certs;
-      }
-      
-      return (Scheme_Object *)res;
-    }
-  } else
-    return o;
-}
-
-static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active)
-{
-  Scheme_Cert *certs = NULL;
-
-  o = stx_strip_certs(o, &certs, 0);
-
-  if (certs)
-    o = add_certs(o, certs, NULL, as_active);
-
-  return o;
-}
-
-Scheme_Object *scheme_stx_activate_certs(Scheme_Object *o)
-{
-  return lift_inactive_certs(o, 1);
-}
-
-Scheme_Object *scheme_stx_lift_active_certs(Scheme_Object *o)
-{
-  Scheme_Cert *certs = NULL;
-  Scheme_Stx *stx = (Scheme_Stx *)o;
-
-  if (stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_NO_ACTIVE_SUBS_P(stx->certs))
-    return o;
-
-  o = stx_strip_certs(o, &certs, 1);
-
-  if (certs)
-    o = add_certs(o, certs, NULL, 1);
-
-  return o;  
 }
 
 int scheme_stx_has_empty_wraps(Scheme_Object *o)
@@ -3555,7 +3098,7 @@ static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env
       while (1) {
         if (WRAP_POS_END_P(awl))
           break;
-        if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl)) && IS_POSMARK(WRAP_POS_FIRST(awl))) {
+        if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl))) {
           if (acur_mark) {
             if (SAME_OBJ(acur_mark, WRAP_POS_FIRST(awl))) {
               acur_mark = NULL;
@@ -3609,7 +3152,7 @@ static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env
       while (1) {
         if (WRAP_POS_END_P(bwl))
           break;
-        if (SCHEME_NUMBERP(WRAP_POS_FIRST(bwl)) && IS_POSMARK(WRAP_POS_FIRST(bwl))) {
+        if (SCHEME_NUMBERP(WRAP_POS_FIRST(bwl))) {
           if (bcur_mark) {
             if (SAME_OBJ(bcur_mark, WRAP_POS_FIRST(bwl))) {
               bcur_mark = NULL;
@@ -3694,85 +3237,6 @@ static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env
       } else
         return 0;
     }
-  }
-}
-
-static int includes_mark(Scheme_Object *wraps, Scheme_Object *mark)
-/* Checks for positive or negative (certificate-only) mark.
-   FIXME: canceling marks are detected only when they're immediately
-   canceling (i.e., no canceled marks in between). */
-{
-  WRAP_POS awl;
-  Scheme_Object *acur_mark;
-
-  WRAP_POS_INIT(awl, wraps);
-
-  while (1) {
-    /* Skip over renames and cancelled marks: */
-    acur_mark = NULL;
-    while (1) {
-      if (WRAP_POS_END_P(awl))
-	break;
-      if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl))) {
-	if (acur_mark) {
-	  if (SAME_OBJ(acur_mark, WRAP_POS_FIRST(awl))) {
-	    acur_mark = NULL;
-	    WRAP_POS_INC(awl);
-	  } else
-	    break;
-	} else {
-	  acur_mark = WRAP_POS_FIRST(awl);
-	  WRAP_POS_INC(awl);
-	}
-      } else {
-	WRAP_POS_INC(awl);
-      }
-    }
-
-    /* Same mark? */
-    if (SAME_OBJ(acur_mark, mark))
-      return 1;
-
-    if (WRAP_POS_END_P(awl))
-      return 0;
-  }
-}
-
-static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
-/* Adds both positive and negative marks to marks table. This may add too many
-   marks, because it detects only immediately canceling marks. */
-{
-  WRAP_POS awl;
-  Scheme_Object *acur_mark;
-
-  WRAP_POS_INIT(awl, wraps);
-
-  while (1) {
-    /* Skip over renames and cancelled marks: */
-    acur_mark = NULL;
-    while (1) {
-      if (WRAP_POS_END_P(awl))
-	break;
-      if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl))) {
-	if (acur_mark) {
-	  if (SAME_OBJ(acur_mark, WRAP_POS_FIRST(awl))) {
-	    acur_mark = NULL;
-	    WRAP_POS_INC(awl);
-	  } else
-	    break;
-	} else {
-	  acur_mark = WRAP_POS_FIRST(awl);
-	  WRAP_POS_INC(awl);
-	}
-      } else {
-	WRAP_POS_INC(awl);
-      }
-    }
-
-    if (acur_mark)
-      scheme_hash_set(marks, acur_mark, scheme_true);
-    else
-      return;
   }
 }
 
@@ -3904,7 +3368,6 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
             if (SCHEME_PAIRP(get_names[4])) /* skip over marks, if any */
               get_names[4] = SCHEME_CDR(get_names[4]);
             get_names[5] = pt->phase_index;
-            get_names[6] = (pt->provide_insps ? pt->provide_insps[i] : NULL);
           }
 
           if (SCHEME_FALSEP(src)) {
@@ -4120,8 +3583,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
      the nominal source module's export, get_names[3] is set to the phase of
      the source definition, and get_names[4] is set to the nominal import phase index,
      and get_names[5] is set to the nominal export phase; get_names[6] is set to
-     an inspector/pair if one applies for a re-export of a protected or unexported, NULL or 
-     #f otherwise.
+     an access-granting inspector, NULL, or #f.
    If lexically bound, result is env id, and a get_names[0] is set to scheme_undefined;
      get_names[1] is set if a free-id=? rename provides a different name for the bindig.
    If neither, result is #f and get_names[0] is either unchanged or NULL; get_names[1]
@@ -4129,7 +3591,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 {
   WRAP_POS wraps;
   Scheme_Object *o_rename_stack = scheme_null, *recur_skip_ribs = skip_ribs;
-  Scheme_Object *mresult = scheme_false, *mresult_insp;
+  Scheme_Object *mresult = scheme_false, *mresult_insp = NULL;
   Scheme_Object *modidx_shift_to = NULL, *modidx_shift_from = NULL;
   Scheme_Object *rename_stack[QUICK_STACK_SIZE], *rib_delim = scheme_false;
   int stack_pos = 0, no_lexical = 0;
@@ -4149,7 +3611,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
     WRAP_POS_INC(wraps);
   } else
     WRAP_POS_INIT(wraps, ((Scheme_Stx *)a)->wraps);
-  
+
   while (1) {
     if (WRAP_POS_END_P(wraps)) {
       /* See rename case for info on rename_stack: */
@@ -4250,6 +3712,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
               get_names[4] = SCHEME_VEC_ELS(result_free_rename)[5];
               get_names[5] = SCHEME_VEC_ELS(result_free_rename)[6];
               get_names[6] = SCHEME_VEC_ELS(result_free_rename)[7];
+              if (SCHEME_FALSEP(get_names[6]))
+                get_names[6] = mresult_insp;
             }
           } else {
             if (get_names)
@@ -4389,8 +3853,6 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	    /* match; set mresult, which is used in the case of no lexical capture: */
             mresult_skipped = skipped;
 
-            mresult_insp = NULL;
-            
             if (SCHEME_BOXP(rename)) {
               /* This should only happen for mappings from free_id_renames */
               mresult = SCHEME_BOX_VAL(rename);
@@ -4405,11 +3867,6 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
             } else {
               if (SCHEME_PAIRP(rename)) {
                 mresult = SCHEME_CAR(rename);
-                if (is_rename_inspector_info(mresult)) {
-                  mresult_insp = mresult;
-                  rename = SCHEME_CDR(rename);
-                  mresult = SCHEME_CAR(rename);
-                }
               } else
                 mresult = rename;
 	    
@@ -4478,7 +3935,6 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
                   if (!get_names[5]) {
                     get_names[5] = get_names[3];
                   }
-                  get_names[6] = mresult_insp;
                 }
 
                 if (modidx_shift_from && !no_shift) {
@@ -4491,6 +3947,10 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
                 }
               }
             }
+            
+            if (get_names)
+              get_names[6] = (mrn->insp ? mrn->insp : mresult_insp);
+            EXPLAIN(fprintf(stderr, "%d  mresult_insp %p %p\n", depth, mresult_insp, mrn->insp));
           } else {
             if (mrn->sealed < STX_SEAL_ALL)
               mresult_depends_unsealed = 1;
@@ -4503,7 +3963,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
       }
     } else if (SCHEME_BOXP(WRAP_POS_FIRST(wraps)) && w_mod) {
       /* Phase shift */
-      Scheme_Object *vec, *n, *dest, *src;
+      Scheme_Object *vec, *n, *dest, *src, *insp;
       
       EXPLAIN(fprintf(stderr, "%d phase shift\n", depth));
 
@@ -4514,6 +3974,9 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
      
       src = SCHEME_VEC_ELS(vec)[1];
       dest = SCHEME_VEC_ELS(vec)[2];
+      insp = SCHEME_VEC_ELS(vec)[4];
+
+      EXPLAIN(fprintf(stderr, "%d  insp %p\n", depth, (SCHEME_FALSEP(insp) ? NULL : insp)));
 
       /* If src is #f, shift is just for phase; no redirection */
 
@@ -4525,7 +3988,6 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 						modidx_shift_from,
 						modidx_shift_to);
 	}
-	
 	modidx_shift_from = src;
       }
 
@@ -4535,6 +3997,9 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	if (SCHEME_TRUEP(er))
 	  export_registry = (Scheme_Hash_Table *)er;
       }
+      
+      if (SCHEME_TRUEP(insp))
+        mresult_insp = insp;
     } else if (rib || (SCHEME_VECTORP(WRAP_POS_FIRST(wraps))
 		       && !no_lexical)) {
       /* Lexical rename: */
@@ -4631,7 +4096,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 		 mappings, but the intermediate name may be needed
 		 (for other_env values that don't come from this stack). */
               if (free_id_recur && !SCHEME_VOIDP(free_id_rename)) {
-                /* Need to remember phase ad shifts for free-id=? rename: */
+                /* Need to remember phase and shifts for free-id=? rename: */
                 Scheme_Object *vec;
                 vec = scheme_make_vector(4, NULL);
                 SCHEME_VEC_ELS(vec)[0] = free_id_rename;
@@ -5317,79 +4782,6 @@ int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx)
   return 0;
 }
 
-int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *id_certs,
-			      Scheme_Object *than_id, Scheme_Object *than_id_certs)
-  /* There's a good chance that certs is an extension of than_certs. */
-{
-  int i, j;
-  Scheme_Cert *certs, *t_certs;
-  Scheme_Hash_Table *ht, *t_ht = NULL;
-
-  if ((!id_certs || SAME_OBJ(id_certs, than_id_certs))
-      && !ACTIVE_CERTS((Scheme_Stx *)id))
-    return 0;
-
-  if (id_marks_ht) {
-    ht = id_marks_ht;
-    id_marks_ht = NULL;
-  } else
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-  add_all_marks(((Scheme_Stx *)id)->wraps, ht);
-
-  for (i = 0; i < 2; i++) {
-    if (i)
-      certs = ACTIVE_CERTS((Scheme_Stx *)id);
-    else
-      certs = (Scheme_Cert *)id_certs;
-    while (certs && !SAME_OBJ(certs, (Scheme_Cert *)than_id_certs)) {
-      if (scheme_hash_get(ht, certs->mark)) {
-	/* Found a relevant certificate in id */
-	if (!t_ht) {
-	  if (than_id_marks_ht) {
-	    t_ht = than_id_marks_ht;
-	    than_id_marks_ht = NULL;
-	  } else
-	    t_ht = scheme_make_hash_table(SCHEME_hash_ptr);
-	  add_all_marks(((Scheme_Stx *)than_id)->wraps, t_ht);
-	}
-	if (scheme_hash_get(t_ht, certs->mark)) {
-	  /* than_id has the same mark */
-	  for (j = 0; j < 2; j++) {
-	    if (j)
-	      t_certs = ACTIVE_CERTS((Scheme_Stx *)than_id);
-	    else
-	      t_certs = (Scheme_Cert *)than_id_certs;
-	    while (t_certs) {
-	      if (SAME_OBJ(t_certs->mark, certs->mark))
-		break;
-	      t_certs = t_certs->next;
-	    }
-	    if (t_certs)
-	      break;
-	  }
-	  if (j == 2) {
-	    scheme_reset_hash_table(ht, NULL);
-	    id_marks_ht = ht;
-	    scheme_reset_hash_table(t_ht, NULL);
-	    than_id_marks_ht = t_ht;
-	    return 1;
-	  }
-	}
-      }
-      certs = certs->next;
-    }
-  }
-
-  scheme_reset_hash_table(ht, NULL);
-  id_marks_ht = ht;
-  if (t_ht) {
-    scheme_reset_hash_table(t_ht, NULL);
-    than_id_marks_ht = t_ht;
-  }
-
-  return 0;
-}
-
 Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *a, Scheme_Object *relative_to,
                                              Scheme_Object *uid)
 {
@@ -5411,11 +4803,11 @@ Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *a, Scheme_Object *re
 
     {
       Scheme_Stx *stx = (Scheme_Stx *)a;
-      Scheme_Object *certs;
-      certs = stx->certs;
+      Scheme_Object *taints;
+      taints = stx->taints;
       stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
       stx->wraps = wraps;
-      stx->certs = certs;
+      stx->taints = taints;
       a = (Scheme_Object *)stx;
     }
    }
@@ -6604,13 +5996,6 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
                     if (ht->vals[i]) {
                       SCHEME_VEC_ELS(l)[j++] = ht->keys[i];
                       fil = ht->vals[i];
-                      if (SCHEME_PAIRP(fil) && is_rename_inspector_info(SCHEME_CAR(fil))) {
-                        /* use 1 or 2 to indicate inspector info */
-                        if (SCHEME_PAIRP(SCHEME_CAR(fil)))
-                          fil = CONS(scheme_make_integer(2), SCHEME_CDR(fil));
-                        else
-                          fil = CONS(scheme_make_integer(1), SCHEME_CDR(fil));
-                      }
                       SCHEME_VEC_ELS(l)[j++] = fil;
                     }
                   }
@@ -6702,17 +6087,22 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
       Scheme_Object *aa;
       
       aa = SCHEME_BOX_VAL(a);
-      if (SCHEME_TRUEP(SCHEME_VEC_ELS(aa)[3])) {
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(aa)[3])
+          || (!just_simplify && SCHEME_TRUEP(SCHEME_VEC_ELS(aa)[4]))) {
         if (mt)
           a = scheme_hash_get(mt->shift_map, aa);
         else
           a = scheme_hash_get(rns, aa);
         if (!a) {
-          a = scheme_make_vector(4, NULL);
+          a = scheme_make_vector(5, NULL);
           SCHEME_VEC_ELS(a)[0] = SCHEME_VEC_ELS(aa)[0];
           SCHEME_VEC_ELS(a)[1] = SCHEME_VEC_ELS(aa)[1];
           SCHEME_VEC_ELS(a)[2] = SCHEME_VEC_ELS(aa)[2];
           SCHEME_VEC_ELS(a)[3] = scheme_false;
+          if (just_simplify)
+            SCHEME_VEC_ELS(a)[4] = SCHEME_VEC_ELS(aa)[4];
+          else
+            SCHEME_VEC_ELS(a)[4] = scheme_false;
           a = scheme_box(a);
           scheme_hash_set(rns, aa, a);
         }
@@ -6812,9 +6202,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
 /* This code can convert a syntax object plus its wraps to something
    writeable. In that case, the result is a <converted>:
 
-      <converted> = (vector <simple converted> <cert>)
-                  | <simple converted>
-      <simple converted> = <simple converted pair> | ...
+      <converted> = <simple converted pair> | ...
 
       <simple converted pair> = (cons (cons <int> (cons <converted> ... <converted>)) <wrap>)
                               | (cons (cons <converted> ... null) <wrap>)
@@ -6830,8 +6218,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
 static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_mark, int pair_ok)
 {
   /* We only share wraps for things constucted with pairs and
-     atomic (w.r.t. syntax) values, where there are no certificates
-     on any of the sub-parts. */
+     atomic (w.r.t. syntax) values. */
   Scheme_Object *v;
 
   if (SCHEME_PAIRP(a)) {
@@ -6875,28 +6262,6 @@ static void lift_common_wraps(Scheme_Object *l, Scheme_Object *common_wraps, int
   }
 }
 
-static Scheme_Object *record_certs(Scheme_Object *cert_marks, Scheme_Marshal_Tables *mt)
-{
-  Scheme_Object *v, *local_key;
-
-  if (SCHEME_PAIRP(cert_marks)) {
-    v = scheme_hash_get(mt->cert_lists, cert_marks);
-    if (!v) {
-      scheme_hash_set(mt->cert_lists, cert_marks, cert_marks);
-      v = cert_marks;
-    }
-
-    local_key = scheme_marshal_lookup(mt, v);
-    if (local_key) {
-      scheme_marshal_using_key(mt, v);
-      return local_key;
-    } else {
-      return scheme_marshal_wrap_set(mt, v, v);
-    }
-  } else
-    return scheme_null;
-}
-
 #ifdef DO_STACK_CHECK
 static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
 					    int with_marks,
@@ -6916,11 +6281,12 @@ static Scheme_Object *syntax_to_datum_k(void)
 #endif
 
 static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
-					    int with_marks,
+					    int with_marks, /* abs > 1 => marshal; negative => implicitly tainted */
 					    Scheme_Marshal_Tables *mt)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *v, *result, *converted_wraps = NULL;
+  int add_taint = 0;
 
 #ifdef DO_STACK_CHECK
   {
@@ -6939,6 +6305,14 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   if (with_marks) {
     /* Propagate wraps: */
     scheme_stx_content((Scheme_Object *)stx);
+    if (with_marks > 0) {
+      if (is_tainted((Scheme_Object *)stx)) {
+        add_taint = 1;
+        with_marks = -with_marks;
+      } else if (is_armed((Scheme_Object *)stx)) {
+        add_taint = 2;
+      }
+    }
   }
 
   v = stx->val;
@@ -6990,7 +6364,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
           common_wraps = scheme_false;
       }
 
-      if ((with_marks > 1) && SCHEME_FALSEP(common_wraps)) {
+      if (((with_marks > 1) || (with_marks < -1)) && SCHEME_FALSEP(common_wraps)) {
 	/* v is likely a pair, and v's car might be a pair,
 	   which means that the datum->syntax part
 	   won't be able to detect that v is a "non-pair"
@@ -7059,43 +6433,15 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   } else
     result = v;
 
-  if (with_marks > 1) {
+  if ((with_marks > 1) || (with_marks < -1)) {
     if (!converted_wraps)
       converted_wraps = wraps_to_datum(stx->val, stx->wraps, mt, NULL, 0);
     result = CONS(result, converted_wraps);
-    if (stx->certs) {
-      Scheme_Object *cert_marks = scheme_null, *icert_marks = scheme_null;
-      Scheme_Cert *certs;
-
-      certs = ACTIVE_CERTS(stx);
-      while (certs) {
-	cert_marks = scheme_make_pair(certs->modidx, cert_marks);
-	cert_marks = scheme_make_pair(certs->mark, cert_marks);
-	certs = certs->next;
-      }
-      certs = INACTIVE_CERTS(stx);
-      while (certs) {
-	icert_marks = scheme_make_pair(certs->modidx, icert_marks);
-	icert_marks = scheme_make_pair(certs->mark, icert_marks);
-	certs = certs->next;
-      }
-
-      if (SCHEME_PAIRP(cert_marks)
-          || SCHEME_PAIRP(icert_marks)) {
-        
-        cert_marks = record_certs(cert_marks, mt);
-        icert_marks = record_certs(icert_marks, mt);
-
-        v = scheme_make_vector(2, NULL);
-        SCHEME_VEC_ELS(v)[0] = result;
-        if (!SCHEME_NULLP(icert_marks)) {
-          cert_marks = scheme_make_pair(cert_marks, icert_marks);
-          if (SCHEME_NUMBERP(SCHEME_CAR(cert_marks)))
-            cert_marks = scheme_make_pair(scheme_false, cert_marks);
-        }
-        SCHEME_VEC_ELS(v)[1] = cert_marks;
-        result = v;
-      }
+    if (add_taint == 1)
+      result = scheme_make_vector(1, result); /* vector of size 1 => tainted */
+    else if (add_taint == 2) {
+      result = scheme_make_vector(2, result); /* vector of size 2 => armed */
+      SCHEME_VEC_ELS(result)[1] = scheme_false;
     }
   }
 
@@ -7162,10 +6508,6 @@ static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Unmarshal_Tables 
   if (!n) {
     /* Map marshaled mark to a new mark. */
     n = scheme_new_mark();
-    if (!IS_POSMARK(_a)) {
-      /* Map negative mark to negative mark: */
-      n = negate_mark(n);
-    }
     scheme_hash_set(ut->rns, a, n);
   }
   
@@ -7206,19 +6548,6 @@ static Scheme_Object *datum_to_module_renames(Scheme_Object *a, Scheme_Hash_Tabl
     if (!SCHEME_SYMBOLP(key)) return_NULL;
 
     p = p0;
-    if (SCHEME_PAIRP(p) && SCHEME_INTP(SCHEME_CAR(p))) {
-      /* reconstruct inspector info */
-      Scheme_Object *insp;
-      if (ut)
-        insp = scheme_get_cport_inspector(ut->rp);
-      else
-        insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-      if (!SAME_OBJ(scheme_make_integer(1), SCHEME_CAR(p))) {
-        insp = CONS(scheme_make_inspector(insp), insp);
-      }
-      p = SCHEME_CDR(p0);
-      p0 = CONS(insp, p);
-    }
 
     if (SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)) {
       /* Ok */
@@ -7449,8 +6778,9 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
       set_identity = unmarshal_mark(SCHEME_CAR(a), ut); 
       if (!set_identity) return_NULL;
       a = SCHEME_CDR(a);
-
-      mrn = (Module_Renames *)scheme_make_module_rename(phase, kind, NULL);
+      
+      mrn = (Module_Renames *)scheme_make_module_rename(phase, kind, NULL, NULL);
+        
       mrn->set_identity = set_identity;
 
       if (!SCHEME_PAIRP(a)) return_NULL;
@@ -7672,7 +7002,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
         Scheme_Object *vec;
         vec = SCHEME_BOX_VAL(a);
         if (!SCHEME_VECTORP(vec)) return_NULL;
-        if (SCHEME_VEC_SIZE(vec) != 4) return_NULL;
+        if (SCHEME_VEC_SIZE(vec) != 5) return_NULL;
       }
     } else {
       return_NULL;
@@ -7703,69 +7033,8 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 					    Scheme_Unmarshal_Tables *ut,
 					    Scheme_Stx *stx_src,
 					    Scheme_Stx *stx_wraps,
-                                            Scheme_Hash_Table *ht);
-
-Scheme_Object *cert_marks_to_certs(Scheme_Object *cert_marks, 
-                                   Scheme_Unmarshal_Tables *ut,
-                                   Scheme_Stx *stx_wraps, int *bad)
-{
-  /* Need to convert a list of marks to certs */
-  Scheme_Cert *certs = NULL;
-  Scheme_Object *a, *b, *insp, *orig = cert_marks;
-
-  if (SCHEME_NUMBERP(cert_marks)) {
-    /* Re-use rename table or env rename */
-    int decoded;
-    a = scheme_unmarshal_wrap_get(ut, cert_marks, &decoded);
-    if (decoded && !a)
-      return_NULL;
-    if (decoded)
-      return a;
-    cert_marks = a;
-  }
-
-  if (ut)
-    insp = scheme_get_cport_inspector(ut->rp);
-  else
-    insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-
-  while (SCHEME_PAIRP(cert_marks)) {
-    a = SCHEME_CAR(cert_marks);
-    if (!SCHEME_NUMBERP(a)) {
-      *bad = 1;
-      return_NULL;
-    }
-    a = unmarshal_mark(a, ut);
-    if (!a) { *bad = 1; return_NULL; }
-    
-    cert_marks = SCHEME_CDR(cert_marks);
-    if (!SCHEME_PAIRP(cert_marks)) {
-      *bad = 1;
-      return_NULL;
-    }
-    b = SCHEME_CAR(cert_marks);
-    if (!SCHEME_SYMBOLP(b)
-	&& !SAME_TYPE(SCHEME_TYPE(b), scheme_module_index_type)) {
-      *bad = 1;
-      return_NULL;
-    }
-    
-    if (!cert_in_chain(a, NULL, certs))
-      certs = cons_cert(a, b, insp, NULL, certs);
-    
-    cert_marks = SCHEME_CDR(cert_marks);
-  }
-  if (!SCHEME_NULLP(cert_marks)) {
-    *bad = 1;
-    return_NULL;
-  }
-
-  if (SCHEME_NUMBERP(orig)) {
-    scheme_unmarshal_wrap_set(ut, orig, (Scheme_Object *)certs);
-  }
-
-  return (Scheme_Object *)certs;
-}
+                                            Scheme_Hash_Table *ht,
+                                            int tainted);
 
 static Scheme_Object *datum_to_syntax_k(void)
 {
@@ -7782,7 +7051,7 @@ static Scheme_Object *datum_to_syntax_k(void)
   p->ku.k.p4 = NULL;
   p->ku.k.p5 = NULL;
 
-  return datum_to_syntax_inner(o, ut, stx_src, stx_wraps, ht);
+  return datum_to_syntax_inner(o, ut, stx_src, stx_wraps, ht, (int)p->ku.k.i1);
 }
 #endif
 
@@ -7790,10 +7059,11 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
                                             Scheme_Unmarshal_Tables *ut,
 					    Scheme_Stx *stx_src,
 					    Scheme_Stx *stx_wraps, /* or rename table, or boxed precomputed wrap */
-					    Scheme_Hash_Table *ht)
+					    Scheme_Hash_Table *ht,
+                                            int tainted)
 {
-  Scheme_Object *result, *wraps, *cert_marks = NULL, *hashed;
-  int do_not_unpack_wraps = 0;
+  Scheme_Object *result, *wraps, *hashed;
+  int do_not_unpack_wraps = 0, armed = 0;
 
   if (SCHEME_STXP(o))
     return o;
@@ -7808,6 +7078,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       p->ku.k.p3 = (void *)stx_wraps;
       p->ku.k.p4 = (void *)ht;
       p->ku.k.p5 = (void *)ut;
+      p->ku.k.i1 = tainted;
       return scheme_handle_stack_overflow(datum_to_syntax_k);
     }
   }
@@ -7831,10 +7102,14 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 
   if (ut && !SCHEME_BOXP(stx_wraps)) {
     if (SCHEME_VECTORP(o)) {
-      /* This one has certs */
-      if (SCHEME_VEC_SIZE(o) == 2) {
-	cert_marks = SCHEME_VEC_ELS(o)[1];
+      if (SCHEME_VEC_SIZE(o) == 1) {
+        /* tainted --- forced on all enclosed syntax objects, too */
 	o = SCHEME_VEC_ELS(o)[0];
+        tainted = 1;
+      } else if (SCHEME_VEC_SIZE(o) == 2) {
+        /* armed */
+        o = SCHEME_VEC_ELS(o)[0];
+        armed = 1;
       } else
 	return_NULL;
     }
@@ -7892,7 +7167,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 	  }
 	}
 
-	a = datum_to_syntax_inner(SCHEME_CAR(o), ut, stx_src, sub_stx_wraps, ht);
+	a = datum_to_syntax_inner(SCHEME_CAR(o), ut, stx_src, sub_stx_wraps, ht, tainted);
 	if (!a) return_NULL;
       
 	p = scheme_make_pair(a, scheme_null);
@@ -7907,7 +7182,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 	--cnt;
       }
       if (!SCHEME_NULLP(o)) {
-	o = datum_to_syntax_inner(o, ut, stx_src, sub_stx_wraps, ht);
+	o = datum_to_syntax_inner(o, ut, stx_src, sub_stx_wraps, ht, tainted);
 	if (!o) return_NULL;
 	SCHEME_CDR(last) = o;
       }
@@ -7920,7 +7195,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     else
       o = SCHEME_PTR_VAL(o);
 
-    o = datum_to_syntax_inner(o, ut, stx_src, stx_wraps, ht);
+    o = datum_to_syntax_inner(o, ut, stx_src, stx_wraps, ht, tainted);
     if (!o) return_NULL;
     result = scheme_box(o);
     SCHEME_SET_BOX_IMMUTABLE(result);
@@ -7940,7 +7215,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
         a = SCHEME_VEC_ELS(o)[i];
       else
         a = scheme_chaperone_vector_ref(oo, i);
-      a = datum_to_syntax_inner(a, ut, stx_src, stx_wraps, ht);
+      a = datum_to_syntax_inner(a, ut, stx_src, stx_wraps, ht, tainted);
       if (!a) return_NULL;
       SCHEME_VEC_ELS(result)[i] = a;
     }
@@ -7963,7 +7238,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       scheme_hash_tree_index(ht1, i, &key, &val);
       if (!SAME_OBJ((Scheme_Object *)ht1, o))
         val = scheme_chaperone_hash_traversal_get(o, key);
-      val = datum_to_syntax_inner(val, ut, stx_src, stx_wraps, ht);
+      val = datum_to_syntax_inner(val, ut, stx_src, stx_wraps, ht, tainted);
       if (!val) return NULL;
       ht2 = scheme_hash_tree_set(ht2, key, val);
       i = scheme_hash_tree_next(ht1, i);
@@ -7979,7 +7254,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     size = s->stype->num_slots;
 
     for (i = 0; i < size; i++) {
-      a = datum_to_syntax_inner(s->slots[i], ut, stx_src, stx_wraps, ht);
+      a = datum_to_syntax_inner(s->slots[i], ut, stx_src, stx_wraps, ht, tainted);
       if (!a) return NULL;
       s->slots[i] = a;
     }
@@ -7993,6 +7268,17 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     result = scheme_make_stx(result, empty_srcloc, NULL);
   else
     result = scheme_make_stx(result, stx_src->srcloc, NULL);
+
+  if (tainted)
+    (void)add_taint_to_stx(result, 0);
+  else if (armed) {
+    /* Arm with #f as the inspector; #f is replaced by a
+       specific inspector when the encloding code is instanted */
+    Scheme_Object *l; 
+    l = taint_intern(scheme_make_pair(scheme_false, scheme_null));
+    l = taint_intern(scheme_make_pair(scheme_false, l));
+    ((Scheme_Stx *)result)->taints = l;
+  }
 
   if (wraps) {
     if (!do_not_unpack_wraps) {
@@ -8008,31 +7294,6 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     ((Scheme_Stx *)result)->wraps = stx_wraps->wraps;
   }
 
-  if (cert_marks) {
-    /* Need to convert a list of marks to certs */
-    Scheme_Object *certs;
-    int bad = 0;
-
-    if (SCHEME_PAIRP(cert_marks) 
-	&& (SCHEME_PAIRP(SCHEME_CAR(cert_marks))
-	    || SCHEME_NULLP(SCHEME_CAR(cert_marks))
-            || SCHEME_FALSEP(SCHEME_CAR(cert_marks)))) {
-      /* Have both active and inactive certs */
-      Scheme_Object *icerts;
-      if (SCHEME_FALSEP(SCHEME_CAR(cert_marks)))
-        cert_marks = SCHEME_CDR(cert_marks);
-      certs = cert_marks_to_certs(SCHEME_CAR(cert_marks), ut, stx_wraps, &bad);
-      icerts = cert_marks_to_certs(SCHEME_CDR(cert_marks), ut, stx_wraps, &bad);
-      certs = scheme_make_raw_pair(certs, icerts);
-    } else {
-      /* Just active certs */
-      certs = cert_marks_to_certs(cert_marks, ut, stx_wraps, &bad);
-    }
-    if (bad)
-      return_NULL;
-    ((Scheme_Stx *)result)->certs = certs;
-  }
-
   if (hashed) {
     scheme_hash_set(ht, hashed, NULL);
   }
@@ -8045,9 +7306,10 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
                                               Scheme_Object *stx_src,
                                               Scheme_Object *stx_wraps,
                                               int can_graph, int copy_props)
-     /* If stx_wraps is a hash table, then `o' includes marks and certs.
+     /* If stx_wraps is a hash table, then `o' includes marks.
 	If copy_props > 0, properties are copied from src.
-	If copy_props != 1 or 0, then certs are copied from src, too. */
+	If copy_props != 1 or 0, then taint armings are copied from src, too,
+          but src must not be tainted. */
 {
   Scheme_Hash_Table *ht;
   Scheme_Object *v, *code = NULL;
@@ -8080,7 +7342,8 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
                             ut,
 			    (Scheme_Stx *)stx_src,
 			    (Scheme_Stx *)stx_wraps,
-			    ht);
+			    ht,
+                            0);
 
   if (!v) {
     if (ut)
@@ -8100,11 +7363,10 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
     ((Scheme_Stx *)v)->props = ((Scheme_Stx *)stx_src)->props;
 
   if (copy_props && (copy_props != 1)) {
-    if (ACTIVE_CERTS(((Scheme_Stx *)stx_src)))
-      v = add_certs(v, ACTIVE_CERTS((Scheme_Stx *)stx_src), NULL, 1);
-    if (INACTIVE_CERTS((Scheme_Stx *)stx_src)) {
-      v = lift_inactive_certs(v, 0);
-      v = add_certs(v, INACTIVE_CERTS((Scheme_Stx *)stx_src), NULL, 0);
+    if (!is_clean(stx_src)) {
+      if (is_tainted(stx_src))
+        scheme_signal_error("internal error: cannot copy taint armings from tainted source");
+      v = add_taint_armings_to_stx(v, ((Scheme_Stx *)stx_src)->taints, 0);
     }
   }
 
@@ -8132,29 +7394,25 @@ Scheme_Object *scheme_unmarshal_datum_to_syntax(Scheme_Object *o,
 
 #ifdef DO_STACK_CHECK
 static void simplify_syntax_inner(Scheme_Object *o,
-				  Scheme_Hash_Table *rns,
-				  Scheme_Hash_Table *marks);
+				  Scheme_Hash_Table *rns);
 
 static Scheme_Object *simplify_syntax_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
   Scheme_Hash_Table *rns = (Scheme_Hash_Table *)p->ku.k.p2;
-  Scheme_Hash_Table *marks = (Scheme_Hash_Table *)p->ku.k.p3;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
-  p->ku.k.p3 = NULL;
 
-  simplify_syntax_inner(o, rns, marks);
+  simplify_syntax_inner(o, rns);
 
   return NULL;
 }
 #endif
 
 static void simplify_syntax_inner(Scheme_Object *o, 
-				  Scheme_Hash_Table *rns, 
-				  Scheme_Hash_Table *marks)
+				  Scheme_Hash_Table *rns)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *v;
@@ -8166,7 +7424,6 @@ static void simplify_syntax_inner(Scheme_Object *o,
       Scheme_Thread *p = scheme_current_thread;
       p->ku.k.p1 = (void *)o;
       p->ku.k.p2 = (void *)rns;
-      p->ku.k.p3 = (void *)marks;
       scheme_handle_stack_overflow(simplify_syntax_k);
       return;
     }
@@ -8182,26 +7439,23 @@ static void simplify_syntax_inner(Scheme_Object *o,
     stx->wraps = v;
   }
 
-  if (stx->certs && !marks)
-    marks = scheme_make_hash_table(SCHEME_hash_ptr);
-
   v = stx->val;
   
   if (SCHEME_PAIRP(v)) {
     while (SCHEME_PAIRP(v)) {
-      simplify_syntax_inner(SCHEME_CAR(v), rns, marks);
+      simplify_syntax_inner(SCHEME_CAR(v), rns);
       v = SCHEME_CDR(v);
     }
     if (!SCHEME_NULLP(v)) {
-      simplify_syntax_inner(v, rns, marks);
+      simplify_syntax_inner(v, rns);
     }
   } else if (SCHEME_BOXP(v)) {
-    simplify_syntax_inner(SCHEME_BOX_VAL(v), rns, marks);
+    simplify_syntax_inner(SCHEME_BOX_VAL(v), rns);
   } else if (SCHEME_VECTORP(v)) {
     int size = SCHEME_VEC_SIZE(v), i;
     
     for (i = 0; i < size; i++) {
-      simplify_syntax_inner(SCHEME_VEC_ELS(v)[i], rns, marks);
+      simplify_syntax_inner(SCHEME_VEC_ELS(v)[i], rns);
     }
   } else if (SCHEME_HASHTRP(v)) {
     Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)v;
@@ -8211,7 +7465,7 @@ static void simplify_syntax_inner(Scheme_Object *o,
     i = scheme_hash_tree_next(ht, -1);
     while (i != -1) {
       scheme_hash_tree_index(ht, i, &key, &val);
-      simplify_syntax_inner(val, rns, marks);
+      simplify_syntax_inner(val, rns);
       i = scheme_hash_tree_next(ht, i);
     }
   } else if (prefab_p(v)) {
@@ -8219,80 +7473,7 @@ static void simplify_syntax_inner(Scheme_Object *o,
     int size = s->stype->num_slots, i;
     
     for (i = 0; i < size; i++) {
-      simplify_syntax_inner(s->slots[i], rns, marks);
-    }
-  }
-
-  if (marks)
-    add_all_marks(stx->wraps, marks);
-
-  /* Pare certs based on marks that are actually used,
-     and eliminate redundant certs. */
-  if (stx->certs) {
-    Scheme_Cert *orig_certs, *certs, *cl, *all_used_after, *result;
-    int i;
-    for (i = 0; i < 2; i++) {
-      if (!i)
-	certs = ACTIVE_CERTS(stx);
-      else
-	certs = INACTIVE_CERTS(stx);
-      orig_certs = certs;
-      /* Is there a tail where all certs are used? */
-      all_used_after = certs;
-      for (cl = certs; cl; cl = cl->next) {
-	if (!scheme_hash_get(marks, cl->mark))
-	  all_used_after = cl->next;
-      }
-      /* In the all-used tail, are any redundant? */
-      for (cl = all_used_after; cl; cl = cl->next) {
-	v = scheme_hash_get(marks, cl->mark);
-	if (SCHEME_VOIDP(v)) {
-	  /* Reset marks, because we're giving up on all_used_after */
-	  result = cl;
-	  for (cl = all_used_after; cl != result; cl = cl->next) {
-	    scheme_hash_set(marks, cl->mark, scheme_true);
-	  }
-	  all_used_after = NULL;
-	  break;
-	}
-	scheme_hash_set(marks, cl->mark, scheme_void);
-      }
-      /* If any marks are unused or redundant, then all_used_after will
-	 have been changed. Also, every mark in all_used_after is mapped
-	 to void instead of true in the marks hash table. */
-      if (all_used_after != certs) {
-	/* We can simplify... */
-	result = all_used_after;
-	for (cl = orig_certs; cl; cl = cl->next) {
-	  if (SAME_OBJ(cl, all_used_after))
-	    break;
-	  if (scheme_hash_get(marks, cl->mark)) {
-	    v = scheme_hash_get(marks, cl->mark);
-	    if (!SCHEME_VOIDP(v))
-	      result = cons_cert(cl->mark, cl->modidx, cl->insp, cl->key, result);
-	  }
-	}
-	if (!i) {
-	  if (SCHEME_RPAIRP(stx->certs)) {
-	    Scheme_Object *pr;
-	    pr = scheme_make_raw_pair((Scheme_Object *)result, SCHEME_CDR(stx->certs));
-	    stx->certs = pr;
-	  } else
-	    stx->certs = (Scheme_Object *)result;
-	} else {
-	  if (!result)
-	    stx->certs = SCHEME_CAR(stx->certs);
-	  else {
-	    Scheme_Object *pr;
-	    pr = scheme_make_raw_pair(SCHEME_CAR(stx->certs), (Scheme_Object *)result);
-	    stx->certs = pr;
-	  }
-	}
-      } 
-      /* Reset mark map from void to true: */
-      for (cl = all_used_after; cl; cl = cl->next) {
-	scheme_hash_set(marks, cl->mark, scheme_true);
-      }
+      simplify_syntax_inner(s->slots[i], rns);
     }
   }
 }
@@ -8319,7 +7500,7 @@ void scheme_simplify_stx(Scheme_Object *stx, Scheme_Object *cache)
 
     rns = (Scheme_Hash_Table *)cache;
 
-    simplify_syntax_inner(stx, rns, NULL);
+    simplify_syntax_inner(stx, rns);
   }
 
 #if 0
@@ -8363,7 +7544,7 @@ static int pos_exact_or_false_p(Scheme_Object *o)
 
 static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *src = scheme_false, *properties = NULL, *certs = NULL;
+  Scheme_Object *src = scheme_false, *properties = NULL;
   
   if (!SCHEME_FALSEP(argv[0]) && !SCHEME_STXP(argv[0]))
     scheme_wrong_type("datum->syntax", "syntax or #f", 0, argc, argv);
@@ -8413,11 +7594,11 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
       }
       
       if (argc > 4) {
+        /* Not used; allowed for backward-compatibility */
         if (!SCHEME_FALSEP(argv[4])) {
           if (!SCHEME_STXP(argv[4]))
             scheme_wrong_type("datum->syntax", "syntax or #f", 4, argc, argv);
-          certs = (Scheme_Object *)INACTIVE_CERTS((Scheme_Stx *)argv[4]);
-        }
+        } 
       }
     }
 
@@ -8472,12 +7653,12 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
     ((Scheme_Stx *)src)->props = properties;
   }
 
-  if (certs)
-    src = add_certs(src, (Scheme_Cert *)certs, NULL, 0);    
+  if (!is_clean(argv[0])) {
+    add_taint_to_stx(src, 0);
+  }
 
   return src;
 }
-
 
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv)
 {
@@ -8568,6 +7749,16 @@ static Scheme_Object *syntax_to_list(int argc, Scheme_Object **argv)
       return scheme_false;
   } else
     return scheme_false;
+}
+
+static Scheme_Object *syntax_tainted_p(int argc, Scheme_Object **argv)
+{
+  if (!SCHEME_STXP(argv[0]))
+    scheme_wrong_type("syntax-tainted?", "syntax", 0, argc, argv);
+
+  return (scheme_stx_is_tainted(argv[0])
+          ? scheme_true
+          : scheme_false);
 }
 
 static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
@@ -8667,30 +7858,9 @@ Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
     l = scheme_null;
 
   if (val) {
-    Scheme_Object *wraps, *modinfo_cache;
-    Scheme_Object *certs;
-    intptr_t lazy_prefix;
-
     l = CONS(CONS(key, val), l);
-
-    wraps = stx->wraps;
-    if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
-      modinfo_cache = NULL;
-      lazy_prefix = stx->u.lazy_prefix;
-    } else {
-      modinfo_cache = stx->u.modinfo_cache;
-      lazy_prefix = 0;
-    }
-    certs = stx->certs;
-
-    stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, l);
-
-    stx->wraps = wraps;
-    if (modinfo_cache)
-      stx->u.modinfo_cache = modinfo_cache;
-    else
-      stx->u.lazy_prefix = lazy_prefix; /* same as NULL modinfo if no SUBSTX */
-    stx->certs = certs;
+    stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
+    stx->props = l;
 
     return (Scheme_Object *)stx;
   } else
@@ -8754,35 +7924,11 @@ static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv)
 Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from)
 {
   if (!SAME_OBJ(((Scheme_Stx *)from)->srcloc, empty_srcloc)) {
-    Scheme_Stx *stx = (Scheme_Stx *)to;
-    Scheme_Object *wraps, *modinfo_cache;
-    Scheme_Object *certs;
-    intptr_t lazy_prefix;
+    to = clone_stx(to);
+    ((Scheme_Stx *)to)->srcloc = ((Scheme_Stx *)from)->srcloc;
+  }
 
-    wraps = stx->wraps;
-    if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
-      modinfo_cache = NULL;
-      lazy_prefix = stx->u.lazy_prefix;
-    } else {
-      modinfo_cache = stx->u.modinfo_cache;
-      lazy_prefix = 0;
-    }
-    certs = stx->certs;
-
-    stx = (Scheme_Stx *)scheme_make_stx(stx->val, 
-                                        ((Scheme_Stx *)from)->srcloc,
-                                        stx->props);
-
-    stx->wraps = wraps;
-    if (modinfo_cache)
-      stx->u.modinfo_cache = modinfo_cache;
-    else
-      stx->u.lazy_prefix = lazy_prefix; /* same as NULL modinfo if no SUBSTX */
-    stx->certs = certs;
-
-    return (Scheme_Object *)stx;
-  } else
-    return to;
+  return to;
 }
 
 static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], Scheme_Object *p)
@@ -9081,7 +8227,7 @@ static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv)
   WRAP_POS_INIT(w, ((Scheme_Stx *)stx)->wraps);
   while (!WRAP_POS_END_P(w)) {
     if (SCHEME_BOXP(WRAP_POS_FIRST(w))) {
-      /* Phase shift:  */
+      /* Phase shift: */
       Scheme_Object *vec, *dest, *src;
 
       vec = SCHEME_PTR_VAL(WRAP_POS_FIRST(w));
@@ -9121,132 +8267,66 @@ static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv)
 
 /**********************************************************************/
 
-static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv)
+static Scheme_Object *syntax_arm(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *insp, *key;
+  Scheme_Object *insp;
+  int use_mode;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-recertify", "syntax", 0, argc, argv);
-  if (!SCHEME_STXP(argv[1]))
-    scheme_wrong_type("syntax-recertify", "syntax", 1, argc, argv);
-  if (SCHEME_TRUEP(argv[2]) && !SAME_TYPE(SCHEME_TYPE(argv[2]), scheme_inspector_type))
-    scheme_wrong_type("syntax-recertify", "inspector or #f", 2, argc, argv);
-  
-  if (SAME_OBJ(argv[0], argv[1]))
-    return argv[0];
-
-  insp = argv[2];
-  if (SCHEME_FALSEP(insp))
-    insp = NULL;
-  key = argv[3];
-
-  if (((Scheme_Stx *)argv[1])->certs) {
-    Scheme_Stx *stx, *res;
-    Scheme_Cert *certs, *new_certs, *orig_certs;
-    int i;
-    
-    stx = (Scheme_Stx *)argv[0];
-    
-    for (i = 0; i < 2; i++) {
-      if (!i) {
-	certs = ACTIVE_CERTS((Scheme_Stx *)argv[1]);
-	new_certs = ACTIVE_CERTS(stx);
-      } else {
-	certs = INACTIVE_CERTS((Scheme_Stx *)argv[1]);
-	new_certs = INACTIVE_CERTS(stx);
-      }
-
-      orig_certs = new_certs;
-
-      while (certs) {
-	if (!SAME_OBJ(certs->key, key) 
-	    && !SAME_OBJ(certs->insp, insp) 
-	    && (!insp || !scheme_is_subinspector(certs->insp, insp))) {
-	  /* Drop opaque certification. */
-	} else {
-	  if (!cert_in_chain(certs->mark, certs->key, new_certs))
-	    new_certs = cons_cert(certs->mark, certs->modidx, certs->insp, certs->key, new_certs);
-	}
-	certs = certs->next;
-      }
-      
-      if (!SAME_OBJ(orig_certs, new_certs)) {
-        if (i && !orig_certs)
-          stx = (Scheme_Stx *)lift_inactive_certs((Scheme_Object *)stx, 0);
-
-	res = (Scheme_Stx *)scheme_make_stx(stx->val, 
-					    stx->srcloc,
-					    stx->props);
-	res->wraps = stx->wraps;
-	res->u.lazy_prefix = stx->u.lazy_prefix;
-
-	if (!i && (!stx->certs || !SCHEME_RPAIRP(stx->certs) || !SCHEME_CDR(stx->certs)))
-	  res->certs = (Scheme_Object *)new_certs;
-	else {
-	  Scheme_Object *pr;
-	  if (!i)
-	    pr = scheme_make_raw_pair((Scheme_Object *)new_certs, SCHEME_CDR(stx->certs));
-	  else
-	    pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)new_certs);
-	  res->certs = pr;
-	}
-      
-	stx = res;
-      }
-    }
-
-    return (Scheme_Object *)stx;
+    scheme_wrong_type("syntax-arm", "syntax", 0, argc, argv);
+  if ((argc > 1) && !SCHEME_FALSEP(argv[1])) {
+    if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_inspector_type))
+      scheme_wrong_type("syntax-arm", "inspector or #f", 1, argc, argv);
+    insp = argv[1];
   } else
-    return argv[0];
+    insp = scheme_false;
+
+  use_mode = ((argc > 2) && SCHEME_TRUEP(argv[2]));
+    
+  return scheme_syntax_taint_arm(argv[0], insp, use_mode);
+}
+
+static Scheme_Object *syntax_disarm(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *insp;
+
+  if (!SCHEME_STXP(argv[0]))
+    scheme_wrong_type("syntax-disarm", "syntax", 0, argc, argv);
+  if (argc > 1) {
+    if (SCHEME_TRUEP(argv[1]) && !SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_inspector_type))
+      scheme_wrong_type("syntax-disarm", "inspector or #f", 1, argc, argv);
+    insp = argv[1];
+  } else
+    insp = scheme_false;
+   
+  return scheme_stx_taint_disarm(argv[0], insp);
+}
+
+static Scheme_Object *syntax_rearm(int argc, Scheme_Object **argv)
+{
+  if (!SCHEME_STXP(argv[0]))
+    scheme_wrong_type("syntax-rearm", "syntax", 0, argc, argv);
+  if (!SCHEME_STXP(argv[1]))
+    scheme_wrong_type("syntax-rearm", "syntax", 1, argc, argv);
+
+  if ((argc > 2) && SCHEME_TRUEP(argv[2]))
+    return scheme_syntax_taint_rearm(argv[0], argv[1]);
+  else
+    return scheme_stx_taint_rearm(argv[0], argv[1]);
+}
+
+static Scheme_Object *syntax_taint(int argc, Scheme_Object **argv)
+{
+  if (!SCHEME_STXP(argv[0]))
+    scheme_wrong_type("syntax-taint", "syntax", 0, argc, argv);
+
+  return add_taint_to_stx(argv[0], 1);
+  
 }
 
 /**********************************************************************/
 /*                             Debugging                              */
 /**********************************************************************/
-
-static Scheme_Object *explode_cert_chain(Scheme_Cert *c, Scheme_Hash_Table *ht)
-{
-  Scheme_Object *first = scheme_null, *last = NULL, *pr, *vec;
-  Scheme_Cert *next;
-  int depth = c ? c->depth : 0;
-
-  while (c) {
-    next = c->next;
-    pr = scheme_hash_get(ht, (Scheme_Object *)c);
-    if (!pr) {
-      vec = scheme_make_vector(3, NULL);
-      SCHEME_VEC_ELS(vec)[0] = c->mark;
-      SCHEME_VEC_ELS(vec)[1] = (c->modidx ? c->modidx : scheme_false);
-      SCHEME_VEC_ELS(vec)[2] = (c->key ? c->key : scheme_false);
-      pr = scheme_make_pair(vec, scheme_null);
-      scheme_hash_set(ht, (Scheme_Object *)c, pr);
-    } else
-      next = NULL;
-    if (last)
-      SCHEME_CDR(last) = pr;
-    else
-      first = pr;
-    last = pr;
-    c = next;
-  }
-
-  if (!SCHEME_NULLP(first)) {
-    first = scheme_make_pair(scheme_make_integer(depth), first);
-  }
-
-  return first;
-}
-
-static Scheme_Object *explode_certs(Scheme_Stx *stx, Scheme_Hash_Table *ht)
-{
-  Scheme_Cert *a, *i;
-
-  a = ACTIVE_CERTS(stx);
-  i = INACTIVE_CERTS(stx);
-
-  return scheme_make_pair(explode_cert_chain(a, ht),
-                          explode_cert_chain(i, ht));
-}
 
 static Scheme_Object *explode_wraps(Scheme_Object *wraps, Scheme_Hash_Table *ht)
 {
@@ -9339,8 +8419,8 @@ Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht)
   }
   SCHEME_VEC_ELS(vec)[0] = v;
 
-  v = explode_certs((Scheme_Stx *)stx, ht);
-  SCHEME_VEC_ELS(vec)[1] = v;
+  v = ((Scheme_Stx *)stx)->taints;
+  SCHEME_VEC_ELS(vec)[1] = (v ? v : scheme_null);
   v = explode_wraps(((Scheme_Stx *)stx)->wraps, ht);
   SCHEME_VEC_ELS(vec)[2] = v;
 
@@ -9364,7 +8444,7 @@ static Scheme_Object *write_free_id_info_prefix(Scheme_Object *obj)
   return vec;
 }
 
-static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj, Scheme_Object *insp)
+static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj)
 {
   Scheme_Object *vec;
   int i;
@@ -9378,8 +8458,7 @@ static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj, Scheme_Object
     SCHEME_VEC_ELS(vec)[i] = SCHEME_VEC_ELS(obj)[i];
   }
 
-  if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7]))
-    SCHEME_VEC_ELS(vec)[7] = insp;
+  SCHEME_VEC_ELS(vec)[7] = scheme_false;
 
   vec->type = scheme_free_id_info_type;
     
@@ -9400,7 +8479,6 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rename_table_set_type, mark_rename_table_set);
   GC_REG_TRAV(scheme_rt_srcloc, mark_srcloc);
   GC_REG_TRAV(scheme_wrap_chunk_type, mark_wrapchunk);
-  GC_REG_TRAV(scheme_certifications_type, mark_cert);
   GC_REG_TRAV(scheme_lexical_rib_type, lex_rib);
   GC_REG_TRAV(scheme_free_id_info_type, mark_free_id_info);
 }

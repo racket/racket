@@ -22,7 +22,7 @@
 	 #'(begin
 	     (define-syntax gen-id (convert-renamer init-val))
 	     (define-syntax id 
-	       (let ([gen-id ((syntax-local-certifier) #'gen-id)])
+	       (let ([gen-id #'gen-id])
 		 (make-set!-transformer
 		  (make-syntax-parameter 
 		   (lambda (stx)

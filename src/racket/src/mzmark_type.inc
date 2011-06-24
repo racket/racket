@@ -1712,7 +1712,6 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->current_local_env, gc);
   gcMARK2(pr->current_local_mark, gc);
   gcMARK2(pr->current_local_name, gc);
-  gcMARK2(pr->current_local_certs, gc);
   gcMARK2(pr->current_local_modidx, gc);
   gcMARK2(pr->current_local_menv, gc);
   gcMARK2(pr->current_local_bindings, gc);
@@ -1827,7 +1826,6 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->current_local_env, gc);
   gcFIXUP2(pr->current_local_mark, gc);
   gcFIXUP2(pr->current_local_name, gc);
-  gcFIXUP2(pr->current_local_certs, gc);
   gcFIXUP2(pr->current_local_modidx, gc);
   gcFIXUP2(pr->current_local_menv, gc);
   gcFIXUP2(pr->current_local_bindings, gc);
@@ -2441,7 +2439,7 @@ static int stx_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
   gcMARK2(stx->wraps, gc);
-  gcMARK2(stx->certs, gc);
+  gcMARK2(stx->taints, gc);
   gcMARK2(stx->props, gc);
   if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
     gcMARK2(stx->u.modinfo_cache, gc);
@@ -2454,7 +2452,7 @@ static int stx_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(stx->val, gc);
   gcFIXUP2(stx->srcloc, gc);
   gcFIXUP2(stx->wraps, gc);
-  gcFIXUP2(stx->certs, gc);
+  gcFIXUP2(stx->taints, gc);
   gcFIXUP2(stx->props, gc);
   if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
     gcFIXUP2(stx->u.modinfo_cache, gc);
@@ -2615,7 +2613,6 @@ static int module_phase_exports_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(m->provide_src_names, gc);
   gcMARK2(m->provide_nominal_srcs, gc);
   gcMARK2(m->provide_src_phases, gc);
-  gcMARK2(m->provide_insps, gc);
 
   gcMARK2(m->kernel_exclusion, gc);
   gcMARK2(m->kernel_exclusion2, gc);
@@ -2638,7 +2635,6 @@ static int module_phase_exports_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->provide_src_names, gc);
   gcFIXUP2(m->provide_nominal_srcs, gc);
   gcFIXUP2(m->provide_src_phases, gc);
-  gcFIXUP2(m->provide_insps, gc);
 
   gcFIXUP2(m->kernel_exclusion, gc);
   gcFIXUP2(m->kernel_exclusion2, gc);

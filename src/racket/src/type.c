@@ -28,7 +28,7 @@
 
 /* types should all be registered before invoking places */
 
-SHARED_OK Scheme_Type_Reader2 *scheme_type_readers;
+SHARED_OK Scheme_Type_Reader *scheme_type_readers;
 SHARED_OK Scheme_Type_Writer *scheme_type_writers;
 SHARED_OK Scheme_Equal_Proc *scheme_type_equals;
 SHARED_OK Scheme_Primary_Hash_Proc *scheme_type_hash1s;
@@ -66,7 +66,7 @@ static void init_type_arrays()
   allocmax = maxtype + 100;
 
   type_names = RAW_MALLOC_N(char *, allocmax);
-  scheme_type_readers = RAW_MALLOC_N(Scheme_Type_Reader2, allocmax);
+  scheme_type_readers = RAW_MALLOC_N(Scheme_Type_Reader, allocmax);
   n = allocmax * sizeof(Scheme_Type_Reader);
   memset((char *)scheme_type_readers, 0, n);
 
@@ -278,8 +278,6 @@ scheme_init_type ()
 
   set_name(scheme_special_comment_type, "<special-comment>");
 
-  set_name(scheme_certifications_type, "<certifications>");
-
   set_name(scheme_global_ref_type, "<variable-reference>");
 
   set_name(scheme_delay_syntax_type, "<on-demand-stub>");
@@ -328,11 +326,11 @@ Scheme_Type scheme_make_type(const char *name)
     free(type_names);
     type_names = (char **)naya;
 
-    naya = malloc(n = allocmax * sizeof(Scheme_Type_Reader2));
+    naya = malloc(n = allocmax * sizeof(Scheme_Type_Reader));
     memset((char *)naya, 0, n);
-    memcpy(naya, scheme_type_readers, maxtype * sizeof(Scheme_Type_Reader2));
+    memcpy(naya, scheme_type_readers, maxtype * sizeof(Scheme_Type_Reader));
     free(scheme_type_readers);
-    scheme_type_readers = (Scheme_Type_Reader2 *)naya;
+    scheme_type_readers = (Scheme_Type_Reader *)naya;
 
     naya = malloc(n = allocmax * sizeof(Scheme_Type_Writer));
     memset((char *)naya, 0, n);
@@ -392,14 +390,6 @@ char *scheme_get_type_name(Scheme_Type t)
 }
 
 void scheme_install_type_reader(Scheme_Type t, Scheme_Type_Reader f)
-{
-  if (t < 0 || t >= maxtype)
-    return;
-
-  scheme_type_readers[t] = (Scheme_Type_Reader2)f;
-}
-
-void scheme_install_type_reader2(Scheme_Type t, Scheme_Type_Reader2 f)
 {
   if (t < 0 || t >= maxtype)
     return;

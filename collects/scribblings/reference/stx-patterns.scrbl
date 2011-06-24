@@ -154,6 +154,12 @@ A syntax object matches a @racket[pattern] as follows:
  when its datum is @racket[equal?] to the @racket[quote]d
  @racket[const].}
 
+If @racket[stx-expr] produces a syntax object that is @tech{tainted}
+or @tech{armed}, then any syntax object bound by a @racket[pattern]
+are @tech{tainted}---unless the binding corresponds to the whole
+syntax object produced by @racket[stx-expr], in which case it remains
+@tech{tainted} or @tech{armed}.
+
 @mz-examples[
 (require (for-syntax racket/base))
 (define-syntax (swap stx)
@@ -440,7 +446,7 @@ Equivalent to
 @racketblock/form[
 (lambda (stx)
   (syntax-case stx (literal-id ...)
-    [(_generated-id . pattern) (syntax template)] ...))
+    [(_generated-id . pattern) (syntax-protect (syntax template))] ...))
 ]
 
 where each @racket[_generated-id] binds no identifier in the
@@ -456,7 +462,7 @@ Equivalent to
 (lambda (stx)
   (make-set!-transformer
    (syntax-case stx (literal-id ...)
-     [pattern (syntax template)] ...)))
+     [pattern (syntax-protect (syntax template))] ...)))
 ]}
 
 

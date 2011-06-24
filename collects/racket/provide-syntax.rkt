@@ -1,16 +1,19 @@
-#lang scheme/base
+#lang racket/base
 
 (provide define-provide-syntax)
 
-(require (for-syntax scheme/base
-                     scheme/provide-transform))
+(require (for-syntax racket/base
+                     "provide-transform.rkt"))
 
-(define-for-syntax (make-provide-macro cert proc)
+(define-for-syntax orig-insp (current-code-inspector))
+
+(define-for-syntax (make-provide-macro proc)
   (make-provide-transformer
    (lambda (stx modes)
      (let* ([i (make-syntax-introducer)]
-            [new-stx (cert (i (proc (i stx))) i)])
-       (expand-export new-stx modes)))))
+            [d-stx (syntax-disarm stx orig-insp)]
+            [new-stx (i (proc (i d-stx)))])
+       (expand-export (syntax-rearm new-stx stx) modes)))))
 
 (define-syntax (define-provide-syntax stx)
   (syntax-case stx ()
@@ -18,8 +21,7 @@
      (identifier? #'id)
      (syntax/loc stx
        (define-syntax id
-         (let ([cert (syntax-local-provide-certifier)])
-           (make-provide-macro cert proc))))]
+         (make-provide-macro proc)))]
     [(_ (id . args) . body)
      (identifier? #'id)
      (syntax/loc stx

@@ -7,20 +7,19 @@
 (provide go go/one)
 
 ;; this transforms `match'-style clauses into ones acceptable to `go'
-;; go : syntax syntax syntax [certifier] -> syntax
-(define (go/one parse/cert stx expr clauses [cert (syntax-local-certifier)])
+;; go : syntax syntax syntax -> syntax
+(define (go/one parse stx expr clauses)
   (define-syntax-class cl
     (pattern [p . rhs]
              #:with res (syntax/loc this-syntax [(p) . rhs])))
   (syntax-parse clauses
     [(c:cl ...)
-     (go parse/cert stx (quasisyntax/loc expr (#,expr))
-         #'(c.res ...)
-         cert)]))
+     (go parse stx (quasisyntax/loc expr (#,expr))
+         #'(c.res ...))]))
 
-;; this parses the clauses using parse/cert, then compiles them
-;; go : syntax syntax syntax [certifier] -> syntax
-(define (go parse/cert stx exprs clauses [cert (syntax-local-certifier)])
+;; this parses the clauses using parse, then compiles them
+;; go : syntax syntax syntax -> syntax
+(define (go parse stx exprs clauses)
   (syntax-case clauses ()
     [([pats . rhs] ...)
      (nest
@@ -61,7 +60,7 @@
                       pats))
                    (let ([mk (lambda (unm rhs)
                                (make-Row (for/list ([p (syntax->list pats)])
-                                           (parse/cert p cert))
+                                           (parse p))
                                          #`(let-values () . #,rhs) unm null))])
                      (syntax-case* rhs (=>)
                        (lambda (x y) (eq? (syntax-e x) (syntax-e y)))

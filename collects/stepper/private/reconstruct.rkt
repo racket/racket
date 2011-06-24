@@ -349,7 +349,7 @@
            [stepper-safe-expanded (skipto/auto expanded-application 'discard (lambda (x) x))]
            [just-the-fn 
             (kernel:kernel-syntax-case 
-             stepper-safe-expanded #f
+             (syntax-disarm stepper-safe-expanded (current-code-inspector)) #f
              ; STC: lazy racket case
              ;      Must change this case if lazy language changes!
              [(#%plain-app 
@@ -360,7 +360,7 @@
               #'fn]
              [(#%plain-app fn . rest) #`fn]
              [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])
-      (eval (syntax-recertify just-the-fn expanded-application (current-code-inspector) #f))))
+      (eval just-the-fn)))
 
   ;; these are delayed so that they use the userspace expander.  I'm sure
   ;; there's a more robust & elegant way to do this.

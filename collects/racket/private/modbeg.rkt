@@ -121,7 +121,7 @@
                                         #t))])
                       (let-values ([(e) (if wrap?
                                             (datum->syntax
-                                             e
+                                             (quote-syntax here)
                                              (list (quote-syntax #%app)
                                                    (quote-syntax call-with-values)
                                                    (list (quote-syntax lambda)

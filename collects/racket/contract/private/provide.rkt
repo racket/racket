@@ -498,7 +498,7 @@
                                               [super-id (if (boolean? super-id)
                                                             super-id
                                                             (with-syntax ([super-id super-id])
-                                                              (syntax ((syntax-local-certifier) #'super-id))))]
+                                                              (syntax (quote-syntax super-id))))]
                                               [(mutator-id-info ...)
                                                (map (λ (x)
                                                       (syntax-case x ()

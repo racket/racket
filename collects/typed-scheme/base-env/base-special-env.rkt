@@ -26,7 +26,6 @@
              (initialize-type-env initial-env))
            (provide (for-syntax initialize-env))))]))
 
-
 (define-initial-env initialize-special
   ;; make-promise
   [(syntax-parse (local-expand #'(delay 3) 'expression null)
@@ -50,8 +49,7 @@
   [(syntax-parse (local-expand #'(for ([x '()]) x) 'expression #f)
      #:context #'make-sequence
      #:literals (let-values quote)
-     [(let-values ([_ (m-s '(_) '())]) . _)
-      #'m-s])
+     [(let-values ([_ (m-s '(_) '())]) . _) #'m-s])
    (-poly (a b)
           (let ([seq-vals
                  (lambda (a)

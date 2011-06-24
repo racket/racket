@@ -693,7 +693,6 @@ thread_val {
   gcMARK2(pr->current_local_env, gc);
   gcMARK2(pr->current_local_mark, gc);
   gcMARK2(pr->current_local_name, gc);
-  gcMARK2(pr->current_local_certs, gc);
   gcMARK2(pr->current_local_modidx, gc);
   gcMARK2(pr->current_local_menv, gc);
   gcMARK2(pr->current_local_bindings, gc);
@@ -978,7 +977,7 @@ stx_val {
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
   gcMARK2(stx->wraps, gc);
-  gcMARK2(stx->certs, gc);
+  gcMARK2(stx->taints, gc);
   gcMARK2(stx->props, gc);
   if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
     gcMARK2(stx->u.modinfo_cache, gc);
@@ -1058,7 +1057,6 @@ module_phase_exports_val {
   gcMARK2(m->provide_src_names, gc);
   gcMARK2(m->provide_nominal_srcs, gc);
   gcMARK2(m->provide_src_phases, gc);
-  gcMARK2(m->provide_insps, gc);
 
   gcMARK2(m->kernel_exclusion, gc);
   gcMARK2(m->kernel_exclusion2, gc);
@@ -1181,7 +1179,6 @@ mark_comp_env {
   gcMARK2(e->base.prefix, gc);
   gcMARK2(e->base.next, gc);
   gcMARK2(e->base.values, gc);
-  gcMARK2(e->base.certs, gc);
   gcMARK2(e->base.renames, gc);
   gcMARK2(e->base.uid, gc);
   gcMARK2(e->base.uids, gc);
@@ -1289,7 +1286,6 @@ mark_comp_info {
   Scheme_Compile_Info *i = (Scheme_Compile_Info *)p;
   
   gcMARK2(i->value_name, gc);
-  gcMARK2(i->certs, gc);
   gcMARK2(i->observer, gc);
 
  size:
@@ -1646,7 +1642,6 @@ mark_marshal_tables {
   gcMARK2(mt->st_ref_stack, gc);
   gcMARK2(mt->reverse_map, gc);
   gcMARK2(mt->same_map, gc);
-  gcMARK2(mt->cert_lists, gc);
   gcMARK2(mt->shift_map, gc);
   gcMARK2(mt->top_map, gc);
   gcMARK2(mt->key_map, gc);
@@ -2090,7 +2085,6 @@ mark_cport {
   gcMARK2(cp->ht, gc);
   gcMARK2(cp->ut, gc);
   gcMARK2(cp->symtab, gc);
-  gcMARK2(cp->insp, gc);
   gcMARK2(cp->relto, gc);
   gcMARK2(cp->magic_sym, gc);
   gcMARK2(cp->magic_val, gc);
@@ -2129,7 +2123,6 @@ mark_delay_load {
   gcMARK2(ld->path, gc);
   gcMARK2(ld->symtab, gc);
   gcMARK2(ld->shared_offsets, gc);
-  gcMARK2(ld->insp, gc);
   gcMARK2(ld->relto, gc);
   gcMARK2(ld->ut, gc);
   gcMARK2(ld->current_rp, gc);
@@ -2213,6 +2206,7 @@ mark_rename_table {
   gcMARK2(rn->set_identity, gc);
   gcMARK2(rn->marked_names, gc);
   gcMARK2(rn->free_id_renames, gc);
+  gcMARK2(rn->insp, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }
@@ -2225,6 +2219,7 @@ mark_rename_table_set {
   gcMARK2(rns->other_phases, gc);
   gcMARK2(rns->share_marked_names, gc);
   gcMARK2(rns->set_identity, gc);
+  gcMARK2(rns->insp, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }
@@ -2246,19 +2241,6 @@ mark_wrapchunk {
   }
  size:
   gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - 1) * sizeof(Scheme_Object *)));
-}
-
-mark_cert {
- mark:
-  Scheme_Cert *c = (Scheme_Cert *)p;
-  gcMARK2(c->mark, gc);
-  gcMARK2(c->modidx, gc);
-  gcMARK2(c->insp, gc);
-  gcMARK2(c->key, gc);
-  gcMARK2(c->mapped, gc);
-  gcMARK2(c->next, gc);
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
 }
 
 lex_rib {

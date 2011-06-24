@@ -693,26 +693,22 @@
                    (make-set!-transformer
                     (make-signature
                      (make-siginfo (list #'#,sigid #'super-name ...)
-                                   (list ((syntax-local-certifier) (quote-syntax signature-tag))
+                                   (list (quote-syntax signature-tag)
                                          #'super-rtime
                                          ...))
                      (list (quote-syntax var) ...)
                      (list (cons (list (quote-syntax vid) ...)
-                                 ((syntax-local-certifier)
-                                  (quote-syntax vbody)))
+                                 (quote-syntax vbody))
                            ...)
                      (list (cons (list (quote-syntax sid) ...)
-                                 ((syntax-local-certifier)
-                                  (quote-syntax sbody)))
+                                 (quote-syntax sbody))
                            ...)
                      (list (cons (list (quote-syntax pvid) ...)
-                                 ((syntax-local-certifier)
-                                  (quote-syntax pvbody)))
+                                 (quote-syntax pvbody))
                            ...)
                      (list #,@(map (lambda (c) 
                                      (if c
-                                         #`((syntax-local-certifier)
-                                            (quote-syntax #,c))
+                                         #`(quote-syntax #,c)
                                          #'#f))
                                    all-ctcs))
                      (quote-syntax #,sigid))))
@@ -1117,7 +1113,7 @@
                  (var-info-id defid)))))
           (syntax->list (localify #'ivars def-ctx)))
          
-         (let ([marker (make-syntax-introducer)])
+         (let ([marker (lambda (id) ((make-syntax-introducer) (datum->syntax #f (syntax-e id))))])
            (with-syntax ([(defn-or-expr ...)
                           (apply append
                                  (map (λ (defn-or-expr)
@@ -1787,7 +1783,7 @@
                  (define u #,exp)
                  (define-syntax name
                    (make-set!-transformer
-                    (make-unit-info ((syntax-local-certifier) (quote-syntax u))
+                    (make-unit-info (quote-syntax u)
                                     (list (cons 'itag (quote-syntax isig)) ...)
                                     (list (cons 'etag (quote-syntax esig)) ...)
                                     (list (cons 'deptag (quote-syntax deptag)) ...)

@@ -50,12 +50,10 @@
                     [(nm . args) #'(macro-xform . args)]
                     [nm (identifier? #'nm) #'macro-xform]
                     [(set! . _)
-                     (raise-syntax-error #f "match expander cannot be target of a set!" stx)]))
-                (syntax-local-certifier))))
+                     (raise-syntax-error #f "match expander cannot be target of a set!" stx)])))))
            (syntax/loc stx
              (define-syntax id
-               (make-match-expander match-xform legacy-xform macro-xform
-                                    (syntax-local-certifier)))))))]
+               (make-match-expander match-xform legacy-xform macro-xform))))))]
     ;; implement legacy syntax
     [(_ id plt-match-xform match-xform std-xform)
      #'(define-match-expander id #:plt-match plt-match-xform

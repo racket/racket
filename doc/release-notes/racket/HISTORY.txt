@@ -1,3 +1,14 @@
+Version 5.1.1.7
+Replaced syntax certificates with syntax taints:
+ Added syntax-tainted?, syntax-arm, syntax-disarm, syntax-rearm,
+  syntax-taint, and syntax-protect
+ Changed syntax-recertify and syntax-local-certifier to
+  have no effect on the target syntax object
+ Changed syntax-rules and syntax-id-rules to use
+  syntax-protect implicitly
+ Changed the way inspectors are associated to syntax objects
+  and variable references in compiled code
+
 Version 5.1.1.2
 Changed "sequence" to include exact nonnegative integers
 mzlib/contract: removed following (undocumented) exports:

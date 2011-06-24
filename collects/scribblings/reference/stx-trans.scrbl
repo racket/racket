@@ -11,7 +11,8 @@
 
 @(define (transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the
-expander, otherwise the @exnraise[exn:fail:contract].})
+expander or while a module is @tech{visit}ed, otherwise the
+@exnraise[exn:fail:contract].})
 
 
 @title[#:tag "stxtrans"]{Syntax Transformers}
@@ -224,16 +225,6 @@ internal definitions is added to @racket[stx] before it is expanded
 also added to the expansion result (because the expansion might
 introduce bindings or references to internal-definition bindings).
 
-Expansion of @racket[stx] can use certificates for the expression
-already being expanded (see @secref["stxcerts"]), and @tech{inactive
-certificates} associated with @racket[stx] are activated for
-@racket[stx] (see @secref["stxcerts"]). Furthermore, if the
-transformer is defined within a module (i.e., the current expansion
-was triggered by a use of a module-defined identifier with a
-@tech{transformer binding}) or if the current expression is being
-expanded for the body of a module, then the expansion of @racket[stx]
-can use any identifier defined by the module.
-
 @transform-time[]
 
 @examples[#:eval stx-eval
@@ -428,15 +419,6 @@ environment, the result is obtained by applying @racket[failure-thunk]
 if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
 @exnraise[exn:fail:contract].
 
-Resolving @racket[id-stx] can use certificates for the expression
-being transformed (see @secref["stxcerts"]) as well as @tech{inactive
-certificates} associated with @racket[id-stx] (see
-@secref["stxcerts"]). Furthermore, if the transformer is defined
-within a module (i.e., the current transformation was triggered by a
-use of a module-defined identifier) or if the current expression is
-being expanded for the body of a module, then resolving
-@racket[id-stx] can access any identifier defined by the module.
-
 @transform-time[]}
 
 
@@ -451,8 +433,7 @@ being expanded for the body of a module, then resolving
 Like @racket[syntax-local-value], but the result is normally two
 values. If @racket[id-stx] is bound to a @tech{rename transformer},
 the results are the rename transformer and the identifier in the
-transformer augmented with certificates from
-@racket[id-stx]. @margin-note*{Beware that @racket[provide] on an
+transformer. @margin-note*{Beware that @racket[provide] on an
 @racket[_id] bound to a @tech{rename transformer} may export the
 target of the rename instead of @racket[_id]. See
 @racket[make-rename-transformer] for more information.} If
@@ -645,40 +626,34 @@ and a module-contextless version of @racket[id-stx] otherwise.
 @transform-time[]}
 
 
+@defproc[(syntax-local-armer)
+         ((syntax?) (any/c any/c) . ->* . syntax?)]{
+
+Returns a procedure that captures the declaration-time code inspector
+of the module in which a syntax transformer was bound (if a syntax
+transformer is being applied) or the module being visited. The result
+is a procedure like @racket[syntax-taint-arm], except that the
+optional third argument is automatically the captured inspector.
+
+The @racket[syntax-local-armer] function is needed by
+macro-generating macros, where a syntax object in the generated macro
+needs to be protected using the code inspector of the generating
+macro's module.
+
+@transform-time[]}
+
 @defproc[(syntax-local-certifier [active? boolean? #f])
          ((syntax?) (any/c (or/c procedure? #f)) 
           . ->* . syntax?)]{
 
-Returns a procedure that captures any certificates currently available
-for @racket[syntax-local-value] or @racket[local-expand]. The
-procedure accepts one to three arguments: @racket[_stx] (required),
-@racket[_key] (optional), and @racket[_intro] (optional). The
-procedure's result is a syntax object like @racket[stx], except that
-it includes the captured certificates as inactive (see
-@secref["stxcerts"]) if @racket[active?] is @racket[#f] (the default)
-or active otherwise. If @racket[key] is supplied and not @racket[#f],
-it is associated with each captured certificate for later use through
-@racket[syntax-recertify]. If @racket[_intro] is supplied, and if it
-is not @racket[#f] (the default), then it must be a procedure created
-by @racket[make-syntax-introducer], in which case the certificate
-applies only to parts of @racket[stx] that are marked as introduced by
-@racket[_intro].
-
-Supply @racket[#t] for @racket[active?] when the syntax to be
-certified can be safely used in any context by any party, and where
-access to the syntax object should not confer any additional
-access. Supply @racket[#f] for @racket[active?] when the syntax to be
-certified is not accessible to parties that might abuse the access
-that the certificate provides, and when the certified syntax
-eventually appears (via macro expansion) within a larger expression
-from which it cannot be safely extracted by other parties.
-
-@transform-time[]}
+For backward compatibility only; returns a procedure that returns its
+first argument.}
 
 @defproc[(syntax-transforming?) boolean?]{
 
 Returns @racket[#t] during the dynamic extent of a @tech{syntax
-transformer} application by the expander, @racket[#f] otherwise.}
+transformer} application by the expander and while a module is being
+@tech{visit}ed, @racket[#f] otherwise.}
 
 
 @defproc[(syntax-local-introduce [stx syntax?]) syntax?]{
@@ -912,11 +887,8 @@ into a module.
          ((syntax?) (or/c #f (syntax? . -> . syntax?)) 
           . ->* . syntax?)]{
 
-Like @racket[syntax-local-certifier], but to certify @tech{syntax
-objects} that correspond to @racket[require] sub-forms, so that
-@racket[expand-import] can deconstruct the @tech{syntax object} as
-necessary to expand it.}
-
+For backward compatibility only; returns a procedure that returns its
+first argument.}
 
 @; ----------------------------------------------------------------------
 
@@ -1006,10 +978,8 @@ A structure representing a single imported identifier:
          ((syntax?) (or/c #f (syntax? . -> . syntax?)) 
           . ->* . syntax?)]{
 
-Like @racket[syntax-local-certifier], but to certify @tech{syntax
-objects} that correspond to @racket[provide] sub-forms, so that
-@racket[expand-export] can deconstruct the @tech{syntax object} as
-necessary to expand it.}
+For backward compatibility only; returns a procedure that returns its
+first argument.}
 
 @; ----------------------------------------------------------------------
 

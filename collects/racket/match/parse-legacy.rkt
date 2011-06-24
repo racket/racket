@@ -9,18 +9,22 @@
          "parse-helper.rkt"
          "parse-quasi.rkt")
 
-(provide parse/legacy/cert)
+(provide parse/legacy)
 
-(define (parse/legacy/cert stx cert)
-  (define (parse stx) (parse/legacy/cert stx cert))
-  (syntax-case* stx (not $ ? and or = quasiquote quote)
+(define orig-insp (current-code-inspector))
+
+(define (parse/legacy stx)
+  (define (rearm new-stx) (syntax-rearm new-stx stx))
+  (define (parse stx) (parse/legacy (rearm stx)))
+  (define disarmed-stx (syntax-disarm stx orig-insp))
+  (syntax-case* disarmed-stx (not $ ? and or = quasiquote quote)
                 (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(expander args ...)
      (and (identifier? #'expander)
           (match-expander?
-           (syntax-local-value (cert #'expander) (lambda () #f))))
+           (syntax-local-value #'expander (lambda () #f))))
      (match-expander-transform
-      parse/legacy/cert cert #'expander stx match-expander-legacy-xform
+      parse #'expander disarmed-stx match-expander-legacy-xform
       "This expander only works with the standard match syntax")]
     [(and p ...)
      (make-And (map parse (syntax->list #'(p ...))))]
@@ -45,18 +49,18 @@
     [#(es ...)
      (make-Vector (map parse (syntax->list #'(es ...))))]
     [($ s . pats)
-     (parse-struct stx cert parse #'s #'pats)]
+     (parse-struct disarmed-stx parse #'s #'pats)]
     [(? p q1 qs ...)
-     (make-And (cons (make-Pred (cert #'p))
+     (make-And (cons (make-Pred #'p)
                      (map parse (syntax->list #'(q1 qs ...)))))]
     [(? p)
-     (make-Pred (cert #'p))]
+     (make-Pred (rearm #'p))]
     [(= f p)
-     (make-App #'f (parse (cert #'p)))]
+     (make-App #'f (parse #'p))]
     [(quasiquote p)
-     (parse-quasi #'p cert parse/legacy/cert)]
+     (parse-quasi #'p parse)]
     [(quote . rest)
-     (parse-quote stx parse)]
+     (parse-quote disarmed-stx parse)]
     [() (make-Null (make-Dummy #f))]
     [(..)
      (ddk? #'..)

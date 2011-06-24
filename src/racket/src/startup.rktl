@@ -132,15 +132,16 @@
       (let-values ([(s) (cdr (syntax->list stx))])
         (let-values ([(bindings) (apply append
                                         (map syntax->list (syntax->list (car s))))])
-          (datum->syntax 
-           here-stx
-           (list 'with-continuation-mark
-                 'parameterization-key
-                 (list* 'extend-parameterization
-                        '(continuation-mark-set-first #f parameterization-key)
-                        bindings)
-                 (list* 'let-values ()
-                        (cdr s))))))))
+          (syntax-arm
+           (datum->syntax 
+            here-stx
+            (list 'with-continuation-mark
+                  'parameterization-key
+                  (list* 'extend-parameterization
+                         '(continuation-mark-set-first #f parameterization-key)
+                         bindings)
+                  (list* 'let-values ()
+                         (cdr s)))))))))
 
   (define-syntaxes (cond)
     (lambda (stx)

@@ -2,10 +2,11 @@
 (require (for-syntax syntax/parse racket/base syntax/id-table racket/dict
                      unstable/debug))
 
+(define-for-syntax code-insp (current-code-inspector))
+
 (define-for-syntax (rewrite stx tbl from)
   (define (rw stx) 
-    (syntax-recertify 
-     (syntax-parse stx #:literal-sets (kernel-literals)
+     (syntax-parse (syntax-disarm stx code-insp) #:literal-sets (kernel-literals)
        [i:identifier
         (dict-ref tbl #'i #'i)]
        ;; no expressions here
@@ -34,10 +35,7 @@
                (~or if begin begin0 set! #%plain-app #%expression
                     #%variable-reference with-continuation-mark))
          expr ...)
-        (quasisyntax/loc stx (#,#'kw #,@(map rw (syntax->list #'(expr ...)))))])
-     stx
-     (current-code-inspector)
-     #f))
+        (quasisyntax/loc stx (#,#'kw #,@(map rw (syntax->list #'(expr ...)))))]))
   (rw stx))
 
 (define-syntax (define-rewriter stx)

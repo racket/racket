@@ -1735,8 +1735,11 @@ static void do_wrong_syntax(const char *where,
 
   if (SCHEME_FALSEP(form))
     form = extra_sources;
-  else
+  else {
+    if (SCHEME_STXP(form))
+      form = scheme_stx_taint(form);
     form = scheme_make_pair(form, extra_sources);
+  }
 
   scheme_raise_exn(MZEXN_FAIL_SYNTAX, 
 		   form,

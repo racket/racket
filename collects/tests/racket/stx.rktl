@@ -737,38 +737,39 @@
 ;; protected identifiers
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(module ++p scheme/base
-  (require (for-syntax scheme/base))
+(module ++p racket/base
+  (require (for-syntax racket/base))
   (define ++c 12)
-  (define-syntax (++goo stx) #'++c)
+  (define-syntax (++goo stx) (syntax-protect #'++c))
   (provide ++goo))
-(module ++q scheme/base
+(module ++q racket/base
   (require (for-syntax '++p
-                       scheme/base))
+                       racket/base))
   (define ++d 11)
-  (define-syntax (++o stx) #'++d)
+  (define-syntax (++o stx) (syntax-protect #'++d))
   (define-syntax (++s stx)
     (syntax-case stx ()
-      [(_ id) #'(define-syntax (id stx)
-                  (datum->syntax #'here (++goo)))]))
-  (define-syntax (++t stx) (syntax-case stx () [(_ id) #'(define-values (id) ++d)]))
-  (define-syntax (++t2 stx) #'(begin ++d))
-  (define-syntax (++t3 stx) (syntax-property #'(begin0 ++d) 'certify-mode 'transparent))
-  (define-syntax (++t4 stx) (syntax-case stx () [(_ id) #'(define id ++d)]))
-  (define-syntax (++v stx) #'(begin0 ++d))
-  (define-syntax (++v2 stx) #'(++d))
-  (define-syntax (++v3 stx) (syntax-property #'(begin ++d) 'certify-mode 'opaque))
+      [(_ id) (syntax-protect
+               #'(define-syntax (id stx)
+                   (datum->syntax #'here (++goo))))]))
+  (define-syntax (++t stx) (syntax-case stx () [(_ id) (syntax-protect #'(define-values (id) ++d))]))
+  (define-syntax (++t2 stx) (syntax-protect #'(begin ++d)))
+  (define-syntax (++t3 stx) (syntax-protect (syntax-property #'(begin0 ++d) 'certify-mode 'transparent)))
+  (define-syntax (++t4 stx) (syntax-case stx () [(_ id) (syntax-protect #'(define id ++d))]))
+  (define-syntax (++v stx) (syntax-protect #'(begin0 ++d)))
+  (define-syntax (++v2 stx) (syntax-protect #'(++d)))
+  (define-syntax (++v3 stx) (syntax-protect (syntax-property #'(begin ++d) 'certify-mode 'opaque)))
   (define-syntax ++ds 17)
   (define-syntax (++check-val stx)
     (syntax-case stx ()
-      [(_ id) (datum->syntax #'here (add1 (syntax-local-value #'id)))]))
-  (define-syntax (++o2 stx) #'(++check-val ++ds))
+      [(_ id) (syntax-protect (datum->syntax #'here (add1 (syntax-local-value #'id))))]))
+  (define-syntax (++o2 stx) (syntax-protect #'(++check-val ++ds)))
   (define-syntax (++apply-to-ds stx)
     (syntax-case stx ()
-      [(_ id) #'(id ++ds)]))
+      [(_ id) (syntax-protect #'(id ++ds))]))
   (define-syntax (++apply-to-d stx)
     (syntax-case stx ()
-      [(_ id) #'(id ++d)]))
+      [(_ id) (syntax-protect #'(id ++d))]))
   (provide ++o ++o2 ++s ++t ++t2 ++t3 ++t4 ++v ++v2 ++v3
            ++apply-to-d ++apply-to-ds))
 
@@ -807,25 +808,27 @@
                         [(_ x) #'x]))
                exn:fail:syntax?))
 
-(let ([expr (expand-syntax #'++v)])
-  (test expr syntax-recertify expr expr (current-inspector) #f)
-    (let ([new (syntax-recertify #'no-marks expr (current-inspector) #f)])
-      (test #t syntax? new)
-      (test 'no-marks syntax-e new))
-    (test #t syntax? (syntax-recertify (syntax-case expr ()
-                                         [(beg id) #'beg])
-                                       expr (current-inspector) #f))
-    ;; we'd prefer this to fail, but it's defined to succeed:
-    (test #t syntax? (syntax-recertify (syntax-case expr ()
-                                         [(beg id) #'id])
-                                       expr (current-inspector) #f))
-    (test #t syntax? (syntax-recertify (datum->syntax expr (syntax-e expr))
-                                       expr (current-inspector) #f))
-    ;; we'd prefer this to fail, but it's defined to succeed:
-    (test #t syntax? (syntax-recertify (syntax-case expr ()
-                                         [(beg id) #'(ack id)])
-                                       expr (current-inspector) #f)))
+(let ([expr (expand-syntax #'++v)]
+      [disarm (lambda (stx)
+                (syntax-disarm stx (current-code-inspector)))])
+  (test expr syntax-protect expr)
+  (let ([new (syntax-protect #'no-marks)])
+    (test #t syntax? new)
+    (test 'no-marks syntax-e new))
+  (test #t (lambda (v) (and (syntax? v) (syntax-tainted? v)))
+        (syntax-case expr ()
+          [(beg id) #'beg]))
+  (test #t (lambda (v) (and (syntax? v) (not (syntax-tainted? v))))
+        (syntax-case (disarm expr) ()
+          [(beg id) #'beg]))
+  (test #t (lambda (v) (and (syntax? v) (syntax-tainted? v)))
+        (syntax-case (disarm (datum->syntax expr (syntax-e expr))) ()
+          [(beg id) #'beg]))
+  (test #t (lambda (v) (and (syntax? v) (not (syntax-tainted? v))))
+        (syntax-case (let ([expr (disarm expr)]) (datum->syntax expr (syntax-e expr))) ()
+          [(beg id) #'beg])))
 
+#;
 (let ([expr (expand-syntax #'(++apply-to-d ack))])
   (test '(#%app (#%top . ack) ++d) syntax->datum expr)
   (let ([try (lambda (cvt? other)
@@ -857,16 +860,16 @@
 (module ++m scheme/base
   (require (for-syntax scheme/base))
   (define ++x 10)
-  (define-syntax (++xm stx) #'100)
+  (define-syntax (++xm stx) (syntax-protect #'100))
   (provide (protect-out ++x ++xm)))
 (module ++n scheme/base
   (require (for-syntax scheme/base)
            '++m)
   (define ++y ++x)
-  (define-syntax (++y-macro stx) #'++x)
-  (define-syntax (++y-macro2 stx) (datum->syntax stx '++x))
-  (define-syntax (++u-macro stx) #'++u)
-  (define-syntax ++u2 (make-rename-transformer #'++u))
+  (define-syntax (++y-macro stx) (syntax-protect #'++x))
+  (define-syntax (++y-macro2 stx) (syntax-protect (datum->syntax stx '++x)))
+  (define-syntax (++u-macro stx) (syntax-protect #'++u))
+  (define-syntax ++u2 (make-rename-transformer (syntax-protect #'++u)))
   (define ++u 8) ; unexported
   (provide ++y ++y-macro ++y-macro2 ++u-macro ++u2))
 (require '++n)
@@ -883,10 +886,10 @@
 (test 10 values ++y-macro2)
 
 (let ()
-  (define n (current-namespace))
-  (define n2 (make-base-empty-namespace))
   (define i (make-inspector))
-
+  (define n (current-namespace))
+  (define n2 (parameterize ([current-code-inspector i])
+               (make-base-empty-namespace)))
 
   (parameterize ([current-namespace n2])
     (namespace-attach-module n ''++n))
@@ -1476,6 +1479,52 @@
   (error-test #'a-rule-pattern no-match?)
   (error-test #'(a-rule-pattern) no-match?)
   (error-test #'(a-rule-pattern 1) no-match?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Extra taint tests
+
+(define (syntax-touch s) (datum->syntax s (syntax-e s)))
+
+(test #f syntax-tainted? #'x)
+(test #f syntax-tainted? (syntax-touch #'x))
+(test #f syntax-tainted? (syntax-arm #'x))
+(test #t syntax-tainted? (syntax-touch (syntax-arm #'x)))
+(test #t syntax-tainted? (car (syntax-e (syntax-arm #'(x y)))))
+
+(test #f syntax-tainted? (car (syntax-e (syntax-arm (syntax-property #'(x y) 
+                                                                     'taint-mode
+                                                                     'transparent)
+                                                    #f #t))))
+(test #f syntax-tainted? (car (syntax-e (syntax-arm (syntax-property #'(x y) 
+                                                                     'certify-mode
+                                                                     'transparent)
+                                                    #f #t))))
+(test #f ormap syntax-tainted? (syntax-e (syntax-arm #'(begin x) #f #t)))
+(test #t andmap syntax-tainted? (syntax-e (syntax-arm (syntax-property #'(begin x)
+                                                                       'taint-mode
+                                                                       'opaque)
+                                                      #f #t)))
+
+(test #f andmap syntax-tainted? (syntax-e (cadr (syntax-e (syntax-arm #'(define-values (x y z) (values 1 2 3))
+                                                                      #f #t)))))
+(test #f andmap syntax-tainted? (syntax-e 
+                                 (cadr 
+                                  (syntax-e 
+                                   (cadr 
+                                    (syntax-e 
+                                     (syntax-arm #'(begin (define-values (x y z) (values 1 2 3)))
+                                                 #f #t)))))))
+
+(let ([round-trip
+       (lambda (stx)
+         (parameterize ([current-namespace (make-base-namespace)])
+           (let ([s (open-output-bytes)])
+             (write (compile `(quote-syntax ,stx)) s)
+             (parameterize ([read-accept-compiled #t])
+               (eval (read (open-input-bytes (get-output-bytes s))))))))])
+  (test #f syntax-tainted? (round-trip (syntax-arm (quote-syntax foo))))
+  (test #t syntax-tainted? (syntax-touch (round-trip (syntax-arm (quote-syntax foo)))))
+  (test #t syntax-tainted? (round-trip (syntax-touch (syntax-arm (quote-syntax foo))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

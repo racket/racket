@@ -5,6 +5,10 @@
          (for-template scheme/base "class-events.rkt")
          "define-struct.rkt")
 
+(define insp (current-code-inspector))
+(define (class-syntax-protect stx)
+  (syntax-arm stx insp #t))
+
 (define-values (struct:s!t make-s!t s!t? s!t-ref s!t-set!)
   (make-struct-type 'set!-transformer #f 2 0 #f null (current-inspector) 0))
 
@@ -66,58 +70,60 @@
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
-       (with-syntax ([obj-expr (find the-finder the-obj stx)])
-         (syntax-case stx ()
-           [(set! id expr)
-            (free-identifier=? (syntax set!) set!-stx)
-            (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [id expr]))]
-                          [trace (syntax/loc stx (set-event obj (quote id) id))]
-                          [set (quasisyntax/loc stx
-                                 ((unsyntax field-mutator) obj id))])
-              (if trace-flag
-                  (syntax/loc stx (let* bindings trace set))
-                  (syntax/loc stx (let* bindings set))))]
-           [(id . args)
-            (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
-                          [trace (syntax/loc stx (get-event obj (quote id)))]
-                          [call (quasisyntax/loc stx
-                                  (((unsyntax field-accessor) obj) . args))])
-              (if trace-flag
-                  (syntax/loc stx (let* bindings trace call))
-                  (syntax/loc stx (let* bindings call))))]
-           [id
-            (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
-                          [trace (syntax/loc stx (get-event obj (quote id)))]
-                          [get (quasisyntax/loc stx
-                                 ((unsyntax field-accessor) obj))])
-              (if trace-flag
-                  (syntax/loc stx (let* bindings trace get))
-                  (syntax/loc stx (let* bindings get))))]))))))
+       (class-syntax-protect
+        (with-syntax ([obj-expr (find the-finder the-obj stx)])
+          (syntax-case stx ()
+            [(set! id expr)
+             (free-identifier=? (syntax set!) set!-stx)
+             (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [id expr]))]
+                           [trace (syntax/loc stx (set-event obj (quote id) id))]
+                           [set (quasisyntax/loc stx
+                                  ((unsyntax field-mutator) obj id))])
+               (if trace-flag
+                   (syntax/loc stx (let* bindings trace set))
+                   (syntax/loc stx (let* bindings set))))]
+            [(id . args)
+             (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
+                           [trace (syntax/loc stx (get-event obj (quote id)))]
+                           [call (quasisyntax/loc stx
+                                   (((unsyntax field-accessor) obj) . args))])
+               (if trace-flag
+                   (syntax/loc stx (let* bindings trace call))
+                   (syntax/loc stx (let* bindings call))))]
+            [id
+             (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
+                           [trace (syntax/loc stx (get-event obj (quote id)))]
+                           [get (quasisyntax/loc stx
+                                  ((unsyntax field-accessor) obj))])
+               (if trace-flag
+                   (syntax/loc stx (let* bindings trace get))
+                   (syntax/loc stx (let* bindings get))))])))))))
 
 (define (make-method-map the-finder the-obj the-binder the-binder-localized method-accessor)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
-       (syntax-case stx ()
-         [(set! id expr)
-          (free-identifier=? (syntax set!) set!-stx)
-          (raise-syntax-error 'class "cannot mutate method" stx)]
-         [(id . args)
-          (binding
-           the-binder (syntax id)
-           (datum->syntax 
-            the-finder
-            (make-method-apply
-             (list method-accessor (find the-finder the-obj stx))
-             (find the-finder the-obj stx)
-             (syntax args))
-            stx))]
-         [_else
-          (raise-syntax-error 
-           'class 
-           "misuse of method (not in application)" 
-           stx)])))))
+       (class-syntax-protect
+        (syntax-case stx ()
+          [(set! id expr)
+           (free-identifier=? (syntax set!) set!-stx)
+           (raise-syntax-error 'class "cannot mutate method" stx)]
+          [(id . args)
+           (binding
+            the-binder (syntax id)
+            (datum->syntax 
+             the-finder
+             (make-method-apply
+              (list method-accessor (find the-finder the-obj stx))
+              (find the-finder the-obj stx)
+              (syntax args))
+             stx))]
+          [_else
+           (raise-syntax-error 
+            'class 
+            "misuse of method (not in application)" 
+            stx)]))))))
 
 ;; For methods that are dirrectly available via their names
 ;;  (e.g., private methods)
@@ -126,44 +132,46 @@
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
-       (syntax-case stx ()
-         [(set! id expr)
-          (free-identifier=? (syntax set!) set!-stx)
-          (raise-syntax-error 'class "cannot mutate method" stx)]
-         [(id . args)
-          (binding
-           the-binder (syntax id)
-           (datum->syntax 
-            the-finder
-            (make-method-apply (find the-finder new-name stx) (find the-finder the-obj stx) (syntax args))
-            stx))]
-         [_else
-          (raise-syntax-error 
-           'class 
-           "misuse of method (not in application)" 
-           stx)])))))
+       (class-syntax-protect
+        (syntax-case stx ()
+          [(set! id expr)
+           (free-identifier=? (syntax set!) set!-stx)
+           (raise-syntax-error 'class "cannot mutate method" stx)]
+          [(id . args)
+           (binding
+            the-binder (syntax id)
+            (datum->syntax 
+             the-finder
+             (make-method-apply (find the-finder new-name stx) (find the-finder the-obj stx) (syntax args))
+             stx))]
+          [_else
+           (raise-syntax-error 
+            'class 
+            "misuse of method (not in application)" 
+            stx)]))))))
 
 (define (make-rename-super-map the-finder the-obj the-binder the-binder-localized rename-temp)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
-       (syntax-case stx ()
-         [(set! id expr)
-          (free-identifier=? (syntax set!) set!-stx)
-          (raise-syntax-error 'class "cannot mutate super method" stx)]
-         [(id . args)
-          (binding
-           the-binder (syntax id)
-           (datum->syntax 
-            the-finder
-            (make-method-apply (find the-finder rename-temp stx) (find the-finder the-obj stx) (syntax args))
-            stx))]
-         [_else
-          (raise-syntax-error 
-           'class 
-           "misuse of super method (not in application)" 
-           stx)])))))
+       (class-syntax-protect
+        (syntax-case stx ()
+          [(set! id expr)
+           (free-identifier=? (syntax set!) set!-stx)
+           (raise-syntax-error 'class "cannot mutate super method" stx)]
+          [(id . args)
+           (binding
+            the-binder (syntax id)
+            (datum->syntax 
+             the-finder
+             (make-method-apply (find the-finder rename-temp stx) (find the-finder the-obj stx) (syntax args))
+             stx))]
+          [_else
+           (raise-syntax-error 
+            'class 
+            "misuse of super method (not in application)" 
+            stx)]))))))
 
 (define (make-rename-inner-map the-finder the-obj the-binder the-binder-localized rename-temp)
   (let ([set!-stx (datum->syntax the-finder 'set!)]
@@ -171,63 +179,66 @@
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
-       (syntax-case stx ()
-         [(set! id expr)
-          (free-identifier=? (syntax set!) set!-stx)
-          (raise-syntax-error 'class "cannot mutate inner method" stx)]
-         [(id (lambda () default) . args)
-          (free-identifier=? (syntax lambda) lambda-stx)
-          (let ([target (find the-finder the-obj stx)])
-            (binding
-             the-binder (syntax id)
-             (datum->syntax 
-              the-finder
-              (make-method-apply (list (find the-finder rename-temp stx) target #'default)
-                                 target (syntax args))
-              stx)))]
-         [(id (lambda largs default) . args)
-          (free-identifier=? (syntax lambda) lambda-stx)
-          (raise-syntax-error 
-           'class 
-           "misuse of inner method (lambda for default does not take zero arguments)" 
-           stx)]
-         [(id (lambda . rest) . args)
-          (free-identifier=? (syntax lambda) lambda-stx)
-          (raise-syntax-error 
-           'class 
-           "misuse of inner method (ill-formed lambda for default)" 
-           stx)]
-         [(id . args)
-          (raise-syntax-error 
-           'class 
-           "misuse of inner method (no lambda-wrapped default after name)" 
-           stx)]
-         [_else
-          (raise-syntax-error 
-           'class 
-           "misuse of inner method (not in application)" 
-           stx)])))))
+       (class-syntax-protect
+        (syntax-case stx ()
+          [(set! id expr)
+           (free-identifier=? (syntax set!) set!-stx)
+           (raise-syntax-error 'class "cannot mutate inner method" stx)]
+          [(id (lambda () default) . args)
+           (free-identifier=? (syntax lambda) lambda-stx)
+           (let ([target (find the-finder the-obj stx)])
+             (binding
+              the-binder (syntax id)
+              (datum->syntax 
+               the-finder
+               (make-method-apply (list (find the-finder rename-temp stx) target #'default)
+                                  target (syntax args))
+               stx)))]
+          [(id (lambda largs default) . args)
+           (free-identifier=? (syntax lambda) lambda-stx)
+           (raise-syntax-error 
+            'class 
+            "misuse of inner method (lambda for default does not take zero arguments)" 
+            stx)]
+          [(id (lambda . rest) . args)
+           (free-identifier=? (syntax lambda) lambda-stx)
+           (raise-syntax-error 
+            'class 
+            "misuse of inner method (ill-formed lambda for default)" 
+            stx)]
+          [(id . args)
+           (raise-syntax-error 
+            'class 
+            "misuse of inner method (no lambda-wrapped default after name)" 
+            stx)]
+          [_else
+           (raise-syntax-error 
+            'class 
+            "misuse of inner method (not in application)" 
+            stx)]))))))
 
 (define (generate-super-call stx the-finder the-obj rename-temp args)
-  (datum->syntax 
-   the-finder
-   (make-method-apply (find the-finder rename-temp stx) 
-                      (find the-finder the-obj stx) 
-                      args)
-   stx))
+  (class-syntax-protect
+   (datum->syntax 
+    the-finder
+    (make-method-apply (find the-finder rename-temp stx) 
+                       (find the-finder the-obj stx) 
+                       args)
+    stx)))
 
 (define (generate-inner-call stx the-finder the-obj default-expr rename-temp args)
-  (datum->syntax 
-   the-finder
-   (let ([target (find the-finder the-obj stx)])
-     (datum->syntax 
-      the-finder
-      `(let ([i (,(find the-finder rename-temp stx) ,target)])
-         (if i
-             ,(make-method-apply 'i target args)
-             ,default-expr))
-      stx))
-   stx))
+  (class-syntax-protect
+   (datum->syntax 
+    the-finder
+    (let ([target (find the-finder the-obj stx)])
+      (datum->syntax 
+       the-finder
+       `(let ([i (,(find the-finder rename-temp stx) ,target)])
+          (if i
+              ,(make-method-apply 'i target args)
+              ,default-expr))
+       stx))
+    stx)))
 
 (define (make-init-error-map localized-id)
   (mk-set!-trans
@@ -242,20 +253,21 @@
   (mk-set!-trans
    localized-id
    (lambda (stx)
-     (syntax-case stx ()
-       [(set! id expr)
-        (free-identifier=? (syntax set!) set!-stx)
-        (with-syntax ([local-id local-id])
-          (syntax/loc stx (set! local-id expr)))]
-       [(id . args)
-        (with-syntax ([local-id local-id]
-                      [#%app #%app-stx])
-          (syntax/loc stx (#%app local-id . args)))]
-       [_else (datum->syntax
-               local-id
-               (syntax-e local-id)
-               stx
-               stx)]))))
+     (class-syntax-protect
+      (syntax-case stx ()
+        [(set! id expr)
+         (free-identifier=? (syntax set!) set!-stx)
+         (with-syntax ([local-id local-id])
+           (syntax/loc stx (set! local-id expr)))]
+        [(id . args)
+         (with-syntax ([local-id local-id]
+                       [#%app #%app-stx])
+           (syntax/loc stx (#%app local-id . args)))]
+        [_else (datum->syntax
+                local-id
+                (syntax-e local-id)
+                stx
+                stx)])))))
 
 (define super-error-map
   (lambda (stx)
@@ -268,30 +280,31 @@
                               method-stx method-obj-stx)
   (make-set!-transformer
    (lambda (stx)
-     (syntax-case stx ()
-       [(set! id expr)
-        (and (identifier? (syntax id))
-             (free-identifier=? (syntax set!) set!-stx))
-        (raise-syntax-error 'with-method "cannot mutate method" stx)]
-       [(id . args)
-        (identifier? (syntax id))
-        (let* ([args-stx (syntax args)]
-               [proper? (stx-list? args-stx)]
-               [flat-args-stx (if proper? args-stx (flatten-args args-stx))])
-          (make-method-call
-           trace-flag
-           stx
-           method-obj-stx
-           method-stx
-           (syntax (quote id))
-           flat-args-stx
-           (not proper?)))]
-       [id
-        (identifier? (syntax id))
-        (raise-syntax-error 
-         'with-method 
-         "misuse of method (not in application)" 
-         stx)]))))
+     (class-syntax-protect
+      (syntax-case stx ()
+        [(set! id expr)
+         (and (identifier? (syntax id))
+              (free-identifier=? (syntax set!) set!-stx))
+         (raise-syntax-error 'with-method "cannot mutate method" stx)]
+        [(id . args)
+         (identifier? (syntax id))
+         (let* ([args-stx (syntax args)]
+                [proper? (stx-list? args-stx)]
+                [flat-args-stx (if proper? args-stx (flatten-args args-stx))])
+           (make-method-call
+            trace-flag
+            stx
+            method-obj-stx
+            method-stx
+            (syntax (quote id))
+            flat-args-stx
+            (not proper?)))]
+        [id
+         (identifier? (syntax id))
+         (raise-syntax-error 
+          'with-method 
+          "misuse of method (not in application)" 
+          stx)])))))
 
 (define (flatten-args orig-args)
   (let loop ([args orig-args][accum null])
@@ -347,24 +360,25 @@
     (syntax-case stx ()
       [(form body) (syntax/loc stx (quasisyntax/loc source-stx body))]))
   
-  (with-syntax ([object object-stx]
-                [method method-proc-stx]
-                [app (if rest-arg? (qstx apply) (qstx #%app))]
-                [args args-stx])
-    (if traced?
-        (with-syntax ([(mth obj) (generate-temporaries
-                                  (list object-stx method-proc-stx))]
-                      [name method-name-stx]
-                      [(arg ...) (qstx args)]
-                      [(var ...) (generate-temporaries (qstx args))])
-          (qstx (let ([mth method]
-                      [obj object]
-                      [var arg] ...)
-                  (initialize-call-event
-                   obj name (app list var ...))
-                  (call-with-values (lambda () (app mth obj var ...))
-                                    finalize-call-event))))
-        (qstx (app method object . args)))))
+  (class-syntax-protect
+   (with-syntax ([object object-stx]
+                 [method method-proc-stx]
+                 [app (if rest-arg? (qstx apply) (qstx #%app))]
+                 [args args-stx])
+     (if traced?
+         (with-syntax ([(mth obj) (generate-temporaries
+                                   (list object-stx method-proc-stx))]
+                       [name method-name-stx]
+                       [(arg ...) (qstx args)]
+                       [(var ...) (generate-temporaries (qstx args))])
+           (qstx (let ([mth method]
+                       [obj object]
+                       [var arg] ...)
+                   (initialize-call-event
+                    obj name (app list var ...))
+                   (call-with-values (lambda () (app mth obj var ...))
+                     finalize-call-event))))
+         (qstx (app method object . args))))))
 
 (provide (protect-out make-this-map make-this%-map make-field-map make-method-map 
                       make-direct-method-map 

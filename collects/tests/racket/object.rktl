@@ -1216,13 +1216,13 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that a macro expansion to init, etc,
-;; is certified correctly:
+;; is taint-armed correctly:
 
-(define (check-class-cert form rename?)
-  (define class-cert-%%-init (gensym 'class-cert-%%-init))
-  (define class-cert-%%-client (gensym 'class-cert-%%-client))
+(define (check-class-taint form rename?)
+  (define class-taint-%%-init (gensym 'class-taint-%%-init))
+  (define class-taint-%%-client (gensym 'class-taint-%%-client))
   (teval
-   `(module ,class-cert-%%-init mzscheme
+   `(module ,class-taint-%%-init mzscheme
       (require mzlib/class)
       (define-syntax (init-private stx)
 	(syntax-case stx ()
@@ -1234,12 +1234,12 @@
 			 value))
 		 (define name internal-name)))]))
       (provide (all-defined))))
-  ;; Shouldn't fail with a cert erorr:
+  ;; Shouldn't fail with a taint erorr:
   (teval
-   `(module ,class-cert-%%-client mzscheme
+   `(module ,class-taint-%%-client mzscheme
       (require mzlib/class
-	       ',class-cert-%%-init)
-      (define cert-error%
+	       ',class-taint-%%-init)
+      (define taint-error%
 	(class object%
 	  (init-private thing "value")
 	  (define/public (to-string)
@@ -1247,9 +1247,9 @@
 	  (super-new))))))
 
 (map (lambda (rename?)
-       (check-class-cert 'init rename?)
-       (check-class-cert 'field rename?) 
-       (check-class-cert 'init-field rename?))
+       (check-class-taint 'init rename?)
+       (check-class-taint 'field rename?) 
+       (check-class-taint 'init-field rename?))
      '(#t #f))
 
 

@@ -17,6 +17,6 @@
          struct*
          exn:misc:match?)
 
-(define-forms parse/cert
+(define-forms parse
   match match* match-lambda match-lambda* match-lambda** match-let match-let*
   match-define match-letrec match/derived match*/derived)

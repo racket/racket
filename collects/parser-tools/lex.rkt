@@ -189,14 +189,12 @@
                      (normalize-definition (syntax (define-syntax name-form body-form)) #'lambda)))
          
          #`(define-syntax #,name 
-             (let ((certifier (syntax-local-certifier))
-                   (func #,body))
+             (let ((func #,body))
                (unless (procedure? func)
                  (raise-syntax-error 'define-lex-trans "expected a procedure as the transformer, got ~e" func))
                (unless (procedure-arity-includes? func 1)
                  (raise-syntax-error 'define-lex-trans "expected a procedure that accepts 1 argument as the transformer, got ~e" func))
-               (make-lex-trans (lambda (stx)
-                                 (certifier (func stx) 'a)))))))
+               (make-lex-trans func)))))
       (_
        (raise-syntax-error
         #f
@@ -366,8 +364,8 @@
   (create-unicode-abbrevs #'here)
   
   (define-lex-trans (char-set stx)
-                    (syntax-case stx ()
-                      ((_ str)
+    (syntax-case stx ()
+      ((_ str)
        (string? (syntax-e (syntax str)))
        (with-syntax (((char ...) (string->list (syntax-e (syntax str)))))
          (syntax (union char ...))))))

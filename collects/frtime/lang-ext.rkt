@@ -707,6 +707,8 @@
           free ...)
          (lambda forms body ...))]))
 
+(define-for-syntax code-insp (current-code-inspector))
+
 (define-syntax (command-lambda stx)
   
   (define (arglist-bindings arglist-stx)
@@ -723,13 +725,12 @@
   (define (make-snapshot-unbound insp unbound-ids)
     (lambda (expr bound-ids)
       (let snapshot-unbound ([expr expr] [bound-ids bound-ids])
-        (syntax-recertify
-         (syntax-case expr (#%datum
-                            quote
-                            #%top
-                            let-values
-                            letrec-values
-                            lambda)
+        (syntax-case (syntax-disarm expr code-insp) (#%datum
+                                                     quote
+                                                     #%top
+                                                     let-values
+                                                     letrec-values
+                                                     lambda)
            [x (identifier? #'x) (if (or
                                      (syntax-property #'x 'protected)
                                      (ormap (lambda (id)
@@ -775,8 +776,7 @@
               #'(tag new-exp ...))]
            [x (begin
                 (fprintf (current-error-port) "snapshot-unbound: fell through on ~a\n" #'x)
-                '())])
-         expr insp #f))))
+                '())]))))
   
   (syntax-case stx ()
     [(src-command-lambda (id ...) expr ...)

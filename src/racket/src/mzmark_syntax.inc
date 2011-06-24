@@ -15,6 +15,7 @@ static int mark_rename_table_MARK(void *p, struct NewGC *gc) {
   gcMARK2(rn->set_identity, gc);
   gcMARK2(rn->marked_names, gc);
   gcMARK2(rn->free_id_renames, gc);
+  gcMARK2(rn->insp, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }
@@ -29,6 +30,7 @@ static int mark_rename_table_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(rn->set_identity, gc);
   gcFIXUP2(rn->marked_names, gc);
   gcFIXUP2(rn->free_id_renames, gc);
+  gcFIXUP2(rn->insp, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }
@@ -49,6 +51,7 @@ static int mark_rename_table_set_MARK(void *p, struct NewGC *gc) {
   gcMARK2(rns->other_phases, gc);
   gcMARK2(rns->share_marked_names, gc);
   gcMARK2(rns->set_identity, gc);
+  gcMARK2(rns->insp, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }
@@ -60,6 +63,7 @@ static int mark_rename_table_set_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(rns->other_phases, gc);
   gcFIXUP2(rns->share_marked_names, gc);
   gcFIXUP2(rns->set_identity, gc);
+  gcFIXUP2(rns->insp, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }
@@ -119,39 +123,6 @@ static int mark_wrapchunk_FIXUP(void *p, struct NewGC *gc) {
 
 #define mark_wrapchunk_IS_ATOMIC 0
 #define mark_wrapchunk_IS_CONST_SIZE 0
-
-
-static int mark_cert_SIZE(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
-}
-
-static int mark_cert_MARK(void *p, struct NewGC *gc) {
-  Scheme_Cert *c = (Scheme_Cert *)p;
-  gcMARK2(c->mark, gc);
-  gcMARK2(c->modidx, gc);
-  gcMARK2(c->insp, gc);
-  gcMARK2(c->key, gc);
-  gcMARK2(c->mapped, gc);
-  gcMARK2(c->next, gc);
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
-}
-
-static int mark_cert_FIXUP(void *p, struct NewGC *gc) {
-  Scheme_Cert *c = (Scheme_Cert *)p;
-  gcFIXUP2(c->mark, gc);
-  gcFIXUP2(c->modidx, gc);
-  gcFIXUP2(c->insp, gc);
-  gcFIXUP2(c->key, gc);
-  gcFIXUP2(c->mapped, gc);
-  gcFIXUP2(c->next, gc);
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
-}
-
-#define mark_cert_IS_ATOMIC 0
-#define mark_cert_IS_CONST_SIZE 1
 
 
 static int lex_rib_SIZE(void *p, struct NewGC *gc) {

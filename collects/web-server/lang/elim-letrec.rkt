@@ -13,10 +13,10 @@
 ; Eliminates letrec-values from syntax[2] and correctly handles references to 
 ; letrec-bound variables [3] therein. 
 (define ((elim-letrec ids) stx)
-  (recertify
+  (rearm
    stx
    (kernel-syntax-case
-       stx (transformer?)
+       (disarm stx) (transformer?)
      [(begin be ...)
       (with-syntax ([(be ...) (map (elim-letrec ids) (syntax->list #'(be ...)))])
         (syntax/loc stx

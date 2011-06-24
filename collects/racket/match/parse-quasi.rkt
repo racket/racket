@@ -30,13 +30,13 @@
         [else (error 'match "illegal input to append-pats")]))
 
 ;; parse stx as a quasi-pattern
-;; parse/cert parses unquote
-(define (parse-quasi stx cert parse/cert)
-  (define (pq s) (parse-quasi s cert parse/cert))
+;; parse parses unquote
+(define (parse-quasi stx parse)
+  (define (pq s) (parse-quasi s parse))
   (syntax-case stx (quasiquote unquote quote unquote-splicing)
-    [(unquote p) (parse/cert #'p cert)]
+    [(unquote p) (parse #'p)]
     [((unquote-splicing p) . rest)
-     (let ([pat (parse/cert #'p cert)]
+     (let ([pat (parse #'p)]
            [rpat (pq #'rest)])
        (if (null-terminated? pat)
          (append-pats pat rpat)

@@ -424,10 +424,7 @@
   (define saved-code-inspector (current-code-inspector))
   
   (define (rebuild-stx new old)
-    (syntax-recertify (datum->syntax old new old old)
-                      old
-                      saved-code-inspector
-                      #f))
+    (datum->syntax old new old old))
 
   (define break-kind?
     (symbols 'normal-break 'normal-break/values 'result-exp-break

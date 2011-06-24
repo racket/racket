@@ -611,11 +611,12 @@
                              [omit-define-values?
                               (compile-time-defns)]
                              [else #'(begin)])])
-                       (if super-id
-                           (syntax-property result 
-                                            'disappeared-use 
-                                            (syntax-local-introduce super-id))
-                           result)))))))))]
+                       (syntax-protect
+                        (if super-id
+                            (syntax-property result 
+                                             'disappeared-use 
+                                             (syntax-local-introduce super-id))
+                            result))))))))))]
       [(_ _ id . _)
        (not (or (identifier? #'id)
                 (and (syntax->list #'id)

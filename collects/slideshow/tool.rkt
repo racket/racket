@@ -35,15 +35,6 @@ pict snip :
   (define orig-inspector (current-code-inspector))
   (define orig-lcp (current-library-collection-paths))
 
-  (define-syntax syntax/cert 
-    (syntax-rules ()
-      [(_ stx tmpl) (let ([stx stx])
-		      (syntax-recertify
-		       (syntax/loc stx tmpl)
-		       stx
-		       orig-inspector
-		       #f))]))
-
   (define tool@
     (unit 
       (import drscheme:tool^)

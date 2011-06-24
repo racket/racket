@@ -15,6 +15,6 @@
          define-match-expander
          exn:misc:match?)
 
-(define-forms parse/legacy/cert
+(define-forms parse/legacy
   match match* match-lambda match-lambda* match-lambda** match-let match-let*
   match-define match-letrec match/derived match*/derived)

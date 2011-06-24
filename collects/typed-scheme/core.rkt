@@ -11,7 +11,7 @@
          (env type-name-env type-alias-env)
          (r:infer infer)
          (rep type-rep)
-         (except-in (utils utils tc-utils) infer)
+         (except-in (utils utils tc-utils arm) infer)
          (only-in (r:infer infer-dummy) infer-param)
          "tc-setup.rkt")
 
@@ -40,7 +40,7 @@
             [(optimized-body ...) (maybe-optimize #'transformed-body)])
            ;; reconstruct the module with the extra code
            ;; use the regular %#module-begin from `racket/base' for top-level printing
-           #`(#%module-begin optimized-body ... #,after-code check-syntax-help)))))]))
+           (arm #`(#%module-begin optimized-body ... #,after-code check-syntax-help))))))]))
 
 (define (ti-core stx)
   (syntax-parse stx
@@ -53,7 +53,7 @@
        ([optimized-body (car (maybe-optimize #`(#,body2)))])
        (syntax-parse body2
          ;; any of these do not produce an expression to be printed
-         [(head:invis-kw . _) #'optimized-body]
+         [(head:invis-kw . _) (arm #'optimized-body)]
          [_ (let ([ty-str (match type
                             ;; don't print results of type void
                             [(tc-result1: (== -Void type-equal?)) #f]
@@ -64,5 +64,5 @@
                             [x (int-err "bad type result: ~a" x)])])
               (if ty-str
                   #`(let ([type '#,ty-str])
-                      (begin0 optimized-body (display type)))
-                  #'optimized-body))])))]))
+                      (begin0 #,(arm #'optimized-body) (display type)))
+                  (arm #'optimized-body)))])))]))

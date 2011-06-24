@@ -63,18 +63,17 @@
      mutable?)))
 
 ;; stx : the syntax object for the whole pattern
-;; cert : the certifier
 ;; parse : the pattern parser
 ;; struct-name : identifier
 ;; pats : syntax representing the member patterns
 ;; returns a pattern
-(define (parse-struct stx cert parse struct-name pats)
+(define (parse-struct stx parse struct-name pats)
   (let* ([fail (lambda ()
                  (raise-syntax-error
                   'match (format "~a does not refer to a structure definition"
                                  (syntax->datum struct-name))
                   stx struct-name))]
-         [v (syntax-local-value (cert struct-name) fail)])
+         [v (syntax-local-value struct-name fail)])
     (unless (struct-info? v) (fail))
     (let-values ([(id _1 pred acc _2 super)
                   (apply values (extract-struct-info v))])
@@ -95,7 +94,7 @@
         (raise-syntax-error 'match (format "structure ~a does not have an associated predicate"
                                            (syntax->datum struct-name))
                             stx struct-name))
-      (let-values ([(complete? lineage) (get-lineage (cert struct-name))])
+      (let-values ([(complete? lineage) (get-lineage struct-name)])
         (let* (;; the accessors come in reverse order
                [acc (reverse acc)]
                ;; remove the first element, if it's #f
@@ -131,29 +130,26 @@
   (make-And (list (make-Pred pred) (make-App transformer pat))))
 
 ;; transform a match-expander application
-;; parse/cert : stx certifier -> pattern
-;; cert : certifier
+;; parse : stx -> pattern
 ;; expander : identifier
-;; stx : the syntax of the match-expander application
+;; stx : the syntax of the match-expander application (armed)
 ;; accessor : match-expander -> syntax transformer/#f
 ;; error-msg : string
 ;; produces a parsed pattern
-(define (match-expander-transform parse/cert cert expander stx accessor
+(define (match-expander-transform parse expander stx accessor
                                   error-msg)
-  (let* ([expander* (syntax-local-value (cert expander))]
+  (let* ([expander* (syntax-local-value expander)]
          [transformer (accessor expander*)]
          [transformer (if (set!-transformer? transformer)
                           (set!-transformer-procedure transformer)
                           transformer)])
     (unless transformer (raise-syntax-error #f error-msg expander*))
     (let* ([introducer (make-syntax-introducer)]
-           [certifier (match-expander-certifier expander*)]
            [mstx (introducer (syntax-local-introduce stx))]
            [mresult (transformer mstx)]
-           [result (syntax-local-introduce (introducer mresult))]
-           [cert* (lambda (id) (certifier (cert id) #f introducer))])
+           [result (syntax-local-introduce (introducer mresult))])
       ;(emit-local-step stx result #:id expander)
-      (parse/cert result cert*))))
+      (parse result))))
 
 ;; raise an error, blaming stx
 (define (match:syntax-err stx msg)

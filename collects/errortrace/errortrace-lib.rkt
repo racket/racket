@@ -35,21 +35,25 @@
          [covered '()])
     (hash-for-each hash (lambda (x y) (unless (eq? x 'base) (set! covered (cons x covered)))))
     (values all covered)))
+
+(define code-insp (current-code-inspector))
+(define (disarm stx)
+  (syntax-disarm stx code-insp))
     
 (define (add-test-coverage-init-code stx)
-  (syntax-case stx (#%plain-module-begin)
-    [(mod name init-import (#%plain-module-begin b1 b2 body ...))
-     (copy-props
-      stx
-      #`(#,(namespace-module-identifier) name init-import
-         #,(syntax-recertify
-            #`(#%plain-module-begin
-               b1 b2 ;; the two requires that were introduced earlier
-               (#%plain-app init-test-coverage '#,(remove-duplicates test-coverage-state))
-               body ...)
-            (list-ref (syntax->list stx) 3)
-            orig-inspector
-            #f)))]))
+  (syntax-case stx ()
+    [(mod name init-import mb)
+     (syntax-case (disarm #'mb) (#%plain-module-begin)
+       [(#%plain-module-begin b1 b2 body ...)
+        (copy-props
+         stx
+         #`(#,(namespace-module-identifier) name init-import
+            #,(syntax-rearm
+               #`(#%plain-module-begin
+                  b1 b2 ;; the two requires that were introduced earlier
+                  (#%plain-app init-test-coverage '#,(remove-duplicates test-coverage-state))
+                  body ...)
+               #'mb)))])]))
 
 (define (annotate-covered-file filename-path [display-string #f])
   (annotate-file filename-path
@@ -392,8 +396,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define orig-inspector (current-code-inspector))
-
 (define errortrace-annotate
   (lambda (top-e)
     (define (normal e)
@@ -410,29 +412,29 @@
            (let ([top-e (expand-syntax top-e)])
              (initialize-test-coverage)
              (syntax-case top-e (#%plain-module-begin)
-               [(mod name init-import (#%plain-module-begin body ...))
-                (add-test-coverage-init-code
-                 (normal
-                  (copy-props
-                   top-e
-                   #`(#,(namespace-module-identifier) name init-import
-                      #,(syntax-recertify
-                         #`(#%plain-module-begin
-                            #,((make-syntax-introducer)
-                               (syntax/loc (datum->syntax #f 'x #f)
-                                 (#%require errortrace/errortrace-key)))
-                            #,((make-syntax-introducer)
-                               (syntax/loc (datum->syntax #f 'x #f)
-                                 (#%require (for-syntax errortrace/errortrace-key))))
-                            body ...)
-                         (list-ref (syntax->list top-e) 3)
-                         orig-inspector
-                         #f)))))])))]
+               [(mod name init-import mb)
+                (syntax-case (disarm #'mb) (#%plain-module-begin)
+                  [(#%plain-module-begin body ...)
+                   (add-test-coverage-init-code
+                    (normal
+                     (copy-props
+                      top-e
+                      #`(#,(namespace-module-identifier) name init-import
+                         #,(syntax-rearm
+                            #`(#%plain-module-begin
+                               #,((make-syntax-introducer)
+                                  (syntax/loc (datum->syntax #f 'x #f)
+                                    (#%require errortrace/errortrace-key)))
+                               #,((make-syntax-introducer)
+                                  (syntax/loc (datum->syntax #f 'x #f)
+                                    (#%require (for-syntax errortrace/errortrace-key))))
+                               body ...)
+                            #'mb)))))])])))]
       [_else
        (normal top-e)])))
 
 (define-namespace-anchor orig-namespace)
-
+                      
 (define (make-errortrace-compile-handler)
   (let ([orig (current-compile)]
         [reg (namespace-module-registry (current-namespace))])

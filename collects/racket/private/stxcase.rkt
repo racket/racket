@@ -297,180 +297,181 @@
 					(free-identifier=? 
 					 lit-comp
 					 (quote-syntax free-identifier=?)))])
-	    (datum->syntax
-	     (quote-syntax here)
-	     (list (quote-syntax let) (list (list arg (if (syntax-e arg-is-stx?)
-							  expr
-							  (list (quote-syntax datum->syntax)
-							    (list
-							     (quote-syntax quote-syntax)
-							     (datum->syntax
-							      expr
-							      'here))
-							    expr))))
-		   (let loop ([patterns patterns]
-			      [fenders fenders]
-			      [unflat-pattern-varss pattern-varss]
-			      [answers answers])
-		     (cond
-		      [(null? patterns)
-		       (list
-			(quote-syntax raise-syntax-error)
-			#f
-			"bad syntax"
-			arg)]
-		      [else
-		       (let ([rest (loop (cdr patterns) (cdr fenders)
-					 (cdr unflat-pattern-varss) (cdr answers))])
-			 (let ([pattern (car patterns)]
-			       [fender (car fenders)]
-			       [unflat-pattern-vars (car unflat-pattern-varss)]
-			       [answer (car answers)])
-			   (-define pattern-vars
-			     (map (lambda (var)
-				    (let loop ([var var])
-				      (if (syntax? var)
-					  var
-					  (loop (car var)))))
-				  unflat-pattern-vars))
-			   (-define temp-vars
-			     (map
-			      (lambda (p) (gen-temp-id 'sc))
-			      pattern-vars))
-			   (-define tail-pattern-var (sub1 (length pattern-vars)))
-			   ;; Here's the result expression for one match:
-			   (let* ([do-try-next (if (car fenders)
-						   (list (quote-syntax try-next))
-						   rest)]
-				  [mtch (make-match&env
-                                         who
-                                         pattern
-                                         pattern
-                                         (stx->list kws)
-                                         (not lit-comp-is-mod?))]
-				  [cant-fail? (if lit-comp-is-mod?
-						  (equal? mtch '(lambda (e) e))
-						  (equal? mtch '(lambda (e free-identifier=?) e)))]
-                                  ;; Avoid generating gigantic matching expressions.
-                                  ;; If it's too big, interpret at run time, instead
-                                  [interp? (and (not cant-fail?)
-                                                (zero?
-                                                 (let sz ([mtch mtch][fuel 100])
-                                                   (cond
-                                                    [(zero? fuel) 0]
-                                                    [(pair? mtch) (sz (cdr mtch)
-                                                                      (sz (car mtch)
-                                                                          fuel))]
-                                                    [(syntax? mtch) (sz (syntax-e mtch) (sub1 fuel))]
-                                                    [else (sub1 fuel)]))))]
-                                  [mtch (if interp?
-                                            (let ([interp-box (box null)])
-                                              (let ([pat (make-interp-match pattern (syntax->list kws) interp-box)])
-                                                (list 'lambda
-                                                      '(e)
-                                                      (list 'interp-match 
-                                                            (list 'quote pat)
-                                                            'e
-                                                            (list 'quote-syntax (list->vector (reverse (unbox interp-box))))
-                                                            lit-comp))))
-                                            mtch)]
-				  [m
-				   ;; Do match, bind result to rslt:
-				   (list (quote-syntax let)
-					 (list 
-					  (list rslt
-						(if cant-fail?
-						    arg
-						    (list* (datum->syntax
-							    (quote-syntax here)
-							    mtch
-							    pattern)
-							   arg
-							   (if (or interp? lit-comp-is-mod?)
-							       null
-							       (list lit-comp))))))
-					 ;; If match succeeded...
-					 (list 
-					  (quote-syntax if)
-					  (if cant-fail?
-					      #t
-					      rslt)
-					  ;; Extract each name binding into a temp variable:
-					  (list
-					   (quote-syntax let) 
-					   (map (lambda (pattern-var temp-var)
-						  (list
-						   temp-var
-						   (let ([pos (stx-memq-pos pattern-var pattern-vars)])
-						     (let ([accessor (cond
-								      [(= tail-pattern-var pos)
-								       (cond
-									[(eq? pos 0) 'tail]
-									[(eq? pos 1) (quote-syntax cdr)]
-									[(eq? pos 2) (quote-syntax cddr)]
-									[(eq? pos 3) (quote-syntax cdddr)]
-									[(eq? pos 4) (quote-syntax cddddr)]
-									[else 'tail])]
-								      [(eq? pos 0) (quote-syntax car)]
-								      [(eq? pos 1) (quote-syntax cadr)]
-								      [(eq? pos 2) (quote-syntax caddr)]
-								      [(eq? pos 3) (quote-syntax cadddr)]
-								      [else #f])])
-						       (cond
-							[(eq? accessor 'tail)
-							 (if (zero? pos)
-							     rslt
-							     (list
-							      (quote-syntax list-tail)
-							      rslt
-							      pos))]
-							[accessor (list
-								   accessor
-								   rslt)]
-							[else (list
-							       (quote-syntax list-ref)
-							       rslt
-							       pos)])))))
-						pattern-vars temp-vars)
-					   ;; Tell nested `syntax' forms about the
-					   ;;  pattern-bound variables:
-					   (list
-					    (quote-syntax letrec-syntaxes+values) 
-					    (map (lambda (pattern-var unflat-pattern-var temp-var)
-						   (list (list pattern-var)
-							 (list
-							  (quote-syntax make-syntax-mapping)
-							  ;; Tell it the shape of the variable:
-							  (let loop ([var unflat-pattern-var][d 0])
-							    (if (syntax? var)
-								d
-								(loop (car var) (add1 d))))
-							  ;; Tell it the variable name:
-							  (list
-							   (quote-syntax quote-syntax)
-							   temp-var))))
-						 pattern-vars unflat-pattern-vars
-						 temp-vars)
-					    null
-					    (if fender
-						(list (quote-syntax if) fender
-						      answer
-						      do-try-next)
-						answer)))
-					  do-try-next))])
-			     (if fender
-				 (list
-				  (quote-syntax let)
-				  ;; Bind try-next to try next case
-				  (list (list (quote try-next)
-					      (list (quote-syntax lambda)
-						    (list)
-						    rest)))
-				  ;; Try one match
-				  m)
-				 ;; Match try already embed the rest case
-				 m))))])))
-	     x))))))
+            (syntax-arm
+             (datum->syntax
+              (quote-syntax here)
+              (list (quote-syntax let) (list (list arg (if (syntax-e arg-is-stx?)
+                                                           expr
+                                                           (list (quote-syntax datum->syntax)
+                                                                 (list
+                                                                  (quote-syntax quote-syntax)
+                                                                  (datum->syntax
+                                                                   expr
+                                                                   'here))
+                                                                 expr))))
+                    (let loop ([patterns patterns]
+                               [fenders fenders]
+                               [unflat-pattern-varss pattern-varss]
+                               [answers answers])
+                      (cond
+                       [(null? patterns)
+                        (list
+                         (quote-syntax raise-syntax-error)
+                         #f
+                         "bad syntax"
+                         arg)]
+                       [else
+                        (let ([rest (loop (cdr patterns) (cdr fenders)
+                                          (cdr unflat-pattern-varss) (cdr answers))])
+                          (let ([pattern (car patterns)]
+                                [fender (car fenders)]
+                                [unflat-pattern-vars (car unflat-pattern-varss)]
+                                [answer (car answers)])
+                            (-define pattern-vars
+                                     (map (lambda (var)
+                                            (let loop ([var var])
+                                              (if (syntax? var)
+                                                  var
+                                                  (loop (car var)))))
+                                          unflat-pattern-vars))
+                            (-define temp-vars
+                                     (map
+                                      (lambda (p) (gen-temp-id 'sc))
+                                      pattern-vars))
+                            (-define tail-pattern-var (sub1 (length pattern-vars)))
+                            ;; Here's the result expression for one match:
+                            (let* ([do-try-next (if (car fenders)
+                                                    (list (quote-syntax try-next))
+                                                    rest)]
+                                   [mtch (make-match&env
+                                          who
+                                          pattern
+                                          pattern
+                                          (stx->list kws)
+                                          (not lit-comp-is-mod?))]
+                                   [cant-fail? (if lit-comp-is-mod?
+                                                   (equal? mtch '(lambda (e) e))
+                                                   (equal? mtch '(lambda (e free-identifier=?) e)))]
+                                   ;; Avoid generating gigantic matching expressions.
+                                   ;; If it's too big, interpret at run time, instead
+                                   [interp? (and (not cant-fail?)
+                                                 (zero?
+                                                  (let sz ([mtch mtch][fuel 100])
+                                                    (cond
+                                                     [(zero? fuel) 0]
+                                                     [(pair? mtch) (sz (cdr mtch)
+                                                                       (sz (car mtch)
+                                                                           fuel))]
+                                                     [(syntax? mtch) (sz (syntax-e mtch) (sub1 fuel))]
+                                                     [else (sub1 fuel)]))))]
+                                   [mtch (if interp?
+                                             (let ([interp-box (box null)])
+                                               (let ([pat (make-interp-match pattern (syntax->list kws) interp-box)])
+                                                 (list 'lambda
+                                                       '(e)
+                                                       (list 'interp-match 
+                                                             (list 'quote pat)
+                                                             'e
+                                                             (list 'quote-syntax (list->vector (reverse (unbox interp-box))))
+                                                             lit-comp))))
+                                             mtch)]
+                                   [m
+                                    ;; Do match, bind result to rslt:
+                                    (list (quote-syntax let)
+                                          (list 
+                                           (list rslt
+                                                 (if cant-fail?
+                                                     arg
+                                                     (list* (datum->syntax
+                                                             (quote-syntax here)
+                                                             mtch
+                                                             pattern)
+                                                            arg
+                                                            (if (or interp? lit-comp-is-mod?)
+                                                                null
+                                                                (list lit-comp))))))
+                                          ;; If match succeeded...
+                                          (list 
+                                           (quote-syntax if)
+                                           (if cant-fail?
+                                               #t
+                                               rslt)
+                                           ;; Extract each name binding into a temp variable:
+                                           (list
+                                            (quote-syntax let) 
+                                            (map (lambda (pattern-var temp-var)
+                                                   (list
+                                                    temp-var
+                                                    (let ([pos (stx-memq-pos pattern-var pattern-vars)])
+                                                      (let ([accessor (cond
+                                                                       [(= tail-pattern-var pos)
+                                                                        (cond
+                                                                         [(eq? pos 0) 'tail]
+                                                                         [(eq? pos 1) (quote-syntax cdr)]
+                                                                         [(eq? pos 2) (quote-syntax cddr)]
+                                                                         [(eq? pos 3) (quote-syntax cdddr)]
+                                                                         [(eq? pos 4) (quote-syntax cddddr)]
+                                                                         [else 'tail])]
+                                                                       [(eq? pos 0) (quote-syntax car)]
+                                                                       [(eq? pos 1) (quote-syntax cadr)]
+                                                                       [(eq? pos 2) (quote-syntax caddr)]
+                                                                       [(eq? pos 3) (quote-syntax cadddr)]
+                                                                       [else #f])])
+                                                        (cond
+                                                         [(eq? accessor 'tail)
+                                                          (if (zero? pos)
+                                                              rslt
+                                                              (list
+                                                               (quote-syntax list-tail)
+                                                               rslt
+                                                               pos))]
+                                                         [accessor (list
+                                                                    accessor
+                                                                    rslt)]
+                                                         [else (list
+                                                                (quote-syntax list-ref)
+                                                                rslt
+                                                                pos)])))))
+                                                 pattern-vars temp-vars)
+                                            ;; Tell nested `syntax' forms about the
+                                            ;;  pattern-bound variables:
+                                            (list
+                                             (quote-syntax letrec-syntaxes+values) 
+                                             (map (lambda (pattern-var unflat-pattern-var temp-var)
+                                                    (list (list pattern-var)
+                                                          (list
+                                                           (quote-syntax make-syntax-mapping)
+                                                           ;; Tell it the shape of the variable:
+                                                           (let loop ([var unflat-pattern-var][d 0])
+                                                             (if (syntax? var)
+                                                                 d
+                                                                 (loop (car var) (add1 d))))
+                                                           ;; Tell it the variable name:
+                                                           (list
+                                                            (quote-syntax quote-syntax)
+                                                            temp-var))))
+                                                  pattern-vars unflat-pattern-vars
+                                                  temp-vars)
+                                             null
+                                             (if fender
+                                                 (list (quote-syntax if) fender
+                                                       answer
+                                                       do-try-next)
+                                                 answer)))
+                                           do-try-next))])
+                              (if fender
+                                  (list
+                                   (quote-syntax let)
+                                   ;; Bind try-next to try next case
+                                   (list (list (quote try-next)
+                                               (list (quote-syntax lambda)
+                                                     (list)
+                                                     rest)))
+                                   ;; Try one match
+                                   m)
+                                  ;; Match try already embed the rest case
+                                  m))))])))
+              x)))))))
 
   (-define-syntax syntax
     (lambda (x)
@@ -483,78 +484,79 @@
 	 #f
 	 "bad form"
 	 x))
-      (datum->syntax
-       here-stx
-       (let ([pattern (stx-car (stx-cdr x))])
-	 (let-values ([(unique-vars all-varss) (make-pexpand pattern #f null #f)])
-	   (let ([var-bindings
-		  (map
-		   (lambda (var)
-		     (and (let ([v (syntax-local-value var (lambda () #f))])
-			    (and (syntax-pattern-variable? v)
-				 v))))
-		   unique-vars)])
-	     (if (and (or (null? var-bindings)
-			  (not (ormap (lambda (x) x) var-bindings)))
-		      (no-ellipses? pattern))
-		 ;; Constant template:
-		 (list (quote-syntax quote-syntax) pattern)
-		 ;; Non-constant:
-		 (let ([proto-r (let loop ([vars unique-vars][bindings var-bindings])
-				  (if (null? bindings)
-				      null
-				      (let ([rest (loop (cdr vars)
-							(cdr bindings))])
-					(if (car bindings)
-					    (cons (let loop ([v (car vars)]
-							     [d (syntax-mapping-depth (car bindings))])
-						    (if (zero? d)
-							v
-							(loop (list v) (sub1 d))))
-						  rest)
-					    rest))))]
-		       [non-pattern-vars (let loop ([vars unique-vars][bindings var-bindings])
-					   (if (null? bindings)
-					       null
-					       (let ([rest (loop (cdr vars)
-								 (cdr bindings))])
-						 (if (car bindings)
-						     rest
-						     (cons (car vars) rest)))))])
-		   (let ([build-from-template
-			  ;; Even if we don't use the builder, we need to check
-			  ;; for a well-formed pattern:
-			  (make-pexpand pattern proto-r non-pattern-vars pattern)]
-			 [r (let loop ([vars unique-vars][bindings var-bindings][all-varss all-varss])
-			      (cond
-			       [(null? bindings) null]
-			       [(car bindings)
-                                (cons
-                                 (syntax-property 
-                                  (let ([id (syntax-mapping-valvar (car bindings))])
-                                    (datum->syntax
-                                     id
-                                     (syntax-e id)
-                                     x))
-                                  'disappeared-use
-                                  (car all-varss))
-                                 (loop (cdr vars) (cdr bindings) (cdr all-varss)))]
-			       [else  (loop (cdr vars) (cdr bindings) (cdr all-varss))]))])
-		     (if (identifier? pattern)
-			 ;; Simple syntax-id lookup:
-			 (car r)
-			 ;; General case:
-			 (list (datum->syntax
-				here-stx
-				build-from-template
-				pattern)
-			       (let ([len (length r)])
-				 (cond
-				  [(zero? len) (quote-syntax ())]
-				  [(= len 1) (car r)]
-				  [else
-				   (cons (quote-syntax list*) r)]))))))))))
-       x)))
+      (syntax-arm
+       (datum->syntax
+        here-stx
+        (let ([pattern (stx-car (stx-cdr x))])
+          (let-values ([(unique-vars all-varss) (make-pexpand pattern #f null #f)])
+            (let ([var-bindings
+                   (map
+                    (lambda (var)
+                      (and (let ([v (syntax-local-value var (lambda () #f))])
+                             (and (syntax-pattern-variable? v)
+                                  v))))
+                    unique-vars)])
+              (if (and (or (null? var-bindings)
+                           (not (ormap (lambda (x) x) var-bindings)))
+                       (no-ellipses? pattern))
+                  ;; Constant template:
+                  (list (quote-syntax quote-syntax) pattern)
+                  ;; Non-constant:
+                  (let ([proto-r (let loop ([vars unique-vars][bindings var-bindings])
+                                   (if (null? bindings)
+                                       null
+                                       (let ([rest (loop (cdr vars)
+                                                         (cdr bindings))])
+                                         (if (car bindings)
+                                             (cons (let loop ([v (car vars)]
+                                                              [d (syntax-mapping-depth (car bindings))])
+                                                     (if (zero? d)
+                                                         v
+                                                         (loop (list v) (sub1 d))))
+                                                   rest)
+                                             rest))))]
+                        [non-pattern-vars (let loop ([vars unique-vars][bindings var-bindings])
+                                            (if (null? bindings)
+                                                null
+                                                (let ([rest (loop (cdr vars)
+                                                                  (cdr bindings))])
+                                                  (if (car bindings)
+                                                      rest
+                                                      (cons (car vars) rest)))))])
+                    (let ([build-from-template
+                           ;; Even if we don't use the builder, we need to check
+                           ;; for a well-formed pattern:
+                           (make-pexpand pattern proto-r non-pattern-vars pattern)]
+                          [r (let loop ([vars unique-vars][bindings var-bindings][all-varss all-varss])
+                               (cond
+                                [(null? bindings) null]
+                                [(car bindings)
+                                 (cons
+                                  (syntax-property 
+                                   (let ([id (syntax-mapping-valvar (car bindings))])
+                                     (datum->syntax
+                                      id
+                                      (syntax-e id)
+                                      x))
+                                   'disappeared-use
+                                   (car all-varss))
+                                  (loop (cdr vars) (cdr bindings) (cdr all-varss)))]
+                                [else  (loop (cdr vars) (cdr bindings) (cdr all-varss))]))])
+                      (if (identifier? pattern)
+                          ;; Simple syntax-id lookup:
+                          (car r)
+                          ;; General case:
+                          (list (datum->syntax
+                                 here-stx
+                                 build-from-template
+                                 pattern)
+                                (let ([len (length r)])
+                                  (cond
+                                   [(zero? len) (quote-syntax ())]
+                                   [(= len 1) (car r)]
+                                   [else
+                                    (cons (quote-syntax list*) r)]))))))))))
+        x))))
 
   (#%provide (all-from "ellipses.rkt") syntax-case** syntax 
              (for-syntax syntax-pattern-variable?)))

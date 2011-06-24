@@ -3056,8 +3056,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         mt->symtab = symtab;
 	rns = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->rns = rns;
-        tht = scheme_make_hash_table_equal();
-        mt->cert_lists = tht;
         tht = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->shift_map = tht;
         mt->reverse_map = NULL;

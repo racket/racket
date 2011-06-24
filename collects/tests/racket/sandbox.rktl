@@ -346,7 +346,7 @@
         (copy-file ,list-zo ,test-zo) => (void)
         (copy-file ,test-zo ,list-zo) =err> "access denied"
         (load/use-compiled ,test-lib) => (void)
-        (require 'list) =err> "access from an uncertified context"
+        (require 'list) =err> "access disallowed by code inspector"
         (delete-file ,test-zo) => (void)
         (delete-file ,test-lib) =err> "`delete' access denied"
         --top--
@@ -364,7 +364,7 @@
         (cp ,list-lib ,test2-lib) (cp ,list-zo   ,test2-zo)
         ;; bytecode from test-lib is bad, even when we can read/write to it
         (load/use-compiled ,test-zo)
-        (require 'list) =err> "access from an uncertified context"
+        (require 'list) =err> "access disallowed by code inspector"
         ;; bytecode from test2-lib is explicitly allowed
         (load/use-compiled ,test2-lib)
         (require 'list) => (void))

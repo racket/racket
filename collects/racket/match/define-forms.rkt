@@ -102,8 +102,7 @@
      (define-syntax (match-define stx)
        (syntax-parse stx        
          [(_ pat rhs:expr)
-          ;; FIXME - calls parse twice
-          (let ([p (parse-id #'pat (syntax-local-certifier))])
+          (let ([p (parse-id #'pat)])
             (with-syntax ([vars (bound-vars p)])
               (quasisyntax/loc stx
                 (define-values vars (match*/derived (rhs) #,stx

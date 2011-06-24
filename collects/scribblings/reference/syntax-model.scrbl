@@ -109,7 +109,7 @@ different phase levels.
 A @deftech{syntax object} combines a simpler Racket value, such as a
 symbol or pair, with @deftech{lexical information} about bindings,
 source-location information, @tech{syntax properties}, and
-@tech{syntax certificates}. In particular, an @tech{identifier} is
+@tech{tamper status}. In particular, an @tech{identifier} is
 represented as a symbol object that combines a symbol with lexical and
 other information.
 
@@ -566,10 +566,9 @@ expander tracks the expansion history of a form through @tech{syntax
 properties} such as @racket['origin]. See @secref["stxprops"] for
 more information.
 
-Finally, the expander uses @tech{syntax certificates} to control the
-way that unexported and protected @tech{module bindings} are used. See
-@secref["stxcerts"] for more information on @tech{syntax
-certificates}.
+Finally, the expander uses a @tech{tamper status} to control the way
+that unexported and protected @tech{module bindings} are used. See
+@secref["stxcerts"] for more information on a @tech{tamper status}.
 
 The expander's handling of @racket[letrec-syntaxes+values] is similar
 to its handling of @racket[define-syntaxes]. A

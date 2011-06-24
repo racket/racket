@@ -591,12 +591,12 @@ void scheme_init_memtrace(Scheme_Env *env)
 }
 
 void scheme_init_inspector() {
-    REGISTER_SO(initial_inspector);
-    initial_inspector = scheme_make_initial_inspectors();
-    /* Keep the initial inspector in case someone resets Scheme (by
-       calling scheme_basic_env() a second time. Using the same
-       inspector after a reset lets us use the same initial module
-       instances. */
+  REGISTER_SO(initial_inspector);
+  initial_inspector = scheme_make_initial_inspectors();
+  /* Keep the initial inspector in case someone resets Scheme (by
+     calling scheme_basic_env() a second time. Using the same
+     inspector after a reset lets us use the same initial module
+     instances. */
 }
 
 Scheme_Object *scheme_get_current_inspector()
@@ -609,6 +609,11 @@ Scheme_Object *scheme_get_current_inspector()
 
   c = scheme_current_config();
   return scheme_get_param(c, MZCONFIG_INSPECTOR);
+}
+
+Scheme_Object *scheme_get_initial_inspector(void)
+{
+  return initial_inspector;
 }
   
 void scheme_init_parameterization()

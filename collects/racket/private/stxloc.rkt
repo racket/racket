@@ -26,8 +26,7 @@
         (datum->syntax stx
                        (syntax-e stx)
                        loc
-                       #f
-                       stx)
+                       #f)
 	stx))
 
   ;; Like syntax, but also takes a syntax object

@@ -504,9 +504,10 @@ assembly code for Racket, and reading such a form produces a compiled
 form when the @racket[read-accept-compiled] parameter is set to
 @racket[#t].
 
-When a compiled form contains syntax object constants, the
-@litchar{#~}-marshaled form drops source-location information and
-properties (see @secref["stxprops"]) for the @tech{syntax objects}.
+When a compiled form contains syntax object constants, they must not
+be @tech{tainted} or @tech{armed}; the @litchar{#~}-marshaled form
+drops source-location information and properties (see
+@secref["stxprops"]) for the @tech{syntax objects}.
 
 Compiled code parsed from @litchar{#~} may contain references to
 unexported or protected bindings from a module. At read time, such

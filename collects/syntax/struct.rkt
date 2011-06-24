@@ -199,11 +199,10 @@
 			       (append base '(#f))
 			       base)
 			   base))]
-             [cert-f (gensym)]
 	     [qs (lambda (x) (if (eq? x #t)
 				 x
-				 (and x `(,cert-f (quote-syntax ,x)))))])
-        `(let ([,cert-f (syntax-local-certifier #t)])
+				 (and x `(quote-syntax ,x))))])
+        `(let ()
            (list
             ,(qs (car names))
             ,(qs (cadr names))
@@ -242,8 +241,7 @@
     ;; if `defined-names' is #f.
     ;; If `expr?' is #t, then generate an expression to build the info,
     ;; otherwise build the info directly.
-    (let* ([cert-f (gensym)]
-           [qs (lambda (x) #`(#,cert-f (quote-syntax #,x)))]
+    (let* ([qs (lambda (x) #`(quote-syntax #,x))]
            [every-other (lambda (l)
                           (let loop ([l l][r null])
                             (cond
@@ -281,7 +279,7 @@
                              (values null null))]
                         [(fields) (cdddr defined-names)]
                         [(wrap) (lambda (x) #`(list #,@x))])
-             #`(let ([#,cert-f (syntax-local-certifier)])
+             #`(let ()
                  (make-struct-info
                   (lambda ()
                     #,(wrap

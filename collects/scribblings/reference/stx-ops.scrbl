@@ -118,7 +118,13 @@ A @tech{syntax object} that is the result of @racket[read-syntax] reflects
 the use of delimited @litchar{.} in the input by creating a syntax
 object for every pair of parentheses in the source, and by creating a
 pair-valued @tech{syntax object} @italic{only} for parentheses in the
-source. See @secref["parse-pair"] for more information.}
+source. See @secref["parse-pair"] for more information.
+
+If @racket[stx] is @tech{tainted} or @tech{armed}, then any syntax
+object in the result of @racket[(syntax-e stx)] is @tech{tainted}, and
+multiple calls to @racket[syntax-e] may return values that are not
+@racket[eq?]. For a @racket[stx] that is not @tech{armed}, the results from
+multiple calls to @racket[syntax-e] of @racket[stx] are @racket[eq?].}
 
 
 @defproc[(syntax->list [stx syntax?]) (or/c list? #f)]{
@@ -126,13 +132,16 @@ source. See @secref["parse-pair"] for more information.}
 Returns a list of @tech{syntax object}s or @racket[#f]. The result is a list
 of @tech{syntax object}s when @racket[(syntax->datum stx)] would produce a
 list. In other words, @tech{syntax pairs} in @racket[(syntax-e stx)]
-are flattened.}
+are flattened.
+
+If @racket[stx] is @tech{tainted} or @tech{armed}, then any syntax
+object in the result of @racket[(syntax->list stx)] is @tech{tainted}.}
 
 
 @defproc[(syntax->datum [stx syntax?]) any]{
 
 Returns a datum by stripping the lexical information, source-location
-information, properties, and certificates from @racket[stx]. Inside of
+information, properties, and tamper status from @racket[stx]. Inside of
 pairs, (immutable) vectors, (immutable) boxes, immutable @tech{hash
 table} values (not keys), and immutable @tech{prefab} structures,
 @tech{syntax object}s are recursively stripped.
@@ -156,7 +165,7 @@ needed to strip lexical and source-location information recursively.}
                                                (or/c exact-nonnegative-integer? #f)))
                                 #f]
                         [prop (or/c syntax? #f) #f]
-                        [cert (or/c syntax? #f) #f])
+                        [ignored (or/c syntax? #f) #f])
           syntax?]{
 
 Converts the @tech{datum} @racket[v] to a @tech{syntax object}.
@@ -168,21 +177,22 @@ boxes. For any kind of value other than a
 pair, vector, box, immutable @tech{hash table}, immutable
 @tech{prefab} structure, or @tech{syntax object}, conversion means
 wrapping the value with lexical information, source-location
-information, properties, and certificates.
+information, and properties.
 
 Converted objects in @racket[v] are given the lexical context
 information of @racket[ctxt] and the source-location information of
 @racket[srcloc]. If @racket[v] is not already a @tech{syntax object},
 then the resulting immediate @tech{syntax object} is given the
-properties (see @secref["stxprops"]) of @racket[prop] and the
-@tech{inactive certificates} (see @secref["stxcerts"]) of
-@racket[cert]; if @racket[v] is a pair, vector, box, immutable
-@tech{hash table}, or immutable @tech{prefab} structure, recursively
-converted values are not given properties or certificates.
+properties (see @secref["stxprops"]) of @racket[prop]; if @racket[v]
+is a pair, vector, box, immutable @tech{hash table}, or immutable
+@tech{prefab} structure, recursively converted values are not given
+properties or certificates. If @racket[ctxt] is @tech{tainted} or
+@tech{armed}, then the resulting syntax object from
+@racket[datum->syntax] is @tech{tainted}.
 
-Any of @racket[ctxt], @racket[srcloc], @racket[prop], or @racket[cert]
-can be @racket[#f], in which case the resulting syntax has no lexical
-context, source information, new properties, and/or certificates.
+Any of @racket[ctxt], @racket[srcloc], or @racket[prop] can be
+@racket[#f], in which case the resulting syntax has no lexical
+context, source information, and/or new properties.
 
 If @racket[srcloc] is not @racket[#f] or a @tech{syntax object}, it
 must be a list or vector of five elements:
@@ -205,7 +215,11 @@ Graph structure is not preserved by the conversion of @racket[v] to a
 @tech{syntax object}. Instead, @racket[v] is essentially unfolded into
 a tree. If @racket[v] has a cycle through pairs, vectors, boxes,
 immutable @tech{hash tables}, and immutable @tech{prefab} structures,
-then the @exnraise[exn:fail:contract].}
+then the @exnraise[exn:fail:contract].
+
+The @racket[ignored] argument is allowed for backward compatibility
+and has no effect on the returned syntax object.}
+
 
 @defproc[(identifier? [v any/c]) boolean?]{
 
@@ -242,9 +256,19 @@ other than one in @racket[syms] produces an identifier with no binding.
 
 See also @racket[quote-syntax/prune].}
 
+
 @defproc[(identifier-prune-to-source-module [id-stx identifier?])
          identifier?]{
 
 Returns an identifier with its lexical context minimized to that
 needed for @racket[syntax-source-module]. The minimized lexical
 context does not include any bindings.}
+
+
+@defproc[(syntax-recertify [new-stx syntax?]
+                           [old-stx syntax?]
+                           [inspector inspector?]
+                           [key any/c])
+         syntax?]{
+
+For backward compatibility only; returns @racket[new-stx].}

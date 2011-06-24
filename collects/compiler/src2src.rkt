@@ -36,7 +36,7 @@
   ;;  install functions that can be used later.
   (define (non-valueable-prims) (procedure-calling-prims))
 
-  (define recert-insp (current-code-inspector))
+  (define code-insp (current-code-inspector))
 
   (define (keep-mzc-property stx-out stx)
     (let ([v (syntax-property stx 'mzc-cffi)]
@@ -185,19 +185,7 @@
       (define/public (get-stx) src-stx)
 
       ;; convert back to a syntax object
-      (define/public (sexpr) 
-	(recertify src-stx))
-
-      ;; adds certifications back to result of sexp, when needed
-      (define/public (recertify stx)
-	(let loop ([cert-stxes cert-stxes][stx stx])
-	  (cond
-	   [(null? cert-stxes) stx]
-	   [else (loop (cdr cert-stxes)
-		       (syntax-recertify stx 
-					 (car cert-stxes)
-					 recert-insp 
-					 #f))])))
+      (define/public (sexpr) src-stx)
 
       ;; returns cert stxes
       (define/public (get-cert-stxes)
@@ -285,13 +273,11 @@
                    env)
             this))
 
-      (inherit recertify)
       (define/override (sexpr)
-	(recertify 
-	 (if needs-top?
-	     (with-syntax ([stx src-stx])
-	       (syntax (#%top . stx)))
-	     src-stx)))
+        (if needs-top?
+            (with-syntax ([stx src-stx])
+              (syntax (#%top . stx)))
+            src-stx))
       
       (define/public (set-mutated) (set-bucket-mutated?! bucket #t))
       (define/public (set-inited) (set-bucket-inited-before-use?! bucket #t))))
@@ -347,11 +333,10 @@
              value
              (send value get-value)))
       
-      (inherit recertify)
       (define/override (sexpr)
         ;; `(==lexical== ,name ,used ,mutated? ,inited? ,(get-value))
-        (recertify src-stx)
-        )
+        src-stx)
+
       (define/public (orig-name)
         (syntax-e src-stx))))
 
@@ -401,13 +386,12 @@
       (define/override (clone env) (lookup-clone binding this env))
       (define/override (substitute env) (lookup-clone binding this env))
 
-      (inherit recertify)
       (define/override (sexpr) 
         (let ([x (send binding sexpr)])
-	  (recertify (datum->syntax
-		      x
-		      (syntax-e x)
-		      src-stx))))
+	  (datum->syntax
+           x
+           (syntax-e x)
+           src-stx)))
 
       (define/public (get-binding) binding)
       (define/public (orig-name) (send binding orig-name))))
@@ -464,13 +448,12 @@
           src-stx
 	  cert-stxes))
 
-      (inherit recertify)
       (define/override (sexpr)
 	(with-syntax ([(body ...) (body-sexpr)])
 	  (syntax/loc src-stx (begin body ...))))
 
       (define/override (body-sexpr)
-	(map (lambda (e) (recertify (get-sexpr e))) subs))))
+	(map (lambda (e) (get-sexpr e)) subs))))
   
   (define top-def% 
     (class exp% 
@@ -495,13 +478,11 @@
                                      src-stx
 				     cert-stxes))
 
-      (inherit recertify)
       (define/override (sexpr)
         (with-syntax ([formname formname]
                       [(varname ...) varnames]
                       [rhs (get-sexpr expr)])
-	  (recertify
-	   (syntax/loc src-stx (formname (varname ...) rhs)))))
+          (syntax/loc src-stx (formname (varname ...) rhs))))
 
       (define/public (get-vars) varnames)
       (define/public (get-rhs) expr)
@@ -572,7 +553,6 @@
       
       (define/override (clone env) (make-object constant% val src-stx cert-stxes))
       
-      (inherit recertify)
       (define/override (sexpr)
 	(let ([vstx (datum->syntax (quote-syntax here) val src-stx)])
 	  (cond
@@ -583,8 +563,7 @@
 	    vstx]
 	   [(syntax? val)
 	    (with-syntax ([vstx vstx])
-	      (recertify
-	       (syntax (quote-syntax vstx))))]
+              (syntax (quote-syntax vstx)))]
 	    [else
 	     (with-syntax ([vstx vstx])
 	       (syntax (quote vstx)))])))))
@@ -881,14 +860,12 @@
                                      src-stx
 				     cert-stxes))
 
-      (inherit recertify)
       (define/override (sexpr)
-	(recertify
-	 (keep-mzc-property
-	  (with-syntax ([rator (get-sexpr rator)]
-			[(rand ...) (map get-sexpr rands)])
-	    (syntax/loc src-stx (#%plain-app rator rand ...)))
-	  src-stx)))
+        (keep-mzc-property
+         (with-syntax ([rator (get-sexpr rator)]
+                       [(rand ...) (map get-sexpr rands)])
+           (syntax/loc src-stx (#%plain-app rator rand ...)))
+         src-stx))
 
       ;; Checks whether the expression is an app of `values'
       ;; to a particular set of bindings.
@@ -1006,7 +983,6 @@
             src-stx
 	    cert-stxes)))
 
-      (inherit recertify)
       (define/override (sexpr)
         (with-syntax ([(vars ...)
                        (map (lambda (vars normal?)
@@ -1019,16 +995,15 @@
                        (map (lambda (body)
                               (get-body-sexpr body))
                             bodys)])
-	  (recertify
-	   (keep-mzc-property
-	    (if (multi?)
-		(syntax/loc src-stx
-		  (case-lambda
-		   [vars . body] ...))
-		(with-syntax ([body (car (syntax->list (syntax (body ...))))])
-		  (syntax/loc src-stx
-		    (#%plain-lambda vars ... . body))))
-	    src-stx))))))
+          (keep-mzc-property
+           (if (multi?)
+               (syntax/loc src-stx
+                 (case-lambda
+                  [vars . body] ...))
+               (with-syntax ([body (car (syntax->list (syntax (body ...))))])
+                 (syntax/loc src-stx
+                   (#%plain-lambda vars ... . body))))
+           src-stx)))))
 
   (define local% 
     (class exp% 
@@ -1136,7 +1111,6 @@
 
       (define/override (get-value) (send body get-value))
 	
-      (inherit recertify)
       (define/override (sexpr)
         (with-syntax ([form form]
                       [(vars ...)
@@ -1146,10 +1120,9 @@
                       [(rhs ...)
                        (map get-sexpr rhss)]
                       [(body ...) (get-body-sexpr body)])
-	  (recertify
-	   (syntax/loc src-stx
-	     (form ([vars rhs] ...) 
-		   body ...)))))))
+          (syntax/loc src-stx
+            (form ([vars rhs] ...) 
+                  body ...))))))
     
   (define let%
     (class local% 
@@ -1211,13 +1184,11 @@
           src-stx
 	  cert-stxes))
 
-      (inherit recertify)
       (define/override (sexpr)
 	(with-syntax ([var (get-sexpr var)]
 		      [val (get-sexpr val)])
-	  (recertify
-	   (syntax/loc src-stx
-	     (set! var val)))))))
+          (syntax/loc src-stx
+            (set! var val))))))
 
   (define if%
     (class exp% 
@@ -1305,17 +1276,15 @@
           src-stx
 	  cert-stxes))
       
-      (inherit recertify)
       (define/override (sexpr)
         (with-syntax ([test (get-sexpr test)]
                       [then (get-sexpr then)])
-	  (recertify
-	   (if (else . is-a? . void%)
-	       (syntax/loc src-stx
-		 (if test then))
-	       (with-syntax ([else (get-sexpr else)])
-		 (syntax/loc src-stx
-		   (if test then else)))))))))
+          (if (else . is-a? . void%)
+              (syntax/loc src-stx
+                (if test then))
+              (with-syntax ([else (get-sexpr else)])
+                (syntax/loc src-stx
+                  (if test then else))))))))
 
   (define begin0%
     (class exp% 
@@ -1347,13 +1316,11 @@
 	  src-stx
 	  cert-stxes))
 	
-      (inherit recertify)
       (define/override (sexpr)
 	(with-syntax ([first (get-sexpr first)]
 		      [(rest ...) (get-body-sexpr rest)])
-	  (recertify
-	   (syntax/loc src-stx
-	     (begin0 first rest ...)))))))
+          (syntax/loc src-stx
+            (begin0 first rest ...))))))
 
   (define wcm%
     (class exp% 
@@ -1377,14 +1344,12 @@
 	  src-stx
 	  cert-stxes))
 
-      (inherit recertify)
       (define/override (sexpr)
         (with-syntax ([key (get-sexpr key)]
                       [val (get-sexpr val)]
                       [body (get-sexpr body)])
-	  (recertify
-	   (syntax/loc src-stx
-	     (with-continuation-mark key val body)))))))
+          (syntax/loc src-stx
+            (with-continuation-mark key val body))))))
 
   (define module%
     (class exp% 
@@ -1536,24 +1501,18 @@
                        (cdr body)))))))
         (super deorganize))
 
-      (inherit recertify)
       (define/override (sexpr)
 	(with-syntax ([name name]
 		      [init-req init-req]
 		      [(body ...) (map get-sexpr body)]
 		      [(et-body ...) (map get-sexpr et-body)]
 		      [(req-prov ...) (map get-sexpr req-prov)])
-          (with-syntax ([body 
-                         (syntax-recertify #'(#%plain-module-begin
-                                              req-prov ...
-                                              body ...
-                                              et-body ...)
-                                           src-module-begin-stx
-                                           recert-insp
-                                           #f)])
-            (recertify
-             (syntax/loc src-stx
-               (module name init-req body))))))
+          (with-syntax ([body #'(#%plain-module-begin
+                                 req-prov ...
+                                 body ...
+                                 et-body ...)])
+            (syntax/loc src-stx
+              (module name init-req body)))))
       (define/override (body-sexpr)
 	(list (sexpr)))))
 
@@ -1665,7 +1624,7 @@
 
   (define (make-parse top?)
     (lambda (stx env trans? in-module? tables)
-      (kernel-syntax-case stx trans?
+      (kernel-syntax-case (syntax-disarm stx code-insp) trans?
 	[id
 	 (identifier? stx)
 	 (let ([a (stx-bound-assq stx env)])

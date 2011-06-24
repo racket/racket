@@ -28,17 +28,20 @@
               ((char-range-arg #'#\1 #'here) (char->integer #\1))
               ((char-range-arg #'"1" #'here) (char->integer #\1)))
   
-  
+  (define orig-insp (current-code-inspector))
+  (define (disarm stx)
+    (syntax-disarm stx orig-insp))
+
   ;; parse : syntax-object (box (list-of syntax-object)) -> s-re (see re.ss)
   ;; checks for errors and generates the plain s-exp form for s
   ;; Expands lex-abbrevs and applies lex-trans.
   (define (parse stx disappeared-uses)
     (let ((parse
            (lambda (s)
-             (parse (syntax-recertify s stx (current-inspector) 'a) 
+             (parse (syntax-rearm s stx)
                     disappeared-uses))))
-    (syntax-case stx (repetition union intersection complement concatenation
-                      char-range char-complement)
+    (syntax-case (disarm stx) (repetition union intersection complement concatenation
+                                          char-range char-complement)
       (_
        (identifier? stx)
        (let ((expansion (syntax-local-value stx (lambda () #f))))
@@ -112,13 +115,11 @@
        ((op form ...)
         (identifier? (syntax op))
         (let* ((o (syntax op))
-               (expansion (syntax-local-value 
-                           (syntax-recertify o stx (current-inspector) 'a) 
-                           (lambda () #f))))
+               (expansion (syntax-local-value o (lambda () #f))))
           (set-box! disappeared-uses (cons o (unbox disappeared-uses)))
           (cond
             ((lex-trans? expansion)
-             (parse ((lex-trans-f expansion) stx)))
+             (parse ((lex-trans-f expansion) (disarm stx))))
             (expansion
              (raise-syntax-error 'regular-expression
                                  "not a lex-trans"

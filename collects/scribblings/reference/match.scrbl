@@ -457,6 +457,7 @@ A transformer produced by a second @racket[proc-expr] sub-expression is
  second @racket[proc-expr], @racket[id] can be given meaning both
  inside and outside patterns.}
 
+
 @defparam[match-equality-test comp-proc (any/c any/c . -> . any)]{
 
 A parameter that determines the comparison procedure used to check
@@ -464,8 +465,7 @@ whether multiple uses of an identifier match the ``same'' value. The
 default is @racket[equal?].}
 
 @deftogether[[@defform[(match/derived val-expr original-datum clause ...)]
-              @defform[(match*/derived (val-expr ...) original-datum clause*
-              ...)]]]{ 
+              @defform[(match*/derived (val-expr ...) original-datum clause* ...)]]]{ 
 Like @racket[match] and @racket[match*] respectively, but includes a
 sub-expression to be used as the source for all syntax errors within the form.
 For example, @racket[match-lambda] expands to @racket[match/derived] so that

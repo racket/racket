@@ -4505,7 +4505,6 @@ typedef struct Scheme_Load_Delay {
   uintptr_t symtab_size;
   Scheme_Object **symtab;
   intptr_t *shared_offsets;
-  Scheme_Object *insp;
   Scheme_Object *relto;
   Scheme_Unmarshal_Tables *ut;
   struct CPort *current_rp;
@@ -4530,7 +4529,6 @@ typedef struct CPort {
   Scheme_Hash_Table **ht;
   Scheme_Unmarshal_Tables *ut;
   Scheme_Object **symtab;
-  Scheme_Object *insp; /* inspector for module-variable access */
   Scheme_Object *magic_sym, *magic_val;
   Scheme_Object *relto;
   intptr_t *shared_offsets;
@@ -5059,7 +5057,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         if (SCHEME_SYMBOLP(mod))
           mod = scheme_intern_resolved_module_path(mod);
 	mv->modidx = mod;
-	mv->insp = port->insp;
 	mv->sym = var;
         if (pos == -2) {
           mv->mod_phase = 1;
@@ -5338,7 +5335,7 @@ static Scheme_Object *read_compact_quote(CPort *port, int embedded)
 static Scheme_Object *read_marshalled(int type, CPort *port)
 {
   Scheme_Object *l;
-  Scheme_Type_Reader2 reader;
+  Scheme_Type_Reader reader;
 
   l = read_compact(port, 1);
 
@@ -5352,7 +5349,7 @@ static Scheme_Object *read_marshalled(int type, CPort *port)
     scheme_ill_formed_code(port);
   }
 
-  l = reader(l, port->insp);
+  l = reader(l);
 
   if (!l)
     scheme_ill_formed_code(port);
@@ -5382,7 +5379,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 				    Scheme_Hash_Table **ht,
 				    ReadParams *params)
 {
-  Scheme_Object *result, *insp;
+  Scheme_Object *result;
   intptr_t size, shared_size, got, offset = 0;
   CPort *rp;
   intptr_t symtabsize;
@@ -5503,9 +5500,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 
   config = scheme_current_config();
 
-  insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
-  rp->insp = insp;
-
   dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
   rp->relto = dir;
 
@@ -5539,7 +5533,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
     delay_info->symtab_size = rp->symtab_size;
     delay_info->symtab = rp->symtab;
     delay_info->shared_offsets = rp->shared_offsets;
-    delay_info->insp = rp->insp;
     delay_info->relto = rp->relto;
 
     if (perma_cache) {
@@ -5592,14 +5585,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
         if (m) {
           Scheme_Object *hc;
           hc = scheme_make_sized_byte_string(hash_code, 20, 1);
-
-          /* CERT-INSP-CACHE: Certificates hold an inspector, which
-             means that the current inspector affects the way that bytecode
-             is read. For now, only share compiled modules when the
-             inspector is the same, but maybe certificates can be
-             fixed and this hack son't be necessary one day. Grep for
-             CERT-INSP-CACHE elsewhere for other places to change. */
-          hc = scheme_make_pair(hc, scheme_make_pair(dir, insp));
+          hc = scheme_make_pair(hc, dir);
 
           m->code_key = hc;
         }
@@ -5725,7 +5711,6 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   rp->symtab_size = delay_info->symtab_size;
   rp->ht = ht;
   rp->symtab = delay_info->symtab;
-  rp->insp = delay_info->insp;
   rp->relto = delay_info->relto;
   rp->shared_offsets = delay_info->shared_offsets;
   rp->delay_info = delay_info;
@@ -5818,11 +5803,6 @@ void scheme_unmarshal_wrap_set(Scheme_Unmarshal_Tables *ut,
 
   ut->rp->symtab[l] = v;
   ut->decoded[l] = 1;
-}
-
-Scheme_Object *scheme_get_cport_inspector(struct CPort *rp)
-{
-  return rp->insp;
 }
 
 /*========================================================================*/

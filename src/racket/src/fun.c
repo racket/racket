@@ -94,9 +94,11 @@ READ_ONLY Scheme_Object *scheme_default_prompt_tag;
 /* READ ONLY SHARABLE GLOBALS */
 
 ROSYM static Scheme_Object *certify_mode_symbol;
+ROSYM static Scheme_Object *taint_mode_symbol;
 ROSYM static Scheme_Object *transparent_symbol;
 ROSYM static Scheme_Object *transparent_binding_symbol;
 ROSYM static Scheme_Object *opaque_symbol;
+ROSYM static Scheme_Object *none_symbol;
 ROSYM static Scheme_Object *is_method_symbol;
 ROSYM static Scheme_Object *cont_key; /* uninterned */
 ROSYM static Scheme_Object *barrier_prompt_key; /* uninterned */
@@ -117,6 +119,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_beg_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_dv_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_ds_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_dvs_stx);
 THREAD_LOCAL_DECL(static int cached_stx_phase);
 THREAD_LOCAL_DECL(static Scheme_Cont *offstack_cont);
 THREAD_LOCAL_DECL(static Scheme_Overflow *offstack_overflow);
@@ -576,14 +579,17 @@ scheme_init_fun (Scheme_Env *env)
 			     env);
 
   REGISTER_SO(certify_mode_symbol);
+  REGISTER_SO(taint_mode_symbol);
   REGISTER_SO(transparent_symbol);
   REGISTER_SO(transparent_binding_symbol);
   REGISTER_SO(opaque_symbol);
+  REGISTER_SO(none_symbol);
   certify_mode_symbol        = scheme_intern_symbol("certify-mode");
+  taint_mode_symbol          = scheme_intern_symbol("taint-mode");
   transparent_symbol         = scheme_intern_symbol("transparent");
   transparent_binding_symbol = scheme_intern_symbol("transparent-binding");
   opaque_symbol              = scheme_intern_symbol("opaque");
-
+  none_symbol                = scheme_intern_symbol("none");
 
   REGISTER_SO(is_method_symbol);
   REGISTER_SO(scheme_inferred_name_symbol);
@@ -593,7 +599,7 @@ scheme_init_fun (Scheme_Env *env)
   scheme_inferred_name_symbol = scheme_intern_symbol("inferred-name");
   cont_key = scheme_make_symbol("k"); /* uninterned */
   barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
-  
+
   REGISTER_SO(scheme_default_prompt_tag);
   {
     Scheme_Object *a[1];
@@ -616,6 +622,7 @@ scheme_init_fun_places()
   REGISTER_SO(cached_mod_beg_stx);
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
+  REGISTER_SO(cached_dvs_stx);
   REGISTER_SO(offstack_cont);
   REGISTER_SO(offstack_overflow);
 }
@@ -1004,7 +1011,6 @@ static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *stat
     state->current_local_env = thread->current_local_env;
     state->mark              = thread->current_local_mark;
     state->name              = thread->current_local_name;
-    state->certs             = thread->current_local_certs;
     state->modidx            = thread->current_local_modidx;
     state->menv              = thread->current_local_menv;
 }
@@ -1013,21 +1019,18 @@ static void restore_dynamic_state(Scheme_Dynamic_State *state, Scheme_Thread *th
     thread->current_local_env     = state->current_local_env;
     thread->current_local_mark    = state->mark;
     thread->current_local_name    = state->name;
-    thread->current_local_certs   = state->certs;
     thread->current_local_modidx  = state->modidx;
     thread->current_local_menv    = state->menv;
 }
 
 void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env, Scheme_Object *mark, 
-			Scheme_Object *name, 
-			Scheme_Object *certs, 
-			Scheme_Env *menv,
-			Scheme_Object *modidx)
+                              Scheme_Object *name, 
+                              Scheme_Env *menv,
+                              Scheme_Object *modidx)
 {
   state->current_local_env = env;
   state->mark              = mark;
   state->name              = name;
-  state->certs             = certs;
   state->modidx            = modidx;
   state->menv              = menv;
 }
@@ -1537,11 +1540,12 @@ _scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands)
 static Scheme_Object *cert_with_specials_k(void);
 
 static Scheme_Object *
-cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv, 
-		   Scheme_Object *orig_code, Scheme_Object *closest_code,
-                   Scheme_Comp_Env *cenv, int phase, 
+cert_with_specials(Scheme_Object *code, 
+                   Scheme_Object *insp,
+                   Scheme_Object *old_stx,
+                   intptr_t phase, 
 		   int deflt, int cadr_deflt)
-/* Adds (if mark) or lifts (if not mark) certificates. */
+/* Arms (insp) or re-arms (old_stx) taints. */
 {
   Scheme_Object *prop;
   int next_cadr_deflt = 0;
@@ -1552,13 +1556,10 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
     {
       Scheme_Thread *p = scheme_current_thread;
       Scheme_Object **args;
-      args = MALLOC_N(Scheme_Object*, 6);
+      args = MALLOC_N(Scheme_Object*, 3);
       args[0] = code;
-      args[1] = mark;
-      args[2] = (Scheme_Object *)menv;
-      args[3] = orig_code;
-      args[4] = closest_code;
-      args[5] = (Scheme_Object *)cenv;
+      args[1] = insp;
+      args[2] = old_stx;
       p->ku.k.p1 = (void *)args;
       p->ku.k.i1 = phase;
       p->ku.k.i2 = deflt;
@@ -1569,12 +1570,20 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 #endif
 
   if (SCHEME_STXP(code)) {
-    prop = scheme_stx_property(code, certify_mode_symbol, NULL);
-    if (SAME_OBJ(prop, opaque_symbol)) {
-      if (mark)
-        return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+    if (scheme_stx_is_tainted(code))
+       /* nothing happens to already-tainted syntax objects */
+      return code;
+
+    prop = scheme_stx_property(code, taint_mode_symbol, NULL);
+    if (SCHEME_FALSEP(prop))
+      prop = scheme_stx_property(code, certify_mode_symbol, NULL);
+    if (SAME_OBJ(prop, none_symbol))
+      return code;
+    else if (SAME_OBJ(prop, opaque_symbol)) {
+      if (old_stx)
+        return scheme_stx_taint_rearm(code, old_stx);
       else
-        return scheme_stx_lift_active_certs(code);
+        return scheme_stx_taint_arm(code, insp);
     } else if (SAME_OBJ(prop, transparent_symbol)) {
       cadr_deflt = 0;
       /* fall through */
@@ -1590,13 +1599,15 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
         scheme_log(NULL,
                    SCHEME_LOG_WARNING,
                    0,
-                   "warning: unrecognized 'certify-mode property value: %V",
+                   "warning: unrecognized 'taint-mode property value: %V",
                    prop);
       if (SCHEME_STX_PAIRP(code)) {
 	Scheme_Object *name;
-	name = SCHEME_STX_CAR(code);
+	/* name = SCHEME_STX_CAR(code); */
+        name = scheme_stx_taint_disarm(code, NULL);
+        name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  Scheme_Object *beg_stx, *mod_stx, *mod_beg_stx, *dv_stx, *ds_stx;
+	  Scheme_Object *beg_stx, *mod_stx, *mod_beg_stx, *dv_stx, *ds_stx, *dvs_stx;
 
 	  if (!phase) {
             mod_stx = scheme_module_stx;
@@ -1604,28 +1615,35 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 	    mod_beg_stx = scheme_module_begin_stx;
 	    dv_stx = scheme_define_values_stx;
 	    ds_stx = scheme_define_syntaxes_stx;
+	    dvs_stx = scheme_define_for_syntaxes_stx;
 	  } else if (phase == cached_stx_phase) {
 	    beg_stx = cached_beg_stx;
 	    mod_stx = cached_mod_stx;
 	    mod_beg_stx = cached_mod_beg_stx;
 	    dv_stx = cached_dv_stx;
 	    ds_stx = cached_ds_stx;
+	    dvs_stx = cached_dvs_stx;
 	  } else {
+            Scheme_Object *sr;
+            sr = scheme_sys_wraps_phase(scheme_make_integer(phase));
 	    beg_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_begin_stx), scheme_false, 
-					     scheme_sys_wraps(cenv), 0, 0);
+					     sr, 0, 0);
 	    mod_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_module_stx), scheme_false, 
-					     scheme_sys_wraps(cenv), 0, 0);
+					     sr, 0, 0);
 	    mod_beg_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_module_begin_stx), scheme_false, 
-                                                 scheme_sys_wraps(cenv), 0, 0);
+                                                 sr, 0, 0);
 	    dv_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_values_stx), scheme_false, 
-					    scheme_sys_wraps(cenv), 0, 0);
+					    sr, 0, 0);
 	    ds_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_syntaxes_stx), scheme_false, 
-					    scheme_sys_wraps(cenv), 0, 0);
+					    sr, 0, 0);
+	    dvs_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_for_syntaxes_stx), scheme_false, 
+                                             sr, 0, 0);
 	    cached_beg_stx = beg_stx;
 	    cached_mod_stx = mod_stx;
 	    cached_mod_beg_stx = mod_beg_stx;
 	    cached_dv_stx = dv_stx;
 	    cached_ds_stx = ds_stx;
+	    cached_dvs_stx = dvs_stx;
 	    cached_stx_phase = phase;
 	  }
 
@@ -1635,18 +1653,19 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 	    trans = 1;
 	    next_cadr_deflt = 0;
 	  } else if (scheme_stx_module_eq(dv_stx, name, phase)
-		     || scheme_stx_module_eq(ds_stx, name, phase)) {
+		     || scheme_stx_module_eq(ds_stx, name, phase)
+		     || scheme_stx_module_eq(dvs_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 1;
 	  }
 	}
       }
-      
+
       if (!trans) {
-        if (mark)
-          return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+        if (old_stx)
+          return scheme_stx_taint_rearm(code, old_stx);
         else
-          return scheme_stx_lift_active_certs(code);
+          return scheme_stx_taint_arm(code, insp);
       }
     }
   }
@@ -1654,30 +1673,24 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
   if (SCHEME_STX_PAIRP(code)) {
     Scheme_Object *a, *d, *v;
     
-    if (SCHEME_STXP(code))
-      closest_code = code;
-
     a = SCHEME_STX_CAR(code);
-    a = scheme_stx_propagate_inactive_certs(a, closest_code);
-    a = cert_with_specials(a, mark, menv, orig_code, closest_code, cenv, phase, cadr_deflt, 0);
+    a = cert_with_specials(a, insp, old_stx, phase, cadr_deflt, 0);
     d = SCHEME_STX_CDR(code);
-    if (SCHEME_STXP(d))
-      d = scheme_stx_propagate_inactive_certs(d, closest_code);
-    d = cert_with_specials(d, mark, menv, orig_code, closest_code, cenv, phase, 1, next_cadr_deflt);
+    d = cert_with_specials(d, insp, old_stx, phase, 1, next_cadr_deflt);
 
     v = scheme_make_pair(a, d);
 
     if (SCHEME_PAIRP(code))
       return v;
 
-    return scheme_datum_to_syntax(v, code, code, 0, 2);
+    return scheme_datum_to_syntax(v, code, scheme_false, 0, 1);
   } else if (SCHEME_STX_NULLP(code))
     return code;
 
-  if (mark)
-    return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+  if (old_stx)
+    return scheme_stx_taint_rearm(code, old_stx);
   else
-    return scheme_stx_lift_active_certs(code);
+    return scheme_stx_taint_arm(code, insp);
 }
 
 static Scheme_Object *cert_with_specials_k(void)
@@ -1687,18 +1700,9 @@ static Scheme_Object *cert_with_specials_k(void)
 
   p->ku.k.p1 = NULL;
 
-  return cert_with_specials(args[0], args[1], (Scheme_Env *)args[2],
-                            args[3], args[4],
-                            (Scheme_Comp_Env *)args[5], p->ku.k.i1,
+  return cert_with_specials(args[0], args[1], args[2],
+                            p->ku.k.i1,
                             p->ku.k.i2, p->ku.k.i3);
-}
-
-Scheme_Object *scheme_lift_local_stx_certificates(Scheme_Object *code, 
-                                                  Scheme_Comp_Env *env)
-{
-  return cert_with_specials(code, NULL, NULL, code, code,
-                            NULL, env->genv->phase,
-                            0, 0);
 }
 
 Scheme_Object *
@@ -1709,8 +1713,6 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 		   int for_set)
 {
   Scheme_Object *orig_code = code;
-  Scheme_Object *certs;
-  certs = rec[drec].certs;
 
   if (scheme_is_rename_transformer(rator)) {
     Scheme_Object *mark;
@@ -1738,30 +1740,35 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
       code = scheme_datum_to_syntax(code, orig_code, scheme_sys_wraps(env), 0, 0);
     }
 
-    code = cert_with_specials(code, mark, menv, orig_code, orig_code, env, env->genv->phase, 0, 0);
-
     code = scheme_stx_track(code, orig_code, name);
+
+    /* Restore old dye packs: */
+    code = cert_with_specials(code, NULL, orig_code, env->genv->phase, 0, 0);
 
     return code;
   } else {
-    Scheme_Object *mark, *rands_vec[1];
+    Scheme_Object *mark, *rands_vec[1], *track_code;
 
-    certs = scheme_stx_extract_certs(code, certs);
- 
     if (scheme_is_set_transformer(rator))
       rator = scheme_set_transformer_proc(rator);
 
-    mark = scheme_new_mark();
-    code = scheme_add_remove_mark(code, mark);
-
     {
-      /* Ensure that source doesn't already have 'certify-mode, in case argument
-         properties are used for result properties. */
+      /* Ensure that source doesn't already have 'taint-mode or 'certify-mode, 
+         in case argument properties are used for result properties. */
       Scheme_Object *prop;
+      prop = scheme_stx_property(code, taint_mode_symbol, NULL);
+      if (SCHEME_TRUEP(prop))
+        code = scheme_stx_property(code, taint_mode_symbol, scheme_false);
       prop = scheme_stx_property(code, certify_mode_symbol, NULL);
       if (SCHEME_TRUEP(prop))
         code = scheme_stx_property(code, certify_mode_symbol, scheme_false);
     }
+    track_code = code;  /* after mode properties are removed */
+
+    mark = scheme_new_mark();
+    code = scheme_add_remove_mark(code, mark);
+
+    code = scheme_stx_taint_disarm(code, NULL);
 
     SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(rec[drec].observer, code);
 
@@ -1777,8 +1784,8 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 
-      scheme_set_dynamic_state(&dyn_state, env, mark, boundname, certs, 
-          menv, menv ? menv->link_midx : env->genv->link_midx);
+      scheme_set_dynamic_state(&dyn_state, env, mark, boundname, 
+                               menv, menv ? menv->link_midx : env->genv->link_midx);
 
       rands_vec[0] = code;
       code = scheme_apply_with_dynamic_state(rator, 1, rands_vec, &dyn_state);
@@ -1797,12 +1804,52 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     code = scheme_add_remove_mark(code, mark);
 
-    code = cert_with_specials(code, mark, menv, orig_code, orig_code, env, env->genv->phase, 0, 0);
-
-    code = scheme_stx_track(code, orig_code, name);
+    code = scheme_stx_track(code, track_code, name);
+    
+    /* Restore old dye packs: */
+    code = cert_with_specials(code, NULL, orig_code, env->genv->phase, 0, 0);
 
     return code;
   }
+}
+
+Scheme_Object *scheme_syntax_taint_arm(Scheme_Object *stx, Scheme_Object *insp, int use_mode)
+{
+  intptr_t phase;
+
+  if (SCHEME_FALSEP(insp)) {
+    insp = scheme_get_local_inspector();
+  }
+
+  if (use_mode) {
+    Scheme_Thread *p = scheme_current_thread;
+    phase = (p->current_local_env
+             ? p->current_local_env->genv->phase
+             : p->current_phase_shift);
+    return cert_with_specials(stx, insp, NULL, phase, 0, 0);
+  } else
+    return scheme_stx_taint_arm(stx, insp);
+}
+
+Scheme_Object *scheme_syntax_taint_disarm(Scheme_Object *o, Scheme_Object *insp)
+{
+  if (SCHEME_FALSEP(insp)) {
+    insp = scheme_get_local_inspector();
+  }
+
+  return scheme_stx_taint_disarm(o, insp);
+}
+
+Scheme_Object *scheme_syntax_taint_rearm(Scheme_Object *stx, Scheme_Object *from_stx)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  intptr_t phase;
+  
+  phase = (p->current_local_env
+           ? p->current_local_env->genv->phase
+           : p->current_phase_shift);
+  
+  return cert_with_specials(stx, NULL, from_stx, phase, 0, 0);
 }
 
 /*========================================================================*/

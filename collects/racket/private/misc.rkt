@@ -21,7 +21,7 @@
              (define-syntax name
                (lambda (user-stx)
                  (syntax-case** dr #t user-stx () free-identifier=?
-                   [(_ . pattern) (syntax/loc user-stx template)]
+                   [(_ . pattern) (syntax-protect (syntax/loc user-stx template))]
                    [_ (let*-values
                           ([(sexpr) (syntax->datum user-stx)]
                            [(msg)

@@ -77,8 +77,7 @@ Racket adds properties to expanded syntax (often using
  @indexed-racket['disappeared-use] property.}
 
  @item{When a reference to an unexported or protected identifier from
- a module is discovered (and the reference is certified; see
- @secref["stxcerts"]), the @indexed-racket['protected] property is
+ a module is discovered, the @indexed-racket['protected] property is
  added to the identifier with a @racket[#t] value.}
 
  @item{When @racket[read-syntax] or @racket[read-honu-syntax]

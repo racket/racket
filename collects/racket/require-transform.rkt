@@ -9,7 +9,8 @@
              (for-template (only '#%kernel quote))
              (for-syntax '#%kernel "private/stxcase-scheme.rkt"))
   
-  (#%provide expand-import syntax-local-require-certifier
+  (#%provide expand-import 
+             syntax-local-require-certifier 
              make-require-transformer prop:require-transformer require-transformer?
              ;; the import struct type:
              import struct:import make-import import?
@@ -64,69 +65,60 @@
   (define (make-require-transformer proc)
     (make-rt proc))
 
-  (define require-cert-key (gensym 'req))
-
+  ;; For backward compatibility:
   (define (syntax-local-require-certifier)
-    (let ([c (syntax-local-certifier)])
-      (case-lambda 
-       [(v)
-        (c v require-cert-key)]
-       [(v mark)
-        (c v require-cert-key mark)])))
+    (case-lambda 
+     [(v) v]
+     [(v mark) v]))
 
-  (define current-recertify (make-parameter (lambda (x) x)))
+  (define orig-insp (current-code-inspector))
 
   ;; expand-import : stx bool -> (listof import)
   (define (expand-import stx)
-    (syntax-case stx ()
-      [simple
-       (or (identifier? #'simple)
-           (string? (syntax-e #'simple))
-           (syntax-case stx (quote)
-             [(quote s) #t]
-             [_ #f]))
-       (let ([mod-path
-              (if (pair? (syntax-e #'simple))
-                  `(quote . ,(cdr (syntax->datum #'simple)))
-                  (syntax->datum #'simple))])
-         (unless (module-path? mod-path)
-           (raise-syntax-error
-            #f
-            "invalid module-path form"
-            stx))
-         (let ([namess (syntax-local-module-exports stx)])
-           (values
-            (apply
-             append
-             (map (lambda (names)
-                    (let ([mode (car names)])
-                      (map (lambda (name)
-                             (make-import (datum->syntax
-                                           stx
-                                           name
-                                           stx)
-                                          name
-                                          mod-path
-                                          mode
-                                          0
-                                          mode
-                                          stx))
-                           (cdr names))))
-                  namess))
-            (list (make-import-source #'simple 0)))))]
-      [(id . rest)
-       (identifier? #'id)
-       (parameterize ([current-recertify (let ([prev (current-recertify)])
-                                           (lambda (sub)
-                                             (syntax-recertify (prev sub)
-                                                               stx
-                                                               (current-code-inspector) 
-                                                               require-cert-key)))])
-         (let ([t (syntax-local-value ((current-recertify) #'id) (lambda () #f))])
+    (let ([disarmed-stx (syntax-disarm stx orig-insp)])
+      (syntax-case disarmed-stx ()
+        [simple
+         (or (identifier? #'simple)
+             (string? (syntax-e #'simple))
+             (syntax-case stx (quote)
+               [(quote s) #t]
+               [_ #f]))
+         (let ([mod-path
+                (if (pair? (syntax-e #'simple))
+                    `(quote . ,(cdr (syntax->datum #'simple)))
+                    (syntax->datum #'simple))])
+           (unless (module-path? mod-path)
+             (raise-syntax-error
+              #f
+              "invalid module-path form"
+              stx))
+           (let ([namess (syntax-local-module-exports stx)])
+             (values
+              (apply
+               append
+               (map (lambda (names)
+                      (let ([mode (car names)])
+                        (map (lambda (name)
+                               (make-import (datum->syntax
+                                             stx
+                                             name
+                                             stx)
+                                            name
+                                            mod-path
+                                            mode
+                                            0
+                                            mode
+                                            stx))
+                             (cdr names))))
+                    namess))
+              (list (make-import-source #'simple 0)))))]
+        [(id . rest)
+         (identifier? #'id)
+         (let ([t (syntax-local-value #'id (lambda () #f))])
            (if (require-transformer? t)
                (call-with-values
                    (lambda ()
-                     (((require-transformer-get-proc t) t) stx))
+                     (((require-transformer-get-proc t) t) disarmed-stx))
                  (case-lambda
                   [(v mods)
                    (unless (and (list? v)
@@ -152,9 +144,9 @@
                (raise-syntax-error
                 #f
                 "not a require sub-form"
-                stx))))]
-      [_
-       (raise-syntax-error
-        #f
-        "bad syntax for require sub-form"
-        stx)])))
+                stx)))]
+        [_
+         (raise-syntax-error
+          #f
+          "bad syntax for require sub-form"
+          stx)]))))

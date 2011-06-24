@@ -14,7 +14,6 @@
     [(_ body bindings)
      (syntax/loc stx (letrec bindings body))]))
 
-
 ; CONTRACTS
 
 
@@ -160,7 +159,8 @@
        stx]
       [else
        (define rewritten
-         (kernel:kernel-syntax-case 
+         (let ([stx (syntax-disarm stx saved-code-inspector)])
+           (kernel:kernel-syntax-case 
           stx
           #f
           ; cond :
@@ -235,7 +235,7 @@
            (let ([content (syntax-e stx)])
              (if (pair? content)
                  (rebuild-stx (syntax-pair-map content recur-regular) stx)
-                 stx))]))
+                 stx))])))
        
        (if (eq? (stepper-syntax-property stx 'stepper-xml-hint) 'from-xml-box)
            (stepper-syntax-property #`(#%plain-app 
@@ -855,9 +855,8 @@
                   
       (define (recertifier vals)
         (match-let* ([(vector new-exp bindings) vals])
-          (vector (stepper-recertify new-exp exp)
-                  (map (lambda (b)
-                         (stepper-recertify b exp))
+          (vector new-exp
+                  (map (lambda (b) b)
                        bindings))))
 
       ;; this is a terrible hack... until some other language form needs it. 
@@ -892,7 +891,8 @@
              (vector (wcm-wrap 13 exp) null)]
             
             [else
-             (recertifier
+             (let ([exp (syntax-disarm exp saved-code-inspector)])
+              (recertifier
               (maybe-final-val-wrap
                (kernel:kernel-syntax-case 
                 exp #f
@@ -1177,7 +1177,7 @@
                  (varref-abstraction #`var-stx)]
                 
                 [else 
-                 (error 'annotate "unexpected syntax for expression: ~v" (syntax->datum exp))])))])))
+                 (error 'annotate "unexpected syntax for expression: ~v" (syntax->datum exp))]))))])))
   
   ;; annotate/top-level : syntax-> syntax
   ;; expansion of teaching level language programs produces two kinds of 
@@ -1345,7 +1345,7 @@
 (define saved-code-inspector (current-code-inspector))
 
 (define (stepper-recertify new-stx old-stx)
-  (syntax-recertify new-stx old-stx saved-code-inspector #f))
+  (syntax-rearm new-stx old-stx #t))
 
 ;; does this stx have the 'stepper-skip-completely property?
 (define (skipped? stx)

@@ -1221,7 +1221,7 @@ static int common4(mz_jit_state *jitter, void *_data)
     scheme_jit_register_sub_func(jitter, code, scheme_false);
   }
 
-  /* *** syntax_ecode *** */
+  /* *** syntax_e_code *** */
   /* R0 is (potential) syntax object */
   {
     GC_CAN_IGNORE jit_insn *ref, *reffail, *refrts;
@@ -1260,8 +1260,12 @@ static int common4(mz_jit_state *jitter, void *_data)
     jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
     (void)jit_bmsi_ul(reffail, JIT_R2, STX_SUBSTX_FLAG);
     
-    /* No propagations. Extract value. */
+    /* Maybe needs taint handling; check STX_ARMED_FLAG flag */
     mz_patch_branch(ref);
+    jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+    (void)jit_bmsi_ul(reffail, JIT_R2, STX_ARMED_FLAG);
+    
+    /* No propagations or dye packs. Extract value. */
     jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Stx *)0x0)->val);
 
     mz_epilog(JIT_R2);

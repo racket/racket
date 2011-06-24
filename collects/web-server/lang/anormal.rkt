@@ -33,10 +33,10 @@
     (anormal id stx))
   
   (define (anormal ctxt stx)
-    (recertify
+    (rearm
      stx
      (kernel-syntax-case
-         stx (transformer?)
+         (disarm stx) (transformer?)
        [(begin)
         (anormal ctxt (syntax/loc stx (#%plain-app void)))]
        [(begin lbe)

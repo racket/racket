@@ -9,6 +9,7 @@
              "kw-file.rkt"
              "namespace.rkt"
              "struct.rkt"
+             "cert.rkt"
              (for-syntax "stxcase-scheme.rkt"))
 
   (#%provide (all-from-except "pre-base.rkt"
@@ -31,6 +32,7 @@
              (all-from "stxcase-scheme.rkt")
              (all-from "qqstx.rkt")
              (all-from "namespace.rkt")
+             (all-from "cert.rkt")
              (for-syntax syntax-rules syntax-id-rules ... _)
              (rename -open-input-file open-input-file)
              (rename -open-output-file open-output-file)

@@ -121,9 +121,7 @@ void scheme_init_compile_recs(Scheme_Compile_Info *src, int drec,
     dest[i].comp = 1;
     dest[i].dont_mark_local_use = src[drec].dont_mark_local_use;
     dest[i].resolve_module_ids = src[drec].resolve_module_ids;
-    dest[i].no_module_cert = src[drec].no_module_cert;
     dest[i].value_name = scheme_false;
-    dest[i].certs = src[drec].certs;
     /* should be always NULL */
     dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
@@ -144,10 +142,8 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
     dest[i].comp = 0;
     dest[i].depth = src[drec].depth;
     dest[i].value_name = scheme_false;
-    dest[i].certs = src[drec].certs;
     dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
-    dest[i].no_module_cert = src[drec].no_module_cert;
     dest[i].env_already = 0;
     dest[i].comp_flags = src[drec].comp_flags;
   }
@@ -168,9 +164,7 @@ void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
   lam[dlrec].comp = 1;
   lam[dlrec].dont_mark_local_use = src[drec].dont_mark_local_use;
   lam[dlrec].resolve_module_ids = src[drec].resolve_module_ids;
-  lam[dlrec].no_module_cert = src[drec].no_module_cert;
   lam[dlrec].value_name = scheme_false;
-  lam[dlrec].certs = src[drec].certs;
   lam[dlrec].observer = src[drec].observer;
   lam[dlrec].pre_unwrapped = 0;
   lam[dlrec].env_already = 0;
@@ -185,13 +179,6 @@ void scheme_merge_lambda_rec(Scheme_Compile_Info *src, int drec,
 void scheme_compile_rec_done_local(Scheme_Compile_Info *rec, int drec)
 {
   rec[drec].value_name = scheme_false;
-}
-
-void scheme_rec_add_certs(Scheme_Compile_Expand_Info *src, int drec, Scheme_Object *stx)
-{
-  Scheme_Object *certs;
-  certs = scheme_stx_extract_certs(stx, src[drec].certs);
-  src[drec].certs = certs;
 }
 
 /**********************************************************************/
@@ -284,8 +271,7 @@ static void init_compile_data(Scheme_Comp_Env *env)
   data->min_use = c;
 }
 
-Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags,
-					      Scheme_Comp_Env *base, Scheme_Object *certs)
+Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Scheme_Comp_Env *base)
 {
   Scheme_Comp_Env *frame;
   int count;
@@ -303,7 +289,6 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags,
     frame->values = vals;
   }
 
-  frame->certs = certs;
   frame->num_bindings = num_bindings;
   frame->flags = flags | (base->flags & SCHEME_NO_RENAME);
   frame->next = base;
@@ -495,7 +480,7 @@ void scheme_set_local_syntax(int pos,
 }
 
 Scheme_Comp_Env *
-scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Comp_Env *env, int flags, Scheme_Object *certs)
+scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Comp_Env *env, int flags)
 {
   Scheme_Comp_Env *frame;
   int len, i, count;
@@ -503,7 +488,7 @@ scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Comp_Env *env, int flag
   len = scheme_stx_list_length(vals);
   count = len;
 
-  frame = scheme_new_compilation_frame(count, flags, env, certs);
+  frame = scheme_new_compilation_frame(count, flags, env);
 
   for (i = 0; i < len ; i++) {
     if (SCHEME_STX_SYMBOLP(vals))
@@ -527,7 +512,7 @@ Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env)
       || scheme_is_module_env(env)
       || scheme_is_module_begin_env(env)
       || (env->flags & SCHEME_INTDEF_FRAME))
-    return scheme_new_compilation_frame(0, 0, env, NULL);
+    return scheme_new_compilation_frame(0, 0, env);
   else
     return env;
 }
@@ -535,7 +520,7 @@ Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env)
 Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env)
 {
   if (env->flags & SCHEME_NO_RENAME) {
-    env = scheme_new_compilation_frame(0, 0, env, NULL);
+    env = scheme_new_compilation_frame(0, 0, env);
     env->flags -= SCHEME_NO_RENAME;
   }
 
@@ -562,7 +547,7 @@ Scheme_Comp_Env *scheme_extend_as_toplevel(Scheme_Comp_Env *env)
   if (scheme_is_toplevel(env))
     return env;
   else
-    return scheme_new_compilation_frame(0, SCHEME_TOPLEVEL_FRAME, env, NULL);
+    return scheme_new_compilation_frame(0, SCHEME_TOPLEVEL_FRAME, env);
 }
 
 Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int resolved, int flags)
@@ -1572,9 +1557,7 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
 
   depth = start_frame->skip_depth;
 
-  /* Find frames to be covered by the skip table.
-     The theory here is the same as the `mapped' table
-     in Scheme_Cert (see "syntax.c") */
+  /* Find frames to be covered by the skip table. */
   for (end_frame = start_frame->next;
        end_frame && ((depth & end_frame->skip_depth) != end_frame->skip_depth);
        end_frame = end_frame->next) {
@@ -1604,6 +1587,14 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
   start_frame->skip_table = table;
 }
 
+static void check_taint(Scheme_Object *find_id)
+{
+  if (scheme_stx_is_tainted(find_id))
+    scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id, 
+                        "cannot use identifier tainted by macro transformation");
+}
+
+
 /*********************************************************************/
 /* 
 
@@ -1628,7 +1619,7 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
 
 Scheme_Object *
 scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
-		      Scheme_Object *certs, Scheme_Object *in_modidx,
+		      Scheme_Object *in_modidx,
 		      Scheme_Env **_menv, int *_protected,
                       Scheme_Object **_lexical_binding_id)
 {
@@ -1690,15 +1681,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 		  || ((frame->flags & SCHEME_CAPTURE_LIFTED)
 		      && scheme_stx_bound_eq(find_id, frame->values[i], scheme_make_integer(phase))))) {
 	    /* Found a lambda-, let-, etc. bound variable: */
-	    /* First, check certs (don't bind with fewer certs): */
-	    if (!(flags & SCHEME_NO_CERT_CHECKS) 
-		&& !(frame->flags & (SCHEME_CAPTURE_WITHOUT_RENAME | SCHEME_CAPTURE_LIFTED))) {
-	      if (scheme_stx_has_more_certs(find_id, certs, frame->values[i], frame->certs)) {
-		scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
-				    "reference is more certified than binding");
-		return NULL;
-	      }
-	    }
+            check_taint(find_id);
 	    /* Looks ok; return a lexical reference */
             if (_lexical_binding_id) {
               if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME))
@@ -1732,14 +1715,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	}
       
 	if (issame) {
-	  if (!(flags & SCHEME_NO_CERT_CHECKS) 
-	      && !(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)) {
-	    if (scheme_stx_has_more_certs(find_id, certs, COMPILE_DATA(frame)->const_names[i], frame->certs)) {
-	      scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
-				  "reference is more certified than binding");
-	      return NULL;
-	    }
-	  }
+          check_taint(find_id);
 
           if (_lexical_binding_id) {
             if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME))
@@ -1788,6 +1764,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   src_find_id = find_id;
   modidx = scheme_stx_module_name(NULL, &find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, 
                                   NULL, NULL, NULL, NULL, &rename_insp);
+
   /* If modidx and modidx is not #<undefined>,  then find_id is now a 
      symbol, otherwise it's still an identifier. */
 
@@ -1874,7 +1851,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     val = scheme_module_syntax(modname, env->genv, find_id);
     if (val && !(flags & SCHEME_NO_CERT_CHECKS))
       scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
-					find_id, src_find_id, certs, NULL, rename_insp,
+					find_id, src_find_id, NULL, NULL, rename_insp,
                                         -2, 0, 
 					NULL, NULL,
                                         env->genv, NULL);
@@ -1889,6 +1866,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
   
   if (val) {
+    check_taint(src_find_id);
     return val;
   }
 
@@ -1898,7 +1876,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       pos = 0;
     else
       pos = scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
-					      find_id, src_find_id, certs, NULL, rename_insp, -1, 1,
+					      find_id, src_find_id, NULL, NULL, rename_insp, -1, 1,
 					      _protected, NULL, env->genv, NULL);
     modpos = (int)SCHEME_INT_VAL(pos);
   } else
@@ -1931,6 +1909,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	   for expand mode, it prevents wrapping the identifier with #%top. */
 	/* Don't need a pos, because the symbol's gensym-ness (if any) will be
 	   preserved within the module. */
+        check_taint(src_find_id);
 	return scheme_hash_module_variable(genv, genv->module->self_modidx, find_id, 
 					   genv->module->insp,
 					   -1, genv->mod_phase);
@@ -1938,6 +1917,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     } else
       return NULL;
   }
+
+  check_taint(src_find_id);
 
   /* Used to have `&& !SAME_OBJ(modidx, modname)' below, but that was a bad
      idea, because it causes module instances to be preserved. */
@@ -1949,7 +1930,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
           || (flags & SCHEME_REFERENCING))) {
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
-				       genv->module->insp,
+				       (rename_insp ? rename_insp : genv->module->insp),
 				       modpos, SCHEME_INT_VAL(mod_defn_phase));
   }
 
@@ -2149,12 +2130,6 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
 
   menv = scheme_current_thread->current_local_menv;
 
-  expr = scheme_stx_cert(expr, scheme_false, 
-			 (menv && menv->module) ? menv : NULL,
-			 scheme_current_thread->current_local_certs, 
-			 NULL, 1);
-
-  expr = scheme_stx_activate_certs(expr);
   orig_expr = expr;
 
   expr = cp(data, &ids, expr, orig_env);
@@ -2315,7 +2290,7 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   init_compile_data((Scheme_Comp_Env *)&inlined_e);
   inlined_e.base.prefix = NULL;
 
-  v = scheme_lookup_binding(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, NULL, NULL, NULL, NULL, NULL);
+  v = scheme_lookup_binding(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, NULL, NULL, NULL, NULL);
   if (v) {
     if (!SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type)) {
       *_use_map = -1;
@@ -2411,6 +2386,11 @@ void scheme_check_identifier(const char *formname, Scheme_Object *id,
     scheme_wrong_syntax(formname, form ? id : NULL, 
 			form ? form : id, 
 			"not an identifier%s", where);
+
+  if (scheme_stx_is_tainted(id))
+    scheme_wrong_syntax(formname, form ? id : NULL, 
+			form ? form : id, 
+			"cannot bind identifier tainted by macro expansion%s", where);
 }
 
 void scheme_begin_dup_symbol_check(DupCheckRecord *r, Scheme_Comp_Env *env)

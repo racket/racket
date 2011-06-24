@@ -19,9 +19,6 @@
       [(var . others)
        (cons #'var (arglist-bindings #'others))]))
 
-
-
-
   ;; Retreives the binding of a variable from a normal-breakpoint-info.
   ;; Returns a list of pairs `(,variable-name-stx ,variable-value). Each
   ;; item in the list is a shadowed instance of a variable with the given
@@ -308,9 +305,9 @@
                    #,@new-bodies))))]))
         
         (define annotated
-          (syntax-recertify
+          (syntax-rearm
            (kernel:kernel-syntax-case
-            expr #f
+            (syntax-disarm expr code-insp) #f
             [var-stx (identifier? (syntax var-stx))
                      (let ([binder (and (syntax-original? expr)
                                         (srfi:member expr bound-vars free-identifier=?))])
@@ -382,9 +379,7 @@
             
             [else (error 'expr-syntax-object-iterator "unknown expr: ~a"
                          (syntax->datum expr))])
-           expr
-           (current-code-inspector)
-           #f))
+           expr))
         
         (if annotate-break?
             (break-wrap
@@ -394,4 +389,6 @@
              is-tail?)
             annotated))
       
-      (values (top-level-annotate stx) (hash-map breakpoints (lambda (k v) k))))))
+      (values (top-level-annotate stx) (hash-map breakpoints (lambda (k v) k)))))
+
+  (define code-insp (current-code-inspector)))

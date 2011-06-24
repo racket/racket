@@ -50,7 +50,7 @@
       #:literals (values define-type-alias-internal define-typed-struct-internal define-type-internal
 			 define-typed-struct/exec-internal :-internal assert-predicate-internal
 			 require/typed-internal declare-refinement-internal
-			 define-values quote-syntax #%plain-app begin)
+			 define-values quote-syntax #%plain-app begin define-syntaxes)
       ;#:literal-sets (kernel-literals)
 
       ;; forms that are handled in other ways
@@ -157,7 +157,7 @@
       ;; define-syntaxes just get noted
       [(define-syntaxes (var:id ...) . rest)
        (map make-def-stx-binding (syntax->list #'(var ...)))]
-
+      
       ;; otherwise, do nothing in this pass
       ;; handles expressions, provides, requires, etc and whatnot
       [_ (list)])))

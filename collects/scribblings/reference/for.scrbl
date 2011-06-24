@@ -344,7 +344,9 @@ The result can be either @racket[#f], to indicate that the forms
 should not be treated specially (perhaps because the number of bound
 identifiers is inconsistent with the @racket[(id . _rest)] form), or a
 new @racket[_clause] to replace the given one. The new clause might
-use @racket[:do-in].}
+use @racket[:do-in]. To protect identifiers in the result of 
+@racket[clause-transform-expr], use @racket[for-clause-syntax-protect]
+instead of @racket[syntax-protect].
 
 @mz-examples[
 (define-sequence-syntax in-digits
@@ -370,7 +372,7 @@ use @racket[:do-in].}
 (for/list ([d (in-digits 1138)]) d)
 
 (map in-digits (list 137 216))
-]
+]}
 
 @defform[(:do-in ([(outer-id ...) outer-expr] ...)
                  outer-check
@@ -410,9 +412,20 @@ inner-expr] ...)] section.
 The actual @racket[loop] binding and call has additional loop
 arguments to support iterations in parallel with the @racket[:do-in]
 form, and the other pieces are similarly accompanied by pieces from
-parallel iterations.}
+parallel iterations.
 
-For an example of @racket[:do-in], see @racket[define-sequence-syntax] above.
+For an example of @racket[:do-in], see @racket[define-sequence-syntax].}
+
+@defproc[(for-clause-syntax-protect [stx syntax?]) syntax?]{
+
+Provided @racket[for-syntax]: Like @racket[syntax-protect], but allows
+the @racket[for] expander to @tech{disarm} the result syntax object,
+and arms the pieces of a clause instead of the entire syntax object.
+
+Use this function to protect the result of a
+@racket[_clause-transform-expr] that is bound by
+@racket[define-sequence-syntax].}
+
 
 @section{Do Loops}
 

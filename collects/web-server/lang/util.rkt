@@ -4,7 +4,8 @@
          racket/contract)
 (provide/contract
  [transformer? (parameter/c boolean?)]
- [recertify (syntax? syntax? . -> . syntax?)]
+ [disarm (syntax? . -> . syntax?)]
+ [rearm (syntax? syntax? . -> . syntax?)]
  [current-code-labeling (parameter/c (syntax? . -> . syntax?))]
  [generate-formal ((symbol?) ((or/c false/c syntax?)) . ->* . (values syntax? syntax?))]
  [formals-list (syntax? . -> . (listof syntax?))]
@@ -15,8 +16,12 @@
 
 (define transformer? (make-parameter #f))
 
-(define (recertify old-expr expr)
-  (syntax-recertify expr old-expr (current-code-inspector) #f))
+(define code-insp (current-code-inspector))
+
+(define (disarm expr)
+  (syntax-disarm expr code-insp))
+(define (rearm old-expr expr)
+  (syntax-rearm expr old-expr))
 
 (define current-code-labeling
   (make-parameter
@@ -41,9 +46,9 @@
      (list* #'rv (syntax->list #'(v ...)))]))
 
 (define ((make-define-case inner) stx)
-  (recertify
+  (rearm
    stx
-   (syntax-case stx (define-values define-syntaxes define-values-for-syntax)
+   (syntax-case (disarm stx) (define-values define-syntaxes define-values-for-syntax)
      [(define-values (v ...) ve)
       (let-values ([(nve) (inner #'ve)])
         (quasisyntax/loc stx
@@ -58,18 +63,18 @@
       (inner #'expr)])))
 
 (define ((make-module-case inner) stx)
-  (recertify
+  (rearm
    stx
-   (syntax-case* stx (#%provide) free-identifier=?     
+   (syntax-case* (disarm stx) (#%provide) free-identifier=?     
      [(#%provide spec ...)
       stx]
      [_
       (inner stx)])))
 
 (define ((make-lang-module-begin make-labeling transform) stx)
-  (recertify
+  (rearm
    stx
-   (syntax-case stx ()
+   (syntax-case (disarm stx) ()
      [(mb forms ...)
       (with-syntax ([(pmb body ...)
                      (local-expand (quasisyntax/loc stx

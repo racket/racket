@@ -11,7 +11,7 @@
          (typecheck typechecker provide-handling tc-toplevel)
          (env tvar-env type-name-env type-alias-env)
          (r:infer infer)
-         (utils tc-utils)
+         (utils tc-utils disarm)
          (rep type-rep)
          (except-in (utils utils) infer)
          (only-in (r:infer infer-dummy) infer-param)
@@ -59,7 +59,7 @@
                      ;; reinitialize seen type variables
                      [type-name-references null])
         (do-time "Initialized Envs")
-        (let ([fully-expanded-stx (local-expand stx expand-ctxt null)])
+        (let ([fully-expanded-stx (disarm* (local-expand stx expand-ctxt null))])
           (when (show-input?)
             (pretty-print (syntax->datum fully-expanded-stx)))
           (do-time "Local Expand Done")
@@ -69,4 +69,4 @@
                          [debugging? #f])
             (let ([result (checker fully-expanded-stx)])
               (do-time "Typechecking Done")
-              . body)))))))
+              (let () . body))))))))

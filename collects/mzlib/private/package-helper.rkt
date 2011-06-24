@@ -50,10 +50,7 @@
 
   (define (rebuild ctxt val)
     (if (syntax? ctxt)
-	(syntax-recertify (datum->syntax-object ctxt val ctxt ctxt)
-			  ctxt
-			  insp
-			  #f)
+	(datum->syntax-object ctxt val ctxt ctxt)
 	val))
   
   (define (rebuild-cons car cdr stx)
