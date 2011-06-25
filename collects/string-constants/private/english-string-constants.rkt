@@ -207,6 +207,8 @@ please adhere to these guidelines:
  (cs-lexical-variable "lexical variable")
  (cs-set!d-variable "set!’d variable")
  (cs-imported-variable "imported variable")
+ (cs-unused-require "unused require")
+ (cs-free-variable "free variable")
 
   ;; mode sub-menu in the "view" menu
   (cs-check-syntax-mode "Check Syntax Mode")
