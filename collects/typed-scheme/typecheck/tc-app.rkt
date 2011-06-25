@@ -419,7 +419,7 @@
 	   [v-ty
 	    (let ([arg-tys (list v-ty e-t (single-value #'val))])
 	      (tc/funapp #'op #'(v e val) (single-value #'op) arg-tys expected))])))]
-    [(#%plain-app (~and op (~literal vector)) args:expr ...)
+    [(#%plain-app (~and op (~or (~literal vector-immutable) (~literal vector))) args:expr ...)
      (let loop ([expected expected])
        (match expected
          [(tc-result1: (Vector: t))
