@@ -276,8 +276,8 @@ corresponding to @racket[trest], where @racket[bound]
 @defform[(Sequenceof t ...)]{A @rtech{sequence} that produces values of the
 types @racket[_t ...] on each iteration.}
 
-@defform[(CustodianBoxof t)]{A @rtech{custodian box} of @racket[t].}
-@defform[(ThreadCellof t)]{A @rtech{thread cell} of @racket[t].}
+@defform[(Custodian-Boxof t)]{A @rtech{custodian box} of @racket[t].}
+@defform[(Thread-Cellof t)]{A @rtech{thread cell} of @racket[t].}
 
 
 @section{Syntax Objects}

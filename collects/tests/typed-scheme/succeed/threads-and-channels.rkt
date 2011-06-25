@@ -52,7 +52,7 @@
 
 
 
-(: tc (ThreadCellof Integer))
+(: tc (Thread-Cellof Integer))
 (define tc (make-thread-cell 0))
 
 (thread-cell-set! tc 1)

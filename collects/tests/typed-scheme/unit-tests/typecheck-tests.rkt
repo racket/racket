@@ -1293,7 +1293,7 @@
         (tc-e (let: ((c : Custodian (current-custodian)))
                 (custodian? c))
               #:ret (ret B (-FS -top -bot)))
-        (tc-e (let: ((c : (CustodianBoxof Integer) (make-custodian-box (current-custodian) 1)))
+        (tc-e (let: ((c : (Custodian-Boxof Integer) (make-custodian-box (current-custodian) 1)))
                 (custodian-box-value c)) -Int)
 
         ;Thread Groups
