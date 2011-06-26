@@ -124,6 +124,13 @@
              (values (or/c false/c number?)
                      (or/c false/c (is-a?/c editor<%>)))]{
 
+    Calls @method[editor:basic<%> get-pos/text-dc-location] with
+          the x and y coordinates of @racket[event].
+                                                          }
+  @defmethod[(get-pos/text-dc-location [x exact-integer?] [y exact-integer?])
+             (values (or/c false/c number?)
+                     (or/c false/c (is-a?/c editor<%>)))]{
+
    This method's first result is @racket[#f] when the mouse
    event does not correspond to a location in the editor. 
 
@@ -132,7 +139,7 @@
    otherwise the first result will be @racket[#f]. 
 
    The @racket[editor<%>] object will always be the nearest
-   enclosing editor containing the mouse click.
+   enclosing editor containing the point (@racket[x], @racket[y]).
   }
 }
 @defmixin[editor:basic-mixin (editor<%>) (editor:basic<%>)]{

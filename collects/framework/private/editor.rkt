@@ -52,9 +52,10 @@
                                  #f))
       
       (define/public (get-pos/text event)
-        (let ([event-x (send event get-x)]
-              [event-y (send event get-y)]
-              [on-it? (box #f)])
+        (get-pos/text-dc-location (send event get-x) (send event get-y)))
+      
+      (define/public (get-pos/text-dc-location event-x event-y)
+        (let ([on-it? (box #f)])
           (let loop ([editor this])
             (let-values ([(x y) (send editor dc-location-to-editor-location event-x event-y)])
               (cond
