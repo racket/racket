@@ -307,9 +307,17 @@
      (#:args e1)
      [(enter-prim prim-define-values ! exit-prim)
       (make p:define-values $1 $4 null $3 #f)]
-     [(enter-prim prim-define-syntaxes !
+     [(enter-prim prim-define-syntaxes (? Eval)
                   phase-up (? EE/LetLifts) (? Eval) exit-prim)
-      (make p:define-syntaxes $1 $7 null $3 $5 $6)]
+      ;; FIXME: define-syntax can trigger instantiation of phase-1 code from other
+      ;; modules. Ideally, should have [ ... prim-define-syntaxes ! (? Eval) ... ]
+      ;; but gives shift/reduce conflict.
+      ;; One solution: add 'next marker between form check and phase-1 init.
+      ;; Also search for other places where phase-1 init can happen.
+      (let ([$3
+             (for/or ([local-action (in-list $3)])
+               (and (local-exn? local-action) (local-exn-exn local-action)))])
+        (make p:define-syntaxes $1 $7 null $3 $5 $6))]
      [(enter-prim prim-require (? Eval) exit-prim)
       (make p:require $1 $4 null #f $3)]
      [()
