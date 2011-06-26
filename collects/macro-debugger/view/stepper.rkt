@@ -80,9 +80,10 @@
 
     ;; remove-current-term : -> void
     (define/public (remove-current-term)
-      (cursor:remove-current! terms)
-      (trim-navigator)
-      (refresh))
+      (when (cursor:has-next? terms)
+        (cursor:remove-current! terms)
+        (trim-navigator)
+        (refresh)))
 
     ;; show-in-new-frame : -> void
     (define/public (show-in-new-frame)
