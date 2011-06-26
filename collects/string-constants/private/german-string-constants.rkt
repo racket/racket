@@ -110,6 +110,8 @@
  (cs-lexical-variable "lexikalische Variable")
  (cs-set!d-variable "geset!zte Variable")
  (cs-imported-variable "importierte Variable")
+ (cs-unused-require "unbenutztes require")
+ (cs-free-variable "freie Variable")
 
   ;; mode sub-menu in the "view" menu
   (cs-check-syntax-mode "Syntax-Check-Modus")
