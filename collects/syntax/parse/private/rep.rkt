@@ -726,10 +726,10 @@ A syntax class is integrable if
        #'name]
       [_
        (wrong-syntax stx "bad ~~var form")]))
-  (define-values (scname argu pfx)
+  (define-values (scname sc+args-stx argu pfx)
     (syntax-case stx (~var)
       [(~var _name)
-       (values #f null #f)]
+       (values #f #f null #f)]
       [(~var _name sc/sc+args . rest)
        (let-values ([(sc argu)
                      (let ([p (check-stxclass-application #'sc/sc+args stx)])
@@ -740,7 +740,7 @@ A syntax class is integrable if
                                       #:context stx))
          (define sep
            (options-select-value chunks '#:attr-name-separator #:default #f))
-         (values sc argu (if sep (syntax-e sep) ".")))]
+         (values sc #'sc/sc+args argu (if sep (syntax-e sep) ".")))]
       [_
        (wrong-syntax stx "bad ~~var form")]))
   (cond [(and (epsilon? name0) (not scname))
@@ -748,7 +748,7 @@ A syntax class is integrable if
         [(and (wildcard? name0) (not scname))
          (create-pat:any)]
         [scname
-         (let ([sc (get-stxclass/check-arity scname stx
+         (let ([sc (get-stxclass/check-arity scname sc+args-stx
                                              (length (arguments-pargs argu))
                                              (arguments-kws argu))])
            (parse-pat:var* stx allow-head? name0 sc argu pfx))]
