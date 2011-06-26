@@ -42,6 +42,7 @@
 (define drscheme-macro-stepper-director%
   (class macro-stepper-director%
     (init-field filename)
+    (inherit-field stepper-frames)
     (define eventspace (current-eventspace))
 
     (define stepper #f)
@@ -70,6 +71,12 @@
              (config (new macro-stepper-config/prefs%))
              (filename filename)
              (director this))))
+
+    (define/public (shutdown)
+      (when (pref:close-on-reset-console?)
+        (for ([(frame flags) (in-hash stepper-frames)])
+          (unless (memq 'no-obsolete flags)
+            (send frame show #f)))))
 
     (super-new)))
 
@@ -256,6 +263,7 @@
           (super reset-console)
           (when current-stepper-director
             (send current-stepper-director add-obsoleted-warning)
+            (send current-stepper-director shutdown)
             (set! current-stepper-director #f))
 
           ;; setting the eval handler at this point disables CM,

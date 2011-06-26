@@ -208,6 +208,9 @@
                               "Refresh on resize"
                               (get-field refresh-on-resize? config))
       (menu-option/notify-box extras-menu
+                              "Close old stepper on Run"
+                              (get-field close-on-reset-console? config))
+      (menu-option/notify-box extras-menu
                               "Draw binding arrows"
                               (get-field draw-arrows? config))
       (menu-option/notify-box extras-menu

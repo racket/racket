@@ -6,6 +6,7 @@
          unstable/gui/notify
          unstable/gui/prefs)
 (provide pref:macro-step-limit
+         pref:close-on-reset-console?
          macro-stepper-config-base%
          macro-stepper-config/prefs%
          macro-stepper-config/prefs/readonly%)
@@ -30,6 +31,7 @@
 (preferences:set-default 'MacroStepper:MacroStepLimit 40000
                          (lambda (x) (or (eq? x #f) (exact-positive-integer? x))))
 (preferences:set-default 'MacroStepper:RefreshOnResize? #t boolean?)
+(preferences:set-default 'MacroStepper:CloseOnResetConsole? #t boolean?)
 
 (define pref:width (pref:get/set 'MacroStepper:Frame:Width))
 (define pref:height (pref:get/set 'MacroStepper:Frame:Height))
@@ -50,6 +52,7 @@
 (define pref:split-context? (pref:get/set 'MacroStepper:SplitContext?))
 (define pref:macro-step-limit (pref:get/set 'MacroStepper:MacroStepLimit))
 (define pref:refresh-on-resize? (pref:get/set 'MacroStepper:RefreshOnResize?))
+(define pref:close-on-reset-console? (pref:get/set 'MacroStepper:CloseOnResetConsole?))
 
 (define macro-stepper-config-base%
   (class* prefs-base% (config<%>)
@@ -75,7 +78,8 @@
       (extra-navigation? pref:extra-navigation?)
       (debug-catch-errors? pref:debug-catch-errors?)
       (split-context? pref:split-context?)
-      (refresh-on-resize? pref:refresh-on-resize?))
+      (refresh-on-resize? pref:refresh-on-resize?)
+      (close-on-reset-console? pref:close-on-reset-console?))
     (super-new)))
 
 (define macro-stepper-config/prefs%
