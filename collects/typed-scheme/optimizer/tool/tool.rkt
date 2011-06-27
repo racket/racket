@@ -43,11 +43,17 @@
                     [read-accept-reader #t])
        (expand (tr:read-syntax portname input)))))
   (set! log (reverse log))
+  (define (highlight-irritant i)
+    (let ([res (list (sub1 (syntax-position i))
+                     (sub1 (+ (syntax-position i) (syntax-span i)))
+                     "red" #f 'high 'hollow-ellipse)])
+      (send defs highlight-range . res)
+      res))
   ;; highlight
   (define new-highlights
     (for/list ([l (in-list log)])
       (match l
-        [(log-entry msg raw-msg stx (app sub1 pos))
+        [(log-entry msg raw-msg stx (app sub1 pos) irritants)
          (let* ([end  (+ pos (syntax-span stx))]
                 [opt? (regexp-match #rx"^TR opt:" msg)] ;; opt or missed opt?
                 [color (if opt? "lightgreen" "pink")])
@@ -55,8 +61,11 @@
            (send defs set-clickback pos end
                  (lambda (ed start end)
                    (message-box "Performance Report" raw-msg)))
-           (list pos end color))]))) ; record the highlight, to undo it later
-  (set! highlights (append new-highlights highlights)))
+           (list (list pos end color) ; record highlights to undo them later
+                 (if irritants
+                     (map highlight-irritant irritants)
+                     '())))])))
+  (set! highlights (append (apply append new-highlights) highlights)))
 
 (define remove-highlights-mixin
   (mixin ((class->interface text%)) ()
