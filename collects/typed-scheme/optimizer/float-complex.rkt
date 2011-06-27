@@ -378,7 +378,10 @@
            #:when (when (and (in-complex-layer? #'e)
                              (for/and ([subexpr (in-list (syntax->list #'(e.args ...)))])
                                (subtypeof? subexpr -Real)))
-                    (log-missed-optimization "unexpected complex type" this-syntax))
+                    (log-missed-optimization
+                     "unexpected complex type"
+                     "This expression has a Complex type, despite all its arguments being reals. If you do not want or expect complex numbers as results, you may want to restrict the type of the arguments, which may have a beneficial impact on performance."
+                     this-syntax))
            ;; We don't actually want to match.
            #:when #f
            #:with real-binding #'#f ; required, otherwise syntax/parse is not happy

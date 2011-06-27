@@ -77,12 +77,7 @@
 (define (log-float-real-missed-opt stx irritants)
   (log-missed-optimization
    "all args float-arg-expr, result not Float"
-   #:msg
-   (format "This expression has type ~a. It would be better optimized if it had a Float type. To fix this, change the irritant~a to have~a Float type~a."
-           (print-res (type-of stx))
-           (if (> (length irritants) 1) "s" "")
-           (if (> (length irritants) 1) ""  " a")
-           (if (> (length irritants) 1) "s" "")) ; plural
+   "This expression has a Real type. It would be better optimized if it had a Float type. To fix this, change the circled expression(s) to have Float type(s)."
    stx irritants))
 
 (define-syntax-class float-opt-expr
@@ -135,7 +130,8 @@
                           ;; which don't perform arithmetic despite returning numbers.
                           [e:arith-expr
                            (log-missed-optimization
-                            "exact arithmetic subexpression inside a float expression, extra precision discarded"
+                            "exact ops inside float expr"
+                            "This expression has a Float type, but the circled subexpression(s) use exact arithmetic. The extra precision of the exact arithmetic will be lost. Using Float types in these subexpression(s) may result in performance gains without significant precision loss."
                             this-syntax subexpr)]
                           [_ #f])))
                     safe-to-opt?)

@@ -33,6 +33,12 @@
     [(tc-result1: (MPair: _ _)) #t]
     [_ #f]))
 
+(define (log-pair-missed-opt stx irritant)
+  (log-missed-optimization
+   "car/cdr on a potentially empty list"
+   "According to its type, the circled list could be empty. Access to it cannot be safely optimized. To fix this, restrict the type to non-empty lists, maybe by wrapping this expression in a check for non-emptiness."
+   stx irritant))
+
 (define-syntax-class pair-opt-expr
   #:commit
   (pattern e:pair-derived-opt-expr
@@ -44,19 +50,13 @@
                       ;; in this case, we have a potentially empty list, but
                       ;; it has to be a list, otherwise, there would have been
                       ;; a type error
-                      (begin
-                        (log-missed-optimization "car/cdr on a potentially empty list"
-                                                 this-syntax #'p)
-                        #f))
+                      (begin (log-pair-missed-opt this-syntax #'p) #f))
            #:with opt
            (begin (log-optimization "pair" this-syntax)
                   #`(op.unsafe #,((optimize) #'p))))
   (pattern (#%plain-app op:mpair-op p:expr e:expr ...)
            #:when (or (has-mpair-type? #'p)
-                      (begin
-                        (log-missed-optimization "mpair op on a potentially empty mlist"
-                                                 this-syntax #'p)
-                        #f))
+                      (begin (log-pair-missed-opt this-syntax #'p) #f))
            #:with opt
            (begin (log-optimization "mutable pair" this-syntax)
                   #`(op.unsafe #,@(syntax-map (optimize) #'(p e ...))))))

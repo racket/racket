@@ -90,8 +90,7 @@
 
 ;; Attempts to merge the incoming missed optimization with existing ones.
 ;; Otherwise, adds the new one to the log.
-(define (log-missed-optimization kind stx [irritants '()]
-                                 #:msg [msg kind])
+(define (log-missed-optimization kind msg stx [irritants '()])
   ;; for convenience, if a single irritant is given, wrap it in a list
   ;; implicitly
   (let* ([irritants (if (list? irritants) irritants (list irritants))]
