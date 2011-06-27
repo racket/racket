@@ -53,18 +53,20 @@
   (define new-highlights
     (for/list ([l (in-list log)])
       (match l
-        [(log-entry msg raw-msg stx (app sub1 pos) irritants)
+        [(log-entry kind msg stx (app sub1 pos))
          (let* ([end  (+ pos (syntax-span stx))]
-                [opt? (regexp-match #rx"^TR opt:" msg)] ;; opt or missed opt?
+                [opt? (opt-log-entry? l)] ;; opt or missed opt?
                 [color (if opt? "lightgreen" "pink")])
            (send defs highlight-range pos end color)
            (send defs set-clickback pos end
                  (lambda (ed start end)
-                   (message-box "Performance Report" raw-msg)))
+                   (message-box "Performance Report" msg)))
            (list (list pos end color) ; record highlights to undo them later
-                 (if irritants
-                     (map highlight-irritant irritants)
-                     '())))])))
+                 ;; missed optimizations have irritants, circle them
+                 (if opt?
+                     '()
+                     (map highlight-irritant
+                          (missed-opt-log-entry-irritants l)))))])))
   (set! highlights (append (apply append new-highlights) highlights)))
 
 (define remove-highlights-mixin

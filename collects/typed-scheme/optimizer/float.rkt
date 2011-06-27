@@ -76,6 +76,8 @@
 
 (define (log-float-real-missed-opt stx irritants)
   (log-missed-optimization
+   "all args float-arg-expr, result not Float"
+   #:msg
    (format "This expression has type ~a. It would be better optimized if it had a Float type. To fix this, change the irritant~a to have~a Float type~a."
            (print-res (type-of stx))
            (if (> (length irritants) 1) "s" "")

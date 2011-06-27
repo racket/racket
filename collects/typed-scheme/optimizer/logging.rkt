@@ -7,16 +7,11 @@
 (provide log-optimization log-missed-optimization
          print-log clear-log
          with-intercepted-tr-logging with-tr-logging-to-port
-         (struct-out log-entry))
+         (struct-out log-entry)
+         (struct-out opt-log-entry)
+         (struct-out missed-opt-log-entry))
 
-(define (line+col->string stx)
-  (let ([line (syntax-line stx)]
-        [col  (syntax-column stx)])
-    (if (and line col)
-        (format "~a:~a" line col)
-        "(no location)")))
-
-(struct log-entry (msg raw-msg stx pos irritants) #:prefab)
+;;--------------------------------------------------------------------
 
 ;; to identify log messages that come from the optimizer
 ;; to be stored in the data section of log messages
@@ -29,64 +24,17 @@
 ;; a problem per se)
 (define log-so-far '())
 
-(define (gen-log-message msg stx from show-badness?)
-  (let* ([stx (locate-stx stx)]
-         [str (format "~a: ~a ~a ~s -- ~a"
-                      from
-                      (syntax-source-file-name stx)
-                      (line+col->string stx)
-                      (syntax->datum stx)
-                      msg)])
-    (if show-badness? ; #f or integer
-        (format "~a (~a times)" str show-badness?)
-        str)))
+;; msg is for consumption by the DrRacket tool
+(struct log-entry (kind msg stx pos) #:prefab)
+;; for optimizations only (not missed optimizations, those are below)
+(struct opt-log-entry log-entry () #:prefab)
 
-(define (log-optimization msg stx
-                          #:from [from "TR opt"]
-                          #:show-badness? [show-badness? #f]
-                          #:irritants [irritants #f])
-  (let* ([new-message (gen-log-message msg stx from show-badness?)]
-         [new-entry (log-entry new-message msg stx (syntax-position stx)
-                               irritants)])
+
+(define (log-optimization msg stx)
+  (let ([new-entry (opt-log-entry msg msg stx (syntax-position stx))])
     (set! log-so-far (cons new-entry log-so-far))))
 
-;; once the optimizer is done, we sort the log according to source
-;; location, then print it
-(define (print-log)
-  (define logger (current-logger))
-  ;; add missed optimizations messages to the log, now that we know all of them
-  (for-each (lambda (x)
-              (log-optimization
-               (format-missed-optimization x)
-               (missed-optimization-stx x)
-               #:from "TR missed opt"
-               #:show-badness?
-               (let ([badness (missed-optimization-badness x)])
-                 (and (> badness 1) badness))
-               #:irritants (missed-optimization-irritants x)))
-            missed-optimizations-log)
-  (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
-                                     (cons optimization-log-key x)))
-            (sort (remove-duplicates log-so-far)
-                  (match-lambda*
-                   [(list (log-entry msg-x raw-x stx-x pos-x irr-x)
-                          (log-entry msg-y raw-y stx-y pos-y irr-y))
-                    (cond [(not (or pos-x pos-y))
-                           ;; neither have location, sort by message
-                           (string<? msg-x msg-y)]
-                          [(not pos-y) #f]
-                          [(not pos-x) #t]
-                          [else
-                           ;; both have location
-                           (cond [(= pos-x pos-y)
-                                  ;; same location, sort by message
-                                  (string<? msg-x msg-y)]
-                                 ;; sort by source location
-                                 [else (< pos-x pos-y)])])]))))
-(define (clear-log)
-  (set! log-so-far '())
-  (set! missed-optimizations-log '()))
-
+;;--------------------------------------------------------------------
 
 ;; Keep track of optimizations that "almost" happened, with the intention
 ;; of reporting them to the user.
@@ -101,8 +49,9 @@
 ;; they are not actual irritants anymore because they were the stx for a miss
 ;; that got merged into this miss. we need to keep them around to detect
 ;; future potential merges.
-(struct missed-optimization (kind stx irritants merged-irritants badness)
-        #:transparent)
+(struct missed-opt-log-entry log-entry
+        (irritants merged-irritants badness)
+        #:prefab)
 
 (define missed-optimizations-log '())
 
@@ -112,35 +61,43 @@
 ;; optimization, and the child must be an irritant of the parent, or be a
 ;; merged irritant of the parent
 (define (parent-of? parent child)
-  (and (equal? (missed-optimization-kind parent)
-               (missed-optimization-kind child))
-       (member (missed-optimization-stx child)
-               (append (missed-optimization-irritants parent)
-                       (missed-optimization-merged-irritants parent)))))
+  (and (equal? (log-entry-kind parent)
+               (log-entry-kind child))
+       (member (log-entry-stx child)
+               (append (missed-opt-log-entry-irritants parent)
+                       (missed-opt-log-entry-merged-irritants parent)))))
 
 ;; combine reporting of two missed optimizations, increasing badness in the
 ;; process
 (define (combine-missed-optmizations parent child)
-  (missed-optimization
-   (missed-optimization-kind parent) ; same as child's
-   (missed-optimization-stx  parent) ; we report the outermost one
-   (remove-duplicates
-    (append (remove (missed-optimization-stx child)
-                    (missed-optimization-irritants parent))
-            (missed-optimization-irritants child)))
-   (remove-duplicates
-    (append (missed-optimization-merged-irritants child)
-            (missed-optimization-merged-irritants parent)
-            ;; we merge child in, keep it for future merges
-            (list (missed-optimization-stx child))))
-   (+ (missed-optimization-badness parent)
-      (missed-optimization-badness child))))
+  (missed-opt-log-entry
+   (log-entry-kind parent) ; same as child's
+   (log-entry-msg  parent)
+   (log-entry-stx  parent) ; we report the outermost one
+   (log-entry-pos  parent)
 
-(define (log-missed-optimization kind stx [irritants '()])
+   (remove-duplicates
+    (append (remove (log-entry-stx child)
+                    (missed-opt-log-entry-irritants parent))
+            (missed-opt-log-entry-irritants child)))
+   (remove-duplicates
+    (append (missed-opt-log-entry-merged-irritants child)
+            (missed-opt-log-entry-merged-irritants parent)
+            ;; we merge child in, keep it for future merges
+            (list (log-entry-stx child))))
+   (+ (missed-opt-log-entry-badness parent)
+      (missed-opt-log-entry-badness child))))
+
+;; Attempts to merge the incoming missed optimization with existing ones.
+;; Otherwise, adds the new one to the log.
+(define (log-missed-optimization kind stx [irritants '()]
+                                 #:msg [msg kind])
   ;; for convenience, if a single irritant is given, wrap it in a list
   ;; implicitly
   (let* ([irritants (if (list? irritants) irritants (list irritants))]
-         [new       (missed-optimization kind stx irritants '() 1)]
+         [new
+          (missed-opt-log-entry kind msg stx (syntax-position stx)
+                                irritants '() 1)]
          ;; check if the new one is the child of an old one
          ;; for/first is ok, since we can only have one parent in the list
          ;; (if we had more, one would have to be the parent of the other, so
@@ -156,8 +113,8 @@
     (set! missed-optimizations-log
           (cond [parent
                  ;; we found our parent, merge with it
-                 (if (member (missed-optimization-stx new)
-                             (missed-optimization-merged-irritants
+                 (if (member (log-entry-stx new)
+                             (missed-opt-log-entry-merged-irritants
                               parent))
                      ;; we have been merged in the past, do nothing
                      missed-optimizations-log
@@ -176,23 +133,92 @@
                  ;; no related entry, just add the new one
                  (cons new missed-optimizations-log)]))))
 
-(define (format-missed-optimization m)
-  (let ([kind      (missed-optimization-kind      m)]
-        [irritants (missed-optimization-irritants m)])
-    (if (not (null? irritants))
-        (format "~a -- caused by: ~a"
-                kind
-                (string-join
-                 (map (lambda (irritant)
-                        (let ([irritant (locate-stx irritant)])
-                          (format "~a ~s"
-                                  (line+col->string irritant)
-                                  (syntax->datum irritant))))
-                      (sort irritants <
-                            #:key (lambda (x)
-                                    (or (syntax-position x) 0))))
-                 ", "))
-        kind)))
+;; When we know all missed opts are known and merging has been done, we
+;; can add them to the regular log.
+(define (add-missed-opts-to-log)
+  (set! log-so-far (append log-so-far missed-optimizations-log)))
+
+
+;;--------------------------------------------------------------------
+
+;; Sort log according to source location. Returns the sorted log.
+(define (sort-log)
+  (sort (remove-duplicates log-so-far)
+        (match-lambda*
+         [(list (log-entry kind-x msg-x stx-x pos-x)
+                (log-entry kind-y msg-y stx-y pos-y))
+          (cond [(not (or pos-x pos-y))
+                 ;; neither have location, sort by message
+                 (string<? msg-x msg-y)]
+                [(not pos-y) #f]
+                [(not pos-x) #t]
+                [else
+                 ;; both have location
+                 (cond [(= pos-x pos-y)
+                        ;; same location, sort by message
+                        (string<? msg-x msg-y)]
+                       ;; sort by source location
+                       [else (< pos-x pos-y)])])])))
+
+(define (line+col->string stx)
+  (let ([line (syntax-line stx)]
+        [col  (syntax-column stx)])
+    (if (and line col)
+        (format "~a:~a" line col)
+        "(no location)")))
+
+(define (format-irritants irritants)
+  (if (null? irritants)
+      ""
+      (format " -- caused by: ~a"
+              (string-join
+               (map (lambda (irritant)
+                      (let ([irritant (locate-stx irritant)])
+                        (format "~a ~s"
+                                (line+col->string irritant)
+                                (syntax->datum irritant))))
+                    (sort irritants <
+                          #:key (lambda (x)
+                                  (or (syntax-position x) 0))))
+               ", "))))
+
+;; For command-line printing purposes.
+;; Not as user friendly as what's produced by the DrRacket tool.
+(define (format-log-entry entry)
+  (define stx (locate-stx (log-entry-stx entry)))
+  (define msg
+    (format "~a ~a ~s -- ~a"
+            (syntax-source-file-name stx)
+            (line+col->string stx)
+            (syntax->datum stx)
+            (log-entry-kind entry)))
+  (cond [(opt-log-entry? entry)
+         (format "TR opt: ~a" msg)]
+        [(missed-opt-log-entry? entry)
+         (define badness (missed-opt-log-entry-badness entry))
+         (format "TR missed opt: ~a~a~a"
+                 msg
+                 (format-irritants (missed-opt-log-entry-irritants entry))
+                 (if (> badness 1)
+                     (format " (~a times)" badness)
+                     ""))]))
+
+
+;; Once the optimizer is done, we sort the log according to source
+;; location, then print it.
+(define (print-log)
+  (define logger (current-logger))
+  (add-missed-opts-to-log)
+  (for ([x (sort-log)])
+    (log-message logger 'warning
+                 (format-log-entry x)
+                 (cons optimization-log-key x))))
+
+(define (clear-log)
+  (set! log-so-far '())
+  (set! missed-optimizations-log '()))
+
+;;--------------------------------------------------------------------
 
 ;; only intercepts TR log messages
 (define (with-intercepted-tr-logging interceptor thunk)
