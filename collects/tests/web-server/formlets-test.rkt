@@ -220,6 +220,15 @@
       (test-equal? "textarea-input"
                    (test-display (textarea-input #:cols 80 #:rows 70))
                    '((textarea ([name "input_0"] [rows "70"] [cols "80"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:rows 80 #:attributes '([class "awesome"])))
+                   '((textarea ([name "input_0"] [rows "80"] [class "awesome"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:cols 80 #:attributes '([class "awesome"])))
+                   '((textarea ([name "input_0"] [cols "80"] [class "awesome"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:cols 80 #:rows 70 #:attributes '([class "awesome"])))
+                   '((textarea ([name "input_0"] [rows "70"] [cols "80"] [class "awesome"]) "")))
       
       ; checkbox
       (test-equal? "checkbox"

@@ -223,6 +223,7 @@
                       #:display display)))
 
 (define (textarea-input
+         #:attributes [attrs empty]
          #:rows [rows #f]
          #:cols [cols #f])   
   (make-input
@@ -232,7 +233,8 @@
                   (append
                    (filter list?
                            (list (and rows (list 'rows (number->string rows)))
-                                 (and cols (list 'cols (number->string cols)))))))                      
+                                 (and cols (list 'cols (number->string cols)))))
+                   attrs))                      
            ""))))
 
 (provide/contract
@@ -307,8 +309,10 @@
                 . ->* .
                 (formlet/c any/c))]
  [textarea-input (()
-                  (#:rows number?
-                          #:cols number?)
+                  (#:attributes 
+                   (listof (list/c symbol? string?))
+                   #:rows number?
+                   #:cols number?)
                   . ->* .
                   (formlet/c (or/c false/c binding?)))])
 

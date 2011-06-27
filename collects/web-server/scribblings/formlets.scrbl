@@ -305,7 +305,8 @@ These @tech{formlet}s are the main combinators for form input.
 }
                                             
 @defproc[(textarea-input [#:rows rows (or/c false/c number?) #f]
-                         [#:cols cols (or/c false/c number?) #f])
+                         [#:cols cols (or/c false/c number?) #f]
+                         [#:attributes attrs (listof (list/c symbol? string?)) empty])
         (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an TEXTAREA element with attributes given in the arguments.
 }
