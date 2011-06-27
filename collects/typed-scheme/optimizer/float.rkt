@@ -4,7 +4,7 @@
          racket/dict racket/flonum
          (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
          "../utils/utils.rkt"
-         (types numeric-tower)
+         (types numeric-tower type-table)
          (optimizer utils numeric-utils logging fixnum))
 
 (provide float-opt-expr float-arg-expr)
@@ -74,6 +74,15 @@
   (pattern e:real-expr
            #:with opt #'(exact->inexact e)))
 
+(define (log-float-real-missed-opt stx irritants)
+  (log-missed-optimization
+   (format "This expression has type ~a. It would be better optimized if it had a Float type. To fix this, change the irritant~a to have~a Float type~a."
+           (print-res (type-of stx))
+           (if (> (length irritants) 1) "s" "")
+           (if (> (length irritants) 1) ""  " a")
+           (if (> (length irritants) 1) "s" "")) ; plural
+   stx irritants))
+
 (define-syntax-class float-opt-expr
   #:commit
   (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-arg-expr)
@@ -81,8 +90,7 @@
                          [missed-optimization? (and (not safe-to-opt?)
                                                     (in-real-layer? this-syntax))])
                     (when missed-optimization?
-                      (log-missed-optimization "unary, arg float-arg-expr, return type not Float"
-                                               this-syntax))
+                      (log-float-real-missed-opt this-syntax (list #'f)))
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "unary float" this-syntax)
@@ -100,11 +108,11 @@
                          [missed-optimization? (and (not safe-to-opt?)
                                                     (in-real-layer? this-syntax))])
                     (when missed-optimization?
-                      (log-missed-optimization "binary, args all float-arg-expr, return type not Float"
-                                               this-syntax
-                                               (for/list ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
-                                                          #:when (not (subtypeof? x -Flonum)))
-                                                 x)))
+                      (log-float-real-missed-opt
+                       this-syntax
+                       (for/list ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
+                                  #:when (not (subtypeof? x -Flonum)))
+                         x)))
                     ;; If an optimization was expected (whether it was safe or not doesn't matter),
                     ;; report subexpressions doing expensive exact arithmetic (Exact-Rational and
                     ;; Real arithmetic), since that extra precision would be "lost" by going to

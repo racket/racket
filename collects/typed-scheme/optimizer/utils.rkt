@@ -12,7 +12,8 @@
          mk-unsafe-tbl
          n-ary->binary
          unboxed-gensym reset-unboxed-gensym
-         optimize)
+         optimize
+         print-res)
 
 ;; if set to #t, the optimizer will dump its result to stdout before compilation
 (define *show-optimized-code* #f)
@@ -51,3 +52,8 @@
 ;; will be set to the actual optimization function at the entry point
 ;; of the optimizer
 (define optimize (make-parameter #f))
+
+(define (print-res t)
+  (match t
+    [(tc-result1: t f o)
+     (format "~a" t)]))
