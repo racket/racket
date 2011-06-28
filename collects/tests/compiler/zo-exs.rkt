@@ -103,14 +103,14 @@
                      (list (current-directory))))
  
  (roundtrip
-    (compilation-top                                            
-     0                                                          
+    (compilation-top
+     0
      (prefix 0 empty empty)
      (cons #hash()
            #hash())))
  
  (roundtrip
-    (compilation-top                                            
-     0                                                          
+    (compilation-top
+     0
      (prefix 0 empty empty)
      #hash())))
