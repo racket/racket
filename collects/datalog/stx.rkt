@@ -99,7 +99,13 @@
               (syntax-parse 
                stx
                [sym:id
-                (list #'sym)]
+                (cond
+                  [(identifier-binding #'sym 0)
+                   empty]
+                  [(char-upper-case? (string-ref (symbol->string (syntax->datum #'sym)) 0))
+                   (list #'sym)]
+                  [else
+                   empty])]
                [sym:expr
                 empty]))
             (define head-vars (datalog-literal-variables #'head))
