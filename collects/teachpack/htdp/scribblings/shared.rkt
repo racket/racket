@@ -13,6 +13,5 @@
 (define-syntax-rule (def-req beg-require)
   (begin
     (require (for-label lang/htdp-beginner))
-    (define beg-require (scheme require))))
+    (define beg-require (racket require))))
 (def-req beginner-require)
-

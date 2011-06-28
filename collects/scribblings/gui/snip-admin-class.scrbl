@@ -374,11 +374,11 @@ Does nothing.
 @methspec{
 Returns the current tab-position array as a list.
 
-@boxisfillnull[(scheme length) @elem{the length of the tab array (and therefore the returned 
+@boxisfillnull[@racket[length] @elem{the length of the tab array (and therefore the returned 
 list)}]
-@boxisfillnull[(scheme tab-width) @elem{the width used for tabs past the 
+@boxisfillnull[@racket[tab-width] @elem{the width used for tabs past the 
 end of the tab array}]
-@boxisfillnull[(scheme in-units) @elem{@racket[#t] if the tabs are specified in
+@boxisfillnull[@racket[in-units] @elem{@racket[#t] if the tabs are specified in
 canvas units or @racket[#f] if they are specified in space-widths}]
 }
 

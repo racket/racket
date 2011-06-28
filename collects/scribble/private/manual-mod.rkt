@@ -28,7 +28,8 @@
                  (list . content)
                  req)]
     [(_ (name ...) . content)
-     (defmodule*/no-declare #:require-form (scheme require) (name ...) . content)]))
+     (defmodule*/no-declare #:require-form (racket require) (name ...)
+       . content)]))
 
 (define-syntax defmodule*
   (syntax-rules ()
@@ -38,7 +39,8 @@
     [(_ #:require-form req (name ...) . content)
      (defmodule* #:require-form req (name ...) #:use-sources () . content)]
     [(_ (name ...) #:use-sources (pname ...) . content)
-     (defmodule* #:require-form (scheme require) (name ...) #:use-sources (pname ...) . content)]
+     (defmodule* #:require-form (racket require) (name ...) #:use-sources (pname ...)
+       . content)]
     [(_ (name ...) . content)
      (defmodule* (name ...) #:use-sources () . content)]))
 

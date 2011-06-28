@@ -30,7 +30,9 @@ Whenever a check box is clicked by the user, the check box's value is
 
 Creates a check box with a string or bitmap label. @bitmaplabeluse[label]
 
-@labelstripped[(scheme label) @elem{ (when @racket[label] is a string)} @elem{effectively click the check box}]
+@labelstripped[@racket[label]
+  @elem{ (when @racket[label] is a string)}
+  @elem{effectively click the check box}]
 
 The @racket[callback] procedure is called (with the event type
  @indexed-racket['check-box]) whenever the user clicks the check box.

@@ -71,11 +71,11 @@
                         [(->d (req ...) () (values [name res] ...))
                          #'((id req ...) (values res ...) ())]
                         [(->d (req ...) () #:pre-cond condition (values [name res] ...))
-                         #'((id req ...) (values res ...) ((bold "Pre-condition: ") (scheme condition) "\n" "\n"))]
+                         #'((id req ...) (values res ...) ((bold "Pre-condition: ") (racket condition) "\n" "\n"))]
                         [(->d (req ...) () [name res])
                          #'((id req ...) res ())]
                         [(->d (req ...) () #:pre-cond condition [name res])
-                         #'((id req ...) res ((bold "Pre-condition: ")  (scheme condition) "\n" "\n" ))]
+                         #'((id req ...) res ((bold "Pre-condition: ")  (racket condition) "\n" "\n" ))]
                         [(->d (req ...) () #:rest rest rest-ctc [name res])
                          #'((id req ... [rest rest-ctc] (... ...)) res ())]
                         [(->d (req ...) (one more ...) whatever)
@@ -99,7 +99,7 @@
                         [(->i (req ...) () #:pre (pre-id ...) condition (values ress ...))
                          (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
                                        [([name res] ...) (map remove->i-deps (syntax->list #'(req ...)))])
-                           #'((id req ...) (values res ...) ((bold "Pre-condition: ") (scheme condition) "\n" "\n")))]
+                           #'((id req ...) (values res ...) ((bold "Pre-condition: ") (racket condition) "\n" "\n")))]
                         [(->i (req ...) () res)
                          (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
                                        [[name res] (remove->i-deps #'res)])
@@ -107,7 +107,7 @@
                         [(->i (req ...) () #:pre (pre-id ...) condition [name res])
                          (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
                                        [[name res] (remove->i-deps #'res)])
-                           #'((id req ...) res ((bold "Pre-condition: ")  (scheme condition) "\n" "\n" )))]
+                           #'((id req ...) res ((bold "Pre-condition: ")  (racket condition) "\n" "\n" )))]
                         [(->i (req ...) () #:rest rest res)
                          (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
                                        [[name res] (remove->i-deps #'res)]

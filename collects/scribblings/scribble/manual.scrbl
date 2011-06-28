@@ -344,7 +344,7 @@ in a form definition.}
 @defform[(schemeresult datum ...)]
 @defform[(schemeid datum ...)]
 @defform*[((schememodname datum)
-           (schememodname ((unsyntax (scheme unsyntax)) expr)))]
+           (schememodname ((unsyntax (racket unsyntax)) expr)))]
 @defform[(schememodlink datum pre-content-expr ...)]
 @defproc[(schemefont [pre-content pre-content?] ...) element?]
 @defproc[(schemevalfont [pre-content pre-content?] ...) element?]

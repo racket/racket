@@ -15,8 +15,8 @@
  (syntax-case stx (*)
   [(_ [* (form ...) (also ...)])
    #'(defform* (form  ...)
-       "See " (scheme class*) (sees also ...) "; use"
-       " outside the body of a " (scheme class*) " form is a syntax error.")]
+       "See " @racket[class*] (sees also ...) "; use"
+       " outside the body of a " @racket[class*] " form is a syntax error.")]
   [(_ [form (also ...)])
    #'(defclassforms [* (form) (also ...)])]
   [(_ form ...)
@@ -38,7 +38,7 @@
                                           s))])
        #'(...
           (defform tmpl
-            "Shorthand for " (scheme (begin (#,(scheme name) id) ... (define id _expr) ...)) ".")))]
+            "Shorthand for " (racket (begin (#,(racket name) id) ... (define id _expr) ...)) ".")))]
      [(_ form ...)
       #'(begin (defstarshorthands form) ...)]))
 
@@ -57,11 +57,11 @@
                                                    (cdr (syntax-e s)))
                                              s))])
          #'(...
-            (defform* [tmpl1 (#,(scheme name) (id . formals) body ...+)]
+            (defform* [tmpl1 (#,(racket name) (id . formals) body ...+)]
               "Shorthand for "
-              (scheme (begin (#,(scheme form) id) (define id expr)))
+              (racket (begin (#,(racket form) id) (define id expr)))
               " or "
-              (scheme (begin (#,(scheme form) id) (define (id . formals) body ...+)))))))]
+              (racket (begin (#,(racket form) id) (define (id . formals) body ...+)))))))]
      [(_ form ...)
       #'(begin (defdefshorthands form) ...)]))
 

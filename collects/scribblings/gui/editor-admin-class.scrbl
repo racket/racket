@@ -39,8 +39,8 @@ The origin of the drawing context is also returned, translated into
  returned origin is reliable only while the editor is being drawn, or
  while it receives a mouse or keyboard event.
 
-@boxisfillnull[(scheme x) @elem{the x-origin of the DC in editor coordinates}]
-@boxisfillnull[(scheme y) @elem{the y-origin of the DC in editor coordinates}]
+@boxisfillnull[@racket[x] @elem{the x-origin of the DC in editor coordinates}]
+@boxisfillnull[@racket[y] @elem{the y-origin of the DC in editor coordinates}]
 
 See also @xmethod[editor<%> editor-location-to-dc-location] and
  @xmethod[editor<%> dc-location-to-editor-location].
@@ -100,10 +100,10 @@ The calculation of the editor's visible region is based on the current
  is hidden, obscured by other windows, or moved off the edge of the
  screen.
 
-@boxisfillnull[(scheme x) @elem{the left edge of the visible region in editor coordinates}]
-@boxisfillnull[(scheme y) @elem{the top edge of the visible region in editor coordinates}]
-@boxisfillnull[(scheme w) @elem{the width of the visible region, which may be larger than the editor itself}]
-@boxisfillnull[(scheme h) @elem{the height of the visible region, which may be larger than the editor itself}]
+@boxisfillnull[@racket[x] @elem{the left edge of the visible region in editor coordinates}]
+@boxisfillnull[@racket[y] @elem{the top edge of the visible region in editor coordinates}]
+@boxisfillnull[@racket[w] @elem{the width of the visible region, which may be larger than the editor itself}]
+@boxisfillnull[@racket[h] @elem{the height of the visible region, which may be larger than the editor itself}]
 
 If an editor is fully visible and @racket[full?] is @racket[#f], then
  @racket[x] and @racket[y] will both be filled with @racket[0].

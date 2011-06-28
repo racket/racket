@@ -13,7 +13,7 @@
   (define-syntax-rule (bind id)
     (begin
      (require (for-label scheme/base))
-     (define id (scheme lambda))))
+     (define id (racket lambda))))
   (bind base-lambda))
 
 @mzlib[#:mode title kw]

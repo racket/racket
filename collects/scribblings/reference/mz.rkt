@@ -83,10 +83,10 @@
     (make-element #f (list s " exception is raised")))
   (define-syntax exnraise
     (syntax-rules ()
-      [(_ s) (*exnraise (scheme s))]))
+      [(_ s) (*exnraise (racket s))]))
   (define-syntax Exn
     (syntax-rules ()
-      [(_ s) (scheme s)]))
+      [(_ s) (racket s)]))
   (provide exnraise Exn)
   
   (provide margin-note/ref
@@ -132,6 +132,6 @@
   (define-syntax speed
     (syntax-rules ()
       [(_ id what)
-       (t "An " (scheme id) " application can provide better performance for "
+       (t "An " (racket id) " application can provide better performance for "
           (elem what)
-          " iteration when it appears directly in a " (scheme for) " clause.")])))
+          " iteration when it appears directly in a " (racket for) " clause.")])))

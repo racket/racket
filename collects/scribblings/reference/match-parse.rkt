@@ -22,7 +22,7 @@
    [(regexp-match-positions #rx"pattern" s)
     => (fixup s "pattern")]
    [(regexp-match-positions #rx"equal%" s)
-    => (fixup s (scheme equal?))]
+    => (fixup s (racket equal?))]
    [(regexp-match-positions #rx"pat" s)
     => (fixup s (fixup-sexp 'pat))]
    [(regexp-match-positions #rx"qp" s)

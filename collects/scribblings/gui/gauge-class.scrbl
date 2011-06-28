@@ -30,7 +30,7 @@ of the gauge.
 If @racket[label] is a string, it is used as the gauge label; otherwise
  the gauge does not display a label.
 
-@labelsimplestripped[(scheme label) @elem{gauge}]
+@labelsimplestripped[@racket[label] @elem{gauge}]
 
 The @racket[range] argument is an integer specifying the maximum value of
  the gauge (inclusive). The minimum gauge value is always @racket[0].

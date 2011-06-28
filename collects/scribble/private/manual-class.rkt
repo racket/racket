@@ -412,7 +412,7 @@
                         (case (syntax-e #'mode)
                           [(pubment)
                            #'((t "Refine this method with "
-                                 (scheme augment) "."))]
+                                 (racket augment) "."))]
                           [(override override-final extend augment)
                            #`((t (case (syntax-e #'mode)
                                    [(override override-final) "Overrides "]

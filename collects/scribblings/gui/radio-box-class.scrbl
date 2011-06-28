@@ -42,7 +42,8 @@ Creates a radio button set with string or bitmap labels. The
  @racket[choices] list specifies the radio button labels; the list of
  choices must be homogeneous, either all strings or all bitmaps.
 
-@labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the radio box}]
+@labelstripped[@racket[label]
+  @elem{} @elem{move the keyboard focus to the radio box}]
 
 Each string in @racket[choices] can also contain a @litchar{&}, which
  creates a mnemonic for clicking the corresponding radio button. As

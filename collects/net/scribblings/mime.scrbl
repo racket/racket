@@ -10,14 +10,14 @@
     #f
     (append
      (list
-      (list (to-flow (scheme 'type))
+      (list (to-flow (racket 'type))
             (to-flow spacer)
-            (to-flow (scheme 'sub-type0))
+            (to-flow (racket 'sub-type0))
             (to-flow spacer)
             (to-flow ref0))
       (list (to-flow spacer)
             (to-flow spacer)
-            (to-flow (scheme 'sub-type))
+            (to-flow (racket 'sub-type))
             (to-flow spacer)
             (to-flow ref))
       ...)

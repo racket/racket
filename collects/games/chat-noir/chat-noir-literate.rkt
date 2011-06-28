@@ -1083,7 +1083,7 @@ coordinates. In particular, they are off by
 in order to keep the computations and test cases simple
 and using exact numbers.
 A more precise approximation would be
-@(scheme #,(sin (/ pi 3))), but it is not necessary at
+@(racket #,(sin (/ pi 3))), but it is not necessary at
 the screen resolution.
 
 @chunk[<cell-center-y>

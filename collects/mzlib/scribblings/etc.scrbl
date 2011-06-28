@@ -16,8 +16,8 @@
   (define-syntax-rule (bind id else-id)
     (begin
      (require (for-label scheme/base))
-     (define id (scheme lambda))
-     (define else-id (scheme else))))
+     (define id (racket lambda))
+     (define else-id (racket else))))
   (bind base-lambda base-else))
 
 @mzlib[#:mode title etc]
@@ -262,7 +262,7 @@ no filename is available, the result is @racket[#f].}
 
 
 @defform[#:literals (quote unsyntax scheme)
-         (hash-table (#,(scheme quote) flag) ... (key-expr val-expr) ...)]{
+         (hash-table (#,(racket quote) flag) ... (key-expr val-expr) ...)]{
 
 Creates a new hash-table providing the quoted flags (if any) to
 @racket[make-hash-table], and then mapping each key to the

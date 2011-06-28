@@ -16,6 +16,6 @@
      (with-syntax ([lib (string->symbol
                          (format "mzlib/~a" (syntax-e #'name)))])
        #'(begin
-           (section #:style 'hidden (scheme lib))
+           (section #:style 'hidden (racket lib))
            (defmodule lib)))]
     [(_ name) #'(mzlib #:mode section name)]))

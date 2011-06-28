@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt")
 
-@(define lit-ellipsis (scheme ...))
+@(define lit-ellipsis (racket ...))
 
 @(define syntax-eval
    (lambda ()

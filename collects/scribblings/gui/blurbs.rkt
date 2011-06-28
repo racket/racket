@@ -1,4 +1,4 @@
-#readerscribble/reader
+#reader scribble/reader
 (module blurbs scheme/base
   (require scribble/struct
            scribble/manual
@@ -47,14 +47,14 @@
 
   (define-syntax bitmaplabeluse
    (syntax-rules ()
-     [(_ id) @bitmapuseinfo["If" (scheme id) "a bitmap" " and" "the"]]))
+     [(_ id) @bitmapuseinfo["If" @racket[id] "a bitmap" " and" "the"]]))
   (define-syntax bitmaplabelusearray
    (syntax-rules ()
-     [(_ id) @bitmapuseinfo["If" (scheme id) "a list of bitmaps" " and" "a"]]))
+     [(_ id) @bitmapuseinfo["If" @racket[id] "a list of bitmaps" " and" "a"]]))
   (define-syntax bitmaplabeluseisbm
     (syntax-rules ()
-      [(_ id) @bitmapuseinfo["Since" (scheme id) "a bitmap" "" "the"]]))
-  
+      [(_ id) @bitmapuseinfo["Since" @racket[id] "a bitmap" "" "the"]]))
+
   (define bitmapiforiglabel
     @elem{The bitmap label is installed only
           if the control was originally created with a bitmap label.})

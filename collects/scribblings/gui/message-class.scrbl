@@ -31,7 +31,7 @@ Creates a string or bitmap message initially showing @racket[label].
  @racket['caution] is a caution-sign icon, and @racket['stop] is a
  stop-sign icon.
 
-@labelsimplestripped[(scheme label) @elem{message}]
+@labelsimplestripped[@racket[label] @elem{message}]
 
 @DeletedStyleNote[@racket[style] @racket[parent]]{message}
 

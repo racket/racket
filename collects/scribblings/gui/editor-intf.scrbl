@@ -599,8 +599,8 @@ For a text editor, the reported descent includes the editor's
            void?]{
 
 Gets the current extent of the editor's graphical representation.
-@boxisfillnull[(scheme w) @elem{the editor's width}]
-@boxisfillnull[(scheme h) @elem{the editor's height}]
+@boxisfillnull[@racket[w] @elem{the editor's width}]
+@boxisfillnull[@racket[h] @elem{the editor's height}]
 For a text editor, the reported extent includes the editor's
 padding (see @method[text% set-padding]).
 
@@ -636,7 +636,7 @@ If the editor is displayed in a single canvas, then the canvas's
 Returns the path name of the last file saved from or loaded into this
  editor, @racket[#f] if the editor has no filename.
 
-@boxisfill[(scheme temp) @elem{@racket[#t] if the filename is temporary or
+@boxisfill[@racket[temp] @elem{@racket[#t] if the filename is temporary or
 @racket[#f] otherwise}]
 
 }
@@ -799,8 +799,8 @@ Returns @racket[#f].
 Gets the @techlink{location} of the given snip. If the snip is found in
  the editor, @racket[#t] is returned; otherwise, @racket[#f] is returned.
 
-@boxisfillnull[(scheme x) @elem{the x-coordinate of the snip's @techlink{location}}]
-@boxisfillnull[(scheme y) @elem{the y-coordinate of the snip's @techlink{location}}]
+@boxisfillnull[@racket[x] @elem{the x-coordinate of the snip's @techlink{location}}]
+@boxisfillnull[@racket[y] @elem{the y-coordinate of the snip's @techlink{location}}]
 
 If @racket[bottom-right?] is not @racket[#f], the values in the
  @racket[x] and @racket[y] boxes are for the snip's bottom right
@@ -846,8 +846,8 @@ Returns the visible area into which the editor is currently being
  displayed (according to the editor's administrator). See also
  @method[editor-admin% get-view] .
 
-@boxisfillnull[(scheme w) @elem{the visible area width}]
-@boxisfillnull[(scheme h) @elem{the visible area height}]
+@boxisfillnull[@racket[w] @elem{the visible area width}]
+@boxisfillnull[@racket[h] @elem{the visible area height}]
 
 @|OVD|
 
@@ -865,9 +865,9 @@ Converts the given coordinates from top-level @techlink{display} coordinates
  same calculation is performed by
 @method[editor<%> dc-location-to-editor-location].
 
-@boxisfillnull[(scheme x) @elem{the translated x-coordinate of the value initially
+@boxisfillnull[@racket[x] @elem{the translated x-coordinate of the value initially
 in @racket[x]}] 
-@boxisfillnull[(scheme y) @elem{the translated x-coordinate of the value initially
+@boxisfillnull[@racket[y] @elem{the translated x-coordinate of the value initially
 in @racket[y]}]
 
 @|OVD|
@@ -1123,9 +1123,9 @@ Converts the given coordinates from editor @techlink{location}
  canvas coordinates).  The same calculation is performed by
  @method[editor<%> editor-location-to-dc-location].
 
-@boxisfillnull[(scheme x) @elem{the translated x-coordinate of the value initially
+@boxisfillnull[@racket[x] @elem{the translated x-coordinate of the value initially
 in @racket[x]}] 
-@boxisfillnull[(scheme y) @elem{the translated x-coordinate of the value initially
+@boxisfillnull[@racket[y] @elem{the translated x-coordinate of the value initially
 in @racket[y]}]
 
 @|OVD|

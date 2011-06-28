@@ -25,7 +25,7 @@ An in-stream base---possibly an @racket[editor-stream-in-bytes-base%]
 Reads data from the stream, returning itself.
 Reading from a bad stream always gives @racket[0].
 
-@boxisfill[(scheme v) @elem{the next integer or floating-point value in the stream}]
+@boxisfill[@racket[v] @elem{the next integer or floating-point value in the stream}]
 
 }
 
@@ -40,7 +40,7 @@ Like @method[editor-stream-in% get-unterminated-bytes], but the last
  @method[editor-stream-in% get-unterminated-bytes] when data is
  written with an explicit byte count.
 
-@boxisfillnull[(scheme len) @elem{the length of the byte string plus one (to indicate the terminator)}]
+@boxisfillnull[@racket[len] @elem{the length of the byte string plus one (to indicate the terminator)}]
 
 }
 
@@ -54,7 +54,7 @@ Returns the next integer value in the stream.
 @defmethod[(get-fixed [v (box/c exact-integer?)])
            (is-a?/c editor-stream-in%)]{
 
-@boxisfill[(scheme v) @elem{a fixed-size integer from the stream obtained through 
+@boxisfill[@racket[v] @elem{a fixed-size integer from the stream obtained through 
            @method[editor-stream-in% get-fixed-exact]}]
 
 }
@@ -90,7 +90,7 @@ Note that when @method[editor-stream-out% put] is not given a byte
  length, it includes an extra byte for a nul terminator; use
  @method[editor-stream-in% get-bytes] to read such byte strings.
 
-@boxisfillnull[(scheme len) @elem{the length of the byte string}]
+@boxisfillnull[@racket[len] @elem{the length of the byte string}]
 
 }
 

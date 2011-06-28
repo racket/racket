@@ -37,7 +37,8 @@ Whenever the user changes the value of a slider, its callback
 If @racket[label] is a string, it is used as the label for the slider.
  Otherwise, the slider does not display its label.
 
-@labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the slider}]
+@labelstripped[@racket[label]
+  @elem{} @elem{move the keyboard focus to the slider}]
 
 The @racket[min-value] and @racket[max-value] arguments specify the
  range of the slider, inclusive. The @racket[init-value] argument

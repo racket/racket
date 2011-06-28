@@ -68,7 +68,7 @@ Returns the name of the currently loaded, non-inlined file, or
  @racket[#f] if a file is not loaded or if a file was loaded with
  inlining (the default).
 
-@boxisfillnull[(scheme relative-path) @elem{@racket[#t] if the loaded file's path is
+@boxisfillnull[@racket[relative-path] @elem{@racket[#t] if the loaded file's path is
 relative to the owning editor's path}]
 
 }

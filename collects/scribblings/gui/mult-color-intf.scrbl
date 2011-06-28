@@ -19,9 +19,9 @@ See also @method[style-delta% get-foreground-mult] and
 
 Gets all of the scaling values.
 
-@boxisfill[(scheme r) @elem{the scaling value for the red component of the color}]
-@boxisfill[(scheme g) @elem{the scaling value for the green component of the color}]
-@boxisfill[(scheme b) @elem{the scaling value for the blue component of the color}]
+@boxisfill[@racket[r] @elem{the scaling value for the red component of the color}]
+@boxisfill[@racket[g] @elem{the scaling value for the green component of the color}]
+@boxisfill[@racket[b] @elem{the scaling value for the blue component of the color}]
 
 }
 

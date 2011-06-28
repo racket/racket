@@ -37,7 +37,8 @@ See also @racket[list-box%].
 Creates a choice item. If @racket[label] is a string, it is used as the
  label for the choice item.
 
-@labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the choice item}]
+@labelstripped[@racket[label]
+  @elem{} @elem{move the keyboard focus to the choice item}]
 
 The @racket[choices] list specifies the initial list of user-selectable
  items for the control. The initial set of choices determines the

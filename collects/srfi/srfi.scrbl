@@ -46,7 +46,7 @@
   (define-syntax-rule (def-mz mz-if)
     (begin
       (require (for-label mzscheme))
-      (define mz-if (scheme if))))
+      (define mz-if (racket if))))
   (def-mz mz-if))
 
 @; ----------------------------------------------------------------------

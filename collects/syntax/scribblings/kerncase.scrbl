@@ -4,7 +4,7 @@
 @(define-syntax-rule (intro id)
   (begin
    (require (for-label mzscheme))
-   (define id (scheme if))))
+   (define id (racket if))))
 @(intro mzscheme-if)
 
 @; ----------------------------------------------------------------------

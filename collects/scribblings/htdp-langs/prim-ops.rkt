@@ -60,7 +60,7 @@
        (make-flow
         (list
          (make-paragraph
-          (list "A " (scheme _prim-op) " is one of:")))))
+          (list "A " (racket _prim-op) " is one of:")))))
       (apply
        append
        (map (lambda (category)

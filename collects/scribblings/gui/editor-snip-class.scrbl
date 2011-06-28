@@ -129,10 +129,10 @@ If the editor is a text editor, then @racket[1] is normally subtracted
 Gets the current border insets for the snip. The inset sets how much space
 is left between the edge of the snip and the border.
 
-@boxisfill[(scheme l) @elem{left inset}]
-@boxisfill[(scheme t) @elem{top inset}]
-@boxisfill[(scheme r) @elem{right inset}]
-@boxisfill[(scheme b) @elem{bottom inset}]
+@boxisfill[@racket[l] @elem{left inset}]
+@boxisfill[@racket[t] @elem{top inset}]
+@boxisfill[@racket[r] @elem{right inset}]
+@boxisfill[@racket[b] @elem{bottom inset}]
 
 }
 
@@ -147,10 +147,10 @@ Gets the current margins for the snip. The margin sets how much space
 is left between the edge of the editor's contents and the edge of the
 snip.
 
-@boxisfill[(scheme l) @elem{left margin}]
-@boxisfill[(scheme t) @elem{top margin}]
-@boxisfill[(scheme r) @elem{right margin}]
-@boxisfill[(scheme b) @elem{bottom margin}]
+@boxisfill[@racket[l] @elem{left margin}]
+@boxisfill[@racket[t] @elem{top margin}]
+@boxisfill[@racket[r] @elem{right margin}]
+@boxisfill[@racket[b] @elem{bottom margin}]
 
 }
 
@@ -271,7 +271,7 @@ Sets the current margins for the snip. The margin sets how much space
 @defmethod[(set-max-height [h (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
            void?]{
 
-@edsnipmax[(scheme height)]
+@edsnipmax[@racket[height]]
 
 Zero or @racket['none] disables the limit.
 
@@ -280,7 +280,7 @@ Zero or @racket['none] disables the limit.
 @defmethod[(set-max-width [w (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
            void?]{
 
-@edsnipmax[(scheme width)] The contained editor's width limits are not
+@edsnipmax[@racket[width]] The contained editor's width limits are not
  changed by this method.
 
 Zero or @racket['none] disables the limit.
@@ -290,7 +290,7 @@ Zero or @racket['none] disables the limit.
 @defmethod[(set-min-height [h (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
            void?]{
 
-@edsnipmin[(scheme height) @elem{top}]
+@edsnipmin[@racket[height] @elem{top}]
 
 Zero or @racket['none] disables the limit.
 
@@ -299,7 +299,7 @@ Zero or @racket['none] disables the limit.
 @defmethod[(set-min-width [w (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
            void?]{
 
-@edsnipmin[(scheme width) @elem{left}] The contained editor's width
+@edsnipmin[@racket[width] @elem{left}] The contained editor's width
  limits are not changed by this method.
 
 Zero or @racket['none] disables the limit.

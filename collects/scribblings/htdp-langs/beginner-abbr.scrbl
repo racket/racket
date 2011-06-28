@@ -5,14 +5,14 @@
 @(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
    (begin
     (require (for-label lang/htdp-beginner))
-    (define beg-define (scheme define))
-    (define beg-define-struct (scheme define-struct))
-    (define beg-cond (scheme cond))
-    (define beg-if (scheme if))
-    (define beg-and (scheme and))
-    (define beg-or (scheme or))
-    (define beg-check-expect (scheme check-expect))
-    (define beg-require (scheme require))))
+    (define beg-define @racket[define])
+    (define beg-define-struct @racket[define-struct])
+    (define beg-cond @racket[cond])
+    (define beg-if @racket[if])
+    (define beg-and @racket[and])
+    (define beg-or @racket[or])
+    (define beg-check-expect @racket[check-expect])
+    (define beg-require @racket[require])))
 @(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
 

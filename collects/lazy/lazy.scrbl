@@ -14,7 +14,7 @@
      (define-syntax-rule (intro mz-id)
        (begin
          (require (for-label (only-in mod id)))
-         (define mz-id (scheme id))))
+         (define mz-id (racket id))))
      (intro in-mz-id)))
 
 @(define-syntax-rule (defprocthing* mod id ...)

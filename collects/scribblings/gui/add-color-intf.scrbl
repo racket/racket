@@ -16,9 +16,9 @@ get-background-add].
            void?]{
   Gets all of the additive values.
 
-  @boxisfill[(scheme r) @elem{the additive value for the red component of the color}]
-  @boxisfill[(scheme g) @elem{the additive value for the green component of the color}]
-  @boxisfill[(scheme b) @elem{the additive value for the blue component of the color}]
+  @boxisfill[@racket[r] @elem{the additive value for the red component of the color}]
+  @boxisfill[@racket[g] @elem{the additive value for the green component of the color}]
+  @boxisfill[@racket[b] @elem{the additive value for the blue component of the color}]
 }
 
 @defmethod[(get-b)

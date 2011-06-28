@@ -395,4 +395,3 @@ except @racket[current-https-protocol].  Note that the exports of
 @defsignature[url+scheme^ (url^)]{
 
 Adds @racket[current-connect-scheme] to @racket[url^].}
-

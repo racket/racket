@@ -8,7 +8,7 @@
          myexamples
          myinteraction)
 
-(define ellipses (scheme ...))
+(define ellipses (racket ...))
 
 (define (fixup exn)
   (let ([src (ormap values (exn:fail:syntax-exprs exn))])
@@ -86,7 +86,7 @@
   (syntax-rules ()
     [(def id suffix ...)
      (elemtag (list 'pattern-link (list 'id 'suffix ...))
-              (scheme id)
+              (racket id)
               #|(superscript (symbol->string 'suffix)) ...|# )]))
 
 (provide defhere

@@ -59,7 +59,7 @@ The keymap for the text field's editor is initialized by calling the
 If @racket[label] is not @racket[#f], it is used as the text field
  label.  Otherwise, the text field does not display its label.
 
-@labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the text field}]
+@labelstripped[@racket[label] @elem{} @elem{move the keyboard focus to the text field}]
 
 The @racket[callback] procedure is called when the user changes the
  text in the text field or presses the Enter key (and Enter is not

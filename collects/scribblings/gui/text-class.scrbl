@@ -525,7 +525,7 @@ See also @method[text% delete].
 Given a @techlink{location} in the editor, returns the line at the
  @techlink{location}. @|LineNumbering|
 
-@boxisfillnull[(scheme on-it?) @elem{@racket[#t] if the line actually
+@boxisfillnull[@racket[on-it?] @elem{@racket[#t] if the line actually
  touches this @techlink{position}, or @racket[#f] otherwise}] (A large
  enough @racket[y] will always return the last line number, but will
  set @racket[on-it?] to @racket[#f].)
@@ -567,10 +567,10 @@ Given a @techlink{location} in the editor, returns the @techlink{position} at th
  @techlink{location}.
 
 See @|ateoldiscuss| for a discussion of the @racket[at-eol?] argument.
- @boxisfillnull[(scheme on-it?) @elem{@racket[#t] if the line actually touches this
+ @boxisfillnull[@racket[on-it?] @elem{@racket[#t] if the line actually touches this
  @techlink{position}, or @racket[#f] otherwise}]
 
-@boxisfillnull[(scheme edge-close?) @elem{it will be filled in with a value
+@boxisfillnull[@racket[edge-close?] @elem{it will be filled in with a value
  indicating how close the point is to the vertical edges of the @techlink{item}
  when the point falls on the @techlink{item}}] If the point is closest to the left
  edge of the @techlink{item}, the value will be negative; otherwise, the value
@@ -594,7 +594,7 @@ Given a @techlink{location} within a line of the editor, returns the
  @techlink{position} at the @techlink{location}. @|LineNumbering|
 
 See @|ateoldiscuss| for a discussion of the @racket[at-eol?] argument.
- @boxisfillnull[(scheme on-it?) @elem{@racket[#t] if the line actually
+ @boxisfillnull[@racket[on-it?] @elem{@racket[#t] if the line actually
  touches this @techlink{position}, or @racket[#f] otherwise}]
 
 See @method[text% find-position] for a discussion of
@@ -632,7 +632,7 @@ can be any of the following:
 
 ]
 
-@boxisfillnull[(scheme s-pos) @elem{the @techlink{position} where the returned snip starts}]
+@boxisfillnull[@racket[s-pos] @elem{the @techlink{position} where the returned snip starts}]
 
 }
 
@@ -864,8 +864,8 @@ the same number and that number will be where the insertion point is.
 See also @method[text% get-start-position] 
 and @method[text% get-end-position].
 
-@boxisfillnull[(scheme start) @elem{the starting @techlink{position} of the selection}]
-@boxisfillnull[(scheme end) @elem{the ending @techlink{position} of the selection}]
+@boxisfillnull[@racket[start] @elem{the starting @techlink{position} of the selection}]
+@boxisfillnull[@racket[end] @elem{the ending @techlink{position} of the selection}]
 
 }
 
@@ -921,9 +921,9 @@ Gets a snip's @techlink{position} and top left @techlink{location} in editor
  coordinates.  The return value is @racket[#t] if the snip is found,
  @racket[#f] otherwise.
 
-@boxisfillnull[(scheme pos) @elem{starting @techlink{position} of @racket[snip]}]
-@boxisfillnull[(scheme x) @elem{left @techlink{location} of @racket[snip] in editor coordinates}]
-@boxisfillnull[(scheme y) @elem{top @techlink{location} of @racket[snip] in editor coordinates}]
+@boxisfillnull[@racket[pos] @elem{starting @techlink{position} of @racket[snip]}]
+@boxisfillnull[@racket[x] @elem{left @techlink{location} of @racket[snip] in editor coordinates}]
+@boxisfillnull[@racket[y] @elem{top @techlink{location} of @racket[snip] in editor coordinates}]
 
 When @techlink{location} information is requested: @|OVD| @|FCA|
 
@@ -968,11 +968,11 @@ See also @method[text% set-styles-sticky].
 
 Returns the current tab-position array as a list.
 
-@boxisfillnull[(scheme length) @elem{the length of the tab array (and therefore the returned 
+@boxisfillnull[@racket[length] @elem{the length of the tab array (and therefore the returned 
 list)}]
-@boxisfillnull[(scheme tab-width) @elem{the width used for tabs past the 
+@boxisfillnull[@racket[tab-width] @elem{the width used for tabs past the 
 end of the tab array}]
-@boxisfillnull[(scheme in-units) @elem{@racket[#t] if the tabs are specified in
+@boxisfillnull[@racket[in-units] @elem{@racket[#t] if the tabs are specified in
 canvas units or @racket[#f] if they are specified in space-widths}]
 
 See also 
@@ -1024,8 +1024,8 @@ The reported baseline distance includes the editor's
 Returns the range of lines which are currently visible (or partially
  visible) to the user. @|LineNumbering|
 
-@boxisfillnull[(scheme start) @elem{first line visible to the user}]
-@boxisfillnull[(scheme end) @elem{last line visible to the user}]
+@boxisfillnull[@racket[start] @elem{first line visible to the user}]
+@boxisfillnull[@racket[end] @elem{last line visible to the user}]
 
 If the editor is displayed by multiple canvases and @racket[all?] is
  @racket[#t], then the computed range includes all visible lines in all
@@ -1045,8 +1045,8 @@ If the editor is displayed by multiple canvases and @racket[all?] is
 Returns the range of @techlink{position}s that are currently visible (or
  partially visible) to the user.
 
-@boxisfillnull[(scheme start) @elem{first @techlink{position} visible to the user}]
-@boxisfillnull[(scheme end) @elem{last @techlink{position} visible to the user}]
+@boxisfillnull[@racket[start] @elem{first @techlink{position} visible to the user}]
+@boxisfillnull[@racket[end] @elem{last @techlink{position} visible to the user}]
 
 If the editor is displayed by multiple canvases and @racket[all?] is
  @racket[#t], then the computed range includes all visible @techlink{position}s in
@@ -1179,7 +1179,7 @@ Returns the number of the last line in the editor. Lines are numbered
  starting with @racket[0], so this is one less than the number of lines
  in the editor.
 
-@LineToPara[(scheme last-paragraph)]
+@LineToPara[@racket[last-paragraph]]
 
 @|FCAMW| @|EVD|
 }
@@ -1219,7 +1219,7 @@ If the line ends with invisible @techlink{item}s (such as a carriage
  @techlink{position} before the invisible @techlink{item}s is
  returned.
 
-@LineToPara[(scheme paragraph-end-position)]
+@LineToPara[@racket[paragraph-end-position]]
 
 @|FCAMW| @|EVD|
 
@@ -1247,7 +1247,7 @@ If @racket[top?] is not @racket[#f], the @techlink{location} for the
  top of the line is returned; otherwise, the @techlink{location} for
  the bottom of the line is returned.
 
-@LineToPara[(scheme paragraph-location)]
+@LineToPara[@racket[paragraph-location]]
 
 @|OVD| @|FCA|
 
@@ -1277,7 +1277,7 @@ If the line starts with invisible @techlink{item}s and @racket[visible?] is not
  @racket[#f], the first @techlink{position} past the invisible @techlink{item}s is
  returned.
 
-@LineToPara[(scheme paragraph-start-position)]
+@LineToPara[@racket[paragraph-start-position]]
 
 @|FCAMW|
 
@@ -1672,7 +1672,7 @@ See @|timediscuss| for a discussion of the @racket[time] argument. If
 
 Returns the line number of the line containing a given @techlink{position}. @|LineNumbering|
 
-@LineToPara[(scheme position-paragraph)]
+@LineToPara[@racket[position-paragraph]]
 
 See @|ateoldiscuss| for a discussion of @racket[at-eol?].
 
@@ -1691,9 +1691,9 @@ See @|ateoldiscuss| for a discussion of @racket[at-eol?].
 
 Returns the @techlink{location} of a given @techlink{position}. See also @method[text% position-locations].
 
-@boxisfillnull[(scheme x) @elem{the x-@techlink{location} of the @techlink{position} @racket[start] in editor
+@boxisfillnull[@racket[x] @elem{the x-@techlink{location} of the @techlink{position} @racket[start] in editor
 coordinates} ]
-@boxisfillnull[(scheme y) @elem{the y-@techlink{location} (top or bottom; see below) of the
+@boxisfillnull[@racket[y] @elem{the y-@techlink{location} (top or bottom; see below) of the
 @techlink{position} @racket[start] in editor coordinates}]
 
 See @|ateoldiscuss| for a discussion of @racket[at-eol?].

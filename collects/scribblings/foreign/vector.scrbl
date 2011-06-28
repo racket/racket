@@ -18,7 +18,7 @@ for @racket[make-bytes].
      (syntax-case stx ()
        [(_ id elem)
         #'(srfi-4-vector/desc id elem make-splice
-                              "Like " (scheme make-vector) ", etc., but for " (scheme elem) " elements.")]))
+            "Like " (racket make-vector) ", etc., but for " (racket elem) " elements.")]))
    (define-syntax (srfi-4-vector/desc stx)
      (syntax-case stx ()
        [(_ id elem extra desc ...)
@@ -57,7 +57,8 @@ for @racket[make-bytes].
                  desc ...
                  (extra
                   (list
-                   " The " (scheme ->cpointer) " function extracts a plain pointer to the underlying array.")))
+                   " The " (racket ->cpointer)
+                   " function extracts a plain pointer to the underlying array.")))
                ;; Big pain: make up relatively-correct source locations
                ;; for pieces in the _vec definition:
                (defform* [#,(datum->syntax
@@ -90,7 +91,8 @@ for @racket[make-bytes].
                                    (sub1 (syntax-position #'vec))
                                    10))
                            _vec]
-                 "Like " (scheme _cvector) ", but for vectors of " (scheme elem) " elements."))))])))
+                 "Like " (racket _cvector) ", but for vectors of "
+                 (racket elem) " elements."))))])))
 
 
 @srfi-4-vector/desc[u8 _uint8 (lambda (x) (make-splice null))]{

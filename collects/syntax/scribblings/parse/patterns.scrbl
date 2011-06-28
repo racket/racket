@@ -7,7 +7,7 @@
 
 @(define-syntax-rule (define-dotsplus-names dotsplus def-dotsplus)
    (begin (require (for-label (only-in syntax/parse ...+)))
-          (define dotsplus (scheme ...+))
+          (define dotsplus (racket ...+))
           (define def-dotsplus (defhere ...+))))
 @(define-dotsplus-names dotsplus def-dotsplus)
 

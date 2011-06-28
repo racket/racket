@@ -6,7 +6,7 @@
   (define-syntax-rule (bind id)
     (begin
      (require (for-label scheme/gui/base))
-     (define id (scheme send-event))))
+     (define id (racket send-event))))
   (bind mred-send-event))
 
 @mzlib[#:mode title sendevent]

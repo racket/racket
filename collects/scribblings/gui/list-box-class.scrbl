@@ -58,7 +58,8 @@ See also @racket[choice%].
 If @racket[label] is not @racket[#f], it is used as the list box
  label.  Otherwise, the list box will not display its label.
 
-@labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the list box}]
+@labelstripped[@racket[label] @elem{}
+  @elem{move the keyboard focus to the list box}]
 
 The @racket[choices] list specifies the initial list of items
  to appear in the list box. If the list box has multiple columns, 

@@ -17,7 +17,7 @@
   (*method 'b (quote-syntax a)))
 
 (define-syntax-rule (xmethod a b)
-  (elem (method a b) " in " (scheme a)))
+  (elem (method a b) " in " (racket a)))
 
 (define (*method sym id)
   (**method sym id))

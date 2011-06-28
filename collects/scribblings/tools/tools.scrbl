@@ -628,9 +628,9 @@ library; they are here for backwards compatibility and to provide links to the
                 [(drr-parent drr-vars drr-var-defs-in-sig drr-stx-defs-in-sig) (signature-members #'drracket:tool-cm^ #'here)])
      (with-syntax ([(drs-id ...) drs-vars]
                    [(drr-id ...) drr-vars])
-       #'(begin 
+       #'(begin
            (defthing drs-id any/c
-             "This is provided for backwards compatibility; new code should use " (scheme drr-id) " instead.") 
+             "This is provided for backwards compatibility; new code should use " (racket drr-id) " instead.") 
            ...))))
 @drs-compat[]
 

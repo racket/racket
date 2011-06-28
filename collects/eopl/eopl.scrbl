@@ -9,11 +9,11 @@
 @(define-syntax-rule (def-mz id)
    (begin
      (require (for-label mzscheme))
-     (define id (scheme provide))))
+     (define id (racket provide))))
 @(def-mz mzscheme-provide)
 
 @(define-syntax-rule (reprovide id ...)
-   (*threecolumns (list (scheme id) ... 'nbsp 'nbsp)))
+   (*threecolumns (list (racket id) ... 'nbsp 'nbsp)))
 @(define (*threecolumns l)
    (let* ([len (length l)]
           [third (quotient len 3)]

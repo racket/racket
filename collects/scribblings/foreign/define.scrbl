@@ -37,7 +37,7 @@ The other options support further wrapping and configuration:
 
  @item{The @racket[#:make-fail] and @racket[#:fail] options are
        mutually exclusive; if @racket[_make-fail-expr] is provided, it
-       is applied to @racket['@#,scheme[_id]] to obtain the last
+       is applied to @racket['@#,racket[_id]] to obtain the last
        argument to @racket[get-ffi-obj]; if @racket[_fail-expr] is
        provided, it is supplied directly as the last argument to
        @racket[get-ffi-obj]. The @racket[make-not-available] function

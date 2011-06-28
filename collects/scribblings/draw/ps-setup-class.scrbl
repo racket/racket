@@ -135,8 +135,8 @@ Gets the command used to view a PostScript file for X. The default is
                         [y (box/c (and/c real? (not/c negative?)))])
            void?]{
 
-Gets the scaling factor for PostScript output.  @boxisfill[(scheme x)
- @elem{the horizontal scaling factor}] @boxisfill[(scheme y) @elem{the
+Gets the scaling factor for PostScript output.  @boxisfill[@racket[x]
+ @elem{the horizontal scaling factor}] @boxisfill[@racket[y] @elem{the
  vertical scaling factor}] The default is @racket[0.8] by
  @racket[0.8].
 

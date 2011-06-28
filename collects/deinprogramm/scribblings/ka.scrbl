@@ -45,16 +45,16 @@ die @italic{n} Kategorien hat, sieht folgendermaßen aus:
 (define proc
   (lambda (a)
     (cond
-      (#,(elem (scheme test) (subscript "1")) ...)
+      (#,(elem @racket[test] @subscript{1}) ...)
       ...
-      (#,(elem (scheme test) (subscript "n")) ...))))
+      (#,(elem @racket[test] @subscript{n}) ...))))
 ]
 Dabei ist @racket[sig] die Signatur, den die Elemente der Sorte erfüllen müssen. 
-Die @elem[(scheme test) (subscript "i")]  müssen Tests sein, welche die einzelnen Kategorien
+Die @elem[@racket[test] @subscript{i}]  müssen Tests sein, welche die einzelnen Kategorien
 erkennen.  Sie sollten alle Kategorien abdecken.
 Der letzte Zweig kann auch ein @racket[else]-Zweig sein, falls
 klar ist, daß @racket[a] zum letzten Fall gehört, wenn alle vorherigen
-@elem[(scheme test) (subscript "i")] @racket[#f] ergeben haben.
+@elem[@racket[test] @subscript{i}] @racket[#f] ergeben haben.
 Anschließend werden die Zweige vervollständigt.
 
 Bei Fallunterscheidungen mit zwei Kategorien kann auch @racket[if]
@@ -68,40 +68,40 @@ anfängt:
 
 @racketblock[
 (code:comment @#,t{Ein @racket[x] besteht aus / hat:})
-(code:comment @#,t{- @racket[#,(elem (scheme Feld) (subscript "1"))] @racket[(#,(elem (scheme sig) (subscript "1")))]})
+(code:comment @#,t{- @racket[#,(elem @racket[Feld] @subscript{1})] @racket[(#,(elem @racket[sig] @subscript{1}))]})
 (code:comment @#,t{...})
-(code:comment @#,t{- @racket[#,(elem (scheme Feld) (subscript "n"))] @racket[(#,(elem (scheme sig) (subscript "n")))]})
+(code:comment @#,t{- @racket[#,(elem @racket[Feld] @subscript{n})] @racket[(#,(elem @racket[sig] @subscript{n}))]})
 ]
 
 Dabei ist @racket[x] ein umgangssprachlicher Name für die Sorte
-(``Schokokeks''), die @elem[(scheme Feld) (subscript "i")] sind
+(``Schokokeks''), die @elem[@racket[Feld] @subscript{i}] sind
 umgangssprachliche Namen und kurze Beschreibungen der Komponenten 
-und die @elem[(scheme sig) (subscript "i")] die dazugehörigen Signaturen.
+und die @elem[@racket[sig] @subscript{i}] die dazugehörigen Signaturen.
 
 Übersetzen Sie die Datendefinition in eine Record-Definition, indem Sie
 auch Namen für die Record-Signatur @racket[sig], Konstruktor @racket[constr],
-Prädikat @racket[pred?] und die Selektoren @elem[(scheme select) (subscript "i")]
+Prädikat @racket[pred?] und die Selektoren @elem[@racket[select] @subscript{i}]
 wählen:
 @racketblock[
 (define-record-procedures sig
   constr pred?
-  (#,(elem (scheme select) (subscript "1")) ... #,(elem (scheme select) (subscript "n"))))
+  (#,(elem @racket[select] @subscript{1}) ... #,(elem @racket[select] @subscript{n})))
 ]
 
 Schreiben Sie außerdem eine Signatur für den Konstruktor der
 Form:
 
 @racketblock[
-(: constr (#,(elem (scheme sig) (subscript "1")) ... #,(elem (scheme sig) (subscript "n")) -> sig))
+(: constr (#,(elem @racket[sig] @subscript{1}) ... #,(elem @racket[sig] @subscript{n}) -> sig))
 ]
 
 Ggf. schreiben Sie außerdem Signaturen für das Prädikat und die Selektoren:
 
 @racketblock[
 (: pred? (any -> boolean))
-(: #,(elem (scheme select) (subscript "1")) (sig -> #,(elem (scheme sig) (subscript "1"))))
+(: #,(elem @racket[select] @subscript{1}) (sig -> #,(elem @racket[sig] @subscript{1})))
 ...
-(: #,(elem (scheme select) (subscript "n")) (sig -> #,(elem (scheme sig) (subscript "n"))))
+(: #,(elem @racket[select] @subscript{n}) (sig -> #,(elem @racket[sig] @subscript{n})))
 ]
 
 @section{zusammengesetzte Daten als Argumente}
@@ -126,15 +126,15 @@ eine Datendefinition der Form:
 
 @racketblock[
 (code:comment @#,t{Ein @racket[x] ist eins der Folgenden:})
-(code:comment @#,t{- @elem[(scheme Sorte) (subscript "1")] (@elem[(scheme sig) (subscript "1")])})
+(code:comment @#,t{- @elem[@racket[Sorte] @subscript{1}] (@elem[@racket[sig] @subscript{1}])})
 (code:comment @#,t{...})
-(code:comment @#,t{- @elem[(scheme Sorte) (subscript "n")] (@elem[(scheme sig) (subscript "n")])})
+(code:comment @#,t{- @elem[@racket[Sorte] @subscript{n}] (@elem[@racket[sig] @subscript{n}])})
 (code:comment @#,t{Name: @racket[sig]})
 ]
 
-Dabei sind die @elem[(scheme Sorte) (subscript "i")] umgangssprachliche Namen
+Dabei sind die @elem[@racket[Sorte] @subscript{i}] umgangssprachliche Namen
 für die möglichen Sorten, die ein Wert aus diesen gemischten Daten
-annehmen kann.  Die @elem[(scheme sig) (subscript "i")] sind die zu den Sorten
+annehmen kann.  Die @elem[@racket[sig] @subscript{i}] sind die zu den Sorten
 gehörenden Signaturen.  Der Name @racket[sig] ist für die Verwendung als
 Signatur.
 
@@ -143,13 +143,13 @@ Aus der Datendefinition entsteht eine Signaturdefinition folgender Form:
 @racketblock[
 (define sig
   (signature
-    (mixed #,(elem (scheme sig) (subscript "1"))
+    (mixed #,(elem @racket[sig] @subscript{1})
            ...
-           #,(elem (scheme sig) (subscript "n")))))
+           #,(elem @racket[sig] @subscript{n}))))
 ]
 
-Wenn die Prädikate für die einzelnen Sorten @elem[(scheme pred?)
-(subscript "1")] ... @elem[(scheme pred?) (subscript "n")] heißen, hat die
+Wenn die Prädikate für die einzelnen Sorten @elem[@racket[pred?]
+@subscript{1}] ... @elem[@racket[pred?] @subscript{n}] heißen, hat die
 Schablone für eine Prozedur, die gemischte Daten konsumiert, die
 folgende Form:
 
@@ -159,9 +159,9 @@ folgende Form:
 (define proc
   (lambda (a)
     (cond
-      ((#,(elem (scheme pred?) (subscript "1")) a) ...)
+      ((#,(elem @racket[pred?] @subscript{1}) a) ...)
       ...
-      ((#,(elem (scheme pred?) (subscript "n")) a) ...))))
+      ((#,(elem @racket[pred?] @subscript{n}) a) ...))))
 ]
  
 Die rechten Seiten der Zweige werden dann nach den
@@ -342,14 +342,15 @@ veränderbares Feld steht:
 @racketblock[
 (define-record-procedures-2 sig
   constr pred?
-  (#,(elem (scheme select) (subscript "1")) ... (#,(elem (scheme s) (subscript "k")) #,(elem (scheme mutate) (subscript "k"))) ... #,(elem (scheme s) (subscript "n"))))
+  (#,(elem @racket[select] @subscript{1}) ... (#,(elem @racket[s] @subscript{k}) #,(elem @racket[mutate] @subscript{k})) ... #,(elem @racket[s] @subscript{n})))
 ]
 
-In der Schablone für Prozeduren, die den Zustand eines
-Record-Arguments @racket[r] ändern, benutzen Sie den dazugehörigen Mutator
-@elem[(scheme mutate) (subscript "k")]  Wenn @racket[a] der Ausdruck für den neuen Wert der Komponente ist,
-sieht der Aufruf folgendermaßen aus: @racket[(#,(elem (scheme mutate) (subscript "k")) r a)].
-  
+In der Schablone für Prozeduren, die den Zustand eines Record-Arguments
+@racket[r] ändern, benutzen Sie den dazugehörigen Mutator
+@elem[@racket[mutate] @subscript{k}] Wenn @racket[a] der Ausdruck für
+den neuen Wert der Komponente ist, sieht der Aufruf folgendermaßen aus:
+@racket[(#,(elem @racket[mutate] @subscript{k}) r a)].
+
 Um mehrere Komponenten in einer Prozedur zu verändern, oder um einen
 sinnvollen Rückgabewert nach einer Mutation zu liefern, benutzen Sie
 @racket[begin].

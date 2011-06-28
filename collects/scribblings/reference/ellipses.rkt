@@ -12,4 +12,4 @@
        (defidform (... ...) . body)]))
 
   (define ellipses-id
-    (scheme ...)))
+    (racket ...)))

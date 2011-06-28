@@ -153,21 +153,21 @@ Raised when the server produces a malformed response.}
 
 @racketblock[
  #,pt (require net/pop3)
- #,pt (define c (connect-to-server "cs.rice.edu"))
- #,pt (authenticate/plain-text "scheme" "********" c)
+ #,pt (define c (connect-to-server "foo.bar.com"))
+ #,pt (authenticate/plain-text "bob" "********" c)
  #,pt (get-mailbox-status c)
  196
  816400
  #,pt (get-message/headers c 100)
  ("Date: Thu, 6 Nov 1997 12:34:18 -0600 (CST)"
-  "Message-Id: <199711061834.MAA11961@new-world.cs.rice.edu>"
-  "From: Shriram Krishnamurthi <shriram@cs.rice.edu>"
+  "Message-Id: <199711061834.MAA11961@foo.bar.com>"
+  "From: Alice <alice@foo.bar.com>"
   ....
   "Status: RO")
  #,pt (get-message/complete  c 100)
  ("Date: Thu, 6 Nov 1997 12:34:18 -0600 (CST)"
-  "Message-Id: <199711061834.MAA11961@new-world.cs.rice.edu>"
-  "From: Shriram Krishnamurthi <shriram@cs.rice.edu>"
+  "Message-Id: <199711061834.MAA11961@foo.bar.com>"
+  "From: Alice <alice@foo.bar.com>"
   ....
   "Status: RO")
  ("some body" "text" "goes" "." "here" "." "")

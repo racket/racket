@@ -34,7 +34,8 @@ A @racket[combo-field%] object is a @racket[text-field%]
 If @racket[label] is not @racket[#f], it is used as the combo label.
  Otherwise, the combo does not display its label.
 
-@labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the combo}]
+@labelstripped[@racket[label]
+  @elem{} @elem{move the keyboard focus to the combo}]
 
 The @racket[choices] list specifies the initial list of items for the
  combo's popup menu. The
