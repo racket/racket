@@ -67,11 +67,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define-syntax-class simple-clause
     #:attributes (nm ty)
     (pattern [nm:opt-rename ty]))
+  (define-splicing-syntax-class opt-constructor
+   (pattern (~optional (~seq (~or #:extra-constructor-name #:constructor-name) name:id))))
+
   (define-syntax-class struct-clause
     ;#:literals (struct)
-    #:attributes (nm (body 1))
-    (pattern [struct nm:opt-rename (body ...)]
-             #:fail-unless (eq? 'struct (syntax-e #'struct)) #f))
+    #:attributes (nm (body 1) (constructor-parts 1))
+    (pattern [struct nm:opt-rename (body ...) constructor:opt-constructor]
+             #:fail-unless (eq? 'struct (syntax-e #'struct)) #f
+             #:with (constructor-parts ...) #'constructor))
   (define-syntax-class opaque-clause
     ;#:literals (opaque)
     #:attributes (ty pred opt)
@@ -85,10 +89,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ lib:expr (~or sc:simple-clause strc:struct-clause oc:opaque-clause) ...)
      (unless (< 0 (length (syntax->list #'(sc ... strc ... oc ...))))
        (raise-syntax-error #f "at least one specification is required" stx))
-     #'(begin
+     #`(begin
 	 (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
 	 (require/typed #:internal sc.nm sc.ty lib) ...
-	 (require-typed-struct strc.nm (strc.body ...) lib) ...)]
+	 (require-typed-struct strc.nm (strc.body ...) strc.constructor-parts ... lib) ...)]
     [(_ nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
      #`(require/typed #:internal nm ty lib #,@(if (attribute parent)
                                                   #'(#:struct-maker parent)
@@ -377,48 +381,90 @@ This file defines two sorts of primitives. All of them are provided into any mod
                           [dtsi (quasisyntax/loc stx (dtsi* (vars ...) nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
               #'(begin d-s dtsi)))])))))
 
+
+;Copied from racket/private/define-struct
+(define-for-syntax (self-ctor-transformer orig stx)
+  (define (transfer-srcloc orig stx)
+    (datum->syntax orig (syntax-e orig) stx orig))
+  (syntax-case stx ()
+    [(self arg ...) (datum->syntax stx
+                                   (cons (syntax-property (transfer-srcloc orig #'self)
+                                                          'constructor-for
+                                                          (syntax-local-introduce #'self))
+                                         (syntax-e (syntax (arg ...))))
+                                   stx
+                                   stx)]
+    [_ (transfer-srcloc orig stx)]))
+
+
+(define-for-syntax make-struct-info-self-ctor
+ (let ()
+  (struct struct-info-self-ctor (id info)
+          #:property prop:procedure
+                     (lambda (ins stx)
+                      (self-ctor-transformer (struct-info-self-ctor-id ins) stx))
+          #:property prop:struct-info (lambda (x) (extract-struct-info (struct-info-self-ctor-info x))))
+  struct-info-self-ctor))
+
+
 (define-syntax (require-typed-struct stx)
+  (define-syntax-class opt-parent
+    (pattern nm:id #:attr parent #'#f)
+    (pattern (nm:id parent:id)))
+
+  (define-splicing-syntax-class constructor-term
+   (pattern (~seq) #:attr name #'#f #:attr extra #f)
+   (pattern (~seq #:constructor-name name:id) #:attr extra #f)
+   (pattern (~seq #:extra-constructor-name name:id) #:attr extra #t))
+
   (syntax-parse stx #:literals (:)
-    [(_ nm:id ([fld : ty] ...) lib)
-     (with-syntax* ([(struct-info maker pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
-                    [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))])
+    [(_ name:opt-parent ([fld : ty] ...) input-maker:constructor-term lib)
+     (define has-parent? (and (syntax-e #'name.parent) #t))
+     (with-syntax* ([nm #'name.nm]
+                    [parent #'name.parent]
+                    [spec (if has-parent? #'(nm parent) #'nm)]
+                    [(struct-info _ pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
+                    [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
+                    [maker-name (if (syntax-e #'input-maker.name) #'input-maker.name #'nm)] ;New default (corresponds to how struct works)
+                    ;maker-name's symbolic form is used in the require form
+                    [id-is-ctor? (or (attribute input-maker.extra) (bound-identifier=? #'maker-name #'nm))]
+                    [internal-maker (generate-temporary #'maker-name)] ;Only used if id-is-ctor? is true
+                    [real-maker (if (syntax-e #'id-is-ctor?) #'internal-maker #'maker-name)] ;The actual identifier bound to the constructor
+                    [extra-maker (and (attribute input-maker.extra)
+                                      (not (bound-identifier=? #'make-name #'nm))
+                                      #'maker-name)])
                    (quasisyntax/loc stx
                      (begin
                        (require (only-in lib struct-info))
-                       (define-syntax nm (make-struct-info
-                                          (lambda ()
-                                            (list #'struct-info
-                                                  #'maker
-                                                  #'pred
-                                                  (reverse (list #'sel ...))
-                                                  (list mut ...)
-                                                  #f))))
-                       (dtsi* () nm ([fld : ty] ...) #:type-only)
+
+                       (define-for-syntax si
+                         (make-struct-info
+                          (lambda ()
+                            (list #'struct-info
+                                  #'real-maker
+                                  #'pred
+                                  (reverse (list #'sel ...))
+                                  (list mut ...)
+                                  #f))))
+
+                       (define-syntax nm
+                            (if id-is-ctor?
+                                (make-struct-info-self-ctor #'internal-maker si)
+                                si))
+
+                       (dtsi* () spec ([fld : ty] ...) #:maker maker-name #:type-only)
                        #,(ignore #'(require/contract pred (any/c . c-> . boolean?) lib))
                        #,(internal #'(require/typed-internal pred (Any -> Boolean : nm)))
-                       (require/typed maker nm lib #:struct-maker #f)
+                       (require/typed (maker-name real-maker) nm lib #:struct-maker parent)
+
+                       ;This needs to be a different identifier to meet the specifications
+                       ;of struct (the id constructor shouldn't expand to it)
+                       #,(if (syntax-e #'extra-maker)
+                             #'(require/typed (maker-name extra-maker) nm lib #:struct-maker #f)
+                             #'(begin))
+
                        (require/typed lib
-                         [sel (nm -> ty)]) ...)))]
-    [(_ (nm parent) ([fld : ty] ...) lib)
-     (and (identifier? #'nm) (identifier? #'parent))
-     (with-syntax* ([(struct-info maker pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
-                    [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))])
-                   #`(begin
-                       (require (only-in lib struct-info))
-                       (define-syntax nm (make-struct-info
-                                          (lambda ()
-                                            (list #'struct-info
-                                                  #'maker
-                                                  #'pred
-                                                  (list #'sel ...)
-                                                  (list mut ...)
-                                                  #f))))
-                       (dtsi* () (nm parent) ([fld : ty] ...) #:type-only)
-                       #,(ignore #'(require/contract pred (any/c . c-> . boolean?) lib))
-                       #,(internal #'(require/typed-internal pred (Any -> Boolean : nm)))
-                       (require/typed maker nm lib #:struct-maker parent)
-                       (require/typed lib
-                         [sel (nm -> ty)]) ...))]))
+                         [sel (nm -> ty)]) ...)))]))
 
 (define-syntax (do: stx)
   (syntax-parse stx #:literals (:)

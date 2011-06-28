@@ -318,10 +318,15 @@ naming a predicate, and @racket[_r] is an optionally-renamed identifier.
 @defform/subs[#:literals (struct opaque)
 (require/typed m rt-clause ...)
 ([rt-clause [r t]
-	    [struct name ([f : t] ...)]
-	    [struct (name parent) ([f : t] ...)]
-	    [opaque t pred]])
-]{This form requires identifiers from the module @racket[m], giving
+	    [struct name ([f : t] ...)
+                 struct-option ...]
+	    [struct (name parent) ([f : t] ...)
+                 struct-option ...]
+	    [opaque t pred]]
+ [struct-option
+   (code:line #:constructor-name constructor-id)
+   (code:line #:extra-constructor-name constructor-id)])]
+{This form requires identifiers from the module @racket[m], giving
 them the specified types.   
 
 The first form requires @racket[r], giving it type @racket[t].
@@ -339,15 +344,15 @@ Racket.
 @ex[(module UNTYPED racket/base
       (define n 100)
       
-      (define-struct IntTree 
+      (struct IntTree
         (elem left right))
       
       (provide n (struct-out IntTree)))
     
     (module TYPED typed/racket
-      (require/typed 'UNTYPED 
+      (require/typed 'UNTYPED
                      [n Natural]
-                     [struct IntTree 
+                     [struct IntTree
                        ([elem  : Integer]
                         [left  : IntTree]
                         [right : IntTree])]))]
