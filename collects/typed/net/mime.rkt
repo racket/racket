@@ -10,6 +10,7 @@
                        [read : String]                                       
                        [size : Number]
                        [params : (Listof (Pair Symbol String))])
+                      #:extra-constructor-name make-disposition
                       net/mime)
 (require-typed-struct entity  ([type : (U Symbol String)] 
                                [subtype : (U Symbol String)] 
@@ -23,9 +24,11 @@
                                [fields : (Listof String)]
                                [parts : (Listof String) ]
                                [body : (Output-Port -> Void)])
+                      #:extra-constructor-name make-entity
                       net/mime)
 (require-typed-struct message 
                       ([version : String] [entity :  entity] [fields : (Listof Symbol)])
+                      #:extra-constructor-name make-message
                       net/mime)
 
 

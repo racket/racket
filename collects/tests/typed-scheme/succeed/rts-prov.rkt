@@ -5,7 +5,7 @@
   (provide (all-defined-out)))
 
 (module m typed-scheme
-  (require-typed-struct q () 'l)
+  (require-typed-struct q () #:extra-constructor-name make-q 'l)
   (provide (all-defined-out)))
 
 (module n typed-scheme
