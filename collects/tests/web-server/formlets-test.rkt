@@ -218,6 +218,9 @@
                    (test-display (textarea-input #:cols 80))
                    '((textarea ([name "input_0"] [cols "80"]) "")))
       (test-equal? "textarea-input"
+                   (test-display (textarea-input #:value #"starting text" #:cols 80))
+                   '((textarea ([name "input_0"] [cols "80"]) "starting text")))
+      (test-equal? "textarea-input"
                    (test-display (textarea-input #:cols 80 #:rows 70))
                    '((textarea ([name "input_0"] [rows "70"] [cols "80"]) "")))
       (test-equal? "textarea-input"

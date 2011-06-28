@@ -304,7 +304,8 @@ These @tech{formlet}s are the main combinators for form input.
  This @tech{formlet} renders using an INPUT element with the PASSWORD type and the attributes given in the arguments.
 }
                                             
-@defproc[(textarea-input [#:rows rows (or/c false/c number?) #f]
+@defproc[(textarea-input [#:value value (or/c false/c bytes?) #f]
+                         [#:rows rows (or/c false/c number?) #f]
                          [#:cols cols (or/c false/c number?) #f]
                          [#:attributes attrs (listof (list/c symbol? string?)) empty])
         (formlet/c (or/c false/c binding?))]{

@@ -223,6 +223,7 @@
                       #:display display)))
 
 (define (textarea-input
+         #:value [value #f]
          #:attributes [attrs empty]
          #:rows [rows #f]
          #:cols [cols #f])   
@@ -234,8 +235,10 @@
                    (filter list?
                            (list (and rows (list 'rows (number->string rows)))
                                  (and cols (list 'cols (number->string cols)))))
-                   attrs))                      
-           ""))))
+                   attrs))
+           (if value
+               (bytes->string/utf-8 value)
+               "")))))
 
 (provide/contract
  [text-input (() 
@@ -311,6 +314,7 @@
  [textarea-input (()
                   (#:attributes 
                    (listof (list/c symbol? string?))
+                   #:value (or/c false/c bytes?)
                    #:rows number?
                    #:cols number?)
                   . ->* .
