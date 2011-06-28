@@ -6,9 +6,9 @@
 
 @(defmethod (get-menu%) (is-a?/c menu:can-restore-underscore-menu%) "The result of this method is used as the class" "\n" "    " "for creating the result of these methods:" "\n" "    " (method frame:standard-menus get-file-menu) "," "\n" "    " (method frame:standard-menus get-edit-menu) ", and" "\n" "    " (method frame:standard-menus get-help-menu) ".")
 
-@(defmethod (get-menu-item%) (is-a?/c menu:can-restore-menu-item%) "The result of this method is used as the class for creating" "\n" "the menu items in this frame." "\n" "\n" "Defaultly returns " (racket menu:can-restore-menu-item) ".")
+@(defmethod (get-menu-item%) (is-a?/c menu:can-restore-menu-item%) "The result of this method is used as the class for creating" "\n" "the menu items in this frame." "\n" "\n" "Returns " (racket menu:can-restore-menu-item) " by default.")
 
-@(defmethod (get-checkable-menu-item%) (is-a?/c menu:can-restore-checkable-menu-item%) "The result of this method is used as the class for creating" "\n" "checkable menu items in this class." "\n" "\n" "Defaultly returns " (racket menu:can-restore-checkable-menu-item) ".")
+@(defmethod (get-checkable-menu-item%) (is-a?/c menu:can-restore-checkable-menu-item%) "The result of this method is used as the class for creating" "\n" "checkable menu items in this class." "\n" "\n" "Returns " (racket menu:can-restore-checkable-menu-item) " by default.")
 
 @(defmethod (get-file-menu) (is-a?/c menu%) "Returns the file menu." "\n" "See also " (method frame:standard-menus<%> get-menu%) ".")
 

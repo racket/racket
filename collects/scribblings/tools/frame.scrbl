@@ -135,7 +135,7 @@ to the user's browser.
 }
 @methimpl{
 
-Defaultly returns the empty list.
+Returns the empty list by default.
 
 
 }}

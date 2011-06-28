@@ -90,7 +90,7 @@ If it receives false, the name message will not shrink and
 its minimum width will be the size required to display its
 current label.
 
-Defaultly, the name-message does not allow shrinking.
+By default, the name-message does not allow shrinking.
 }
 
 }

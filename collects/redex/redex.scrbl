@@ -2114,7 +2114,7 @@ constructed directly with @racket[language]. If it is @racket[#f], then only
 the last extension to the language is shown (with
 four-period ellipses, just like in the concrete syntax).
 
-Defaultly @racket[#f].
+Defaults to @racket[#f].
 
 Note that the @racket[#t] variant can look a little bit strange if
 @racket[....] are used and the original version of the language has

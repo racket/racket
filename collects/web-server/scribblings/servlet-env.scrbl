@@ -192,7 +192,7 @@ Like always, you don't even need to save the file.
  as its continuation manager. (The default manager limits the amount of memory to 64 MB and
  deals with memory pressure as discussed in the @racket[make-threshold-LRU-manager] documentation.)
  
- The server files are rooted at @racket[server-root-path] (which is defaultly the distribution root.)
+ The server files are rooted at @racket[server-root-path] (which is the distribution root by default.)
  File paths, in addition to the @filepath["htdocs"] directory under @racket[server-root-path] may be
  provided with @racket[extra-files-paths]. These paths are checked first, in the order they appear in the list.
  

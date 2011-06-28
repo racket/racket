@@ -405,7 +405,7 @@ interface.
   @racket[#f], @racket[namespace-require] is used.
 }
 @methimpl{
-  Defaultly returns @racket[#f].
+  Returns @racket[#f] by default.
 }}}
 
 
@@ -467,7 +467,7 @@ DrRacket.
   @racket[drracket:language:register-capability].
 }
 @methimpl{
-  Defaultly returns the value from:
+  By default, returns the value from:
   @racket[drracket:language:get-capability-default].
 }}
 

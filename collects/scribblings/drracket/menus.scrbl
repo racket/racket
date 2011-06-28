@@ -204,7 +204,7 @@ appears at any time.
 
  @item{@defmenuitem{Toolbar} 
 @itemize[
-@item{@defmenuitem{Toolbar on Left} Moves the tool bar (defaultly on the top of DrRacket's window) to the left-hand side, organized vertically.}
+@item{@defmenuitem{Toolbar on Left} Moves the tool bar (on the top of DrRacket's window by default) to the left-hand side, organized vertically.}
 @item{@defmenuitem{Toolbar on Top} Moves the toolbar to the top of the DrRacket window.}
 @item{@defmenuitem{Toolbar on Right} Moves the tool bar to the right-hand side, organized vertically.}
 @item{@defmenuitem{Toolbar Hidden} Hides the toolbar entirely.}]}

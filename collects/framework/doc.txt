@@ -20,9 +20,9 @@ to specify this class's behavior.
      instance of decorated-editor-snip%. Override this when
      deriving a new class from decorated-editor-snip%.
 
->  make-editor :: (send a-des make-editor) - returns the 
-     editor to be used in the snip. Defaultly returns an
-     instance of text%.
+>  make-editor :: (send a-des make-editor) - returns the
+     editor to be used in the snip. Returns an instance of
+     text% by default.
 
 >  get-color :: (send a-des get-color) - returns a color%
      object or a string in the color-database%

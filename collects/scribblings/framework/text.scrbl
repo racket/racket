@@ -100,7 +100,7 @@
     this method to change the initial @racket[bitmap%]. See also @method[text%
     set-autowrap-bitmap]
 
-    Defaultly returns the result of @racket[icon:get-autowrap-bitmap]
+    Returns the result of @racket[icon:get-autowrap-bitmap] by default.
   }
 
   @defmethod*[(((get-port-name) (or/c path-string? symbol? #f)))]{
@@ -871,8 +871,8 @@
 
     This method is called during the initialization of the class.
 
-    Defaultly returns @racket["text:ports out"] which is mapped to a blue style
-    in the style list returned by @racket[editor:get-standard-style-list].
+    By default, returns @racket["text:ports out"] which is mapped to a blue
+    style in the style list returned by @racket[editor:get-standard-style-list].
   }
 
   @defmethod*[(((get-err-style-delta) (or/c (is-a?/c style-delta%) string?)))]{
@@ -885,8 +885,8 @@
 
     This method is called during the initialization of the class.
 
-    Defaultly returns @racket["text:ports err"] which is mapped to a red italic
-    style in the style list returned by
+    By default, returns @racket["text:ports err"] which is mapped to a red
+    italic style in the style list returned by
     @racket[editor:get-standard-style-list].
   }
 
@@ -901,7 +901,7 @@
 
     This method is called during the initialization of the class.
 
-    Defaultly returns @racket["text:ports value"] which is mapped to a blue
+    By default, returns @racket["text:ports value"] which is mapped to a blue
     style in the style list returned by
     @racket[editor:get-standard-style-list].
   }

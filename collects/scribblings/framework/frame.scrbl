@@ -82,7 +82,7 @@
     This returns the filename that the frame is currently being saved as,
     or @racket[#f] if there is no appropriate filename.
 
-    Defaultly returns @racket[#f]. 
+    Returns @racket[#f] by default.
 
     If @racket[temp] is a box, it is filled with @racket[#t] or @racket[#f],
     depending if the filename is a temporary filename.
@@ -647,7 +647,7 @@
     When the user switches the visible file in this frame, the of this method
     is the editor that gets switched.
 
-    Defaultly returns the result of @method[frame:editor<%> get-editor].
+    By Default, returns the result of @method[frame:editor<%> get-editor].
   }
 
   @defmethod*[(((open-here (filename string)) void?))]{

@@ -252,7 +252,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   @defmethod[(reload) void?]{
     Reloads the current page.
 
-    The text defaultly uses the basic style named
+    By default, the text uses the basic style named
     @racket["Html Standard"] in the editor (if it exists).
   }
 
@@ -339,7 +339,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   }
 
   @defmethod[(after-set-page) void?]{
-    Called during @racket[set-page].  Defaultly does nothing.
+    Called during @racket[set-page].  Does nothing by default.
   }
 }
 

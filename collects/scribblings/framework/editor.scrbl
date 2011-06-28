@@ -281,7 +281,7 @@
 
     See also @racket[editor:add-after-user-keymap].
 
-    Defaultly returns @racket[(list (keymap:get-user) (keymap:get-global))]
+    Returns @racket[(list (keymap:get-user) (keymap:get-global))] by default.
   }
 }
 @defmixin[editor:keymap-mixin (editor:basic<%>) (editor:keymap<%>)]{
@@ -315,7 +315,7 @@
     The result of this method is used as the parent for the
     dialog that asks about closing.
 
-    Defaultly returns @racket[#f].
+    Returns @racket[#f] by default.
   }
   @defmethod*[(((update-frame-filename) void?))]{
     Attempts to find a frame that displays this editor. If it
@@ -328,7 +328,7 @@
     been saved is a reason to alert the user. See also
     @method[editor:file-mixin can-close?].
 
-    Defaultly returns @racket[#f].
+    Returns @racket[#f] by default.
   }
   
   @defmethod[(user-saves-or-not-modified? [allow-cancel? #t]) boolean?]{
