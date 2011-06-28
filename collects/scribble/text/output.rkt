@@ -1,23 +1,32 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/promise)
+(require racket/promise)
 
 (provide output)
 
-;; Outputs some value, for the preprocessor language.
+;; Outputs some value for the `scribble/text' language:
+;; - several atomic values are printed as in `display',
+;; - promises, thunks, and boxes are indirections for the value they contain
+;;   (useful in various cases),
+;; - some "special" values are used for controlling output (eg, flushing,
+;;   prefix changes, etc),
+;; - specifically, `block's delimit indentation levels, `splice's do not,
+;; - lists (more generally, pairs) are like either one depending on the context
+;;   (same as blocks/splices when inside a `block'/`splice'), at the toplevel
+;;   they default to blocks.
 ;;
 ;; Uses global state because `output' is wrapped around each expression in a
 ;; scribble/text file so this is much more convenient than wrapping the whole
 ;; module's body in a `list' (which will be difficult with definitions etc).
 ;; The state is a pair of prefixes -- one that is the prefix for the current
-;; value (which gets accumulated to with nested lists), and the other is the
-;; prefix for the current "line" (which is reset after a newline).  The
-;; line-prefix is needed because a line can hold a list, which means that the
-;; line-prefix will apply for the contents of the list including newlines in
-;; it.  This state is associated to a port via a hash table.  Another state
-;; that is used is the port's column position, which is maintained by the
-;; system (when line counts are enabled) -- this is used to tell what part of a
-;; prefix is already displayed.
+;; value (which gets extended with nested blocks), and the other is the prefix
+;; for the current "line" (which is reset after a newline).  The line-prefix is
+;; needed because a line can hold a block, which means that the line-prefix
+;; will apply for the contents of the block including newlines in it.  This
+;; state is associated with a port via a hash table.  Another state that is
+;; used is the port's column position, which is maintained by the system (when
+;; line counts are enabled) -- this is used to tell what part of a prefix is
+;; already displayed.
 ;;
 ;; Each prefix is either an integer (for a number of spaces) or a string.  The
 ;; prefix mechanism can be disabled by using #f for the global prefix, and in
@@ -28,6 +37,8 @@
 (define (output x [p (current-output-port)])
   ;; these are the global prefix and the one that is local to the current line
   (define pfxs (port->state p))
+  ;; the current mode for lists
+  (define list=block? #t)
   ;; the low-level string output function (can change with `with-writer')
   (define write write-string)
   ;; to get the output column
@@ -98,6 +109,17 @@
                        (output-pfx col pfx lpfx)
                        ;; the spaces were already added to lpfx
                        (write x p (if m (cdar m) start)))))])))))
+  ;; blocks and splices
+  (define (output-block c)
+    (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
+           [npfx (pfx+col (pfx+ pfx lpfx))])
+      (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
+      (if (list? c)
+        (for ([c (in-list c)]) (loop c))
+        (begin (loop (car c)) (loop (cdr c))))
+      (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx)))
+  (define (output-splice c)
+    (for-each loop c))
   ;; main loop
   (define (loop x)
     (cond
@@ -107,13 +129,7 @@
       ;; one, then output the contents recursively (no need to change the
       ;; state, since we pass the values in the loop, and we'd need to restore
       ;; it afterwards anyway)
-      [(pair? x) (if (list? x)
-                   (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
-                          [npfx (pfx+col (pfx+ pfx lpfx))])
-                     (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
-                     (for ([x (in-list x)]) (loop x))
-                     (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))
-                   (begin (loop (car x)) (loop (cdr x))))]
+      [(pair? x) (if list=block? (output-block x) (output-splice x))]
       ;; delayed values
       [(and (procedure? x) (procedure-arity-includes? x 0)) (loop (x))]
       [(promise? x) (loop (force x))]
@@ -122,7 +138,17 @@
       [(special? x)
        (let ([c (special-contents x)])
          (case (special-flag x)
-           [(splice) (for-each loop c)]
+           ;; preserve tailness & avoid `set!' for blocks/splices if possible
+           [(block) (if list=block?
+                      (output-block c)
+                      (begin (set! list=block? #t)
+                             (output-block c)
+                             (set! list=block? #f)))]
+           [(splice) (if list=block?
+                      (begin (set! list=block? #f)
+                             (output-splice c)
+                             (set! list=block? #t))
+                      (output-splice c))]
            [(flush) ; useful before `disable-prefix'
             (output-pfx (getcol) (mcar pfxs) (mcdr pfxs))]
            [(disable-prefix) ; save the previous pfxs
@@ -196,6 +222,10 @@
 
 (define-syntax define/provide-special
   (syntax-rules ()
+    [(_ (name))
+     (begin (provide name)
+            (define (name . contents)
+              (make-special 'name contents)))]
     [(_ (name x ...))
      (begin (provide name)
             (define (name x ... . contents)
@@ -204,6 +234,7 @@
      (begin (provide name)
             (define name (make-special 'name #f)))]))
 
+(define/provide-special (block))
 (define/provide-special (splice))
 (define/provide-special flush)
 (define/provide-special (disable-prefix))
@@ -215,11 +246,11 @@
 (define/provide-special (with-writer-change writer))
 
 (define make-spaces ; (efficiently)
-  (let ([t (make-hasheq)] [v (make-vector 80 #f)])
+  (let ([t (make-hasheq)] [v (make-vector 200 #f)])
     (lambda (n)
-      (or (if (< n 80) (vector-ref v n) (hash-ref t n #f))
+      (or (if (< n 200) (vector-ref v n) (hash-ref t n #f))
           (let ([spaces (make-string n #\space)])
-            (if (< n 80) (vector-set! v n spaces) (hash-set! t n spaces))
+            (if (< n 200) (vector-set! v n spaces) (hash-set! t n spaces))
             spaces)))))
 
 ;; Convenient utilities

@@ -526,13 +526,13 @@ converting @litchar{---} to an em dash or for converting @litchar{"}
 and @litchar{'} to suitable curly quotes.
 
 The decoding process for document's stream is ultimately determined by
-the @hash-lang[] line that starts the document. The @racketmodname[scribble/base],
-@racketmodname[scribble/manual], and @racketmodname[scribble/sigplan]
-languages all use the same @racket[decode] operation.  The
-@racketmodname[scribble/text] language, however, acts more like a
-plain-text preprocessor and it does not perform any such decoding
-rules. (For more on @racketmodname[scribble/text], see
-@secref["preprocessor"].)
+the @hash-lang[] line that starts the document.  The
+@racketmodname[scribble/base], @racketmodname[scribble/manual], and
+@racketmodname[scribble/sigplan] languages all use the same
+@racket[decode] operation.  The @racketmodname[scribble/text] language,
+however, acts more like a plain-text genrator and preprocessor, and it
+does not perform any such decoding rules.  (For more on
+@racketmodname[scribble/text], see @secref["text"].)
 
 @margin-note{More precisely, languages like
              @racketmodname[scribble/base] apply @racket[decode] only after
@@ -607,5 +607,5 @@ Racket, continue with @secref["reader"] and then
 @secref["generic-prose"].  Move on to @secref["internals"] when you
 need more power.
 
-If you are interested in text preprocessing, continue with
-@secref["reader"], but then skip to @secref["preprocessor"].
+If you are interested in text generation and preprocessing, continue
+with @secref["reader"], but then skip to @secref["text"].

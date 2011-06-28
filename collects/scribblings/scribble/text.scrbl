@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual 
+@(require scribble/manual
           scribble/core scribble/html-properties scribble/latex-properties
           "utils.rkt"
           (for-label racket/base
@@ -8,27 +8,28 @@
                      ))
 @initialize-tests
 
-@title[#:tag "preprocessor"
+@title[#:tag "text"
        #:style (make-style #f (list (make-tex-addition "shaded.tex")
                                     (make-css-addition "shaded.css")))
-      ]{Text Preprocessing}
+      ]{Text Generation}
+@section-index["Preprocessor"]
 
-@defmodulelang[scribble/text]{The @racketmodname[scribble/text]
-language provides everything from @racket[racket/base] with a few
-changes that make it suitable as a preprocessor language:
+@defmodulelang[scribble/text]{The @racketmodname[scribble/text] language
+provides everything from @racket[racket/base] with a few changes that
+make it suitable as a text generation or a preprocessor language:
 
 @itemize[
 
-  @item{It uses @racket[read-syntax-inside] to read the body of the
-        module, similar to @secref["docreader"].  This means that by
-        default, all text is read in as Racket strings; and
+  @item{The language uses @racket[read-syntax-inside] to read the body
+        of the module, similar to @secref["docreader"].  This means that
+        by default, all text is read in as Racket strings; and
         @seclink["reader"]|{@-forms}| can be used to use Racket
         functions and expression escapes.}
 
-  @item{Values of expressions are printed with a custom
-        @racket[output] function.  This function displays most values
-        in a similar way to @racket[display], except that it is more
-        convenient for a preprocessor output.}]
+  @item{Values of expressions are printed with a custom @racket[output]
+        function.  This function displays most values in a similar way
+        to @racket[display], except that it is more convenient for a
+        textual output.}]
 
 }
 
@@ -39,7 +40,7 @@ changes that make it suitable as a preprocessor language:
 @; * maybe a section on additional utilities: begin/text
 
 @;--------------------------------------------------------------------
-@section{Writing Preprocessor Files}
+@section{Writing Text Files}
 
 The combination of the two features makes text in files in the
 @racket[scribble/text] language be read as strings, which get printed
@@ -380,9 +381,9 @@ number of body expressions must be fixed.
 @;--------------------------------------------------------------------
 @section{Using Printouts}
 
-Because the preprocessor language simply displays each toplevel value
-as the file is run, it is possible to print text directly as part of
-the output.
+Because the text language simply displays each toplevel value as the
+file is run, it is possible to print text directly as part of the
+output.
 
 @example|-{#lang scribble/text
            First
@@ -463,13 +464,13 @@ promises, so you can create a loop that is delayed in either form.
 @;--------------------------------------------------------------------
 @section{Indentation in Preprocessed output}
 
-An issue that can be very important in many preprocessor applications
-is the indentation of the output.  This can be crucial in some cases,
-if you're generating code for an indentation-sensitive language (e.g.,
+An issue that can be very important in many text generation applications
+is the indentation of the output.  This can be crucial in some cases, if
+you're generating code for an indentation-sensitive language (e.g.,
 Haskell, Python, or C preprocessor directives).  To get a better
-understanding of how the pieces interact, you may want to review how
-the @seclink["reader"]|{Scribble reader}| section, but also remember
-that you can use quoted forms to see how some form is read.
+understanding of how the pieces interact, you may want to review how the
+@seclink["reader"]|{Scribble reader}| section, but also remember that
+you can use quoted forms to see how some form is read.
 
 @example|-{#lang scribble/text
            @(format "~s" '@list{
@@ -479,40 +480,51 @@ that you can use quoted forms to see how some form is read.
            ---***---
            (list "a" "\n" "  " "b" "\n" "c")}-|
 
-The Scribble reader ignores indentation spaces in its body.  This is
-an intentional feature, since you usually do not want an expression to
-depend on its position in the source.  But the question is how
-@emph{can} we render some output text with proper indentation.  The
-@racket[output] function achieves that by assigning a special meaning
-to lists: when a newline is part of a list's contents, it causes the
-following text to appear with indentation that corresponds to the
-column position at the beginning of the list.  In most cases, this
-makes the output appear ``as intended'' when lists are used for nested
-pieces of text --- either from a literal @racket[list] expression, or
-an expression that evaluates to a list, or when a list is passed on as
-a value; either as a toplevel expression, or as a nested value; either
-appearing after spaces, or after other output.
+The Scribble reader ignores indentation spaces in its body.  This is an
+intentional feature, since you usually do not want an expression to
+depend on its position in the source.  But the question is whether we
+@emph{can} render some output text with proper indentation.  The
+@racket[output] function achieves that by introducing @racket[block]s.
+Just like a list, a @racket[block] contains a list of elements, and when
+one is rendered, it is done in its own indentation level.  When a
+newline is part of a @racket[block]'s contents, it causes the following
+text to appear with indentation that corresponds to the column position
+at the beginning of the block.
+
+In addition, lists are also rendered as blocks by default, so they can
+be used for the same purpose.  In most cases, this makes the output
+appear ``as intended'' where lists are used for nested pieces of text
+--- either from a literal @racket[list] expression, or an expression
+that evaluates to a list, or when a list is passed on as a value; either
+as a toplevel expression, or as a nested value; either appearing after
+spaces, or after other output.
 
 @example|-{#lang scribble/text
-           foo @list{1
-                     2
-                     3}
+           foo @block{1
+                      2
+                      3}
+           foo @list{4
+                     5
+                     6}
            ---***---
            foo 1
                2
-               3}-|
+               3
+           foo 4
+               5
+               6}-|
 
 @example|-{#lang scribble/text
-           @(define (block . text)
+           @(define (code . text)
               @list{begin
                       @text
                     end})
-           @block{first
-                  second
-                  @block{
-                    third
-                    fourth}
-                  last}
+           @code{first
+                 second
+                 @code{
+                   third
+                   fourth}
+                 last}
            ---***---
            begin
              first
@@ -697,20 +709,25 @@ appearing after spaces, or after other output.
   }-|
 
 There are, however, cases when you need more refined control over the
-output.  The @racket[scribble/text] provides a few functions for such
-cases.  The @racket[splice] function is used to group together a
-number of values but avoid introducing a new indentation context.
+output.  The @racket[scribble/text] language provides a few functions
+for such cases in addition to @racket[block].  The @racket[splice]
+function groups together a number of values but avoids introducing a new
+indentation context.  Furthermore, lists are not always rendered as
+@racket[block]s --- instead, they are rendered as @racket[splice]s when
+they are used inside one, so you essentially use @racket[splice] to
+avoid the ``indentation group'' behavior, and @racket[block] to restore
+it.
 
 @example|-{#lang scribble/text
-           @(define (block . text)
+           @(define (blah . text)
               @splice{{
-                blah(@text);
+                blah(@block{@text});
               }})
            start
              @splice{foo();
                      loop:}
-             @list{if (something) @block{one,
-                                         two}}
+             @list{if (something) @blah{one,
+                                        two}}
            end
            ---***---
            start
@@ -759,8 +776,8 @@ example, to print out CPP directives.
            }-|
 
 If there are values after a @racket[disable-prefix] value on the same
-line, they will get indented to the goal column (unless the output is
-already beyond it).
+line, they @emph{will} get indented to the goal column (unless the
+output is already beyond it).
 
 @example|-{#lang scribble/text
            @(define (thunk name . body)
@@ -922,8 +939,8 @@ property of @racket[disable-prefix] but only for a nested prefix.
 @section{Using External Files}
 
 Using additional files that contain code for your preprocessing is
-trivial: the preprocessor source is still source code in a module, so
-you can @racket[require] additional files with utility functions.
+trivial: the source text is still source code in a module, so you can
+@racket[require] additional files with utility functions.
 
 @example|-{#lang scribble/text
            @(require "itemize.rkt")
@@ -984,13 +1001,13 @@ it, it is easy to include a lot of textual content.
 
 Of course, the extreme side of this will be to put all of your content
 in a plain Racket module, using @"@"-forms for convenience.  However,
-there is no need to use the preprocessor language in this case;
-instead, you can @racket[(require scribble/text)], which will get all
-of the bindings that are available in the @racket[scribble/text]
-language.  Using @racket[output], switching from a preprocessed files
-to a Racket file is very easy ---- choosing one or the other depends
-on whether it is more convenient to write a text file with occasional
-Racket expressions or the other way.
+there is no need to use the text language in this case; instead, you can
+@racket[(require scribble/text)], which will get all of the bindings
+that are available in the @racket[scribble/text] language.  Using
+@racket[output], switching from a preprocessed files to a Racket file is
+very easy ---- choosing one or the other depends on whether it is more
+convenient to write a text file with occasional Racket expressions or
+the other way.
 
 @example|-{#lang at-exp racket/base
            (require scribble/text racket/list)
@@ -1022,11 +1039,11 @@ Racket expressions or the other way.
            }-|
 
 However, you might run into a case where it is desirable to include a
-mostly-text file from a preprocessor file.  It might be because you
-prefer to split the source text to several files, or because you need
-to preprocess a file without even a @litchar{#lang} header (for
-example, an HTML template file that is the result of an external
-editor).  For these cases, the @racket[scribble/text] language
+mostly-text file from a @racket[scribble/text] source file.  It might be
+because you prefer to split the source text to several files, or because
+you need to use a template file that cannot have a @litchar{#lang}
+header (for example, an HTML template file that is the result of an
+external editor).  In these cases, the @racket[scribble/text] language
 provides an @racket[include] form that includes a file in the
 preprocessor syntax (where the default parsing mode is text).
 
@@ -1075,12 +1092,11 @@ preprocessor syntax (where the default parsing mode is text).
            }-|
 
 (Using @racket[require] with a text file in the @racket[scribble/text]
-language will not work as intended: using the preprocessor language
-means that the text is displayed when the module is invoked, so the
-required file's contents will be printed before any of the requiring
-module's text does.  If you find yourself in such a situation, it is
-better to switch to a Racket-with-@"@"-expressions file as shown
-above.)
+language will not work as intended: the language will display the text
+is when the module is invoked, so the required file's contents will be
+printed before any of the requiring module's text does.  If you find
+yourself in such a situation, it is better to switch to a
+Racket-with-@"@"-expressions file as shown above.)
 
 @;FIXME: add more text on `restore-prefix', `set-prefix', `with-writer'
 

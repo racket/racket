@@ -101,7 +101,7 @@
                       (map as-flow (list spacer @expr reads-as sexpr))))
                   r))))))))
 
-;; stuff for the preprocessor examples
+;; stuff for the scribble/text examples
 
 (require racket/list (for-syntax racket/base racket/list))
 

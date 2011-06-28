@@ -8,17 +8,20 @@
 
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
 @(define at-reader-ref @secref[#:doc '(lib "scribblings/scribble/scribble.scrbl")]{reader})
-@(define text-ref @secref[#:doc '(lib "scribblings/scribble/scribble.scrbl")]{preprocessor})
+@(define text-ref
+   @secref[#:doc '(lib "scribblings/scribble/scribble.scrbl") "text"])
 
 @title[#:tag "templates"]{Templates: Separation of View}
 
 @defmodule[web-server/templates]
 
-The @web-server provides a powerful Web template system for separating the presentation logic of a Web application
-and enabling non-programmers to contribute to Racket-based Web applications.
+The @web-server provides a powerful Web template system for separating
+the presentation logic of a Web application and enabling non-programmers
+to contribute to Racket-based Web applications.
 
-@margin-note{Although all the examples here generate HTML, the template language and the @text-ref it is based on can
-             be used to generate any text-based format: C, SQL, form emails, reports, etc.} 
+@margin-note{Although all the examples here generate HTML, the template
+  language and the @text-ref it is based on can be used to generate any
+  text-based format: C, SQL, form emails, reports, etc.}
 
 @section{Static}
 

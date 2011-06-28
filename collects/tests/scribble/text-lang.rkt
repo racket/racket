@@ -1,11 +1,11 @@
 #lang racket/base
 
 (require tests/eli-tester racket/runtime-path racket/port racket/sandbox
-         (prefix-in doc: (lib "scribblings/scribble/preprocessor.scrbl")))
+         (prefix-in doc: (lib "scribblings/scribble/text.scrbl")))
 
-(provide preprocessor-tests)
+(provide text-lang-tests)
 
-(define (preprocessor-tests)
+(define (text-lang-tests)
   ;; (sample-file-tests)
   (in-documentation-tests))
 
@@ -36,7 +36,7 @@
     ;; test with name indicating the source
     (define-syntax-rule (t . stuff)
       (test ;; #:failure-message
-            ;; (format "preprocessor test failure at line ~s" line)
+            ;; (format "text-lang test failure at line ~s" line)
             . stuff))
     (parameterize ([current-directory this-dir]
                    [sandbox-output o]
