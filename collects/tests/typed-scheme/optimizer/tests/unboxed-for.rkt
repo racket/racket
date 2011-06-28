@@ -1,8 +1,8 @@
 #;
 (
-TR opt: unboxed-for.rkt 30:0 #%module-begin -- in-list
 TR opt: unboxed-for.rkt 33:0 (for/fold: : Float-Complex ((sum : Float-Complex 0.0+0.0i)) ((i : Float-Complex (quote (1.0+2.0i 2.0+4.0i)))) (+ i sum)) -- call to fun with unboxed args
 TR opt: unboxed-for.rkt 33:0 (for/fold: : Float-Complex ((sum : Float-Complex 0.0+0.0i)) ((i : Float-Complex (quote (1.0+2.0i 2.0+4.0i)))) (+ i sum)) -- fun -> unboxed fun
+TR opt: unboxed-for.rkt 30:0 #%module-begin -- in-list
 TR opt: unboxed-for.rkt 33:0 (for/fold: : Float-Complex ((sum : Float-Complex 0.0+0.0i)) ((i : Float-Complex (quote (1.0+2.0i 2.0+4.0i)))) (+ i sum)) -- unbox float-complex
 TR opt: unboxed-for.rkt 33:0 (for/fold: : Float-Complex ((sum : Float-Complex 0.0+0.0i)) ((i : Float-Complex (quote (1.0+2.0i 2.0+4.0i)))) (+ i sum)) -- unboxed call site
 TR opt: unboxed-for.rkt 33:0 (for/fold: : Float-Complex ((sum : Float-Complex 0.0+0.0i)) ((i : Float-Complex (quote (1.0+2.0i 2.0+4.0i)))) (+ i sum)) -- unboxed function -> table
