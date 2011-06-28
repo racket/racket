@@ -33,7 +33,7 @@
    [#\" (token-STRING (list->string (get-string-token input-port)))]
    [#\( (token-LPAREN)]
    [#\, (token-COMMA)]
-   [#\) (token-RPAREN)]   
+   [#\) (token-RPAREN)]
    [#\. (token-DOT)]
    [#\~ (token-TILDE)]
    [#\? (token-QMARK)]
@@ -41,6 +41,6 @@
    ["!=" (token-NEQUAL)]
    [(eof) (token-EOF)]))
 
-(provide dtokens dpunct 
+(provide dtokens dpunct
          line-break id-chars variable-re identifier-re comment-re
          dlexer)

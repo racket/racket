@@ -72,4 +72,3 @@
   (test
    (do-the-test #:connection-close? #f) => (list 1 2)
    (do-the-test #:connection-close? #t) => (list 1 1))
-  

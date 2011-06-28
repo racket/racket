@@ -1,4 +1,3 @@
-
 #lang at-exp typed/racket
 
 (define contents

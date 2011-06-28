@@ -523,4 +523,3 @@
       (set-flags (cons 'handles-events (get-flags)))
       (set-snipclass number-snipclass)
       (iterate 1))) ;; calc first digits
-  

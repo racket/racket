@@ -5,13 +5,14 @@
          racket/match
          racket/runtime-path)
 
-;; the constants in this file are pulled from version 1.0.21 of the libsndfile header file. However,
-;; I think it would be a mistake to specify this in the call to ffi-lib; it appears that 
-;; this version is a conservative extension of the earlier version (1.0.17?), and I
+;; the constants in this file are pulled from version 1.0.21 of the
+;; libsndfile header file. However, I think it would be a mistake to
+;; specify this in the call to ffi-lib; it appears that this version is
+;; a conservative extension of the earlier version (1.0.17?), and I
 ;; think you'll get graceful failures if the version is wrong.
 
 (define-runtime-path mac-ffi-path "./lib/libsndfile")
-(define libsndfile 
+(define libsndfile
   (match (system-type)
     ['unix (ffi-lib "libsndfile"   '("1.0.21" "1.0.20" ""))]
     ['macosx (ffi-lib mac-ffi-path '("1.0.21" "1.0.20" ""))]
@@ -31,9 +32,8 @@
 (define _sndfile
   (make-ctype _pointer sndfile-ptr
     (lambda (p)
-      ;; can't check here for null-ness of p, 
-      ;; the check has to be specific to the 
-      ;; call.
+      ;; can't check here for null-ness of p, the check has to be
+      ;; specific to the call.
       (make-sndfile p #f))))
 
 ;; sf_count_t is a count type that depends on the operating system however it
@@ -45,7 +45,7 @@
   (_bitmask '(sfm-read  = #x10
               sfm-write = #x20
               sfm-rdwrt = #x30
-              
+
               ;; I really have no clue what these are for:
               sf-ambisonic-none = #x40
               sf-ambisonic-b-format = #x41)))
@@ -56,31 +56,31 @@
 
 (define _sf-format
   (let ([majors ; Major formats
-         '((wav	      #x010000) ; Microsoft WAV format (little endian default). 
-           (aiff      #x020000) ; Apple/SGI AIFF format (big endian). 
-           (au	      #x030000) ; Sun/NeXT AU format (big endian). 
-           (raw	      #x040000) ; RAW PCM data. 
-           (paf	      #x050000) ; Ensoniq PARIS file format. 
-           (svx	      #x060000) ; Amiga IFF / SVX8 / SV16 format. 
-           (nist      #x070000) ; Sphere NIST format. 
-           (voc	      #x080000) ; VOC files. 
-           (ircam     #x0A0000) ; Berkeley/IRCAM/CARL 
-           (w64	      #x0B0000) ; Sonic Foundry's 64 bit RIFF/WAV 
-           (mat4      #x0C0000) ; Matlab (tm) V4.2 / GNU Octave 2.0 
-           (mat5      #x0D0000) ; Matlab (tm) V5.0 / GNU Octave 2.1 
-           (pvf	      #x0E0000) ; Portable Voice Format 
-           (xi	      #x0F0000) ; Fasttracker 2 Extended Instrument 
-           (htk	      #x100000) ; HMM Tool Kit format 
-           (sds	      #x110000) ; Midi Sample Dump Standard 
-           (avr	      #x120000) ; Audio Visual Research 
-           (wavex     #x130000) ; MS WAVE with WAVEFORMATEX 
-           (sd2	      #x160000) ; Sound Designer 2 
-           (flac      #x170000) ; FLAC lossless file format 
-           (caf	      #x180000) ; Core Audio File format 
-           (wve	      #x190000) ; Psion WVE format 
-           (ogg	      #x200000) ; Xiph OGG container 
-           (mpc2k     #x210000) ; Akai MPC 2000 sampler 
-           (rf64      #x220000) ; RF64 WAV file 
+         '((wav       #x010000) ; Microsoft WAV format (little endian default).
+           (aiff      #x020000) ; Apple/SGI AIFF format (big endian).
+           (au        #x030000) ; Sun/NeXT AU format (big endian).
+           (raw       #x040000) ; RAW PCM data.
+           (paf       #x050000) ; Ensoniq PARIS file format.
+           (svx       #x060000) ; Amiga IFF / SVX8 / SV16 format.
+           (nist      #x070000) ; Sphere NIST format.
+           (voc       #x080000) ; VOC files.
+           (ircam     #x0A0000) ; Berkeley/IRCAM/CARL
+           (w64       #x0B0000) ; Sonic Foundry's 64 bit RIFF/WAV
+           (mat4      #x0C0000) ; Matlab (tm) V4.2 / GNU Octave 2.0
+           (mat5      #x0D0000) ; Matlab (tm) V5.0 / GNU Octave 2.1
+           (pvf       #x0E0000) ; Portable Voice Format
+           (xi        #x0F0000) ; Fasttracker 2 Extended Instrument
+           (htk       #x100000) ; HMM Tool Kit format
+           (sds       #x110000) ; Midi Sample Dump Standard
+           (avr       #x120000) ; Audio Visual Research
+           (wavex     #x130000) ; MS WAVE with WAVEFORMATEX
+           (sd2       #x160000) ; Sound Designer 2
+           (flac      #x170000) ; FLAC lossless file format
+           (caf       #x180000) ; Core Audio File format
+           (wve       #x190000) ; Psion WVE format
+           (ogg       #x200000) ; Xiph OGG container
+           (mpc2k     #x210000) ; Akai MPC 2000 sampler
+           (rf64      #x220000) ; RF64 WAV file
            )]
         [subtypes ; Subtypes from here on
          '((pcm-s8    #x0001)     ; Signed 8 bit data
@@ -90,27 +90,27 @@
            (pcm-u8    #x0005)     ; Unsigned 8 bit data (WAV and RAW only)
            (float     #x0006)     ; 32 bit float data
            (double    #x0007)     ; 64 bit float data
-           
+
            (ulaw      #x0010)     ; U-Law encoded
            (alaw      #x0011)     ; A-Law encoded
            (ima-adpcm #x0012)     ; IMA ADPCM
            (ms-adpcm  #x0013)     ; Microsoft ADPCM
-           
+
            (gsm610    #x0020)     ; GSM 6.10 encoding
            (vox-adpcm #x0021)     ; OKI / Dialogix ADPCM
-           
+
            (g721-32   #x0030)     ; 32kbs G721 ADPCM encoding
            (g723-24   #x0031)     ; 24kbs G723 ADPCM encoding
            (g723-40   #x0032)     ; 40kbs G723 ADPCM encoding
-           
+
            (dwvw-12   #x0040)     ; 12 bit Delta Width Variable Word encoding
            (dwvw-16   #x0041)     ; 16 bit Delta Width Variable Word encoding
            (dwvw-24   #x0042)     ; 24 bit Delta Width Variable Word encoding
            (dwvw-n    #x0043)     ; N bit Delta Width Variable Word encoding
-           
+
            (dpcm-8    #x0050)     ; 8 bit differential PCM (XI only)
            (dpcm-16   #x0051)     ; 16 bit differential PCM (XI only)
-           
+
            (vorbis    #x0060)     ; Xiph Vorbis encoding.
            )]
         [endians ; Endian-ness options
@@ -231,13 +231,13 @@
 ;; ==================== Utilities for the Scheme interface ====================
 
 ;; get-meta-strings : sndfile -> (listof (list/c sf-str-type string))
-;; produce an association list for the meta-information associated with 
+;; produce an association list for the meta-information associated with
 ;; the sndfile
 
-;; Q: can sf-get-string signal an error? apparently so. I think it makes sense
-;; to identify these errors with the simple lack of the string, which 
-;; requires no change to the code. I hope that such an error doesn't pollute
-;; later operations on the soundfile.
+;; Q: can sf-get-string signal an error? apparently so. I think it makes
+;; sense to identify these errors with the simple lack of the string,
+;; which requires no change to the code. I hope that such an error
+;; doesn't pollute later operations on the soundfile.
 (define (get-meta-strings sndfile)
   (for/list ([s (in-list str-types)]
              #:when (sf-get-string sndfile s))
@@ -254,7 +254,7 @@
 
 
 ;; read-sound-internal : path-string -> (values/c (or/c cblock (listof (listof sample))) a-list)
-;; read the data from a file. 
+;; read the data from a file.
 (define (read-sound-internal file)
   (let* ([sndfile  (sf-open file 'sfm-read)]
          [strings  (get-meta-strings sndfile)]
@@ -265,12 +265,10 @@
                      [(short) _int16] [(int) _int] [(float) _double*])]
          [readf    (sample-type->reader (sample-type))]
          [cblock   ((sample-type->vector-maker (sample-type)) (* frames channels))]
-         [num-read (readf sndfile ((sample-type->cpointer-extractor (sample-type)) cblock) frames)]
-         [_        (unless (= frames num-read)
-                     (error 'read-sound-internal
-                            "wanted ~s frames, but got ~s: ~s" 
-                            frames num-read
-                            (sf-strerror sndfile)))])
+         [num-read (readf sndfile ((sample-type->cpointer-extractor (sample-type)) cblock) frames)])
+    (unless (= frames num-read)
+      (error 'read-sound-internal "wanted ~e frames, but got ~e: ~e"
+             frames num-read (sf-strerror sndfile)))
     (begin0 (values cblock
                     `((frames     ,frames)
                       (samplerate ,(sf-info-samplerate info))
@@ -279,8 +277,7 @@
                       (sections   ,(sf-info-sections   info))
                       ,@strings))
       (unless (= 0 (sf-close sndfile))
-        (error 'read-sound-internal 
-               "error while closing file: ~s" 
+        (error 'read-sound-internal "error while closing file: ~e"
                (sf-strerror sndfile))))))
 
 
@@ -334,7 +331,7 @@
     (void)))
 
 ;; write-sound-internal/lists : path-string (listof (listof sample)) (listof (list/c symbol? string?)) -> (void)
-;; a bunch of guessing happens here... 
+;; a bunch of guessing happens here...
 (define (write-sound-internal/lists file data meta)
   (let* ([frames     (length data)]
          [channels   (if (or (null? data) (not (pair? (car data))))
@@ -377,10 +374,10 @@
           [else (loop (cdr xs))])))
 
 ;; check-filename-format : format filename -> (void)
-;; check that the format is compatible with the given 
-;; pathname; it should not be possible to write, e.g., an aiff file
-;; to a filename ending in ".voc". If we don't recognize the 
-;; filename extension, it's okay.
+;; check that the format is compatible with the given pathname; it
+;; should not be possible to write, e.g., an aiff file to a filename
+;; ending in ".voc". If we don't recognize the filename extension, it's
+;; okay.
 ;; EFFECT: signals an error if the format and filename are incompatible
 (define (check-filename-format format filename)
   (match format
@@ -389,10 +386,10 @@
        (cond [(null? xs) (void)]
              [(regexp-match (caar xs) filename)
               (match (cadar xs)
-                [(list major/f minor/f file/f) 
+                [(list major/f minor/f file/f)
                  (unless (eq? major major/f)
                    (error 'check-filename-format
-                          "can't use format ~s with filename ~s." 
+                          "can't use format ~s with filename ~s."
                           format
                           filename))]
                 [other
@@ -440,7 +437,7 @@
   (make-parameter
    'float (lambda (x)
             (if (memq x '(short int double))
-              x 
+              x
               (error 'sample-type "bad or unsupported type: ~s" x)))))
 
 
@@ -499,15 +496,13 @@
 ;; write the cblock sound to the given file as a wav.
 (provide write-sound/s16vector)
 (define (write-sound/s16vector data sample-rate file)
-  (write-sound-internal/s16vector file data '(wav pcm-16 file) 
-                               sample-rate 
+  (write-sound-internal/s16vector file data '(wav pcm-16 file)
+                               sample-rate
                                (/ (s16vector-length data) global-channels)
                                2
                                'short
                                ;; meta-data not supported.
                                '()))
-
-
 
 
 ;; test cases for check-filename-format: Commented out until there's a critical mass.

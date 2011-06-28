@@ -60,4 +60,3 @@ END
    (delete-file (path-replace-suffix tmp-file #".dvi")))
  
  (delete-file tmp-file))
- 

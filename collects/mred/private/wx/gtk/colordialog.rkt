@@ -39,5 +39,3 @@
                         (arithmetic-shift (GdkColor-red c) -8)
                         (arithmetic-shift (GdkColor-green c) -8)
                         (arithmetic-shift (GdkColor-blue c) -8))))))
-
-                        

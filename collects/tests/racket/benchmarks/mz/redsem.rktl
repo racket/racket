@@ -32,4 +32,3 @@ Robby
 (time (begin (run-tests run-struct-test?)
 	     (run-tests run-struct-test?)
 	     (run-tests run-struct-test?)))
-   

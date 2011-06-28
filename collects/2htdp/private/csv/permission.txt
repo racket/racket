@@ -21,6 +21,3 @@ Neil, would it be okay with you if I provide your csv package from the core:
  (require (planet neil/csv:1:2/csv))
 
 If so, could you send me your sources? Thanks -- Matthias
-
-
- 

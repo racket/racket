@@ -215,4 +215,3 @@ Like always, you don't even need to save the file.
  If @racket[connection-close?] is @racket[#t], then every connection is closed after one
  request. Otherwise, the client decides based on what HTTP version it uses.
 }
-              

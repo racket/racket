@@ -26,4 +26,3 @@
 (test
  (can-encode?)
  ((wrap-reader can-encode? empty)))
- 

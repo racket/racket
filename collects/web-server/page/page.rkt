@@ -66,7 +66,7 @@
      (and (bytes=? id-bs (binding-id b))
           (convert-binding format b)))
    (request-bindings/raw req)))
-             
+
 (provide embed/url
          page
          lambda/page

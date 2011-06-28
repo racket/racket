@@ -8,7 +8,7 @@ reading in each file in the solutions directory (based on the
 directory file) and rewriting it into the format described
 in ...
 
-|#         
+|#
 
 (require mzlib/match)
 
@@ -19,7 +19,8 @@ in ...
   (let ([shrunk (shrink-set (call-with-input-file (build-path 'up "solution-sets" filename) read))])
     (call-with-output-file (build-path 'up "problems" filename)
       (lambda (port)
-        (write shrunk port))))
+        (write shrunk port)
+        (newline port))))
   (printf "done\n"))
 
 ;; shrink-set sexp[set] -> sexp[set]

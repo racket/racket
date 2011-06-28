@@ -61,21 +61,20 @@
   (define-clause on-mouse (proc world-nat-nat-mouse->world))
   (define-clause on-tick (proc world->world))
   )
-
-(module utest scheme 
+(module utest scheme
   (require 'clauses (for-syntax 'clauses syntax/parse) (for-template 'clauses))
-  
+
   (define-syntax (big-bang stx)
     (syntax-parse stx
       [(big-bang world0:expr 
                  (~or (~optional otk:on-tick-clause)
-                      (~optional omc:on-mouse-clause))                 
+                      (~optional omc:on-mouse-clause))
                  ...)
        #`(printf "~s\n"
                  '(bb world0
                       #,(if (attribute omc) "mouse" "no mouse")
                       #,(if (attribute otk) "tick" "no tick")))]))
-  
+
   (big-bang 0)
   (big-bang 1 (on-tick +) (on-mouse -))
   (big-bang 2 (on-tick +))
