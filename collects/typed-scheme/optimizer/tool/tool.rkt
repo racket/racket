@@ -44,29 +44,38 @@
        (expand (tr:read-syntax portname input)))))
   (set! log (reverse log))
   (define (highlight-irritant i)
-    (let ([res (list (sub1 (syntax-position i))
-                     (sub1 (+ (syntax-position i) (syntax-span i)))
-                     "red" #f 'high 'hollow-ellipse)])
-      (send defs highlight-range . res)
-      res))
+    (define pos (syntax-position i))
+    (and pos
+         (let ([start (sub1 pos)]
+               [end   (sub1 (+ pos (syntax-span i)))]
+               [color "red"]
+               [caret-space #f]
+               [style 'hollow-ellipse])
+           ;; high priority, to display above the coloring
+           (send defs highlight-range start end color caret-space 'high style)
+           ;; info needed to remove the highlight
+           (list start end color caret-space style))))
   ;; highlight
   (define new-highlights
     (for/list ([l (in-list log)])
       (match l
-        [(log-entry kind msg stx (app sub1 pos))
-         (let* ([end  (+ pos (syntax-span stx))]
-                [opt? (opt-log-entry? l)] ;; opt or missed opt?
+        [(log-entry kind msg stx (? number? pos))
+         (let* ([start (sub1 pos)]
+                [end   (+ start (syntax-span stx))]
+                [opt?  (opt-log-entry? l)] ;; opt or missed opt?
                 [color (if opt? "lightgreen" "pink")])
-           (send defs highlight-range pos end color)
-           (send defs set-clickback pos end
+           (send defs highlight-range start end color)
+           (send defs set-clickback start end
                  (lambda (ed start end)
                    (message-box "Performance Report" msg)))
-           (list (list pos end color) ; record highlights to undo them later
+           (cons (list start end color) ; record highlights to undo them later
                  ;; missed optimizations have irritants, circle them
                  (if opt?
                      '()
-                     (map highlight-irritant
-                          (missed-opt-log-entry-irritants l)))))])))
+                     (filter values ; remove irritants w/o location
+                             (map highlight-irritant
+                                  (missed-opt-log-entry-irritants l))))))]
+        [_ '()]))) ; no source location, don't highlight anything
   (set! highlights (append (apply append new-highlights) highlights)))
 
 (define remove-highlights-mixin
@@ -78,7 +87,7 @@
     (define (clear-highlights)
       (for ([h (in-list highlights)])
         (match h
-          [(list start end color)
+          [`(,start ,end . ,rest )
            (send this unhighlight-range . h)
            (send this remove-clickback start end)])))
     (define/augment (after-insert start len)
