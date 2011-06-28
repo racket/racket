@@ -25,15 +25,15 @@
          (list (to-flow spacer)
                (to-flow sec)
                (to-flow spacer)
-               (to-flow (scheme sym0))
+               (to-flow (racket sym0))
                (to-flow spacer)
-               (to-flow (scheme flag0)))
+               (to-flow (racket flag0)))
          (list (to-flow spacer)
                (to-flow spacer)
                (to-flow spacer)
-               (to-flow (scheme sym))
+               (to-flow (racket sym))
                (to-flow spacer)
-               (to-flow (scheme flag)))
+               (to-flow (racket flag)))
          ...))
      ...))))
 
@@ -317,7 +317,7 @@ Pending expunges must be handled before calling this function; see
 )]{
 
 An IMAP flag is a symbol, but it is generally not a convenient one to
-use within a Scheme program, because it usually starts with a
+use within a Racket program, because it usually starts with a
 backslash. The @racket[imap-flag->symbol] and
 @racket[symbol->imap-flag] procedures convert IMAP flags to convenient
 symbols and vice-versa:
