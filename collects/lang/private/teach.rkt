@@ -1499,7 +1499,8 @@
               "bad syntax for a module path"))
            (stepper-syntax-property
             #'(require id)
-            'stepper-black-box-expr))]
+            'stepper-black-box-expr
+            stx))]
         [(_ (lib . rest))
          (let ([s (syntax->list #'rest)])
            (unless ((length s) . >= . 2)
