@@ -233,6 +233,8 @@ stepper-define-struct-hint :
   this expression came from a define-struct. The value associated with
   this label is the syntax-object representing the define-struct itself.
 
+NB: this should be renamed now that we're using it for "require" as well.
+
 stepper-test-suite-hint :
   this expression was the expression being tested in a test-suite-tool
   test.  this hint indicates to the annotator that the expression should

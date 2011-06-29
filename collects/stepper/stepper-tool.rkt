@@ -234,7 +234,7 @@
   (define (stepper-tab-mixin super%)
     (class* super% (stepper-tab<%>)
       
-      (inherit get-ints get-defs get-frame)
+      (inherit get-ints get-defs get-frame get-directory)
       
       ;; a reference to a possible stepper frame.
       (define stepper-frame #f)
@@ -287,11 +287,12 @@
                [language-level-name (language-level->name language-level)])
           (if (or (stepper-works-for? language-level)
                   (is-a? language-level drracket:module-language:module-language<%>))
-              (set! stepper-frame
-                    (go this 
-                        program-expander 
-                        (+ 1 (send (get-defs) get-start-position))
-                        (+ 1 (send (get-defs) get-end-position))))
+              (parameterize ([current-directory (get-directory)])
+                (set! stepper-frame
+                      (go this 
+                          program-expander 
+                          (+ 1 (send (get-defs) get-start-position))
+                          (+ 1 (send (get-defs) get-end-position)))))
               (message-box
                (string-constant stepper-name)
                (format (string-constant stepper-language-level-message)

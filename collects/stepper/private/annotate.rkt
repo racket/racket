@@ -1258,7 +1258,13 @@
              [(define-syntaxes (new-vars ...) e)
               exp]
              [(#%require specs ...)
-              exp]
+              #`(begin #,exp
+                    (#%plain-app #,(make-define-struct-break 
+                                    (stepper-syntax-property
+                                     exp
+                                     'stepper-define-struct-hint
+                                     ;; I hope this actually looks right, and isn't mangled by the expander:
+                                     exp))))]
              [(#%provide specs ...)
               exp]
              [(begin .  bodies)
