@@ -9,8 +9,8 @@ TR opt: make-polar.rkt 30:21 (make-polar 2.0 4.0) -- make-rectangular eliminatio
 TR opt: make-polar.rkt 31:39 (real-part p) -- complex accessor elimination
 TR opt: make-polar.rkt 31:39 (real-part p) -- unboxed unary float complex
 TR opt: make-polar.rkt 31:50 p -- leave var unboxed
-TR opt: make-polar.rkt 31:50 p -- unbox float-complex
 TR opt: make-polar.rkt 31:50 p -- unboxed complex variable
+TR opt: make-polar.rkt 31:50 p -- unbox float-complex
 TR opt: make-polar.rkt 32:39 (imag-part p) -- complex accessor elimination
 TR opt: make-polar.rkt 32:50 p -- leave var unboxed
 TR opt: make-polar.rkt 32:50 p -- unboxed complex variable
