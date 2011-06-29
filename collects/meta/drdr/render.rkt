@@ -76,23 +76,30 @@
   (define next-rev-url (format "/~a~a" (next-rev) the-base-path))
   (define cur-rev-url (format "/~a~a" "current" the-base-path))
   ; XXX Don't special case top level
-  (values (apply string-append (add-between (list* "DrDr" string-parts) " / "))
+  (values (apply string-append 
+                 (add-between (list* "DrDr" string-parts) " / "))
           `(span
             (span ([class "breadcrumb"])
                  ,(parent-a "/" "DrDr") " / "
                  ,@(add-between
                     (snoc
-                     (for/list ([sp (in-list (all-but-last string-parts))]
-                                [from-root (in-naturals)])
-                       (define the-depth (current-depth pth directory?))
-                       (parent-a (to-index (- the-depth from-root)) sp))
+                     (for/list 
+                         ([sp (in-list (all-but-last string-parts))]
+                          [from-root (in-naturals)])
+                       (define the-depth 
+                         (current-depth pth directory?))
+                       (parent-a 
+                        (to-index (- the-depth from-root)) sp))
                      `(span ([class "this"]) 
                             ,(last string-parts)))
                     " / "))
             (span ([class "revnav"])
-                  (a ([href ,prev-rev-url]) (img ([src "/images/rewind.png"])))
-                  (a ([href ,next-rev-url]) (img ([src "/images/fast-forward.png"])))
-                  (a ([href ,cur-rev-url]) (img ([src "/images/skip-forward1.png"])))))))
+                  (a ([href ,prev-rev-url])
+                     (img ([src "/images/rewind.png"])))
+                  (a ([href ,next-rev-url])
+                     (img ([src "/images/fast-forward.png"])))
+                  (a ([href ,cur-rev-url])
+                     (img ([src "/images/skip-forward1.png"])))))))
 
 (define (looks-like-directory? pth)
   (and (regexp-match #rx"/$" pth) #t))
@@ -106,66 +113,86 @@
   (define end-commit (git-push-end-commit log))
   (if (string=? start-commit end-commit)
       (format "http://github.com/plt/racket/commit/~a" end-commit)
-      (format "http://github.com/plt/racket/compare/~a...~a" (git-push-previous-commit log) end-commit)))
+      (format "http://github.com/plt/racket/compare/~a...~a"
+              (git-push-previous-commit log) end-commit)))
   
 (define (format-commit-msg)
   (define pth (revision-commit-msg (current-rev)))
   (define (timestamp pth)
     (with-handlers ([exn:fail? (lambda (x) "")])
-      (date->string (seconds->date (read-cache (build-path (revision-dir (current-rev)) pth))) #t)))
+      (date->string 
+       (seconds->date 
+        (read-cache
+         (build-path (revision-dir (current-rev)) pth))) #t)))
   (define bdate/s (timestamp "checkout-done"))
   (define bdate/e (timestamp "integrated"))
   (match (read-cache* pth)
     [(and gp (struct git-push (num author commits)))
      (define start-commit (git-push-start-commit gp))
      (define end-commit (git-push-end-commit gp))
-     `(table ([class "data"])
-             (tr ([class "author"]) (td "Author:") (td ,author))
-             (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
-             (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
-             (tr ([class "hash"]) (td "Diff:") (td (a ([href ,(log->url gp)]) ,(substring start-commit 0 8) ".." ,(substring end-commit 0 8))))
-             ,@(append-map
-                (match-lambda
-                  [(struct git-merge (hash author date msg from to))
-                   #;`((tr ([class "hash"]) (td "Commit:") (td (a ([href ,(format "http://github.com/plt/racket/commit/~a" hash)]) ,hash)))
-                     (tr ([class "date"]) (td "Date:") (td ,(git-date->nice-date date)))
-                     (tr ([class "author"]) (td "Author:") (td ,author))
-                     (tr ([class "msg"]) (td "Log:") (td (pre ,@msg)))
-                     (tr ([class "merge"]) (td "Merge:") (td "From " ,from " to " ,to)))
-                   ; Don't display these "meaningless" commits
-                   empty]
-                  [(struct git-diff (hash author date msg mfiles))
-                   (define cg-id (symbol->string (gensym 'changes)))
-                   (define ccss-id (symbol->string (gensym 'changes)))
-                   `((tr ([class "hash"]) (td "Commit:") (td (a ([href ,(format "http://github.com/plt/racket/commit/~a" hash)]) ,hash)))
-                     (tr ([class "date"]) (td "Date:") (td ,(git-date->nice-date date)))
-                     (tr ([class "author"]) (td "Author:") (td ,author))
-                     (tr ([class "msg"]) (td "Log:") (td (pre ,@msg)))
-                     (tr ([class "changes"]) 
-                         (td 
-                          (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" cg-id ccss-id)])
-                             (span ([id ,cg-id]) 9658) "Changes:"))
-                         (td
-                          (div ([id ,ccss-id]
-                                [style "display: none;"])
-                               ,@(for/list ([path (in-list mfiles)])
-                                         `(p ([class "output"])
-                                             ,(if (regexp-match #rx"^collects" path)
-                                                  (local [(define path-w/o-trunk
-                                                            (apply build-path (explode-path path)))
-                                                          (define html-path
-                                                            (if (looks-like-directory? path)
-                                                                (format "~a/" path-w/o-trunk)
-                                                                path-w/o-trunk))
-                                                          (define path-url
-                                                            (path->string* html-path))
-                                                          (define path-tested?
-                                                            #t)]
-                                                    (if path-tested?
-                                                        `(a ([href ,path-url]) ,path)
-                                                        path))
-                                                  path)))))))])
-                commits))]
+     `(table 
+       ([class "data"])
+       (tr ([class "author"]) (td "Author:") (td ,author))
+       (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
+       (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
+       (tr ([class "hash"]) 
+           (td "Diff:") 
+           (td (a ([href ,(log->url gp)]) 
+                  ,(substring start-commit 0 8)
+                  ".." ,(substring end-commit 0 8))))
+       ,@(append-map
+          (match-lambda
+            [(struct git-merge (hash author date msg from to))
+             ; Don't display these "meaningless" commits
+             empty]
+            [(struct git-diff (hash author date msg mfiles))
+             (define cg-id (symbol->string (gensym 'changes)))
+             (define ccss-id
+               (symbol->string (gensym 'changes)))
+             `((tr 
+                ([class "hash"])
+                (td "Commit:")
+                (td 
+                 (a 
+                  ([href
+                    ,(format "http://github.com/plt/racket/commit/~a"
+                             hash)])
+                  ,hash)))
+               (tr ([class "date"])
+                   (td "Date:")
+                   (td ,(git-date->nice-date date)))
+               (tr ([class "author"]) (td "Author:") (td ,author))
+               (tr ([class "msg"]) (td "Log:") (td (pre ,@msg)))
+               (tr ([class "changes"]) 
+                   (td 
+                    (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" cg-id ccss-id)])
+                       (span ([id ,cg-id]) 9658) "Changes:"))
+                   (td
+                    (div 
+                     ([id ,ccss-id]
+                      [style "display: none;"])
+                     ,@(for/list ([path (in-list mfiles)])
+                         `(p 
+                           ([class "output"])
+                           ,(if 
+                             (regexp-match #rx"^collects" path)
+                             (let ()
+                               (define path-w/o-trunk
+                                 (apply build-path 
+                                        (explode-path path)))
+                               (define html-path
+                                 (if (looks-like-directory? path)
+                                     (format "~a/" path-w/o-trunk)
+                                     path-w/o-trunk))
+                               (define path-url
+                                 (path->string* html-path))
+                               (define path-tested?
+                                 #t)
+                               (if path-tested?
+                                   `(a ([href ,path-url]) ,path)
+                                   path))
+                             path)))))))])
+          commits))]
      
     [(struct svn-rev-log (num author date msg changes))
      (define url (format "http://svn.racket-lang.org/view?view=rev&revision=~a" num))
@@ -173,10 +200,16 @@
      (define ccss-id (symbol->string (gensym 'changes)))
      `(table ([class "data"])
               (tr ([class "author"]) (td "Author:") (td ,author))
-              (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
+              (tr ([class "date"]) 
+                  (td "Build Start:")
+                  (td ,bdate/s))
               (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
-              (tr ([class "rev"]) (td "Commit:") (td (a ([href ,url]) ,(number->string num))))
-              (tr ([class "date"]) (td "Date:") (td ,(svn-date->nice-date date)))
+              (tr ([class "rev"])
+                  (td "Commit:")
+                  (td (a ([href ,url]) ,(number->string num))))
+              (tr ([class "date"])
+                  (td "Date:")
+                  (td ,(svn-date->nice-date date)))
               (tr ([class "msg"]) (td "Log:") (td (pre ,msg)))
               (tr ([class "changes"]) 
                   (td 
