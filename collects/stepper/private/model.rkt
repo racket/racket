@@ -56,6 +56,9 @@
          #;"display-break-stuff.ss"
          (for-syntax scheme/base))
 
+(define stepper-model-debug? (make-parameter #f))
+(provide stepper-model-debug?)
+
 
 (define program-expander-contract
   ((-> void?) ; init
@@ -86,7 +89,7 @@
             #:disable-error-handling? [disable-error-handling? #f]
             #:raw-step-receiver [raw-step-receiver #f])
   
-  (define DEBUG #f)
+  (define DEBUG (stepper-model-debug?))
   
   ;; finished-exps:
   ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
@@ -222,7 +225,7 @@
       (let* ([mark-list (and mark-set (extract-mark-list mark-set))]
              [dump-marks
               (when DEBUG
-                (printf "MARKLIST:\n")
+                (printf "MARKLIST:\n\n")
                 (and mark-set
                      (map (λ (x) (printf "~a\n" (display-mark x))) mark-list))
                 (printf "RETURNED VALUE LIST: ~a\n" returned-value-list))])
@@ -340,8 +343,6 @@
           (equal? (map syntax->hilite-datum lhs)
                   (map syntax->hilite-datum rhs)))
         
-        #;(>>> break-kind)
-        #;(fprintf (current-error-port) "break called with break-kind: ~a ..." break-kind)
         (if (r:skip-step? break-kind mark-list render-settings)
             (begin
               (when DEBUG (printf "skipped step\n"))
