@@ -170,6 +170,9 @@ stepper-binding-type :
  [ 'macro-bound ] : this variable's binding was inserted by a macro
  [ 'let-bound ] : this variable's binding was in a let/*/rec
  [ 'lambda-bound ] : this variable's binding was in a lambda
+ [ 'non-lexical ] : this variable's identifier-binding is not
+      'lexical (i.e., unbound, top-level, or a module binding
+      
 
 stepper-no-lifting-info :
  this label is applied to a let-bound-variable whose binding is not

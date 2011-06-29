@@ -105,7 +105,8 @@
 ; label-var-types returns a syntax object which is identical to the 
 ; original except that the variable references are labeled with the 
 ; stepper-syntax-property 'stepper-binding-type, which is set to either 
-; let-bound, lambda-bound, or non-lexical.
+; let-bound, lambda-bound, or non-lexical. (It can also be 'macro-bound, set
+; earlier during macro expansion.)
 
 (define (top-level-rewrite stx)
   (let loop ([stx stx]
@@ -811,21 +812,25 @@
              [varref-no-break-wrap
               (lambda ()
                 (outer-wcm-wrap (make-debug-info-normal free-varrefs) var))]
+             ;; JBC: shouldn't this be the namespace of the user's code... ?
              [base-namespace-symbols (namespace-mapped-symbols (make-base-namespace))]
-             [top-level-varref-break-wrap
+             [module-bound-varref-break-wrap
               (lambda ()
-                (if (or (memq (syntax-e var) beginner-defined:must-reduce)
+                (varref-break-wrap)
+                #;(if (or (memq (syntax-e var) beginner-defined:must-reduce)
                         (and (stepper-syntax-property var 'lazy-op)
                              (not (memq (syntax->datum var) base-namespace-symbols))))
                     (varref-break-wrap)
                     (varref-no-break-wrap)))])
           (vector 
-           (case (stepper-syntax-property var 'stepper-binding-type)
-             ((lambda-bound macro-bound)   (varref-no-break-wrap))
-             ((let-bound)                  (varref-break-wrap))
-             ((non-lexical) ;; is it from this module or not?
-              (match (identifier-binding var)                                 
-                (#f (top-level-varref-break-wrap))
+           (match (stepper-syntax-property var 'stepper-binding-type)
+             [(or 'lambda-bound 'macro-bound)   (varref-no-break-wrap)]
+             ['let-bound                        (varref-break-wrap)]
+             ['non-lexical ;; is it from this module or not?
+              (match (identifier-binding var)
+                ;; this can only come up when stepping through non-module code...
+                ;; perhaps we should just signal an error here.
+                (#f (varref-break-wrap))
                 ['lexical  
                  ;; my reading of the docs suggest that this should not occur in v4...
                  (error 'varref-abstraction 
@@ -833,14 +838,19 @@
                 [(list-rest (? module-path-index? path-index) dontcare)
                  (let-values ([(module-path dc5)
                                (module-path-index-split path-index)])
-                   (if module-path 
+                   (if module-path
                        ;; not a module-local variable:
-                       (top-level-varref-break-wrap)
+                       (module-bound-varref-break-wrap)
                        ;; a module-local-variable:
                        (varref-break-wrap)))]
                 [other (error 
                         'annotate
-                        "unexpected value for identifier-binding: ~v" other)])))
+                        "unexpected value for identifier-binding: ~v" other)])]
+             [other
+              (error 'annotate 
+                     "unexpected value for stepper-binding-type on variable ~e: ~e"
+                     (syntax->datum var)
+                     other)])
            free-varrefs)))
                   
       (define (recertifier vals)
