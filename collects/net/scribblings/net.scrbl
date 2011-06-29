@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt")
 
-@title{@bold{Net}: Racket Networking Libraries}
+@title{Net: Networking Libraries}
 
 @table-of-contents[]
 
