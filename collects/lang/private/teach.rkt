@@ -822,7 +822,7 @@
 				  (with-syntax ([(def-proc-name ...) def-proc-names]
 						[(proc-name ...) proc-names]
 						[(getter-name ...) getter-names])
-				    (stepper-syntax-property 
+				    (stepper-syntax-property
 				     #`(define-values (#,signature-name #,parametric-signature-name def-proc-name ...)
 					 (let ()
 
@@ -935,7 +935,7 @@
 						       sig)))
 
 					   (values #,signature-name #,parametric-signature-name proc-name ...)))
-				     'stepper-define-struct-hint
+				     'stepper-black-box-expr
 				     stx))))])
 		   (let ([defn
 			   (quasisyntax/loc stx
@@ -1484,7 +1484,10 @@
          (string? (syntax-e #'s))
          (begin
            (check-string-form stx #'s)
-           #'(require s))]
+           (stepper-syntax-property
+            #'(require s)
+            'stepper-black-box-expr
+            stx))]
         [(_ id)
          (identifier? #'id)
          (begin
@@ -1494,7 +1497,9 @@
               stx
               #'id
               "bad syntax for a module path"))
-           #'(require id))]
+           (stepper-syntax-property
+            #'(require id)
+            'stepper-black-box-expr))]
         [(_ (lib . rest))
          (let ([s (syntax->list #'rest)])
            (unless ((length s) . >= . 2)
@@ -1516,7 +1521,10 @@
                      s)
            ;; use the original `lib', so that it binds correctly:
            (syntax-case stx ()
-             [(_ ms) #'(require ms)]))]
+             [(_ ms) (stepper-syntax-property
+                      #'(require ms)
+                      'stepper-black-box-expr
+                      stx)]))]
         [(_ (planet . rest))
          (syntax-case stx (planet)
            [(_ (planet s1 (s2 s3 n1 n2)))
@@ -1531,7 +1539,10 @@
               (check-string-form stx #'s3)
               ;; use the original `planet', so that it binds correctly:
               (syntax-case stx ()
-                [(_ ms) #'(require ms)]))]
+                [(_ ms) (stepper-syntax-property
+                         #'(require ms)
+                         'stepper-black-box-expr
+                         stx)]))]
            [_else
             (teach-syntax-error
              'require

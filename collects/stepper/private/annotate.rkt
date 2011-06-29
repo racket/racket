@@ -155,7 +155,7 @@
     
     (cond 
       [(or (stepper-syntax-property stx 'stepper-skip-completely)
-           (stepper-syntax-property stx 'stepper-define-struct-hint))
+           (stepper-syntax-property stx 'stepper-black-box-expr))
        stx]
       [else
        (define rewritten
@@ -1235,7 +1235,7 @@
           [(stepper-syntax-property exp 'stepper-skip-completely) exp]
           ;; for kathy's test engine:
           [(syntax-property exp 'test-call) exp]
-          [(stepper-syntax-property exp 'stepper-define-struct-hint)
+          [(stepper-syntax-property exp 'stepper-black-box-expr)
            #`(begin #,exp
                     (#%plain-app #,(make-define-struct-break exp)))]
           [(stepper-syntax-property exp 'stepper-skipto)
@@ -1252,19 +1252,24 @@
                  #`(begin
                      (define-values (new-var ...)
                        #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
-                     ;; this next expression should deliver the newly computed values to an exp-finished-break
-                     (#%plain-app #,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () (#%plain-app list new-var ...))))))
+                     ;; this next expression should deliver the newly computed values to an
+                     ;; exp-finished-break
+                     (#%plain-app #,exp-finished-break
+                                  (#%plain-app list 
+                                               (#%plain-app list
+                                                            #,(lambda () exp)
+                                                            #f
+                                                            (#%plain-lambda ()
+                                                                            (#%plain-app
+                                                                             list
+                                                                             new-var ...))))))
                  #'e))]
              [(define-syntaxes (new-vars ...) e)
               exp]
              [(#%require specs ...)
-              #`(begin #,exp
-                    (#%plain-app #,(make-define-struct-break 
-                                    (stepper-syntax-property
-                                     exp
-                                     'stepper-define-struct-hint
-                                     ;; I hope this actually looks right, and isn't mangled by the expander:
-                                     exp))))]
+              ;; this should only include requires inserted automatically, as others should 
+              ;; get caught above in the "stepper-black-box-expr" check:
+              exp]
              [(#%provide specs ...)
               exp]
              [(begin .  bodies)
