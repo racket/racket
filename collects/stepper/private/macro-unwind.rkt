@@ -1,11 +1,8 @@
-(module macro-unwind scheme/base
-  (require (only-in syntax/kerncase kernel-syntax-case)
-           scheme/contract
-           scheme/list
-	   "model-settings.ss"
-           "shared.ss"
-           #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
-           (for-syntax scheme/base))
+#lang racket
+
+(require (only-in syntax/kerncase kernel-syntax-case)
+         "model-settings.ss"
+         "shared.ss")
 
   (provide/contract [unwind (syntax? render-settings? . -> . syntax?)])
                                                                                ;
@@ -218,12 +215,7 @@
              (and
               (improper-member 'comes-from-let*
                                (stepper-syntax-property stx 'stepper-hint))
-              (eq? (stepper-syntax-property stx 'stepper-source)
-                   (stepper-syntax-property (car (syntax->list #`new-bodies))
-                                            'stepper-source))
-              (eq? (stepper-syntax-property stx 'stepper-position)
-                   (stepper-syntax-property (car (syntax->list #`new-bodies))
-                                            'stepper-position)))
+              (same-source? stx (car (syntax->list #`new-bodies))))
              #`(let* #,(append (syntax->list #`([var rhs2] ...))
                                (syntax->list #`bindings))
                  inner-body ...)]
@@ -265,15 +257,11 @@
        #`(new-test result)))
    
    (define (unwind-cond stx settings)
-     (let ([user-source   (syntax-property stx 'user-source)]
-           [user-position (syntax-property stx 'user-position)])
+     (let ([outer-stx stx])
        (with-syntax
            ([clauses
              (let loop ([stx stx])
-               (if (and (eq? user-source
-                             (syntax-property stx 'user-source))
-                        (eq? user-position
-                             (syntax-property stx 'user-position)))
+               (if (and (same-source? outer-stx stx))
                    (syntax-case stx (if begin let-values)
                      ;; the else clause disappears when it's a
                      ;; language-inserted else clause
@@ -372,4 +360,9 @@
          (with-syntax ([expected (unwind (third args-of-call) settings)])
            #`(check-error actual expected)))]
       [any #`(c-e any) #;#`(check-expect )]))
-)
+
+(define (same-source? stx1 stx2)
+  (and (equal? (syntax-property stx1 'user-source)
+               (syntax-property stx2 'user-source))
+       (equal? (syntax-property stx1 'user-position)
+               (syntax-property stx2 'user-position))))
