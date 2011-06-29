@@ -33,6 +33,17 @@
 
 (define unann-defs (make-free-id-table))
 
+(define-splicing-syntax-class dtsi-fields
+ #:attributes (mutable type-only maker constructor-return predicate)
+ (pattern
+  (~seq
+    (~or (~optional (~and #:mutable (~bind (mutable #t))))
+         (~optional (~and #:type-only (~bind (type-only #t))))
+         (~optional (~seq #:maker maker))
+         (~optional (~seq #:predicate predicate))
+         (~optional (~seq #:constructor-return constructor-return))) ...)))
+
+
 (define (tc-toplevel/pass1 form)
   (parameterize ([current-orig-stx form])
     (syntax-parse form
@@ -82,43 +93,20 @@
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...)
-                                                #:maker m #:constructor-return t #:predicate p))
-                                (#%plain-app values)))
+
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) fields:dtsi-fields)) (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
-		  #:maker #'m #:constructor-return #'t #:predicate #'p)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...)
-						#:maker m #:constructor-return t))
-                                (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
-		  #:maker #'m #:constructor-return #'t)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...)
-						#:maker m))
-                                (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
-		  #:maker #'m)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...)
-						#:maker m #:mutable))
-                                (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
-		  #:maker #'m #:mutable #t)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...)
-						#:maker m))
-                                (#%plain-app values)))
-       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
-                       #:maker #'m)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...)
-						#:maker m #:mutable))
-                                (#%plain-app values)))
-       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
-                       #:maker #'m #:mutable #t)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:type-only))
-                                (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:type-only #t)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:maker m #:type-only))
-                                (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:type-only #t)]
+            #:mutable (attribute fields.mutable)
+            #:maker (attribute fields.maker)
+            #:constructor-return (attribute fields.constructor-return)
+            #:predicate (attribute fields.predicate)
+            #:type-only (attribute fields.type-only))]
+
       ;; define-typed-struct w/ polymorphism
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:maker m)) (#%plain-app values)))
+       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m)]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:maker m #:mutable)) (#%plain-app values)))
+       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:mutable #t)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
        (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...))) (#%plain-app values)))
