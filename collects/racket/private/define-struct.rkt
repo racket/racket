@@ -14,6 +14,7 @@
              struct-field-index
              struct-copy
              (for-syntax 
+               make-applicable-struct-info
 	      (rename checked-struct-info-rec? checked-struct-info?)))
   
   (define-values-for-syntax
@@ -83,6 +84,25 @@
                                                      (self-ctor-transformer ((ref v 0)) stx))))
                                        (current-inspector) #f '(0))])
       make-))
+
+
+ (define-for-syntax make-applicable-struct-info
+  (letrec-values ([(struct: make- ? ref set!)
+                   (make-struct-type 'self-ctor-struct-info struct:struct-info
+                                     1 0 #f
+                                     (list (cons prop:procedure
+                                                 (lambda (v stx)
+                                                   (self-ctor-transformer ((ref v 0)) stx))))
+                                     (current-inspector) #f '(0)
+                                     (lambda (info-proc stx-proc subtype)
+                                       (if (and (procedure? stx-proc)
+                                                (procedure-arity-includes? stx-proc 0))
+                                           (values info-proc stx-proc)
+                                           (raise-type-error 'make-applicable-struct-info
+                                                             "procedure (arity 0)"
+                                                             stx-proc))))])
+    make-))
+
 
   (define-syntax-parameter struct-field-index
     (lambda (stx)

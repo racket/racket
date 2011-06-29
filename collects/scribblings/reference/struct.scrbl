@@ -698,6 +698,15 @@ specified through a transformer binding to such a value.}
 Encapsulates a thunk that returns structure-type information in list
 form.}
 
+@defproc[(make-applicable-struct-info [info-thunk (-> (and/c struct-info? list?))]
+                                      [id-thunk (-> identifier?)])
+         (and/c struct-info? (-> syntax? syntax?))]{
+
+Works like make-struct-info, but the returned value is also a syntax transformer.
+The syntax transformer works like the constructor bound by @racket[struct] and
+replaces uses of itself with the identifier returned by  @racket[id-thunk].}
+
+
 @defproc[(extract-struct-info [v struct-info?])
          (and/c struct-info? list?)]{
 

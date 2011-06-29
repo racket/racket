@@ -21,24 +21,6 @@
     [(_ name x) (a:known-good-contract? #'x) #'x]
     [(_ name x) #'(coerce-contract name x)]))
 
-(define-for-syntax (self-ctor-transformer orig stx)
-  (with-syntax ([orig orig])
-    (syntax-case stx ()
-      [(_ arg ...) (datum->syntax stx
-                                  (syntax-e (syntax (orig arg ...)))
-                                  stx
-                                  stx)]
-      [_ (syntax orig)])))
-
-(define-for-syntax make-applicable-struct-info
-  (letrec-values ([(struct: make- ? ref set!)
-                   (make-struct-type 'self-ctor-struct-info struct:struct-info
-                                     1 0 #f
-                                     (list (cons prop:procedure
-                                                 (lambda (v stx)
-                                                   (self-ctor-transformer ((ref v 0)) stx))))
-                                     (current-inspector) #f '(0))])
-    make-))
 
 (define-for-syntax (make-provide/contract-transformer contract-id id external-id pos-module-source)
   (make-set!-transformer
