@@ -419,10 +419,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
   (syntax-parse stx #:literals (:)
     [(_ name:opt-parent ([fld : ty] ...) input-maker:constructor-term lib)
-     (define has-parent? (and (syntax-e #'name.parent) #t))
      (with-syntax* ([nm #'name.nm]
                     [parent #'name.parent]
-                    [spec (if has-parent? #'(nm parent) #'nm)]
+                    [spec (if (syntax-e #'name.parent) #'(nm parent) #'nm)]
                     [(struct-info _ pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
                     [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
                     [maker-name (if (syntax-e #'input-maker.name) #'input-maker.name #'nm)] ;New default (corresponds to how struct works)
