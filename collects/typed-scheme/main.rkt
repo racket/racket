@@ -3,7 +3,12 @@
 (providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers lambda #%app for for*))
 	   (basics #%module-begin #%top-interaction lambda #%app))
 (require typed-scheme/base-env/extra-procs
-         typed-scheme/base-env/prims
+         (rename-in
+           (except-in typed-scheme/base-env/prims
+             require-typed-struct
+             require/typed)
+           (require-typed-struct-legacy require-typed-struct)
+           (require/typed-legacy require/typed))
          typed-scheme/base-env/base-types
          typed-scheme/base-env/base-types-extra
 	 (for-syntax typed-scheme/base-env/base-types-extra))
