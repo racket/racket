@@ -287,7 +287,7 @@
                [language-level-name (language-level->name language-level)])
           (if (or (stepper-works-for? language-level)
                   (is-a? language-level drracket:module-language:module-language<%>))
-              (parameterize ([current-directory (get-directory)])
+              (parameterize ([current-directory (or (get-directory) (current-directory))])
                 (set! stepper-frame
                       (go this 
                           program-expander 

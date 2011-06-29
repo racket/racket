@@ -28,12 +28,17 @@ textual locations: collects/lang/private/teach.ss, and
 collects/stepper/private/annotate.ss (with a few stray ones
 in collects/lang/private/teachhelp.ss).
 
-Also, in order to be visible to the reconstructor, these properties
-must be explicitly transferred from the annotated source code syntax
-to the reconstructed syntax. This is accomplished by the 'attach-info'
-procedure in reconstruct.ss.  Note that in the process, these properties
-are given names that have "user-" prepended to them.  This now seems
-like a strange decision.
+In order to make it easy to move the stepper's syntax properties
+as a group and also in order to check that only sane ones are
+used, the stepper syntax properties are actually all grouped
+together as a list stored under a  single syntax property.
+
+In order to be visible to the reconstructor, these properties must
+be explicitly transferred from the annotated source code syntax to the
+reconstructed syntax. This is accomplished by the 'attach-info'
+procedure in shared.rkt. Note that in the process, the source and
+source-position properties are given names that have "user-" prepended
+to them.  This now seems like a strange decision.
 
 Finally, the astute reader may wonder why I need to add things like
 'comes-from-or, since the expression that results from the expansion
@@ -43,13 +48,16 @@ in the expansion, and during runtime reconstruction, this outermost
 expression may be gone.
 
 Here are the syntax properties added, the values they may be
-associated with, their meanings, whether they're transferred
-by attach-info, and where they're used:
+associated with, their meanings, and where they're used.
+
+NB: this list of property names is specified in the code in
+private/shared.rkt; if you add one or change its name, you should
+do so in that code as well, or you'll get errors.
 
 stepper-skip-completely :
  [ #t ] : this code should not be annotated at all.  In general, this
- means it therefore be invisible to the reconstructor. (Not
- transferred.) Actually, the code is wrapped with a dummy mark,
+ means it therefore be invisible to the reconstructor.
+ Actually, the code is wrapped with a dummy mark,
  just to make sure that other marks get properly obliterated.
 
  Note that skipping an expression can turn a sensible expression into
@@ -70,8 +78,6 @@ stepper-hint :
  from.
 
  See notes below about 'being careful with stepper-hint'.
-
-(Transferred.)
 
  [ 'comes-from-cond ] : similarly, this expression came from a use
  of 'cond'. This tag is applied to all the if's, but not to the else
@@ -101,8 +107,6 @@ stepper-define-type:
 
  [ 'lambda-define ] : this lambda arose from the expansion of
     (define id (lambda (
-
-  (Transferred.)
 
  Question 1: why the right-hand side?  Why not on the define itself?
  A: because for certain kinds of define (namely those in a local),
@@ -135,8 +139,6 @@ xml-box.  The protocol is as follows:
  [ 'from-splice-box ] : attached to the (qq-append ...) that wraps
    the result of expanding a splice-box
 
-  (Transferred.)
-
 stepper-xml-value-hint : like the stepper-xml-hint, used to indicate
    values that are the result of evaluating xml boxes.  The reason
    this cannot be the same as the stepper-xml-hint property is that
@@ -152,13 +154,9 @@ stepper-xml-value-hint : like the stepper-xml-hint, used to indicate
 stepper-proc-define-name : stores the name to which a procedure
    defined with the (define (fn arg ...) body) was bound.
 
-  (Transferred.)
-
 stepper-orig-name: attached to an uninterned symbol used by
    the expansion of define so that the stepper can compare the
    name attached to a lambda to the name of a definition.
-
-  (Not transferred.)
 
 stepper-prim-name:
  this is attached to the expansion of primitives introduced with the
@@ -167,7 +165,7 @@ stepper-prim-name:
 
 stepper-binding-type :
  this is actually unrelated to macro expansion. It differentiates
- between the various kinds of lexical bindings. (Not transferred.)
+ between the various kinds of lexical bindings.
 
  [ 'macro-bound ] : this variable's binding was inserted by a macro
  [ 'let-bound ] : this variable's binding was in a let/*/rec
@@ -186,13 +184,12 @@ stepper-and/or-clauses-consumed :
  This allows the stepper to reconstruct a partially evaluated
  'and' or 'or' with the right number of 'true's or 'false's
  in front.
- (Transferred.)
-
+ 
 stepper-skipto :
  this instructs the annotator to look inside the current expression
  along a given path for the expression to be annotated.  In
  particular, the value bound to stepper-skipto must be a list whose
- elements are car, cdr, or syntax-e. (Not transferred)
+ elements are car, cdr, or syntax-e.
 
 Some uses:
  - applied to the 'check-undefined' check added on local-bound variables.
@@ -227,14 +224,17 @@ stepper-else :
   Note that it cannot be applied simply to the 'true' itself,
   because then, when you reduce to the then, the mark on the
   test (that is, the (#%datum . true)) is gone.
-  (Transferred.)
-
-stepper-define-struct-hint :
-  this expression came from a define-struct. The value associated with
-  this label is the syntax-object representing the define-struct itself.
-
-NB: this should be renamed now that we're using it for "require" as well.
-
+  
+stepper-black-box-expr :
+  this expression should be treated as a "black box"; evaluated without
+  annotation, and "transparent" in the stepper, in the sense that the
+  original expression should appear in the completed expressions without
+  alteration.
+  
+  Examples:
+  - define-struct
+  - require
+  
 stepper-test-suite-hint :
   this expression was the expression being tested in a test-suite-tool
   test.  this hint indicates to the annotator that the expression should
@@ -261,6 +261,12 @@ stepper-hide-reduction : don't show any reductions where this term is
 
 stepper-use-val-as-final : use the return value of this expression as a
   "completed" val in the stepper. Used for test cases.
+
+stepper-lifted-name : used by the reconstructor to tell the unwinder
+  what the lifted name of a variable is.
+
+lazy-op : ???
+
 
 STEPPER-HINT COLLISIONS
 

@@ -285,8 +285,7 @@
        (or 
         ;; don't stop for a double-break on a let that is the expansion of a 'begin'
         (let ([expr (mark-source (car mark-list))])
-          (or (eq? (stepper-syntax-property expr 'stepper-hint) 'comes-from-begin)
-              (stepper-syntax-property expr 'stepper-skip-double-break)))
+          (eq? (stepper-syntax-property expr 'stepper-hint) 'comes-from-begin))
         (not (render-settings-lifting? render-settings)))]
       [(expr-finished-break define-struct-break late-let-break) #f]))
   
@@ -674,9 +673,9 @@
              (vector (reconstruct-completed-define exp vars (vals-getter) render-settings) #f))])
         (let ([exp (skipto/auto exp 'discard (lambda (exp) exp))])
           (cond 
-            [(stepper-syntax-property exp 'stepper-define-struct-hint)
+            [(stepper-syntax-property exp 'stepper-black-box-expr)
              ;; the hint contains the original syntax
-             (vector (stepper-syntax-property exp 'stepper-define-struct-hint) #t)]
+             (vector (stepper-syntax-property exp 'stepper-black-box-expr) #t)]
             ;; for test cases, use the result here as the final result of the expression:
             [(stepper-syntax-property exp 'stepper-use-val-as-final)
              (vector (recon-value (car (vals-getter)) render-settings) #f)]
@@ -833,19 +832,11 @@
                                         (map reconstruct-remaining-def (cdr not-done-glumps))))
                               null)]
                          [recon-bindings (append before-bindings after-bindings)]
-                         ;; there's a terrible tangle of invariants here.  Among them:  
-                         ;; num-defns-done = (length binding-sets) IFF the so-far has a 'stepper-offset' index
-                         ;; that is not #f (that is, we're evaluating the body...)                                    
-                         [so-far-offset-index (and (not (eq? so-far nothing-so-far)) 
-                                                   (stepper-syntax-property so-far 'stepper-offset-index))]
-                         [bodies (syntax->list (syntax bodies))]
+                         ;; JBC: deleted a bunch of dead code here referring to a never-set "stepper-offset" index...
+                         ;; frightening.
                          [rectified-bodies 
-                          (map (lambda (body offset-index)
-                                 (if (eq? offset-index so-far-offset-index)
-                                     so-far
-                                     (recon-source-expr body mark-list binding-list binding-list render-settings)))
-                               bodies
-                               (iota (length bodies)))])
+                          (for/list ([body (in-list (syntax->list #'bodies))])
+                            (recon-source-expr body mark-list binding-list binding-list render-settings))])
                          (attach-info #`(label #,recon-bindings #,@rectified-bodies) exp))))])
              
              ; STC: cache any running promises in the top mark 
