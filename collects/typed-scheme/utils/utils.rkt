@@ -8,7 +8,7 @@ at least theoretically.
 (require (for-syntax racket/base syntax/parse racket/string)
          racket/contract racket/require-syntax
 	 racket/provide-syntax racket/unit (prefix-in d: unstable/debug)
-	 racket/pretty mzlib/pconvert syntax/parse)
+	 racket/struct-info racket/pretty mzlib/pconvert syntax/parse)
 
 ;; to move to unstable
 (provide reverse-begin list-update list-set debugf debugging? dprintf)
@@ -237,3 +237,30 @@ at least theoretically.
 (define debugging? (make-parameter #f))
 (define-syntax-rule (debugf f . args) (if (debugging?) (d:debugf f . args) (f . args)))
 (define (dprintf . args) (when (debugging?) (apply d:dprintf args)))
+
+
+(provide make-struct-info-self-ctor)
+;Copied from racket/private/define-struct
+;FIXME when multiple bindings are supported
+(define (self-ctor-transformer orig stx)
+  (define (transfer-srcloc orig stx)
+    (datum->syntax orig (syntax-e orig) stx orig))
+  (syntax-case stx ()
+    [(self arg ...) (datum->syntax stx
+                                   (cons (syntax-property (transfer-srcloc orig #'self)
+                                                          'constructor-for
+                                                          (syntax-local-introduce #'self))
+                                         (syntax-e (syntax (arg ...))))
+                                   stx
+                                   stx)]
+    [_ (transfer-srcloc orig stx)]))
+
+
+(define make-struct-info-self-ctor
+ (let ()
+  (struct struct-info-self-ctor (id info)
+          #:property prop:procedure
+                     (lambda (ins stx)
+                      (self-ctor-transformer (struct-info-self-ctor-id ins) stx))
+          #:property prop:struct-info (lambda (x) (extract-struct-info (struct-info-self-ctor-info x))))
+  struct-info-self-ctor))
