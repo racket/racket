@@ -4,7 +4,7 @@
           (for-syntax racket/base racket/path)
           (for-label scribble/base))
 
-@title[#:tag "unstable"]{Unstable}
+@title[#:tag "unstable"]{Unstable: May Change Without Warning}
 
 @defmodule[unstable]
 

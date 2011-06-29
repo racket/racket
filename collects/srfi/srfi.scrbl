@@ -51,7 +51,7 @@
 
 @; ----------------------------------------------------------------------
 
-@title{@bold{SRFIs}: Libraries}
+@title{SRFIs: Libraries}
 
 The @link["http://srfi.schemers.org/"]{Scheme Requests for
 Implementation} (a.k.a. @deftech{SRFI}) process allows individual

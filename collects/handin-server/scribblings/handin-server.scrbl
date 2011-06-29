@@ -9,7 +9,7 @@
    More comments labeled with `JBC' below
 ;}
 
-@title{@bold{Handin Server}}
+@title{Handin Server}
 
 @table-of-contents[]
 

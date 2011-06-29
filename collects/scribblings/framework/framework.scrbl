@@ -3,7 +3,7 @@
 @(require (for-label framework framework/framework-unit framework/framework-sig racket/gui))
 @(require scribble/manual)
 
-@title{@bold{Framework}: Racket GUI Application Framework}
+@title{Framework: Racket GUI Application Framework}
 @(defmodule framework)
 
 @author["Robert Bruce Findler" "Matthew Flatt"]

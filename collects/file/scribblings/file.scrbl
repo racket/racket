@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt")
 
-@title{@bold{File}: Racket File Format Libraries}
+@title{File: Racket File Format Libraries}
 
 @table-of-contents[]
 

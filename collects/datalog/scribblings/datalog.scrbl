@@ -5,7 +5,7 @@
           scribble/bnf
           "utils.rkt")
 
-@title[#:tag "top"]{@bold{Datalog}: Deductive database programming}
+@title[#:tag "top"]{Datalog: Deductive Database Programming}
 @author[(author+email "Jay McCarthy" "jay@racket-lang.org")]
 
 @link["http://en.wikipedia.org/wiki/Datalog"]{Datalog} is 

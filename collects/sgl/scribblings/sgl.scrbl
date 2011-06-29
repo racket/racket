@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt")
 
-@title{@bold{GL}: 3-D Graphics}
+@title{GL: 3-D Graphics}
 
 @author["Scott Owens"]
 

@@ -3,7 +3,7 @@
           (for-label games/cards
                      scheme/gui/base))
 
-@title{@bold{Cards}: Virtual Playing Cards Library}
+@title{Cards: Virtual Playing Cards Library}
 
 @defmodule[games/cards]{The @racketmodname[games/cards]
 module provides a toolbox for creating cards games.}

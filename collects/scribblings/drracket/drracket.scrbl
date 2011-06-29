@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual)
 
-@title{@bold{DrRacket}: Programming Environment}
+@title{DrRacket: The Racket Programming Environment}
 
 @author["Robert Bruce Findler" "PLT"]
 

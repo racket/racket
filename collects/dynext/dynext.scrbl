@@ -11,7 +11,7 @@
              dynext/file-unit
              dynext/file-sig))
 
-@title{@bold{Dynext}: Running a C Compiler/Linker}
+@title{Dynext: Running a C Compiler/Linker}
 
 The @filepath{dynext} collection provides libraries for using a
 platform-specific C compiler and linker.

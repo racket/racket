@@ -2,7 +2,7 @@
 @(require scribble/manual
           (for-label algol60/algol60))
 
-@title{@bold{Algol 60}}
+@title{Algol 60}
 
 @section{Implementation}
 

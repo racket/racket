@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "web-server.rkt")
 
-@title[#:tag "web-server-ref-internal"]{@bold{Web Server}: Racket HTTP Server}
+@title[#:tag "web-server-ref-internal"]{Web Server: HTTP Server}
 
 @author{Jay McCarthy}
 

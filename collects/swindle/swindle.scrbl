@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual)
 
-@title{@bold{Swindle}}
+@title{Swindle}
 
 @defmodulelang[swindle]
 

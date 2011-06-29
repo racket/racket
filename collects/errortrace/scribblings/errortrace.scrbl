@@ -7,7 +7,7 @@
                      errortrace/errortrace-lib
                      errortrace/stacktrace))
 
-@title[#:tag "top"]{@bold{Errortrace}: Debugging and Profiling}
+@title[#:tag "top"]{Errortrace: Debugging and Profiling}
 
 @bold{Errortrace} is a stack-trace-on-exceptions, profiler, and
 coverage tool for Racket. It is not a complete debugger; DrRacket

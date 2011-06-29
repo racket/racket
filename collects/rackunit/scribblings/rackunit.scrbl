@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "base.rkt")
 
-@title{@bold{RackUnit}: Unit Testing for Racket}
+@title{RackUnit: Unit Testing}
 
 @author[(author+email "Noel Welsh" "noelwelsh@gmail.com")
         (author+email "Ryan Culpepper" "ryanc@racket-lang.org")]

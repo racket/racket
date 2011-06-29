@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("raco.scrbl" (multi-page) (tool 50))))
+(define scribblings '(("raco.scrbl" (multi-page) (racket-core -26))))

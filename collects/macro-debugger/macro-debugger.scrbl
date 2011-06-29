@@ -16,7 +16,7 @@
                          macro-debugger/stepper-text))
      the-eval))
 
-@title{@bold{Macro Debugger}}
+@title{Macro Debugger: Inspecting Macro Expansion}
 
 @author["Ryan Culpepper"]
 

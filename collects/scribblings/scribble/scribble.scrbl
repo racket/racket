@@ -1,7 +1,7 @@
 #lang scribble/manual
 @(require scribble/bnf "utils.rkt")
 
-@title{@bold{Scribble}: Racket Documentation Tool}
+@title{Scribble: The Racket Documentation Tool}
 
 @author["Matthew Flatt" "Eli Barzilay"]
 

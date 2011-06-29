@@ -5,7 +5,7 @@
                      "../graphics-unit.rkt"
                      "../graphics-posn-less-unit.rkt"))
 
-@title{@bold{Graphics}: Legacy Library}
+@title{Graphics: Legacy Library}
 
 @defmodule[graphics/graphics]
 

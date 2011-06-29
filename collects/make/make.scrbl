@@ -7,7 +7,7 @@
 
 @(define raco-manual @other-manual['(lib "scribblings/raco/raco.scrbl")])
 
-@title{@bold{Make}: Dependency Manager}
+@title{Make: Dependency Manager}
 
 The @racketmodname[make] library provides a Racket version of the
 popular @exec{make} utility.  Its syntax is intended to imitate the

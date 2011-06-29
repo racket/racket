@@ -5,7 +5,7 @@
                      scheme
                      openssl/sha1))
 
-@title{@bold{OpenSSL}}
+@title{OpenSSL: Secure Communication}
 
 @defmodule[openssl]
 

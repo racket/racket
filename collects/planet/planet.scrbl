@@ -15,7 +15,7 @@
      (eval:alts code resl)
      ...))
 
-@title{@bold{PLaneT}: Automatic Package Distribution}
+@title{PLaneT: Automatic Package Distribution}
 
 @author["Jacob Matthews" "Robert Bruce Findler"]
 

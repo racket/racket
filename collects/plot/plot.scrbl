@@ -5,7 +5,7 @@
                      plot
                      plot/extend))
 
-@title{@bold{PLoT}: Graph Plotting}
+@title{PLoT: Graph Plotting}
 
 @author["Alexander Friedman" "Jamie Raymond"]
 

@@ -19,7 +19,7 @@
 @(define r5rs @elem{R@superscript{5}RS})
 @(define drs-doc '(lib "scribblings/drracket/drracket.scrbl"))
 
-@title{@bold{R5RS}: Legacy Scheme}
+@title{R5RS: Legacy Scheme}
 
 The @link["../r5rs-std/index.html"]{The Revised@superscript{5} Report
 on the Algorithmic Language Scheme} defines a dialect of Scheme. We

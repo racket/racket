@@ -49,7 +49,7 @@
 @(define-syntax-rule (compat sid rid)
    (compat-except sid rid))
 
-@title{@bold{Scheme}: Compatibility Libraries and Executables}
+@title{Scheme: Compatibility Libraries and Executables}
 
 Racket was once called ``PLT Scheme,'' and a number of libraries with
 names starting @racketidfont{scheme} provide compatibility with the

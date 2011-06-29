@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("foreign.scrbl" (multi-page) (foreign 9))))
+(define scribblings '(("foreign.scrbl" (multi-page) (racket-core -23))))

@@ -14,7 +14,7 @@
 @interaction-eval[#:eval xml-eval (require racket/list)]
 @interaction-eval[#:eval plist-eval (require xml/plist)]
 
-@title{@bold{XML}: Parsing and Writing}
+@title{XML: Parsing and Writing}
 
 @author["Paul Graunke and Jay McCarthy"]
 

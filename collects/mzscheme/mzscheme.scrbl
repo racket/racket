@@ -51,7 +51,7 @@
 
 @(define old-vers @elem{version 372})
 
-@title{@bold{MzScheme}: Legacy Module Language}
+@title{MzScheme: Legacy Language}
 
 @defmodule[mzscheme]{
 

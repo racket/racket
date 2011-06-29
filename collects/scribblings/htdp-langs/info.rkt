@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("htdp-langs.scrbl" (multi-page) (language -10))))
+(define scribblings '(("htdp-langs.scrbl" (multi-page) (teaching -12))))

@@ -9,7 +9,7 @@
            (list @elem{@(tt name) COM @|what|})
            (apply tt proto)))
 
-@title{@bold{MzCOM}: Racket as a Windows COM Object}
+@title{MzCOM: Racket as a Windows COM Object}
 
 @author["Paul Steckler"]
 

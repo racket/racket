@@ -7,7 +7,7 @@
 @(define racklog-eval (make-base-eval))
 @(racklog-eval '(require racklog))
 
-@title{@bold{Racklog}: Prolog-Style Logic Programming in Racket}
+@title{Racklog: Prolog-Style Logic Programming}
 
 @author{Dorai Sitaram}
 

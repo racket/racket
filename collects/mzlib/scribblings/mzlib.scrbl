@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt")
 
-@title{@bold{MzLib}: Legacy Racket Libraries}
+@title{MzLib: Legacy Libraries}
 
 The @filepath{mzlib} collection contains wrappers and libraries for
 compatibility with older versions of Racket. In many ways, the

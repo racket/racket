@@ -4,4 +4,4 @@
 (define homepage "http://www.cs.brown.edu/~sk/Publications/Books/ProgLangs/")
 (define primary-file "main.ss")
   
-(define scribblings '(("scribblings/plai.scrbl" (multi-page) (language -11))))
+(define scribblings '(("scribblings/plai.scrbl" (multi-page) (teaching -20))))

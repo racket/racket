@@ -3,7 +3,7 @@
 @(require scribble/manual
           (for-label scheme))
 
-@title{@bold{Profile}: Statistical Profiler}
+@title{Profile: Statistical Profiler}
 
 The @racket[profile] collection implements a statistical profiler.
 The profiling is done by running a background thread that collects

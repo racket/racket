@@ -4,7 +4,7 @@
           (for-syntax racket/base racket/path)
           (for-label scribble/base))
 
-@title[#:tag "data"]{Data Structures}
+@title[#:tag "data"]{Data: Data Structures}
 
 @defmodule[data]
 

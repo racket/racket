@@ -7,7 +7,7 @@
 
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
 
-@title{@bold{HTML}: Parsing Library}
+@title{HTML: Parsing Library}
 
 @defmodule[html]{The @racketmodname[html] library provides
 functions to read html documents and structures to represent them.}

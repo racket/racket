@@ -18,7 +18,7 @@
      (item (indexed-racket x) ": " . ys))) ;; indexing missing
 
 
-@title{@bold{Plugins}: Extending DrRacket}
+@title{Extending DrRacket}
 
 @author["Robert Bruce Findler"]
 

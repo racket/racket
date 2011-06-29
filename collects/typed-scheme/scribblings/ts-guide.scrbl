@@ -2,7 +2,7 @@
 
 @begin[(require "utils.rkt" (for-label (only-meta-in 0 typed/racket)))]
 
-@title[#:tag "top"]{@bold{Typed Racket}: Racket with Static Types}
+@title[#:tag "top"]{The Typed Racket Guide}
 
 @author[@author+email["Sam Tobin-Hochstadt" "samth@racket-lang.org"]
         @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]]

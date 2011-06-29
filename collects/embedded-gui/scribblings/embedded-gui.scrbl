@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt" (for-label framework))
 
-@title{@bold{Embedded GUI}: Widgets within @racket[editor<%>]}
+@title{Embedded GUI: Widgets Within Editors}
 
 @author["Mike T. McHenry"]
 

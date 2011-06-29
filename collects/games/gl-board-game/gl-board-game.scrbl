@@ -6,7 +6,7 @@
                      scheme/gui/base
                      sgl))
 
-@title{@bold{GL Board Game}: 3-D Game Support}
+@title{GL Board Game: 3-D Game Support}
 
 @defmodule[games/gl-board-game]
 

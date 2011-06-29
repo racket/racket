@@ -1,7 +1,7 @@
 #lang scribble/manual
 @(require scribble/eval "guide-utils.rkt")
 
-@title{@bold{Guide}: Racket}
+@title{@bold{The Racket Guide}}
 
 @author["Matthew Flatt" "Robert Bruce Findler" "PLT"]
 

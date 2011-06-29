@@ -3,7 +3,7 @@
           (for-label string-constants
                      racket))
 
-@title{@bold{String Constants}: GUI Internationalization}
+@title{String Constants: GUI Internationalization}
 
 This library provides the facility for multiple languages in
 DrRacket's GUI. 

@@ -1,6 +1,6 @@
 #lang scribble/doc
 
-@title{@bold{Quick}: An Introduction to Racket with Pictures}
+@title{Quick: An Introduction to Racket with Pictures}
 
 @author["Matthew Flatt"]
 

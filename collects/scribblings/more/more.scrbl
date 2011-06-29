@@ -39,7 +39,7 @@
                  " in plain text: "
                  (link file "step " which) ".")))
 
-@title{@bold{More}: Systems Programming with Racket}
+@title{More: Systems Programming with Racket}
 
 @author["Matthew Flatt"]
 

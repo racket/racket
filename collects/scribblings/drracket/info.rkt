@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("drracket.scrbl" (multi-page) (tool 100))))
+(define scribblings '(("drracket.scrbl" (multi-page) (racket-core -25))))

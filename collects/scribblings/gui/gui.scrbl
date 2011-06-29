@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt")
 
-@title{@bold{GUI}: Racket Graphical Interface Toolkit}
+@title{The Racket Graphical Interface Toolkit}
 
 @author["Matthew Flatt" "Robert Bruce Findler" "John Clements"]
 

@@ -10,7 +10,7 @@
 
 @(define (selflink s) (link s (tt s)))
 
-@title{@bold{Version}: Racket Version Checking}
+@title{Version: Racket Version Checking}
 
 The version collection contains several version-related pieces that
 are used by Racket. See also @racket[version] from

@@ -10,7 +10,7 @@
                      framework/private/color
                      scheme))
 
-@title{@bold{Syntax Color}: Utilities}
+@title{Syntax Color: Utilities}
 
 @author["Scott Owens"]
 

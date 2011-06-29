@@ -21,7 +21,7 @@
 @(def-ext net-send-url)
 
 
-@title{@bold{Browser}: Simple HTML Rendering}
+@title{Browser: Simple HTML Rendering}
 
 The @racketmodname[browser] library provides the following procedures
 and classes for parsing and viewing HTML files.  The

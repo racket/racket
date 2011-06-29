@@ -5,7 +5,7 @@
 
 @(define lcomma (litchar ", "))
 
-@title{@bold{Honu}}
+@title{Honu}
 
 @defterm{Honu} is a family of languages built on top of Racket. Honu
 syntax resembles Java. Like Racket, however, Honu has no fixed syntax,

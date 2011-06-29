@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "web-server.rkt")
 
-@title[#:tag "web-server-ref"]{@bold{Web}: Racket Web Applications}
+@title[#:tag "web-server-ref"]{Web Applications in Racket}
 
 @author{Jay McCarthy}
 

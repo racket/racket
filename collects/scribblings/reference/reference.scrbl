@@ -22,7 +22,7 @@
                    (make-css-addition "extras.css")
                    (make-tex-addition "extras.tex"))))
 
-@title[#:style (extras)]{@bold{Reference}: Racket}
+@title[#:style (extras)]{@bold{The Racket Reference}}
 
 @author["Matthew Flatt" "PLT"]
 

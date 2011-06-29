@@ -4,7 +4,7 @@
           (for-label web-server/servlet)
           "tutorial-util.rkt")
 
-@title{@bold{Continue}: Web Applications in Racket}
+@title{Continue: Web Applications in Racket}
 
 @author[(author+email "Danny Yoo" "dyoo@cs.wpi.edu")
         (author+email "Jay McCarthy" "jay@cs.byu.edu")]

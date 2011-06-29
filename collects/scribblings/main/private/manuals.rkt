@@ -5,6 +5,7 @@
          setup/getinfo
          setup/main-collects
          scheme/list
+         scheme/match
          "../config.ss")
 
 (provide make-start-page)
@@ -85,9 +86,9 @@
                 ;; Add HtDP
                 (list
                  ;; Category
-                 'getting-started
+                 'teaching
                  ;; Priority
-                 7
+                 -11
                  ;; Priority label (not used):
                  ""
                  ;; Path
@@ -114,10 +115,15 @@
                                docs)])
              (list*
               (plain-line (hspace 1))
-              (plain-line (let ([s (sec-label sec)])
-                            (if (and (list? s) (eq? 'link (car s)))
-                                (seclink "top" #:doc (caddr s) #:underline? #f (cadr s))
-                                s)))
+              (plain-line (let loop ([s (sec-label sec)])
+                            (match s
+                              [(list 'elem parts ...)
+                               (apply elem (map loop parts))]
+                              [(list 'link text doc-mod-path)
+                               (seclink "top" #:doc doc-mod-path #:underline? #f text)]
+                              [(list 'link text doc-mod-path tag)
+                               (seclink tag #:doc doc-mod-path #:underline? #f text)]
+                              [_ s])))
               (add-sections
                (sec-cat sec)
                (lambda (str)

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt")
 
-@title{@bold{MrLib}: Extra GUI Libraries}
+@title{MrLib: Extra GUI Libraries}
 
 @table-of-contents[]
 

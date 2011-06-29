@@ -2,7 +2,7 @@
 
 (require string-constants)
 
-(define scribblings '(("eopl.scrbl" () (language -12))))
+(define scribblings '(("eopl.scrbl" () (teaching -20))))
 
 (define textbook-pls
   (list (list '("eopl-small.png" "eopl")

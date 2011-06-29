@@ -4,7 +4,7 @@
                      scheme/contract
                      config))
 
-@title{@bold{Config}: Installation and Search Paths}
+@title{Config: Installation and Search Paths}
 
 @section{Configuring Directories and Search Paths}
 

@@ -3,7 +3,7 @@
 
 @(define paper-url "http://www.cs.utah.edu/plt/publications/jfp05-ff.pdf")
 
-@title{@bold{Slideshow}: Racket Figure and Presentation Tools}
+@title{Slideshow: Figure and Presentation Tools}
 
 @author["Matthew Flatt" "Robert Bruce Findler"]
 

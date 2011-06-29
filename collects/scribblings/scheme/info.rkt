@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("scheme.scrbl" (multi-page) (legacy 60))))
+(define scribblings '(("scheme.scrbl" (multi-page) (legacy 50))))

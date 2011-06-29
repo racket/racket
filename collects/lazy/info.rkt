@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define scribblings '(("lazy.scrbl" () (experimental))))
+(define scribblings '(("lazy.scrbl" () (experimental 50))))
 
 ;; STC 2010-06-01
 ;; Changing lazy to be a tools-based language so I can use 

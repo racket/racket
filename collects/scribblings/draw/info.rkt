@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("draw.scrbl" (multi-page) (gui-library 101))))
+(define scribblings '(("draw.scrbl" (multi-page) (racket-core -21))))

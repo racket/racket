@@ -12,7 +12,7 @@
 @(define htdp @italic{How to Design Programs})
 @(define (htdp-ref s) @secref[#:doc '(lib "scribblings/htdp-langs/htdp-langs.scrbl") s])
 
-@title{@bold{HtDP}: Languages as Libraries}
+@title{HtDP Languages as Libraries}
 
 @; ------------------------------------------------------------
 @section{@italic{HtDP} Beginning Student}

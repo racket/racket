@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@title{@bold{Scriblib}: Extra Scribble Libraries}
+@title{Scriblib: Extra Scribble Libraries}
 
 @table-of-contents[]
 

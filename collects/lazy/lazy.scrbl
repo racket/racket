@@ -34,7 +34,7 @@
 
 @(require scribble/manual)
 
-@title{@bold{Lazy Racket}}
+@title{Lazy Racket}
 
 @author["Eli Barzilay"]
 

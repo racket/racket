@@ -3,7 +3,7 @@
           (for-label scheme/base scheme/contract
                      games/show-help games/show-scribbling))
 
-@title{@bold{Games}: Fun Examples}
+@title{Games: Fun Examples}
 
 The @exec{PLT Games} executable (or @exec{plt-games} on Unix) lets
 you select one of the games distributed by PLT or other games

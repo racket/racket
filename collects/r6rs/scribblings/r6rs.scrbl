@@ -23,7 +23,7 @@
 @(define r6rs @elem{R@superscript{6}RS})
 @(define r5rs @elem{R@superscript{5}RS})
 
-@title{@bold{R6RS}: Scheme}
+@title{R6RS: Scheme}
 
 The @link["../r6rs-std/index.html"]{The Revised@superscript{6} Report
 on the Algorithmic Language Scheme} defines a dialect of Scheme. We

@@ -10,7 +10,7 @@
 @(define readline "Readline")
 @(define Readline "Readline")
 
-@title{@bold{Readline}: Terminal Interaction}
+@title{Readline: Terminal Interaction}
 
 The @filepath{readline} collection (not to be confused with Racket's
 @racket[read-line] function) provides glue for using GNU's @|readline|

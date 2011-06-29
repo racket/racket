@@ -6,7 +6,7 @@
                      (prefix-in : parser-tools/lex-sre)
                      parser-tools/yacc))
 
-@title{@bold{Parser Tools}: @exec{lex} and @exec{yacc}-style Parsing}
+@title{Parser Tools: @exec{lex} and @exec{yacc}-style Parsing}
 
 @author["Scott Owens"]
 

@@ -3,4 +3,4 @@
 
 (define compile-omit-paths '("demos" "tests"))
 
-(define scribblings '(("scribblings/frtime.scrbl" () (experimental))))
+(define scribblings '(("scribblings/frtime.scrbl" () (experimental 50))))

@@ -13,7 +13,7 @@
 ;; user-specific pages using cookies).  (Note: the subpath must match
 ;; where the corresponding document is generated, this is a hack.)
 (define links
-  `((start   "Racket"           user "index.html")
+  `((start   "Racket Documentation" user "index.html")
     (search  "Search Manuals"   user "search/index.html")
     ---
     (license "License"          plt  "license/index.html")
@@ -24,8 +24,16 @@
 
 ;; Section definitions for manuals that appear on the start page.
 (define manual-sections
-  '((getting-started (link "Getting Started" (lib "scribblings/main/getting-started.scrbl")))
-    (language        "Languages")
+  '((getting-started (link "Getting Started"
+                           (lib "scribblings/main/getting-started.scrbl")))
+    (tutorial        "Tutorials")
+    (racket-core     "Racket Language and Core Libraries")
+    (teaching        "Teaching")
+    (language        (elem "Other "
+                           (link "Languages"
+                                 (lib "scribblings/guide/guide.scrbl")
+                                 "dialects")
+                           " in the Racket Environment "))
     (tool            "Tools")
     (gui-library     "GUI and Graphics Libraries")
     (net-library     "Network Libraries")

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt")
 
-@title{@bold{Syntax}: Meta-Programming Helpers}
+@title{Syntax: Meta-Programming Helpers}
 
 @table-of-contents[]
 

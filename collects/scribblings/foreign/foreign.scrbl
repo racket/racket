@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title{@bold{FFI}: Racket Foreign Interface}
+@title{The Racket Foreign Interface}
 
 @author["Eli Barzilay"]
 

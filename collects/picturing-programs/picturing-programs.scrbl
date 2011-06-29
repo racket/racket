@@ -13,7 +13,7 @@
              ))
 
 @; teachpack["picturing-programs"]{Picturing Programs}
-@title{Picturing Programs Teachpack}
+@title{@italic{Picturing Programs} Teachpack}
 @author{Stephen Bloch}
 
 @defmodule[picturing-programs]
