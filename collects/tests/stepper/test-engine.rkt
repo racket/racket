@@ -77,8 +77,8 @@
 
 ;; THE METHOD THAT RUNS A TEST:
 
-(provide/contract [run-one-test (symbol? model-or-models/c string? (listof step?) . -> . boolean?)])
-;; run-one-test : symbol? model-or-models? string? steps? -> boolean?
+(provide/contract [run-one-test (symbol? model-or-models/c string? (listof step?) (listof (list/c string? string?)) . -> . boolean?)])
+;; run-one-test : symbol? model-or-models? string? steps? extra-files -> boolean?
 
 ;; the ll-model determines the behavior of the stepper w.r.t. "language-level"-y things:
 ;; how should values be rendered, should steps be displayed (i.e, will the input & output
@@ -90,13 +90,15 @@
 ;; the steps lists the desired steps.  The easiest way to understand these is probably just to 
 ;; read the code for the comparison given in "compare-steps", below.
 
+;; the extra-files contain a list of other files that must occur in the same directory. 
+
 ;; run the named test, return #t if a failure occurred during the test.
 
-(define (run-one-test name models exp-str expected-steps)
+(define (run-one-test name models exp-str expected-steps extra-files)
   (unless (display-only-errors)
     (printf "running test: ~v\n" name))
   (let ([error-has-occurred-box (box #f)])
-    (test-sequence/many models exp-str expected-steps error-has-occurred-box)
+    (test-sequence/many models exp-str expected-steps extra-files error-has-occurred-box)
     (if (unbox error-has-occurred-box)
         (begin (fprintf (current-error-port) "...Error has occurred during test: ~v\n" name)
                #f)
@@ -109,18 +111,25 @@
 ;; test-sequence/many : model-or-models/c string? steps? -> (void)
 ;; run a given test through a bunch of language models (or just one).
 
-(define (test-sequence/many models exp-str expected-steps error-box)
-  (cond [(list? models)(for-each (lambda (model) (test-sequence model exp-str expected-steps error-box))
+(define (test-sequence/many models exp-str expected-steps extra-files error-box)
+  (cond [(list? models)(for-each (lambda (model) (test-sequence model exp-str expected-steps extra-files error-box))
                                  models)]
-        [else (test-sequence models exp-str expected-steps error-box)]))
+        [else (test-sequence models exp-str expected-steps extra-files error-box)]))
 
-;; test-sequence : ll-model? string? steps? -> (void)
+;; test-sequence : ll-model? string? steps? extra-files? -> (void)
 ;; given a language model and an expression and a sequence of steps,
 ;; check to see whether the stepper produces the desired steps
-(define (test-sequence the-ll-model exp-str expected-steps error-box)
+(define (test-sequence the-ll-model exp-str expected-steps extra-files error-box)
   (match the-ll-model
     [(struct ll-model (namespace-spec render-settings enable-testing?))
      (let ([filename (build-path test-directory "stepper-test")])
+       (for ([f (in-list extra-files)])
+         (define filename (first f))
+         (define content (second f))
+         (when (file-exists? filename)
+           (fprintf (current-error-port) 'run-one-test "file ~s exists, truncating...\n")
+           (delete-file filename))
+         (display-to-file content filename))
        (call-with-output-file filename
          (lambda (port) (fprintf port "~a" exp-str))
          #:exists
@@ -132,7 +141,9 @@
               ;; thunk this so that syntax errors happen within the error handlers:
               [expanded-thunk 
                (lambda () (expand-teaching-program port read-syntax namespace-spec '() #f module-id enable-testing?))])
-         (test-sequence/core render-settings expanded-thunk expected-steps error-box)))]))
+         (test-sequence/core render-settings expanded-thunk expected-steps error-box))
+       (for ([f (in-list extra-files)])
+         (delete-file (first f))))]))
 
 ;; test-sequence/core : render-settings? boolean? syntax? steps?
 ;; this is a front end for calling the stepper's "go"; the main 

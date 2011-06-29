@@ -20,16 +20,30 @@
 
 (define (add-test test)
   (match test
-    [(list name models string expected-steps)
+    [(list name models string expected-steps extra-files)
+     (unless (symbol? name)
+       (error 'add-test "expected name to be a symbol, got: ~e" name))
+     (unless (or (m:ll-model? models)
+                 (and (list? models) (andmap m:ll-model? models)))
+       (error 'add-test "expected models to be a list of models, got: ~e" models))
+     (unless (string? string)
+       (error 'add-test "expected string to be a string, got: ~e" string))
+     (unless (list? expected-steps)
+       (error 'add-test "expected expected-steps to be a list, got: ~e" expected-steps))
+     (match extra-files
+       [(list (list (? string? filename) (? string? content)) ...) #t]
+       [other (error 'add-test 
+                     "expected list of extra file specifications, got: ~e" 
+                     other)])
      (when (assq name list-of-tests)
        (error 'add-test "name ~v is already in the list of tests" name))
      (set! list-of-tests 
            (append list-of-tests 
                    (list (list name
-                               (list models string expected-steps)))))]))
+                               (rest test)))))]))
 
 (define (t1 name models string expected-steps)
-  (add-test (list name models string expected-steps)))
+  (add-test (list name models string expected-steps '())))
 
 ;; one more layer around 
 (define-syntax (t stx)
@@ -2170,11 +2184,20 @@
      -> (define (f x) (local ((define-struct a (b c))) x)) 
      {(define-struct a_1 (b c))} {1})
   
+  ;; test of require
+  (add-test
+   (list 'require-test m:upto-int/lam
+         "(require \"foo.rkt\") (+ a 4)"
+         '((before-after ((require "foo.rkt") (+ (hilite a) 4))
+                         ((require "foo.rkt") (hilite (+ 3 4))))
+           (before-after ((require "foo.rkt") (hilite (+ 3 4)))
+                         ((require "foo.rkt") (hilite 7))))
+         '(("foo.rkt" "#lang racket \n(provide a) (define a 3)"))))
   
   (provide ggg)
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
-    (parameterize ([disable-stepper-error-handling #t]
+    (parameterize (#;[disable-stepper-error-handling #t]
                    #;[display-only-errors #t]
                    #;[store-steps #f]
                    #;[show-all-steps #t])
@@ -2182,5 +2205,5 @@
                                   check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
       #;(run-all-tests)
-      (run-tests '(simple-if))
+      (run-test 'require-test)
       ))
