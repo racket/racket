@@ -25,7 +25,8 @@
          place-channel-put/get
          processor-count
          place
-         (rename-out [pl-place-enabled? place-enabled?]))
+         (rename-out [pl-place-enabled? place-enabled?])
+         place-dead-evt)
 
 (define-struct TH-place (th ch cust) 
   #:property prop:evt (lambda (x) (TH-place-channel-in (TH-place-ch x))))
@@ -66,6 +67,7 @@
 (define (th-place-wait pl) (thread-wait (TH-place-th pl)) 0)
 (define (th-place-kill pl) (custodian-shutdown-all (TH-place-cust pl)))
 (define (th-place-break pl) (break-thread (TH-place-th pl)))
+(define (th-place-dead-evt pl) (thread-dead-evt (TH-place-th pl)))
 (define (th-place-channel)
   (define-values (as ar) (make-th-async-channel))
   (define-values (bs br) (make-th-async-channel))
@@ -134,6 +136,7 @@
 (define-pl place-channel?     pl-place-channel?     th-place-channel?)
 (define-pl place?             pl-place?             TH-place?)
 (define-pl place-message-allowed? pl-place-message-allowed? th-place-message-allowed?)
+(define-pl place-dead-evt     pl-place-dead-evt     th-place-dead-evt)
 
 (define-syntax-rule (define-syntax-case (N a ...) b ...)
   (define-syntax (N stx)

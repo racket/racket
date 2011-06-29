@@ -588,6 +588,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_symbol_type, symbol_obj);
 #ifdef MZ_USE_PLACES  
   GC_REG_TRAV(scheme_serialized_symbol_type, bstring_obj);
+  GC_REG_TRAV(scheme_place_dead_type, small_object);
 #endif
   GC_REG_TRAV(scheme_keyword_type, symbol_obj);
   GC_REG_TRAV(scheme_null_type, char_obj); /* small */

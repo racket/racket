@@ -174,6 +174,7 @@
   (define b1 (shared-bytes 66 66 66 66))
   (define b2 (make-shared-bytes 4 65))
 
+  ; test place-channel communication of basic types
   (channel-test-basic-types-master place-channel-put/get pl)
   (channel-test-basic-types-master big-sender pl)
 
@@ -209,6 +210,7 @@
   (channel-test-basic-types-master place-channel-put/get pc6)
   (channel-test-basic-types-master big-sender pc6)
 
+  ; test deep copy of cycles
   (let ([try-graph
          (lambda (s)
            (let ([v (read (open-input-string s))])
@@ -225,6 +227,7 @@
 
   (place-wait pl))
 
+  ; test place-break
   (let ([p (place ch
              (with-handlers ([exn:break? (lambda (x) (place-channel-put ch "OK"))])
               (place-channel-put ch "ALIVE")
@@ -236,11 +239,32 @@
   (test "OK" place-channel-get p)
   (place-wait p))
 
+  ; test place-dead-evt
+  (define wbs '())
+  (for ([i (in-range 0 50)])
+    (define p (place ch (void (place-channel-get ch))))
+    (set! wbs
+          (cons
+           (make-weak-box
+            (thread
+             (λ ()
+               (define-values (in out) (place-channel))
+               (place-channel-put p in)
+               (sync 
+                 (handle-evt (place-dead-evt p)
+                   (lambda (x) (printf "Place ~a died\n" i) ))
+                 out))))
+           wbs))
+    (collect-garbage)
+    (set! wbs (filter weak-box-value wbs))
+    (printf "len ~a\n" (length wbs)))
+
+  ; test deep stack handling in places_deep_copy c routine
   (test-long (lambda (x) 3) "Listof ints")
   (test-long (lambda (x) #(1 2)) "Listof vectors")
   (test-long (lambda (x) (intern-num-sym (modulo x 1000))) "Listof symbols")
   (test-long (lambda (x) #s(clown "Binky" "pie")) "Listof prefabs")
-  (test-long (lambda (x) (read (open-input-string "#0=(#0# . #0#)"))) "Listof cycles"))
-
+  (test-long (lambda (x) (read (open-input-string "#0=(#0# . #0#)"))) "Listof cycles")
+  )
 
 ;(report-errs)

@@ -191,6 +191,10 @@ generate events (see @racket[prop:evt]).
  would not block. The result as an event is the same as the
  @racket[place-channel-get] result.}
 
+ @item{@racket[_place-dead] --- an event returned by
+ @racket[place-dead-evt] applied to @racket[p] is ready when
+ @racket[p] has terminated.  @ResultItself[_place-dead].}
+
  ]
 
 @;------------------------------------------------------------------------

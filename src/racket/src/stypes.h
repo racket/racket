@@ -160,7 +160,7 @@ enum {
   scheme_always_evt_type,               /* 140 */
   scheme_never_evt_type,                /* 141 */
   scheme_progress_evt_type,             /* 142 */
-  scheme_UNUSED_type,                   /* 143 */
+  scheme_place_dead_type,               /* 143 */
   scheme_already_comp_type,             /* 144 */
   scheme_readtable_type,                /* 145 */
   scheme_intdef_context_type,           /* 146 */
@@ -191,7 +191,6 @@ enum {
   scheme_once_used_type,                /* 171 */
   scheme_serialized_symbol_type,        /* 172 */
   scheme_serialized_structure_type,     /* 173 */
-  /* use scheme_UNUSED_type above, first */
 
 #ifdef MZTAG_REQUIRED
   _scheme_last_normal_type_,            /* 174 */

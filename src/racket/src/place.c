@@ -43,6 +43,8 @@ static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo);
 static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
 static Scheme_Object *place_async_receive(Scheme_Place_Async_Channel *ch);
 static Scheme_Object *places_deep_copy_to_master(Scheme_Object *so);
+static Scheme_Object *make_place_dead(int argc, Scheme_Object *argv[]);
+static int place_dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, 
@@ -102,6 +104,7 @@ void scheme_init_place(Scheme_Env *env)
   PLACE_PRIM_W_ARITY("place-channel-get",     place_receive,   1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-channel?",        place_channel_p, 1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-message-allowed?", place_allowed_p, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-dead-evt",        make_place_dead, 1, 1, plenv);
 
 #ifdef MZ_USE_PLACES
   REGISTER_SO(scheme_def_place_exit_proc);
@@ -123,6 +126,7 @@ void scheme_init_places_once() {
 #ifdef MZ_USE_PLACES
   scheme_add_evt(scheme_place_type,            (Scheme_Ready_Fun)place_channel_ready, NULL, NULL, 1); 
   scheme_add_evt(scheme_place_bi_channel_type, (Scheme_Ready_Fun)place_channel_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_place_dead_type,       (Scheme_Ready_Fun)place_dead_ready, NULL, NULL, 1);
   mzrt_mutex_create(&id_counter_mutex);
 #endif
 }
@@ -332,6 +336,47 @@ static Scheme_Object *place_break(int argc, Scheme_Object *args[]) {
   return scheme_make_integer(do_place_break(place));
 }
 
+static int place_deadp(Scheme_Object *place) {
+  Scheme_Place_Object *place_obj;
+  int ref = 0;
+  place_obj = (Scheme_Place_Object*) ((Scheme_Place *)place)->place_obj;
+
+  if (place_obj == NULL) {
+    return 1;
+  }
+  else
+  {
+    mzrt_mutex_lock(place_obj->lock);
+
+    ref = place_obj->ref;
+
+    mzrt_mutex_unlock(place_obj->lock);
+  }
+  if (ref > 1) { return 0; }
+  return 1;
+}
+
+static Scheme_Object *make_place_dead(int argc, Scheme_Object *argv[])
+{ 
+  Scheme_Object *b;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_place_type))
+    scheme_wrong_type("thread-dead-evt", "place", 0, argc, argv);
+
+  b = scheme_alloc_small_object();
+  b->type = scheme_place_dead_type;
+  SCHEME_PTR_VAL(b) = argv[0];
+  return b;
+} 
+  
+static int place_dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo) {
+  if (place_deadp(SCHEME_PTR_VAL(o))) {
+    scheme_set_sync_target(sinfo, o, NULL, NULL, 0, 0, NULL);
+    return 1;
+  }
+  return 0;
+}
+/
 
 # if defined(MZ_PLACES_WAITPID)
 /*============= SIGCHLD SIGNAL HANDLING =============*/
