@@ -507,7 +507,7 @@
   (define (step-through-expression expanded expand-next-expression)
     (define show-lambdas-as-lambdas?
       (render-settings-show-lambdas-as-lambdas? render-settings))
-    (let* ([annotated (a:annotate expanded break 
+    (let* ([annotated (a:annotate expanded break
                                   show-lambdas-as-lambdas?)])
       (parameterize ([test-engine:test-silence #t])
         (eval-syntax annotated))
