@@ -343,6 +343,9 @@
 (define checkmark-entity
   10004)
 
+(define (path->url pth)
+  (format "http://drdr.racket-lang.org/~a~a" (current-rev) pth))
+
 (define (render-logs/dir dir-pth #:show-commit-msg? [show-commit-msg? #f])
   (match (dir-rendering dir-pth)
     [#f
@@ -369,10 +372,35 @@
                   ,(if show-commit-msg?
                         (format-commit-msg)
                         "")
-                  ,(local [(define (path->url pth)
-                             (format "http://drdr.racket-lang.org/~a~a" (current-rev) pth))
-                           
-                           (define responsible->problems
+                  
+                  ; All files with a status
+                  ,(let ()
+                     (define log-dir (revision-log-dir (current-rev)))
+                     (define base-path 
+                       (rebase-path log-dir "/"))
+                     `(div ([class "status"])
+                           (div ([class "tag"]) "by status")
+                           ,@(for/list ([status (in-list responsible-ht-severity)]
+                                        [rendering->list-count (in-list (list rendering-timeout? rendering-unclean-exit?
+                                                                              rendering-stderr? rendering-changed?))])
+                               (define lc (rendering->list-count pth-rendering))
+                               (define rcss-id (symbol->string (gensym)))
+                               (define rg-id (symbol->string (gensym 'glyph)))
+                               
+                               `(div (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" rg-id rcss-id)])
+                                        (span ([id ,rg-id]) 9658) " "
+                                        ,(format "~a [~a]"
+                                                 status
+                                                 (lc->number lc)))
+                                     (ul ([id ,rcss-id] 
+                                          [style ,(format "display: ~a"
+                                                          "none")])
+                                         ,@(for/list ([pp (lc->list lc)])
+                                             (define p (bytes->string/utf-8 pp))
+                                             (define bp (base-path p))
+                                             `(li (a ([href ,(path->url bp)]) ,(path->string bp)))))))))
+                  
+                  ,(local [(define responsible->problems
                              (rendering->responsible-ht (current-rev) pth-rendering))
                            (define last-responsible->problems
                              (with-handlers ([exn:fail? (lambda (x) (make-hash))])
