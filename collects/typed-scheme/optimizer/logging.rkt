@@ -30,8 +30,8 @@
 (struct opt-log-entry log-entry () #:prefab)
 
 
-(define (log-optimization msg stx)
-  (let ([new-entry (opt-log-entry msg msg stx (syntax-position stx))])
+(define (log-optimization kind msg stx)
+  (let ([new-entry (opt-log-entry kind msg stx (syntax-position stx))])
     (set! log-so-far (cons new-entry log-so-far))))
 
 ;;--------------------------------------------------------------------

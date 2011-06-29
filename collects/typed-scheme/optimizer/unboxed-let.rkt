@@ -39,7 +39,9 @@
                             #'unboxed-info #'operator.opt))
            this-syntax
            #:with opt
-           (begin (log-optimization "unboxed let loop" #'loop-fun)
+           (begin (log-optimization "unboxed let loop"
+                                    arity-raising-opt-msg
+                                    #'loop-fun)
                   #'e*.opt)))
 
 ;; does the bulk of the work
@@ -99,9 +101,10 @@
                                        (and (> (length unboxed) 0)
                                             ;; if so, add to the table of functions with
                                             ;; unboxed params, so we can modify its call
-                                            ;; sites, it's body and its header
+                                            ;; sites, its body and its header
                                             (begin (log-optimization
                                                     "unboxed function -> table"
+                                                    arity-raising-opt-msg
                                                     fun-name)
                                                    #t)
                                             (dict-set! unboxed-funs-table fun-name
@@ -112,6 +115,7 @@
                                              (car params) #'(begin body ...)))
                                        ;; we can unbox
                                        (log-optimization "unboxed var -> table"
+                                                         arity-raising-opt-msg
                                                          (car params))
                                        (loop (cons i unboxed) boxed
                                              (add1 i) (cdr params) (cdr doms))]
@@ -128,7 +132,9 @@
            #:with opt
            (begin (when (not (null? (syntax->list #'(opt-candidates.id ...))))
                     ;; only log when we actually optimize
-                    (log-optimization "unboxed let bindings" this-syntax))
+                    (log-optimization "unboxed let bindings"
+                                      arity-raising-opt-msg
+                                      this-syntax))
                   ;; add the unboxed bindings to the table, for them to be used by
                   ;; further optimizations
                   (for ((v (in-list (syntax->list #'(opt-candidates.id ...))))
@@ -294,7 +300,7 @@
                                                 #'(to-unbox ...))
            #:with res
            (begin
-             (log-optimization "fun -> unboxed fun" #'v)
+             (log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'v)
              ;; add unboxed parameters to the unboxed vars table
              (let ((to-unbox (syntax-map syntax->datum #'(to-unbox ...))))
                (let loop ((params     (syntax->list #'params))

@@ -80,6 +80,8 @@
    "This expression has a Real type. It would be better optimized if it had a Float type. To fix this, change the circled expression(s) to have Float type(s)."
    stx irritants))
 
+(define float-opt-msg "Float arithmetic specialization.")
+
 (define-syntax-class float-opt-expr
   #:commit
   (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-arg-expr)
@@ -90,7 +92,7 @@
                       (log-float-real-missed-opt this-syntax (list #'f)))
                     safe-to-opt?)
            #:with opt
-           (begin (log-optimization "unary float" this-syntax)
+           (begin (log-optimization "unary float" float-opt-msg this-syntax)
                   #'(op.unsafe f.opt)))
   (pattern (#%plain-app (~var op (float-op binary-float-ops))
                         f1:float-arg-expr
@@ -136,50 +138,50 @@
                           [_ #f])))
                     safe-to-opt?)
            #:with opt
-           (begin (log-optimization "binary float" this-syntax)
+           (begin (log-optimization "binary float" float-opt-msg this-syntax)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
   (pattern (#%plain-app (~var op (float-op binary-float-comps))
                         f1:float-expr
                         f2:float-expr
                         fs:float-expr ...)
            #:with opt
-           (begin (log-optimization "binary float comp" this-syntax)
+           (begin (log-optimization "binary float comp" float-opt-msg this-syntax)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
 
   (pattern (#%plain-app (~and op (~literal -)) f:float-expr)
            #:with opt
-           (begin (log-optimization "unary float" this-syntax)
+           (begin (log-optimization "unary float" float-opt-msg this-syntax)
                   #'(unsafe-fl- 0.0 f.opt)))
   (pattern (#%plain-app (~and op (~literal /)) f:float-expr)
            #:with opt
-           (begin (log-optimization "unary float" this-syntax)
+           (begin (log-optimization "unary float" float-opt-msg this-syntax)
                   #'(unsafe-fl/ 1.0 f.opt)))
   (pattern (#%plain-app (~and op (~literal sqr)) f:float-expr)
            #:with opt
-           (begin (log-optimization "unary float" this-syntax)
+           (begin (log-optimization "unary float" float-opt-msg this-syntax)
                   #'(let ([tmp f.opt]) (unsafe-fl* tmp tmp))))
 
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-expr)
            #:with opt
-           (begin (log-optimization "int to float" this-syntax)
+           (begin (log-optimization "int to float" float-opt-msg this-syntax)
                   #'(->fl n.opt)))
   ;; we can get rid of it altogether if we're giving it a float
   (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-expr)
            #:with opt
-           (begin (log-optimization "float to float" this-syntax)
+           (begin (log-optimization "float to float" float-opt-msg this-syntax)
                   #'f.opt))
 
   (pattern (#%plain-app (~and op (~literal zero?)) f:float-expr)
            #:with opt
-           (begin (log-optimization "float zero?" this-syntax)
+           (begin (log-optimization "float zero?" float-opt-msg this-syntax)
                   #'(unsafe-fl= f.opt 0.0)))
 
   (pattern (#%plain-app (~and op (~literal add1)) n:float-expr)
            #:with opt
-           (begin (log-optimization "float add1" this-syntax)
+           (begin (log-optimization "float add1" float-opt-msg this-syntax)
                   #'(unsafe-fl+ n.opt 1.0)))
   (pattern (#%plain-app (~and op (~literal sub1)) n:float-expr)
            #:with opt
-           (begin (log-optimization "float sub1" this-syntax)
+           (begin (log-optimization "float sub1" float-opt-msg this-syntax)
                   #'(unsafe-fl- n.opt 1.0))))

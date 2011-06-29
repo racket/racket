@@ -28,5 +28,5 @@
   #:commit
   (pattern (#%plain-app op:box-op b:box-expr new:expr ...)
            #:with opt
-           (begin (log-optimization "box" this-syntax)
+           (begin (log-optimization "box" "Box check elimination." this-syntax)
                   #`(op.unsafe b.opt #,@(syntax-map (optimize) #'(new ...))))))

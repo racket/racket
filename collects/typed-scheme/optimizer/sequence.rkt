@@ -30,6 +30,8 @@
                     [_ #f])
            #:with opt ((optimize) #'e)))
 
+(define seq-opt-msg "Sequence type specialization.")
+
 (define-syntax-class sequence-opt-expr
   #:commit
   ;; if we're iterating (with the for macros) over something we know is a list,
@@ -38,7 +40,7 @@
            #:when (id-from? #'op 'make-sequence 'racket/private/for)
            #:with l*:list-expr #'l
            #:with opt
-           (begin (log-optimization "in-list" this-syntax)
+           (begin (log-optimization "in-list" seq-opt-msg this-syntax)
                   #'(let ((i l*.opt))
                       (values unsafe-car unsafe-cdr i
                               (lambda (x) (not (null? x)))
@@ -49,7 +51,7 @@
            #:when (id-from? #'op 'make-sequence 'racket/private/for)
            #:with v*:vector-expr #'v
            #:with opt
-           (begin (log-optimization "in-vector" this-syntax)
+           (begin (log-optimization "in-vector" seq-opt-msg this-syntax)
                   #'(let* ((i   v*.opt)
                            (len (unsafe-vector-length i)))
                       (values (lambda (x) (unsafe-vector-ref i x))
@@ -63,7 +65,7 @@
            #:when (id-from? #'op 'make-sequence 'racket/private/for)
            #:with s*:string-expr #'s
            #:with opt
-           (begin (log-optimization "in-string" this-syntax)
+           (begin (log-optimization "in-string" seq-opt-msg this-syntax)
                   #'(let* ((i   s*.opt)
                            (len (string-length i)))
                       (values (lambda (x) (string-ref i x))
@@ -76,7 +78,7 @@
            #:when (id-from? #'op 'make-sequence 'racket/private/for)
            #:with s*:bytes-expr #'s
            #:with opt
-           (begin (log-optimization "in-bytes" this-syntax)
+           (begin (log-optimization "in-bytes" seq-opt-msg this-syntax)
                   #'(let* ((i   s*.opt)
                            (len (bytes-length i)))
                       (values (lambda (x) (bytes-ref i x))

@@ -15,12 +15,16 @@
   (pattern (if tst:expr thn:expr els:expr)
            #:when (tautology? #'tst)
            #:with opt
-           (begin (log-optimization "dead else branch" #'els)
+           (begin (log-optimization "dead else branch"
+                                    "Unreachable else branch elimination."
+                                    #'els)
                   #`(#%expression (begin #,((optimize) #'tst)
                                          #,((optimize) #'thn)))))
   (pattern (if tst:expr thn:expr els:expr)
            #:when (contradiction? #'tst)
            #:with opt
-           (begin (log-optimization "dead then branch" #'thn)
+           (begin (log-optimization "dead then branch"
+                                    "Unreachable then branch elimination."
+                                    #'thn)
                   #`(#%expression (begin #,((optimize) #'tst)
                                          #,((optimize) #'els))))))

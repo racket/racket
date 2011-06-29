@@ -23,9 +23,13 @@
   #:commit
   (pattern (#%plain-app (~literal string-length) s:string-expr)
            #:with opt
-           (begin (log-optimization "string-length" this-syntax)
+           (begin (log-optimization "string-length"
+                                    "String check elimination."
+                                    this-syntax)
                   #'(unsafe-string-length s.opt)))
   (pattern (#%plain-app (~literal bytes-length) s:bytes-expr)
            #:with opt
-           (begin (log-optimization "bytes-length" this-syntax)
+           (begin (log-optimization "bytes-length"
+                                    "Byte string check elimination."
+                                    this-syntax)
                   #'(unsafe-bytes-length s.opt))))

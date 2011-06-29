@@ -37,7 +37,9 @@
                                       (~literal unsafe-vector*-length)))
                         v:known-length-vector-expr)
            #:with opt
-           (begin (log-optimization "known-length vector-length" this-syntax)
+           (begin (log-optimization "known-length vector-length"
+                                    "Static vector length computation."
+                                    this-syntax)
                   (match (type-of #'v)
                     [(tc-result1: (HeterogenousVector: es))
                      #`(begin v.opt #,(length es))]))) ; v may have side effects
@@ -46,12 +48,12 @@
   ;; we can optimize no matter what.
   (pattern (#%plain-app (~and op (~literal vector-length)) v:expr)
            #:with opt
-           (begin (log-optimization "vector-length" this-syntax)
+           (begin (log-optimization "vector-length" "Vector check elimination." this-syntax)
                   #`(unsafe-vector-length #,((optimize) #'v))))
   ;; same for flvector-length
   (pattern (#%plain-app (~and op (~literal flvector-length)) v:expr)
            #:with opt
-           (begin (log-optimization "flvector-length" this-syntax)
+           (begin (log-optimization "flvector-length" "Float vector check elimination." this-syntax)
                   #`(unsafe-flvector-length #,((optimize) #'v))))
   ;; we can optimize vector ref and set! on vectors of known length if we know
   ;; the index is within bounds (for now, literal or singleton type)
@@ -65,7 +67,7 @@
                                     [_ #f]))))
                     (and (integer? ival) (exact? ival) (<= 0 ival (sub1 len))))
            #:with opt
-           (begin (log-optimization "vector" this-syntax)
+           (begin (log-optimization "vector" "Vector bounds checking elimination." this-syntax)
                   #`(op.unsafe v.opt #,((optimize) #'i)
                                #,@(syntax-map (optimize) #'(new ...)))))
 

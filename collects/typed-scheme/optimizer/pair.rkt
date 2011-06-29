@@ -39,11 +39,16 @@
    "According to its type, the circled list could be empty. Access to it cannot be safely optimized. To fix this, restrict the type to non-empty lists, maybe by wrapping this expression in a check for non-emptiness."
    stx irritant))
 
+(define pair-opt-msg "Pair check elimination.")
+
+(define (log-pair-opt stx)
+  (log-optimization "pair" pair-opt-msg stx))
+
 (define-syntax-class pair-opt-expr
   #:commit
   (pattern e:pair-derived-opt-expr
            #:with opt
-           (begin (log-optimization "derived pair" this-syntax)
+           (begin (log-optimization "derived pair" pair-opt-msg this-syntax)
                   #'e.opt))
   (pattern (#%plain-app op:pair-op p:expr)
            #:when (or (has-pair-type? #'p)
@@ -52,13 +57,13 @@
                       ;; a type error
                       (begin (log-pair-missed-opt this-syntax #'p) #f))
            #:with opt
-           (begin (log-optimization "pair" this-syntax)
+           (begin (log-pair-opt this-syntax)
                   #`(op.unsafe #,((optimize) #'p))))
   (pattern (#%plain-app op:mpair-op p:expr e:expr ...)
            #:when (or (has-mpair-type? #'p)
                       (begin (log-pair-missed-opt this-syntax #'p) #f))
            #:with opt
-           (begin (log-optimization "mutable pair" this-syntax)
+           (begin (log-pair-opt this-syntax)
                   #`(op.unsafe #,@(syntax-map (optimize) #'(p e ...))))))
 
 

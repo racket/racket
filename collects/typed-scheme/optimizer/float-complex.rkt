@@ -9,7 +9,7 @@
 (provide float-complex-opt-expr
          float-complex-arith-opt-expr
          unboxed-float-complex-opt-expr
-         float-complex-call-site-opt-expr
+         float-complex-call-site-opt-expr arity-raising-opt-msg
          unboxed-vars-table unboxed-funs-table)
 
 
@@ -26,6 +26,9 @@
 ;; params first, then all imaginary parts, then all boxed arguments
 (define unboxed-funs-table (make-free-id-table))
 
+(define complex-unboxing-opt-msg "Complex number unboxing.")
+(define arity-raising-opt-msg    "Complex number arity raising.")
+
 ;; it's faster to take apart a complex number and use unsafe operations on
 ;; its parts than it is to use generic operations
 ;; we keep the real and imaginary parts unboxed as long as we stay within
@@ -41,7 +44,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "unboxed binary float complex" this-syntax)
+           (begin (log-optimization "unboxed binary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(#,@(append (syntax->list #'(c1.bindings ... c2.bindings ... cs.bindings ... ...))
                                 (let ()
                                    ;; we can skip the real parts of imaginaries (#f) and vice versa
@@ -66,7 +71,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "unboxed binary float complex" this-syntax)
+           (begin (log-optimization "unboxed binary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(#,@(append (syntax->list #'(c1.bindings ... c2.bindings ... cs.bindings ... ...))
                                 (let ()
                                   ;; unlike addition, we simply can't skip real parts of imaginaries
@@ -93,7 +100,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "unboxed binary float complex" this-syntax)
+           (begin (log-optimization "unboxed binary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-binding and imag-binding
@@ -146,7 +155,9 @@
            #:with imags (syntax-map (lambda (x) (if (syntax->datum x) x #'0.0))
                                     #'(c1.imag-binding c2.imag-binding cs.imag-binding ...))
            #:with (bindings ...)
-           (begin (log-optimization "unboxed binary float complex" this-syntax)
+           (begin (log-optimization "unboxed binary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-binding and imag-binding
@@ -210,7 +221,9 @@
            #:with real-binding #'c.real-binding
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "unboxed unary float complex" this-syntax)
+           (begin (log-optimization "unboxed unary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(#,@(append (syntax->list #'(c.bindings ...))
                                 (list #'((imag-binding) (unsafe-fl- 0.0 c.imag-binding)))))))
 
@@ -218,7 +231,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding #f
            #:with (bindings ...)
-           (begin (log-optimization "unboxed unary float complex" this-syntax)
+           (begin (log-optimization "unboxed unary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(c.bindings ...
                      ((real-binding) (unsafe-flsqrt
                                       (unsafe-fl+ (unsafe-fl* c.real-binding c.real-binding)
@@ -229,14 +244,18 @@
            #:with real-binding #'c.real-binding
            #:with imag-binding #f
            #:with (bindings ...)
-           (begin (log-optimization "unboxed unary float complex" this-syntax)
+           (begin (log-optimization "unboxed unary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #'(c.bindings ...)))
   (pattern (#%plain-app (~and op (~or (~literal imag-part) (~literal unsafe-flimag-part)))
                         c:unboxed-float-complex-opt-expr)
            #:with real-binding #'c.imag-binding
            #:with imag-binding #f
            #:with (bindings ...)
-           (begin (log-optimization "unboxed unary float complex" this-syntax)
+           (begin (log-optimization "unboxed unary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #'(c.bindings ...)))
 
   ;; special handling of reals inside complex operations
@@ -245,7 +264,9 @@
            #:with real-binding (unboxed-gensym 'unboxed-float-)
            #:with imag-binding #f
            #:with (bindings ...)
-           (begin (log-optimization "float-arg-expr in complex ops" this-syntax)
+           (begin (log-optimization "float-arg-expr in complex ops"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(((real-binding) e.opt))))
 
 
@@ -256,7 +277,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "make-rectangular elimination" this-syntax)
+           (begin (log-optimization "make-rectangular elimination"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #'(((real-binding) real.opt)
                      ((imag-binding) imag.opt))))
   (pattern (#%plain-app (~and op (~literal make-polar))
@@ -266,7 +289,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "make-rectangular elimination" this-syntax)
+           (begin (log-optimization "make-rectangular elimination"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #'(((magnitude)    r.opt)
                      ((angle)        theta.opt)
                      ((real-binding) (unsafe-fl* magnitude (unsafe-flcos angle)))
@@ -279,7 +304,9 @@
            #:with real-binding (car  (syntax->list #'unboxed-info))
            #:with imag-binding (cadr (syntax->list #'unboxed-info))
            #:with (bindings ...)
-           (begin (log-optimization "leave var unboxed" this-syntax)
+           (begin (log-optimization "leave var unboxed"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #'()))
 
   ;; else, do the unboxing here
@@ -292,7 +319,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "unboxed literal" this-syntax)
+           (begin (log-optimization "unboxed literal"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   (let ((n (syntax->datum #'n)))
                     #`(((real-binding) #,(datum->syntax
                                           #'here
@@ -305,7 +334,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding #f
            #:with (bindings ...)
-           (begin (log-optimization "unboxed literal" this-syntax)
+           (begin (log-optimization "unboxed literal"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(((real-binding) #,(datum->syntax
                                         #'here
                                         (exact->inexact (syntax->datum #'n)))))))
@@ -316,7 +347,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "unbox float-complex" this-syntax)
+           (begin (log-optimization "unbox float-complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(((e*) #,((optimize) #'e))
                      ((real-binding) (unsafe-flreal-part e*))
                      ((imag-binding) (unsafe-flimag-part e*)))))
@@ -326,7 +359,9 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (begin (log-optimization "unbox complex" this-syntax)
+           (begin (log-optimization "unbox complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #`(((e*) #,((optimize) #'e))
                      ((real-binding) (exact->inexact (real-part e*)))
                      ((imag-binding) (exact->inexact (imag-part e*))))))
@@ -396,7 +431,9 @@
                         c:float-complex-expr)
            #:with c*:unboxed-float-complex-opt-expr #'c
            #:with opt
-           (begin (log-optimization "complex accessor elimination" this-syntax)
+           (begin (log-optimization "complex accessor elimination"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   (reset-unboxed-gensym)
                   #`(let*-values (c*.bindings ...)
                       #,(if (or (free-identifier=? #'op #'real-part)
@@ -407,14 +444,18 @@
 
   (pattern (#%plain-app op:float-complex-unary-op n:float-complex-expr)
            #:with opt
-           (begin (log-optimization "unary float complex" this-syntax)
+           (begin (log-optimization "unary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   #'(op.unsafe n.opt)))
 
   (pattern (#%plain-app (~and op (~literal make-polar)) r theta)
            #:when (subtypeof? this-syntax -FloatComplex)
            #:with exp*:unboxed-float-complex-opt-expr this-syntax
            #:with opt
-           (begin (log-optimization "make-polar" this-syntax)
+           (begin (log-optimization "make-polar"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
                       (unsafe-make-flrectangular exp*.real-binding
@@ -427,7 +468,9 @@
                             #'unboxed-info #'op)) ; no need to optimize op
            this-syntax
            #:with opt
-           (begin (log-optimization "call to fun with unboxed args" this-syntax)
+           (begin (log-optimization "call to fun with unboxed args"
+                                    arity-raising-opt-msg
+                                    this-syntax)
                   #'e*.opt))
 
   (pattern e:float-complex-arith-opt-expr
@@ -467,7 +510,9 @@
            #:with (bindings ...) #'()
            ;; unboxed variable used in a boxed fashion, we have to box
            #:with opt
-           (begin (log-optimization "unboxed complex variable" this-syntax)
+           (begin (log-optimization "unboxed complex variable"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
                   (reset-unboxed-gensym)
                   #'(unsafe-make-flrectangular real-binding imag-binding))))
 
@@ -487,7 +532,9 @@
              (define (get-arg i) (list-ref args i))
              (syntax-parse (map get-arg unboxed)
                [(e:unboxed-float-complex-opt-expr ...)
-                (log-optimization "unboxed call site" this-syntax)
+                (log-optimization "unboxed call site"
+                                  complex-unboxing-opt-msg
+                                  this-syntax)
                 (reset-unboxed-gensym)
                 #`(let*-values (e.bindings ... ...)
                     (#%plain-app #,opt-operator

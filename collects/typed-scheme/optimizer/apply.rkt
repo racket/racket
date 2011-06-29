@@ -21,7 +21,7 @@
            (with-syntax ([(f* lp v lst) (map unboxed-gensym '(f* loop v lst))]
 			 [l ((optimize) #'l)]
 			 [f ((optimize) #'f)])
-	     (log-optimization "apply-map" this-syntax)
+	     (log-optimization "apply-map" "apply-map deforestation." this-syntax)
 	     #'(let ([f* f])
                  (let lp ([v op.identity] [lst l])
                    (if (null? lst)
