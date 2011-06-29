@@ -1,15 +1,15 @@
-#lang scheme
+#lang racket
 
 (require (for-syntax scheme/mpair))
 
-(provide tt)
+(provide t)
 
-;; tt : eli's convenient short-cut syntactic form for defining tests.
+;; t : eli's convenient short-cut syntactic form for defining tests.
 
 ;; here's an example of how you might use it:
 #;(let* ([defs1 `((define (a x) (+ x 5)) (define b a))]
        [defs2 (append defs1 `((define c a)))])
-  (tt 'top-ref4 m:intermediate
+  (t 'top-ref4 m:intermediate
      ,@defs1 (define c b) (c 3)
      :: ,@defs1 (define c {b})
      -> ,@defs1 (define c {a})
@@ -21,7 +21,7 @@
 
 
 
-(define-syntax (tt stx)
+(define-syntax (t stx)
   (define (maybe-mlist->list r)
     (if (mpair? r) 
         (mlist->list r)
