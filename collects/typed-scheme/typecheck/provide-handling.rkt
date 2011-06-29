@@ -51,6 +51,7 @@
     (define (mk-untyped-syntax b defn-id internal-id)
       (match b
         [(def-struct-stx-binding _ (? struct-info? si))
+         (define type-is-constructor? #t) ;Conservative estimate (provide/contract does the same)
          (match-let ([(list type-desc constr pred (list accs ...) muts super) (extract-struct-info si)])
            (let-values ([(defns new-ids) (map/values 2 (lambda (e) (if (identifier? e)
                                                                        (mk e)
@@ -63,7 +64,10 @@
                #`(begin
                    #,@defns
                    (define-syntax #,defn-id
-                     (list type-desc* constr* pred* (list accs* ...) (list #,@(map (lambda x #'#f) accs)) super*))))))]
+                     (let ((info (list type-desc* constr* pred* (list accs* ...) (list #,@(map (lambda x #'#f) accs)) super*)))
+                      #,(if type-is-constructor?
+                            #'(make-struct-info-self-ctor constr* info)
+                            #'info)))))))]
         [_
          #`(define-syntax #,defn-id
              (lambda (stx)
