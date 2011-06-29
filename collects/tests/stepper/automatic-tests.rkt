@@ -1,5 +1,10 @@
 #lang scheme
 
+
+;; run shared.rkt unit tests:
+(require "shared-unit-tests.rkt")
+
+;; now, the rest:
 (require "through-tests.ss" 
          "test-engine.ss")
 

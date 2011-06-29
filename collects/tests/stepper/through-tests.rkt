@@ -721,6 +721,14 @@
                     ((define a_0 9) (define b_1 6) (hilite 9)))
       (finished-stepping)))
 
+(let ([def '(define (f x) (let* ([a 13] [b 14]) (let* ([c 15] [d 16]) (+ a b c d))))])
+  (t1 'nested-let-unwinding
+      m:both-intermediates 
+      "(define (f x) (let* ([a 13] [b 14]) (let* ([c 15] [d 16]) (+ a b c d)))) (+ 3 4)"
+      `((before-after (,def (hilite (+ 3 4)))
+                      (,def (hilite 7)))
+        (finished-stepping))))
+
 ;;;;;;;;;;;;;
 ;;
 ;;  LETREC
@@ -762,6 +770,7 @@
           (before-after (,@defs (define gprime (hilite (letrec ([gp (lambda (x) (/ (- (cos (+ x 0.1)) (cos x)) 0.001))]) gp))))
                         (,@defs (hilite (define gp_0 (lambda (x) (/ (- (cos (+ x 0.1)) (cos x)) 0.001)))) (define gprime (hilite gp_0))))
           (finished-stepping))))
+  
       ;;;;;;;;;;;;;
       ;;
       ;;  RECUR
@@ -2205,5 +2214,6 @@
                                   check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
       #;(run-all-tests)
-      (run-test 'require-test)
+      #;(run-test 'let-lifting1)
+      (run-test 'nested-let-unwinding)
       ))
