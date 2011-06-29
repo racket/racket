@@ -1,29 +1,36 @@
 #;
 (
-TR opt: fixnum-bounded-expr.rkt 60:2 (+ x (sqr y)) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 66:2 (- x (* y y)) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 66:7 (* y y) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 73:2 (+ x y) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 76:2 (+ x y) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 81:0 (abs 45) -- fixnum fxabs
-TR opt: fixnum-bounded-expr.rkt 84:0 (fx+ 5 2) -- fixnum fx+
-TR opt: fixnum-bounded-expr.rkt 85:0 (fx+ (+ 34 231) (* 24 25)) -- fixnum fx+
-TR opt: fixnum-bounded-expr.rkt 85:5 (+ 34 231) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 85:16 (* 24 25) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 86:0 (fx+ (+ (+ 34 231) 23) -4) -- fixnum fx+
-TR opt: fixnum-bounded-expr.rkt 86:5 (+ (+ 34 231) 23) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 86:8 (+ 34 231) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 87:0 (fx+ -4 (+ (+ 34 231) 23)) -- fixnum fx+
-TR opt: fixnum-bounded-expr.rkt 87:8 (+ (+ 34 231) 23) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 87:11 (+ 34 231) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 88:5 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 88:17 (+ 301 302) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 90:0 (fx- (+ 300 301) (+ 301 302)) -- fixnum fx-
-TR opt: fixnum-bounded-expr.rkt 90:5 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 90:17 (+ 301 302) -- fixnum bounded expr
-TR opt: fixnum-bounded-expr.rkt 93:0 (fx* 4 5) -- fixnum fx*
-TR opt: fixnum-bounded-expr.rkt 96:0 (fxquotient (ann 34 Nonnegative-Fixnum) (ann -4 Fixnum)) -- fixnum fxquotient
-TR opt: fixnum-bounded-expr.rkt 99:0 (fxabs (ann 64235 Nonnegative-Fixnum)) -- fixnum fxabs
+TR opt: fixnum-bounded-expr.rkt 67:2 (+ x (sqr y)) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 73:2 (- x (* y y)) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 73:7 (* y y) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 80:2 (+ x y) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 83:2 (+ x y) -- fixnum bounded expr
+TR missed opt: fixnum-bounded-expr.rkt 86:2 (+ x y) -- out of fixnum range
+TR opt: fixnum-bounded-expr.rkt 88:0 (abs 45) -- fixnum fxabs
+TR missed opt: fixnum-bounded-expr.rkt 89:0 (abs (ann -3 Fixnum)) -- out of fixnum range
+TR opt: fixnum-bounded-expr.rkt 91:0 (fx+ 5 2) -- fixnum fx+
+TR opt: fixnum-bounded-expr.rkt 92:0 (fx+ (+ 34 231) (* 24 25)) -- fixnum fx+
+TR opt: fixnum-bounded-expr.rkt 92:5 (+ 34 231) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 92:16 (* 24 25) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 93:0 (fx+ (+ (+ 34 231) 23) -4) -- fixnum fx+
+TR opt: fixnum-bounded-expr.rkt 93:5 (+ (+ 34 231) 23) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 93:8 (+ 34 231) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 94:0 (fx+ -4 (+ (+ 34 231) 23)) -- fixnum fx+
+TR opt: fixnum-bounded-expr.rkt 94:8 (+ (+ 34 231) 23) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 94:11 (+ 34 231) -- fixnum bounded expr
+TR missed opt: fixnum-bounded-expr.rkt 95:0 (fx+ (+ 300 301) (+ 301 302)) -- out of fixnum range
+TR opt: fixnum-bounded-expr.rkt 95:5 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 95:17 (+ 301 302) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 97:0 (fx- (+ 300 301) (+ 301 302)) -- fixnum fx-
+TR opt: fixnum-bounded-expr.rkt 97:5 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum-bounded-expr.rkt 97:17 (+ 301 302) -- fixnum bounded expr
+TR missed opt: fixnum-bounded-expr.rkt 98:0 (fx- (ann 3 Fixnum) (ann 4 Fixnum)) -- out of fixnum range
+TR opt: fixnum-bounded-expr.rkt 100:0 (fx* 4 5) -- fixnum fx*
+TR missed opt: fixnum-bounded-expr.rkt 101:0 (fx* 300 300) -- out of fixnum range
+TR opt: fixnum-bounded-expr.rkt 103:0 (fxquotient (ann 34 Nonnegative-Fixnum) (ann -4 Fixnum)) -- fixnum fxquotient
+TR missed opt: fixnum-bounded-expr.rkt 104:0 (fxquotient -4 -5) -- out of fixnum range
+TR opt: fixnum-bounded-expr.rkt 106:0 (fxabs (ann 64235 Nonnegative-Fixnum)) -- fixnum fxabs
+TR missed opt: fixnum-bounded-expr.rkt 107:0 (fxabs -4) -- out of fixnum range
 28
 89525
 28
