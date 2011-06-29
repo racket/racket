@@ -337,26 +337,27 @@ This file defines two sorts of primitives. All of them are provided into any mod
                #:with super #f
                #:attr old-spec #'name
                #:with new-spec #'(name)))
+    (define-splicing-syntax-class maybe-type-vars
+     #:description "optional list of type variables"
+     #:attributes ((vars 1))
+     (pattern (vars:id ...))
+     (pattern (~seq) #:attr (vars 1) null))
+
+
     (define (mutable? opts)
       (if (memq '#:mutable (syntax->datum opts)) '(#:mutable) '()))
     (values
      (lambda (stx)
        (syntax-parse stx
-         [(_ nm:struct-name (fs:fld-spec ...) . opts)
+         [(_ vars:maybe-type-vars nm:struct-name (fs:fld-spec ...) . opts)
           (let ([mutable (mutable? #'opts)])
             (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
                                                 'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* () nm (fs ...) #,@mutable))])
-              #'(begin d-s dtsi)))]
-         [(_ (vars:id ...) nm:struct-name (fs:fld-spec ...) . opts)
-          (let ([mutable (mutable? #'opts)])
-            (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
-                                                'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* (vars ...) nm (fs ...)  #,@mutable))])
+                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm (fs ...) #,@mutable))])
               #'(begin d-s dtsi)))]))
      (lambda (stx)
        (syntax-parse stx
-         [(_ nm:struct-name/new (fs:fld-spec ...) . opts)
+         [(_ vars:maybe-type-vars nm:struct-name/new (fs:fld-spec ...) . opts)
           (let ([mutable (mutable? #'opts)]
                 [cname (datum->syntax #f (syntax-e #'nm.name))])
             (with-syntax ([d-s (syntax-property (quasisyntax/loc stx
@@ -364,17 +365,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                                           #:extra-constructor-name #,cname
                                                           . opts))
                                                 'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* () nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
-              #'(begin d-s dtsi)))]
-         [(_ (vars:id ...) nm:struct-name/new (fs:fld-spec ...) . opts)
-          (let ([cname (datum->syntax #f (syntax-e #'nm.name))]
-                [mutable (mutable? #'opts)])
-            (with-syntax ([d-s (syntax-property (quasisyntax/loc stx
-                                                  (struct #,@(attribute nm.new-spec) (fs.fld ...)
-                                                          #:extra-constructor-name #,cname
-                                                          . opts))
-                                                'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* (vars ...) nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
+                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
               #'(begin d-s dtsi)))])))))
 
 (define-syntax (require-typed-struct stx)
