@@ -2514,8 +2514,14 @@ static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp
 
   if (is_tainted(o))
     return o;
-  if (is_armed(o) && SCHEME_TRUEP(SCHEME_CAR(((Scheme_Stx *)o)->taints)))
-    return o;
+  else if (is_armed(o)) {
+    if (SCHEME_TRUEP(SCHEME_CAR(((Scheme_Stx *)o)->taints)))
+      return o;
+  } else {
+    if (((Scheme_Stx *)o)->taints)
+      /* `taints' must be an inspector already */
+      return o;
+  }
 
   if (need_clone)
     o = clone_stx(o);
