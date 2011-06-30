@@ -654,6 +654,9 @@
   (err/rt-test (make-string 500000000000000 #\f) exn:fail:out-of-memory?)) ;; bignum on 32-bit machines
 (err/rt-test (make-string 50000000000000000000 #\f) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
 
+(unless 64-bit-machine?
+  (err/rt-test (make-vector 1234567890 #\f) exn:fail:out-of-memory?)
+  (err/rt-test (read (open-input-string "#1234567890(0)")) exn:fail:out-of-memory?))
 
 (define f (make-string 3 #\*))
 (test "?**" 'string-set! (begin (string-set! f 0 #\?) f))

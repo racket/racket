@@ -235,6 +235,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
 }
 
 #define VECTOR_BYTES(size) (sizeof(Scheme_Vector) + ((size) - 1) * sizeof(Scheme_Object *))
+#define REV_VECTOR_BYTES(size) (((size - sizeof(Scheme_Vector)) / sizeof(Scheme_Object *)) + 1)
 
 Scheme_Object *
 scheme_make_vector (intptr_t size, Scheme_Object *fill)
@@ -250,7 +251,13 @@ scheme_make_vector (intptr_t size, Scheme_Object *fill)
   if (size < 1024) {
     vec = (Scheme_Object *)scheme_malloc_tagged(VECTOR_BYTES(size));
   } else {
-    vec = (Scheme_Object *)scheme_malloc_fail_ok(scheme_malloc_tagged, VECTOR_BYTES(size));
+    size_t sz;
+    sz = VECTOR_BYTES(size);
+    if (REV_VECTOR_BYTES(sz) != size)
+      /* overflow */
+      scheme_raise_out_of_memory(NULL, NULL);
+    else
+      vec = (Scheme_Object *)scheme_malloc_fail_ok(scheme_malloc_tagged, sz);
   }
 
   vec->type = scheme_vector_type;
@@ -283,7 +290,7 @@ make_vector (int argc, Scheme_Object *argv[])
 
   if ((len == -1) 
       /* also watch for overflow: */
-      || ((intptr_t)VECTOR_BYTES(len) < len)) {
+      || (REV_VECTOR_BYTES(len) != len)) {
     scheme_raise_out_of_memory("make-vector", "making vector of length %s",
 			       scheme_make_provided_string(argv[0], 1, NULL));
   }
