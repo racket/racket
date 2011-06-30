@@ -100,15 +100,22 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
              #:with opt #'(#:name-exists)))
 
+  (define-syntax-class (clause legacy lib)
+   #:attributes (spec)
+   (pattern oc:opaque-clause #:attr spec
+     #`(require/opaque-type oc.ty oc.pred #,lib . oc.opt))
+   (pattern (~var strc (struct-clause legacy)) #:attr spec
+     #`(require-typed-struct strc.nm (strc.body ...) strc.constructor-parts ... #,lib))
+   (pattern sc:simple-clause #:attr spec
+     #`(require/typed #:internal sc.nm sc.ty #,lib)))
+
+
   (define ((r/t-maker legacy) stx)
     (syntax-parse stx
-      [(_ lib:expr (~or sc:simple-clause (~var strc (struct-clause legacy)) oc:opaque-clause) ...)
-       (unless (< 0 (length (syntax->list #'(sc ... strc ... oc ...))))
+      [(_ lib:expr (~var c (clause legacy #'lib)) ...)
+       (unless (< 0 (length (syntax->list #'(c ...))))
          (raise-syntax-error #f "at least one specification is required" stx))
-       #`(begin
-       (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
-       (require/typed #:internal sc.nm sc.ty lib) ...
-       (require-typed-struct strc.nm (strc.body ...) strc.constructor-parts ... lib) ...)]
+       #`(begin c.spec ...)]
       [(_ nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
        #`(require/typed #:internal nm ty lib #,@(if (attribute parent)
                                                     #'(#:struct-maker parent)
