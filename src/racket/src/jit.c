@@ -2072,7 +2072,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         (void)jit_bmsi_l(sjc.bad_app_vals_target, JIT_R0, 0x1);
         jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
         (void)jit_blti_i(sjc.bad_app_vals_target, JIT_R1, scheme_prim_type);
-        (void)jit_bgti_i(sjc.bad_app_vals_target, JIT_R1, scheme_native_closure_type);
+        (void)jit_bgti_i(sjc.bad_app_vals_target, JIT_R1, scheme_proc_chaperone_type);
         CHECK_LIMIT();
       }
 

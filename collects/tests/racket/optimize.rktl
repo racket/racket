@@ -1484,5 +1484,13 @@
   (test '(3 (a b c)) example-1 '(a b c)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure JIT-implemented `apply-values' recognizes chaperones:
+
+(test 99 (lambda ()
+           (call-with-values 
+               (lambda () (apply values (make-list (add1 (random 1)) '(99))))
+             (chaperone-procedure car (lambda (v) v)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
