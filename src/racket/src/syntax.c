@@ -1886,7 +1886,6 @@ Scheme_Object *scheme_delayed_rename(Scheme_Object **o, intptr_t i)
 {
   Scheme_Object *rename, *v;
   Resolve_Prefix *rp;
-  int added = 0;
 
   rename = o[0];
 
@@ -1908,7 +1907,7 @@ Scheme_Object *scheme_delayed_rename(Scheme_Object **o, intptr_t i)
   rename = SCHEME_VEC_ELS(rename)[4];
   if (!SCHEME_FALSEP(rename)) {
     /* need to propagate the inspector for dye packs, too */
-    (void)set_false_insp((Scheme_Object *)v, rename, added);
+    (void)set_false_insp((Scheme_Object *)v, rename, 0);
   }
 
   return v;
