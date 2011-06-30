@@ -622,7 +622,11 @@ int BTC_single_allocation_limit(NewGC *gc, size_t sizeb) {
    * is much smaller than the actual available memory, and as long as
    * GC_out_of_memory protects any user-requested allocation whose size
    * is independent of any existing object, then we can enforce the limit. */
-  return (custodian_single_time_limit(gc, thread_get_owner(scheme_current_thread)) < sizeb);
+  Scheme_Thread *p = scheme_current_thread;
+  if (p)
+    return (custodian_single_time_limit(gc, thread_get_owner(p)) < sizeb);
+  else
+    return 0;
 }
 
 static inline void BTC_clean_up(NewGC *gc) {
