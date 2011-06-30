@@ -124,6 +124,32 @@
 	     (syntax-id-rules (set!)
 	       [(x (... ...)) ,illegal-use-of-once]
 	       [x (get-val)])))]))
+
+  ;; Find which line `stx' ends on, #f for unknown
+  (define (syntax-end-line stx)
+    (cond
+     [(syntax? stx) (or (syntax-end-line (syntax-e stx))
+                        (syntax-line stx))]
+     [(pair? stx) (or (syntax-end-line (cdr stx))
+                      (syntax-end-line (car stx)))]
+     [(vector? stx) (syntax-end-line (reverse (vector->list stx)))]
+     [else #f]))
+
+  ;; Find which column `stx' ends on if it's not on `line'
+  (define (syntax-end-column stx line delta)
+    (cond
+     [(syntax? stx) (or (syntax-end-column (syntax-e stx) line delta)
+                        (let ([line2 (syntax-line stx)])
+                          (and line line2
+                               (not (= line line2))
+                               (let ([span (syntax-span stx)]
+                                     [col (syntax-column stx)])
+                                 (and span col (+ col span delta))))))]
+     [(pair? stx) (or (syntax-end-column (cdr stx) line (+ delta 1))
+                      (and (or (null? (cdr stx)) 
+                               (and (syntax? (cdr stx)) (null? (cdr stx))))
+                           (syntax-end-column (car stx) line (+ delta 1))))]
+     [else #f]))
   
   (define-unit code@
       (import code-params^)
@@ -282,15 +308,19 @@
 	       [(#\{) close-curly-p]
 	       [else close-paren-p]))))
       
-      (define (add-close p closes)
+      (define (add-close p closes [force-line #f])
 	(cond
 	 [(null? closes) p]
 	 [(memq (caar closes) '(contract line))
-	  (add-close p (cdr closes))]
+	  (add-close p (cdr closes) force-line)]
 	 [else
-	  (add-close (code-hbl-append p (get-close (caar closes) (cdar closes)))
-		     (cdr closes))]))
-
+          (let ([p (if force-line
+                       (vl-append p (tt ""))
+                       p)])
+            (add-close (code-hbl-append p (get-close (caar closes) (cdar closes)))
+                       (cdr closes)
+                       #f))]))
+      
       (define (pad-left space p)
 	(if (= 0 space)
 	    p
@@ -453,13 +483,17 @@
                                     [else stx]))
                    closes 'line)]
 	    [(code:comment s ...)
-	     (apply htl-append 
-		    (color-semi-p)
-		    (map (lambda (s)
-			   (if (pict? (syntax-e s))
-			       (syntax-e s)
-			       (maybe-colorize (tt (syntax-e s)) (current-comment-color))))
-			 (syntax->list #'(s ...))))]
+	     (let ([p
+                    (apply htl-append 
+                           (color-semi-p)
+                           (map (lambda (s)
+                                  (if (pict? (syntax-e s))
+                                      (syntax-e s)
+                                      (maybe-colorize (tt (syntax-e s)) (current-comment-color))))
+                                (syntax->list #'(s ...))))])
+               ;; Ungraceful handling of ungraceful closes by adding a line
+               ;; --- better than sticking them to the right of the comment, at least
+               (add-close p closes 'force-line))]
 	    [(code:template i ...)
 	     (add-semis (loop #'(code:line i ...) closes 'template))]
             [(a b i ... c)
@@ -547,10 +581,13 @@
 			     (loop (cdr stxs)
 				   (cdr ps)
 				   p
-				   (if (not (syntax-column (car stxs)))
-				       +inf.0
-				       (+ col space (get-span (car stxs))))
-				   (or line (syntax-line (car stxs)))
+                                   (or (syntax-end-column (car stxs) line 0)
+                                       (if (not (syntax-column (car stxs)))
+                                           +inf.0
+                                           (+ col space (get-span (car stxs)))))
+				   (or (syntax-end-line (car stxs))
+                                       line 
+                                       (syntax-line (car stxs)))
 				   #t
                                    col->width)))]
 		      [else
