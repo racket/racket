@@ -1,10 +1,6 @@
 #lang scheme/base
 
-(require setup/dirs
-         setup/main-collects
-         setup/path-relativize
-         unstable/dirs
-         (rename-in planet/config [CACHE-DIR planet-dir]))
+(require setup/dirs setup/main-collects unstable/dirs)
 
 (provide doc-path path->name)
 
@@ -34,7 +30,6 @@
 (define (path->name path #:prefix [prefix #f] #:base [find-base #f])
   (path->directory-relative-string
    path
-   #:dirs (cond
-           [find-base (list (cons find-base prefix))]
-           [prefix (list (cons find-collects-dir prefix))]
-           [else setup-relative-directories])))
+   #:dirs (cond [find-base (list (cons find-base prefix))]
+                [prefix (list (cons find-collects-dir prefix))]
+                [else setup-relative-directories])))

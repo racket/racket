@@ -40,7 +40,8 @@
                                      (current-inspector) #f '(0))])
     make-))
 
-(define-for-syntax (make-provide/contract-transformer contract-id id external-id pos-module-source)
+(define-for-syntax (make-provide/contract-transformer
+                    contract-id id external-id pos-module-source)
   (make-set!-transformer
    (let ([saved-id-table (make-hasheq)])
      (λ (stx)
@@ -56,19 +57,18 @@
                                       [external-id external-id]
                                       [pos-module-source pos-module-source]
                                       [loc-id (identifier-prune-to-source-module id)])
-                          (let ([srcloc-code 
-                                 (with-syntax ([src                      
-                                                (cond
-                                                  [(and
-                                                    (path-string? (syntax-source #'id))
-                                                    (path->directory-relative-string (syntax-source #'id) #:default #f))
-                                                   =>
-                                                   (lambda (rel) rel)]
-                                                  [else (syntax-source #'id)])]
-                                               [line (syntax-line #'id)]
-                                               [col (syntax-column #'id)]
-                                               [pos (syntax-position #'id)]
-                                               [span (syntax-span #'id)])
+                          (let ([srcloc-code
+                                 (with-syntax
+                                     ([src
+                                       (or (and
+                                            (path-string? (syntax-source #'id))
+                                            (path->directory-relative-string
+                                             (syntax-source #'id) #:default #f))
+                                           (syntax-source #'id))]
+                                      [line (syntax-line #'id)]
+                                      [col  (syntax-column #'id)]
+                                      [pos  (syntax-position #'id)]
+                                      [span (syntax-span #'id)])
                                    #'(make-srcloc 'src 'line 'col 'pos 'span))])
                             (syntax-local-introduce
                              (syntax-local-lift-expression

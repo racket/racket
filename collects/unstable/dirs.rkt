@@ -59,11 +59,11 @@
             (with-handlers ([exn:fail? (lambda (e) #f)])
               (path->relative path)))
           (when (list? exploded)
-            (let* ([relative (path->string
-                              (apply build-path
-                                (map bytes->path-element (cdr exploded))))])
+            (let ([relative (path->string
+                             (apply build-path
+                               (map bytes->path-element (cdr exploded))))])
               (return
                (if dir-name
                  (format "<~a>/~a" dir-name relative)
-                 (format "~a" relative))))))))
+                 relative)))))))
     default))

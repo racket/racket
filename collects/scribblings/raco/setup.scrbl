@@ -1166,20 +1166,14 @@ converted to a path using @racket[bytes->path].}
 
 @defproc[(main-collects-relative->path
           [rel (or/c bytes? path-string?
-                     (cons/c 'collects
-                             (or/c (listof bytes?) bytes?)))])
+                     (cons/c 'collects (listof bytes?)))])
          path?]{
 
 The inverse of @racket[path->main-collects-relative]: if @racket[rel]
 is a pair that starts with @racket['collects], then it is converted
 back to a path relative to @racket[(find-collects-dir)].
 
-For historical reasons, a single byte string is allowed in place of a
-list of byte strings after @racket['collects], in which case it is
-assumed to be a relative path after conversion with
-@racket[bytes->path].
-
-Also for historical reasons, if @racket[rel] is any kind of value other
+For historical reasons, if @racket[rel] is any kind of value other
 than specified in the contract above, it is returned as-is.}
 
 @; ------------------------------------------------------------------------
