@@ -1471,5 +1471,18 @@
              exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the compiler doesn't reorder past a mutable variable:
+
+(let ()
+  (define (example-1 lst)
+    (define x 0)
+    (define (doit)
+    (reverse (foldl (lambda (v store) (set! x (add1 x)) (cons v store))
+                    '() lst)))
+    (let ([results (doit)])
+      (list x results)))
+  (test '(3 (a b c)) example-1 '(a b c)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

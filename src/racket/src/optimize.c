@@ -83,7 +83,7 @@ static int optimize_info_is_ready(Optimize_Info *info, int pos);
 
 static void optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use);
 static Scheme_Object *optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
-                                           int once_used_ok, int context, int *potential_size);
+                                           int once_used_ok, int context, int *potential_size, int *_mutated);
 static void optimize_info_used_top(Optimize_Info *info);
 
 static void optimize_mutated(Optimize_Info *info, int pos);
@@ -866,7 +866,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (!optimized_rator && SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
-    le = optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset, &single_use, 0, 0, &psize);
+    le = optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset, &single_use, 0, 0, &psize, NULL);
     outside_nested = 1;
     already_opt = 1;
   }
@@ -1060,7 +1060,7 @@ static void register_flonum_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec 
     rator = optimize_reverse(info, SCHEME_LOCAL_POS(rator), 1);
     if (rator) {
       int offset, single_use;
-      le = optimize_info_lookup(info, SCHEME_LOCAL_POS(rator), &offset, &single_use, 0, 0, NULL);
+      le = optimize_info_lookup(info, SCHEME_LOCAL_POS(rator), &offset, &single_use, 0, 0, NULL, NULL);
       if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
         Scheme_Closure_Data *data = (Scheme_Closure_Data *)le;
         char *map;
@@ -1830,7 +1830,7 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
     int offset;
     Scheme_Object *expr;
     expr = optimize_reverse(info, SCHEME_LOCAL_POS(rand), 0);
-    c = optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL, 0, 0, NULL);
+    c = optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL, 0, 0, NULL, NULL);
   }
   if (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_toplevel_type)) {
     if (info->top_level_consts) {
@@ -2619,7 +2619,7 @@ set_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     pos = SCHEME_LOCAL_POS(var);
 
     /* Register that we use this variable: */
-    optimize_info_lookup(info, pos, NULL, NULL, 0, 0, NULL);
+    optimize_info_lookup(info, pos, NULL, NULL, 0, 0, NULL, NULL);
 
     /* Offset: */
     delta = optimize_info_get_shift(info, pos);
@@ -4753,7 +4753,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   case scheme_local_type:
     {
       Scheme_Object *val;
-      int pos, delta;
+      int pos, delta, is_mutated;
       
       info->size += 1;
 
@@ -4761,7 +4761,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
       val = optimize_info_lookup(info, pos, NULL, NULL, 
                                  (context & OPT_CONTEXT_NO_SINGLE) ? 0 : 1, 
-                                 context, NULL);
+                                 context, NULL, &is_mutated);
       
       if (val) {
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
@@ -4777,7 +4777,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
           }
           /* Can't move expression, so lookup again to mark as used
              and to perform any copy propagation that might apply. */
-          val = optimize_info_lookup(info, pos, NULL, NULL, 0, context, NULL);
+          val = optimize_info_lookup(info, pos, NULL, NULL, 0, context, NULL, NULL);
           if (val)
             return val;
         } else {
@@ -4787,6 +4787,8 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
           }
           return val;
         }
+      } else if (is_mutated) {
+        info->vclock += 1;
       }
 
       delta = optimize_info_get_shift(info, pos);
@@ -5657,7 +5659,7 @@ static int optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
 
 static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use, 
                                               int *not_ready, int once_used_ok, int context, int *potential_size,
-                                              int disrupt_single_use)
+                                              int disrupt_single_use, int *is_mutated)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -5674,6 +5676,10 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 
   if (context & OPT_CONTEXT_FLONUM_ARG)
     register_use(info, pos, 0x2);
+
+  if (is_mutated)
+    if (info->use && (info->use[pos] & 0x1))
+      *is_mutated = 1;
 
   p = info->consts;
   while (p) {
@@ -5753,7 +5759,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 
 	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL,
                                     once_used_ok && !disrupt_single_use, context, 
-                                    potential_size, disrupt_single_use);
+                                    potential_size, disrupt_single_use, NULL);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
@@ -5777,16 +5783,17 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 }
 
 static Scheme_Object *optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
-                                           int once_used_ok, int context, int *potential_size)
+                                           int once_used_ok, int context, int *potential_size, int *is_mutated)
 {
-  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok, context, potential_size, 0);
+  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok, context, 
+                                 potential_size, 0, is_mutated);
 }
 
 static int optimize_info_is_ready(Optimize_Info *info, int pos)
 {
   int closure_offset, single_use, ready = 1;
   
-  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0, NULL, 0);
+  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0, NULL, 0, NULL);
 
   return ready;
 }
