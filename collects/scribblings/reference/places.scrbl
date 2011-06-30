@@ -209,3 +209,12 @@ messages:
 
 ]}
 
+@;------------------------------------------------------------------------
+@;@section[#:tag "placesync"]{Synchronizing Places}
+
+@defproc[(place-dead-evt [p place?]) evt?]{
+
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is
+ready if and only if @racket[p] has terminated.
+
+@;------------------------------------------------------------------------
