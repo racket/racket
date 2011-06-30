@@ -290,7 +290,7 @@ make_vector (int argc, Scheme_Object *argv[])
 
   if ((len == -1) 
       /* also watch for overflow: */
-      || (REV_VECTOR_BYTES(len) != len)) {
+      || (REV_VECTOR_BYTES(VECTOR_BYTES(len)) != len)) {
     scheme_raise_out_of_memory("make-vector", "making vector of length %s",
 			       scheme_make_provided_string(argv[0], 1, NULL));
   }
