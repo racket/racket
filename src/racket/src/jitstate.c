@@ -476,6 +476,9 @@ int scheme_mz_compute_runstack_restored(mz_jit_state *jitter, int adj, int skip)
         c >>= 2;
         if (c > 0)
           amt += c;
+        else {
+          if (adj) jitter->self_pos += c;
+        }
       }
     } else if (c & 0x2) {
       /* single procedure */

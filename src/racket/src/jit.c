@@ -1513,7 +1513,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   GC_CAN_IGNORE jit_insn *ref2;
   int pushed_marks;
   int nsrs, nsrs1, g1, g2, amt, need_sync, flostack, flostack_pos;
-  int else_is_empty = 0, i, can_chain_branch, chain_true, chain_false;
+  int else_is_empty = 0, i, can_chain_branch, chain_true, chain_false, old_self_pos;
 #ifdef NEED_LONG_JUMPS
   int then_short_ok, else_short_ok;
 #else
@@ -1532,6 +1532,8 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
                    && (is_short(branch->test, 32) > 0));
   else_short_ok = (is_short(branch->fbranch, 32) > 0);
 #endif
+
+  old_self_pos = jitter->self_pos;
 
   for_this_branch.addrs = addrs;
   for_this_branch.addrs_size = NUM_QUICK_INFO_ADDRS;
@@ -1647,6 +1649,9 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   jitter->need_set_rs = nsrs;
   jitter->pushed_marks = pushed_marks;
   if (need_sync) mz_rs_sync_0();
+
+  if (old_self_pos != jitter->self_pos)
+    scheme_signal_error("internal error: self position moved across branch");
 
   /* False branch */
   mz_CLEAR_R0_STATUS();
@@ -3190,7 +3195,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
                                      ? NATIVE_IS_SINGLE_RESULT
                                        : 0)));
 	if (SAME_OBJ(lr->procs[pos], (Scheme_Object *)data)) {
-	  self_pos = i;
+          self_pos = i;
 	}
       } else {
 #ifdef USE_FLONUM_UNBOXING
@@ -3252,7 +3257,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   jitter->closure_to_args_delta = to_args;
   jitter->example_argc = argc;
   jitter->example_argv = argv;
-  
+
   /* Generate code for the body: */
   jitter->need_set_rs = 1;
   r = scheme_generate(data->code, jitter, 1, 1, 1, JIT_R0, NULL); /* no need for sync */
