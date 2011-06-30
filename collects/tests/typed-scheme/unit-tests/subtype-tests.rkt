@@ -45,7 +45,7 @@
    [(Un (-val 6) (-val 7)) -Number]
    [(Un (-val #f) (Un (-val 6) (-val 7))) (Un -Number (Un -Boolean -Symbol))]
    [(Un (-val #f) (Un (-val 6) (-val 7))) (-mu x (Un -Number (Un -Boolean -Symbol)))]
-   [(Un -Number (-val #f) (-mu x (Un -Number -Symbol (make-Listof x)))) 
+   [(Un -Number (-val #f) (-mu x (Un -Number -Symbol (make-Listof x))))
     (-mu x (Un -Number -Symbol -Boolean (make-Listof x)))]
    ;; sexps vs list*s of nums
    [(-mu x (Un -Number -Symbol (make-Listof x))) (-mu x (Un -Number -Symbol -Boolean (make-Listof x)))]
@@ -69,7 +69,7 @@
    ;; polymorphic types
    [(-poly (t) (-> t t)) (-poly (s) (-> s s))]
    [FAIL (make-Listof -Number) (-poly (t) (make-Listof t))]
-   [(-poly (a) (make-Listof (-v a))) (make-Listof -Number)]     ;; 
+   [(-poly (a) (make-Listof (-v a))) (make-Listof -Number)]     ;;
    [(-poly (a) -Number) -Number]
 
    [(-val 6) -Number]
@@ -109,11 +109,11 @@
 		     [(-Number) a]))
     (cl-> [() (-pair -Number (-v b))]
 	  [(-Number) (-pair -Number (-v b))])]
-   
+
    [(-values (list -Number)) (-values (list Univ))]
-   
+
    [(-poly (b) ((Un (make-Base 'foo #'dummy values #'values)
-                    (-struct 'bar #f 
+                    (-struct 'bar #f
                              (list (make-fld -Number #'values #f) (make-fld b #'values #f))
                              #'values))
                 . -> . (-lst b)))
@@ -121,12 +121,12 @@
      . -> . (-lst (-pair -Number (-v a))))]
    [(-poly (b) ((-struct 'bar #f (list (make-fld -Number #'values #f) (make-fld b #'values #f)) #'values) . -> . (-lst b)))
     ((-struct 'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f)) #'values) . -> . (-lst (-pair -Number (-v a))))]
-   
+
    [(-poly (a) (a . -> . (make-Listof a))) ((-v b) . -> . (make-Listof (-v b)))]
    [(-poly (a) (a . -> . (make-Listof a))) ((-pair -Number (-v b)) . -> . (make-Listof (-pair -Number (-v b))))]
 
    (FAIL (-poly (a b) (-> a a)) (-poly (a b) (-> a b)))
-   
+
    ;; polymorphic function types should be subtypes of the function top
    [(-poly (a) (a . -> . a)) top-func]
    (FAIL (-> Univ) (null Univ . ->* . Univ))
@@ -137,5 +137,5 @@
    [(-struct 'a #f (list (make-fld -String #'values #f)) #'values) (-struct 'a #f (list (make-fld Univ #'values #f)) #'values)]
    ))
 
-(define-go 
+(define-go
   subtype-tests)

@@ -14,7 +14,7 @@
 (define (check f a b)
   (if (f a b)
       #t
-      (error (format "Check (~a ~a ~a) failed" f a b)))) 
+      (error (format "Check (~a ~a ~a) failed" f a b))))
 
 (check = (fx+ 1 2) 3)
 (check = (fx- 2 3) -1)

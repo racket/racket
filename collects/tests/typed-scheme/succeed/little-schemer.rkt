@@ -1,4 +1,4 @@
-#lang typed-scheme  
+#lang typed-scheme
 #;(require mzlib/etc)
 #;(require "prims.ss")
 (require mzlib/match
@@ -19,7 +19,7 @@
     [(_ [pred expr id rhs] . rest)
      (quasisyntax/loc stx
          (let ([id expr])
-           (if (pred id) 
+           (if (pred id)
                rhs
                #,(syntax/loc #'rest (cond . rest)))))]
     [(_ [else . rest]) #'(begin . rest)]
@@ -41,26 +41,26 @@
 	     (member? a (cdr l)))]))
 
 (define: (rember [a : symbol] [l : (list-of symbol)]) : (list-of symbol)
-  (cond 
+  (cond
    [(null? l) l]
    [(eq? (car l) a) (cdr l)]
    [else (cons (car l) (rember a (cdr l)))]))
 
 (define: (multisubst [new : symbol] [old : symbol] [lat : (list-of symbol)]) : (list-of symbol)
-  (cond 
+  (cond
    [(null? lat) lat]
    [(eq? (car lat) old) (cons new (multisubst new old (cdr lat)))]
    [else (cons (car lat) (multisubst new old (cdr lat)))]))
 
 (define: (tup+ [t1 : (list-of number)] [t2 : (list-of number)]) : (list-of number)
-  (cond 
+  (cond
    [(null? t1) t2]
    [(null? t2) t1]
    [else (cons (+ (car t1) (car t2))
 	       (tup+ (cdr t1) (cdr t2)))]))
 
 (define: (len [l : (list-of top)]) : number
-  (cond 
+  (cond
    [(null? l) 0]
    [else (add1 (len (cdr l)))]))
 
@@ -70,8 +70,8 @@
    [else (pick (sub1 n) (cdr lat))]))
 
 (define: (no-nums [lat : (list-of atom)]) : (list-of atom)
-  (cond 
-   [(null? lat) lat]      
+  (cond
+   [(null? lat) lat]
    [(number? (car lat)) (no-nums (cdr lat))]
    [else (cons (car lat) (no-nums (cdr lat)))]))
 
@@ -92,7 +92,7 @@
   (cond [(and (number? a1) (number? a2)) (= a1 a2)]
 	[else (eq? a1 a2)]))
 
-(define: (occur [a : atom] [lat : (list-of atom)]) : number 
+(define: (occur [a : atom] [lat : (list-of atom)]) : number
   (cond [(null? lat) 0]
 	[(eq? (car lat) a) (add1 (occur a (cdr lat)))]
 	[else (occur a (cdr lat))]))
@@ -102,7 +102,7 @@
 
 ;; (atom? (car l)) doesn't do anything - bug in type system
 #;(define: (rember* [a : atom] [l : (list-of SExp)]) : (list-of SExp)
-(cond 
+(cond
  [(null? l) l]
  [(atom? (car l))
   (cond [(eq? (car l) a) (rember* a (cdr l))]
@@ -114,7 +114,7 @@
    [(null? l) l]
    [else
     (let ([c (car l)])
-      (cond 
+      (cond
         [(atom? c)
          (cond [(eq? c a) (rember* a (cdr l))]
                [else (cons c (rember* a (cdr l)))])]
@@ -135,7 +135,7 @@
                   (insertR* new old (cdr l)))])]
         [else (cons (insertR* new old c)
                     (insertR* new old (cdr l)))]))]))
-    
+
 (define: (occur* [a : atom] [l : (list-of SExp)]) : number
   (cond*
    [(null? l) 0]
@@ -167,7 +167,7 @@
 (define-type-alias num-exp (Rec N (U Number (List N (U '+ '* '^) N))))
 
 (define: (value [nexp : num-exp]) : number
-  (cond 
+  (cond
    [(atom? nexp) nexp]
    [(eq? (car (cdr nexp)) '+)
     (+ (value (car nexp))
@@ -201,20 +201,20 @@
 	       (makeset (multirember (car l) (cdr l))))]))
 
 (define: (subset? [set1 : lat] [set2 : lat]) : boolean
-  (cond 
+  (cond
    [(null? set1) #t]
    [(member? (car set1) set2)
     (subset? (cdr set1) set2)]
    [else #f]))
 
 (define: (subset2? [set1 : (list-of atom)] [set2 : (list-of atom)]) : boolean
-  (cond 
+  (cond
    [(null? set1) #t]
    [else (and (member? (car set1) set2)
 	      (subset? (cdr set1) set2))]))
 
 (define: (intersect? [set1 : (list-of atom)] [set2 : (list-of atom)]) : boolean
-  (cond 
+  (cond
    [(null? set1) #t]
    [else (or (member? (car set1) set2)
 	     (intersect? (cdr set1) set2))]))
@@ -269,11 +269,11 @@
 
 
 (define: (seqR [new : atom] [old : atom] [l : (list-of atom)]) : (list-of atom)
-  (cons old (cons new l))) 
+  (cons old (cons new l)))
 
 (define: (insertR-g [seq : (atom atom lat -> lat)]
-		    [test? : (atom atom -> boolean)] 
-		    [new : atom] [old : atom] [l : (list-of atom)]) 
+		    [test? : (atom atom -> boolean)]
+		    [new : atom] [old : atom] [l : (list-of atom)])
   : (list-of atom)
   (cond
    [(null? l) l]
@@ -282,9 +282,9 @@
    [else (cons (car l)
 	       (insertR-g seq test? new old (cdr l)))]))
 
-(define: (insertR-g-curry [seq : (atom atom (list-of atom) -> (list-of atom))]) 
+(define: (insertR-g-curry [seq : (atom atom (list-of atom) -> (list-of atom))])
   : ((atom atom -> boolean) atom atom (list-of atom) -> (list-of atom))
-  (lambda: ([test? : (atom atom -> boolean)] 
+  (lambda: ([test? : (atom atom -> boolean)]
 	    [new : atom] [old : atom] [l : (list-of atom)])
 	   (cond
 	    [(null? l) l]
@@ -368,7 +368,7 @@
 (define-type-alias table (list-of entry))
 
 
-(define: (new-entry  [keys : (list-of atom)] 
+(define: (new-entry  [keys : (list-of atom)]
 		     [vals : (list-of atom)]) : entry
 		     (cons keys (cons vals empty-atom)))
 

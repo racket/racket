@@ -54,13 +54,13 @@
 
 (: rotate : (All (A) ((Stream A) (Listof A) (Stream A) -> (Stream A))))
 (define (rotate frnt rer accum)
-  (let ([carrer (car rer)])   
+  (let ([carrer (car rer)])
     ;; Manually expanded `stream-cons', and added type annotations
     (if (empty-stream? frnt)
         (stream-cons carrer accum)
         (stream-cons
          (stream-car frnt)
          ((inst rotate A)
-          (stream-cdr frnt) 
+          (stream-cdr frnt)
           (cdr rer)
           (box (lambda () (cons carrer accum))))))))

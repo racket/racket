@@ -233,7 +233,7 @@
                                           (lambda (x)
                                             (and (flonum? (imag-part x))
                                                  (flonum? (real-part x)))))
-                                 (lambda (x) 
+                                 (lambda (x)
                                    (and (number? x)
                                         (flonum? (imag-part x))
                                         (flonum? (real-part x))))

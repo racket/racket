@@ -1,5 +1,5 @@
 #lang typed-scheme
-  
+
 (require typed/private/utils)
 
 (require-typed-struct/provide
@@ -7,7 +7,7 @@
  #:extra-constructor-name make-communicator
  net/nntp)
 
-(require/typed/provide net/nntp  
+(require/typed/provide net/nntp
   [connect-to-server (case-lambda (String -> communicator) (String Number -> communicator))]
   [disconnect-from-server (communicator -> Void)]
   [authenticate-user  (communicator String String -> Void)]

@@ -157,7 +157,7 @@
       ;; define-syntaxes just get noted
       [(define-syntaxes (var:id ...) . rest)
        (map make-def-stx-binding (syntax->list #'(var ...)))]
-      
+
       ;; otherwise, do nothing in this pass
       ;; handles expressions, provides, requires, etc and whatnot
       [_ (list)])))

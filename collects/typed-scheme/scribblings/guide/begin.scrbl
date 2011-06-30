@@ -8,7 +8,7 @@
 
 @title[#:tag "beginning"]{Beginning Typed Racket}
 
-Recall the typed module from @secref["quick"]:                 
+Recall the typed module from @secref["quick"]:
 
 @|typed-mod|
 
@@ -21,7 +21,7 @@ This specifies that the module is written in the
 @racketmodname[racket] language.  Typed versions of other languages
 are provided as well; for example, the
 @racketmodname[typed/racket/base] language corresponds to
-@racketmodname[racket/base].   
+@racketmodname[racket/base].
 
 @racketblock[(struct: pt ([x : Real] [y : Real]))]
 
@@ -98,7 +98,7 @@ In order to calculate interesting facts about trees, we have to take
 them apart and get at their contents.  But since accessors such as
 @racket[node-left] require a @racket[node] as input, not a
 @racket[Tree], we have to determine which kind of input we
-were passed.  
+were passed.
 
 For this purpose, we use the predicates that come with each defined
 structure.  For example, the @racket[leaf?] predicate distinguishes
@@ -117,7 +117,7 @@ process of elimination we can determine that @racket[t] must be a
 @section{Type Errors}
 
 When Typed Racket detects a type error in the module, it raises an
-error before running the program.  
+error before running the program.
 
 @examples[#:eval the-eval
 (add1 "not a number")

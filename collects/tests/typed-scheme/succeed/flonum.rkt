@@ -9,7 +9,7 @@
 (define (check f a b)
   (if (f a b)
       #t
-      (error (format "Check (~a ~a ~a) failed" f a b)))) 
+      (error (format "Check (~a ~a ~a) failed" f a b))))
 
 (: check-pred (All (a) ((a -> Boolean) a -> Boolean)))
 (define (check-pred pred v)

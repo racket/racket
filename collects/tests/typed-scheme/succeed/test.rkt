@@ -97,5 +97,5 @@ xxx6-y
 (list* 1 2 3)
 (ann (list* 1 2 3 (list)) (Pair Number (Listof Integer)))
 
-((lambda (x) 1) 1) 
+((lambda (x) 1) 1)
 ((lambda (x y) 1) 1 2)

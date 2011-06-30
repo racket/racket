@@ -2,7 +2,7 @@
 
 (: no-exec (-> Void))
 (define (no-exec)
- 
+
 
  (call-with-output-file "file.tmp"
   (lambda: ((port : Output-Port))
@@ -15,7 +15,7 @@
  (make-directory "tmp-dir")
 
  (path-only "file.tmp")
- 
+
  (system #"echo foo")
  (system* "/bin/echo" "zzz" #"foo" (string->path "/"))
  (system/exit-code #"echo foo")

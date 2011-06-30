@@ -22,13 +22,13 @@ The @racket[with-type] for allows for localized Typed Racket regions in otherwis
 The first form, an expression, checks that @racket[body ...+] has the type @racket[type].
 If the last expression in @racket[body ...+] returns multiple values, @racket[type] must
 be a type of the form @racket[(values t ...)].
-Uses of the result values are appropriately checked by contracts generated from 
+Uses of the result values are appropriately checked by contracts generated from
 @racket[type].
 
-The second form, which can be used as a definition, checks that each of the @racket[export-id]s 
+The second form, which can be used as a definition, checks that each of the @racket[export-id]s
 has the specified type.  These types are also enforced in the surrounding code with contracts.
 
-The @racket[id]s are assumed to 
+The @racket[id]s are assumed to
 have the types ascribed to them; these types are converted to contracts and checked dynamically.
 
 @examples[#:eval the-eval

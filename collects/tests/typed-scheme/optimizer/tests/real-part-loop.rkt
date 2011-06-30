@@ -28,7 +28,7 @@ TR opt: real-part-loop.rkt 33:17 3.6 -- float-arg-expr in complex ops
 
 (ann
  (let loop ([v 0.0+1.0i])
-  (if (> (real-part v) 70000.2) 
+  (if (> (real-part v) 70000.2)
       0
       (loop (+ v 3.6))))
  Integer)

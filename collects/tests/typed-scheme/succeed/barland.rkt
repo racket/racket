@@ -1,4 +1,4 @@
-#lang typed-scheme  
+#lang typed-scheme
 (define-type-alias top Any)
 (define-type-alias set (top -> top))
 

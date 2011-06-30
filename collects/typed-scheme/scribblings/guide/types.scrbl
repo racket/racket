@@ -10,7 +10,7 @@
 @title[#:tag "types"]{Types in Typed Racket}
 
 Typed Racket provides a rich variety of types to describe data. This
-section introduces them.  
+section introduces them.
 
 @section{Basic Types}
 
@@ -74,7 +74,7 @@ each of these types.
 @section{Union Types}
 
 Sometimes a value can be one of several types.  To specify this, we
-can use a union type, written with the type constructor @racket[U].  
+can use a union type, written with the type constructor @racket[U].
 
 @interaction[#:eval the-eval
 (let ([a-number 37])
@@ -83,7 +83,7 @@ can use a union type, written with the type constructor @racket[U].
       'no))]
 
 Any number of types can be combined together in a union, and nested
-unions are flattened.  
+unions are flattened.
 
 @racketblock[(U Number String Boolean Char)]
 
@@ -91,7 +91,7 @@ unions are flattened.
 
 @deftech{Recursive types} can refer to themselves.  This allows a type
 to describe an infinite family of data.  For example, this is the type
-of binary trees of numbers.  
+of binary trees of numbers.
 
 @racketblock[
 (define-type BinaryTree (Rec BT (U Number (Pair BT BT))))]
@@ -103,7 +103,7 @@ refers to the whole binary tree type within the body of the
 @section{Structure Types}
 
 Using @racket[struct:] introduces new types, distinct from any
-previous type.    
+previous type.
 
 @racketblock[(struct: point ([x : Real] [y : Real]))]
 
@@ -165,7 +165,7 @@ of @racket[l], which looks like a function application.  In fact, it's
 a use of the @italic{type constructor} @racket[Listof], which takes
 another type as its input, here @racket[Number].  We can use
 @racket[Listof] to construct the type of any kind of list we might
-want.  
+want.
 
 We can define our own type constructors as well.  For example, here is
 an analog of the @tt{Maybe} type constructor from Haskell:
@@ -185,7 +185,7 @@ typed/racket
 ]
 
 The first @racket[struct:] defines @racket[None] to be
-a structure with no contents.  
+a structure with no contents.
 
 The second definition
 
@@ -209,7 +209,7 @@ container for whatever type is supplied.
 The @racket[find] function takes a number @racket[v] and list, and
 produces @racket[(Some v)] when the number is found in the list,
 and @racket[(None)] otherwise.  Therefore, it produces a
-@racket[(Opt Number)], just as the annotation specified.  
+@racket[(Opt Number)], just as the annotation specified.
 
 @subsection{Polymorphic Functions}
 

@@ -11,7 +11,7 @@
       (parameterize ((abort k))
         body ...))))))
 
-(call-with-exception-handler 
+(call-with-exception-handler
  (lambda (v) (displayln v) ((abort) v))
  (lambda ()
   (with-abort 2)
@@ -31,7 +31,7 @@
   (with-abort (raise-syntax-error #f "stx-err" 45))
   (with-abort (raise-syntax-error #f "stx-err" 4 5))
   (with-abort (raise-syntax-error #f "stx-err" 4 5 (list #'stx)))
-  
+
   (void)
   ))
 

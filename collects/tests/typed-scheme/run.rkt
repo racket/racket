@@ -22,7 +22,7 @@
  ["--just" path "run only this test" (single (just-one path))]
  ["--nightly" "for the nightly builds" (begin (nightly? #t) (unit? #t) (opt? #t))]
  ["--all" "run all tests" (begin (unit? #t) (int? #t) (opt? #t) (missed-opt? #t) (bench? #t))]
- ["--gui" "run using the gui" 
+ ["--gui" "run using the gui"
           (if (gui-available?)
               (begin (exec go))
               (error "GUI not available"))])

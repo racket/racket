@@ -49,7 +49,7 @@ in both top-level and internal contexts.
 
 Here, @racket[x] has the type @racket[Number], and @racket[id] has the
 type @racket[(Number -> Number)].  In the body of @racket[id],
-@racket[z] has the type @racket[Number]. 
+@racket[z] has the type @racket[Number].
 
 @subsection{Annotating Local Binding}
 
@@ -75,7 +75,7 @@ The @racket[let*-values:] and @racket[letrec-values:] forms are similar.
 
 Function expressions also bind variables, which can be annotated with
 types. This function expects two arguments, a @racket[Number] and a
-@racket[String]: 
+@racket[String]:
 
 @racketblock[(lambda: ([x : Number] [y : String]) (+ x 5))]
 
@@ -91,8 +91,8 @@ Functions defined by cases may also be annotated:
 @racketblock[(case-lambda: [() 0]
 			   [([x : Number]) x])]
 
-This function has the type 
-@racket[(case-lambda (-> Number) (Number -> Number))].   
+This function has the type
+@racket[(case-lambda (-> Number) (Number -> Number))].
 
 @subsection{Annotating Single Variables}
 
@@ -107,13 +107,13 @@ especially useful for binding forms which do not have counterparts
 provided by Typed Racket, such as @racket[let+]:
 
 @racketblock[
-(let+ ([val #,(annvar x Number) (+ 6 1)]) 
+(let+ ([val #,(annvar x Number) (+ 6 1)])
   (* x x))]
 
 @subsection{Annotating Expressions}
 
 It is also possible to provide an expected type for a particular
-expression.   
+expression.
 
 @racketblock[(ann (+ 7 1) Number)]
 
@@ -133,7 +133,7 @@ infer them.  For example, the types of all local bindings using
 @racketblock[(let ([x 7]) (add1 x))]
 
 In this example, @racket[x] has the type
-@racket[Exact-Positive-Integer].  
+@racket[Exact-Positive-Integer].
 
 Similarly, top-level constant definitions do not require annotation:
 
@@ -142,7 +142,7 @@ Similarly, top-level constant definitions do not require annotation:
 In this examples, @racket[y] has the type @racket[String].
 
 Finally, the parameter types for loops are inferred from their initial
-values.  
+values.
 
 @racketblock[
 (let loop ([x 0] [y (list 1 2 3)])
@@ -154,7 +154,7 @@ variable has type @racket[(Integer (Listof Integer) -> Integer)].
 
 @section{New Type Names}
 
-Any type can be given a name with @racket[define-type].  
+Any type can be given a name with @racket[define-type].
 
 @racketblock[(define-type NN (Number -> Number))]
 

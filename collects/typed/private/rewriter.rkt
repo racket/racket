@@ -5,12 +5,12 @@
 (define-for-syntax code-insp (current-code-inspector))
 
 (define-for-syntax (rewrite stx tbl from)
-  (define (rw stx) 
+  (define (rw stx)
      (syntax-parse (syntax-disarm stx code-insp) #:literal-sets (kernel-literals)
        [i:identifier
         (dict-ref tbl #'i #'i)]
        ;; no expressions here
-       [((~or (~literal #%top) (~literal quote) (~literal quote-syntax)) . _) stx]        
+       [((~or (~literal #%top) (~literal quote) (~literal quote-syntax)) . _) stx]
        [(#%plain-lambda formals expr ...)
         (quasisyntax/loc stx (#%plain-lambda formals #,@(map rw (syntax->list #'(expr ...)))))]
        [(case-lambda [formals expr ...] ...)

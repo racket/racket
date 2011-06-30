@@ -1,9 +1,9 @@
 #lang scheme/base
 
-(require 
+(require
  "test-utils.ss"
  "typecheck-tests.ss" ;;fail
- 
+
  "subtype-tests.ss" ;; pass
  "type-equal-tests.ss" ;; pass
  "remove-intersect-tests.ss" ;; pass
@@ -11,7 +11,7 @@
  "subst-tests.ss" ;; pass
  "infer-tests.ss" ;; pass
  "type-annotation-test.ss" ;; pass
- 
+
  "module-tests.ss" ;; pass
  "contract-tests.ss"
 
@@ -23,10 +23,10 @@
 (infer-param infer)
 
 (define unit-tests
-  (make-test-suite 
+  (make-test-suite
    "Unit Tests"
    (for/list ([f (list
-                  typecheck-tests 
+                  typecheck-tests
                   subtype-tests
                   type-equal-tests
                   restrict-tests

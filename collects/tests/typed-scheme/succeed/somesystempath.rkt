@@ -11,11 +11,11 @@
    (unless (path-for-some-system? p)
     (error "Predicate failed"))
    (explode-path long-path)
-   
+
    (filename-extension p)
    (path-only long-path)
    (some-system-path->string long-path)
-   
+
    ))
 
 

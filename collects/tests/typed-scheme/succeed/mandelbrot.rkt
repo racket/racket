@@ -5,7 +5,7 @@
 (define: N : Positive-Fixnum 512)
 (: mandelbrot-point : Integer Integer -> Integer)
 (define (mandelbrot-point x y)
-  (define c 
+  (define c
     (+ (- (/ (* 2.0 (->fl x)) N) 1.5)
        (* 0.0+1.0i (- (/ (* 2.0 (->fl y)) N) 1.0))))
   (let loop ((i 0) (z 0.0+0.0i))

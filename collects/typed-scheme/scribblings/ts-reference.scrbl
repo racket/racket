@@ -1,12 +1,12 @@
 #lang scribble/manual
 
-@title[#:tag "top"]{The Typed Racket Reference} 
+@title[#:tag "top"]{The Typed Racket Reference}
 
 @author[@author+email["Sam Tobin-Hochstadt" "samth@racket-lang.org"]
         @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]]
 
 @(defmodulelang* (typed/racket/base typed/racket)
-                 #:use-sources 
+                 #:use-sources
                     (typed-scheme/typed-scheme
                      typed-scheme/base-env/prims
                      typed-scheme/base-env/extra-procs

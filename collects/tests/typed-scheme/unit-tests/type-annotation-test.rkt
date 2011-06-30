@@ -12,7 +12,7 @@
 (provide type-annotation-tests)
 
 (define-syntax-rule (tat ann-stx ty)
-  (check-tc-result-equal? (format "~a" (quote ann-stx))  
+  (check-tc-result-equal? (format "~a" (quote ann-stx))
                           (type-ascription (let ([ons (current-namespace)]
                                                  [ns (make-base-namespace)])
                                              (parameterize ([current-namespace ns])
@@ -23,7 +23,7 @@
                           ty))
 
 (define (type-annotation-tests)
-  (test-suite 
+  (test-suite
    "Type Annotation tests"
    ;; FIXME - ask Ryan
    (tat (ann foo : Number) (ret -Number (make-NoFilter) (make-NoObject)))

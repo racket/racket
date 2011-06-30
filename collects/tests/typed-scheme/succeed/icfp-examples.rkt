@@ -23,7 +23,7 @@
 (define: y : Any "foo")
 (if (and (number? x) (string? y))
     (+ x (string-length y))
-    0) 
+    0)
 
 ;; Example 6 has an intentional error
 (define: z : (U Number String) 7)

@@ -1,12 +1,12 @@
 #lang typed-scheme
-             
+
 (require typed/private/utils typed/mred/mred)
 
-(dt Style-List% (Class () 
+(dt Style-List% (Class ()
                        ()
-                       ([find-named-style 
+                       ([find-named-style
                          (String -> (Instance (Class ()
-                                                     () 
+                                                     ()
                                                      ([get-font (-> (Instance Font%))]))))])))
 
 (dt Scheme:Text% (Class ()
@@ -24,14 +24,14 @@
                          [get-end-position (-> Number)]
                          [insert (String Number Number -> Void)])))
 
-(require/typed/provide 
+(require/typed/provide
  framework/framework
  [preferences:set-default (Symbol Sexp (Any -> Boolean) -> Void)]
  [preferences:set (Symbol Sexp -> Void)]
- [editor:get-standard-style-list 
+ [editor:get-standard-style-list
   (-> (Instance Style-List%))]
  [scheme:text% Scheme:Text%]
- [gui-utils:ok/cancel-buttons 
+ [gui-utils:ok/cancel-buttons
   ((Instance Horizontal-Panel%) ((Instance Button%) (Instance Event%) -> Void) ((Instance Button%) (Instance Event%) -> Void) -> (values Any Any))])
 
 (require/typed/provide "prefs-contract.rkt"

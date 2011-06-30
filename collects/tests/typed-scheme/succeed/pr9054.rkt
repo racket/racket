@@ -10,7 +10,7 @@
   (provide (all-defined)))
 
 (module alias typed-scheme
- 
+
   (define-type-alias Srcloc Any)
- 
+
   (require-typed-struct term ([posn : Srcloc]) 'source))

@@ -29,23 +29,23 @@
 
 (define (cfile file)
   ((compile-zos #f) (list file) 'auto))
-  
+
 (define (exn-pred p)
   (let ([sexp (with-handlers
                   ([exn:fail? (lambda _ #f)])
                 (call-with-input-file*
                  p
-                 (lambda (prt) 
+                 (lambda (prt)
                    (read-line prt 'any) (read prt))))])
     (match sexp
       [(list-rest 'exn-pred e)
        (eval `(exn-matches . ,e) (namespace-anchor->namespace a))]
-      [_ 
+      [_
        (exn-matches ".*Type Checker.*" exn:fail:syntax?)])))
 
 (define (mk-tests dir loader test)
   (lambda ()
-    (define path (build-path (this-expression-source-directory) dir))  
+    (define path (build-path (this-expression-source-directory) dir))
     (define tests
       (for/list ([p (directory-list path)]
                  #:when (scheme-file? p)
@@ -64,10 +64,10 @@
     (make-test-suite dir tests)))
 
 (define (dr p)
-  (parameterize ([current-namespace (make-base-empty-namespace)])    
+  (parameterize ([current-namespace (make-base-empty-namespace)])
     (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)))
 
-(define succ-tests (mk-tests "succeed" 
+(define succ-tests (mk-tests "succeed"
                              dr
                              (lambda (p thnk) (check-not-exn thnk))))
 (define fail-tests (mk-tests "fail"

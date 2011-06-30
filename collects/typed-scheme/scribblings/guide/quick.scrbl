@@ -8,11 +8,11 @@
 Given a module written in the @racketmodname[racket] language, using
 Typed Racket requires the following steps:
 
-@itemize[#:style 
+@itemize[#:style
          'ordered
          @item{Change the language to @racketmodname[typed/racket].}
          @item{Change the uses of @racket[(require mod)] to
-           @racket[(require typed/mod)].} 
+           @racket[(require typed/mod)].}
          @item{Annotate structure definitions and top-level
            definitions with their types.} ]
 

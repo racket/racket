@@ -2,7 +2,7 @@
 
 #;#;
 (: g (Any -> Boolean : (U 'r 's)))
-(define (g x) 
+(define (g x)
   (let ([q x])
     (let ([op2 (eq? 'r x)])
       (if op2 op2 (eq? 's x)))))
@@ -13,7 +13,7 @@
     (let ([op1 (eq? 'q x)])
       (if op1 op1
         (let ([op2 (eq? 'r x)])
-               (if op2 
+               (if op2
                    ;; !#f_op2
                    op2
                    (eq? 's x)))))))

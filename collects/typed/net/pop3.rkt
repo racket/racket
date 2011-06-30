@@ -8,7 +8,7 @@
 			      net/pop3)
 
 (require/typed/provide net/pop3
-  [connect-to-server (case-lambda (String -> communicator) (String Number -> communicator))] 
+  [connect-to-server (case-lambda (String -> communicator) (String Number -> communicator))]
 
   [disconnect-from-server (communicator -> Void)]
   [authenticate/plain-text (String String communicator -> Void)]
@@ -19,10 +19,10 @@
   [delete-message (communicator Number -> Void)]
   [get-unique-id/single  (communicator Number -> String)]
   [get-unique-id/all (communicator -> (Listof (cons Number String)))]
-  
+
   [make-desired-header  (String -> String)]
   [extract-desired-headers ((Listof String)(Listof String)-> (Listof String))])
- 
+
 
 (require-typed-struct/provide (pop3 exn)
   () #:extra-constructor-name make-pop3 net/pop3)

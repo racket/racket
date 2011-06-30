@@ -102,7 +102,7 @@
           [-StrRx  (Un -String -Regexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp)])
        ((Un -BtsRx -StrRx) -Input-Port [N ?N ?outp -Bytes] . ->opt . (optlist -Bytes)))]
-    
+
 
    [regexp-match-positions
     (let* ([?outp   (-opt -Output-Port)]
@@ -119,7 +119,7 @@
            [N       index-type]
            [?N      (-opt index-type)]
            [ind-pair (-pair -Index -Index)]
-           [output (-lst ind-pair)] 
+           [output (-lst ind-pair)]
            [-Input (Un -String -Input-Port -Bytes -Path)])
       (->opt -Pattern -Input [N ?N ?outp -Bytes] output))]
 

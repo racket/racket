@@ -1,4 +1,4 @@
-#lang typed-scheme  
+#lang typed-scheme
 ;; CHANGES
 ;; added annotations on all bound variables and structs
 ;; require typed foldl
@@ -7,7 +7,7 @@
 ;; added annotation on use of polymorphic functions in higher-order contexts
 
 ;; fixme -- how do we require polymorphic functions?
-#;(require (only (lib "list.ss") foldl)) 
+#;(require (only (lib "list.ss") foldl))
 #;(require (only "typed-list.ss" foldl))
 
 (define-type-alias number Number)
@@ -64,11 +64,11 @@
 	  (car (queue-front q)))
 
 (pdefine: (a) (elements: [q : (queue a)]) : (Listof a)
-	  (append (queue-front q) 
+	  (append (queue-front q)
 		  (reverse (queue-rear q))))
 
 (pdefine: (a b) (fold [f : (a b -> b)] [init : b] [q : (queue a)]) : b
-	  (foldl f 
+	  (foldl f
 		 (foldl f init (queue-front q))
 		 (reverse (queue-rear q))))
 
@@ -77,7 +77,7 @@
 	  (+ (length (queue-front q))
 	     (length (queue-rear q))))
 
-;; 12 definitions checked 
+;; 12 definitions checked
 ;; generators removed
 
 ;; TESTS

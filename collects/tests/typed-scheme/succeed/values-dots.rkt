@@ -20,7 +20,7 @@
 
 (inst map-with-funcs Integer Integer)
 
-(map-with-funcs 
+(map-with-funcs
  (lambda: ([x : Integer] [y : Integer]) (+ x y))
  (lambda: ([x : Integer] [y : Integer]) (- x y)) )
 

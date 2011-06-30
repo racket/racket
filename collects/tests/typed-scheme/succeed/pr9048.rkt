@@ -10,5 +10,5 @@
   )
 
 (module client typed-scheme
-  
+
   (require-typed-struct ast ([loc : Any]) 'source))

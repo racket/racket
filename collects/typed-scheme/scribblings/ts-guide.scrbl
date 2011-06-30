@@ -11,7 +11,7 @@
 
 Typed Racket is a family of languages, each of which enforce
 that programs written in the language obey a type system that ensures
-the absence of many common errors.  This guide is intended for programmers familiar 
+the absence of many common errors.  This guide is intended for programmers familiar
 with Racket.  For an introduction to Racket, see the @(other-manual '(lib "scribblings/guide/guide.scrbl")).
 
 @local-table-of-contents[]

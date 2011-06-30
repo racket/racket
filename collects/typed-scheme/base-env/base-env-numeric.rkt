@@ -1838,8 +1838,8 @@
 [unsafe-flmin flmin-type]
 [unsafe-flmax flmax-type]
 
-;These are currently the same binding as the safe versions 
-;and so are not needed. If this changes they should be 
+;These are currently the same binding as the safe versions
+;and so are not needed. If this changes they should be
 ;uncommented. There is a check in the definitions part of
 ;the file that makes sure that they are the same binding.
 ;

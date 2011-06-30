@@ -131,18 +131,18 @@
 (define -Base-Regexp (make-Base 'Base-Regexp
                            #'(and/c regexp? (not/c pregexp?))
                            (conjoin regexp? (negate pregexp?))
-                           #'-Regexp))                     
+                           #'-Regexp))
 (define -PRegexp (make-Base 'PRegexp
-                            #'pregexp?                      
-                            pregexp?                        
-                            #'-PRegexp))                    
+                            #'pregexp?
+                            pregexp?
+                            #'-PRegexp))
 (define -Regexp (*Un -PRegexp -Base-Regexp))
 
 (define -Byte-Base-Regexp (make-Base 'Byte-Regexp
                                 #'(and/c byte-regexp? (not/c byte-pregexp?))
                                 (conjoin byte-regexp? (negate byte-pregexp?))
-                                #'-Byte-Regexp))                
-(define -Byte-PRegexp (make-Base 'Byte-PRegexp #'byte-pregexp? byte-pregexp? #'-Byte-PRegexp)) 
+                                #'-Byte-Regexp))
+(define -Byte-PRegexp (make-Base 'Byte-PRegexp #'byte-pregexp? byte-pregexp? #'-Byte-PRegexp))
 (define -Byte-Regexp (*Un -Byte-Base-Regexp -Byte-PRegexp))
 
 (define -Pattern (*Un -Bytes -Regexp -Byte-Regexp -String))
@@ -194,7 +194,7 @@
 ;return type of functions
 ;FIXME
 ;This is not correct as Univ is only a single value.
-(define ManyUniv Univ) 
+(define ManyUniv Univ)
 
 (define -Port (*Un -Output-Port -Input-Port))
 

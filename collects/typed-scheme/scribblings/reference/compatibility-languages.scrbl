@@ -11,7 +11,7 @@ languages. The @racketmod[typed-scheme] language is equivalent to the
 @racketmod[typed/scheme/base] language.
 
 @(declare-exporting typed/scheme/base typed/scheme typed-scheme
-                    #:use-sources 
+                    #:use-sources
                     (typed-scheme/typed-scheme
                      typed-scheme/base-env/prims
                      typed-scheme/base-env/extra-procs

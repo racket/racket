@@ -3,7 +3,7 @@
 
 #;(require "../list.scm"
          "../etc.ss")
-(require/typed apply-to-scheme-files 
+(require/typed apply-to-scheme-files
                ((Path -> (Listof (Listof (U #f (Listof (U Real #f))))))
                 Path
                 -> (Listof (U #f (Listof  (Listof ( U #f (Listof (U Real #f)))))))) "foldo.rkt")
@@ -34,7 +34,7 @@
 (define-type-alias NumB (U boolean number))
 ;;C is either Sexpr or Listof Sepr
 ;;X = (Listof (U number #f)) - not needed as a parameter
-(define-type-alias (Unit X C) ((C ->  X) -> (Path -> (Listof (U #f X)))))  
+(define-type-alias (Unit X C) ((C ->  X) -> (Path -> (Listof (U #f X)))))
 
 ;; ============================================================
 ;; CONFIG
@@ -57,7 +57,7 @@
 ;; in mean cannot be explained by chance.
 (define: (t-test [seqA : (Listof Real)] [seqB : (Listof Real)]) : Real
   (manual-t-test
-   (avg seqA) (avg seqB) 
+   (avg seqA) (avg seqB)
    (variance seqA) (variance seqB)
    (length seqA) (length seqB)))
 
@@ -73,7 +73,7 @@
 ;; be explained by chance. higher numbers means higher confidence
 ;; that they cannot.
 (define: (chi-square [seqA : (Listof number)] [seqB : (Listof number)]) :  number
-  (with-handlers ([exn:fail? (lambda: ([e : str]) +nan.0)])  
+  (with-handlers ([exn:fail? (lambda: ([e : str]) +nan.0)])
     (let* ([ct-a (length seqA)]
            [ct-b (length seqB)]
            [total-subjects (+ ct-a ct-b)]
@@ -86,8 +86,8 @@
               (,a-misses ,b-misses))]
            [expected (lambda: ([i : Integer] [j : Integer])
                               (/ (* (row-total i table) (col-total j table)) total-subjects))])
-      (exact->inexact 
-       (table-sum 
+      (exact->inexact
+       (table-sum
         (lambda: ([i : Integer] [j : Integer])
                  (/ (sqr (- (expected i j) (table-ref i j table))) (expected i j)))
         table)))))
@@ -96,7 +96,7 @@
 ;; UNITS OF MEASUREMENT IMPLEMENTATIONS
 
 ;; per-module : path ((listof expr) -> (number | #f)) -> (path -> (listof (number | #f)))  === Unit P
-(pdefine: (X) (per-module [f : ((Listof Sexpr) ->  X )]) : (Path -> (cons (U #f X) '())) 
+(pdefine: (X) (per-module [f : ((Listof Sexpr) ->  X )]) : (Path -> (cons (U #f X) '()))
           (lambda: ([path : Path])
                    (with-handlers ([exn:fail:read? (lambda: ([e : Void]) (list #f))])  ;; with handler
                      (let ([initial-sexp (with-input-from-file path read)])
@@ -108,10 +108,10 @@
 
 ;; per-module-top-level-expression : path (expr -> (number | #f)) -> (path -> (listof (number | #f)))
 (define: (per-module-top-level-expression [f : (Sexpr -> (Listof NumF))] ) : ( Path -> (Listof (U #f (Listof NumF))))
-  (let ([calc (per-module (lambda: ([exprs : (Listof Sexpr)]) (map f exprs)))])  
+  (let ([calc (per-module (lambda: ([exprs : (Listof Sexpr)]) (map f exprs)))])
     (lambda: ([p : Path]) (let* ([r  (calc p)]
                                  [carr (car r)]) ;;carr added
-                            (if carr  carr 
+                            (if carr  carr
                                 (list carr)))))) ;; list carr instead of r
 
 ;; ============================================================
@@ -138,7 +138,7 @@
 ;; ----------------------------------------
 ;; setbang counts
 
-(define-type-alias (IList e) (mu x (Un e '() (cons e x)))) 
+(define-type-alias (IList e) (mu x (Un e '() (cons e x))))
 
 ;; count-setbangs/ilist : ((ilistof expr) -> number)
 (define: (count-setbangs/ilist [exprs : (Listof Any)]) : number
@@ -148,12 +148,12 @@
 (define: (count-setbangs/expr [expr : Any]) : number
   (match expr
     [`(,(? setbang?) . ,rest ) ;(,(? setbang?) ,rest ...)
-     (if (list? rest) 
+     (if (list? rest)
          (+ 1 (count-setbangs/ilist rest))
          0)] ;; mostly occurs in syntax patterns
     [('quote _) 0]
     [('quasiquote _) 0] ; undercount potentially, but how many `,(set! ...)'s can there be?
-    [`(,e1 . ,e2)        
+    [`(,e1 . ,e2)
      (if (list? expr)
          (count-setbangs/ilist expr)
          (error " l" expr ))]   ;;FIXME - do something intelligent here
@@ -167,7 +167,7 @@
 ;; count-fns
 (define: (count-fns-with-setbangs [exprs : (Listof Sexpr)]) : number
   (apply + (map (lambda: ([e : Sexpr]) (if (= (count-setbangs/expr e) 0) 0 1)) exprs)))
-(define: (module-has-setbangs? [exprs : (Listof Sexpr)]) : Boolean 
+(define: (module-has-setbangs? [exprs : (Listof Sexpr)]) : Boolean
   (ormap expr-uses-setbangs? exprs))
 (define: (expr-uses-setbangs? [expr : Sexpr]) : Boolean
   (not (= (count-setbangs/expr expr) 0)))
@@ -180,10 +180,10 @@
         (* (/ set!s atoms) 1000.0))))
 
 ;; ----------------------------------------
-;; contracts 
+;; contracts
 
 
-(define: (uses-contracts [exprs : (Listof Sexpr)]) : Boolean 
+(define: (uses-contracts [exprs : (Listof Sexpr)]) : Boolean
   (ormap (lambda: ([e : Sexpr])
                   (match e
                     [`(provide/contract . ,_) #t]
@@ -195,9 +195,9 @@
    (lambda: ([t : Sexpr] [r : number])
             (match t
               ;; FIXME match ...
-              [`(provide/contract . ,p ) ;(provide/contract ,p ...) 
+              [`(provide/contract . ,p ) ;(provide/contract ,p ...)
                (if (list? p)
-                   (+ (length p) r)  
+                   (+ (length p) r)
                    r)] ;; extra case added
               [_ r]))
    0
@@ -208,10 +208,10 @@
   (foldl
    (lambda: ([t : Sexpr] [r : number])
             (match t
-              [`(provide . ,p ) ;(provide ,p ...) 
+              [`(provide . ,p ) ;(provide ,p ...)
                (if (list? p)
                    (+ (length p) r)
-                   r)] 
+                   r)]
               [_ r]))
    0
    exprs))
@@ -222,11 +222,11 @@
 (define: (number-of-macro-definitions [expr : Sexpr]) : number
   (match expr
     [`(define-syntax ,_ ...) 1]
-    [`(define-syntaxes (,s . ,r ). ,_ ) ;`(define-syntaxes (,s ...) ,_ ...) 
+    [`(define-syntaxes (,s . ,r ). ,_ ) ;`(define-syntaxes (,s ...) ,_ ...)
      (if (and (list?  expr)(list? r))
          (length (cons s r));;s -> cadr expr
          (error "corrupted file"))]
-    [`(define-syntax-set (,s . ,r) . ,_ ) ;(define-syntax-set (,s ...) ,_ ...) 
+    [`(define-syntax-set (,s . ,r) . ,_ ) ;(define-syntax-set (,s ...) ,_ ...)
      (if (and (list? expr) (list? r))
          (length (cons s r))
          (error "corrupted file"))]
@@ -270,14 +270,14 @@
 (define-type-alias Table (Listof (Listof Real)))
 (define-type-alias Atom-display (cons Symbol (Listof Real)))
 
-(define: (standard-display [name : Symbol] 
-                           [summarize : ((Listof number) -> number)] 
-                           [significance-test : ((Listof number)(Listof number) -> number)]) 
-  : ((Listof NumF) (Listof NumF) -> Atom-display) 
+(define: (standard-display [name : Symbol]
+                           [summarize : ((Listof number) -> number)]
+                           [significance-test : ((Listof number)(Listof number) -> number)])
+  : ((Listof NumF) (Listof NumF) -> Atom-display)
   ;; FIXME - use lambda instead of (define ((
   (lambda: ([seqA : (Listof NumF)] [seqB : (Listof NumF)])
-           (let ([clean-seqA (nonfalses seqA)]  
-                 [clean-seqB (nonfalses seqB)]) 
+           (let ([clean-seqA (nonfalses seqA)]
+                 [clean-seqB (nonfalses seqB)])
              (list name (summarize clean-seqA) (summarize clean-seqB) (significance-test clean-seqA clean-seqB)))))
 
 (pdefine: (c) (interval [u : (Unit (Listof NumF) c)]
@@ -292,20 +292,20 @@
           : (Metric  Atom-display c NumF)
           (make-metric u (lambda: ([es : c]) #{(if (compute es) 1 0) :: NumF}) (standard-display name avg chi-square)))
 
-(pdefine: (c) (combine-metrics [ms : (Listof (Metric Atom-display c NumF))]) 
+(pdefine: (c) (combine-metrics [ms : (Listof (Metric Atom-display c NumF))])
           : (Metric (Listof Atom-display) c (Listof NumF))
-          (let ([u (metric-analysis-unit (car ms))])      
+          (let ([u (metric-analysis-unit (car ms))])
             ;; This test now redundant b/c of typechecking
             (unless (andmap (lambda: ([m : (Metric Atom-display c NumF) ]) (eq? u (metric-analysis-unit m))) ms)
               (error 'combine-metrics "all combined metrics must operate on the same unit of analysis"))
-            
+
             (make-metric
              u
              (lambda: ([exprs : c] ) (map (lambda: ([m : (Metric Atom-display c NumF)]) ((metric-computation m) exprs)) ms))
              (lambda: ([seqA : (Listof (Listof NumF))] [seqB : (Listof (Listof NumF))])
-                      (map (lambda: ([m : (Metric Atom-display c NumF)] 
-                                     [sA : (Listof NumF)] 
-                                     [sB : (Listof NumF)]) 
+                      (map (lambda: ([m : (Metric Atom-display c NumF)]
+                                     [sA : (Listof NumF)]
+                                     [sB : (Listof NumF)])
                                     ((metric->display m) sA sB)) ms (pivot seqA) (pivot seqB))))))
 
 ;; FIXME - should go in helper file
@@ -315,13 +315,13 @@
                 (if (null? lst)
                     '()
                     (let ([x (car lst)])
-                      (if x 
+                      (if x
                           (cons x (loop (cdr lst)))
                           (loop (cdr lst)))))))
 
-(define: (avg [l : (Listof number)]) : number 
+(define: (avg [l : (Listof number)]) : number
   (/ (exact->inexact (apply + l)) (length l)))
-(define: (avg* [l : (Listof number)]) : number 
+(define: (avg* [l : (Listof number)]) : number
   (avg (nonfalses l)))
 
 (require (for-syntax scheme/base))
@@ -333,7 +333,7 @@
                                               [n (syntax->list #'(name ...))]
                                               [f (syntax->list #'(fn ...))])
                                      (quasisyntax/loc k (#,k u '#,n #,f)))])
-       (syntax/loc 
+       (syntax/loc
            stx
          (begin
            (define: u : ((type -> (Listof NumF)) -> (Path -> (Listof (U #f(Listof NumF))))) unit-of-analysis )
@@ -348,14 +348,14 @@
   (uses-setbang?/mod         count     module-has-setbangs?)
   (uses-contracts?           count     uses-contracts)
   (number-of-contracts       interval  contracted-provides)
-  (num-uncontracted-provides interval  uncontracted-provides)  
+  (num-uncontracted-provides interval  uncontracted-provides)
   (number-of-macro-defs      interval  num-of-define-syntax)
-  (maximum-num-atoms         interval  max-atoms) 
+  (maximum-num-atoms         interval  max-atoms)
   (average-num-atoms         interval  avg-atoms)
   (total-num-atoms/mod       interval  total-atoms)
   (set!s-per-1000-atoms      interval  setbangs-per-1000-atoms))
 
-(define-metrics tl-expr-metrics per-module-top-level-expression  Sexpr  
+(define-metrics tl-expr-metrics per-module-top-level-expression  Sexpr
   (uses-setbang?/fn          count     expr-uses-setbangs?)
   (number-of-setbangs/fn     interval  count-setbangs/expr)
   (total-num-atoms/fn        interval  atoms))
@@ -367,16 +367,16 @@
 ;; ============================================================
 ;; EXPERIMENT RUNNING
 
-;; FIXME - everything in untyped file (foldo.ss) b/c fold-files has terrible api  
+;; FIXME - everything in untyped file (foldo.ss) b/c fold-files has terrible api
 #;(define-syntax (define-excluder stx)
-    
+
     (define (path->clause c)
       (syntax-case c ()
         [(item ...)
          #`[`(#,@(reverse (syntax-e #'(item ...))) ,_ (... ...)) #t]]
         [item
          #`[`(item) #t]]))
-    
+
     (syntax-case stx ()
       [(_ name path ...)
        (with-syntax ([(match-clause ...) (map path->clause (syntax-e #'(path ...)))])
@@ -386,7 +386,7 @@
                  match-clause ...
                  [_ #f]))))]))
 
-#;(define-excluder default-excluder 
+#;(define-excluder default-excluder
     "compiled" ".svn" #;("collects" "drscheme") #;("collects" "framework"))
 
 #;(define: exclude-directory? : (Parameter (Path -> Any)) (make-parameter default-excluder))
@@ -395,10 +395,10 @@
 ;; apply-to-scheme-files: (path[file] -> X) path[directory] -> (listof X)
 ;; applies the given function to each .ss or .scm file in the given directory
 ;; hierarchy; returns all results in a list
-#;(define:  (apply-to-scheme-files [f : (Path -> (Listof(Listof(Listof NumF))))] 
+#;(define:  (apply-to-scheme-files [f : (Path -> (Listof(Listof(Listof NumF))))]
                                    [root : Path])
-    : (Listof (Listof(Listof(Listof NumF)))) ;;FOLD-FILES 
-    
+    : (Listof (Listof(Listof(Listof NumF)))) ;;FOLD-FILES
+
     (fold-files
      (lambda: ([path : Path] [kind : Symbol]
                              [acc : (Listof (Listof(Listof(Listof NumF))))])
@@ -413,10 +413,10 @@
                             #;(cons resl acc) (values (cons resl acc) #t) ;;values added
                             #;acc (values acc #t)))]
                      [else #;acc (values acc #t)]))]
-                [(dir) 
+                [(dir)
                  (let* ([p (normalize-path path root)])
                    (if ((exclude-directory?) p)
-                       #; acc (values acc #f) 
+                       #; acc (values acc #f)
                        #;acc (values acc #t)))]         ;; values added
                 [(link) #;acc (values acc #t)]
                 [else (error "never happen")]))  ;;error added
@@ -430,23 +430,23 @@
 ;; get-sequences : (listof 'a metric) path -> (listof (listof 'a))
 
 (pdefine: (b c) (get-sequences [metrics : (Listof (U (Metric  b c (Listof NumF))))]
-                                 [path : Path]) 
+                                 [path : Path])
           :  (Listof (Listof (Listof NumF)))
           (let* ([metric-fns ; : (Listof (Path -> (Listof (U #f(Listof NumF)))))
                   (map (lambda: ([m : (Metric  b c (Listof NumF))])
-                                ((metric-analysis-unit m) 
+                                ((metric-analysis-unit m)
                                  (metric-computation m))) metrics)]
                  [#{result-seqs  : (Listof (U #f (Listof (Listof ( U #f (Listof NumF))))))}
-                  (apply-to-scheme-files 
-                   (lambda: ([file : Path]) 
+                  (apply-to-scheme-files
+                   (lambda: ([file : Path])
                             (map (lambda: ([fn : (Path -> (Listof (U #f (Listof NumF))))]) (fn file)) metric-fns)) path)])
-            (map (lambda: ([l :  (Listof(Listof (Option (Listof NumF))))]) 
+            (map (lambda: ([l :  (Listof(Listof (Option (Listof NumF))))])
                           ;; FIXME - problem with inference and ordering
                           (nonfalses (apply append l)))
                  (pivot (nonfalses result-seqs)))))
 
 ;; compare* : (listof metric) -> (listof result)
-(: compare* (All (b c) 
+(: compare* (All (b c)
                  ((Listof (Metric b c (Listof NumF)))
                   ->
                   (Listof (Result (Listof NumF) b c)))))
@@ -480,7 +480,7 @@
 ;; ============================================================
 ;; UTILITY
 
-(pdefine: (X Y) (imap [f : (X -> Y)] [il : (Listof X)]) : (Listof Y) 
+(pdefine: (X Y) (imap [f : (X -> Y)] [il : (Listof X)]) : (Listof Y)
           (cond
             [(null? il) '()]
             [(not (pair? il)) (list (f il))]
@@ -524,31 +524,31 @@
 
 ;; unused (and untypeable)
 #;(define: (/* . [args : (Listof number)]) : number  ;;((number)) against (number) and USELESS
-    (apply map (lambda: ([ns : number]) (apply / ns)) args)) 
+    (apply map (lambda: ([ns : number]) (apply / ns)) args))
 
 
 ;; ============================================================
 ;; MAIN ENTRY POINT
 
-(define: results : 
+(define: results :
   #;Any
   ;; FIXME bug in typed scheme when this type is used
-  
-  (Listof (U (Result (Listof NumF) (Listof Atom-display) (Listof Sexpr)) 
+
+  (Listof (U (Result (Listof NumF) (Listof Atom-display) (Listof Sexpr))
              (Result (Listof NumF) (Listof Atom-display) Sexpr)))
   '())
 ; just in case i want to do some more analysis on the results afterwards,
 ; so i don't have to waste a minute if i forget to bind the return value to something
 (define: (run-all-tests) : top
   (let*: ([rs1 :  (Listof (Result (Listof NumF) (Listof Atom-display) (Listof Any)))
-               (#{compare* @ (Listof Atom-display) (Listof Any)} 
+               (#{compare* @ (Listof Atom-display) (Listof Any)}
                 (list module-metrics))]
           [rs2 :  (Listof (Result (Listof NumF) (Listof Atom-display) Any))
-               (#{compare* @ (Listof Atom-display) Any} 
+               (#{compare* @ (Listof Atom-display) Any}
                 (list tl-expr-metrics))])
          (let
              ([rs (append rs1 rs2)])
-           (set! results rs) 
+           (set! results rs)
            (for-each #{pretty-print-result @ (Listof Any)} rs1)
            (for-each #{pretty-print-result @ Any} rs2)
            rs)))

@@ -4,13 +4,13 @@
 (define-type-alias top Any)
 
 (define: a : (number -> number) (lambda: ([x : number]) x))
-(define: f : (case-lambda (number -> number) 
+(define: f : (case-lambda (number -> number)
 			  (boolean boolean -> boolean))
   (case-lambda
    [(#{x : number}) (add1 x)]
    [(#{a : boolean} #{b : boolean}) (and a b)]))
 
-(define: f* : (case-lambda (number -> number) 
+(define: f* : (case-lambda (number -> number)
 			   (boolean boolean -> boolean))
   (case-lambda:
    [([x : number]) (add1 x)]

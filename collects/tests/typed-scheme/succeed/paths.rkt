@@ -19,9 +19,9 @@
 (: other-foo-path Path-For-Some-System)
 (define other-foo-path
  (build-path/convention-type other-system
-  (string->some-system-path "foo" other-system) 
-  (string->some-system-path "bar" other-system) 
-  'same 
+  (string->some-system-path "foo" other-system)
+  (string->some-system-path "bar" other-system)
+  'same
   'up))
 
 

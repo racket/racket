@@ -3,24 +3,24 @@
 (require typed/private/utils)
 
 (dt Bitmap% (Class (Real Real Boolean)
-                   () 
+                   ()
                    ([get-width (-> Integer)]
                     [get-height (-> Integer)])))
-(dt Font-List% (Class () () ([find-or-create-font 
+(dt Font-List% (Class () () ([find-or-create-font
 			      (case-lambda
 			       (Integer Symbol Symbol Symbol -> (Instance Font%))
 			       (Integer String Symbol Symbol Symbol -> (Instance Font%)))])))
 (dt Font% (Class () () ([get-face (-> (Option String))]
                         [get-point-size (-> Integer)])))
-(dt Dialog% (Class () 
-                   ([parent Any] [width Integer] [label String]) 
+(dt Dialog% (Class ()
+                   ([parent Any] [width Integer] [label String])
                    ([show (Any -> Void)])))
-(dt Text-Field% (Class () 
+(dt Text-Field% (Class ()
                        ([parent Any] [callback Any] [label String])
                        ([get-value (-> String)]
                         [focus (-> Void)])))
 (dt Horizontal-Panel% (Class ()
-                             ([parent Any] 
+                             ([parent Any]
                               [stretchable-height Any #t]
                               [alignment (List Symbol Symbol) #t])
                              ()))
@@ -71,12 +71,12 @@
 (dt Button% (Class () () ()))
 (dt Event% (Class () () ()))
 
-(require/typed/provide 
+(require/typed/provide
  scheme/gui
  [button% Button%]
  [event% Event%]
- [the-font-list (Instance Font-List%)] 
- [dialog% Dialog%] 
+ [the-font-list (Instance Font-List%)]
+ [dialog% Dialog%]
  [text-field% Text-Field%]
  [horizontal-panel% Horizontal-Panel%]
  [choice% Choice%]
@@ -88,6 +88,6 @@
  [bitmap% Bitmap%]
  [color% Color%]
  [snip% Snip%]
- [open-input-text-editor 
+ [open-input-text-editor
   ((Instance Text%) Integer (U 'end Integer) ((Instance Snip%) -> (Instance Snip%)) (Instance Text%) Boolean -> Input-Port)])
 

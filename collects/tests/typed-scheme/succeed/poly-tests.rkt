@@ -16,10 +16,10 @@
 		[else (cons (f (car l))
 			    (mymap2 f (cdr l)))]))
 
-(define: x : (list-of number) 
+(define: x : (list-of number)
   (mymap (lambda: ([x : number]) (+ 3 x)) (cons 1 (cons 4 #{'() : (list-of number)}))))
 
-(define: x2 : (list-of number) 
+(define: x2 : (list-of number)
   (mymap2 (lambda: ([x : number]) (+ 3 x)) (cons 1 (cons 4 #{'() : (list-of number)}))))
 
 (provide x2)

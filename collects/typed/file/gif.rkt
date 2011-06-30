@@ -12,5 +12,5 @@
   [gif-add-comment ( GIF-Stream String -> Void )]
   [gif-end ( GIF-Stream -> Void )]
   [quantize ( String -> (values String (Listof (Vectorof Number)) (U #f (Vectorof Number))))])
-  
+
 (provide gif-stream? GIF-Stream)

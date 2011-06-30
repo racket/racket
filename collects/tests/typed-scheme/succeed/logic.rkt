@@ -1,4 +1,4 @@
-   
+
 #lang typed-scheme
 
 (: f ((U Number #f) (cons Any Any) -> Number))

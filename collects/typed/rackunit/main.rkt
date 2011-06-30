@@ -41,7 +41,7 @@
     (Any -> Any)
     (Any String -> Any))]
  [check-exn
-  (case-lambda 
+  (case-lambda
     ((U (Predicate Any) Regexp) (Thunk Any) -> Any)
     ((U (Predicate Any) Regexp) (Thunk Any) String -> Any))]
  [check-not-exn
@@ -88,7 +88,7 @@
 ; 3.3
 (require (prefix-in t: (except-in rackunit struct:check-info struct:exn:test struct:exn:test:check struct:test-result struct:test-failure
                                   struct:test-error struct:test-success)))
-(define-rewriter t:test-begin test-begin 
+(define-rewriter t:test-begin test-begin
   [t:current-test-case-around current-test-case-around]
   [t:check-around check-around]
   [t:current-check-handler current-check-handler]
@@ -155,7 +155,7 @@
 
 (require/typed/provide
  rackunit
- [run-test-case 
+ [run-test-case
   ((Option String) (Thunk Any) -> test-result)]
  [run-test
   (Test -> (Tree test-result))]

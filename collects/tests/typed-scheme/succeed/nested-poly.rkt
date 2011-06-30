@@ -6,7 +6,7 @@
 
 (define (f . xs) 5)
 
-(: map-with-funcs 
+(: map-with-funcs
    (All (A ...)
         (All (B ...)
              ((B ... B -> A) ... A ->

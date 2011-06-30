@@ -64,7 +64,7 @@ corresponds to the type of the corresponding argument of @racket[f].
 We also know that, in order to avoid arity errors, the length of
 @racket[bss] must be one less than the arity of @racket[f] (as
 @racket[as] corresponds to the first argument of @racket[f]).
-                                                            
+
 The example uses of @racket[map] evaluate to @racketresult[(list 2 3 4 5)],
 @racketresult[(list (list 1 4) (list 2 5) (list 3 6))], and
 @racketresult[(list 10 14 18)].
@@ -73,7 +73,7 @@ In Typed Racket, we can define @racket[map] as follows:
 
 @racketmod[
 typed/racket
-(: map 
+(: map
    (All (C A B ...)
         ((A B ... B -> C) (Listof A) (Listof B) ... B
          ->

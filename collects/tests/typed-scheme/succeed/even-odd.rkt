@@ -12,12 +12,12 @@
 
 
 (: append-one (case-lambda (EvenParity -> OddParity)
-                           (OddParity -> EvenParity)                           
+                           (OddParity -> EvenParity)
                            (Bitstring -> Bitstring)))
 (define (append-one l)
   (if (null? l)
       (make-O '())
-      (if (Z? l) 
+      (if (Z? l)
           (make-Z (append-one (Z-b l)))
           (make-O (append-one (O-b l))))))
 

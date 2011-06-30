@@ -17,7 +17,7 @@ Typed Racket provides some additional utility functions to facilitate typed prog
  [(assert [v A] [p? (A -> Any : B)]) B])]{
 Verifies that the argument satisfies the constraint.  If no predicate
 is provided, simply checks that the value is not
-@racket[#f].  
+@racket[#f].
 }
 
 @examples[#:eval the-top-eval

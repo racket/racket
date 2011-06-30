@@ -446,7 +446,7 @@
 ;thread-suspend-evt
 
 ;Section 10.1.4
-[thread-send (-poly (a) 
+[thread-send (-poly (a)
  (cl->*
   (-> -Thread Univ -Void)
   (-> -Thread Univ (-val #f) (-opt -Void))
@@ -575,7 +575,7 @@
 
 
 ;; Section 3.7
-;; Regular Expressions 
+;; Regular Expressions
 
 [regexp? (make-pred-ty -Regexp)]
 [pregexp? (make-pred-ty -PRegexp)]
@@ -2128,7 +2128,7 @@
 
 [open-input-string (-> -String -Input-Port)]
 [open-input-bytes (-> -Bytes -Input-Port)]
-[open-output-string 
+[open-output-string
  ([Univ] . ->opt . -Output-Port)]
 [open-output-bytes
  ([Univ] . ->opt . -Output-Port)]
@@ -2215,9 +2215,9 @@
 [open-output-nowhere (-> -Output-Port)]
 [peeking-input-port (->opt -Input-Port [Univ -Nat] -Input-Port)]
 
-[reencode-input-port 
+[reencode-input-port
  (->opt -Input-Port -String (-opt -Bytes) [Univ Univ Univ (-> -String -Input-Port ManyUniv)] -Input-Port)]
-[reencode-output-port 
+[reencode-output-port
  (->opt -Output-Port -String (-opt -Bytes) [Univ Univ (-opt -Bytes) (-> -String -Output-Port ManyUniv)] -Output-Port)]
 
 [dup-input-port (-Input-Port (B) . ->opt . -Input-Port)]
@@ -2449,7 +2449,7 @@
 
 ;12.9.1
 [readtable? (make-pred-ty -Read-Table)]
-[make-readtable 
+[make-readtable
  (cl->*
   (-> -Read-Table -Read-Table)
   (-> -Read-Table
@@ -2469,14 +2469,14 @@
                                  (Un -Char (one-of/c  'terminating-macro 'non-terminating-macro))
                                  (-opt (Un (-> -Char -Input-Port (-opt -PosInt) (-opt -Nat)
                                                (-opt -PosInt) (-opt -Nat) Univ)
-                                           (cl->* 
+                                           (cl->*
 
                                              (-> -Char -Input-Port (-opt -PosInt) (-opt -Nat)
                                                  (-opt -PosInt) (-opt -Nat) Univ)
-                                             (-> -Char -Input-Port Univ)))) 
+                                             (-> -Char -Input-Port Univ))))
                                  (-opt (Un (-> -Char -Input-Port (-opt -PosInt) (-opt -Nat)
                                                (-opt -PosInt) (-opt -Nat) Univ)
-                                           (cl->* 
+                                           (cl->*
 
                                              (-> -Char -Input-Port (-opt -PosInt) (-opt -Nat)
                                                  (-opt -PosInt) (-opt -Nat) Univ)

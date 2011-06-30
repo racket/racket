@@ -10,7 +10,7 @@
 
 (define-typed-struct (a) heap              ([compare : comparator]))
 (define-typed-struct (a) (heap-empty heap) ())
-(define-typed-struct (a) (heap-node heap)  
+(define-typed-struct (a) (heap-node heap)
   ([rank : number] [elm : a] [left : (Un (heap-node a) (heap-empty a))] [right : (Un (heap-node a) (heap-empty a))]))
 
 (define-type-alias (Heap a) (Un (heap-empty a) (heap-node a)))
@@ -18,7 +18,7 @@
 
 (pdefine: (b) (heap-size [h : (Heap b)]) : number
 	  (cond [(heap-empty? h) 0]
-		[(heap-node? h)                  
+		[(heap-node? h)
 		 (+ 1 (+ (heap-size (heap-node-left h))
 			 (heap-size (heap-node-right h))))]
 		;; FIXME - shouldn't need else clause
@@ -27,7 +27,7 @@
 
 (define-typed-struct npheap              ([compare : comparator]))
 (define-typed-struct (npheap-empty npheap) ())
-(define-typed-struct (npheap-node npheap)  
+(define-typed-struct (npheap-node npheap)
   ([rank : number] [elm : symbol] [left : (Un npheap-node npheap-empty)] [right : (Un npheap-node npheap-empty)]))
 
 (define-type-alias npHeap (Un npheap-empty npheap-node))

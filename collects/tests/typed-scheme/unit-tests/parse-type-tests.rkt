@@ -23,7 +23,7 @@
 ;; The solution is to add the identifiers to the table at phase 0.
 ;; We do this by going through the table, constructing new identifiers based on the symbol
 ;; of the old identifier.
-;; This relies on the identifiers being bound at phase 0 in this module (which they are, 
+;; This relies on the identifiers being bound at phase 0 in this module (which they are,
 ;; because we have a phase 0 require of "base-env.ss").
 (for ([pr (type-alias-env-map cons)])
   (let ([nm (car pr)]
@@ -61,9 +61,9 @@
 (define B -Boolean)
 (define Sym -Symbol)
 
-(define (parse-type-tests)  
+(define (parse-type-tests)
   (pt-tests
-   "parse-type tests" 
+   "parse-type tests"
    [Number N]
    [Any Univ]
    [(List Number String) (-Tuple (list N -String))]
@@ -105,13 +105,13 @@
    [#f (-val #f)]
    ["foo" (-val "foo")]
    ['(1 2 3) (-Tuple (map -val '(1 2 3)))]
-   
+
    [(Listof Number) (make-Listof  N)]
-   
+
    [a (-v a) (set-add initial-tvar-env 'a)]
    [(All (a ...) (a ... -> Number))
     (-polydots (a) ((list) [a a] . ->... . N))]
-   
+
    [(Any -> Boolean : Number) (make-pred-ty -Number)]
    [(Any -> Boolean : #:+ (Number @ 0) #:- (! Number @ 0))
     (make-pred-ty -Number)]
@@ -121,7 +121,7 @@
     (t:-> -Number (t:-> -Number -Number))]
    [(Integer -> (All (X) (X -> X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
-   
+
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results

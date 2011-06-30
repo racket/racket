@@ -103,7 +103,7 @@
 (define (list-length loa)
   (list-length-helper loa 0))
 |#
-  
+
   ;; tests:
   (= 0 (list-length '()))
   (= 2 (list-length '(1 2)))

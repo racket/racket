@@ -5,7 +5,7 @@
   (if (or (null? as)
           (ormap null? bss))
       c
-      (apply (inst fold-left c a b ... b) f 
+      (apply (inst fold-left c a b ... b) f
              (apply f c (car as) (map car bss))
              (cdr as) (map cdr bss))))
 

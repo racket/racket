@@ -21,7 +21,7 @@ any expression of this type will not evaluate to a value.}
 
 @section{Base Types}
 
-@(define-syntax-rule                    
+@(define-syntax-rule
    (defnums (ids ...) . rest)
    (deftogether ((defidform ids) ...) . rest))
 
@@ -217,7 +217,7 @@ The following base types are parameteric in their type arguments.
 
 
 @defform[(Listof t)]{Homogenous @rtech{lists} of @racket[t]}
-@defform[(List t ...)]{is the type of the list with one element, in order, 
+@defform[(List t ...)]{is the type of the list with one element, in order,
   for each type provided to the @racket[List] type constructor.}
 @defform/none[(#,(racket List) t ... trest #,(racket ...) bound)]{is the type of a list with
 one element for each of the @racket[t]s, plus a sequence of elements
@@ -238,7 +238,7 @@ corresponding to @racket[trest], where @racket[bound]
 @ex[(box "hello world")]
 
 @defform[(Vectorof t)]{Homogenous @rtech{vectors} of @racket[t]}
-@defform[(Vector t ...)]{is the type of the list with one element, in order, 
+@defform[(Vector t ...)]{is the type of the list with one element, in order,
   for each type provided to the @racket[Vector] type constructor.}
 @defidform[FlVector]{An @rtech{flvector}.}
 
@@ -262,12 +262,12 @@ corresponding to @racket[trest], where @racket[bound]
 }
 
 @defform*[[(Parameterof t)
-           (Parameterof s t)]]{A @rtech{parameter} of @racket[t].  If two type arguments are supplied, 
+           (Parameterof s t)]]{A @rtech{parameter} of @racket[t].  If two type arguments are supplied,
                                  the first is the type the parameter accepts, and the second is the type returned.
 @ex[current-input-port
     current-directory]
 }
-                              
+
 @defform[(Promise t)]{A @rtech{promise} of @racket[t].
  @ex[(delay 3)]}
 
@@ -316,7 +316,7 @@ of type @racket[Syntax-E].}
 
 @defform[(Ephemeronof t)]{An @rtech{ephemeron} whose value is of type @racket[t].}
 
-@section{Other Type Constructors} 
+@section{Other Type Constructors}
 
 @defform*[#:id -> #:literals (* ...)
 	       [(dom ... -> rng)
@@ -328,10 +328,10 @@ of type @racket[Syntax-E].}
   third form specifies a non-uniform rest argument of type
   @racket[rest] with bound @racket[bound].  In the third form, the
   second occurrence of @racket[...] is literal, and @racket[bound]
-  must be an identifier denoting a type variable. In the fourth form, 
-  there must be only one @racket[dom] and @racket[pred] is the type 
+  must be an identifier denoting a type variable. In the fourth form,
+  there must be only one @racket[dom] and @racket[pred] is the type
   checked by the predicate.
-  
+
   @ex[(λ: ([x : Number]) x)
       (λ: ([x : Number] . [y : String *]) (length y))
       ormap
@@ -373,7 +373,7 @@ name or a type variable}
 @defform[(Rec n t)]{is a recursive type where @racket[n] is bound to the
 recursive type in the body @racket[t]
 @ex[(define-type IntList (Rec List (Pair Integer (U List Null))))
-    
+
     (define-type (List A) (Rec List (Pair A (U List Null))))]}
 
 @defalias[→ ->]

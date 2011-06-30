@@ -63,7 +63,7 @@
 
 
 ;; "bug" found - handling of empty heaps
-(pdefine: (a) (find-min [pq : (priority-queue a)]) : a 
+(pdefine: (a) (find-min [pq : (priority-queue a)]) : a
 	  (let ([h (heap pq)])
 	    (if (heap:heap-node? h)
 		(elm (heap:find-min h))

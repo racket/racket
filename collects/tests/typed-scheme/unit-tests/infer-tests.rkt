@@ -26,7 +26,7 @@
               [fv-t (-poly (b c d e) (-v a)) a]
               [fv-t (-mu a (-lst a))]
               [fv-t (-mu a (-lst (-pair a (-v b)))) b]
-              
+
               [fv-t (->* null (-v a) -Number) a] ;; check that a is CONTRAVARIANT
               ))
 
@@ -45,7 +45,7 @@
 (define (f t1 t2) (infer t1 t2 (fv t1) (fv t1)))
 
 (define-syntax-rule (i2-f t1 t2)
-  (test-false (format "~a ~a" t1 t2)                   
+  (test-false (format "~a ~a" t1 t2)
               (f t1 t2)))
 #|
 (define (i2-tests)
@@ -55,7 +55,7 @@
               [i2-t (-lst (-v a)) (-pair N (-pair N (-val null))) ('a N)]
               [i2-t (-lst (-v a)) (-pair N (-pair B (-val null))) ('a (Un N B))]
               [i2-t Univ (Un N B)]
-              
+
               [i2-t ((-v a) . -> . (-v b)) (-> N N) ('b N) ('a N)]
               [i2-l (list (-v a) (-v a) (-v b)) (list (Un (-val 1) (-val 2)) N N) '(a b) ('b N) ('a N)]
               [i2-l (list (-> (-v a) Univ) (-lst (-v a)))  (list (-> N (Un N B)) (-lst N)) '(a) ('a N)]

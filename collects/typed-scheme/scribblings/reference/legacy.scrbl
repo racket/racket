@@ -6,7 +6,7 @@
 @title{Legacy Forms}
 
 The following forms are provided by Typed Racket for backwards
-compatibility.  
+compatibility.
 
 @defidform[define-type-alias]{Equivalent to @racket[define-type].}
 @defidform[define-typed-struct]{Equivalent to @racket[define-struct:]}

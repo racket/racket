@@ -17,7 +17,7 @@
               (s... (-Number -Boolean) a (make-Function (list (make-arr-dots null -Number (-v a) 'a))) (-Number -Boolean . -> . -Number))
               (s... (-Number -Boolean) a (make-Function (list (make-arr-dots (list -String) -Number (-v a) 'a))) (-String -Number -Boolean . -> . -Number))
               (s... (-Number -Boolean) a (make-Function (list (make-arr-dots (list -String) -Number (-v b) 'a))) (-String (-v b) (-v b) . -> . -Number))
-              (s... (-Number -Boolean) a (make-Function (list (make-arr-dots (list -String) -Number (-v b) 'b))) 
+              (s... (-Number -Boolean) a (make-Function (list (make-arr-dots (list -String) -Number (-v b) 'b)))
                     (make-Function (list (make-arr-dots (list -String) -Number (-v b) 'b))))))
 
 (define-go subst-tests)

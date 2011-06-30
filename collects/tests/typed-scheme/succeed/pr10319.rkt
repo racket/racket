@@ -10,5 +10,5 @@
     [(null? lsn) 0]
     [(number? (car lsn)) (+ (car lsn) (sum (cdr lsn)))]
     [else (sum (cdr lsn))]))
- 
+
 (sum '(a b 2 3))

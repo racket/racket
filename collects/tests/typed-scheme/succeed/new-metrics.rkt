@@ -1,7 +1,7 @@
 #lang typed-scheme
 (provide results run-all-tests)
 
-(require (except-in scheme/list count) scheme/math scheme/path mzlib/match 
+(require (except-in scheme/list count) scheme/math scheme/path mzlib/match
          (prefix-in srfi13: srfi/13) scheme/file
          (for-syntax scheme/base))
 
@@ -11,7 +11,7 @@
 
 (define-type-alias NumF (U Number #f))
 
-(define-type-alias (Unit C) ((C ->  (Listof NumF)) -> (Path -> (Listof (U #f (Listof NumF))))))  
+(define-type-alias (Unit C) ((C ->  (Listof NumF)) -> (Path -> (Listof (U #f (Listof NumF))))))
 
 ;; ============================================================
 ;; CONFIG
@@ -34,7 +34,7 @@
 ;; in mean cannot be explained by chance.
 (define (t-test seqA seqB)
   (manual-t-test
-   (avg seqA) (avg seqB) 
+   (avg seqA) (avg seqB)
    (variance seqA) (variance seqB)
    (length seqA) (length seqB)))
 
@@ -63,8 +63,8 @@
               (,a-misses ,b-misses))]
            [expected (λ: ([i : Integer] [j : Integer])
                          (/ (* (row-total i table) (col-total j table)) total-subjects))])
-      (exact->inexact 
-       (table-sum 
+      (exact->inexact
+       (table-sum
         (λ (i j) (/ (sqr (- (expected i j) (table-ref i j table))) (expected i j)))
         table)))))
 
@@ -72,7 +72,7 @@
 ;; UNITS OF MEASUREMENT IMPLEMENTATIONS
 
 (: per-module (All (X) (((Listof Any) ->  X) -> (Path -> (List (U #f X))))))
-(define (per-module f)  
+(define (per-module f)
   (λ (path)
     (with-handlers ([exn:fail:read? (λ (e) (list #f))])
       (let ([initial-sexp (with-input-from-file path read)])
@@ -83,7 +83,7 @@
 
 (: per-module-top-level-expression ((Any -> (Listof NumF)) -> MetricFn))
 (define (per-module-top-level-expression f)
-  (let ([calc (per-module (λ: ([exprs : (Listof Any)]) (map f exprs)))])  
+  (let ([calc (per-module (λ: ([exprs : (Listof Any)]) (map f exprs)))])
     (λ (p) (let ([r  (calc p)]) (if (car r) (car r) r)))))
 
 ;; ============================================================
@@ -149,10 +149,10 @@
         (* (/ set!s atoms) 1000.0))))
 
 ;; ----------------------------------------
-;; contracts 
+;; contracts
 
 (: uses-contracts ((Listof Any) -> Boolean))
-(define (uses-contracts exprs) 
+(define (uses-contracts exprs)
   (ormap (λ (e)
            (ann
             (match e
@@ -173,12 +173,12 @@
    exprs))
 
 (: uncontracted-provides ((Listof Any) -> Number))
-(define (uncontracted-provides exprs) 
+(define (uncontracted-provides exprs)
   (foldl
    (λ: ([t : Any] [r : Number])
-       (ann 
+       (ann
         (match t
-          [`(provide ,p  ...) (+ (length p) r)] 
+          [`(provide ,p  ...) (+ (length p) r)]
           [_ r]) : Number))
    0
    exprs))
@@ -237,7 +237,7 @@
 (define-type-alias Table (Listof (Listof Number)))
 (define-type-alias Atom-display (cons Symbol (Listof Number)))
 
-(: standard-display (Symbol ((Listof Number) -> Number) ((Listof Number) (Listof Number) -> Number) 
+(: standard-display (Symbol ((Listof Number) -> Number) ((Listof Number) (Listof Number) -> Number)
                      -> ((Listof NumF) (Listof NumF) -> Atom-display)))
 (define ((standard-display name summarize significance-test) seqA seqB)
     (let ([clean-seqA (nonfalses seqA)]
@@ -252,28 +252,28 @@
 
 (: combine-metrics (All (c) ((Listof (metric Atom-display c NumF)) -> (metric (Listof Atom-display) c (Listof NumF)))))
 (define (combine-metrics ms)
-  (let ([u (metric-analysis-unit (car ms))])      
+  (let ([u (metric-analysis-unit (car ms))])
     ;; This test now redundant b/c of typechecking
     (unless (andmap (λ: ([m : (metric Atom-display c NumF) ]) (eq? u (metric-analysis-unit m))) ms)
       (error 'combine-metrics "all combined metrics must operate on the same unit of analysis"))
-    
+
     (make-metric
      u
      (λ: ([exprs : c]) (map (λ: ([m : (metric Atom-display c NumF)]) ((metric-computation m) exprs)) ms))
      (λ: ([seqA : (Listof (Listof NumF))] [seqB : (Listof (Listof NumF))])
-              (map (λ: ([m : (metric Atom-display c NumF)] 
-                             [sA : (Listof NumF)] 
-                             [sB : (Listof NumF)]) 
+              (map (λ: ([m : (metric Atom-display c NumF)]
+                             [sA : (Listof NumF)]
+                             [sB : (Listof NumF)])
                             ((metric->display m) sA sB)) ms (pivot seqA) (pivot seqB))))))
 
 ;; FIXME - (filter (lambda (x) x) l)
 (: nonfalses (All (X) ((Listof (U #f X)) -> (Listof X))))
-(define (nonfalses l) 
+(define (nonfalses l)
   (let loop ([lst l])
     (if (null? lst)
         '()
         (let ([x (car lst)])
-          (if x 
+          (if x
               (cons x (loop (cdr lst)))
               (loop (cdr lst)))))))
 
@@ -290,22 +290,22 @@
        (define name (kind u 'name fn )) ...
        (define all-metrics-id (combine-metrics (list name ...))))]))
 
-(define-metrics module-metrics #{per-module @ (Listof NumF)} 
+(define-metrics module-metrics #{per-module @ (Listof NumF)}
   (maximum-sexp-depth        interval  max-sexp-depth)
   (average-sexp-depth        interval  avg-sexp-depth)
   (number-of-setbangs/mod    interval  count-setbangs/ilist)
-  (number-of-exprs           interval  #{length @ Any}) 
+  (number-of-exprs           interval  #{length @ Any})
   (uses-setbang?/mod         count     module-has-setbangs?)
   (uses-contracts?           count     uses-contracts)
   (number-of-contracts       interval  contracted-provides)
-  (num-uncontracted-provides interval  uncontracted-provides)  
+  (num-uncontracted-provides interval  uncontracted-provides)
   (number-of-macro-defs      interval  num-of-define-syntax)
-  (maximum-num-atoms         interval  max-atoms) 
+  (maximum-num-atoms         interval  max-atoms)
   (average-num-atoms         interval  avg-atoms)
   (total-num-atoms/mod       interval  total-atoms)
   (set!s-per-1000-atoms      interval  setbangs-per-1000-atoms))
 
-(define-metrics tl-expr-metrics per-module-top-level-expression  
+(define-metrics tl-expr-metrics per-module-top-level-expression
   (uses-setbang?/fn          count     expr-uses-setbangs?)
   (number-of-setbangs/fn     interval  count-setbangs/expr)
   (total-num-atoms/fn        interval  atoms))
@@ -318,25 +318,25 @@
 ;; EXPERIMENT RUNNING
 
 (define-syntax (define-excluder stx)
-  
+
   (define (path->clause c)
     (syntax-case c ()
       [(item ...)
        #`[`(#,@(reverse (syntax-e #'(item ...))) ,_ (... ...)) #t]]
       [item
        #`[`(item) #t]]))
-  
+
   (syntax-case stx ()
     [(_ name path ...)
      (with-syntax ([(match-clause ...) (map path->clause (syntax-e #'(path ...)))])
-       #`(define (name p ) 
+       #`(define (name p )
            (let* ([dirnames (map path->string (filter path? (explode-path p)))])
              (match (reverse dirnames) ; goofy backwards matching because ... matches greedily
                match-clause ...
                [_ #f]))))]))
 
 (: default-excluder (Path -> Boolean))
-(define-excluder default-excluder 
+(define-excluder default-excluder
   "compiled" ".svn" #;("collects" "drscheme") #;("collects" "framework"))
 
 (define exclude-directory? (make-parameter default-excluder))
@@ -357,17 +357,17 @@
             [(regexp-match #rx"(ss|scm)$" extension)
              (let ([resl (f path)])
                (if resl
-                   (values (cons resl acc) #t)  
+                   (values (cons resl acc) #t)
                    (values acc #t)))]
             [else (values acc #t)]))]
-       [(dir) 
+       [(dir)
         (let* ([p (normalize-path path root)])
           (if ((exclude-directory?) p)
               (values acc #f)
-              (values acc #t)))]         
-       [(link) (values acc #t)]))  
+              (values acc #t)))]
+       [(link) (values acc #t)]))
    '()
-   root)) 
+   root))
 (define-typed-struct (a b c) result ([metric : (metric b c a)] [seqA : (Listof a)] [seqB : (Listof a)]))
 (define-type-alias MetricFn (Path -> (Listof (U #f (Listof NumF)))))
 
@@ -380,16 +380,16 @@
   (: selector (case-lambda [(M b c) -> MetricFn] [(M b C) -> MetricFn]))
   (define (selector m) ((metric-analysis-unit m) (metric-computation m)))
   (let* ([metric-fns (map #{selector :: ((M2 b c C) -> MetricFn)} metrics)]
-         [result-seqs (apply-to-scheme-files 
-                       (λ: ([file : Path]) 
+         [result-seqs (apply-to-scheme-files
+                       (λ: ([file : Path])
                            (map (λ: ([fn : MetricFn]) (fn file)) metric-fns)) path)])
-    (map 
-     (λ: ([l : (Listof (Listof (U #f (Listof NumF))))]) 
+    (map
+     (λ: ([l : (Listof (Listof (U #f (Listof NumF))))])
          (nonfalses (apply append l)))
      (pivot (nonfalses result-seqs)))))
- 
 
-(: compare* 
+
+(: compare*
    (All (b c c*)
         ((List (M b c) (M b c*))
          ->
@@ -408,7 +408,7 @@
    (result-seqA result)
    (result-seqB result)))
 
-(: pretty-print-result 
+(: pretty-print-result
    (case-lambda
      ((result (Listof NumF) (Listof Atom-display) (Listof Any)) -> Void)
      ((result (Listof NumF) (Listof Atom-display) Any) -> Void)))
@@ -435,7 +435,7 @@
 ;; UTILITY
 
 (: imap (All (Y) ((Any -> Y) Any -> (Listof Y))))
-(define (imap f il) 
+(define (imap f il)
   (cond
     [(null? il) '()]
     [(not (pair? il)) (list (f il))]
@@ -491,16 +491,16 @@
 ;; ============================================================
 ;; MAIN ENTRY POINT
 
-(: results (U #f (Listof (U (result (Listof NumF) (Listof Atom-display) (Listof Any)) 
+(: results (U #f (Listof (U (result (Listof NumF) (Listof Atom-display) (Listof Any))
                             (result (Listof NumF) (Listof Atom-display) Any)))))
 (define results #f) ; just in case i want to do some more analysis on the results afterwards,
 ; so i don't have to waste a minute if i forget to bind the return value to something
 
-(define (run-all-tests) 
+(define (run-all-tests)
   (let ([rs (compare* all-metrics)])
         (set! results rs)
     (for-each
-     (ann pretty-print-result ((U (result (Listof NumF) (Listof Atom-display) (Listof Any)) 
+     (ann pretty-print-result ((U (result (Listof NumF) (Listof Atom-display) (Listof Any))
                                   (result (Listof NumF) (Listof Atom-display) Any))
                                -> Any))
      rs)

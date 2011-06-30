@@ -6,7 +6,7 @@
 ;; For simplicity, protect everything produced by Typed Racket.
 (define (arm stx)
   (syntax-case stx (module #%plain-module-begin
-                       #%require #%provide begin 
+                       #%require #%provide begin
                        define-values define-syntaxes
                        define-values-for-syntax)
     [(module name initial-import mb)
@@ -20,6 +20,6 @@
      (quasisyntax/loc stx (define-values ids #,(arm #'expr)))]
     [(define-syntaxes ids expr)
      (quasisyntax/loc stx (define-syntaxes ids #,(arm #'expr)))]
-    [(define-values-for-syntax ids expr) 
+    [(define-values-for-syntax ids expr)
      (quasisyntax/loc stx (define-values-for-syntax ids #,(arm #'expr)))]
     [_ (syntax-arm stx)]))

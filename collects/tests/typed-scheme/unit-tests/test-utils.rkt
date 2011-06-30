@@ -19,7 +19,7 @@
 (define (run . ts)
   (run-tests (mk-suite ts)))
 
-(define (test/gui suite) 
+(define (test/gui suite)
   (((dynamic-require 'rackunit/private/gui/gui 'make-gui-runner))
    suite))
 
@@ -30,7 +30,7 @@
 (define-syntax (define-go stx)
   (syntax-case stx ()
     [(_ args ...)
-     (with-syntax 
+     (with-syntax
       ([go (datum->syntax stx 'go)]
        [go/gui (datum->syntax stx 'go/gui)]
        [(tmps ...) (generate-temporaries #'(args ...))])

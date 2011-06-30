@@ -15,4 +15,4 @@
   (loop 10000000 0))
 (parameterize ([current-output-port (open-output-nowhere)])
   (time (bar 0)))
-  
+
