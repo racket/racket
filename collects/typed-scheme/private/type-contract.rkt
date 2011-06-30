@@ -40,7 +40,7 @@
                            #:typed-side #f
                            #:flat flat?
                            (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
-         (syntax/loc stx (define-values (n) cnt))))]
+         (quasisyntax/loc stx (define-values (n) (recursive-contract cnt #,(if flat? #'#:flat #'#:impersonator))))))]
     [_ (int-err "should never happen - not a define-values: ~a" (syntax->datum stx))]))
 
 (define (change-contract-fixups forms)
