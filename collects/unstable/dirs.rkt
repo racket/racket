@@ -13,7 +13,7 @@
 
 (define library-relative-directories
   (list (cons find-collects-dir 'collects)
-        (cons find-user-collects-dir 'user)
+        (cons find-user-collects-dir 'user-collects)
         (cons find-planet-dir 'planet)))
 
 (define setup-relative-directories
