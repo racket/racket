@@ -7,6 +7,21 @@
          path-replace
          pathseg-replace)
 
+;; Update for syntax taint: On get, disarm stx on the way, but don't
+;; disarm final stx. On replace, disarm and rearm along the way.
+
+(define (stx-disarm stx)
+  (if (syntax? stx) (syntax-disarm stx (current-code-inspector)) stx))
+
+(define (stx-car* stx)
+  (let ([stx (stx-disarm stx)]) (stx-car stx)))
+
+(define (stx-cdr* stx)
+  (let ([stx (stx-disarm stx)]) (stx-cdr stx)))
+
+(define (syntax-e* stx)
+  (syntax-e (stx-disarm stx)))
+
 ;; A Path is a (list-of PathSeg)
 ;; where the PathSegs are listed outermost to innermost
 ;; for example: (path-get #'((a b) (c d)) (list (make-ref 0) (make-ref 1))) = #'b, not #'c
@@ -18,13 +33,6 @@
 (define-struct pathseg () #:transparent)
 (define-struct (ref pathseg) (n) #:transparent)
 (define-struct (tail pathseg) (n) #:transparent)
-
-;; path:ref->splicing-tail : PathSeg -> ???
-;; ????
-(define (path:ref->splicing-tail path)
-  (unless (ref? path)
-    (raise-type-error 'path:ref->splicing-tail "ref path" path))
-  (make-tail (sub1 (ref-n path))))
 
 ;; path-get : syntax Path -> syntax
 (define (path-get stx path)
@@ -48,8 +56,8 @@
              n0
              (syntax->datum stx0)))
     (if (zero? n)
-        (stx-car stx)
-        (loop (sub1 n) (stx-cdr stx)))))
+        (stx-car* stx)
+        (loop (sub1 n) (stx-cdr* stx)))))
 
 ;; pathseg-get/tail : syntax number -> syntax
 (define (pathseg-get/tail stx0 n0)
@@ -57,8 +65,8 @@
     (unless (stx-pair? stx)
       (error 'pathseg-get "tail path out of bounds for syntax: ~s, ~s" n0 stx0))
     (if (zero? n)
-        (stx-cdr stx)
-        (loop (sub1 n) (stx-cdr stx)))))
+        (stx-cdr* stx)
+        (loop (sub1 n) (stx-cdr* stx)))))
 
 ;; path-replace : syntax Path syntax -> syntax
 (define (path-replace stx path x)
@@ -86,7 +94,7 @@
       (error 'pathseg-replace "ref path out of bounds for syntax: ~s, ~s" n0 stx0))
     (if (zero? n)
         (stx-replcar stx x)
-        (stx-replcdr stx (loop (sub1 n) (stx-cdr stx))))))
+        (stx-replcdr stx (loop (sub1 n) (stx-cdr* stx))))))
 
 ;; pathseg-replace/tail : syntax number syntax -> syntax
 (define (pathseg-replace/tail stx0 n0 x)
@@ -95,14 +103,16 @@
       (error 'pathseg-replace "tail path out of bounds for syntax: ~s, ~s" n0 stx0))
     (if (zero? n)
         (stx-replcdr stx x)
-        (stx-replcdr stx (loop (sub1 n) (stx-cdr stx))))))
+        (stx-replcdr stx (loop (sub1 n) (stx-cdr* stx))))))
 
 ;; stx-replcar : syntax syntax -> syntax
 (define (stx-replcar stx x)
   (cond [(pair? stx)
          (cons x (cdr stx))]
         [(syntax? stx)
-         (datum->syntax stx (cons x (cdr (syntax-e stx))) stx stx)]
+         (syntax-rearm
+          (datum->syntax stx (cons x (cdr (syntax-e stx))) stx stx)
+          stx)]
         [else (raise-type-error 'stx-replcar "stx-pair" stx)]))
 
 ;; stx-replcdr : syntax syntax -> syntax
@@ -110,8 +120,7 @@
   (cond [(pair? stx)
          (cons (car stx) x)]
         [(and (syntax? stx) (pair? (syntax-e stx)))
-         (datum->syntax stx (cons (car (syntax-e stx)) x) stx stx)]
+         (syntax-rearm
+          (datum->syntax stx (cons (car (syntax-e stx)) x) stx stx)
+          stx)]
         [else (raise-type-error 'stx-replcdr "stx-pair" stx)]))
-
-(define (sd x)
-  (syntax->datum (datum->syntax #f x)))

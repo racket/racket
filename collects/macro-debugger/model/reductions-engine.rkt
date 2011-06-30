@@ -3,6 +3,7 @@
                      syntax/parse
                      syntax/parse/experimental/contract)
          racket/contract
+         syntax/stx
          "deriv-util.rkt"
          "stx-util.rkt"
          "context.rkt"

@@ -202,7 +202,8 @@
       (display-source-info stx)
       (display-extra-source-info stx)
       (display-symbol-property-info stx)
-      (display-marks stx))
+      (display-marks stx)
+      (display-taint stx))
 
     ;; display-source-info : syntax -> void
     (define/private (display-source-info stx)
@@ -246,7 +247,20 @@
     ;; display-marks : syntax -> void
     (define/private (display-marks stx)
       (display "Marks: " key-sd)
-      (display (format "~s\n" (simplify-marks (get-marks stx))) #f))
+      (display (format "~s\n" (simplify-marks (get-marks stx))) #f)
+      (display "\n" #f))
+
+    ;; display-taint : syntax -> void
+    (define/private (display-taint stx)
+      (define (syntax-armed? stx)
+        (syntax-tainted? (datum->syntax stx 'dummy)))
+      (display "Tamper status: " key-sd)
+      (display (cond [(syntax-tainted? stx)
+                      "tainted"]
+                     [(syntax-armed? stx)
+                      "armed"]
+                     [else "clean"])
+               #f))
 
     ;; display-kv : any any -> void
     (define/private (display-kv key value)
