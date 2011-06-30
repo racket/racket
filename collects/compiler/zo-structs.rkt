@@ -57,21 +57,11 @@
 (define mark-map? 
   (alist/c number? module-path-index?)
   #;(hash/c number? module-path-index?))
-(define-form-struct certificate ())
-(define-form-struct (certificate:nest certificate)
-  ([nested mark-map?]
-   [map  mark-map?]))
-(define-form-struct (certificate:ref certificate)
-  ([val any/c]
-   [map  mark-map?]))
-(define-form-struct (certificate:plain certificate)
-  ([map  mark-map?]))
-
 
 (define-form-struct wrap ())
 (define-form-struct wrapped ([datum any/c] 
                              [wraps (listof wrap?)] 
-                             [certs (or/c certificate? #f)]))
+                             [tamper-status (or/c 'clean 'armed 'tainted)]))
 
 ;; In stxs of prefix:
 (define-form-struct stx ([encoded wrapped?]))
@@ -91,8 +81,7 @@
                               [src-name symbol?] 
                               [nom-src any/c] ; should be (or/c module-path-index? #f)
                               [src-phase (or/c 0 1)] 
-                              [protected? boolean?] 
-                              [insp (or/c boolean? void?)]))
+                              [protected? boolean?]))
 
 (define-form-struct (toplevel expr) ([depth exact-nonnegative-integer?] 
                                      [pos exact-nonnegative-integer?] 

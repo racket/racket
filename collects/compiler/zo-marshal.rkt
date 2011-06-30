@@ -304,7 +304,7 @@
   (for/list ([wrap (in-list wraps)])
     (match wrap
       [(struct phase-shift (amt src dest))
-       (box (vector amt src dest #f))]
+       (box (vector amt src dest #f #f))]
       [(struct module-rename (phase kind set-id unmarshals renames mark-renames plus-kern?))
        (define encoded-kind (eq? kind 'marked))
        (define encoded-unmarshals (map encode-all-from-module unmarshals))
@@ -343,18 +343,9 @@
 
 (define-struct protected-symref (val))
 
-(define encode-certs
-  (match-lambda
-    [(struct certificate:nest (m1 m2))
-     (list* (encode-mark-map m1) (encode-mark-map m2))]
-    [(struct certificate:ref (val m))
-     (list* #f (make-protected-symref val) (encode-mark-map m))]
-    [(struct certificate:plain (m))
-     (encode-mark-map m)]))
-
 (define (encode-wrapped w)
   (match w
-    [(struct wrapped (datum wraps certs))
+    [(struct wrapped (datum wraps tamper-status))
      (let* ([enc-datum
              (match datum
                [(cons a b) 
@@ -391,9 +382,10 @@
                [_ datum])]
             [p (cons enc-datum
                      (encode-wraps wraps))])
-       (if certs
-           (vector p (encode-certs certs))
-           p))]))
+       (case tamper-status
+         [(clean) p]
+         [(tainted) (vector p)]
+         [(armed) (vector p #f)]))]))
 
 (define-struct out (s shared-index shared-unsee encoded-wraps))
 (define (out-shared v out k)
@@ -887,7 +879,6 @@
                                (let ([phase (car l)]
                                      [all (append (cadr l) (caddr l))])
                                  (list phase
-                                       (list->vector/#f #f (map provided-insp all))
                                        (list->vector/#f 0 (map (lambda (p) (= 1 (provided-src-phase p))) 
                                                                all))
                                        (list->vector/#f #f (map (lambda (p)
