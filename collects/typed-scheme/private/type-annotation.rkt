@@ -69,9 +69,10 @@
     [(syntax-property stx type-ascrip-symbol)
      =>
      (lambda (prop)
-       (if (pair? prop)
-           (pt (car prop))
-           (pt prop)))]
+       (let loop ((prop prop))
+         (if (pair? prop)
+             (loop (cdr prop))
+             (pt prop))))]
     [else #f]))
 
 (define (remove-ascription stx)
@@ -81,8 +82,11 @@
                       =>
                       (lambda (prop)
                         (if (pair? prop)
-                            (cdr prop)
-                            #f))]
+                            (let loop ((prop (cdr prop)) (last (car prop)))
+                              (if (pair? prop)
+                                  (cons last (loop (cdr prop) (car prop)))
+                                  last))
+                              #f))]
                      [else #f])))
 
 (define (log/ann stx ty)
