@@ -7653,7 +7653,7 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
     ((Scheme_Stx *)src)->props = properties;
   }
 
-  if (!is_clean(argv[0])) {
+  if (!SCHEME_FALSEP(argv[0]) && !is_clean(argv[0])) {
     add_taint_to_stx(src, 0);
   }
 
