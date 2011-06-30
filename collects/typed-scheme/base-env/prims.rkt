@@ -122,6 +122,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                                     #'()))]
       [(_ #:internal nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
        (with-syntax ([cnt* (generate-temporary #'nm.nm)]
+                     [hidden (generate-temporary #'nm.nm)]
                      [sm (if (attribute parent)
                              #'(#:struct-maker parent)
                              #'())])
@@ -141,8 +142,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                       (syntax-property #'(define cnt* #f)
                                                    prop-name #'ty))
                                   'typechecker:ignore #t)
-               #,(internal #'(require/typed-internal nm.nm ty . sm))
-               #,(syntax-property #'(require/contract nm.spec cnt* lib)
+               #,(internal #'(require/typed-internal hidden ty . sm))
+               #,(syntax-property #'(require/contract nm.spec hidden cnt* lib)
                                   'typechecker:ignore #t)))))]))
   (values (r/t-maker #t) (r/t-maker #f))))
 
@@ -177,16 +178,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ ty:id pred:id lib (~optional ne:name-exists-kw) ...)
      (register-type-name #'ty (make-Opaque #'pred (syntax-local-certifier)))
-     (quasisyntax/loc stx
-       (begin
-         #,(syntax-property #'(define pred-cnt (any/c . c-> . boolean?))
-                            'typechecker:ignore #t)
-         #,(internal #'(require/typed-internal pred (Any -> Boolean : (Opaque pred))))
-         #,(if (attribute ne)
-               (internal (syntax/loc stx (define-type-alias-internal ty (Opaque pred))))
-               (syntax/loc stx (define-type-alias ty (Opaque pred))))
-         #,(syntax-property #'(require/contract pred pred-cnt lib)
-                            'typechecker:ignore #t)))]))
+     (with-syntax ([hidden (generate-temporary #'pred)])
+       (quasisyntax/loc stx
+         (begin
+           #,(syntax-property #'(define pred-cnt (any/c . c-> . boolean?))
+                              'typechecker:ignore #t)
+           #,(internal #'(require/typed-internal hidden (Any -> Boolean : (Opaque pred))))
+           #,(if (attribute ne)
+                 (internal (syntax/loc stx (define-type-alias-internal ty (Opaque pred))))
+                 (syntax/loc stx (define-type-alias ty (Opaque pred))))
+           #,(syntax-property #'(require/contract pred hidden pred-cnt lib)
+                              'typechecker:ignore #t))))]))
 
 (define-syntax (plambda: stx)
   (syntax-parse stx
@@ -443,6 +445,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       [(_ name:opt-parent ([fld : ty] ...) (~var input-maker (constructor-term legacy #'name.nm)) lib)
        (with-syntax* ([nm #'name.nm]
                       [parent #'name.parent]
+                      [hidden (generate-temporary #'name.nm)]
                       [spec (if (syntax-e #'name.parent) #'(nm parent) #'nm)]
                       [(struct-info _ pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
                       [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
@@ -474,8 +477,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                   si))
 
                          (dtsi* () spec ([fld : ty] ...) #:maker maker-name #:type-only)
-                         #,(ignore #'(require/contract pred (any/c . c-> . boolean?) lib))
-                         #,(internal #'(require/typed-internal pred (Any -> Boolean : nm)))
+                         #,(ignore #'(require/contract pred hidden (any/c . c-> . boolean?) lib))
+                         #,(internal #'(require/typed-internal hidden (Any -> Boolean : nm)))
                          (require/typed (maker-name real-maker) nm lib #:struct-maker parent)
 
                          ;This needs to be a different identifier to meet the specifications

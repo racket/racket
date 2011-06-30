@@ -1,3 +1,6 @@
+#;
+(exn-pred exn:fail:syntax? #rx".*unbound identifier.*make-q.*")
+
 #lang scheme/load
 
 (module l scheme
