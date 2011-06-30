@@ -105,6 +105,26 @@
          (parameterize ([current-namespace  (make-base-namespace)]
                         [read-accept-reader #t])
            (expand (tr:read-syntax portname input)))))
+      (set! log (sort log < #:key log-entry-pos))
+      ;; detect overlapping reports
+      (define-values (rev-log/overlaps _)
+        (for/fold ([rev-log/overlaps '()]
+                   [prev #f])
+            ([l (in-list log)])
+          (match* (prev l)
+            [((log-entry k1 msg1 stx1 pos1) (log-entry k2 msg2 stx2 pos2))
+             (=> unmatch)
+             (define end-prev (+ pos1 (syntax-span stx1)))
+             (if (< pos2 end-prev) ; l in within prev
+                 ;; merge the two
+                 (values (cons (merge-entries prev l)
+                               (cdr rev-log/overlaps))
+                         ;; we don't advance, since we merged
+                         prev)
+                 (unmatch))]
+            [(l1 l2) ; no overlap, just add to the list
+             (values (cons l rev-log/overlaps) l)])))
+      (set! log rev-log/overlaps)
       (define max-badness
         (for/fold ([max-badness 0])
             ([l (in-list log)]
@@ -129,6 +149,29 @@
       (clear-highlights))
 
     (super-new)))
+
+(define (merge-entries prev l)
+  (define new-stx (log-entry-stx prev)) ; prev starts earlier than l
+  (define new-pos (log-entry-pos prev))
+  (define new-msg (string-append (log-entry-msg prev) "\n" (log-entry-msg l)))
+  (match (list prev l)
+    [`(,(missed-opt-log-entry k1 m1 s1 p1 irritants1 m-irr1 badness1)
+       ,(missed-opt-log-entry k2 m2 s2 p2 irritants2 m-irr2 badness2))
+     ;; both are missed opts
+     (missed-opt-log-entry #f ; kind doesn't matter at this point
+                           new-msg new-stx new-pos
+                           (append irritants1 irritants2)
+                           #f ; merged-irritants either
+                           (+ badness1 badness2))]
+    [(or `(,(missed-opt-log-entry k1 m1 s1 p1 irritants m-irr badness)
+           ,(log-entry k2 m2 s2 p2))
+         `(,(log-entry k1 m1 s1 p1)
+           ,(missed-opt-log-entry k2 m2 s2 p2 irritants m-irr badness)))
+     ;; since missed opts are more important to report, they win
+     (missed-opt-log-entry #f new-msg new-stx new-pos irritants #f badness)]
+    [`(,(log-entry k1 m1 s1 p1) ,(log-entry k2 m2 s2 p2))
+     ;; both are opts
+     (log-entry #f new-msg new-stx new-pos)]))
 
 (define-unit tool@
   (import drracket:tool^)
