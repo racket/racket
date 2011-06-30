@@ -100,6 +100,8 @@
              get-size
              get-transformation
              set-transformation
+             get-smoothing
+             set-smoothing
              scale
              get-font)
     
@@ -163,10 +165,13 @@
                                             [(make-or-false bitmap%) [mask #f]])
       (let ([sx (if (zero? src-w) 1.0 (/ dest-w src-w))]
             [sy (if (zero? src-h) 1.0 (/ dest-h src-h))])
-        (let ([t (get-transformation)])
+        (let ([t (get-transformation)]
+              [s (get-smoothing)])
           (scale sx sy)
+          (when (eq? s 'unsmoothed) (set-smoothing 'aligned))
           (begin0
            (draw-bitmap-section src (/ dest-x sx) (/ dest-y sy) src-x src-y src-w src-h style color mask)
+           (when (eq? s 'unsmoothed) (set-smoothing 'unsmoothed))
            (set-transformation t)))))
 
     (def/override (get-char-width)

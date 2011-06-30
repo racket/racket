@@ -41,13 +41,10 @@ Creates a new memory DC. If @racket[bitmap] is not @racket[#f], it is
 
 The same as @method[dc<%> draw-bitmap-section], except that
  @racket[dest-width] and @racket[dest-height] cause the DC's
- transformation to be adjusted while drawing the bitmap so 
- that the bitmap is scaled.
-
-In older versions, this method smoothed drawing more than
- @method[dc<%> draw-bitmap-section], but smoothing is now provided by
- @method[dc<%> draw-bitmap-section].
-}
+ transformation to be adjusted while drawing the bitmap so that the
+ bitmap is scaled; and, if the DC's smoothing mode is
+ @racket['unsmoothed], it is changed to @racket['aligned] while
+ drawing.}
 
 @defmethod[(get-argb-pixels [x real?]
                             [y real?]

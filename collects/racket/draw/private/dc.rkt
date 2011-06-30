@@ -1634,12 +1634,17 @@
               [a-src-y (floor src-y)]
               [a-msrc-x (floor msrc-x)]
               [a-msrc-y (floor msrc-y)]
+              [adjust-pattern-filter
+               (lambda (p)
+                 (when (eq? smoothing 'unsmoothed)
+                   (cairo_pattern_set_filter p CAIRO_FILTER_NEAREST)))]
               [stamp-pattern
                (lambda (src a-src-x a-src-y)
                  (let ([p (cairo_pattern_create_for_surface (send src get-cairo-alpha-surface))]
                        [m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
                    (cairo_matrix_init_translate m (- a-src-x a-dest-x) (- a-src-y a-dest-y))
                    (cairo_pattern_set_matrix p m)
+                   (adjust-pattern-filter (cairo_get_source cr))
                    ;; clip to the section that we're supposed to draw:
                    (cairo_save cr)
                    (when op (cairo_set_operator cr op))
@@ -1663,6 +1668,7 @@
                                        (send src get-cairo-surface)
                                        (- a-dest-x a-src-x)
                                        (- a-dest-y a-src-y))
+             (adjust-pattern-filter (cairo_get_source cr))
              (if mask
                  (stamp-pattern mask a-msrc-x a-msrc-y)
                  (begin
