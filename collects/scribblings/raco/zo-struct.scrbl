@@ -204,8 +204,7 @@ structures that are produced by @racket[zo-parse] and consumed by
              [src-name symbol?]
              [nom-mod (or/c module-path-index? #f)]
              [src-phase (or/c 0 1)]
-             [protected? boolean?]
-             [insp (or #t #f void?)])]{
+             [protected? boolean?])]{
   Describes an individual provided identifier within a @racket[mod]
   instance.}
 
@@ -462,27 +461,10 @@ structures that are produced by @racket[zo-parse] and consumed by
 @defstruct+[(wrapped zo)
             ([datum any/c]
              [wraps (listof wrap?)]
-             [certs (or/c certificate? #f)])]{
+             [tamper-status (or/c 'clean 'armed 'tainted)])]{
   Represents a syntax object, where @racket[wraps] contain the lexical
-  information and @racket[certs] is certificate information. When the
+  information and @racket[tamper-status] is taint information. When the
   @racket[datum] part is itself compound, its pieces are wrapped, too.}
-
-@defstruct+[(certificate zo) ()]{
-  A supertype for syntax certificates.}
-
-@defstruct+[(certificate:nest certificate)
-            ([nested (listof number? module-path-index? ...)]
-             [map (listof number? module-path-index? ...)])]{
-  A nested certificate.}
-
-@defstruct+[(certificate:ref certificate)
-            ([val any/c]
-             [map (listof number? module-path-index? ...)])]{
-  A reference certificate.}
-
-@defstruct+[(certificate:plain certificate)
-            ([map (listof number? module-path-index? ...)])]{
-  A plain certificate.}
 
 @defstruct+[(wrap zo) ()]{
   A supertype for lexical-information elements.}

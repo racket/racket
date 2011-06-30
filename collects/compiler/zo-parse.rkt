@@ -232,8 +232,8 @@
              ,indirect-provides ,num-indirect-provides 
              ,protects ,et-protects
              ,provide-phase-count . ,rest)
-     (let ([phase-data (take rest (* 9 provide-phase-count))])
-       (match (list-tail rest (* 9 provide-phase-count))
+     (let ([phase-data (take rest (* 8 provide-phase-count))])
+       (match (list-tail rest (* 8 provide-phase-count))
          [`(,syntax-body ,body
                          ,requires ,syntax-requires ,template-requires ,label-requires
                          ,more-requires-count . ,more-requires)
@@ -241,34 +241,31 @@
                     prefix (let loop ([l phase-data])
                              (if (null? l)
                                  null
-                                 (let ([num-vars (list-ref l 7)]
-                                       [ps (for/list ([name (in-vector (list-ref l 6))]
-                                                      [src (in-vector (list-ref l 5))]
-                                                      [src-name (in-vector (list-ref l 4))]
-                                                      [nom-src (or (list-ref l 3)
+                                 (let ([num-vars (list-ref l 6)]
+                                       [ps (for/list ([name (in-vector (list-ref l 5))]
+                                                      [src (in-vector (list-ref l 4))]
+                                                      [src-name (in-vector (list-ref l 3))]
+                                                      [nom-src (or (list-ref l 2)
                                                                    (in-cycle (in-value #f)))]
-                                                      [src-phase (or (list-ref l 2)
+                                                      [src-phase (or (list-ref l 1)
                                                                      (in-cycle (in-value #f)))]
                                                       [protected? (or (case (car l)
                                                                         [(0) protects]
                                                                         [(1) et-protects]
                                                                         [else #f])
-                                                                      (in-cycle (in-value #f)))]
-                                                      [insp (or (list-ref l 1)
-                                                                (in-cycle (in-value #f)))])
+                                                                      (in-cycle (in-value #f)))])
                                              (make-provided name src src-name 
                                                             (or nom-src src)
                                                             (if src-phase 1 0)
-                                                            protected?
-                                                            insp))])
+                                                            protected?))])
                                    (if (null? ps)
-                                       (loop (list-tail l 9))
+                                       (loop (list-tail l 8))
                                        (cons
                                         (list
                                          (car l)
                                          (take ps num-vars)
                                          (drop ps num-vars))
-                                        (loop (list-tail l 9)))))))
+                                        (loop (list-tail l 8)))))))
                     (list*
                      (cons 0 requires)
                      (cons 1 syntax-requires)
@@ -527,20 +524,6 @@
 (define (decode-mark-map alist)
   alist)
 
-(define marks-memo (make-memo))
-(define (decode-marks cp ms)
-  (with-memo marks-memo ms
-    (match ms
-      [#f #f]
-      [(list* #f (? number? symref) alist)
-       (make-certificate:ref
-        (symtab-lookup cp symref)
-        (decode-mark-map alist))]
-      [(list* (? list? nested) alist)
-       (make-certificate:nest (decode-mark-map nested) (decode-mark-map alist))]
-      [alist
-       (make-certificate:plain (decode-mark-map alist))])))
-
 (define stx-memo (make-memo))
 ; XXX More memo use
 (define (decode-stx cp v)
@@ -548,15 +531,15 @@
     (if (integer? v)
         (unmarshal-stx-get/decode cp v decode-stx) 
         (let loop ([v v])
-          (let-values ([(cert-marks v encoded-wraps)
+          (let-values ([(tamper-status v encoded-wraps)
                         (match v
-                          [`#((,datum . ,wraps) ,cert-marks) (values cert-marks datum wraps)]
-                          [`(,datum . ,wraps) (values #f datum wraps)]
+                          [`#((,datum . ,wraps)) (values 'tainted datum wraps)]
+                          [`#((,datum . ,wraps) #f) (values 'armed datum wraps)]
+                          [`(,datum . ,wraps) (values 'clean datum wraps)]
                           [else (error 'decode-wraps "bad datum+wrap: ~.s" v)])])
             (let* ([wraps (decode-wraps cp encoded-wraps)]
-                   [marks (decode-marks cp cert-marks)]
                    [wrapped-memo (make-memo)]
-                   [add-wrap (lambda (v) (with-memo wrapped-memo v (make-wrapped v wraps marks)))])
+                   [add-wrap (lambda (v) (with-memo wrapped-memo v (make-wrapped v wraps tamper-status)))])
               (cond
                 [(pair? v)
                  (if (eq? #t (car v))
@@ -652,7 +635,7 @@
       [(box? a)
        (match (unbox a)
          [(list (? symbol?) ...) (make-prune (unbox a))]
-         [`#(,amt ,src ,dest #f) 
+         [`#(,amt ,src ,dest #f #f) 
           (make-phase-shift amt 
                             (parse-module-path-index cp src)
                             (parse-module-path-index cp dest))]
