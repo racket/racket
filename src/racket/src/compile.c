@@ -4050,7 +4050,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     stx = quick_stx;
     quick_stx = NULL;
   } else
-    stx = scheme_datum_to_syntax(stx, scheme_false, form, 0, 2);
+    stx = scheme_datum_to_syntax(stx, scheme_false, form, 0, 0);
 
   if (rec[drec].comp)
     can_recycle_stx = stx;
