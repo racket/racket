@@ -17,6 +17,7 @@
 (module mzssl racket/base
   (require ffi/unsafe
            ffi/unsafe/define
+           ffi/unsafe/atomic
            racket/port
            racket/tcp
            "libcrypto.rkt"
@@ -1059,8 +1060,30 @@
 
   (define ssl-available? (and libssl #t))
 
-  (when ssl-available?
-    (SSL_library_init)
-    (SSL_load_error_strings))
 
-  )
+  (define scheme_register_process_global
+    (and ssl-available?
+         (get-ffi-obj 'scheme_register_process_global #f (_fun _string _pointer -> _pointer))))
+
+  (when ssl-available?
+    ;; Make sure only one place tries to initialize OpenSSL,
+    ;; and wait in case some other place is currently initializing
+    ;; it.
+    (begin
+      (start-atomic)
+      (let* ([done (cast 1 _scheme _pointer)]
+             [v (scheme_register_process_global "OpenSSL-support-initializing" done)])
+        (if v
+            ;; Some other place is initializing:
+            (begin
+              (end-atomic)
+              (let loop ()
+                (unless (scheme_register_process_global "OpenSSL-support-initialized" #f)
+                  (sleep 0.01) ;; busy wait! --- this should be rare
+                  (loop))))
+            ;; This place must initialize:
+            (begin
+              (SSL_library_init)
+              (SSL_load_error_strings)
+              (scheme_register_process_global "OpenSSL-support-initialized" done)
+              (end-atomic)))))))
