@@ -376,7 +376,6 @@ static int place_dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo) {
   }
   return 0;
 }
-/
 
 # if defined(MZ_PLACES_WAITPID)
 /*============= SIGCHLD SIGNAL HANDLING =============*/
