@@ -166,7 +166,9 @@
                                                       (s:member x safe-bindings bound-identifier=?))
                                                    l)
                                            types-from-user
-                                           (map (λ (x) (make-Union (list x -Undefined)))
+                                           (map (λ (x) (make-Union (if (type<? x -Undefined)
+                                                                       (list x -Undefined)
+                                                                       (list -Undefined x))))
                                                 types-from-user)))))
                          names))
                    ;; types the user gave. check against that to error if we could get undefined
