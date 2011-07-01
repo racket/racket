@@ -172,7 +172,6 @@ typedef struct Scheme_Place_Object {
   char die;
   char pbreak;
   char ref;
-  mz_jmp_buf *exit_buf;
   void *signal_handle;
   void *parent_signal_handle; /* set to NULL when the place terminates */
   intptr_t result; /* initialized to 1, reset when parent_signal_handle becomes NULL */
@@ -1540,29 +1539,28 @@ static void *place_start_proc(void *data_arg) {
   return rc;
 }
 
-void scheme_place_check_for_interruption() {
+void scheme_place_check_for_interruption() 
+{
   Scheme_Place_Object *place_obj;
   char local_die;
   char local_break;
 
   place_obj = place_object;
-  if (place_obj) {
-    {
-      mzrt_mutex_lock(place_obj->lock);
+  if (!place_obj)
+    return;
 
-      local_die = place_obj->die;
-      local_break = place_obj->pbreak;
-      place_obj->pbreak = 0;
-
-      mzrt_mutex_unlock(place_obj->lock);
-    }
-
-    if (local_die) {
-      scheme_longjmp(*place_obj->exit_buf, 1);
-    }
-    if (local_break)
-      scheme_break_thread(NULL);
-  }
+  mzrt_mutex_lock(place_obj->lock);
+  
+  local_die = place_obj->die;
+  local_break = place_obj->pbreak;
+  place_obj->pbreak = 0;
+  
+  mzrt_mutex_unlock(place_obj->lock);
+  
+  if (local_die)
+    scheme_kill_thread(scheme_main_thread);
+  if (local_break)
+    scheme_break_thread(NULL);
 }
 
 static void place_release_place_object() {
@@ -1604,7 +1602,7 @@ static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[
   place_set_result(argv[0]);
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
-  scheme_place_instance_destroy();
+  scheme_place_instance_destroy(0);
 
   place_release_place_object();
   mz_proc_thread_exit(NULL);
@@ -1680,10 +1678,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     mz_jmp_buf * volatile saved_error_buf;
     mz_jmp_buf new_error_buf;
     Scheme_Object * volatile rc = scheme_false;
-      
-
-    place_obj->exit_buf = &new_error_buf;
-
+    
     p = scheme_get_current_thread();
     saved_error_buf = p->error_buf;
     p->error_buf = &new_error_buf;
@@ -1708,7 +1703,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
-  scheme_place_instance_destroy();
+  scheme_place_instance_destroy(place_obj->die);
 
   place_release_place_object();
 

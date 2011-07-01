@@ -719,6 +719,11 @@ void scheme_end_futures_per_place()
 
     free_fevent(&fs->runtime_fevents);
 
+    mzrt_mutex_destroy(fs->future_mutex);
+    mzrt_sema_destroy(fs->future_pending_sema);
+    mzrt_sema_destroy(fs->gc_ok_c);
+    mzrt_sema_destroy(fs->gc_done_c);
+
     free(fs->pool_threads);
     free(fs);
 

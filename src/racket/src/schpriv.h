@@ -564,7 +564,8 @@ typedef struct Scheme_Custodian_Box {
 
 Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_Func f);
 Scheme_Custodian *scheme_get_current_custodian(void);
-void scheme_run_atexit_closers(void);
+void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt);
+void scheme_run_atexit_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
 
 typedef struct Scheme_Security_Guard {
   Scheme_Object so;
@@ -3618,7 +3619,7 @@ typedef struct Scheme_Place {
 } Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();
-void scheme_place_instance_destroy();
+void scheme_place_instance_destroy(int force);
 void scheme_kill_green_thread_timer();
 void scheme_place_check_for_interruption();
 void scheme_check_place_port_ok();

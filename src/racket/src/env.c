@@ -515,21 +515,24 @@ static void force_more_closed(Scheme_Object *o, Scheme_Close_Custodian_Client *f
   if (!f || SCHEME_THREADP(o))
     return;
 
-  /* don't close stdin, stdout, or stderr file descriptors: */
-  if (SAME_OBJ(scheme_orig_stdin_port, o)
-      || SAME_OBJ(scheme_orig_stderr_port, o)
-      || SAME_OBJ(scheme_orig_stdout_port, o))
-    return;
-  
   f(o, data);
 }
 
-void scheme_place_instance_destroy() {
-  /* shutdown custodian */
+static void force_more_closed_after(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
+{
+  scheme_run_atexit_closers(o, f, data);
+  force_more_closed(o, f, data);
+}
+
+void scheme_place_instance_destroy(int force)
+{
   /* run atexit handlers to flush file ports, and also
      force file-stream ports closed */
-  scheme_add_atexit_closer(force_more_closed);
-  scheme_run_atexit_closers();
+  if (force)
+    scheme_run_atexit_closers_on_all(force_more_closed);
+  else
+    scheme_run_atexit_closers_on_all(force_more_closed_after);
+
   scheme_release_file_descriptor();
 
   scheme_end_futures_per_place();

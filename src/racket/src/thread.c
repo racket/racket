@@ -1694,7 +1694,7 @@ static void shrink_cust_box_array(void)
 # define clean_cust_box_list()   /* empty */
 #endif
 
-static void run_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
+void scheme_run_atexit_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
 {
   Scheme_Object *l;
 
@@ -1707,7 +1707,7 @@ static void run_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void
   }
 }
 
-void scheme_run_atexit_closers(void)
+void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt)
 {
   mz_jmp_buf newbuf, *savebuf;
 
@@ -1720,9 +1720,14 @@ void scheme_run_atexit_closers(void)
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {  
-    scheme_do_close_managed(NULL, run_closers);
+    scheme_do_close_managed(NULL, alt ? alt : scheme_run_atexit_closers);
   }
   scheme_current_thread->error_buf = savebuf;
+}
+
+void do_run_atexit_closers_on_all()
+{
+  scheme_run_atexit_closers_on_all(NULL);
 }
 
 void scheme_set_atexit(Scheme_At_Exit_Proc p)
@@ -1734,12 +1739,12 @@ void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 {
   if (!cust_closers) {
     if (replacement_at_exit) {
-      replacement_at_exit(scheme_run_atexit_closers);
+      replacement_at_exit(do_run_atexit_closers_on_all);
     } else {
 #ifdef USE_ON_EXIT_FOR_ATEXIT
-      on_exit(scheme_run_atexit_closers, NULL);
+      on_exit(do_run_atexit_closers_on_all, NULL);
 #else
-      atexit(scheme_run_atexit_closers);
+      atexit(do_run_atexit_closers_on_all);
 #endif
     }
 
@@ -3715,21 +3720,29 @@ static void raise_break(Scheme_Thread *p)
   p->block_needs_wakeup = block_needs_wakeup;
 }
 
+static void escape_to_kill(Scheme_Thread *p)
+{
+  p->cjs.jumping_to_continuation = (Scheme_Object *)p;
+  p->cjs.alt_full_continuation = NULL;
+  p->cjs.is_kill = 1;
+  p->cjs.skip_dws = 0;
+  scheme_longjmp(*p->error_buf, 1);
+}
+
 static void exit_or_escape(Scheme_Thread *p)
 {
   /* Maybe this killed thread is nested: */
   if (p->nester) {
     if (p->running & MZTHREAD_KILLED)
       p->running -= MZTHREAD_KILLED;
-    p->cjs.jumping_to_continuation = (Scheme_Object *)p;
-    p->cjs.alt_full_continuation = NULL;
-    p->cjs.is_kill = 1;
-    p->cjs.skip_dws = 0;
-    scheme_longjmp(*p->error_buf, 1);
+    escape_to_kill(p);
   }
 
   if (SAME_OBJ(p, scheme_main_thread)) {
     /* Hard exit: */
+    if (scheme_current_place_id)
+      escape_to_kill(p);
+
     if (scheme_exit)
       scheme_exit(0);
     

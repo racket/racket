@@ -132,8 +132,6 @@ typedef struct Win_FD_Input_Thread {
   HANDLE thread;
 } Win_FD_Input_Thread;
 
-static HANDLE refcount_sema;
-
 typedef struct Win_FD_Output_Thread {
   /* This is malloced for use in a Win32 thread */
   HANDLE fd;
@@ -203,17 +201,28 @@ typedef struct Scheme_Subprocess {
 
 /******************** refcounts ********************/
 
-#ifdef WINDOWS_FILE_HANDLES
+#if defined(WINDOWS_FILE_HANDLES) || defined(MZ_USE_PLACES)
+# define MZ_LOCK_REFCOUNTS
+static mzrt_mutex *refcount_mutex;
+#endif
 
-static int *malloc_refcount()
+static int *malloc_refcount(int val, int free_on_zero)
 {
-  if (!refcount_sema)
-    refcount_sema = CreateSemaphore(NULL, 1, 1, NULL);
+  int *rc;
 
-  return (int *)malloc(sizeof(int));
+#ifdef MZ_LOCK_REFCOUNTS
+  if (!refcount_mutex)
+    mzrt_mutex_create(&refcount_mutex);
+#endif
+
+  rc = (int *)malloc(2 * sizeof(int));
+  *rc = val;
+  rc[1] = free_on_zero;
+
+  return rc;
 }
 
-static int dec_refcount(int *refcount)
+static int adj_refcount(int *refcount, int amt)
   XFORM_SKIP_PROC
 {
   int rc;
@@ -221,32 +230,25 @@ static int dec_refcount(int *refcount)
   if (!refcount)
     return 0;
 
-  WaitForSingleObject(refcount_sema, INFINITE);
-  *refcount -= 1;
+#ifdef MZ_LOCK_REFCOUNTS
+  mzrt_mutex_lock(refcount_mutex);
+#endif
+  if (amt > 0) {
+    /* don't increment up from 0 */
+    if (*refcount)
+      *refcount += amt;
+  } else
+    *refcount += amt;
   rc = *refcount;
-  ReleaseSemaphore(refcount_sema, 1, NULL);
+#ifdef MZ_LOCK_REFCOUNTS
+  mzrt_mutex_unlock(refcount_mutex);
+#endif
 
-  if (!rc) free(refcount);
+  if (!rc && refcount[1])
+    free(refcount);
 
   return rc;
 }
-
-#else
-
-static int *malloc_refcount()
-{
-  return (int *)scheme_malloc_atomic(sizeof(int));
-}
-
-static int dec_refcount(int *refcount)
-{
-  if (!refcount)
-    return 0;
-  *refcount -= 1;
-  return *refcount;
-}
-
-#endif
 
 /******************** file-descriptor I/O ********************/
 
@@ -257,6 +259,8 @@ static int dec_refcount(int *refcount)
    (non-GCed) records that mediate the threads. */
 
 #ifdef MZ_FDS
+
+static int *stdin_refcount, *stdout_refcount, *stderr_refcount;
 
 # define MZPORT_FD_BUFFSIZE 4096
 # define MZPORT_FD_DIRECT_THRESHOLD MZPORT_FD_BUFFSIZE
@@ -406,7 +410,8 @@ THREAD_LOCAL_DECL(void *scheme_break_semaphore;)
 
 #ifdef MZ_FDS
 static Scheme_Object *make_fd_input_port(int fd, Scheme_Object *name, int regfile, int textmode, int *refcount, int internal);
-static Scheme_Object *make_fd_output_port(int fd, Scheme_Object *name, int regfile, int textmode, int read_too, int flush_mode);
+static Scheme_Object *make_fd_output_port(int fd, Scheme_Object *name, int regfile, int textmode, int read_too, int flush_mode,
+					  int *refcount);
 #endif
 #ifdef USE_OSKIT_CONSOLE
 static Scheme_Object *make_oskit_console_input_port();
@@ -587,6 +592,14 @@ void scheme_init_port_places(void)
      All writing by the main thread will get flushed on exit
      (but not, of course, if the thread is shutdown via a
      custodian). */
+
+  if (!stdin_refcount) {
+    /* Referece counts are needed for stdio and places; start
+       at 1 in main place, but then cancel initial count */
+    stdin_refcount = malloc_refcount(1, 0);
+    stdout_refcount = malloc_refcount(1, 0);
+    stderr_refcount = malloc_refcount(1, 0);
+  }
 #endif
 
   REGISTER_SO(read_string_byte_buffer);
@@ -602,9 +615,10 @@ void scheme_init_port_places(void)
 #else
 # ifdef MZ_FDS
 #  ifdef WINDOWS_FILE_HANDLES
-			    : make_fd_input_port((int)GetStdHandle(STD_INPUT_HANDLE), scheme_intern_symbol("stdin"), 0, 0, NULL, 0)
+			    : make_fd_input_port((int)GetStdHandle(STD_INPUT_HANDLE), scheme_intern_symbol("stdin"), 0, 0, 
+						 stdin_refcount, 0)
 #  else
-			    : make_fd_input_port(0, scheme_intern_symbol("stdin"), 0, 0, NULL, 0)
+			    : make_fd_input_port(0, scheme_intern_symbol("stdin"), 0, 0, stdin_refcount, 0)
 #  endif
 # else
 			    : scheme_make_named_file_input_port(stdin, scheme_intern_symbol("stdin"))
@@ -618,9 +632,10 @@ void scheme_init_port_places(void)
 # ifdef WINDOWS_FILE_HANDLES
 			     : make_fd_output_port((int)GetStdHandle(STD_OUTPUT_HANDLE), 
 						   scheme_intern_symbol("stdout"), 0, 0, 0,
-                                                   -1)
+                                                   -1, stdout_refcount)
 # else
-			     : make_fd_output_port(1, scheme_intern_symbol("stdout"), 0, 0, 0, -1)
+			     : make_fd_output_port(1, scheme_intern_symbol("stdout"), 0, 0, 0, -1,
+						   stdout_refcount)
 # endif
 #else
 			     : scheme_make_file_output_port(stdout)
@@ -633,15 +648,23 @@ void scheme_init_port_places(void)
 # ifdef WINDOWS_FILE_HANDLES
 			     : make_fd_output_port((int)GetStdHandle(STD_ERROR_HANDLE), 
 						   scheme_intern_symbol("stderr"), 0, 0, 0,
-                                                   MZ_FLUSH_ALWAYS)
+                                                   MZ_FLUSH_ALWAYS, stderr_refcount)
 # else
 			     : make_fd_output_port(2, scheme_intern_symbol("stderr"), 0, 0, 0,
-                                                   MZ_FLUSH_ALWAYS)
+                                                   MZ_FLUSH_ALWAYS, stderr_refcount)
 # endif
 #else
 			     : scheme_make_file_output_port(stderr)
 #endif
 			     );
+
+#ifdef MZ_FDS
+  if (!scheme_current_place_id) {
+    adj_refcount(stdin_refcount, -1);
+    adj_refcount(stdout_refcount, -1);
+    adj_refcount(stderr_refcount, -1);
+  }
+#endif
 
 #if defined(FILES_HAVE_FDS)
 # ifndef USE_OSKIT_CONSOLE
@@ -4195,7 +4218,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   } while ((ok == -1) && (errno == EINTR));
 
   regfile = S_ISREG(buf.st_mode);
-  return make_fd_output_port(fd, scheme_make_path(filename), regfile, 0, and_read, -1);
+  return make_fd_output_port(fd, scheme_make_path(filename), regfile, 0, and_read, 
+			     -1, NULL);
 #else
 # ifdef WINDOWS_FILE_HANDLES
   if (!existsok)
@@ -4280,7 +4304,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       SetEndOfFile(fd);
   }
 
-  return make_fd_output_port((int)fd, scheme_make_path(filename), regfile, mode[1] == 't', and_read, -1);
+  return make_fd_output_port((int)fd, scheme_make_path(filename), regfile, mode[1] == 't', and_read, 
+			     -1, NULL);
 # else
   if (scheme_directory_exists(filename)) {
     if (!existsok)
@@ -5476,7 +5501,7 @@ fd_close_input(Scheme_Input_Port *port)
     } /* otherwise, thread is responsible for clean-up */
   } else {
     int rc;
-    rc = dec_refcount(fip->refcount);
+    rc = adj_refcount(fip->refcount, -1);
     if (!rc) {
       CloseHandle((HANDLE)fip->fd);
     }
@@ -5484,7 +5509,7 @@ fd_close_input(Scheme_Input_Port *port)
 #else
  {
    int rc;
-   rc = dec_refcount(fip->refcount);
+   rc = adj_refcount(fip->refcount, -1);
    if (!rc) {
      int cr;
      do {
@@ -5493,6 +5518,12 @@ fd_close_input(Scheme_Input_Port *port)
    }
  }
 #endif
+}
+
+static void
+fd_init_close_input(Scheme_Input_Port *port)
+{
+  /* never actually opened! */
 }
 
 static void
@@ -5559,6 +5590,7 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
   Scheme_Input_Port *ip;
   Scheme_FD *fip;
   unsigned char *bfr;
+  int start_closed = 0;
 
   fip = MALLOC_ONE_RT(Scheme_FD);
 #ifdef MZTAG_REQUIRED
@@ -5579,7 +5611,13 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
   fip->textmode = win_textmode;  
 #endif
 
-  fip->refcount = refcount;
+  if (refcount) {
+    fip->refcount = refcount;
+    if (!adj_refcount(refcount, 1)) {
+      /* fd is already closed! */
+      start_closed = 1;
+    }
+  }
 
   fip->flush = MZ_FLUSH_NEVER;
 
@@ -5591,7 +5629,9 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
 			      scheme_progress_evt_via_get,
 			      scheme_peeked_read_via_get,
 			      fd_byte_ready,
-			      fd_close_input,
+			      (start_closed 
+			       ? fd_init_close_input
+			       : fd_close_input),
 			      fd_need_wakeup,
 			      !internal);
   ip->p.buffer_mode_fun = fd_input_buffer_mode;
@@ -5599,7 +5639,7 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
   ip->pending_eof = 1; /* means that pending EOFs should be tracked */
 
 #ifdef WINDOWS_FILE_HANDLES
-  if (!regfile) {
+  if (!regfile && !start_closed) {
     /* To get non-blocking I/O for anything that can block, we create
        a separate reader thread.
 
@@ -5642,6 +5682,9 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
     scheme_remember_thread(h, 1);
   }
 #endif
+
+  if (start_closed)
+    scheme_close_input_port((Scheme_Object *)ip);
 
   return (Scheme_Object *)ip;
 }
@@ -5713,7 +5756,7 @@ static void WindowsFDICleanup(Win_FD_Input_Thread *th)
   CloseHandle(th->ready_sema);
   CloseHandle(th->you_clean_up_sema);
 
-  rc = dec_refcount(th->refcount);
+  rc = adj_refcount(th->refcount, -1);
   if (!rc) CloseHandle(th->fd);
 
   free(th->buffer);
@@ -6736,7 +6779,7 @@ fd_close_output(Scheme_Output_Port *port)
     fop->oth = NULL;
   } else {
     int rc;
-    rc = dec_refcount(fop->refcount);
+    rc = adj_refcount(fop->refcount, -1);
     if (!rc) {
       CloseHandle((HANDLE)fop->fd);
     }
@@ -6744,7 +6787,7 @@ fd_close_output(Scheme_Output_Port *port)
 #else
  {
    int rc;
-   rc = dec_refcount(fop->refcount);
+   rc = adj_refcount(fop->refcount, -1);
 
    if (!rc) {
      int cr;
@@ -6754,6 +6797,12 @@ fd_close_output(Scheme_Output_Port *port)
    }
  }
 #endif
+}
+
+static void
+fd_init_close_output(Scheme_Output_Port *port)
+{
+  /* never actually opened */
 }
 
 static int fd_output_buffer_mode(Scheme_Port *p, int mode)
@@ -6777,11 +6826,12 @@ static int fd_output_buffer_mode(Scheme_Port *p, int mode)
 
 static Scheme_Object *
 make_fd_output_port(int fd, Scheme_Object *name, int regfile, int win_textmode, int and_read,
-                    int flush_mode)
+                    int flush_mode, int *refcount)
 {
   Scheme_FD *fop;
   unsigned char *bfr;
   Scheme_Object *the_port;
+  int start_closed = 0;
 
   fop = MALLOC_ONE_RT(Scheme_FD);
 #ifdef MZTAG_REQUIRED
@@ -6814,24 +6864,36 @@ make_fd_output_port(int fd, Scheme_Object *name, int regfile, int win_textmode, 
     fop->flush = MZ_FLUSH_NEVER;
   }
 
+  if (refcount) {
+    fop->refcount = refcount;
+    if (!adj_refcount(refcount, 1)) {
+      /* fd is already closed! */
+      start_closed = 1;
+    }
+  }
+
   the_port = (Scheme_Object *)scheme_make_output_port(fd_output_port_type,
 						      fop,
 						      name,
 						      scheme_write_evt_via_write,
 						      fd_write_string,
 						      (Scheme_Out_Ready_Fun)fd_write_ready,
-						      fd_close_output,
+						      (start_closed
+						       ? fd_init_close_output
+						       : fd_close_output),
 						      (Scheme_Need_Wakeup_Output_Fun)fd_write_need_wakeup,
 						      NULL,
 						      NULL,
 						      1);
   ((Scheme_Port *)the_port)->buffer_mode_fun = fd_output_buffer_mode;
 
+  if (start_closed)
+    scheme_close_output_port(the_port);
+
   if (and_read) {
     int *rc;
     Scheme_Object *a[2];
-    rc = malloc_refcount();
-    *rc = 2;
+    rc = malloc_refcount(1, 1);
     fop->refcount = rc;
     a[1] = the_port;
     a[0] = make_fd_input_port(fd, name, regfile, win_textmode, rc, 0);
@@ -6845,9 +6907,8 @@ static void flush_if_output_fds(Scheme_Object *o, Scheme_Close_Custodian_Client 
   if (SCHEME_OUTPUT_PORTP(o)) {
     Scheme_Output_Port *op;
     op = scheme_output_port_record(o);
-    if (SAME_OBJ(op->sub_type, fd_output_port_type)) {
+    if (SAME_OBJ(op->sub_type, fd_output_port_type))
       scheme_flush_output(o);
-    }
   }
 }
 
@@ -6926,7 +6987,7 @@ static void WindowsFDOCleanup(Win_FD_Output_Thread *oth)
   CloseHandle(oth->work_sema);
   CloseHandle(oth->you_clean_up_sema);
   
-  rc = dec_refcount(oth->refcount);
+  rc = adj_refcount(oth->refcount, -1);
   if (!rc) CloseHandle(oth->fd);
 
   if (oth->buffer)
@@ -6942,7 +7003,7 @@ Scheme_Object *
 scheme_make_fd_output_port(int fd, Scheme_Object *name, int regfile, int textmode, int read_too)
 {
 #ifdef MZ_FDS
-  return make_fd_output_port(fd, name, regfile, textmode, read_too, -1);
+  return make_fd_output_port(fd, name, regfile, textmode, read_too, -1, NULL);
 #else
   return NULL;
 #endif
@@ -8347,7 +8408,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*--------------------------------------*/
 
   in = (in ? in : make_fd_input_port(from_subprocess[0], scheme_intern_symbol("subprocess-stdout"), 0, 0, NULL, 0));
-  out = (out ? out : make_fd_output_port(to_subprocess[1], scheme_intern_symbol("subprocess-stdin"), 0, 0, 0, -1));
+  out = (out ? out : make_fd_output_port(to_subprocess[1], scheme_intern_symbol("subprocess-stdin"), 0, 0, 0, -1, NULL));
   if (stderr_is_stdout)
     err = scheme_false;
   else
@@ -9188,6 +9249,9 @@ void scheme_kill_green_thread_timer()
   close(external_event_fd);
   close(put_external_event_fd);
 # endif
+#endif
+#ifdef WIN32_FD_HANDLES
+  CloseHandle((HANDLE)scheme_break_semaphore);
 #endif
 }
 
