@@ -3621,5 +3621,6 @@ Scheme_Env *scheme_place_instance_init();
 void scheme_place_instance_destroy();
 void scheme_kill_green_thread_timer();
 void scheme_place_check_for_interruption();
+void scheme_check_place_port_ok();
 
 #endif /* __mzscheme_private__ */

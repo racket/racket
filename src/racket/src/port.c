@@ -653,6 +653,13 @@ void scheme_init_port_places(void)
       put_external_event_fd = fds[1];
       fcntl(external_event_fd, F_SETFL, MZ_NONBLOCKING);
       fcntl(put_external_event_fd, F_SETFL, MZ_NONBLOCKING);
+    } else {
+      if (!scheme_current_place_id) {
+        scheme_log_abort("creation of scheduler pipe failed");
+        abort();
+      } else {
+        /* place will call scheme_check_place_port_ok() to discover failure */
+      }
     }
   }
 # endif
@@ -686,6 +693,19 @@ void scheme_set_stdio_makers(Scheme_Stdio_Maker_Proc in,
   scheme_make_stdout = out;
   scheme_make_stderr = err;
 }
+
+#ifdef MZ_USE_PLACES
+void scheme_check_place_port_ok()
+{
+# if defined(FILES_HAVE_FDS)
+#  ifndef USE_OSKIT_CONSOLE
+  if (!external_event_fd) {
+    scheme_signal_error("place: scheduler pipe failed");
+  }
+#  endif
+# endif
+}
+#endif
 
 /*========================================================================*/
 /*                                fd arrays                               */
@@ -9161,6 +9181,13 @@ void scheme_kill_green_thread_timer()
   kill_green_thread_timer();
 #elif defined(USE_WIN32_THREAD_TIMER)
   scheme_stop_itimer_thread();
+#endif
+
+#if defined(FILES_HAVE_FDS)
+# ifndef USE_OSKIT_CONSOLE
+  close(external_event_fd);
+  close(put_external_event_fd);
+# endif
 #endif
 }
 

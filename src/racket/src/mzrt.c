@@ -182,19 +182,19 @@ mzrt_thread_id mz_proc_thread_id(mz_proc_thread* thread) {
 }
 
 mz_proc_thread* mzrt_proc_first_thread_init() {
-  /* initialize mz_proc_thread struct for first thread myself that wasn't created with mz_proc_thread_create,
-   * so it can communicate with other mz_proc_thread_created threads via pt_mboxes */
+  /* initialize mz_proc_thread struct for first thread that wasn't created with mz_proc_thread_create */
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
-  thread->mbox      = pt_mbox_create();
   thread->threadid  = mz_proc_thread_self();
   proc_thread_self  = thread;
   thread->refcount = 1;
   return thread;
 }
 
-mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_proc, void* data, intptr_t stacksize) {
+mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_proc, void* data, intptr_t stacksize)
+{
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
   mzrt_thread_stub_data *stub_data;
+  int ok;
 
 #   ifndef WIN32
   pthread_attr_t *attr;
@@ -212,19 +212,25 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
 
   stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
 
-  thread->mbox = pt_mbox_create();
   stub_data->start_proc = start_proc;
   stub_data->data       = data;
   stub_data->thread     = thread;
 #   ifdef WIN32
   thread->threadid = (HANDLE)_beginthreadex(NULL, stacksize, mzrt_win_thread_stub, stub_data, 0, NULL);
+  ok = (thread->threadid != -1L);
 #   else
 #    ifdef NEED_GC_THREAD_OPS
-  GC_pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
+  ok = !GC_pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #    else
-  pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
+  ok = !pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #    endif
 #   endif
+
+  if (!ok) {
+    free(thread);
+    free(stub_data);
+    return NULL;
+  }
 
   return thread;
 }
@@ -765,60 +771,6 @@ int mzrt_sema_destroy(mzrt_sema *s)
 }
 
 #endif
-
-/****************** PROCESS THREAD MAIL BOX *******************************/
-
-pt_mbox *pt_mbox_create() {
-  pt_mbox *mbox = (pt_mbox *)malloc(sizeof(pt_mbox));
-  mbox->count = 0;
-  mbox->in    = 0;
-  mbox->out   = 0;
-  mzrt_mutex_create(&mbox->mutex);
-  mzrt_cond_create(&mbox->nonempty);
-  mzrt_cond_create(&mbox->nonfull);
-  return mbox;
-}
-
-void pt_mbox_send(pt_mbox *mbox, int type, void *payload, pt_mbox *origin) {
-  mzrt_mutex_lock(mbox->mutex);
-  while ( mbox->count == 5 ) {
-    mzrt_cond_wait(mbox->nonfull, mbox->mutex);
-  }
-  mbox->queue[mbox->in].type = type;
-  mbox->queue[mbox->in].payload = payload;
-  mbox->queue[mbox->in].origin = origin;
-  mbox->in = (mbox->in + 1) % 5;
-  mbox->count++;
-  mzrt_cond_signal(mbox->nonempty);
-  mzrt_mutex_unlock(mbox->mutex);
-}
-
-void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin){
-  mzrt_mutex_lock(mbox->mutex);
-  while ( mbox->count == 0 ) {
-    mzrt_cond_wait(mbox->nonempty, mbox->mutex);
-  }
-  *type    = mbox->queue[mbox->out].type;
-  *payload = mbox->queue[mbox->out].payload;
-  *origin  = mbox->queue[mbox->out].origin;
-  mbox->out = (mbox->out + 1) % 5;
-  mbox->count--;
-  mzrt_cond_signal(mbox->nonfull);
-  mzrt_mutex_unlock(mbox->mutex);
-}
-
-void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload) {
-  pt_mbox *return_origin;
-  pt_mbox_send(mbox, type, payload, origin);
-  pt_mbox_recv(origin, return_type, return_payload, &return_origin);
-}
-
-void pt_mbox_destroy(pt_mbox *mbox) {
-  mzrt_mutex_destroy(mbox->mutex);
-  mzrt_cond_destroy(mbox->nonempty);
-  mzrt_cond_destroy(mbox->nonfull);
-  free(mbox);
-}
 
 /************************************************************************/
 /************************************************************************/

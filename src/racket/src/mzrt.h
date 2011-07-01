@@ -31,7 +31,6 @@ typedef pthread_t mzrt_thread_id;
 typedef struct mz_proc_thread {
   mzrt_thread_id threadid;
   int refcount;
-  struct pt_mbox *mbox;
 } mz_proc_thread;
 
 
@@ -84,28 +83,7 @@ int mzrt_sema_post(mzrt_sema *sema);
 int mzrt_sema_wait(mzrt_sema *sema);
 int mzrt_sema_destroy(mzrt_sema *sema);
 
-/****************** PROCESS THREAD MAIL BOX *******************************/
-typedef struct pt_mbox_msg {
-  int     type;
-  void    *payload;
-  struct pt_mbox *origin;
-} pt_mbox_msg;
-
-typedef struct pt_mbox {
-  struct pt_mbox_msg queue[5];
-  int count;
-  int in;
-  int out;
-  mzrt_mutex *mutex;
-  mzrt_cond *nonempty;
-  mzrt_cond *nonfull;
-} pt_mbox;
-
-pt_mbox *pt_mbox_create();
-void pt_mbox_send(pt_mbox *mbox, int type, void *payload, pt_mbox *origin);
-void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin);
-void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload);
-void pt_mbox_destroy(pt_mbox *mbox);
+/****************** Compare and Swap *******************************/
 
 static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val) {
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER) && __GNUC__ <= 4 && __GNUC_MINOR__ < 1

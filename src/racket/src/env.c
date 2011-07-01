@@ -509,10 +509,28 @@ Scheme_Env *scheme_place_instance_init(void *stack_base) {
   return env; 
 }
 
+static void force_more_closed(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
+{
+  /* no need to shut down threads: */
+  if (!f || SCHEME_THREADP(o))
+    return;
+
+  /* don't close stdin, stdout, or stderr file descriptors: */
+  if (SAME_OBJ(scheme_orig_stdin_port, o)
+      || SAME_OBJ(scheme_orig_stderr_port, o)
+      || SAME_OBJ(scheme_orig_stdout_port, o))
+    return;
+  
+  f(o, data);
+}
+
 void scheme_place_instance_destroy() {
   /* shutdown custodian */
-  /* run atexit handlers to flush file ports */
+  /* run atexit handlers to flush file ports, and also
+     force file-stream ports closed */
+  scheme_add_atexit_closer(force_more_closed);
   scheme_run_atexit_closers();
+  scheme_release_file_descriptor();
 
   scheme_end_futures_per_place();
 #if defined(MZ_USE_PLACES)

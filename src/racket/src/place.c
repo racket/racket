@@ -238,6 +238,11 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   /* create new place */
   proc_thread = mz_proc_thread_create(place_start_proc, place_data);
 
+  if (!proc_thread) {
+      mzrt_sema_destroy(ready);
+    scheme_signal_error("place: place creation failed");
+  }
+
   /* wait until the place has started and grabbed the value
      from `place_data'; it's important that a GC doesn't happen
      here until the other place is far enough. */
@@ -1717,12 +1722,14 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     p->error_buf = &new_error_buf;
     if (!scheme_setjmp(new_error_buf)) {
       Scheme_Object *dynamic_require;
+
+      scheme_check_place_port_ok();
+
       dynamic_require = scheme_builtin_value("dynamic-require");
       place_main = scheme_apply(dynamic_require, 2, a);
       a[0] = channel;
       scheme_apply(place_main, 1, a);
-    }
-    else {
+    } else {
       rc = 1;
     }
     p->error_buf = saved_error_buf;

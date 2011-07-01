@@ -721,6 +721,8 @@ void scheme_end_futures_per_place()
 
     free(fs->pool_threads);
     free(fs);
+
+    scheme_future_state = NULL;
   }
 }
 
