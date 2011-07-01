@@ -319,7 +319,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Hash_Table *place_local_misc_table_;
   int place_evts_array_size_;
   struct Evt **place_evts_;
-  void *place_object_;
+  struct Scheme_Place_Object *place_object_;
   struct Scheme_Object *empty_self_shift_cache_;
   struct Scheme_Bucket_Table *scheme_module_code_cache_;
   struct Scheme_Object *group_member_cache_;

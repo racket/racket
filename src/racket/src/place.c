@@ -21,7 +21,7 @@ static int id_counter;
 static mzrt_mutex *id_counter_mutex;
 
 SHARED_OK mz_proc_thread *scheme_master_proc_thread;
-THREAD_LOCAL_DECL(void *place_object);
+THREAD_LOCAL_DECL(struct Scheme_Place_Object *place_object);
 static Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_wait(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_kill(int argc, Scheme_Object *args[]);
@@ -34,7 +34,7 @@ static Scheme_Object *place_channel_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_channel(int argc, Scheme_Object *args[]);
 static Scheme_Object* place_allowed_p(int argc, Scheme_Object *args[]);
-static int cust_kill_place(Scheme_Object *pl, void *notused);
+static void cust_kill_place(Scheme_Object *pl, void *notused);
 
 static Scheme_Place_Async_Channel *place_async_channel_create();
 static Scheme_Place_Bi_Channel *place_bi_channel_create();
@@ -145,7 +145,7 @@ typedef struct Place_Start_Data {
   Scheme_Object *channel;
   Scheme_Object *current_library_collection_paths;
   mzrt_sema *ready;  /* malloc'ed item */
-  void *place_obj;   /* malloc'ed item */
+  struct Scheme_Place_Object *place_obj;   /* malloc'ed item */
 } Place_Start_Data;
 
 static void null_out_runtime_globals() {
@@ -174,6 +174,8 @@ typedef struct Scheme_Place_Object {
   char ref;
   mz_jmp_buf *exit_buf;
   void *signal_handle;
+  void *parent_signal_handle; /* set to NULL when the place terminates */
+  intptr_t result; /* initialized to 1, reset when parent_signal_handle becomes NULL */
   /*Thread_Local_Variables *tlvs; */
 } Scheme_Place_Object;
 
@@ -194,6 +196,12 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_obj->die = 0;
   place_obj->pbreak = 0;
   place_obj->ref= 1;
+  place_obj->result = 1;
+  {
+    GC_CAN_IGNORE void *handle;
+    handle = scheme_get_signal_handle();
+    place_obj->parent_signal_handle = handle;
+  }
 
   mzrt_sema_create(&ready, 0);
 
@@ -202,14 +210,14 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_data->ready    = ready;
   place_data->place_obj = place_obj;
 
-  if (argc == 2) {
+  {
     Scheme_Object *so;
 
     if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0])) {
-      scheme_wrong_type("place", "module-path or path", 0, argc, args);
+      scheme_wrong_type("dynamic-place", "module-path or path", 0, argc, args);
     }
     if (!SCHEME_SYMBOLP(args[1])) {
-      scheme_wrong_type("place", "symbol", 1, argc, args);
+      scheme_wrong_type("dynamic-place", "symbol", 1, argc, args);
     }
 
     so = places_deep_copy_to_master(args[0]);
@@ -227,9 +235,6 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
       place_data->channel = (Scheme_Object *) channel;
     }
   }
-  else {
-    scheme_wrong_count_m("place", 2, 2, argc, args, 0);
-  }
 
   collection_paths = scheme_current_library_collection_paths(0, NULL);
   collection_paths = places_deep_copy_to_master(collection_paths);
@@ -243,6 +248,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     scheme_signal_error("place: place creation failed");
   }
 
+  mz_proc_thread_detach(proc_thread);
+
   /* wait until the place has started and grabbed the value
      from `place_data'; it's important that a GC doesn't happen
      here until the other place is far enough. */
@@ -252,28 +259,28 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_data->ready = NULL;
   place_data->place_obj = NULL;
   
-  place->proc_thread = proc_thread;
-
-
   {
     Scheme_Custodian *cust;
     Scheme_Custodian_Reference *mref;
     cust = scheme_get_current_custodian();
     mref = scheme_add_managed(NULL,
-        (Scheme_Object *)place,
-        (Scheme_Close_Custodian_Client *)cust_kill_place,
-        NULL,
-        1);
+                              (Scheme_Object *)place,
+                              cust_kill_place,
+                              NULL,
+                              1);
     place->mref = mref;
   }
 
   return (Scheme_Object*) place;
 }
 
-static int do_place_kill(Scheme_Place *place) {
+static void do_place_kill(Scheme_Place *place) 
+{
   Scheme_Place_Object *place_obj;
   int ref = 0;
-  place_obj = (Scheme_Place_Object*) place->place_obj;
+  place_obj = place->place_obj;
+
+  if (!place_obj) return;
 
   {
     mzrt_mutex_lock(place_obj->lock);
@@ -283,15 +290,16 @@ static int do_place_kill(Scheme_Place *place) {
 
     if (ref != 0) { scheme_signal_received_at(place_obj->signal_handle); }
 
+    place->result = place_obj->result;
+
     mzrt_mutex_unlock(place_obj->lock);
   }
 
-  if (ref == 0) { free(place->place_obj); }
-  else { scheme_signal_received_at(place_obj->signal_handle); }
+  if (ref == 0)
+    free(place->place_obj);
 
   scheme_remove_managed(place->mref, (Scheme_Object *)place);
   place->place_obj = NULL;
-  return 0;
 }
 
 static int do_place_break(Scheme_Place *place) {
@@ -311,33 +319,28 @@ static int do_place_break(Scheme_Place *place) {
   return 0;
 }
 
-static int cust_kill_place(Scheme_Object *pl, void *notused) {
-  return do_place_kill((Scheme_Place *)pl);
+static void cust_kill_place(Scheme_Object *pl, void *notused) {
+  do_place_kill((Scheme_Place *)pl);
 }
 
 static Scheme_Object *place_kill(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
 
-  if (argc != 1) {
-    scheme_wrong_count_m("place-kill", 1, 1, argc, args, 0);
-  }
-  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
+  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
     scheme_wrong_type("place-kill", "place", 0, argc, args);
-  }
-  return scheme_make_integer(do_place_kill(place));
+
+  do_place_kill(place);
+  return scheme_void;
 }
 
 static Scheme_Object *place_break(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
 
-  if (argc != 1) {
-    scheme_wrong_count_m("place-break", 1, 1, argc, args, 0);
-  }
-  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
+  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
     scheme_wrong_type("place-break", "place", 0, argc, args);
-  }
+
   return scheme_make_integer(do_place_break(place));
 }
 
@@ -790,85 +793,36 @@ static void do_group_signal_fds()
 
 #endif
 
-# if defined(MZ_PRECISE_GC)
+/* ---------------------------------------------------------------------- */
 
-/*============= THREAD JOIN HANDLER =============*/
-typedef struct {
-  mz_proc_thread *proc_thread;
-  Scheme_Place   *waiting_place; 
-  int            *wake_fd;
-  int             ready;
-  intptr_t            rc;
-} proc_thread_wait_data;
+static int place_wait_ready(Scheme_Object *_p) {
+  Scheme_Place *p = (Scheme_Place *)_p;
+  int done;
 
+  if (!p->place_obj) return 1;
 
-static void *mz_proc_thread_wait_worker(void *data) {
-  void           *rc;
-  proc_thread_wait_data *wd = (proc_thread_wait_data*) data;
+  mzrt_mutex_lock(p->place_obj->lock);
+  done = !p->place_obj->parent_signal_handle;
+  mzrt_mutex_unlock(p->place_obj->lock);
 
-  rc = mz_proc_thread_wait(wd->proc_thread);
-  wd->rc = (intptr_t) rc;
-  wd->ready = 1;
-  scheme_signal_received_at(wd->wake_fd);
-  return NULL;
-}
-
-static int place_wait_ready(Scheme_Object *o) {
-  proc_thread_wait_data *wd = (proc_thread_wait_data*) o;
-  if (wd->ready) {
+  if (done) {
+    do_place_kill(p); /* sets result, frees place */
     return 1;
   }
+
   return 0;
 }
-# endif
 
 static Scheme_Object *place_wait(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
 
-  if (argc != 1) {
-    scheme_wrong_count_m("place-wait", 1, 1, argc, args, 0);
-  }
-  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
+  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
     scheme_wrong_type("place-wait", "place", 0, argc, args);
-  }
- 
-# ifdef MZ_PRECISE_GC
-   {
-    Scheme_Object *rc;
-    mz_proc_thread *worker_thread;
-    Scheme_Place *waiting_place;
-    int *wake_fd;
+  
+  scheme_block_until(place_wait_ready, NULL, (Scheme_Object*)place, 0);
 
-    proc_thread_wait_data *wd;
-    wd = (proc_thread_wait_data*) malloc(sizeof(proc_thread_wait_data));
-    wd->proc_thread = (mz_proc_thread *)place->proc_thread;
-    wd->waiting_place = waiting_place;
-    wake_fd = scheme_get_signal_handle();
-    wd->wake_fd = wake_fd;
-    wd->ready   = 0;
-
-    worker_thread = mz_proc_thread_create(mz_proc_thread_wait_worker, wd);
-    mz_proc_thread_detach(worker_thread);
-    scheme_block_until(place_wait_ready, NULL, (Scheme_Object *) wd, 0);
-
-    rc = scheme_make_integer((intptr_t)wd->rc);
-    free(wd);
-    /*
-    return rc;
-    */
-    return scheme_void;
-  }
-# else
-  {
-    void *rcvoid;
-    rcvoid = mz_proc_thread_wait((mz_proc_thread *)place->proc_thread);
-    /*
-    return scheme_make_integer((intptr_t) rcvoid);
-    */
-    return scheme_void;
-  }
-# endif
+  return scheme_make_integer(place->result);
 }
 
 static Scheme_Object *place_p(int argc, Scheme_Object *args[])
@@ -1591,7 +1545,7 @@ void scheme_place_check_for_interruption() {
   char local_die;
   char local_break;
 
-  place_obj = (Scheme_Place_Object *) place_object;
+  place_obj = place_object;
   if (place_obj) {
     {
       mzrt_mutex_lock(place_obj->lock);
@@ -1613,7 +1567,7 @@ void scheme_place_check_for_interruption() {
 
 static void place_release_place_object() {
   int ref = 0;
-  Scheme_Place_Object *place_obj = (Scheme_Place_Object *) place_object;
+  Scheme_Place_Object *place_obj = place_object;
   if (place_obj) {
     mzrt_mutex_lock(place_obj->lock);
       ref = --place_obj->ref;
@@ -1625,24 +1579,36 @@ static void place_release_place_object() {
   }
 }
 
-static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[])
+static void place_set_result(Scheme_Object *result)
 {
   intptr_t status;
 
-  if (SCHEME_INTP(argv[0])) {
-    status = SCHEME_INT_VAL(argv[0]);
+  if (SCHEME_INTP(result)) {
+    status = SCHEME_INT_VAL(result);
     if (status < 1 || status > 255)
       status = 0;
   } else
     status = 0;
 
+  mzrt_mutex_lock(place_object->lock);
+  place_object->result = status;
+  scheme_signal_received_at(place_object->parent_signal_handle);
+  place_object->parent_signal_handle = NULL;
+  mzrt_mutex_unlock(place_object->lock);
+}
+
+static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[])
+{
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting via (exit)", scheme_current_place_id);
+
+  place_set_result(argv[0]);
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
   scheme_place_instance_destroy();
 
   place_release_place_object();
-  mz_proc_thread_exit((void *) status);
+  mz_proc_thread_exit(NULL);
+
   return scheme_void; /* Never get here */
 }
   
@@ -1652,7 +1618,6 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   Scheme_Object *place_main;
   Scheme_Object *a[2], *channel;
   mzrt_thread_id ptid;
-  intptr_t rc = 0;
   ptid = mz_proc_thread_self();
   
   place_data = (Place_Start_Data *) data_arg;
@@ -1683,7 +1648,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   else {
     channel = place_data->channel;
   }
-  place_obj = (Scheme_Place_Object*) place_data->place_obj;
+  place_obj = place_data->place_obj;
   place_object = place_obj;
   place_obj->ref++;
   
@@ -1714,6 +1679,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     Scheme_Thread * volatile p;
     mz_jmp_buf * volatile saved_error_buf;
     mz_jmp_buf new_error_buf;
+    Scheme_Object * volatile rc = scheme_false;
+      
 
     place_obj->exit_buf = &new_error_buf;
 
@@ -1728,11 +1695,14 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
       dynamic_require = scheme_builtin_value("dynamic-require");
       place_main = scheme_apply(dynamic_require, 2, a);
       a[0] = channel;
-      scheme_apply(place_main, 1, a);
+      (void)scheme_apply(place_main, 1, a);
+      rc = scheme_make_integer(0);
     } else {
-      rc = 1;
+      rc = scheme_make_integer(1);
     }
     p->error_buf = saved_error_buf;
+    
+    place_set_result(rc);
   }
 
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
@@ -1741,7 +1711,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   scheme_place_instance_destroy();
 
   place_release_place_object();
-  return (void*) rc;
+
+  return NULL;
 }
 
 Scheme_Object *places_deep_copy_to_master(Scheme_Object *so) {
@@ -2128,18 +2099,12 @@ Scheme_Place_Bi_Channel *place_bi_peer_channel_create(Scheme_Place_Bi_Channel *o
 }
 
 static Scheme_Object *place_channel(int argc, Scheme_Object *args[]) {
-  if (argc == 0) {
-    Scheme_Place_Bi_Channel *ch;
-    Scheme_Object *a[2];
-    ch = place_bi_channel_create();
-    a[0] = (Scheme_Object *) ch;
-    a[1] = (Scheme_Object *) place_bi_peer_channel_create(ch);
-    return scheme_values(2, a);
-  }
-  else {
-    scheme_wrong_count_m("place-channel", 0, 0, argc, args, 0);
-  }
-  return scheme_true;
+  Scheme_Place_Bi_Channel *ch;
+  Scheme_Object *a[2];
+  ch = place_bi_channel_create();
+  a[0] = (Scheme_Object *) ch;
+  a[1] = (Scheme_Object *) place_bi_peer_channel_create(ch);
+  return scheme_values(2, a);
 }
 
 static Scheme_Object *place_channel_p(int argc, Scheme_Object *args[])

@@ -3611,10 +3611,10 @@ typedef struct Scheme_Place_Bi_Channel {
 
 typedef struct Scheme_Place {
   Scheme_Object so;
-  void *proc_thread;
-  void *place_obj;
+  struct Scheme_Place_Object *place_obj;
   Scheme_Object *channel;
   Scheme_Custodian_Reference *mref;
+  intptr_t result; /* set when place_obj becomes NULL */
 } Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();

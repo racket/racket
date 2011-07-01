@@ -6,15 +6,16 @@
   (printf "Hello from place\n")))
 
 (let ([p (place/base (p1 ch)
-          (printf "Hello form place 2\n"))])
+          (printf "Hello form place 2\n")
+          (exit 99))])
   (test #f place? 1)
   (test #f place? void)
   (test #t place? p)
 
   (err/rt-test (place-wait 1))
   (err/rt-test (place-wait void))
-  (test (void) place-wait p)
-)
+  (test 99 place-wait p)
+  (test 99 place-wait p))
 
 (arity-test dynamic-place 2 2)
 (arity-test place-wait 1 1)
@@ -33,6 +34,8 @@
 (let ([p (place/base (p1 ch)
           (printf "Hello form place 2\n")
           (sync never-evt))])
+  (place-kill p)
+  (place-kill p)
   (place-kill p))
 
 (for ([v (list #t #f null 'a #\a 1 1/2 1.0 (expt 2 100) 
