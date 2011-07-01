@@ -1,8 +1,9 @@
 #lang racket/base
 
-(require racket/class racket/port racket/list racket/match
+(require racket/class racket/port racket/list racket/match racket/string
          racket/gui/base mrlib/switchable-button
-         racket/unit drracket/tool)
+         racket/unit drracket/tool
+         unstable/sequence)
 
 (require (prefix-in tr: typed-scheme/typed-reader)
          typed-scheme/optimizer/logging)
@@ -43,6 +44,13 @@
                    (min 255 (- max-g (* (sub1 x) bucket-size-g)))
                    (min 255 (- max-b (* (sub1 x) bucket-size-b)))))))
 
+;; Similar to the log-entry family of structs, but geared towards GUI display.
+;; Also designed to contain info for multiple overlapping log entries.
+;; stxs+msgs is a list of syntax-message pairs
+(struct report-entry (stxs+msgs start end))
+(struct opt-report-entry        report-entry ())
+(struct missed-opt-report-entry report-entry (badness irritants))
+
 (define highlights-mixin
   (mixin ((class->interface text%)) ()
     (inherit begin-edit-sequence
@@ -67,20 +75,24 @@
              ;; info needed to remove the highlight
              (list start end color caret-space style))))
 
+    (define (format-message stxs+msgs)
+      (string-join (for/list ([(stx msg) (in-pairs stxs+msgs)])
+                     (format "~a\n~a" (syntax->datum stx) msg))
+                   "\n\n"))
+
     (define (highlight-entry l)
       (match l
-        [(log-entry kind msg stx (? number? pos))
-         (let* ([start (sub1 pos)]
-                [end   (+ start (syntax-span stx))]
-                [opt?  (opt-log-entry? l)] ;; opt or missed opt?
+        [(report-entry stxs+msgs start end)
+         (let* ([opt?  (opt-report-entry? l)] ; opt or missed opt?
                 [color (if opt?
                            "lightgreen"
                            (vector-ref color-table
-                                       (missed-opt-log-entry-badness l)))])
+                                       (missed-opt-report-entry-badness l)))])
            (send this highlight-range start end color)
            (send this set-clickback start end
                  (lambda (ed start end)
-                   (message-box "Performance Report" msg)))
+                   (message-box "Performance Report"
+                                (format-message stxs+msgs))))
            ;; record highlights to undo them later
            (cons (list start end color)
                  ;; missed optimizations have irritants, circle them
@@ -88,15 +100,13 @@
                      '()
                      (filter values ; remove irritants w/o location
                              (map highlight-irritant
-                                  (missed-opt-log-entry-irritants l))))))]
-        [_ '()])) ; no source location, don't highlight anything
+                                  (missed-opt-report-entry-irritants l))))))]))
 
-    (define/public (add-highlights)
+    (define (generate-log)
       (define portname (send this get-port-name))
       (define input    (open-input-text-editor this))
       (port-count-lines! input)
       (define log '())
-      ;; generate the log
       (with-intercepted-tr-logging
        (lambda (l)
          (set! log (cons (cdr (vector-ref l 2)) ; log-entry struct
@@ -105,34 +115,57 @@
          (parameterize ([current-namespace  (make-base-namespace)]
                         [read-accept-reader #t])
            (expand (tr:read-syntax portname input)))))
-      (set! log (sort log < #:key log-entry-pos))
-      ;; detect overlapping reports
-      (define-values (rev-log/overlaps _)
-        (for/fold ([rev-log/overlaps '()]
+      log)
+
+    ;; converts log-entry structs to report-entry structs for further
+    ;; processing
+    (define (log->report log)
+      (define (log-entry->report-entry l)
+        (match l
+          [(log-entry kind msg stx (? number? pos))
+           (define stxs+msgs `((,stx . ,msg)))
+           (define start     (sub1 pos))
+           (define end       (+ start (syntax-span stx)))
+           (if (opt-log-entry? l)
+               (opt-report-entry stxs+msgs start end)
+               (missed-opt-report-entry stxs+msgs start end
+                                        (missed-opt-log-entry-badness   l)
+                                        (missed-opt-log-entry-irritants l)))]
+          [_ #f])) ; no source location, ignore
+      (filter values (map log-entry->report-entry log)))
+
+    ;; detect overlapping reports and merge them
+    (define (collapse-report orig-report)
+      ;; sort in order of starting point
+      (define report (sort orig-report < #:key report-entry-start))
+      (define-values (new-report _)
+        (for/fold ([new-report '()]
                    [prev #f])
-            ([l (in-list log)])
+            ([l (in-list report)])
           (match* (prev l)
-            [((log-entry k1 msg1 stx1 pos1) (log-entry k2 msg2 stx2 pos2))
+            [((report-entry stxs+msgs1 start1 end1)
+              (report-entry stxs+msgs2 start2 end2))
              (=> unmatch)
-             (define end-prev (+ pos1 (syntax-span stx1)))
-             (if (< pos2 end-prev) ; l in within prev
+             (if (< start2 end1) ; l in within prev
                  ;; merge the two
-                 (values (cons (merge-entries prev l)
-                               (cdr rev-log/overlaps))
+                 (values (cons (merge-entries prev l) (cdr new-report))
                          ;; we don't advance, since we merged
                          prev)
                  (unmatch))]
-            [(l1 l2) ; no overlap, just add to the list
-             (values (cons l rev-log/overlaps) l)])))
-      (set! log rev-log/overlaps)
+            [(prev l) ; no overlap, just add to the list
+             (values (cons l new-report) l)])))
+      new-report)
+
+    (define/public (add-highlights)
+      (define report (collapse-report (log->report (generate-log))))
       (define max-badness
         (for/fold ([max-badness 0])
-            ([l (in-list log)]
-             #:when (missed-opt-log-entry? l))
-          (max max-badness (missed-opt-log-entry-badness l))))
+            ([l (in-list report)]
+             #:when (missed-opt-report-entry? l))
+          (max max-badness (missed-opt-report-entry-badness l))))
       (unless (= max-badness 0) ; no missed opts, color table code would error
         (set! color-table (make-color-table max-badness)))
-      (define new-highlights (map highlight-entry log))
+      (define new-highlights (map highlight-entry report))
       (set! highlights (append (apply append new-highlights) highlights)))
 
     (define (clear-highlights)
@@ -151,27 +184,23 @@
     (super-new)))
 
 (define (merge-entries prev l)
-  (define new-stx (log-entry-stx prev)) ; prev starts earlier than l
-  (define new-pos (log-entry-pos prev))
-  (define new-msg (string-append (log-entry-msg prev) "\n" (log-entry-msg l)))
+  (define new-stxs+msgs
+    (append (report-entry-stxs+msgs prev) (report-entry-stxs+msgs l)))
   (match (list prev l)
-    [`(,(missed-opt-log-entry k1 m1 s1 p1 irritants1 m-irr1 badness1)
-       ,(missed-opt-log-entry k2 m2 s2 p2 irritants2 m-irr2 badness2))
-     ;; both are missed opts
-     (missed-opt-log-entry #f ; kind doesn't matter at this point
-                           new-msg new-stx new-pos
-                           (append irritants1 irritants2)
-                           #f ; merged-irritants either
-                           (+ badness1 badness2))]
-    [(or `(,(missed-opt-log-entry k1 m1 s1 p1 irritants m-irr badness)
-           ,(log-entry k2 m2 s2 p2))
-         `(,(log-entry k1 m1 s1 p1)
-           ,(missed-opt-log-entry k2 m2 s2 p2 irritants m-irr badness)))
+    [`(,(missed-opt-report-entry ss+ms1 start1 end1 bad1 irr1)
+       ,(missed-opt-report-entry ss+ms2 start2 end2 bad2 irr2))
+     ;; we take start1 and end1 since prev includes l
+     (missed-opt-report-entry new-stxs+msgs start1 end1
+                              (+ bad1 bad2) (append irr1 irr2))]
+    [(or `(,(missed-opt-report-entry ss+ms1 start1 end1 bad irr)
+           ,(report-entry ss+ms2 start2 end2))
+         `(,(report-entry ss+ms1 start1 end1)
+           ,(missed-opt-report-entry ss+ms2 start2 end2 bad irr)))
      ;; since missed opts are more important to report, they win
-     (missed-opt-log-entry #f new-msg new-stx new-pos irritants #f badness)]
-    [`(,(log-entry k1 m1 s1 p1) ,(log-entry k2 m2 s2 p2))
+     (missed-opt-report-entry new-stxs+msgs start1 end1 bad irr)]
+    [`(,(report-entry ss+ms1 start1 end1) ,(report-entry ss+ms2 start2 end2))
      ;; both are opts
-     (log-entry #f new-msg new-stx new-pos)]))
+     (report-entry new-stxs+msgs start1 end1)]))
 
 (define-unit tool@
   (import drracket:tool^)
