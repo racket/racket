@@ -722,7 +722,7 @@ void scheme_check_place_port_ok()
 {
 # if defined(FILES_HAVE_FDS)
 #  ifndef USE_OSKIT_CONSOLE
-  if (!external_event_fd) {
+  if (!external_event_fd && !put_external_event_fd) {
     scheme_signal_error("place: scheduler pipe failed");
   }
 #  endif
