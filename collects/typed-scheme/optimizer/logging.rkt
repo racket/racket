@@ -31,7 +31,8 @@
 
 
 (define (log-optimization kind msg stx)
-  (let ([new-entry (opt-log-entry kind msg stx (syntax-position stx))])
+  (let* ([stx (locate-stx stx)]
+         [new-entry (opt-log-entry kind msg stx (syntax-position stx))])
     (set! log-so-far (cons new-entry log-so-far))))
 
 ;;--------------------------------------------------------------------
@@ -91,9 +92,10 @@
 ;; Attempts to merge the incoming missed optimization with existing ones.
 ;; Otherwise, adds the new one to the log.
 (define (log-missed-optimization kind msg stx [irritants '()])
-  ;; for convenience, if a single irritant is given, wrap it in a list
-  ;; implicitly
-  (let* ([irritants (if (list? irritants) irritants (list irritants))]
+  (let* ([stx (locate-stx stx)]
+         ;; for convenience, if a single irritant is given, wrap it in a list
+         ;; implicitly
+         [irritants (if (list? irritants) irritants (list irritants))]
          [new
           (missed-opt-log-entry kind msg stx (syntax-position stx)
                                 irritants '() 1)]
@@ -184,7 +186,7 @@
 ;; For command-line printing purposes.
 ;; Not as user friendly as what's produced by the DrRacket tool.
 (define (format-log-entry entry)
-  (define stx (locate-stx (log-entry-stx entry)))
+  (define stx (log-entry-stx entry))
   (define msg
     (format "~a ~a ~s -- ~a"
             (syntax-source-file-name stx)
