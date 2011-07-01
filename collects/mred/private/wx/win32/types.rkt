@@ -1,5 +1,6 @@
 #lang racket/base
-(require ffi/unsafe)
+(require ffi/unsafe
+	 ffi/winapi)
 
 (provide
  (protect-out _wfun
@@ -50,11 +51,8 @@
               MAKELONG
               MAKELPARAM))
 
-(define win64? (equal? "win32\\x86_64" (path->string (system-library-subpath #f))))
-(define win_abi (if win64? #f 'stdcall))
-
 (define-syntax-rule (_wfun . a)
-  (_fun #:abi win_abi . a))
+  (_fun #:abi winapi . a))
 
 (define _WORD _int16)
 (define _DWORD _int32)

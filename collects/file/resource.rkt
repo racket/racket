@@ -1,6 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
-         ffi/unsafe/define)
+         ffi/unsafe/define
+	 ffi/winapi)
 
 (provide get-resource
          write-resource)
@@ -46,9 +47,6 @@
 (define-ffi-definer define-kernel kernel-dll
   #:default-make-fail make-not-available)
 
-(define win64? (equal? "win32\\x86_64" (path->string (system-library-subpath #f))))
-(define win_abi (if win64? #f 'stdcall))
-
 (define _LONG _long)
 (define _DWORD _int32)
 (define _REGSAM _DWORD)
@@ -59,11 +57,11 @@
 
 (define ERROR_SUCCESS 0)
 
-(define-advapi RegOpenKeyExW (_fun #:abi win_abi
+(define-advapi RegOpenKeyExW (_fun #:abi winapi
                                    _HKEY _string/utf-16 _DWORD _REGSAM (hkey : (_ptr o _HKEY))
                                    -> (r : _LONG)
                                    -> (and (= r ERROR_SUCCESS) hkey)))
-(define-advapi RegCreateKeyExW (_fun #:abi win_abi
+(define-advapi RegCreateKeyExW (_fun #:abi winapi
                                      _HKEY _string/utf-16 (_DWORD = 0) 
                                      (_pointer = #f) ; class
                                      _DWORD ; options
@@ -74,7 +72,7 @@
                                      -> (r : _LONG)
                                      -> (and (= r ERROR_SUCCESS) hkey)))
 
-(define-advapi RegQueryValueExW (_fun #:abi win_abi
+(define-advapi RegQueryValueExW (_fun #:abi winapi
                                       _HKEY _string/utf-16 (_pointer = #f)
                                       (type : (_ptr o _DWORD))
                                       _pointer (len : (_ptr io _DWORD))
@@ -82,21 +80,21 @@
                                       -> (if (= r ERROR_SUCCESS) 
                                              (values len type)
                                              (values #f #f))))
-(define-advapi RegSetValueExW (_fun #:abi win_abi
+(define-advapi RegSetValueExW (_fun #:abi winapi
                                     _HKEY _string/utf-16 (_pointer = #f)
                                     _DWORD _pointer _DWORD
                                     -> (r : _LONG)
                                     -> (= r ERROR_SUCCESS)))
 
-(define-advapi RegCloseKey (_fun #:abi win_abi _HKEY -> _LONG))
+(define-advapi RegCloseKey (_fun #:abi winapi _HKEY -> _LONG))
 
-(define-kernel WritePrivateProfileStringW (_fun #:abi win_abi
+(define-kernel WritePrivateProfileStringW (_fun #:abi winapi
                                                 _string/utf-16 ; app
                                                 _string/utf-16 ; key
                                                 _string/utf-16 ; val
                                                 _string/utf-16 ; filename
                                                 -> _BOOL))
-(define-kernel GetPrivateProfileStringW (_fun #:abi win_abi
+(define-kernel GetPrivateProfileStringW (_fun #:abi winapi
                                               _string/utf-16 ; app
                                               _string/utf-16 ; key
                                               _string/utf-16 ; default

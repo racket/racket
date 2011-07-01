@@ -400,9 +400,9 @@ particular, its lexical context is properly preserved.
 The optional @racket[abi] keyword argument determines the foreign ABI
 that is used. Supplying @racket[#f] or @racket['default] indicates the
 platform-dependent default. The other possible
-values---@racket['stdcall]and @racket['sysv] (i.e., ``cdecl'')---are
+values---@racket['stdcall] and @racket['sysv] (i.e., ``cdecl'')---are
 currently supported only for 32-bit Windows; using them on other
-platforms raises an exception.
+platforms raises an exception. See also @racketmodname[ffi/winapi].
 
 If @racket[atomic?] is true, then when a Racket procedure is given
 this procedure type and called from foreign code, then the Racket

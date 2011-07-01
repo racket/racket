@@ -1,6 +1,9 @@
 #lang mzscheme
 
-(require mzlib/etc mzlib/foreign) (unsafe!)
+(require mzlib/etc 
+	 ffi/unsafe 
+	 ffi/cvector
+	 ffi/winapi)
 
 (define kernel32
   (delay (and (eq? 'windows (system-type)) (ffi-lib "kernel32"))))
@@ -23,7 +26,7 @@
 
 (define windows-getcomputername
   (delay-ffi-obj "GetComputerNameExA" (force kernel32)
-                 (_fun #:abi 'stdcall _int _bytes _cvector -> _int)))
+                 (_fun #:abi winapi _int _bytes _cvector -> _int)))
 
 (define (gethostname)
   (case (system-type)
