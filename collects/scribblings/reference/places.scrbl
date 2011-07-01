@@ -57,7 +57,7 @@ separate places. At the same time, the setup and communication costs
 for places can be higher than for futures.
 
 For example, the following expression lanches two places, echoes a
-message to each, and then waits for the places to complete and return:
+message to each, and then waits for the places to terminate:
 
 @racketblock[
 (let ([pls (for/list ([i (in-range 2)])
@@ -117,7 +117,20 @@ are simulated using @racket[thread].}
  with the name @racket[start-proc]. The function must accept a single
  argument, which is a @tech{place channel} that corresponds to the
  other end of communication for the @tech{place descriptor} returned
- by @racket[place].}
+ by @racket[place].
+
+ When the @tech{place} is created, the initial @tech{exit handler}
+ terminates the place, using the argument to the exit handler as the
+ place's @deftech{completion value}. Use @racket[(exit _v)] to
+ immediately terminate a place with the completion value
+ @racket[_v]. Since a completion value is limited to an exact integer
+ between @racket[0] and @racket[255], any other value for @racket[v]
+ is converted to @racket[0].
+
+ If the function indicated by @racket[module-path] and
+ @racket[start-proc] returns, then the place terminates with the
+ @tech{completion value} @racket[0].}
+
 
 @defform[(place id body ...+)]{
   Creates a place that evaluates @racket[body]
@@ -131,17 +144,27 @@ are simulated using @racket[thread].}
 
 
 @defproc[(place-wait [p place?]) exact-integer?]{
-  Returns the completion value of the place indicated by @racket[p],
-  blocking until the place completes if it has not already completed.
+  Returns the @tech{completion value} of the place indicated by @racket[p],
+  blocking until the place has terminated.
 }
+
+
+@defproc[(place-dead-evt [p place?]) evt?]{
+
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is
+ready if and only if @racket[p] has terminated.}
+
+
+@defproc[(place-kill [p place?]) void?]{
+  Immediately terminates the place, setting the place's
+  @tech{completion value} to @racket[1] if the place does not have a
+  completion value already.}
+
 
 @defproc[(place-break [p place?]) void?]{
   Sends place @racket[p] a break signal; see @secref["breakhandler"].
 }
 
-@defproc[(place-kill [p place?]) void?]{
-  Terminates the place indicated by @racket[p],
-}
 
 @defproc[(place-channel) (values place-channel? place-channel?)]{
 
@@ -208,15 +231,5 @@ messages:
        @racket[make-shared-bytes].}
 
 ]}
-
-@;------------------------------------------------------------------------
-@;@section[#:tag "placesync"]{Synchronizing Places}
-
-@defproc[(place-dead-evt [p place?]) evt?]{
-
-Returns a @tech{synchronizable event} (see @secref["sync"]) that is
-ready if and only if @racket[p] has terminated.
-
-}
 
 @;------------------------------------------------------------------------

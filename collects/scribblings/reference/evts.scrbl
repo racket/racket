@@ -183,17 +183,13 @@ generate events (see @racket[prop:evt]).
    or blocked on events with timeouts that have not yet expired. The
    event's result is @|void-const|.}
 
- @item{@racket[place-channel] --- a place-channel is ready when
+ @item{@racket[_place-channel] --- a @tech{place channel} is ready when
  @racket[place-channel-get] would not block. The channel's result as an
  event is the same as the @racket[place-channel-get] result.}
 
- @item{@racket[place] --- a place is ready when @racket[place-channel-get]
- would not block. The result as an event is the same as the
- @racket[place-channel-get] result.}
-
  @item{@racket[_place-dead] --- an event returned by
- @racket[place-dead-evt] applied to @racket[p] is ready when
- @racket[p] has terminated.  @ResultItself[_place-dead].}
+ @racket[(place-dead-evt _p)] is ready when @racket[_p] has
+ terminated.  @ResultItself[_place-dead].}
 
  ]
 
