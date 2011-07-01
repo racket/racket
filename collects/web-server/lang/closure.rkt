@@ -2,7 +2,8 @@
 (require syntax/free-vars
          (for-template
           racket/base
-          racket/serialize))
+          racket/serialize)
+         "util.rkt")
 
 (define (define-closure! label fvars stx)
   ; Boxes
@@ -108,7 +109,7 @@
     [(_ label lambda-stx)
      (let*-values 
          ([(lambda-fe-stx) (local-expand #'lambda-stx 'expression empty)]
-          [(fvars) (free-vars lambda-fe-stx)]
+          [(fvars) (free-vars (disarm lambda-fe-stx))]
           ; Define the closure struct (req serialize info value)
           [(make-CLOSURE-id CLOSURE?-id CLOSURE-env-id)
            (define-closure! #'label fvars lambda-fe-stx)])

@@ -69,7 +69,7 @@
       stx]
      [(with-continuation-mark ke me be)
       (let-values ([(es) (defun* (list #'ke #'me #'be))])
-        (quasisyntax/loc stx (with-continuation-mark #,@es)))]       
+        (quasisyntax/loc stx (with-continuation-mark #,@es)))]
      [(#%plain-app e ...)
       (let-values ([(es) (defun* (syntax->list #'(e ...)))])
         (quasisyntax/loc stx (#%plain-app #,@es)))]
