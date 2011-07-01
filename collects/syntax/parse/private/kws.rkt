@@ -46,7 +46,7 @@ An Arity is
                             (arity-maxpos arity)
                             (arity-minkws arity)
                             (arity-maxkws arity)
-                            pos-count keywords)])
+                            pos-count (sort keywords keyword<?))])
     (when msg
       (proc msg))))
 
@@ -55,7 +55,7 @@ An Arity is
                                 (arity-maxpos arity)
                                 (arity-minkws arity)
                                 (arity-maxkws arity)
-                                pos-count keywords)])
+                                pos-count (sort keywords keyword<?))])
     (when msg
       (proc msg))))
 

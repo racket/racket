@@ -194,3 +194,9 @@
    #:with c #'c0
    #:declare c (Nat> (syntax-e #'b0))
    (void)])
+
+(define-syntax-class (Nat-Between #:lo lo #:hi hi)
+  #:description (format "~s <= Nat <= ~s" lo hi)
+  (pattern x:nat #:when (<= lo (syntax-e #'x) hi)))
+(syntax-parse #'5
+  [(~var _ (Nat-Between #:lo 0 #:hi 10)) (void)])
