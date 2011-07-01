@@ -9,6 +9,7 @@
                     setup/option-sig
                     setup/dirs
                     setup/main-collects
+                    setup/path-to-relative
                     setup/xref scribble/xref
                     ;; setup/infotab -- no bindings from this are used
                     setup/getinfo
@@ -1138,13 +1139,21 @@ An @deftech{unpackable} is one of the following:
   file for this collection or @PLaneT package exists on the filesystem the @racket[syms] field holds the 
   identifiers defined in that file.
 }
-                                    
+
 @defproc[(reset-relevant-directories-state!) void?]{
    Resets the cache used by @racket[find-relevant-directories].}
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "main-collects"]{API for Paths Relative to @filepath{collects}}
+@section[#:tag "relative-paths"]{API for Relative Paths}
+
+The Racket installation tree can usually be moved around the filesystem.
+To support this, care must be taken to avoid absolute paths.  The
+following two APIs cover two aspects of this: a way to convert a path to
+a value that is relative to the @filepath{collets} tree, and a way to
+display such paths (e.g., in error messages).
+
+@subsection{Representing paths relative to @filepath{collects}}
 
 @defmodule[setup/main-collects]
 
@@ -1175,6 +1184,49 @@ back to a path relative to @racket[(find-collects-dir)].
 
 For historical reasons, if @racket[rel] is any kind of value other
 than specified in the contract above, it is returned as-is.}
+
+@subsection{Displaying paths relative to a common root}
+
+@defmodule[setup/path-to-relative]
+
+@defproc[(path->relative-string/library [path path-string?]
+                                        [default any/c (lambda (x) x)])
+         any]{
+  Produces a string suitable for display in error messages.  If the path
+  is an absolute one that is inside the @filepath{collects} tree, the
+  result will be a string that begins with @racket["<collects>/"].
+  Similarly, a path in the user-specific collects results in a prefix of
+  @racket["<user-collects>/"], and a @PLaneT path results in
+  @racket["<planet>/"].  If the path is not absolute, or if it is not in
+  any of these, the @racket[default] determines the result: if it is a
+  procedure, it is applied onto the path to get the result, otherwise it
+  is returned.
+}
+
+@defproc[(path->relative-string/setup [path path-string?]
+                                      [default any/c (lambda (x) x)])
+         any]{
+  Similar to @racket[path->relative-string/library], but more suited for
+  output during compilation: @filepath{collects} paths are shown with no
+  prefix, and in the user-specific collects with just a
+  @racket["<user>"] prefix.
+}
+
+@defproc[(make-path->relative-string [dirs (listof (cons (-> path?) string?))]
+                                     [default any/c (lambda (x) x)])
+         (path-string? any/c . -> . any)]{
+  This function produces functions like
+  @racket[path->relative-string/library] and
+  @racket[path->relative-string/setup].
+
+  @racket[dirs] determines the prefix substitutions.  It should be an
+  association list mapping a path-producing thunk to a prefix string for
+  paths in the specified path.
+
+  @racket[default] determines the default for the resulting function
+  (which can always be overridden by an additional argument to this
+  function).
+}
 
 @; ------------------------------------------------------------------------
 

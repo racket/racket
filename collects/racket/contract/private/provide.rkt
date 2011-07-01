@@ -6,7 +6,7 @@
 (require (for-syntax racket/base
                      racket/list
                      racket/struct-info
-                     unstable/dirs
+                     setup/path-to-relative
                      (prefix-in a: "helpers.rkt"))
          "arrow.rkt"
          "base.rkt"
@@ -61,8 +61,8 @@
                               (with-syntax
                                   ([src
                                     (or (and (path-string? (syntax-source #'id))
-                                             (path->directory-relative-string
-                                              (syntax-source #'id) #:default #f))
+                                             (path->relative-string/library
+                                              (syntax-source #'id) #f))
                                         (syntax-source #'id))]
                                    [line (syntax-line     #'id)]
                                    [col  (syntax-column   #'id)]

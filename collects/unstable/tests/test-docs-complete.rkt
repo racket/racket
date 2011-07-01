@@ -20,7 +20,6 @@
 (check-docs (quote unstable/find))
 (check-docs (quote unstable/file))
 (check-docs (quote unstable/exn))
-(check-docs (quote unstable/dirs))
 (check-docs (quote unstable/dict))
 (check-docs (quote unstable/define))
 (check-docs (quote unstable/debug))

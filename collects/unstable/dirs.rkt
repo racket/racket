@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; This file needs to be deleted -- it is now superseded by
+;; `setup/path-relativize'.
+
 ;; Unstable library by: Carl Eastlund <cce@ccs.neu.edu>
 ;; intended for use in racket/contract, so don't try to add contracts!
 

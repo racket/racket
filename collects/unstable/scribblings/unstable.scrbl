@@ -79,7 +79,6 @@ Keep documentation and tests up to date.
 @include-section["debug.scrbl"]
 @include-section["define.scrbl"]
 @include-section["dict.scrbl"]
-@include-section["dirs.scrbl"]
 @include-section["exn.scrbl"]
 @include-section["file.scrbl"]
 @include-section["find.scrbl"]

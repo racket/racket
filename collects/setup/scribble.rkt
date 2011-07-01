@@ -2,6 +2,7 @@
 
 (require "getinfo.ss"
          "dirs.ss"
+         "path-to-relative.rkt"
          "private/path-utils.ss"
          "main-collects.ss"
          "main-doc.ss"
@@ -232,10 +233,10 @@
                    (unless (or (memq 'depends-all (doc-flags (info-doc info)))
                                (memq 'depends-all-main (doc-flags (info-doc info))))
                      (unless one?
-                       (setup-printf "WARNING"
-                                     "undefined tag in ~a:" 
-                                     (path->name (doc-src-file
-                                                  (info-doc info))))
+                       (setup-printf
+                        "WARNING" "undefined tag in ~a:"
+                        (path->relative-string/setup
+                         (doc-src-file (info-doc info))))
                        (set! one? #t))
                      (setup-printf #f " ~s" k)))])
             (for ([k (info-undef info)])
@@ -300,7 +301,7 @@
                                       infos)])
           (define (say-rendering i)
             (setup-printf (if (info-rendered? i) "re-rendering" "rendering") "~a"
-              (path->name (doc-src-file (info-doc i)))))
+              (path->relative-string/setup (doc-src-file (info-doc i)))))
           (define (update-info info response)
             (match response 
               [#f (set-info-failed?! info #t)]
@@ -541,10 +542,10 @@
                             (and auto-user?
                                  (memq 'depends-all (doc-flags doc)))))])
     (when (or (not up-to-date?) (verbose))
-      (setup-printf 
+      (setup-printf
        (cond [up-to-date? "using"] [can-run? "running"] [else "skipping"])
        "~a"
-       (path->name (doc-src-file doc))))
+       (path->relative-string/setup (doc-src-file doc))))
 
     (if up-to-date?
       ;; Load previously calculated info:

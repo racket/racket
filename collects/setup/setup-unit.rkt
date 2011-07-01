@@ -24,7 +24,7 @@
          "getinfo.rkt"
          "dirs.rkt"
          "main-collects.rkt"
-         "private/path-utils.rkt"
+         "path-to-relative.rkt"
          "private/omitted-paths.rkt"
          "parallel-build.rkt"
          "collects.rkt")
@@ -88,9 +88,15 @@
 
   (define (relative-path-string? x) (and (path-string? x) (relative-path? x)))
 
-
   (define (call-info info flag mk-default test)
     (let ([v (info flag mk-default)]) (test v) v))
+
+  (define path->relative-string/console-bin
+    (make-path->relative-string
+     (list (cons find-console-bin-dir "<console-bin>/"))))
+  (define path->relative-string/gui-bin
+    (make-path->relative-string
+     (list (cons find-gui-bin-dir "<gui-bin>/"))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;
@@ -174,7 +180,7 @@
            (error name-sym
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
-    (define path-name (path->name path))
+    (define path-name (path->relative-string/setup path))
     (when (info 'compile-subcollections (lambda () #f))
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
@@ -464,7 +470,7 @@
                 (unless printed?
                   (set! printed? #t)
                   (setup-printf "deleting" "in ~a"
-                                (path->name (cc-path cc)))))])
+                                (path->relative-string/setup (cc-path cc)))))])
         (for ([path paths])
           (let ([full-path (build-path (cc-path cc) path)])
             (when (or (file-exists? full-path) (directory-exists? full-path))
@@ -514,7 +520,8 @@
                         [dep (build-path dir mode-dir (path-add-suffix name #".dep"))])
                    (when (and (file-exists? dep) (file-exists? zo))
                      (set! did-something? #t)
-                     (setup-printf "deleting" "~a" (path->name zo))
+                     (setup-printf "deleting" "~a"
+                                   (path->relative-string/setup zo))
                      (delete-file/record-dependency zo dependencies)
                      (delete-file/record-dependency dep dependencies))))))
             (when did-something? (loop dependencies))))
@@ -648,9 +655,11 @@
       (begin-record-error cc "making"
         (setup-printf "making" "~a" (cc-name cc))
         (control-io
-          (lambda (p where) 
-            (set! gcs 2) 
-            (setup-fprintf p #f " in ~a" (path->name (path->complete-path where (cc-path cc)))))
+          (lambda (p where)
+            (set! gcs 2)
+            (setup-fprintf p #f " in ~a"
+                           (path->relative-string/setup
+                            (path->complete-path where (cc-path cc)))))
           (let ([dir (cc-path cc)]
                 [info (cc-info cc)])
             (clean-cc dir info)
@@ -795,7 +804,7 @@
                        info-path))
               (make-directory* base)
               (let ([p info-path])
-                (setup-printf "updating" "~a" (path->name p))
+                (setup-printf "updating" "~a" (path->relative-string/setup p))
                 (with-handlers ([exn:fail? (warning-handler (void))])
                   (with-output-to-file p
                     #:exists 'truncate/replace
@@ -917,10 +926,10 @@
                      (setup-printf
                       "launcher"
                       "~a~a"
-                      (path->name p #:prefix (format "~a-bin" kind)
-                                    #:base (if (equal? kind 'console)
-                                             find-console-bin-dir
-                                             find-gui-bin-dir))
+                      (case kind
+                        [(gui)     (path->relative-string/gui-bin p)]
+                        [(console) (path->relative-string/console-bin p)]
+                        [else (error 'make-launcher "internal error (~s)" kind)])
                       (let ([v (current-launcher-variant)])
                         (if (eq? v (system-type 'gc)) "" (format " [~a]" v))))
                      (make-launcher

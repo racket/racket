@@ -1,8 +1,6 @@
 #lang racket/base
 (require syntax/srcloc
-         (for-syntax racket/base
-                     syntax/srcloc
-                     unstable/dirs))
+         (for-syntax racket/base syntax/srcloc setup/path-to-relative))
 (provide quote-srcloc
          quote-source-file
          quote-line-number
@@ -18,9 +16,8 @@
     [(_ loc)
      (let* ([src (build-source-location #'loc)])
        (cond
-        [(and
-          (path-string? (srcloc-source src))
-          (path->directory-relative-string (srcloc-source src) #:default #f))
+        [(and (path-string? (srcloc-source src))
+              (path->relative-string/library (srcloc-source src) #f))
          =>
          (lambda (rel)
            (with-syntax ([src rel]
