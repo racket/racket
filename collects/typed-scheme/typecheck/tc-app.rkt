@@ -563,6 +563,7 @@
         (match (map single-value (syntax->list #'pos-args))
           [(list (tc-result1: argtys-t) ...)
            (let* ([subst (infer vars null argtys-t dom rng (and expected (tc-results->values expected)))])
+             (unless subst (fail))
              (tc-keywords form (list (subst-all subst ar))
                           (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected))])]
        [(tc-result1: (Function: arities))
