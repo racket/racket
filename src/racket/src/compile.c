@@ -3324,6 +3324,7 @@ do_letrec_syntaxes(const char *where,
 	/* Pull back out the pieces we want: */
 	Scheme_Object *formname;
 	formname = SCHEME_STX_CAR(forms);
+        v = scheme_stx_taint_disarm(v, NULL);
 	v = SCHEME_STX_CDR(v);
 	v = cons(formname, cons(bindings, v));
 	v = scheme_datum_to_syntax(v, orig_forms, scheme_sys_wraps(origenv), 0, 2);

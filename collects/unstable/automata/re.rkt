@@ -14,7 +14,7 @@
 
 (define-for-syntax (re-expand stx)
   (syntax-parse
-   stx
+   (syntax-disarm stx (current-code-inspector))
    #:literals (complement seq union star epsilon nullset dseq rec unquote)
    [((~and op complement) lhs:expr)
     (quasisyntax/loc stx
