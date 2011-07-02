@@ -497,7 +497,7 @@
                s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
                [(nominal nominal-base) (module-path-index-split (caddr b))])
-    (test '"teachprims.ss" values real)
+    (test '"teachprims.rkt" values real)
     (test 'beginner-cons cadr b)
     (test '(lib "lang/htdp-intermediate.rkt") values nominal)
     (test 'cons cadddr b)))
@@ -511,7 +511,7 @@
                s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
                [(nominal nominal-base) (module-path-index-split (caddr b))])
-    (test '"teachprims.ss" values real)
+    (test '"teachprims.rkt" values real)
     (test 'beginner-cons cadr b)
     (test '(lib "lang/htdp-intermediate.rkt") values nominal)
     (test 'cons cadddr b)))
