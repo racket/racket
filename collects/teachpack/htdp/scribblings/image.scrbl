@@ -1,14 +1,14 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.rkt" (for-label scheme teachpack/htdp/image))
+@(require scribble/manual "shared.rkt" (for-label racket teachpack/htdp/image))
 
 @teachpack["image"]{Manipulating Images}
 
 @defmodule[#:require-form beginner-require htdp/image]
 
-The teachpack provides primitives for constructing and manipulating
+The teachpack provides functions for constructing and manipulating
 images. Basic, colored images are created as outlines or solid
-shapes. Additional primitives allow for the composition of images.
+shapes. Additional functions allow for the composition of images.
 
 @;-----------------------------------------------------------------------------
 @section{Images}
@@ -47,7 +47,7 @@ A @tech{Color} is a color-symbol (e.g., @racket['blue]) or a color-string
 @section[#:tag "creational"]{Creating Basic Shapes}
 
 In DrRacket, you can insert images from your file system. Use PNG images
-instead whenever possible for insertions. In addition, you can create basic
+whenever possible. In addition, you can create basic
 shapes with the following functions.
 
 @defproc[(rectangle [w (and/c number? (or/c zero? positive?))] [h (and/c number? (or/c zero? positive?))] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
@@ -104,9 +104,9 @@ basic properties of images.
 @defproc[(image-height [i image?]) integer?]{
  Obtain @racket[i]'s height in pixels}
 
-For the composition of images, you must know about @emph{pinholes}. Each
-image, including primitive ones, come with a pinhole. For images created
-with the above primitives, the pinhole is at the center of the shape except
+For the composition of images, you must know about @emph{pinholes}. Every
+image come with a pinhole. For images created
+with the above functions, the pinhole is at the center of the shape except
 for those created from @racket[line] and @racket[text].
 The @racket[text] function puts the pinhole at the upper left corner of
 the image, and @racket[line] puts the pinhole at the beginning of the line

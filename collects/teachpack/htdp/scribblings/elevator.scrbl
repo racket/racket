@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/elevator))
+          (for-label racket teachpack/htdp/elevator))
 
 @teachpack["elevator"]{Controlling an Elevator}
 

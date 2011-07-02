@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/draw))
+          (for-label racket teachpack/htdp/draw))
 
 @teachpack["draw"]{Simple Drawing}
 
@@ -58,8 +58,8 @@ Draws @racket[s] at @racket[p].}
 @defproc[(sleep-for-a-while [s number?]) true]{
 Suspends evaluation for @racket[s] seconds.}
 
-The teachpack also provides @racket[clear-] operations for each
-@racket[draw-] operation:
+The teachpack also provides @racket[clear-] functions for each
+@racket[draw-] function:
 
 @defproc[(clear-circle [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
          true]{

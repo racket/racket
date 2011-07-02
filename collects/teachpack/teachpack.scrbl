@@ -3,7 +3,7 @@
 @(require scribble/manual
           (for-label scheme/base))
 
-@title[#:style '(toc)]{@italic{How to Design Programs} Teachpacks}
+@title[#:style '(toc) #:tag "top"]{@italic{How to Design Programs} Teachpacks}
 
 Teaching languages are small subsets of a full programming language. While
  such restrictions simplify error diagnosis and the construction of tools,

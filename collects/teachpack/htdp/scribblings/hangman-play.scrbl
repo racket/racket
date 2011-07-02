@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/hangman))
+          (for-label racket teachpack/htdp/hangman))
 
 @teachpack["hangman-play"]{Playing Hangman}
 

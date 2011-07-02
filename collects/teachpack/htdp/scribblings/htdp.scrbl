@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label scheme))
+          (for-label racket))
 
 @title[#:style '(toc) #:tag "htdp"]{HtDP Teachpacks}
 
@@ -32,6 +32,6 @@
 
 @;-- what do those do? --
 
-@;include-section["Simplified Scheme Web Servlets"]
-@;include-section["Scheme Web Servlets"]
+@;include-section["Simplified Racket Web Servlets"]
+@;include-section["Racket Web Servlets"]
 

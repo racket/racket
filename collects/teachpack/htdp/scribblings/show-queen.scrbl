@@ -1,14 +1,14 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/show-queen))
+          (for-label racket teachpack/htdp/show-queen))
 
 @teachpack["show-queen"]{Queens}
 
 @;declare-exporting[teachpack/htdp/show-queen]
 @defmodule[#:require-form beginner-require htdp/show-queen]
 
-The teachpack provides the operation @racket[show-queen], which implements
+The teachpack provides the function @racket[show-queen], which implements
 a GUI for exploring the n-queens problem.
 
 @defproc[(show-queen [board (list-of (list-of boolean?))]) true]{The

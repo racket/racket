@@ -1,16 +1,16 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label (except-in scheme/base file-size)
+          (for-label (except-in racket/base file-size)
                      teachpack/htdp/dir
-                     scheme/contract))
+                     racket/contract))
 
 @teachpack["dir"]{Working with Files and Directories}
 
 @;declare-exporting[teachpack/htdp/dir]
 @defmodule[#:require-form beginner-require htdp/dir]
 
-The teachpack provides structures and operations for working with files and
+The teachpack provides structures and functions for working with files and
 directories: 
 
 @defstruct[dir ([name symbol?][dirs (listof dir?)][files (listof file?)])]{}

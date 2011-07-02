@@ -3,22 +3,22 @@
 @(require scribble/manual "shared.rkt"
           (for-label scheme teachpack/htdp/matrix lang/posn))
 
-@teachpack["matrix"]{Matrix Operations}
+@teachpack["matrix"]{Matrix Functions}
 
 @;declare-exporting[teachpack/htdp/matrix]
 @defmodule[#:require-form beginner-require htdp/matrix]
 
-The experimental teachpack supports matrices and matrix operations. A
+The experimental teachpack supports matrices and matrix functions. A
 matrix is just a rectangle of 'objects'. It is displayed as an image, just
 like the images from @secref["image"]. Matrices are images and, indeed,
 scenes in the sense of the @secref["world"]. 
 
 @emph{No educational materials involving matrices exist.}
 
-The operations access a matrix in the usual (school-mathematics) manner:
+The functions access a matrix in the usual (school-mathematics) manner:
 row first, column second. 
 
-The operations aren't tuned for efficiency so don't expect to build
+The functions aren't tuned for efficiency so don't expect to build
 programs that process lots of data. 
 
 @deftech{Rectangle} 

@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/convert))
+          (for-label racket teachpack/htdp/convert))
 
 @teachpack["convert"]{Converting Temperatures}
 

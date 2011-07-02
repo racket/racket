@@ -1,8 +1,8 @@
-{ (define LIBNAME "Scheme Web Servlets")
+{ (define LIBNAME "Racket Web Servlets")
   (include "head.tinc") }
 
 <p>The teachpack <code>servlet.ss</code> provides structures and
-functions for building Web servlets in Scheme. The data definitions
+functions for building Web servlets in Racket. The data definitions
 represent HTTP requests and Web page responses using these two structures:</p>
 
 <pre>

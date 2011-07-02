@@ -1,17 +1,17 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/guess))
+          (for-label racket teachpack/htdp/guess))
 
 @teachpack["guess"]{Guessing Numbers}
 
 @;declare-exporting[teachpack/htdp/guess]
 @defmodule[#:require-form beginner-require htdp/guess]
 
-The teachpack provides operations to play a guess-the-number game. Each
-operation display a GUI in which a player can choose specific values for
+The teachpack provides functions to play a guess-the-number game. Each
+function display a GUI in which a player can choose specific values for
 some number of digits and then check the guess. The more advanced
-operations ask students to implement more of the game.
+functions ask students to implement more of the game.
 
 @defproc[(guess-with-gui [check-guess (-> number? number? symbol?)]) true]{
 The @racket[check-guess] function consumes two numbers: @racket[guess], which

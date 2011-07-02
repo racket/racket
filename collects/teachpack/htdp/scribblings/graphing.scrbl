@@ -1,14 +1,14 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/graphing))
+          (for-label racket teachpack/htdp/graphing))
 
 @teachpack["graphing"]{Graphing Functions}
 
 @;declare-exporting[teachpack/htdp/graphing]
 @defmodule[#:require-form beginner-require htdp/graphing #:use-sources (htdp/draw)]
 
-The teachpack provides two operations for graphing functions in the regular
+The teachpack provides two functions for graphing functions in the regular
 (upper right) quadrant of the Cartesian plane (between 0 and 10 in both
 directions): 
 

@@ -7,8 +7,8 @@
 
 @defmodule[#:require-form beginner-require htdp/arrow-gui]
 
-The teachpack provides operations for creating and manipulating an arrow
-GUI. We recommend using the @seclink["world"]{world teachpack} instead.
+The teachpack provides functions for creating and manipulating an arrow
+GUI. We recommend using @racketmodname[2htdp/universe] instead.
 
 @deftech{modelT} @racket[(-> button% event% true)]
 

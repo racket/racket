@@ -1,22 +1,22 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/docs))
+          (for-label racket teachpack/htdp/docs))
 
 @teachpack["docs"]{Manipulating Simple HTML Documents}
 
 @;declare-exporting[teachpack/htdp/docs]
 @defmodule[#:require-form beginner-require htdp/docs]
 
-The teachpack provides three operations for creating simple ``HTML'' documents: 
+The teachpack provides three functions for creating simple ``HTML'' documents: 
 
 @deftech{Annotation} An @tech{Annotation} is a symbol that starts with ``<''
 and ends in ``>''. An end annotation is one that starts with ``</''.
 
-@defproc[(atom? [x any/c]) boolean?]{Determines whether or not a Scheme value
+@defproc[(atom? [x any/c]) boolean?]{Determines whether or not a value
 is a number, a symbol, or a string.} 
 
-@defproc[(annotation? [x any/c]) boolean?]{Determines whether or not a Scheme
+@defproc[(annotation? [x any/c]) boolean?]{Determines whether or not a
 symbol is a document annotation.} 
 
 @defproc[(end-annotation [x (unsyntax @tech{Annotation})]) (unsyntax @tech{Annotation})]{Consumes an annotation

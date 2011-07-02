@@ -40,14 +40,14 @@
       character]
 ]
 
-@prim-nonterms[("intermediate-w-lambda") define define-struct]
+@prim-nonterms[("intm-w-lambda") define define-struct]
 
-@prim-variables[("intermedia-w-lambda") empty true false]
+@prim-variables[("intm-w-lambda") empty true false]
 
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "intermediate-lambda-syntax"]{Syntax for Intermediate with Lambda}
+@section[#:tag "intm-w-lambda-syntax"]{Syntax for Intermediate with Lambda}
 
 
 @defform[(lambda (variable variable ...) expression)]{
@@ -90,7 +90,7 @@ the function.}
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "intermediate-lambda-common-syntax"]{Common Syntax}
+@section[#:tag "intm-w-lambda-common-syntax"]{Common Syntax}
 
 @(define-forms/normal define)
 
@@ -111,7 +111,7 @@ the function.}
              check-range
              require)
 
-@section[#:tag "intermediate-lambda-pre-defined"]{Pre-defined Functions}
+@section[#:tag "intm-w-lambda-pre-defined"]{Pre-defined Functions}
 
 @prim-op-defns['(lib "htdp-intermediate-lambda.ss" "lang") #'here '()]
 

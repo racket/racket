@@ -1,16 +1,15 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/gui))
+          (for-label racket teachpack/htdp/gui))
 
 @teachpack["gui"]{Simple Graphical User Interfaces}
 
 @;declare-exporting[teachpack/htdp/gui]
 @defmodule[#:require-form beginner-require htdp/gui]
 
-The teachpack provides operations for creating and manipulating graphical
-user interfaces. We recommend using the @seclink["world"]{world teachpack}
-instead. 
+The teachpack provides functions for creating and manipulating graphical
+user interfaces. We recommend using @racketmodname[2htdp/universe] instead. 
 
 @deftech{Window} A @tech{Window} is a data representation of a visible
 window on your computer screen.

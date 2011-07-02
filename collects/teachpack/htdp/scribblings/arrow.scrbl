@@ -8,9 +8,7 @@
 @;declare-exporting[teachpack/htdp/arrow]
 @defmodule[#:require-form beginner-require htdp/arrow]
 
-The teachpack implements a controller for moving shapes across a canvass. A
-shape is a class of data for which @racket[move] and @racket[draw]
-operations can be drawn. 
+The teachpack implements a controller for moving shapes across a canvass.  
 
 @defproc[(control-left-right
 	   [shape Shape]

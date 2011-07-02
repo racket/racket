@@ -1,7 +1,7 @@
-{ (define LIBNAME "Simplified Scheme Web Servlets")
+{ (define LIBNAME "Simplified Racket Web Servlets")
   (include "head.tinc") }
 
-<p>This teachpack provides a simplified API for PLT Scheme servlets. The
+<p>This teachpack provides a simplified API for Racket servlets. The
 teachpack does not require any understanding of HTML and higher-order
 functions. It uses structures and lists, and is therefore well-suited for
 use with an HtDP course.
@@ -134,7 +134,7 @@ ________________________________________________________________________________
 <p>The following example illustrates how the library enables programs to
 interact with the consumer. In particular, note the properly recursive
 calls to <code>login</code> in <code>inform-error</code>. Also note how the
-primitives <code>make-password</code> and <code>make-number</code> deliver
+functions <code>make-password</code> and <code>make-number</code> return
 strings and numbers, respectively.
 
 <pre>

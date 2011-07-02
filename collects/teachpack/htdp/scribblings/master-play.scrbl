@@ -1,6 +1,6 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.rkt" (for-label scheme teachpack/htdp/master))
+@(require scribble/manual "shared.rkt" (for-label racket teachpack/htdp/master))
 
 @teachpack["master-play"]{Playing MasterMind}
 
