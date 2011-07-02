@@ -32,10 +32,10 @@
 (eli:test
  (i 4)
  
- (regexp-match "\\(exception \\(make-i #f\\) \".+ on make-i .+\" '<no-expected-value> \"at line 36\"\\)"
+ (regexp-match "\\(exception \\(make-i #f\\) \"make-i.+\" '<no-expected-value> \"at line 36\"\\)"
                (with-output-to-string (λ () (test/exn (make-i #f) "contract"))))
  
- (regexp-match "\\(exception \\(i-f #f\\) \".+ on i-f .+\" '<no-expected-value> \"at line 39\"\\)"
+ (regexp-match "\\(exception \\(i-f #f\\) \"i-f.+\" '<no-expected-value> \"at line 39\"\\)"
                (with-output-to-string (λ () (test/exn (i-f #f) "contract"))))
  
  
@@ -45,7 +45,7 @@
  =>
  1
  
- (regexp-match "\\(exception \\(c1 \\(quote not-a-number\\)\\) \".+ on c1 .+\" '<no-expected-value> \"at line 49\"\\)"
+ (regexp-match "\\(exception \\(c1 \\(quote not-a-number\\)\\) \"c1.+\" '<no-expected-value> \"at line 49\"\\)"
                (with-output-to-string (λ () (test (c1 'not-a-number) (list 5)))))
  
  (regexp-match (regexp-quote "(exception (type-case t (list 1) (c () 1)) \"type-case: expected a value from type t, got: (1)\" '<no-expected-value> \"at line 53\")")
