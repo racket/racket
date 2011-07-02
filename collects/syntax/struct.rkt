@@ -200,25 +200,27 @@
 			   base))]
 	     [qs (lambda (x) (if (eq? x #t)
 				 x
-				 (and x `(quote-syntax ,x))))])
+				 (and x `(quote-syntax ,x))))]
+         [self-sels (reverse (if omit-sel?
+                                 null
+                                 (map qs (if omit-set? flds (every-other flds)))))]
+         [self-sets (reverse (if omit-sel?
+                                 null
+                                 (if omit-set?
+                                     (map (lambda (sel) #f) self-sels)
+                                     (map qs (every-other (if (null? flds)
+                                                              null
+                                                              (cdr flds)))))))])
         `(let ()
            (list
             ,(qs (car names))
             ,(qs (cadr names))
             ,(qs (caddr names))
             (list 
-             ,@(reverse (if omit-sel?
-                            null
-                            (map qs (if omit-set? flds (every-other flds)))))
+             ,@self-sels
              ,@(map qs (add-#f omit-sel? base-getters)))
             (list
-             ,@(reverse (if omit-set?
-                            null
-                            (map qs (if omit-sel?
-                                        flds
-                                        (every-other (if (null? flds)
-                                                         null
-                                                         (cdr flds)))))))
+             ,@self-sets
              ,@(map qs (add-#f omit-set? base-setters)))
             ,(qs base-name))))))
 

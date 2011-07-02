@@ -103,6 +103,7 @@
              (identifier/#f? (caddr x))
              (id/#f-list? identifier? (list-ref x 3))
              (id/#f-list? identifier/#f? (list-ref x 4))
+             (= (length (list-ref x 3)) (length (list-ref x 4)))
              (or (eq? #t (list-ref x 5)) (identifier/#f? (list-ref x 5)))))))
 
   (define-values (prop:struct-auto-info
