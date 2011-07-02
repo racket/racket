@@ -1,14 +1,13 @@
-
 (module distribute scheme/base
   (require scheme/file
            scheme/path
            setup/dirs
-	   mzlib/list
-	   setup/variant
-	   dynext/filename-version
-	   "private/macfw.ss"
-	   "private/windlldir.ss"
-	   "private/collects-path.ss")
+           mzlib/list
+           setup/variant
+           dynext/filename-version
+           "private/macfw.rkt"
+           "private/windlldir.rkt"
+           "private/collects-path.rkt")
 
   (provide assemble-distribution)
 

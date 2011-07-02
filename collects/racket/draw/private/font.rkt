@@ -2,13 +2,13 @@
 (require scheme/class
          ffi/unsafe
          ffi/unsafe/atomic
-         "syntax.ss"
-         "../unsafe/pango.ss"
-         "../unsafe/cairo.ss"
-         "font-syms.ss"
-         "font-dir.ss"
-         "local.ss"
-	 "xp.rkt")
+         "syntax.rkt"
+         "../unsafe/pango.rkt"
+         "../unsafe/cairo.rkt"
+         "font-syms.rkt"
+         "font-dir.rkt"
+         "local.rkt"
+         "xp.rkt")
 
 (provide font%
          font-list% the-font-list

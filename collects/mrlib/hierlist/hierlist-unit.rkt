@@ -1,14 +1,13 @@
-
 (module hierlist-unit mzscheme
   (require (all-except mzlib/unit rename)
-	   mzlib/class
-	   mzlib/class100
-	   mred/mred-sig
-	   mrlib/include-bitmap
-	   "hierlist-sig.ss")
+           mzlib/class
+           mzlib/class100
+           mred/mred-sig
+           mrlib/include-bitmap
+           "hierlist-sig.rkt")
 
   (require (rename mzlib/list sort* sort)
-	   mzlib/etc)
+           mzlib/etc)
 
   (define turn-up (include-bitmap "../../icons/turn-up.png" 'png/mask))
   (define turn-down (include-bitmap "../../icons/turn-down.png" 'png/mask))

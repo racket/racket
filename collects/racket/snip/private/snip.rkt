@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/file file/convertible
-         "snip-flags.ss"
+         "snip-flags.rkt"
          "load-one.rkt"
          "style.rkt"
          "private.rkt"

@@ -1,24 +1,24 @@
 ;; Scheme->VMScheme conversion phase
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-2001 PLT, Rice University
+;; (c) 1997-2011 PLT Scheme Inc
 
 ;; Takes a zodiac:* AST and produces a vm:* AST. Some
 ;;  zodiac:* AST elements are still used, particularly
-;;  bindings and varrefs. 
+;;  bindings and varrefs.
 
 ;; Well-applied known primitives are sometimes compiled
 ;;  to macro uses (where the macros are defined in mzc.h).
 
-(module vmphase mzscheme 
+(module vmphase mzscheme
   (require mzlib/unit
-	   mzlib/list
-	   mzlib/etc)
+           mzlib/list
+           mzlib/etc)
 
   (require syntax/zodiac-sig
-	   syntax/primitives)
+           syntax/primitives)
 
-  (require "sig.ss"
-	   "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide vmphase@)
   (define-unit vmphase@

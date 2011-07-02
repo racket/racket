@@ -1,7 +1,7 @@
 #lang scheme
 
-(require "../private/keyword-macros.ss"
-         "test-util.ss")
+(require "../private/keyword-macros.rkt"
+         "test-util.rkt")
 
 (reset-count)
 
@@ -62,4 +62,4 @@
    #:blaming (format "~a" form)
    #:message "#:a arg"))
 
-(print-tests-passed 'keyword-macros-test.ss)
+(print-tests-passed 'keyword-macros-test.rkt)

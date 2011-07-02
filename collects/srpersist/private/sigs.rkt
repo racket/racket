@@ -1,4 +1,4 @@
-;; sigs.ss for srpersist collection
+;; sigs.rkt for srpersist collection
 
 (module sigs mzscheme
 

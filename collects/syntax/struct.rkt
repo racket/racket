@@ -1,9 +1,8 @@
-
 (module struct scheme/base
   (require (for-syntax scheme/base)
            mzlib/etc
            scheme/contract
-	   "stx.ss"
+           "stx.rkt"
            scheme/struct-info)
   (require (for-template mzscheme))
   

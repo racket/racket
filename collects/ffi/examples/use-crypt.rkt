@@ -2,7 +2,7 @@
 
 #lang racket/base
 
-(require "crypt.ss")
+(require "crypt.rkt")
 
 (define passwd "foo")
 (define salt "xz")

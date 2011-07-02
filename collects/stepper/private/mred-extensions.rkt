@@ -4,8 +4,8 @@
          mred
          (prefix-in f: framework)
          mzlib/pretty
-         #;"testing-shared.ss"
-         "shared.ss")
+         #;"testing-shared.rkt"
+         "shared.rkt")
 
 (provide
  foot-img/horizontal

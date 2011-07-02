@@ -1,7 +1,6 @@
-
 (module bnf mzscheme
-  (require "struct.ss"
-           "decode.ss"
+  (require "struct.rkt"
+           "decode.rkt"
            mzlib/kw
            mzlib/class)
 

@@ -1,6 +1,6 @@
 (module stx mzscheme
   (require syntax/boundmap
-           "util.ss")
+           "util.rkt")
   
   (provide parse)
 
@@ -32,7 +32,7 @@
   (define (disarm stx)
     (syntax-disarm stx orig-insp))
 
-  ;; parse : syntax-object (box (list-of syntax-object)) -> s-re (see re.ss)
+  ;; parse : syntax-object (box (list-of syntax-object)) -> s-re (see re.rkt)
   ;; checks for errors and generates the plain s-exp form for s
   ;; Expands lex-abbrevs and applies lex-trans.
   (define (parse stx disappeared-uses)

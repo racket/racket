@@ -1,13 +1,12 @@
-
 (module compile-unit mzscheme
   (require mzlib/unit
-	   mzlib/process
-	   mzlib/sendevent
-	   "private/dirs.ss"
+           mzlib/process
+           mzlib/sendevent
+           "private/dirs.rkt"
            "private/stdio.rkt"
-	   "private/cmdargs.ss")
+           "private/cmdargs.rkt")
 
-  (require "compile-sig.ss")
+  (require "compile-sig.rkt")
 
   (provide dynext:compile@)
 

@@ -16,7 +16,7 @@
          (only-in scheme/class send)
          (only-in xml xexpr->string)
          (only-in setup/dirs find-doc-dir)
-         "utils.ss"
+         "utils.rkt"
          scheme/runtime-path)
 
 (provide make-search)

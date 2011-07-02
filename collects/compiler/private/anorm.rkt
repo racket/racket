@@ -1,6 +1,6 @@
 ;; A-Normalizer
 ;; (c) 1996-7 Sebastian Good
-;; (c) 1997-8 PLT, Rice University
+;; (c) 1997-2011 PLT Scheme Inc
 
 ; This file contains an "a-normalizer" for Zodiac abstract
 ;  syntax trees for Scheme.
@@ -34,13 +34,13 @@
 
 (module anorm mzscheme
   (require mzlib/unit
-	  mzlib/list
-	  mzlib/etc)
+           mzlib/list
+           mzlib/etc)
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide anorm@)
   (define-unit anorm@

@@ -1,11 +1,11 @@
 (module input-file-parser mzscheme
 
   ;; routines for parsing the input to the parser generator and producing a
-  ;; grammar (See grammar.ss)
+  ;; grammar (See grammar.rkt)
   
-  (require "yacc-helper.ss"
-           "../private-lex/token-syntax.ss"
-           "grammar.ss"
+  (require "yacc-helper.rkt"
+           "../private-lex/token-syntax.rkt"
+           "grammar.rkt"
            mzlib/class
            mzlib/contract)
   (require-for-template mzscheme)
@@ -57,7 +57,7 @@
         (values args biggest-pos))))
     
   ;; Given the list of terminal symbols and the precedence/associativity definitions,
-  ;; builds terminal structures (See grammar.ss)
+  ;; builds terminal structures (See grammar.rkt)
   ;; build-terms: symbol list * symbol list list -> term list
   (define (build-terms term-list precs)
     (let ((counter 0)
@@ -87,7 +87,7 @@
                     (hash-table-get prec-table term-sym (lambda () #f))))
        term-list)))
   
-  ;; Retrieves the terminal symbols from a terminals-def (See terminal-syntax.ss)
+  ;; Retrieves the terminal symbols from a terminals-def (See terminal-syntax.rkt)
   ;; get-terms-from-def: identifier? -> (listof identifier?)
   (define (get-terms-from-def term-syn)
     (let ((t (syntax-local-value term-syn (lambda () #f))))

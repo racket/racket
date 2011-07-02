@@ -5,11 +5,11 @@
            net/tcp-sig
            net/url-sig
            net/url-unit
-           "browser-sig.ss"
-           "private/sig.ss"
-           "private/bullet.ss"
-           "private/html.ss"
-           "private/hyper.ss")
+           "browser-sig.rkt"
+           "private/sig.rkt"
+           "private/bullet.rkt"
+           "private/html.rkt"
+           "private/hyper.rkt")
   
   (provide browser@)
   

@@ -4,13 +4,13 @@
 
 (module vm2c mzscheme
   (require mzlib/unit
-	   mzlib/list)
+           mzlib/list)
 
   (require syntax/zodiac-sig
-	   syntax/primitives)
+           syntax/primitives)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide vm2c@)
   (define-unit vm2c@

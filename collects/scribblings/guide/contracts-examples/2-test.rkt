@@ -1,5 +1,5 @@
 #lang racket
-(require rackunit rackunit/text-ui "2.ss")
+(require rackunit rackunit/text-ui "2.rkt")
 
 (define s0 (initialize (flat-contract integer?) =))
 (define s2 (push (push s0 2) 1))

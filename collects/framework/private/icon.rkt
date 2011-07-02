@@ -5,8 +5,8 @@
          scheme/promise
          scheme/class
          scheme/runtime-path
-         "bday.ss"
-         "sig.ss"
+         "bday.rkt"
+         "sig.rkt"
          mred/mred-sig)
 
 (provide icon@)

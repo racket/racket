@@ -1,5 +1,5 @@
 ;;;
-;;; <fold.ss> ---- List folds
+;;; <fold.rkt> ---- List folds
 ;;; Time-stamp: <02/02/28 12:02:38 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -26,9 +26,9 @@
 #lang scheme/base
 
 (require srfi/optional
-         "predicate.ss"
-         "selector.ss"
-         "util.ss")
+         "predicate.rkt"
+         "selector.rkt"
+         "util.rkt")
 
 (provide (rename-out [my-map map])
          (rename-out [my-for-each for-each])
@@ -248,4 +248,4 @@
         (f (car lis))             ; Do head first,
         (recur (cdr lis))))))
 
-;;; fold.ss ends here
+;;; fold.rkt ends here

@@ -2,7 +2,7 @@
 (require rackunit)
 (require macro-debugger/model/debug
          macro-debugger/model/steps
-         "../test-setup.ss")
+         "../test-setup.rkt")
 (provide regression-tests)
 
 (define regression-tests
@@ -116,7 +116,7 @@
     (test-case "hiding: keeping lifts in sync"
       (let ([freshname (gensym)])
         (eval `(module ,freshname mzscheme
-                 (require (lib "contract.ss"))
+                 (require (lib "contract.rkt"))
                  (provide/contract [f (integer? . -> . integer?)]
                                    [c integer?])
                  (define (f x) (add1 x))

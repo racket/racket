@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "raw-hattori.ss")
+(require "raw-hattori.rkt")
 
 (define (num-possibilities size col)
   (let* ([col-len (length col)]

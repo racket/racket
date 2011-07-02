@@ -1,7 +1,7 @@
 #lang scheme
 (require net/head tests/eli-tester)
 
-;; a few tests of head.ss -- JBC, 2006-07-31
+;; a few tests of head.rkt -- JBC, 2006-07-31
 
 (provide tests)
 (define (tests)

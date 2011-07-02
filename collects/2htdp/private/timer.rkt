@@ -8,7 +8,7 @@
 ;; tick field, which the super-class uses to define the callback.
 
 
-(require "check-aux.ss")
+(require "check-aux.rkt")
 
 (provide clock-mixin start-stop<%>)
 

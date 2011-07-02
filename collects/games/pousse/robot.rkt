@@ -1,7 +1,7 @@
 (module robot mzscheme
-  (require "counter.ss"
-           "board.ss"
-           "utils.ss"
+  (require "counter.rkt"
+           "board.rkt"
+           "utils.rkt"
            mzlib/unitsig)
   
   (provide robot)

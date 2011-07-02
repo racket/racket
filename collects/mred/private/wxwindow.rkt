@@ -1,14 +1,14 @@
 (module wxwindow mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   (prefix wx: "kernel.ss")
+           mzlib/class100
+           (prefix wx: "kernel.rkt")
            "te.rkt"
-	   "lock.ss"
-	   "helper.ss"
-	   "wx.ss")
+           "lock.rkt"
+           "helper.rkt"
+           "wx.rkt")
 
   (provide (protect wx-make-window%
-		    make-window-glue%))
+                    make-window-glue%))
 
   (define wx-make-window%
     (lambda (% top?)

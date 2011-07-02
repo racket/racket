@@ -2,8 +2,8 @@
   
   (require
    mrlib/click-forwarding-editor
-   "geometry-managed-pasteboard.ss"
-   "locked-pasteboard.ss")
+   "geometry-managed-pasteboard.rkt"
+   "locked-pasteboard.rkt")
   
   (provide
    vertical-pasteboard%

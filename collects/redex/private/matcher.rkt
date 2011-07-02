@@ -14,7 +14,7 @@ before the pattern compiler is invoked.
 (require scheme/list
          scheme/match
          scheme/contract
-         "underscore-allowed.ss")
+         "underscore-allowed.rkt")
 
 (define-struct compiled-pattern (cp))
 
@@ -103,7 +103,7 @@ before the pattern compiler is invoked.
              (bind-exp rib)
              (loop (cdr ribs))))])))
 
-;; compile-language : language-pict-info[see pict.ss] (listof nt) (listof (listof sym)) -> compiled-lang
+;; compile-language : language-pict-info[see pict.rkt] (listof nt) (listof (listof sym)) -> compiled-lang
 (define (compile-language pict-info lang nt-map)
   (let* ([clang-ht (make-hasheq)]
          [clang-list-ht (make-hasheq)]
@@ -1150,7 +1150,7 @@ before the pattern compiler is invoked.
                        [hole-exp (mtch-hole mtch)]
                        [contractum-mtches (match-contractum hole-exp old-hole-info)])
                   (when (eq? none hole-exp)
-                    (error 'matcher.ss "found zero holes when matching a decomposition"))
+                    (error 'matcher.rkt "found zero holes when matching a decomposition"))
                   (if contractum-mtches
                       (let i-loop ([contractum-mtches contractum-mtches]
                                    [acc acc])
@@ -1318,7 +1318,7 @@ before the pattern compiler is invoked.
   (cond
     [(eq? none s1) s2]
     [(eq? none s2) s1]
-    [(error 'matcher.ss "found two holes")]))
+    [(error 'matcher.rkt "found two holes")]))
 
 ;; reverse-multiples : (listof mtch[to-lists]) -> (listof mtch[to-lists])
 ;; reverses the rhs of each rib in the bindings and reverses the context.

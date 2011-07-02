@@ -2,12 +2,12 @@
  mzlib/class
  mzlib/etc
  mred
- "../verthoriz-alignment.ss"
- "../lines.ss"
- "../aligned-pasteboard.ss"
- "../snip-wrapper.ss")
+ "../verthoriz-alignment.rkt"
+ "../lines.rkt"
+ "../aligned-pasteboard.rkt"
+ "../snip-wrapper.rkt")
 
-(require "../snip-lib.ss")
+(require "../snip-lib.rkt")
 
 (define f (new frame% (label "f") (height 500) (width 500)))
 (send f show true)

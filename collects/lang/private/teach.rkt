@@ -1,4 +1,3 @@
-
 ;; Implements the syntactic forms for the HtDP teaching languages. The
 ;; reader-level aspects of the language (e.g., case-sensitivity) are
 ;; not implemented here, and the procedures are in a separate
@@ -35,37 +34,37 @@
 
 (module teach mzscheme
   (require mzlib/etc
-	   mzlib/list
-	   mzlib/math
-	   mzlib/pconvert-prop
+           mzlib/list
+           mzlib/math
+           mzlib/pconvert-prop
            scheme/match
-           "set-result.ss"
+           "set-result.rkt"
            (only racket/base define-struct)
-	   racket/struct-info
-	   deinprogramm/signature/signature-english
-	   (all-except deinprogramm/signature/signature signature-violation)
-	   (all-except lang/private/signature-syntax property)
-	   (rename lang/private/signature-syntax signature:property property)
-	   (all-except deinprogramm/quickcheck/quickcheck property)
-	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
-	   test-engine/racket-tests
-	   scheme/class
+           racket/struct-info
+           deinprogramm/signature/signature-english
+           (all-except deinprogramm/signature/signature signature-violation)
+           (all-except lang/private/signature-syntax property)
+           (rename lang/private/signature-syntax signature:property property)
+           (all-except deinprogramm/quickcheck/quickcheck property)
+           (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
+           test-engine/racket-tests
+           scheme/class
            "../posn.rkt"
-	   (only lang/private/teachprims
+           (only lang/private/teachprims
                  beginner-equal? beginner-equal~? teach-equal?
                  advanced-cons advanced-list*))
-  (require-for-syntax "teachhelp.ss"
-                      "teach-shared.ss"
-		      syntax/kerncase
-		      syntax/stx
-		      syntax/struct
-		      syntax/context
-		      mzlib/include
-		      scheme/list
-		      (rename racket/base racket:define-struct define-struct)
-		      (only racket/base syntax->datum datum->syntax)
+  (require-for-syntax "teachhelp.rkt"
+                      "teach-shared.rkt"
+                      syntax/kerncase
+                      syntax/stx
+                      syntax/struct
+                      syntax/context
+                      mzlib/include
+                      scheme/list
+                      (rename racket/base racket:define-struct define-struct)
+                      (only racket/base syntax->datum datum->syntax)
                       (rename racket/base kw-app #%app)
-		      racket/struct-info
+                      racket/struct-info
                       stepper/private/shared
                       test-engine/racket-tests)
 
@@ -107,8 +106,8 @@
       (error who "cannot redefine name: ~a" (syntax-e id))))
 
   ;; For quasiquote and shared:
-  (require (rename "teachprims.ss" the-cons advanced-cons))
-  (require (only   "teachprims.ss" cyclic-list?))
+  (require (rename "teachprims.rkt" the-cons advanced-cons))
+  (require (only   "teachprims.rkt" cyclic-list?))
 
   ;; Referenced to ensure that evaluating `lambda' always
   ;; produces a new closure (instead of using a closure
@@ -2756,7 +2755,7 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; We do all the initial syntax checks, and otherwise
-    ;; let "shared-body.ss" implement the form.
+    ;; let "shared-body.rkt" implement the form.
 
     (define advanced-shared/proc
       (lambda (stx)

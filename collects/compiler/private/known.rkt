@@ -1,6 +1,6 @@
 ;; Known-value analysis
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-2001 PLT
+;; (c) 1997-2011 PLT Scheme
 
 ;; Sets the real annotation for zodiac:binding AST nodes,
 ;; setting the known? and known-val fields as possible.
@@ -22,13 +22,13 @@
 
 (module known mzscheme
   (require mzlib/unit
-	  mzlib/list
-	  mzlib/etc)
+           mzlib/list
+           mzlib/etc)
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide known@)
   (define-unit known@

@@ -4,7 +4,7 @@
            scribble/eval
            scribble/decode
            racket/contract
-           "../icons.ss")
+           "../icons.rkt")
   
   (provide (all-from-out scribble/manual)
            (all-from-out scribble/eval)

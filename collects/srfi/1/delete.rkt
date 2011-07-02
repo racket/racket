@@ -1,5 +1,5 @@
 ;;;
-;;; <delete.ss> ---- List deletion functions
+;;; <delete.rkt> ---- List deletion functions
 ;;; Time-stamp: <02/03/01 07:26:12 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -26,7 +26,7 @@
 
 #lang scheme/base
 
-(require srfi/optional "predicate.ss")
+(require srfi/optional "predicate.rkt")
 
 (provide delete (rename-out [delete delete!])
          delete-duplicates (rename-out [delete-duplicates delete-duplicates!]))
@@ -66,4 +66,4 @@
                (new-tail (recur (delete! x tail elt=))))
           (if (eq? tail new-tail) lis (cons x new-tail))))))
 
-;;; delete.ss ends here
+;;; delete.rkt ends here

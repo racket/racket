@@ -3,9 +3,9 @@
 (require mzlib/class
          mzlib/list
          mrlib/hierlist
-         "sig.ss"
-         "../preferences.ss"
-         "../gui-utils.ss"
+         "sig.rkt"
+         "../preferences.rkt"
+         "../gui-utils.rkt"
          mred/mred-sig
          scheme/path
          string-constants)

@@ -4,39 +4,39 @@
 (require scheme/runtime-path
          scheme/cmdline
          scheme/match
-         "test-util.ss")
+         "test-util.rkt")
 
 (define test-bitmaps? #t)
 (define test-examples? #f)
 
 (command-line
  #:once-each
- [("--no-bitmaps") "executes bitmap-test.ss" (set! test-bitmaps? #f)]
+ [("--no-bitmaps") "executes bitmap-test.rkt" (set! test-bitmaps? #f)]
  [("--examples") "executes the tests in the examples directory" (set! test-examples? #t)])
 
 (define test-files
   (append
-   '("lw-test.ss" 
-     "matcher-test.ss" 
-     "tl-test.ss" 
-     "term-test.ss" 
-     "rg-test.ss" 
-     "keyword-macros-test.ss"
-     "core-layout-test.ss" 
-     "pict-test.ss"
-     "hole-test.ss"
-     "stepper-test.ss"
+   '("lw-test.rkt"
+     "matcher-test.rkt"
+     "tl-test.rkt"
+     "term-test.rkt"
+     "rg-test.rkt"
+     "keyword-macros-test.rkt"
+     "core-layout-test.rkt"
+     "pict-test.rkt"
+     "hole-test.rkt"
+     "stepper-test.rkt"
      "test-docs-complete.rkt")
-   (if test-bitmaps? '("bitmap-test.ss") '())
-   (if test-examples? 
+   (if test-bitmaps? '("bitmap-test.rkt") '())
+   (if test-examples?
        '("../examples/stlc.rkt"
-         "../examples/pi-calculus.ss"
-         ("../examples/beginner.ss" main)
-         "../examples/racket-machine/reduction-test.ss"
-         "../examples/racket-machine/verification-test.ss"
+         "../examples/pi-calculus.rkt"
+         ("../examples/beginner.rkt" main)
+         "../examples/racket-machine/reduction-test.rkt"
+         "../examples/racket-machine/verification-test.rkt"
          "../examples/delim-cont/test.rkt"
          "../examples/cont-mark-transform/all-test.rkt"
-         ("../examples/r6rs/r6rs-tests.ss" main))
+         ("../examples/r6rs/r6rs-tests.rkt" main))
        '())))
 
 (define-runtime-path here ".")
@@ -63,5 +63,5 @@
      (flush)))
  test-files)
 
-(printf "\nWARNING: didn't run color-test.ss\n")
+(printf "\nWARNING: didn't run color-test.rkt\n")
 (flush)

@@ -4,9 +4,9 @@
 
 #lang scheme/unit
 
-(require "kerncase.ss"
-         "zodiac-sig.ss"
-         "stx.ss")
+(require "kerncase.rkt"
+         "zodiac-sig.rkt"
+         "stx.rkt")
 
 (import)
 (export zodiac^)

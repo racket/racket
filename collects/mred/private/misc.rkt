@@ -1,15 +1,15 @@
 (module misc mzscheme
   (require mzlib/class
-	   mzlib/file
-	   mzlib/process
-	   (prefix wx: "kernel.ss")
+           mzlib/file
+           mzlib/process
+           (prefix wx: "kernel.rkt")
            racket/snip/private/prefs)
 
   (provide file-creator-and-type
-	   hide-cursor-until-moved
-	   sleep/yield
-	   play-sound
-	   timer%)
+           hide-cursor-until-moved
+           sleep/yield
+           play-sound
+           timer%)
 
   ;; Formerly used for PS print and preview:
   #;

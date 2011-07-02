@@ -5,11 +5,11 @@
          racket/math
          "syntax.rkt"
          ffi/unsafe
-         "../unsafe/cairo.ss"
-	 "dc.ss"
-         "font.ss"
-         "local.ss"
-         "ps-setup.ss"
+         "../unsafe/cairo.rkt"
+         "dc.rkt"
+         "font.rkt"
+         "local.rkt"
+         "ps-setup.rkt"
          "page-dc.rkt"
          "write-bytes.rkt")
 

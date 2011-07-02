@@ -1,8 +1,8 @@
 #lang scheme
-(require "match.ss"
-         "contract.ss"
-         #;"sema-mailbox.ss"
-         "mailbox.ss")
+(require "match.rkt"
+         "contract.rkt"
+         #;"sema-mailbox.rkt"
+         "mailbox.rkt")
 
 (define-struct tid (lid) #:prefab)
 (define (create-tid thr) (make-tid thr))

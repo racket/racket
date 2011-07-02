@@ -1,16 +1,16 @@
 (module gdi mzscheme
   (require mzlib/class
-	   mzlib/class100
+           mzlib/class100
            mzlib/list
            racket/draw/private/page-dc
-	   (prefix wx: "kernel.ss")
-           (rename "wxme/cycle.ss" wx:set-printer-dc%! set-printer-dc%!)
-	   "lock.ss"
-	   "check.ss"
-	   "wx.ss"
+           (prefix wx: "kernel.rkt")
+           (rename "wxme/cycle.rkt" wx:set-printer-dc%! set-printer-dc%!)
+           "lock.rkt"
+           "check.rkt"
+           "wx.rkt"
            "te.rkt"
-	   "mrtop.ss"
-	   "mrcanvas.ss"
+           "mrtop.rkt"
+           "mrcanvas.rkt"
            "syntax.rkt")
 
   (provide register-collecting-blit

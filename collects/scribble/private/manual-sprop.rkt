@@ -1,11 +1,11 @@
 #lang scheme/base
 
-(require "../html-properties.ss"
-         "../latex-properties.ss"
-         "on-demand.ss"
+(require "../html-properties.rkt"
+         "../latex-properties.rkt"
+         "on-demand.rkt"
          setup/main-collects
          scheme/promise)
-           
+
 (provide scheme-properties)
 
 (define-on-demand scheme-properties

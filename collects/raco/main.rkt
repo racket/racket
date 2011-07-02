@@ -1,9 +1,8 @@
-
 ;; Because `raco setup' is used to rebuild .zos, check for "setup"
 ;; directly.
 
-;; Note that this file is listed in "info.ss" so that it never gets a
-;; .zo file. Do not `require' this module from anywhere, not even 
+;; Note that this file is listed in "info.rkt" so that it never gets a
+;; .zo file. Do not `require' this module from anywhere, not even
 ;; `for-label', otherwise it could get a .zo anyway.
 
 (module main '#%kernel

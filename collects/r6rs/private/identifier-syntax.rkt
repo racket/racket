@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
-         (for-template "no-set.ss"
+         (for-template "no-set.rkt"
                        (only-in scheme/base #%app set!)))
 
 (provide identifier-syntax)

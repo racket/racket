@@ -1,5 +1,5 @@
 ;;;
-;;; <filter-test.ss> ---- List filtering and partitioning tests
+;;; <filter-test.rkt> ---- List filtering and partitioning tests
 ;;; Time-stamp: <05/12/16 21:16:28 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -270,4 +270,4 @@
      ))
   )
 
-;;; filter-test.ss ends here
+;;; filter-test.rkt ends here

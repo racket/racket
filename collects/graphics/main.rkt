@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "graphics.ss")
-(provide (all-from-out "graphics.ss"))
+(require "graphics.rkt")
+(provide (all-from-out "graphics.rkt"))

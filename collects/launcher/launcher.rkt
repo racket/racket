@@ -1,8 +1,8 @@
 #lang scheme/base
 
 (require scheme/unit
-         "launcher-sig.ss"
-         "launcher-unit.ss")
+         "launcher-sig.rkt"
+         "launcher-unit.rkt")
 
 (define-values/invoke-unit/infer launcher@)
 

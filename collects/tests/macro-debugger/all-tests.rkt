@@ -1,17 +1,17 @@
 #lang scheme/base
 (require rackunit
          macro-debugger/model/debug
-         "gentest-framework.ss"
-         "gentests.ss"
-         "test-setup.ss"
-         "tests/syntax-basic.ss"
-         "tests/syntax-macros.ss"
-         "tests/syntax-modules.ss"
-         "tests/syntax-errors.ss"
-         "tests/hiding.ss"
-         "tests/regression.ss"
-         "tests/policy.ss"
-         ;;"tests/collects.ss"
+         "gentest-framework.rkt"
+         "gentests.rkt"
+         "test-setup.rkt"
+         "tests/syntax-basic.rkt"
+         "tests/syntax-macros.rkt"
+         "tests/syntax-modules.rkt"
+         "tests/syntax-errors.rkt"
+         "tests/hiding.rkt"
+         "tests/regression.rkt"
+         "tests/policy.rkt"
+         ;;"tests/collects.rkt"
          )
 (provide all-tests)
 

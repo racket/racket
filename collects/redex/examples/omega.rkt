@@ -1,5 +1,5 @@
 #lang racket
-(require redex "subst.ss")
+(require redex "subst.rkt")
 
 (reduction-steps-cutoff 10)
 

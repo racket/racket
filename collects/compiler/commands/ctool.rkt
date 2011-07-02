@@ -5,8 +5,8 @@
 
 (error-print-width 512)
 
-(require (prefix-in compiler:option: "../option.ss")
-         "../compiler.ss"
+(require (prefix-in compiler:option: "../option.rkt")
+         "../compiler.rkt"
          raco/command-name
          mzlib/cmdline
          dynext/file

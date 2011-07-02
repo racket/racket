@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "private/decorated-editor-snip.ss")
+(require "private/decorated-editor-snip.rkt")
 
 (provide 
  (rename-out [editor-snip:decorated% decorated-editor-snip%])

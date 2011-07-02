@@ -1,4 +1,3 @@
-
 (module readline mzscheme
-  (require "mzrl.ss")
-  (provide (all-from "mzrl.ss")))
+  (require "mzrl.rkt")
+  (provide (all-from "mzrl.rkt")))

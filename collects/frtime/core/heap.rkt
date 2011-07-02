@@ -1,6 +1,6 @@
 #lang scheme
-(require "dv.ss"
-         "contract.ss")
+(require "dv.rkt"
+         "contract.rkt")
 
 (define-struct t (sorter equality data))
 

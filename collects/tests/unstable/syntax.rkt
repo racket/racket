@@ -15,7 +15,7 @@
          1 1 1 1)))
 
 (run-tests
- (test-suite "syntax.ss"
+ (test-suite "syntax.rkt"
 
    (test-suite "Syntax Lists"
 

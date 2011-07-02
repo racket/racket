@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "test-suite-utils.ss")
+(require "test-suite-utils.rkt")
   
   (test
    'keymap:aug-keymap%/get-table

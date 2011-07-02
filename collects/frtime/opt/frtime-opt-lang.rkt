@@ -29,7 +29,7 @@
                   ;; equiv doesn't become part of the module's namespace, and there's
                   ;; no way to find the list of identifiers exported by a module other
                   ;; than by filtering its namespace (see all-provided-symbols in 
-                  ;; lowered-equivs.ss)
+                  ;; lowered-equivs.rkt)
                   (define #,lowered-equiv-id FUNC)
                   (provide FUNC)
                   (provide #,lowered-equiv-id)))]

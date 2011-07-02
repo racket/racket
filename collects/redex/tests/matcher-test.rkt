@@ -1,7 +1,7 @@
 (module matcher-test mzscheme
-  (require "../private/matcher.ss"
-           (only "test-util.ss" equal/bindings?)
-           (lib "list.ss"))
+  (require "../private/matcher.rkt"
+           (only "test-util.rkt" equal/bindings?)
+           mzlib/list)
   
   (error-print-width 500)
   
@@ -652,9 +652,9 @@
     
     (cond
       [(= failures 0)
-       (printf "matcher-test.ss: all ~a tests passed.\n" test-count)]
+       (printf "matcher-test.rkt: all ~a tests passed.\n" test-count)]
       [else
-       (printf "matcher-test.ss: ~a test~a failed.\n" 
+       (printf "matcher-test.rkt: ~a test~a failed.\n" 
                failures
                (if (= failures 1)
                    ""

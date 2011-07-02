@@ -1,25 +1,25 @@
 (module mrcontainer mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "const.ss"
-	   "wx.ss"
-	   "kw.ss"
-	   "check.ss"
-	   "wxcontainer.ss"
-	   "mrwindow.ss")
+           mzlib/class100
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "const.rkt"
+           "wx.rkt"
+           "kw.rkt"
+           "check.rkt"
+           "wxcontainer.rkt"
+           "mrwindow.rkt")
 
   (provide area-container<%>
-	   (protect internal-container<%>
-		    check-container-parent
-		    container%-keywords
-		    make-container%
+           (protect internal-container<%>
+                    check-container-parent
+                    container%-keywords
+                    make-container%
                     make-subwindow%)
-	   area-container-window<%>
-	   (protect make-area-container-window%))
+           area-container-window<%>
+           (protect make-area-container-window%))
 
   (define area-container<%> 
     (interface (area<%>) 

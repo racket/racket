@@ -3,7 +3,7 @@
          racket/tcp
          racket/class
          racket/gui/base
-         "debug.ss")
+         "debug.rkt")
 
 (define errs null)
 (define sema (make-semaphore 1))
@@ -38,7 +38,7 @@
                                    (format "~s" x))))])
       (let ([port (call-with-input-file
                       (build-path (find-system-path 'temp-dir)
-                                  "framework-tests-receive-sexps-port.ss")
+                                  "framework-tests-receive-sexps-port.rkt")
                     read)])
         (debug-printf mr-tcp "about to connect to ~a\n" port)
         (let*-values ([(in out) (tcp-connect "127.0.0.1" port)])

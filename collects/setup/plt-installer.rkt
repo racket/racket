@@ -1,7 +1,7 @@
 (module plt-installer mzscheme
   (require mzlib/unit
-           "plt-installer-sig.ss"
-           "plt-installer-unit.ss"
+           "plt-installer-sig.rkt"
+           "plt-installer-unit.rkt"
            mred/mred-unit
            mred/mred-sig)
 
@@ -10,4 +10,3 @@
     (import) (export setup:plt-installer^)
     (link standard-mred@ plt-installer@))
   (define-values/invoke-unit/infer plt-installer+mred@))
-

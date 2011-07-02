@@ -9,9 +9,9 @@
              syntax/name
              syntax/parse
              scheme/pretty
-             "ops.ss"
-             "util.ss"
-             "contexts.ss"
+             "ops.rkt"
+             "util.rkt"
+             "contexts.rkt"
              ))
 
   (provide (all-defined-out))

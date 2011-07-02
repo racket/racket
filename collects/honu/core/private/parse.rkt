@@ -1,14 +1,14 @@
 #lang racket/base
 
-(require "contexts.ss"
-         "util.ss"
-         (for-template "literals.ss"
-                       "language.ss"
-                       "syntax.ss"
+(require "contexts.rkt"
+         "util.rkt"
+         (for-template "literals.rkt"
+                       "language.rkt"
+                       "syntax.rkt"
                        racket/class)
          syntax/parse
          syntax/parse/experimental/splicing
-         "syntax.ss"
+         "syntax.rkt"
          "debug.rkt"
          (for-syntax syntax/parse
                      racket/base)
@@ -18,7 +18,7 @@
          syntax/name
          racket/match
          syntax/stx
-         (for-syntax "util.ss"
+         (for-syntax "util.rkt"
                      macro-debugger/emit)
          (for-syntax syntax/parse/private/runtime-report
                      syntax/parse/private/runtime

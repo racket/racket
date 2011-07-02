@@ -29,7 +29,7 @@
 (define (v-m VM) (send VM get-M))
 (define (v? VM) (is-a? VM visible-matrix%))
 
-;; representing a matrix that renders itself as an image, as in image.ss
+;; representing a matrix that renders itself as an image, as in "image.rkt"
 (define visible-matrix%
   (class cache-image-snip%
     (inherit set-snipclass get-argb)

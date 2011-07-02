@@ -5,11 +5,11 @@
 ;;  by the code in this collection. Other modes are handled
 ;;  by other collections, such as MzLib and dynext.
 ;; If you are interested Scheme->C part of mzc, look in
-;;  driver.ss, which is the `main' file for the compiler.
+;;  "private/driver.rkt", which is the `main' file for the compiler.
 
 ;; Different compilation modes are driven by dynamically
 ;;  linking in appropriate libraries. This is handled
-;;  by compiler.ss.
+;;  by "compiler.rkt".
 
 ;; See manual for information about the Scheme-level interface
 ;;  provided by this collection.
@@ -21,8 +21,8 @@
 
 (error-print-width 512)
 
-(require (prefix-in compiler:option: "option.ss"))
-(require "compiler.ss")
+(require (prefix-in compiler:option: "option.rkt")
+         "compiler.rkt")
 
 ;; Read argv array for arguments and input file name
 (require mzlib/cmdline

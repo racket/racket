@@ -5,7 +5,7 @@
 
 #lang mzscheme
 
-(require mzlib/class mred mzlib/etc "../show-scribbling.ss" mzlib/unit)
+(require mzlib/class mred mzlib/etc "../show-scribbling.rkt" mzlib/unit)
 (provide game@)
 
 (define customs '())

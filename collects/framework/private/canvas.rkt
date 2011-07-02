@@ -1,7 +1,7 @@
 #lang scheme/unit
   (require mzlib/class
-           "sig.ss"
-           "../preferences.ss"
+           "sig.rkt"
+           "../preferences.rkt"
            mred/mred-sig)
   
   (import mred^

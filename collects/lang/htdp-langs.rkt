@@ -20,24 +20,24 @@
          wxme/wxme
          setup/dirs
          test-engine/racket-tests
-         
+
          ;; this module is shared between the drscheme's namespace (so loaded here) 
          ;; and the user's namespace in the teaching languages
-         "private/set-result.ss"
+         "private/set-result.rkt"
 
          "private/continuation-mark-key.rkt"
 
-         "stepper-language-interface.ss"           
-         "debugger-language-interface.ss"
-         "run-teaching-program.ss"
+         "stepper-language-interface.rkt"
+         "debugger-language-interface.rkt"
+         "run-teaching-program.rkt"
          stepper/private/shared
-         
+
          (only-in test-engine/scheme-gui make-formatter)
-         (only-in test-engine/scheme-tests 
-		  scheme-test-data error-handler test-format test-execute display-results
-		  build-test-engine)
+         (only-in test-engine/scheme-tests
+                  scheme-test-data error-handler test-format test-execute display-results
+                  build-test-engine)
          (lib "test-engine/test-display.scm")
-	 deinprogramm/signature/signature
+         deinprogramm/signature/signature
          )
   
   
@@ -518,7 +518,7 @@
                        (string-append no-ext-name ".scm")]
                       [(file-exists? no-ext-name)
                        no-ext-name]
-                      [else (error 'htdp-lang.ss "could not find language filename ~s" no-ext-name)])]
+                      [else (error 'htdp-lang.rkt "could not find language filename ~s" no-ext-name)])]
                    [base-dir (let-values ([(base _1 _2) (split-path full-name)]) base)]
                    [stx
                     (call-with-input-file full-name

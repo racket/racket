@@ -1,6 +1,6 @@
 (module search racket/base
-  (require "struct.ss"
-           "basic.ss"
+  (require "struct.rkt"
+           "basic.rkt"
            setup/main-collects
            syntax/modcode)
 

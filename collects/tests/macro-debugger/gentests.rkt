@@ -2,8 +2,8 @@
 (require rackunit)
 (require macro-debugger/model/debug
          macro-debugger/model/stx-util
-         "gentest-framework.ss"
-         "test-setup.ss")
+         "gentest-framework.rkt"
+         "test-setup.rkt")
 (provide mk-deriv-test
          mk-steps-test
          mk-hidden-deriv-test

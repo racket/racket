@@ -4,7 +4,7 @@
 (define argv (current-command-line-arguments))
 
 (when (equal? (vector) argv)
-  (error 'build-rows-cols.ss
+  (error 'build-rows-cols.rkt
 	 "expected an image file on the command-line"))
 	 
 (define image (vector-ref argv 0))

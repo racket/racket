@@ -20,7 +20,7 @@
          syntax/parse
          "literals.rkt"
          "debug.rkt"
-         ;; "typed-utils.ss"
+         ;; "typed-utils.rkt"
          )
 
 (require (for-meta 2 scheme/base "util.rkt"))

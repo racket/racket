@@ -6,7 +6,7 @@
          scribble/html-properties
          scribble/latex-properties
          setup/main-collects
-         "private/counter.ss")
+         "private/counter.rkt")
 
 (provide figure
          figure*

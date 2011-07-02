@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require mrlib/image-core
-         "img-err.ss"
+         "img-err.rkt"
          racket/match
          racket/contract
          racket/class

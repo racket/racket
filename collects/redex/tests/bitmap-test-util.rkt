@@ -1,8 +1,8 @@
 #lang scheme/gui
 (require framework
          slideshow/pict
-         "../pict.ss"
-         "../reduction-semantics.ss")
+         "../pict.rkt"
+         "../reduction-semantics.rkt")
 
 (provide test done)
 
@@ -125,7 +125,7 @@
      test-result-single-panel]
     [else
      (let ()
-       (define f (new frame% [label "bitmap-test.ss failures"]))
+       (define f (new frame% [label "bitmap-test.rkt failures"]))
        (define lined (new vertical-panel% [parent f] [style '(border)]))
        (define sp (new panel:single% [parent lined]))
        (define current-index 0)

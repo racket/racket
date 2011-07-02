@@ -4,15 +4,15 @@
  mzlib/etc
  mzlib/list
  mzlib/match
- (prefix a: "../alignment.ss")
- "../alignment-helpers.ss"
- "../dllist.ss"
+ (prefix a: "../alignment.rkt")
+ "../alignment-helpers.rkt"
+ "../dllist.rkt"
  mrlib/click-forwarding-editor
- "../on-show-pasteboard.ss"
- "../really-resized-pasteboard.ss"
- "../interface.ss"
- "../locked-pasteboard.ss"
- "../suppress-modify-editor.ss")
+ "../on-show-pasteboard.rkt"
+ "../really-resized-pasteboard.rkt"
+ "../interface.rkt"
+ "../locked-pasteboard.rkt"
+ "../suppress-modify-editor.rkt")
 
 ;;;;;;;;;;
 ;; alignment

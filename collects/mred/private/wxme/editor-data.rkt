@@ -2,19 +2,19 @@
 
 (require scheme/class
          scheme/file file/convertible
-         "../syntax.ss"
-         "private.ss"
+         "../syntax.rkt"
+         "private.rkt"
          racket/snip/private/snip-flags
          racket/snip/private/private
- 	 racket/snip/private/style
-	 racket/snip/private/load-one
-	 (only-in "cycle.ss"
+         racket/snip/private/style
+         racket/snip/private/load-one
+         (only-in "cycle.rkt"
                   editor-stream-in% editor-stream-out%
                   get-editor-data-class set-get-editor-data-class!)
          "../wx/common/event.rkt"
          racket/draw)
 
-(provide get-the-editor-data-class-list         
+(provide get-the-editor-data-class-list
          editor-data%
          editor-data-class%
          location-editor-data%

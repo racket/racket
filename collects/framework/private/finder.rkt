@@ -1,8 +1,8 @@
 #lang scheme/unit
 
   (require string-constants
-           "sig.ss"
-           "../preferences.ss"
+           "sig.rkt"
+           "../preferences.rkt"
            mred/mred-sig
            scheme/path)
   

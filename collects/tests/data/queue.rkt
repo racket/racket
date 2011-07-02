@@ -3,7 +3,7 @@
 (require rackunit rackunit/text-ui data/queue)
 
 (run-tests
- (test-suite "queue.ss"
+ (test-suite "queue.rkt"
    (test-suite "queue-empty?"
      (test-case "make-queue"
        (check-true (queue-empty? (make-queue))))

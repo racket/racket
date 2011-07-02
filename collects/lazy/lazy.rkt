@@ -9,7 +9,7 @@
   ;; --------------------------------------------------------------------------
   ;; Syntax utilities
 
-  ;; taken & modified from swindle/misc.ss
+  ;; taken & modified from swindle/misc.rkt
   (provide defsubst) ; useful utility
   (define-syntax (defsubst-process stx)
     (syntax-case stx ()
@@ -45,7 +45,7 @@
   ;; --------------------------------------------------------------------------
   ;; Delay/force etc
 
-  (require "force.ss")
+  (require "force.rkt")
 
   (provide ~)
 

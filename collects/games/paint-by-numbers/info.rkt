@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define game "paint-by-numbers.ss")
+(define game "paint-by-numbers.rkt")
 (define game-set "Puzzle Games")
 (define compile-omit-paths
   '("main.rkt"

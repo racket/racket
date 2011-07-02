@@ -1,8 +1,7 @@
-
 (module cards mzscheme
-  (require "base.ss"
-	   "utils.ss"
-	   "region.ss")
+  (require "base.rkt"
+           "utils.rkt"
+           "region.rkt")
 
   (provide table<%> card<%>
            region struct:region
@@ -18,4 +17,3 @@
 	   make-table
 
 	   shuffle-list))
-

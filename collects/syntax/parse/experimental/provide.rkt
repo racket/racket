@@ -7,7 +7,7 @@
                      "../private/minimatch.rkt"
                      "../private/sc.rkt"
                      "../private/lib.rkt"
-                     "../private/rep-data.ss"
+                     "../private/rep-data.rkt"
                      "../private/kws.rkt"
                      unstable/wrapc))
 (provide provide-syntax-class/contract

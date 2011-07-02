@@ -1,19 +1,18 @@
-
 (module optionr mzscheme
   (require mzlib/unit
-	   mzlib/string)
+           mzlib/string)
 
   (require net/imap-sig
            mred/mred-sig
-	   framework)
+           framework)
 
-  (require "sirmails.ss"
-	   "pref.ss")
+  (require "sirmails.rkt"
+           "pref.rkt")
 
   (define shared-password #f)
 
   ;; The option@ unit gets instanted afresh for every window, but
-  ;; it defers practically all of its work to the "pref.ss" module
+  ;; it defers practically all of its work to the "pref.rkt" module
   ;; (which is only instantiated once).
   
   (provide option@)

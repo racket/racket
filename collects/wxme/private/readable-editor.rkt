@@ -1,9 +1,8 @@
-
 (module readable-editor mzscheme
   (require mzlib/class
            mzlib/struct
-           "../wxme.ss"
-           "../editor.ss")
+           "../wxme.rkt"
+           "../editor.rkt")
 
   (provide readable-editor%
            editor-reader%)

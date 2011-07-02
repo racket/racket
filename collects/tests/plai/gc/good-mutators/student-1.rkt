@@ -1,6 +1,6 @@
 #lang plai/mutator
 
-; mark-and-sweep-test.ss - Ben Childs
+; mark-and-sweep-test.rkt - Ben Childs
 ; Designed to test the mark and sweep collector
 ; Runs three tests:
 ;
@@ -15,7 +15,7 @@
 ; Finally it runs the sample tests distributed with the assignment
 
 
-(allocator-setup "../good-collectors/good-collector.ss" 80)
+(allocator-setup "../good-collectors/good-collector.rkt" 80)
 
 ; Helper to generate long lists
 (define (gen-list x)

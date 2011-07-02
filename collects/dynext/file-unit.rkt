@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/unit "file-sig.ss")
+(require scheme/unit "file-sig.rkt")
 
 (provide dynext:file@)
 

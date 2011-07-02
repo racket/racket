@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "manual.ss" "struct.ss" "scheme.ss" "decode.ss"
+(require "manual.rkt" "struct.rkt" "scheme.rkt" "decode.rkt"
          racket/string racket/list racket/file
          racket/sandbox racket/promise racket/port file/convertible
          (for-syntax racket/base))

@@ -1,4 +1,4 @@
-;;; cut.ss
+;;; cut.rkt
 
 ; This file reimplements srfi-26 for PLT.
 ; The reimplementation provides better error messages.

@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "calltrace.ss")
-(provide (all-from-out "calltrace.ss"))
+(require "calltrace.rkt")
+(provide (all-from-out "calltrace.rkt"))

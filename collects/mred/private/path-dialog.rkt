@@ -1,10 +1,11 @@
 (module path-dialog mzscheme
   (require mzlib/class mzlib/list mzlib/string mzlib/file
-	   (prefix wx: "kernel.ss")
-	   (prefix wx: racket/snip)
+           (prefix wx: "kernel.rkt")
+           (prefix wx: racket/snip)
            racket/snip/private/prefs
-	   "helper.ss" "mrtop.ss" "mritem.ss" "mrpanel.ss" "mrtextfield.ss"
-           "messagebox.ss" "mrmenu.ss" (only scheme/base compose))
+           "helper.rkt" "mrtop.rkt" "mritem.rkt" "mrpanel.rkt"
+           "mrtextfield.rkt" "messagebox.rkt" "mrmenu.rkt"
+           (only scheme/base compose))
   (provide path-dialog%)
 
   (define last-visted-directory #f)

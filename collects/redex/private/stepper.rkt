@@ -21,9 +21,9 @@ todo:
          framework
          mrlib/graph
          racket/contract
-         "sexp-diffs.ss"
-         "size-snip.ss"
-         "reduction-semantics.ss")
+         "sexp-diffs.rkt"
+         "size-snip.rkt"
+         "reduction-semantics.rkt")
   
   (provide stepper stepper/seed
            

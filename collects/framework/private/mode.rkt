@@ -4,7 +4,7 @@
          scheme/unit
          scheme/class
          scheme/surrogate
-         "sig.ss")
+         "sig.rkt")
 
 (provide mode@ surrogate-methods)
 

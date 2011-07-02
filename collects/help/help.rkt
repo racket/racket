@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "search.ss" scheme/cmdline scheme/list scheme/string
+(require "search.rkt" scheme/cmdline scheme/list scheme/string
          raco/command-name) 
 
 ;; Minimal command-line arguments, the query string can contain all

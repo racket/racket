@@ -1,10 +1,10 @@
 #lang scheme/base
 (require scheme/class
-         "../syntax.ss"
+         "../syntax.rkt"
          racket/snip
-         (only-in "cycle.ss" 
+         (only-in "cycle.rkt"
                   popup-menu%)
-         (prefix-in wx: "wx.ss"))
+         (prefix-in wx: "wx.rkt"))
 
 (provide standard-snip-admin%)
 

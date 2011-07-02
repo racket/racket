@@ -1,12 +1,12 @@
 #lang scheme
 
-(require (for-syntax syntax/parse) 
-         srfi/13 htdp/error 
+(require (for-syntax syntax/parse)
+         srfi/13 htdp/error
          (rename-in lang/prim (first-order->higher-order f2h))
-         "private/csv/csv.ss")
+         "private/csv/csv.rkt")
 
 ;; todo?
-;; -- export tokenization? 
+;; -- export tokenization?
 
 ;; -----------------------------------------------------------------------------
 (provide simulate-file) ;; syntax (simulate-file reader string ...)

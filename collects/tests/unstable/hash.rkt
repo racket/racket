@@ -3,7 +3,7 @@
 (require rackunit rackunit/text-ui unstable/hash "helpers.rkt")
 
 (run-tests
- (test-suite "hash.ss"
+ (test-suite "hash.rkt"
    (test-suite "hash-union"
      (test-ok (hash-union #hash([1 . one] [2 . two])
                           #hash([3 . three] [4 . four]))

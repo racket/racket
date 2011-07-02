@@ -1,5 +1,5 @@
-;; Shared dependency-checking infrastructure, used by "check-dists.ss"
-;; and by bundle script
+;; Shared dependency-checking infrastructure, used by "check-dists.rkt"
+;; and by the bundle script
 
 #lang scheme/base
 
@@ -7,8 +7,8 @@
          scheme/list ; for use in specs too
          (for-syntax scheme/base) ; for runtime-path
          (except-in scheme/mpair mappend)
-         (only-in (lib "process.ss") system)
-         "specs.ss")
+         (only-in mzlib/process system)
+         "specs.rkt")
 
 (define cd current-directory)
 
@@ -516,8 +516,8 @@
       (cond [(null? deps) #t]
             [(equal? (car deps) last-dep) (loop files (cdr deps) last-dep)]
             [(or (null? files) (string<? (car deps) (car files)))
-             ;; Exception: foo.ss might be satisified by a platform dependent
-             ;; compiled/foo_ss.zo (need to exist in all platform dependent
+             ;; Exception: foo.rkt might be satisified by a platform dependent
+             ;; compiled/foo_rkt.zo (need to exist in all platform dependent
              ;; trees).  No need to optimize since this happens very
              ;; infrequently.
              (let ([dep (regexp-replace #rx"/([^/]+)\\.([^/]+)$" (car deps)

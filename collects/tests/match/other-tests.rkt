@@ -16,7 +16,7 @@
                        (check set-equal? tst exp))]))
   
   (define other-tests 
-    (test-suite "Tests copied from match-test.ss"
+    (test-suite "Tests copied from match-test.rkt"
 
 (mytest (letrec ((z 
                 (lambda (x) 

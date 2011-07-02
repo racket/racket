@@ -1,18 +1,18 @@
 (module app racket/base
   (require racket/class
-	   (prefix-in wx: "kernel.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "wx.ss"
-	   "wxtop.ss")
+           (prefix-in wx: "kernel.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "wx.rkt"
+           "wxtop.rkt")
 
   (provide application-preferences-handler
-	   application-about-handler
-	   application-quit-handler
-	   application-file-handler
-	   current-eventspace-has-standard-menus?
-	   current-eventspace-has-menu-root?
-	   eventspace-handler-thread)
+           application-about-handler
+           application-quit-handler
+           application-file-handler
+           current-eventspace-has-standard-menus?
+           current-eventspace-has-menu-root?
+           eventspace-handler-thread)
 
   ;; An app-handler record keeps a wrapped procedure with
   ;; its original wrappee.

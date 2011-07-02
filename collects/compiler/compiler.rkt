@@ -1,8 +1,7 @@
-
 (module compiler mzscheme
   (require mzlib/unit)
-  
-  (require "sig.ss")
+
+  (require "sig.rkt")
 
   (require dynext/compile-sig)
   (require dynext/link-sig)
@@ -12,11 +11,10 @@
   (require dynext/link)
   (require dynext/file)
 
-  (require "option.ss")
+  (require "option.rkt")
 
-  (require "compiler-unit.ss")
+  (require "compiler-unit.rkt")
 
   (define-values/invoke-unit/infer compiler@)
 
   (provide-signature-elements compiler^))
-

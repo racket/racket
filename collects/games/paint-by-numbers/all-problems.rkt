@@ -3,7 +3,7 @@
            mzlib/list
            mzlib/unitsig
            mzlib/include
-           "problem.ss")
+           "problem.rkt")
 
   (require-for-syntax mzlib/etc)
 

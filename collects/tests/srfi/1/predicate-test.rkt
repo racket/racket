@@ -1,5 +1,5 @@
 ;;;
-;;; <predicate-test.ss> ---- List predicate tests
+;;; <predicate-test.rkt> ---- List predicate tests
 ;;; Time-stamp: <05/12/16 21:16:27 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -165,4 +165,4 @@
 
      ))
   )
-;;; predicate-test.ss ends here
+;;; predicate-test.rkt ends here

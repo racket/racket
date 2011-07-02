@@ -2,7 +2,7 @@
 
 (provide get-svn-tree get-plt-svn-tree)
 
-(require "tree.ss" scheme/system scheme/match xml)
+(require "tree.rkt" scheme/system scheme/match xml)
 
 (define svn-exe (find-executable-path "svn"))
 (define (svn . args)

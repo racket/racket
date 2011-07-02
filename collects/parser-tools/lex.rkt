@@ -2,19 +2,19 @@
 
   ;; Provides the syntax used to create lexers and the functions needed to
   ;; create and use the buffer that the lexer reads from.  See docs.
-	
+
   (require-for-syntax mzlib/list
                       syntax/stx
                       syntax/define
                       syntax/boundmap
-                      "private-lex/util.ss"
-                      "private-lex/actions.ss"
-                      "private-lex/front.ss"
-                      "private-lex/unicode-chars.ss")
+                      "private-lex/util.rkt"
+                      "private-lex/actions.rkt"
+                      "private-lex/front.rkt"
+                      "private-lex/unicode-chars.rkt")
 
   (require mzlib/stxparam
            syntax/readerr
-           "private-lex/token.ss")
+           "private-lex/token.rkt")
 
   (provide lexer lexer-src-pos define-lex-abbrev define-lex-abbrevs define-lex-trans
            

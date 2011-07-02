@@ -3,7 +3,7 @@
 #|
 
 The test suite for this code is in
-plt/collects/tests/mzscheme/htdp-image.ss
+plt/collects/tests/mzscheme/htdp-image.rkt
 
 |#
 
@@ -12,10 +12,10 @@ plt/collects/tests/mzscheme/htdp-image.ss
          mzlib/class
          mrlib/cache-image-snip
          mzlib/math
-	 lang/prim
+         lang/prim
          lang/posn
          lang/private/imageeq
-         "error.ss")
+         "error.rkt")
 
 (provide-primitives
          image?
@@ -1084,7 +1084,7 @@ converting from the computer's coordinates, we get:
    0 0))
 
 (define (scene+line img x0 y0 x1 y1 c)
-  ;; img and c are checked via calls to add-line from image.ss
+  ;; img and c are checked via calls to add-line from image.rkt
   (check-arg 'scene+line (scene? img) "scene" "first" "plain image")
   (check-arg 'scene+line (real? x0) "number" "second" x0)
   (check-arg 'scene+line (real? y0) "number" "third" y0)

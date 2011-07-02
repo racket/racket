@@ -1,21 +1,18 @@
-
 (module windlldir mzscheme
   (require mzlib/port
-	   "winutf16.ss")
+           "winutf16.rkt")
 
   (provide update-dll-dir
            get-current-dll-dir)
 
   (define label (byte-regexp (bytes->utf-16-bytes #"dLl dIRECTORy:")))
   (define max-dir-len (* 512 2)) ; sizeof(wchar_t) is 2
-  
+
   (define (update-dll-dir dest path)
     (let ([path-bytes (bytes->utf-16-bytes
-		       (if (eq? path #t)
-			   #"<system>"
-			   (if (path? path)
-			       (path->bytes path)
-			       (string->bytes/locale path))))])
+                       (cond [(eq? path #t) #"<system>"]
+                             [(path? path) (path->bytes path)]
+                             [else (string->bytes/locale path)]))])
       (unless ((bytes-length path-bytes) . <= . max-dir-len)
         (error 'update-dll-dir "path too long: ~e" path))
       (let ([m (with-input-from-file dest

@@ -1,11 +1,11 @@
 #lang scheme/base
 (require scheme/class
-         "../syntax.ss"
-         "private.ss"
+         "../syntax.rkt"
+         "private.rkt"
          racket/snip/private/private
          racket/snip
          "editor-data.rkt"
-         (only-in "cycle.ss"
+         (only-in "cycle.rkt"
                   set-editor-stream-in%!
                   set-editor-stream-out%!))
 

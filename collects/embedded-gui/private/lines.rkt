@@ -4,8 +4,8 @@
    mzlib/class
    mzlib/etc
    mred
-   "snip-wrapper.ss"
-   "interface.ss")
+   "snip-wrapper.rkt"
+   "interface.rkt")
   
   (provide hline% vline%)
   
@@ -125,9 +125,9 @@
   
   #|
   (require
-   "verthoriz-alignment.ss"
-   "aligned-pasteboard.ss"
-   "snip-wrapper.ss")
+   "verthoriz-alignment.rkt"
+   "aligned-pasteboard.rkt"
+   "snip-wrapper.rkt")
   
   (define f (new frame% (label "f") (height 500) (width 500)))
   (send f show true)

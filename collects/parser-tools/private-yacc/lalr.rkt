@@ -1,11 +1,11 @@
 (module lalr mzscheme
-  
+
   ;; Compute LALR lookaheads from DeRemer and Pennello 1982
-  
-  (require "lr0.ss"
-	   "grammar.ss"
-	   mzlib/list
-	   mzlib/class)
+
+  (require "lr0.rkt"
+           "grammar.rkt"
+           mzlib/list
+           mzlib/class)
 
   (provide compute-LA)
   
@@ -228,7 +228,7 @@
   ;;     -> (trans-key -> term list)
   ;; DeRemer and Pennello 1982
   ;; Computes (f x) = (f- x) union Union{(f y) | y in (edges x)}
-  ;; A specialization of digraph in the file graph.ss
+  ;; A specialization of digraph in the file graph.rkt
   (define (digraph-tk->terml nodes edges f- num-states)
     (letrec (
 	     ;; Will map elements of trans-key to term sets represented as bit vectors

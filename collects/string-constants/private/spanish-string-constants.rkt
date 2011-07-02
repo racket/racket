@@ -1,4 +1,4 @@
-(module spanish-string-constants "string-constant-lang.ss"
+(module spanish-string-constants "string-constant-lang.rkt"
 
  ;;; when translating this constant, substitue name of actual language for `English'
  (is-this-your-native-language
@@ -602,15 +602,15 @@
  (drscheme-internal-error "Error interno de DrRacket")
  
  ;;; tools
- (invalid-tool-spec "La especificación de la herramienta, especificada en el archivo info.ss de la colección ~a, es inválida.  Esperaba una cadena o una lista no vacía de cadenas y recibí: ~e")
+ (invalid-tool-spec "La especificación de la herramienta, especificada en el archivo info.rkt de la colección ~a, es inválida.  Esperaba una cadena o una lista no vacía de cadenas y recibí: ~e")
  (error-invoking-tool-title "Error al invocar la herramienta ~s;~s")
  (tool-tool-names-same-length
-  "esperaba que `tool-names' y `tools', en el archivo info.ss de ~s, fueran listas de la misma longitud, pero obtuve ~e y ~e")
+  "esperaba que `tool-names' y `tools', en el archivo info.rkt de ~s, fueran listas de la misma longitud, pero obtuve ~e y ~e")
  (tool-tool-icons-same-length
-  "esperaba que `tool-icons' y  `tools', en el archivo info.ss de ~s, fueran listas de la misma longitud, pero obtuve ~e y ~e")
+  "esperaba que `tool-icons' y  `tools', en el archivo info.rkt de ~s, fueran listas de la misma longitud, pero obtuve ~e y ~e")
  (tool-tool-urls-same-length
-  "esperaba que `tool-urls' y `tools' fueran listas del mismo tamaño en info.ss de ~s, pero obtuve ~e y ~e")
- (error-getting-info-tool "error al cargar el archivo info.ss de ~s")
+  "esperaba que `tool-urls' y `tools' fueran listas del mismo tamaño en info.rkt de ~s, pero obtuve ~e y ~e")
+ (error-getting-info-tool "error al cargar el archivo info.rkt de ~s")
  (tool-error-phase1 "Error en la fase 1 de la herramienta ~s; ~s")
  (tool-error-phase2 "Error en la fase 2 de la herramienta ~s; ~s")
 

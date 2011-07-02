@@ -3,8 +3,8 @@
            mzlib/etc
            mred
            string-constants
-           "../preferences.ss"
-           "sig.ss")
+           "../preferences.rkt"
+           "sig.rkt")
   
   (import [prefix preferences: framework:preferences^]
           [prefix editor: framework:editor^]

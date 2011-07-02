@@ -5,7 +5,7 @@
          scribble/decode
          scribble/sigplan
          racket/list
-         "../private/defaults.ss"
+         "../private/defaults.rkt"
          (for-syntax scheme/base))
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/sigplan)

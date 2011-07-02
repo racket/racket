@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 4)
+(allocator-setup "../good-collectors/good-collector.rkt" 4)
 
 ; 2
 (define thunker

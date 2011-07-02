@@ -1,7 +1,7 @@
 #lang scheme/base
-(require "checker.ss"
-         "specs.ss"
-         "dist-specs.ss")
+(require "checker.rkt"
+         "specs.rkt"
+         "dist-specs.rkt")
 
 (parameterize ([*specs* #f]
                [current-namespace (namespace-anchor->namespace checker-namespace-anchor)])

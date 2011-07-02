@@ -1,7 +1,7 @@
 #lang racket
 
 (require "test-abbrev.rkt"
-         (prefix-in m: "language-level-model.ss")
+         (prefix-in m: "language-level-model.rkt")
          stepper/private/model-settings)
 
 (provide the-test-cases)

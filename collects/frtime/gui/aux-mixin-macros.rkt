@@ -1,5 +1,5 @@
 (module aux-mixin-macros frtime
-  (require "mixin-macros.ss")
+  (require "mixin-macros.rkt")
   (require mzlib/class)
 
   

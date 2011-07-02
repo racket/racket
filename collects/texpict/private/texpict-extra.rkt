@@ -1,11 +1,10 @@
-
 #lang scheme/unit
 
   (require mzlib/etc
-	   mzlib/list)
+           mzlib/list)
 
-  (require "texpict-sig.ss"
-	   "common-sig.ss")
+  (require "texpict-sig.rkt"
+           "common-sig.rkt")
 
   (import texpict-common^
           texpict-internal^)

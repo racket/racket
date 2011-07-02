@@ -1,15 +1,15 @@
 ;; Library of functions for the compiler
 ;; (c) 1996-7 Sebastian Good
-;; (c) 1997-8 PLT, Rice University
+;; (c) 1997-2011 PLT Scheme Inc
 
 (module library mzscheme
   (require mzlib/unit
-	  mzlib/list
-	  mzlib/etc)
+           mzlib/list
+           mzlib/etc)
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
+  (require "sig.rkt")
 
   (provide library@)
   (define-unit library@

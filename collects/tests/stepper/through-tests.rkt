@@ -1,8 +1,8 @@
 #lang racket
 
 (require (only-in stepper/private/model stepper-model-debug?)
-         (prefix-in m: "language-level-model.ss")
-         "test-engine.ss"
+         (prefix-in m: "language-level-model.rkt")
+         "test-engine.rkt"
          "test-cases.rkt"
          
          ;; for xml testing:

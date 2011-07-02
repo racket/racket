@@ -1,11 +1,11 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base 
-                     "term-fn.ss"
+                     "term-fn.rkt"
                      syntax/boundmap
                      racket/syntax)
          "error.rkt"
-         "matcher.ss")
+         "matcher.rkt")
 
 (provide term term-let term-let/error-name term-let-fn term-define-fn hole in-hole)
 

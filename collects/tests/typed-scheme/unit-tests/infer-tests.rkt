@@ -1,8 +1,8 @@
 #lang scheme/base
-(require "test-utils.ss" (for-syntax scheme/base))
+(require "test-utils.rkt" (for-syntax scheme/base))
 (require (rep type-rep)
-	 (r:infer infer)
-	 (types convenience union utils abbrev)
+         (r:infer infer)
+         (types convenience union utils abbrev)
          rackunit)
 
 

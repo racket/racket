@@ -4,7 +4,7 @@
          (except-in scribble/base author)
          scribble/decode
          scribble/jfp
-         "../private/defaults.ss"
+         "../private/defaults.rkt"
          (for-syntax scheme/base))
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/jfp)

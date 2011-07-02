@@ -1,7 +1,7 @@
 #lang racket/unit
 
   (require mzlib/class
-           "sig.ss"
+           "sig.rkt"
            mred/mred-sig
            mzlib/list
            mzlib/etc)

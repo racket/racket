@@ -3,25 +3,25 @@
          scheme/port
          scheme/file
          (for-syntax scheme/base)
-         "../syntax.ss"
-         "const.ss"
-         "mline.ss"
-         "private.ss"
+         "../syntax.rkt"
+         "const.rkt"
+         "mline.rkt"
+         "private.rkt"
          racket/snip/private/private
          racket/snip/private/prefs
-         "editor.ss"
+         "editor.rkt"
          "editor-data.rkt"
-         "undo.ss"
+         "undo.rkt"
          racket/snip
          racket/snip/private/snip-flags
          "standard-snip-admin.rkt"
-         "keymap.ss"
-         (only-in "cycle.ss" 
+         "keymap.rkt"
+         (only-in "cycle.rkt"
                   printer-dc%
                   set-text%!)
-         "wordbreak.ss"
-         "stream.ss"
-         "wx.ss")
+         "wordbreak.rkt"
+         "stream.rkt"
+         "wx.rkt")
 
 (provide text%
          add-text-keymap-functions)

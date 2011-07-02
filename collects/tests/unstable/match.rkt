@@ -3,7 +3,7 @@
 (require unstable/match rackunit rackunit/text-ui "helpers.rkt")
 
 (run-tests
- (test-suite "match.ss"
+ (test-suite "match.rkt"
    (test-suite "match?"
      (test
       (check-true (match? (list 1 2 3)

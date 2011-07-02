@@ -1,5 +1,5 @@
 #lang mzscheme
-(require "dirs.ss" "path-relativize.ss")
+(require "dirs.rkt" "path-relativize.rkt")
 
 (provide path->main-doc-relative
          main-doc-relative->path)
@@ -10,4 +10,3 @@
                    'doc
                    'path->main-doc-relative
                    'main-doc-relative->path))
-

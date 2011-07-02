@@ -2,10 +2,10 @@
 
 (define name "HtDP Teachpacks")
 (define compile-omit-paths
-  '("hangman-world.ss" "hangman-world-play.ss"
+  '("hangman-world.rkt" "hangman-world-play.rkt"
     ;; TEMPORARY DISABLE THESE FILES UNTIL FIXED
-    ;; "matrix.ss" "matrix-client.ss" "matrix-invisible.ss"
-    ;; "matrix-render-sig.ss" "matrix-sig.ss" "matrix-unit.ss"
+    ;; "matrix.rkt" "matrix-client.rkt" "matrix-invisible.rkt"
+    ;; "matrix-render-sig.rkt" "matrix-sig.rkt" "matrix-unit.rkt"
     "tests"))
 
 (define scribblings '(("htdp.scrbl")))

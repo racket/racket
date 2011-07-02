@@ -1,15 +1,15 @@
 #lang scheme/base
 (require scheme/class
          scheme/file
-         "../syntax.ss"
-         "editor.ss"
-         "editor-admin.ss"
-         "private.ss"
+         "../syntax.rkt"
+         "editor.rkt"
+         "editor-admin.rkt"
+         "private.rkt"
          racket/snip/private/prefs
          racket/snip/private/private
-         (only-in "cycle.ss" popup-menu%)
-         (only-in "../helper.ss" queue-window-callback)
-         "wx.ss")
+         (only-in "cycle.rkt" popup-menu%)
+         (only-in "../helper.rkt" queue-window-callback)
+         "wx.rkt")
 
 (provide editor-canvas%)
 

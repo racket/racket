@@ -9,7 +9,7 @@
          net/uri-codec
          browser/htmltext
          "private/bug-report-controls.rkt"
-         "private/buginfo.ss"
+         "private/buginfo.rkt"
          "private/save-bug-report.rkt")
 
 (provide help-desk:report-bug

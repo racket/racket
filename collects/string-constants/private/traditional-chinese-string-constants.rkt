@@ -15,7 +15,7 @@
 ;     ;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
 ;   ;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
 ;            ;;                    ;               ;   ;;; ;; ;;;;   
-(module traditional-chinese-string-constants "string-constant-lang.ss"
+(module traditional-chinese-string-constants "string-constant-lang.rkt"
   (is-this-your-native-language "中文是你的母語嗎？")
   
   (are-you-sure-you-want-to-switch-languages
@@ -708,16 +708,16 @@
   (drscheme-internal-error "DrRacket内部错误")
   
   ;;; tools
-  (invalid-tool-spec "Collection ~a中info.ss的tool定义不正确。需要一个字符串或者一个非空表，得到：~e")
+  (invalid-tool-spec "Collection ~a中info.rkt的tool定义不正确。需要一个字符串或者一个非空表，得到：~e")
   (error-invoking-tool-title "调用tool ~s出错；~s")
   (tool-tool-names-same-length
-   "在~s的info.ss文件中，“tool-names”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.rkt文件中，“tool-names”和“tools”应该是等长的表，得到~e和~e")
   (tool-tool-icons-same-length
-   "在~s的info.ss文件中，“tool-icons”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.rkt文件中，“tool-icons”和“tools”应该是等长的表，得到~e和~e")
   (tool-tool-urls-same-length
-   "在~s的info.ss文件中，“tool-urls”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.rkt文件中，“tool-urls”和“tools”应该是等长的表，得到~e和~e")
   (error-getting-info-tool
-   "载入~s的info.ss出错")
+   "载入~s的info.rkt出错")
   (tool-error-phase1 "tool ~s第一阶段出错;~s")
   (tool-error-phase2 "tool ~s第二阶段出错;~s")
   

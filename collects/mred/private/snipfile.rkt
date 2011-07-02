@@ -1,16 +1,16 @@
 (module snipfile racket/base
   (require racket/class
            racket/port
-	   syntax/moddep
-           (prefix-in wx: "kernel.ss")
-	   (prefix-in wx: racket/snip)
-	   "check.ss"
-	   "editor.ss")
-		
-  (provide open-input-text-editor 
-	   open-input-graphical-file
-	   text-editor-load-handler
-	   open-output-text-editor )
+           syntax/moddep
+           (prefix-in wx: "kernel.rkt")
+           (prefix-in wx: racket/snip)
+           "check.rkt"
+           "editor.rkt")
+
+  (provide open-input-text-editor
+           open-input-graphical-file
+           text-editor-load-handler
+           open-output-text-editor )
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

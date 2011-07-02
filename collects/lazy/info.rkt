@@ -9,7 +9,7 @@
 
 ;(require string-constants)
 ;(define name "Lazy Scheme")
-;(define drscheme-language-modules '(("lazy.ss" "lazy")))
+;(define drscheme-language-modules '(("lazy.rkt" "lazy")))
 ;(define drscheme-language-positions
 ;  `((,(string-constant experimental-languages) "Lazy Racket")))
 ;(define drscheme-language-numbers '((1000 -500)))

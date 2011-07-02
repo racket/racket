@@ -3,18 +3,18 @@
 ; Once upon a time, there were three different variants.  Preserve the
 ; ability to do this.
 (provide (rename-out (module-begin beginner-module-begin)
-		     (module-begin intermediate-module-begin)
-		     (module-begin advanced-module-begin)))
+                     (module-begin intermediate-module-begin)
+                     (module-begin advanced-module-begin)))
 
 (require deinprogramm/signature/signature
-	 lang/private/signature-syntax)
+         lang/private/signature-syntax)
 
 (require (for-syntax scheme/base)
-	 (for-syntax racket/list)
-	 (for-syntax syntax/boundmap)
-	 (for-syntax syntax/kerncase))
+         (for-syntax racket/list)
+         (for-syntax syntax/boundmap)
+         (for-syntax syntax/kerncase))
 
-(require (for-syntax "firstorder.ss"))
+(require (for-syntax "firstorder.rkt"))
 
 (define-syntax (print-results stx)
   (syntax-case stx ()

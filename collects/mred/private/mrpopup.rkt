@@ -1,16 +1,16 @@
 (module mrpopup mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-           (rename "wxme/cycle.ss" wx:set-popup-menu%! set-popup-menu%!)
-	   "lock.ss"
-	   "const.ss"
-	   "helper.ss"
-	   "check.ss"
-	   "wx.ss"
-	   "wxmenu.ss"
-	   "mrmenuintf.ss")
+           mzlib/class100
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           (rename "wxme/cycle.rkt" wx:set-popup-menu%! set-popup-menu%!)
+           "lock.rkt"
+           "const.rkt"
+           "helper.rkt"
+           "check.rkt"
+           "wx.rkt"
+           "wxmenu.rkt"
+           "mrmenuintf.rkt")
 
   (provide popup-menu%)
 

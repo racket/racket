@@ -9,10 +9,10 @@
            mzlib/etc
 	   mzlib/contract
            scheme/match
-           "marks.ss"
-           "model-settings.ss"
-           "shared.ss"
-           "my-macros.ss"
+           "marks.rkt"
+           "model-settings.rkt"
+           "shared.rkt"
+           "my-macros.rkt"
            (for-syntax scheme/base)
            racket/private/promise)
 

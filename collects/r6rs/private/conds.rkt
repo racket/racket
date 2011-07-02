@@ -3,7 +3,7 @@
 (require rnrs/records/syntactic-6
          rnrs/records/procedural-6
          scheme/mpair
-         "exns.ss"
+         "exns.rkt"
          (for-syntax scheme/base))
 
 (provide &condition

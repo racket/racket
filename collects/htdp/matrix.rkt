@@ -67,7 +67,7 @@ position structures returned by matrix-where?
     (define (visible? m) (and (object? m) (v? m)))
     (define visible-matrix v-m)
 
-    ;; the graphical stuff follows  .. it is code based on image.ss 
+    ;; the graphical stuff follows  .. it is code based on image.rkt
     ;; Matrix -> VisibleMatrix
     (define (make-visible M)
       (define S (matrix-render M))
@@ -161,7 +161,7 @@ position structures returned by matrix-where?
                     (loop (map cdr S-sizes))))))
       (values row-heights col-widths))
     
-    ;; --- copied from image.ss --- needs refactoring
+    ;; --- copied from image.rkt --- needs refactoring
     (define (get-text-size size string)
       (unless (thread-cell-ref cached-bdc-for-text-size)
         (let* ([bm (make-object bitmap% 1 1)]

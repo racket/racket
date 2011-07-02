@@ -2,8 +2,8 @@
 
 (provide profile-thunk profile)
 
-(require "sampler.ss" "analyzer.ss"
-         (prefix-in text: "render-text.ss")
+(require "sampler.rkt" "analyzer.rkt"
+         (prefix-in text: "render-text.rkt")
          (for-syntax scheme/base))
 
 (define (profile-thunk thunk
@@ -74,7 +74,7 @@
   (thread bg-fib)
   (list (fibs n) (channel-get ch)))
 
-(require "render-graphviz.ss")
+(require "render-graphviz.rkt")
 
 (profile ;(fibs 40)
          ;(dynamic-require '(lib "scribblings/reference/reference.scrbl") #f)

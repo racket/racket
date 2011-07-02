@@ -1,7 +1,6 @@
-
-(module code "slideshow.ss"
+(module code "slideshow.rkt"
   (require texpict/code
-	   mzlib/unit)
+           mzlib/unit)
   (require-for-syntax syntax/to-string
                       mzlib/list)
 

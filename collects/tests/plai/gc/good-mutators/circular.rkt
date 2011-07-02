@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 68)
+(allocator-setup "../good-collectors/good-collector.rkt" 68)
 
 (define (gen-circular)
   (let ([x (cons 3 4)])

@@ -529,9 +529,9 @@
               (= 2 (length language))
               (eq? (car language) 'special)
               (memq (cadr language) teaching-langs))
-         `(lib ,(format "htdp-~a.ss" (cadr language)) "lang")]
+         `(lib ,(format "htdp-~a.rkt" (cadr language)) "lang")]
         [(equal? language '(special r5rs))
-         `(lib "lang.ss" "r5rs")]
+         `(lib "lang.rkt" "r5rs")]
         [else #f]))
 
 ;; Like a toplevel (eval `(begin ,@exprs)), but the language that is used may
@@ -553,9 +553,9 @@
 
 ;; We need a powerful enough code inspector to invoke the errortrace library
 ;; (indirectly through private/sandbox-coverage).  But there is a small problem
-;; here -- errortrace/stacktrace.ss will grab the global code inspector value
+;; here -- errortrace/stacktrace.rkt will grab the global code inspector value
 ;; at the time it is invoked.  So we grab it here too, and use it to wrap the
-;; code that invokes errortrace.  If errortrace/stacktrace.ss is changed to
+;; code that invokes errortrace.  If errortrace/stacktrace.rkt is changed to
 ;; grab the current inspector, then it would be better to avoid this here, and
 ;; pass `evaluate-program' the inspector that was in effect when the sandbox
 ;; was created.

@@ -1,9 +1,8 @@
-
 (module link mzscheme
   (require mzlib/unit)
 
-  (require "link-sig.ss")
-  (require "link-unit.ss")
+  (require "link-sig.rkt"
+           "link-unit.rkt")
 
   (define-values/invoke-unit/infer dynext:link@)
 

@@ -1,5 +1,5 @@
 #lang racket/base
-(require "main.ss")
+(require "main.rkt")
 
 (with-output-to-file "stdout"
   #:exists 'append

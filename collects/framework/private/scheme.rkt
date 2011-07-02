@@ -7,10 +7,10 @@
          scheme/class
          mred/mred-sig
          syntax-color/module-lexer
-         "collapsed-snipclass-helpers.ss"
-         "sig.ss"
-         "../gui-utils.ss"
-         "../preferences.ss"
+         "collapsed-snipclass-helpers.rkt"
+         "sig.rkt"
+         "../gui-utils.rkt"
+         "../preferences.rkt"
          scheme/match)
 
 (import mred^

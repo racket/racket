@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base))
-(require "test-suite-utils.ss")
+(require "test-suite-utils.rkt")
 
 (define-syntax (test-search stx)
   (syntax-case stx ()
@@ -10,7 +10,7 @@
 
 (define (test-search/proc line txt string cs? rs bubble-table)
   (test
-   (string->symbol (format "search.ss: line ~a" line))
+   (string->symbol (format "search.rkt: line ~a" line))
    (lambda (x) (equal? bubble-table x))
    (lambda ()
      (queue-sexp-to-mred

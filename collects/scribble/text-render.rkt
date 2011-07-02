@@ -1,6 +1,5 @@
-
 (module text-render racket/base
-  (require "core.ss"
+  (require "core.rkt"
            racket/class
            racket/port)
   (provide render-mixin)

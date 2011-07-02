@@ -1,4 +1,4 @@
 #lang setup/infotab
 
-(define game "pousse.ss")
+(define game "pousse.rkt")
 (define game-set "Board Games")

@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "mzssl.ss")
-(provide (all-from-out "mzssl.ss"))
+(require "mzssl.rkt")
+(provide (all-from-out "mzssl.rkt"))

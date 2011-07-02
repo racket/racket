@@ -3,7 +3,7 @@
 (require rackunit rackunit/text-ui unstable/debug "helpers.rkt")
 
 (run-tests
- (test-suite "debug.ss"
+ (test-suite "debug.rkt"
    (test-suite "dprintf"
      (test
       (let ()

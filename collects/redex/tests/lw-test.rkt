@@ -50,9 +50,9 @@
 
 
 (module lw-test racket/base
-  (require "test-util.ss"
-           "../private/loc-wrapper.ss"
-           "lw-test-util.ss"
+  (require "test-util.rkt"
+           "../private/loc-wrapper.rkt"
+           "lw-test-util.rkt"
            (only-in "../pict.rkt" to-lw/stx))
   
   (reset-count)
@@ -322,5 +322,5 @@
     (test (normalize-lw (to-lw/stx (from-str "(a ((b)) c 1 #t)")))
           (normalize-lw (to-lw (a ((b)) c 1 #t)))))
   
-  (print-tests-passed "lw-test.ss"))
+  (print-tests-passed "lw-test.rkt"))
 

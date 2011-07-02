@@ -3,12 +3,12 @@
          (only mzlib/unit unit import export)
          mzlib/file
          mred
-         "sig.ss"
-         "model.ss"
-         "gui.ss"
-         "heuristics.ss"
-         "explore.ss"
-         "../show-scribbling.ss")
+         "sig.rkt"
+         "model.rkt"
+         "gui.rkt"
+         "heuristics.rkt"
+         "explore.rkt"
+         "../show-scribbling.rkt")
 
 (provide game@)
 

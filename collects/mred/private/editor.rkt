@@ -1,35 +1,35 @@
 (module editor mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/etc
-	   mzlib/list
-	   mzlib/file
-	   (prefix wx: "kernel.ss")
+           mzlib/class100
+           mzlib/etc
+           mzlib/list
+           mzlib/file
+           (prefix wx: "kernel.rkt")
            (prefix wx: racket/snip)
-           (prefix wx: "wxme/keymap.ss")
-           (prefix wx: "wxme/editor.ss")
-           (prefix wx: "wxme/text.ss")
-           (prefix wx: "wxme/pasteboard.ss")
-           (prefix wx: "wxme/editor-snip.ss")
-           (rename "wxme/cycle.ss" wx:set-extended-editor-snip%! set-extended-editor-snip%!)
-           (rename "wxme/cycle.ss" wx:set-extended-text%! set-extended-text%!)
-           (rename "wxme/cycle.ss" wx:set-extended-pasteboard%! set-extended-pasteboard%!)
-	   "seqcontract.ss"
-	   "lock.ss"
-	   "check.ss"
-	   "const.ss"
-	   "helper.ss"
-	   "cycle.ss"
-	   "wx.ss"
-	   "wxtop.ss"
-	   "wxitem.ss"
-	   "wxcanvas.ss"
-	   "mrwindow.ss"
-	   "mrtop.ss"
-	   "mrcanvas.ss"
-	   "mrpopup.ss"
-	   "mrmenuintf.ss"
-	   "mrmenu.ss")
+           (prefix wx: "wxme/keymap.rkt")
+           (prefix wx: "wxme/editor.rkt")
+           (prefix wx: "wxme/text.rkt")
+           (prefix wx: "wxme/pasteboard.rkt")
+           (prefix wx: "wxme/editor-snip.rkt")
+           (rename "wxme/cycle.rkt" wx:set-extended-editor-snip%! set-extended-editor-snip%!)
+           (rename "wxme/cycle.rkt" wx:set-extended-text%! set-extended-text%!)
+           (rename "wxme/cycle.rkt" wx:set-extended-pasteboard%! set-extended-pasteboard%!)
+	   "seqcontract.rkt"
+	   "lock.rkt"
+	   "check.rkt"
+	   "const.rkt"
+	   "helper.rkt"
+	   "cycle.rkt"
+	   "wx.rkt"
+	   "wxtop.rkt"
+	   "wxitem.rkt"
+	   "wxcanvas.rkt"
+	   "mrwindow.rkt"
+	   "mrtop.rkt"
+	   "mrcanvas.rkt"
+	   "mrpopup.rkt"
+	   "mrmenuintf.rkt"
+	   "mrmenu.rkt")
 
   (provide editor<%>
 	   text%

@@ -1,4 +1,4 @@
-;; properties.ss
+;; properties.rkt
 
 (module properties mzscheme
   (require mzlib/list)	

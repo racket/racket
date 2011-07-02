@@ -1,10 +1,10 @@
 #cs(module simplify mzscheme
-     (require "parse.ss"
-              "prims.ss"
+     (require "parse.rkt"
+              "prims.rkt"
               mzlib/match)
-     
+
      (provide simplify)
-      
+
      ;; flatten/label-block : list-of-decl list-of-stmt -> block-stmt
      ;; Desugars `for', converts `if' so that it's always of the form
      ;; `if <test> then goto <label> else goto <label>', flattens

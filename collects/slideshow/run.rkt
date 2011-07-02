@@ -1,2 +1,2 @@
-(module run "slideshow.ss"
-  (provide (all-from "slideshow.ss")))
+(module run "slideshow.rkt"
+  (provide (all-from "slideshow.rkt")))

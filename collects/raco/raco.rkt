@@ -1,6 +1,6 @@
 #lang scheme/base
-(require "command-name.ss"
-         "all-tools.ss")
+(require "command-name.rkt"
+         "all-tools.rkt")
 
 (define (find-by-prefix hash str)
   (let ([trie (make-hash)])

@@ -1,13 +1,12 @@
-
 ;; Since Matthew implemented this module, tests are in
-;;  plt/collects/tests/mzscheme/char-set.ss.
+;;  collects/tests/mzscheme/char-set.rkt.
 ;; Since Mike Sperber looked carefully at this module,
 ;;  the code and tests are a lot better than they would be.
 
 (module char-set mzscheme
   (require mzlib/integer-set
-	   (all-except mzlib/contract union)
-	   (rename mzlib/contract union/c union))
+           (all-except mzlib/contract union)
+           (rename mzlib/contract union/c union))
 
   ;; Data defn ----------------------------------------
     

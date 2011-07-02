@@ -1,14 +1,13 @@
-
 (module unpack mzscheme
 
   (require mzlib/etc
-	   mzlib/inflate
-	   mzlib/file
+           mzlib/inflate
+           mzlib/file
            mzlib/list
            mzlib/port
-	   net/base64
-	   setup/getinfo
-	   "dirs.ss")
+           net/base64
+           setup/getinfo
+           "dirs.rkt")
 
   (provide unpack
            fold-plt-archive)

@@ -1,13 +1,13 @@
 #lang scheme/base
 (require scheme/contract)
 
-(require "private/reduction-semantics.ss"
-         "private/matcher.ss"
-         "private/term.ss"
-         "private/rg.ss"
-         "private/error.ss")
+(require "private/reduction-semantics.rkt"
+         "private/matcher.rkt"
+         "private/term.rkt"
+         "private/rg.rkt"
+         "private/error.rkt")
 
-(provide exn:fail:redex?) ;; from error.ss
+(provide exn:fail:redex?) ;; from error.rkt
 
 (provide reduction-relation 
          --> fresh with ;; keywords for reduction-relation

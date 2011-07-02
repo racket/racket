@@ -1,8 +1,8 @@
 #lang scheme/base
-(require "stx.ss"
+(require "stx.rkt"
          unstable/struct
          (for-template scheme/base
-                       "private/template-runtime.ss"))
+                       "private/template-runtime.rkt"))
 
 (provide transform-template)
 

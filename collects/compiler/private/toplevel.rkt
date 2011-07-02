@@ -1,11 +1,11 @@
 ;; routines for top-level entities
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-2001 PLT
+;; (c) 1997-2011 PLT Scheme Inc
 
 (module toplevel mzscheme
   (require mzlib/unit)
 
-  (require "sig.ss")
+  (require "sig.rkt")
 
   (provide toplevel@)
   (define-unit toplevel@

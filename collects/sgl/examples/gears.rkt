@@ -1,4 +1,4 @@
-;; $Id: gears.ss,v 1.8 2005/01/12 12:49:10 mflatt Exp $
+;; $Id: gears.rkt,v 1.8 2005/01/12 12:49:10 mflatt Exp $
 ;;
 ;; This is a version of the venerable "gears" demo for PLT Scheme 200 using
 ;; Scott Owens' SGL OpenGL bindings.  It was ported from "glxgears.c" 1.3 from
@@ -23,10 +23,10 @@
 ;;     GLUT).  Port by Brian Paul 23 March 2001.
 ;;
 ;; To run, evaluate this file in DrRacket in the "module" language level,
-;; or execute "mred -qu gears.ss" from your OS shell.
+;; or execute "mred -qu gears.rkt" from your OS shell.
 ;;
 ;; Scheme port by Neil W. Van Dyke <neil@neilvandyke.org>, 23 November 2002.
-;; Originally called glxgears.ss.  Minor modifications since.
+;; Originally called glxgears.rkt.  Minor modifications since.
 ;; See "http://www.neilvandyke.org/opengl-plt/" for more information.
 ;;
 ;; Updated to newer sgl interface by Scott Owens
@@ -339,7 +339,7 @@
 
     (super-instantiate () (style '(gl no-autoclear)))))
 (define (f)
-  (let* ((f (make-object frame% "gears.ss" #f))
+  (let* ((f (make-object frame% "gears.rkt" #f))
          (c (instantiate gears-canvas% (f) (min-width 300) (min-height 300))))
     (send f create-status-line)
     (when controls?

@@ -26,4 +26,4 @@
           stream-of stream-range stream-ref stream-reverse stream-scan stream-take
           stream-take-while stream-unfold stream-unfolds stream-zip)
 
-  (require "primitive.ss" "derived.ss")
+  (require "primitive.rkt" "derived.rkt")

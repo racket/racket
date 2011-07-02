@@ -1,9 +1,9 @@
 #lang racket/base
 (require ffi/unsafe
          ffi/unsafe/alloc
-         "utils.ss"
-         "const.ss"
-         "types.ss")
+         "utils.rkt"
+         "const.rkt"
+         "types.rkt")
 
 (provide
  (protect-out get-theme-logfont

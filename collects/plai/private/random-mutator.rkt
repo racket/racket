@@ -1,8 +1,8 @@
 #lang scheme/base
-(require scheme/pretty 
-         scheme/match 
+(require scheme/pretty
+         scheme/match
          scheme/contract
-         "gc-core.ss")
+         "gc-core.rkt")
 
 (provide save-random-mutator 
          find-heap-values

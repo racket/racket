@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require "plot-extend.ss"
-         "renderer-helpers.ss"
-         "view.ss")
+(require "plot-extend.rkt"
+         "renderer-helpers.rkt"
+         "view.rkt")
 
-(provide (except-out (all-from-out "plot-extend.ss")
+(provide (except-out (all-from-out "plot-extend.rkt")
                      define-plot-type)
          plot-view%
 

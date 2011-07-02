@@ -5,7 +5,7 @@
            racket/draw
            racket/math
            racket/gui/dynamic
-           "mrpict.ss")
+           "mrpict.rkt")
 
   ;; Utilities for use with mrpict
   

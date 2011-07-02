@@ -1,2 +1,1 @@
-
-(module mazefun "wrap.ss")
+(module mazefun "wrap.rkt")

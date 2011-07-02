@@ -1,5 +1,5 @@
 ;;;
-;;; <optional.ss> ---- Let-optionals macros
+;;; <optional.rkt> ---- Let-optionals macros
 ;;; Time-stamp: <2011-02-02 11:44:21 dvanhorn>
 ;;;
 ;;; Usually, I would add a copyright notice, and the announce that
@@ -165,4 +165,4 @@
      (if (null? arg) (begin body ...)
          (error "Too many arguments in let-opt" arg))]))
 
-;; optional.ss ends here
+;; optional.rkt ends here

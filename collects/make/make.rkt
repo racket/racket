@@ -1,8 +1,8 @@
 #lang mzscheme
 
 (require mzlib/unit
-         "make-sig.ss"
-         "make-unit.ss")
+         "make-sig.rkt"
+         "make-unit.rkt")
 
 (define-values/invoke-unit/infer make@)
 

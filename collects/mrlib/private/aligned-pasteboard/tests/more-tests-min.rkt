@@ -1,6 +1,6 @@
 (require
- "../aligned-editor-container.ss"
- "../aligned-pasteboard.ss")
+ "../aligned-editor-container.rkt"
+ "../aligned-pasteboard.rkt")
 
 (define editor (new vertical-pasteboard%))
 (define pb (new horizontal-pasteboard%))
@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;
 ;; exploration
-(require "../snip-lib.ss")
+(require "../snip-lib.rkt")
 (define t-e (send t get-editor))
 (send t-e get-aligned-min-width)
 (send t get-aligned-min-width)

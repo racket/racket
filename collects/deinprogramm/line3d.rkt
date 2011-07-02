@@ -1,13 +1,13 @@
 (module line3d mzscheme
-  (require "world.ss"
-	   "define-record-procedures.ss")
-  (require (only "DMdA-vanilla.ss"
-		 empty make-pair empty?
-		 first rest))
+  (require "world.rkt"
+           "define-record-procedures.rkt")
+  (require (only "DMdA-vanilla.rkt"
+                 empty make-pair empty?
+                 first rest))
   (provide make-vec3
-  				 vec3-x
-  				 vec3-y
-  				 vec3-z
+           vec3-x
+           vec3-y
+           vec3-z
            add-vec3
            sub-vec3
            mult-vec3
@@ -55,6 +55,6 @@
            transform-primitive-list
            render-scene
            )
-                   
-  (require (lib "include.ss"))
+
+  (require mzlib/include)
   (include "line3d.scm"))

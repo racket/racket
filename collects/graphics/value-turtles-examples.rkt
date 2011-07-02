@@ -1,5 +1,5 @@
 (module value-turtles-examples mzscheme
-  (require "value-turtles.ss"
+  (require "value-turtles.rkt"
            mzlib/etc
            mzlib/math)
 

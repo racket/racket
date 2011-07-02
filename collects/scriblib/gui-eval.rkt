@@ -7,7 +7,7 @@
          racket/file
          racket/runtime-path
          racket/serialize
-         "private/gui-eval-exn.ss"
+         "private/gui-eval-exn.rkt"
          racket/system
          racket/sandbox
          (for-syntax racket/base))

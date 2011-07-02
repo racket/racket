@@ -1,17 +1,17 @@
 ;; Zodiac interface and library routines
 ;; (c)1996-1997 Sebastian Good
-;; (c)1997-2001 PLT
+;; (c)1997-2011 PLT Scheme Inc
 
 (module zlayer mzscheme
   (require mzlib/unit
-	  mzlib/list
-	  mzlib/etc)
-  
+           mzlib/list
+           mzlib/etc)
+
   (require syntax/zodiac-sig)
 
-  (require "../sig.ss")
-  (require "sig.ss")
-  
+  (require "../sig.rkt"
+           "sig.rkt")
+
   (provide zlayer@)
   (define-unit zlayer@
       (import (prefix compiler:option: compiler:option^)

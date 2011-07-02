@@ -1,5 +1,5 @@
 #lang racket
-(require rackunit rackunit/text-ui "1.ss" "1b.ss")
+(require rackunit rackunit/text-ui "1.rkt" "1b.rkt")
 
 (add (make-basic-customer 'mf "matthias" "brookstone"))
 (add (make-basic-customer 'rf "robby" "beverly hills park"))

@@ -1,6 +1,5 @@
-
 #lang scheme/base
-(require "../gentest-framework.ss")
+(require "../gentest-framework.rkt")
 (provide proto:errors)
 
 (define-tests proto:errors "Bad syntax"

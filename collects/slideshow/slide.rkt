@@ -1,22 +1,22 @@
 (module slide racket/base
   (require racket/unit
-	   racket/contract
-	   texpict/mrpict
-	   texpict/utils
-	   "sig.ss"
-	   "core.ss"
-	   "private/utils.ss"
-	   "param.ss")
+           racket/contract
+           texpict/mrpict
+           texpict/utils
+           "sig.rkt"
+           "core.rkt"
+           "private/utils.rkt"
+           "param.rkt")
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;       Link Config and Viewer with Core        ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ;; The actual config and viewer units are determined by a parameter
-  ;;  in "param.ss". This somewhat strange technqiue allows the units
+  ;;  in "param.rkt". This somewhat strange technqiue allows the units
   ;;  to be changed as this module is loaded in a new namespace; see
-  ;;  "slides-to-picts.ss". Such namespace games are not necessary if
-  ;;  talks are written as units and linked to the core.ss unit.
+  ;;  "slides-to-picts.rkt". Such namespace games are not necessary if
+  ;;  talks are written as units and linked to the core.rkt unit.
 
   (define-values/invoke-unit ((current-slideshow-linker) core@)
     (import)

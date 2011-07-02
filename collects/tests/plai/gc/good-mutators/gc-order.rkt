@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 58)
+(allocator-setup "../good-collectors/good-collector.rkt" 58)
 
 (define x 3)
 (cons (begin (set! x 2)

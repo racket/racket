@@ -6,7 +6,7 @@
    mred
    mzlib/class
    mzlib/etc
-   "snip-wrapper.ss")
+   "snip-wrapper.rkt")
   
   (provide
    text-button-snip%

@@ -13,8 +13,8 @@ added get-regions
          syntax-color/paren-tree
          syntax-color/default-lexer
          string-constants
-         "../preferences.ss"
-         "sig.ss")
+         "../preferences.rkt"
+         "sig.rkt")
 
 (import [prefix icon: framework:icon^]
         [prefix mode: framework:mode^]

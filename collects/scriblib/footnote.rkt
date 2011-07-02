@@ -6,7 +6,7 @@
          scribble/latex-properties
          racket/promise
          setup/main-collects
-         "private/counter.ss")
+         "private/counter.rkt")
 
 (provide note
          define-footnote)

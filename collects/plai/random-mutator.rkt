@@ -1,7 +1,7 @@
 #lang scheme/base
-(require "private/random-mutator.ss"
+(require "private/random-mutator.rkt"
          scheme/contract
-         "private/gc-core.ss")
+         "private/gc-core.rkt")
 
 (provide/contract
  [save-random-mutator 

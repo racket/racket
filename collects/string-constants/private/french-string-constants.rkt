@@ -1,6 +1,6 @@
 
 ; Do not remove all these blank lines, I use them to make sure a translation 
-; in this file appears on the same line as in english-string-constants.ss
+; in this file appears on the same line as in english-string-constants.rkt
 
 ; "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz" "AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ"
 
@@ -88,7 +88,7 @@
 
 
 
-(module french-string-constants "string-constant-lang.ss"
+(module french-string-constants "string-constant-lang.rkt"
   ;;; when translating this constant, substitue name of actual language for `English'
   (is-this-your-native-language "Le Français est-il votre langue maternelle ?")
   
@@ -826,17 +826,17 @@
   (drscheme-internal-error "Erreur interne de DrRacket.")
   
   ;;; tools
-  (invalid-tool-spec "La spécification d'outil qui se trouve dans le fichier info.ss de la collection ~a est invalide. Espérait soit une chaîne de caractères, soit une liste de chaînes de caractères, trouvé : ~e")
+  (invalid-tool-spec "La spécification d'outil qui se trouve dans le fichier info.rkt de la collection ~a est invalide. Espérait soit une chaîne de caractères, soit une liste de chaînes de caractères, trouvé : ~e")
   (error-invoking-tool-title "Erreur durant l'invocation de l'outil ~s;~s")
   (error-loading-tool-title "Erreur durant le chargement de l'outil ~s\n~a") ;; ~s filled with a path, ~a filled with an error message from an exn
   (tool-tool-names-same-length
-   "`tool-names' et `tools' ne sont pas des listes de la même longueur, dans le fichier info.ss pour ~s. Trouvé ~e et ~e")
+   "`tool-names' et `tools' ne sont pas des listes de la même longueur, dans le fichier info.rkt pour ~s. Trouvé ~e et ~e")
   (tool-tool-icons-same-length
-   "`tool-icons' et `tools' ne sont pas des listes de la même longueur, dans le fichier info.ss pour ~s. Trouvé ~e et ~e")
+   "`tool-icons' et `tools' ne sont pas des listes de la même longueur, dans le fichier info.rkt pour ~s. Trouvé ~e et ~e")
   (tool-tool-urls-same-length
-   "`tool-urls' et `tools' ne sont pas des listes de la même longueur, dans le fichier info.ss pour ~s. Trouvé ~e et ~e")
+   "`tool-urls' et `tools' ne sont pas des listes de la même longueur, dans le fichier info.rkt pour ~s. Trouvé ~e et ~e")
   (error-getting-info-tool
-   "erreur durant le chargement du fichier info.ss pour ~s")
+   "erreur durant le chargement du fichier info.rkt pour ~s")
   (tool-error-phase1 "Erreur durant la phase 1 pour l'outil ~s; ~s")
   (tool-error-phase2 "Erreur durant la phase 2 oour l'outil ~s; ~s")
   

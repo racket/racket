@@ -1,6 +1,6 @@
 #lang scheme
-(require "match.ss"
-         "contract.ss")
+(require "match.rkt"
+         "contract.rkt")
 
 (define (call-with-semaphore s thunk)
     (semaphore-wait s)

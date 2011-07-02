@@ -3,7 +3,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; define higher-order primitives that consume boolean-valued functions 
 
-(require "teachprims.ss" "teach.ss")
+(require "teachprims.rkt" "teach.rkt")
 
 (provide intermediate-andmap intermediate-ormap intermediate-filter 
          intermediate-quicksort intermediate-sort)

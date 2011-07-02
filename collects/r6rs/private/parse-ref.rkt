@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require "find-version.ss"
-         "encode-name.ss"
+(require "find-version.rkt"
+         "encode-name.rkt"
          (for-template scheme/base))
 
 (provide parse-import)

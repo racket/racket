@@ -1,10 +1,9 @@
-
 (module paint-by-numbers mzscheme
-  (require "gui.ss" 
-           (prefix solve: "solve.ss")
-           "all-problems.ss"
-           "problem.ss"
-           "../show-scribbling.ss"
+  (require "gui.rkt"
+           (prefix solve: "solve.rkt")
+           "all-problems.rkt"
+           "problem.rkt"
+           "../show-scribbling.rkt"
            framework
            mzlib/class
            mzlib/unit

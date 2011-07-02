@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
-         "../lex.ss"
+         "../lex.rkt"
          rackunit)
 
 (define-syntax (catch-syn-error stx)

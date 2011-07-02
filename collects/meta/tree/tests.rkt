@@ -140,37 +140,37 @@
                     entries
                     format
                     (prop-base
-                     base-render.ss.svn-base
-                     base.ss.svn-base
-                     basic.ss.svn-base
-                     bnf.ss.svn-base
-                     comment-reader.ss.svn-base
-                     config.ss.svn-base
-                     core.ss.svn-base
-                     decode-struct.ss.svn-base
-                     decode.ss.svn-base
+                     base-render.rkt.svn-base
+                     base.rkt.svn-base
+                     basic.rkt.svn-base
+                     bnf.rkt.svn-base
+                     comment-reader.rkt.svn-base
+                     config.rkt.svn-base
+                     core.rkt.svn-base
+                     decode-struct.rkt.svn-base
+                     decode.rkt.svn-base
                      doc.txt.svn-base
-                     doclang.ss.svn-base
-                     eval.ss.svn-base
-                     extract.ss.svn-base
-                     html-properties.ss.svn-base
-                     html-render.ss.svn-base
-                     info.ss.svn-base
-                     latex-properties.ss.svn-base
-                     latex-render.ss.svn-base
-                     lp-include.ss.svn-base
-                     lp.ss.svn-base
+                     doclang.rkt.svn-base
+                     eval.rkt.svn-base
+                     extract.rkt.svn-base
+                     html-properties.rkt.svn-base
+                     html-render.rkt.svn-base
+                     info.rkt.svn-base
+                     latex-properties.rkt.svn-base
+                     latex-render.rkt.svn-base
+                     lp-include.rkt.svn-base
+                     lp.rkt.svn-base
                      manual-prefix.tex.svn-base
-                     manual-struct.ss.svn-base
+                     manual-struct.rkt.svn-base
                      manual-style.tex.svn-base
-                     manual.ss.svn-base
-                     pdf-render.ss.svn-base
-                     provide-doc-transform.ss.svn-base
-                     reader.ss.svn-base
-                     render-struct.ss.svn-base
-                     run.ss.svn-base
+                     manual.rkt.svn-base
+                     pdf-render.rkt.svn-base
+                     provide-doc-transform.rkt.svn-base
+                     reader.rkt.svn-base
+                     render-struct.rkt.svn-base
+                     run.rkt.svn-base
                      scheme.css.svn-base
-                     scheme.ss.svn-base
+                     scheme.rkt.svn-base
                      scheme.tex.svn-base
                      scribble-common.js.svn-base
                      scribble-prefix.html.svn-base
@@ -179,47 +179,47 @@
                      scribble-style.tex.svn-base
                      scribble.css.svn-base
                      scribble.tex.svn-base
-                     search.ss.svn-base
-                     sigplan.ss.svn-base
-                     srcdoc.ss.svn-base
-                     struct.ss.svn-base
-                     text-render.ss.svn-base
-                     text.ss.svn-base
-                     urls.ss.svn-base
-                     xref.ss.svn-base)
+                     search.rkt.svn-base
+                     sigplan.rkt.svn-base
+                     srcdoc.rkt.svn-base
+                     struct.rkt.svn-base
+                     text-render.rkt.svn-base
+                     text.rkt.svn-base
+                     urls.rkt.svn-base
+                     xref.rkt.svn-base)
                     (props)
                     (text-base
-                     base-render.ss.svn-base
-                     base.ss.svn-base
-                     basic.ss.svn-base
-                     bnf.ss.svn-base
-                     comment-reader.ss.svn-base
-                     config.ss.svn-base
-                     core.ss.svn-base
-                     decode-struct.ss.svn-base
-                     decode.ss.svn-base
+                     base-render.rkt.svn-base
+                     base.rkt.svn-base
+                     basic.rkt.svn-base
+                     bnf.rkt.svn-base
+                     comment-reader.rkt.svn-base
+                     config.rkt.svn-base
+                     core.rkt.svn-base
+                     decode-struct.rkt.svn-base
+                     decode.rkt.svn-base
                      doc.txt.svn-base
-                     doclang.ss.svn-base
-                     eval.ss.svn-base
-                     extract.ss.svn-base
-                     html-properties.ss.svn-base
-                     html-render.ss.svn-base
-                     info.ss.svn-base
-                     latex-properties.ss.svn-base
-                     latex-render.ss.svn-base
-                     lp-include.ss.svn-base
-                     lp.ss.svn-base
+                     doclang.rkt.svn-base
+                     eval.rkt.svn-base
+                     extract.rkt.svn-base
+                     html-properties.rkt.svn-base
+                     html-render.rkt.svn-base
+                     info.rkt.svn-base
+                     latex-properties.rkt.svn-base
+                     latex-render.rkt.svn-base
+                     lp-include.rkt.svn-base
+                     lp.rkt.svn-base
                      manual-prefix.tex.svn-base
-                     manual-struct.ss.svn-base
+                     manual-struct.rkt.svn-base
                      manual-style.tex.svn-base
-                     manual.ss.svn-base
-                     pdf-render.ss.svn-base
-                     provide-doc-transform.ss.svn-base
-                     reader.ss.svn-base
-                     render-struct.ss.svn-base
-                     run.ss.svn-base
+                     manual.rkt.svn-base
+                     pdf-render.rkt.svn-base
+                     provide-doc-transform.rkt.svn-base
+                     reader.rkt.svn-base
+                     render-struct.rkt.svn-base
+                     run.rkt.svn-base
                      scheme.css.svn-base
-                     scheme.ss.svn-base
+                     scheme.rkt.svn-base
                      scheme.tex.svn-base
                      scribble-common.js.svn-base
                      scribble-prefix.html.svn-base
@@ -228,14 +228,14 @@
                      scribble-style.tex.svn-base
                      scribble.css.svn-base
                      scribble.tex.svn-base
-                     search.ss.svn-base
-                     sigplan.ss.svn-base
-                     srcdoc.ss.svn-base
-                     struct.ss.svn-base
-                     text-render.ss.svn-base
-                     text.ss.svn-base
-                     urls.ss.svn-base
-                     xref.ss.svn-base)
+                     search.rkt.svn-base
+                     sigplan.rkt.svn-base
+                     srcdoc.rkt.svn-base
+                     struct.rkt.svn-base
+                     text-render.rkt.svn-base
+                     text.rkt.svn-base
+                     urls.rkt.svn-base
+                     xref.rkt.svn-base)
                     (tmp
                      (prop-base)
                      (props)
@@ -247,10 +247,10 @@
                      entries
                      format
                      (prop-base
-                      lang.ss.svn-base)
+                      lang.rkt.svn-base)
                      (props)
                      (text-base
-                      lang.ss.svn-base)
+                      lang.rkt.svn-base)
                      (tmp
                       (prop-base)
                       (props)
@@ -265,10 +265,10 @@
                       entries
                       format
                       (prop-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (props)
                       (text-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (tmp
                        (prop-base)
                        (props)
@@ -276,13 +276,13 @@
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
-                     reader.ss)
-                    lang.ss)
-                   base-render.ss
-                   base.ss
-                   basic.ss
-                   bnf.ss
-                   comment-reader.ss
+                     reader.rkt)
+                    lang.rkt)
+                   base-render.rkt
+                   base.rkt
+                   basic.rkt
+                   bnf.rkt
+                   comment-reader.rkt
                    (compiled
                     base-render_ss.dep
                     base-render_ss.zo
@@ -354,10 +354,10 @@
                     urls_ss.zo
                     xref_ss.dep
                     xref_ss.zo)
-                   config.ss
-                   core.ss
-                   decode-struct.ss
-                   decode.ss
+                   config.rkt
+                   core.rkt
+                   decode-struct.rkt
+                   decode.rkt
                    (doc
                     (.svn
                      all-wcprops
@@ -365,12 +365,12 @@
                      entries
                      format
                      (prop-base
-                      main.ss.svn-base
-                      reader.ss.svn-base)
+                      main.rkt.svn-base
+                      reader.rkt.svn-base)
                      (props)
                      (text-base
-                      main.ss.svn-base
-                      reader.ss.svn-base)
+                      main.rkt.svn-base
+                      reader.rkt.svn-base)
                      (tmp
                       (prop-base)
                       (props)
@@ -387,10 +387,10 @@
                       entries
                       format
                       (prop-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (props)
                       (text-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (tmp
                        (prop-base)
                        (props)
@@ -398,18 +398,18 @@
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
-                     reader.ss)
-                    main.ss
-                    reader.ss)
+                     reader.rkt)
+                    main.rkt
+                    reader.rkt)
                    doc.txt
-                   doclang.ss
-                   eval.ss
-                   extract.ss
-                   html-properties.ss
-                   html-render.ss
-                   info.ss
-                   latex-properties.ss
-                   latex-render.ss
+                   doclang.rkt
+                   eval.rkt
+                   extract.rkt
+                   html-properties.rkt
+                   html-render.rkt
+                   info.rkt
+                   latex-properties.rkt
+                   latex-render.rkt
                    (lp
                     (.svn
                      all-wcprops
@@ -429,12 +429,12 @@
                       entries
                       format
                       (prop-base
-                       lang.ss.svn-base
-                       reader.ss.svn-base)
+                       lang.rkt.svn-base
+                       reader.rkt.svn-base)
                       (props)
                       (text-base
-                       lang.ss.svn-base
-                       reader.ss.svn-base)
+                       lang.rkt.svn-base
+                       reader.rkt.svn-base)
                       (tmp
                        (prop-base)
                        (props)
@@ -444,10 +444,10 @@
                       lang_ss.zo
                       reader_ss.dep
                       reader_ss.zo)
-                     lang.ss
-                     reader.ss))
-                   lp-include.ss
-                   lp.ss
+                     lang.rkt
+                     reader.rkt))
+                   lp-include.rkt
+                   lp.rkt
                    (manual
                     (.svn
                      all-wcprops
@@ -455,10 +455,10 @@
                      entries
                      format
                      (prop-base
-                      lang.ss.svn-base)
+                      lang.rkt.svn-base)
                      (props)
                      (text-base
-                      lang.ss.svn-base)
+                      lang.rkt.svn-base)
                      (tmp
                       (prop-base)
                       (props)
@@ -473,10 +473,10 @@
                       entries
                       format
                       (prop-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (props)
                       (text-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (tmp
                        (prop-base)
                        (props)
@@ -484,13 +484,13 @@
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
-                     reader.ss)
-                    lang.ss)
+                     reader.rkt)
+                    lang.rkt)
                    manual-prefix.tex
-                   manual-struct.ss
+                   manual-struct.rkt
                    manual-style.tex
-                   manual.ss
-                   pdf-render.ss
+                   manual.rkt
+                   pdf-render.rkt
                    (private
                     (.svn
                      all-wcprops
@@ -498,54 +498,54 @@
                      entries
                      format
                      (prop-base
-                      defaults.ss.svn-base
-                      indirect-renderer.ss.svn-base
-                      lp.ss.svn-base
-                      manual-bib.ss.svn-base
-                      manual-bind.ss.svn-base
-                      manual-class.ss.svn-base
-                      manual-ex.ss.svn-base
-                      manual-form.ss.svn-base
-                      manual-method.ss.svn-base
-                      manual-mod.ss.svn-base
-                      manual-proc.ss.svn-base
-                      manual-scheme.ss.svn-base
-                      manual-sprop.ss.svn-base
-                      manual-style.ss.svn-base
-                      manual-tech.ss.svn-base
-                      manual-unit.ss.svn-base
-                      manual-utils.ss.svn-base
-                      manual-vars.ss.svn-base
-                      on-demand.ss.svn-base
-                      provide-structs.ss.svn-base
-                      qsloc.ss.svn-base
-                      render-utils.ss.svn-base
-                      run-pdflatex.ss.svn-base)
+                      defaults.rkt.svn-base
+                      indirect-renderer.rkt.svn-base
+                      lp.rkt.svn-base
+                      manual-bib.rkt.svn-base
+                      manual-bind.rkt.svn-base
+                      manual-class.rkt.svn-base
+                      manual-ex.rkt.svn-base
+                      manual-form.rkt.svn-base
+                      manual-method.rkt.svn-base
+                      manual-mod.rkt.svn-base
+                      manual-proc.rkt.svn-base
+                      manual-scheme.rkt.svn-base
+                      manual-sprop.rkt.svn-base
+                      manual-style.rkt.svn-base
+                      manual-tech.rkt.svn-base
+                      manual-unit.rkt.svn-base
+                      manual-utils.rkt.svn-base
+                      manual-vars.rkt.svn-base
+                      on-demand.rkt.svn-base
+                      provide-structs.rkt.svn-base
+                      qsloc.rkt.svn-base
+                      render-utils.rkt.svn-base
+                      run-pdflatex.rkt.svn-base)
                      (props)
                      (text-base
-                      defaults.ss.svn-base
-                      indirect-renderer.ss.svn-base
-                      lp.ss.svn-base
-                      manual-bib.ss.svn-base
-                      manual-bind.ss.svn-base
-                      manual-class.ss.svn-base
-                      manual-ex.ss.svn-base
-                      manual-form.ss.svn-base
-                      manual-method.ss.svn-base
-                      manual-mod.ss.svn-base
-                      manual-proc.ss.svn-base
-                      manual-scheme.ss.svn-base
-                      manual-sprop.ss.svn-base
-                      manual-style.ss.svn-base
-                      manual-tech.ss.svn-base
-                      manual-unit.ss.svn-base
-                      manual-utils.ss.svn-base
-                      manual-vars.ss.svn-base
-                      on-demand.ss.svn-base
-                      provide-structs.ss.svn-base
-                      qsloc.ss.svn-base
-                      render-utils.ss.svn-base
-                      run-pdflatex.ss.svn-base)
+                      defaults.rkt.svn-base
+                      indirect-renderer.rkt.svn-base
+                      lp.rkt.svn-base
+                      manual-bib.rkt.svn-base
+                      manual-bind.rkt.svn-base
+                      manual-class.rkt.svn-base
+                      manual-ex.rkt.svn-base
+                      manual-form.rkt.svn-base
+                      manual-method.rkt.svn-base
+                      manual-mod.rkt.svn-base
+                      manual-proc.rkt.svn-base
+                      manual-scheme.rkt.svn-base
+                      manual-sprop.rkt.svn-base
+                      manual-style.rkt.svn-base
+                      manual-tech.rkt.svn-base
+                      manual-unit.rkt.svn-base
+                      manual-utils.rkt.svn-base
+                      manual-vars.rkt.svn-base
+                      on-demand.rkt.svn-base
+                      provide-structs.rkt.svn-base
+                      qsloc.rkt.svn-base
+                      render-utils.rkt.svn-base
+                      run-pdflatex.rkt.svn-base)
                      (tmp
                       (prop-base)
                       (props)
@@ -597,35 +597,35 @@
                      render-utils_ss.zo
                      run-pdflatex_ss.dep
                      run-pdflatex_ss.zo)
-                    defaults.ss
-                    indirect-renderer.ss
-                    lp.ss
-                    manual-bib.ss
-                    manual-bind.ss
-                    manual-class.ss
-                    manual-ex.ss
-                    manual-form.ss
-                    manual-method.ss
-                    manual-mod.ss
-                    manual-proc.ss
-                    manual-scheme.ss
-                    manual-sprop.ss
-                    manual-style.ss
-                    manual-tech.ss
-                    manual-unit.ss
-                    manual-utils.ss
-                    manual-vars.ss
-                    on-demand.ss
-                    provide-structs.ss
-                    qsloc.ss
-                    render-utils.ss
-                    run-pdflatex.ss)
-                   provide-doc-transform.ss
-                   reader.ss
-                   render-struct.ss
-                   run.ss
+                    defaults.rkt
+                    indirect-renderer.rkt
+                    lp.rkt
+                    manual-bib.rkt
+                    manual-bind.rkt
+                    manual-class.rkt
+                    manual-ex.rkt
+                    manual-form.rkt
+                    manual-method.rkt
+                    manual-mod.rkt
+                    manual-proc.rkt
+                    manual-scheme.rkt
+                    manual-sprop.rkt
+                    manual-style.rkt
+                    manual-tech.rkt
+                    manual-unit.rkt
+                    manual-utils.rkt
+                    manual-vars.rkt
+                    on-demand.rkt
+                    provide-structs.rkt
+                    qsloc.rkt
+                    render-utils.rkt
+                    run-pdflatex.rkt)
+                   provide-doc-transform.rkt
+                   reader.rkt
+                   render-struct.rkt
+                   run.rkt
                    scheme.css
-                   scheme.ss
+                   scheme.rkt
                    scheme.tex
                    scribble-common.js
                    scribble-prefix.html
@@ -634,7 +634,7 @@
                    scribble-style.tex
                    scribble.css
                    scribble.tex
-                   search.ss
+                   search.rkt
                    (sigplan
                     (.svn
                      all-wcprops
@@ -642,14 +642,14 @@
                      entries
                      format
                      (prop-base
-                      lang.ss.svn-base
+                      lang.rkt.svn-base
                       sigplan.css.svn-base
                       sigplan.tex.svn-base
                       sigplanconf.cls.svn-base
                       style.tex.svn-base)
                      (props)
                      (text-base
-                      lang.ss.svn-base
+                      lang.rkt.svn-base
                       sigplan.css.svn-base
                       sigplan.tex.svn-base
                       sigplanconf.cls.svn-base
@@ -668,10 +668,10 @@
                       entries
                       format
                       (prop-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (props)
                       (text-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (tmp
                        (prop-base)
                        (props)
@@ -679,15 +679,15 @@
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
-                     reader.ss)
-                    lang.ss
+                     reader.rkt)
+                    lang.rkt
                     sigplan.css
                     sigplan.tex
                     sigplanconf.cls
                     style.tex)
-                   sigplan.ss
-                   srcdoc.ss
-                   struct.ss
+                   sigplan.rkt
+                   srcdoc.rkt
+                   struct.rkt
                    (text
                     (.svn
                      all-wcprops
@@ -695,14 +695,14 @@
                      entries
                      format
                      (prop-base
-                      output.ss.svn-base
-                      syntax-utils.ss.svn-base
-                      textlang.ss.svn-base)
+                      output.rkt.svn-base
+                      syntax-utils.rkt.svn-base
+                      textlang.rkt.svn-base)
                      (props)
                      (text-base
-                      output.ss.svn-base
-                      syntax-utils.ss.svn-base
-                      textlang.ss.svn-base)
+                      output.rkt.svn-base
+                      syntax-utils.rkt.svn-base
+                      textlang.rkt.svn-base)
                      (tmp
                       (prop-base)
                       (props)
@@ -721,10 +721,10 @@
                       entries
                       format
                       (prop-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (props)
                       (text-base
-                       reader.ss.svn-base)
+                       reader.rkt.svn-base)
                       (tmp
                        (prop-base)
                        (props)
@@ -732,12 +732,12 @@
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
-                     reader.ss)
-                    output.ss
-                    syntax-utils.ss
-                    textlang.ss)
-                   text-render.ss
-                   text.ss
+                     reader.rkt)
+                    output.rkt
+                    syntax-utils.rkt
+                    textlang.rkt)
+                   text-render.rkt
+                   text.rkt
                    (tools
                     (.svn
                      all-wcprops
@@ -745,12 +745,12 @@
                      entries
                      format
                      (prop-base
-                      drscheme-buttons.ss.svn-base
+                      drscheme-buttons.rkt.svn-base
                       html.png.svn-base
                       pdf.png.svn-base)
                      (props)
                      (text-base
-                      drscheme-buttons.ss.svn-base
+                      drscheme-buttons.rkt.svn-base
                       html.png.svn-base
                       pdf.png.svn-base)
                      (tmp
@@ -760,7 +760,7 @@
                     (compiled
                      drscheme-buttons_ss.dep
                      drscheme-buttons_ss.zo)
-                    drscheme-buttons.ss
+                    drscheme-buttons.rkt
                     html.png
                     pdf.png
                     (private
@@ -770,10 +770,10 @@
                       entries
                       format
                       (prop-base
-                       mk-drs-bitmaps.ss.svn-base)
+                       mk-drs-bitmaps.rkt.svn-base)
                       (props)
                       (text-base
-                       mk-drs-bitmaps.ss.svn-base)
+                       mk-drs-bitmaps.rkt.svn-base)
                       (tmp
                        (prop-base)
                        (props)
@@ -781,9 +781,9 @@
                      (compiled
                       mk-drs-bitmaps_ss.dep
                       mk-drs-bitmaps_ss.zo)
-                     mk-drs-bitmaps.ss))
-                   urls.ss
-                   xref.ss)))
+                     mk-drs-bitmaps.rkt))
+                   urls.rkt
+                   xref.rkt)))
   (test
    ;; the whole tree
    (e/filter "*")
@@ -796,37 +796,37 @@
      -/.svn/entries
      -/.svn/format
      -/.svn/prop-base/
-     -/.svn/prop-base/base-render.ss.svn-base
-     -/.svn/prop-base/base.ss.svn-base
-     -/.svn/prop-base/basic.ss.svn-base
-     -/.svn/prop-base/bnf.ss.svn-base
-     -/.svn/prop-base/comment-reader.ss.svn-base
-     -/.svn/prop-base/config.ss.svn-base
-     -/.svn/prop-base/core.ss.svn-base
-     -/.svn/prop-base/decode-struct.ss.svn-base
-     -/.svn/prop-base/decode.ss.svn-base
+     -/.svn/prop-base/base-render.rkt.svn-base
+     -/.svn/prop-base/base.rkt.svn-base
+     -/.svn/prop-base/basic.rkt.svn-base
+     -/.svn/prop-base/bnf.rkt.svn-base
+     -/.svn/prop-base/comment-reader.rkt.svn-base
+     -/.svn/prop-base/config.rkt.svn-base
+     -/.svn/prop-base/core.rkt.svn-base
+     -/.svn/prop-base/decode-struct.rkt.svn-base
+     -/.svn/prop-base/decode.rkt.svn-base
      -/.svn/prop-base/doc.txt.svn-base
-     -/.svn/prop-base/doclang.ss.svn-base
-     -/.svn/prop-base/eval.ss.svn-base
-     -/.svn/prop-base/extract.ss.svn-base
-     -/.svn/prop-base/html-properties.ss.svn-base
-     -/.svn/prop-base/html-render.ss.svn-base
-     -/.svn/prop-base/info.ss.svn-base
-     -/.svn/prop-base/latex-properties.ss.svn-base
-     -/.svn/prop-base/latex-render.ss.svn-base
-     -/.svn/prop-base/lp-include.ss.svn-base
-     -/.svn/prop-base/lp.ss.svn-base
+     -/.svn/prop-base/doclang.rkt.svn-base
+     -/.svn/prop-base/eval.rkt.svn-base
+     -/.svn/prop-base/extract.rkt.svn-base
+     -/.svn/prop-base/html-properties.rkt.svn-base
+     -/.svn/prop-base/html-render.rkt.svn-base
+     -/.svn/prop-base/info.rkt.svn-base
+     -/.svn/prop-base/latex-properties.rkt.svn-base
+     -/.svn/prop-base/latex-render.rkt.svn-base
+     -/.svn/prop-base/lp-include.rkt.svn-base
+     -/.svn/prop-base/lp.rkt.svn-base
      -/.svn/prop-base/manual-prefix.tex.svn-base
-     -/.svn/prop-base/manual-struct.ss.svn-base
+     -/.svn/prop-base/manual-struct.rkt.svn-base
      -/.svn/prop-base/manual-style.tex.svn-base
-     -/.svn/prop-base/manual.ss.svn-base
-     -/.svn/prop-base/pdf-render.ss.svn-base
-     -/.svn/prop-base/provide-doc-transform.ss.svn-base
-     -/.svn/prop-base/reader.ss.svn-base
-     -/.svn/prop-base/render-struct.ss.svn-base
-     -/.svn/prop-base/run.ss.svn-base
+     -/.svn/prop-base/manual.rkt.svn-base
+     -/.svn/prop-base/pdf-render.rkt.svn-base
+     -/.svn/prop-base/provide-doc-transform.rkt.svn-base
+     -/.svn/prop-base/reader.rkt.svn-base
+     -/.svn/prop-base/render-struct.rkt.svn-base
+     -/.svn/prop-base/run.rkt.svn-base
      -/.svn/prop-base/scheme.css.svn-base
-     -/.svn/prop-base/scheme.ss.svn-base
+     -/.svn/prop-base/scheme.rkt.svn-base
      -/.svn/prop-base/scheme.tex.svn-base
      -/.svn/prop-base/scribble-common.js.svn-base
      -/.svn/prop-base/scribble-prefix.html.svn-base
@@ -835,47 +835,47 @@
      -/.svn/prop-base/scribble-style.tex.svn-base
      -/.svn/prop-base/scribble.css.svn-base
      -/.svn/prop-base/scribble.tex.svn-base
-     -/.svn/prop-base/search.ss.svn-base
-     -/.svn/prop-base/sigplan.ss.svn-base
-     -/.svn/prop-base/srcdoc.ss.svn-base
-     -/.svn/prop-base/struct.ss.svn-base
-     -/.svn/prop-base/text-render.ss.svn-base
-     -/.svn/prop-base/text.ss.svn-base
-     -/.svn/prop-base/urls.ss.svn-base
-     -/.svn/prop-base/xref.ss.svn-base
+     -/.svn/prop-base/search.rkt.svn-base
+     -/.svn/prop-base/sigplan.rkt.svn-base
+     -/.svn/prop-base/srcdoc.rkt.svn-base
+     -/.svn/prop-base/struct.rkt.svn-base
+     -/.svn/prop-base/text-render.rkt.svn-base
+     -/.svn/prop-base/text.rkt.svn-base
+     -/.svn/prop-base/urls.rkt.svn-base
+     -/.svn/prop-base/xref.rkt.svn-base
      -/.svn/props/
      -/.svn/text-base/
-     -/.svn/text-base/base-render.ss.svn-base
-     -/.svn/text-base/base.ss.svn-base
-     -/.svn/text-base/basic.ss.svn-base
-     -/.svn/text-base/bnf.ss.svn-base
-     -/.svn/text-base/comment-reader.ss.svn-base
-     -/.svn/text-base/config.ss.svn-base
-     -/.svn/text-base/core.ss.svn-base
-     -/.svn/text-base/decode-struct.ss.svn-base
-     -/.svn/text-base/decode.ss.svn-base
+     -/.svn/text-base/base-render.rkt.svn-base
+     -/.svn/text-base/base.rkt.svn-base
+     -/.svn/text-base/basic.rkt.svn-base
+     -/.svn/text-base/bnf.rkt.svn-base
+     -/.svn/text-base/comment-reader.rkt.svn-base
+     -/.svn/text-base/config.rkt.svn-base
+     -/.svn/text-base/core.rkt.svn-base
+     -/.svn/text-base/decode-struct.rkt.svn-base
+     -/.svn/text-base/decode.rkt.svn-base
      -/.svn/text-base/doc.txt.svn-base
-     -/.svn/text-base/doclang.ss.svn-base
-     -/.svn/text-base/eval.ss.svn-base
-     -/.svn/text-base/extract.ss.svn-base
-     -/.svn/text-base/html-properties.ss.svn-base
-     -/.svn/text-base/html-render.ss.svn-base
-     -/.svn/text-base/info.ss.svn-base
-     -/.svn/text-base/latex-properties.ss.svn-base
-     -/.svn/text-base/latex-render.ss.svn-base
-     -/.svn/text-base/lp-include.ss.svn-base
-     -/.svn/text-base/lp.ss.svn-base
+     -/.svn/text-base/doclang.rkt.svn-base
+     -/.svn/text-base/eval.rkt.svn-base
+     -/.svn/text-base/extract.rkt.svn-base
+     -/.svn/text-base/html-properties.rkt.svn-base
+     -/.svn/text-base/html-render.rkt.svn-base
+     -/.svn/text-base/info.rkt.svn-base
+     -/.svn/text-base/latex-properties.rkt.svn-base
+     -/.svn/text-base/latex-render.rkt.svn-base
+     -/.svn/text-base/lp-include.rkt.svn-base
+     -/.svn/text-base/lp.rkt.svn-base
      -/.svn/text-base/manual-prefix.tex.svn-base
-     -/.svn/text-base/manual-struct.ss.svn-base
+     -/.svn/text-base/manual-struct.rkt.svn-base
      -/.svn/text-base/manual-style.tex.svn-base
-     -/.svn/text-base/manual.ss.svn-base
-     -/.svn/text-base/pdf-render.ss.svn-base
-     -/.svn/text-base/provide-doc-transform.ss.svn-base
-     -/.svn/text-base/reader.ss.svn-base
-     -/.svn/text-base/render-struct.ss.svn-base
-     -/.svn/text-base/run.ss.svn-base
+     -/.svn/text-base/manual.rkt.svn-base
+     -/.svn/text-base/pdf-render.rkt.svn-base
+     -/.svn/text-base/provide-doc-transform.rkt.svn-base
+     -/.svn/text-base/reader.rkt.svn-base
+     -/.svn/text-base/render-struct.rkt.svn-base
+     -/.svn/text-base/run.rkt.svn-base
      -/.svn/text-base/scheme.css.svn-base
-     -/.svn/text-base/scheme.ss.svn-base
+     -/.svn/text-base/scheme.rkt.svn-base
      -/.svn/text-base/scheme.tex.svn-base
      -/.svn/text-base/scribble-common.js.svn-base
      -/.svn/text-base/scribble-prefix.html.svn-base
@@ -884,14 +884,14 @@
      -/.svn/text-base/scribble-style.tex.svn-base
      -/.svn/text-base/scribble.css.svn-base
      -/.svn/text-base/scribble.tex.svn-base
-     -/.svn/text-base/search.ss.svn-base
-     -/.svn/text-base/sigplan.ss.svn-base
-     -/.svn/text-base/srcdoc.ss.svn-base
-     -/.svn/text-base/struct.ss.svn-base
-     -/.svn/text-base/text-render.ss.svn-base
-     -/.svn/text-base/text.ss.svn-base
-     -/.svn/text-base/urls.ss.svn-base
-     -/.svn/text-base/xref.ss.svn-base
+     -/.svn/text-base/search.rkt.svn-base
+     -/.svn/text-base/sigplan.rkt.svn-base
+     -/.svn/text-base/srcdoc.rkt.svn-base
+     -/.svn/text-base/struct.rkt.svn-base
+     -/.svn/text-base/text-render.rkt.svn-base
+     -/.svn/text-base/text.rkt.svn-base
+     -/.svn/text-base/urls.rkt.svn-base
+     -/.svn/text-base/xref.rkt.svn-base
      -/.svn/tmp/
      -/.svn/tmp/prop-base/
      -/.svn/tmp/props/
@@ -903,10 +903,10 @@
      -/base/.svn/entries
      -/base/.svn/format
      -/base/.svn/prop-base/
-     -/base/.svn/prop-base/lang.ss.svn-base
+     -/base/.svn/prop-base/lang.rkt.svn-base
      -/base/.svn/props/
      -/base/.svn/text-base/
-     -/base/.svn/text-base/lang.ss.svn-base
+     -/base/.svn/text-base/lang.rkt.svn-base
      -/base/.svn/tmp/
      -/base/.svn/tmp/prop-base/
      -/base/.svn/tmp/props/
@@ -921,10 +921,10 @@
      -/base/lang/.svn/entries
      -/base/lang/.svn/format
      -/base/lang/.svn/prop-base/
-     -/base/lang/.svn/prop-base/reader.ss.svn-base
+     -/base/lang/.svn/prop-base/reader.rkt.svn-base
      -/base/lang/.svn/props/
      -/base/lang/.svn/text-base/
-     -/base/lang/.svn/text-base/reader.ss.svn-base
+     -/base/lang/.svn/text-base/reader.rkt.svn-base
      -/base/lang/.svn/tmp/
      -/base/lang/.svn/tmp/prop-base/
      -/base/lang/.svn/tmp/props/
@@ -932,13 +932,13 @@
      -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
-     -/base/lang/reader.ss
-     -/base/lang.ss
-     -/base-render.ss
-     -/base.ss
-     -/basic.ss
-     -/bnf.ss
-     -/comment-reader.ss
+     -/base/lang/reader.rkt
+     -/base/lang.rkt
+     -/base-render.rkt
+     -/base.rkt
+     -/basic.rkt
+     -/bnf.rkt
+     -/comment-reader.rkt
      -/compiled/
      -/compiled/base-render_ss.dep
      -/compiled/base-render_ss.zo
@@ -1010,10 +1010,10 @@
      -/compiled/urls_ss.zo
      -/compiled/xref_ss.dep
      -/compiled/xref_ss.zo
-     -/config.ss
-     -/core.ss
-     -/decode-struct.ss
-     -/decode.ss
+     -/config.rkt
+     -/core.rkt
+     -/decode-struct.rkt
+     -/decode.rkt
      -/doc/
      -/doc/.svn/
      -/doc/.svn/all-wcprops
@@ -1021,12 +1021,12 @@
      -/doc/.svn/entries
      -/doc/.svn/format
      -/doc/.svn/prop-base/
-     -/doc/.svn/prop-base/main.ss.svn-base
-     -/doc/.svn/prop-base/reader.ss.svn-base
+     -/doc/.svn/prop-base/main.rkt.svn-base
+     -/doc/.svn/prop-base/reader.rkt.svn-base
      -/doc/.svn/props/
      -/doc/.svn/text-base/
-     -/doc/.svn/text-base/main.ss.svn-base
-     -/doc/.svn/text-base/reader.ss.svn-base
+     -/doc/.svn/text-base/main.rkt.svn-base
+     -/doc/.svn/text-base/reader.rkt.svn-base
      -/doc/.svn/tmp/
      -/doc/.svn/tmp/prop-base/
      -/doc/.svn/tmp/props/
@@ -1043,10 +1043,10 @@
      -/doc/lang/.svn/entries
      -/doc/lang/.svn/format
      -/doc/lang/.svn/prop-base/
-     -/doc/lang/.svn/prop-base/reader.ss.svn-base
+     -/doc/lang/.svn/prop-base/reader.rkt.svn-base
      -/doc/lang/.svn/props/
      -/doc/lang/.svn/text-base/
-     -/doc/lang/.svn/text-base/reader.ss.svn-base
+     -/doc/lang/.svn/text-base/reader.rkt.svn-base
      -/doc/lang/.svn/tmp/
      -/doc/lang/.svn/tmp/prop-base/
      -/doc/lang/.svn/tmp/props/
@@ -1054,18 +1054,18 @@
      -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
-     -/doc/lang/reader.ss
-     -/doc/main.ss
-     -/doc/reader.ss
+     -/doc/lang/reader.rkt
+     -/doc/main.rkt
+     -/doc/reader.rkt
      -/doc.txt
-     -/doclang.ss
-     -/eval.ss
-     -/extract.ss
-     -/html-properties.ss
-     -/html-render.ss
-     -/info.ss
-     -/latex-properties.ss
-     -/latex-render.ss
+     -/doclang.rkt
+     -/eval.rkt
+     -/extract.rkt
+     -/html-properties.rkt
+     -/html-render.rkt
+     -/info.rkt
+     -/latex-properties.rkt
+     -/latex-render.rkt
      -/lp/
      -/lp/.svn/
      -/lp/.svn/all-wcprops
@@ -1085,12 +1085,12 @@
      -/lp/lang/.svn/entries
      -/lp/lang/.svn/format
      -/lp/lang/.svn/prop-base/
-     -/lp/lang/.svn/prop-base/lang.ss.svn-base
-     -/lp/lang/.svn/prop-base/reader.ss.svn-base
+     -/lp/lang/.svn/prop-base/lang.rkt.svn-base
+     -/lp/lang/.svn/prop-base/reader.rkt.svn-base
      -/lp/lang/.svn/props/
      -/lp/lang/.svn/text-base/
-     -/lp/lang/.svn/text-base/lang.ss.svn-base
-     -/lp/lang/.svn/text-base/reader.ss.svn-base
+     -/lp/lang/.svn/text-base/lang.rkt.svn-base
+     -/lp/lang/.svn/text-base/reader.rkt.svn-base
      -/lp/lang/.svn/tmp/
      -/lp/lang/.svn/tmp/prop-base/
      -/lp/lang/.svn/tmp/props/
@@ -1100,10 +1100,10 @@
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
      -/lp/lang/compiled/reader_ss.zo
-     -/lp/lang/lang.ss
-     -/lp/lang/reader.ss
-     -/lp-include.ss
-     -/lp.ss
+     -/lp/lang/lang.rkt
+     -/lp/lang/reader.rkt
+     -/lp-include.rkt
+     -/lp.rkt
      -/manual/
      -/manual/.svn/
      -/manual/.svn/all-wcprops
@@ -1111,10 +1111,10 @@
      -/manual/.svn/entries
      -/manual/.svn/format
      -/manual/.svn/prop-base/
-     -/manual/.svn/prop-base/lang.ss.svn-base
+     -/manual/.svn/prop-base/lang.rkt.svn-base
      -/manual/.svn/props/
      -/manual/.svn/text-base/
-     -/manual/.svn/text-base/lang.ss.svn-base
+     -/manual/.svn/text-base/lang.rkt.svn-base
      -/manual/.svn/tmp/
      -/manual/.svn/tmp/prop-base/
      -/manual/.svn/tmp/props/
@@ -1129,10 +1129,10 @@
      -/manual/lang/.svn/entries
      -/manual/lang/.svn/format
      -/manual/lang/.svn/prop-base/
-     -/manual/lang/.svn/prop-base/reader.ss.svn-base
+     -/manual/lang/.svn/prop-base/reader.rkt.svn-base
      -/manual/lang/.svn/props/
      -/manual/lang/.svn/text-base/
-     -/manual/lang/.svn/text-base/reader.ss.svn-base
+     -/manual/lang/.svn/text-base/reader.rkt.svn-base
      -/manual/lang/.svn/tmp/
      -/manual/lang/.svn/tmp/prop-base/
      -/manual/lang/.svn/tmp/props/
@@ -1140,13 +1140,13 @@
      -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
-     -/manual/lang/reader.ss
-     -/manual/lang.ss
+     -/manual/lang/reader.rkt
+     -/manual/lang.rkt
      -/manual-prefix.tex
-     -/manual-struct.ss
+     -/manual-struct.rkt
      -/manual-style.tex
-     -/manual.ss
-     -/pdf-render.ss
+     -/manual.rkt
+     -/pdf-render.rkt
      -/private/
      -/private/.svn/
      -/private/.svn/all-wcprops
@@ -1154,54 +1154,54 @@
      -/private/.svn/entries
      -/private/.svn/format
      -/private/.svn/prop-base/
-     -/private/.svn/prop-base/defaults.ss.svn-base
-     -/private/.svn/prop-base/indirect-renderer.ss.svn-base
-     -/private/.svn/prop-base/lp.ss.svn-base
-     -/private/.svn/prop-base/manual-bib.ss.svn-base
-     -/private/.svn/prop-base/manual-bind.ss.svn-base
-     -/private/.svn/prop-base/manual-class.ss.svn-base
-     -/private/.svn/prop-base/manual-ex.ss.svn-base
-     -/private/.svn/prop-base/manual-form.ss.svn-base
-     -/private/.svn/prop-base/manual-method.ss.svn-base
-     -/private/.svn/prop-base/manual-mod.ss.svn-base
-     -/private/.svn/prop-base/manual-proc.ss.svn-base
-     -/private/.svn/prop-base/manual-scheme.ss.svn-base
-     -/private/.svn/prop-base/manual-sprop.ss.svn-base
-     -/private/.svn/prop-base/manual-style.ss.svn-base
-     -/private/.svn/prop-base/manual-tech.ss.svn-base
-     -/private/.svn/prop-base/manual-unit.ss.svn-base
-     -/private/.svn/prop-base/manual-utils.ss.svn-base
-     -/private/.svn/prop-base/manual-vars.ss.svn-base
-     -/private/.svn/prop-base/on-demand.ss.svn-base
-     -/private/.svn/prop-base/provide-structs.ss.svn-base
-     -/private/.svn/prop-base/qsloc.ss.svn-base
-     -/private/.svn/prop-base/render-utils.ss.svn-base
-     -/private/.svn/prop-base/run-pdflatex.ss.svn-base
+     -/private/.svn/prop-base/defaults.rkt.svn-base
+     -/private/.svn/prop-base/indirect-renderer.rkt.svn-base
+     -/private/.svn/prop-base/lp.rkt.svn-base
+     -/private/.svn/prop-base/manual-bib.rkt.svn-base
+     -/private/.svn/prop-base/manual-bind.rkt.svn-base
+     -/private/.svn/prop-base/manual-class.rkt.svn-base
+     -/private/.svn/prop-base/manual-ex.rkt.svn-base
+     -/private/.svn/prop-base/manual-form.rkt.svn-base
+     -/private/.svn/prop-base/manual-method.rkt.svn-base
+     -/private/.svn/prop-base/manual-mod.rkt.svn-base
+     -/private/.svn/prop-base/manual-proc.rkt.svn-base
+     -/private/.svn/prop-base/manual-scheme.rkt.svn-base
+     -/private/.svn/prop-base/manual-sprop.rkt.svn-base
+     -/private/.svn/prop-base/manual-style.rkt.svn-base
+     -/private/.svn/prop-base/manual-tech.rkt.svn-base
+     -/private/.svn/prop-base/manual-unit.rkt.svn-base
+     -/private/.svn/prop-base/manual-utils.rkt.svn-base
+     -/private/.svn/prop-base/manual-vars.rkt.svn-base
+     -/private/.svn/prop-base/on-demand.rkt.svn-base
+     -/private/.svn/prop-base/provide-structs.rkt.svn-base
+     -/private/.svn/prop-base/qsloc.rkt.svn-base
+     -/private/.svn/prop-base/render-utils.rkt.svn-base
+     -/private/.svn/prop-base/run-pdflatex.rkt.svn-base
      -/private/.svn/props/
      -/private/.svn/text-base/
-     -/private/.svn/text-base/defaults.ss.svn-base
-     -/private/.svn/text-base/indirect-renderer.ss.svn-base
-     -/private/.svn/text-base/lp.ss.svn-base
-     -/private/.svn/text-base/manual-bib.ss.svn-base
-     -/private/.svn/text-base/manual-bind.ss.svn-base
-     -/private/.svn/text-base/manual-class.ss.svn-base
-     -/private/.svn/text-base/manual-ex.ss.svn-base
-     -/private/.svn/text-base/manual-form.ss.svn-base
-     -/private/.svn/text-base/manual-method.ss.svn-base
-     -/private/.svn/text-base/manual-mod.ss.svn-base
-     -/private/.svn/text-base/manual-proc.ss.svn-base
-     -/private/.svn/text-base/manual-scheme.ss.svn-base
-     -/private/.svn/text-base/manual-sprop.ss.svn-base
-     -/private/.svn/text-base/manual-style.ss.svn-base
-     -/private/.svn/text-base/manual-tech.ss.svn-base
-     -/private/.svn/text-base/manual-unit.ss.svn-base
-     -/private/.svn/text-base/manual-utils.ss.svn-base
-     -/private/.svn/text-base/manual-vars.ss.svn-base
-     -/private/.svn/text-base/on-demand.ss.svn-base
-     -/private/.svn/text-base/provide-structs.ss.svn-base
-     -/private/.svn/text-base/qsloc.ss.svn-base
-     -/private/.svn/text-base/render-utils.ss.svn-base
-     -/private/.svn/text-base/run-pdflatex.ss.svn-base
+     -/private/.svn/text-base/defaults.rkt.svn-base
+     -/private/.svn/text-base/indirect-renderer.rkt.svn-base
+     -/private/.svn/text-base/lp.rkt.svn-base
+     -/private/.svn/text-base/manual-bib.rkt.svn-base
+     -/private/.svn/text-base/manual-bind.rkt.svn-base
+     -/private/.svn/text-base/manual-class.rkt.svn-base
+     -/private/.svn/text-base/manual-ex.rkt.svn-base
+     -/private/.svn/text-base/manual-form.rkt.svn-base
+     -/private/.svn/text-base/manual-method.rkt.svn-base
+     -/private/.svn/text-base/manual-mod.rkt.svn-base
+     -/private/.svn/text-base/manual-proc.rkt.svn-base
+     -/private/.svn/text-base/manual-scheme.rkt.svn-base
+     -/private/.svn/text-base/manual-sprop.rkt.svn-base
+     -/private/.svn/text-base/manual-style.rkt.svn-base
+     -/private/.svn/text-base/manual-tech.rkt.svn-base
+     -/private/.svn/text-base/manual-unit.rkt.svn-base
+     -/private/.svn/text-base/manual-utils.rkt.svn-base
+     -/private/.svn/text-base/manual-vars.rkt.svn-base
+     -/private/.svn/text-base/on-demand.rkt.svn-base
+     -/private/.svn/text-base/provide-structs.rkt.svn-base
+     -/private/.svn/text-base/qsloc.rkt.svn-base
+     -/private/.svn/text-base/render-utils.rkt.svn-base
+     -/private/.svn/text-base/run-pdflatex.rkt.svn-base
      -/private/.svn/tmp/
      -/private/.svn/tmp/prop-base/
      -/private/.svn/tmp/props/
@@ -1253,35 +1253,35 @@
      -/private/compiled/render-utils_ss.zo
      -/private/compiled/run-pdflatex_ss.dep
      -/private/compiled/run-pdflatex_ss.zo
-     -/private/defaults.ss
-     -/private/indirect-renderer.ss
-     -/private/lp.ss
-     -/private/manual-bib.ss
-     -/private/manual-bind.ss
-     -/private/manual-class.ss
-     -/private/manual-ex.ss
-     -/private/manual-form.ss
-     -/private/manual-method.ss
-     -/private/manual-mod.ss
-     -/private/manual-proc.ss
-     -/private/manual-scheme.ss
-     -/private/manual-sprop.ss
-     -/private/manual-style.ss
-     -/private/manual-tech.ss
-     -/private/manual-unit.ss
-     -/private/manual-utils.ss
-     -/private/manual-vars.ss
-     -/private/on-demand.ss
-     -/private/provide-structs.ss
-     -/private/qsloc.ss
-     -/private/render-utils.ss
-     -/private/run-pdflatex.ss
-     -/provide-doc-transform.ss
-     -/reader.ss
-     -/render-struct.ss
-     -/run.ss
+     -/private/defaults.rkt
+     -/private/indirect-renderer.rkt
+     -/private/lp.rkt
+     -/private/manual-bib.rkt
+     -/private/manual-bind.rkt
+     -/private/manual-class.rkt
+     -/private/manual-ex.rkt
+     -/private/manual-form.rkt
+     -/private/manual-method.rkt
+     -/private/manual-mod.rkt
+     -/private/manual-proc.rkt
+     -/private/manual-scheme.rkt
+     -/private/manual-sprop.rkt
+     -/private/manual-style.rkt
+     -/private/manual-tech.rkt
+     -/private/manual-unit.rkt
+     -/private/manual-utils.rkt
+     -/private/manual-vars.rkt
+     -/private/on-demand.rkt
+     -/private/provide-structs.rkt
+     -/private/qsloc.rkt
+     -/private/render-utils.rkt
+     -/private/run-pdflatex.rkt
+     -/provide-doc-transform.rkt
+     -/reader.rkt
+     -/render-struct.rkt
+     -/run.rkt
      -/scheme.css
-     -/scheme.ss
+     -/scheme.rkt
      -/scheme.tex
      -/scribble-common.js
      -/scribble-prefix.html
@@ -1290,7 +1290,7 @@
      -/scribble-style.tex
      -/scribble.css
      -/scribble.tex
-     -/search.ss
+     -/search.rkt
      -/sigplan/
      -/sigplan/.svn/
      -/sigplan/.svn/all-wcprops
@@ -1298,14 +1298,14 @@
      -/sigplan/.svn/entries
      -/sigplan/.svn/format
      -/sigplan/.svn/prop-base/
-     -/sigplan/.svn/prop-base/lang.ss.svn-base
+     -/sigplan/.svn/prop-base/lang.rkt.svn-base
      -/sigplan/.svn/prop-base/sigplan.css.svn-base
      -/sigplan/.svn/prop-base/sigplan.tex.svn-base
      -/sigplan/.svn/prop-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/prop-base/style.tex.svn-base
      -/sigplan/.svn/props/
      -/sigplan/.svn/text-base/
-     -/sigplan/.svn/text-base/lang.ss.svn-base
+     -/sigplan/.svn/text-base/lang.rkt.svn-base
      -/sigplan/.svn/text-base/sigplan.css.svn-base
      -/sigplan/.svn/text-base/sigplan.tex.svn-base
      -/sigplan/.svn/text-base/sigplanconf.cls.svn-base
@@ -1324,10 +1324,10 @@
      -/sigplan/lang/.svn/entries
      -/sigplan/lang/.svn/format
      -/sigplan/lang/.svn/prop-base/
-     -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/prop-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/props/
      -/sigplan/lang/.svn/text-base/
-     -/sigplan/lang/.svn/text-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/text-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/tmp/
      -/sigplan/lang/.svn/tmp/prop-base/
      -/sigplan/lang/.svn/tmp/props/
@@ -1335,15 +1335,15 @@
      -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
-     -/sigplan/lang/reader.ss
-     -/sigplan/lang.ss
+     -/sigplan/lang/reader.rkt
+     -/sigplan/lang.rkt
      -/sigplan/sigplan.css
      -/sigplan/sigplan.tex
      -/sigplan/sigplanconf.cls
      -/sigplan/style.tex
-     -/sigplan.ss
-     -/srcdoc.ss
-     -/struct.ss
+     -/sigplan.rkt
+     -/srcdoc.rkt
+     -/struct.rkt
      -/text/
      -/text/.svn/
      -/text/.svn/all-wcprops
@@ -1351,14 +1351,14 @@
      -/text/.svn/entries
      -/text/.svn/format
      -/text/.svn/prop-base/
-     -/text/.svn/prop-base/output.ss.svn-base
-     -/text/.svn/prop-base/syntax-utils.ss.svn-base
-     -/text/.svn/prop-base/textlang.ss.svn-base
+     -/text/.svn/prop-base/output.rkt.svn-base
+     -/text/.svn/prop-base/syntax-utils.rkt.svn-base
+     -/text/.svn/prop-base/textlang.rkt.svn-base
      -/text/.svn/props/
      -/text/.svn/text-base/
-     -/text/.svn/text-base/output.ss.svn-base
-     -/text/.svn/text-base/syntax-utils.ss.svn-base
-     -/text/.svn/text-base/textlang.ss.svn-base
+     -/text/.svn/text-base/output.rkt.svn-base
+     -/text/.svn/text-base/syntax-utils.rkt.svn-base
+     -/text/.svn/text-base/textlang.rkt.svn-base
      -/text/.svn/tmp/
      -/text/.svn/tmp/prop-base/
      -/text/.svn/tmp/props/
@@ -1377,10 +1377,10 @@
      -/text/lang/.svn/entries
      -/text/lang/.svn/format
      -/text/lang/.svn/prop-base/
-     -/text/lang/.svn/prop-base/reader.ss.svn-base
+     -/text/lang/.svn/prop-base/reader.rkt.svn-base
      -/text/lang/.svn/props/
      -/text/lang/.svn/text-base/
-     -/text/lang/.svn/text-base/reader.ss.svn-base
+     -/text/lang/.svn/text-base/reader.rkt.svn-base
      -/text/lang/.svn/tmp/
      -/text/lang/.svn/tmp/prop-base/
      -/text/lang/.svn/tmp/props/
@@ -1388,12 +1388,12 @@
      -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
-     -/text/lang/reader.ss
-     -/text/output.ss
-     -/text/syntax-utils.ss
-     -/text/textlang.ss
-     -/text-render.ss
-     -/text.ss
+     -/text/lang/reader.rkt
+     -/text/output.rkt
+     -/text/syntax-utils.rkt
+     -/text/textlang.rkt
+     -/text-render.rkt
+     -/text.rkt
      -/tools/
      -/tools/.svn/
      -/tools/.svn/all-wcprops
@@ -1401,12 +1401,12 @@
      -/tools/.svn/entries
      -/tools/.svn/format
      -/tools/.svn/prop-base/
-     -/tools/.svn/prop-base/drscheme-buttons.ss.svn-base
+     -/tools/.svn/prop-base/drscheme-buttons.rkt.svn-base
      -/tools/.svn/prop-base/html.png.svn-base
      -/tools/.svn/prop-base/pdf.png.svn-base
      -/tools/.svn/props/
      -/tools/.svn/text-base/
-     -/tools/.svn/text-base/drscheme-buttons.ss.svn-base
+     -/tools/.svn/text-base/drscheme-buttons.rkt.svn-base
      -/tools/.svn/text-base/html.png.svn-base
      -/tools/.svn/text-base/pdf.png.svn-base
      -/tools/.svn/tmp/
@@ -1416,7 +1416,7 @@
      -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
      -/tools/compiled/drscheme-buttons_ss.zo
-     -/tools/drscheme-buttons.ss
+     -/tools/drscheme-buttons.rkt
      -/tools/html.png
      -/tools/pdf.png
      -/tools/private/
@@ -1426,10 +1426,10 @@
      -/tools/private/.svn/entries
      -/tools/private/.svn/format
      -/tools/private/.svn/prop-base/
-     -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/prop-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/props/
      -/tools/private/.svn/text-base/
-     -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/text-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/tmp/
      -/tools/private/.svn/tmp/prop-base/
      -/tools/private/.svn/tmp/props/
@@ -1437,9 +1437,9 @@
      -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
-     -/tools/private/mk-drs-bitmaps.ss
-     -/urls.ss
-     -/xref.ss
+     -/tools/private/mk-drs-bitmaps.rkt
+     -/urls.rkt
+     -/xref.rkt
      )
    ;; no immediate files
    (e/filter "*/*")
@@ -1451,37 +1451,37 @@
      -/.svn/entries
      -/.svn/format
      -/.svn/prop-base/
-     -/.svn/prop-base/base-render.ss.svn-base
-     -/.svn/prop-base/base.ss.svn-base
-     -/.svn/prop-base/basic.ss.svn-base
-     -/.svn/prop-base/bnf.ss.svn-base
-     -/.svn/prop-base/comment-reader.ss.svn-base
-     -/.svn/prop-base/config.ss.svn-base
-     -/.svn/prop-base/core.ss.svn-base
-     -/.svn/prop-base/decode-struct.ss.svn-base
-     -/.svn/prop-base/decode.ss.svn-base
+     -/.svn/prop-base/base-render.rkt.svn-base
+     -/.svn/prop-base/base.rkt.svn-base
+     -/.svn/prop-base/basic.rkt.svn-base
+     -/.svn/prop-base/bnf.rkt.svn-base
+     -/.svn/prop-base/comment-reader.rkt.svn-base
+     -/.svn/prop-base/config.rkt.svn-base
+     -/.svn/prop-base/core.rkt.svn-base
+     -/.svn/prop-base/decode-struct.rkt.svn-base
+     -/.svn/prop-base/decode.rkt.svn-base
      -/.svn/prop-base/doc.txt.svn-base
-     -/.svn/prop-base/doclang.ss.svn-base
-     -/.svn/prop-base/eval.ss.svn-base
-     -/.svn/prop-base/extract.ss.svn-base
-     -/.svn/prop-base/html-properties.ss.svn-base
-     -/.svn/prop-base/html-render.ss.svn-base
-     -/.svn/prop-base/info.ss.svn-base
-     -/.svn/prop-base/latex-properties.ss.svn-base
-     -/.svn/prop-base/latex-render.ss.svn-base
-     -/.svn/prop-base/lp-include.ss.svn-base
-     -/.svn/prop-base/lp.ss.svn-base
+     -/.svn/prop-base/doclang.rkt.svn-base
+     -/.svn/prop-base/eval.rkt.svn-base
+     -/.svn/prop-base/extract.rkt.svn-base
+     -/.svn/prop-base/html-properties.rkt.svn-base
+     -/.svn/prop-base/html-render.rkt.svn-base
+     -/.svn/prop-base/info.rkt.svn-base
+     -/.svn/prop-base/latex-properties.rkt.svn-base
+     -/.svn/prop-base/latex-render.rkt.svn-base
+     -/.svn/prop-base/lp-include.rkt.svn-base
+     -/.svn/prop-base/lp.rkt.svn-base
      -/.svn/prop-base/manual-prefix.tex.svn-base
-     -/.svn/prop-base/manual-struct.ss.svn-base
+     -/.svn/prop-base/manual-struct.rkt.svn-base
      -/.svn/prop-base/manual-style.tex.svn-base
-     -/.svn/prop-base/manual.ss.svn-base
-     -/.svn/prop-base/pdf-render.ss.svn-base
-     -/.svn/prop-base/provide-doc-transform.ss.svn-base
-     -/.svn/prop-base/reader.ss.svn-base
-     -/.svn/prop-base/render-struct.ss.svn-base
-     -/.svn/prop-base/run.ss.svn-base
+     -/.svn/prop-base/manual.rkt.svn-base
+     -/.svn/prop-base/pdf-render.rkt.svn-base
+     -/.svn/prop-base/provide-doc-transform.rkt.svn-base
+     -/.svn/prop-base/reader.rkt.svn-base
+     -/.svn/prop-base/render-struct.rkt.svn-base
+     -/.svn/prop-base/run.rkt.svn-base
      -/.svn/prop-base/scheme.css.svn-base
-     -/.svn/prop-base/scheme.ss.svn-base
+     -/.svn/prop-base/scheme.rkt.svn-base
      -/.svn/prop-base/scheme.tex.svn-base
      -/.svn/prop-base/scribble-common.js.svn-base
      -/.svn/prop-base/scribble-prefix.html.svn-base
@@ -1490,47 +1490,47 @@
      -/.svn/prop-base/scribble-style.tex.svn-base
      -/.svn/prop-base/scribble.css.svn-base
      -/.svn/prop-base/scribble.tex.svn-base
-     -/.svn/prop-base/search.ss.svn-base
-     -/.svn/prop-base/sigplan.ss.svn-base
-     -/.svn/prop-base/srcdoc.ss.svn-base
-     -/.svn/prop-base/struct.ss.svn-base
-     -/.svn/prop-base/text-render.ss.svn-base
-     -/.svn/prop-base/text.ss.svn-base
-     -/.svn/prop-base/urls.ss.svn-base
-     -/.svn/prop-base/xref.ss.svn-base
+     -/.svn/prop-base/search.rkt.svn-base
+     -/.svn/prop-base/sigplan.rkt.svn-base
+     -/.svn/prop-base/srcdoc.rkt.svn-base
+     -/.svn/prop-base/struct.rkt.svn-base
+     -/.svn/prop-base/text-render.rkt.svn-base
+     -/.svn/prop-base/text.rkt.svn-base
+     -/.svn/prop-base/urls.rkt.svn-base
+     -/.svn/prop-base/xref.rkt.svn-base
      -/.svn/props/
      -/.svn/text-base/
-     -/.svn/text-base/base-render.ss.svn-base
-     -/.svn/text-base/base.ss.svn-base
-     -/.svn/text-base/basic.ss.svn-base
-     -/.svn/text-base/bnf.ss.svn-base
-     -/.svn/text-base/comment-reader.ss.svn-base
-     -/.svn/text-base/config.ss.svn-base
-     -/.svn/text-base/core.ss.svn-base
-     -/.svn/text-base/decode-struct.ss.svn-base
-     -/.svn/text-base/decode.ss.svn-base
+     -/.svn/text-base/base-render.rkt.svn-base
+     -/.svn/text-base/base.rkt.svn-base
+     -/.svn/text-base/basic.rkt.svn-base
+     -/.svn/text-base/bnf.rkt.svn-base
+     -/.svn/text-base/comment-reader.rkt.svn-base
+     -/.svn/text-base/config.rkt.svn-base
+     -/.svn/text-base/core.rkt.svn-base
+     -/.svn/text-base/decode-struct.rkt.svn-base
+     -/.svn/text-base/decode.rkt.svn-base
      -/.svn/text-base/doc.txt.svn-base
-     -/.svn/text-base/doclang.ss.svn-base
-     -/.svn/text-base/eval.ss.svn-base
-     -/.svn/text-base/extract.ss.svn-base
-     -/.svn/text-base/html-properties.ss.svn-base
-     -/.svn/text-base/html-render.ss.svn-base
-     -/.svn/text-base/info.ss.svn-base
-     -/.svn/text-base/latex-properties.ss.svn-base
-     -/.svn/text-base/latex-render.ss.svn-base
-     -/.svn/text-base/lp-include.ss.svn-base
-     -/.svn/text-base/lp.ss.svn-base
+     -/.svn/text-base/doclang.rkt.svn-base
+     -/.svn/text-base/eval.rkt.svn-base
+     -/.svn/text-base/extract.rkt.svn-base
+     -/.svn/text-base/html-properties.rkt.svn-base
+     -/.svn/text-base/html-render.rkt.svn-base
+     -/.svn/text-base/info.rkt.svn-base
+     -/.svn/text-base/latex-properties.rkt.svn-base
+     -/.svn/text-base/latex-render.rkt.svn-base
+     -/.svn/text-base/lp-include.rkt.svn-base
+     -/.svn/text-base/lp.rkt.svn-base
      -/.svn/text-base/manual-prefix.tex.svn-base
-     -/.svn/text-base/manual-struct.ss.svn-base
+     -/.svn/text-base/manual-struct.rkt.svn-base
      -/.svn/text-base/manual-style.tex.svn-base
-     -/.svn/text-base/manual.ss.svn-base
-     -/.svn/text-base/pdf-render.ss.svn-base
-     -/.svn/text-base/provide-doc-transform.ss.svn-base
-     -/.svn/text-base/reader.ss.svn-base
-     -/.svn/text-base/render-struct.ss.svn-base
-     -/.svn/text-base/run.ss.svn-base
+     -/.svn/text-base/manual.rkt.svn-base
+     -/.svn/text-base/pdf-render.rkt.svn-base
+     -/.svn/text-base/provide-doc-transform.rkt.svn-base
+     -/.svn/text-base/reader.rkt.svn-base
+     -/.svn/text-base/render-struct.rkt.svn-base
+     -/.svn/text-base/run.rkt.svn-base
      -/.svn/text-base/scheme.css.svn-base
-     -/.svn/text-base/scheme.ss.svn-base
+     -/.svn/text-base/scheme.rkt.svn-base
      -/.svn/text-base/scheme.tex.svn-base
      -/.svn/text-base/scribble-common.js.svn-base
      -/.svn/text-base/scribble-prefix.html.svn-base
@@ -1539,14 +1539,14 @@
      -/.svn/text-base/scribble-style.tex.svn-base
      -/.svn/text-base/scribble.css.svn-base
      -/.svn/text-base/scribble.tex.svn-base
-     -/.svn/text-base/search.ss.svn-base
-     -/.svn/text-base/sigplan.ss.svn-base
-     -/.svn/text-base/srcdoc.ss.svn-base
-     -/.svn/text-base/struct.ss.svn-base
-     -/.svn/text-base/text-render.ss.svn-base
-     -/.svn/text-base/text.ss.svn-base
-     -/.svn/text-base/urls.ss.svn-base
-     -/.svn/text-base/xref.ss.svn-base
+     -/.svn/text-base/search.rkt.svn-base
+     -/.svn/text-base/sigplan.rkt.svn-base
+     -/.svn/text-base/srcdoc.rkt.svn-base
+     -/.svn/text-base/struct.rkt.svn-base
+     -/.svn/text-base/text-render.rkt.svn-base
+     -/.svn/text-base/text.rkt.svn-base
+     -/.svn/text-base/urls.rkt.svn-base
+     -/.svn/text-base/xref.rkt.svn-base
      -/.svn/tmp/
      -/.svn/tmp/prop-base/
      -/.svn/tmp/props/
@@ -1558,10 +1558,10 @@
      -/base/.svn/entries
      -/base/.svn/format
      -/base/.svn/prop-base/
-     -/base/.svn/prop-base/lang.ss.svn-base
+     -/base/.svn/prop-base/lang.rkt.svn-base
      -/base/.svn/props/
      -/base/.svn/text-base/
-     -/base/.svn/text-base/lang.ss.svn-base
+     -/base/.svn/text-base/lang.rkt.svn-base
      -/base/.svn/tmp/
      -/base/.svn/tmp/prop-base/
      -/base/.svn/tmp/props/
@@ -1576,10 +1576,10 @@
      -/base/lang/.svn/entries
      -/base/lang/.svn/format
      -/base/lang/.svn/prop-base/
-     -/base/lang/.svn/prop-base/reader.ss.svn-base
+     -/base/lang/.svn/prop-base/reader.rkt.svn-base
      -/base/lang/.svn/props/
      -/base/lang/.svn/text-base/
-     -/base/lang/.svn/text-base/reader.ss.svn-base
+     -/base/lang/.svn/text-base/reader.rkt.svn-base
      -/base/lang/.svn/tmp/
      -/base/lang/.svn/tmp/prop-base/
      -/base/lang/.svn/tmp/props/
@@ -1587,8 +1587,8 @@
      -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
-     -/base/lang/reader.ss
-     -/base/lang.ss
+     -/base/lang/reader.rkt
+     -/base/lang.rkt
      -/compiled/
      -/compiled/base-render_ss.dep
      -/compiled/base-render_ss.zo
@@ -1667,12 +1667,12 @@
      -/doc/.svn/entries
      -/doc/.svn/format
      -/doc/.svn/prop-base/
-     -/doc/.svn/prop-base/main.ss.svn-base
-     -/doc/.svn/prop-base/reader.ss.svn-base
+     -/doc/.svn/prop-base/main.rkt.svn-base
+     -/doc/.svn/prop-base/reader.rkt.svn-base
      -/doc/.svn/props/
      -/doc/.svn/text-base/
-     -/doc/.svn/text-base/main.ss.svn-base
-     -/doc/.svn/text-base/reader.ss.svn-base
+     -/doc/.svn/text-base/main.rkt.svn-base
+     -/doc/.svn/text-base/reader.rkt.svn-base
      -/doc/.svn/tmp/
      -/doc/.svn/tmp/prop-base/
      -/doc/.svn/tmp/props/
@@ -1689,10 +1689,10 @@
      -/doc/lang/.svn/entries
      -/doc/lang/.svn/format
      -/doc/lang/.svn/prop-base/
-     -/doc/lang/.svn/prop-base/reader.ss.svn-base
+     -/doc/lang/.svn/prop-base/reader.rkt.svn-base
      -/doc/lang/.svn/props/
      -/doc/lang/.svn/text-base/
-     -/doc/lang/.svn/text-base/reader.ss.svn-base
+     -/doc/lang/.svn/text-base/reader.rkt.svn-base
      -/doc/lang/.svn/tmp/
      -/doc/lang/.svn/tmp/prop-base/
      -/doc/lang/.svn/tmp/props/
@@ -1700,9 +1700,9 @@
      -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
-     -/doc/lang/reader.ss
-     -/doc/main.ss
-     -/doc/reader.ss
+     -/doc/lang/reader.rkt
+     -/doc/main.rkt
+     -/doc/reader.rkt
      -/lp/
      -/lp/.svn/
      -/lp/.svn/all-wcprops
@@ -1722,12 +1722,12 @@
      -/lp/lang/.svn/entries
      -/lp/lang/.svn/format
      -/lp/lang/.svn/prop-base/
-     -/lp/lang/.svn/prop-base/lang.ss.svn-base
-     -/lp/lang/.svn/prop-base/reader.ss.svn-base
+     -/lp/lang/.svn/prop-base/lang.rkt.svn-base
+     -/lp/lang/.svn/prop-base/reader.rkt.svn-base
      -/lp/lang/.svn/props/
      -/lp/lang/.svn/text-base/
-     -/lp/lang/.svn/text-base/lang.ss.svn-base
-     -/lp/lang/.svn/text-base/reader.ss.svn-base
+     -/lp/lang/.svn/text-base/lang.rkt.svn-base
+     -/lp/lang/.svn/text-base/reader.rkt.svn-base
      -/lp/lang/.svn/tmp/
      -/lp/lang/.svn/tmp/prop-base/
      -/lp/lang/.svn/tmp/props/
@@ -1737,8 +1737,8 @@
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
      -/lp/lang/compiled/reader_ss.zo
-     -/lp/lang/lang.ss
-     -/lp/lang/reader.ss
+     -/lp/lang/lang.rkt
+     -/lp/lang/reader.rkt
      -/manual/
      -/manual/.svn/
      -/manual/.svn/all-wcprops
@@ -1746,10 +1746,10 @@
      -/manual/.svn/entries
      -/manual/.svn/format
      -/manual/.svn/prop-base/
-     -/manual/.svn/prop-base/lang.ss.svn-base
+     -/manual/.svn/prop-base/lang.rkt.svn-base
      -/manual/.svn/props/
      -/manual/.svn/text-base/
-     -/manual/.svn/text-base/lang.ss.svn-base
+     -/manual/.svn/text-base/lang.rkt.svn-base
      -/manual/.svn/tmp/
      -/manual/.svn/tmp/prop-base/
      -/manual/.svn/tmp/props/
@@ -1764,10 +1764,10 @@
      -/manual/lang/.svn/entries
      -/manual/lang/.svn/format
      -/manual/lang/.svn/prop-base/
-     -/manual/lang/.svn/prop-base/reader.ss.svn-base
+     -/manual/lang/.svn/prop-base/reader.rkt.svn-base
      -/manual/lang/.svn/props/
      -/manual/lang/.svn/text-base/
-     -/manual/lang/.svn/text-base/reader.ss.svn-base
+     -/manual/lang/.svn/text-base/reader.rkt.svn-base
      -/manual/lang/.svn/tmp/
      -/manual/lang/.svn/tmp/prop-base/
      -/manual/lang/.svn/tmp/props/
@@ -1775,8 +1775,8 @@
      -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
-     -/manual/lang/reader.ss
-     -/manual/lang.ss
+     -/manual/lang/reader.rkt
+     -/manual/lang.rkt
      -/private/
      -/private/.svn/
      -/private/.svn/all-wcprops
@@ -1784,54 +1784,54 @@
      -/private/.svn/entries
      -/private/.svn/format
      -/private/.svn/prop-base/
-     -/private/.svn/prop-base/defaults.ss.svn-base
-     -/private/.svn/prop-base/indirect-renderer.ss.svn-base
-     -/private/.svn/prop-base/lp.ss.svn-base
-     -/private/.svn/prop-base/manual-bib.ss.svn-base
-     -/private/.svn/prop-base/manual-bind.ss.svn-base
-     -/private/.svn/prop-base/manual-class.ss.svn-base
-     -/private/.svn/prop-base/manual-ex.ss.svn-base
-     -/private/.svn/prop-base/manual-form.ss.svn-base
-     -/private/.svn/prop-base/manual-method.ss.svn-base
-     -/private/.svn/prop-base/manual-mod.ss.svn-base
-     -/private/.svn/prop-base/manual-proc.ss.svn-base
-     -/private/.svn/prop-base/manual-scheme.ss.svn-base
-     -/private/.svn/prop-base/manual-sprop.ss.svn-base
-     -/private/.svn/prop-base/manual-style.ss.svn-base
-     -/private/.svn/prop-base/manual-tech.ss.svn-base
-     -/private/.svn/prop-base/manual-unit.ss.svn-base
-     -/private/.svn/prop-base/manual-utils.ss.svn-base
-     -/private/.svn/prop-base/manual-vars.ss.svn-base
-     -/private/.svn/prop-base/on-demand.ss.svn-base
-     -/private/.svn/prop-base/provide-structs.ss.svn-base
-     -/private/.svn/prop-base/qsloc.ss.svn-base
-     -/private/.svn/prop-base/render-utils.ss.svn-base
-     -/private/.svn/prop-base/run-pdflatex.ss.svn-base
+     -/private/.svn/prop-base/defaults.rkt.svn-base
+     -/private/.svn/prop-base/indirect-renderer.rkt.svn-base
+     -/private/.svn/prop-base/lp.rkt.svn-base
+     -/private/.svn/prop-base/manual-bib.rkt.svn-base
+     -/private/.svn/prop-base/manual-bind.rkt.svn-base
+     -/private/.svn/prop-base/manual-class.rkt.svn-base
+     -/private/.svn/prop-base/manual-ex.rkt.svn-base
+     -/private/.svn/prop-base/manual-form.rkt.svn-base
+     -/private/.svn/prop-base/manual-method.rkt.svn-base
+     -/private/.svn/prop-base/manual-mod.rkt.svn-base
+     -/private/.svn/prop-base/manual-proc.rkt.svn-base
+     -/private/.svn/prop-base/manual-scheme.rkt.svn-base
+     -/private/.svn/prop-base/manual-sprop.rkt.svn-base
+     -/private/.svn/prop-base/manual-style.rkt.svn-base
+     -/private/.svn/prop-base/manual-tech.rkt.svn-base
+     -/private/.svn/prop-base/manual-unit.rkt.svn-base
+     -/private/.svn/prop-base/manual-utils.rkt.svn-base
+     -/private/.svn/prop-base/manual-vars.rkt.svn-base
+     -/private/.svn/prop-base/on-demand.rkt.svn-base
+     -/private/.svn/prop-base/provide-structs.rkt.svn-base
+     -/private/.svn/prop-base/qsloc.rkt.svn-base
+     -/private/.svn/prop-base/render-utils.rkt.svn-base
+     -/private/.svn/prop-base/run-pdflatex.rkt.svn-base
      -/private/.svn/props/
      -/private/.svn/text-base/
-     -/private/.svn/text-base/defaults.ss.svn-base
-     -/private/.svn/text-base/indirect-renderer.ss.svn-base
-     -/private/.svn/text-base/lp.ss.svn-base
-     -/private/.svn/text-base/manual-bib.ss.svn-base
-     -/private/.svn/text-base/manual-bind.ss.svn-base
-     -/private/.svn/text-base/manual-class.ss.svn-base
-     -/private/.svn/text-base/manual-ex.ss.svn-base
-     -/private/.svn/text-base/manual-form.ss.svn-base
-     -/private/.svn/text-base/manual-method.ss.svn-base
-     -/private/.svn/text-base/manual-mod.ss.svn-base
-     -/private/.svn/text-base/manual-proc.ss.svn-base
-     -/private/.svn/text-base/manual-scheme.ss.svn-base
-     -/private/.svn/text-base/manual-sprop.ss.svn-base
-     -/private/.svn/text-base/manual-style.ss.svn-base
-     -/private/.svn/text-base/manual-tech.ss.svn-base
-     -/private/.svn/text-base/manual-unit.ss.svn-base
-     -/private/.svn/text-base/manual-utils.ss.svn-base
-     -/private/.svn/text-base/manual-vars.ss.svn-base
-     -/private/.svn/text-base/on-demand.ss.svn-base
-     -/private/.svn/text-base/provide-structs.ss.svn-base
-     -/private/.svn/text-base/qsloc.ss.svn-base
-     -/private/.svn/text-base/render-utils.ss.svn-base
-     -/private/.svn/text-base/run-pdflatex.ss.svn-base
+     -/private/.svn/text-base/defaults.rkt.svn-base
+     -/private/.svn/text-base/indirect-renderer.rkt.svn-base
+     -/private/.svn/text-base/lp.rkt.svn-base
+     -/private/.svn/text-base/manual-bib.rkt.svn-base
+     -/private/.svn/text-base/manual-bind.rkt.svn-base
+     -/private/.svn/text-base/manual-class.rkt.svn-base
+     -/private/.svn/text-base/manual-ex.rkt.svn-base
+     -/private/.svn/text-base/manual-form.rkt.svn-base
+     -/private/.svn/text-base/manual-method.rkt.svn-base
+     -/private/.svn/text-base/manual-mod.rkt.svn-base
+     -/private/.svn/text-base/manual-proc.rkt.svn-base
+     -/private/.svn/text-base/manual-scheme.rkt.svn-base
+     -/private/.svn/text-base/manual-sprop.rkt.svn-base
+     -/private/.svn/text-base/manual-style.rkt.svn-base
+     -/private/.svn/text-base/manual-tech.rkt.svn-base
+     -/private/.svn/text-base/manual-unit.rkt.svn-base
+     -/private/.svn/text-base/manual-utils.rkt.svn-base
+     -/private/.svn/text-base/manual-vars.rkt.svn-base
+     -/private/.svn/text-base/on-demand.rkt.svn-base
+     -/private/.svn/text-base/provide-structs.rkt.svn-base
+     -/private/.svn/text-base/qsloc.rkt.svn-base
+     -/private/.svn/text-base/render-utils.rkt.svn-base
+     -/private/.svn/text-base/run-pdflatex.rkt.svn-base
      -/private/.svn/tmp/
      -/private/.svn/tmp/prop-base/
      -/private/.svn/tmp/props/
@@ -1883,29 +1883,29 @@
      -/private/compiled/render-utils_ss.zo
      -/private/compiled/run-pdflatex_ss.dep
      -/private/compiled/run-pdflatex_ss.zo
-     -/private/defaults.ss
-     -/private/indirect-renderer.ss
-     -/private/lp.ss
-     -/private/manual-bib.ss
-     -/private/manual-bind.ss
-     -/private/manual-class.ss
-     -/private/manual-ex.ss
-     -/private/manual-form.ss
-     -/private/manual-method.ss
-     -/private/manual-mod.ss
-     -/private/manual-proc.ss
-     -/private/manual-scheme.ss
-     -/private/manual-sprop.ss
-     -/private/manual-style.ss
-     -/private/manual-tech.ss
-     -/private/manual-unit.ss
-     -/private/manual-utils.ss
-     -/private/manual-vars.ss
-     -/private/on-demand.ss
-     -/private/provide-structs.ss
-     -/private/qsloc.ss
-     -/private/render-utils.ss
-     -/private/run-pdflatex.ss
+     -/private/defaults.rkt
+     -/private/indirect-renderer.rkt
+     -/private/lp.rkt
+     -/private/manual-bib.rkt
+     -/private/manual-bind.rkt
+     -/private/manual-class.rkt
+     -/private/manual-ex.rkt
+     -/private/manual-form.rkt
+     -/private/manual-method.rkt
+     -/private/manual-mod.rkt
+     -/private/manual-proc.rkt
+     -/private/manual-scheme.rkt
+     -/private/manual-sprop.rkt
+     -/private/manual-style.rkt
+     -/private/manual-tech.rkt
+     -/private/manual-unit.rkt
+     -/private/manual-utils.rkt
+     -/private/manual-vars.rkt
+     -/private/on-demand.rkt
+     -/private/provide-structs.rkt
+     -/private/qsloc.rkt
+     -/private/render-utils.rkt
+     -/private/run-pdflatex.rkt
      -/sigplan/
      -/sigplan/.svn/
      -/sigplan/.svn/all-wcprops
@@ -1913,14 +1913,14 @@
      -/sigplan/.svn/entries
      -/sigplan/.svn/format
      -/sigplan/.svn/prop-base/
-     -/sigplan/.svn/prop-base/lang.ss.svn-base
+     -/sigplan/.svn/prop-base/lang.rkt.svn-base
      -/sigplan/.svn/prop-base/sigplan.css.svn-base
      -/sigplan/.svn/prop-base/sigplan.tex.svn-base
      -/sigplan/.svn/prop-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/prop-base/style.tex.svn-base
      -/sigplan/.svn/props/
      -/sigplan/.svn/text-base/
-     -/sigplan/.svn/text-base/lang.ss.svn-base
+     -/sigplan/.svn/text-base/lang.rkt.svn-base
      -/sigplan/.svn/text-base/sigplan.css.svn-base
      -/sigplan/.svn/text-base/sigplan.tex.svn-base
      -/sigplan/.svn/text-base/sigplanconf.cls.svn-base
@@ -1939,10 +1939,10 @@
      -/sigplan/lang/.svn/entries
      -/sigplan/lang/.svn/format
      -/sigplan/lang/.svn/prop-base/
-     -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/prop-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/props/
      -/sigplan/lang/.svn/text-base/
-     -/sigplan/lang/.svn/text-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/text-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/tmp/
      -/sigplan/lang/.svn/tmp/prop-base/
      -/sigplan/lang/.svn/tmp/props/
@@ -1950,8 +1950,8 @@
      -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
-     -/sigplan/lang/reader.ss
-     -/sigplan/lang.ss
+     -/sigplan/lang/reader.rkt
+     -/sigplan/lang.rkt
      -/sigplan/sigplan.css
      -/sigplan/sigplan.tex
      -/sigplan/sigplanconf.cls
@@ -1963,14 +1963,14 @@
      -/text/.svn/entries
      -/text/.svn/format
      -/text/.svn/prop-base/
-     -/text/.svn/prop-base/output.ss.svn-base
-     -/text/.svn/prop-base/syntax-utils.ss.svn-base
-     -/text/.svn/prop-base/textlang.ss.svn-base
+     -/text/.svn/prop-base/output.rkt.svn-base
+     -/text/.svn/prop-base/syntax-utils.rkt.svn-base
+     -/text/.svn/prop-base/textlang.rkt.svn-base
      -/text/.svn/props/
      -/text/.svn/text-base/
-     -/text/.svn/text-base/output.ss.svn-base
-     -/text/.svn/text-base/syntax-utils.ss.svn-base
-     -/text/.svn/text-base/textlang.ss.svn-base
+     -/text/.svn/text-base/output.rkt.svn-base
+     -/text/.svn/text-base/syntax-utils.rkt.svn-base
+     -/text/.svn/text-base/textlang.rkt.svn-base
      -/text/.svn/tmp/
      -/text/.svn/tmp/prop-base/
      -/text/.svn/tmp/props/
@@ -1989,10 +1989,10 @@
      -/text/lang/.svn/entries
      -/text/lang/.svn/format
      -/text/lang/.svn/prop-base/
-     -/text/lang/.svn/prop-base/reader.ss.svn-base
+     -/text/lang/.svn/prop-base/reader.rkt.svn-base
      -/text/lang/.svn/props/
      -/text/lang/.svn/text-base/
-     -/text/lang/.svn/text-base/reader.ss.svn-base
+     -/text/lang/.svn/text-base/reader.rkt.svn-base
      -/text/lang/.svn/tmp/
      -/text/lang/.svn/tmp/prop-base/
      -/text/lang/.svn/tmp/props/
@@ -2000,10 +2000,10 @@
      -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
-     -/text/lang/reader.ss
-     -/text/output.ss
-     -/text/syntax-utils.ss
-     -/text/textlang.ss
+     -/text/lang/reader.rkt
+     -/text/output.rkt
+     -/text/syntax-utils.rkt
+     -/text/textlang.rkt
      -/tools/
      -/tools/.svn/
      -/tools/.svn/all-wcprops
@@ -2011,12 +2011,12 @@
      -/tools/.svn/entries
      -/tools/.svn/format
      -/tools/.svn/prop-base/
-     -/tools/.svn/prop-base/drscheme-buttons.ss.svn-base
+     -/tools/.svn/prop-base/drscheme-buttons.rkt.svn-base
      -/tools/.svn/prop-base/html.png.svn-base
      -/tools/.svn/prop-base/pdf.png.svn-base
      -/tools/.svn/props/
      -/tools/.svn/text-base/
-     -/tools/.svn/text-base/drscheme-buttons.ss.svn-base
+     -/tools/.svn/text-base/drscheme-buttons.rkt.svn-base
      -/tools/.svn/text-base/html.png.svn-base
      -/tools/.svn/text-base/pdf.png.svn-base
      -/tools/.svn/tmp/
@@ -2026,7 +2026,7 @@
      -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
      -/tools/compiled/drscheme-buttons_ss.zo
-     -/tools/drscheme-buttons.ss
+     -/tools/drscheme-buttons.rkt
      -/tools/html.png
      -/tools/pdf.png
      -/tools/private/
@@ -2036,10 +2036,10 @@
      -/tools/private/.svn/entries
      -/tools/private/.svn/format
      -/tools/private/.svn/prop-base/
-     -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/prop-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/props/
      -/tools/private/.svn/text-base/
-     -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/text-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/tmp/
      -/tools/private/.svn/tmp/prop-base/
      -/tools/private/.svn/tmp/props/
@@ -2047,7 +2047,7 @@
      -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
-     -/tools/private/mk-drs-bitmaps.ss
+     -/tools/private/mk-drs-bitmaps.rkt
      )
    (e/filter "*/")
    => same-as-last-datums
@@ -2057,37 +2057,37 @@
    '(-/
      -/.svn/
      -/.svn/prop-base/
-     -/.svn/prop-base/base-render.ss.svn-base
-     -/.svn/prop-base/base.ss.svn-base
-     -/.svn/prop-base/basic.ss.svn-base
-     -/.svn/prop-base/bnf.ss.svn-base
-     -/.svn/prop-base/comment-reader.ss.svn-base
-     -/.svn/prop-base/config.ss.svn-base
-     -/.svn/prop-base/core.ss.svn-base
-     -/.svn/prop-base/decode-struct.ss.svn-base
-     -/.svn/prop-base/decode.ss.svn-base
+     -/.svn/prop-base/base-render.rkt.svn-base
+     -/.svn/prop-base/base.rkt.svn-base
+     -/.svn/prop-base/basic.rkt.svn-base
+     -/.svn/prop-base/bnf.rkt.svn-base
+     -/.svn/prop-base/comment-reader.rkt.svn-base
+     -/.svn/prop-base/config.rkt.svn-base
+     -/.svn/prop-base/core.rkt.svn-base
+     -/.svn/prop-base/decode-struct.rkt.svn-base
+     -/.svn/prop-base/decode.rkt.svn-base
      -/.svn/prop-base/doc.txt.svn-base
-     -/.svn/prop-base/doclang.ss.svn-base
-     -/.svn/prop-base/eval.ss.svn-base
-     -/.svn/prop-base/extract.ss.svn-base
-     -/.svn/prop-base/html-properties.ss.svn-base
-     -/.svn/prop-base/html-render.ss.svn-base
-     -/.svn/prop-base/info.ss.svn-base
-     -/.svn/prop-base/latex-properties.ss.svn-base
-     -/.svn/prop-base/latex-render.ss.svn-base
-     -/.svn/prop-base/lp-include.ss.svn-base
-     -/.svn/prop-base/lp.ss.svn-base
+     -/.svn/prop-base/doclang.rkt.svn-base
+     -/.svn/prop-base/eval.rkt.svn-base
+     -/.svn/prop-base/extract.rkt.svn-base
+     -/.svn/prop-base/html-properties.rkt.svn-base
+     -/.svn/prop-base/html-render.rkt.svn-base
+     -/.svn/prop-base/info.rkt.svn-base
+     -/.svn/prop-base/latex-properties.rkt.svn-base
+     -/.svn/prop-base/latex-render.rkt.svn-base
+     -/.svn/prop-base/lp-include.rkt.svn-base
+     -/.svn/prop-base/lp.rkt.svn-base
      -/.svn/prop-base/manual-prefix.tex.svn-base
-     -/.svn/prop-base/manual-struct.ss.svn-base
+     -/.svn/prop-base/manual-struct.rkt.svn-base
      -/.svn/prop-base/manual-style.tex.svn-base
-     -/.svn/prop-base/manual.ss.svn-base
-     -/.svn/prop-base/pdf-render.ss.svn-base
-     -/.svn/prop-base/provide-doc-transform.ss.svn-base
-     -/.svn/prop-base/reader.ss.svn-base
-     -/.svn/prop-base/render-struct.ss.svn-base
-     -/.svn/prop-base/run.ss.svn-base
+     -/.svn/prop-base/manual.rkt.svn-base
+     -/.svn/prop-base/pdf-render.rkt.svn-base
+     -/.svn/prop-base/provide-doc-transform.rkt.svn-base
+     -/.svn/prop-base/reader.rkt.svn-base
+     -/.svn/prop-base/render-struct.rkt.svn-base
+     -/.svn/prop-base/run.rkt.svn-base
      -/.svn/prop-base/scheme.css.svn-base
-     -/.svn/prop-base/scheme.ss.svn-base
+     -/.svn/prop-base/scheme.rkt.svn-base
      -/.svn/prop-base/scheme.tex.svn-base
      -/.svn/prop-base/scribble-common.js.svn-base
      -/.svn/prop-base/scribble-prefix.html.svn-base
@@ -2096,46 +2096,46 @@
      -/.svn/prop-base/scribble-style.tex.svn-base
      -/.svn/prop-base/scribble.css.svn-base
      -/.svn/prop-base/scribble.tex.svn-base
-     -/.svn/prop-base/search.ss.svn-base
-     -/.svn/prop-base/sigplan.ss.svn-base
-     -/.svn/prop-base/srcdoc.ss.svn-base
-     -/.svn/prop-base/struct.ss.svn-base
-     -/.svn/prop-base/text-render.ss.svn-base
-     -/.svn/prop-base/text.ss.svn-base
-     -/.svn/prop-base/urls.ss.svn-base
-     -/.svn/prop-base/xref.ss.svn-base
+     -/.svn/prop-base/search.rkt.svn-base
+     -/.svn/prop-base/sigplan.rkt.svn-base
+     -/.svn/prop-base/srcdoc.rkt.svn-base
+     -/.svn/prop-base/struct.rkt.svn-base
+     -/.svn/prop-base/text-render.rkt.svn-base
+     -/.svn/prop-base/text.rkt.svn-base
+     -/.svn/prop-base/urls.rkt.svn-base
+     -/.svn/prop-base/xref.rkt.svn-base
      -/.svn/text-base/
-     -/.svn/text-base/base-render.ss.svn-base
-     -/.svn/text-base/base.ss.svn-base
-     -/.svn/text-base/basic.ss.svn-base
-     -/.svn/text-base/bnf.ss.svn-base
-     -/.svn/text-base/comment-reader.ss.svn-base
-     -/.svn/text-base/config.ss.svn-base
-     -/.svn/text-base/core.ss.svn-base
-     -/.svn/text-base/decode-struct.ss.svn-base
-     -/.svn/text-base/decode.ss.svn-base
+     -/.svn/text-base/base-render.rkt.svn-base
+     -/.svn/text-base/base.rkt.svn-base
+     -/.svn/text-base/basic.rkt.svn-base
+     -/.svn/text-base/bnf.rkt.svn-base
+     -/.svn/text-base/comment-reader.rkt.svn-base
+     -/.svn/text-base/config.rkt.svn-base
+     -/.svn/text-base/core.rkt.svn-base
+     -/.svn/text-base/decode-struct.rkt.svn-base
+     -/.svn/text-base/decode.rkt.svn-base
      -/.svn/text-base/doc.txt.svn-base
-     -/.svn/text-base/doclang.ss.svn-base
-     -/.svn/text-base/eval.ss.svn-base
-     -/.svn/text-base/extract.ss.svn-base
-     -/.svn/text-base/html-properties.ss.svn-base
-     -/.svn/text-base/html-render.ss.svn-base
-     -/.svn/text-base/info.ss.svn-base
-     -/.svn/text-base/latex-properties.ss.svn-base
-     -/.svn/text-base/latex-render.ss.svn-base
-     -/.svn/text-base/lp-include.ss.svn-base
-     -/.svn/text-base/lp.ss.svn-base
+     -/.svn/text-base/doclang.rkt.svn-base
+     -/.svn/text-base/eval.rkt.svn-base
+     -/.svn/text-base/extract.rkt.svn-base
+     -/.svn/text-base/html-properties.rkt.svn-base
+     -/.svn/text-base/html-render.rkt.svn-base
+     -/.svn/text-base/info.rkt.svn-base
+     -/.svn/text-base/latex-properties.rkt.svn-base
+     -/.svn/text-base/latex-render.rkt.svn-base
+     -/.svn/text-base/lp-include.rkt.svn-base
+     -/.svn/text-base/lp.rkt.svn-base
      -/.svn/text-base/manual-prefix.tex.svn-base
-     -/.svn/text-base/manual-struct.ss.svn-base
+     -/.svn/text-base/manual-struct.rkt.svn-base
      -/.svn/text-base/manual-style.tex.svn-base
-     -/.svn/text-base/manual.ss.svn-base
-     -/.svn/text-base/pdf-render.ss.svn-base
-     -/.svn/text-base/provide-doc-transform.ss.svn-base
-     -/.svn/text-base/reader.ss.svn-base
-     -/.svn/text-base/render-struct.ss.svn-base
-     -/.svn/text-base/run.ss.svn-base
+     -/.svn/text-base/manual.rkt.svn-base
+     -/.svn/text-base/pdf-render.rkt.svn-base
+     -/.svn/text-base/provide-doc-transform.rkt.svn-base
+     -/.svn/text-base/reader.rkt.svn-base
+     -/.svn/text-base/render-struct.rkt.svn-base
+     -/.svn/text-base/run.rkt.svn-base
      -/.svn/text-base/scheme.css.svn-base
-     -/.svn/text-base/scheme.ss.svn-base
+     -/.svn/text-base/scheme.rkt.svn-base
      -/.svn/text-base/scheme.tex.svn-base
      -/.svn/text-base/scribble-common.js.svn-base
      -/.svn/text-base/scribble-prefix.html.svn-base
@@ -2144,14 +2144,14 @@
      -/.svn/text-base/scribble-style.tex.svn-base
      -/.svn/text-base/scribble.css.svn-base
      -/.svn/text-base/scribble.tex.svn-base
-     -/.svn/text-base/search.ss.svn-base
-     -/.svn/text-base/sigplan.ss.svn-base
-     -/.svn/text-base/srcdoc.ss.svn-base
-     -/.svn/text-base/struct.ss.svn-base
-     -/.svn/text-base/text-render.ss.svn-base
-     -/.svn/text-base/text.ss.svn-base
-     -/.svn/text-base/urls.ss.svn-base
-     -/.svn/text-base/xref.ss.svn-base
+     -/.svn/text-base/search.rkt.svn-base
+     -/.svn/text-base/sigplan.rkt.svn-base
+     -/.svn/text-base/srcdoc.rkt.svn-base
+     -/.svn/text-base/struct.rkt.svn-base
+     -/.svn/text-base/text-render.rkt.svn-base
+     -/.svn/text-base/text.rkt.svn-base
+     -/.svn/text-base/urls.rkt.svn-base
+     -/.svn/text-base/xref.rkt.svn-base
      -/.svn/tmp/
      -/.svn/tmp/prop-base/
      -/.svn/tmp/props/
@@ -2163,10 +2163,10 @@
      -/base/.svn/entries
      -/base/.svn/format
      -/base/.svn/prop-base/
-     -/base/.svn/prop-base/lang.ss.svn-base
+     -/base/.svn/prop-base/lang.rkt.svn-base
      -/base/.svn/props/
      -/base/.svn/text-base/
-     -/base/.svn/text-base/lang.ss.svn-base
+     -/base/.svn/text-base/lang.rkt.svn-base
      -/base/.svn/tmp/
      -/base/.svn/tmp/prop-base/
      -/base/.svn/tmp/props/
@@ -2181,10 +2181,10 @@
      -/base/lang/.svn/entries
      -/base/lang/.svn/format
      -/base/lang/.svn/prop-base/
-     -/base/lang/.svn/prop-base/reader.ss.svn-base
+     -/base/lang/.svn/prop-base/reader.rkt.svn-base
      -/base/lang/.svn/props/
      -/base/lang/.svn/text-base/
-     -/base/lang/.svn/text-base/reader.ss.svn-base
+     -/base/lang/.svn/text-base/reader.rkt.svn-base
      -/base/lang/.svn/tmp/
      -/base/lang/.svn/tmp/prop-base/
      -/base/lang/.svn/tmp/props/
@@ -2192,7 +2192,7 @@
      -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
-     -/base/lang/reader.ss
+     -/base/lang/reader.rkt
      -/doc/
      -/doc/.svn/
      -/doc/.svn/all-wcprops
@@ -2200,12 +2200,12 @@
      -/doc/.svn/entries
      -/doc/.svn/format
      -/doc/.svn/prop-base/
-     -/doc/.svn/prop-base/main.ss.svn-base
-     -/doc/.svn/prop-base/reader.ss.svn-base
+     -/doc/.svn/prop-base/main.rkt.svn-base
+     -/doc/.svn/prop-base/reader.rkt.svn-base
      -/doc/.svn/props/
      -/doc/.svn/text-base/
-     -/doc/.svn/text-base/main.ss.svn-base
-     -/doc/.svn/text-base/reader.ss.svn-base
+     -/doc/.svn/text-base/main.rkt.svn-base
+     -/doc/.svn/text-base/reader.rkt.svn-base
      -/doc/.svn/tmp/
      -/doc/.svn/tmp/prop-base/
      -/doc/.svn/tmp/props/
@@ -2222,10 +2222,10 @@
      -/doc/lang/.svn/entries
      -/doc/lang/.svn/format
      -/doc/lang/.svn/prop-base/
-     -/doc/lang/.svn/prop-base/reader.ss.svn-base
+     -/doc/lang/.svn/prop-base/reader.rkt.svn-base
      -/doc/lang/.svn/props/
      -/doc/lang/.svn/text-base/
-     -/doc/lang/.svn/text-base/reader.ss.svn-base
+     -/doc/lang/.svn/text-base/reader.rkt.svn-base
      -/doc/lang/.svn/tmp/
      -/doc/lang/.svn/tmp/prop-base/
      -/doc/lang/.svn/tmp/props/
@@ -2233,7 +2233,7 @@
      -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
-     -/doc/lang/reader.ss
+     -/doc/lang/reader.rkt
      -/lp/
      -/lp/.svn/
      -/lp/.svn/all-wcprops
@@ -2253,12 +2253,12 @@
      -/lp/lang/.svn/entries
      -/lp/lang/.svn/format
      -/lp/lang/.svn/prop-base/
-     -/lp/lang/.svn/prop-base/lang.ss.svn-base
-     -/lp/lang/.svn/prop-base/reader.ss.svn-base
+     -/lp/lang/.svn/prop-base/lang.rkt.svn-base
+     -/lp/lang/.svn/prop-base/reader.rkt.svn-base
      -/lp/lang/.svn/props/
      -/lp/lang/.svn/text-base/
-     -/lp/lang/.svn/text-base/lang.ss.svn-base
-     -/lp/lang/.svn/text-base/reader.ss.svn-base
+     -/lp/lang/.svn/text-base/lang.rkt.svn-base
+     -/lp/lang/.svn/text-base/reader.rkt.svn-base
      -/lp/lang/.svn/tmp/
      -/lp/lang/.svn/tmp/prop-base/
      -/lp/lang/.svn/tmp/props/
@@ -2268,8 +2268,8 @@
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
      -/lp/lang/compiled/reader_ss.zo
-     -/lp/lang/lang.ss
-     -/lp/lang/reader.ss
+     -/lp/lang/lang.rkt
+     -/lp/lang/reader.rkt
      -/manual/
      -/manual/.svn/
      -/manual/.svn/all-wcprops
@@ -2277,10 +2277,10 @@
      -/manual/.svn/entries
      -/manual/.svn/format
      -/manual/.svn/prop-base/
-     -/manual/.svn/prop-base/lang.ss.svn-base
+     -/manual/.svn/prop-base/lang.rkt.svn-base
      -/manual/.svn/props/
      -/manual/.svn/text-base/
-     -/manual/.svn/text-base/lang.ss.svn-base
+     -/manual/.svn/text-base/lang.rkt.svn-base
      -/manual/.svn/tmp/
      -/manual/.svn/tmp/prop-base/
      -/manual/.svn/tmp/props/
@@ -2295,10 +2295,10 @@
      -/manual/lang/.svn/entries
      -/manual/lang/.svn/format
      -/manual/lang/.svn/prop-base/
-     -/manual/lang/.svn/prop-base/reader.ss.svn-base
+     -/manual/lang/.svn/prop-base/reader.rkt.svn-base
      -/manual/lang/.svn/props/
      -/manual/lang/.svn/text-base/
-     -/manual/lang/.svn/text-base/reader.ss.svn-base
+     -/manual/lang/.svn/text-base/reader.rkt.svn-base
      -/manual/lang/.svn/tmp/
      -/manual/lang/.svn/tmp/prop-base/
      -/manual/lang/.svn/tmp/props/
@@ -2306,7 +2306,7 @@
      -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
-     -/manual/lang/reader.ss
+     -/manual/lang/reader.rkt
      -/private/
      -/private/.svn/
      -/private/.svn/all-wcprops
@@ -2314,54 +2314,54 @@
      -/private/.svn/entries
      -/private/.svn/format
      -/private/.svn/prop-base/
-     -/private/.svn/prop-base/defaults.ss.svn-base
-     -/private/.svn/prop-base/indirect-renderer.ss.svn-base
-     -/private/.svn/prop-base/lp.ss.svn-base
-     -/private/.svn/prop-base/manual-bib.ss.svn-base
-     -/private/.svn/prop-base/manual-bind.ss.svn-base
-     -/private/.svn/prop-base/manual-class.ss.svn-base
-     -/private/.svn/prop-base/manual-ex.ss.svn-base
-     -/private/.svn/prop-base/manual-form.ss.svn-base
-     -/private/.svn/prop-base/manual-method.ss.svn-base
-     -/private/.svn/prop-base/manual-mod.ss.svn-base
-     -/private/.svn/prop-base/manual-proc.ss.svn-base
-     -/private/.svn/prop-base/manual-scheme.ss.svn-base
-     -/private/.svn/prop-base/manual-sprop.ss.svn-base
-     -/private/.svn/prop-base/manual-style.ss.svn-base
-     -/private/.svn/prop-base/manual-tech.ss.svn-base
-     -/private/.svn/prop-base/manual-unit.ss.svn-base
-     -/private/.svn/prop-base/manual-utils.ss.svn-base
-     -/private/.svn/prop-base/manual-vars.ss.svn-base
-     -/private/.svn/prop-base/on-demand.ss.svn-base
-     -/private/.svn/prop-base/provide-structs.ss.svn-base
-     -/private/.svn/prop-base/qsloc.ss.svn-base
-     -/private/.svn/prop-base/render-utils.ss.svn-base
-     -/private/.svn/prop-base/run-pdflatex.ss.svn-base
+     -/private/.svn/prop-base/defaults.rkt.svn-base
+     -/private/.svn/prop-base/indirect-renderer.rkt.svn-base
+     -/private/.svn/prop-base/lp.rkt.svn-base
+     -/private/.svn/prop-base/manual-bib.rkt.svn-base
+     -/private/.svn/prop-base/manual-bind.rkt.svn-base
+     -/private/.svn/prop-base/manual-class.rkt.svn-base
+     -/private/.svn/prop-base/manual-ex.rkt.svn-base
+     -/private/.svn/prop-base/manual-form.rkt.svn-base
+     -/private/.svn/prop-base/manual-method.rkt.svn-base
+     -/private/.svn/prop-base/manual-mod.rkt.svn-base
+     -/private/.svn/prop-base/manual-proc.rkt.svn-base
+     -/private/.svn/prop-base/manual-scheme.rkt.svn-base
+     -/private/.svn/prop-base/manual-sprop.rkt.svn-base
+     -/private/.svn/prop-base/manual-style.rkt.svn-base
+     -/private/.svn/prop-base/manual-tech.rkt.svn-base
+     -/private/.svn/prop-base/manual-unit.rkt.svn-base
+     -/private/.svn/prop-base/manual-utils.rkt.svn-base
+     -/private/.svn/prop-base/manual-vars.rkt.svn-base
+     -/private/.svn/prop-base/on-demand.rkt.svn-base
+     -/private/.svn/prop-base/provide-structs.rkt.svn-base
+     -/private/.svn/prop-base/qsloc.rkt.svn-base
+     -/private/.svn/prop-base/render-utils.rkt.svn-base
+     -/private/.svn/prop-base/run-pdflatex.rkt.svn-base
      -/private/.svn/props/
      -/private/.svn/text-base/
-     -/private/.svn/text-base/defaults.ss.svn-base
-     -/private/.svn/text-base/indirect-renderer.ss.svn-base
-     -/private/.svn/text-base/lp.ss.svn-base
-     -/private/.svn/text-base/manual-bib.ss.svn-base
-     -/private/.svn/text-base/manual-bind.ss.svn-base
-     -/private/.svn/text-base/manual-class.ss.svn-base
-     -/private/.svn/text-base/manual-ex.ss.svn-base
-     -/private/.svn/text-base/manual-form.ss.svn-base
-     -/private/.svn/text-base/manual-method.ss.svn-base
-     -/private/.svn/text-base/manual-mod.ss.svn-base
-     -/private/.svn/text-base/manual-proc.ss.svn-base
-     -/private/.svn/text-base/manual-scheme.ss.svn-base
-     -/private/.svn/text-base/manual-sprop.ss.svn-base
-     -/private/.svn/text-base/manual-style.ss.svn-base
-     -/private/.svn/text-base/manual-tech.ss.svn-base
-     -/private/.svn/text-base/manual-unit.ss.svn-base
-     -/private/.svn/text-base/manual-utils.ss.svn-base
-     -/private/.svn/text-base/manual-vars.ss.svn-base
-     -/private/.svn/text-base/on-demand.ss.svn-base
-     -/private/.svn/text-base/provide-structs.ss.svn-base
-     -/private/.svn/text-base/qsloc.ss.svn-base
-     -/private/.svn/text-base/render-utils.ss.svn-base
-     -/private/.svn/text-base/run-pdflatex.ss.svn-base
+     -/private/.svn/text-base/defaults.rkt.svn-base
+     -/private/.svn/text-base/indirect-renderer.rkt.svn-base
+     -/private/.svn/text-base/lp.rkt.svn-base
+     -/private/.svn/text-base/manual-bib.rkt.svn-base
+     -/private/.svn/text-base/manual-bind.rkt.svn-base
+     -/private/.svn/text-base/manual-class.rkt.svn-base
+     -/private/.svn/text-base/manual-ex.rkt.svn-base
+     -/private/.svn/text-base/manual-form.rkt.svn-base
+     -/private/.svn/text-base/manual-method.rkt.svn-base
+     -/private/.svn/text-base/manual-mod.rkt.svn-base
+     -/private/.svn/text-base/manual-proc.rkt.svn-base
+     -/private/.svn/text-base/manual-scheme.rkt.svn-base
+     -/private/.svn/text-base/manual-sprop.rkt.svn-base
+     -/private/.svn/text-base/manual-style.rkt.svn-base
+     -/private/.svn/text-base/manual-tech.rkt.svn-base
+     -/private/.svn/text-base/manual-unit.rkt.svn-base
+     -/private/.svn/text-base/manual-utils.rkt.svn-base
+     -/private/.svn/text-base/manual-vars.rkt.svn-base
+     -/private/.svn/text-base/on-demand.rkt.svn-base
+     -/private/.svn/text-base/provide-structs.rkt.svn-base
+     -/private/.svn/text-base/qsloc.rkt.svn-base
+     -/private/.svn/text-base/render-utils.rkt.svn-base
+     -/private/.svn/text-base/run-pdflatex.rkt.svn-base
      -/private/.svn/tmp/
      -/private/.svn/tmp/prop-base/
      -/private/.svn/tmp/props/
@@ -2420,14 +2420,14 @@
      -/sigplan/.svn/entries
      -/sigplan/.svn/format
      -/sigplan/.svn/prop-base/
-     -/sigplan/.svn/prop-base/lang.ss.svn-base
+     -/sigplan/.svn/prop-base/lang.rkt.svn-base
      -/sigplan/.svn/prop-base/sigplan.css.svn-base
      -/sigplan/.svn/prop-base/sigplan.tex.svn-base
      -/sigplan/.svn/prop-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/prop-base/style.tex.svn-base
      -/sigplan/.svn/props/
      -/sigplan/.svn/text-base/
-     -/sigplan/.svn/text-base/lang.ss.svn-base
+     -/sigplan/.svn/text-base/lang.rkt.svn-base
      -/sigplan/.svn/text-base/sigplan.css.svn-base
      -/sigplan/.svn/text-base/sigplan.tex.svn-base
      -/sigplan/.svn/text-base/sigplanconf.cls.svn-base
@@ -2446,10 +2446,10 @@
      -/sigplan/lang/.svn/entries
      -/sigplan/lang/.svn/format
      -/sigplan/lang/.svn/prop-base/
-     -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/prop-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/props/
      -/sigplan/lang/.svn/text-base/
-     -/sigplan/lang/.svn/text-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/text-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/tmp/
      -/sigplan/lang/.svn/tmp/prop-base/
      -/sigplan/lang/.svn/tmp/props/
@@ -2457,7 +2457,7 @@
      -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
-     -/sigplan/lang/reader.ss
+     -/sigplan/lang/reader.rkt
      -/text/
      -/text/.svn/
      -/text/.svn/all-wcprops
@@ -2465,14 +2465,14 @@
      -/text/.svn/entries
      -/text/.svn/format
      -/text/.svn/prop-base/
-     -/text/.svn/prop-base/output.ss.svn-base
-     -/text/.svn/prop-base/syntax-utils.ss.svn-base
-     -/text/.svn/prop-base/textlang.ss.svn-base
+     -/text/.svn/prop-base/output.rkt.svn-base
+     -/text/.svn/prop-base/syntax-utils.rkt.svn-base
+     -/text/.svn/prop-base/textlang.rkt.svn-base
      -/text/.svn/props/
      -/text/.svn/text-base/
-     -/text/.svn/text-base/output.ss.svn-base
-     -/text/.svn/text-base/syntax-utils.ss.svn-base
-     -/text/.svn/text-base/textlang.ss.svn-base
+     -/text/.svn/text-base/output.rkt.svn-base
+     -/text/.svn/text-base/syntax-utils.rkt.svn-base
+     -/text/.svn/text-base/textlang.rkt.svn-base
      -/text/.svn/tmp/
      -/text/.svn/tmp/prop-base/
      -/text/.svn/tmp/props/
@@ -2491,10 +2491,10 @@
      -/text/lang/.svn/entries
      -/text/lang/.svn/format
      -/text/lang/.svn/prop-base/
-     -/text/lang/.svn/prop-base/reader.ss.svn-base
+     -/text/lang/.svn/prop-base/reader.rkt.svn-base
      -/text/lang/.svn/props/
      -/text/lang/.svn/text-base/
-     -/text/lang/.svn/text-base/reader.ss.svn-base
+     -/text/lang/.svn/text-base/reader.rkt.svn-base
      -/text/lang/.svn/tmp/
      -/text/lang/.svn/tmp/prop-base/
      -/text/lang/.svn/tmp/props/
@@ -2502,7 +2502,7 @@
      -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
-     -/text/lang/reader.ss
+     -/text/lang/reader.rkt
      -/tools/
      -/tools/.svn/
      -/tools/.svn/all-wcprops
@@ -2510,12 +2510,12 @@
      -/tools/.svn/entries
      -/tools/.svn/format
      -/tools/.svn/prop-base/
-     -/tools/.svn/prop-base/drscheme-buttons.ss.svn-base
+     -/tools/.svn/prop-base/drscheme-buttons.rkt.svn-base
      -/tools/.svn/prop-base/html.png.svn-base
      -/tools/.svn/prop-base/pdf.png.svn-base
      -/tools/.svn/props/
      -/tools/.svn/text-base/
-     -/tools/.svn/text-base/drscheme-buttons.ss.svn-base
+     -/tools/.svn/text-base/drscheme-buttons.rkt.svn-base
      -/tools/.svn/text-base/html.png.svn-base
      -/tools/.svn/text-base/pdf.png.svn-base
      -/tools/.svn/tmp/
@@ -2532,10 +2532,10 @@
      -/tools/private/.svn/entries
      -/tools/private/.svn/format
      -/tools/private/.svn/prop-base/
-     -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/prop-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/props/
      -/tools/private/.svn/text-base/
-     -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/text-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/tmp/
      -/tools/private/.svn/tmp/prop-base/
      -/tools/private/.svn/tmp/props/
@@ -2543,7 +2543,7 @@
      -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
-     -/tools/private/mk-drs-bitmaps.ss
+     -/tools/private/mk-drs-bitmaps.rkt
      )
    ;; only 3-levels and deeper
    (e/filter "*/*/*/*")
@@ -2552,9 +2552,9 @@
      -/base/
      -/base/.svn/
      -/base/.svn/prop-base/
-     -/base/.svn/prop-base/lang.ss.svn-base
+     -/base/.svn/prop-base/lang.rkt.svn-base
      -/base/.svn/text-base/
-     -/base/.svn/text-base/lang.ss.svn-base
+     -/base/.svn/text-base/lang.rkt.svn-base
      -/base/.svn/tmp/
      -/base/.svn/tmp/prop-base/
      -/base/.svn/tmp/props/
@@ -2566,10 +2566,10 @@
      -/base/lang/.svn/entries
      -/base/lang/.svn/format
      -/base/lang/.svn/prop-base/
-     -/base/lang/.svn/prop-base/reader.ss.svn-base
+     -/base/lang/.svn/prop-base/reader.rkt.svn-base
      -/base/lang/.svn/props/
      -/base/lang/.svn/text-base/
-     -/base/lang/.svn/text-base/reader.ss.svn-base
+     -/base/lang/.svn/text-base/reader.rkt.svn-base
      -/base/lang/.svn/tmp/
      -/base/lang/.svn/tmp/prop-base/
      -/base/lang/.svn/tmp/props/
@@ -2580,11 +2580,11 @@
      -/doc/
      -/doc/.svn/
      -/doc/.svn/prop-base/
-     -/doc/.svn/prop-base/main.ss.svn-base
-     -/doc/.svn/prop-base/reader.ss.svn-base
+     -/doc/.svn/prop-base/main.rkt.svn-base
+     -/doc/.svn/prop-base/reader.rkt.svn-base
      -/doc/.svn/text-base/
-     -/doc/.svn/text-base/main.ss.svn-base
-     -/doc/.svn/text-base/reader.ss.svn-base
+     -/doc/.svn/text-base/main.rkt.svn-base
+     -/doc/.svn/text-base/reader.rkt.svn-base
      -/doc/.svn/tmp/
      -/doc/.svn/tmp/prop-base/
      -/doc/.svn/tmp/props/
@@ -2596,10 +2596,10 @@
      -/doc/lang/.svn/entries
      -/doc/lang/.svn/format
      -/doc/lang/.svn/prop-base/
-     -/doc/lang/.svn/prop-base/reader.ss.svn-base
+     -/doc/lang/.svn/prop-base/reader.rkt.svn-base
      -/doc/lang/.svn/props/
      -/doc/lang/.svn/text-base/
-     -/doc/lang/.svn/text-base/reader.ss.svn-base
+     -/doc/lang/.svn/text-base/reader.rkt.svn-base
      -/doc/lang/.svn/tmp/
      -/doc/lang/.svn/tmp/prop-base/
      -/doc/lang/.svn/tmp/props/
@@ -2620,12 +2620,12 @@
      -/lp/lang/.svn/entries
      -/lp/lang/.svn/format
      -/lp/lang/.svn/prop-base/
-     -/lp/lang/.svn/prop-base/lang.ss.svn-base
-     -/lp/lang/.svn/prop-base/reader.ss.svn-base
+     -/lp/lang/.svn/prop-base/lang.rkt.svn-base
+     -/lp/lang/.svn/prop-base/reader.rkt.svn-base
      -/lp/lang/.svn/props/
      -/lp/lang/.svn/text-base/
-     -/lp/lang/.svn/text-base/lang.ss.svn-base
-     -/lp/lang/.svn/text-base/reader.ss.svn-base
+     -/lp/lang/.svn/text-base/lang.rkt.svn-base
+     -/lp/lang/.svn/text-base/reader.rkt.svn-base
      -/lp/lang/.svn/tmp/
      -/lp/lang/.svn/tmp/prop-base/
      -/lp/lang/.svn/tmp/props/
@@ -2638,9 +2638,9 @@
      -/manual/
      -/manual/.svn/
      -/manual/.svn/prop-base/
-     -/manual/.svn/prop-base/lang.ss.svn-base
+     -/manual/.svn/prop-base/lang.rkt.svn-base
      -/manual/.svn/text-base/
-     -/manual/.svn/text-base/lang.ss.svn-base
+     -/manual/.svn/text-base/lang.rkt.svn-base
      -/manual/.svn/tmp/
      -/manual/.svn/tmp/prop-base/
      -/manual/.svn/tmp/props/
@@ -2652,10 +2652,10 @@
      -/manual/lang/.svn/entries
      -/manual/lang/.svn/format
      -/manual/lang/.svn/prop-base/
-     -/manual/lang/.svn/prop-base/reader.ss.svn-base
+     -/manual/lang/.svn/prop-base/reader.rkt.svn-base
      -/manual/lang/.svn/props/
      -/manual/lang/.svn/text-base/
-     -/manual/lang/.svn/text-base/reader.ss.svn-base
+     -/manual/lang/.svn/text-base/reader.rkt.svn-base
      -/manual/lang/.svn/tmp/
      -/manual/lang/.svn/tmp/prop-base/
      -/manual/lang/.svn/tmp/props/
@@ -2666,53 +2666,53 @@
      -/private/
      -/private/.svn/
      -/private/.svn/prop-base/
-     -/private/.svn/prop-base/defaults.ss.svn-base
-     -/private/.svn/prop-base/indirect-renderer.ss.svn-base
-     -/private/.svn/prop-base/lp.ss.svn-base
-     -/private/.svn/prop-base/manual-bib.ss.svn-base
-     -/private/.svn/prop-base/manual-bind.ss.svn-base
-     -/private/.svn/prop-base/manual-class.ss.svn-base
-     -/private/.svn/prop-base/manual-ex.ss.svn-base
-     -/private/.svn/prop-base/manual-form.ss.svn-base
-     -/private/.svn/prop-base/manual-method.ss.svn-base
-     -/private/.svn/prop-base/manual-mod.ss.svn-base
-     -/private/.svn/prop-base/manual-proc.ss.svn-base
-     -/private/.svn/prop-base/manual-scheme.ss.svn-base
-     -/private/.svn/prop-base/manual-sprop.ss.svn-base
-     -/private/.svn/prop-base/manual-style.ss.svn-base
-     -/private/.svn/prop-base/manual-tech.ss.svn-base
-     -/private/.svn/prop-base/manual-unit.ss.svn-base
-     -/private/.svn/prop-base/manual-utils.ss.svn-base
-     -/private/.svn/prop-base/manual-vars.ss.svn-base
-     -/private/.svn/prop-base/on-demand.ss.svn-base
-     -/private/.svn/prop-base/provide-structs.ss.svn-base
-     -/private/.svn/prop-base/qsloc.ss.svn-base
-     -/private/.svn/prop-base/render-utils.ss.svn-base
-     -/private/.svn/prop-base/run-pdflatex.ss.svn-base
+     -/private/.svn/prop-base/defaults.rkt.svn-base
+     -/private/.svn/prop-base/indirect-renderer.rkt.svn-base
+     -/private/.svn/prop-base/lp.rkt.svn-base
+     -/private/.svn/prop-base/manual-bib.rkt.svn-base
+     -/private/.svn/prop-base/manual-bind.rkt.svn-base
+     -/private/.svn/prop-base/manual-class.rkt.svn-base
+     -/private/.svn/prop-base/manual-ex.rkt.svn-base
+     -/private/.svn/prop-base/manual-form.rkt.svn-base
+     -/private/.svn/prop-base/manual-method.rkt.svn-base
+     -/private/.svn/prop-base/manual-mod.rkt.svn-base
+     -/private/.svn/prop-base/manual-proc.rkt.svn-base
+     -/private/.svn/prop-base/manual-scheme.rkt.svn-base
+     -/private/.svn/prop-base/manual-sprop.rkt.svn-base
+     -/private/.svn/prop-base/manual-style.rkt.svn-base
+     -/private/.svn/prop-base/manual-tech.rkt.svn-base
+     -/private/.svn/prop-base/manual-unit.rkt.svn-base
+     -/private/.svn/prop-base/manual-utils.rkt.svn-base
+     -/private/.svn/prop-base/manual-vars.rkt.svn-base
+     -/private/.svn/prop-base/on-demand.rkt.svn-base
+     -/private/.svn/prop-base/provide-structs.rkt.svn-base
+     -/private/.svn/prop-base/qsloc.rkt.svn-base
+     -/private/.svn/prop-base/render-utils.rkt.svn-base
+     -/private/.svn/prop-base/run-pdflatex.rkt.svn-base
      -/private/.svn/text-base/
-     -/private/.svn/text-base/defaults.ss.svn-base
-     -/private/.svn/text-base/indirect-renderer.ss.svn-base
-     -/private/.svn/text-base/lp.ss.svn-base
-     -/private/.svn/text-base/manual-bib.ss.svn-base
-     -/private/.svn/text-base/manual-bind.ss.svn-base
-     -/private/.svn/text-base/manual-class.ss.svn-base
-     -/private/.svn/text-base/manual-ex.ss.svn-base
-     -/private/.svn/text-base/manual-form.ss.svn-base
-     -/private/.svn/text-base/manual-method.ss.svn-base
-     -/private/.svn/text-base/manual-mod.ss.svn-base
-     -/private/.svn/text-base/manual-proc.ss.svn-base
-     -/private/.svn/text-base/manual-scheme.ss.svn-base
-     -/private/.svn/text-base/manual-sprop.ss.svn-base
-     -/private/.svn/text-base/manual-style.ss.svn-base
-     -/private/.svn/text-base/manual-tech.ss.svn-base
-     -/private/.svn/text-base/manual-unit.ss.svn-base
-     -/private/.svn/text-base/manual-utils.ss.svn-base
-     -/private/.svn/text-base/manual-vars.ss.svn-base
-     -/private/.svn/text-base/on-demand.ss.svn-base
-     -/private/.svn/text-base/provide-structs.ss.svn-base
-     -/private/.svn/text-base/qsloc.ss.svn-base
-     -/private/.svn/text-base/render-utils.ss.svn-base
-     -/private/.svn/text-base/run-pdflatex.ss.svn-base
+     -/private/.svn/text-base/defaults.rkt.svn-base
+     -/private/.svn/text-base/indirect-renderer.rkt.svn-base
+     -/private/.svn/text-base/lp.rkt.svn-base
+     -/private/.svn/text-base/manual-bib.rkt.svn-base
+     -/private/.svn/text-base/manual-bind.rkt.svn-base
+     -/private/.svn/text-base/manual-class.rkt.svn-base
+     -/private/.svn/text-base/manual-ex.rkt.svn-base
+     -/private/.svn/text-base/manual-form.rkt.svn-base
+     -/private/.svn/text-base/manual-method.rkt.svn-base
+     -/private/.svn/text-base/manual-mod.rkt.svn-base
+     -/private/.svn/text-base/manual-proc.rkt.svn-base
+     -/private/.svn/text-base/manual-scheme.rkt.svn-base
+     -/private/.svn/text-base/manual-sprop.rkt.svn-base
+     -/private/.svn/text-base/manual-style.rkt.svn-base
+     -/private/.svn/text-base/manual-tech.rkt.svn-base
+     -/private/.svn/text-base/manual-unit.rkt.svn-base
+     -/private/.svn/text-base/manual-utils.rkt.svn-base
+     -/private/.svn/text-base/manual-vars.rkt.svn-base
+     -/private/.svn/text-base/on-demand.rkt.svn-base
+     -/private/.svn/text-base/provide-structs.rkt.svn-base
+     -/private/.svn/text-base/qsloc.rkt.svn-base
+     -/private/.svn/text-base/render-utils.rkt.svn-base
+     -/private/.svn/text-base/run-pdflatex.rkt.svn-base
      -/private/.svn/tmp/
      -/private/.svn/tmp/prop-base/
      -/private/.svn/tmp/props/
@@ -2720,13 +2720,13 @@
      -/sigplan/
      -/sigplan/.svn/
      -/sigplan/.svn/prop-base/
-     -/sigplan/.svn/prop-base/lang.ss.svn-base
+     -/sigplan/.svn/prop-base/lang.rkt.svn-base
      -/sigplan/.svn/prop-base/sigplan.css.svn-base
      -/sigplan/.svn/prop-base/sigplan.tex.svn-base
      -/sigplan/.svn/prop-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/prop-base/style.tex.svn-base
      -/sigplan/.svn/text-base/
-     -/sigplan/.svn/text-base/lang.ss.svn-base
+     -/sigplan/.svn/text-base/lang.rkt.svn-base
      -/sigplan/.svn/text-base/sigplan.css.svn-base
      -/sigplan/.svn/text-base/sigplan.tex.svn-base
      -/sigplan/.svn/text-base/sigplanconf.cls.svn-base
@@ -2742,10 +2742,10 @@
      -/sigplan/lang/.svn/entries
      -/sigplan/lang/.svn/format
      -/sigplan/lang/.svn/prop-base/
-     -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/prop-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/props/
      -/sigplan/lang/.svn/text-base/
-     -/sigplan/lang/.svn/text-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/text-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/tmp/
      -/sigplan/lang/.svn/tmp/prop-base/
      -/sigplan/lang/.svn/tmp/props/
@@ -2756,13 +2756,13 @@
      -/text/
      -/text/.svn/
      -/text/.svn/prop-base/
-     -/text/.svn/prop-base/output.ss.svn-base
-     -/text/.svn/prop-base/syntax-utils.ss.svn-base
-     -/text/.svn/prop-base/textlang.ss.svn-base
+     -/text/.svn/prop-base/output.rkt.svn-base
+     -/text/.svn/prop-base/syntax-utils.rkt.svn-base
+     -/text/.svn/prop-base/textlang.rkt.svn-base
      -/text/.svn/text-base/
-     -/text/.svn/text-base/output.ss.svn-base
-     -/text/.svn/text-base/syntax-utils.ss.svn-base
-     -/text/.svn/text-base/textlang.ss.svn-base
+     -/text/.svn/text-base/output.rkt.svn-base
+     -/text/.svn/text-base/syntax-utils.rkt.svn-base
+     -/text/.svn/text-base/textlang.rkt.svn-base
      -/text/.svn/tmp/
      -/text/.svn/tmp/prop-base/
      -/text/.svn/tmp/props/
@@ -2774,10 +2774,10 @@
      -/text/lang/.svn/entries
      -/text/lang/.svn/format
      -/text/lang/.svn/prop-base/
-     -/text/lang/.svn/prop-base/reader.ss.svn-base
+     -/text/lang/.svn/prop-base/reader.rkt.svn-base
      -/text/lang/.svn/props/
      -/text/lang/.svn/text-base/
-     -/text/lang/.svn/text-base/reader.ss.svn-base
+     -/text/lang/.svn/text-base/reader.rkt.svn-base
      -/text/lang/.svn/tmp/
      -/text/lang/.svn/tmp/prop-base/
      -/text/lang/.svn/tmp/props/
@@ -2788,11 +2788,11 @@
      -/tools/
      -/tools/.svn/
      -/tools/.svn/prop-base/
-     -/tools/.svn/prop-base/drscheme-buttons.ss.svn-base
+     -/tools/.svn/prop-base/drscheme-buttons.rkt.svn-base
      -/tools/.svn/prop-base/html.png.svn-base
      -/tools/.svn/prop-base/pdf.png.svn-base
      -/tools/.svn/text-base/
-     -/tools/.svn/text-base/drscheme-buttons.ss.svn-base
+     -/tools/.svn/text-base/drscheme-buttons.rkt.svn-base
      -/tools/.svn/text-base/html.png.svn-base
      -/tools/.svn/text-base/pdf.png.svn-base
      -/tools/.svn/tmp/
@@ -2806,10 +2806,10 @@
      -/tools/private/.svn/entries
      -/tools/private/.svn/format
      -/tools/private/.svn/prop-base/
-     -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/prop-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/props/
      -/tools/private/.svn/text-base/
-     -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/text-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/tmp/
      -/tools/private/.svn/tmp/prop-base/
      -/tools/private/.svn/tmp/props/
@@ -2826,9 +2826,9 @@
      -/base/lang/
      -/base/lang/.svn/
      -/base/lang/.svn/prop-base/
-     -/base/lang/.svn/prop-base/reader.ss.svn-base
+     -/base/lang/.svn/prop-base/reader.rkt.svn-base
      -/base/lang/.svn/text-base/
-     -/base/lang/.svn/text-base/reader.ss.svn-base
+     -/base/lang/.svn/text-base/reader.rkt.svn-base
      -/base/lang/.svn/tmp/
      -/base/lang/.svn/tmp/prop-base/
      -/base/lang/.svn/tmp/props/
@@ -2837,9 +2837,9 @@
      -/doc/lang/
      -/doc/lang/.svn/
      -/doc/lang/.svn/prop-base/
-     -/doc/lang/.svn/prop-base/reader.ss.svn-base
+     -/doc/lang/.svn/prop-base/reader.rkt.svn-base
      -/doc/lang/.svn/text-base/
-     -/doc/lang/.svn/text-base/reader.ss.svn-base
+     -/doc/lang/.svn/text-base/reader.rkt.svn-base
      -/doc/lang/.svn/tmp/
      -/doc/lang/.svn/tmp/prop-base/
      -/doc/lang/.svn/tmp/props/
@@ -2848,11 +2848,11 @@
      -/lp/lang/
      -/lp/lang/.svn/
      -/lp/lang/.svn/prop-base/
-     -/lp/lang/.svn/prop-base/lang.ss.svn-base
-     -/lp/lang/.svn/prop-base/reader.ss.svn-base
+     -/lp/lang/.svn/prop-base/lang.rkt.svn-base
+     -/lp/lang/.svn/prop-base/reader.rkt.svn-base
      -/lp/lang/.svn/text-base/
-     -/lp/lang/.svn/text-base/lang.ss.svn-base
-     -/lp/lang/.svn/text-base/reader.ss.svn-base
+     -/lp/lang/.svn/text-base/lang.rkt.svn-base
+     -/lp/lang/.svn/text-base/reader.rkt.svn-base
      -/lp/lang/.svn/tmp/
      -/lp/lang/.svn/tmp/prop-base/
      -/lp/lang/.svn/tmp/props/
@@ -2861,9 +2861,9 @@
      -/manual/lang/
      -/manual/lang/.svn/
      -/manual/lang/.svn/prop-base/
-     -/manual/lang/.svn/prop-base/reader.ss.svn-base
+     -/manual/lang/.svn/prop-base/reader.rkt.svn-base
      -/manual/lang/.svn/text-base/
-     -/manual/lang/.svn/text-base/reader.ss.svn-base
+     -/manual/lang/.svn/text-base/reader.rkt.svn-base
      -/manual/lang/.svn/tmp/
      -/manual/lang/.svn/tmp/prop-base/
      -/manual/lang/.svn/tmp/props/
@@ -2872,9 +2872,9 @@
      -/sigplan/lang/
      -/sigplan/lang/.svn/
      -/sigplan/lang/.svn/prop-base/
-     -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/prop-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/text-base/
-     -/sigplan/lang/.svn/text-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/text-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/tmp/
      -/sigplan/lang/.svn/tmp/prop-base/
      -/sigplan/lang/.svn/tmp/props/
@@ -2883,9 +2883,9 @@
      -/text/lang/
      -/text/lang/.svn/
      -/text/lang/.svn/prop-base/
-     -/text/lang/.svn/prop-base/reader.ss.svn-base
+     -/text/lang/.svn/prop-base/reader.rkt.svn-base
      -/text/lang/.svn/text-base/
-     -/text/lang/.svn/text-base/reader.ss.svn-base
+     -/text/lang/.svn/text-base/reader.rkt.svn-base
      -/text/lang/.svn/tmp/
      -/text/lang/.svn/tmp/prop-base/
      -/text/lang/.svn/tmp/props/
@@ -2894,9 +2894,9 @@
      -/tools/private/
      -/tools/private/.svn/
      -/tools/private/.svn/prop-base/
-     -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/prop-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/text-base/
-     -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/text-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/tmp/
      -/tools/private/.svn/tmp/prop-base/
      -/tools/private/.svn/tmp/props/
@@ -2915,10 +2915,10 @@
      -/base/lang/
      -/base/lang/.svn/
      -/base/lang/.svn/prop-base/
-     -/base/lang/.svn/prop-base/reader.ss.svn-base
+     -/base/lang/.svn/prop-base/reader.rkt.svn-base
      -/base/lang/.svn/props/
      -/base/lang/.svn/text-base/
-     -/base/lang/.svn/text-base/reader.ss.svn-base
+     -/base/lang/.svn/text-base/reader.rkt.svn-base
      -/base/lang/.svn/tmp/
      -/base/lang/.svn/tmp/prop-base/
      -/base/lang/.svn/tmp/props/
@@ -2932,10 +2932,10 @@
      -/doc/lang/
      -/doc/lang/.svn/
      -/doc/lang/.svn/prop-base/
-     -/doc/lang/.svn/prop-base/reader.ss.svn-base
+     -/doc/lang/.svn/prop-base/reader.rkt.svn-base
      -/doc/lang/.svn/props/
      -/doc/lang/.svn/text-base/
-     -/doc/lang/.svn/text-base/reader.ss.svn-base
+     -/doc/lang/.svn/text-base/reader.rkt.svn-base
      -/doc/lang/.svn/tmp/
      -/doc/lang/.svn/tmp/prop-base/
      -/doc/lang/.svn/tmp/props/
@@ -2949,12 +2949,12 @@
      -/lp/lang/
      -/lp/lang/.svn/
      -/lp/lang/.svn/prop-base/
-     -/lp/lang/.svn/prop-base/lang.ss.svn-base
-     -/lp/lang/.svn/prop-base/reader.ss.svn-base
+     -/lp/lang/.svn/prop-base/lang.rkt.svn-base
+     -/lp/lang/.svn/prop-base/reader.rkt.svn-base
      -/lp/lang/.svn/props/
      -/lp/lang/.svn/text-base/
-     -/lp/lang/.svn/text-base/lang.ss.svn-base
-     -/lp/lang/.svn/text-base/reader.ss.svn-base
+     -/lp/lang/.svn/text-base/lang.rkt.svn-base
+     -/lp/lang/.svn/text-base/reader.rkt.svn-base
      -/lp/lang/.svn/tmp/
      -/lp/lang/.svn/tmp/prop-base/
      -/lp/lang/.svn/tmp/props/
@@ -2968,10 +2968,10 @@
      -/manual/lang/
      -/manual/lang/.svn/
      -/manual/lang/.svn/prop-base/
-     -/manual/lang/.svn/prop-base/reader.ss.svn-base
+     -/manual/lang/.svn/prop-base/reader.rkt.svn-base
      -/manual/lang/.svn/props/
      -/manual/lang/.svn/text-base/
-     -/manual/lang/.svn/text-base/reader.ss.svn-base
+     -/manual/lang/.svn/text-base/reader.rkt.svn-base
      -/manual/lang/.svn/tmp/
      -/manual/lang/.svn/tmp/prop-base/
      -/manual/lang/.svn/tmp/props/
@@ -2991,10 +2991,10 @@
      -/sigplan/lang/
      -/sigplan/lang/.svn/
      -/sigplan/lang/.svn/prop-base/
-     -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/prop-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/props/
      -/sigplan/lang/.svn/text-base/
-     -/sigplan/lang/.svn/text-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/text-base/reader.rkt.svn-base
      -/sigplan/lang/.svn/tmp/
      -/sigplan/lang/.svn/tmp/prop-base/
      -/sigplan/lang/.svn/tmp/props/
@@ -3008,10 +3008,10 @@
      -/text/lang/
      -/text/lang/.svn/
      -/text/lang/.svn/prop-base/
-     -/text/lang/.svn/prop-base/reader.ss.svn-base
+     -/text/lang/.svn/prop-base/reader.rkt.svn-base
      -/text/lang/.svn/props/
      -/text/lang/.svn/text-base/
-     -/text/lang/.svn/text-base/reader.ss.svn-base
+     -/text/lang/.svn/text-base/reader.rkt.svn-base
      -/text/lang/.svn/tmp/
      -/text/lang/.svn/tmp/prop-base/
      -/text/lang/.svn/tmp/props/
@@ -3025,10 +3025,10 @@
      -/tools/private/
      -/tools/private/.svn/
      -/tools/private/.svn/prop-base/
-     -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/prop-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/props/
      -/tools/private/.svn/text-base/
-     -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/text-base/mk-drs-bitmaps.rkt.svn-base
      -/tools/private/.svn/tmp/
      -/tools/private/.svn/tmp/prop-base/
      -/tools/private/.svn/tmp/props/
@@ -3044,37 +3044,37 @@
    (e/filter '(not: "*/"))
    =>
    '(-/
-     -/base-render.ss
-     -/base.ss
-     -/basic.ss
-     -/bnf.ss
-     -/comment-reader.ss
-     -/config.ss
-     -/core.ss
-     -/decode-struct.ss
-     -/decode.ss
+     -/base-render.rkt
+     -/base.rkt
+     -/basic.rkt
+     -/bnf.rkt
+     -/comment-reader.rkt
+     -/config.rkt
+     -/core.rkt
+     -/decode-struct.rkt
+     -/decode.rkt
      -/doc.txt
-     -/doclang.ss
-     -/eval.ss
-     -/extract.ss
-     -/html-properties.ss
-     -/html-render.ss
-     -/info.ss
-     -/latex-properties.ss
-     -/latex-render.ss
-     -/lp-include.ss
-     -/lp.ss
+     -/doclang.rkt
+     -/eval.rkt
+     -/extract.rkt
+     -/html-properties.rkt
+     -/html-render.rkt
+     -/info.rkt
+     -/latex-properties.rkt
+     -/latex-render.rkt
+     -/lp-include.rkt
+     -/lp.rkt
      -/manual-prefix.tex
-     -/manual-struct.ss
+     -/manual-struct.rkt
      -/manual-style.tex
-     -/manual.ss
-     -/pdf-render.ss
-     -/provide-doc-transform.ss
-     -/reader.ss
-     -/render-struct.ss
-     -/run.ss
+     -/manual.rkt
+     -/pdf-render.rkt
+     -/provide-doc-transform.rkt
+     -/reader.rkt
+     -/render-struct.rkt
+     -/run.rkt
      -/scheme.css
-     -/scheme.ss
+     -/scheme.rkt
      -/scheme.tex
      -/scribble-common.js
      -/scribble-prefix.html
@@ -3083,14 +3083,14 @@
      -/scribble-style.tex
      -/scribble.css
      -/scribble.tex
-     -/search.ss
-     -/sigplan.ss
-     -/srcdoc.ss
-     -/struct.ss
-     -/text-render.ss
-     -/text.ss
-     -/urls.ss
-     -/xref.ss
+     -/search.rkt
+     -/sigplan.rkt
+     -/srcdoc.rkt
+     -/struct.rkt
+     -/text-render.rkt
+     -/text.rkt
+     -/urls.rkt
+     -/xref.rkt
      )
    ;; (not: "*/*") would be the same as (not: "*/") if empty directories were
    ;; dropped -- but for negated predicates the default is to keep empty
@@ -3102,42 +3102,42 @@
      -/
      -/.svn/
      -/base/
-     -/base-render.ss
-     -/base.ss
-     -/basic.ss
-     -/bnf.ss
-     -/comment-reader.ss
+     -/base-render.rkt
+     -/base.rkt
+     -/basic.rkt
+     -/bnf.rkt
+     -/comment-reader.rkt
      -/compiled/
-     -/config.ss
-     -/core.ss
-     -/decode-struct.ss
-     -/decode.ss
+     -/config.rkt
+     -/core.rkt
+     -/decode-struct.rkt
+     -/decode.rkt
      -/doc/
      -/doc.txt
-     -/doclang.ss
-     -/eval.ss
-     -/extract.ss
-     -/html-properties.ss
-     -/html-render.ss
-     -/info.ss
-     -/latex-properties.ss
-     -/latex-render.ss
+     -/doclang.rkt
+     -/eval.rkt
+     -/extract.rkt
+     -/html-properties.rkt
+     -/html-render.rkt
+     -/info.rkt
+     -/latex-properties.rkt
+     -/latex-render.rkt
      -/lp/
-     -/lp-include.ss
-     -/lp.ss
+     -/lp-include.rkt
+     -/lp.rkt
      -/manual/
      -/manual-prefix.tex
-     -/manual-struct.ss
+     -/manual-struct.rkt
      -/manual-style.tex
-     -/manual.ss
-     -/pdf-render.ss
+     -/manual.rkt
+     -/pdf-render.rkt
      -/private/
-     -/provide-doc-transform.ss
-     -/reader.ss
-     -/render-struct.ss
-     -/run.ss
+     -/provide-doc-transform.rkt
+     -/reader.rkt
+     -/render-struct.rkt
+     -/run.rkt
      -/scheme.css
-     -/scheme.ss
+     -/scheme.rkt
      -/scheme.tex
      -/scribble-common.js
      -/scribble-prefix.html
@@ -3146,17 +3146,17 @@
      -/scribble-style.tex
      -/scribble.css
      -/scribble.tex
-     -/search.ss
+     -/search.rkt
      -/sigplan/
-     -/sigplan.ss
-     -/srcdoc.ss
-     -/struct.ss
+     -/sigplan.rkt
+     -/srcdoc.rkt
+     -/struct.rkt
      -/text/
-     -/text-render.ss
-     -/text.ss
+     -/text-render.rkt
+     -/text.rkt
      -/tools/
-     -/urls.ss
-     -/xref.ss
+     -/urls.rkt
+     -/xref.rkt
      )
    ;; (not: (not: pred)) returns `pred'
    (e/filter '(not: (not: (not: "*/*"))))
@@ -3526,13 +3526,13 @@
      -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
-     -/base/lang/reader.ss
-     -/base/lang.ss
-     -/base-render.ss
-     -/base.ss
-     -/basic.ss
-     -/bnf.ss
-     -/comment-reader.ss
+     -/base/lang/reader.rkt
+     -/base/lang.rkt
+     -/base-render.rkt
+     -/base.rkt
+     -/basic.rkt
+     -/bnf.rkt
+     -/comment-reader.rkt
      -/compiled/
      -/compiled/base-render_ss.dep
      -/compiled/base-render_ss.zo
@@ -3604,10 +3604,10 @@
      -/compiled/urls_ss.zo
      -/compiled/xref_ss.dep
      -/compiled/xref_ss.zo
-     -/config.ss
-     -/core.ss
-     -/decode-struct.ss
-     -/decode.ss
+     -/config.rkt
+     -/core.rkt
+     -/decode-struct.rkt
+     -/decode.rkt
      -/doc/
      -/doc/compiled/
      -/doc/compiled/main_ss.dep
@@ -3618,18 +3618,18 @@
      -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
-     -/doc/lang/reader.ss
-     -/doc/main.ss
-     -/doc/reader.ss
+     -/doc/lang/reader.rkt
+     -/doc/main.rkt
+     -/doc/reader.rkt
      -/doc.txt
-     -/doclang.ss
-     -/eval.ss
-     -/extract.ss
-     -/html-properties.ss
-     -/html-render.ss
-     -/info.ss
-     -/latex-properties.ss
-     -/latex-render.ss
+     -/doclang.rkt
+     -/eval.rkt
+     -/extract.rkt
+     -/html-properties.rkt
+     -/html-render.rkt
+     -/info.rkt
+     -/latex-properties.rkt
+     -/latex-render.rkt
      -/lp/
      -/lp/lang/
      -/lp/lang/compiled/
@@ -3637,10 +3637,10 @@
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
      -/lp/lang/compiled/reader_ss.zo
-     -/lp/lang/lang.ss
-     -/lp/lang/reader.ss
-     -/lp-include.ss
-     -/lp.ss
+     -/lp/lang/lang.rkt
+     -/lp/lang/reader.rkt
+     -/lp-include.rkt
+     -/lp.rkt
      -/manual/
      -/manual/compiled/
      -/manual/compiled/lang_ss.dep
@@ -3649,13 +3649,13 @@
      -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
-     -/manual/lang/reader.ss
-     -/manual/lang.ss
+     -/manual/lang/reader.rkt
+     -/manual/lang.rkt
      -/manual-prefix.tex
-     -/manual-struct.ss
+     -/manual-struct.rkt
      -/manual-style.tex
-     -/manual.ss
-     -/pdf-render.ss
+     -/manual.rkt
+     -/pdf-render.rkt
      -/private/
      -/private/compiled/
      -/private/compiled/defaults_ss.dep
@@ -3704,35 +3704,35 @@
      -/private/compiled/render-utils_ss.zo
      -/private/compiled/run-pdflatex_ss.dep
      -/private/compiled/run-pdflatex_ss.zo
-     -/private/defaults.ss
-     -/private/indirect-renderer.ss
-     -/private/lp.ss
-     -/private/manual-bib.ss
-     -/private/manual-bind.ss
-     -/private/manual-class.ss
-     -/private/manual-ex.ss
-     -/private/manual-form.ss
-     -/private/manual-method.ss
-     -/private/manual-mod.ss
-     -/private/manual-proc.ss
-     -/private/manual-scheme.ss
-     -/private/manual-sprop.ss
-     -/private/manual-style.ss
-     -/private/manual-tech.ss
-     -/private/manual-unit.ss
-     -/private/manual-utils.ss
-     -/private/manual-vars.ss
-     -/private/on-demand.ss
-     -/private/provide-structs.ss
-     -/private/qsloc.ss
-     -/private/render-utils.ss
-     -/private/run-pdflatex.ss
-     -/provide-doc-transform.ss
-     -/reader.ss
-     -/render-struct.ss
-     -/run.ss
+     -/private/defaults.rkt
+     -/private/indirect-renderer.rkt
+     -/private/lp.rkt
+     -/private/manual-bib.rkt
+     -/private/manual-bind.rkt
+     -/private/manual-class.rkt
+     -/private/manual-ex.rkt
+     -/private/manual-form.rkt
+     -/private/manual-method.rkt
+     -/private/manual-mod.rkt
+     -/private/manual-proc.rkt
+     -/private/manual-scheme.rkt
+     -/private/manual-sprop.rkt
+     -/private/manual-style.rkt
+     -/private/manual-tech.rkt
+     -/private/manual-unit.rkt
+     -/private/manual-utils.rkt
+     -/private/manual-vars.rkt
+     -/private/on-demand.rkt
+     -/private/provide-structs.rkt
+     -/private/qsloc.rkt
+     -/private/render-utils.rkt
+     -/private/run-pdflatex.rkt
+     -/provide-doc-transform.rkt
+     -/reader.rkt
+     -/render-struct.rkt
+     -/run.rkt
      -/scheme.css
-     -/scheme.ss
+     -/scheme.rkt
      -/scheme.tex
      -/scribble-common.js
      -/scribble-prefix.html
@@ -3741,7 +3741,7 @@
      -/scribble-style.tex
      -/scribble.css
      -/scribble.tex
-     -/search.ss
+     -/search.rkt
      -/sigplan/
      -/sigplan/compiled/
      -/sigplan/compiled/lang_ss.dep
@@ -3750,15 +3750,15 @@
      -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
-     -/sigplan/lang/reader.ss
-     -/sigplan/lang.ss
+     -/sigplan/lang/reader.rkt
+     -/sigplan/lang.rkt
      -/sigplan/sigplan.css
      -/sigplan/sigplan.tex
      -/sigplan/sigplanconf.cls
      -/sigplan/style.tex
-     -/sigplan.ss
-     -/srcdoc.ss
-     -/struct.ss
+     -/sigplan.rkt
+     -/srcdoc.rkt
+     -/struct.rkt
      -/text/
      -/text/compiled/
      -/text/compiled/output_ss.dep
@@ -3771,26 +3771,26 @@
      -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
-     -/text/lang/reader.ss
-     -/text/output.ss
-     -/text/syntax-utils.ss
-     -/text/textlang.ss
-     -/text-render.ss
-     -/text.ss
+     -/text/lang/reader.rkt
+     -/text/output.rkt
+     -/text/syntax-utils.rkt
+     -/text/textlang.rkt
+     -/text-render.rkt
+     -/text.rkt
      -/tools/
      -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
      -/tools/compiled/drscheme-buttons_ss.zo
-     -/tools/drscheme-buttons.ss
+     -/tools/drscheme-buttons.rkt
      -/tools/html.png
      -/tools/pdf.png
      -/tools/private/
      -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
-     -/tools/private/mk-drs-bitmaps.ss
-     -/urls.ss
-     -/xref.ss
+     -/tools/private/mk-drs-bitmaps.rkt
+     -/urls.rkt
+     -/xref.rkt
      )
    ;; no .svn or compiled directories using "{|}"
    (e/filter '(not: "**/{.svn|compiled}/"))
@@ -3798,76 +3798,76 @@
    '(-/
      -/base/
      -/base/lang/
-     -/base/lang/reader.ss
-     -/base/lang.ss
-     -/base-render.ss
-     -/base.ss
-     -/basic.ss
-     -/bnf.ss
-     -/comment-reader.ss
-     -/config.ss
-     -/core.ss
-     -/decode-struct.ss
-     -/decode.ss
+     -/base/lang/reader.rkt
+     -/base/lang.rkt
+     -/base-render.rkt
+     -/base.rkt
+     -/basic.rkt
+     -/bnf.rkt
+     -/comment-reader.rkt
+     -/config.rkt
+     -/core.rkt
+     -/decode-struct.rkt
+     -/decode.rkt
      -/doc/
      -/doc/lang/
-     -/doc/lang/reader.ss
-     -/doc/main.ss
-     -/doc/reader.ss
+     -/doc/lang/reader.rkt
+     -/doc/main.rkt
+     -/doc/reader.rkt
      -/doc.txt
-     -/doclang.ss
-     -/eval.ss
-     -/extract.ss
-     -/html-properties.ss
-     -/html-render.ss
-     -/info.ss
-     -/latex-properties.ss
-     -/latex-render.ss
+     -/doclang.rkt
+     -/eval.rkt
+     -/extract.rkt
+     -/html-properties.rkt
+     -/html-render.rkt
+     -/info.rkt
+     -/latex-properties.rkt
+     -/latex-render.rkt
      -/lp/
      -/lp/lang/
-     -/lp/lang/lang.ss
-     -/lp/lang/reader.ss
-     -/lp-include.ss
-     -/lp.ss
+     -/lp/lang/lang.rkt
+     -/lp/lang/reader.rkt
+     -/lp-include.rkt
+     -/lp.rkt
      -/manual/
      -/manual/lang/
-     -/manual/lang/reader.ss
-     -/manual/lang.ss
+     -/manual/lang/reader.rkt
+     -/manual/lang.rkt
      -/manual-prefix.tex
-     -/manual-struct.ss
+     -/manual-struct.rkt
      -/manual-style.tex
-     -/manual.ss
-     -/pdf-render.ss
+     -/manual.rkt
+     -/pdf-render.rkt
      -/private/
-     -/private/defaults.ss
-     -/private/indirect-renderer.ss
-     -/private/lp.ss
-     -/private/manual-bib.ss
-     -/private/manual-bind.ss
-     -/private/manual-class.ss
-     -/private/manual-ex.ss
-     -/private/manual-form.ss
-     -/private/manual-method.ss
-     -/private/manual-mod.ss
-     -/private/manual-proc.ss
-     -/private/manual-scheme.ss
-     -/private/manual-sprop.ss
-     -/private/manual-style.ss
-     -/private/manual-tech.ss
-     -/private/manual-unit.ss
-     -/private/manual-utils.ss
-     -/private/manual-vars.ss
-     -/private/on-demand.ss
-     -/private/provide-structs.ss
-     -/private/qsloc.ss
-     -/private/render-utils.ss
-     -/private/run-pdflatex.ss
-     -/provide-doc-transform.ss
-     -/reader.ss
-     -/render-struct.ss
-     -/run.ss
+     -/private/defaults.rkt
+     -/private/indirect-renderer.rkt
+     -/private/lp.rkt
+     -/private/manual-bib.rkt
+     -/private/manual-bind.rkt
+     -/private/manual-class.rkt
+     -/private/manual-ex.rkt
+     -/private/manual-form.rkt
+     -/private/manual-method.rkt
+     -/private/manual-mod.rkt
+     -/private/manual-proc.rkt
+     -/private/manual-scheme.rkt
+     -/private/manual-sprop.rkt
+     -/private/manual-style.rkt
+     -/private/manual-tech.rkt
+     -/private/manual-unit.rkt
+     -/private/manual-utils.rkt
+     -/private/manual-vars.rkt
+     -/private/on-demand.rkt
+     -/private/provide-structs.rkt
+     -/private/qsloc.rkt
+     -/private/render-utils.rkt
+     -/private/run-pdflatex.rkt
+     -/provide-doc-transform.rkt
+     -/reader.rkt
+     -/render-struct.rkt
+     -/run.rkt
      -/scheme.css
-     -/scheme.ss
+     -/scheme.rkt
      -/scheme.tex
      -/scribble-common.js
      -/scribble-prefix.html
@@ -3876,34 +3876,34 @@
      -/scribble-style.tex
      -/scribble.css
      -/scribble.tex
-     -/search.ss
+     -/search.rkt
      -/sigplan/
      -/sigplan/lang/
-     -/sigplan/lang/reader.ss
-     -/sigplan/lang.ss
+     -/sigplan/lang/reader.rkt
+     -/sigplan/lang.rkt
      -/sigplan/sigplan.css
      -/sigplan/sigplan.tex
      -/sigplan/sigplanconf.cls
      -/sigplan/style.tex
-     -/sigplan.ss
-     -/srcdoc.ss
-     -/struct.ss
+     -/sigplan.rkt
+     -/srcdoc.rkt
+     -/struct.rkt
      -/text/
      -/text/lang/
-     -/text/lang/reader.ss
-     -/text/output.ss
-     -/text/syntax-utils.ss
-     -/text/textlang.ss
-     -/text-render.ss
-     -/text.ss
+     -/text/lang/reader.rkt
+     -/text/output.rkt
+     -/text/syntax-utils.rkt
+     -/text/textlang.rkt
+     -/text-render.rkt
+     -/text.rkt
      -/tools/
-     -/tools/drscheme-buttons.ss
+     -/tools/drscheme-buttons.rkt
      -/tools/html.png
      -/tools/pdf.png
      -/tools/private/
-     -/tools/private/mk-drs-bitmaps.ss
-     -/urls.ss
-     -/xref.ss
+     -/tools/private/mk-drs-bitmaps.rkt
+     -/urls.rkt
+     -/xref.rkt
      )
    ;; no .svn or compiled directories using `or:'
    (e/filter '(not: (or: "**/.svn/" "**/compiled/")))

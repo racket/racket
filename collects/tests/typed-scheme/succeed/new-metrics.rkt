@@ -343,8 +343,8 @@
 
 ;; ----------------------------------------
 ;; apply-to-scheme-files: (path[file] -> X) path[directory] -> (listof X)
-;; applies the given function to each .ss or .scm file in the given directory
-;; hierarchy; returns all results in a list
+;; applies the given function to each .rkt or .ss or .scm file in the given
+;; directory hierarchy; returns all results in a list
 (: apply-to-scheme-files (All (X) ((Path -> X) Path -> (Listof X))))
 (define  (apply-to-scheme-files f root)
   (fold-files

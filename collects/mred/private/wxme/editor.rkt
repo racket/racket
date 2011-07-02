@@ -3,19 +3,19 @@
          (for-syntax scheme/base)
          scheme/file
          racket/port
-         "../syntax.ss"
-         "private.ss"
+         "../syntax.rkt"
+         "private.rkt"
          racket/snip
          racket/snip/private/private
-	 racket/snip/private/style
+         racket/snip/private/style
          racket/snip/private/snip-flags
          racket/snip/private/prefs
-         "editor-admin.ss"
-         "stream.ss"
-         "undo.ss"
-         "keymap.ss"
+         "editor-admin.rkt"
+         "stream.rkt"
+         "undo.rkt"
+         "keymap.rkt"
          "editor-data.rkt"
-         (only-in "cycle.ss" 
+         (only-in "cycle.rkt"
                   printer-dc%
                   text%
                   pasteboard%
@@ -23,7 +23,7 @@
                   editor-snip-editor-admin%
                   editor-get-file
                   editor-put-file)
-         "wx.ss")
+         "wx.rkt")
 
 (provide editor%
          editor<%>
@@ -763,7 +763,7 @@
   (def/public (print [bool? [interactive? #t]]
                      [bool? [fit-to-page? #t]]
                      [(symbol-in standard postscript pdf) [output-mode 'standard]]
-                     [any? [parent #f]] ; checked in ../editor.ss
+                     [any? [parent #f]] ; checked in ../editor.rkt
                      [bool? [force-page-bbox? #t]]
                      [bool? [as-eps? #f]])
     (let ([ps? (or (eq? output-mode 'postscript)

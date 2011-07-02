@@ -1,2 +1,2 @@
-(module main "frtime-big.ss"
-  (provide (all-from "frtime-big.ss")))
+(module main "frtime-big.rkt"
+  (provide (all-from "frtime-big.rkt")))

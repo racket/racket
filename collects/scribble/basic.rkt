@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require "base.ss"
-         "core.ss"
-         "decode.ss")
+(require "base.rkt"
+         "core.rkt"
+         "decode.rkt")
 
 (provide title
          section

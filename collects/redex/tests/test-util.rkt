@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "../private/matcher.ss"
+(require "../private/matcher.rkt"
          (for-syntax syntax/parse)
          errortrace/errortrace-lib
          errortrace/errortrace-key)

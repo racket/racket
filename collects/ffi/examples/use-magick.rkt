@@ -2,7 +2,7 @@
 
 #lang racket/base
 
-(require "magick.ss" (for-syntax racket/base))
+(require "magick.rkt" (for-syntax racket/base))
 
 (define-syntax (test stx)
   (syntax-case stx ()

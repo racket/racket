@@ -1,5 +1,5 @@
 #lang scheme
-(require "list.ss")
+(require "list.rkt")
 (require (rename-in (only-in frtime/frtime provide)
                     [provide frtime:provide]))
 

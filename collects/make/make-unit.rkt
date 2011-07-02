@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-(require "make-sig.ss")
+(require "make-sig.rkt")
 
 (import)
 (export make^)

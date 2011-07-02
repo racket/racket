@@ -1,13 +1,12 @@
-
 ;; This is the main search engine for auto-play.
 ;; See `make-search' for the main entry point.
 
 (module explore mzscheme
   (require mzlib/unitsig
-	   mzlib/etc
-	   mzlib/list
-	   "sig.ss"
-	   "test.ss")
+           mzlib/etc
+           mzlib/list
+           "sig.rkt"
+           "test.rkt")
 
   (provide explore-unit)
 
@@ -544,9 +543,10 @@
       ;;  Multi-run memory:
 
       (define learn? #f)
-      (define MEMORY-FILE (and learn?
-			       (build-path (find-system-path 'addon-dir)
-					   (format "gobblet-memory-~a.ss" BOARD-SIZE))))
+      (define MEMORY-FILE
+        (and learn?
+             (build-path (find-system-path 'addon-dir)
+                         (format "gobblet-memory-~a.rktd" BOARD-SIZE))))
 
       (define (record-result plays board me config init-memory)
         (when (or (found-win? plays)

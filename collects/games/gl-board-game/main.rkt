@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "gl-board.ss")
-(provide (all-from-out "gl-board.ss"))
+(require "gl-board.rkt")
+(provide (all-from-out "gl-board.rkt"))

@@ -1,4 +1,4 @@
 #lang mzscheme
 
-(require "cards.ss")
-(provide (all-from "cards.ss"))
+(require "cards.rkt")
+(provide (all-from "cards.rkt"))

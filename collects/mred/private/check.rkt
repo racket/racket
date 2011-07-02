@@ -1,8 +1,8 @@
 (module check mzscheme
   (require mzlib/class
-	   (prefix wx: "kernel.ss")
-	   "wx.ss"
-	   "const.ss")
+           (prefix wx: "kernel.rkt")
+           "wx.rkt"
+           "const.rkt")
   (provide (protect (all-defined)))
 
   (define (key-code-symbol? x)

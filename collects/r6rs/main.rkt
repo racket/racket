@@ -8,9 +8,9 @@ FIXME:
 
 (require (for-syntax scheme/base
                      syntax/kerncase
-                     "private/parse-ref.ss"
+                     "private/parse-ref.rkt"
                      scheme/provide-transform)
-         "private/no-set.ss")
+         "private/no-set.rkt")
 
 (provide (rename-out [module-begin #%module-begin]))
 

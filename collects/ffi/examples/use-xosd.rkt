@@ -2,7 +2,7 @@
 
 #lang racket/base
 
-(require "xosd.ss")
+(require "xosd.rkt")
 
 (define x (xosd-create))
 

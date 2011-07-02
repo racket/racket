@@ -1,4 +1,3 @@
-
 #lang scheme/unit
 
   (require mzlib/class
@@ -7,8 +6,8 @@
   (require racket/draw/draw-sig
            racket/gui/dynamic)
 
-  (require "mrpict-sig.ss"
-	   "common-sig.ss")
+  (require "mrpict-sig.rkt"
+           "common-sig.rkt")
 
   (import draw^
           texpict-common^

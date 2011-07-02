@@ -1,8 +1,5 @@
 (module run-dmda-code mzscheme
-  (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
-	   (lib "match.ss")
-	   (lib "modread.ss" "syntax"))
+  (require mred/mred mzlib/class mzlib/match syntax/modread)
 
   (define (run-dmda-file filename)
     (let ((p (open-input-graphical-file/fixed filename))
@@ -20,7 +17,7 @@
 			 ((?module ?name ?language ?body ...)
 			  (syntax
 			   (?module ?name ?language 
-				    (require (lib "testing.ss" "htdp"))
+				    (require (lib "testing.rkt" "htdp"))
 				    ?body ...)))))
 		      (module-ized-code
 		       (check-module-form pimped-code expected-module-name filename)))

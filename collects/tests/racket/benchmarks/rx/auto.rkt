@@ -8,7 +8,7 @@ exec racket -qu "$0" ${1+"$@"}
            mzlib/port
            mzlib/list
            mzlib/date
-           "../common/cmdline.ss")
+           "../common/cmdline.rkt")
 
   ;; Needed for rxmzold, comment out otherwise:
   (begin
@@ -79,8 +79,8 @@ exec racket -qu "$0" ${1+"$@"}
         (* 1000 (read)))))
 
   (define (test-pcre input rx iterations)
-    (let ([pcregexp (dynamic-require "pcre.ss" 'pcregexp)]
-	  [pcregexp-match (dynamic-require "pcre.ss" 'pcregexp-match)])
+    (let ([pcregexp (dynamic-require "pcre.rkt" 'pcregexp)]
+	  [pcregexp-match (dynamic-require "pcre.rkt" 'pcregexp-match)])
       (let ([rx (pcregexp rx)])
 	(let ([start (current-inexact-milliseconds)])
 	  (let loop ([n iterations])

@@ -1,7 +1,6 @@
-
 (module number mzscheme
   (require mzlib/class
-           "wxme.ss")
+           "wxme.rkt")
 
   (provide reader)
 

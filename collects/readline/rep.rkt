@@ -1,9 +1,9 @@
-;; This is a wrapper around "rep-start.ss" -- use it if we're using a terminal
+;; This is a wrapper around "rep-start.rkt" -- use it if we're using a terminal
 #lang scheme/base
 
 (require scheme/runtime-path scheme/file)
 
-(define-runtime-path rep-start "rep-start.ss")
+(define-runtime-path rep-start "rep-start.rkt")
 
 (provide install-readline!)
 

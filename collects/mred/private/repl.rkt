@@ -1,14 +1,14 @@
 (module repl mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   (prefix wx: "kernel.ss")
-	   (prefix wx: racket/snip)
-	   "editor.ss"
-	   "app.ss"
-	   "mrtop.ss"
-	   "mrcanvas.ss"
-	   "mrmenu.ss"
-	   "filedialog.ss")
+           mzlib/class100
+           (prefix wx: "kernel.rkt")
+           (prefix wx: racket/snip)
+           "editor.rkt"
+           "app.rkt"
+           "mrtop.rkt"
+           "mrcanvas.rkt"
+           "mrmenu.rkt"
+           "filedialog.rkt")
 
   (provide graphical-read-eval-print-loop
            textual-read-eval-print-loop)

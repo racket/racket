@@ -32,7 +32,7 @@
 	   exn:application:type?
 	   exn:application:arity?)
   
-  ; The format of the next line is important: file.ss relies on it
+  ; The format of the next line is important: file.rkt relies on it
   ; JBC : not in this version...
   (define cur-section '())(define errs '())
   
@@ -170,7 +170,7 @@
         (thunk-error-test (lambda () (eval expr)) expr exn?)])))
   
   ; JBC : I'm not going to worry about this for the time being :
-  ; (require (rename mzscheme err:mz:lambda lambda)) ; so err/rt-test works with beginner.ss
+  ; (require (rename mzscheme err:mz:lambda lambda)) ; so err/rt-test works with beginner.rkt
 
   (define-syntax err/rt-test
     (lambda (stx)

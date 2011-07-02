@@ -1,35 +1,34 @@
-
 (module base mzscheme
   (require mzlib/unit)
 
-  (require "../sig.ss")
-  (require "sig.ss")
+  (require "../sig.rkt"
+           "sig.rkt")
 
   (require syntax/zodiac-sig
-	   syntax/zodiac-unit)
+           syntax/zodiac-unit)
 
   (require dynext/file-sig
-	   dynext/link-sig
-	   dynext/compile-sig)
+           dynext/link-sig
+           dynext/compile-sig)
 
-  (require "zlayer.ss"
-	   "library.ss"
-	   "cstructs.ss"
-	   "prephase.ss"
-	   "anorm.ss"
-	   "const.ss"
-	   "known.ss"
-	   "analyze.ss"
-	   "lift.ss"
-	   "closure.ss"
-	   "vehicle.ss"
-	   "rep.ss"
-	   "vmscheme.ss"
-	   "vmphase.ss"
-	   "vmopt.ss"
-	   "vm2c.ss"
-	   "toplevel.ss"
-	   "driver.ss")
+  (require "zlayer.rkt"
+           "library.rkt"
+           "cstructs.rkt"
+           "prephase.rkt"
+           "anorm.rkt"
+           "const.rkt"
+           "known.rkt"
+           "analyze.rkt"
+           "lift.rkt"
+           "closure.rkt"
+           "vehicle.rkt"
+           "rep.rkt"
+           "vmscheme.rkt"
+           "vmphase.rkt"
+           "vmopt.rkt"
+           "vm2c.rkt"
+           "toplevel.rkt"
+           "driver.rkt")
 
   ;; The core Scheme->C compiler linkage, including everything
   ;;  that's common to MrSpidey and non-MrSpidey compilation.

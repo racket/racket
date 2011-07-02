@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 28)
+(allocator-setup "../good-collectors/good-collector.rkt" 28)
 
 (define (app f)
   (lambda (x)

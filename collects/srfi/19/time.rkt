@@ -49,7 +49,7 @@
 ;; is copied below.
 ;;
 ; srfi-8: receive
-;(require-library "synrule.ss") -- PLT doesn't like DEFINE-SYNTAX. 
+;(require-library "synrule.rkt") -- PLT doesn't like DEFINE-SYNTAX. 
 
 ;(define-syntax receive
 ;  (syntax-rules ()

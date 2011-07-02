@@ -1,22 +1,22 @@
 (module fontdialog mzscheme
   (require mzlib/class
-	   mzlib/etc
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "wx.ss"
-	   "cycle.ss"
-	   "check.ss"
-	   "helper.ss"
-	   "gdi.ss"
-	   "editor.ss"
-	   "mrtop.ss"
-	   "mrcanvas.ss"
-	   "mrpopup.ss"
-	   "mrmenu.ss"
-	   "mritem.ss"
-	   "mrpanel.ss"
-	   "mrtextfield.ss")
+           mzlib/etc
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "wx.rkt"
+           "cycle.rkt"
+           "check.rkt"
+           "helper.rkt"
+           "gdi.rkt"
+           "editor.rkt"
+           "mrtop.rkt"
+           "mrcanvas.rkt"
+           "mrpopup.rkt"
+           "mrmenu.rkt"
+           "mritem.rkt"
+           "mrpanel.rkt"
+           "mrtextfield.rkt")
 
   (provide get-font-from-user)
 

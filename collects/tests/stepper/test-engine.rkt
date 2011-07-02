@@ -6,7 +6,7 @@
          lang/run-teaching-program
          (only-in srfi/13 string-contains)
          scheme/contract
-         "language-level-model.ss")
+         "language-level-model.rkt")
 
 
 ;; A SIMPLE EXAMPLE OF USING THIS FRAMEWORK:

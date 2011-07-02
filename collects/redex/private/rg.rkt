@@ -1,15 +1,15 @@
 #lang scheme
 
-(require "matcher.ss"
-         "reduction-semantics.ss"
-         "underscore-allowed.ss"
-         "term.ss"
-         "error.ss"
-         "struct.ss"
-         (for-syntax "rewrite-side-conditions.ss")
-         (for-syntax "term-fn.ss")
-         (for-syntax "reduction-semantics.ss")
-         (for-syntax "keyword-macros.ss")
+(require "matcher.rkt"
+         "reduction-semantics.rkt"
+         "underscore-allowed.rkt"
+         "term.rkt"
+         "error.rkt"
+         "struct.rkt"
+         (for-syntax "rewrite-side-conditions.rkt")
+         (for-syntax "term-fn.rkt")
+         (for-syntax "reduction-semantics.rkt")
+         (for-syntax "keyword-macros.rkt")
          mrlib/tex-table)
 
 (define redex-pseudo-random-generator

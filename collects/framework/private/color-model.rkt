@@ -1,6 +1,6 @@
 #lang scheme/unit
   (require mzlib/class
-           "sig.ss"
+           "sig.rkt"
            mred/mred-sig
            mzlib/list)
   

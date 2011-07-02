@@ -2,17 +2,17 @@
   (require mzlib/unit
            mzlib/etc
            
-	   ;; All the rest are to get the imports for setup@:
-	   "option-sig.ss"
-	   "setup-unit.ss"
-	   "option-unit.ss"
-	   launcher/launcher-sig
-	   launcher/launcher-unit
-	   dynext/dynext-sig
-	   dynext/dynext-unit
-	   compiler/sig
-	   compiler/option-unit
-	   compiler/compiler-unit)
+           ;; All the rest are to get the imports for setup@:
+           "option-sig.rkt"
+           "setup-unit.rkt"
+           "option-unit.rkt"
+           launcher/launcher-sig
+           launcher/launcher-unit
+           dynext/dynext-sig
+           dynext/dynext-unit
+           compiler/sig
+           compiler/option-unit
+           compiler/compiler-unit)
 
   (provide run-single-installer install-planet-package clean-planet-package reindex-user-documentation)
 

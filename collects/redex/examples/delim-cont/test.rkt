@@ -1,9 +1,9 @@
 #lang racket
 
 (require redex
-         "grammar.ss"
-         "meta.ss"
-         "reduce.ss")
+         "grammar.rkt"
+         "meta.rkt"
+         "reduce.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Abbreviations:

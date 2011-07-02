@@ -8,7 +8,7 @@
          texpict/mrpict
          texpict/utils
          
-         "reduction-semantics.ss"
+         "reduction-semantics.rkt"
          "struct.rkt"
          "loc-wrapper.rkt"
          "matcher.rkt"
@@ -934,7 +934,7 @@
                     (list*
                      ;; the first loc wrapper is just there to make the
                      ;; shape of this line be one that the apply-rewrites
-                     ;; function (in core-layout.ss) recognizes as a metafunction
+                     ;; function (in core-layout.rkt) recognizes as a metafunction
                      (make-lw "("
                               (lw-line an-lw)
                               0

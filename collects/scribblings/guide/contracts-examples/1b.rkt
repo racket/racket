@@ -1,6 +1,6 @@
 #lang racket
 
-(require "1.ss") ;; the module just above
+(require "1.rkt") ;; the module just above
 
 ;; implementation
 ;; [listof (list basic-customer? secret-info)]

@@ -1,6 +1,6 @@
 #lang racket
 
-(require mred mzlib/class "marks.ss")
+(require mred mzlib/class "marks.rkt")
 
 (provide display-break-stuff)
 

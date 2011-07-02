@@ -1,8 +1,8 @@
 (module graphics-unit mzscheme
   (require mzlib/unit
-	   mred/mred-sig
-	   "graphics-sig.ss"
-	   "graphics-posn-less-unit.ss")
+           mred/mred-sig
+           "graphics-sig.rkt"
+           "graphics-posn-less-unit.rkt")
   (provide graphics@)
 
   (define-unit p@

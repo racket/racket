@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require "decode.ss"
-         "core.ss"
-         "manual-struct.ss"
-         "decode-struct.ss"
-         "html-properties.ss"
+(require "decode.rkt"
+         "core.rkt"
+         "manual-struct.rkt"
+         "decode-struct.rkt"
+         "html-properties.rkt"
          scheme/list
          scheme/class
          scheme/contract

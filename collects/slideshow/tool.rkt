@@ -25,8 +25,8 @@ pict snip :
            texpict/mrpict
            texpict/pict-value-snip
            mzlib/list
-           "private/pict-box-lib.ss"
-           "private/image-snipr.ss")
+           "private/pict-box-lib.rkt"
+           "private/image-snipr.rkt")
 
   (provide tool@
            get-snp/poss

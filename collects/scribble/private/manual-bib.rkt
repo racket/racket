@@ -1,13 +1,13 @@
 #lang scheme/base
 (require scheme/contract
-         "../decode.ss"
-         "../struct.ss"
-         "../basic.ss"
-         "on-demand.ss"
-         (only-in "../core.ss" make-style)
-         "manual-sprop.ss"
-         "manual-utils.ss"
-         "manual-style.ss")
+         "../decode.rkt"
+         "../struct.rkt"
+         "../basic.rkt"
+         "on-demand.rkt"
+         (only-in "../core.rkt" make-style)
+         "manual-sprop.rkt"
+         "manual-utils.rkt"
+         "manual-style.rkt")
 
 (define-struct a-bib-entry (key val))
 

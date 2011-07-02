@@ -1,9 +1,8 @@
-
 (module interactive-value-port mzscheme
   (require mzlib/pretty
            mred
            mzlib/class
-           "syntax-browser.ss")
+           "syntax-browser.rkt")
   (provide set-interactive-display-handler
            set-interactive-write-handler
            set-interactive-print-handler)

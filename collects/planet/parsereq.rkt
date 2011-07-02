@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require mzlib/match
-         "private/short-syntax-helpers.ss"
-         "private/data.ss")
+         "private/short-syntax-helpers.rkt"
+         "private/data.rkt")
 
 (provide (struct-out request)
          parse-package-string
@@ -71,7 +71,7 @@
               [tail (cadr pkg-spec/tail)]
               [fullspec (pkg-spec->full-pkg-spec pkg-spec stx)]
               [final-path (if (string=? tail "")
-                              "main.ss"
+                              "main.rkt"
                               (if (regexp-match #rx"[.]" tail)
                                   tail
                                   (string-append tail ".ss")))])

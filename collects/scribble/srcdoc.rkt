@@ -2,7 +2,7 @@
 
 (require scheme/contract
          (for-syntax scheme/base)
-         "provide-doc-transform.ss")
+         "provide-doc-transform.rkt")
 
 (provide require/doc
          provide/doc

@@ -6,7 +6,7 @@ BUG: letrec & let are not handled properly by substitution
 
 |#
 
-(require redex "subst.ss")
+(require redex "subst.rkt")
 
 (reduction-steps-cutoff 20)
 

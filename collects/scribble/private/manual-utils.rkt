@@ -1,8 +1,8 @@
 #lang scheme/base
-(require "../struct.ss"
-         "../decode.ss"
-         "../base.ss"
-         (only-in "../core.ss"
+(require "../struct.rkt"
+         "../decode.rkt"
+         "../base.rkt"
+         (only-in "../core.rkt"
                    content?)
          scheme/contract
          scheme/list)

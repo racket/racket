@@ -3,9 +3,9 @@
 (require "syntax.rkt"
          scheme/math
          scheme/class
-         "../unsafe/cairo.ss"
-         "fmod.ss"
-         "point.ss"
+         "../unsafe/cairo.rkt"
+         "fmod.rkt"
+         "point.rkt"
          (only-in scheme/base 
                   [append s:append]
                   [reverse s:reverse]))

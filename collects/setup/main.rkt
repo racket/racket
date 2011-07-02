@@ -4,7 +4,7 @@
 ;; startup stub parses the command line and either disables .zos or
 ;; installs cm for loading Setup PLT.
 
-;; Note that this file is listed in "info.ss" so that it never gets a
+;; Note that this file is listed in "info.rkt" so that it never gets a
 ;; .zo file. Do not `require' this module from anywhere, not even 
 ;; `for-label', otherwise it could get a .zo anyway.
 
@@ -90,15 +90,15 @@
       ;; This has to be dynamic, so we get a chance to turn off compiled
       ;;  file loading, and so it can be in a separate namespace.
       (let-values ([(mk trust-zos)
-		    ;; Load cm.ss into its own namespace, so that cm compiles
+		    ;; Load cm.rkt into its own namespace, so that cm compiles
 		    ;;  itself and its required modules in the right order
 		    ;;  (i.e., when some module requires cm or one of its
 		    ;;  required modules)
-		    ;; Since cm.ss pulls in quite a lot of code itself, we
+		    ;; Since cm.rkt pulls in quite a lot of code itself, we
 		    ;;  would like to load using .zo files. But if we discover
 		    ;;  any date mismatch in the loading process, abort and
 		    ;;  try again without .zo files. If .zo files are newer
-		    ;;  than .ss files but a required file is newer than its
+		    ;;  than .rkt files but a required file is newer than its
 		    ;;  requring file, we won't notice, but that
 		    ;;  shouldn't happen for a reaonsbaly maintained
 		    ;;  tree, and there's always --clean to turn this
@@ -159,7 +159,7 @@
                                                   (lambda () (raise exn)))
                                                  (escape
                                                   (lambda () (loop #t)))))])
-			     ;; Here's the main dynamic load of "cm.ss":
+			     ;; Here's the main dynamic load of "cm.rkt":
 			     (let ([mk
 				    (dynamic-require 'compiler/cm
 						     'make-compilation-manager-load/use-compiled-handler)]

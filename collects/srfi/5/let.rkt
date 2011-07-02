@@ -1,5 +1,5 @@
 ;;;
-;;; <let.ss> ---- SRFI 5 A compatible let form with signatures and rest arguments
+;;; <let.rkt> ---- SRFI 5 A compatible let form with signatures and rest arguments
 ;;; Time-stamp: <03/04/08 09:56:06 solsona>
 ;;;
 ;;; Usually, I would add a copyright notice, and the announce that

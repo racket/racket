@@ -1,9 +1,9 @@
 (module play-game mzscheme
-  (require "gui.ss"
-           "admin.ss"
-           "board.ss"
-	   "moves.ss"
-           "die.ss"
+  (require "gui.rkt"
+           "admin.rkt"
+           "board.rkt"
+           "moves.rkt"
+           "die.rkt"
            mzlib/math
            mzlib/class
            mred)
@@ -144,7 +144,7 @@
 
   #;
   (begin
-    (require "best-player.ss") 
+    (require "best-player.rkt") 
     (play-game (list (new first-player%) 
                      (new last-player%) 
                      (new first-player%) 

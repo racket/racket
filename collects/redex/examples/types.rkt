@@ -1,6 +1,6 @@
 #lang racket
 (require redex
-         "subst.ss")
+         "subst.rkt")
 
 (reduction-steps-cutoff 10)
 

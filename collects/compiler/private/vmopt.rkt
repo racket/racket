@@ -1,21 +1,21 @@
 ;; VM Optimization pass
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-201 PLT
+;; (c) 1997-2011 PLT Scheme Inc
 
 ;; This pass only allows T & V statements to be expanded into multiple
 ;; statments there is not a mechanism to expand R, A, or L
-;; expressions. (See vmscheme.ss.)
+;; expressions. (See "vmscheme.rkt".)
 
 (module vmopt mzscheme
-  
+
   (require mzlib/unit
-	  mzlib/list
-	  mzlib/etc)
+           mzlib/list
+           mzlib/etc)
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide vmopt@)
   (define-unit vmopt@

@@ -1,8 +1,8 @@
 (module const mzscheme
   (require mzlib/class
-	   mzlib/file
+           mzlib/file
            racket/snip/private/prefs
-	   (prefix wx: "kernel.ss"))
+           (prefix wx: "kernel.rkt"))
   (provide (protect (all-defined)))
 
   ;; default spacing between items.

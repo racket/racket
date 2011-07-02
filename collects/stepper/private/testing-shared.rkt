@@ -1,6 +1,6 @@
 (module testing-shared mzscheme
   (require mzlib/contract
-           "shared.ss"
+           "shared.rkt"
            syntax/kerncase
            mzlib/file)
   

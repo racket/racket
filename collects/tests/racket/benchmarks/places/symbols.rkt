@@ -26,14 +26,14 @@
 )]))
   )
 END
-  "pct1.ss")
+  "pct1.rkt")
 
   (define-values (plcnt reps symcnt)
     (match (current-command-line-arguments)
       [(vector) (values (processor-count) 10 1000000)]
       [(vector a b c) (values a b c)]))
 
-  (define pls (for/list ([i (in-range plcnt)]) (dynamic-place "pct1.ss" 'place-main)))
+  (define pls (for/list ([i (in-range plcnt)]) (dynamic-place "pct1.rkt" 'place-main)))
 
   (for ([i (in-range plcnt)]
         [pl pls])
@@ -60,7 +60,7 @@ END
             (barrier ch))
   )
 END
-  "pct2.ss")
+  "pct2.rkt")
 
   (define-values (plcnt reps symcnt)
     (match (current-command-line-arguments)
@@ -70,7 +70,7 @@ END
 
   (for ([j (in-range reps)])
     (time-n "require-algol-parse/racket-class" j
-      (define pls (for/list ([i (in-range plcnt)]) (dynamic-place "pct2.ss" 'place-main)))
+      (define pls (for/list ([i (in-range plcnt)]) (dynamic-place "pct2.rkt" 'place-main)))
       (barrier-m pls))))
 
 (symbol-test)

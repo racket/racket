@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/contract/base
-         "private/modhelp.ss")
+         "private/modhelp.rkt")
 
 (define (force-relto relto dir?)
   (cond [(path-string? relto)

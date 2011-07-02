@@ -1,4 +1,4 @@
 #lang scheme/base
 (require scribble/extract)
 
-(provide-extracted (lib "main.ss" "framework"))
+(provide-extracted (lib "framework/main.rkt"))

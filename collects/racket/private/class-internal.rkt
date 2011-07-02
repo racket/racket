@@ -1262,7 +1262,7 @@
                                     [(plain-init-name-localized ...) (map lookup-localize plain-init-names)]
                                     [(local-plain-init-name ...) (generate-temporaries plain-init-names)])
                         (let ([mappings
-                               ;; make-XXX-map is supplied by private/classidmap.ss
+                               ;; make-XXX-map is supplied by private/classidmap.rkt
                                (with-syntax ([the-obj the-obj]
                                              [the-finder the-finder]
                                              [this-id this-id]

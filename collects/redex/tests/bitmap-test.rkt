@@ -1,6 +1,6 @@
 #lang scheme
-(require "bitmap-test-util.ss"
-         "../main.ss")
+(require "bitmap-test-util.rkt"
+         "../main.rkt")
 
 ;; tests: 
 ;;  - language,
@@ -257,5 +257,5 @@
      (r x)])
   (test (render-relation r) "relation-with-name.png"))    
 
-(printf "bitmap-test.ss: ")
+(printf "bitmap-test.rkt: ")
 (done)

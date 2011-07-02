@@ -1,12 +1,12 @@
 #lang racket/base
-(require "../decode.ss"
-         "../struct.ss"
-         "../scheme.ss"
-         "../search.ss"
-         "../basic.ss"
+(require "../decode.rkt"
+         "../struct.rkt"
+         "../scheme.rkt"
+         "../search.rkt"
+         "../basic.rkt"
          racket/list
-         "manual-utils.ss"
-         "manual-style.ss"
+         "manual-utils.rkt"
+         "manual-style.rkt"
          (for-syntax racket/base)
          (for-label racket/base))
 

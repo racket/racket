@@ -1,5 +1,5 @@
 ;;;
-;;; <lset-test.ss> ---- Lists as Sets Tests
+;;; <lset-test.rkt> ---- Lists as Sets Tests
 ;;; Time-stamp: <05/12/16 21:15:22 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -108,4 +108,4 @@
                           '(d c b i o u))))
      ))
   )
-;;; lset-test.ss ends here
+;;; lset-test.rkt ends here

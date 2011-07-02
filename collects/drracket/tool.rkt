@@ -1,5 +1,5 @@
 #lang racket/base
-(require "private/drsig.ss")
+(require "private/drsig.rkt")
 (provide drracket:tool^
          drracket:tool-exports^
          drscheme:tool^

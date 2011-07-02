@@ -1,19 +1,19 @@
 (module messagebox mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/etc
+           mzlib/class100
+           mzlib/etc
            mzlib/string
-	   (prefix wx: "kernel.ss")
-	   "const.ss"
-	   "check.ss"
-	   "helper.ss"
-	   "editor.ss"
-	   "mrtop.ss"
-	   "mrcanvas.ss"
-	   "mrpopup.ss"
-	   "mrmenu.ss"
-	   "mritem.ss"
-	   "mrpanel.ss")
+           (prefix wx: "kernel.rkt")
+           "const.rkt"
+           "check.rkt"
+           "helper.rkt"
+           "editor.rkt"
+           "mrtop.rkt"
+           "mrcanvas.rkt"
+           "mrpopup.rkt"
+           "mrmenu.rkt"
+           "mritem.rkt"
+           "mrpanel.rkt")
 
   (provide message-box
 	   message-box/custom

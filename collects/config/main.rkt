@@ -1,4 +1,4 @@
 #lang racket/base
 
-(require "config.ss")
-(provide (all-from-out "config.ss"))
+(require "config.rkt")
+(provide (all-from-out "config.rkt"))

@@ -1,5 +1,5 @@
 #| This tests to make sure show works. It's not a correct test because
-   it's been abandoned and was reduced to wont-shrink.ss This is still
+   it's been abandoned and was reduced to wont-shrink.rkt This is still
    a good file for sandboxing show stuff though.
 |#
 
@@ -9,19 +9,19 @@
  mzlib/etc
  mzlib/list
  mzlib/match
- (prefix a: "../alignment.ss")
+ (prefix a: "../alignment.rkt")
    
- "../snip-lib.ss"
- "../interface.ss"
- "../alignment-helpers.ss"
+ "../snip-lib.rkt"
+ "../interface.rkt"
+ "../alignment-helpers.rkt"
  mrlib/click-forwarding-editor
- "../on-show-pasteboard.ss"
- "../really-resized-pasteboard.ss"
- "../interface.ss"
- "../snip-lib.ss"
- "../locked-pasteboard.ss"
- "../verthoriz-alignment.ss"
- "../suppress-modify-editor.ss")
+ "../on-show-pasteboard.rkt"
+ "../really-resized-pasteboard.rkt"
+ "../interface.rkt"
+ "../snip-lib.rkt"
+ "../locked-pasteboard.rkt"
+ "../verthoriz-alignment.rkt"
+ "../suppress-modify-editor.rkt")
   
 (require mike-lib/print-debug)
   

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; math.ss: some extra math routines
+;; math.rkt: some extra math routines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #lang scheme/base
@@ -66,7 +66,7 @@
 
 ;;; Tests and timings of order-of-magnitude
 
-(require "order-of-magnitude.ss")
+(require "order-of-magnitude.rkt")
 (require (planet joskoot/planet-fmt:1:1/fmt))
 
 (define-syntax timer

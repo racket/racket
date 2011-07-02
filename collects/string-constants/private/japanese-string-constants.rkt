@@ -3,7 +3,7 @@
 When modifying the string constants files,
 please adhere to these guidelines:
 
-- All the entries in english-string-constants.ss have the same format
+- All the entries in english-string-constants.rkt have the same format
   (name string).  If the purpose of an entry you are adding to the
   file is not clear from just the name and string, put a comment next
   to the entry explaining what the string is going to be used for and
@@ -29,8 +29,8 @@ please adhere to these guidelines:
   re-use strings that already exist.  There's no need for yet another
   "Ok" string...
 
-- If you modify an existing string in english-string-constants.ss, go
-  through all the *-string-constants.ss files for the other languages,
+- If you modify an existing string in english-string-constants.rkt, go
+  through all the *-string-constants.rkt files for the other languages,
   comment out the old version of the modified string in each of these
   files, and put a short comment there telling us the English string
   has changed and needs to be re-translated.  Do not erase the old
@@ -72,7 +72,7 @@ please adhere to these guidelines:
 
 - If, for some reason, you really have to change the name of a string
   (like, because the original name you gave it really sucked...),
-  change the name of the string in *ALL* the *-string-constants.ss
+  change the name of the string in *ALL* the *-string-constants.rkt
   files.  That's a modification you can do without the help of a
   translator, so do it yourself.  It's not the job of the translators
   to clean up your naming mess for you.  Besides, you are the one who
@@ -81,14 +81,14 @@ please adhere to these guidelines:
 
 - If, for some reason, you need to remove a string (i.e. you changed
   your code and don't need the string anymore), remove the string in
-  *ALL* the *-string-constants.ss files.  Again, you don't need the
+  *ALL* the *-string-constants.rkt files.  Again, you don't need the
   help of a translator to do that.  If you're not sure whether you
   might need the string in the future or not, just comment it out in
   *ALL* the files.
 
 |#
 
-(module japanese-string-constants "string-constant-lang.ss"
+(module japanese-string-constants "string-constant-lang.rkt"
  ;;; when translating this constant, substitute name of actual language for `English'
  (is-this-your-native-language "Is Japanese Your Native Language?")
 
@@ -799,16 +799,16 @@ please adhere to these guidelines:
  (drscheme-internal-error "DrRacket 内部エラー")
 
  ;;; tools
- (invalid-tool-spec "コレクション ~a の info.ss ファイルに記述されているツール仕様が不正です。文字列か空でない文字列リストでなければなりませんが、次の値が記述されています: ~e")
+ (invalid-tool-spec "コレクション ~a の info.rkt ファイルに記述されているツール仕様が不正です。文字列か空でない文字列リストでなければなりませんが、次の値が記述されています: ~e")
  (error-invoking-tool-title "ツール ~s を起動時にエラーが発生しました: ~s")
  (tool-tool-names-same-length
-  "expected `tool-names' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
+  "expected `tool-names' and `tools' to be lists of the same length, in info.rkt file for ~s, got ~e and ~e")
  (tool-tool-icons-same-length
-  "expected `tool-icons' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
+  "expected `tool-icons' and `tools' to be lists of the same length, in info.rkt file for ~s, got ~e and ~e")
  (tool-tool-urls-same-length
-  "expected `tool-urls' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
+  "expected `tool-urls' and `tools' to be lists of the same length, in info.rkt file for ~s, got ~e and ~e")
  (error-getting-info-tool
-  "~s の info.ss をロード時にエラーが発生しました")
+  "~s の info.rkt をロード時にエラーが発生しました")
  (tool-error-phase1 "ツール ~s のフェーズ 1 でエラーが発生しました: ~s")
  (tool-error-phase2 "ツール ~s のフェーズ 2 でエラーが発生しました: ~s")
 

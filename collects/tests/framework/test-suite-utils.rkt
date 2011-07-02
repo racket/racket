@@ -5,7 +5,7 @@
          racket/system
          racket/tcp
          racket/pretty
-         "debug.ss")
+         "debug.rkt")
 
 (provide
  test-name
@@ -60,7 +60,7 @@
 (define initial-port 6012)
 (define port-filename
   (build-path (find-system-path 'temp-dir)
-              "framework-tests-receive-sexps-port.ss"))
+              "framework-tests-receive-sexps-port.rkt"))
 
 (unless (file-exists? port-filename)
   (call-with-output-file port-filename
@@ -97,7 +97,7 @@
         (if (eq? 'windows (system-type)) "Racket.exe" "racket")))
       (path->string
        (build-path (collection-path "tests" "framework")
-                   "framework-test-engine.ss")))))
+                   "framework-test-engine.rkt")))))
   (debug-printf mz-tcp "accepting listener\n")
   (let-values ([(in out) (tcp-accept listener)])
     (set! in-port in)

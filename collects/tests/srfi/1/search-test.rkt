@@ -1,5 +1,5 @@
 ;;;
-;;; <search-test.ss> ---- List searching functions tests
+;;; <search-test.rkt> ---- List searching functions tests
 ;;; Time-stamp: <05/12/16 21:16:26 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -526,4 +526,4 @@
      ))
   )
 
-;;; search-test.ss ends here
+;;; search-test.rkt ends here

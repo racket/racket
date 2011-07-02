@@ -1,10 +1,10 @@
 #lang scheme/base
 (require scheme/class
          ffi/unsafe/atomic
-         "color.ss"
-         "syntax.ss"
-         "local.ss"
-         "bitmap.ss")
+         "color.rkt"
+         "syntax.rkt"
+         "local.rkt"
+         "bitmap.rkt")
 
 (provide pen%
          pen-list% the-pen-list

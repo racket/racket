@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../stx.ss"
+(require "../stx.rkt"
          unstable/struct)
 
 (provide template-map-apply)

@@ -1,19 +1,19 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base
-                     "private-yacc/parser-builder.ss"
-                     "private-yacc/grammar.ss"
-                     "private-yacc/yacc-helper.ss"
-                     "private-yacc/parser-actions.ss"))
-  (require "private-lex/token.ss"
-           "private-yacc/parser-actions.ss"
-           mzlib/etc
-           mzlib/pretty
-	   syntax/readerr)
-  
-  (provide parser)
-  
-    
+                     "private-yacc/parser-builder.rkt"
+                     "private-yacc/grammar.rkt"
+                     "private-yacc/yacc-helper.rkt"
+                     "private-yacc/parser-actions.rkt"))
+(require "private-lex/token.rkt"
+         "private-yacc/parser-actions.rkt"
+         mzlib/etc
+         mzlib/pretty
+         syntax/readerr)
+
+(provide parser)
+
+
   ;; convert-parse-table : (vectorof (listof (cons/c gram-sym? action?))) ->
   ;;                       (vectorof (symbol runtime-action hashtable))
   (define-for-syntax (convert-parse-table table)
@@ -255,7 +255,7 @@
   ;; The table is a vector that maps each state to a hash-table that maps a
   ;; terminal symbol to either an accept, shift, reduce, or goto structure.
   ;  We encode the structures according to the runtime-action data definition in
-  ;; parser-actions.ss
+  ;; parser-actions.rkt
   (define (parser-body debug? err starts ends table all-term-syms actions src-pos)
     (local ((define extract
               (if src-pos

@@ -1,7 +1,7 @@
 (module linkage mzscheme
-  
-  (require "planet-shared.ss"
-           "../config.ss"
+
+  (require "planet-shared.rkt"
+           "../config.rkt"
            mzlib/match)
 
   (provide get/linkage
@@ -16,7 +16,7 @@
   ; The first check is to see if there is a valid linkage for the module.
   ; ==========================================================================================
 
-  ;; get/linkage : pkg-getter [see ../resolver.ss]
+  ;; get/linkage : pkg-getter [see ../resolver.rkt]
   ;; getter for the linkage table
   (define (get/linkage rmp pkg-specifier success-k failure-k)
     (let ([linked-pkg (get-linkage rmp pkg-specifier)])

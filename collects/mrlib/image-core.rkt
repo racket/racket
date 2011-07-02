@@ -30,15 +30,15 @@ has been moved out).
 (require racket/class
          racket/draw
          (for-syntax racket/base)
-         file/convertible         
+         file/convertible
          racket/math
          racket/contract
-         "private/image-core-bitmap.ss" 
-         "image-core-wxme.ss"
+         "private/image-core-bitmap.rkt"
+         "image-core-wxme.rkt"
          "private/image-core-snipclass.rkt"
          "private/regmk.rkt"
          racket/snip
-         (prefix-in cis: "cache-image-snip.ss"))
+         (prefix-in cis: "cache-image-snip.rkt"))
 
 
 

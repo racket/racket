@@ -1,10 +1,10 @@
 #lang scheme/base
-(require "test-utils.ss" (for-syntax scheme/base)
+(require "test-utils.rkt" (for-syntax scheme/base)
          racket/set
          (utils tc-utils)
-	 (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
-	 (rep type-rep)
-	 (rename-in (types comparison subtype union utils convenience)
+         (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
+         (rep type-rep)
+         (rename-in (types comparison subtype union utils convenience)
                     [Un t:Un] [-> t:->] [->* t:->*])
          (base-env base-types base-types-extra colon)
          (for-template (base-env base-types base-types-extra base-env colon))
@@ -15,7 +15,7 @@
 
 ;; HORRIBLE HACK!
 ;; We are solving the following problem:
-;; when we require "base-env.ss" for template, it constructs the type-alias-env
+;; when we require "base-env.rkt" for template, it constructs the type-alias-env
 ;; in phase 0 (relative to this module), but populates it with phase -1 identifiers
 ;; The identifiers are also bound in this module at phase -1, but the comparison for
 ;; the table is phase 0, so they don't compare correctly
@@ -24,7 +24,7 @@
 ;; We do this by going through the table, constructing new identifiers based on the symbol
 ;; of the old identifier.
 ;; This relies on the identifiers being bound at phase 0 in this module (which they are,
-;; because we have a phase 0 require of "base-env.ss").
+;; because we have a phase 0 require of "base-env.rkt").
 (for ([pr (type-alias-env-map cons)])
   (let ([nm (car pr)]
         [ty (cdr pr)])

@@ -1,3 +1,3 @@
 (module main scheme/base
-  (require "mred.ss")
-  (provide (all-from-out "mred.ss")))
+  (require "mred.rkt")
+  (provide (all-from-out "mred.rkt")))

@@ -31,7 +31,7 @@
                (values (subbytes bts (add1 n)) (subbytes bts 0 n))]
               [else (loop (add1 n))])))))
 
-;; see also the same function name in zip.ss
+;; see also the same function name in "zip.rkt"
 (define (path-attributes path dir?)
   (apply bitwise-ior
          (map (lambda (p)

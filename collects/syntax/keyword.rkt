@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          racket/dict
-         "private/keyword.ss")
+         "private/keyword.rkt")
 
 (define optstx (or/c syntax? false/c))
 

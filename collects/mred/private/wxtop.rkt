@@ -1,19 +1,19 @@
 (module wxtop mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/etc
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-           (prefix wx: "wxme/editor-canvas.ss")
-           (prefix wx: "wxme/editor-snip.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "const.ss"
-	   "kw.ss"
-	   "check.ss"
-	   "wx.ss"
-	   "wxwindow.ss"
-	   "wxcontainer.ss")
+           mzlib/class100
+           mzlib/etc
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           (prefix wx: "wxme/editor-canvas.rkt")
+           (prefix wx: "wxme/editor-snip.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "const.rkt"
+           "kw.rkt"
+           "check.rkt"
+           "wx.rkt"
+           "wxwindow.rkt"
+           "wxcontainer.rkt")
 
   (provide (protect active-main-frame
                     set-root-menu-wx-frame!)

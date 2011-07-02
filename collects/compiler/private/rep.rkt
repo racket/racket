@@ -1,6 +1,6 @@
 ;; Representation choosing phase of the compiler
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-201 PLT
+;; (c) 1997-2011 PLT Scheme Inc
 
 ;; Chooses the representation of all bindings, and also
 ;;  closures.
@@ -19,8 +19,8 @@
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide rep@)
   (define-unit rep@

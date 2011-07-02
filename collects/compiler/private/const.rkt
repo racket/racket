@@ -12,14 +12,14 @@
 
 (module const mzscheme
   (require mzlib/unit
-	   mzlib/list
-	   mzlib/etc)
+           mzlib/list
+           mzlib/etc)
 
   (require syntax/zodiac-sig
-	   syntax/stx)
+           syntax/stx)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide const@)
   (define-unit const@
@@ -339,7 +339,7 @@
 				  (zodiac:make-zread
 				   (datum->syntax-object
 				    #f
-				    ast ;; See vm2c.ss
+				    ast ;; See "vm2c.rkt"
 				    #f)))
 				 varref:static)]
 	   

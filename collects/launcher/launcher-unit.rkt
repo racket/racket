@@ -9,7 +9,7 @@
          setup/dirs
          setup/variant
 
-         "launcher-sig.ss"
+         "launcher-sig.rkt"
 
          compiler/private/winutf16)
 
@@ -359,7 +359,7 @@
         (display header)
         (newline)
         ;; comments needed to rehack launchers when paths change
-        ;; (see setup/unixstyle-install.ss)
+        ;; (see setup/unixstyle-install.rkt)
         (display "# {{{ bindir\n")
         (display dir-finder)
         (display "# }}} bindir\n")

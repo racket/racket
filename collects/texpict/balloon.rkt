@@ -1,22 +1,22 @@
 (module balloon mzscheme
-  (require "mrpict.ss"
-	   "utils.ss"
-	   racket/draw
+  (require "mrpict.rkt"
+           "utils.rkt"
+           racket/draw
            mzlib/class
            mzlib/etc
            mzlib/math)
-  
+
   (provide wrap-balloon pip-wrap-balloon
-	   place-balloon
-	   pin-balloon
-	   (rename mk-balloon balloon)
+           place-balloon
+           pin-balloon
+           (rename mk-balloon balloon)
            make-balloon
-	   balloon?
+           balloon?
            balloon-pict
            balloon-point-x
            balloon-point-y
-	   balloon-color)
-  
+           balloon-color)
+
   (define-struct balloon (pict point-x point-y))
     
   (define no-pen (find-pen "white" 1 'transparent))

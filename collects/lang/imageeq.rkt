@@ -7,7 +7,7 @@
   (define tried? #f)
 
   ;; This macro is used once to export all functions
-  ;;  from "private/image.ss":
+  ;;  from "private/image.rkt":
   (define-syntax (re-export stx)
     (syntax-case stx ()
       [(_ (id . impl) ...) 

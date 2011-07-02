@@ -3,7 +3,7 @@
 (require scribble/manual
          scribble/struct
          scribble/decode
-         (only-in "../inside/utils.ss" cpp)
+         (only-in "../inside/utils.rkt" cpp)
          (for-syntax racket/base)
          (for-label racket/base
                     racket/contract

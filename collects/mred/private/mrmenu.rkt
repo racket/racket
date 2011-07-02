@@ -1,28 +1,28 @@
 (module mrmenu mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-           (prefix wx: "wxme/keymap.ss")
-	   "lock.ss"
-	   "const.ss"
-	   "helper.ss"
-	   "check.ss"
-	   "wx.ss"
-	   "app.ss"
-	   "wxmenu.ss"
-	   "mrtop.ss"
-	   "mrmenuintf.ss"
-	   "mrpopup.ss")
+           mzlib/class100
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           (prefix wx: "wxme/keymap.rkt")
+           "lock.rkt"
+           "const.rkt"
+           "helper.rkt"
+           "check.rkt"
+           "wx.rkt"
+           "app.rkt"
+           "wxmenu.rkt"
+           "mrtop.rkt"
+           "mrmenuintf.rkt"
+           "mrpopup.rkt")
 
   (provide separator-menu-item%
-	   menu-item%
-	   checkable-menu-item%
-	   menu%
-	   menu-bar%
-	   get-default-shortcut-prefix
-	   (protect menu-parent-only
-		    menu-or-bar-parent))
+           menu-item%
+           checkable-menu-item%
+           menu%
+           menu-bar%
+           get-default-shortcut-prefix
+           (protect menu-parent-only
+                    menu-or-bar-parent))
 
   (define root-menu-frame-used? #f)
 

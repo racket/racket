@@ -1,6 +1,5 @@
-
-;; A few simple port functions are needed in pretty.ss, which is
-;;  used by contract.ss, which is used by port.ss --- so we
+;; A few simple port functions are needed in pretty.rkt, which is
+;;  used by contract.rkt, which is used by port.rkt --- so we
 ;;  break the cycle with this module.
 
 (module port racket/base

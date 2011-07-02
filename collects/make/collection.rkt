@@ -7,10 +7,10 @@
          compiler/compiler
          compiler/option)
 
-(require "make-sig.ss"
-         "make.ss"
-         "collection-sig.ss"
-         "collection-unit.ss")
+(require "make-sig.rkt"
+         "make.rkt"
+         "collection-sig.rkt"
+         "collection-unit.rkt")
 
 (define-values/invoke-unit/infer make:collection@)
 

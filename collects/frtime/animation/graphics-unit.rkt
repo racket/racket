@@ -1,8 +1,8 @@
 #lang scheme
 (require scheme/unit
          mred/mred-sig
-         "graphics-sig.ss"
-         "graphics-posn-less-unit.ss")
+         "graphics-sig.rkt"
+         "graphics-posn-less-unit.rkt")
 (provide graphics@)
 
 (define-unit posn@ (import) (export graphics:posn^)

@@ -2,7 +2,7 @@
 
 #lang racket/base
 
-(require "c-printf.ss")
+(require "c-printf.rkt")
 
 (c-printf-is-dangerous!) ; see last example below
 

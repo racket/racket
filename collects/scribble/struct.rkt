@@ -1,10 +1,10 @@
 #lang scheme/base
-(require (rename-in (except-in "core.ss"
+(require (rename-in (except-in "core.rkt"
                                target-url struct:target-url target-url? target-url-addr
                                deserialize-info:target-url-v0)
                     [make-target-url core:make-target-url])
-         "private/provide-structs.ss"
-         "html-properties.ss"
+         "private/provide-structs.rkt"
+         "html-properties.rkt"
          scheme/provide-syntax
          scheme/struct-info
          scheme/contract

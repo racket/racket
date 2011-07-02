@@ -1,5 +1,5 @@
 ;;;
-;;; <program.ss> ---- SRFI-7 program
+;;; <program.rkt> ---- SRFI-7 program
 ;;; based on MJ Ray's code for SRFI 0
 
 (module program mzscheme
@@ -126,4 +126,4 @@
 	       (feature-cond rest ...)
 	       more ...))))))))
 
-;;; program.ss ends here
+;;; program.rkt ends here

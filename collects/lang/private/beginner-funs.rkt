@@ -1,11 +1,10 @@
-
 (module beginner-funs scheme
   (require mzlib/etc mzlib/list mzlib/math syntax/docprovide)
 
   ;; Implements the procedures:
-  (require "teachprims.ss"
-	   "../posn.ss"
-	   "../imageeq.ss")
+  (require "teachprims.rkt"
+           "../posn.rkt"
+           "../imageeq.rkt")
 
   ;; procedures with documentation:
   (provide-and-document

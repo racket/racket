@@ -1,5 +1,5 @@
 ;;;
-;;; <alist.ss> ---- Association list functions
+;;; <alist.rkt> ---- Association list functions
 ;;; Time-stamp: <02/03/01 13:56:33 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -25,7 +25,7 @@
 
 #lang scheme/base
 
-(require (only-in "search.ss" find))
+(require (only-in "search.rkt" find))
 
 (provide (rename-out [my-assoc assoc])
          alist-cons
@@ -50,4 +50,4 @@
 (define (alist-delete! key alist [= equal?])
   (filter! (lambda (elt) (not (= key (car elt)))) alist))
 
-;;; alist.ss ends here
+;;; alist.rkt ends here

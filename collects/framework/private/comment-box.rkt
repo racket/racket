@@ -5,8 +5,8 @@
          scheme/class
          scheme/gui/base
          scheme/runtime-path
-         "sig.ss"
-         "../decorated-editor-snip.ss"
+         "sig.rkt"
+         "../decorated-editor-snip.rkt"
          string-constants)
 
 (define-runtime-path semicolon-bitmap-path '(lib "icons/semicolon.gif"))

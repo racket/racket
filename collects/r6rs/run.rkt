@@ -1,13 +1,13 @@
 #lang scheme/base
 (require scheme/cmdline
          compiler/cm
-         (prefix-in r6rs: "lang/reader.ss")
+         (prefix-in r6rs: "lang/reader.rkt")
          syntax/modcode
          setup/dirs
          scheme/port
          scheme/file
-         "private/readtable.ss"
-         "private/encode-name.ss")
+         "private/readtable.rkt"
+         "private/encode-name.rkt")
 
 (define install-mode (make-parameter #f))
 (define compile-mode (make-parameter #f))

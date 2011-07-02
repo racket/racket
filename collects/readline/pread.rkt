@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "mzrl.ss" scheme/list scheme/file)
+(require "mzrl.rkt" scheme/list scheme/file)
 
 ;; --------------------------------------------------------------------------
 ;; Configuration

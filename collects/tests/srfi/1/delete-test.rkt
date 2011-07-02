@@ -1,5 +1,5 @@
 ;;;
-;;; <delete-test.ss> ---- List deletion function tests
+;;; <delete-test.rkt> ---- List deletion function tests
 ;;; Time-stamp: <05/12/16 21:16:28 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -355,4 +355,4 @@
      ))
 
   )
-;;; delete-test.ss ends here
+;;; delete-test.rkt ends here

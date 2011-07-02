@@ -12,7 +12,7 @@
          (prefix-in x: "private/mred-extensions.rkt")
          "private/shared.rkt"
          "private/xml-sig.rkt"
-         "drracket-button.ss") ;; get the stepper-button-callback private-member-name
+         "drracket-button.rkt") ;; get the stepper-button-callback private-member-name
 
 (import drracket:tool^ xml^ view-controller^)
 (export drracket:tool-exports^ stepper-frame^)
@@ -365,7 +365,7 @@
   (drracket:get/extend:extend-definitions-text stepper-definitions-text-mixin)
   (drracket:get/extend:extend-tab stepper-tab-mixin)
   
-  ;; COPIED FROM drracket/private/language.ss
+  ;; COPIED FROM drracket/private/language.rkt
 ;; simple-module-based-language-convert-value : TST STYLE boolean -> TST
 (define (simple-module-based-language-convert-value value settings)
   (case (drracket:language:simple-settings-printing-style settings)
@@ -389,7 +389,7 @@
 
 (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
   (if (or (is-a? expr snip%)
-          ;; FIXME: internal in language.ss (to-snip-value? expr)
+          ;; FIXME: internal in language.rkt (to-snip-value? expr)
           )
       expr
       (sh expr basic-convert sub-convert)))
@@ -414,7 +414,7 @@
 
 ;; stepper-convert-hook:
 ;;   (TST (TST -> TST) (TST -> TST) -> TST)
-;; this code copied from various locations in language.ss and rep.ss
+;; this code copied from various locations in language.rkt and rep.rkt
 (define (stepper-print-convert-hook exp basic-convert sub-convert)
   (cond
     [(is-a? exp snip%)

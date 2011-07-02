@@ -2,7 +2,7 @@
 
 #lang racket/base
 
-(require (prefix-in xmms- "xmmsctrl.ss"))
+(require (prefix-in xmms- "xmmsctrl.rkt"))
 
 (printf "version: ~s\n" (xmms-get-version))
 (printf "skin: ~s\n" (xmms-get-skin))

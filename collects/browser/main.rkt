@@ -1,3 +1,3 @@
 #lang scheme/base
-(require "browser.ss")
-(provide (all-from-out "browser.ss"))
+(require "browser.rkt")
+(provide (all-from-out "browser.rkt"))

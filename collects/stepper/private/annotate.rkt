@@ -2,11 +2,11 @@
 
 (require (prefix-in kernel: syntax/kerncase)
          racket/contract
-         "marks.ss"
-         "shared.ss"
-         "my-macros.ss"
-         #;"xml-box.ss"
-         (prefix-in beginner-defined: "beginner-defined.ss")
+         "marks.rkt"
+         "shared.rkt"
+         "my-macros.rkt"
+         #;"xml-box.rkt"
+         (prefix-in beginner-defined: "beginner-defined.rkt")
          (for-syntax racket/base))
 
 (define-syntax (where stx)
@@ -199,7 +199,7 @@
            (stepper-syntax-property stx 'stepper-skip-completely #t)]
           
           ; wrapper on a local.  This is necessary because 
-          ; teach.ss expands local into a trivial let wrapping a bunch of
+          ; teach.rkt expands local into a trivial let wrapping a bunch of
           ; internal defines, and therefore the letrec-values on 
           ; which I want to hang the 'stepper-hint doesn't yet
           ; exist.  So we patch it up after expansion.  And we 

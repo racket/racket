@@ -6,7 +6,7 @@
 
 (require r6rs/private/identifier-syntax
          (for-syntax scheme/base
-                     "check-pattern.ss"))
+                     "check-pattern.rkt"))
 
 (provide (rename-out [r6rs:syntax-rules syntax-rules])
          identifier-syntax

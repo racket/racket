@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scribble/doclang 
          scribble/manual
-         "../private/defaults.ss")
+         "../private/defaults.rkt")
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/manual)
          (rename-out [module-begin #%module-begin]))

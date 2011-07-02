@@ -1,5 +1,5 @@
 #lang scheme
-(require "contract.ss")
+(require "contract.rkt")
 
 (define-struct dv (vec-length next-avail-pos vec) #:mutable)
 

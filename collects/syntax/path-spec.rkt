@@ -1,6 +1,6 @@
 (module path-spec scheme/base
   (require (for-template scheme/base))
-  (require "stx.ss")
+  (require "stx.rkt")
 
   (provide resolve-path-spec)
 

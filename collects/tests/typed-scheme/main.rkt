@@ -4,8 +4,8 @@
          mzlib/etc scheme/port
          compiler/compiler
          scheme/match mzlib/compile
-         "unit-tests/all-tests.ss"
-         "unit-tests/test-utils.ss"
+         "unit-tests/all-tests.rkt"
+         "unit-tests/test-utils.rkt"
          "optimizer/run.rkt")
 
 (define (scheme-file? s)

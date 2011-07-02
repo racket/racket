@@ -96,7 +96,7 @@
                 '((A) (B)))
 
    ;; this is an example using the actual times for the A->B->A case that is
-   ;; tested in main.ss
+   ;; tested in main.rkt
    (same-levels '(* 2->1 A 1->2 B 2->1 A 1->2 *)
                 '((A) (B)))
 

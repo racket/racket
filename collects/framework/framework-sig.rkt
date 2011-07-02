@@ -1,4 +1,3 @@
 #lang scheme/base
-(require "private/sig.ss")
+(require "private/sig.rkt")
 (provide framework^)
-

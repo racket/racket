@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class
          racket/draw/private/syntax
-         "snip.ss")
+         "snip.rkt")
 
 (provide snip-admin%)
 

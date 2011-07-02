@@ -5,10 +5,10 @@
    mzlib/etc
    mzlib/list
    mzlib/match
-   (prefix a: "alignment.ss")
-   "interface.ss"
-   "alignment-helpers.ss"
-   "dllist.ss")
+   (prefix a: "alignment.rkt")
+   "interface.rkt"
+   "alignment-helpers.rkt"
+   "dllist.rkt")
    
   (provide
    horizontal-alignment%

@@ -1,14 +1,13 @@
-
 (module tool mzscheme
   (require drscheme/tool
            mred
            mzlib/unit
            mzlib/class
-	   string-constants
-	   mzlib/contract
-           "top-level.ss"
-	   "toolbar.ss"
-	   "readable.ss")
+           string-constants
+           mzlib/contract
+           "top-level.rkt"
+           "toolbar.rkt"
+           "readable.rkt")
 
   (provide tool@)
 

@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/class
-         "private.ss"
+         "private.rkt"
          racket/snip/private/private
          racket/snip
          racket/snip/private/snip-flags)

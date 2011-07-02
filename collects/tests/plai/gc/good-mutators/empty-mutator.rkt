@@ -1,3 +1,3 @@
 #lang plai/mutator
 
-(allocator-setup "../good-collectors/good-collector.ss" 80)
+(allocator-setup "../good-collectors/good-collector.rkt" 80)

@@ -1,6 +1,6 @@
 (module fred frtime
-  (require "mixin-macros.ss"
-           "aux-mixin-macros.ss"
+  (require "mixin-macros.rkt"
+           "aux-mixin-macros.rkt"
            mzlib/class
            mzlib/string
            texpict/mrpict
@@ -324,8 +324,5 @@
   
   (provide (all-defined)
            (all-from mzlib/class)
-           (all-from "mixin-macros.ss")
-           (all-from "aux-mixin-macros.ss"))) 
-
-
-
+           (all-from "mixin-macros.rkt")
+           (all-from "aux-mixin-macros.rkt")))

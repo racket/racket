@@ -8,7 +8,7 @@
 ;; resources that are specific to only one site here, do so in the
 ;; site's "resources.rkt" file)
 
-(require "utils.ss")
+(require "utils.rkt")
 
 (provide make-logo make-icon make-style
          navbar-style page-sizes font-family) ; needed for the blog template

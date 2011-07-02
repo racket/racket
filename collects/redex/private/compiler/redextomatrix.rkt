@@ -10,7 +10,7 @@
                   build-flat-context
                   the-hole
                   )
-         (lib "list.ss"))
+         racket/list)
 
 (define plug (λ (x y)
                (cond 

@@ -1,4 +1,3 @@
-
 ;; This module implements the mail-composing window. The `new-mailer'
 ;;  function creates a compose-window instance.
 
@@ -7,22 +6,22 @@
            scheme/unit
            scheme/class
            scheme/string
-	   mred/mred-sig
+           mred/mred-sig
            framework)
 
   (require scheme/file
-	   mzlib/process
-	   openssl/mzssl)
+           mzlib/process
+           openssl/mzssl)
 
-  (require "sirmails.ss"
-	   "pref.ss"
-           "spell.ss")
+  (require "sirmails.rkt"
+           "pref.rkt"
+           "spell.rkt")
 
   (require net/imap-sig
-	   net/smtp-sig
-	   net/head-sig
-	   net/base64-sig
-	   net/qp-sig)
+           net/smtp-sig
+           net/head-sig
+           net/base64-sig
+           net/qp-sig)
 
   (require mrlib/hierlist/hierlist-sig)
 
@@ -130,7 +129,7 @@
         #:mutable)
 
       ;; Create a message with enclosures.
-      ;;  `header' is a message header created with the head.ss library
+      ;;  `header' is a message header created with the head.rkt library
       ;;  `body-lines' is a list of strings and byte strings
       ;;  `enclosures' is a list of `enclosure' structs
       (define (enclose header body-lines enclosures)

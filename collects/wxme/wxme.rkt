@@ -1,4 +1,3 @@
-
 (module wxme mzscheme
   (require mzlib/port
            mzlib/string
@@ -9,9 +8,9 @@
            scheme/gui/dynamic
            syntax/modread
            (only racket/snip/private/snip int->img-type)
-           "image.ss"
-           "editor.ss"
-           "private/compat.ss")
+           "image.rkt"
+           "editor.rkt"
+           "private/compat.rkt")
 
   (define (decode who port snip-filter close? skip-content?)
     (expect #rx#"^WXME" port who "does not start with \"WXME\"")

@@ -1,4 +1,4 @@
-;;; util.ss -- utility procedures for MysterX
+;;; util.rkt -- utility procedures for MysterX
 #lang scheme/base
 
 (require scheme/string)

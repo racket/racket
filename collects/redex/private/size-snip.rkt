@@ -3,7 +3,7 @@
          scheme/class
          framework
          scheme/pretty
-         "matcher.ss")
+         "matcher.rkt")
 
 (provide reflowing-snip<%>
          size-editor-snip%

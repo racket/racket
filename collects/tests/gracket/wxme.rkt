@@ -12,7 +12,7 @@
          mred/private/wxme/editor
          mred/private/wxme/text
          mred/private/wxme/pasteboard
-         "test-editor-admin.ss"
+         "test-editor-admin.rkt"
          mred/private/wxme/stream
          mred/private/wxme/keymap
          mred/private/wxme/editor-snip

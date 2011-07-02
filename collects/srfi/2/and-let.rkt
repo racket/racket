@@ -1,5 +1,5 @@
 ;;;
-;;; <land.ss> ---- SRFI 2 port to PLT Scheme: LAND*, a generalized AND.
+;;; <land.rkt> ---- SRFI 2 port to PLT Scheme: LAND*, a generalized AND.
 ;;; Time-stamp: <02/04/30 08:05:27 solsona>
 ;;;
 ;;; Usually, I would add a copyright notice, and the announce that
@@ -139,7 +139,7 @@
 ; The first "failure" triggers the guard and aborts the rest of the
 ; sequence (which presumably would not make any sense to execute anyway).
 ;
-; $Id: and-let.ss,v 1.1 2003/02/25 01:49:25 solsona Exp $
+; $Id: and-let.rkt,v 1.1 2003/02/25 01:49:25 solsona Exp $
 
 ;;; See: http://srfi.schemers.org for more information on SRFIs.
 
@@ -201,4 +201,4 @@
 
   )
 
-;;; land.ss ends here
+;;; land.rkt ends here

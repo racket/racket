@@ -1,7 +1,7 @@
 #lang scheme/base
 (require rackunit)
 (require macro-debugger/model/debug
-         "../test-setup.ss")
+         "../test-setup.rkt")
 (provide policy-tests)
 
 (define ns (make-base-namespace))

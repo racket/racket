@@ -1,14 +1,14 @@
 (module advanced-funs scheme/base
-  (require "teachprims.ss"
+  (require "teachprims.rkt"
            mzlib/etc
            mzlib/list
            mzlib/pretty
            syntax/docprovide
            scheme/promise
            scheme/port
-           "../posn.ss"
+           "../posn.rkt"
            (for-syntax scheme/base))
-  
+
   (define pp
     (let ([pretty-print (lambda (v)
                           (pretty-write v))])

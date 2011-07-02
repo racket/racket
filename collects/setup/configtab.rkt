@@ -1,5 +1,5 @@
 #lang racket/base
-;; Defines a language to be used by the "config.ss" file
+;; Defines a language to be used by the "config.rkt" file
 
 (require racket/promise
          (for-syntax racket/base))
@@ -9,7 +9,7 @@
          #%datum quote)
 
 ;; These are the name that need to be provided
-;;  by the "config.ss" library:
+;;  by the "config.rkt" library:
 (define-for-syntax path-exports
   '(doc-dir
     doc-search-dirs

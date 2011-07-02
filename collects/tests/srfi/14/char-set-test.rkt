@@ -1,5 +1,5 @@
 ;;;
-;;; <char-set-test.ss> ---- Test driver for the SRFI-14 port: char-set
+;;; <char-set-test.rkt> ---- Test driver for the SRFI-14 port: char-set
 ;;; Time-stamp: <06/06/09 16:38:25 nhw>
 ;;;
 ;;; Copyright (C) 2002 by Francisco Solsona.
@@ -233,4 +233,4 @@
 
   )
 
-;;; char-set-test.ss ends here
+;;; char-set-test.rkt ends here

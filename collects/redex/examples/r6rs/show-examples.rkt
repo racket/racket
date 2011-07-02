@@ -1,7 +1,7 @@
 #lang racket
 
 (require redex
-         "r6rs.ss")
+         "r6rs.rkt")
 (provide show show-expression
          step step-expression)
 

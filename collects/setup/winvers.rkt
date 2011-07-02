@@ -1,9 +1,9 @@
-;; This is a wrapper around `winvers-change.ss' to patch binary files with the
+;; This is a wrapper around "winvers-change.rkt" to patch binary files with the
 ;; current version number.
 
 #lang scheme/base
 
-(require mzlib/file "main-collects.ss" "dirs.ss")
+(require mzlib/file "main-collects.rkt" "dirs.rkt")
 
 (define (make-copy)
   (let* ([tmpdir (find-system-path 'temp-dir)]

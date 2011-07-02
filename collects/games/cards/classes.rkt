@@ -1,17 +1,16 @@
-
 (module classes mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   (prefix mred: mred)
-	   mzlib/list
-	   mzlib/etc
-	   (prefix util: "utils.ss")
-	   "constants.ss"
-	   "make-cards.ss"
-	   "region.ss"
-	   string-constants
-	   "../show-help.ss"
-	   "../show-scribbling.ss")
+           mzlib/class100
+           (prefix mred: mred)
+           mzlib/list
+           mzlib/etc
+           (prefix util: "utils.rkt")
+           "constants.rkt"
+           "make-cards.rkt"
+           "region.rkt"
+           string-constants
+           "../show-help.rkt"
+           "../show-scribbling.rkt")
 
   (provide pasteboard%
 	   table%)

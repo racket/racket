@@ -1,9 +1,9 @@
-;; This module initializes readline unconditionally, "rep.ss" uses it if we're
+;; This module initializes readline unconditionally, "rep.rkt" uses it if we're
 ;; using a `terminal-port?' for input.
 
 #lang scheme/base
 
-(require "pread.ss")
+(require "pread.rkt")
 
 ;; Change the input port and readline-prompt hook
 (current-input-port readline-input)

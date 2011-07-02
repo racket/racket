@@ -1,14 +1,14 @@
 (module wxitem racket/base
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/etc
-	   (prefix-in wx: "kernel.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "const.ss"
-	   "wx.ss"
-	   "check.ss"
-	   "wxwindow.ss")
+           mzlib/class100
+           mzlib/etc
+           (prefix-in wx: "kernel.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "const.rkt"
+           "wx.rkt"
+           "check.rkt"
+           "wxwindow.rkt")
 
   (provide (protect-out make-item%
                         make-control%

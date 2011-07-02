@@ -9,7 +9,7 @@
   (regexp-match? #rx"^srfi-[0-9]+$" (symbol->string id)))
 
 (define (srfi-id->filename srfi-id)
-  (regexp-replace #rx"^srfi-([0-9]+)$" (symbol->string srfi-id) "\\1/\\1.ss"))
+  (regexp-replace #rx"^srfi-([0-9]+)$" (symbol->string srfi-id) "\\1/\\1.rkt"))
 
 (define (srfi-id-present? srfi-id)
   (file-exists? (build-path (collection-path "srfi")

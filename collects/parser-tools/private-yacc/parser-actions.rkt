@@ -1,5 +1,5 @@
 (module parser-actions mzscheme
-  (require "grammar.ss")
+  (require "grammar.rkt")
   (provide (all-defined-except make-reduce make-reduce*)
            (rename make-reduce* make-reduce))
 

@@ -6,7 +6,7 @@
          string-constants/string-constant
          setup/dirs
          framework
-         "buginfo.ss"
+         "buginfo.rkt"
          "save-bug-report.rkt")
 
 (provide/contract

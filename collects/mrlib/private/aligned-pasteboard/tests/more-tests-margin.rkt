@@ -1,6 +1,6 @@
 (require
- "../aligned-editor-container.ss"
- "../aligned-pasteboard.ss")
+ "../aligned-editor-container.rkt"
+ "../aligned-pasteboard.rkt")
 
 (define pb (new horizontal-pasteboard%))
 (send* pb
@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;
 ;; exploration
-(require "../snip-lib.ss")
+(require "../snip-lib.rkt")
 (define (margin snip)
   (let ([left (box 0)]
         [top (box 0)]

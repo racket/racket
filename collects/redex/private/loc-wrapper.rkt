@@ -2,8 +2,8 @@
 
 (require scheme/contract
          (for-syntax scheme/base)
-         (for-syntax "loc-wrapper-ct.ss")
-         "loc-wrapper-rt.ss")
+         (for-syntax "loc-wrapper-ct.rkt")
+         "loc-wrapper-rt.rkt")
 
 (define-syntax (to-lw stx) 
   (syntax-case stx ()

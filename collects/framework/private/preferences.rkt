@@ -31,9 +31,9 @@ the state transitions / contracts are:
   (require string-constants
 	   mzlib/class
            racket/file
-           "sig.ss"
-           "../gui-utils.ss"
-           "../preferences.ss"
+           "sig.rkt"
+           "../gui-utils.rkt"
+           "../preferences.rkt"
 	   mred/mred-sig
 	   mzlib/list)
   

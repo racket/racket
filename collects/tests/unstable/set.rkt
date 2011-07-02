@@ -9,7 +9,7 @@
   (test (check/set arg ...)))
 
 (run-tests
- (test-suite "set.ss"
+ (test-suite "set.rkt"
    (test-suite "Conversions"
      (test-suite "list->set"
        (test/set (list->set (list 'a 'b 'c)) (list 'a 'b 'c))

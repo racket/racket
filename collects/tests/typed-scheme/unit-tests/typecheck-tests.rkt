@@ -1,14 +1,14 @@
 #lang racket/base
 
-(require "test-utils.ss"
+(require "test-utils.rkt"
          (for-syntax scheme/base)
          (for-template scheme/base))
 (require (private type-annotation parse-type)
          (base-env prims
                    base-types-extra base-special-env
                    base-env-indexing base-structs)
-	 (typecheck typechecker)
-	 (rep type-rep filter-rep object-rep)
+         (typecheck typechecker)
+         (rep type-rep filter-rep object-rep)
          (rename-in (types utils union convenience abbrev filter-ops)
                     [Un t:Un]
                     [true-lfilter -true-lfilter]

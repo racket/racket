@@ -2,7 +2,7 @@
 (require profile
          scheme/runtime-path)
 
-(define-runtime-path perform-robby "perform-robby.ss")
+(define-runtime-path perform-robby "perform-robby.rkt")
 
 (profile-thunk
  (λ ()

@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require "loc-wrapper.ss"
-         "matcher.ss"
-         "reduction-semantics.ss"
+(require "loc-wrapper.rkt"
+         "matcher.rkt"
+         "reduction-semantics.rkt"
          
          texpict/utils
          texpict/mrpict
@@ -120,7 +120,7 @@
   (define-struct token (column span) #:inspector (make-inspector))
   
   ;; string : string
-  ;; style : valid third argument to mrpict.ss's `text' function
+  ;; style : valid third argument to mrpict.rkt's `text' function
   (define-struct (string-token token) (string style) #:inspector (make-inspector))
   
   ;; width : number

@@ -4,7 +4,7 @@
 (define-type-alias symbol Symbol)
 (define-type-alias top Any)
 (define-type-alias list-of Listof)
-#;(require "prims.ss")
+#;(require "prims.rkt")
 (define: mymap : (All (a b) ((a -> b) (list-of a) -> (list-of b)))
   (plambda: (a b) ([f : (a -> b)] [l : (list-of a)])
 	    (cond [(null? l) '()]

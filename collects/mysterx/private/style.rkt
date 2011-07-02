@@ -1,9 +1,9 @@
-;;; style.ss 
+;;; style.rkt
 
 (module style mzscheme
   (require mzlib/string)
-  (require "util.ss")
-  (require "properties.ss")
+  (require "util.rkt")
+  (require "properties.rkt")
 
   (provide
    make-css-percentage

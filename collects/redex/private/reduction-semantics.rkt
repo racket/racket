@@ -1,22 +1,22 @@
 #lang racket/base
 
-(require "matcher.ss"
-         "struct.ss"
-         "term.ss"
-         "fresh.ss"
-         "loc-wrapper.ss"
-	 "error.ss"
+(require "matcher.rkt"
+         "struct.rkt"
+         "term.rkt"
+         "fresh.rkt"
+         "loc-wrapper.rkt"
+         "error.rkt"
          racket/trace
          racket/contract
          racket/list
-         (lib "etc.ss"))
+         mzlib/etc)
 
-(require (for-syntax (lib "name.ss" "syntax")
-                     "loc-wrapper-ct.ss"
-                     "rewrite-side-conditions.ss"
-                     "term-fn.ss"
-                     "underscore-allowed.ss"
-                     (lib "boundmap.ss" "syntax")
+(require (for-syntax syntax/name
+                     "loc-wrapper-ct.rkt"
+                     "rewrite-side-conditions.rkt"
+                     "term-fn.rkt"
+                     "underscore-allowed.rkt"
+                     syntax/boundmap
                      scheme/base
                      (prefix-in pattern- scheme/match)
                      syntax/parse

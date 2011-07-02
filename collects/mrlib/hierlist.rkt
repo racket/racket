@@ -2,8 +2,8 @@
 
 (require mzlib/unit
          scheme/gui/base
-         "hierlist/hierlist-sig.ss"
-         "hierlist/hierlist-unit.ss")
+         "hierlist/hierlist-sig.rkt"
+         "hierlist/hierlist-unit.rkt")
 
 (define-values/invoke-unit/infer hierlist@)
 

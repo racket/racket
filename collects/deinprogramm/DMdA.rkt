@@ -439,10 +439,10 @@
 		  unit combine))
 	 (current-continuation-marks)))))))
 
-;; This is copied from collects/lang/private/beginner-funs.ss
+;; This is copied from collects/lang/private/beginner-funs.rkt
 ;; Test-suite support (require is really an effect
 ;;  to make sure that it's loaded)
-(require "test-suite.ss")
+(require "test-suite.rkt")
 
 (define-for-syntax (binding-in-this-module? b)
   (and (list? b)
@@ -932,7 +932,7 @@
 (define unspecific (signature unspecific %unspecific))
 (define any (signature any %any))
 
-;; aus collects/lang/private/teach.ss
+;; aus collects/lang/private/teach.rkt
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; dots (.. and ... and .... and ..... and ......)

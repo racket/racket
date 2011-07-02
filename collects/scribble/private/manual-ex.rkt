@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../struct.ss")
+(require "../struct.rkt")
 
 ; XXX unknown contracts
 (provide (struct-out exporting-libraries)

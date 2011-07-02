@@ -12,14 +12,14 @@
    mzlib/etc
    mzlib/list
    mzlib/match
-   (prefix a: "alignment.ss")
+   (prefix a: "alignment.rkt")
    mrlib/click-forwarding-editor
    
-   "on-show-pasteboard.ss"
-   "really-resized-pasteboard.ss"
-   "interface.ss"
-   "snip-lib.ss"
-   "alignment-helpers.ss")
+   "on-show-pasteboard.rkt"
+   "really-resized-pasteboard.rkt"
+   "interface.rkt"
+   "snip-lib.rkt"
+   "alignment-helpers.rkt")
   
   (provide grid-alignment%)
   

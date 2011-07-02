@@ -1,10 +1,10 @@
 (module rewrite-side-conditions scheme
-  (require (lib "list.ss")
-           "underscore-allowed.ss")
+  (require mzlib/list
+           "underscore-allowed.rkt")
   (require (for-template
             mzscheme
-            "term.ss"
-            "matcher.ss"))
+            "term.rkt"
+            "matcher.rkt"))
   
   (provide rewrite-side-conditions/check-errs
            extract-names

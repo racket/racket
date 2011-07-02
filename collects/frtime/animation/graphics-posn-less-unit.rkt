@@ -1,4 +1,3 @@
-; graphics.ss
 ; Simple graphics routines for GRacket
 ; Originally written by Johnathan Franklin
 ;
@@ -11,7 +10,7 @@
 	   mzlib/class100
 	   mzlib/etc
            frtime/core/frp
-	   "graphics-sig.ss")
+	   "graphics-sig.rkt")
 
   (import (prefix mred: mred^)
           graphics:posn^)

@@ -1,8 +1,8 @@
 #lang racket
 
 (require (only-in syntax/kerncase kernel-syntax-case)
-         "model-settings.ss"
-         "shared.ss")
+         "model-settings.rkt"
+         "shared.rkt")
 
   (provide/contract [unwind (syntax? render-settings? . -> . syntax?)])
                                                                                ;

@@ -117,11 +117,11 @@
                        (check = 3 (value))
                        (reset)
                        (check =  0 (value))))
-                     
+
      ))
-  
+
   (define match-tests
-    (test-suite "Tests for match.ss"
+    (test-suite "Tests for match.rkt"
                      doc-tests
                      simple-tests
                      nonlinear-tests

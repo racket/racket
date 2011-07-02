@@ -44,7 +44,7 @@
 	  (send g set-value counter)]))))
 
   (define show-help
-    ((require-library "show-help.ss" "games")
+    ((require-library "show-help.rkt" "games")
      (list "games" "paint-by-numbers")
      "Paint by Numbers Help"))
 

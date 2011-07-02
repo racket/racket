@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require "test-utils.ss" (for-syntax scheme/base)
+(require "test-utils.rkt" (for-syntax scheme/base)
          (rep type-rep)
-	 (types utils abbrev numeric-tower substitute)
+         (types utils abbrev numeric-tower substitute)
          rackunit)
 
 (define-syntax-rule (s img var tgt result)

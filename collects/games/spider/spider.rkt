@@ -1,7 +1,7 @@
 #lang mzscheme
 
 (require games/cards mred mzlib/class mzlib/list mzlib/file mzlib/unit
-         "../show-scribbling.ss")
+         "../show-scribbling.rkt")
 
 (define (list-first-n l n)
   (if (zero? n)

@@ -5,7 +5,7 @@
    mzlib/list
    mzlib/etc
    framework
-   "interface.ss")
+   "interface.rkt")
   
   (provide dllist-mixin dllist% head% tail%)
   

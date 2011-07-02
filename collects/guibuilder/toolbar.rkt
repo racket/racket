@@ -1,23 +1,22 @@
-
 (module toolbar mzscheme
   (require (prefix mred: mred)
-	   mzlib/class
-	   mzlib/file
-	   mzlib/pretty
-	   mzlib/etc
-	   mzlib/list
-	   "utils.ss")
+           mzlib/class
+           mzlib/file
+           mzlib/pretty
+           mzlib/etc
+           mzlib/list
+           "utils.rkt")
 
   ;; These modules implement snips for the various
   ;;  kinds of windows and controls.
-  (require "base.ss"
-	   "panel.ss"
-	   "simple-control.ss"
-	   "text-field.ss"
-	   "multiple-choice.ss"
-	   "slider-guage.ss"
-	   "canvas.ss")
-  
+  (require "base.rkt"
+           "panel.rkt"
+           "simple-control.rkt"
+           "text-field.rkt"
+           "multiple-choice.rkt"
+           "slider-guage.rkt"
+           "canvas.rkt")
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Frame
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

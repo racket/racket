@@ -1,6 +1,6 @@
 (require
- "../aligned-editor-container.ss"
- "../aligned-pasteboard.ss")
+ "../aligned-editor-container.rkt"
+ "../aligned-pasteboard.rkt")
 
 (define f (new frame% (label "test") (width 200) (height 200)))
 (define e (new vertical-pasteboard%))

@@ -9,7 +9,7 @@
          editor-snip:decorated-mixin
          editor-snip:decorated<%>)
 
-(require "../preferences.ss")
+(require "../preferences.rkt")
 
 (define editor-snip:decorated<%>
   (interface ((class->interface editor-snip%))

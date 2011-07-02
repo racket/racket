@@ -7,7 +7,7 @@
 ;;                Yujeong Cho <mayflower418@gmail.com>,
 ;;                Sung Gyeong Bae <imai0917@gmail.com>
 ;;
-(module korean-string-constants "string-constant-lang.ss"
+(module korean-string-constants "string-constant-lang.rkt"
  (is-this-your-native-language "한글을 사용하시겠습니까?")
 
  (are-you-sure-you-want-to-switch-languages
@@ -731,17 +731,17 @@
  (drscheme-internal-error "DrRacket 내부 오류")
  
  ;;; tools
- (invalid-tool-spec "info.ss 파일(collection ~a) 안에 있는 도구 세부 정보가 잘못되었습니다. 문자열 또는 문자열의 목록이 있어야 하는데, ~e이(가) 있습니다.")
+ (invalid-tool-spec "info.rkt 파일(collection ~a) 안에 있는 도구 세부 정보가 잘못되었습니다. 문자열 또는 문자열의 목록이 있어야 하는데, ~e이(가) 있습니다.")
  (error-invoking-tool-title "~s 도구를 가져오는데 ;~s 오류가 발생하였습니다.")
  (error-loading-tool-title "~s 도구를 불러오는데 \n~a 오류가 발생하였습니다.") ;; ~s filled with a path, ~a filled with an error message from an exn
  (tool-tool-names-same-length
-  "info.ss 파일(~s)의 `tool-names' 와 `tools' 이 같은 길이의 목록이어야 하는데 ~e와(과) ~e이(가) 있습니다.")
+  "info.rkt 파일(~s)의 `tool-names' 와 `tools' 이 같은 길이의 목록이어야 하는데 ~e와(과) ~e이(가) 있습니다.")
  (tool-tool-icons-same-length
-  "info.ss 파일(~s)의 `tool-icons' 와 `tools' 이 같은 길이의 목록이어야 하는데 ~e와(과) ~e이(가) 있습니다.")
+  "info.rkt 파일(~s)의 `tool-icons' 와 `tools' 이 같은 길이의 목록이어야 하는데 ~e와(과) ~e이(가) 있습니다.")
  (tool-tool-urls-same-length
-  "info.ss 파일(~s)의 `tool-urls' 와 `tools' 이 같은 길이의 목록이어야 하는데 ~e와(과) ~e이(가) 있습니다.")
+  "info.rkt 파일(~s)의 `tool-urls' 와 `tools' 이 같은 길이의 목록이어야 하는데 ~e와(과) ~e이(가) 있습니다.")
  (error-getting-info-tool
-  "info.ss 파일(~s)을 불러오는데 오류가 발생하였습니다.")
+  "info.rkt 파일(~s)을 불러오는데 오류가 발생하였습니다.")
  (tool-error-phase1 "도구 ~s의 phase1에 ~s 오류가 발생하였습니다.")
  (tool-error-phase2 "도구 ~s의 phase2에 ~s 오류가 발생하였습니다.")
 

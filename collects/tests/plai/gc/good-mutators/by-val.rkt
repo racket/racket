@@ -1,6 +1,6 @@
 ; Ensure that call by value is correctly implemented.
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 40)
+(allocator-setup "../good-collectors/good-collector.rkt" 40)
 
 (define global-val 'global)
 

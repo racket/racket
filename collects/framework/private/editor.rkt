@@ -2,9 +2,9 @@
 
   (require mzlib/class
            string-constants
-           "sig.ss"
-           "../preferences.ss"
-           "../gui-utils.ss"
+           "sig.rkt"
+           "../preferences.rkt"
+           "../gui-utils.rkt"
            mzlib/etc
            mred/mred-sig
            scheme/path)

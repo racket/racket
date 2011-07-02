@@ -3,7 +3,7 @@
 #reader(lib "htdp-beginner-reader.ss" "lang")((modname hangman1) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 (require htdp/hangman)
 
-; (load "tester.ss")
+; (load "tester.rkt")
 ;; by hand, Beginner for plain, Full for errors 
 
 

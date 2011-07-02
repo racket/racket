@@ -1,6 +1,6 @@
 #lang mzscheme
-(require "board.ss"
-         "../show-scribbling.ss"
+(require "board.rkt"
+         "../show-scribbling.rkt"
          mred
          mzlib/class
          mzlib/unit)

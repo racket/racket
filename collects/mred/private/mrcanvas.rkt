@@ -1,22 +1,22 @@
 (module mrcanvas racket/base
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/list
-	   (prefix-in wx: "kernel.ss")
-	   "lock.ss"
-	   "const.ss"
-	   "kw.ss"
-	   "helper.ss"
-	   "check.ss"
-	   "wx.ss"
-	   "wxcanvas.ss"
-	   "mrwindow.ss"
-	   "mrcontainer.ss"
-	   "mrtop.ss")
+           mzlib/class100
+           mzlib/list
+           (prefix-in wx: "kernel.rkt")
+           "lock.rkt"
+           "const.rkt"
+           "kw.rkt"
+           "helper.rkt"
+           "check.rkt"
+           "wx.rkt"
+           "wxcanvas.rkt"
+           "mrwindow.rkt"
+           "mrcontainer.rkt"
+           "mrtop.rkt")
 
   (provide canvas<%>
-	   canvas%
-	   editor-canvas%)
+           canvas%
+           editor-canvas%)
 
   (define canvas-default-size 20) ; a default size for canvases tht fits borders without losing client sizes
   (define canvas-scroll-size 10)

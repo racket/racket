@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/class
-         "syntax.ss")
+         "syntax.rkt")
 
 (provide color%
          color-red

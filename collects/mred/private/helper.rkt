@@ -1,27 +1,27 @@
 (module helper mzscheme
   (require mzlib/class
-	   (prefix wx: "kernel.ss")
+           (prefix wx: "kernel.rkt")
            (prefix wx: racket/snip)
-	   "lock.ss")
+           "lock.rkt")
 
   (provide (protect (struct child-info (x-min y-min x-margin y-margin x-stretch y-stretch))
-		    get-two-int-values
-		    non-negative-number?
-		    same-dimension?
-		    list-diff
-		    key-regexp
-		    do-command
-		    double-boxed
-		    queue-window-callback
-		    param
-		    protect&
-		    find-pos
-		    no-stretch
-		    font->delta
-		    traverse
-		    object->position
-		    container->children
-		    filter-overlapping
+                    get-two-int-values
+                    non-negative-number?
+                    same-dimension?
+                    list-diff
+                    key-regexp
+                    do-command
+                    double-boxed
+                    queue-window-callback
+                    param
+                    protect&
+                    find-pos
+                    no-stretch
+                    font->delta
+                    traverse
+                    object->position
+                    container->children
+                    filter-overlapping
                     system-position-ok-before-cancel?
                     ok-cancel))
 

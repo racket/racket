@@ -1,9 +1,8 @@
-
 (module param mzscheme
   (require mzlib/unit
-	   "sig.ss"
-	   "cmdline.ss"
-	   "viewer.ss")
+           "sig.rkt"
+           "cmdline.rkt"
+           "viewer.rkt")
 
   (provide current-slideshow-linker)
 

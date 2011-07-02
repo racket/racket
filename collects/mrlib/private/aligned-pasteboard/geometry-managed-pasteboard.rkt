@@ -7,11 +7,11 @@
    mzlib/etc
    mzlib/match
    mred
-   "aligned-editor-container.ss"
-   "interface.ss"
-   "alignment.ss"
-   "snip-lib.ss"
-   "pasteboard-lib.ss")
+   "aligned-editor-container.rkt"
+   "interface.rkt"
+   "alignment.rkt"
+   "snip-lib.rkt"
+   "pasteboard-lib.rkt")
   
   (provide/contract (make-aligned-pasteboard ((symbols 'vertical 'horizontal) . -> . class?)))
   

@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "launcher.ss")
-(provide (all-from-out "launcher.ss"))
+(require "launcher.rkt")
+(provide (all-from-out "launcher.rkt"))

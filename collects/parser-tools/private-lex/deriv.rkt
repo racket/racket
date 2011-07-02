@@ -2,8 +2,8 @@
   
   (require mzlib/list
            (prefix is: mzlib/integer-set)
-           "re.ss"
-           "util.ss")
+           "re.rkt"
+           "util.rkt")
 
   (provide build-dfa print-dfa (struct dfa (num-states start-state final-states/actions transitions)))
 

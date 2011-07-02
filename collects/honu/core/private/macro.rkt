@@ -1,21 +1,21 @@
 #lang racket/base
 
-(require "honu-typed-scheme.ss"
+(require "honu-typed-scheme.rkt"
          "literals.rkt"
-         "parse.ss"
-         "syntax.ss"
+         "parse.rkt"
+         "syntax.rkt"
          syntax/parse
          (for-syntax macro-debugger/emit)
          (for-meta 2 macro-debugger/emit
                    racket/base)
          (for-meta -3
            (only-in "literals.rkt" (#%parens literal-parens)))
-         (for-syntax "debug.ss"
-                     "contexts.ss"
-                     "parse.ss"
-                     "syntax.ss"
+         (for-syntax "debug.rkt"
+                     "contexts.rkt"
+                     "parse.rkt"
+                     "syntax.rkt"
                      "literals.rkt"
-                     "honu-typed-scheme.ss"
+                     "honu-typed-scheme.rkt"
                      racket/base
                      syntax/parse
                      syntax/stx

@@ -8,8 +8,8 @@
    mzlib/class
    mred
    mzlib/etc
-   "snip-lib.ss"
-   "interface.ss")
+   "snip-lib.rkt"
+   "interface.rkt")
   
   (define (stretchable-editor-snip-mixin super%)
     (class* super% (stretchable-snip<%>)

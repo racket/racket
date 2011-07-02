@@ -2,7 +2,7 @@
 
 (provide get-file-tree get-plt-file-tree)
 
-(require "tree.ss" setup/dirs)
+(require "tree.rkt" setup/dirs)
 
 ;; ----------------------------------------------------------------------------
 ;; Reading a tree from a directory

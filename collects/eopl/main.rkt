@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "eopl.ss") ; provides `provide'
-(provide (all-from "eopl.ss"))
+(require "eopl.rkt") ; provides `provide'
+(provide (all-from "eopl.rkt"))

@@ -42,18 +42,18 @@
          scheme/match
          scheme/class
          scheme/list
-         (prefix-in a: "annotate.ss")
-         (prefix-in r: "reconstruct.ss")
-         "shared.ss"
-         "marks.ss"
-         "model-settings.ss"
-         "macro-unwind.ss"
-         "lifting.ss"
+         (prefix-in a: "annotate.rkt")
+         (prefix-in r: "reconstruct.rkt")
+         "shared.rkt"
+         "marks.rkt"
+         "model-settings.rkt"
+         "macro-unwind.rkt"
+         "lifting.rkt"
          (prefix-in test-engine: test-engine/scheme-tests)
          #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
          ;; for breakpoint display
          ;; (commented out to allow nightly testing)
-         #;"display-break-stuff.ss"
+         #;"display-break-stuff.rkt"
          (for-syntax scheme/base))
 
 (define stepper-model-debug? (make-parameter #f))
@@ -502,7 +502,7 @@
   (define maybe-lift
     (if (render-settings-lifting? render-settings)
         lift
-        ;; ... oh dear; model.ss should disable the double-break & late-let break when lifting is off.
+        ;; ... oh dear; model.rkt should disable the double-break & late-let break when lifting is off.
         (lambda (stx dont-care) (list stx))))
   
   (define (step-through-expression expanded expand-next-expression)

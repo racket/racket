@@ -1,16 +1,16 @@
 (module all-1-tests mzscheme
   
   (require rackunit)
-  (require "alist-test.ss"
-           "cons-test.ss"
-           "delete-test.ss"
-           "filter-test.ss"
-           "fold-test.ss"
-           "lset-test.ss"
-           "misc-test.ss"
-           "predicate-test.ss"
-           "search-test.ss"
-           "selector-test.ss")
+  (require "alist-test.rkt"
+           "cons-test.rkt"
+           "delete-test.rkt"
+           "filter-test.rkt"
+           "fold-test.rkt"
+           "lset-test.rkt"
+           "misc-test.rkt"
+           "predicate-test.rkt"
+           "search-test.rkt"
+           "selector-test.rkt")
   
   (provide all-1-tests)
   

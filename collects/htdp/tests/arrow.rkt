@@ -42,7 +42,7 @@
 ;; this creates the controller GUI
 (check-expect (control-left-right (make-posn 10 20) 10 move draw-it) true)
 
-; (load "tester.ss")
+; (load "tester.rkt")
 
 ; (test-error (control-left-right 'aa 10 move))
 

@@ -7,25 +7,25 @@
                (provide (all-from filename) ...))]))
   
   (require/provide
-   "private/interface.ss"
+   "private/interface.rkt"
    
-   "private/aligned-pasteboard.ss"
-   "private/verthoriz-alignment.ss"
-   "private/grid-alignment.ss"
-   "private/snip-wrapper.ss"
+   "private/aligned-pasteboard.rkt"
+   "private/verthoriz-alignment.rkt"
+   "private/grid-alignment.rkt"
+   "private/snip-wrapper.rkt"
    
-   "private/on-show-editor.ss"
+   "private/on-show-editor.rkt"
    
-   "private/button-snip.ss"
-   "private/embedded-message.ss"
-   "private/fixed-width-label-snip.ss"
-   "private/lines.ss"
+   "private/button-snip.rkt"
+   "private/embedded-message.rkt"
+   "private/fixed-width-label-snip.rkt"
+   "private/lines.rkt"
    
-   "private/stretchable-editor-snip.ss"
-   "private/tabbable-text.ss"
-   "private/grey-editor.ss"
-   "private/single-line-text.ss"
-   "private/cue-text.ss"
+   "private/stretchable-editor-snip.rkt"
+   "private/tabbable-text.rkt"
+   "private/grey-editor.rkt"
+   "private/single-line-text.rkt"
+   "private/cue-text.rkt"
    
-   "private/snip-lib.ss")
+   "private/snip-lib.rkt")
   )

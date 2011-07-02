@@ -1,11 +1,10 @@
-
 (module slides-to-picts scheme/base
   (require racket/draw
            scheme/class
            scheme/unit
-	   "sig.ss"
-	   "param.ss"
-	   "core.ss"
+           "sig.rkt"
+           "param.rkt"
+           "core.rkt"
            texpict/mrpict)
 
   (provide get-slides-as-picts)

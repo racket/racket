@@ -1,9 +1,9 @@
 #lang scheme
 (require (only-in mzlib/etc 
                   identity nor)
-         "contract.ss"
-         "erl.ss"
-         "heap.ss")
+         "contract.rkt"
+         "erl.rkt"
+         "heap.rkt")
 
 ;;;;;;;;;;;;;
 ;; Globals ;;

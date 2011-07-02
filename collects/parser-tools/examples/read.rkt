@@ -59,7 +59,7 @@
    [comment (:: #\; (:* (:~ #\newline)) #\newline)]
    
    
-   ;; See ${PLTHOME}/collects/syntax-color/scheme-lexer.ss for an example of
+   ;; See ${PLTHOME}/collects/syntax-color/scheme-lexer.rkt for an example of
    ;; using regexp macros to avoid the cut and paste.
    ;   [numR (:: prefixR complexR)]
    ;   [complexR (:or realR

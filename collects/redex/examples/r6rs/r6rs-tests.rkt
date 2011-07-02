@@ -2,8 +2,8 @@
 (require racket/match
          redex/reduction-semantics
          (for-syntax racket/base)
-         "test.ss"
-         "r6rs.ss")
+         "test.rkt"
+         "r6rs.rkt")
 
 ;; ============================================================
 ;; TESTING APPARATUS

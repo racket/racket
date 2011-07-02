@@ -240,7 +240,7 @@
                                                 (i which (lambda () null))
                                                 null)])
                                       (unless (coll-list? rl)
-                                        (error 'mzc "bad ~a specification in info.ss for collection ~s"
+                                        (error 'mzc "bad ~a specification in info.rkt for collection ~s"
                                                which src-cp))
                                       rl))
                                   infos collections)))])
@@ -276,7 +276,7 @@
                                        (andmap integer? v))
                             (error
                              'mzc
-                             "bad version specification in info.ss for collection ~s"
+                             "bad version specification in info.rkt for collection ~s"
                              r))
                           (list r v))
                         (list r null)))))

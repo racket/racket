@@ -1,13 +1,12 @@
-
 ;; Supplies canned moves and board-rating functions for the state
 ;; explorer.
 
 (module heuristics mzscheme
   (require mzlib/unitsig
-	   mzlib/etc
-	   mzlib/list
-	   "sig.ss"
-	   "plays-3x3.ss")
+           mzlib/etc
+           mzlib/list
+           "sig.rkt"
+           "plays-3x3.rkt")
 
   (provide heuristics-unit)
 

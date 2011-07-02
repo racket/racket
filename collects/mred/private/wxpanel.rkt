@@ -1,16 +1,16 @@
 (module wxpanel racket/base
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/list
-	   (prefix-in wx: "kernel.ss")
-	   "lock.ss"
-	   "const.ss"
-	   "helper.ss"
-	   "check.ss"
-	   "wx.ss"
-	   "wxwindow.ss"
-	   "wxitem.ss"
-	   "wxcontainer.ss")
+           mzlib/class100
+           mzlib/list
+           (prefix-in wx: "kernel.rkt")
+           "lock.rkt"
+           "const.rkt"
+           "helper.rkt"
+           "check.rkt"
+           "wx.rkt"
+           "wxwindow.rkt"
+           "wxitem.rkt"
+           "wxcontainer.rkt")
 
   (provide (protect-out wx-panel%
                         wx-vertical-panel%

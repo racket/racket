@@ -1,9 +1,8 @@
-
 (module text mzscheme
   (require mzlib/class
-           "wxme.ss"
-           "editor.ss"
-           "private/readable-editor.ss")
+           "wxme.rkt"
+           "editor.rkt"
+           "private/readable-editor.rkt")
 
   (provide reader
            text-editor%)

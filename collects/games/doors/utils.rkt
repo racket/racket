@@ -7,7 +7,7 @@
            mzlib/etc
            mzlib/class
            mzlib/kw
-           "doors.ss")
+           "doors.rkt")
   
   (provide door-bm
            magic-door-bm

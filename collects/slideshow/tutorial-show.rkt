@@ -6,7 +6,7 @@
 ;; The first few slides are not to be read
 ;; until you have seen the rest of the tutorial,
 ;; so we put them in a separate file
-(require "initial-ones.ss")
+(require "initial-ones.rkt")
 (do-initial-slides)
 
 ;; The rest is meant for reading, as you view the slides
@@ -805,7 +805,7 @@
  #:title "Printing"
  (para "To export a set of slides as PostScript, "
             "use the" (tt "slideshow") "command-line program:")
- (tt "slideshow --print mytalk.ss")
+ (tt "slideshow --print mytalk.rkt")
  (blank)
  (para "Slideshow steps through slides while producing PostScript pages")
  (para "The slides will look bad on the screen --- because"
@@ -816,11 +816,11 @@
  #:title "Condensing"
  (para "Often, it makes sense to eliminate" (code 'step)
             "staging when printing slides:")
- (tt "slideshow --print --condense mytalk.ss")
+ (tt "slideshow --print --condense mytalk.rkt")
  (blank)
  'next
  (para "You can also condense without printing")
- (tt "slideshow --condense mytalk.ss")
+ (tt "slideshow --condense mytalk.rkt")
  'next
  (blank)
  (para "For example, in condensed form, this slide appears"

@@ -1,5 +1,5 @@
 ;;;
-;;; <selector.ss> ---- List selectors
+;;; <selector.rkt> ---- List selectors
 ;;; Time-stamp: <02/02/27 12:49:44 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -139,4 +139,4 @@
     (let ((tail (cdr lis)))
       (if (pair? tail) (lp tail) lis))))
 
-;;; selector.ss ends here
+;;; selector.rkt ends here

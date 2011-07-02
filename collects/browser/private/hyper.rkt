@@ -28,7 +28,7 @@ A test case:
 #lang scheme/unit
 
 (require mzlib/class
-         "sig.ss"
+         "sig.rkt"
          scheme/path
          scheme/file
          net/url-sig
@@ -219,14 +219,14 @@ A test case:
                (send (get-canvas) goto-url
                      (open-input-string v)
                      (get-url)))))
-         
+
          (define/public (init-browser-status-line top-level-window)
-           (send top-level-window open-status-line 'browser:hyper.ss))
+           (send top-level-window open-status-line 'browser:hyper.rkt))
          (define/public (update-browser-status-line top-level-window s)
-           (send top-level-window update-status-line 'browser:hyper.ss s))
+           (send top-level-window update-status-line 'browser:hyper.rkt s))
          (define/public (close-browser-status-line top-level-window)
-           (send top-level-window close-status-line 'browser:hyper.ss))
-         
+           (send top-level-window close-status-line 'browser:hyper.rkt))
+
          (define/public reload
            ;; The reload function is called in a non-main thread,
            ;;  since this class is instantiated in a non-main thread.

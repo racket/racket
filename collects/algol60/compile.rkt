@@ -1,12 +1,12 @@
 #cs(module compile mzscheme
-     (require "parse.ss"
+     (require "parse.rkt"
               mzlib/match
               mzlib/list)
-     
+
      (provide compile-simplified)
 
-     ;; The compiler generates references to prim.ss and
-     ;; runtime.ss exports, as well as Racket forms
+     ;; The compiler generates references to "prims.rkt" and
+     ;; "runtime.rkt" exports, as well as Racket forms
      ;; and functions. The `ctx' argument provides
      ;; an appropriate context for those bindings (in
      ;; the form of a syntax object to use with d->s-o).

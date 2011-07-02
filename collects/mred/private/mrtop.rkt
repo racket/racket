@@ -1,32 +1,32 @@
 (module mrtop mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/etc
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "const.ss"
-	   "kw.ss"
-	   "check.ss"
-	   "wx.ss"
-	   "wxtop.ss"
-	   "wxpanel.ss"
-	   "wxitem.ss"
-	   "mrwindow.ss"
-	   "mrcontainer.ss"
-           "app.ss")
+           mzlib/class100
+           mzlib/etc
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "const.rkt"
+           "kw.rkt"
+           "check.rkt"
+           "wx.rkt"
+           "wxtop.rkt"
+           "wxpanel.rkt"
+           "wxitem.rkt"
+           "mrwindow.rkt"
+           "mrcontainer.rkt"
+           "app.rkt")
 
   (provide top-level-window<%>
-	   frame%
-	   dialog%
-	   (protect root-menu-frame)
-	   get-top-level-windows
-	   get-top-level-focus-window
-	   get-top-level-edit-target-window
-	   send-message-to-window
-	   (protect check-top-level-parent/false
-		    check-frame-parent/false))
+           frame%
+           dialog%
+           (protect root-menu-frame)
+           get-top-level-windows
+           get-top-level-focus-window
+           get-top-level-edit-target-window
+           send-message-to-window
+           (protect check-top-level-parent/false
+                    check-frame-parent/false))
 
   (define top-level-window<%>
     (interface (area-container-window<%>)

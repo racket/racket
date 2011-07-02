@@ -5,7 +5,7 @@
 ;; "xxxxxxx" in their name by a "NNN_NNN" version number, and will also do this
 ;; rewrite in all files.  (Actually looking for a few known string templates,
 ;; to be safe.)  Note that this is done *in-place*, so it will not work from a
-;; running Racket.exe on Windows -- "winvers.ss" uses a trick of making a copy
+;; running Racket.exe on Windows -- "winvers.rkt" uses a trick of making a copy
 ;; of the binary and restarting that copy for the actual change.
 
 #lang scheme/base

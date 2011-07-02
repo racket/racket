@@ -1,11 +1,10 @@
-
 (module slatex-wrapper scheme/base
   (require mzlib/file
            scheme/contract
-	   mzlib/process
-	   mzlib/sendevent
+           mzlib/process
+           mzlib/sendevent
            scheme/runtime-path
-           "private/slatex.ss")
+           "private/slatex.rkt")
   
   (define-runtime-path here ".")
 

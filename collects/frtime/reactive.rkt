@@ -1,6 +1,6 @@
 (module reactive frtime/lang-utils
-  (require "lang-ext.ss"
-           "frp-snip.ss"
+  (require "lang-ext.rkt"
+           "frp-snip.rkt"
            frtime/frlibs/list
            frtime/frlibs/etc
            (as-is:unchecked frtime/core/frp
@@ -21,5 +21,5 @@
            (all-from frtime/frlibs/list)
            (all-from frtime/frlibs/etc)
            (all-from frtime/lang-utils)
-           (all-from-except "lang-ext.ss" lift)
-           (all-from "frp-snip.ss")))
+           (all-from-except "lang-ext.rkt" lift)
+           (all-from "frp-snip.rkt")))

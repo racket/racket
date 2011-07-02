@@ -1,7 +1,6 @@
-
 (module cache-image mzscheme
   (require mzlib/class
-           "wxme.ss")
+           "wxme.rkt")
 
   (provide reader
            cache-image%)

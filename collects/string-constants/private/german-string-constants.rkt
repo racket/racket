@@ -1,4 +1,4 @@
-(module german-string-constants "string-constant-lang.ss"
+(module german-string-constants "string-constant-lang.rkt"
 
  (is-this-your-native-language
   "Ist Deutsch Ihre Muttersprache?")
@@ -738,17 +738,17 @@
  (drscheme-internal-error "Interner Fehler in DrRacket")
  
  ;;; tools
- (invalid-tool-spec "Die Tool-Spezifikation in der Datei info.ss der Kollektion ~a enthält Fehler. Da sollte eine Zeichenkette oder eine Liste von Zeichenketten stehen, tatsächlich steht dort aber: ~e")
+ (invalid-tool-spec "Die Tool-Spezifikation in der Datei info.rkt der Kollektion ~a enthält Fehler. Da sollte eine Zeichenkette oder eine Liste von Zeichenketten stehen, tatsächlich steht dort aber: ~e")
  (error-invoking-tool-title "Fehler beim Starten von Tool ~s;~s")
  (error-loading-tool-title "Fehler beim Laden von Tool ~s\n~a") ;; ~s filled with a path, ~a filled with an error message from an exn
  (tool-tool-names-same-length
-  "`tool-names' und `tools' in info.ss für ~s müssen Listen der gleichen Länge sein, tatsächlich stehen dort ~e und ~e")
+  "`tool-names' und `tools' in info.rkt für ~s müssen Listen der gleichen Länge sein, tatsächlich stehen dort ~e und ~e")
  (tool-tool-icons-same-length
-  "`tool-icons' und `tools' in info.ss für ~s müssen Listen der gleichen Länge sein, tatsächlich stehen dort ~e und ~e")
+  "`tool-icons' und `tools' in info.rkt für ~s müssen Listen der gleichen Länge sein, tatsächlich stehen dort ~e und ~e")
  (tool-tool-urls-same-length
-  "`tool-urls' und `tools' in info.ss für ~s müssen Listen der gleichen Länge sein, tatsächlich stehen dort ~e und ~e")
+  "`tool-urls' und `tools' in info.rkt für ~s müssen Listen der gleichen Länge sein, tatsächlich stehen dort ~e und ~e")
  (error-getting-info-tool
-  "Fehler beim Laden von info.ss file für ~s")
+  "Fehler beim Laden von info.rkt file für ~s")
  (tool-error-phase1 "Fehler in Phase 1 von Tool ~s; ~s")
  (tool-error-phase2 "Fehler in Phase 2 von Tool ~s; ~s")
 

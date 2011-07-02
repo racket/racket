@@ -28,7 +28,7 @@
 	 )
 (require srfi/9
 	 racket/promise
-	 "random.ss")
+	 "random.rkt")
 
 (provide exn:assertion-violation?
 	 exn:assertion-violation-who

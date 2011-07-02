@@ -2,14 +2,14 @@
 
 ;; `omitted-paths' returns a list of omitted file and subdirectory names for a
 ;; given directory, or 'all if the directory is completely omitted.  Considers
-;; the local info.ss as well as info.ss in parent directories all the way to a
+;; the local info.rkt as well as info.rkt in parent directories all the way to a
 ;; collection root.  (Could be a bit easier using `find-relevant-directories',
 ;; but it needs to be available for setup-plt, before the "info-domain" caches
 ;; are created.)
 
 (provide omitted-paths)
 
-(require scheme/path scheme/list scheme/promise "../dirs.ss" "lib-roots.ss")
+(require scheme/path scheme/list scheme/promise "../dirs.rkt" "lib-roots.rkt")
 
 ;; An entry for each collections root that holds a hash table.  The hash table
 ;; maps a reversed list of subpath elements to the exploded omitted-paths

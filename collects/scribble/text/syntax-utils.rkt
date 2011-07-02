@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "output.ss" (for-syntax scheme/base syntax/kerncase))
+(require "output.rkt" (for-syntax scheme/base syntax/kerncase))
 
 (provide module-begin/text begin/text include/text begin/collect
          process-begin/text)
@@ -172,7 +172,7 @@
      #'(process-begin/text begin/collect begin expr ...)]))
 
 ;; include for templates
-(require (for-syntax scheme/base (prefix-in scribble: "../reader.ss"))
+(require (for-syntax scheme/base (prefix-in scribble: "../reader.rkt"))
          scheme/include)
 (define-syntax-rule (include/text path-spec)
   (begin/text

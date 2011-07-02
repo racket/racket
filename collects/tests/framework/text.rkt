@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/file
-         "test-suite-utils.ss")
+         "test-suite-utils.rkt")
 
 (define dummy-frame-title "dummy to avoid quitting")
 (queue-sexp-to-mred `(send (make-object frame:basic% ,dummy-frame-title) show #t))

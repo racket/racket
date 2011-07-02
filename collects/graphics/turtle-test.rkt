@@ -2,9 +2,9 @@
   (require mred
            mzlib/class
            mzlib/math
-           "turtle-examples.ss"
-           "turtles.ss")
-  
+           "turtle-examples.rkt"
+           "turtles.rkt")
+
   (define frame (make-object frame% "Turtle Examples"))
   
   (define options

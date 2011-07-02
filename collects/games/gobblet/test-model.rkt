@@ -1,13 +1,12 @@
-
 ;; Some tests for the model
 
 (module test-model mzscheme
   (require mzlib/unitsig
-	   mzlib/etc
-	   mzlib/list
-	   "sig.ss"
-	   "model.ss"
-	   "test.ss")
+           mzlib/etc
+           mzlib/list
+           "sig.rkt"
+           "model.rkt"
+           "test.rkt")
 
   ;; Test basic procs:
   (define (test-folding n)

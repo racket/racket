@@ -1,4 +1,4 @@
 #lang setup/infotab
 
 (define name "GCalc")
-(define game "gcalc.ss")
+(define game "gcalc.rkt")

@@ -1,12 +1,12 @@
 #lang scheme/base
 (require scheme/class
          ffi/unsafe/atomic
-         "syntax.ss"
-         "local.ss"
-         "../unsafe/cairo.ss"
-         "dc-path.ss"
-         "dc-intf.ss"
-         "point.ss")
+         "syntax.rkt"
+         "local.rkt"
+         "../unsafe/cairo.rkt"
+         "dc-path.rkt"
+         "dc-intf.rkt"
+         "point.rkt")
 
 (provide region%
 

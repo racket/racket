@@ -1,14 +1,13 @@
-
 (module link-unit mzscheme
   (require mzlib/unit
-	   mzlib/process
-	   mzlib/sendevent
-	   "private/dirs.ss"
+           mzlib/process
+           mzlib/sendevent
+           "private/dirs.rkt"
            "private/stdio.rkt"
-	   "private/cmdargs.ss"
-           "filename-version.ss")
+           "private/cmdargs.rkt"
+           "filename-version.rkt")
 
-  (require "link-sig.ss")
+  (require "link-sig.rkt")
 
   (provide dynext:link@)
 

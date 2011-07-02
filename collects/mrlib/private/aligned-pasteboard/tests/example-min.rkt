@@ -2,8 +2,8 @@
  mzlib/class
  mred
  mzlib/etc
- "../aligned-pasteboard.ss"
- "../aligned-editor-container.ss")
+ "../aligned-pasteboard.rkt"
+ "../aligned-editor-container.rkt")
 
 (define f (new frame% (label "") (width 400) (height 400)))
 (define e (new horizontal-pasteboard%))

@@ -5,8 +5,8 @@
 (require "shared-unit-tests.rkt")
 
 ;; now, the rest:
-(require "through-tests.ss" 
-         "test-engine.ss")
+(require "through-tests.rkt" 
+         "test-engine.rkt")
 
 (define lazy-tests 
   '(lazy1 lazy2 lazy3 lazy-multi lazy-app1 lazy-app2 lazy-app3 

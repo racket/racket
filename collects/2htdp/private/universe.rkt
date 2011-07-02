@@ -1,10 +1,10 @@
 #lang racket/gui
 
-(require (for-syntax "syn-aux.ss")
-         "checked-cell.ss"
-         "check-aux.ss"
-         "timer.ss"    
-         "last.ss"
+(require (for-syntax "syn-aux.rkt")
+         "checked-cell.rkt"
+         "check-aux.rkt"
+         "timer.rkt"
+         "last.rkt"
          htdp/error
          (only-in mzlib/etc evcase)
          string-constants)

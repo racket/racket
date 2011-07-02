@@ -5,7 +5,7 @@
 (require racket/class)
 
 (require "private/honu-typed-scheme.rkt"
-         "private/parse.ss"
+         "private/parse.rkt"
          (for-syntax "private/literals.rkt")
          (for-syntax "private/honu-typed-scheme.rkt")
          (for-syntax "private/parse.rkt")
@@ -20,7 +20,7 @@
          (for-syntax "private/more.rkt")
          (for-syntax "private/syntax.rkt")
          (for-syntax "private/macro.rkt")
-         "private/macro.ss")
+         "private/macro.rkt")
 
 (define-for-syntax (syntax-to-string stx)
   (format "original '~a' - ~a" (syntax->datum stx) (to-honu-string stx)))

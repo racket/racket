@@ -6,7 +6,7 @@
          setup/main-collects
          scheme/list
          scheme/match
-         "../config.ss")
+         "../config.rkt")
 
 (provide make-start-page)
 

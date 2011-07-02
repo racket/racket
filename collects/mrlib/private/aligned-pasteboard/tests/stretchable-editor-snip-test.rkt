@@ -1,8 +1,8 @@
 (require
- "../aligned-pasteboard.ss"
- "../aligned-editor-container.ss"
- "../stretchable-editor-snip.ss"
- "../snip-lib.ss")
+ "../aligned-pasteboard.rkt"
+ "../aligned-editor-container.rkt"
+ "../stretchable-editor-snip.rkt"
+ "../snip-lib.rkt")
 
 (define f (new frame% (label "") (width 500) (height 500)))
 (define e (new vertical-pasteboard%))

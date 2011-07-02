@@ -1,5 +1,5 @@
 (module moves mzscheme
-  (require "board.ss"
+  (require "board.rkt"
            mzlib/contract
            mzlib/list)
 

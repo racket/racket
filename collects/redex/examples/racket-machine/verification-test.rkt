@@ -1,7 +1,7 @@
 #lang racket
 
 (require redex/reduction-semantics)
-(require "grammar.ss" "verification.ss")
+(require "grammar.rkt" "verification.rkt")
 
 ;; localrefs
 (test-predicate

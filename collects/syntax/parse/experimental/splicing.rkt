@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     "../../parse.ss"
+                     "../../parse.rkt"
                      "../private/rep-data.rkt"
                      "../private/kws.rkt")
          "../private/runtime.rkt")

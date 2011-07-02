@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-(require "sig.ss")
+(require "sig.rkt")
 
 ;; Implements a red-black tree with relative indexing along right
 ;; splines. This allows the usual O(log(n)) operations, plus a

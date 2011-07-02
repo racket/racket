@@ -1,8 +1,7 @@
-
 #lang mzscheme
 
 (require mzlib/unit)
-(require "sig.ss")
+(require "sig.rkt")
 
 (provide compiler:option@)
 

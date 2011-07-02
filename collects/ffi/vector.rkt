@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "unsafe.ss"
+(require "unsafe.rkt"
          racket/unsafe/ops
          (for-syntax racket/base))
 

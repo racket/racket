@@ -1,5 +1,5 @@
 ;;;
-;;; <misc-test.ss> ---- Misc list procedure tests
+;;; <misc-test.rkt> ---- Misc list procedure tests
 ;;; Time-stamp: <05/12/16 21:15:50 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -379,4 +379,4 @@
      ))
   )
 
-;;; misc-test.ss ends here
+;;; misc-test.rkt ends here

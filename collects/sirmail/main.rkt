@@ -1,3 +1,2 @@
-
 (module main scheme/base
-  (require "sirmail.ss"))
+  (require "sirmail.rkt"))

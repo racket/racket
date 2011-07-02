@@ -2,16 +2,16 @@
 (require racket/class
          (only-in racket/list last)
          ffi/unsafe
-	 "../../syntax.rkt"
-	 "../../lock.rkt"
-	 "../common/queue.rkt"
-	 "../common/freeze.rkt"
-	 "../common/dialog.rkt"
-         "utils.ss"
-         "const.ss"
-         "types.ss"
-	 "window.rkt"
-	 "frame.rkt"
+         "../../syntax.rkt"
+         "../../lock.rkt"
+         "../common/queue.rkt"
+         "../common/freeze.rkt"
+         "../common/dialog.rkt"
+         "utils.rkt"
+         "const.rkt"
+         "types.rkt"
+         "window.rkt"
+         "frame.rkt"
          "wndclass.rkt")
 
 (provide dialog%)

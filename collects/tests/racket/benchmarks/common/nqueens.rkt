@@ -1,2 +1,1 @@
-
-(module nqueens "wrap.ss")
+(module nqueens "wrap.rkt")

@@ -1,9 +1,9 @@
-;;; filter.ss
+;;; filter.rkt
 
 (module filter mzscheme
-  (require mzlib/string)
-  (require "properties.ss")
-  (require "util.ss")
+  (require mzlib/string
+           "properties.rkt"
+           "util.rkt")
 
   (provide
    string->filter

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (prefix-in scribble: "../reader.ss")
+(require (prefix-in scribble: "../reader.rkt")
          (rename-in syntax/module-reader
                     [#%module-begin #%reader-module-begin]))
 (provide (rename-out [module-begin #%module-begin])

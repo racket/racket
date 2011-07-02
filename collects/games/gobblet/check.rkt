@@ -1,4 +1,3 @@
-
 ;; Checks that all paths in a tree of games leads to the expected
 ;; winner. It also generates information for known plays to be used to
 ;; speed up future games (i.e., converts learned strategy to a compact
@@ -6,12 +5,12 @@
 
 (module check mzscheme
   (require mzlib/unitsig
-	   mzlib/etc
-	   mzlib/list
-	   "sig.ss"
-	   "model.ss"
-	   "explore.ss"
-	   "heuristics.ss")
+           mzlib/etc
+           mzlib/list
+           "sig.rkt"
+           "model.rkt"
+           "explore.rkt"
+           "heuristics.rkt")
 
   (define board-size 3)
   (define cannon-size +inf.0)

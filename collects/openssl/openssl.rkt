@@ -1,4 +1,4 @@
 (module openssl mzscheme
-  (require "mzssl.ss")
+  (require "mzssl.rkt")
 
   (provide ssl-connect))

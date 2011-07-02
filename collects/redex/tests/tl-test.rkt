@@ -1,9 +1,9 @@
 #lang racket/gui
-  (require "../reduction-semantics.ss"
-           "test-util.ss"
-           (only-in "../private/matcher.ss" make-bindings make-bind)
+  (require "../reduction-semantics.rkt"
+           "test-util.rkt"
+           (only-in "../private/matcher.rkt" make-bindings make-bind)
            racket/match
-           "../private/struct.ss")
+           "../private/struct.rkt")
   
   (reset-count)
 
@@ -2024,7 +2024,7 @@
           (and m (length m)))
         1)
   
-  (require (lib "list.ss"))
+  (require mzlib/list)
   (let ()
     (define-metafunction lc-lang
       free-vars : e -> (x ...)
@@ -2552,4 +2552,4 @@
      #:blaming "tl-test"
      #:message "steps expression"))
   
-  (print-tests-passed 'tl-test.ss)
+  (print-tests-passed 'tl-test.rkt)

@@ -5,7 +5,7 @@
   
   (require mzlib/class
            mzlib/list
-           "yacc-helper.ss"
+           "yacc-helper.rkt"
            mzlib/contract)
   
   ;; Each production has a unique index 0 <= index <= number of productions

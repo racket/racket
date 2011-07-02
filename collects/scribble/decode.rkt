@@ -1,7 +1,7 @@
 #lang scheme/base
-(require "core.ss"
-         "private/provide-structs.ss"
-         "decode-struct.ss"
+(require "core.rkt"
+         "private/provide-structs.rkt"
+         "decode-struct.rkt"
          scheme/contract
          scheme/class
          scheme/list)

@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require tests/eli-tester profile/structs profile/analyzer
-         scheme/match scheme/list "topsort.ss")
+         scheme/match scheme/list "topsort.rkt")
 
 (define A '(A . #f))
 (define B '(B . #f))

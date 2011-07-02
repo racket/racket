@@ -2,8 +2,8 @@
 
 (require scheme/unit scheme/class framework drscheme/tool
          browser/external string-constants
-         "patchlevel.ss"
-         "check.ss")
+         "patchlevel.rkt"
+         "check.rkt")
 
 (define download-url "http://download.racket-lang.org/")
 

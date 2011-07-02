@@ -1,9 +1,9 @@
 (module aligned-pasteboard mzscheme
   (require
-    "private/aligned-pasteboard/aligned-pasteboard.ss"
-    "private/aligned-pasteboard/aligned-editor-container.ss"
-    "private/aligned-pasteboard/interface.ss"
-    "private/aligned-pasteboard/stretchable-editor-snip.ss")
+    "private/aligned-pasteboard/aligned-pasteboard.rkt"
+    "private/aligned-pasteboard/aligned-editor-container.rkt"
+    "private/aligned-pasteboard/interface.rkt"
+    "private/aligned-pasteboard/stretchable-editor-snip.rkt")
   (provide
     vertical-pasteboard%
     horizontal-pasteboard%

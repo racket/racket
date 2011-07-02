@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define game "chat-noir-unit.ss")
+(define game "chat-noir-unit.rkt")
 (define game-set "Puzzle Games")
-(define compile-omit-files '("chat-noir.ss"))
+(define compile-omit-files '("chat-noir.rkt"))
 (define name "Chat Noir")

@@ -1,17 +1,16 @@
-
 ;; Implements the Beginner Scheme language, at least in terms of the
 ;; forms and procedures. The reader-level aspects of the language
 ;; (e.g., case-sensitivity) are not implemented here.
 
 (module htdp-beginner scheme/base
   (require mzlib/etc
-	   mzlib/list
-	   syntax/docprovide
+           mzlib/list
+           syntax/docprovide
            (for-syntax scheme/base))
 
   ;; Implements the forms:
-  (require "private/teach.ss"
-	   "private/teach-module-begin.ss"
+  (require "private/teach.rkt"
+           "private/teach-module-begin.rkt"
            test-engine/scheme-tests)
 
   ;; syntax:

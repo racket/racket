@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../kernel.ss" racket/draw/private/font-syms)
+(require "../kernel.rkt" racket/draw/private/font-syms)
 
 (define the-clipboard (get-the-clipboard))
 (define the-x-selection-clipboard (get-the-x-selection))

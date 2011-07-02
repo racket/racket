@@ -1,35 +1,35 @@
 (module mritem racket/base
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/list
-	   (prefix-in wx: "kernel.ss")
-	   "lock.ss"
-	   "const.ss"
-	   "kw.ss"
-           "gdi.ss"
-	   "check.ss"
-	   "helper.ss"
-	   "wx.ss"
-	   "wxitem.ss"
-           "wxlitem.ss"
-	   "mrwindow.ss"
-	   "mrcontainer.ss")
+           mzlib/class100
+           mzlib/list
+           (prefix-in wx: "kernel.rkt")
+           "lock.rkt"
+           "const.rkt"
+           "kw.rkt"
+           "gdi.rkt"
+           "check.rkt"
+           "helper.rkt"
+           "wx.rkt"
+           "wxitem.rkt"
+           "wxlitem.rkt"
+           "mrwindow.rkt"
+           "mrcontainer.rkt")
 
   (provide control<%>
-	   (protect-out control%-keywords
+           (protect-out control%-keywords
                         basic-control%)
-	   message%
-	   button%
-	   check-box%
-	   radio-box%
-	   slider%
-	   gauge%
+           message%
+           button%
+           check-box%
+           radio-box%
+           slider%
+           gauge%
 
-	   list-control<%>
-	   choice%
-	   list-box%
+           list-control<%>
+           choice%
+           list-box%
 
-	   (protect-out wrap-callback
+           (protect-out wrap-callback
                         check-list-control-args
                         check-list-control-selection
                         

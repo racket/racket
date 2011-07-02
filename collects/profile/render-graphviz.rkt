@@ -2,7 +2,7 @@
 
 (provide render)
 
-(require "structs.ss" "analyzer.ss" "utils.ss")
+(require "structs.rkt" "analyzer.rkt" "utils.rkt")
 
 (define (render profile
                 #:hide-self [hide-self% 1/100]

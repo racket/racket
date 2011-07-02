@@ -2,7 +2,7 @@
 
 (provide render)
 
-(require "structs.ss" "analyzer.ss" "utils.ss" scheme/list)
+(require "structs.rkt" "analyzer.rkt" "utils.rkt" scheme/list)
 
 (define (f:msec msec)
   (number->string (round (inexact->exact msec))))

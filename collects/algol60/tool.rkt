@@ -3,13 +3,13 @@
            mred
            mzlib/unit
            mzlib/class
-           "parse.ss"
-           "simplify.ss"
-           "compile.ss"
-	   compiler/embed
-	   string-constants
-	   errortrace/errortrace-lib
-           (prefix bd: "bd-tool.ss"))
+           "parse.rkt"
+           "simplify.rkt"
+           "compile.rkt"
+           compiler/embed
+           string-constants
+           errortrace/errortrace-lib
+           (prefix bd: "bd-tool.rkt"))
 
   (provide tool@)
 
@@ -44,7 +44,7 @@
 	      (define/override (get-mrflow-primitives-filename)
 		(build-path (collection-path "mrflow")
 			    "primitives"
-			    "algol60.ss"))
+			    "algol60.rkt"))
 	      (super-instantiate ()))
 	    %))
 

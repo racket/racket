@@ -1,5 +1,5 @@
 ;;;
-;;; <cons.ss> ---- List constructors
+;;; <cons.rkt> ---- List constructors
 ;;; Time-stamp: <02/02/27 12:19:59 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -25,7 +25,7 @@
 
 #lang scheme/base
 
-(require srfi/optional "selector.ss"
+(require srfi/optional "selector.rkt"
          (only-in scheme/list [make-list make-list*]))
 
 (provide xcons
@@ -90,4 +90,4 @@
     (if (= n count) '()
         (cons (+ start (* n step)) (loop (add1 n))))))
 
-;;; cons.ss ends here
+;;; cons.rkt ends here

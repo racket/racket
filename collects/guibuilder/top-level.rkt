@@ -7,9 +7,9 @@
          racket/list
          (prefix-in mred: racket/gui)
          (prefix-in framework: framework)
-         "utils.ss"
-         "base.ss"
-         "panel.ss")
+         "utils.rkt"
+         "base.rkt"
+         "panel.rkt")
 
 ;; INVARIANT: If a snip is selected, then no ancestor or
 ;;  descendant of the snip can be selected. Otherwise, the

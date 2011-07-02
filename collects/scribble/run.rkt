@@ -1,16 +1,16 @@
 #lang racket/base
 
-(require "core.ss"
-         "base-render.ss"
-         "xref.ss"
+(require "core.rkt"
+         "base-render.rkt"
+         "xref.rkt"
          scheme/cmdline
          scheme/file
          scheme/class
          raco/command-name
-         (prefix-in text:  "text-render.ss")
-         (prefix-in html:  "html-render.ss")
-         (prefix-in latex: "latex-render.ss")
-         (prefix-in pdf:   "pdf-render.ss"))
+         (prefix-in text:  "text-render.rkt")
+         (prefix-in html:  "html-render.rkt")
+         (prefix-in latex: "latex-render.rkt")
+         (prefix-in pdf:   "pdf-render.rkt"))
 
 (define multi-html:render-mixin
   (lambda (%) (html:render-multi-mixin (html:render-mixin %))))

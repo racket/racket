@@ -1,7 +1,7 @@
-;; prims.ss
+;; prims.rkt
 
 (module prims mzscheme
-  (require "mxmain.ss")
+  (require "mxmain.rkt")
 
   (provide 
    mx-version

@@ -1,7 +1,7 @@
 (module term-test scheme
-  (require "../private/term.ss"
-           "../private/matcher.ss"
-           "test-util.ss")
+  (require "../private/term.rkt"
+           "../private/matcher.rkt"
+           "test-util.rkt")
   
   (reset-count)
   (test (term 1) 1)
@@ -180,4 +180,4 @@
             (gensym 'wrong)))
         'label)
   
-  (print-tests-passed 'term-test.ss))
+  (print-tests-passed 'term-test.rkt))

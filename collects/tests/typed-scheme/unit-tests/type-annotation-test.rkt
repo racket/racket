@@ -1,12 +1,12 @@
 #lang scheme/base
-(require "test-utils.ss"
+(require "test-utils.rkt"
          (for-syntax scheme/base)
          typed-scheme/private/type-annotation
          typed-scheme/private/parse-type
          (types abbrev numeric-tower utils)
-	 (env type-env-structs init-envs)
-	 (utils tc-utils)
-	 (rep type-rep filter-rep object-rep)
+         (env type-env-structs init-envs)
+         (utils tc-utils)
+         (rep type-rep filter-rep object-rep)
          rackunit)
 
 (provide type-annotation-tests)

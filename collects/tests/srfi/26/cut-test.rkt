@@ -1,5 +1,5 @@
 ;;;
-;;; <cut-test.ss> ---- SRFI 26 tests
+;;; <cut-test.rkt> ---- SRFI 26 tests
 ;;; Time-stamp: <06/06/09 16:04:14 nhw>
 ;;;
 ;;; Usually, I would add a copyright notice, and the announce that
@@ -20,7 +20,7 @@
 ;     SRFI-23: error
 ;
 
-; $Id: cut-test.ss,v 1.1 2002/06/20 15:40:52 noel Exp $
+; $Id: cut-test.rkt,v 1.1 2002/06/20 15:40:52 noel Exp $
 
 (module cut-test mzscheme
   (require rackunit)

@@ -1,7 +1,6 @@
-
 (module gui mzscheme
-  (require "board.ss"
-	   "moves.ss"
+  (require "board.rkt"
+           "moves.rkt"
            mred
            mzlib/class
            mzlib/list

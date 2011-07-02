@@ -3,7 +3,7 @@
 
 (define name "DeinProgramm")
 
-(define tools '("deinprogramm-langs.ss"))
+(define tools '("deinprogramm-langs.rkt"))
 
 (define tool-icons '(("logo-small.png" "deinprogramm")))
 (define tool-names '("DeinProgramm"))

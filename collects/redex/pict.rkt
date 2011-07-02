@@ -1,11 +1,11 @@
 #lang racket/base
 
 (require racket/contract
-         "private/pict.ss"
-         "private/core-layout.ss"
-         "private/loc-wrapper.ss"
-         "reduction-semantics.ss"
-         (lib "mrpict.ss" "texpict"))
+         "private/pict.rkt"
+         "private/core-layout.rkt"
+         "private/loc-wrapper.rkt"
+         "reduction-semantics.rkt"
+         texpict/mrpict)
 
 (define reduction-rule-style/c
   (symbols 'compact-vertical

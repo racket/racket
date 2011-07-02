@@ -1,14 +1,13 @@
-
-;; Plays automatic games, often useful when learning is enabled in explore.ss
+;; Plays automatic games, often useful when learning is enabled in "explore.rkt"
 
 (module robot mzscheme
   (require mzlib/unitsig
            mzlib/etc
            mzlib/list
-           "sig.ss"
-           "model.ss"
-           "explore.ss"
-           "heuristics.ss")
+           "sig.rkt"
+           "model.rkt"
+           "explore.rkt"
+           "heuristics.rkt")
   
   (define board-size 3)
   (define steps 2)

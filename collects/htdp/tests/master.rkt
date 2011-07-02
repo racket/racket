@@ -3,7 +3,7 @@
 #reader(lib "htdp-beginner-reader.ss" "lang")((modname master) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 (require htdp/master)
 
-; (load "tester.ss")
+; (load "tester.rkt")
 
 ;; check-guess : color color color color -> symbol
 

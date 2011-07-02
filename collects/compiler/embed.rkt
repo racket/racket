@@ -2,10 +2,10 @@
 (require scheme/unit
          scheme/contract)
 
-(require "sig.ss")
+(require "sig.rkt")
 
-(require "embed-unit.ss"
-         "embed-sig.ss")
+(require "embed-unit.rkt"
+         "embed-sig.rkt")
 
 (define-values/invoke-unit/infer compiler:embed@)
 

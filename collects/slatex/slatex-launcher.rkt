@@ -1,6 +1,5 @@
-
 (module slatex-launcher scheme/base
-  (require "slatex-wrapper.ss"
+  (require "slatex-wrapper.rkt"
            scheme/cmdline)
 
   (define argv (current-command-line-arguments))

@@ -9,7 +9,7 @@
   ;; Path normalization is not really necessary by any existing code,
   ;; but there might be applications that rely on these paths, so it's
   ;; best to do some minor normalization.  This is similar to what
-  ;; "main-collects.ss" does. Don't use this with 'exec-file, however,
+  ;; "main-collects.rkt" does. Don't use this with 'exec-file, however,
   ;; because the treatment of an executable path can very depending
   ;; on whether it has a path prefix or not.
   (define (system-path* what)

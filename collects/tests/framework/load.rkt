@@ -1,5 +1,5 @@
 #lang racket/base
-(require "test-suite-utils.ss")
+(require "test-suite-utils.rkt")
 
   (load-framework-automatically #f)
 
@@ -21,20 +21,20 @@
             (void))))))
 
  
-  (test/load "gui-utils.ss" 'gui-utils:next-untitled-name)
-  (test/load "test.ss" 'test:run-interval)
-  (test/load "splash.ss" 'start-splash)
-  (test/load "framework-sig.ss" '(begin (eval '(require mzlib/unit))
+  (test/load "gui-utils.rkt" 'gui-utils:next-untitled-name)
+  (test/load "test.rkt" 'test:run-interval)
+  (test/load "splash.rkt" 'start-splash)
+  (test/load "framework-sig.rkt" '(begin (eval '(require mzlib/unit))
                                         (eval '(define-signature dummy-signature^ ((open framework^))))))
-  (test/load "framework-unit.ss" 'framework@)
-  (test/load "framework.ss" '(list test:button-push
-				   gui-utils:next-untitled-name
-				   frame:basic-mixin))
+  (test/load "framework-unit.rkt" 'framework@)
+  (test/load "framework.rkt" '(list test:button-push
+                                    gui-utils:next-untitled-name
+                                    frame:basic-mixin))
   
   ;; ensures that all of the names in the signature are provided
   ;; by (require framework)
-  (test/load 
-   "framework.ss"
+  (test/load
+   "framework.rkt"
    ;; these extra evals let me submit multiple, independent top-level
    ;; expressions in the newly created namespace.
    '(begin (eval '(require mzlib/unit))

@@ -1,8 +1,8 @@
 #lang racket
 (require (only-in redex term))
-(require  "../../private/matcher.ss"
-          (only-in "../test-util.ss" equal/bindings?)
-          (lib "list.ss"))
+(require "../../private/matcher.rkt"
+         (only-in "../test-util.rkt" equal/bindings?)
+         mzlib/list)
 (require "../../private/compiler/match.rkt")
 (require "../../private/compiler/redextomatrix.rkt")
 

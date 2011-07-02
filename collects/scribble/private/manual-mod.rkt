@@ -1,11 +1,11 @@
 #lang scheme/base
-(require "../decode.ss"
-         "../struct.ss"
-         "../basic.ss"
-         "../manual-struct.ss"
-         "manual-ex.ss"
-         "manual-style.ss"
-         "manual-scheme.ss"
+(require "../decode.rkt"
+         "../struct.rkt"
+         "../basic.rkt"
+         "../manual-struct.rkt"
+         "manual-ex.rkt"
+         "manual-style.rkt"
+         "manual-scheme.rkt"
          scheme/string
          scheme/list
          (for-syntax scheme/base)

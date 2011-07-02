@@ -1,10 +1,10 @@
 (module base mzscheme
-  (require "prims.ss"
-	   "runtime.ss")
+  (require "prims.rkt"
+           "runtime.rkt")
 
   (define base-importing-stx #'here)
 
   (provide (all-from mzscheme)
-	   (all-from "prims.ss")
-           (all-from "runtime.ss")
+           (all-from "prims.rkt")
+           (all-from "runtime.rkt")
            base-importing-stx))

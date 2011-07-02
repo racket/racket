@@ -4,7 +4,7 @@
          racket/list
          racket/gui/base
          racket/math
-         "../show-scribbling.ss"
+         "../show-scribbling.rkt"
          "same-lib.rkt")
 
 (provide game@)

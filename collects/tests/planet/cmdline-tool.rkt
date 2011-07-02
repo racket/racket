@@ -34,7 +34,7 @@ using 'system' to call out to the tool and then reading its results, etc.
     (get-output-string sp)))
 
 (unless (regexp-match #rx"No packages" (call-planet "show"))
-  (error 'cmdline-tool.ss "please clear out all planet packages before running this test"))
+  (error 'cmdline-tool.rkt "please clear out all planet packages before running this test"))
 
 (when (file-exists? test-connection.plt-cache)
   (delete-file test-connection.plt-cache))
@@ -52,10 +52,10 @@ using 'system' to call out to the tool and then reading its results, etc.
     [(regexp-match #rx"test-connection.plt" (call-planet "show"))
      (printf "Installed successfully\n")]
     [else
-     (error 'cmdline-tool.ss "Installation failed\n")])
+     (error 'cmdline-tool.rkt "Installation failed\n")])
   
   (unless (file-exists? test-connection.plt-cache)
-    (error 'cmdline-tool.ss "Installation did not populate ~s" test-connection.plt-cache)))
+    (error 'cmdline-tool.rkt "Installation did not populate ~s" test-connection.plt-cache)))
 
   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -69,12 +69,12 @@ using 'system' to call out to the tool and then reading its results, etc.
   (printf "done\n")
   (cond
     [(regexp-match #rx"test-connection.plt" (call-planet "show"))
-     (error 'cmdline-tool.ss "Removal failed\n")]
+     (error 'cmdline-tool.rkt "Removal failed\n")]
     [else
      (printf "Removed successfully\n")])
   
   (unless (file-exists? test-connection.plt-cache)
-    (error 'cmdline-tool.ss "Removal removed ~s" test-connection.plt-cache)))
+    (error 'cmdline-tool.rkt "Removal removed ~s" test-connection.plt-cache)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -108,7 +108,7 @@ using 'system' to call out to the tool and then reading its results, etc.
   (printf "done\n")
   
   (unless (same-file? direct-file (list-ref test-connection-spec 1))
-    (error 'cmdline-tool.ss "expected planet fetch and planet url to point at the same file, but found different ones"))
+    (error 'cmdline-tool.rkt "expected planet fetch and planet url to point at the same file, but found different ones"))
   
   (delete-file direct-file)
   (printf "Download succesful\n"))
@@ -125,10 +125,10 @@ using 'system' to call out to the tool and then reading its results, etc.
   (apply call-planet "fileinject" test-connection-spec)
   (printf "done\n")
   (unless (regexp-match #rx"test-connection.plt" (call-planet "show"))
-    (error 'cmdline-tool.ss "expected a fileinject to show up in planet info"))
+    (error 'cmdline-tool.rkt "expected a fileinject to show up in planet info"))
   (apply call-planet "remove" test-connection-spec)
   (when (regexp-match #rx"test-connection.plt" (call-planet "show"))
-    (error 'cmdline-tool.ss "expected remove (after fileinject) to remove test-connection.plt"))
+    (error 'cmdline-tool.rkt "expected remove (after fileinject) to remove test-connection.plt"))
   (printf "Fileinject successful\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -147,7 +147,7 @@ using 'system' to call out to the tool and then reading its results, etc.
       string<=?)))
   (define tmp-dir "test-connection-contents")
   (when (directory-exists? tmp-dir)
-      (error 'cmdline-tool.ss "expected the directory ~a to not exist" tmp-dir))
+      (error 'cmdline-tool.rkt "expected the directory ~a to not exist" tmp-dir))
   (call-planet "open" (list-ref test-connection-spec 1) tmp-dir)
   (define open-files
     (sort (let f/d-loop ([f/d #f]
@@ -182,12 +182,12 @@ using 'system' to call out to the tool and then reading its results, etc.
   (system (format "rm -rf ~a" tmp-dir))
   (printf "done\n")
   (unless (equal? open-files structure-files)
-    (error 'cmdline-tool.ss "expected planet structure to produce the same files as planet open, got ~s and ~s"
+    (error 'cmdline-tool.rkt "expected planet structure to produce the same files as planet open, got ~s and ~s"
            structure-files 
            open-files))
  
   (unless (equal? doc.txt-fetch doc.txt-print)
-    (error 'cmdline-tool.ss "expected planet print to produce the same content as the actual file, got\n~s\nand\n~s"
+    (error 'cmdline-tool.rkt "expected planet print to produce the same content as the actual file, got\n~s\nand\n~s"
            doc.txt-print
            doc.txt-fetch)))
     
@@ -272,7 +272,7 @@ using 'system' to call out to the tool and then reading its results, etc.
   
 (define (ensure-not-there fn)
   (when (file-exists? fn)
-    (error 'cmdline-tool.ss
+    (error 'cmdline-tool.rkt
            "test script expects no file named ~a to exist in the current directory (may have been left behind by test script, tho ... (which would be a bug))"
            fn)))
 

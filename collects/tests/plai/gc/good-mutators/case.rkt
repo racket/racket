@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 40)
+(allocator-setup "../good-collectors/good-collector.rkt" 40)
 (test/value=? (case 1 [(1) 2])
               2)
 (test/value=? (case 1 [(1) 2] [else 3])

@@ -1,11 +1,11 @@
 #lang scheme/base
 
-(require "getinfo.ss"
-         "dirs.ss"
+(require "getinfo.rkt"
+         "dirs.rkt"
          "path-to-relative.rkt"
-         "private/path-utils.ss"
-         "main-collects.ss"
-         "main-doc.ss"
+         "private/path-utils.rkt"
+         "main-collects.rkt"
+         "main-doc.rkt"
          "parallel-do.rkt"
          scheme/class
          scheme/list
@@ -789,7 +789,7 @@
       (namespace-attach-module ns 'scribble/base-render p)
       (namespace-attach-module ns 'scribble/html-render p)
       ;; This is here for de-serialization; we need a better repair than
-      ;;  hard-wiring the "manual.ss" library:
+      ;;  hard-wiring the "manual.rkt" library:
       (namespace-attach-module ns 'scribble/manual p)
       (parameterize ([current-namespace p])
         (call-in-nested-thread (lambda () (dynamic-require mod-path 'doc)))))))

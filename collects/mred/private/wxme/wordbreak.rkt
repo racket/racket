@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class
-         "../syntax.ss"
-         "cycle.ss")
+         "../syntax.rkt"
+         "cycle.rkt")
 
 (provide editor-wordbreak-map%
          the-editor-wordbreak-map

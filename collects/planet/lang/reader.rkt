@@ -1,6 +1,6 @@
 #lang racket/base
 (require syntax/module-reader
-         "../resolver.ss")
+         "../resolver.rkt")
 
 (provide (rename-out [planet-read read]
                      [planet-read-syntax read-syntax]

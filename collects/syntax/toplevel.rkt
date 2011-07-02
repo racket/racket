@@ -1,9 +1,8 @@
-
 (module toplevel scheme/base
-  (require "kerncase.ss")
+  (require "kerncase.rkt")
   
   (provide eval-compile-time-part-of-top-level
-	   eval-compile-time-part-of-top-level/compile
+           eval-compile-time-part-of-top-level/compile
            expand-top-level-with-compile-time-evals
            expand-syntax-top-level-with-compile-time-evals
            expand-syntax-top-level-with-compile-time-evals/flatten)

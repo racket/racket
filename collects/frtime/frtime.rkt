@@ -1,6 +1,6 @@
-(module frtime "lang-utils.ss"
-  (require (all-except "lang-ext.ss" lift deep-value-now))
-  (require "frp-snip.ss")
+(module frtime "lang-utils.rkt"
+  (require (all-except "lang-ext.rkt" lift deep-value-now))
+  (require "frp-snip.rkt")
   (require (as-is:unchecked frtime/core/frp
                             event-set? signal-value))
 
@@ -14,6 +14,6 @@
           (pred v))))
 
   (provide value-nowable? behaviorof
-           (all-from "lang-ext.ss")
-	   (all-from "lang-utils.ss")
-           (all-from "frp-snip.ss")))
+           (all-from "lang-ext.rkt")
+	   (all-from "lang-utils.rkt")
+           (all-from "frp-snip.rkt")))

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../gentest-framework.ss")
+(require "../gentest-framework.rkt")
 (provide proto:kernel-forms
          proto:kernel-contexts)
 

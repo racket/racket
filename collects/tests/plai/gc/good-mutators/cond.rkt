@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 40)
+(allocator-setup "../good-collectors/good-collector.rkt" 40)
 
 (cond
  [(zero? 3) 1111]

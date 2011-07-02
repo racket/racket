@@ -1,11 +1,11 @@
 #lang scheme/gui
 
-(require "check-aux.ss"
-         "timer.ss"
-         "last.ss"
-         "checked-cell.ss"
-         "stop.ss"
-         "universe-image.ss"
+(require "check-aux.rkt"
+         "timer.rkt"
+         "last.rkt"
+         "checked-cell.rkt"
+         "stop.rkt"
+         "universe-image.rkt"
          htdp/error
          mzlib/runtime-path
          mrlib/bitmap-label

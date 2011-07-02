@@ -4,5 +4,3 @@
          (rename-out (-read read)))
 (define -read-syntax (make-read-syntax '(lib "DMdA-assignments.ss" "deinprogramm")))
 (define -read (make-read '(lib "DMdA-assignments.ss" "deinprogramm")))
-
-

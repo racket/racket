@@ -1,8 +1,7 @@
-
 (module admin mzscheme
-  (require "board.ss"
-	   "moves.ss"
-           "interfaces.ss"
+  (require "board.rkt"
+           "moves.rkt"
+           "interfaces.rkt"
            mzlib/class
            mzlib/list)
   

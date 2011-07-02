@@ -3,7 +3,7 @@
 (require rackunit rackunit/text-ui unstable/contract "helpers.rkt")
 
 (run-tests
- (test-suite "contract.ss"
+ (test-suite "contract.rkt"
    (test-suite "Flat Contracts"
      (test-suite "nat/c"
        (test-ok (with/c nat/c 1))

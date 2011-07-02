@@ -1,5 +1,5 @@
 ;;;
-;;; <receive.ss> ---- SRFI 8 Binding to Multiple Values port to PLT Scheme
+;;; <receive.rkt> ---- SRFI 8 Binding to Multiple Values port to PLT Scheme
 ;;; Time-stamp: <02/05/10 12:22:37 solsona>
 ;;;
 ;;; Usually, I would add a copyright notice, and the announce that

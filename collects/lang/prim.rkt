@@ -1,4 +1,3 @@
-
 ;; Provides `define-primitive' and `define-higher-order-primitive'
 ;; for use in teachpacks for Beginner, especially those that
 ;; define a primitive operator that consumes a procedure.
@@ -6,9 +5,9 @@
 
 (module prim mzscheme
   (require lang/error
-	   (rename lang/htdp-beginner beginner-app #%app))
+           (rename lang/htdp-beginner beginner-app #%app))
   
-  (require-for-syntax (prefix fo: "private/firstorder.ss")
+  (require-for-syntax (prefix fo: "private/firstorder.rkt")
                       stepper/private/shared)
   
   (provide define-primitive

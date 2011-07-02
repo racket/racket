@@ -1,5 +1,5 @@
 #lang racket/base
-(require "dirs.ss" "path-relativize.ss")
+(require "dirs.rkt" "path-relativize.rkt")
 
 (provide path->main-collects-relative
          main-collects-relative->path)
@@ -10,4 +10,3 @@
                    'collects
                    'path->main-collects-relative
                    'main-collects-relative->path))
-

@@ -2,8 +2,8 @@
 (require launcher
          racket/cmdline
          racket/unit
-         "debug.ss"
-         "test-suite-utils.ss")
+         "debug.rkt"
+         "test-suite-utils.rkt")
 
 (define preferences-file (find-system-path 'pref-file))
 

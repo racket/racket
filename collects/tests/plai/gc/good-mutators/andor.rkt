@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 400)
+(allocator-setup "../good-collectors/good-collector.rkt" 400)
 (define (do-one i) (/ (- i 1)))
 (define (loop i)
   (or (= 1 i)

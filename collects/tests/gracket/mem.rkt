@@ -154,7 +154,7 @@
 	    (let ([e edit])
               (send e begin-edit-sequence)
 	      (when load-file?
-		(send e load-file (build-path source-dir "mem.ss")))
+		(send e load-file (build-path source-dir "mem.rkt")))
 	      (let loop ([i 20])
 		(send e insert (number->string i))
 		(unless (zero? i)

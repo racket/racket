@@ -1,5 +1,5 @@
 ;;;
-;;; <selector-test.ss> ---- List selector tests
+;;; <selector-test.rkt> ---- List selector tests
 ;;; Time-stamp: <05/12/16 21:13:25 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -338,4 +338,4 @@
      ))
   )
 
-;;; selector-test.ss ends here
+;;; selector-test.rkt ends here

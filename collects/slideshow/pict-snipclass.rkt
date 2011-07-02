@@ -3,7 +3,7 @@
            mred)
   
   (provide snip-class)
-  (require "private/pict-box-lib.ss")
+  (require "private/pict-box-lib.rkt")
 
   (define pict-snip%
     (class* editor-snip% (readable-snip<%>)

@@ -8,5 +8,5 @@
        ((current-namespace (make-namespace)))
        (namespace-require
         `(file ,(path->string (build-path (this-expression-source-directory)
-                                          "tex2page-aux.ss"))))
+                                          "tex2page-aux.rkt"))))
        ((namespace-variable-value 'tex2page) f)))))

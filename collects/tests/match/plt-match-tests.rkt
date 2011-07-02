@@ -1,7 +1,8 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base)
-         "match-tests.ss" "other-plt-tests.ss" "other-tests.ss" "examples.ss"
+         "match-tests.rkt" "other-plt-tests.rkt" "other-tests.rkt"
+         "examples.rkt"
          rackunit rackunit/text-ui)
 
 (require mzlib/plt-match)
@@ -364,7 +365,7 @@
                 (check = 1 b)))))
 
 (define plt-match-tests
-  (test-suite "Tests for plt-match.ss"
+  (test-suite "Tests for plt-match.rkt"
               doc-tests
               cons-tests
               simple-tests

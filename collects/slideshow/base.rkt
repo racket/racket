@@ -1,8 +1,7 @@
-
 (module base scheme/base
-  (require "slide.ss"
+  (require "slide.rkt"
            scheme/gui/base
-           (only-in "core.ss"
+           (only-in "core.rkt"
                     sliderec?
                     just-a-comment?))
 

@@ -1,11 +1,11 @@
 #cs(module parse mzscheme
      (require parser-tools/lex
               (prefix : parser-tools/lex-sre)
-              "cfg-parser.ss"
-	      parser-tools/yacc
+              "cfg-parser.rkt"
+              parser-tools/yacc
               syntax/readerr
-              "prims.ss")
-     
+              "prims.rkt")
+
      (define-lex-abbrevs [lex:letter (:or (:/ #\a #\z) (:/ #\A #\Z))]
                          [lex:digit (:/ #\0 #\9)]
                          [lex:whitespace (:or #\newline #\return #\tab #\space #\vtab)]

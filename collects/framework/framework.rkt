@@ -1,3 +1,3 @@
 #lang scheme/base
-(require "main.ss")
-(provide (all-from-out "main.ss"))
+(require "main.rkt")
+(provide (all-from-out "main.rkt"))

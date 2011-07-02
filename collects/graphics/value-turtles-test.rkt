@@ -1,6 +1,6 @@
 (module value-turtles-test mzscheme
-  (require "value-turtles-examples.ss"
-           "value-turtles.ss"
+  (require "value-turtles-examples.rkt"
+           "value-turtles.rkt"
            mred
            mzlib/class)
   

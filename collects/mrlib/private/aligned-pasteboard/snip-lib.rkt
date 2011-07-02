@@ -6,7 +6,7 @@
    mred
    mzlib/list
    mzlib/contract
-   "interface.ss")
+   "interface.rkt")
   
   ;; a snip
   (define snip? (is-a?/c snip%))

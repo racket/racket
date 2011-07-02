@@ -1,14 +1,13 @@
-
 (module mrpict-unit mzscheme
   (require mzlib/unit)
 
   (require racket/draw/draw-sig)
 
-  (require "private/mrpict-sig.ss"
-	   "private/common-sig.ss"
-	   "private/common-unit.ss"
-	   "private/mrpict-extra.ss")
-	
+  (require "private/mrpict-sig.rkt"
+           "private/common-sig.rkt"
+           "private/common-unit.rkt"
+           "private/mrpict-extra.rkt")
+
   (provide mrpict@)
   (define-compound-unit/infer mrpict@
     (import draw^)

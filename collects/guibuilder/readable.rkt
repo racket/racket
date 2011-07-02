@@ -1,9 +1,8 @@
-
 (module readable mzscheme
   (require mred
            mzlib/class
-	   "top-level.ss"
-	   "toolbar.ss")
+           "top-level.rkt"
+           "toolbar.rkt")
 
   (define gui-snip-class%
     (class snip-class%

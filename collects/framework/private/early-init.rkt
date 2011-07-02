@@ -1,6 +1,6 @@
 #lang racket/unit
 (require "sig.rkt"
-         "../preferences.ss")
+         "../preferences.rkt")
 (import [prefix preferences: framework:preferences^])
 (export framework:early-init^)
 (init-depend framework:preferences^)

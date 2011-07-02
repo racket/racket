@@ -1,5 +1,5 @@
 (module unicode-chars mzscheme
-  (require "util.ss")
+  (require "util.rkt")
   
   (provide (all-defined))
   

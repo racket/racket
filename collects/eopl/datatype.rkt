@@ -4,7 +4,7 @@
 #lang mzscheme
 
 (require mzlib/pconvert-prop)
-(require-for-syntax "private/utils.ss")
+(require-for-syntax "private/utils.rkt")
 
 (define-syntax define-datatype
   (lambda (stx)

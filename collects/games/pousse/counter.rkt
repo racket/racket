@@ -5,8 +5,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (module counter mzscheme
-  (require "board.ss"
-           "utils.ss"
+  (require "board.rkt"
+           "utils.rkt"
            mzlib/unitsig)
   
   (provide params^

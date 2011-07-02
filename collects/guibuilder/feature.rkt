@@ -1,13 +1,12 @@
-
 (module feature mzscheme
   (require (prefix mred: mred)
-	   mzlib/class
-	   mzlib/file
-	   mzlib/pretty
-	   mzlib/etc
-	   mzlib/list
-	   "base.ss"
-	   "utils.ss")
+           mzlib/class
+           mzlib/file
+           mzlib/pretty
+           mzlib/etc
+           mzlib/list
+           "base.rkt"
+           "utils.rkt")
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Mixins for GUI features

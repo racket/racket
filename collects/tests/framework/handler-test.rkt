@@ -1,7 +1,7 @@
 (module handler-test mzscheme
-  (require "test-suite-utils.ss")
+  (require "test-suite-utils.rkt")
 
-(let* ([filename "framework-group-test.ss"]
+(let* ([filename "framework-group-test.rkt"]
        [tmp-filename (build-path (find-system-path 'temp-dir) filename)])
 
   (test

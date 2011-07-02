@@ -1,9 +1,9 @@
 (module rules mzscheme
   (provide show-rules)
   
-  (require "board.ss"
-           "moves.ss"
-           "gui.ss"
+  (require "board.rkt"
+           "moves.rkt"
+           "gui.rkt"
 
            mzlib/class
            xml

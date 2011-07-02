@@ -1,26 +1,26 @@
 (module mrpanel mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "const.ss"
-	   "check.ss"
-	   "helper.ss"
-	   "wx.ss"
-	   "kw.ss"
-	   "wxpanel.ss"
-	   "mrwindow.ss"
-	   "mrcontainer.ss")
+           mzlib/class100
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "const.rkt"
+           "check.rkt"
+           "helper.rkt"
+           "wx.rkt"
+           "kw.rkt"
+           "wxpanel.rkt"
+           "mrwindow.rkt"
+           "mrcontainer.rkt")
 
   (provide pane%
-	   vertical-pane%
-	   horizontal-pane%
-	   grow-box-spacer-pane%
-	   panel%
-	   vertical-panel%
-	   horizontal-panel%
-	   tab-panel%
-	   group-box-panel%)
+           vertical-pane%
+           horizontal-pane%
+           grow-box-spacer-pane%
+           panel%
+           vertical-panel%
+           horizontal-panel%
+           tab-panel%
+           group-box-panel%)
 
   (define-keywords pane%-keywords
     subarea%-keywords

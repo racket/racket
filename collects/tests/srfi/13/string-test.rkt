@@ -1,5 +1,5 @@
 ;;;
-;;; <string-test.ss> ---- SRFI-13 (string) tests
+;;; <string-test.rkt> ---- SRFI-13 (string) tests
 ;;; Time-stamp: <06/06/09 16:05:08 nhw>
 ;;;
 ;;; Copyright (C) 2002 by Francisco Solsona. 
@@ -79,4 +79,4 @@
 
   )
 
-;;; string-test.ss ends here
+;;; string-test.rkt ends here

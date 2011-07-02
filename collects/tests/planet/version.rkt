@@ -14,7 +14,7 @@
 
 (define (test/proc file line got expected)
   (unless (equal? got expected)
-    (error 'test.ss "FAILED ~a: ~s\n     got ~s\nexpected ~s" file line got expected)))
+    (error 'test.rkt "FAILED ~a: ~s\n     got ~s\nexpected ~s" file line got expected)))
 
 
 (test (string->mz-version "372")

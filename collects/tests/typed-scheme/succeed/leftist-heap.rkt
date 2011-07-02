@@ -23,8 +23,8 @@
 ;; need rest args
 ;; didn't attempt generators
 
-;#reader (planet "typed-reader.ss" ("plt" "typed-scheme.plt"))
-;(module leftist-heap (planet "typed-scheme.ss" ("plt" "typed-scheme.plt" 3 0))
+;#reader (planet "typed-reader.rkt" ("plt" "typed-scheme.plt"))
+;(module leftist-heap (planet "typed-scheme.rkt" ("plt" "typed-scheme.plt" 3 0))
 ;(module leftist-heap mzscheme
 
 #lang typed-scheme
@@ -35,7 +35,7 @@
 (define-type-alias list-of Listof)
 (require
    (except-in srfi/67 current-compare =? <?)
-   #;"typed-list.ss"
+   #;"typed-list.rkt"
    #;srfi/42
    #;(only mzlib/list foldl))
 

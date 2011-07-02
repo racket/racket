@@ -1,6 +1,6 @@
 #lang scheme/gui
 
-(require "timer.ss")
+(require "timer.rkt")
 
 (provide last-mixin)
 

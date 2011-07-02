@@ -1,7 +1,7 @@
 #lang racket
 
 (require redex/reduction-semantics
-         "grammar.ss")
+         "grammar.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Substitution:

@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 20)
+(allocator-setup "../good-collectors/good-collector.rkt" 20)
 
 
 (define car first)

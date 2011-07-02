@@ -1,13 +1,13 @@
 (module pousse mzscheme
-  (require "utils.ss"
-           "board.ss"
-           "board-size.ss"
-           "../show-scribbling.ss"
+  (require "utils.rkt"
+           "board.rkt"
+           "board-size.rkt"
+           "../show-scribbling.rkt"
            mzlib/class
            mzlib/class100
            (all-except mzlib/unit rename) ; rename collides with class100
            mred
-           (prefix robot: "robot.ss"))
+           (prefix robot: "robot.rkt"))
   
   (provide game@)
   

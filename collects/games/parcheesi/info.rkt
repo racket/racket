@@ -1,4 +1,4 @@
 #lang setup/infotab
 
-(define game "parcheesi.ss")
+(define game "parcheesi.rkt")
 (define game-set "Board Games")

@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "DeinProgramm - QuickCheck")
 
   (define compile-omit-files

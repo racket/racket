@@ -1,14 +1,12 @@
 #lang scheme/base
 
-(require "../private/core-layout.ss"
-         "../private/loc-wrapper.ss"
-         "lw-test-util.ss"
-         "test-util.ss"
-         (lib "struct.ss"))
+(require "../private/core-layout.rkt"
+         "../private/loc-wrapper.rkt"
+         "lw-test-util.rkt"
+         "test-util.rkt"
+         mzlib/struct)
 
-(require (lib "mrpict.ss" "texpict")
-         (lib "mred.ss" "mred")
-         (lib "class.ss"))
+(require texpict/mrpict mred/mred mzlib/class)
 (dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1)))
 
 (reset-count)
@@ -79,4 +77,4 @@
                              (make-pict-token 0 1 'pict)
                              (make-pict-token 1 0 'pict)))))
 
-(print-tests-passed "core-layout.ss")
+(print-tests-passed "core-layout.rkt")

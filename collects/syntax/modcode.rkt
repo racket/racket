@@ -1,7 +1,7 @@
 #lang racket/base
   (require mzlib/port
            racket/contract
-           "modread.ss")
+           "modread.rkt")
 
   (provide moddep-current-open-input-file
            exn:get-module-code

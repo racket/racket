@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require "core.ss"
-         "private/render-utils.ss"
-         "html-properties.ss"
+(require "core.rkt"
+         "private/render-utils.rkt"
+         "html-properties.rkt"
          scheme/class
          scheme/path
          scheme/file
@@ -19,8 +19,8 @@
          scheme/serialize
          (prefix-in xml: xml/xml)
          (for-syntax scheme/base)
-         "search.ss"
-         (except-in "base.ss" url))
+         "search.rkt"
+         (except-in "base.rkt" url))
 (provide render-mixin
          render-multi-mixin)
 

@@ -3,16 +3,16 @@
 
 #|
 
-raw-misc.ss
+raw-misc.rkt
 
 This file contains the built-in problems in a raw format. It is
 intended to be processed by the solver which will produce
-`problems.ss'. This file should contain a single sexpression of this
+"problems.rkt". This file should contain a single sexpression of this
 type:
 
   (listof (list string cols rows))
 
-The cols and rows types are specified in sig.ss
+The cols and rows types are specified in sig.rkt
 
 |#
 (define raw-misc

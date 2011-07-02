@@ -5,14 +5,14 @@
    mred
    mzlib/etc
    mzlib/list
-   "snip-lib.ss"
-   "interface.ss"
-   "constants.ss")
-  
+   "snip-lib.rkt"
+   "interface.rkt"
+   "constants.rkt")
+
   (provide
    aligned-editor-canvas%
    aligned-editor-snip%)
-  
+
   ;; a canvas that can contain an aligned-pasteboard<%>
   ;; STATUS: When both min-width and min-height change the size of the canvas
   ;;         I might be getting two on-size method invocations inside

@@ -1,5 +1,5 @@
 (module board mzscheme
-  (require "board-size.ss") ; for n
+  (require "board-size.rkt") ; for n
   
   (provide x o none     ; cell values
 	   new-board    ; n => board

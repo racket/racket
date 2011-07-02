@@ -1,15 +1,14 @@
-
 (module htdp-beginner-abbr scheme/base
   (require mzlib/etc
-	   mzlib/list
-	   mzlib/math
-	   syntax/docprovide
+           mzlib/list
+           mzlib/math
+           syntax/docprovide
            test-engine/scheme-tests)
 
   ;; Implements the forms:
-  (require "private/teach.ss"
-	   "private/teachprims.ss"
-	   "private/teach-module-begin.ss")
+  (require "private/teach.rkt"
+           "private/teachprims.rkt"
+           "private/teach-module-begin.rkt")
 
   ;; syntax:
   (provide (rename-out

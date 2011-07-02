@@ -2,7 +2,7 @@
   (require mred
            mzlib/class
            mzlib/etc
-           "boards.ss")
+           "boards.rkt")
 
   (provide
    new-board      ;; : (-> board)  querys user

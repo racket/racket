@@ -4,7 +4,7 @@
 
 (provide analyze-samples)
 
-(require "structs.ss" "utils.ss" scheme/list)
+(require "structs.rkt" "utils.rkt" scheme/list)
 
 (define-syntax-rule (with-hash <hash> <key> <expr>)
   (hash-ref! <hash> <key> (lambda () <expr>)))

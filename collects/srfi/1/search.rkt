@@ -1,7 +1,7 @@
 #lang scheme/base
 
 ;;;
-;;; <search.ss> ---- List searching functions
+;;; <search.rkt> ---- List searching functions
 ;;; Time-stamp: <02/02/28 12:11:01 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -28,8 +28,8 @@
 
 
 (require srfi/optional
-         "predicate.ss"
-         "util.ss")
+         "predicate.rkt"
+         "util.rkt")
 
 (provide (rename-out [my-member member])
          find
@@ -173,4 +173,4 @@
       (and (not (null-list? lis))
            (if (pred (car lis)) n (lp (cdr lis) (+ n 1)))))))
 
-;;; search.ss ends here
+;;; search.rkt ends here

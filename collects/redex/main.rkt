@@ -1,7 +1,7 @@
 #lang scheme/base
-(require "reduction-semantics.ss"
-         "gui.ss"
-         "pict.ss")
-(provide (all-from-out "reduction-semantics.ss"
-                       "gui.ss" 
-                       "pict.ss"))
+(require "reduction-semantics.rkt"
+         "gui.rkt"
+         "pict.rkt")
+(provide (all-from-out "reduction-semantics.rkt"
+                       "gui.rkt"
+                       "pict.rkt"))

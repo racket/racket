@@ -1,12 +1,12 @@
 (module gui mzscheme
   (require games/gl-board-game/gl-board
            mzlib/class
-	   mred
+           mred
            mzlib/file
            sgl/gl-vectors
            sgl
-	   mzlib/unitsig
-	   "sig.ss")
+           mzlib/unitsig
+           "sig.rkt")
 
   (provide gui-unit)
   

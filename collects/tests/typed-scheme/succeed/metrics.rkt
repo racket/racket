@@ -2,7 +2,7 @@
 (provide results run-all-tests)
 
 #;(require "../list.scm"
-         "../etc.ss")
+         "../etc.rkt")
 (require/typed apply-to-scheme-files
                ((Path -> (Listof (Listof (U #f (Listof (U Real #f))))))
                 Path
@@ -11,18 +11,18 @@
 (define-type-alias top Any)
 (define-type-alias str String)
 
-(require/typed filename-extension (Path -> (U #f Bytes)) (lib "file.ss"))
-(require/typed normalize-path (Path Path -> Path) (lib "file.ss"))
-(require/typed explode-path (Path -> (Listof Path)) (lib "file.ss"))
-(require/typed srfi48::format (Port String String top * -> top)  "patch.ss")
+(require/typed filename-extension (Path -> (U #f Bytes)) (lib "file.rkt"))
+(require/typed normalize-path (Path Path -> Path) (lib "file.rkt"))
+(require/typed explode-path (Path -> (Listof Path)) (lib "file.rkt"))
+(require/typed srfi48::format (Port String String top * -> top)  "patch.rkt")
 ;; FIXME - prefix
-#;(require/typed srfi48:format ( Port String String top * -> top) (prefix-in srfi48: (lib "48.ss" "srfi")))
-(require (lib "match.ss")
-         ;(lib "file.ss")
-         ;(lib "list.ss")
-         ;(lib "etc.ss")
-         (prefix-in srfi13: (lib "13.ss" "srfi"))
-         ;(prefix srfi48: (lib "48.ss" "srfi"))
+#;(require/typed srfi48:format ( Port String String top * -> top) (prefix-in srfi48: (lib "48.rkt" "srfi")))
+(require (lib "match.rkt")
+         ;(lib "file.rkt")
+         ;(lib "list.rkt")
+         ;(lib "etc.rkt")
+         (prefix-in srfi13: (lib "13.rkt" "srfi"))
+         ;(prefix srfi48: (lib "48.rkt" "srfi"))
          )
 
 (define-type-alias Sexpr Any)
@@ -367,7 +367,7 @@
 ;; ============================================================
 ;; EXPERIMENT RUNNING
 
-;; FIXME - everything in untyped file (foldo.ss) b/c fold-files has terrible api
+;; FIXME - everything in untyped file (foldo.rkt) b/c fold-files has terrible api
 #;(define-syntax (define-excluder stx)
 
     (define (path->clause c)
@@ -393,8 +393,8 @@
 
 ;; ----------------------------------------
 ;; apply-to-scheme-files: (path[file] -> X) path[directory] -> (listof X)
-;; applies the given function to each .ss or .scm file in the given directory
-;; hierarchy; returns all results in a list
+;; applies the given function to each .rkt or .ss or .scm file in the given
+;; directory hierarchy; returns all results in a list
 #;(define:  (apply-to-scheme-files [f : (Path -> (Listof(Listof(Listof NumF))))]
                                    [root : Path])
     : (Listof (Listof(Listof(Listof NumF)))) ;;FOLD-FILES

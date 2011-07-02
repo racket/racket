@@ -3,10 +3,10 @@
 (define version-url "http://download.racket-lang.org/version.txt")
 (define timeout 30)
 
-(require "utils.ss")
+(require "utils.rkt")
 
 ;; This file can be invoked from an installer, and in case it's
-;; without zo files using net/url.ss is extremely slow.  Instead, do
+;; without zo files using `net/url' is extremely slow.  Instead, do
 ;; things directly.
 ;; (require net/url)
 ;; (define (url->port url) (get-pure-port (string->url url)))

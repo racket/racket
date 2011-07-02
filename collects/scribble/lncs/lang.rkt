@@ -4,7 +4,7 @@
          (except-in scribble/base author)
          (prefix-in s/b: scribble/base)
          scribble/decode
-         "../private/defaults.ss"
+         "../private/defaults.rkt"
          (for-syntax racket/base racket/list)
          setup/main-collects
          scribble/html-properties

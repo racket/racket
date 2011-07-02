@@ -2,7 +2,7 @@
 
 ;; Mon Mar 27 10:29:28 EST 2006: integrated Felix's mouse events
 ;; Wed Jan 25 13:38:42 EST 2006: on-redraw: proc is now called on installation
-;; Tue Jan  3 11:17:50 EST 2006: changed add-line behavior in world.ss 
+;; Tue Jan  3 11:17:50 EST 2006: changed add-line behavior in world.rkt
 ;; Sat Dec 10 19:39:03 EST 2005: fixed name, changed interface to on-key-event
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
@@ -11,13 +11,13 @@
    mred
    mzlib/class
    htdp/error
-   "image.ss"
+   "image.rkt"
    (prefix-in beg: lang/htdp-beginner)
    lang/prim
    deinprogramm/signature/signature-syntax)
   
   ;; --- provide ---------------------------------------------------------------
-  (provide (all-from-out "image.ss"))
+  (provide (all-from-out "image.rkt"))
   
   (provide      ;; forall(World):
    big-bang	;; Number Number Number World -> true 

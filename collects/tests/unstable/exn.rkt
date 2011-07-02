@@ -3,7 +3,7 @@
 (require rackunit rackunit/text-ui unstable/exn "helpers.rkt")
 
 (run-tests
- (test-suite "exn.ss"
+ (test-suite "exn.rkt"
    (test-suite "try"
      (test-ok (try (+ 1 2)))
      (test-bad (try (+ 'a 'b)))

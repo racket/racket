@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "specs.ss")
+(require "specs.rkt")
 
 (provide (rename-out [module-begin #%module-begin]))
 

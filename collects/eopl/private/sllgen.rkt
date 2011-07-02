@@ -8,12 +8,12 @@
 (module sllgen mzscheme
   (require mzlib/pretty
            scheme/mpair
-	   "../datatype.ss"
-	   "sllboth.ss"
+	   "../datatype.rkt"
+	   "sllboth.rkt"
 	   mzlib/etc)
 
-  (require-for-syntax "sllboth.ss"
-		      "slldef.ss")
+  (require-for-syntax "sllboth.rkt"
+		      "slldef.rkt")
 
   (provide sllgen:make-string-scanner
 	   sllgen:make-string-parser

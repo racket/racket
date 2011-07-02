@@ -1,8 +1,7 @@
-
-(module start "slideshow.ss"
-  (require "start-param.ss"
+(module start "slideshow.rkt"
+  (require "start-param.rkt"
            planet/config
-	   mred
+           mred
            mzlib/class)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -93,7 +92,7 @@
 			     (retract-most-recent-slide)
 			     (load-content
 			      (build-path (collection-path "slideshow")
-					  "tutorial-show.ss")))))
+                                          "tutorial-show.rkt")))))
 	 (page-para* (link "Open File..."
 			   (lambda ()
 			     (let ([file (get-file)])

@@ -1,6 +1,6 @@
 #lang racket/base
 (require ffi/unsafe
-         "atomic.ss")
+         "atomic.rkt")
 
 (provide allocator deallocator retainer 
          (rename-out [deallocator releaser]))

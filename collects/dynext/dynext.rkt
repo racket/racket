@@ -1,8 +1,7 @@
-
 (module dynext mzscheme
 
-  (require "compile.ss" "link.ss" "file.ss")
+  (require "compile.rkt" "link.rkt" "file.rkt")
 
-  (provide (all-from "compile.ss")
-	  (all-from "link.ss")
-	  (all-from "file.ss")))
+  (provide (all-from "compile.rkt")
+           (all-from "link.rkt")
+           (all-from "file.rkt")))

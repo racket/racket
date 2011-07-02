@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-(require "sig.ss"
+(require "sig.rkt"
          mred/mred-sig
          scheme/file
          mzlib/port
@@ -8,9 +8,9 @@
          (only-in html read-html-as-xml read-html-comments use-html-spec)
          (except-in xml read-comments)
          mzlib/class
-         "bullet.ss"
-         "option-snip.ss"
-         "entity-names.ss")
+         "bullet.rkt"
+         "option-snip.rkt"
+         "entity-names.rkt")
 
 
 (import mred^ url^)

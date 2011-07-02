@@ -2,14 +2,14 @@
 
 #|
 
-Shell script to read in the ../problems/raw-*.ss file and produce
+Shell script to read in the ../problems/raw-*.rkt file and produce
 the files in the ../solution-sets subdirectory via John's solver. 
 
 This file must produce code that evaluates to a list of problem
 structs. The problem struct should have four fields: a string, a col,
 a row and a (union #f solution)
 
-The col and row type specs are in sig.ss and the solution type is:
+The col and row type specs are in sig.rkt and the solution type is:
 
   (vectorof (vectorof (union 'on 'off 'unknown)))
 
@@ -24,8 +24,8 @@ The col and row type specs are in sig.ss and the solution type is:
          mzlib/pretty
          mzlib/class
          mred
-         "raw-hattori.ss"
-         (prefix solve: "../solve.ss"))
+         "raw-hattori.rkt"
+         (prefix solve: "../solve.rkt"))
 
 (if (equal? (vector) argv)
     (printf "pass any command line argument to skip the solver\n\n")
@@ -109,13 +109,13 @@ The col and row type specs are in sig.ss and the solution type is:
         output-file
         (call-with-input-file (build-path problems-dir input-file) (compose eval read))))
 
-(require "raw-problems.ss")
+(require "raw-problems.rkt")
 (define games-set (list "Games Magazine" "games" raw-problems))
 
-(require "raw-misc.ss")
+(require "raw-misc.rkt")
 (define misc-set (list "Misc" "misc" raw-misc))
 
-(require "raw-kajitani.ss")
+(require "raw-kajitani.rkt")
 (define kajitani-sets raw-kajitani)
 
 (define sets (append (list games-set)
@@ -252,13 +252,13 @@ The col and row type specs are in sig.ss and the solution type is:
         [cols (second problem)]
         [rows (third problem)])
     (when (null? cols)
-      (error 'build-problems.ss
+      (error 'build-solution-sets.rkt
              "problem ~a doesn't have any cols" name))
     (when (null? rows)
-      (error 'build-problems.ss
+      (error 'build-solution-sets.rkt
              "problem ~a doesn't have any rows" name))
     (unless (= (sum-lists cols) (sum-lists rows))
-      (error 'build-problems.ss
+      (error 'build-solution-sets.rkt
              "problem ~a: sum of the column lists is not the same as the sum of the row lists"
              name))))
 

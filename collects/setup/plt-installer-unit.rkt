@@ -1,11 +1,10 @@
-
 (module plt-installer-unit mzscheme
   (require mzlib/unit
            mred/mred-sig
            mzlib/class
            mzlib/etc
-           "plt-installer-sig.ss"
-           (prefix single: "plt-single-installer.ss")
+           "plt-installer-sig.rkt"
+           (prefix single: "plt-single-installer.rkt")
            string-constants)
 
   (provide plt-installer@)

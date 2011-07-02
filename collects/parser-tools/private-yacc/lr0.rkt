@@ -2,14 +2,14 @@
 
   ;; Handle the LR0 automaton
   
-  (require "grammar.ss"
-	   "graph.ss"
-	   mzlib/list
-	   mzlib/class)
+  (require "grammar.rkt"
+           "graph.rkt"
+           mzlib/list
+           mzlib/class)
   
   (provide build-lr0-automaton lr0%
-	   (struct trans-key (st gs)) trans-key-list-remove-dups
-	   kernel-items kernel-index)
+           (struct trans-key (st gs)) trans-key-list-remove-dups
+           kernel-items kernel-index)
 
   ;; kernel = (make-kernel (LR1-item list) index)
   ;;   the list must be kept sorted according to item<? so that equal? can

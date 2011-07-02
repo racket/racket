@@ -2,9 +2,9 @@
  mzlib/class
  mzlib/etc
  mred
- "../stretchable-editor-snip.ss"
- "../verthoriz-alignment.ss"
- "../aligned-pasteboard.ss")
+ "../stretchable-editor-snip.rkt"
+ "../verthoriz-alignment.rkt"
+ "../aligned-pasteboard.rkt")
 
 (define f (new frame% (label "f") (width 400) (height 400)))
 (define e (new text%))

@@ -11,10 +11,10 @@ careful charlie
 |#
 
 (module best-players mzscheme
-  (require "board.ss"
-	   "moves.ss"
-           "interfaces.ss"
-           "test.ss"
+  (require "board.rkt"
+           "moves.rkt"
+           "interfaces.rkt"
+           "test.rkt"
            mzlib/list
            mzlib/etc
            mzlib/class
@@ -701,7 +701,7 @@ another new board representation (vector of loc's)
     
     #;
     (require xml
-             "parse.ss")
+             "parse.rkt")
     #;
     (define (dump-out-candidates candidates)
       (let loop ([i 0]
@@ -721,7 +721,7 @@ another new board representation (vector of loc's)
     (printf "~s candidates\n" (length candidates2)))
   
   
-  ;(require "gui.ss") (show-board problem-board)
+  ;(require "gui.rkt") (show-board problem-board)
   #|
 cpu time: 12680 real time: 13855 gc time: 380
 candidates 2797 (avg moves 6.9878441186986056)

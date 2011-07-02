@@ -1,6 +1,6 @@
 (module token mzscheme
 
-  (require-for-syntax "token-syntax.ss")
+  (require-for-syntax "token-syntax.rkt")
   
   ;; Defining tokens
   

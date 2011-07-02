@@ -1,12 +1,11 @@
-
 (module base mzscheme
   (require (prefix mred: mred)
-	   mzlib/class
-	   mzlib/file
-	   mzlib/pretty
-	   mzlib/etc
-	   mzlib/list
-	   "utils.ss")
+           mzlib/class
+           mzlib/file
+           mzlib/pretty
+           mzlib/etc
+           mzlib/list
+           "utils.rkt")
 
   (define GB:SNIP-VERSION 5)
   (define MINOR-VERSION 0)

@@ -1,18 +1,18 @@
 (module wx mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "helper.ss")
+           mzlib/class100
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "helper.rkt")
 
   (provide (protect wx<%>
-		    wx/proxy<%>
-		    make-glue%
-		    wx->mred
-		    wx->proxy
-		    mred%
-		    mred->wx
-		    mred->wx-container))
+                    wx/proxy<%>
+                    make-glue%
+                    wx->mred
+                    wx->proxy
+                    mred%
+                    mred->wx
+                    mred->wx-container))
 
   ;; The windowing wx classes are not exposed directly.
   ;; Instead, we expose wrapper classes that have wx instances.

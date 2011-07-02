@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require "private/indirect-renderer.ss" "private/run-pdflatex.ss"
-         (prefix-in latex: "latex-render.ss"))
+(require "private/indirect-renderer.rkt" "private/run-pdflatex.rkt"
+         (prefix-in latex: "latex-render.rkt"))
 
 (provide render-mixin)
 

@@ -1,18 +1,18 @@
 (module wxcanvas mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   (prefix wx: "kernel.ss")
-	   (prefix wx: "wxme/text.ss")
-	   (prefix wx: "wxme/editor-canvas.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "wx.ss"
-	   "wxwindow.ss"
-	   "wxitem.ss")
+           mzlib/class100
+           (prefix wx: "kernel.rkt")
+           (prefix wx: "wxme/text.rkt")
+           (prefix wx: "wxme/editor-canvas.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "wx.rkt"
+           "wxwindow.rkt"
+           "wxitem.rkt")
 
   (provide (protect make-canvas-glue%
-		    wx-canvas%
-		    wx-editor-canvas%))
+                    wx-canvas%
+                    wx-editor-canvas%))
 
   (define (make-canvas-glue% default-tabable? %) ; implies make-window-glue%
     (class100 (make-window-glue% %) (mred proxy . args)

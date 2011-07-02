@@ -1,13 +1,12 @@
-
 (module panel mzscheme
   (require (prefix mred: mred)
-	   mzlib/class
-	   mzlib/file
-	   mzlib/pretty
-	   mzlib/etc
-	   mzlib/list
-	   "utils.ss"
-	   "base.ss")
+           mzlib/class
+           mzlib/file
+           mzlib/pretty
+           mzlib/etc
+           mzlib/list
+           "utils.rkt"
+           "base.rkt")
 
   (define gb:make-panel-params-snip%
     (lambda (cl)

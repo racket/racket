@@ -3,7 +3,7 @@
 (require rackunit rackunit/text-ui unstable/port "helpers.rkt")
 
 (run-tests
- (test-suite "port.ss"
+ (test-suite "port.rkt"
    (test-suite "read-all"
      (test-ok (check-equal? (read-all read (open-input-string "1 2 3"))
                             (list 1 2 3)))

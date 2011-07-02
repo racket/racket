@@ -1,9 +1,9 @@
 #lang racket/unit
 
-  (require "sig.ss"
+  (require "sig.rkt"
            mred/mred-sig
            racket/class
-           "../preferences.ss"
+           "../preferences.rkt"
            string-constants)
   
   (import mred^)

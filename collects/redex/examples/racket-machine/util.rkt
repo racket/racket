@@ -1,6 +1,6 @@
 #lang racket
 
-(require "grammar.ss"
+(require "grammar.rkt"
          redex/reduction-semantics)
 
 (provide (all-defined-out))

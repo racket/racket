@@ -1,14 +1,14 @@
 #lang scheme/base
 
   ;; Routine to build the LALR table
-  
-  (require "grammar.ss"
-	   "lr0.ss"
-	   "lalr.ss"
-	   "parser-actions.ss"
-	   mzlib/contract
+
+  (require "grammar.rkt"
+           "lr0.rkt"
+           "lalr.rkt"
+           "parser-actions.rkt"
+           mzlib/contract
            mzlib/list
-	   mzlib/class)
+           mzlib/class)
 
   (provide/contract 
    (build-table ((is-a?/c grammar%) string? any/c . -> .

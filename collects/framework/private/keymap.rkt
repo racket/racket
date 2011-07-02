@@ -5,10 +5,10 @@
          mzlib/list
          mred/mred-sig
          mzlib/match
-         "../preferences.ss"
+         "../preferences.rkt"
          mrlib/tex-table
          (only-in srfi/13 string-prefix? string-prefix-length)
-         "sig.ss")
+         "sig.rkt")
 
   (import mred^
           [prefix finder: framework:finder^]
@@ -51,7 +51,9 @@
   (define (valid-keybindings-lang? x)
     (member x
             (list `(lib "keybinding-lang.ss" "framework")
+                  `(lib "keybinding-lang.rkt" "framework")
                   `(lib "framework/keybinding-lang.ss")
+                  `(lib "framework/keybinding-lang.rkt")
                   `framework/keybinding-lang)))
   
   (define (spec->path p)
@@ -1454,7 +1456,7 @@
                     (case (system-type)
                       [(macosx macos) "d:"]
                       [(windows unix) "c:"]
-                      [else (error 'keymap.ss "unknown platform: ~s" (system-type))])
+                      [else (error 'keymap.rkt "unknown platform: ~s" (system-type))])
                     key)
                    func))])
       (add/map "editor-undo" 'undo "z")

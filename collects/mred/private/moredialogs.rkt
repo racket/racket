@@ -1,29 +1,29 @@
 (module moredialogs mzscheme
   (require mzlib/class
-	   mzlib/etc
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-	   (prefix wx: racket/snip)
-	   "lock.ss"
-	   "const.ss"
-	   "check.ss"
-	   "wx.ss"
-	   "helper.ss"
-	   "editor.ss"
-	   "mrtop.ss"
-	   "mrcanvas.ss"
-	   "mrpopup.ss"
-	   "mrmenu.ss"
-	   "mritem.ss"
-	   "mrpanel.ss"
-	   "mrtextfield.ss")
+           mzlib/etc
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           (prefix wx: racket/snip)
+           "lock.rkt"
+           "const.rkt"
+           "check.rkt"
+           "wx.rkt"
+           "helper.rkt"
+           "editor.rkt"
+           "mrtop.rkt"
+           "mrcanvas.rkt"
+           "mrpopup.rkt"
+           "mrmenu.rkt"
+           "mritem.rkt"
+           "mrpanel.rkt"
+           "mrtextfield.rkt")
 
   (provide get-ps-setup-from-user
-	   get-page-setup-from-user
-	   can-get-page-setup-from-user?
-	   get-text-from-user
-	   get-choices-from-user
-	   get-color-from-user)
+           get-page-setup-from-user
+           can-get-page-setup-from-user?
+           get-text-from-user
+           get-choices-from-user
+           get-color-from-user)
 
   (define (number->string* n)
     (let ([s (number->string n)])

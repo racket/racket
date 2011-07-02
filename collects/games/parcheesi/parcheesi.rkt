@@ -1,13 +1,10 @@
-
 (module parcheesi mzscheme
   (require mzlib/unit
            mzlib/class
-           "admin-gui.ss")
-  
+           "admin-gui.rkt")
+
   (provide game@)
   (define game@
     (unit (import)
           (export)
           (new gui-game%))))
-
-

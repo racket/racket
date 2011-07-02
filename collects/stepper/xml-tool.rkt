@@ -2,7 +2,7 @@
 
 (require "private/xml-snip-helpers.rkt"
          "private/find-tag.rkt"
-         "private/xml-sig.ss"
+         "private/xml-sig.rkt"
          mred
          framework
          drracket/tool

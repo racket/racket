@@ -1,5 +1,5 @@
 #lang racket/base
-(require "prefix-dispatcher.ss"
+(require "prefix-dispatcher.rkt"
          racket/cmdline
          (for-syntax racket/base))
 

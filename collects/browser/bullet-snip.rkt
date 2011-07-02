@@ -1,3 +1,3 @@
 (module bullet-snip mzscheme
-  (require "private/bullet.ss")
+  (require "private/bullet.rkt")
   (provide (rename bullet-snip-class snip-class)))

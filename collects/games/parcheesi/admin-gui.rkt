@@ -6,14 +6,14 @@ corresponds to the unplayed move! that's confusing.
 |#
 
 (module admin-gui mzscheme
-  (require "gui.ss"
-           "die.ss"
-           "interfaces.ss"
-           "admin.ss"
-           "board.ss"
-	   "moves.ss"
-           "rules.ss"
-           "best-players.ss"
+  (require "gui.rkt"
+           "die.rkt"
+           "interfaces.rkt"
+           "admin.rkt"
+           "board.rkt"
+           "moves.rkt"
+           "rules.rkt"
+           "best-players.rkt"
            framework
            mzlib/class
            mzlib/list

@@ -1,5 +1,5 @@
 #lang racket/base
-(require drracket/tool racket/unit framework "stamp.ss")
+(require drracket/tool racket/unit framework "stamp.rkt")
 
 (provide tool@)
 (define tool@

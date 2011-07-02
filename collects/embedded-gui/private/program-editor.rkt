@@ -26,7 +26,7 @@ is being reset.
    mzlib/etc
    mzlib/class
    framework
-   "snip-lib.ss")
+   "snip-lib.rkt")
   
   (provide program-editor-mixin
            program-editor%)

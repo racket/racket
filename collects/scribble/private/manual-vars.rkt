@@ -1,8 +1,8 @@
 #lang scheme/base
-(require "../decode.ss"
-         "../scheme.ss"
-         "../struct.ss"
-         (only-in "../core.ss" style-name)
+(require "../decode.rkt"
+         "../scheme.rkt"
+         "../struct.rkt"
+         (only-in "../core.rkt" style-name)
          scheme/contract
          (for-syntax scheme/base
                      syntax/kerncase

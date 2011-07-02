@@ -1,6 +1,6 @@
-;; Compiler driver routines 
+;; Compiler driver routines
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-2001 PLT
+;; (c) 1997-2011 PLT Scheme Inc
 ;;
 ;; Scheme->C compilation Overview
 ;; ------------------------------
@@ -9,23 +9,23 @@
 ;;  each of which is implemented in its own unit:
 ;;
 ;;   1) Reading/parsing - Zodiac collection
-;;   2) Prephase - prephase.ss
-;;   3) A-normalization - anorm.ss
-;;   4) Known-value analysis - known.ss
-;;   5) Lexical analysis and inlining - analyze.ss
-;;   6) Static procedure lifting - lift.ss
-;;   7) Static procedure lifting after LWCC - lift.ss (optional)
-;;   8) Closure conversion - closure.ss
-;;   9) Closure vehicle assignment - vehicle.ss
-;;  10) Representation choosing - rep.ss
-;;  11) Scheme to virtual machine translation - vmphase.ss
-;;  12) Optimizations on VM code - vmopt.ss
-;;  13) VM to C translation - vm2c.ss
+;;   2) Prephase - "prephase.rkt"
+;;   3) A-normalization - "anorm.rkt"
+;;   4) Known-value analysis - "known.rkt"
+;;   5) Lexical analysis and inlining - "analyze.rkt"
+;;   6) Static procedure lifting - "lift.rkt"
+;;   7) Static procedure lifting after LWCC - "lift.rkt" (optional)
+;;   8) Closure conversion - "closure.rkt"
+;;   9) Closure vehicle assignment - "vehicle.rkt"
+;;  10) Representation choosing - "rep.rkt"
+;;  11) Scheme to virtual machine translation - "vmphase.rkt"
+;;  12) Optimizations on VM code - "vmopt.rkt"
+;;  13) VM to C translation - "vm2c.rkt"
 ;;
 ;; For more information about a phase, see the file
 ;;  implementing that phase.
 ;;
-;; All steps up to vmphase.ss work on a Scheme program, representated
+;; All steps up to "vmphase.rkt" work on a Scheme program, representated
 ;;  as a zodiac AST. The AST produced by zodiac is destructively
 ;;  modified by each phase (usually); mzc-specific information is
 ;;  stored in the AST as ``annotations''. At the implementation file
@@ -61,27 +61,27 @@
 
 (module driver mzscheme
   (require mzlib/unit
-	   mzlib/list
-	   mzlib/file
-	   mzlib/port
-	   mzlib/etc
-	   mzlib/pretty
-	   (prefix src2src: "../src2src.ss"))
-  
+           mzlib/list
+           mzlib/file
+           mzlib/port
+           mzlib/etc
+           mzlib/pretty
+           (prefix src2src: "../src2src.rkt"))
+
   (require syntax/zodiac-sig
-	   syntax/toplevel
-	   dynext/compile-sig
-	   dynext/link-sig
-	   dynext/file-sig
-	   setup/dirs
-           (only scheme/base 
-                 define-namespace-anchor 
+           syntax/toplevel
+           dynext/compile-sig
+           dynext/link-sig
+           dynext/file-sig
+           setup/dirs
+           (only scheme/base
+                 define-namespace-anchor
                  namespace-anchor->empty-namespace))
 
-  (require "../sig.ss"
-	   "sig.ss"
-	   "../to-core.ss"
-	   "../xform.ss")
+  (require "../sig.rkt"
+           "sig.rkt"
+           "../to-core.rkt"
+           "../xform.rkt")
 
   (provide driver@)
 
@@ -247,7 +247,7 @@
 				      expr)])
 		       (values ; use to be zodiac:syntax->zodiac here
 			(let ([p (src2src:optimize expanded #t)])
-			  '(with-output-to-file "/tmp/l.ss"
+			  '(with-output-to-file "/tmp/l.rkt"
 			     (lambda () (pretty-print (syntax-object->datum p)))
 			     'replace)
 			  (let ([opt-expanded (expand p)])

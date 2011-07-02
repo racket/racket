@@ -1,10 +1,10 @@
 (require
  mzlib/class
  mred
- "../aligned-pasteboard.ss"
- "../verthoriz-alignment.ss"
- "../snip-wrapper.ss"
- "../stretchable-editor-snip.ss")
+ "../aligned-pasteboard.rkt"
+ "../verthoriz-alignment.rkt"
+ "../snip-wrapper.rkt"
+ "../stretchable-editor-snip.rkt")
 
 (define actual-show? #f)
 (define collapsed? #t)

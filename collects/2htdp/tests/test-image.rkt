@@ -2275,10 +2275,10 @@
          [normalized (normalize-shape (image-shape img))]
          [norm-size (image-struct-count normalized)]) 
     (unless (normalized-shape? normalized)
-      (error 'test-image.ss "found a non-normalized shape after normalization:\n~s" 
+      (error 'test-image.rkt "found a non-normalized shape after normalization:\n~s" 
              img-sexp))
     (unless (equal? norm-size raw-size)
-      (error 'test-image.ss "found differing sizes for ~s:\n  ~s\n  ~s" 
+      (error 'test-image.rkt "found differing sizes for ~s:\n  ~s\n  ~s" 
              img-sexp raw-size norm-size))))
 
 (time

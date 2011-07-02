@@ -1,11 +1,10 @@
-
 (module xml-snip-helpers mzscheme
   (require xml/xml
            syntax/readerr
            mred
            mzlib/class
            mzlib/list
-           "shared.ss")
+           "shared.rkt")
   
   (provide xml-read-special
            xml-snip<%>

@@ -1,9 +1,8 @@
-
 (module comment mzscheme
   (require mzlib/class
            mzlib/string
-           "wxme.ss"
-           "private/readable-editor.ss")
+           "wxme.rkt"
+           "private/readable-editor.rkt")
 
   (provide reader
            comment-editor%)

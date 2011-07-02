@@ -3,8 +3,8 @@
 (require scribble/xref
          scheme/fasl
          scheme/path
-         "getinfo.ss"
-         "private/path-utils.ss")
+         "getinfo.rkt"
+         "private/path-utils.rkt")
 
 (provide load-collections-xref)
 

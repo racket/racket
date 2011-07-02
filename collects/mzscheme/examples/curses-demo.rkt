@@ -1,5 +1,5 @@
 ; Uses the curses.so extension. Run with
-;    mzscheme -r curses-demo.ss
+;    racket -r curses-demo.rkt
 
 ; To get append-extension-suffix, which adds .so or .dll as
 ; approrpiate for the current platform:

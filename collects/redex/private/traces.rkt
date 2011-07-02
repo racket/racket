@@ -5,10 +5,10 @@
 ;; equal hash-table
 
 (require mrlib/graph
-         "reduction-semantics.ss"
-         "matcher.ss"
-         "size-snip.ss"
-         "dot.ss"
+         "reduction-semantics.rkt"
+         "matcher.rkt"
+         "size-snip.rkt"
+         "dot.rkt"
          racket/gui/base
          racket/class
          racket/file

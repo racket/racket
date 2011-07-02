@@ -3,11 +3,11 @@
 (require string-constants
          scheme/class
          mzlib/include
-         "search.ss"
-         "sig.ss"
-         "../preferences.ss"
-         "../gui-utils.ss"
-         "bday.ss"
+         "search.rkt"
+         "sig.rkt"
+         "../preferences.rkt"
+         "../gui-utils.rkt"
+         "bday.rkt"
          mrlib/close-icon
          mred/mred-sig
          scheme/path)

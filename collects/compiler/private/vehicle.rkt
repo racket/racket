@@ -1,6 +1,6 @@
 ;; vehicle choosing phase for closures
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-2001 PLT
+;; (c) 1997-2011 PLT Scheme Inc
 
 ; Assign closures to ``vehicles'', and collect information for
 ;  Racket about the closures.
@@ -24,8 +24,8 @@
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide vehicle@)
   (define-unit vehicle@

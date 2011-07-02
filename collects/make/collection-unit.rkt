@@ -3,8 +3,8 @@
 (require mzlib/unit
          mzlib/list
          mzlib/file
-         "collection-sig.ss"
-         "make-sig.ss"
+         "collection-sig.rkt"
+         "make-sig.rkt"
          compiler/sig
          dynext/file-sig)
 

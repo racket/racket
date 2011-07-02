@@ -35,7 +35,7 @@
   
   (define other-plt-tests 
     (test-suite 
-     "Tests copied from plt-match-test.ss"
+     "Tests copied from plt-match-test.rkt"
      
      (mytest (match "hello"
                ((pregexp (pregexp "hello")) #t)

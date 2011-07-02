@@ -4,8 +4,8 @@
            racket/class
            racket/list
            file/convertible)
-  
-  (require "common-sig.ss")
+
+  (require "common-sig.rkt")
 
   (import texpict-common-setup^)
   (export texpict-common^ texpict-internal^)

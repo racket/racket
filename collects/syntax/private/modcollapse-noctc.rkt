@@ -10,7 +10,7 @@ Use syntax/modcollapse instead.
 
 (require racket/string
          racket/list
-         "modhelp.ss")
+         "modhelp.rkt")
 
 (define (collapse-module-path s relto-mp)
   ;; relto-mp should be a path, '(lib relative-path collection) or symbol,

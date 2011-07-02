@@ -1,14 +1,14 @@
-;; mysterx.ss
+;; mysterx.rkt
 
 (module mysterx mzscheme
 
   ; private mysterx modules
 
-  (require (prefix mxprims: "private/mxmain.ss"))
-  (require (prefix style: "private/style.ss"))
-  (require "private/filter.ss")
-  (require "private/properties.ss")
-  (require "private/util.ss")
+  (require (prefix mxprims: "private/mxmain.rkt")
+           (prefix style: "private/style.rkt")
+           "private/filter.rkt"
+           "private/properties.rkt"
+           "private/util.rkt")
 
   ; mzlib
 

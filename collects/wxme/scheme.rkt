@@ -1,13 +1,12 @@
-
 (module scheme mzscheme
   (require mzlib/class
-           "wxme.ss"
-           "editor.ss"
-           "private/readable-editor.ss")
+           "wxme.rkt"
+           "editor.rkt"
+           "private/readable-editor.rkt")
 
   (provide reader 
            scheme-editor%)
-  
+
   (define scheme-editor% (class readable-editor% (super-new)))
 
   (define reader

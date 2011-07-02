@@ -1,5 +1,5 @@
 (module config racket/base
-  (require "private/define-config.ss") 
+  (require "private/define-config.rkt")
   (define-parameters
     (PLANET-SERVER-NAME       "planet.racket-lang.org")
     (PLANET-SERVER-PORT       270)

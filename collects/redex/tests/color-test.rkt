@@ -10,8 +10,8 @@ In the other window, you expect to see the currently unreducted terms in green a
 
 #lang scheme/gui
 
-(require "../reduction-semantics.ss"
-         "../gui.ss")
+(require "../reduction-semantics.rkt"
+         "../gui.rkt")
 
 (reduction-steps-cutoff 1)
 

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../core.ss")
+(require "../core.rkt")
 
 (provide part-style?
          select-suffix

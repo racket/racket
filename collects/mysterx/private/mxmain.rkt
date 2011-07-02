@@ -288,7 +288,7 @@
    com-omit
    %%initialize-dotnet-runtime)
 
-  (error "mxmain.ss: you seem to be missing mxmain.dll; you need to build MysterX in plt\\src\\mysterx\\")
+  (error "mxmain.rkt: you seem to be missing mxmain.dll; you need to build MysterX in plt\\src\\mysterx\\")
 
   (define mx-version #f)
   (define block-while-browsers #f)

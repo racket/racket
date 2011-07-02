@@ -7,8 +7,8 @@
            net/tcp-sig
            net/url-sig
            net/url
-           "browser-sig.ss"
-           "browser-unit.ss")
+           "browser-sig.rkt"
+           "browser-unit.rkt")
   
   (provide-signature-elements browser^)
   

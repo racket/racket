@@ -1,4 +1,4 @@
 #lang setup/infotab
 
-(define game "gobblet.ss")
+(define game "gobblet.rkt")
 (define game-set "Board Games")

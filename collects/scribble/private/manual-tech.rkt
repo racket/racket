@@ -1,10 +1,10 @@
 #lang scheme/base
 (require scheme/contract
-         "../decode.ss"
-         "../struct.ss"
-         "../basic.ss"
-         "manual-utils.ss"
-         "manual-style.ss")
+         "../decode.rkt"
+         "../struct.rkt"
+         "../basic.rkt"
+         "manual-utils.rkt"
+         "manual-style.rkt")
 
 (provide/contract
  [deftech (() (#:style? boolean?) #:rest (listof pre-content?) . ->* . element?)]

@@ -1,5 +1,5 @@
 ;;;
-;;; <and-let-test.ss> ---- and-let* macro tests
+;;; <and-let-test.rkt> ---- and-let* macro tests
 ;;; Time-stamp: <06/06/09 15:58:59 nhw>
 ;;;
 ;;; Copyright (C) 2002 by Francisco Solsona. 
@@ -191,4 +191,4 @@
     
 
 
-;;; and-let-test.ss ends here
+;;; and-let-test.rkt ends here

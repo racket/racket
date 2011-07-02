@@ -11,9 +11,9 @@
 	   texpict/utils
 	   scheme/math
 	   mrlib/include-bitmap
-	   "sig.ss"
-	   "core.ss"
-	   "private/utils.ss")
+	   "sig.rkt"
+	   "core.rkt"
+	   "private/utils.rkt")
 
   (provide viewer@)
 

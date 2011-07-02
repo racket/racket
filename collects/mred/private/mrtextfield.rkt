@@ -1,22 +1,22 @@
 (module mrtextfield mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "const.ss"
-	   "check.ss"
-	   "helper.ss"
-	   "wx.ss"
-	   "kw.ss"
-	   "wxtextfield.ss"
-	   "mrcontainer.ss"
-	   "mritem.ss"
-	   "mrmenu.ss"
-	   "mrpopup.ss")
+           mzlib/class100
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "const.rkt"
+           "check.rkt"
+           "helper.rkt"
+           "wx.rkt"
+           "kw.rkt"
+           "wxtextfield.rkt"
+           "mrcontainer.rkt"
+           "mritem.rkt"
+           "mrmenu.rkt"
+           "mrpopup.rkt")
 
   (provide text-field%
-	   combo-field%)
+           combo-field%)
 
   (define combo-flag (gensym))
 

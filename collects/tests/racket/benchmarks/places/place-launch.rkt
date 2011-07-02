@@ -20,7 +20,7 @@
       (barrier ch))
   )
 END
-  "pct1.ss")
+  "pct1.rkt")
   (splat
   #<<END
   (module pct2 racket
@@ -36,7 +36,7 @@ END
       (barrier ch))
   )
 END
-  "pct2.ss")
+  "pct2.rkt")
 
   
   (define-values (plcnt reps symcnt)
@@ -62,8 +62,8 @@ END
       (barrier-m pls)
       (places-wait pls)))
 
-  (t "pct1.ss" "racket/base")
-  (t "pct2.ss" "racket")
+  (t "pct1.rkt" "racket/base")
+  (t "pct2.rkt" "racket")
 )
 
     

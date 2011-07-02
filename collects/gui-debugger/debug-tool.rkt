@@ -7,11 +7,11 @@
            mred
            mzlib/match
            drscheme/tool
-           "marks.ss"
+           "marks.rkt"
            mrlib/switchable-button
            mrlib/bitmap-label
-           "annotator.ss"
-           "load-sandbox.ss"
+           "annotator.rkt"
+           "load-sandbox.rkt"
            framework
            string-constants
            lang/debugger-language-interface)

@@ -1,8 +1,8 @@
 #lang racket
 
 (require redex/reduction-semantics
-         "grammar.ss"
-         "meta.ss")
+         "grammar.rkt"
+         "meta.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Reductions:

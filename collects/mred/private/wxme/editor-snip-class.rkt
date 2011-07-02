@@ -2,12 +2,12 @@
 
 (require racket/class
          racket/file file/convertible
-         "../syntax.ss"
+         "../syntax.rkt"
          racket/snip/private/snip-flags
-         "private.ss"
+         "private.rkt"
          racket/snip/private/private
          racket/snip
-         (only-in "cycle.ss"
+         (only-in "cycle.rkt"
                   editor-stream-in% editor-stream-out%
                   extended-text% extended-pasteboard% extended-editor-snip% 
                   get-editor-data-class)

@@ -1,8 +1,8 @@
 (module code racket/base
-  (require "mrpict.ss"
-	   (prefix-in r: racket/base)
+  (require "mrpict.rkt"
+           (prefix-in r: racket/base)
            mzlib/class
-	   mzlib/list
+           mzlib/list
            (only-in scheme/list last)
            racket/draw
            mzlib/unit

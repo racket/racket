@@ -2,7 +2,7 @@
   (require mred
            mzlib/class
            texpict/mrpict
-           "image-snipr.ss")
+           "image-snipr.rkt")
   
   (provide get-snp/poss
            build-lib-pict-stx

@@ -2,7 +2,7 @@
 
 #|
 
-raw-problems.ss
+raw-problems.rkt
 
 This file contains the built-in problems in a raw format. 
 This file should contain a single sexpression of this
@@ -10,7 +10,7 @@ type:
 
   (listof (list string cols rows))
 
-The cols and rows types are specified in sig.ss
+The cols and rows types are specified in sig.rkt
 
 |#
 

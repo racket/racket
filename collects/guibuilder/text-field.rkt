@@ -1,14 +1,13 @@
-
 (module text-field mzscheme
   (require (prefix mred: mred)
-	   mzlib/class
-	   mzlib/file
-	   mzlib/pretty
-	   mzlib/etc
-	   mzlib/list
-	   "utils.ss"
-	   "base.ss"
-	   "feature.ss")
+           mzlib/class
+           mzlib/file
+           mzlib/pretty
+           mzlib/etc
+           mzlib/list
+           "utils.rkt"
+           "base.rkt"
+           "feature.rkt")
 
   (define gb:make-text-initial-snip%
     (lambda (cl)

@@ -3,7 +3,7 @@
            scribble/struct
            scribble/decode
            scribble/eval
-           "../icons.ss")
+           "../icons.rkt")
 
   (require (for-label racket/base))
   (provide (for-label (all-from-out racket/base)))

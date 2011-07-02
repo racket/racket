@@ -45,4 +45,4 @@
 (test (diff (term |a'|) (term b))
       (cons (list (cons 0 4)) (list (cons 0 1))))
 
-(print-tests-passed 'stepper-test.ss)
+(print-tests-passed 'stepper-test.rkt)

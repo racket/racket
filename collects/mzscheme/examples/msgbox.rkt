@@ -1,5 +1,5 @@
 ;; Build with
-;;   mzc ++ldf user32.lib msgbox.ss
+;;   mzc ++ldf user32.lib msgbox.rkt
 ;; so that MessageBox() is linked in.
 
 (module msgbox mzscheme

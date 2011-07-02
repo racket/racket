@@ -1,7 +1,7 @@
 #lang racket
 
 (require redex/reduction-semantics
-         "reduction.ss")
+         "reduction.rkt")
 
 ;                                                                                             
 ;                                                                                             

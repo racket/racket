@@ -1,6 +1,6 @@
 #lang typed-scheme
 #;(require mzlib/etc)
-#;(require "prims.ss")
+#;(require "prims.rkt")
 (require mzlib/match)
 
 (define-type-alias number Number)

@@ -1,6 +1,5 @@
-
 #lang scheme/base
-(require "../gentest-framework.ss")
+(require "../gentest-framework.rkt")
 (provide proto:modules)
 
 (define-syntax-rule (testM form . clauses)
@@ -327,9 +326,9 @@
           (P? (make-P P-x P-y))))
   (test "module with match"
         (module m mzscheme
-          (require (lib "match.ss"))
+          (require (lib "match.rkt"))
           (match '4 [n (add1 n)])))
   (test "module with match before require"
         (module m mzscheme
           (match '4 [n (add1 n)])
-          (require (lib "match.ss")))))
+          (require (lib "match.rkt")))))

@@ -1,9 +1,8 @@
-
 (module sirmailr mzscheme
   (require mzlib/unit
-	   mred/mred-sig)
+           mred/mred-sig)
 
-  (require "sirmails.ss")
+  (require "sirmails.rkt")
 
   (require net/imap-sig
            net/smtp-sig
@@ -14,13 +13,13 @@
   
   (require mrlib/hierlist/hierlist-sig)
   
-  (require "utilr.ss"
-           "optionr.ss"
-           "readr.ss"
-           "sendr.ss")
+  (require "utilr.rkt"
+           "optionr.rkt"
+           "readr.rkt"
+           "sendr.rkt")
 
   ;; The sirmail@ unit implements a single reader window. See
-  ;; "sirmail.ss" for its use: 
+  ;; "sirmail.rkt" for its use: 
   (provide sirmail@)
   (define-compound-unit/infer sirmail@
     (import (ENV : sirmail:environment^)

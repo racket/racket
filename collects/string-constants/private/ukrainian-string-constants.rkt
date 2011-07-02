@@ -3,7 +3,7 @@
 When modifying the string constants files,
 please adhere to these guidelines:
 
-- All the entries in english-string-constants.ss have the same format
+- All the entries in english-string-constants.rkt have the same format
   (name string).  If the purpose of an entry you are adding to the
   file is not clear from just the name and string, put a comment next
   to the entry explaining what the string is going to be used for and
@@ -29,8 +29,8 @@ please adhere to these guidelines:
   re-use strings that already exist.  There's no need for yet another
   "Ok" string...
 
-- If you modify an existing string in english-string-constants.ss, go
-  through all the *-string-constants.ss files for the other languages,
+- If you modify an existing string in english-string-constants.rkt, go
+  through all the *-string-constants.rkt files for the other languages,
   comment out the old version of the modified string in each of these
   files, and put a short comment there telling us the English string
   has changed and needs to be re-translated.  Do not erase the old
@@ -72,7 +72,7 @@ please adhere to these guidelines:
 
 - If, for some reason, you really have to change the name of a string
   (like, because the original name you gave it really sucked...),
-  change the name of the string in *ALL* the *-string-constants.ss
+  change the name of the string in *ALL* the *-string-constants.rkt
   files.  That's a modification you can do without the help of a
   translator, so do it yourself.  It's not the job of the translators
   to clean up your naming mess for you.  Besides, you are the one who
@@ -81,14 +81,14 @@ please adhere to these guidelines:
 
 - If, for some reason, you need to remove a string (i.e. you changed
   your code and don't need the string anymore), remove the string in
-  *ALL* the *-string-constants.ss files.  Again, you don't need the
+  *ALL* the *-string-constants.rkt files.  Again, you don't need the
   help of a translator to do that.  If you're not sure whether you
   might need the string in the future or not, just comment it out in
   *ALL* the files.
 
 |#
 
-(module ukrainian-string-constants "string-constant-lang.ss"
+(module ukrainian-string-constants "string-constant-lang.rkt"
  ;;; when translating this constant, substitute name of actual langauge for `English'
  (is-this-your-native-language "Українська - це Ваша рідна мова?")
 
@@ -805,17 +805,17 @@ please adhere to these guidelines:
  (drscheme-internal-error "Внутрішня помилка DrRacket")
  
  ;;; tools
- (invalid-tool-spec "Некоректний файл info.ss, який містить опис інструменту в колекції ~a. Очікується рядок або непустий список рядків, отримано: ~e")
+ (invalid-tool-spec "Некоректний файл info.rkt, який містить опис інструменту в колекції ~a. Очікується рядок або непустий список рядків, отримано: ~e")
  (error-invoking-tool-title "Помилка виклику інструменту ~s;~s")
  (error-loading-tool-title "Помилка завантаження інструменту ~s\n~a") ;; ~s filled with a path, ~a filled with an error message from an exn
  (tool-tool-names-same-length
-  "В файлі info.ss для ~s очікується, що `tool-names' і `tools' - списки однакової довжини, отримано ~e і ~e")
+  "В файлі info.rkt для ~s очікується, що `tool-names' і `tools' - списки однакової довжини, отримано ~e і ~e")
  (tool-tool-icons-same-length
-  "В файлі info.ss для ~s очікується, що `tool-icons' і `tools' - списки однакової довжини, отримано ~e і ~e")
+  "В файлі info.rkt для ~s очікується, що `tool-icons' і `tools' - списки однакової довжини, отримано ~e і ~e")
  (tool-tool-urls-same-length
-  "В файлі info.ss для ~s очікується, що `tool-urls' і `tools' - списки однакової довжини, отримано ~e і ~e")
+  "В файлі info.rkt для ~s очікується, що `tool-urls' і `tools' - списки однакової довжини, отримано ~e і ~e")
  (error-getting-info-tool
-  "помилка при завантаженні файлу info.ss для ~s")
+  "помилка при завантаженні файлу info.rkt для ~s")
  (tool-error-phase1 "Помилка на 1 етапі для інструменту ~s; ~s")
  (tool-error-phase2 "Помилка на 2 етапі для інструменту ~s; ~s")
 

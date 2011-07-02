@@ -4,7 +4,7 @@
          (prefix-in config: config)
          compiler/private/winutf16
          compiler/private/mach-o
-         "private/main-collects.ss")
+         "private/main-collects.rkt")
 
 (provide (rename-out [config:absolute-installation? absolute-installation?]))
 

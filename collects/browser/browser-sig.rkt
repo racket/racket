@@ -1,6 +1,6 @@
 (module browser-sig mzscheme
   (require mzlib/unit
-           "private/sig.ss")
+           "private/sig.rkt")
 
   (provide browser^)
   
@@ -8,4 +8,3 @@
     ((open hyper^)
      (open html-export^)
      (open bullet-export^))))
-

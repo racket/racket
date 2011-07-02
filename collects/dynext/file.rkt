@@ -1,9 +1,8 @@
-
 (module file mzscheme
   (require mzlib/unit)
 
-  (require "file-sig.ss")
-  (require "file-unit.ss")
+  (require "file-sig.rkt"
+           "file-unit.rkt")
 
   (define-values/invoke-unit/infer dynext:file@)
 

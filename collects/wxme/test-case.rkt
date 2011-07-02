@@ -1,8 +1,7 @@
-
 (module test-case mzscheme
   (require mzlib/class
-           "wxme.ss"
-           "private/class-help.ss")
+           "wxme.rkt"
+           "private/class-help.rkt")
 
   (provide reader
            test-case%)

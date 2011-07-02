@@ -1,14 +1,14 @@
 (module wxcontainer mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   mzlib/list
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "wx.ss")
+           mzlib/class100
+           mzlib/list
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "wx.rkt")
 
   (provide (protect make-container-glue%
-		    wx-make-container%))
+                    wx-make-container%))
 
   (define (make-container-glue% %)
     (class100 % (mr prxy . args)

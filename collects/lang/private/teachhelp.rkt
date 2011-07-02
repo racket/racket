@@ -1,6 +1,5 @@
-
 (module teachhelp mzscheme
-  (require "firstorder.ss"
+  (require "firstorder.rkt"
            stepper/private/shared)
 
   (require-for-syntax stepper/private/shared)

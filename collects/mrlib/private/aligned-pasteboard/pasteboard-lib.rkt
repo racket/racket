@@ -5,8 +5,8 @@
    mred
    mzlib/contract
    mzlib/etc
-   "interface.ss"
-   "snip-lib.ss")
+   "interface.rkt"
+   "snip-lib.rkt")
   
   (provide/contract
    (pasteboard-root ((is-a?/c aligned-pasteboard<%>) . -> . (is-a?/c aligned-pasteboard<%>)))

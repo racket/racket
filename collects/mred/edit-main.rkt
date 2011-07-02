@@ -1,9 +1,9 @@
 
-;; Uses editor.ss to open a frame for each argument
+;; Uses editor.rkt to open a frame for each argument
 
 (module edit-main mzscheme
-  (require "edit.ss"
-	   mzlib/cmdline)
+  (require "edit.rkt"
+           mzlib/cmdline)
 
   (command-line
    "Edit"

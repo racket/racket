@@ -1,14 +1,14 @@
 #lang racket/base
-(require "../decode.ss"
-         "../struct.ss"
-         "../base.ss"
-         (only-in "../basic.ss" aux-elem itemize)
-         "../scheme.ss"
-         (only-in "../core.ss" make-style plain
+(require "../decode.rkt"
+         "../struct.rkt"
+         "../base.rkt"
+         (only-in "../basic.rkt" aux-elem itemize)
+         "../scheme.rkt"
+         (only-in "../core.rkt" make-style plain
                   make-nested-flow
                   [element? core:element?])
-         "manual-utils.ss"
-         "on-demand.ss"
+         "manual-utils.rkt"
+         "on-demand.rkt"
          "manual-sprop.rkt"
          racket/list
          racket/contract

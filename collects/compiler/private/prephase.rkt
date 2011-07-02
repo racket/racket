@@ -1,6 +1,6 @@
 ;; pre-compilation scan
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-2001 PLT
+;; (c) 1997-2011 PLT Scheme Inc
 
 ; Notes mutability of lexical variables.
 ; Performs a few very-high-level optimizations, such as
@@ -44,8 +44,8 @@
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide prephase@)
   (define-unit prephase@

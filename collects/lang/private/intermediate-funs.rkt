@@ -1,8 +1,8 @@
 (module intermediate-funs scheme/base
-  (require "teachprims.ss" "and-or-map.ss"
-	   mzlib/etc
-	   scheme/list
-	   syntax/docprovide
+  (require "teachprims.rkt" "and-or-map.rkt"
+           mzlib/etc
+           scheme/list
+           syntax/docprovide
            (for-syntax scheme/base))
 
   (provide-and-document

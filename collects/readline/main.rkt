@@ -1,4 +1,4 @@
 #lang scheme
 
-(require "rep.ss")
-(provide (all-from-out "rep.ss"))
+(require "rep.rkt")
+(provide (all-from-out "rep.rkt"))

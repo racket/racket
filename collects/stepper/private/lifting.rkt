@@ -1,8 +1,8 @@
 #lang racket
 
 (require (prefix-in kernel: syntax/kerncase)
-         "testing-shared.ss"
-         "shared.ss"
+         "testing-shared.rkt"
+         "shared.rkt"
          (for-syntax racket/base))
 
 (define-struct context-record (stx index kind))

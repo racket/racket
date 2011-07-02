@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../bad-collectors/broken-collector.ss" 12)
+(allocator-setup "../bad-collectors/broken-collector.rkt" 12)
 
 50
 60

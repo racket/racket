@@ -1,13 +1,12 @@
-
 (module flash mzscheme
-  (require "mrpict.ss"
-	   mzlib/math
-	   mzlib/etc
+  (require "mrpict.rkt"
+           mzlib/math
+           mzlib/etc
            racket/draw
            mzlib/class)
 
   (provide filled-flash
-	   outline-flash)
+           outline-flash)
 
   (define-syntax define-flash
     (syntax-rules ()

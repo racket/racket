@@ -1,5 +1,5 @@
 ;;;
-;;; <fold-test.ss> ---- Tests for list folds
+;;; <fold-test.rkt> ---- Tests for list folds
 ;;; Time-stamp: <05/12/16 21:19:37 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -953,4 +953,4 @@
 
      ))
   )
-;;; fold-test.ss ends here
+;;; fold-test.rkt ends here

@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "srpersist.ss")
-(provide (all-from-out "srpersist.ss"))
+(require "srpersist.rkt")
+(provide (all-from-out "srpersist.rkt"))

@@ -1,11 +1,11 @@
 ;; A kind of lambda-lifting
-;; (c) 1997-2001 PLT
+;; (c) 1997-2011 PLT Scheme Inc
 
 ;; Finds liftable procedures, sets their `liftable' field, and
 ;;  replaces lexical variables for liftable procedures with
 ;;  globals variables. This transformation can be applied
-;;  anytime (and multiple times) after analyze.ss and before
-;;  closure.ss.
+;;  anytime (and multiple times) after "analyze.rkt" and before
+;;  "closure.rkt".
 ;; Liftable lambdas are procedures whose free variables include only
 ;;  lexical variables bound to known-lifted procedures, primitive
 ;;  globals, and statics. (No namespace-sentsitive globals and no
@@ -22,13 +22,13 @@
 
 (module lift mzscheme
   (require mzlib/unit
-	  mzlib/list
-	  mzlib/etc)
+           mzlib/list
+           mzlib/etc)
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide lift@)
   (define-unit lift@

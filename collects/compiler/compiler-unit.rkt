@@ -9,7 +9,7 @@
 
 (require scheme/unit
 
-         "sig.ss"
+         "sig.rkt"
          dynext/file-sig
          dynext/link-sig
          dynext/compile-sig

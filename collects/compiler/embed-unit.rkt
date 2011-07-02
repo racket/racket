@@ -1,27 +1,26 @@
-
 (module embed-unit scheme/base
   (require scheme/unit
-	   scheme/path
+           scheme/path
            scheme/file
-	   scheme/port
-	   scheme/promise
+           scheme/port
+           scheme/promise
            syntax/moddep
            syntax/modcollapse
            xml/plist
            setup/dirs
            setup/variant
-	   "embed-sig.ss"
-	   "private/winicon.ss"
-           "private/winsubsys.ss"
-	   "private/macfw.ss"
-	   "private/mach-o.ss"
-	   "private/elf.ss"
-	   "private/windlldir.ss"
-	   "private/collects-path.ss"
+           "embed-sig.rkt"
+           "private/winicon.rkt"
+           "private/winsubsys.rkt"
+           "private/macfw.rkt"
+           "private/mach-o.rkt"
+           "private/elf.rkt"
+           "private/windlldir.rkt"
+           "private/collects-path.rkt"
            "find-exe.rkt")
-  
+
   (provide compiler:embed@)
-  
+
   (define-unit compiler:embed@
     (import)
     (export compiler:embed^)
@@ -1361,4 +1360,3 @@
         [(list? p) (map mac-mred-collects-path-adjust p)]
         [(relative-path? p) (build-path 'up 'up 'up p)]
         [else p]))))
-

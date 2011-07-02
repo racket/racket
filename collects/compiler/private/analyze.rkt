@@ -1,13 +1,13 @@
 ;; lexical analysis phase of the compiler
 ;; (c) 1996-1997 Sebastian Good
-;; (c) 1997-2001 PLT
+;; (c) 1997-2011 PLT Scheme Inc
 
 ;; For closures, variable sets, such as the free variables,
 ;;  are computed.
 ;; Constants are transformed into varrefs to top-level
 ;;  constant definitions. A list of these is kept, and
 ;;  code is generated to create the constants and prefixed
-;;  onto the output code. See also const.ss.
+;;  onto the output code. See also "const.rkt".
 ;; Global and primitive varrefs are collected into a list,
 ;;  so they can all be looked up once.
 ;; Letrec expressions that don't just bind procedures are
@@ -40,13 +40,13 @@
 
 (module analyze mzscheme
   (require mzlib/unit
-	  mzlib/list
-	  mzlib/etc)
+           mzlib/list
+           mzlib/etc)
 
   (require syntax/zodiac-sig)
 
-  (require "sig.ss")
-  (require "../sig.ss")
+  (require "sig.rkt"
+           "../sig.rkt")
 
   (provide analyze@)
   (define-unit analyze@

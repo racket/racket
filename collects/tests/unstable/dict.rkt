@@ -14,7 +14,7 @@
 (define (check/dict a b) (check dict=? a b))
 
 (run-tests
- (test-suite "dict.ss"
+ (test-suite "dict.rkt"
    (test-suite "Accessors"
      (test-suite "dict-empty?"
        (test (check-true (dict-empty? '())))

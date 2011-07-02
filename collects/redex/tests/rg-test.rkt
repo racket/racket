@@ -1,12 +1,12 @@
 #lang scheme
 
-(require "test-util.ss"
-         "../private/reduction-semantics.ss"
-         "../private/matcher.ss"
-         "../private/term.ss"
-         "../private/rg.ss"
-         "../private/keyword-macros.ss"
-         "../private/error.ss")
+(require "test-util.rkt"
+         "../private/reduction-semantics.rkt"
+         "../private/matcher.rkt"
+         "../private/term.rkt"
+         "../private/rg.rkt"
+         "../private/keyword-macros.rkt"
+         "../private/error.rkt")
 
 (define-namespace-anchor nsa)
 (define ns (namespace-anchor->namespace nsa))
@@ -1340,4 +1340,4 @@
     (test (seed-effect-generate void)
           (seed-effect-generate random))))
 
-(print-tests-passed 'rg-test.ss)
+(print-tests-passed 'rg-test.rkt)

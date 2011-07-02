@@ -1,7 +1,7 @@
 #lang racket
 (require racket/vector racket/gui/dynamic rackunit)
 
-(require "main.ss")
+(require "main.rkt")
 
 (define exec (make-parameter go/text))
 (define nightly? (make-parameter #f))

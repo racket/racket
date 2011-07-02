@@ -1,11 +1,10 @@
-
 (module xml mzscheme
   (require mzlib/class
            xml/xml
            mzlib/list
-           "wxme.ss"
-           "editor.ss"
-           "private/readable-editor.ss")
+           "wxme.rkt"
+           "editor.rkt"
+           "private/readable-editor.rkt")
 
   (provide reader
            xml-editor%)
@@ -31,7 +30,7 @@
 
            (super-new))))
 
-  ;; FIXME! Copied from xml-snip-helpers.ss verbatim
+  ;; FIXME! Copied from xml-snip-helpers.rkt verbatim
   (define (eliminate-whitespace-in-empty-tags xexpr)
     (cond
      [(and (pair? xexpr)

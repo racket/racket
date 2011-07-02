@@ -1,27 +1,27 @@
 (module mrwindow mzscheme
   (require mzlib/class
-	   mzlib/class100
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "const.ss"
-	   "check.ss"
-	   "wx.ss"
-	   "kw.ss"
-	   "wxwindow.ss"
-	   "mrpopup.ss")
+           mzlib/class100
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "const.rkt"
+           "check.rkt"
+           "wx.rkt"
+           "kw.rkt"
+           "wxwindow.rkt"
+           "mrpopup.rkt")
 
   (provide area<%>
-	   (protect area%-keywords)
-	   area%
-	   (protect internal-subarea<%>)
-	   subarea<%>
-	   (protect subarea%-keywords
-		    make-subarea%)
-	   window<%>
-	   (protect window%-keywords)
-	   subwindow<%>
-	   (protect make-window%)
+           (protect area%-keywords)
+           area%
+           (protect internal-subarea<%>)
+           subarea<%>
+           (protect subarea%-keywords
+                    make-subarea%)
+           window<%>
+           (protect window%-keywords)
+           subwindow<%>
+           (protect make-window%)
            
            (protect set-get-outer-panel
                     set-parent))

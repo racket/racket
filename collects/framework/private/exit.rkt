@@ -1,9 +1,9 @@
 #lang scheme/unit
 
   (require string-constants
-           "sig.ss"
-           "../preferences.ss"
-           "../gui-utils.ss"
+           "sig.rkt"
+           "../preferences.rkt"
+           "../gui-utils.rkt"
            mred/mred-sig)
   
   (import mred^)

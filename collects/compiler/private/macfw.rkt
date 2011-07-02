@@ -1,12 +1,11 @@
-
 (module macfw mzscheme
-  (require "mach-o.ss"
-	   mzlib/string
-	   mzlib/process)
+  (require "mach-o.rkt"
+           mzlib/string
+           mzlib/process)
 
   (provide update-framework-path
-	   get-current-framework-path
-	   update-framework-path/cmdline)
+           get-current-framework-path
+           update-framework-path/cmdline)
 
   (define (update-framework-path/cmdline)
     (let ([v (current-command-line-arguments)])

@@ -2,14 +2,12 @@
   ;; these tests just make sure that errors don't
   ;; happen. These tests are really only last resorts
   ;; for testing functions that aren't easily extraced
-  ;; from the pict.ss library
+  ;; from the pict.rkt library
   
-  (require "../reduction-semantics.ss"
-           "../pict.ss")
+  (require "../reduction-semantics.rkt"
+           "../pict.rkt")
   
-  (require (lib "mrpict.ss" "texpict")
-           (lib "mred.ss" "mred")
-           (lib "class.ss"))
+  (require texpict/mrpict mred/mred mzlib/class)
   
   (define-language empty-language)
   
@@ -50,4 +48,4 @@
   
   (render-language x0-10)
   
-  (printf "pict-test.ss passed\n"))
+  (printf "pict-test.rkt passed\n"))

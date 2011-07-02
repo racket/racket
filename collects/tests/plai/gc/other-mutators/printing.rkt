@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 400)
+(allocator-setup "../good-collectors/good-collector.rkt" 400)
 (print-only-errors #f)
 
 (define lst (cons 1 (cons 2 (cons 3 empty))))

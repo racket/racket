@@ -1,4 +1,4 @@
-;pregexp.ss
+;; pregexp.rkt
 ;; Originally:
 ;;   ;Portable regular expressions for Scheme
 ;;   ;Dorai Sitaram

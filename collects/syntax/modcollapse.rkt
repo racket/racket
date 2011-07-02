@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/contract/base
-         "private/modcollapse-noctc.ss")
+         "private/modcollapse-noctc.rkt")
 
 (define simple-rel-to-module-path-v/c
   (or/c (and/c module-path?

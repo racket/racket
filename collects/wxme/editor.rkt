@@ -1,7 +1,6 @@
-
 (module editor mzscheme
   (require mzlib/class
-           "private/class-help.ss")
+           "private/class-help.rkt")
 
   (provide editor%)
 

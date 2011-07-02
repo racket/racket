@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "match-parse.ss")
+(require "match-parse.rkt")
 
 (provide match-grammar)
 

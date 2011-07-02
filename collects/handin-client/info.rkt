@@ -9,7 +9,7 @@
 
 ;; The handin tool is disabled by default, uncomment these three lines to
 ;; enable it
-;(define drracket-tools      `("client-gui.ss"))
+;(define drracket-tools      `("client-gui.rkt"))
 ;(define drracket-tool-names `(,name))
 ;(define drracket-tool-icons `("icon.png"))
 ;; Modify the provided "icon.png" file to your school/lab/etc logo.

@@ -1,6 +1,6 @@
 (module start mzscheme
-  (require "tex2page.ss"
-	   mzlib/cmdline)
+  (require "tex2page.rkt"
+           mzlib/cmdline)
 
   (command-line
    "tex2page"
@@ -9,4 +9,4 @@
     [("--version") "Reports long help and version information"
      (tex2page "--version")]]
    [args file "Processes each <file>"
-	 (map tex2page file)]))
+         (map tex2page file)]))

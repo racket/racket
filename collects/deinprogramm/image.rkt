@@ -3,7 +3,7 @@
 #|
 
 The test suite for this code is in
-plt/collects/tests/deinprogramm/image.ss
+collects/tests/deinprogramm/image.rkt
 
 |#
 

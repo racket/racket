@@ -8,26 +8,25 @@
   
   (define *progname* "WaterWorld")
 
-  (define *prefs-file* 
-	(let*-values 
-	 ([(sys-prefs-file) (find-system-path 'pref-file)]
-	  [(prefs-dir nm mbd) (split-path sys-prefs-file)])
-	 (build-path prefs-dir ".ww-prefs.ss")))
+  (define *prefs-file*
+    (let*-values ([(sys-prefs-file) (find-system-path 'pref-file)]
+                  [(prefs-dir nm mbd) (split-path sys-prefs-file)])
+      (build-path prefs-dir ".ww-prefs.rktd")))
 
   (define (get-ww-pref sym default)
     (get-preference sym (lambda () default) #t *prefs-file*))
 
   (define (put-ww-prefs ss)
     (let ([syms (map car ss)]
-	  [vals (map cadr ss)])
+          [vals (map cadr ss)])
       (put-preferences syms vals
-		       (lambda _
-			 (message-box
-			  "WaterWorld error"
-			  "Error saving preferences"
-			  #f
-			  '(ok)))
-		       *prefs-file*)))
+                       (lambda _
+                         (message-box
+                          "WaterWorld error"
+                          "Error saving preferences"
+                          #f
+                          '(ok)))
+                       *prefs-file*)))
 
   ; base dimensions
   (define *base-tile-edge-length* 48) ; length of triangular tile edge
@@ -1247,9 +1246,9 @@
 			       (build-path (collection-path "waterworld") 
 					   "games"))
 			   #f
-			   "ss"
+			   "rkt"
 			   '()
-			   '(("Scheme files" "*.ss")))])
+			   '(("Racket files" "*.rkt")))])
 		  (when fn
 			(let-values 
 			 ([(base n d) (split-path fn)])

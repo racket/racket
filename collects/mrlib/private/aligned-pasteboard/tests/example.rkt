@@ -2,8 +2,8 @@
  mzlib/class
  mred
  mzlib/etc
- "../aligned-pasteboard.ss"
- "../aligned-editor-container.ss")
+ "../aligned-pasteboard.rkt"
+ "../aligned-editor-container.rkt")
 
 ;                                                          
 ;                                                          

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "private/provide-structs.ss"
+(require "private/provide-structs.rkt"
          scheme/contract)
 
 (provide-structs

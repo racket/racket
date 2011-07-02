@@ -8,10 +8,10 @@
          syntax/parse
          (env type-env-structs tvar-env type-name-env type-alias-env lexical-env index-env)
          racket/match
-         (for-template scheme/base "../base-env/colon.ss")
+         (for-template scheme/base "../base-env/colon.rkt")
          ;; needed at this phase for tests
-         (combine-in (prefix-in t: "../base-env/base-types-extra.ss") "../base-env/colon.ss")
-         (for-template (prefix-in t: "../base-env/base-types-extra.ss")))
+         (combine-in (prefix-in t: "../base-env/base-types-extra.rkt") "../base-env/colon.rkt")
+         (for-template (prefix-in t: "../base-env/base-types-extra.rkt")))
 
 (define-struct poly (name vars) #:prefab)
 

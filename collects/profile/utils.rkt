@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "structs.ss" scheme/list scheme/nest)
+(require "structs.rkt" scheme/list scheme/nest)
 
 ;; Format a percent number, possibly doing the division too.  If we do the
 ;; division, then be careful: if we're dividing by zero, then make the result

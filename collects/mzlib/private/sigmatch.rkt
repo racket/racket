@@ -1,7 +1,6 @@
-
 (module sigmatch mzscheme
 
-  (require "../unit200.ss")
+  (require "../unit200.rkt")
 
   (define (hash-sig src-sig table)
     (and (pair? src-sig)

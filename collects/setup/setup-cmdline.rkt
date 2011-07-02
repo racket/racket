@@ -1,7 +1,7 @@
 #lang racket/base
 
 ;; Command-line parsing is in its own module because it has to be used
-;;  both in setup.ss (pre-zo, pre-cm) and setup-go.ss (use zos and cm).
+;;  both in setup.ss (pre-zo, pre-cm) and setup-go.rkt (use zos and cm).
 ;; This means that command lines will be parsed twice.
 
 (require racket/cmdline
@@ -13,7 +13,7 @@
 ;; The result of parse-cmdline is three lists:
 ;;  - An assoc list mapping flag symbols to booleans
 ;;     (nearly all symbols correspond to parameter names
-;;      in setup-go.ss)
+;;      in setup-go.rkt)
 ;;  - A list of specific collections
 ;;  - A list of archives
 

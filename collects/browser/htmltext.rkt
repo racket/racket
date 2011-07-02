@@ -2,12 +2,12 @@
 (module htmltext mzscheme
   (require mzlib/unit
            mzlib/class
-           "browser-sig.ss"
-           "private/sig.ss"
-           "private/html.ss"
-           "private/bullet.ss"
-	   net/url
-	   net/url-sig
+           "browser-sig.rkt"
+           "private/sig.rkt"
+           "private/html.rkt"
+           "private/bullet.rkt"
+           net/url
+           net/url-sig
            mred
            mred/mred-unit
            mred/mred-sig

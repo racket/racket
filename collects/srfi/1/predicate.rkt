@@ -1,5 +1,5 @@
 ;;;
-;;; <predicate.ss> ---- List Predicates
+;;; <predicate.rkt> ---- List Predicates
 ;;; Time-stamp: <02/02/27 12:57:15 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -104,4 +104,4 @@
                          (= (car la) (car lb))
                          (lp2 (cdr la) (cdr lb)))))))))))
 
-;;; predicate.ss ends here
+;;; predicate.rkt ends here

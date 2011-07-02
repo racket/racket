@@ -4,9 +4,9 @@
    mzlib/etc
    mzlib/class
    mred
-   "interface.ss"
-   (prefix sl: "snip-lib.ss")
-   "dllist.ss")
+   "interface.rkt"
+   (prefix sl: "snip-lib.rkt")
+   "dllist.rkt")
   
   (provide control-style
 	   snip-wrapper%)

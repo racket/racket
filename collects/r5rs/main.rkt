@@ -1,8 +1,7 @@
-
 (module main scheme/base
   (require scheme/mpair
            (for-syntax scheme/base syntax/kerncase
-                       "private/r5rs-trans.ss")
+                       "private/r5rs-trans.rkt")
            (only-in mzscheme transcript-on transcript-off))
 
   (provide (for-syntax syntax-rules ...

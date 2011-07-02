@@ -1,9 +1,8 @@
-
 (module sig mzscheme
   (require mzlib/unit)
 
-  (require "../sig.ss")
-  (require syntax/zodiac-sig)
+  (require "../sig.rkt"
+           syntax/zodiac-sig)
 
   (define for-syntax-in-env-stx #'for-syntax-in-env)
   (provide for-syntax-in-env-stx)

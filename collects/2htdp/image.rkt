@@ -33,9 +33,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 |#
 
 
-(require (except-in "../mrlib/image-core.ss" make-color color make-pen pen)
-         "private/image-more.ss"
-         "private/img-err.ss"
+(require (except-in "../mrlib/image-core.rkt" make-color color make-pen pen)
+         "private/image-more.rkt"
+         "private/img-err.rkt"
          (only-in lang/prim provide-primitive provide-primitives define-primitive)
          htdp/error)
 

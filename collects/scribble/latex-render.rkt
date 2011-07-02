@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require "core.ss"
-         "latex-properties.ss"
-         "private/render-utils.ss"
+(require "core.rkt"
+         "latex-properties.rkt"
+         "private/render-utils.rkt"
          scheme/class
          scheme/runtime-path
          scheme/port

@@ -1,7 +1,7 @@
 #lang racket/unit
 (require racket/class
-         "sig.ss"
-         "../preferences.ss"
+         "sig.rkt"
+         "../preferences.rkt"
          mred/mred-sig)
 
 (import mred^

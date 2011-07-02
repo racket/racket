@@ -3,31 +3,31 @@
 
 (module sirmail mzscheme
   (require mzlib/unit
-	   mzlib/class
-	   mred/mred-sig
-	   mred
+           mzlib/class
+           mred/mred-sig
+           mred
            framework
-	   mzlib/list)
+           mzlib/list)
 
-  (require "sirmails.ss"
-	   "pref.ss"
-	   "sirmailr.ss")
+  (require "sirmails.rkt"
+           "pref.rkt"
+           "sirmailr.rkt")
 
   (require net/imap-sig
-	   net/smtp-sig
-	   net/head-sig
-	   net/base64-sig
-	   net/mime-sig
-	   net/qp-sig
-	   net/imap
-	   net/smtp
-	   net/head
-	   net/base64
-	   net/mime
-	   net/qp)
+           net/smtp-sig
+           net/head-sig
+           net/base64-sig
+           net/mime-sig
+           net/qp-sig
+           net/imap
+           net/smtp
+           net/head
+           net/base64
+           net/mime
+           net/qp)
 
   (require mrlib/hierlist/hierlist-sig
-	   mrlib/hierlist)
+           mrlib/hierlist)
 
   ;; For testing purposes, cause GC accounting to be
   ;;  enabled:
@@ -100,8 +100,8 @@
 
   ;; There's only one Folders window ----------------------------------------
   
-  (require "optionr.ss"
-	   "folderr.ss")
+  (require "optionr.rkt"
+           "folderr.rkt")
 
   (define folders-window #f)
   (define folders-lock (make-semaphore 1))

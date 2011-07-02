@@ -2,7 +2,7 @@
 
 (require planet/util
          scheme/runtime-path
-         "../eli-tester.ss")
+         "../eli-tester.rkt")
 
 (define-runtime-path here ".")
 (define (in-here path) (path->string (build-path here path)))
@@ -13,7 +13,7 @@
  (add-hard-link "plt" "dummy-package.plt" 1 0
                 (string->path (in-here "examples/dummy-package")))
  => (void)
- (dynamic-require `(file ,(in-here "examples/dummy-module.ss")) 'result)
+ (dynamic-require `(file ,(in-here "examples/dummy-module.rkt")) 'result)
  => '(successful test result)
  (remove-hard-link "plt" "dummy-package.plt" 1 0)
  => (void)

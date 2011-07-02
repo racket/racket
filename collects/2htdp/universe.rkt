@@ -12,16 +12,16 @@
    -- make window resizable :: why
 |#
 
-(require (for-syntax "private/syn-aux.ss"
+(require (for-syntax "private/syn-aux.rkt"
                      stepper/private/shared)
-         "private/syn-aux-aux.ss" 
-         "private/syn-aux.ss"
-         "private/check-aux.ss"
-         "private/universe-image.ss"
-         "private/world.ss"
-         "private/universe.ss"
-         "private/launch-many-worlds.ss"
-         "private/stop.ss"
+         "private/syn-aux-aux.rkt"
+         "private/syn-aux.rkt"
+         "private/check-aux.rkt"
+         "private/universe-image.rkt"
+         "private/world.rkt"
+         "private/universe.rkt"
+         "private/launch-many-worlds.rkt"
+         "private/stop.rkt"
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
 

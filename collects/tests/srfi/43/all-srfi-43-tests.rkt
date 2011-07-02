@@ -1,11 +1,11 @@
 (module all-srfi-43-tests mzscheme
   (require rackunit)
-  (require "constructor-tests.ss"
-           "predicate-tests.ss"
-           "iteration-tests.ss"
-           "searching-tests.ss"
-           "mutator-tests.ss"
-           "conversion-tests.ss")
+  (require "constructor-tests.rkt"
+           "predicate-tests.rkt"
+           "iteration-tests.rkt"
+           "searching-tests.rkt"
+           "mutator-tests.rkt"
+           "conversion-tests.rkt")
   (provide all-srfi-43-tests)
   
   (define all-srfi-43-tests

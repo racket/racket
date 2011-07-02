@@ -1,9 +1,8 @@
-
 (module make-cards mzscheme
   (require mzlib/class
-	   (prefix mred: mred)
-	   (prefix card-class: "card-class.ss"))
-  
+           (prefix mred: mred)
+           (prefix card-class: "card-class.rkt"))
+
   (provide back deck-of-cards make-card)
 
   (define (get-bitmap file)

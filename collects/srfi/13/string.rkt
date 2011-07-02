@@ -1,5 +1,5 @@
 ;;;
-;;; <string.ss> ---- SRFI 13 port to PLT Scheme
+;;; <string.rkt> ---- SRFI 13 port to PLT Scheme
 ;;; Revised by Chongkai Zhu, based on the orgianl port
 ;;;
 ;;; Here is the copyright notice, and licence from the original source:
@@ -1876,4 +1876,4 @@
 
             (else "")))))             ; Special-cased for infix grammar.
 
-;; string.ss ends here
+;; string.rkt ends here

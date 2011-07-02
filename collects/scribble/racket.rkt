@@ -1,9 +1,9 @@
 (module racket racket/base
-  (require "core.ss"
-           "basic.ss"
-           "search.ss"
-           "private/manual-sprop.ss"
-           "private/on-demand.ss"
+  (require "core.rkt"
+           "basic.rkt"
+           "search.rkt"
+           "private/manual-sprop.rkt"
+           "private/on-demand.rkt"
            mzlib/class
            mzlib/for
            syntax/modresolve

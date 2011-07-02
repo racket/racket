@@ -1,18 +1,18 @@
 (module wxlitem mzscheme
   (require mzlib/class
-	   mzlib/class100
+           mzlib/class100
            mzlib/file
            (only racket/base remq)
            racket/snip/private/prefs
-	   (prefix wx: "kernel.ss")
-	   "lock.ss"
-	   "helper.ss"
-	   "const.ss"
-	   "wx.ss"
-	   "check.ss"
-	   "wxwindow.ss"
-	   "wxitem.ss"
-           "wxpanel.ss")
+           (prefix wx: "kernel.rkt")
+           "lock.rkt"
+           "helper.rkt"
+           "const.rkt"
+           "wx.rkt"
+           "check.rkt"
+           "wxwindow.rkt"
+           "wxitem.rkt"
+           "wxpanel.rkt")
 
   (provide (protect wx-choice%
                     wx-list-box%

@@ -1,5 +1,5 @@
 ;;;
-;;; <cons-test.ss> ---- List constructor tests
+;;; <cons-test.rkt> ---- List constructor tests
 ;;; Time-stamp: <05/12/16 21:14:31 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -214,4 +214,4 @@
 
      ))
   )
-;;; cons-test.ss ends here
+;;; cons-test.rkt ends here

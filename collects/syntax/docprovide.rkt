@@ -1,7 +1,6 @@
-
 (module docprovide scheme/base
   (require (for-syntax scheme/base
-                       "private/doctable.ss"))
+                       "private/doctable.rkt"))
 
   (define-syntaxes (provide-and-document provide-and-document/wrap)
     (let ()

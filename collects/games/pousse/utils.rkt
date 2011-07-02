@@ -1,7 +1,7 @@
 (module utils mzscheme
-  ; See boardsig.ss for the core utilities.
-  (require "board-size.ss"
-           "board.ss")
+  ; See boardsig.rkt for the core utilities.
+  (require "board-size.rkt"
+           "board.rkt")
   
   (provide
    n-times      ; call a procedure with each number in [0, n]

@@ -4,11 +4,11 @@
 
 #lang racket/base
 
-(require "private/stepper.ss"
-         "private/traces.ss"
-         "private/matcher.ss"
-         "private/reduction-semantics.ss"
-         "private/size-snip.ss"
+(require "private/stepper.rkt"
+         "private/traces.rkt"
+         "private/matcher.rkt"
+         "private/reduction-semantics.rkt"
+         "private/size-snip.rkt"
          mrlib/graph
          racket/contract
          racket/class

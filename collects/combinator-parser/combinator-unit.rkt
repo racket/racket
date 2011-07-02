@@ -1,7 +1,7 @@
 (module combinator-unit mzscheme
   
   (require "private-combinator/combinator-parser.scm"
-           "private-combinator/parser-sigs.ss")
+           "private-combinator/parser-sigs.rkt")
   
   (provide combinator-parser-tools@
            combinator-parser^ err^

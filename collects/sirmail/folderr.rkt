@@ -1,4 +1,3 @@
-
 (module folderr mzscheme
   (require mzlib/unit
            mzlib/class
@@ -8,8 +7,8 @@
   (require mzlib/list
            mzlib/etc)
   
-  (require "sirmails.ss"
-           "pref.ss")
+  (require "sirmails.rkt"
+           "pref.rkt")
   
   (require net/imap-sig)
   

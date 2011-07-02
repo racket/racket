@@ -5,7 +5,7 @@
    mred
    sgl/gl
    sgl/gl-vectors
-   "gl-frame.ss")
+   "gl-frame.rkt")
   
   ;; texture
   ;; This needs to be here and not in gl-init because of some weirdness in the

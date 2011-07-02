@@ -1,5 +1,5 @@
 ;;;
-;;; <util.ss> ---- Utility functions
+;;; <util.rkt> ---- Utility functions
 ;;; Time-stamp: <02/02/28 12:05:00 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -25,8 +25,8 @@
 
 #lang scheme/base
 
-(require "predicate.ss"
-         "selector.ss")
+(require "predicate.rkt"
+         "selector.rkt")
 
 (provide %cdrs
          %cars+
@@ -105,4 +105,4 @@
         (values (cons a cars) (cons d cdrs)))
       (values '() '()))))
 
-;;; util.ss ends here
+;;; util.rkt ends here

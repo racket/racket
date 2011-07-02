@@ -1,6 +1,6 @@
 #reader scribble/reader
 #lang scheme/base
-(require "common.ss"
+(require "common.rkt"
          scribble/decode
          (for-label lang/htdp-beginner-abbr))
 

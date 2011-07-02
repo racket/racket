@@ -36,7 +36,7 @@
 
   (require mzlib/pconvert-prop)
 
-  (require "convert-explicit.ss")
+  (require "convert-explicit.rkt")
 
   (require (only-in mrlib/syntax-browser render-syntax/snip))
   
@@ -53,7 +53,7 @@
   (define generic-proc
     (procedure-rename void '?))
 
-  ;; adapted from collects/drscheme/private/main.ss
+  ;; adapted from collects/drracket/private/main.rkt
   (preferences:set-default 'drscheme:deinprogramm:last-set-teachpacks
                            '() 
                            (lambda (x)
@@ -168,7 +168,7 @@
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-namespace (current-namespace)]
                   [scheme-test-module-name
-                   ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
+                   ((current-module-name-resolver) '(lib "test-engine/scheme-tests.rkt") #f #f)]
                   [scheme-signature-module-name
                    ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-german.rkt") #f #f)])
               (run-in-user-thread
@@ -211,7 +211,7 @@
 		 )))
             (super on-execute settings run-in-user-thread)
 
-	    ;; DeinProgramm addition, copied from language.ss
+	    ;; DeinProgramm addition, copied from language.rkt
 	    (run-in-user-thread
 	     (lambda ()
 	       (global-port-print-handler
@@ -261,7 +261,7 @@
       (define drscheme-inspector (current-inspector))
 
       ;; FIXME: brittle, mimics drscheme-secrets
-      ;; as declared in lang/htdp-langs.ss.
+      ;; as declared in lang/htdp-langs.rkt.
       ;; Is it even needed for DeinProgramm langs?
       ;; Only used by htdp/hangman teachpack.
       (define (ensure-drscheme-secrets-declared drs-namespace)
@@ -278,13 +278,13 @@
 
 
       ;; {
-      ;;   all this copied from collects/drscheme/private/language.ss
+      ;;   all this copied from collects/drracket/private/language.rkt
 
       ;; stepper-convert-value : TST settings -> TST 
      (define (stepper-convert-value value settings)
         (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
           (if (or (is-a? expr snip%)
-                  ;; FIXME: internal in language.ss (to-snip-value? expr)
+                  ;; FIXME: internal in language.rkt (to-snip-value? expr)
                   )
             expr
             (sh expr basic-convert sub-convert)))
@@ -723,7 +723,7 @@
                        (string-append no-ext-name ".scm")]
                       [(file-exists? no-ext-name)
                        no-ext-name]
-                      [else (error 'deinprogramm-lang.ss "could not find language filename ~s" no-ext-name)])]
+                      [else (error 'deinprogramm-lang.rkt "could not find language filename ~s" no-ext-name)])]
                    [base-dir (let-values ([(base _1 _2) (split-path full-name)]) base)]
                    [stx
                     (call-with-input-file full-name
@@ -768,7 +768,7 @@
             (let ([reader (get-reader)] ;; DeinProgramm addition:
 					;; needed for test boxes; see
 					;; the code in
-					;; collects/drscheme/private/language.ss
+					;; collects/drracket/private/language.rkt
 		  [start? #t]
                   [done? #f])
               (λ ()
@@ -1130,7 +1130,7 @@
 
       ;; make-print-convert-hook:
       ;;   simple-settings -> (TST (TST -> TST) (TST -> TST) -> TST)
-      ;; this code copied from various locations in language.ss and rep.ss
+      ;; this code copied from various locations in language.rkt and rep.rkt
       (define (make-print-convert-hook simple-settings)
 	(lambda (exp basic-convert sub-convert)
 	  (cond
@@ -1370,7 +1370,7 @@
         (add-deinprogramm-language
          (instantiate (make-deinprogramm-language% 'write 'explicit) ()
 	   (one-line-summary "Die Macht der Abstraktion - Anfänger")
-	   (module '(lib "deinprogramm/DMdA-beginner.ss"))
+	   (module '(lib "deinprogramm/DMdA-beginner.rkt"))
            (manual #"DMdA-beginner")
 	   (language-position (list (string-constant teaching-languages)
 				    "DeinProgramm" "Die Macht der Abstraktion - Anfänger"))
@@ -1379,13 +1379,13 @@
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-	   (reader-module '(lib "DMdA-beginner-reader.ss" "deinprogramm"))
+	   (reader-module '(lib "DMdA-beginner-reader.rkt" "deinprogramm"))
 	   (stepper:supported #t)))
 	
 	(add-deinprogramm-language
          (instantiate (make-deinprogramm-language% 'write 'explicit) ()
 	   (one-line-summary "Die Macht der Abstraktion")
-	   (module '(lib "deinprogramm/DMdA-vanilla.ss"))
+	   (module '(lib "deinprogramm/DMdA-vanilla.rkt"))
            (manual #"DMdA-vanilla")
 	   (language-position (list (string-constant teaching-languages)
 				    "DeinProgramm" "Die Macht der Abstraktion"))
@@ -1394,13 +1394,13 @@
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-	   (reader-module '(lib "DMdA-vanilla-reader.ss" "deinprogramm"))
+	   (reader-module '(lib "DMdA-vanilla-reader.rkt" "deinprogramm"))
 	   (stepper:supported #t)))
 
         (add-deinprogramm-language
          (instantiate (make-deinprogramm-language% 'write 'explicit) ()
 	   (one-line-summary "Die Macht der Abstraktion mit Zuweisungen")
-	   (module '(lib "deinprogramm/DMdA-assignments.ss"))
+	   (module '(lib "deinprogramm/DMdA-assignments.rkt"))
            (manual #"DMdA-assignments")
 	   (language-position (list (string-constant teaching-languages)
 				    "DeinProgramm" "Die Macht der Abstraktion mit Zuweisungen"))
@@ -1409,14 +1409,14 @@
            (sharing-printing #t)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
-	   (reader-module '(lib "DMdA-assignments-reader.ss" "deinprogramm"))
+	   (reader-module '(lib "DMdA-assignments-reader.rkt" "deinprogramm"))
 	   (stepper:supported #f)
 	   (debugger:supported #t)))
 
         (add-deinprogramm-language
          (instantiate (make-deinprogramm-language% 'write 'datum) ()
 	   (one-line-summary "Die Macht der Abstraktion - fortgeschritten")
-	   (module '(lib "deinprogramm/DMdA-advanced.ss"))
+	   (module '(lib "deinprogramm/DMdA-advanced.rkt"))
            (manual #"DMdA-advanced")
 	   (language-position (list (string-constant teaching-languages)
 				    "DeinProgramm" "Die Macht der Abstraktion - fortgeschritten"))
@@ -1425,6 +1425,6 @@
            (sharing-printing #t)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
-	   (reader-module '(lib "DMdA-advanced-reader.ss" "deinprogramm"))
+	   (reader-module '(lib "DMdA-advanced-reader.rkt" "deinprogramm"))
 	   (stepper:supported #f)
 	   (debugger:supported #t))))))

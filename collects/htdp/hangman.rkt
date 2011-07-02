@@ -1,7 +1,7 @@
 #lang mzscheme
-(require "error.ss"
-         "draw-sig.ss"
-         "big-draw.ss"
+(require "error.rkt"
+         "draw-sig.rkt"
+         "big-draw.rkt"
          mzlib/class
          mzlib/unit
          mzlib/etc

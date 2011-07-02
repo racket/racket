@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require "test-utils.ss"
+(require "test-utils.rkt"
          (for-syntax scheme/base)
          (for-template scheme/base)
          (private type-contract)
-	 (rep type-rep filter-rep object-rep)
+         (rep type-rep filter-rep object-rep)
          (types utils union convenience)
          (utils tc-utils)
          rackunit)

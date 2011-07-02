@@ -1,15 +1,15 @@
 (module all-srfi-tests mzscheme
   
   (require rackunit)
-  (require "1/all-1-tests.ss"
-           "2/and-let-test.ss"
-           "4/srfi-4-test.ss"
-           "13/string-test.ss"
-           "14/char-set-test.ss"
-           "26/cut-test.ss"
-           "40/all-srfi-40-tests.ss"
-           "43/all-srfi-43-tests.ss"
-           "69/hash-tests.ss")
+  (require "1/all-1-tests.rkt"
+           "2/and-let-test.rkt"
+           "4/srfi-4-test.rkt"
+           "13/string-test.rkt"
+           "14/char-set-test.rkt"
+           "26/cut-test.rkt"
+           "40/all-srfi-40-tests.rkt"
+           "43/all-srfi-43-tests.rkt"
+           "69/hash-tests.rkt")
   (provide all-srfi-tests)
   
   (define all-srfi-tests

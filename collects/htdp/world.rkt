@@ -24,7 +24,7 @@
 ;; Wed Apr 23 11:42:25 EDT 2008: fixed reverse bug in animation 
 ;; Thu Mar 20 17:15:54 EDT 2008: fixed place-image0, which used shrink off-by-1
 ;; Mon Sep 17 09:40:39 EDT 2007: run-simulation now allows recordings, too
-;; Mon Aug  6 19:50:30 EDT 2007: exporting both add-line from image.ss and scene+line 
+;; Mon Aug  6 19:50:30 EDT 2007: exporting both add-line from "image.rkt" and scene+line 
 ;; Fri May  4 18:05:33 EDT 2007: define-run-time-path 
 ;; Thu May  3 22:06:16 EDT 2007: scene # image; pasteboard% for text%
 ;; Sat Apr 28 13:31:02 EDT 2007: fixed the image and animated-gif thing, using Matthew's lib
@@ -60,7 +60,7 @@ Matthew
 ;; Sun Dec 09 23:17:41 EST 2006: add-line fixed so it cuts off lines before drawing
 ;; Mon Mar 27 10:29:28 EST 2006: integrated Felix's mouse events
 ;; Wed Jan 25 13:38:42 EST 2006: on-redraw: proc is now called on installation
-;; Tue Jan  3 11:17:50 EST 2006: changed add-line behavior in world.ss 
+;; Tue Jan  3 11:17:50 EST 2006: changed add-line behavior in "world.rkt"
 ;; Sat Dec 10 19:39:03 EST 2005: fixed name, changed interface to on-key-event
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now

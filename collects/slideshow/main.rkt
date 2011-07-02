@@ -1,10 +1,7 @@
-
 (module main racket
-  (require "base.ss"
-           "pict.ss")
+  (require "base.rkt"
+           "pict.rkt")
   (provide (except-out (all-from-out racket
-                                     "base.ss"
-                                     "pict.ss")
+                                     "base.rkt"
+                                     "pict.rkt")
                        printable<%>)))
-
-

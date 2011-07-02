@@ -1,3 +1,3 @@
 #lang typed-scheme
 
-(require "simple-poly.ss")
+(require "simple-poly.rkt")

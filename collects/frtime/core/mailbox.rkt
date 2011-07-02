@@ -1,6 +1,6 @@
 #lang scheme
-(require "contract.ss"
-         "match.ss"
+(require "contract.rkt"
+         "match.rkt"
          scheme/async-channel)
 
 ; XXX More efficient structure

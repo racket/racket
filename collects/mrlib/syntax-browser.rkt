@@ -13,7 +13,7 @@ needed to really make this work:
            mred
            mzlib/match
            mzlib/string
-	   "include-bitmap.ss")
+           "include-bitmap.rkt")
 
   (define orig-output-port (current-output-port))
   (define (oprintf . args) (apply fprintf orig-output-port args))

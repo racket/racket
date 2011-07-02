@@ -1,7 +1,7 @@
 (module collapsed-snipclass mzscheme
   (require mred
            mzlib/class
-           "private/collapsed-snipclass-helpers.ss")
+           "private/collapsed-snipclass-helpers.rkt")
   
   (provide snip-class)
 

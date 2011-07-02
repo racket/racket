@@ -6,11 +6,11 @@
            racket/draw)
 
   (require racket/draw/draw-sig
-	   racket/draw/draw-unit)
-  (require "private/mrpict-sig.ss"
-	   "private/common-sig.ss")
-  (require "mrpict-sig.ss"
-	   "mrpict-unit.ss")
+           racket/draw/draw-unit
+           "private/mrpict-sig.rkt"
+           "private/common-sig.rkt"
+           "mrpict-sig.rkt"
+           "mrpict-unit.rkt")
 
   (define-compound-unit/infer mrpict+mred@
     (import)

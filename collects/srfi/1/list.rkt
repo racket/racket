@@ -211,30 +211,30 @@
 ;;;
 ;;; The SRFI discussion record contains more discussion on this topic.
 
-;; JBC, 2003-10-20: some of the names provided by list.ss are prefixed
-;; with an s: to avoid colliding with mzscheme.  The wrapper 1.ss
+;; JBC, 2003-10-20: some of the names provided by list.rkt are prefixed
+;; with an s: to avoid colliding with mzscheme.  The wrapper 1.rkt
 ;; changes their names back to the non-prefixed form.
 
 #lang scheme/base
 
-(require "cons.ss"
-         "selector.ss"
-         "predicate.ss"
-         "misc.ss"
-         (rename-in "fold.ss" [map s:map] [for-each s:for-each])
-         (rename-in "search.ss" [member s:member])
-         (rename-in "filter.ss" [remove s:remove])
-         "delete.ss"
-         (rename-in "alist.ss" [assoc s:assoc])
-         "lset.ss")
+(require "cons.rkt"
+         "selector.rkt"
+         "predicate.rkt"
+         "misc.rkt"
+         (rename-in "fold.rkt" [map s:map] [for-each s:for-each])
+         (rename-in "search.rkt" [member s:member])
+         (rename-in "filter.rkt" [remove s:remove])
+         "delete.rkt"
+         (rename-in "alist.rkt" [assoc s:assoc])
+         "lset.rkt")
 
-(provide (all-from-out "cons.ss")
-         (all-from-out "selector.ss")
-         (all-from-out "predicate.ss")
-         (all-from-out "misc.ss")
-         (all-from-out "fold.ss")
-         (all-from-out "search.ss")
-         (all-from-out "filter.ss")
-         (all-from-out "delete.ss")
-         (all-from-out "alist.ss")
-         (all-from-out "lset.ss"))
+(provide (all-from-out "cons.rkt")
+         (all-from-out "selector.rkt")
+         (all-from-out "predicate.rkt")
+         (all-from-out "misc.rkt")
+         (all-from-out "fold.rkt")
+         (all-from-out "search.rkt")
+         (all-from-out "filter.rkt")
+         (all-from-out "delete.rkt")
+         (all-from-out "alist.rkt")
+         (all-from-out "lset.rkt"))

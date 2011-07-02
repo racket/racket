@@ -1,5 +1,5 @@
 ;;;
-;;; <alist-test.ss> ---- Association list tests
+;;; <alist-test.rkt> ---- Association list tests
 ;;; Time-stamp: <2008-03-07 16:36:15 nhw>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -305,4 +305,4 @@
      ))
   )
 
-;;; alist-test.ss ends here
+;;; alist-test.rkt ends here

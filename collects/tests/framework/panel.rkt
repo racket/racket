@@ -1,5 +1,5 @@
 #lang racket/base
-(require "test-suite-utils.ss")
+(require "test-suite-utils.rkt")
 
 (test
  'dragable-min-size1

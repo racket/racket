@@ -1,9 +1,8 @@
-
 (module option mzscheme
   (require mzlib/unit)
 
-  (require "sig.ss")
-  (require "option-unit.ss")
+  (require "sig.rkt"
+           "option-unit.rkt")
 
   (define-values/invoke-unit/infer compiler:option@)
 

@@ -1,6 +1,5 @@
-
 (module comp-unit mzscheme
-  (require "private/base.ss")
+  (require "private/base.rkt")
 
   (define comp@ base@)
 

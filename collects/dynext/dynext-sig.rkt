@@ -1,8 +1,7 @@
-
 (module dynext-sig mzscheme
 
-  (require "compile-sig.ss" "link-sig.ss" "file-sig.ss")
+  (require "compile-sig.rkt" "link-sig.rkt" "file-sig.rkt")
 
-  (provide (all-from "compile-sig.ss")
-	  (all-from "link-sig.ss")
-	  (all-from "file-sig.ss")))
+  (provide (all-from "compile-sig.rkt")
+           (all-from "link-sig.rkt")
+           (all-from "file-sig.rkt")))

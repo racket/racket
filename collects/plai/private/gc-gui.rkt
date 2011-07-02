@@ -1,5 +1,5 @@
 #lang scheme/gui
-(require "gc-core.ss")
+(require "gc-core.rkt")
 (provide heap-viz%)
 
 (define row-size 10)

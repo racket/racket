@@ -1,4 +1,4 @@
-(module dutch-string-constants "string-constant-lang.ss"
+(module dutch-string-constants "string-constant-lang.rkt"
 
 ;;; -- Where are Undo, Redo, Select all, and friends from the right-click popup menu?
 
@@ -468,14 +468,14 @@
  (drscheme-internal-error "Interne Fout van DrRacket")
  
  ;;; tools <**>
- (invalid-tool-spec "The tool specification in collection ~a's info.ss file is invalid. Expected either a string or a non-empty list of strings, got: ~e")
+ (invalid-tool-spec "The tool specification in collection ~a's info.rkt file is invalid. Expected either a string or a non-empty list of strings, got: ~e")
  (error-invoking-tool-title "Error invoking tool ~s;~s")
  (tool-tool-names-same-length
-  "expected `tool-names' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
+  "expected `tool-names' and `tools' to be lists of the same length, in info.rkt file for ~s, got ~e and ~e")
  (tool-tool-icons-same-length
-  "expected `tool-icons' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
+  "expected `tool-icons' and `tools' to be lists of the same length, in info.rkt file for ~s, got ~e and ~e")
  (error-getting-info-tool
-  "error loading info.ss file for ~s")
+  "error loading info.rkt file for ~s")
  (tool-error-phase1 "Error in phase 1 for tool ~s; ~s")
  (tool-error-phase2 "Error in phase 2 for tool ~s; ~s")
 

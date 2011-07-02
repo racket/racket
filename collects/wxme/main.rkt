@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "wxme.ss")
-(provide (all-from-out "wxme.ss"))
+(require "wxme.rkt")
+(provide (all-from-out "wxme.rkt"))

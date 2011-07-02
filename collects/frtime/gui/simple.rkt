@@ -1,6 +1,6 @@
 (module simple frtime
   
-  (require "fred.ss"
+  (require "fred.rkt"
            mzlib/class
            (rename mred frame% frame%))
   
@@ -49,5 +49,5 @@
 
   
   (provide (all-defined)
-           (all-from "fred.ss")
+           (all-from "fred.rkt")
            (all-from mzlib/class)))

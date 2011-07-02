@@ -4,15 +4,15 @@
            scribble/eval
            racket/class
            racket/contract
-           "blurbs.ss"
-           (only-in "../reference/mz.ss" AllUnix exnraise))
+           "blurbs.rkt"
+           (only-in "../reference/mz.rkt" AllUnix exnraise))
   (provide (all-from-out scribble/manual)
            (all-from-out scribble/basic)
            (all-from-out scribble/eval)
            (all-from-out racket/class)
            (all-from-out racket/contract)
-           (all-from-out "blurbs.ss")
-           (all-from-out "../reference/mz.ss"))
+           (all-from-out "blurbs.rkt")
+           (all-from-out "../reference/mz.rkt"))
 
   (require (for-label racket/draw
                       racket/gui/base

@@ -67,7 +67,7 @@
   
   
   
-  ; taken directly from mred.ss -- it's not exported...
+  ; taken directly from mred.rkt -- it's not exported...
   (define (build-input-port filename)
     (let ([p (open-input-file filename)])
       (port-count-lines! p)

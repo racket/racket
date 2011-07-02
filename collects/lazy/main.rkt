@@ -1,2 +1,2 @@
-(module main "lazy.ss"
-  (provide (all-from "lazy.ss")))
+(module main "lazy.rkt"
+  (provide (all-from "lazy.rkt")))

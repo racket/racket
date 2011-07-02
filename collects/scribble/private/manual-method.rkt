@@ -1,9 +1,9 @@
 #lang scheme/base
-(require "../struct.ss"
-         "../search.ss"
-         "../scheme.ss"
-         "../basic.ss"
-         "manual-scheme.ss"
+(require "../struct.rkt"
+         "../search.rkt"
+         "../scheme.rkt"
+         "../basic.rkt"
+         "manual-scheme.rkt"
          (for-syntax scheme/base))
 
 (provide ;; public:

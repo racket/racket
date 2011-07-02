@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "dynext.ss")
-(provide (all-from-out "dynext.ss"))
+(require "dynext.rkt")
+(provide (all-from-out "dynext.rkt"))

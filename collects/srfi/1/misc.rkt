@@ -1,5 +1,5 @@
 ;;;
-;;; <misc.ss> ---- Miscellaneous list procedures
+;;; <misc.rkt> ---- Miscellaneous list procedures
 ;;; Time-stamp: <02/03/01 13:52:22 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -26,11 +26,11 @@
 #lang scheme/base
 
 (require srfi/optional
-         "predicate.ss"
-         "selector.ss"
-         "util.ss"
-         (only-in "fold.ss" reduce-right)
-         (rename-in "fold.ss" [map s:map] [for-each s:for-each])
+         "predicate.rkt"
+         "selector.rkt"
+         "util.rkt"
+         (only-in "fold.rkt" reduce-right)
+         (rename-in "fold.rkt" [map s:map] [for-each s:for-each])
          (only-in scheme/list count append*))
 
 (provide length+
@@ -175,4 +175,4 @@
           (set-cdr! lis ans)
           (lp tail lis)))))
 
-;;; misc.ss ends here
+;;; misc.rkt ends here

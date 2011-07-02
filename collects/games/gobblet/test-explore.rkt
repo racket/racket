@@ -1,12 +1,11 @@
-
 (module test-explore mzscheme
   (require mzlib/unitsig
-	   mzlib/etc
-	   mzlib/list
-	   "sig.ss"
-	   "model.ss"
-	   "explore.ss"
-	   "heuristics.ss")
+           mzlib/etc
+           mzlib/list
+           "sig.rkt"
+           "model.rkt"
+           "explore.rkt"
+           "heuristics.rkt")
 
   (define board-size 3)
 

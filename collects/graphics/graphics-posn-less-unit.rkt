@@ -1,15 +1,14 @@
-; graphics.ss
 ; Simple graphics routines for GRacket
 ; Originally written by Johnathan Franklin
 
 (module graphics-posn-less-unit mzscheme
   (require mzlib/unit
-	   mred/mred-sig
+           mred/mred-sig
            mred
-	   mzlib/class
-	   mzlib/class100
-	   mzlib/etc
-	   "graphics-sig.ss")
+           mzlib/class
+           mzlib/class100
+           mzlib/etc
+           "graphics-sig.rkt")
   (provide graphics-posn-less@)
 
   (define-syntax define-do-pixel

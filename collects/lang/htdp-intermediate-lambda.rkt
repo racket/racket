@@ -1,12 +1,11 @@
-
 (module htdp-intermediate-lambda scheme/base
-  (require "private/teach.ss"
-	   "private/teach-module-begin.ss"
-	   mzlib/etc
-	   mzlib/list
-	   syntax/docprovide
+  (require "private/teach.rkt"
+           "private/teach-module-begin.rkt"
+           mzlib/etc
+           mzlib/list
+           syntax/docprovide
            test-engine/scheme-tests)
-  
+
   ;; syntax:
   (provide (rename-out
             [intermediate-lambda-define define]

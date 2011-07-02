@@ -285,7 +285,7 @@
 
 ;; This might be cute for some ugly hacks but not needed for now.
 ;; Copies the contents of source to target, making it an "alias" object.  This
-;; is no re-provided by clos.ss, but maybe it will in the future...
+;; is no re-provided by clos.rkt, but maybe it will in the future...
 ;; (define* (copy-object-contents! target source)
 ;;   (set-instance-class! target (instance-class source))
 ;;   (set-instance-proc!  target (instance-proc  source))
@@ -733,7 +733,7 @@
 ;;; optimize generic invocations: app-cache holds an 'equal hash-table that
 ;;; maps a list of classes to the lambda expression that holds the method call
 ;;; (it used to be an l-hash-table, but 'equal is ok since we can't compare
-;;; swindleobj instances recursively -- which is also why tool.ss needs to
+;;; swindleobj instances recursively -- which is also why tool.rkt needs to
 ;;; redefine the `render-value/format' method).  The contents of this slot is
 ;;; reset whenever a method is added to the generic.  Two problems make things
 ;;; a little more complicated.  First, if add-method is used to modify any of
@@ -1781,7 +1781,7 @@
 ;;; Make `add-method' a generic function
 
 ;;; Use this to compute a name for the method.  specs is a list of classes or
-;;; class-names (in case of unnamed-methods in clos.ss).
+;;; class-names (in case of unnamed-methods in clos.rkt).
 (define (compute-method-name specs generic-name)
   (define (spec-string spec)
     (cond [(%singleton? spec) (format "{~.s}" (singleton-value spec))]

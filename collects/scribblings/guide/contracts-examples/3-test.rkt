@@ -1,5 +1,5 @@
 #lang racket
-(require rackunit rackunit/text-ui "3.ss")
+(require rackunit rackunit/text-ui "3.rkt")
 
 (define d0 (initialize (flat-contract integer?) =))
 (define d (put (put (put d0 'a 2) 'b 2) 'c 1))

@@ -1,12 +1,11 @@
-
 (module setup-go mzscheme
-  (require "setup-cmdline.ss"
-	   mzlib/unit
+  (require "setup-cmdline.rkt"
+           mzlib/unit
 
-	    "option-sig.ss"
-	    "setup-unit.ss"
-	    "option-unit.ss"
-	    compiler/cm)
+           "option-sig.rkt"
+           "setup-unit.rkt"
+           "option-unit.rkt"
+           compiler/cm)
 
   (define-values/invoke-unit/infer setup:option@)
 

@@ -3,7 +3,7 @@
   (require
    mred
    mzlib/class
-   "snip-wrapper.ss")
+   "snip-wrapper.rkt")
   
   (provide embedded-message%)
 

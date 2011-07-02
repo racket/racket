@@ -1,11 +1,11 @@
 (module front mzscheme
   (require (prefix is: mzlib/integer-set)
            mzlib/list
-	   syntax/stx
-           "util.ss"
-           "stx.ss"
-           "re.ss"
-           "deriv.ss")
+           syntax/stx
+           "util.rkt"
+           "stx.rkt"
+           "re.rkt"
+           "deriv.rkt")
   
   (provide build-lexer)
   

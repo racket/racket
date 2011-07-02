@@ -1,4 +1,4 @@
-(module frtime-lang-only "lang-utils.ss"
+(module frtime-lang-only "lang-utils.rkt"
   (require frtime/lang-ext)
   (require (as-is:unchecked frtime/core/frp
 	    event-set? signal-value))
@@ -13,5 +13,5 @@
           (pred v))))
 
   (provide value-nowable? behaviorof
-	   (all-from "lang-utils.ss")
+	   (all-from "lang-utils.rkt")
            (all-from-except frtime/lang-ext lift)))

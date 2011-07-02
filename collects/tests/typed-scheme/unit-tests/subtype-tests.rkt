@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require "test-utils.ss"
+(require "test-utils.rkt"
          (types subtype convenience union)
-	 (rep type-rep)
-	 (env init-envs type-env-structs)
-	 (r:infer infer infer-dummy)
+         (rep type-rep)
+         (env init-envs type-env-structs)
+         (r:infer infer infer-dummy)
          rackunit
          (for-syntax scheme/base))
 

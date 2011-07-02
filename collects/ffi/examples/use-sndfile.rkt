@@ -2,7 +2,7 @@
 
 #lang racket/base
 
-(require "sndfile.ss")
+(require "sndfile.rkt")
 
 ;; (require swindle)
 

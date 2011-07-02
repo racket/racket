@@ -2,7 +2,7 @@
   (require mzlib/list
            scheme/match
            (prefix is: mzlib/integer-set)
-           "util.ss")
+           "util.rkt")
   
   (provide ->re build-epsilon build-zero build-char-set build-concat
            build-repeat build-or build-and build-neg

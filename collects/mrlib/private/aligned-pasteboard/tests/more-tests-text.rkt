@@ -1,8 +1,8 @@
 ;; Note this test case fails when the snip 'y' is stretchable. There is lots of extra space. Finding out
 ;; why will probably fix the test case's extra space.
 (require
- "../aligned-editor-container.ss"
- "../aligned-pasteboard.ss")
+ "../aligned-editor-container.rkt"
+ "../aligned-pasteboard.rkt")
 
 (define editor (new vertical-pasteboard%))
 (define pb (new horizontal-pasteboard%))
@@ -29,7 +29,7 @@
 ;; exploration
 (eq-hash-code y)
 (eq-hash-code t)
-(require "../snip-lib.ss")
+(require "../snip-lib.rkt")
 (define (margin snip)
   (let ([left (box 0)]
         [top (box 0)]

@@ -10,11 +10,11 @@
          mred
          string-constants
          racket/async-channel
-         (prefix-in model: "model.ss")
-         (prefix-in x: "mred-extensions.ss")
-         "shared.ss"
-         "model-settings.ss"
-         "xml-sig.ss")
+         (prefix-in model: "model.rkt")
+         (prefix-in x: "mred-extensions.rkt")
+         "shared.rkt"
+         "model-settings.rkt"
+         "xml-sig.rkt")
 
 
 (import drracket:tool^ xml^ stepper-frame^)

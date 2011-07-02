@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require "core.ss"
-         "private/render-utils.ss"
+(require "core.rkt"
+         "private/render-utils.rkt"
          mzlib/class
          mzlib/serialize
          scheme/file
@@ -9,7 +9,7 @@
          setup/main-collects
          setup/path-relativize
          file/convertible
-         "render-struct.ss")
+         "render-struct.rkt")
 
 (provide render%)
 

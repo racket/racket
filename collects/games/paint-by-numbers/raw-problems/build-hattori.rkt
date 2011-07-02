@@ -159,7 +159,7 @@
 
 (provide main)
 (define (main)
-  (call-with-output-file "raw-hattori.ss"
+  (call-with-output-file "raw-hattori.rkt"
     (lambda (port)
       (parameterize ([current-output-port port])
         (printf "`(\n")

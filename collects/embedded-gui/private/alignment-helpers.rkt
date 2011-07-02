@@ -6,8 +6,8 @@
    mred
    mzlib/contract
    
-   "interface.ss"
-   "snip-lib.ss")
+   "interface.rkt"
+   "snip-lib.rkt")
   
   (provide/contract
    (vacuous-max (() (listof number?) . ->* . (number?)))

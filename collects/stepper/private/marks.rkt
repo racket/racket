@@ -2,8 +2,8 @@
 
 (require mzlib/list
          mzlib/contract
-         "my-macros.ss"
-         "shared.ss"
+         "my-macros.rkt"
+         "shared.rkt"
          #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss"))
 
 (define-struct full-mark-struct (source label bindings values))

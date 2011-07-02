@@ -1,3 +1,3 @@
 #lang racket/base
-(require "racket.ss")
-(provide (all-from-out "racket.ss"))
+(require "racket.rkt")
+(provide (all-from-out "racket.rkt"))

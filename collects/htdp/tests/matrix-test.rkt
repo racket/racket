@@ -2,7 +2,7 @@
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname matrix-test) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 ;(require htdp/matrix-invisible)
-(require (lib "matrix.ss" "htdp"))
+(require (lib "matrix.rkt" "htdp"))
 
 (define r1 '((a00 a01 a02)
              (a10 a11 a12)))

@@ -5,7 +5,7 @@
 (define list/kw (make-keyword-procedure list))
 
 (run-tests
- (test-suite "function.ss"
+ (test-suite "function.rkt"
 
    (test-suite "Simple Functions"
 

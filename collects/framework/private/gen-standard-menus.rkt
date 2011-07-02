@@ -3,12 +3,12 @@
 (provide main)
 (require scheme/pretty
          scheme/runtime-path)
-(require "standard-menus-items.ss")
+(require "standard-menus-items.rkt")
 
 (define-runtime-path here ".")
 
 (define standard-menus.rkt-filename (simplify-path (build-path here "standard-menus.rkt")))
-(define docs-menus.ss-filename (simplify-path (build-path here 'up 'up "scribblings" "framework" "standard-menus.scrbl")))
+(define docs-menus-filename (simplify-path (build-path here 'up 'up "scribblings" "framework" "standard-menus.scrbl")))
 
 ;; build-before-super-item-clause : an-item -> (listof clause)
 (define build-before-super-item-clause
@@ -125,8 +125,8 @@
   (write-docs))
 
 (define (write-docs)
-  (printf "writing to ~a\n" docs-menus.ss-filename)
-  (call-with-output-file docs-menus.ss-filename
+  (printf "writing to ~a\n" docs-menus-filename)
+  (call-with-output-file docs-menus-filename
     (λ (port)
       (define (pop-out sexp)
         (display "@" port)

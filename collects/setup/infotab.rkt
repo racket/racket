@@ -1,5 +1,4 @@
-
-;; Defines a language to be used by info.ss files
+;; Defines a language to be used by info.rkt files
 
 #lang scheme/base
 (require (for-syntax scheme/base))
@@ -33,12 +32,12 @@
               defn ...
               (define #%info-lookup
                 (case-lambda
-                  [(n) (#%info-lookup n (lambda () (error 'info.ss "no info for ~a" n)))]
+                  [(n) (#%info-lookup n (lambda () (error 'info.rkt "no info for ~a" n)))]
                   [(n fail)
                    (unless (and (procedure? fail)
                                 (procedure-arity-includes? fail 0))
                      (error
-                      'info.ss
+                      'info.rkt
                       "expected second argument to be a procedure that takes no arguments, got: ~e"
                       fail))
                    (case n

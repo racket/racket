@@ -15,8 +15,8 @@
 #lang mzscheme
 
 (require mzlib/etc
-         "gl-vectors.ss"
-         "gl.ss")
+         "gl-vectors.rkt"
+         "gl.rkt")
 
 (define-syntax (_provide stx)
   (syntax-case stx ()

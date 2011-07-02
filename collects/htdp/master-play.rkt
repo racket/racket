@@ -1,6 +1,6 @@
 #cs(module master-play mzscheme
   (require 
-   "master.ss"
+   "master.rkt"
    lang/prim)
   
   (provide go)

@@ -1,6 +1,5 @@
-
 #lang scheme/base
-(require "../gentest-framework.ss")
+(require "../gentest-framework.rkt")
 (provide proto:macros)
 
 (define-tests proto:macros "Macros"

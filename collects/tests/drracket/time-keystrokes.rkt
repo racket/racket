@@ -55,7 +55,7 @@
                   (string->list chars)))
       
       
-      ;; copied from framework/test.ss
+      ;; copied from framework/test.rkt
       (define (send-key-event window event)
         (let loop ([l (ancestor-list window #t)])
           (cond [(null? l)
@@ -71,7 +71,7 @@
                 [(send (car l) on-subwindow-char window event) #f]
                 [else (loop (cdr l))])))
       
-      ;; copied from framework/test.ss
+      ;; copied from framework/test.rkt
       (define (ancestor-list window stop-at-top-level-window?)
         (let loop ([w window] [l null])
           (if (or (not w)

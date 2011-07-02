@@ -2,7 +2,7 @@
 
 #lang racket/base
 
-(require "esd.ss")
+(require "esd.rkt")
 
 (printf "default = ~s\n" (default-esd))
 (printf "latency = ~s\n" (esd-get-latency))
@@ -11,7 +11,7 @@
 (printf "resume  -> ~s\n" (esd-resume))
 
 (printf "Normal play...\n")
-(esd-play-file "esd.ss" "~/stuff/sounds/Eeeooop.wav" #t)
+(esd-play-file "esd.rkt" "~/stuff/sounds/Eeeooop.wav" #t)
 (sleep 1)
 
 (printf "Sample play...\n")

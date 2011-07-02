@@ -1,11 +1,11 @@
 #lang scheme 
 
 #| tests are at plt/collects/tests/mzscheme/
-collects/tests/mzscheme/beginner.ss
-                    .../beginner-abbr.ss
-                    .../intermediate.ss
-                    .../intermediate-lambda.ss
-                    .../advanced.ss
+collects/tests/mzscheme/beginner.rkt
+                    .../beginner-abbr.rkt
+                    .../intermediate.rkt
+                    .../intermediate-lambda.rkt
+                    .../advanced.rkt
 
 Each one has to run separately, since they mangle the top-level
 namespace.

@@ -1,6 +1,5 @@
-
-(module slideshow-run "slideshow.ss"
+(module slideshow-run "slideshow.rkt"
   (require (prefix slideshow: slideshow/run))
 
-  (provide (all-from-except "slideshow.ss" #%module-begin)
+  (provide (all-from-except "slideshow.rkt" #%module-begin)
            (rename slideshow:#%module-begin #%module-begin)))

@@ -7,40 +7,40 @@
            racket/draw racket/snip
            file/resource
            mzlib/etc
-	   (prefix wx: "kernel.ss")
-	   (prefix wx: "wxme/editor.ss")
-	   (prefix wx: "wxme/text.ss")
-	   (prefix wx: "wxme/pasteboard.ss")
-	   (prefix wx: "wxme/keymap.ss")
-	   (prefix wx: "wxme/editor-admin.ss")
-           (prefix wx: "wxme/editor-data.ss")
-	   (prefix wx: "wxme/editor-snip.ss")
-	   (prefix wx: "wxme/stream.ss")
-	   (prefix wx: "wxme/wordbreak.ss")
-	   "wxtop.ss"
-	   "app.ss"
-	   "misc.ss"
-	   "mrwindow.ss"
-	   "mrcontainer.ss"
-	   "mrtop.ss"
-	   "mrpanel.ss"
-	   "mrcanvas.ss"
-	   "mritem.ss"
-	   "mrtextfield.ss"
-	   "mrmenuintf.ss"
-	   "mrmenu.ss"
-	   "mrpopup.ss"
-	   "editor.ss"
-	   "messagebox.ss"
-	   "filedialog.ss"
-	   "fontdialog.ss"
-	   "moredialogs.ss"
-	   "gdi.ss"
-	   "snipfile.ss"
-	   "repl.ss"
-           "helper.ss"
-           "dynamic.ss"
-           "check.ss")
+           (prefix wx: "kernel.rkt")
+           (prefix wx: "wxme/editor.rkt")
+           (prefix wx: "wxme/text.rkt")
+           (prefix wx: "wxme/pasteboard.rkt")
+           (prefix wx: "wxme/keymap.rkt")
+           (prefix wx: "wxme/editor-admin.rkt")
+           (prefix wx: "wxme/editor-data.rkt")
+           (prefix wx: "wxme/editor-snip.rkt")
+           (prefix wx: "wxme/stream.rkt")
+           (prefix wx: "wxme/wordbreak.rkt")
+           "wxtop.rkt"
+           "app.rkt"
+           "misc.rkt"
+           "mrwindow.rkt"
+           "mrcontainer.rkt"
+           "mrtop.rkt"
+           "mrpanel.rkt"
+           "mrcanvas.rkt"
+           "mritem.rkt"
+           "mrtextfield.rkt"
+           "mrmenuintf.rkt"
+           "mrmenu.rkt"
+           "mrpopup.rkt"
+           "editor.rkt"
+           "messagebox.rkt"
+           "filedialog.rkt"
+           "fontdialog.rkt"
+           "moredialogs.rkt"
+           "gdi.rkt"
+           "snipfile.rkt"
+           "repl.rkt"
+           "helper.rkt"
+           "dynamic.rkt"
+           "check.rkt")
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; These functions are re-implemented in scheme/gui/base
@@ -90,7 +90,7 @@
 			      #f))
 			   ns)])
 	     (syntax (begin
-		       ;; We can't just re-export, because kernel.ss's
+		       ;; We can't just re-export, because kernel.rkt's
 		       ;;  exports are protected.
 		       (define n k:n) ...
 		       (provide n ...)))))])))

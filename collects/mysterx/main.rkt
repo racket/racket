@@ -1,4 +1,4 @@
 #lang scheme/base
 
-(require "mysterx.ss")
-(provide (all-from-out "mysterx.ss"))
+(require "mysterx.rkt")
+(provide (all-from-out "mysterx.rkt"))

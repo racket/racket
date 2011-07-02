@@ -2,8 +2,8 @@
 
 (require (for-syntax scheme/base scheme/provide-transform))
 
-;; This is a utility for many srfi/N.ss files that simply reprovide stuff from
-;; some other file.  It is used as a module, for example, the "srfi/1.ss"
+;; This is a utility for many srfi/N.rkt files that simply reprovide stuff from
+;; some other file.  It is used as a module, for example, the "srfi/1.rkt"
 ;; loader has:
 ;;   #lang s-exp srfi/provider srfi/1/list #:unprefix s:
 ;; which makes it require `srfi/1/list', then reprovide everything from there,

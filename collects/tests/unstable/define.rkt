@@ -3,7 +3,7 @@
 (require rackunit rackunit/text-ui racket/sandbox unstable/define "helpers.rkt")
 
 (run-tests
- (test-suite "define.ss"
+ (test-suite "define.rkt"
 
    (test-suite "at-end")
 

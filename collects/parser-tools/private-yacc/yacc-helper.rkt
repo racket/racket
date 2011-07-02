@@ -1,8 +1,8 @@
 (module yacc-helper mzscheme
 
   (require mzlib/list
-           "../private-lex/token-syntax.ss")
-  
+           "../private-lex/token-syntax.rkt")
+
   ;; General helper routines
   
   (provide duplicate-list? remove-duplicates overlap? vector-andmap display-yacc)

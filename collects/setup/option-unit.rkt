@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/unit
          racket/future
-         "option-sig.ss")
+         "option-sig.rkt")
 
 (provide setup:option@ set-flag-params)
 

@@ -1,5 +1,5 @@
 #lang racket/base
-(require "../unsafe.ss")
+(require "../unsafe.rkt")
 
 (define-struct cvector (ptr type length))
 

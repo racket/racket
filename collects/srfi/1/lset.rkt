@@ -1,5 +1,5 @@
 ;;;
-;;; <lset.ss> ---- Lists as Sets
+;;; <lset.rkt> ---- Lists as Sets
 ;;; Time-stamp: <03/03/13 16:20:56 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -26,11 +26,11 @@
 #lang scheme/base
 
 (require srfi/optional
-         (rename-in "search.ss" [member s:member])
-         (except-in "fold.ss" map for-each)
-         "delete.ss"
-         "predicate.ss"
-         (only-in "filter.ss" [filter-with-sharing s:filter] partition))
+         (rename-in "search.rkt" [member s:member])
+         (except-in "fold.rkt" map for-each)
+         "delete.rkt"
+         "predicate.rkt"
+         (only-in "filter.rkt" [filter-with-sharing s:filter] partition))
 
 (provide lset<=
          lset=
@@ -215,4 +215,4 @@
                                       lists)))
                           lis1))))
 
-;;; lset.ss ends here
+;;; lset.rkt ends here

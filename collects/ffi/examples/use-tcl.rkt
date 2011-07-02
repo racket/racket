@@ -2,7 +2,7 @@
 
 #lang racket/base
 
-(require "tcl.ss")
+(require "tcl.rkt")
 
 (define (tcldemo . strs)
   (for-each (lambda (s)

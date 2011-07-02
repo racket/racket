@@ -1,33 +1,32 @@
 #lang scheme/base
-(require "base.ss"
-         "private/manual-style.ss"
-         "private/manual-scheme.ss"
-         "private/manual-code.ss"
-         "private/manual-mod.ss"
-         "private/manual-tech.ss"
-         "private/manual-bib.ss"
-         "private/manual-proc.ss"
-         "private/manual-form.ss"
-         "private/manual-class.ss"
-         "private/manual-unit.ss"
-         "private/manual-vars.ss"
-         "private/manual-bind.ss")
+(require "base.rkt"
+         "private/manual-style.rkt"
+         "private/manual-scheme.rkt"
+         "private/manual-code.rkt"
+         "private/manual-mod.rkt"
+         "private/manual-tech.rkt"
+         "private/manual-bib.rkt"
+         "private/manual-proc.rkt"
+         "private/manual-form.rkt"
+         "private/manual-class.rkt"
+         "private/manual-unit.rkt"
+         "private/manual-vars.rkt"
+         "private/manual-bind.rkt")
 
 (provide unsyntax
          make-binding-redirect-elements
          defidentifier
-         (all-from-out "base.ss"
-                       "private/manual-style.ss"
-                       "private/manual-scheme.ss"
-                       "private/manual-code.ss"
-                       "private/manual-mod.ss"
-                       "private/manual-tech.ss"
-                       "private/manual-bib.ss"
-                       "private/manual-form.ss"
-                       "private/manual-class.ss"
-                       "private/manual-unit.ss")
-         (except-out (all-from-out "private/manual-vars.ss")
+         (all-from-out "base.rkt"
+                       "private/manual-style.rkt"
+                       "private/manual-scheme.rkt"
+                       "private/manual-code.rkt"
+                       "private/manual-mod.rkt"
+                       "private/manual-tech.rkt"
+                       "private/manual-bib.rkt"
+                       "private/manual-form.rkt"
+                       "private/manual-class.rkt"
+                       "private/manual-unit.rkt")
+         (except-out (all-from-out "private/manual-vars.rkt")
                      *deftogether)
-         (except-out (all-from-out "private/manual-proc.ss")
+         (except-out (all-from-out "private/manual-proc.rkt")
                      *defthing))
-

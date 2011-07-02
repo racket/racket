@@ -1,7 +1,7 @@
 #lang racket/base
-(require "private/planet-shared.ss"
-         "config.ss"
-         "cachepath.ss")
+(require "private/planet-shared.rkt"
+         "config.rkt"
+         "cachepath.rkt")
 
 (provide repository-tree 
          get-installed-planet-archives

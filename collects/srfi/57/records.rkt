@@ -13,7 +13,7 @@
   (require            (prefix s9: srfi/9))
   (require-for-syntax (prefix s1: srfi/1))
 
-  (require-for-syntax "registry.ss")
+  (require-for-syntax "registry.rkt")
 
   (define-syntax define-record-type
     (syntax-rules ()

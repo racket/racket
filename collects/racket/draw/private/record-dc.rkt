@@ -11,7 +11,7 @@
          "brush.rkt"
          "region.rkt"
          "dc-path.rkt"
-         "local.ss")
+         "local.rkt")
 
 (provide record-dc-mixin
          get-recorded-command

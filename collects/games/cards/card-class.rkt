@@ -4,8 +4,8 @@
 	   mzlib/class100
            mzlib/shared
 	   (prefix mred: mred)
-	   "snipclass.ss"
-	   "region.ss"
+	   "snipclass.rkt"
+	   "region.rkt"
            (only scheme/base for in-range))
 
   (provide card%)

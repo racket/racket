@@ -1,4 +1,4 @@
-;;; mxdemo.ss -- demo program for MysterX
+;;; mxdemo.rkt -- demo program for MysterX
 
 ;;; Requires the MSCal Calendar control.
 ;;; The calendar control is normally installed with

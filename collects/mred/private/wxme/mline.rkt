@@ -1,10 +1,10 @@
 #lang scheme/base
 (require scheme/class
-         "../syntax.ss"
-         "const.ss"
+         "../syntax.rkt"
+         "const.rkt"
          racket/snip
          racket/snip/private/snip-flags
-         "private.ss"
+         "private.rkt"
          racket/snip/private/private)
 
 (provide create-mline

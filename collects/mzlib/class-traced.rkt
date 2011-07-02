@@ -1,7 +1,7 @@
 (module class-traced mzscheme
   
-  ;; All of the implementation is actually in private/class-internal.ss,
-  ;;  which provides extra (private) functionality to contract.ss.
+  ;; All of the implementation is actually in private/class-internal.rkt,
+  ;;  which provides extra (private) functionality to contract.rkt.
   (require racket/private/class-internal)
   
   (provide (rename class-traced class)

@@ -1,16 +1,16 @@
 #lang scheme/base
 
-(require (prefix-in orig: 
-                    (only-in "plot.ss"
+(require (prefix-in orig:
+                    (only-in "plot.rkt"
                              plot plot3d
                              points line error-bars
                              vector-field contour
                              shade surface))
-         (only-in "plot.ss"
+         (only-in "plot.rkt"
                   mix
                   derivative gradient make-vec
                   mesh3d)
-         (only-in "fit.ss" fit-int))
+         (only-in "fit.rkt" fit-int))
 
 (provide plot
          plot3d
@@ -31,7 +31,7 @@
 
 (define-syntax-rule (out-fit-struct)
   (begin
-    (require "plot.ss")
+    (require "plot.rkt")
     (provide (struct-out fit-result))))
 
 (out-fit-struct)

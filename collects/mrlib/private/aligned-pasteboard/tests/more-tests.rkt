@@ -4,8 +4,8 @@
  mzlib/class
  mred
  mzlib/etc
- "../aligned-editor-container.ss"
- "../aligned-pasteboard.ss")
+ "../aligned-editor-container.rkt"
+ "../aligned-pasteboard.rkt")
 
 ;; a text-case snip
 (define test-case-box%

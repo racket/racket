@@ -1,4 +1,4 @@
-(module lang-utils "lang-core.ss"
+(module lang-utils "lang-core.rkt"
   
   (require (all-except mzscheme
                        module
@@ -33,10 +33,10 @@
                        cond when unless
                        map ormap andmap assoc member)
            (rename mzscheme mzscheme:if if)
-           (rename "lang-ext.ss" lift lift)
+           (rename "lang-ext.rkt" lift lift)
            (only frtime/core/frp super-lift behavior? value-now)
-           (rename "lang-ext.ss" undefined undefined)
-           (rename "lang-ext.ss" undefined? undefined?)
+           (rename "lang-ext.rkt" undefined undefined)
+           (rename "lang-ext.rkt" undefined? undefined?)
 	   mzlib/class)
   (require mzlib/list)
   
@@ -380,6 +380,6 @@
            )
   
   ; from core
-  (provide (all-from "lang-core.ss"))
-           
+  (provide (all-from "lang-core.rkt"))
+
   )

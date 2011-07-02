@@ -10,7 +10,7 @@
          sgl/gl
          srfi/25/array
          mrlib/include-bitmap
-         "honu-bitmaps.ss")
+         "honu-bitmaps.rkt")
 (provide game@)
 
 (define-struct image (width height rgba))

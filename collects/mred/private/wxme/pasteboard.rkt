@@ -2,23 +2,23 @@
 (require scheme/class
          scheme/port
          scheme/file
-         "../syntax.ss"
-         "const.ss"
-         "private.ss"
+         "../syntax.rkt"
+         "const.rkt"
+         "private.rkt"
          racket/snip/private/private
-         "editor.ss"
+         "editor.rkt"
          "editor-data.rkt"
-         "undo.ss"
+         "undo.rkt"
          racket/snip
          racket/snip/private/snip-flags
          "standard-snip-admin.rkt"
-         "keymap.ss"
-         (only-in "cycle.ss" 
+         "keymap.rkt"
+         (only-in "cycle.rkt"
                   printer-dc%
                   set-pasteboard%!)
-         "wordbreak.ss"
-         "stream.ss"
-         "wx.ss")
+         "wordbreak.rkt"
+         "stream.rkt"
+         "wx.rkt")
 
 (provide pasteboard%
          add-pasteboard-keymap-functions)

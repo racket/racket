@@ -36,12 +36,12 @@
 
 (define-module rackunit
   (planet/multiple ("schematics" "rackunit.plt" 2 11)
-                   "test.ss"
-                   ;"graphical-ui.ss"
-                   "text-ui.ss"
-                   "util.ss")
+                   "test.rkt"
+                   ;"graphical-ui.rkt"
+                   "text-ui.rkt"
+                   "util.rkt")
   ;; disabled until Carl updates to v4
   #;
   (planet/multiple ("cce" "fasttest.plt" 1 2)
-                   "random.ss"
-                   "rackunit.ss"))
+                   "random.rkt"
+                   "rackunit.rkt"))

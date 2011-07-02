@@ -1,15 +1,13 @@
-
 ;; Poor man's stack-trace-on-exceptions/profiler.
 ;; See docs for information.
 
 (module calltrace-lib mzscheme
-  (require "stacktrace.ss"
-           mzlib/list 
+  (require "stacktrace.rkt"
+           mzlib/list
            mzlib/etc
            mzlib/unit)
 
 
-  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Eval handler, exception handler
 
@@ -74,4 +72,3 @@
   (provide calltrace-eval-handler
            instrumenting-enabled
            annotate))
- 

@@ -1,10 +1,10 @@
 #lang mzscheme
 
-(require "datatype.ss"
-         "private/sllgen.ss"
+(require "datatype.rkt"
+         "private/sllgen.rkt"
          mzlib/trace
          mzlib/pretty)
-(require-for-syntax "private/slldef.ss")
+(require-for-syntax "private/slldef.rkt")
 
 (provide define-datatype
          cases)
@@ -25,7 +25,7 @@
 
 (provide (rename eopl-define define))
 
-(provide (all-from "private/sllgen.ss"))
+(provide (all-from "private/sllgen.rkt"))
 
 (provide (rename error eopl:error)
          (rename printf eopl:printf)

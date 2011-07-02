@@ -1,6 +1,6 @@
 #lang racket
 
-(require "grammar.ss" 
+(require "grammar.rkt"
          "reduce.rkt"
          (except-in redex/reduction-semantics plug)
          racket/runtime-path)

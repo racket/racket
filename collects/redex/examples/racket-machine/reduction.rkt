@@ -1,7 +1,7 @@
 #lang racket
 
 (require redex/reduction-semantics)
-(require "grammar.ss" "util.ss")
+(require "grammar.rkt" "util.rkt")
 
 (define-extended-language runtime bytecode
   (p (V S H T C) error)

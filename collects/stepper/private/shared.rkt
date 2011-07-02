@@ -553,7 +553,7 @@
   ;; (equal? (get-set-pair-union-stats)
   ;         `(((2 . 3) 1) ((2 . 1) 2) ((1 . 2) 2)))
 
-  ;; until this remove* goes into list.ss?
+  ;; until this remove* goes into list.rkt?
 
   (define (set-pair-union a-set b-set comparator)
     (cond [(null? b-set) a-set]

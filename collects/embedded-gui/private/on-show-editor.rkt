@@ -5,7 +5,7 @@
    mzlib/etc
    mred
    framework
-   "snip-lib.ss")
+   "snip-lib.rkt")
   
   (provide
    on-show-editor<%>

@@ -1,5 +1,5 @@
 (module foldo mzscheme
-  (require (lib "file.ss")(lib "match.ss"))
+  (require (lib "file.rkt") (lib "match.rkt"))
   (provide apply-to-scheme-files)
 
    (define-syntax (define-excluder stx)
@@ -27,8 +27,8 @@
 
   ;; ----------------------------------------
   ;; apply-to-scheme-files: (path[file] -> X) path[directory] -> (listof X)
-  ;; applies the given function to each .ss or .scm file in the given directory
-  ;; hierarchy; returns all results in a list
+  ;; applies the given function to each .rkt or .ss or .scm file in the given
+  ;; directory hierarchy; returns all results in a list
   (define  (apply-to-scheme-files f root )
      ;;FOLD-FILES
 

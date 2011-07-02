@@ -1,6 +1,6 @@
-
 (module base mzscheme
-  (require mzlib/class mzlib/etc "make-cards.ss" "classes.ss" "card-class.ss")
+  (require mzlib/class mzlib/etc
+           "make-cards.rkt" "classes.rkt" "card-class.rkt")
 
   (provide make-table make-deck make-card
            table<%> card<%>)

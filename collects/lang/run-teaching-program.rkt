@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require "stepper-language-interface.ss"           
-         "debugger-language-interface.ss"
+(require "stepper-language-interface.rkt"
+         "debugger-language-interface.rkt"
          stepper/private/shared
          scheme/class
          scheme/contract

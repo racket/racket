@@ -1,6 +1,6 @@
 #lang mzscheme
 
-#| resolver.ss -- PLaneT client
+#| resolver.rkt -- PLaneT client
 
 1. Introduction
 
@@ -194,13 +194,13 @@ subdirectory.
          net/head
          mzlib/struct
 
-         "config.ss"
-         "private/planet-shared.ss"
-         "private/linkage.ss"
-         "parsereq.ss"
-         
-         "terse-info.ss"
-         compiler/cm) 
+         "config.rkt"
+         "private/planet-shared.rkt"
+         "private/linkage.rkt"
+         "parsereq.rkt"
+
+         "terse-info.rkt"
+         compiler/cm)
 
 (provide (rename resolver planet-module-name-resolver)
          resolve-planet-path

@@ -1,10 +1,10 @@
 (module model mzscheme
-  (require "sig.ss"
-	   mzlib/unitsig)
+  (require "sig.rkt"
+           mzlib/unitsig)
 
   (provide model-unit)
 
-  ;; Most tests are in test-model.ss, but for better coverage,
+  ;; Most tests are in test-model.rkt, but for better coverage,
   ;; uncomment the tests below for unexported functions when running
   ;; the test suite.
   
@@ -408,7 +408,7 @@
       ;; Generate a numerical ID for each stack. This numerical
       ;;  ID must stay constant for all of time, because we
       ;;  record boards in compact form using these numbers.
-      ;;  (For example, see "plays-3x3.ss".)
+      ;;  (For example, see "plays-3x3.rkt".)
       (define red-stack-ids (make-hash-table))
       (define yellow-stack-ids (make-hash-table))
       (for-each (lambda (s)

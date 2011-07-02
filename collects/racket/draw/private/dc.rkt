@@ -7,21 +7,21 @@
          ffi/unsafe/atomic
          racket/math
          racket/class
-         "hold.ss"
-         "local.ss"
-         "../unsafe/cairo.ss"
-         "../unsafe/pango.ss"
-         "color.ss"
-         "pen.ss"
-         "brush.ss"
-         "gradient.ss"
-         "font.ss"
-         "bitmap.ss"
-         "region.ss"
-         "dc-intf.ss"
-         "dc-path.ss"
-         "point.ss"
-         "local.ss"
+         "hold.rkt"
+         "local.rkt"
+         "../unsafe/cairo.rkt"
+         "../unsafe/pango.rkt"
+         "color.rkt"
+         "pen.rkt"
+         "brush.rkt"
+         "gradient.rkt"
+         "font.rkt"
+         "bitmap.rkt"
+         "region.rkt"
+         "dc-intf.rkt"
+         "dc-path.rkt"
+         "point.rkt"
+         "local.rkt"
          "../unsafe/bstr.rkt")
 
 (provide dc-mixin

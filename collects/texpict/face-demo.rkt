@@ -3,10 +3,10 @@
            mzlib/class
            texpict/utils
            texpict/mrpict
-           "face.ss")
-  
+           "face.rkt")
+
   (define f (new frame% (label "frame")))
-  
+
   (define canvas-scale 1)
   
   (define c (new canvas%

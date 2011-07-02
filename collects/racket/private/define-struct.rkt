@@ -1,4 +1,3 @@
-
 ;; Based on
 ;;  (planet "struct.ss" ("ryanc" "macros.plt" 1 0)))
 

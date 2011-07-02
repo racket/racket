@@ -1,17 +1,16 @@
-
 (module cmdline mzscheme
   (require mzlib/class
            mzlib/unit
-	   mzlib/file
-	   mzlib/etc
-	   mzlib/contract
-	   mred
-	   mzlib/cmdline
-	   texpict/mrpict
-	   texpict/utils
-	   mzlib/math
-	   "sig.ss"
-	   (prefix start: "start-param.ss"))
+           mzlib/file
+           mzlib/etc
+           mzlib/contract
+           mred
+           mzlib/cmdline
+           texpict/mrpict
+           texpict/utils
+           mzlib/math
+           "sig.rkt"
+           (prefix start: "start-param.rkt"))
 
   (provide cmdline@)
 

@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/snip
-         "private/class-help.ss")
+         "private/class-help.rkt")
 
 (provide image%)
 
