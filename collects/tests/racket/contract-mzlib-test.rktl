@@ -5065,7 +5065,7 @@ so that propagation occurs.
        (eval '(require 'pce1-bug)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable1" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable1:" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -5077,7 +5077,7 @@ so that propagation occurs.
        (eval '(the-defined-variable2 #f)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable2" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable2:" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -5089,7 +5089,7 @@ so that propagation occurs.
        (eval '(the-defined-variable3 #f)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable3" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable3:" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -5101,7 +5101,7 @@ so that propagation occurs.
        (eval '((if #t the-defined-variable4 the-defined-variable4) #f)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable4" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable4:" (exn-message x)))))
 
   (contract-error-test
    #'(begin
