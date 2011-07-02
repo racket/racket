@@ -931,7 +931,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         || ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
             && (argc + 1 >= data->num_params))
         || (!app && !app2 && !app3)) {
-      int threshold, is_leaf;
+      int threshold, is_leaf = 0;
 
       if (!already_opt) {
         /* We have an immediate `lambda' that wasn't optimized, yet.
