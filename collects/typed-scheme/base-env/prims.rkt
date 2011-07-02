@@ -439,6 +439,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
    (pattern (~seq #:constructor-name name:id) #:attr extra #f)
    (pattern (~seq #:extra-constructor-name name:id) #:attr extra #t))
 
+  (define (maybe-add-quote-syntax stx)
+   (if (and stx (syntax-e stx)) #`(quote-syntax #,stx) stx))
 
   (define ((rts legacy) stx)
     (syntax-parse stx #:literals (:)
@@ -446,8 +448,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (with-syntax* ([nm #'name.nm]
                       [parent #'name.parent]
                       [hidden (generate-temporary #'name.nm)]
+                      [orig-struct-info (generate-temporary #'nm)]
                       [spec (if (syntax-e #'name.parent) #'(nm parent) #'nm)]
-                      [(struct-info _ pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
+                      [num-fields (length (syntax->list #'(fld ...)))]
+                      [(type-des _ pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
                       [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
                       [maker-name #'input-maker.name]
                       ;maker-name's symbolic form is used in the require form
@@ -459,17 +463,42 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                         #'maker-name)])
                      (quasisyntax/loc stx
                        (begin
-                         (require (only-in lib struct-info))
+                         (require (only-in lib type-des (nm orig-struct-info)))
 
                          (define-for-syntax si
+                           (let () 
+                            (define-values (orig-type-des orig-maker orig-pred orig-sels orig-muts orig-parent)
+                             (apply values (extract-struct-info (syntax-local-value (quote-syntax orig-struct-info)))))
+
+                            (define (id-drop sels muts num)
+                             (cond
+                              ((zero? num) (values sels muts))
+                              ((null? sels) (int-err "id-drop: Too short of list"))
+                              ((pair? sels)
+                               (cond
+                                ((not (car sels)) (values sels muts))
+                                (else (id-drop (cdr sels) (cdr muts) (sub1 num)))))
+                              (else (int-err "id-drop: Not a list"))))
+                            
                            (make-struct-info
                             (lambda ()
-                              (list #'struct-info
-                                    #'real-maker
-                                    #'pred
-                                    (reverse (list #'sel ...))
-                                    (list mut ...)
-                                    #f))))
+                              #,(if (syntax-e #'parent)
+                                    (let-values (((parent-type-des parent-maker parent-pred
+                                                   parent-sel  parent-mut grand-parent)
+                                                  (apply values (extract-struct-info (syntax-local-value #'parent)))))
+                                      #`(list (quote-syntax type-des)
+                                              (quote-syntax real-maker)
+                                              (quote-syntax pred)
+                                              (list #,@(map maybe-add-quote-syntax (append (reverse (syntax->list #'(sel ...))) parent-sel)))
+                                              (list #,@(map maybe-add-quote-syntax (append (reverse (syntax->list #'(mut ...))) parent-mut)))
+                                              (quote-syntax parent)))
+                                    #`(let-values (((new-sels new-muts) (id-drop orig-sels orig-muts num-fields)))
+                                        (list (quote-syntax type-des)
+                                              (quote-syntax real-maker)
+                                              (quote-syntax pred)
+                                              (list* #,@(map maybe-add-quote-syntax (reverse (syntax->list #'(sel ...)))) new-sels)
+                                              (list* #,@(map maybe-add-quote-syntax (reverse (syntax->list #'(mut ...)))) new-muts)
+                                              orig-parent)))))))
 
                          (define-syntax nm
                               (if id-is-ctor?

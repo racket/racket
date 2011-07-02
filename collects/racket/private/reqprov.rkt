@@ -835,16 +835,18 @@
                                            (and (struct-info? super-v)
                                                 (extract-struct-info super-v)))))]
                          [list-ize (lambda (ids super-ids)
-                                     (let loop ([ids ids])
-                                       (cond
-                                        [(not (pair? ids)) null]
-                                        [(and (pair? super-ids)
-                                              (car ids)
-                                              (free-identifier=? (car ids)
-                                                                 (car super-ids)))
-                                         ;; stop because we got to ids that belong to the supertype
-                                         null]
-                                        [else (cons (car ids) (loop (cdr ids)))])))]
+                                     (let ((super-ids (and super-ids (filter values super-ids))))
+                                       ;Remove all unknown super-ids
+                                       (let loop ([ids ids])
+                                        (cond
+                                         [(not (pair? ids)) null]
+                                         [(and (pair? super-ids)
+                                               (car ids)
+                                               (free-identifier=? (car ids)
+                                                                  (car super-ids)))
+                                          ;; stop because we got to ids that belong to the supertype
+                                          null]
+                                         [else (cons (car ids) (loop (cdr ids)))]))))]
                          ;; FIXME: we're building a list of all imports on every expansion
                          ;; of `syntax-out'. That could become expensive if `syntax-out' is
                          ;; used a lot.
