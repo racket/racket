@@ -29,12 +29,12 @@ END
     [opaque . "5ccc069c403ebaf9f0171e9517f40e41"]))
 
 (define Safari-Example-bytes
-  #"Digest username=\"username\", realm=\"Digest Auth Test: g10971\", nonce=\"MTIzMzc2ODU3NCA4MjA2MTAyMDNhYzYyYTRiMTdmOTY4NzVjOWI1MzEwOQ==\", uri=\"/servlets/standalone.rkt\", response=\"c3e45e8499e37bf0872930b35fcae291\", cnonce=\"94db38ffd6e360db658e0dbcbf5e43b9\", nc=00000001, qop=\"auth\"")
+  #"Digest username=\"username\", realm=\"Digest Auth Test: g10971\", nonce=\"MTIzMzc2ODU3NCA4MjA2MTAyMDNhYzYyYTRiMTdmOTY4NzVjOWI1MzEwOQ==\", uri=\"/servlets/standalone.ss\", response=\"c3e45e8499e37bf0872930b35fcae291\", cnonce=\"94db38ffd6e360db658e0dbcbf5e43b9\", nc=00000001, qop=\"auth\"")
 (define Safari-Example-alist
   '([username . "username"]
     [realm . "Digest Auth Test: g10971"]
     [nonce . "MTIzMzc2ODU3NCA4MjA2MTAyMDNhYzYyYTRiMTdmOTY4NzVjOWI1MzEwOQ=="]
-    [uri . "/servlets/standalone.rkt"]
+    [uri . "/servlets/standalone.ss"]
     [response . "c3e45e8499e37bf0872930b35fcae291"]
     [cnonce . "94db38ffd6e360db658e0dbcbf5e43b9"]
     [nc . "00000001"]
