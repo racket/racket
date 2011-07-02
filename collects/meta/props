@@ -1816,7 +1816,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/openssl.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/optimize.rktl" drdr:command-line #f
 "collects/tests/racket/pack.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/package-gen.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/package-gen.rktl" drdr:command-line (racket "-f" *) drdr:timeout 600
 "collects/tests/racket/package.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/parallel.rktl" drdr:command-line #f
 "collects/tests/racket/param.rktl" drdr:command-line (racket "-f" *)
