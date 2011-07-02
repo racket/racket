@@ -26,7 +26,11 @@
             (on-draw draw-number)
             (record? dir)))
 (sleep 1)
-(unless (image=? (bitmap "images0/i1.png") (draw-stop 5))
+
+(define i (bitmap "images0/i1.png"))
+(define j (draw-stop 5))
+
+(unless (image=? (crop 0 0 100 100 i) j)
   (fprintf (current-error-port)
            "this test needs to be revised -- the way 'world' writes images adds an extra pixel -- think! \n"))
 

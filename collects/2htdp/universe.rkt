@@ -1,10 +1,11 @@
 #lang racket/gui
 
-;; DONT USE to-draw IN THIS FILE 
+;; ---------------------------------------------------------------------------------------------------
+;; the universe library provides the functionality to create interactive and distributed FPs in HtDP
+
+;; DONT USE ___to-draw___ IN THIS FILE 
 
 #| TODO: 
-   -- check that on-release is only defined if on-key is defined 
-
    -- run callbacks in user eventspace
    -- make timer fire just once; restart after on-tick callback finishes
    -- take out counting; replace by 0.25 delay
@@ -12,16 +13,18 @@
    -- make window resizable :: why
 |#
 
-(require (for-syntax "private/syn-aux.rkt"
+(require (for-syntax "private/clauses-spec-and-process.rkt"
                      stepper/private/shared)
-         "private/syn-aux-aux.rkt"
-         "private/syn-aux.rkt"
-         "private/check-aux.rkt"
-         "private/universe-image.rkt"
+         "private/define-keywords.rkt"
+         "private/clauses-spec-aux.rkt" 
+         ;; ---
          "private/world.rkt"
          "private/universe.rkt"
-         "private/launch-many-worlds.rkt"
-         "private/stop.rkt"
+         "private/universe-image.rkt"
+         ;; 
+         (only-in "private/launch-many-worlds.rkt" launch-many-worlds)
+         (only-in "private/stop.rkt" make-stop-the-world)
+         (only-in "private/check-aux.rkt" sexp?)
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
 
@@ -314,8 +317,7 @@
     [(universe) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u bind ...)
-     (let* ([args
-             (->args 'universe stx #'u #'(bind ...) UniSpec void "universe")]
+     (let* ([args (->args 'universe stx #'u #'(bind ...) UniSpec void "universe")]
             [dom (syntax->list #'(bind ...))])
        (cond
          [(not (contains-clause? #'on-new dom))

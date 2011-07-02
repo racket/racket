@@ -10,10 +10,6 @@
 (define PAUSE  1/2)     ;; # secs to wait between attempts to connect to server 
 (define SQPORT 4567) ;; the port on which universe traffic flows
 
-(define (K w . r) w)
-(define (False w) #f)
-(define (True w) #t)
-
 ;                                                                               
 ;                                                                               
 ;                                                                               
@@ -31,6 +27,10 @@
 ;                                                                               
 
 ;; -----------------------------------------------------------------------------
+
+;; Any -> Boolean
+(define (nat? x)
+  (and (number? x) (integer? x) (>= x 0)))
 
 ;; Number Symbol Symbol -> Integer
 (define (number->integer x [t ""] [p ""])

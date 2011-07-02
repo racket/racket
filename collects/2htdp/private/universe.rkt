@@ -1,15 +1,34 @@
 #lang racket/gui
 
-(require (for-syntax "syn-aux.rkt")
-         "checked-cell.rkt"
+;; ---------------------------------------------------------------------------------------------------
+;; provides the universe functionality (distributed worlds)
+
+(require "checked-cell.rkt"
          "check-aux.rkt"
-         "timer.rkt"
+         "timer.rkt"    
          "last.rkt"
+         "clauses-spec-aux.rkt"
          htdp/error
          (only-in mzlib/etc evcase)
          string-constants)
 
-(provide universe%)
+(provide 
+ universe%
+ ;; --- sample worlds and function on worlds ---
+ iworld?  ;; Any -> Boolean 
+ iworld=? ;; World World -> Boolean 
+ iworld-name ;; World -> Symbol 
+ iworld1  ;; sample worlds 
+ iworld2
+ iworld3
+ ;; --- sending 'mail' to worlds ---
+ ;; type Bundle = (make-bundle [Listof World] Universe [Listof Mail]) 
+ ;; type Mail = (make-mail World S-expression)
+ make-bundle ;; [Listof World] Universe [Listof Mail] -> Bundle 
+ bundle?     ;; is this a bundle? 
+ make-mail   ;; World S-expression -> Mail 
+ mail?       ;; is this a real mail? 
+ )
 
 ;                                                          
 ;                                                          
@@ -205,14 +224,6 @@
 ;                                            
 ;                                            
 
-(provide 
- iworld?  ;; Any -> Boolean 
- iworld=? ;; World World -> Boolean 
- iworld-name ;; World -> Symbol 
- iworld1  ;; sample worlds 
- iworld2
- iworld3)
-
 ;; --- the server representation of a world --- 
 (define-struct iworld (in out name info) #; #:transparent)
 ;; World = (make-iworld IPort OPort Symbol [Listof Sexp])
@@ -331,15 +342,6 @@
 ;                              
 ;                              
 ;                              
-
-(provide
- ;; type Bundle = (make-bundle [Listof World] Universe [Listof Mail]) 
- ;; type Mail = (make-mail World S-expression)
- make-bundle ;; [Listof World] Universe [Listof Mail] -> Bundle 
- bundle?     ;; is this a bundle? 
- make-mail   ;; World S-expression -> Mail 
- mail?       ;; is this a real mail? 
- )
 
 (define-struct bundle (state mails bad) #:transparent)
 
