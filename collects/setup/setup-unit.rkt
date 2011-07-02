@@ -188,7 +188,9 @@
     ;; this check is also done in compiler/compiler-unit, in compile-directory
     (and (not (eq? 'all (omitted-paths path getinfo)))
          (make-cc collection path
-                  (if name (string-append path-name " (" name ")") path-name)
+                  (if name
+                      (format "~a (~a)" path-name name)
+                      path-name)
                   info root-dir info-path shadowing-policy)))
 
   (define ((warning-handler v) exn)
