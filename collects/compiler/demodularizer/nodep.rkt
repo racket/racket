@@ -163,13 +163,13 @@
          empty
          (begin
            (hash-set! REQUIRED ct #t)
-           (list (make-req (make-stx (make-wrapped ct empty #f)) (make-toplevel 0 0 #f #f)))))]
+           (list (make-req (make-stx (make-wrapped ct empty 'clean)) (make-toplevel 0 0 #f #f)))))]
     [(module-path-index? ct)
      (if (hash-has-key? REQUIRED ct)
          empty
          (begin
            (hash-set! REQUIRED ct #t)
-           (list (make-req (make-stx (make-wrapped ct empty #f)) (make-toplevel 0 0 #f #f)))))]
+           (list (make-req (make-stx (make-wrapped ct empty 'clean)) (make-toplevel 0 0 #f #f)))))]
     [(not ct)
      empty]
     [(@phase? ct)
