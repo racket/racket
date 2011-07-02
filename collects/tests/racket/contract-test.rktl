@@ -92,7 +92,7 @@
       (define (has-proper-blame? msg)
         (define reg
           (case blame
-            [(pos) #rx"^self-contract violation"]
+            [(pos) #rx"self-contract violation"]
             [(neg) #rx"blaming neg"]
             [else (error 'test/spec-failed "unknown blame name ~s" blame)]))
         (regexp-match? reg msg))
@@ -11345,7 +11345,7 @@ so that propagation occurs.
        (eval '(require 'pce1-bug)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable1" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable1: self-contract violation" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -11357,7 +11357,7 @@ so that propagation occurs.
        (eval '(the-defined-variable2 #f)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable2" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable2: contract violation" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -11369,7 +11369,7 @@ so that propagation occurs.
        (eval '(the-defined-variable3 #f)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable3" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable3" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -11381,7 +11381,7 @@ so that propagation occurs.
        (eval '((if #t the-defined-variable4 the-defined-variable4) #f)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable4" (exn-message x)))))
+          (regexp-match #rx"^the-defined-variable4" (exn-message x)))))
 
   (contract-error-test
    #'(begin
@@ -11447,7 +11447,7 @@ so that propagation occurs.
        (eval '(g 12)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"contract on g from 'pce9-bug" (exn-message x)))))
+          (regexp-match #rx"^g.*contract from 'pce9-bug" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -11460,7 +11460,7 @@ so that propagation occurs.
        (eval '(g 'a)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"contract on g from 'pce10-bug" (exn-message x)))))
+          (regexp-match #rx"^g.*contract from 'pce10-bug" (exn-message x)))))
    
   (contract-eval
    `(,test

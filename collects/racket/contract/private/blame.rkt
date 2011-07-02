@@ -76,19 +76,18 @@
                                                  "\n"
                                                  (if (string=? source-message "")
                                                      ""
-                                                     (format "        at: ~a" source-message))))]
-                                                 
-         [value-message (if (blame-value b)
-                          (format " on ~a" (show/display (blame-value b)))
-                          "")])
+                                                     (format "        at: ~a" source-message))))])
     ;; use (regexp-match #rx"\n" ...) to find out if show/display decided that this
     ;; is a multiple-line message and adjust surrounding formatting accordingly
     (cond
       [(blame-original? b)
+       (define start-of-message
+         (if (blame-value b)
+             (format "~a: self-contract violation," (blame-value b))
+             "self-contract violation:"))
        (string-append
-        (format "self-contract violation: ~a\n" custom-message)
-        (format "  contract~a from ~a~a blaming ~a~a" 
-                value-message 
+        (format "~a ~a\n" start-of-message custom-message)
+        (format "  contract from ~a~a blaming ~a~a" 
                 positive-message
                 (if (regexp-match #rx"\n" positive-message)
                     " "
@@ -100,10 +99,13 @@
         contract-message+at)]
       [else
        (define negative-message (show/display (blame-negative b)))
+       (define start-of-message
+         (if (blame-value b)
+             (format "~a: contract violation," (blame-value b))
+             "contract violation:"))
        (string-append
-        (format "contract violation: ~a\n" custom-message)
-        (format "  contract~a from ~a~a blaming ~a~a" 
-                value-message
+        (format "~a ~a\n" start-of-message custom-message)
+        (format "  contract from ~a~a blaming ~a~a" 
                 negative-message 
                 (if (regexp-match #rx"\n" negative-message)
                     " "
