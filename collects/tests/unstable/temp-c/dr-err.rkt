@@ -2,7 +2,7 @@
 (module re racket/base
   (require (for-syntax syntax/parse
                        racket/base
-                       "dr-err-help.rkt"))
+                       tests/unstable/temp-c/dr-err-help))
   
   (define-syntax (re stx)
     (syntax-parse
