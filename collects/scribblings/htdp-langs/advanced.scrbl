@@ -2,102 +2,63 @@
 @(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-advanced))
 
-@(define-syntax-rule (bdl intm-define intm-lambda)
-   (begin
-    (require (for-label lang/htdp-intermediate-lambda))
-    (define intm-define @racket[define])
-    (define intm-lambda @racket[lambda])))
-@(bdl intm-define intm-lambda)
-
-@(define-syntax-rule (bd intm-define-struct intm-local intm-letrec intm-let intm-let* intm-time)
-   (begin
-    (require (for-label lang/htdp-intermediate))
-    (define intm-define @racket[define])
-    (define intm-define-struct @racket[define-struct])
-    (define intm-local @racket[local])
-    (define intm-letrec @racket[letrec])
-    (define intm-let @racket[let])
-    (define intm-let* @racket[let*])
-    (define intm-time @racket[time])))
-@(bd intm-define-struct intm-local intm-letrec intm-let intm-let* intm-time)
-
-@(define-syntax-rule (bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
-   (begin
-    (require (for-label lang/htdp-beginner))
-    (define beg-define @racket[define])
-    (define beg-define-struct @racket[define-struct])
-    (define beg-cond @racket[cond])
-    (define beg-if @racket[if])
-    (define beg-and @racket[and])
-    (define beg-or @racket[or])
-    (define beg-check-expect @racket[check-expect])
-    (define beg-require @racket[require])))
-@(bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
-
-
 @title[#:style 'toc #:tag "advanced"]{Advanced Student}
 
 @declare-exporting[lang/htdp-advanced]
 
 @racketgrammar*+qq[
-#:literals (define define-struct define-datatype lambda λ cond else if and or empty true false require lib planet
+#:literals (define define-struct define-datatype lambda λ cond else if and or require lib planet
             local let let* letrec time begin begin0 set! delay shared recur when case match unless
              ; match
              _ cons list list* struct vector box
-            check-expect check-within check-error)
-(check-expect check-within check-error require)
+            check-expect check-within check-member-of check-range check-error)
+(check-expect check-within check-error check-member-of check-range require)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
-             expr
+             expression
              test-case
              library-require]
-[definition (define (id id id ...) expr)
-            (define id expr)
-            (define-struct id (id ...))
-            (define-datatype id (id id ...) ...)]
-[expr (begin expr expr ...)
-      (begin0 expr expr ...)
-      (set! id expr)
-      (delay expr)
-      (lambda (id ...) expr)
-      (λ (id ...) expr)
-      (local [definition ...] expr)
-      (letrec ([id expr] ...) expr)
-      (shared ([id expr] ...) expr)
-      (let ([id expr] ...) expr)
-      (let id ([id expr] ...) expr)
-      (let* ([id expr] ...) expr)
-      (recur id ([id expr] ...) expr)
-      (code:line (expr expr ...) (code:comment @#,seclink["advanced-call"]{function call}))
-      (cond [expr expr] ... [expr expr])
-      (cond [expr expr] ... [else expr])
-      (case expr [(choice choice ...) expr] ... 
-                 [(choice choice ...) expr])
-      (case expr [(choice choice ...) expr] ... 
-                 [else expr])
-      (match expr [pattern expr] ...)
-      (if expr expr expr)
-      (when expr expr)
-      (unless expr expr)
-      (and expr expr expr ...)
-      (or expr expr expr ...)
-      (time expr)
-      empty
-      (code:line id (code:comment @#,seclink["intermediate-id"]{identifier}))
-      (code:line prim-op (code:comment @#,seclink["advanced-prim-ops"]{primitive operation}))
-      (code:line @#,elem{@racketvalfont{'}@racket[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
+[definition (define (name variable ...) expression)
+            (define name expression)
+            (define-struct name (name ...))
+            (define-datatype name (name name ...) ...)]
+[expression (begin expression expression ...)
+      (begin0 expression expression ...)
+      (set! variable expression)
+      (delay expression)
+      (lambda (variable ...) expression)
+      (λ (variable ...) expression)
+      (local [definition ...] expression)
+      (letrec ([name expression] ...) expression)
+      (shared ([name expression] ...) expression)
+      (let ([name expression] ...) expression)
+      (let name ([name expression] ...) expression)
+      (let* ([name expression] ...) expression)
+      (recur name ([name expression] ...) expression)
+      (code:line (expression expression ...))
+      (cond [expression expression] ... [expression expression])
+      (cond [expression expression] ... [else expression])
+      (case expression [(choice choice ...) expression] ... 
+                 [(choice choice ...) expression])
+      (case expression [(choice choice ...) expression] ... 
+                 [else expression])
+      (match expression [pattern expression] ...)
+      (if expression expression expression)
+      (when expression expression)
+      (unless expression expression)
+      (and expression expression expression ...)
+      (or expression expression expression ...)
+      (time expression)
+      (code:line name)
+      (code:line @#,elem{@racketvalfont{'}@racket[_quoted]})
+      (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]})
       number
-      true
-      
-      false
       string
       character]
-[choice (code:line id (code:comment @#,t{treated as a symbol}))
+[choice (code:line name)
         number]
 [pattern _
-         empty
-         id
+         name
          number
          true
          false
@@ -111,7 +72,7 @@
          (struct id (pattern ...))
          (vector pattern ...)
          (box pattern)]
-[quasiquoted-pattern id
+[quasiquoted-pattern name
                      number
                      string
                      character
@@ -122,310 +83,239 @@
                      @#,elem{@racketfont[",@"]@racket[_pattern]}]
 ]
 
-@|prim-nonterms|
 
-@prim-ops['(lib "htdp-advanced.rkt" "lang") #'here]
+@prim-nonterms[("advanced") define define-struct]
 
-@; ----------------------------------------------------------------------
-
-@section[#:tag "advanced-define"]{@racket[define]}
-
-@deftogether[(
-@defform[(define (id id ...) expr)]
-@defform/none[#:literals (define)
-              (define id expr)]
-)]{
-
-The same as Intermediate with Lambda's @|intm-define|, except that a
-function is allowed to accept zero arguments.}
+@prim-variables[("advanced") empty true false]
 
 @; ----------------------------------------------------------------------
+@section[#:tag "advanced-syntax"]{Syntax for Advanced}
 
-@section[#:tag "advanced-define-struct"]{@racket[define-struct]}
+In Advanced, @racket[define] and @racket[lambda] can define functions of zero
+arguments, and (naturally) function calls can invoke functions of zero arguments.
 
-@defform[(define-struct structid (fieldid ...))]{
 
-The same as Intermediate's @|intm-define-struct|, but defines an
-additional set of operations:
+@defform[(lambda (variable ...) expression)]{
+
+Creates a function that takes as many arguments as given @racket[variables]s,
+and whose body is @racket[expression].}
+
+@defform[(λ (variable ...) expression)]{
+
+The Greek letter @racket[λ] is a synonym for @racket[lambda].}
+
+
+
+@defform/none[(expression expression ...)]{
+
+Calls the function that results from evaluating the first
+@racket[expression]. The value of the call is the value of function's body when
+every instance of @racket[name]'s variables are replaced by the values of the
+corresponding @racket[expression]s.
+
+The function being called must come from either a definition appearing before the
+function call, or from a @racket[lambda] expression. The number of argument
+@racket[expression]s must be the same as the number of arguments expected by
+the function.}
+
+
+
+In Advanced, @racket[define-struct] introduces one additional function:
 
 @itemize[
 
- @item{@racketidfont{set-}@racket[structid]@racketidfont{-}@racket[fieldid]@racketidfont{!}
+ @item{@racketidfont{set-}@racket[structure-name]@racketidfont{-}@racket[field-name]@racketidfont{!}
        : takes an instance of the structure and a value, and changes
        the instance's field to the given value.}
 
 ]}
 
+
 @; ----------------------------------------------------------------------
 
-@section[#:tag "advanced-define-datatype"]{@racket[define-datatype]}
 
-@defform[(define-datatype datatypeid [variantid fieldid ...] ...)]{
+@defform[(define-datatype dataype-name [variant-name field-name ...] ...)]{
+                                                                  
+A short-hand for defining a group of related structures. The following @racket[define-datatype]:
 
-A short-hand for defining a group of related structures. A @racket[define-datatype] form
 @racketblock[
- (define-datatype datatypeid
-   [variantid fieldid (unsyntax @racketidfont{...})]
+ (define-datatype datatype-name
+   [variant-name field-name (unsyntax @racketidfont{...})]
    (unsyntax @racketidfont{...}))
 ]
-is equivalent to
+is equivalent to:
 @racketblock[
- (define ((unsyntax @racket[datatypeid])? x)
-   (or ((unsyntax @racket[variantid])? x) (unsyntax @racketidfont{...})))
- (define-struct variantid (fieldid (unsyntax @racketidfont{...})))
+ (define ((unsyntax @racket[datatype-name])? x)
+   (or ((unsyntax @racket[variant-name])? x) (unsyntax @racketidfont{...})))
+ (define-struct variant-name (field-name (unsyntax @racketidfont{...})))
  (unsyntax @racketidfont{...})
 ]}
 
-@; ----------------------------------------------------------------------
 
-@section[#:tag "advanced-lambda"]{@racket[lambda]}
 
-@deftogether[(
-@defform[(lambda (id ...) expr)]
-@defform[(λ (id ...) expr)]
-)]{
+@defform[(begin expression expression ...)]{
 
-The same as Intermediate with Lambda's @|intm-lambda|, except that a
-function is allowed to accept zero arguments.}
+Evaluates the @racket[expression]s in order from left to right. The value of
+the @racket[begin] expression is the value of the last @racket[expression].}
 
-@; ----------------------------------------------------------------------
 
-@section[#:tag "advanced-call"]{Function Calls}
 
-@defform/none[(expr expr ...)]{
+@defform[(begin0 expression expression ...)]{
 
-A function call in Advanced is the same as an Intermediate with Lambda
-@seclink["intermediate-lambda-call"]{function call}, except that zero
-arguments are allowed.}
+Evaluates the @racket[expression]s in order from left to right. The value of
+the @racket[begin] expression is the value of the first @racket[expression].}
 
-@defform[(#%app expr expr ...)]{
 
-A function call can be written with @racket[#%app], though it's
-practically never written that way.}
 
-@; ----------------------------------------------------------------------
+@defform[(set! variable expression)]{
 
-@section{@racket[begin]}
+Evaluates @racket[expression], and then changes the definition @racket[variable]
+to have @racket[expression]'s value. The @racket[variable] must be defined or
+bound by @racket[define], @racket[letrec], @racket[let*], or @racket[let].}
 
-@defform[(begin expr expr ...)]{
 
-Evaluates the @racket[expr]s in order from left to right. The value of
-the @racket[begin] expression is the value of the last @racket[expr].}
+@defform[(delay expression)]{
 
-@; ----------------------------------------------------------------------
+Produces a ``promise'' to evaluate @racket[expression]. The @racket[expression]
+is not evaluated until the promise is forced with @racket[force]; when
+the promise is forced, the result is recorded, so that any further
+@racket[force] of the promise immediately produces the remembered value.}
 
-@section{@racket[begin0]}
 
-@defform[(begin0 expr expr ...)]{
 
-Evaluates the @racket[expr]s in order from left to right. The value of
-the @racket[begin] expression is the value of the first @racket[expr].}
+@defform[(shared ([name expression] ...) expression)]{
 
-@; ----------------------------------------------------------------------
-
-@section{@racket[set!]}
-
-@defform[(set! id expr)]{
-
-Evaluates @racket[expr], and then changes the definition @racket[id]
-to have @racket[expr]'s value. The @racket[id] must be defined or
-bound by @racket[letrec], @racket[let], or @racket[let*].}
-
-@; ----------------------------------------------------------------------
-
-@section{@racket[delay]}
-
-@defform[(delay expr)]{
-
-Produces a ``promise'' to evaluate @racket[expr]. The @racket[expr] is
-not evaluated until the promise is forced through the @racket[force]
-operator; when the promise is forced, the result is recorded, so that
-any further @racket[force] of the promise always produces the
-remembered value.}
-
-@; ----------------------------------------------------------------------
-
-@section{@racket[shared]}
-
-@defform[(shared ([id expr] ...) expr)]{
-
-Like @racket[letrec], but when an @racket[expr] next to an @racket[id]
+Like @racket[letrec], but when an @racket[expression] next to an @racket[id]
 is a @racket[cons], @racket[list], @racket[vector], quasiquoted
-expression, or @racketidfont{make-}@racket[_structid] from a
-@racket[define-struct], the @racket[expr] can refer directly to any
-@racket[id], not just @racket[id]s defined earlier. Thus,
+expression, or @racketidfont{make-}@racket[_struct-name] from a
+@racket[define-struct], the @racket[expression] can refer directly to any
+@racket[name], not just @racket[name]s defined earlier. Thus,
 @racket[shared] can be used to create cyclic data structures.}
 
-@; ----------------------------------------------------------------------
-
-@section[#:tag "advanced-let"]{@racket[let]}
-
-@defform*[[(let ([id expr] ...) expr)
-           (let id ([id expr] ...) expr)]]{
-
-The first form of @racket[let] is the same as Intermediate's
-@|intm-let|.
-
-The second form is equivalent to a @racket[recur] form.}
-
 
 @; ----------------------------------------------------------------------
 
-@section{@racket[recur]}
 
-@defform[(recur id ([id expr] ...) expr)]{
+@defform[(recur name ([name expression] ...) expression)]{
 
-A short-hand recursion construct. The first @racket[id] corresponds to
-the name of the recursive function. The parenthesized @racket[id]s are
-the function's arguments, and each corresponding @racket[expr] is a
+A short-hand syntax for recursive loops. The first @racket[name] corresponds to
+the name of the recursive function. The @racket[name]s in the parenthesis are
+the function's arguments, and each corresponding @racket[expression] is a
 value supplied for that argument in an initial starting call of the
-function. The last @racket[expr] is the body of the function.
+function. The last @racket[expression] is the body of the function.
 
-More precisely, a @racket[recur] form 
+More precisely, the following @racket[recur]: 
 
 @racketblock[
-(recur func-id ([arg-id arg-expr] (unsyntax @racketidfont{...}))
-  body-expr)
+(recur func-name ([arg-name arg-expression] (unsyntax @racketidfont{...}))
+  body-expression)
 ]
 
-is equivalent to
+is equivalent to:
 
 @racketblock[
-((local [(define (func-id arg-id (unsyntax @racketidfont{...}))
-           body-expr)]
-   func-id)
-  arg-expr (unsyntax @racketidfont{...}))
+(local [(define (func-name arg-name (unsyntax @racketidfont{...})) body-expression)]
+  (func-name arg-expression (unsyntax @racketidfont{...})))
 ]}
 
-@; ----------------------------------------------------------------------
 
-@section{@racket[case]}
+@defform/none[(let name ([name expression] ...) expression)]{
 
-@defform[(case expr [(choice ...) expr] ... [(choice ...) expr])]{
+An alternate syntax for @racket[recur].}
 
-A @racket[case] form contains one or more ``lines'' that are
-surrounded by parentheses or square brackets. Each line contains a
-sequence of choices---numbers and names for symbols---and an answer
-@racket[expr]. The initial @racket[expr] is evaluated, and the
-resulting value is compared to the choices in each line, where the
-lines are considered in order. The first line that contains a matching
-choice provides an answer @racket[expr] whose value is the result of
-the whole @racket[case] expression. If none of the lines contains a
-matching choice, it is an error.}
-
-@defform/none[#:literals (case else)
-              (case expr [(choice ...) expr] ... [else expr])]{
-
-This form of @racket[case] is similar to the prior one, except that
-the final @racket[else] clause is always taken if no prior line
-contains a choice matching the value of the initial @racket[expr]. In
-other words, so there is no possibility to ``fall off the end'' of
-the @racket[case] form.}
 
 @; ----------------------------------------------------------------------
 
-@section{@racket[match]}
 
-@defform[(match expr [pattern expr] ...)]{
+@defform[(case expression [(choice ...) expression] ... [(choice ...) expression])]{
 
-A @racket[match] form contains one or more ``lines'' that are
-surrounded by parentheses or square brackets. Each line contains a
-pattern---a description of a value---and an answer @racket[expr].
-The initial @racket[expr] is evaluated, and the resulting value
-is matched against the pattern in each line, where the lines are
-considered in order. The first line that contains a matching pattern
-provides an answer @racket[expr] whose value is the result of the
-whole @racket[match] expression. This @racket[expr] may reference
-identifiers bound in the matching pattern. If none of the lines
-contains a matching pattern, it is an error.}
-
-@; ----------------------------------------------------------------------
-
-@section{@racket[when] and @racket[unless]}
-
-@defform[(when expr expr)]{
-
-The first @racket[expr] (known as the ``test'' expression) is
-evaluated. If it evaluates to @racket[true], the result of the
-@racket[when] expression is the result of evaluating the second
-@racket[expr], otherwise the result is @racket[(void)] and the second
-@racket[expr] is not evaluated. If the result of evaluating the test
-@racket[expr] is neither @racket[true] nor @racket[false], it is an
+A @racket[case] form contains one or more clauses. Each clause contains a
+choices (in parentheses)---either numbers or names---and an answer
+@racket[expression]. The initial @racket[expression] is evaluated, and its
+value is compared to the choices in each clause, where the lines are considered
+in order. The first line that contains a matching choice provides an answer
+@racket[expression] whose value is the result of the whole @racket[case]
+expression. Numbers match with the numbers in the choices, and symbols match
+with the names. If none of the lines contains a matching choice, it is an
 error.}
 
-@defform[(unless expr expr)]{
+@defform/none[#:literals (case else)
+              (case expression [(choice ...) expression] ... [else expression])]{
 
-Like @racket[when], but the second @racket[expr] is evaluated when the
-first @racket[expr] produces @racket[false] instead of @racket[true].}
+This form of @racket[case] is similar to the prior one, except that the final
+@racket[else] clause is taken if no clause contains a choice matching the value
+of the initial @racket[expression].}
+
+@; ----------------------------------------------------------------------
+
+
+@defform[(match expression [pattern expression] ...)]{
+                                          
+A @racket[match] form contains one or more clauses that are surrounded by
+square brackets. Each clause contains a pattern---a description of a value---and
+an answer @racket[expression].  The initial @racket[expression] is evaluated,
+and its value is matched against the pattern in each clause, where the clauses are
+considered in order. The first clause that contains a matching pattern provides
+an answer @racket[expression] whose value is the result of the whole
+@racket[match] expression. This @racket[expression] may reference identifiers
+bound in the matching pattern. If none of the clauses contains a matching
+pattern, it is an error.}
+
+@; ----------------------------------------------------------------------
+
+
+@defform[(when test-expression body-expression)]{
+
+If @racket[test-expression] evaluates to @racket[true], the result of the
+@racket[when] expression is the result of evaluating the 
+@racket[body-expression], otherwise the result is @racket[(void)] and the 
+@racket[body-expression] is not evaluated. If the result of evaluating the
+@racket[test-expression] is neither @racket[true] nor @racket[false], it is an
+error.}
+
+@defform[(unless test-expression body-expression)]{
+
+Like @racket[when], but the @racket[body-expression] is evaluated when the
+@racket[test-expression] produces @racket[false] instead of @racket[true].}
+
+
+@section[#:tag "advanced-common-syntax"]{Common Syntax}
+
+
+@(intermediate-forms lambda
+                     quote
+                     quasiquote
+                     unquote
+                     unquote-splicing
+                     local
+                     letrec
+                     let*
+                     let
+                     time)
+
+
+@(define-forms/normal define)
+
+@(prim-forms ("advanced")
+             define 
+             lambda
+             define-struct
+             define-wish
+             cond
+             else
+             if
+             and 
+             or
+             check-expect
+             check-within
+             check-error
+             check-member-of
+             check-range
+             require)
 
 @; ----------------------------------------
 
-@section[#:tag "advanced-prim-ops"]{Primitive Operations}
+@section[#:tag "advanced-pre-defined"]{Pre-Defined Functions}
 
-@prim-op-defns['(lib "htdp-advanced.rkt" "lang") #'here '()]
+@prim-op-defns['(lib "htdp-advanced.ss" "lang") #'here '()]
 
-@; ----------------------------------------------------------------------
-
-@section[#:tag "advanced-unchanged"]{Unchanged Forms}
-
-@deftogether[(
-@defform[(local [definition ...] expr)]
-@defform[(letrec ([id expr-for-let] ...) expr)]
-@defform[(let* ([id expr-for-let] ...) expr)]
-)]{
-
-The same as Intermediate's @|intm-local|, @|intm-letrec|, and
-@|intm-let*|.}
-
-
-@deftogether[(
-@defform[(cond [expr expr] ... [expr expr])]
-@defidform[else]
-)]{
-
-The same as Beginning's @|beg-cond|, except that @racket[else] can be
-used with @racket[case].}
-
-
-
-@defform[(if expr expr expr)]{
-
-The same as Beginning's @|beg-if|.}
-
-@deftogether[(
-@defform[(and expr expr expr ...)]
-@defform[(or expr expr expr ...)]
-)]{
-
-The same as Beginning's @|beg-and| and @|beg-or|.}
-
-
-@defform[(time expr)]{
-
-The same as Intermediate's @|intm-time|.}
-
-
-@deftogether[(
-@defform[(check-expect expr expr)]
-@defform[(check-within expr expr expr)]
-@defform*[[(check-error expr expr)
-           (check-error expr)]]
-@defform[(check-member-of expr expr expr ...)]
-@defform[(check-range expr expr expr)]
-)]{
-
-The same as Beginning's @|beg-check-expect|, etc.}
-
-
-
-@deftogether[(
-@defthing[empty empty?]
-@defthing[true boolean?]
-@defthing[false boolean?]
-)]{
-
-Constants for the empty list, true, and false.}
-
-@defform[(require module-path)]{
-
-The same as Beginning's @|beg-require|.}

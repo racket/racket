@@ -1034,7 +1034,6 @@
       ;;    (string (union TST exn) -> void) -> string exn -> void
       ;; adds in the bug icon, if there are contexts to display
       (define (teaching-languages-error-display-handler msg exn)
-          
           (if (exn? exn)
               (display (exn-message exn) (current-error-port))
               (fprintf (current-error-port) "uncaught exception: ~e" exn))

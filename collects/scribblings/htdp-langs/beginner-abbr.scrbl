@@ -2,18 +2,6 @@
 @(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-beginner-abbr))
 
-@(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
-   (begin
-    (require (for-label lang/htdp-beginner))
-    (define beg-define @racket[define])
-    (define beg-define-struct @racket[define-struct])
-    (define beg-cond @racket[cond])
-    (define beg-if @racket[if])
-    (define beg-and @racket[and])
-    (define beg-or @racket[or])
-    (define beg-check-expect @racket[check-expect])
-    (define beg-require @racket[require])))
-@(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
 
 @title[#:style 'toc #:tag "beginner-abbr"]{Beginning Student with List Abbreviations}
@@ -21,96 +9,94 @@
 @declare-exporting[lang/htdp-beginner-abbr]
 
 @racketgrammar*+qq[
-#:literals (define define-struct lambda cond else if and or empty true false require lib planet
+#:literals (define define-struct lambda cond else if and or require lib planet
             check-expect check-within check-error)
-(check-expect check-within check-error require)
+(check-expect check-within check-member-of check-range check-error require)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
-             expr
+             expression
              test-case
              library-require]
-[definition (define (id id id ...) expr)
-            (define id expr)
-            (define id (lambda (id id ...) expr))
-            (define-struct id (id ...))]
-[expr (code:line (id expr expr ...) (code:comment @#,seclink["beginner-call"]{function call}))
-      (code:line (prim-op expr ...) (code:comment @#,seclink["beginner-prim-call"]{primitive operation call}))
-      (cond [expr expr] ... [expr expr])
-      (cond [expr expr] ... [else expr])
-      (if expr expr expr)
-      (and expr expr expr ...)
-      (or expr expr expr ...)
-      empty
-      id
-      (code:line @#,elem{@racketvalfont{'}@racket[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
+[definition (define (name variable variable ...) expression)
+            (define name expression)
+            (define name (lambda (variable variable ...) expression))
+            (define-struct name (name ...))]
+[expression (code:line (name expression expression ...))
+      (code:line (prim-op expression ...))
+      (cond [expression expression] ... [expression expression])
+      (cond [expression expression] ... [else expression])
+      (if expression expression expression)
+      (and expression expression expression ...)
+      (or expression expression expression ...)
+      name
+      (code:line @#,elem{@racketvalfont{'}@racket[_quoted]})
+      (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]})
       number
-      true
-      false
       string
       character]
 ]
 
-@|prim-nonterms|
+@prim-nonterms[("beginner-abbr") define define-struct]
 
-@prim-ops['(lib "htdp-beginner-abbr.rkt" "lang") #'here]
+@prim-variables[("beginner-abbr") empty true false]
 
 @; ----------------------------------------
 
-@section[#:tag "beginner-abbr-quote"]{Quote}
+@section[#:tag "beginner-abbr-syntax"]{Syntax for Abbreviations}
+
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[quoted]})]
-@defform[(quote quoted)]
+@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[name]})]
+@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[part]})]
+@defform[(quote name)]
+@defform/none[(quote part)]
 )]{
 
-Creates symbols and abbreviates nested lists.
+A quoted name is a symbol. A quote part is an abbreviation for a nested lists.
 
-Normally, this form is written with a @litchar{'}, like
+Normally, this quotation is written with a @litchar{'}, like
 @racket['(apple banana)], but it can also be written with @racket[quote], like
 @racket[(@#,racket[quote] (apple banana))].}
 
-@; ----------------------------------------
-
-@section[#:tag "beginner-abbr-quasiquote"]{Quasiquote}
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{`}@racket[quasiquoted]})]
-@defform[(quasiquote quasiquoted)]
+@defform/none[(unsyntax @elem{@racketvalfont{`}@racket[name]})]
+@defform/none[(unsyntax @elem{@racketvalfont{`}@racket[part]})]
+@defform[(quasiquote name)]
+@defform/none[(quasiquote part)]
 )]{
 
-Creates symbols and abbreviates nested lists, but also allows escaping
-to expression ``unquotes.''
+Like @racket[quote], but also allows escaping to expression ``unquotes.''
 
-Normally, this form is written with a backquote, @litchar{`}, like
-@racket[`(apple ,(+ 1 2))], but it can also be written with
+Normally, quasi-quotations are written with a backquote, @litchar{`}, like
+@racket[`(apple ,(+ 1 2))], but they can also be written with
 @racket[quasiquote], like
 @racket[(@#,racket[quasiquote] (apple ,(+ 1 2)))].}
 
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{,}@racket[quasiquoted]})]
-@defform[(unquote expr)]
+@defform/none[(unsyntax @elem{@racketvalfont{,}@racket[expression]})]
+@defform[(unquote expression)]
 )]{
 
-Under a single quasiquote, @racketfont{,}@racket[expr] escapes from
-the quote to include an evaluated expression whose result is inserted
+Under a single quasiquote, @racketfont{,}@racket[expression] escapes from
+the quote to include an evaluated expression whose value is inserted
 into the abbreviated list.
 
-Under multiple quasiquotes, @racketfont{,}@racket[expr] is really
-@racketfont{,}@racket[quasiquoted], decrementing the quasiquote count
-by one for @racket[quasiquoted].
+Under multiple quasiquotes, @racketfont{,}@racket[expression] is really
+the literal @racketfont{,}@racket[expression], decrementing the quasiquote count
+by one for @racket[expression].
 
 Normally, an unquote is written with @litchar{,}, but it can also be
 written with @racket[unquote].}
 
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont[",@"]@racket[quasiquoted]})]
-@defform[(unquote-splicing expr)]
+@defform/none[(unsyntax @elem{@racketvalfont[",@"]@racket[expression]})]
+@defform[(unquote-splicing expression)]
 )]{
 
-Under a single quasiquote, @racketfont[",@"]@racket[expr] escapes from
+Under a single quasiquote, @racketfont[",@"]@racket[expression] escapes from
 the quote to include an evaluated expression whose result is a list to
 splice into the abbreviated list.
 
@@ -121,70 +107,34 @@ Normally, a splicing unquote is written with @litchar{,}, but it can
 also be written with @racket[unquote-splicing].}
 
 
+@; ----------------------------------------------------------------------
+@section[#:tag "beginner-abbr-common-syntax"]{Common Syntax}
+
+@(define-forms/normal define)
+@(define-form/explicit-lambda define lambda)
+
+
+@prim-forms[("beginner-abbr")
+            define 
+            lambda
+            define-struct
+            define-wish
+            cond
+            else
+            if
+            and 
+            or
+            check-expect
+            check-within
+            check-error
+            check-member-of
+            check-range
+            require]
+
+
 @; ----------------------------------------
 
-@section[#:tag "beginner-abbr-prim-ops"]{Primitive Operations}
+@section[#:tag "beginner-abbr-pre-defined"]{Pre-defined Functions}
 
-@prim-op-defns['(lib "htdp-beginner-abbr.rkt" "lang") #'here '()]
+@prim-op-defns['(lib "htdp-beginner-abbr.ss" "lang") #'here '()]
 
-@; ----------------------------------------------------------------------
-
-@section{Unchanged Forms}
-
-@deftogether[(
-@defform[(define (id id id ...) expr)]
-@defform/none[#:literals (define)
-              (define id expr)]
-@defform/none[#:literals (define lambda)
-              (define id (lambda (id id ...) expr))]
-@defidform[lambda]
-)]{
-
-The same as Beginning's @|beg-define|.}
-
-
-@defform[(define-struct structid (fieldid ...))]{
-
-The same as Beginning's @|beg-define-struct|.}
-
-
-@deftogether[(
-@defform[(cond [expr expr] ... [expr expr])]
-@defidform[else]
-)]{
-
-The same as Beginning's @|beg-cond|.}
-
-@defform[(if expr expr expr)]{
-
-The same as Beginning's @|beg-if|.}
-
-@deftogether[(
-@defform[(and expr expr expr ...)]
-@defform[(or expr expr expr ...)]
-)]{
-
-The same as Beginning's @|beg-and| and @|beg-or|.}
-
-@deftogether[(
-@defform[(check-expect expr expr)]
-@defform[(check-within expr expr expr)]
-@defform*[[(check-error expr expr)
-           (check-error expr)]]
-@defform[(check-member-of expr expr expr ...)]
-@defform[(check-range expr expr expr)]
-)]{
-
-The same as Beginning's @|beg-check-expect|, etc.}
-
-@deftogether[(
-@defthing[empty empty?]
-@defthing[true boolean?]
-@defthing[false boolean?]
-)]{
-
-Constants for the empty list, true, and false.}
-
-@defform[(require module-path)]{
-
-The same as Beginning's @|beg-require|.}

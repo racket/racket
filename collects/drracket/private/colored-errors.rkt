@@ -1,10 +1,8 @@
 #lang racket
 
-
-
 (define-syntax (test stx) #'(begin)) ;; TODO: convert my test into DrRacket's test framework
-(require #;gmarceau/test
-         parser-tools/lex
+(require ; gmarceau/test
+ parser-tools/lex
          (prefix-in : parser-tools/lex-sre)
          (rename-in srfi/26 [cut //])
          (only-in srfi/1 break)
@@ -38,6 +36,7 @@
 
 ;; additional-highligts can specify their color
 (define additional-highlights/c (listof (or/c srcloc-syntax/c (list/c srcloc-syntax/c symbol?))))
+(define color/c (or/c #f symbol?))
 
 ;; colored-error-message : Exceptions that support highlighting contain a colored-error-message
 ;; in addition to a string. The string message is automatically generated from 
@@ -54,10 +53,11 @@
                   [struct colored-msg-fragment ([locs srcloc-syntax/c]
                                                 [frags (listof (or/c msg-fragment:str? msg-fragment:v?))]
                                                 [important boolean?]
-                                                [color (or/c #f symbol?)])])
+                                                [color color/c])])
 
 ;; prop:exn:colored-message : The property of exceptions that contain colored-message information.
 ;;     The property's value is a function that when given an exception, returns the colored-error-message.
+(provide prop:exn:colored-message exn:colored-message? exn:colored-message-accessor)
 (define-values (prop:exn:colored-message
                 exn:colored-message?
                 exn:colored-message-accessor)
@@ -70,8 +70,8 @@
 ;; get-error-message/color : When given an exception, if that exception contains coloring information,
 ;;    returns it, otherwise, returns a colored-error-message that capture the information provided by
 ;;    by field message and the srclocs property (if any) of the exception.
-(provide/contract [get-error-messages/color (exn? . -> . colored-error-message?)])
-(define (get-error-messages/color exn)
+(provide/contract [get-error-message/color (exn? . -> . colored-error-message?)])
+(define (get-error-message/color exn)
   (cond [(exn:colored-message? exn) ((exn:colored-message-accessor exn) exn)]
         [(exn:srclocs? exn)
          (colored-error-message (list (msg-fragment:str (exn-message exn)))
@@ -79,6 +79,17 @@
         [else
          (colored-error-message (list (msg-fragment:str (exn-message exn))) empty)]))
 
+(provide/contract [get-error-colored-srclocs (exn? . -> . (listof (list/c srcloc-syntax/c color/c)))])
+(define (get-error-colored-srclocs exn)
+  (define (promote srcloc) (if (list? srcloc) srcloc (list srcloc #f)))
+  (define msg (get-error-message/color exn))
+  (map promote
+       (append
+        (append*
+         (filter-map (// match <> [(colored-msg-fragment locs _ _ c)
+                                   (map (// list <> c) (if (list? locs) locs (list locs)))] [_ #f])
+                     (colored-error-message-fragments msg)))
+        (colored-error-message-additional-highlights msg))))
 
 (define lex (lexer
              [(eof) empty]
@@ -193,7 +204,7 @@
 ;;
 (define (colored-format fmt #:additional-highlights [additional-highlights empty] . args)
   (define parsed (lex (open-input-string fmt)))
-  
+
   (check-tildas-are-paired parsed)
   
   (define fragments
@@ -263,21 +274,23 @@
 ;;                              in the fmt. additional-highlights specifies srclocs that should be highlighted, in addition
 ;;                              to the highlights used to explicate the correspondance between the text and the piece of codes.
 (define (raise-colored-syntax-error fmt #:additional-highlights [additional-highlights empty] . args)
-  (define formatted (apply colored-format fmt #:additional-highlights empty args))
+  (define formatted (apply colored-format fmt #:additional-highlights additional-highlights args))
   (raise (exn:fail:colored:syntax (uncolor-message formatted)
                                   (current-continuation-marks)
                                   (important-srclocs formatted)
                                   formatted)))
 
+(define (catch-the-error thunk) (with-handlers ([void (lambda (e) e)]) (thunk)))
+
 (test 'raise-colored-syntax-error
       (check-exn-msg exn:fail:colored:syntax? #rx"only one part"
                      (lambda () (raise-colored-syntax-error "~|cond|~: expected a clause with a question and answer, but found a clause with only ~|one part|~"
                                                             #'stx #'question)))
-      (check-match (with-handlers ([void (lambda (e) (get-error-messages/color e))])
-                     (raise-colored-syntax-error "~|cond|~: expected a clause with a question and answer, but found a clause with only ~|one part|~"
-                                                  #'stx #'question))
+      
+      (check-match (get-error-message/color (catch-the-error (lambda () (raise-colored-syntax-error "~|cond|~: expected a clause with a question and answer, but found a clause with only ~|one part|~"
+                                                                                                    #'stx #'question))))
                    (colored-error-message (list (colored-msg-fragment
-                                                   (? syntax?)
+                                                 (? syntax?)
                                                  (list (msg-fragment:str "cond")) #f #f)
                                                 (msg-fragment:str ": expected a clause with a question and answer, but found a clause with only ")
                                                 (colored-msg-fragment (? syntax?) (list (msg-fragment:str "one part")) #f #f))
@@ -285,5 +298,35 @@
 
 
 (test 'get-error-messages/color
-      (check-equal? (get-error-messages/color (exn:fail:colored:syntax "ah!" (current-continuation-marks) (list #'here) (colored-error-message 1 2)))
-                    (colored-error-message 1 2)))
+      (check-equal? (get-error-message/color (exn:fail:colored:syntax "ah!" (current-continuation-marks) (list #'here) (colored-error-message 1 2)))
+                    (colored-error-message 1 2))
+      
+      (check-match (important-srclocs (colored-format "~|1|~" (list #'first #t) #:additional-highlights '(a b)))
+                   (list (app syntax-e 'first) a b))
+      (check-match (get-error-colored-srclocs (catch-the-error (lambda () (raise-colored-syntax-error "~|1|~ ~||~" (list #'first #t) (list #'second 'red) #:additional-highlights (list #'a #'b)))))
+                   (list (list (app syntax-e 'first) #f) (list (app syntax-e 'second) 'red) (list (app syntax-e 'a) #f) (list (app syntax-e 'b) #f))))
+
+#|
+(provide insert-colored-message)
+(define (insert-colored-message msg repl clickback)
+  (send repl begin-edit-sequence)
+  (define port (send repl get-err-port))
+  (let loop ([fragments (colored-error-message-fragments msg)])
+    (for ([f fragments])
+      (match f
+        [(msg-fragment:str str) (display str port)]
+        [(msg-fragment:v v) (write v port)]
+        [(colored-msg-fragment locs frags imp col)
+         (define start (send repl get-insertion-point))
+         (for-each loop frags)
+         (define end (send repl get-insertion-point))
+         (send repl higlight-range start end col #t)
+         (send repl set-clickback start end (lambda () (clickback f)))])))
+  (send repl highlight-errors (get-message-colored-srclocs msg))
+  
+  ;; need to flush here so that error annotations inserted in next line
+  ;; don't get erased if this output were to happen after the insertion
+  (flush-output (send repl get-err-port))
+  
+  (send repl end-edit-sequence))
+|#
