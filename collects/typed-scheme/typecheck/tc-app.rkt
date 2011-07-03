@@ -503,7 +503,7 @@
     [(#%plain-app call-with-values prod con)
      (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
        [(tc-results: ts fs os)
-        (tc/funapp #'con #'prod (single-value #'con) (map ret ts fs os) expected)])]
+        (tc/funapp #'con #'(prod) (single-value #'con) (map ret ts fs os) expected)])]
     ;; in eq? cases, call tc/eq
     [(#%plain-app eq?:comparator v1 v2)
      ;; make sure the whole expression is type correct
