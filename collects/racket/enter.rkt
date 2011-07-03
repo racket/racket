@@ -11,12 +11,13 @@
     (unless (memq (syntax-e noise) '(#:verbose #:quiet #:verbose-reload))
       (raise-syntax-error #f "not a valid verbosity keyword" stx noise))
     #`(do-enter! '#,mod '#,noise))
-  (syntax-case stx ()
-    [(enter! mod)       (do-enter #'mod #'#:verbose-reload)]
-    [(enter! mod noise) (do-enter #'mod #'noise)]
-    [_ (raise-syntax-error
-        #f "bad syntax; should be `(enter! <module-path-or-#f> [noise-flag])'"
-        stx)]))
+  (syntax-protect
+   (syntax-case stx ()
+     [(enter! mod)       (do-enter #'mod #'#:verbose-reload)]
+     [(enter! mod noise) (do-enter #'mod #'noise)]
+     [_ (raise-syntax-error
+         #f "bad syntax; should be `(enter! <module-path-or-#f> [noise-flag])'"
+         stx)])))
 
 (define orig-namespace (current-namespace))
 
