@@ -16,9 +16,11 @@ expands to a use of @racket[unchecked-go]:
 #:file "m.rkt"
 racket
 (provide go)
+
 (define (unchecked-go n x) 
   (code:comment @#,t{to avoid disaster, @racket[n] must be a number})
   (+ n 17))
+
 (define-syntax (go stx)
   (syntax-case stx ()
    [(_ x)
@@ -79,8 +81,11 @@ output. Building on the previous example,
 #:file "n.rkt"
 racket
 (require "m.rkt")
+
 (provide go-more)
+
 (define y 'hello)
+
 (define-syntax (go-more stx)
   (syntax-protect #'(go y)))
 ]
@@ -99,14 +104,18 @@ input to its output.
 @section{Tainting Modes}
 
 In some cases, a macro implementor intends to allow limited
-destructuring of a macro result without losing the result's
-certificate. For example, given the following @racket[define-like-y]
+destructuring of a macro result without tainting the result.
+For example, given the following @racket[define-like-y]
 macro,
 
 @racketmod[
+#:file "q.rkt"
 racket
+
 (provide define-like-y)
+
 (define y 'hello)
+
 (define-syntax (define-like-y stx)
   (syntax-case stx ()
     [(_ id) (syntax-protect #'(define-values (id) y))]))
@@ -120,7 +129,7 @@ someone may use the macro in an internal definition:
   x)
 ]
 
-The implementor of the @racket[q] module most likely intended to allow
+The implementor of the @filepath{q.rkt} module most likely intended to allow
 such uses of @racket[define-like-y]. To convert an internal definition
 into a @racket[letrec] binding, however, the @racket[define] form
 produced by @racket[define-like-y] must be deconstructed, which would
@@ -203,8 +212,10 @@ a macro:
 @racketmod[
 racket
 (provide def-go)
+
 (define (unchecked-go n x) 
   (+ n 17))
+
 (define-syntax (def-go stx)
  (syntax-case stx ()
    [(_ go)
@@ -217,21 +228,24 @@ racket
 
 When @racket[def-go] is used inside another module to defined
 @racket[go], and when the @racket[go]-defining module is at a
-different protection level than the @racket[def-go] module, the
+different protection level than the @racket[def-go]-defining module, the
 generated macro's use of @racket[protect-syntax] is not right.  The
 use of @racket[unchecked-go] should be protected at the level of the
-@racket[def-go] module, not the @racket[go] module.
+@racket[def-go]-defining module, not the @racket[go]-defining module.
 
-The solution is to define and use @racket[protect-go-syntax], instead:
+The solution is to define and use @racket[go-syntax-protect], instead:
 
 @racketmod[
 racket
 (provide def-go)
+
 (define (unchecked-go n x) 
   (+ n 17))
+
 (define-for-syntax go-syntax-protect
   (let ([insp (current-code-inspector)])
     (lambda (stx) (syntax-arm stx insp))))
+
 (define-syntax (def-go stx)
  (syntax-case stx ()
    [(_ go)
