@@ -528,7 +528,16 @@
     ;; handle apply specially
     [(#%plain-app apply f . args) (tc/apply #'f #'args)]
     ;; special case for `values' with single argument - we just ignore the values, except that it forces arg to return one value
-    [(#%plain-app values arg) (single-value #'arg expected)]
+    [(#%plain-app values arg)
+     (match expected
+      [#f (single-value #'arg)]
+      [(tc-result1: tp)
+       (single-value #'arg expected)]
+      [(tc-results: ts)
+       (single-value #'arg) ;Type check the argument, to find other errors
+       (tc-error/expr #:return expected
+         "wrong number of values: expected ~a but got one"
+          (length ts))])]
     ;; handle `values' specially
     [(#%plain-app values . args)
      (match expected

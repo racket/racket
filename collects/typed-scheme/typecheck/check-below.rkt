@@ -93,6 +93,9 @@
          (tc-error/expr "Expected result with filter ~a and ~a, got ~a" f (print-object o) t1)
          (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      t1]
+    [((? Type? t1) (tc-results: ts2 fs os))
+       (tc-error/expr "Expected one value, but got ~a" (length ts2))
+       t1]
     [((? Type? t1) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
