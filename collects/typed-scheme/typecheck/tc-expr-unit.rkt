@@ -452,7 +452,10 @@
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))
   (match t
     [(tc-result1: _ _ _) t]
-    [_ (tc-error/stx form "expected single value, got multiple (or zero) values")]))
+    [_ (tc-error/expr
+          #:stx form
+          #:return (or expected (ret (Un)))
+     "expected single value, got multiple (or zero) values")]))
 
 ;; type-check a list of exprs, producing the type of the last one.
 ;; if the list is empty, the type is Void.
