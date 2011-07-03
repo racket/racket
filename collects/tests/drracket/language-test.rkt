@@ -422,7 +422,7 @@ the settings above should match r5rs
     (test-expression "(cons 1 2)" 
                      "cons: second argument must be a list, but received 1 and 2")
     (test-expression "(+ (list 1) 2)"
-                     "+: expects a number as 1st argument, given: (cons 1 empty); other arguments were: 2")
+                     "+: expects a number as 1st argument, given (cons 1 empty)")
     (test-expression "'(1)"
                      "quote: expected the name of the symbol after the quote, but found a part")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
@@ -435,7 +435,7 @@ the settings above should match r5rs
                      "letrec: this function is not defined"
                      "function call: expected a function after the open parenthesis, but found a part")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "+: expects at least 2 arguments, given 1: 1")
+    (test-expression "(+ 1)" "+: expects at least 2 arguments, but found only 1")
     
     (test-expression "1.0" "1" "1")
     (test-expression "#i1.0" "#i1.0" "#i1.0")
@@ -572,7 +572,7 @@ the settings above should match r5rs
     (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
     (test-expression "(cons 1 2)" "cons: second argument must be a list, but received 1 and 2")
-    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given: (list 1); other arguments were: 2")
+    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given (list 1)")
     (test-expression "'(1)" 
                      "(list 1)"
                      "(list 1)")
@@ -586,7 +586,7 @@ the settings above should match r5rs
                      "letrec: this function is not defined"
                      "function call: expected a function after the open parenthesis, but found a part")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "+: expects at least 2 arguments, given 1: 1")
+    (test-expression "(+ 1)" "+: expects at least 2 arguments, but found only 1")
     
     (test-expression "1.0" "1" "1")
     (test-expression "#i1.0" "#i1.0" "#i1.0")
@@ -722,7 +722,7 @@ the settings above should match r5rs
     (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
     (test-expression "(cons 1 2)"   "cons: second argument must be a list, but received 1 and 2")
-    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given: (cons 1 empty); other arguments were: 2")
+    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given (list 1)")
     (test-expression "'(1)" 
                      "(list 1)"
                      "(list 1)")
@@ -781,7 +781,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
+    (test-expression "(car (list))" "car: expects a pair; given empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -869,7 +869,7 @@ the settings above should match r5rs
     (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
     (test-expression "(cons 1 2)" "cons: second argument must be a list, but received 1 and 2")
-    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given: (list 1); other arguments were: 2")
+    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given (list 1)")
     (test-expression "'(1)" 
                      "(list 1)"
                      "(list 1)")
@@ -924,7 +924,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
+    (test-expression "(car (list))" "car: expects a pair; given empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -988,7 +988,7 @@ the settings above should match r5rs
     |#
     (test-undefined-var "class")
     
-    (test-expression "shared" "shared: found a use that does not follow an open parenthesis")
+    (test-expression "shared" "shared: expected an open parenthesis before shared, but found none")
     
     (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
     (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
@@ -1016,7 +1016,7 @@ the settings above should match r5rs
                      "qqq: this name was defined previously and cannot be re-defined\n(void)")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
     (test-expression "(cons 1 2)"   "cons: second argument must be a list or cyclic list, but received 1 and 2")
-    (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
+    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given (list 1)")
     (test-expression "'(1)" 
                      "(list 1)"
                      "(list 1)")
@@ -1075,7 +1075,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
+    (test-expression "(car (list))" "car: expects a pair; given empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")

@@ -59,6 +59,7 @@
   (require-for-syntax "teachhelp.ss"
                       "rewrite-error-message.rkt"
                       "teach-shared.ss"
+                      "rewrite-error-message.rkt"
 		      syntax/kerncase
 		      syntax/stx
 		      syntax/struct
@@ -76,7 +77,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; run-time helpers
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+  
   ;; verify-boolean is inserted to check for boolean results:
   (define (verify-boolean b where)
     (if (or (eq? b #t) (eq? b #f))
@@ -97,17 +98,15 @@
       val))
   (define undefined (letrec ([x x]) x))
 
+  (define (identifier-is-bound? id)
+    (or (identifier-binding id)
+        ;; identifier-binding returns #f for variable bound at the top-level,
+        ;; check explicitly:
+        (and (namespace-variable-value (syntax-e id) #t (lambda () #f)) #t)))
+
   ;; Wrapped around top-level definitions to disallow re-definition:
   (define (check-top-level-not-defined who id)
-    (when (let ([b (identifier-binding id)])
-	    ;; if it's not top-level, raise an exn
-	    (if b
-		#t
-		;; At top-level, might be bound to syntax or value:
-		(with-handlers ([exn:fail:contract:variable? (lambda (exn) #f)]
-				[exn:fail:syntax? (lambda (exn) #t)])
-		  (namespace-variable-value (syntax-e id) #t)
-		  #t)))
+    (when (identifier-is-bound? id)
       (raise-syntax-error #f "this name was defined previously and cannot be re-defined" id)))
 
   (define (top/check-defined id)
@@ -170,6 +169,7 @@
 		(define provided-identifiers (quote-syntax (id ...)))
 		defn ...))))])))
 
+
   ;; The implementation of form X is defined below as X/proc. The
   ;; reason for this is to allow the implementation of Y to re-use the
   ;; implementation of X (expanding to a use of X would mangle syntax
@@ -190,6 +190,8 @@
 			      beginner-quote/expr
                               beginner-require
                               beginner-dots
+                              beginner-true
+                              beginner-false
 			      
 			      intermediate-define
 			      intermediate-define-struct
@@ -263,7 +265,7 @@
        name
        stx
        #f
-       "found a use that does not follow an open parenthesis"))
+       "expected an open parenthesis before ~a, but found none" name))
 
     ;; Use for messages "expected ..., found <something else>"
     (define (something-else v)
@@ -272,6 +274,7 @@
 	 [(number? v) "a number"]
 	 [(string? v) "a string"]
          [(list? v) "a part"]
+         [(struct? v) "an image"]
 	 [else "something else"])))
     
     (define (ordinal n)
@@ -286,6 +289,7 @@
 	(format "~and" n)]
        [(= 3 (modulo n 10))
 	(format "~ard" n)]))
+
 
     ;; At the top level, wrap `defn' to first check for
     ;;  existing definitions of the `names'. The `names'
@@ -457,7 +461,28 @@
           (values (k names)
                   names)))
 
-      
+
+    ;; Racket's true and false are defined as macros (for performance perhaps?),
+    ;; but this dodge *SL's redefinition of #%app and set!. Without these
+    ;; beginner-true/proc and beginner-false/proc here, (true) would throw a
+    ;; professional error message not suitable for beginners.
+    (define (make-constant-expander val)
+      (make-set!-transformer
+       (lambda (stx)
+         (syntax-case stx (set!)
+           [(set! id rhs) (syntax/loc stx (set! val rhs))]
+           [(id . args) 
+            (teach-syntax-error
+             '|function call|
+             #'stx
+             #'id 
+             "expected a function after the open parenthesis, but found ~a"
+             (syntax-e #'id))]
+           [_ (datum->syntax stx val)]))))
+    
+    (define beginner-true/proc (make-constant-expander #t))
+    (define beginner-false/proc (make-constant-expander #f))
+
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; define (beginner)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -953,9 +978,7 @@
                                                              [(self . args)
                                                               (raise-syntax-error
                                                                #f
-                                                               (string-append
-                                                                "cannot use a signature name after an"
-                                                                " open parenthesis for a function call")
+                                                               "expected a function after the open parenthesis, but found a structure name" 
                                                                stx
                                                                #'self)]
                                                              [_ #'#,signature-name])))
@@ -974,7 +997,7 @@
 	  'define-struct
 	  stx
 	  (syntax something)
-	  "expected at least one field name after the structure name, but found ~a"
+	  "expected at least one field name (in parentheses) after the structure name, but found ~a"
 	  (something-else (syntax something)))]
 	[(_ name_)
 	 (teach-syntax-error
@@ -1174,7 +1197,7 @@
 			(bad-app "a variable")]
 		       [(or lex-ok? (and binding (not (binding-in-this-module? binding))))
                         (with-syntax ([new-rator (syntax-property #'rator 'was-in-app-position #t)])
-                          (syntax/loc stx (#%app new-rator rand ...)))]
+                           (syntax/loc stx (#%app new-rator rand ...)))]
 		       [else
 			;; We don't know what rator is, yet, and it might be local:
                         (with-syntax ([new-rator (syntax-property #'rator 'was-in-app-position #t)])
@@ -1183,16 +1206,17 @@
                             (#%app values #,(quasisyntax/loc
                                                 stx
                                               (beginner-app-continue new-rator rand ...)))))]))]
-		   [(_)
+                    [(_)
 		    (teach-syntax-error
 		     '|function call|
 		       stx
 		       #f
-		       (format
-			"expected a function after the open parenthesis, but nothing's there"))]
-		   [_else (bad-use-error '#%app stx)])))])
+		       "expected a function after the open parenthesis, but nothing's there")]
+		   [_else (bad-use-error '|function call| stx)])))])
 	(values (mk-app #f) (mk-app #t))))
 
+
+    
     (define (beginner-app-continue/proc stx)
       (syntax-case stx ()
 	[(_ rator rand ...)
@@ -1202,15 +1226,14 @@
 	       ;; Now defined in the module:
 	       (if (set!-transformer? (syntax-local-value fun (lambda () #f)))
 		   ;; Something that takes care of itself:
-		   (syntax/loc stx (rator rand ...))
+                   (syntax/loc stx (rator rand ...))
 		   ;; Something for which we probably need to report an error,
 		   ;;  but let beginner-app take care of it:
 		   (syntax/loc stx (beginner-app rator rand ...)))
 
                ;; Something undefined; let beginner-top take care of it:
                (with-syntax ([new-rator (syntax-property #'rator 'was-in-app-position #t)])
-                 (syntax/loc stx (#%app new-rator rand ...)))
-               ))]))
+                 (syntax/loc stx (#%app new-rator rand ...)))))]))
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; top-level variables (beginner)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1406,9 +1429,7 @@
 				where
 				stx
 				#f
-				"expected at least two expressions after ~a, but ~a"
-				where
-				(if (zero? n) "nothing's there" "found only one expression")))
+                                (argcount-error-message 2 n #t)))
 			     (let loop ([clauses-consumed 0]
 					[remaining (syntax->list #`clauses)])
 			       (if (null? remaining)
@@ -2294,7 +2315,7 @@
 	       stx
 	       #f
 	       "expected a function after the open parenthesis, but nothing's there")]
-	   [_else (bad-use-error '#%app stx)]))))
+	   [_else (bad-use-error '|function call| stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; set! (advanced)
@@ -2673,11 +2694,11 @@
                          qqp]))]
                     [check-and-translate-p
                     (λ (p)
-                      (syntax-case p (struct posn true false empty intermediate-quote intermediate-quasiquote advanced-cons list advanced-list* vector box)
-                        [true
+                      (syntax-case p (struct posn beginner-true beginner-false empty intermediate-quote intermediate-quasiquote advanced-cons list advanced-list* vector box)
+                        [beginner-true
                          (syntax/loc p
                            #t)]
-                        [false
+                        [beginner-false
                          (syntax/loc p
                            #f)]
                         [empty
@@ -2775,7 +2796,7 @@
 	       (syntax (unless (cyclic-list? (cdr name))
 			 (raise-type-error
 			  'cons
-			  "list or cyclic list"
+			  "list"
 			  1
 			  (car name)
 			  (cdr name))))))

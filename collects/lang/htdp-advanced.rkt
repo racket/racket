@@ -1,11 +1,10 @@
 (module htdp-advanced scheme/base
-  (require "private/teach.rkt"
-           "private/teachprims.rkt"
-           "private/teach-module-begin.rkt"
-           mzlib/etc
-           mzlib/list
-           mzlib/pretty
-           syntax/docprovide
+  (require "private/teach.ss"
+	   "private/teach-module-begin.ss"
+	   mzlib/etc
+	   mzlib/list
+	   mzlib/pretty
+	   syntax/docprovide
            scheme/promise
            test-engine/scheme-tests
            "posn.rkt")
@@ -35,6 +34,8 @@
             [beginner-dots ....]
             [beginner-dots .....]
             [beginner-dots ......]
+            [beginner-true true]
+            [beginner-false false]
             [intermediate-quote quote]
             [intermediate-quasiquote quasiquote]
             [intermediate-unquote unquote]
@@ -49,8 +50,7 @@
             [advanced-case case]
             [advanced-match match]
             [advanced-delay delay]
-            [advanced-module-begin #%module-begin]
-            )
+            [advanced-module-begin #%module-begin])
            check-expect
            check-within
            check-error
@@ -58,7 +58,7 @@
            check-range
 	   #%datum
            #%top-interaction
-	   empty true false
+	   empty
 
 	   signature : -> mixed one-of predicate combined
 	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list Any

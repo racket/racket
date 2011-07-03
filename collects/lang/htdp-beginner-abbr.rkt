@@ -6,9 +6,8 @@
            test-engine/scheme-tests)
 
   ;; Implements the forms:
-  (require "private/teach.rkt"
-           "private/teachprims.rkt"
-           "private/teach-module-begin.rkt")
+  (require "private/teach.ss"
+	   "private/teach-module-begin.ss")
 
   ;; syntax:
   (provide (rename-out
@@ -32,7 +31,9 @@
             [intermediate-quasiquote quasiquote]
             [intermediate-unquote unquote]
             [intermediate-unquote-splicing unquote-splicing]
-            [beginner-module-begin #%module-begin])
+            [beginner-module-begin #%module-begin]
+            [beginner-true true]
+            [beginner-false false])
            check-expect
            check-within
            check-error
@@ -40,7 +41,7 @@
            check-range
 	   #%datum
            #%top-interaction
-	   empty true false
+	   empty 
 
 ; 	   signature : -> mixed one-of predicate combined
 ; 	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list Any

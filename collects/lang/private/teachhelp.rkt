@@ -64,7 +64,7 @@
 	   (identifier? #'id)
 	   (raise-syntax-error
 	    #f
-	    (format "found a use that does not follow an open parenthesis")
+	    (format "expected a function call, but there is no open parenthesis before this function")
 	    stx
 	    #f)]
 	  [(id . rest)

@@ -36,6 +36,8 @@
             [intermediate-unquote-splicing unquote-splicing]
             [intermediate-time time]
             [intermediate-module-begin #%module-begin]
+            [beginner-true true]
+            [beginner-false false]
             )
            check-expect
            check-within
@@ -44,7 +46,7 @@
            check-range
 	   #%datum
            #%top-interaction
-	   empty true false
+	   empty
 
 ; 	   signature : -> mixed one-of predicate combined
 ; 	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list Any

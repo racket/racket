@@ -91,7 +91,7 @@
 (load-relative "beg-intm.rktl")
 (load-relative "beg-bega.rktl")
 
-(htdp-syntax-test #'quote "quote: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'quote "quote: expected an open parenthesis before quote, but found none")
 (htdp-syntax-test #''1 "quote: expected the name of the symbol after the quote, but found a number")
 (htdp-syntax-test #''"hello" "quote: expected the name of the symbol after the quote, but found a string")
 (htdp-syntax-test #''(1 2) "quote: expected the name of the symbol after the quote, but found a part")

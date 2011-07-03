@@ -24,7 +24,7 @@
 (htdp-top-pop 1)
 
 (htdp-top (define (my-f x) (+ x 5)))
-(htdp-syntax-test #'my-f #rx"found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'my-f #rx"expected a function call, but there is no open parenthesis before this function")
 (htdp-top-pop 1)
 
 ;; Teachpacks with higher-order primitives
@@ -35,12 +35,12 @@
 (htdp-top (define-struct foo (a b)))
 
 (htdp-syntax-test #'(go 5 8) "go: expects a function in this position at: 8 in: (go 5 8)")
-(htdp-syntax-test #'(go add1 add1) "add1: found a use that does not follow an open parenthesis in: add1")
-(htdp-syntax-test #'(go my-f add1) "my-f: found a use that does not follow an open parenthesis in: my-f")
-(htdp-syntax-test #'(go foo? add1) "foo?: found a use that does not follow an open parenthesis in: foo?")
-(htdp-syntax-test #'(go make-foo add1) "make-foo: found a use that does not follow an open parenthesis in: make-foo")
-(htdp-syntax-test #'(go foo-a add1) "foo-a: found a use that does not follow an open parenthesis in: foo-a")
-(htdp-syntax-test #'(go go add1) "go: found a use that does not follow an open parenthesis in: go")
+(htdp-syntax-test #'(go add1 add1) "add1: expected a function call, but there is no open parenthesis before this function")
+(htdp-syntax-test #'(go my-f add1) "my-f: expected a function call, but there is no open parenthesis before this function")
+(htdp-syntax-test #'(go foo? add1) "foo?: expected a function call, but there is no open parenthesis before this function")
+(htdp-syntax-test #'(go make-foo add1) "make-foo: expected a function call, but there is no open parenthesis before this function")
+(htdp-syntax-test #'(go foo-a add1) "foo-a: expected a function call, but there is no open parenthesis before this function")
+(htdp-syntax-test #'(go go add1) "go: expected a function call, but there is no open parenthesis before this function")
 
 (htdp-top-pop 1)
 (htdp-teachpack-pop)

@@ -88,15 +88,9 @@ namespace.
            (unless (ok? last)
              (raise
               (make-exn:fail:contract
-               (format "~a: last argument must be ~a ~a, but received ~e; the other arguments were: ~a"
+               (format "~a: last argument must be ~a ~a, but received ~e"
                        prim-name (a-or-an type) type
-                       last
-                       ;; all-but-last:
-                       (build-arg-list
-                        (let loop ([args args])
-                          (cond
-                            [(null? (cdr args)) null]
-                            [else (cons (car args) (loop (cdr args)))]))))
+                       last)
                (current-continuation-marks)))))]
         [else (loop (cdr l))]))))
 
@@ -278,9 +272,9 @@ namespace.
          (and (number? b)
               (beginner-=~ a b epsilon))]
 	[(procedure? a)
-	 (fail "first argument of equality cannot be a procedure, given ~e" a)]
+	 (fail "first argument of equality cannot be a function, given ~e" a)]
 	[(procedure? b)
-	 (fail "second argument of equality cannot be a procedure, given ~e" b)]
+	 (fail "second argument of equality cannot be a function, given ~e" b)]
         [(union-equal!? a b) #t]
         [else (equal?/recur a b ?)]))))
 
@@ -297,9 +291,9 @@ namespace.
     (let recur ([a x] [b y])
       (cond
        [(procedure? a)
-	(fail "first argument of equality cannot be a procedure, given ~e" a)]
+	(fail "first argument of equality cannot be a function, given ~e" a)]
        [(procedure? b)
-	(fail "second argument of equality cannot be a procedure, given ~e" b)]
+	(fail "second argument of equality cannot be a function, given ~e" b)]
        [(and (number? a)
 	     (inexact? a))
 	(fail "first argument of equality cannot be an inexact number, given ~e" a)]

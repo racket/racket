@@ -38,7 +38,7 @@
 (define x8 (lambda () 11))
 (test 11 x8)
 
-(htdp-syntax-test #'begin "begin: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'begin "begin: expected an open parenthesis before begin, but found none")
 (htdp-syntax-test #'(begin) "begin: expected at least one expression after begin, but nothing's there")
 (htdp-syntax-test #'(begin (define x 10)) "define: found a definition that is not at the top level")
 (htdp-syntax-test #'(begin (define x 10) x) "define: found a definition that is not at the top level")
@@ -54,7 +54,7 @@
 (htdp-test 12 'begin+set! (begin 12 ex))
 (htdp-top-pop 1)
 
-(htdp-syntax-test #'begin0 "begin0: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'begin0 "begin0: expected an open parenthesis before begin0, but found none")
 (htdp-syntax-test #'(begin0) "begin: expected at least one expression after begin0, but nothing's there")
 
 (htdp-test 1 'begin0 (begin0 1))
@@ -62,7 +62,7 @@
 (htdp-test 3 'begin0 (begin0 3 2 1))
 
 
-(htdp-syntax-test #'set! "set!: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'set! "set!: expected an open parenthesis before set!, but found none")
 (htdp-syntax-test #'(set!) "set!: expected a variable after set!, but nothing's there")
 (htdp-syntax-test #'(set! x) "set!: expected an expression for the new value, but nothing's there")
 (htdp-syntax-test #'(set! 1 2) "set!: expected a variable after set!, but found a number")
@@ -87,7 +87,7 @@
 		    x)))
       45)
 
-(htdp-syntax-test #'delay "delay: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'delay "delay: expected an open parenthesis before delay, but found none")
 (htdp-syntax-test #'(delay) "delay: expected an expression after delay, but nothing's there")
 (htdp-syntax-test #'(delay 1 2) "delay: expected only one expression after delay, but found 1 extra part")
 
@@ -114,7 +114,7 @@
 
 (htdp-test 19 'lookup (recur empty-f () 19))
 
-(htdp-syntax-test #'case "case: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'case "case: expected an open parenthesis before case, but found none")
 (htdp-syntax-test #'(case) "case: expected an expression after case, but nothing's there")
 (htdp-syntax-test #'(case 5) "expected a clause with at least one choice (in parentheses) and an answer after the expression, but nothing's there")
 (htdp-syntax-test #'(case 5 12) "case: expected a clause with at least one choice (in parentheses) and an answer, but found a number")
@@ -136,7 +136,7 @@
 (htdp-test 'd 'case (case 'hello [(no) 10][(6 5 hello) 'd][else 'b]))
 (htdp-test 'cc 'case (case (+ 2 3) [(6 5) 'cc][else 'b]))
 
-(htdp-syntax-test #'when "when: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'when "when: expected an open parenthesis before when, but found none")
 (htdp-syntax-test #'(when) "when: expected a question and an answer, but nothing's there")
 (htdp-syntax-test #'(when 10) "when: expected a question and an answer, but found only one part")
 (htdp-syntax-test #'(when 10 12 13) "when: expected a question and an answer, but found 3 parts")
@@ -146,7 +146,7 @@
 (htdp-test (void) 'when (when false 1))
 (htdp-test 11 'when (when true 11))
 
-(htdp-syntax-test #'unless "unless: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'unless "unless: expected an open parenthesis before unless, but found none")
 (htdp-syntax-test #'(unless) "unless: expected a question and an answer, but nothing's there")
 (htdp-syntax-test #'(unless 10) "unless: expected a question and an answer, but found only one part")
 (htdp-syntax-test #'(unless 10 12 13) "unless: expected a question and an answer, but found 3 parts")
@@ -156,7 +156,7 @@
 (htdp-test (void) 'unless (unless true 1))
 (htdp-test 11 'unless (unless false 11))
 
-(htdp-syntax-test #'shared "shared: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'shared "shared: expected an open parenthesis before shared, but found none")
 (htdp-syntax-test #'(shared) "shared: expected at least one binding (in parentheses) after shared, but nothing's there")
 (htdp-syntax-test #'(shared ()) "shared: expected an expression after the bindings, but nothing's there")
 (htdp-syntax-test #'(shared 1 2) "shared: expected at least one binding (in parentheses) after shared, but found a number")
@@ -179,7 +179,7 @@
 (htdp-test #t (lambda (l) (eq? l (cadr l))) (shared ([x (list x x)]) x))
 (htdp-err/rt-test (shared ([x (cons 1 y)][y 5]) x))
 
-(htdp-syntax-test #'recur "recur: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'recur "recur: expected an open parenthesis before recur, but found none")
 (htdp-syntax-test #'(recur) "recur: expected a function name after recur, but nothing's there")
 (htdp-syntax-test #'(recur 10) "recur: expected a function name after recur, but found a number")
 (htdp-syntax-test #'(recur name) "recur: expected at least one binding (in parentheses) after recur, but nothing's there")
@@ -198,7 +198,7 @@
 (load (build-path (collection-path "tests" "racket") "shared-tests.rktl"))
 
 (htdp-err/rt-test (cons 1 2) "cons: second argument must be a list or cyclic list, but received 1 and 2")
-(htdp-err/rt-test (append (list 1) 2) "append: last argument must be a list or cyclic list, but received 2; the other arguments were:")
+(htdp-err/rt-test (append (list 1) 2) "append: last argument must be a list or cyclic list, but received 2")
 
 (htdp-test #t 'equal? (equal? (vector (list 10) 'apple) (vector (list 10) 'apple)))
 (htdp-test #t 'equal? (equal?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10 x)]) x)))
@@ -417,7 +417,7 @@
 
 ;; define-datatype
 
-(htdp-syntax-test #'define-datatype #rx"define-datatype: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'define-datatype #rx"define-datatype: expected an open parenthesis before define-datatype, but found none")
 (htdp-syntax-test #'(define-datatype) #rx"define-datatype: expected a datatype type name after `define-datatype', but nothing's there")
 (htdp-syntax-test #'(define-datatype dt 10) #rx"define-datatype: expected a variant after the datatype type name in `define-datatype', but found a number")
 (htdp-syntax-test #'(define-datatype dt [v1] 10) #rx"define-datatype: expected a variant after the datatype type name in `define-datatype', but found a number")
@@ -460,7 +460,7 @@
 
 ;; match
 
-(htdp-syntax-test #'match #rx"match: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'match #rx"match: expected an open parenthesis before match, but found none")
 (htdp-syntax-test #'(match) #rx"match: expected an expression after `match', but nothing's there")
 (htdp-syntax-test #'(match 1) #rx"match: expected a pattern--answer clause after the expression following `match', but nothing's there")
 

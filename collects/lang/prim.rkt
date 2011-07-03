@@ -44,7 +44,7 @@
                     [_
                      (raise-syntax-error
                       #f
-                      "found a use that does not follow an open parenthesis"
+                      "expected a function call, but there is no open parenthesis before this function"
                       stx)])))
               ((syntax-local-certifier #t)
                #'impl))))]))
@@ -122,7 +122,7 @@
                             [_
                              (raise-syntax-error
                               #f
-                              "found a use that does not follow an open parenthesis"
+                              "expected a function call, but there is no open parenthesis before this function"
                               s)])))
                       ((syntax-local-certifier #t)
                        #'impl))))))))]))

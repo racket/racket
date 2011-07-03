@@ -35,6 +35,8 @@
             [beginner-dots ....]
             [beginner-dots .....]
             [beginner-dots ......]
+            [beginner-true true]
+            [beginner-false false]
             )
            check-expect
            check-within
@@ -44,7 +46,7 @@
            ;; define-wish
 	   #%datum
            #%top-interaction
-	   empty true false
+	   empty
 
 ; 	   signature : -> mixed one-of predicate combined
 ; 	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list Any
@@ -55,6 +57,7 @@
   
   (require (for-syntax "private/firstorder.ss"))
     
+
   (define-syntax (in-rator-position-only stx)
     (syntax-case stx ()
       [(_ new-name orig-name)
@@ -73,7 +76,7 @@
                        (raise-syntax-error
                         #f
                         (format
-                         "found a use that does not follow an open parenthesis")
+                         "expected a function call, but there is no open parenthesis before this function")
                         stx)]))
                   #'orig-name))))]))
   

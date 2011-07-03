@@ -2,7 +2,7 @@
 ;; These are true for beginner, but the operators are syntax, so
 ;; arity-test doesn't work.
 
-(htdp-syntax-test #'local "local: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'local "local: expected an open parenthesis before local, but found none")
 (htdp-syntax-test #'(local) "local: expected at least one definition (in square brackets) after local, but nothing's there")
 (htdp-syntax-test #'(local ()) "local: expected an expression after the local definitions, but nothing's there")
 (htdp-syntax-test #'(local 1) "local: expected at least one definition (in square brackets) after local, but found a number")
@@ -26,7 +26,7 @@
 (htdp-test 19 (local [(define (f x) (+ x 10))] f) 9)
 (htdp-test 16 'local (local [(define (f x) (+ x 10))] (f 6)))
 
-(htdp-syntax-test #'letrec "letrec: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'letrec "letrec: expected an open parenthesis before letrec, but found none")
 (htdp-syntax-test #'(letrec) "letrec: expected at least one binding (in parentheses) after letrec, but nothing's there")
 (htdp-syntax-test #'(letrec ()) "letrec: expected an expression after the bindings, but nothing's there")
 (htdp-syntax-test #'(letrec 1 2) "letrec: expected at least one binding (in parentheses) after letrec, but found a number")
@@ -52,7 +52,7 @@
 (htdp-test 19 (letrec ([f (lambda (x) (+ x 10))]) f) 9)
 (htdp-test 16 'letrec (letrec ([f (lambda (x) (+ x 10))]) (f 6)))
 
-(htdp-syntax-test #'let "let: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'let "let: expected an open parenthesis before let, but found none")
 (htdp-syntax-test #'(let) "let: expected at least one binding (in parentheses) after let, but nothing's there")
 (htdp-syntax-test #'(let ()) "let: expected an expression after the bindings, but nothing's there")
 (htdp-syntax-test #'(let 1 2) "let: expected at least one binding (in parentheses) after let, but found a number")
@@ -72,7 +72,7 @@
 (htdp-test 19 (let ([f (lambda (x) (+ x 10))]) f) 9)
 (htdp-test 16 'let (let ([f (lambda (x) (+ x 10))]) (f 6)))
 
-(htdp-syntax-test #'let* "let*: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'let* "let*: expected an open parenthesis before let*, but found none")
 (htdp-syntax-test #'(let*) "let*: expected at least one binding (in parentheses) after let*, but nothing's there")
 (htdp-syntax-test #'(let* ()) "let*: expected an expression after the bindings, but nothing's there")
 (htdp-syntax-test #'(let* 1 2) "let*: expected at least one binding (in parentheses) after let*, but found a number")
@@ -94,7 +94,7 @@
 (htdp-test 16 'let* (let* ([f (lambda (x) (+ x 10))]) (f 6)))
 
 (htdp-test 7779 'time (time 7779))
-(htdp-syntax-test #'time "time: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'time "time: expected an open parenthesis before time, but found none")
 (htdp-syntax-test #'(time) "time: expected an expression after time, but nothing's there")
 (htdp-syntax-test #'(time 1 2) "time: expected only one expression after time, but found 1 extra part")
 (htdp-syntax-test #'(time (define x 5)) "define: found a definition that is not at the top level")

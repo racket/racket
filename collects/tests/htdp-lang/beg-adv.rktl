@@ -5,7 +5,7 @@
 (htdp-syntax-test #'quote)
 (htdp-syntax-test #'(quote 1 2))
 
-(htdp-syntax-test #'define "define: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'define "define: expected an open parenthesis before define, but found none")
 (htdp-syntax-test #'(define) "define: expected a variable name, or a function name and its variables (in parentheses)")
 (htdp-syntax-test #'(define x) "define: expected an expression after the variable name")
 (htdp-syntax-test #'(define x 10 12) "define: expected only one expression after the variable name")
@@ -19,7 +19,7 @@
 (htdp-syntax-test #'(define (x y y) 10) "define: found a variable that is used more than once: y")
 (htdp-syntax-test #'(define () 10) "define: expected a name for the function, but nothing's there")
 (htdp-syntax-test #'(define 1 10) "define: expected a variable name, or a function name and its variables (in parentheses), but found a number")
-(htdp-syntax-test #'(define x lambda) "lambda: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'(define x lambda) "lambda: expected an open parenthesis before lambda, but found none")
 (htdp-syntax-test #'(define x (lambda)) "lambda: expected at least one variable (in parentheses) after lambda, but nothing's there")
 (htdp-syntax-test #'(define x (lambda (x))) "lambda: expected an expression for the function body, but nothing's there")
 (htdp-syntax-test #'(define x (lambda y)) "lambda: expected at least one variable (in parentheses) after lambda, but found something else")
@@ -41,17 +41,15 @@
 (htdp-syntax-test #'(define (y if) 12) "define: expected a variable, but found a keyword")
 (htdp-syntax-test #'(define (y and) 12) "define: expected a variable, but found a keyword")
 (htdp-syntax-test #'(define (y or) 12) "define: expected a variable, but found a keyword")
-(htdp-syntax-test #'(define (y true) 12) "define: expected a variable, but found a keyword")
-(htdp-syntax-test #'(define (y false) 12) "define: expected a variable, but found a keyword")
 (htdp-syntax-test #'(define (y empty) 12) "define: expected a variable, but found a keyword")
 
-(htdp-syntax-test #'define-struct "define-struct: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'define-struct "define-struct: expected an open parenthesis before define-struct, but found none")
 (htdp-syntax-test #'(define-struct) "define-struct: expected the structure name after define-struct, but nothing's there")
 (htdp-syntax-test #'(define-struct a) "define-struct: expected at least one field name (in parentheses) after the structure name, but nothing's there")
 (htdp-syntax-test #'(define-struct a (b) 10) "define-struct: expected nothing after the field names, but found 1 extra part")
 (htdp-syntax-test #'(define-struct a (b) 10 11 12) "define-struct: expected nothing after the field names, but found 3 extra parts")
 (htdp-syntax-test #'(define-struct 10 (b)) "define-struct: expected the structure name after define-struct, but found a number")
-(htdp-syntax-test #'(define-struct a b) "define-struct: expected at least one field name after the structure name, but found something else")
+(htdp-syntax-test #'(define-struct a b) "define-struct: expected at least one field name (in parentheses) after the structure name, but found something else")
 (htdp-syntax-test #'(define-struct a (10)) "define-struct: expected a field name, but found a number")
 (htdp-syntax-test #'(define-struct a (b 10)) "define-struct: expected a field name, but found a number")
 (htdp-syntax-test #'(define-struct (a) (b)) "define-struct: expected the structure name after define-struct, but found a part")
@@ -78,9 +76,9 @@
 (htdp-test #f 'a1? (a1? (make-a3 1 2 3)))
 (htdp-test #f 'a3? (a3? (make-a1 1)))
 (htdp-err/rt-test (a1-b 10) "a1-b: expects argument of type <struct:a1>; given 10")
-(htdp-syntax-test #'(a0 1 2 3) "a0: cannot use a structure name after an open parenthesis for a function call")
+(htdp-syntax-test #'(a0 1 2 3) "a0: expected a function after the open parenthesis, but found a structure name")
 
-(htdp-syntax-test #'cond "cond: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'cond "cond: expected an open parenthesis before cond, but found none")
 (htdp-syntax-test #'(cond) "cond: expected a clause after cond, but nothing's there")
 (htdp-syntax-test #'(cond 1) "cond: expected a clause with a question and an answer, but found a number")
 (htdp-syntax-test #'(cond [#t 6] 2) "cond: expected a clause with a question and an answer, but found a number")
@@ -102,7 +100,7 @@
 (define rx:not-true-or-false "not true or false")
 (htdp-err/rt-test (cond [1 10]) rx:not-true-or-false)
 
-(htdp-syntax-test #'if "if: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'if "if: expected an open parenthesis before if, but found none")
 (htdp-syntax-test #'(if) "if: expected a question and two answers, but nothing's there")
 (htdp-syntax-test #'(if #t) "if: expected a question and two answers, but found only 1 part")
 (htdp-syntax-test #'(if #t 1) "if: expected a question and two answers, but found only 2 parts")
@@ -110,17 +108,17 @@
 
 (htdp-err/rt-test (if 1 2 3) rx:not-true-or-false)
 
-(htdp-syntax-test #'and "and: found a use that does not follow an open parenthesis")
-(htdp-syntax-test #'(and) "and: expected at least two expressions after and, but nothing's there")
-(htdp-syntax-test #'(and #t) "and: expected at least two expressions after and, but found only one expression")
+(htdp-syntax-test #'and "and: expected an open parenthesis before and, but found none")
+(htdp-syntax-test #'(and) "and: expects at least 2 arguments, but found none")
+(htdp-syntax-test #'(and #t) "and: expects at least 2 arguments, but found only 1")
 
 (htdp-err/rt-test (and 1 #t) rx:not-true-or-false)
 (htdp-err/rt-test (and #t 1) rx:not-true-or-false)
 (htdp-test #f 'ok-and (and #t #f 1))
 
-(htdp-syntax-test #'or "or: found a use that does not follow an open parenthesis")
-(htdp-syntax-test #'(or) "or: expected at least two expressions after or, but nothing's there")
-(htdp-syntax-test #'(or #t) "or: expected at least two expressions after or, but found only one expression")
+(htdp-syntax-test #'or "or: expected an open parenthesis before or, but found none")
+(htdp-syntax-test #'(or) "or: expects at least 2 arguments, but found none")
+(htdp-syntax-test #'(or #t) "or: expects at least 2 arguments, but found only 1")
 
 (htdp-err/rt-test (or 1 #f) rx:not-true-or-false)
 (htdp-err/rt-test (or #f 1) rx:not-true-or-false)
@@ -234,7 +232,7 @@
 (htdp-syntax-test #'(define (my-x h) 12) #rx"cannot be re-defined")
 (htdp-top-pop 1)
 (htdp-top-pop 1)
-(htdp-syntax-test #'define #rx"define: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'define #rx"define: expected an open parenthesis before define, but found none")
 
 
 (htdp-syntax-test #'(require) #rx"found nothing")
