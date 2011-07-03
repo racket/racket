@@ -22,20 +22,20 @@ A @deftech{progressive pict} or ``ppict'' is a kind of @racket[pict]
 that has an associated ``pict placer,'' which generally represents a
 position and alignment. New picts can be placed on the progressive
 pict by calling @racket[ppict-add], and the placer can be updated by
-calling @racket[ppict-go]. The @racket[ppict-do] function provides a
+calling @racket[ppict-go]. The @racket[ppict-do] form provides a
 compact notation for sequences of those two operations.
 
 @examples[#:eval the-eval
 (define base
   (ppict-do (colorize (rectangle 200 200) "gray")
-            (coord 1/2 1/2 'cc)
+            #:go (coord 1/2 1/2 'cc)
             (colorize (hline 200 1) "gray")
-            (coord 1/2 1/2 'cc)
+            #:go (coord 1/2 1/2 'cc)
             (colorize (vline 1 200) "gray")))
 base
 (define circles-down-1
   (ppict-do base
-            (grid 2 2 1 0 'ct)
+            #:go (grid 2 2 1 0 'ct)
             10
             (circle 20)
             (circle 20)
@@ -58,14 +58,28 @@ Returns @racket[#t] if @racket[x] is a @tech{progressive pict},
 @racket[#f] otherwise.
 }
 
-@defproc[(ppict-do [p pict?]
-                   [cmd (or/c pict? real? #f placer?)] ...)
-         pict?]{
+@deftogether[[
+@defform[(ppict-do base-expr ppict-do-fragment ...)]
+@defform/subs[(ppict-do* base-expr do-fragment ...)
+              ([ppict-do-fragment (code:line #:go placer-expr)
+                                  (code:line #:next)
+                                  (code:line elem-expr)])
+              #:contracts ([base-expr pict?]
+                           [placer-expr placer?]
+                           [elem-expr (or/c pict? real? #f)])]]]{
 
-Starting with @racket[p], applies @racket[ppict-go] for every
-@racket[cmd] that is a placer and @racket[ppict-add] for every
-sequence of @racket[cmd]s that are picts, real numbers, and
-@racket[#f].
+Starting with @racket[base-expr], applies @racket[ppict-go] for every
+@racket[#:go] directive and @racket[ppict-add] for every sequence of
+@racket[elem-expr]s. If @racket[base-expr] is not a @tech{progressive
+pict}, a use of @racket[#:go] must precede the first
+@racket[elem-expr]. The @racket[#:next] directive saves a pict
+including only the contents emitted so far (but whose alignment takes
+into account picts yet to come).
+
+The @racket[ppict-do] form returns only the final pict; any uses of
+@racket[#:next] are ignored. The @racket[ppict-do*] form returns two
+values: the final pict and a list of all partial picts emitted due to
+@racket[#:next] (the final pict is not included).
 
 A spacing change, represented by a real number, only affects added
 picts up until the next placer is installed; when a placer is
@@ -74,9 +88,9 @@ installed, the spacing is reset to @racket[0].
 For example, the following code
 @racketblock[
 (ppict-do (colorize (rectangle 200 200) "gray")
-          (coord 1/2 1/2 'cc)
+          #:go (coord 1/2 1/2 'cc)
           (colorize (hline 200 1) "gray")
-          (coord 1/2 1/2 'cc)
+          #:go (coord 1/2 1/2 'cc)
           (colorize (vline 1 200) "gray"))
 ]
 is equivalent to
@@ -88,6 +102,7 @@ is equivalent to
       [pp (ppict-add pp (colorize (vline 1 200) "gray"))])
   pp)
 ]
+}
 }
 
 @defproc[(ppict-go [p pict?] [pl placer?]) ppict?]{
@@ -149,17 +164,17 @@ another progressive pict only if
 
 @examples[#:eval the-eval
 (ppict-do base 
-          (coord 1/3 3/4 'cc)
+          #:go (coord 1/3 3/4 'cc)
           (circle 20))
 (ppict-do base
-          (coord 1 0 'rt)
+          #:go (coord 1 0 'rt)
           50 (code:comment "change spacing")
           (text "abc")
           (text "12345")
           0  (code:comment "and again")
           (text "ok done"))
 (ppict-do base
-          (coord 0 0 'lt #:compose ht-append)
+          #:go (coord 0 0 'lt #:compose ht-append)
           (circle 10)
           (circle 20)
           (circle 30))
@@ -186,12 +201,12 @@ but @racket[(grid 2 2 0 0 'rt)] is equivalent to @racket[(coord 1/2 0 'rt)].
 @examples[#:eval the-eval
 (define none-for-me-thanks
   (ppict-do base
-            (grid 2 2 0 0 'lt)
+            #:go (grid 2 2 0 0 'lt)
             (text "You do not like")
             (colorize (text "green eggs and ham?") "darkgreen")))
 none-for-me-thanks
 (ppict-do none-for-me-thanks
-          (grid 2 2 1 0 'rb)
+          #:go (grid 2 2 1 0 'rb)
           (colorize (text "I do not like them,") "red")
           (text "Sam-I-am."))
 ]
@@ -209,11 +224,15 @@ none-for-me-thanks
               #:contracts ([placer-expr placer?]
                            [elem-expr (or/c pict? real? #f)])]{
 
-Constructs a slide using the @tech{progressive pict} mechanism. A
-@racket[#:go] directive updates the current placer; a @racket[#:next]
-directive causes a slide to be emitted with the contents thus far (but
-whose alignment takes into account contents yet to be added); and
-other elements have the same meaning as in @racket[ppict-add].
+Produce slide(s) using @tech{progressive picts}. A @racket[#:go]
+directive updates the current placer; a @racket[#:next] directive
+causes a slide to be emitted with the contents thus far (but whose
+alignment takes into account contents yet to be added); and other
+elements have the same meaning as in @racket[ppict-add].
+
+Note that like @racket[slide] but unlike @racket[ppict-do*], the
+number of slides produced is one greater than the number of
+@racket[#:next] uses; a slide is created for the final pict.
 
 Remember to include @racket[gap-size] after updating the current
 placer if you want @racket[slide]-like spacing.
@@ -226,28 +245,32 @@ placer if you want @racket[slide]-like spacing.
                    #:go (coord 1 1 'rb)
                    (colorize (t "I do not like them,") "red")
                    (t "Sam-I-am."))
-           (let* ([slide1
-                   (ppict-do (colorize (filled-rectangle 200 150) "white")
-                             (coord 1/20 1/20 'lt) ;; for margins
-                             (text "You do not like")
-                             (colorize (text "green eggs and ham?")
-                             "darkgreen"))]
-                  [slide2
-                   (ppict-do slide1
-                             (coord 19/20 19/20 'rb) ;; for margins
-                             (colorize (text "I do not like them,") "red")
-                             (text "Sam-I-am."))]
-                  [slides
-                   (inset
-                    (vl-append -5 
-                               (colorize (text "slides" '(bold . roman)) "white")
-                               (inset (hc-append 20 slide1 slide2) 15))
-                    5)])
-             (cc-superimpose
-              (colorize (filled-rectangle (pict-width slides) (pict-height slides))
-                        "darkgray")
-              slides)))
+           (let-values ([(final slides0)
+                         (ppict-do* (colorize (filled-rectangle 200 150) "white")
+                                    #:go (coord 1/20 1/20 'lt) ;; for margins
+                                    (text "You do not like")
+                                    (colorize (text "green eggs and ham?")
+                                              "darkgreen")
+                                    #:next
+                                    #:go (coord 19/20 19/20 'rb) ;; for margins
+                                    (colorize (text "I do not like them,") "red")
+                                    (text "Sam-I-am.")
+                                    #:next)])
+             (let ([slides
+                    (inset
+                     (vl-append -10 
+                                (colorize (text "slides" '(bold . roman)) "white")
+                                (inset (apply hc-append 20 slides0) 15))
+                     5)])
+               (cc-superimpose
+                (colorize (filled-rectangle (pict-width slides) (pict-height slides))
+                          "darkgray")
+                slides))))
 ]
+
+Note that the text is not flush against the sides of the slide,
+because @racket[pslide] uses a base pict the size of the client
+area, excluding the margins.
 }
 
 @defparam[pslide-base-pict make-base-pict (-> pict)]{
