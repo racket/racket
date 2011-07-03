@@ -23,7 +23,8 @@
 
          ;; this module is shared between the drscheme's namespace (so loaded here) 
          ;; and the user's namespace in the teaching languages
-         "private/set-result.rkt"
+         "private/set-result.ss"
+         "private/rewrite-error-message.rkt"
 
          "private/continuation-mark-key.rkt"
 
@@ -1035,7 +1036,7 @@
       ;; adds in the bug icon, if there are contexts to display
       (define (teaching-languages-error-display-handler msg exn)
           (if (exn? exn)
-              (display (exn-message exn) (current-error-port))
+              (display (get-rewriten-error-message exn) (current-error-port))
               (fprintf (current-error-port) "uncaught exception: ~e" exn))
           (fprintf (current-error-port) "\n")
 

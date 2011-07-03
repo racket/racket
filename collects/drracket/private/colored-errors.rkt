@@ -81,8 +81,11 @@
 
 (provide/contract [get-error-colored-srclocs (exn? . -> . (listof (list/c srcloc-syntax/c color/c)))])
 (define (get-error-colored-srclocs exn)
+  (get-message-colored-srclocs (get-error-message/color exn)))
+
+(provide/contract [get-message-colored-srclocs (colored-error-message? . -> . (listof (list/c srcloc-syntax/c color/c)))])
+(define (get-message-colored-srclocs msg)
   (define (promote srcloc) (if (list? srcloc) srcloc (list srcloc #f)))
-  (define msg (get-error-message/color exn))
   (map promote
        (append
         (append*
@@ -183,8 +186,9 @@
   (define color (and (list? the-arg) (findf symbol? the-arg)))
   (values (colored-msg-fragment (if (list? the-arg) (first the-arg) the-arg) sub is-important color) rest-args))
 
-(provide/contract [colored-format (([fmt string?]) (#:additional-highlights [additional-highlights additional-highlights/c]) #:rest [_ any/c]
-                                                   . ->i . [_ colored-error-message?])])
+(define colored-format/c (([fmt string?]) (#:additional-highlights [additional-highlights additional-highlights/c]) #:rest [_ any/c]
+                                                   . ->i . [_ colored-error-message?]))
+(provide/contract [colored-format colored-format/c])
 
 ;; colored-format : Takes a format string and a number of arguments, and produces a string where each
 ;;                  format marker has been replaced by their corresponding argument. This function support 
@@ -273,6 +277,7 @@
 ;;                              The message and srcloc fields of the exception are populated from the information 
 ;;                              in the fmt. additional-highlights specifies srclocs that should be highlighted, in addition
 ;;                              to the highlights used to explicate the correspondance between the text and the piece of codes.
+(provide/contract [raise-colored-syntax-error colored-format/c])
 (define (raise-colored-syntax-error fmt #:additional-highlights [additional-highlights empty] . args)
   (define formatted (apply colored-format fmt #:additional-highlights additional-highlights args))
   (raise (exn:fail:colored:syntax (uncolor-message formatted)

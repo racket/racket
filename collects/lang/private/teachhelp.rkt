@@ -1,5 +1,6 @@
 (module teachhelp mzscheme
-  (require "firstorder.rkt"
+  (require "firstorder.ss"
+           "rewrite-error-message.rkt"
            stepper/private/shared)
 
   (require-for-syntax stepper/private/shared)
@@ -67,13 +68,11 @@
 	    stx
 	    #f)]
 	  [(id . rest)
-	   (let ([l (length (syntax->list #'rest))])
-	     (unless (= l arity)
+	   (let ([found (length (syntax->list #'rest))])
+	     (unless (= found arity)
 	       (raise-syntax-error
 		#f
-		(format "this function expects ~a argument~a, here it is provided ~a argument~a"
-			arity (if (= 1 arity) "" "s")
-			l (if (= 1 l) "" "s"))
+                (argcount-error-message arity found)
 		stx
 		#f))
 	     (datum->syntax-object

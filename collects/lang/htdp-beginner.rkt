@@ -68,7 +68,7 @@
                   (lambda (stx)
                     (syntax-case stx ()
                       [(id . args)
-                       ((wrap-for-contract-error-message #'beginner-app) #'orig-name stx)]
+                        (syntax/loc stx (beginner-app orig-name . args))]
                       [_else
                        (raise-syntax-error
                         #f

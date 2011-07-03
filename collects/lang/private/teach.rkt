@@ -54,13 +54,16 @@
                  beginner-equal? beginner-equal~? teach-equal?
                  advanced-cons advanced-list*))
 
+  (require "rewrite-error-message.rkt")
+
   (require-for-syntax "teachhelp.ss"
-                      "teach-shared.ss"
                       "rewrite-error-message.rkt"
+                      "teach-shared.ss"
 		      syntax/kerncase
 		      syntax/stx
 		      syntax/struct
 		      syntax/context
+                      syntax/colored-errors
 		      mzlib/include
 		      scheme/list
 		      (rename racket/base racket:define-struct define-struct)
@@ -107,6 +110,9 @@
 		  #t)))
       (raise-syntax-error #f "this name was defined previously and cannot be re-defined" id)))
 
+  (define (top/check-defined id)
+    (namespace-variable-value (syntax-e id) #t (lambda () (raise-not-bound-error id))))
+  
   ;; For quasiquote and shared:
   (require (rename "teachprims.rkt" the-cons advanced-cons))
   (require (only   "teachprims.rkt" cyclic-list?))
@@ -233,6 +239,7 @@
 	(if detail
 	    (raise-syntax-error form msg stx detail)
 	    (raise-syntax-error form msg stx))))
+
 
     (define (teach-syntax-error* form stx details msg . args)
       (let ([exn (with-handlers ([exn:fail:syntax?
@@ -1208,40 +1215,31 @@
     ;; top-level variables (beginner)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
-    ;; Report errors for undefined names (but only in modules)
-    
     (define (beginner-top/proc stx)
       (syntax-case stx ()
         [(_ . id)
-         ;; If we're in a module, we'll need to check that the name
-         ;;  is bound....
-         (if (and (not (identifier-binding #'id))
-                  (syntax-source-module #'id))
-	     ;; ... but it might be defined later in the module, so
-	     ;; delay the check.
-             (stepper-ignore-checker 
-              (syntax/loc stx (#%app values (beginner-top-continue id))))
-             
-             (wrap-top-for-lookup-error-message 
-              stx
-              (syntax-property #'id 'was-in-app-position)))]))
+         (if (not (identifier-binding #'id))
+             (if (syntax-source-module #'id)
+                 ;; If we're in a module, we'll need to check that the name
+                 ;;  is bound but it might be defined later in the module, so
+                 ;; delay the check.
+                 (stepper-ignore-checker 
+                  (syntax/loc stx (#%app values (beginner-top-continue id))))
+                 
+                 ;; identifier-finding only returns useful information when inside a module. At the top-level we need to
+                 ;; do the check at runtime. Also, note that at the top level there is no need for stepper annotations
+                 (syntax/loc stx (#%app top/check-defined #'id)))
+
+             (syntax/loc stx (#%top . id)))]))
+
     
     (define (beginner-top-continue/proc stx)
       (syntax-case stx ()
         [(_ id)
-         ;; If there's still no binding, it's an "unknown name" error.
          (if (not (identifier-binding #'id))
-             (if (syntax-property #'id 'was-in-app-position)
-                 (teach-syntax-error
-                  #f
-                  #'id
-                  #f
-                  "this function is not defined")
-                 (teach-syntax-error
-                  #f
-                  #'id
-                  #f
-                  "this variable is not defined"))
+             ;; If there's still no binding, it's an "unknown name" error.
+             (raise-not-bound-error #'id)
+             
              ;; Don't use #%top here; id might have become bound to something
              ;;  that isn't a value.
              #'id)]))
