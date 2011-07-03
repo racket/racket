@@ -1,9 +1,41 @@
 #lang racket/base
 (require (for-syntax racket/base)
          syntax/stx)
-(provide stx->datum
+(provide stx-disarm
+         stx-car*
+         stx-cdr*
+         syntax-e*
+         stx->list*
+         stx->datum
          syntaxish?
          syntax-copier)
+
+;; Update for syntax taint: On get, disarm stx on the way, but don't
+;; disarm final stx. On replace, disarm and rearm along the way.
+
+(define (stx-disarm stx)
+  (if (syntax? stx) (syntax-disarm stx (current-code-inspector)) stx))
+
+(define (stx-car* stx)
+  (let ([stx (stx-disarm stx)]) (stx-car stx)))
+
+(define (stx-cdr* stx)
+  (let ([stx (stx-disarm stx)]) (stx-cdr stx)))
+
+(define (syntax-e* stx)
+  (syntax-e (stx-disarm stx)))
+
+(define (stx->list* stx)
+  (if (stx-list? stx)
+      (let loop ([stx stx])
+        (cond [(syntax? stx)
+               (loop (syntax-e* stx))]
+              [(pair? stx)
+               (cons (car stx) (loop (cdr stx)))]
+              [else stx]))
+      #f))
+
+;; ----
 
 (define (stx->datum x)
   (syntax->datum (datum->syntax #f x)))

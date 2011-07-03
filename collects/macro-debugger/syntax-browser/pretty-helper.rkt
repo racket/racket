@@ -3,7 +3,8 @@
          unstable/class-iop
          syntax/stx
          unstable/struct
-         "interfaces.rkt")
+         "interfaces.rkt"
+         "../model/stx-util.rkt")
 (provide (all-defined-out))
 
 ;; Problem: If stx1 and stx2 are two distinguishable syntax objects, it
@@ -100,7 +101,7 @@
                       lp-datum))]
               [(syntax? obj)
                (when partition (send/i partition partition<%> get-partition obj))
-               (let ([lp-datum (loop (syntax-e obj))])
+               (let ([lp-datum (loop (syntax-e* obj))])
                  (hash-set! flat=>stx lp-datum obj)
                  (hash-set! stx=>flat obj lp-datum)
                  lp-datum)]
@@ -151,7 +152,7 @@
 
 ;; check+convert-special-expression : syntax -> #f/syntaxish
 (define (check+convert-special-expression stx)
-  (define stx-list (stx->list stx))
+  (define stx-list (stx->list* stx))
   (and stx-list (= 2 (length stx-list))
        (let ([kw (car stx-list)]
              [expr (cadr stx-list)])

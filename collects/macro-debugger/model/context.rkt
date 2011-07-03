@@ -1,26 +1,12 @@
 #lang racket/base
-(require syntax/stx)
+(require syntax/stx
+         "stx-util.rkt")
 (provide (struct-out ref)
          (struct-out tail)
          path-get
          pathseg-get
          path-replace
          pathseg-replace)
-
-;; Update for syntax taint: On get, disarm stx on the way, but don't
-;; disarm final stx. On replace, disarm and rearm along the way.
-
-(define (stx-disarm stx)
-  (if (syntax? stx) (syntax-disarm stx (current-code-inspector)) stx))
-
-(define (stx-car* stx)
-  (let ([stx (stx-disarm stx)]) (stx-car stx)))
-
-(define (stx-cdr* stx)
-  (let ([stx (stx-disarm stx)]) (stx-cdr stx)))
-
-(define (syntax-e* stx)
-  (syntax-e (stx-disarm stx)))
 
 ;; A Path is a (list-of PathSeg)
 ;; where the PathSegs are listed outermost to innermost
