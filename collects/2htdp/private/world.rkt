@@ -390,7 +390,7 @@
     
      ;; -> String or false 
     (define/private (recordable-directory)
-      (and (string? record?) (directory-exists? record?) record?))
+      (and (path-string? record?) (directory-exists? record?) record?))
 
     ;; Frame Custodian ->* (-> Void) (-> Void)
     ;; adds the stop animation and image creation button, 
