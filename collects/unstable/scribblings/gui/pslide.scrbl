@@ -145,13 +145,14 @@ base's bounding box, and @racket[1], @racket[1] is the bottom right.
 
 Additions are aligned according to @racket[align], a symbol whose name
 consists of a horizontal alignment character followed by a vertical
-alignment character. If @racket[align] is @racket['lt], the pict is
-placed so that its left-top corner is at the reference point; if
-@racket[align] is @racket['rc], the pict is placed so that the center
-of its bounding box's right edge coincides with the reference point.
+alignment character. For example, if @racket[align] is @racket['lt],
+the pict is placed so that its left-top corner is at the reference
+point; if @racket[align] is @racket['rc], the pict is placed so that
+the center of its bounding box's right edge coincides with the
+reference point.
 
 By default, if there are multiple picts to be placed, they are
-verictally appended, aligned according to the horizontal component of
+vertically appended, aligned according to the horizontal component of
 @racket[align]. For example, if @racket[align] is @racket['cc], the
 default @racket[composer] is @racket[vc-append]; for @racket['lt], the
 default @racket[composer] is @racket[vl-append]. The spacing is
