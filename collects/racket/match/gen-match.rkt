@@ -29,7 +29,13 @@
                   'match*
                   "expected a sequence of expressions to match"
                   exprs))]
-        [let ([len (length (syntax->list exprs))])]
+        [let ([len (length (syntax->list exprs))]
+              [srcloc-list (list
+                            (syntax-source stx)
+                            (syntax-line stx)
+                            (syntax-column stx)
+                            (syntax-position stx)
+                            (syntax-span stx))])]
         [with-syntax ([(xs ...) (generate-temporaries exprs)]
                       [(exprs ...) exprs]
                       [(fail) (generate-temporaries #'(fail))])]      
@@ -72,5 +78,5 @@
        (quasisyntax/loc stx
          (let ([xs exprs] ...)
            (let ([fail (lambda ()
-                         #,(syntax/loc stx (match:error orig-expr)))])
+                         #,(quasisyntax/loc stx (match:error orig-expr (list (apply srcloc (quote #,srcloc-list))))))])
              body))))]))
