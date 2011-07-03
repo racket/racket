@@ -14,12 +14,15 @@
 
 (define match-equality-test (make-parameter equal?))
 
-(define-struct (exn:misc:match exn:fail) (value))
+(define-struct (exn:misc:match exn:fail) (value srclocs)
+ #:property prop:exn:srclocs (lambda (ex) (exn:misc:match-srclocs ex)))
 
-(define (match:error val)
+
+(define (match:error val srclocs)
   (raise (make-exn:misc:match (format "match: no matching clause for ~e" val)
                               (current-continuation-marks)
-                              val)))
+                              val
+                              srclocs)))
 
 (define-syntax-parameter fail
   (lambda (stx)
