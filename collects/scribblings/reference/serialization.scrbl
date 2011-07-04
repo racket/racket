@@ -41,11 +41,11 @@ The following kinds of values are serializable:
  @item{instances of classes defined with @racket[define-serializable-class]
        or @racket[define-serializable-class];}
 
- @item{booleans, numbers, characters, @tech{interned} symbols,
-       @tech{unreadable symbols}, strings, byte strings, paths (for a
+ @item{@tech{booleans}, @tech{numbers}, @tech{characters}, @tech{interned} symbols,
+       @tech{unreadable symbols}, @tech{strings}, @tech{byte strings}, @tech{paths} (for a
        specific convention), @|void-const|, and the empty list;}
 
- @item{pairs, mutable pairs, vectors, boxes, hash tables, and sets;}
+ @item{@tech{pairs}, @tech{mutable pairs}, @tech{vectors}, @tech{box}es, @tech{hash tables}, and @tech{sets};}
 
  @item{@racket[date] and @racket[arity-at-least] structures; and}
  
