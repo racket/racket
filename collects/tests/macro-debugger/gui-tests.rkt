@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/list
-         scheme/gui
+         scheme/gui/base
          framework/framework
          mzlib/etc)
 
