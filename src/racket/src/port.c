@@ -547,8 +547,6 @@ scheme_init_port (Scheme_Env *env)
   scheme_redirect_output_port_type = scheme_make_port_type("<redirect-output-port>");
 
 #ifdef WIN32_FD_HANDLES
-  scheme_break_semaphore = (void*)CreateSemaphore(NULL, 0, 1, NULL);
-
   /* We'll need to know whether this is Win95 or WinNT: */
   {
     OSVERSIONINFO info;
@@ -686,6 +684,10 @@ void scheme_init_port_places(void)
     }
   }
 # endif
+#endif
+
+#ifdef WIN32_FD_HANDLES
+  scheme_break_semaphore = (void*)CreateSemaphore(NULL, 0, 1, NULL);
 #endif
   
   flush_out = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stdout_port));
