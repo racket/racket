@@ -36,12 +36,12 @@ arguments; otherwise, the @exnraise[exn:fail:contract]. The given
               @defproc[(compose1 [proc procedure?] ...) procedure?])]{
 
 Returns a procedure that composes the given functions, applying the last
-@racket[proc] first and the first @racket[proc] last.  @racket[compose]
-allows the functions to consume and produce any number of values, as
+@racket[proc] first and the first @racket[proc] last.  The @racket[compose] function
+allows the given functions to consume and produce any number of values, as
 long as each function produces as many values as the preceding function
-consumes, and @racket[compose1] restricts the internal value passing to
-a single value.  In both cases the input arity of the last function and
-the output arity of the first are unrestricted, and become the
+consumes, while @racket[compose1] restricts the internal value passing to
+a single value.  In both cases, the input arity of the last function and
+the output arity of the first are unrestricted, and they become the
 corresponding arity of the resulting composition (including keyword
 arguments for the input side).
 
@@ -54,7 +54,7 @@ When no @racket[proc] arguments are given, the result is
 ((compose list split-path) (bytes->path #"/a" 'unix))
 ]
 
-Note that in many cases @racket[compose1] is preferred.  For example,
+Note that in many cases, @racket[compose1] is preferred.  For example,
 using @racket[compose] with two library functions may lead to problems
 when one function is extended to return two values, and the preceding
 one has an optional input with different semantics.  In addition,
@@ -509,7 +509,8 @@ Returns @racket[v].
 
 @defproc[(const [v any]) procedure?]{
 
-Returns a procedure that accepts any arguments and returns @racket[v].
+Returns a procedure that accepts any arguments (including keyword
+arguments) and returns @racket[v].
 
 @mz-examples[#:eval fun-eval
 ((const 'foo) 1 2 3)
@@ -519,9 +520,9 @@ Returns a procedure that accepts any arguments and returns @racket[v].
 @deftogether[(@defform[(thunk  body ...+)]
               @defform[(thunk* body ...+)])]{
 
-@racket[thunk] creates a nullary function that evaluates the given body.
-@racket[thunk*] is similar, except that the resulting function accepts
-any number of inputs and keyword arguments.
+The @racket[thunk] form creates a nullary function that evaluates the
+given body.  The @racket[thunk*] form is similar, except that the
+resulting function accepts any arguments (including keyword arguments).
 
 @defexamples[
 #:eval fun-eval
