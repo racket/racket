@@ -132,16 +132,20 @@ around it.
 Returns @racket[#t] if @racket[x] is a placer, @racket[#f] otherwise.
 }
 
-@defproc[(coord [relx real?] [rely real?]
+@defproc[(coord [rel-x real?] 
+                [rel-y real?]
                 [align (or/c 'lt 'ct 'rt 'lc 'cc 'rc 'lb 'cb 'rb) 'cc]
+                [#:abs-x abs-x real? 0]
+                [#:abs-y abs-y real? 0]
                 [#:compose composer procedure? #, @elem{computed from @racket[align]}])
          placer?]{
 
-Returns a placer that places picts according to a reference point
-determined by @racket[relx] and @racket[rely], which are interpeted as
-fractions of the width and height of the base @tech{progressive
-pict}. That is, @racket[0], @racket[0] is the top left corner of the
-base's bounding box, and @racket[1], @racket[1] is the bottom right.
+Returns a placer that places picts according to @racket[rel-x] and
+@racket[rel-y], which are interpeted as fractions of the width and
+height of the base @tech{progressive pict}. That is, @racket[0],
+@racket[0] is the top left corner of the base's bounding box, and
+@racket[1], @racket[1] is the bottom right. Then @racket[abs-x] and
+@racket[abs-y] offsets are added to get the final reference point.
 
 Additions are aligned according to @racket[align], a symbol whose name
 consists of a horizontal alignment character followed by a vertical
@@ -165,10 +169,12 @@ another progressive pict only if
 
 @examples[#:eval the-eval
 (ppict-do base 
-          #:go (coord 1/3 3/4 'cc)
-          (circle 20))
+          #:go (coord 1/2 1/2 'rb)
+          (colorize (circle 20) "red")
+          #:go (coord 1/2 1/2 'lt)
+          (colorize (circle 20) "darkgreen"))
 (ppict-do base
-          #:go (coord 1 0 'rt)
+          #:go (coord 1 0 'rt #:abs-x -5 #:abs-y 10)
           50 (code:comment "change spacing")
           (text "abc")
           (text "12345")
@@ -184,9 +190,11 @@ another progressive pict only if
 
 @defproc[(grid [cols exact-positive-integer?]
                [rows exact-positive-integer?]
-               [col exact-nonnegative-integer?]
-               [row exact-nonnegative-integer?]
+               [col exact-integer?]
+               [row exact-integer?]
                [align (or/c 'lt 'ct 'rt 'lc 'cc 'rc 'lb 'cb 'rb) 'cc]
+               [#:abs-x abs-x real? 0]
+               [#:abs-y abs-y real? 0]
                [#:compose composer procedure? #, @elem{computed from @racket[align]}])
          placer?]{
 

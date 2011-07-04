@@ -46,12 +46,16 @@
  [coord
   (->* (real? real?)
        (align/c
+        #:abs-x real?
+        #:abs-y real?
         #:compose procedure?)
        placer?)]
  [grid
   (->* (exact-positive-integer? exact-positive-integer?
-        exact-nonnegative-integer? exact-nonnegative-integer?)
+        exact-integer? exact-integer?)
        (align/c
+        #:abs-x real?
+        #:abs-y real?
         #:compose procedure?)
        placer?)]
  [cascade

@@ -66,7 +66,7 @@ In a placer function's arguments:
   (define valign (align->v align))
   (define xfrac (/ (+ (sub1 col) (align->frac halign)) cols))
   (define yfrac (/ (+ (sub1 row) (align->frac valign)) rows))
-  (refpoint* xfrac yfrac abs-x abs-y halign valign compose sep))
+  (refpoint* xfrac yfrac abs-x abs-y halign valign compose sep #f))
 
 (define (coord xfrac yfrac [align 'cc]
                #:abs-x [abs-x 0]
@@ -76,10 +76,10 @@ In a placer function's arguments:
                #:internal:skip [skip #f])
   (define halign (align->h align))
   (define valign (align->v align))
-  (refpoint* xfrac yfrac abs-x abs-y halign valign compose sep))
+  (refpoint* xfrac yfrac abs-x abs-y halign valign compose sep #f))
 
 (define (refpoint* xfrac yfrac dxabs dyabs
-                   halign valign compose sep)
+                   halign valign compose sep continued?)
   (placer
    (lambda (scene picts)
      (define scene-w (pict-width scene))
@@ -87,7 +87,7 @@ In a placer function's arguments:
      (define dx (+ (* scene-w xfrac) dxabs))
      (define dy (+ (* scene-h yfrac) dyabs))
      (define-values (newpict newsep)
-       (apply-compose compose sep picts))
+       (apply-compose compose sep (cons (and continued? (blank 0)) picts)))
      (define newpict-w (pict-width newpict))
      (define newpict-h (pict-height newpict))
      (define newscene
@@ -98,11 +98,13 @@ In a placer function's arguments:
        (cond [(and (eq? valign 't) (eq? compose (halign->vcompose halign)))
               ;; ie, going top-down and compose is the natural compose for this align
               (mk-ppict result-pict
-                        (refpoint* 0 0 dx (+ dy newpict-h) halign valign compose newsep))]
+                        (refpoint* 0 0 dx (+ dy newpict-h)
+                                   halign valign compose newsep #t))]
              [(and (eq? halign 'l) (eq? compose (valign->hcompose valign)))
               ;; ie, going left-right and compose is the natural compose ...
               (mk-ppict result-pict
-                        (refpoint* 0 0 (+ dx newpict-w) dy halign valign compose newsep))]
+                        (refpoint* 0 0 (+ dx newpict-w) dy
+                                   halign valign compose newsep #t))]
              [else result-pict])))))
 
 ;; ----
