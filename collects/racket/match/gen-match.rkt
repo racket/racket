@@ -31,11 +31,11 @@
                   exprs))]
         [let ([len (length (syntax->list exprs))]
               [srcloc-list (list
-                            (syntax-source stx)
-                            (syntax-line stx)
-                            (syntax-column stx)
-                            (syntax-position stx)
-                            (syntax-span stx))])]
+                            #`(quote #,(syntax-source stx))
+                            #`(quote #,(syntax-line stx))
+                            #`(quote #,(syntax-column stx))
+                            #`(quote #,(syntax-position stx))
+                            #`(quote #,(syntax-span stx)))])]
         [with-syntax ([(xs ...) (generate-temporaries exprs)]
                       [(exprs ...) exprs]
                       [(fail) (generate-temporaries #'(fail))])]      
@@ -78,5 +78,5 @@
        (quasisyntax/loc stx
          (let ([xs exprs] ...)
            (let ([fail (lambda ()
-                         #,(quasisyntax/loc stx (match:error orig-expr (list (apply srcloc (quote #,srcloc-list))))))])
+                         #,(quasisyntax/loc stx (match:error orig-expr (list (srcloc #,@srcloc-list)))))])
              body))))]))
