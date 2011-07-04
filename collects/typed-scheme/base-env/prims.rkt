@@ -513,7 +513,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                          ;This needs to be a different identifier to meet the specifications
                          ;of struct (the id constructor shouldn't expand to it)
                          #,(if (syntax-e #'extra-maker)
-                               #'(require/typed (maker-name extra-maker) nm lib #:struct-maker #f)
+                               #'(require/typed (maker-name extra-maker) nm lib #:struct-maker parent)
                                #'(begin))
 
                          (require/typed lib
