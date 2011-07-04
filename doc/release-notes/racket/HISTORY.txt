@@ -15,6 +15,9 @@ Replaced syntax certificates with syntax taints:
 compiler/zo-struct: removed certificate structures; changed
  wrapper to have a tamper-status field instead of certs
 
+Version 5.1.1.5
+racket/function: added identity, thunk, compose1
+
 Version 5.1.1.2
 Changed "sequence" to include exact nonnegative integers
 mzlib/contract: removed following (undocumented) exports:
