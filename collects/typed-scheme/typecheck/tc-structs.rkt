@@ -17,7 +17,9 @@
                   listof any/c or/c
                   [->* c->*]
                   [-> c->])
-         (for-syntax scheme/base))
+         (for-syntax
+          syntax/parse
+          scheme/base))
 
 
 (require (for-template scheme/base
@@ -282,25 +284,38 @@
 
 ;; register a struct type
 ;; convenience function for built-in structs
-;; tc/builtin-struct : identifier identifier Listof[identifier] Listof[Type] Listof[Type] -> void
-(define/cond-contract (tc/builtin-struct nm parent flds tys #;parent-tys)
+;; tc/builtin-struct : identifier Maybe[identifier] Listof[identifier] Listof[Type] Maybe[identifier] Listof[Type] -> void
+(define/cond-contract (tc/builtin-struct nm parent flds tys kernel-maker #;parent-tys)
      (c-> identifier? (or/c #f identifier?) (listof identifier?)
-          (listof Type/c) #;(listof fld?)
+          (listof Type/c) (or/c #f identifier?) #;(listof fld?)
           any/c)
   (let* ([parent-name (if parent (make-Name parent) #f)]
          [parent-flds (if parent (get-parent-flds parent-name) null)])
-    (mk/register-sty nm flds parent-name parent-flds tys
+    (let ((defs (mk/register-sty nm flds parent-name parent-flds tys
                      #:mutable #t)))
+      (if kernel-maker
+        (let* ((result-type (lookup-type-name nm))
+               (ty (->* tys result-type)))
+          (register-type kernel-maker ty)
+          (cons (make-def-binding kernel-maker ty) defs))
+        defs))))
+
 
 ;; syntax for tc/builtin-struct
 (define-syntax (d-s stx)
-  (syntax-case stx (:)
-    [(_ (nm par) ([fld : ty] ...) (par-ty ...))
+  (define-splicing-syntax-class options
+   (pattern (~optional (~seq #:kernel-maker maker:id))
+            #:attr kernel-maker (if (attribute maker) #'(quote-syntax maker) #'#f)))
+
+  (syntax-parse stx
+    [(_ (nm:id par:id) ([fld:id (~datum :) ty] ...) (par-ty ...) opts:options)
      #'(tc/builtin-struct #'nm #'par
                           (list #'fld ...)
-                          (list ty ...))]
-    [(_ nm ([fld : ty] ...))
+                          (list ty ...)
+                          opts.kernel-maker)]
+    [(_ nm:id ([fld:id (~datum :) ty] ...) opts:options)
      #'(tc/builtin-struct #'nm #f
                           (list #'fld ...)
-                          (list ty ...))]))
+                          (list ty ...)
+                          opts.kernel-maker)]))
 
