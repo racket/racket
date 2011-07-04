@@ -346,6 +346,12 @@ void scheme_mz_popr_p_it(mz_jit_state *jitter, int reg, int discard)
   jitter->need_set_rs = 1;
 }
 
+void scheme_mz_need_space(mz_jit_state *jitter, int need_extra)
+{
+  if (jitter->extra_pushed + need_extra > jitter->max_extra_pushed)
+    jitter->max_extra_pushed = jitter->extra_pushed + need_extra;
+}
+
 void scheme_mz_runstack_skipped(mz_jit_state *jitter, int n) 
 {
   int v;

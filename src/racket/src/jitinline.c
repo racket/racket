@@ -2100,9 +2100,9 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       int unbox = jitter->unbox;
       int can_chaperone = 1, for_struct = 0, for_fx = 0;
 
-      if (IS_NAMED_PRIM(rator, "vector-ref"))
+      if (IS_NAMED_PRIM(rator, "vector-ref")) {
         which = 0;
-      else if (IS_NAMED_PRIM(rator, "fxvector-ref")) {
+      } else if (IS_NAMED_PRIM(rator, "fxvector-ref")) {
 	which = 0;
         for_fx = 1;
         can_chaperone = 0;
@@ -2163,6 +2163,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
         if (!which) {
           /* vector-ref is relatively simple and worth inlining */
+          if (can_chaperone) scheme_mz_need_space(jitter, 3);
           generate_vector_op(jitter, 0, 0, base_offset, 0, unsafe, 
                              0, 0, can_chaperone, for_struct, for_fx, 0);
           CHECK_LIMIT();
@@ -2220,6 +2221,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	jit_movi_l(JIT_V1, offset);
 	if (!which) {
           /* vector-ref is relatively simple and worth inlining */
+          if (can_chaperone) scheme_mz_need_space(jitter, 3);
           generate_vector_op(jitter, 0, 1, base_offset, 0, unsafe, 
                              0, 0, can_chaperone, for_struct, for_fx, 0);
           CHECK_LIMIT();
@@ -2847,6 +2849,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       if (!simple) {
 	if (!which) {
           /* vector-set! is relatively simple and worth inlining */
+          if (can_chaperone) scheme_mz_need_space(jitter, 3);
           generate_vector_op(jitter, 1, 0, base_offset, 0, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
                              for_struct, for_fx, check_mutable);
@@ -2896,6 +2899,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	jit_movi_l(JIT_V1, offset);
 	if (!which) {
           /* vector-set! is relatively simple and worth inlining */
+          if (can_chaperone) scheme_mz_need_space(jitter, 3);
           generate_vector_op(jitter, 1, 1, base_offset, 0, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
                              for_struct, for_fx, check_mutable);

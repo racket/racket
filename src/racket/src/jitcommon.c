@@ -83,6 +83,17 @@ static Scheme_Object *apply_checked_fail(Scheme_Object **args)
   return _scheme_apply(args[2], 3, a);
 }
 
+static Scheme_Object *vector_check_chaperone_of(Scheme_Object *o, Scheme_Object *orig, int setter)
+{
+  if (!scheme_chaperone_of(o, orig))
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                     (setter ? "vector-set!" : "vector-ref"),
+                     o, 
+                     orig);
+  return o;
+}
+
 static int save_struct_temp(mz_jit_state *jitter)
 {
 #ifdef MZ_USE_JIT_PPC
@@ -864,6 +875,82 @@ static int common2(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int generate_apply_proxy(mz_jit_state *jitter, int setter)
+/* current val in R0, chaperone-filtered val in R0;
+   original chaperone and index on runstack;
+   for setter, put back result in R2, vec in R0, and index in V1 */
+{
+  GC_CAN_IGNORE jit_insn *ref, *ref1, *ref2, *refrts;
+
+  CHECK_LIMIT();
+  jit_ldr_p(JIT_R2, JIT_RUNSTACK);
+  jit_ldxi_p(JIT_R1, JIT_R2, &((Scheme_Chaperone *)0x0)->redirects);
+
+  /* if chaperone was for properties, only, then we're done */
+  ref = mz_beqi_t(jit_forward(), JIT_R1, scheme_vector_type, JIT_R2);
+
+  if (setter)
+    jit_ldxi_p(JIT_V1, JIT_R1, &SCHEME_CDR(0x0)); /* rator */
+  else
+    jit_ldxi_p(JIT_V1, JIT_R1, &SCHEME_CAR(0x0)); /* rator */
+  jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Chaperone *)0x0)->prev); /* vec */
+  jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(1)); /* index */
+  if (setter) {
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(4));
+    jit_stxi_p(WORDS_TO_BYTES(3), JIT_RUNSTACK, JIT_R0); /* save value */
+  } else {
+    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R0); /* save value */
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
+  }
+  jit_str_p(JIT_RUNSTACK, JIT_R2);
+  jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+  jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R0);
+  CHECK_LIMIT();
+  JIT_UPDATE_THREAD_RSPTR();
+  scheme_generate_non_tail_call(jitter, 3, 0, 0, 0, 0, 0, 1);
+  CHECK_LIMIT();
+  if (setter) {
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(4));
+  } else {
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
+  }
+            
+  jit_ldr_p(JIT_R1, JIT_RUNSTACK);
+  jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+  /* if impersonator, no chaperone-of check needed */
+  ref1 = jit_bmsi_ul(jit_forward(), JIT_R2, SCHEME_CHAPERONE_IS_IMPERSONATOR);
+
+  if (setter)
+    jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(-1)); /* saved value */
+  else
+    jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(1)); /* saved value */
+  ref2 = jit_beqr_p(jit_forward(), JIT_R1, JIT_R0);
+  CHECK_LIMIT();
+  jit_prepare(3);
+  jit_movi_i(JIT_R2, setter);
+  jit_pusharg_i(JIT_R2);
+  jit_pusharg_p(JIT_R1);
+  jit_pusharg_p(JIT_R0);
+  JIT_UPDATE_THREAD_RSPTR();
+  mz_finish_lwe(ts_vector_check_chaperone_of, refrts);
+  jit_retval(JIT_R0);
+  CHECK_LIMIT();
+            
+  mz_patch_branch(ref);
+  mz_patch_branch(ref1);
+  mz_patch_branch(ref2);
+  if (setter) {
+    jit_movr_p(JIT_R2, JIT_R0); /* result needed in R2 for setter */
+    jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(1)); /* saved index */
+    jit_ldr_p(JIT_R0, JIT_RUNSTACK); /* saved chaperone */
+    jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Chaperone *)0x0)->prev); /* vec */
+  }
+  jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2)); /* don't need saved anymore */
+  JIT_UPDATE_THREAD_RSPTR();
+
+  return 1;
+}
+
 static int common3(mz_jit_state *jitter, void *_data)
 {
   int i, ii, iii;
@@ -874,7 +961,7 @@ static int common3(mz_jit_state *jitter, void *_data)
      vector, it includes the offset to the start of the elements array).
      In set mode, value is on run stack. */
   for (iii = 0; iii < 2; iii++) { /* ref, set */
-    for (ii = 0; ii < 4; ii++) { /* vector, string, bytes, fx */
+    for (ii = -1; ii < 4; ii++) { /* chap-vector, vector, string, bytes, fx */
       for (i = 0; i < 2; i++) { /* check index? */
 	GC_CAN_IGNORE jit_insn *ref, *reffail, *refrts;
 	Scheme_Type ty;
@@ -884,12 +971,27 @@ static int common3(mz_jit_state *jitter, void *_data)
         code = jit_get_ip().ptr;
 
 	switch (ii) {
+	case -1:
 	case 0:
 	  ty = scheme_vector_type;
 	  offset = (int)&SCHEME_VEC_ELS(0x0);
 	  count_offset = (int)&SCHEME_VEC_SIZE(0x0);
 	  log_elem_size = JIT_LOG_WORD_SIZE;
-	  if (!iii) {
+          if (ii == -1) {
+            if (!iii) {
+              if (!i) {
+                sjc.chap_vector_ref_code = code;
+              } else {
+                sjc.chap_vector_ref_check_index_code = code;
+              }
+            } else {
+              if (!i) {
+                sjc.chap_vector_set_code = code;
+              } else {
+                sjc.chap_vector_set_check_index_code = code;
+              }
+            }
+          } else if (!iii) {
 	    if (!i) {
 	      sjc.vector_ref_code = code;
 	    } else {
@@ -965,21 +1067,38 @@ static int common3(mz_jit_state *jitter, void *_data)
 
 	__START_SHORT_JUMPS__(1);
 
-	mz_prolog(JIT_R2);
+        if (ii != -1) {
+          mz_prolog(JIT_R2);
+        } else {
+          /* skip prolog for chaperone handling, but save original R0 & R1: */
+          jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+          CHECK_RUNSTACK_OVERFLOW();
+          jit_str_p(JIT_RUNSTACK, JIT_R0);
+          if (i)
+            jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+          else {
+            jit_lshi_ul(JIT_R2, JIT_R1, 0x1);
+            jit_ori_ul(JIT_R2, JIT_R2, 0x1);
+            jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R2);
+          }
+        }
 
 	ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
 	CHECK_LIMIT();
 
 	/* Slow path: */
 	reffail = _jit.x.pc;
-	if (!i) {
-	  jit_lshi_ul(JIT_R1, JIT_R1, 1);
-	  jit_ori_ul(JIT_R1, JIT_R1, 0x1);
-	}
-	jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
-        CHECK_RUNSTACK_OVERFLOW();
-	jit_str_p(JIT_RUNSTACK, JIT_R0);
-	jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+        if (ii != -1) {
+          /* in chaperone mode, we already saved original and index on runstack */
+          if (!i) {
+            jit_lshi_ul(JIT_R1, JIT_R1, 1);
+            jit_ori_ul(JIT_R1, JIT_R1, 0x1);
+          }
+          jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+          CHECK_RUNSTACK_OVERFLOW();
+          jit_str_p(JIT_RUNSTACK, JIT_R0);
+          jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+        }
 	if (!iii) {
 	  jit_movi_i(JIT_R1, 2);
 	} else {
@@ -991,6 +1110,7 @@ static int common3(mz_jit_state *jitter, void *_data)
 	jit_pusharg_p(JIT_RUNSTACK);
 	jit_pusharg_i(JIT_R1);
 	switch (ii) {
+	case -1:
 	case 0:
 	  if (!iii) {
 	    (void)mz_finish_lwe(ts_scheme_checked_vector_ref, refrts);
@@ -999,6 +1119,8 @@ static int common3(mz_jit_state *jitter, void *_data)
 	  }
           CHECK_LIMIT();
           /* Might return, if arg was chaperone */
+          if (ii == -1) 
+            jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
           jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
           JIT_UPDATE_THREAD_RSPTR();
           if (!iii)
@@ -1043,6 +1165,24 @@ static int common3(mz_jit_state *jitter, void *_data)
 	  (void)jit_bmci_ul(reffail, JIT_R1, 0x1);
 	  (void)jit_blei_l(reffail, JIT_R1, 0x0);
 	}
+        if (!ii) {
+          __END_SHORT_JUMPS__(1);
+          if (iii == 0) {
+            if (i)
+              (void)mz_beqi_t(sjc.chap_vector_ref_check_index_code, JIT_R0, scheme_chaperone_type, JIT_R2);
+            else
+              (void)mz_beqi_t(sjc.chap_vector_ref_code, JIT_R0, scheme_chaperone_type, JIT_R2);
+          } else {
+            if (i)
+              (void)mz_beqi_t(sjc.chap_vector_set_check_index_code, JIT_R0, scheme_chaperone_type, JIT_R2);
+            else
+              (void)mz_beqi_t(sjc.chap_vector_set_code, JIT_R0, scheme_chaperone_type, JIT_R2);
+          }
+          __START_SHORT_JUMPS__(1);
+        } else if (ii == -1) {
+          /* since we got here, we know that the wrapper is a proxy */
+          jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Chaperone *)0x0)->prev);
+        }
 	(void)mz_bnei_t(reffail, JIT_R0, ty, JIT_R2);
         if (iii) {
           jit_ldxi_s(JIT_R2, JIT_R0, &(MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0)));
@@ -1056,7 +1196,7 @@ static int common3(mz_jit_state *jitter, void *_data)
 	  (void)jit_bler_ul(reffail, JIT_R2, JIT_V1);
 	  if (log_elem_size)
 	    jit_lshi_ul(JIT_V1, JIT_V1, log_elem_size);
-	  if (!ii) /* vector */
+	  if (!ii || (ii == -1)) /* vector */
 	    jit_addi_p(JIT_V1, JIT_V1, offset);
 	} else {
 	  /* constant index supplied: */
@@ -1065,6 +1205,7 @@ static int common3(mz_jit_state *jitter, void *_data)
 	if (!iii) {
 	  /* ref mode: */
 	  switch (ii) {
+	  case -1: /* chap-vector */
 	  case 0: /* vector */
 	  case 3: /* fxvector */
 	    jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
@@ -1088,12 +1229,34 @@ static int common3(mz_jit_state *jitter, void *_data)
 	    jit_ori_l(JIT_R0, JIT_R0, 0x1);
 	    break;
 	  }
+
+          if (ii == -1) {
+            /* apply proxy */
+            CHECK_LIMIT();
+            generate_apply_proxy(jitter, 0);
+            CHECK_LIMIT();
+          }
 	} else {
 	  /* set mode: */
-	  jit_ldr_p(JIT_R2, JIT_RUNSTACK);
+          if (ii == -1) {
+            /* apply proxy */
+            CHECK_LIMIT();
+            jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+            generate_apply_proxy(jitter, 1);
+            CHECK_LIMIT();
+
+            /* recompute offset */
+            jit_rshi_ul(JIT_V1, JIT_V1, 1);
+            if (log_elem_size)
+              jit_lshi_ul(JIT_V1, JIT_V1, log_elem_size);
+            jit_addi_p(JIT_V1, JIT_V1, offset);            
+          } else {
+            jit_ldr_p(JIT_R2, JIT_RUNSTACK);
+          }
 	  switch (ii) {
 	  case 3: /* fxvector */
             (void)jit_bmci_l(reffail, JIT_R2, 0x1);
+	  case -1: /* chap-vector, fall-though from fxvector */
 	  case 0: /* vector, fall-though from fxvector */
 	    jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
 	    break;
