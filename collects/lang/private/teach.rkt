@@ -64,7 +64,6 @@
 		      syntax/stx
 		      syntax/struct
 		      syntax/context
-                      syntax/colored-errors
 		      mzlib/include
 		      scheme/list
 		      (rename racket/base racket:define-struct define-struct)

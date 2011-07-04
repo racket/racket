@@ -15,14 +15,13 @@
 
 (define checked-cell% 
   (class* object% (checked-cell<%>) 
-    (init-field msg    ;; String 
-                value0 ;; X
+    (init-field value0 ;; X
                 ok?)   ;; Any -> Boolean : X 
     
     (init [display #f]) ;; (U String #f) ; a string is the name of the state display window
     
     (field 
-     [value (coerce "initial value" value0)]
+     [value (coerce "the initial expression" value0 #t)]
      ;; (U False pasteboard%)
      [pb (if (boolean? display)
              #f
@@ -63,10 +62,15 @@
                   (read-all)))))))
     
     ;; Symbol Any -> ok?
-    (define/private (coerce tag nw)
+    (define/private (coerce tag nw [say-evaluated-to #f])
       (let ([b (ok? nw)])
-        (check-result "check-with predicate" boolean? "Boolean" b)
-        (check-result tag (lambda _ b) (format "~a (see check-with)" msg) nw)
+        (unless (boolean? b)
+          (tp-error 'check-with "the test function ~a is expected to return a boolean, but it returned ~v" 
+                    (object-name ok?) b))
+        (unless b
+          (tp-error 'check-with "~a ~a ~v, which fails to pass check-with's ~a test"
+                    tag (if say-evaluated-to "evaluated to" "returned") 
+                    nw (object-name ok?)))
         nw))
     
     ;; Symbol Any -> Void 

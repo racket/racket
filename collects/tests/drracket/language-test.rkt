@@ -1015,7 +1015,7 @@ the settings above should match r5rs
                      "(void)" 
                      "qqq: this name was defined previously and cannot be re-defined\n(void)")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
-    (test-expression "(cons 1 2)"   "cons: second argument must be a list or cyclic list, but received 1 and 2")
+    (test-expression "(cons 1 2)"  "cons: second argument must be a list, but received 1 and 2")
     (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given (list 1)")
     (test-expression "'(1)" 
                      "(list 1)"

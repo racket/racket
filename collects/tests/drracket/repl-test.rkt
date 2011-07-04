@@ -79,7 +79,6 @@ This produces an ACK message
 
 (define test-data
   (list
-   #|
    ;; basic tests
    (mktest "1"
            ("1"
@@ -611,7 +610,7 @@ This produces an ACK message
            #f
            void
            void)
-   |#
+
    ;; error escape handler test
    (mktest
     "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (expt 3 #f))\n(lambda () (error-escape-handler old))))\n10))"

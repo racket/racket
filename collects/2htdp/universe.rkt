@@ -218,7 +218,7 @@
     "wheel-down"))
 
 (define-syntax (big-bang stx)
-  (define world0 "big-bang needs at least an initial world")
+  (define world0 "expects an expression for the initial world and at least one clause, but nothing's there")
   (syntax-case stx ()
     [(big-bang) (raise-syntax-error #f world0 stx)]
     [(big-bang w clause ...)
@@ -230,11 +230,11 @@
                    [(V) (set! rec? #'V)]
                    [_ (err '#'record? stx)])))]
             [args 
-             (->args 'big-bang stx #'w #'(clause ...) WldSpec ->rec? "world")]
+             (->args 'big-bang stx #'w #'(clause ...) WldSpec ->rec?)]
             [dom (syntax->list #'(clause ...))])
        (cond
          [(and (not (contains-clause? #'to-draw dom)) (not (contains-clause? #'on-draw dom)))
-          (raise-syntax-error #f "missing to-draw clause" stx)]
+          (raise-syntax-error #f "expects at least one clause after the initial world, but nothing's there" stx)]
          [else 
           (stepper-syntax-property
            #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args))
@@ -248,7 +248,7 @@
 
 (define (run-movie r m*)
   (check-arg 'run-movie (positive? r) "positive number" "first" r)
-  (check-arg 'run-movie (list? m*) "list (of images)" "second" m*)
+  (check-arg 'run-movie (list? m*) "list of images" "second" m*)
   (for-each (lambda (m) (check-image 'run-movie m "first" "list of images")) m*)
   (let* ([fst (car m*)]
          [wdt (image-width fst)]
@@ -314,16 +314,16 @@
 
 (define-syntax (universe stx)
   (syntax-case stx ()
-    [(universe) (raise-syntax-error #f "not a legal universe description" stx)]
-    [(universe u) (raise-syntax-error #f "not a legal universe description" stx)]
+    [(universe) (raise-syntax-error #f "expects an expression for the initial world and at least one clause, but nothing's there" stx)]
+    [(universe u) (raise-syntax-error #f "expects at least one clause after the initial world, but nothing's there" stx)]
     [(universe u bind ...)
-     (let* ([args (->args 'universe stx #'u #'(bind ...) UniSpec void "universe")]
+     (let* ([args (->args 'universe stx #'u #'(bind ...) UniSpec void)]
             [dom (syntax->list #'(bind ...))])
        (cond
          [(not (contains-clause? #'on-new dom))
-          (raise-syntax-error #f "missing on-new clause" stx)]
+          (raise-syntax-error #f "expects a on-new clause, but found none" stx)]
          [(not (contains-clause? #'on-msg dom))
-          (raise-syntax-error #f "missing on-msg clause" stx)]
+          (raise-syntax-error #f "expects a on-msg clause, but found none" stx)]
          [else ; (and (memq #'on-new dom) (memq #'on-msg dom))
           #`(run-it ((new-universe universe%) u #,@args))]))]))
 

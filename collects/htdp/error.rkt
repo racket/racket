@@ -1,12 +1,14 @@
 #lang scheme/base
-(require scheme/class)
+(require scheme/class
+         lang/private/rewrite-error-message)
 
 ;; --------------------------------------------------------------------------
 (provide check-arg check-arity check-proc check-result 
          check-list-list check-color
          check-fun-res check-dependencies
          natural?
-         find-non tp-exn? number->ord)
+         find-non tp-exn? number->ord
+         tp-error)
 
 (define (natural? w)
   (and (number? w) (integer? w) (>= w 0)))
@@ -79,7 +81,7 @@
 (define (check-result pname pred? expected given . other-given)
   (if (pred? given)
       given
-      (tp-error pname "result of type <~a> expected, your function produced ~a" expected 
+      (tp-error pname "is expected to return a ~a, but it returned ~v" expected 
                 (if (pair? other-given)
                     (car other-given)
                     given))))
@@ -112,7 +114,7 @@
 ;; check-arg : sym bool str (or/c str non-negative-integer) TST -> void
 (define (check-arg pname condition expected arg-posn given)
   (unless condition
-    (tp-error pname "expected <~a> as ~a argument, given: ~e"
+    (tp-error pname "expects a ~a as ~a argument, given: ~e"
               expected 
               (spell-out arg-posn)
               given)))
@@ -121,16 +123,16 @@
 (define (check-arity name arg# args)
   (if (= (length args) arg#)
       (void)
-      (tp-error name "expects ~a arguments, given ~e" arg# (length args))))
+      (tp-error name (argcount-error-message arg# (length args)))))
 
 ;; check-proc :
 ;;   sym (... *->* ...) num (union sym str) (union sym str) -> void
 (define (check-proc proc f exp-arity arg# arg-err)
   (unless (procedure? f)
-    (tp-error proc "procedure expected as ~a argument; given ~e" arg# f))
+    (tp-error proc "expected a function as ~a argument; given ~e" arg# f))
   (let ([arity-of-f (procedure-arity f)])
     (unless (procedure-arity-includes? f exp-arity) ; (and (number? arity-of-f) (>= arity-of-f exp-arity))
-      (tp-error proc "procedure of ~a expected as ~a argument; given procedure of ~a "
+      (tp-error proc "expected function of ~a as ~a argument; given function of ~a "
                 arg-err arg# 
                 (cond
                   [(number? arity-of-f)

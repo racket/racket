@@ -59,7 +59,7 @@
       (field
        [to-draw on-draw]
        [world
-        (new checked-cell% [msg "World"] [value0 world0] [ok? check-with]
+        (new checked-cell% [value0 world0] [ok? check-with]
              [display (and state (or name "your world program's state"))])])
       
       
@@ -256,7 +256,7 @@
             (queue-callback 
              (lambda ()
                (with-handlers ([exn? (handler #t)])
-                 (define tag (format "~a callback" 'transform))
+                 (define tag (object-name transform))
                  (define nw (transform (send world get) arg ...))
                  (define (d) (pdraw) (set-draw#!))
                  ;; ---

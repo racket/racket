@@ -72,10 +72,9 @@
   
   if anything fails, use the legal keyword to specialize the error message
 |#
-(define (->args tag stx state0 clauses Spec ->rec? legal)
-  (define msg (format "not a legal clause in a ~a description" legal))
+(define (->args tag stx state0 clauses Spec ->rec?)
   (define kwds (map (compose (curry datum->syntax stx) car) Spec))
-  (define spec (clauses-use-kwd (syntax->list clauses) ->rec? msg kwds))
+  (define spec (clauses-use-kwd (syntax->list clauses) ->rec? tag kwds))
   (duplicates? tag spec)
   (not-a-clause tag stx state0 kwds)
   (map (lambda (s) 
@@ -93,19 +92,20 @@
        Spec))
 
 ;; check whether rec? occurs, produce list of keyword x clause pairs 
-(define (clauses-use-kwd stx:list ->rec? legal-clause kwds)
+(define (clauses-use-kwd stx:list ->rec? tag kwds)
   (define kwd-in? (->kwds-in kwds))
-  (define double (string-append legal-clause ", ~a has been redefined"))
   (map (lambda (stx)
          (syntax-case stx ()
            [(kw . E) (kwd-in? #'kw) (begin (->rec? #'kw #'E) (cons #'kw stx))]
            [(kw . E)
             (let ([kw (syntax-e #'kw)])
               (if (member kw (map syntax-e kwds))
-                  (raise-syntax-error #f (format double kw) stx)
-                  (raise-syntax-error #f legal-clause stx)))]
-           [_ (raise-syntax-error #f legal-clause stx)]))
+                  (raise-syntax-error tag (format "the ~a clause appears twice" kw) stx)
+                  (raise-syntax-error tag (format "~a clauses are not allowed when using ~a" kw tag)
+                                      stx)))]
+           [_ (raise-syntax-error tag "expected a clause, but found something else" stx)]))
        stx:list))
+
 
 ;; [Listof SyntaxIdentifier] -> (Syntax -> Boolean)
 (define (->kwds-in kwds)
@@ -118,7 +118,7 @@
   (syntax-case state0 ()
     [(kw . E) 
      ((->kwds-in kwds) #'kw) 
-     (raise-syntax-error tag "missing initial state" stx)]
+     (raise-syntax-error tag "expected an initial state, but found a clause" stx)]
     [_ #t]))
 
 ;; Symbol [Listof kw] -> true

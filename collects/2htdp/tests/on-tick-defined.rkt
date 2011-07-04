@@ -6,9 +6,9 @@
 
 (error-print-source-location #f)
 
-(define legal "~a: not a legal clause in a world description")
+(define legal "big-bang: ~a clauses are not allowed when using big-bang")
 (define double 
-  (string-append (format legal 'on-tick) ", on-tick has been redefined"))
+  "big-bang: the on-tick clause appears twice")
 
 (with-handlers ((exn:fail:syntax? 
                  (lambda (x) 
@@ -33,7 +33,8 @@
 
 (with-handlers ((exn:fail:syntax? 
                  (lambda (e)
-                   (unless (string=? (exn-message e) (format legal 'stop-when))
+                   (unless (string=? (exn-message e) 
+                                     "big-bang: expected a clause, but found something else")
                      (raise e)))))
   (eval '(module a scheme
            (require 2htdp/universe)
@@ -44,7 +45,7 @@
 
 (with-handlers ((exn:fail:syntax? 
                  (lambda (x) 
-                   (unless (string=? (exn-message x) "big-bang: missing initial state")
+                   (unless (string=? (exn-message x) "big-bang: expected an initial state, but found a clause")
                      (raise x)))))
   (eval '(module a scheme 
            (require 2htdp/universe)
@@ -52,7 +53,7 @@
 
 (with-handlers ((exn:fail:syntax? 
                  (lambda (x) 
-                   (unless (string=? (exn-message x) "universe: missing initial state")
+                   (unless (string=? (exn-message x) "universe: expected an initial state, but found a clause")
                      (raise x)))))
   (eval '(module a scheme 
            (require 2htdp/universe)
