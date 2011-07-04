@@ -1,3 +1,7 @@
+Version 5.1.1.8
+slideshow/pict: added rotate function, and added sxy anf syx
+ fields to a child structure
+
 Version 5.1.1.7
 Replaced syntax certificates with syntax taints:
  Added syntax-tainted?, syntax-arm, syntax-disarm, syntax-rearm,
@@ -8,6 +12,8 @@ Replaced syntax certificates with syntax taints:
   syntax-protect implicitly
  Changed the way inspectors are associated to syntax objects
   and variable references in compiled code
+compiler/zo-struct: removed certificate structures; changed
+ wrapper to have a tamper-status field instead of certs
 
 Version 5.1.1.2
 Changed "sequence" to include exact nonnegative integers
@@ -25,7 +31,8 @@ mzlib/contract: removed following (undocumented) exports:
   opt-contract/info-id
   synthesized-value
   unknown?
-  
+compiler/zo-struct: added toplevel-map field to lam
+
 Version 5.1.1, May 2011
 Enabled single-precision floats by default
 Added single-flonum?

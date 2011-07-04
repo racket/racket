@@ -162,7 +162,7 @@ A pict is an instance of the `pict' structure type:
 
 The `children' field is a list of `child' structures:
 
-> struct:child :: (struct child (pict dx dy sx sy))
+> struct:child :: (struct child (pict dx dy sx sy sxy syx))
 
 ------------------------------------------------------------
 Procedures

@@ -94,10 +94,15 @@ own last sub-pict.}
                   [dx real?]
                   [dy real?]
                   [sx real?]
-                  [sy real?])]{
+                  [sy real?]
+                  [sxy real?]
+                  [syx real?])]{
 
-Records, for a pict constructed of other picts, the relative location
-and scale of one nested pict.
+Records, for a pict constructed of other picts, the transformation to
+arrive at a @tech{inverted point} in the composed pict from an
+@tech{inverted point} in a constituent pict's. An @deftech{inverted
+point} is a point relative to a pict's lower-left corner with an
+increasing value moving upward.
 
 A @racket[child] structure is normally not created directly with
 @racket[make-child]. Instead, functions like @racket[hc-append] create
@@ -489,10 +494,24 @@ Scales a pict drawing, as well as its @tech{bounding-box}. The drawing
 is scaled by adjusting the destination @racket[dc<%>]'s scale while
 drawing the original @racket[pict].}
 
+
+@defproc[(rotate [pict pict?] [theta real?]) pict?]{
+
+Rotates a pict's drawing by @racket[theta] radians counter-clockwise.
+
+The bounding box of the resulting pict is the box encloses the rotated
+corners of @racket[pict] (which inflates the area of the bounding
+box, unless @racket[theta] is a multiple of half of @racket[pi]). The
+ascent and descent lines of the result's bounding box are the
+horizontal lines that bisect the rotated original lines; if the ascent
+line drops below the descent line, the two lines are flipped.}
+
+
 @defproc[(ghost [pict pict?]) pict?]{
 
 Creats a container picture that doesn't draw the child picture,
 but uses the child's size.}
+
 
 @defproc[(linewidth [w (or/c real? #f)] [pict pict?]) pict?]{
 

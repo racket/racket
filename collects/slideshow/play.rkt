@@ -154,7 +154,7 @@
                               (pict-height orig)
                               da
                               dd
-                              (list (make-child orig 0 0 1 1))
+                              (list (make-child orig 0 0 1 1 0 0))
                               #f
                               (pict-last orig))])
             (let ([left (+ atx (* (- btx atx) n))]

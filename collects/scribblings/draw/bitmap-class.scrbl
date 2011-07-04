@@ -32,7 +32,7 @@ A bitmap is convertible to @racket['png-bytes] through the
 The @racket[make-bitmap], @racket[make-monochrome-bitmap], and
  @racket[read-bitmap] functions are preferred over using
  @racket[make-object] with @racket[bitmap%], because the functions are
- less overloaded and provide more useful defaults.
+ less overloaded and they enable alpha channels by default.
 
 When @racket[width] and @racket[height] are provided: Creates a new
  bitmap. If @racket[monochrome?] is true, the bitmap is monochrome; if
