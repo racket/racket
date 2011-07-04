@@ -19,23 +19,26 @@
 (define pslide-default-placer
   (make-parameter (coord 1/2 1/2 'cc)))
 
-;; pslide* : (U p:elem p:out p:go) ... -> void
-(define (pslide* who parts)
-  (let* ([init-go (p:go (pslide-default-placer))]
-         [init-pict ((pslide-base-pict))]
-         [gochunks
-          (get-gochunks who init-go (append parts (list (p:out))))])
-    (let-values ([(final picts) (do-gochunks init-pict gochunks)])
+;; pslide* : symbol (pict -> (values pict (listof pict)) -> void
+(define (pslide* who proc)
+  (let* ([init-pict ((pslide-base-pict))]
+         [init-placer (pslide-default-placer)])
+    (let-values ([(final picts)
+                  (proc (ppict-go init-pict init-placer))])
       (for-each slide picts)
+      (slide final)
       (void))))
 
 ;; ----
 
 (define-syntax (pslide stx)
   (syntax-parse stx
-    [(_ p ...)
-     #:declare p (fragment 'pslide)
-     #'(pslide* 'pslide (list p.code ...))]))
+    [(_ . fs)
+     #:declare fs (fragment-sequence 'pslide #'xp #'rpss)
+     #'(pslide* 'pslide
+                (lambda (xp)
+                  (let ([rpss null])
+                    fs.code)))]))
 
 ;; ============================================================
 ;; Exports

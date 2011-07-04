@@ -25,6 +25,45 @@ pict by calling @racket[ppict-add], and the placer can be updated by
 calling @racket[ppict-go]. The @racket[ppict-do] form provides a
 compact notation for sequences of those two operations.
 
+@deftogether[[
+@defform[(ppict-do base-expr ppict-do-fragment ...)]
+@defform/subs[(ppict-do* base-expr ppic-do-fragment ...)
+              ([ppict-do-fragment (code:line #:go placer-expr)
+                                  (code:line #:set pict-expr)
+                                  (code:line #:next)
+                                  (code:line #:alt (ppict-do-fragment ...))
+                                  (code:line elem-expr)])
+              #:contracts ([base-expr pict?]
+                           [placer-expr placer?]
+                           [pict-expr pict?]
+                           [elem-expr (or/c pict? real? #f)])]]]{
+
+Builds a pict (and optionally a list of intermediate picts)
+progressively. The @racket[ppict-do] form returns only the final pict;
+any uses of @racket[#:next] are ignored. The @racket[ppict-do*] form
+returns two values: the final pict and a list of all partial picts
+emitted due to @racket[#:next] (the final pict is not included).
+
+A @racket[#:go] fragment changes the current placer. A @racket[#:set]
+fragment replaces the current pict state altogether with a new
+computed pict. A @racket[#:next] fragment saves a pict including only
+the contents emitted so far (but whose alignment takes into account
+picts yet to come). A @racket[#:alt] fragment saves the current pict
+state, executes the sub-sequence that follows, saves the result (as if
+the sub-sequence ended with @racket[#:next]), then restores the saved
+pict state before continuing.
+
+The @racket[elem-expr]s are interpreted by the current placer. A
+numeric @racket[elem-expr] usually represents a spacing change, but
+some placers do not support them. A spacing change only affects added
+picts up until the next placer is installed; when a new placer is
+installed, the spacing is reset, usually to @racket[0].
+
+The @racket[ppict-do-state] form tracks the current state of the
+pict. It is updated before a @racket[#:go] or @racket[#:set] fragment
+or before a sequence of @racket[elem-expr]s. It is not updated in the
+middle of a chain of @racket[elem-expr]s, however.
+
 @examples[#:eval the-eval
 (define base
   (ppict-do (colorize (rectangle 200 200) "gray")
@@ -33,6 +72,19 @@ compact notation for sequences of those two operations.
             #:go (coord 1/2 1/2 'cc)
             (colorize (vline 1 200) "gray")))
 base
+]
+The use of @racket[ppict-do] in the defnition of @racket[base] above
+is equivalent to
+@racketblock[
+(let* ([pp (colorize (rectangle 200 200) "gray")]
+       [pp (ppict-go pp (coord 1/2 1/2 'cc))]
+       [pp (ppict-add pp (colorize (hline 200 1) "gray"))]
+       [pp (ppict-go pp (coord 1/2 1/2 'cc))]
+       [pp (ppict-add pp (colorize (vline 1 200) "gray"))])
+  pp)
+]
+
+@examples[#:eval the-eval
 (define circles-down-1
   (ppict-do base
             #:go (grid 2 2 2 1 'ct)
@@ -49,60 +101,40 @@ circles-down-1
             (colorize (circle 20) "red")))
 (code:line (inset circles-down-2 20) (code:comment "draws outside its bounding box"))
 (inset (clip circles-down-2) 20)
+(ppict-do base
+          #:go (coord 0 0 'lt)
+          (tag-pict (circle 20) 'circA)
+          #:go (coord 1 1 'rb)
+          (tag-pict (circle 20) 'circB)
+          #:set (let ([p ppict-do-state])
+                  (pin-arrow-line 10 p
+                                  (find-tag p 'circA) rb-find
+                                  (find-tag p 'circB) lt-find)))
+(let-values ([(final intermediates)
+              (ppict-do* base
+                         #:go (coord 1/4 1/2 'cb)
+                         (text "shapes:")
+                         #:go (coord 1/2 1/2 'lb)
+                         #:alt [(circle 20)]
+                         #:alt [(rectangle 20 20)]
+                         (text "and more!"))])
+  (append intermediates (list final)))
 ]
 
+More examples of @racket[ppict-do] are scattered throughout this
+section.
+}
+
+@defidform[ppict-do-state]{
+
+Tracks the current state of a @racket[ppict-do] or @racket[ppict-do*]
+form.
+}
 
 @defproc[(ppict? [x any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[x] is a @tech{progressive pict},
 @racket[#f] otherwise.
-}
-
-@deftogether[[
-@defform[(ppict-do base-expr ppict-do-fragment ...)]
-@defform/subs[(ppict-do* base-expr do-fragment ...)
-              ([ppict-do-fragment (code:line #:go placer-expr)
-                                  (code:line #:next)
-                                  (code:line elem-expr)])
-              #:contracts ([base-expr pict?]
-                           [placer-expr placer?]
-                           [elem-expr (or/c pict? real? #f)])]]]{
-
-Starting with @racket[base-expr], applies @racket[ppict-go] for every
-@racket[#:go] directive and @racket[ppict-add] for every sequence of
-@racket[elem-expr]s. If @racket[base-expr] is not a @tech{progressive
-pict}, a use of @racket[#:go] must precede the first
-@racket[elem-expr]. The @racket[#:next] directive saves a pict
-including only the contents emitted so far (but whose alignment takes
-into account picts yet to come).
-
-The @racket[ppict-do] form returns only the final pict; any uses of
-@racket[#:next] are ignored. The @racket[ppict-do*] form returns two
-values: the final pict and a list of all partial picts emitted due to
-@racket[#:next] (the final pict is not included).
-
-A spacing change, represented by a real number, only affects added
-picts up until the next placer is installed; when a placer is
-installed, the spacing is reset to @racket[0].
-
-For example, the following code
-@racketblock[
-(ppict-do (colorize (rectangle 200 200) "gray")
-          #:go (coord 1/2 1/2 'cc)
-          (colorize (hline 200 1) "gray")
-          #:go (coord 1/2 1/2 'cc)
-          (colorize (vline 1 200) "gray"))
-]
-is equivalent to
-@racketblock[
-(let ([pp (colorize (rectangle 200 200) "gray")]
-      [pp (ppict-go pp (coord 1/2 1/2 'cc))]
-      [pp (ppict-add pp (colorize (hline 200 1) "gray"))]
-      [pp (ppict-go pp (coord 1/2 1/2 'cc))]
-      [pp (ppict-add pp (colorize (vline 1 200) "gray"))])
-  pp)
-]
-}
 }
 
 @defproc[(ppict-go [p pict?] [pl placer?]) ppict?]{
@@ -132,13 +164,19 @@ around it.
 Returns @racket[#t] if @racket[x] is a placer, @racket[#f] otherwise.
 }
 
+@defproc[(refpoint-placer? [x any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[x] is a placer based on a reference
+point, @racket[#f] otherwise.
+}
+
 @defproc[(coord [rel-x real?] 
                 [rel-y real?]
                 [align (or/c 'lt 'ct 'rt 'lc 'cc 'rc 'lb 'cb 'rb) 'cc]
                 [#:abs-x abs-x real? 0]
                 [#:abs-y abs-y real? 0]
                 [#:compose composer procedure? #, @elem{computed from @racket[align]}])
-         placer?]{
+         refpoint-placer?]{
 
 Returns a placer that places picts according to @racket[rel-x] and
 @racket[rel-y], which are interpeted as fractions of the width and
@@ -161,11 +199,6 @@ vertically appended, aligned according to the horizontal component of
 default @racket[composer] is @racket[vc-append]; for @racket['lt], the
 default @racket[composer] is @racket[vl-append]. The spacing is
 initially @racket[0].
-
-@;{
-The result of @racket[ppict-add] using a @racket[coord] placer is
-another progressive pict only if 
-}
 
 @examples[#:eval the-eval
 (ppict-do base 
@@ -196,7 +229,7 @@ another progressive pict only if
                [#:abs-x abs-x real? 0]
                [#:abs-y abs-y real? 0]
                [#:compose composer procedure? #, @elem{computed from @racket[align]}])
-         placer?]{
+         refpoint-placer?]{
 
 Returns a placer that places picts according to a position in a
 virtual grid. The @racket[row] and @racket[col] indexes are numbered
@@ -255,27 +288,80 @@ spacing between the last pict and the base.
 ]
 }
 
+@defproc[(at-find-pict [find-path (or/c tag-path? pict-path?)]
+                       [finder procedure? cc-find]
+                       [align (or/c 'lt 'ct 'rt 'lc 'cc 'rc 'lb 'cb 'rb) 'cc]
+                       [#:abs-x abs-x real? 0]
+                       [#:abs-y abs-y real? 0]
+                       [#:compose composer procedure? #, @elem{computed from @racket[align]}])
+         refpoint-placer?]{
+
+Returns a placer that places picts according to a reference point
+based on an existing pict within the base.
+
+@examples[#:eval the-eval
+(ppict-do base
+          #:go (cascade)
+          (tag-pict (standard-fish 40 20 #:direction 'right #:color "red") 'red-fish)
+          (tag-pict (standard-fish 50 30 #:direction 'left #:color "blue") 'blue-fish)
+          #:go (at-find-pict 'red-fish rc-find 'lc #:abs-x 10)
+          (text "red fish"))
+]
+}
+
+@defproc[(merge-refpoints [x-placer refpoint-placer?] 
+                          [y-placer refpoint-placer?])
+         refpoint-placer?]{
+
+Returns a placer like @racket[x-placer] except that the y-coordinate of its
+reference point is computed by @racket[y-placer].
+
+@examples[#:eval the-eval
+(ppict-do base
+          #:go (cascade)
+          (tag-pict (standard-fish 40 20 #:direction 'right #:color "red") 'red-fish)
+          (tag-pict (standard-fish 50 30 #:direction 'left #:color "blue") 'blue-fish)
+          #:go (merge-refpoints (coord 1 0 'rc)
+                                (at-find-pict 'red-fish))
+          (text "red fish"))
+]
+}
+
+
+@subsection{Tagging picts}
+
+@defproc[(tag-pict [p pict?] [tag symbol?]) pict?]{
+
+Returns a pict like @racket[p] that carries a symbolic tag. The tag
+can be used with @racket[find-tag] to locate the pict.
+}
+
+@defproc[(find-tag [p pict?] [find tag-path?])
+         (or/c pict-path? #f)]{
+
+Locates a sub-pict of @racket[p]. Returns a pict-path that can be used
+with functions like @racket[lt-find], etc.
+}
+
+@defproc[(tag-path? [x any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[x] is a symbol or a non-empty list of
+symbols, @racket[#f] otherwise.
+}
+
 
 @section[#:tag "pslide"]{Progressive Slides}
 
 @defmodule[unstable/gui/pslide]
 
-@defform/subs[(pslide pslide-fragment ...)
-              ([pslide-fragment (code:line #:go placer-expr)
-                                (code:line #:next)
-                                (code:line elem-expr)])
-              #:contracts ([placer-expr placer?]
-                           [elem-expr (or/c pict? real? #f)])]{
+@defform[(pslide ppict-do-fragment ...)]{
 
-Produce slide(s) using @tech{progressive picts}. A @racket[#:go]
-directive updates the current placer; a @racket[#:next] directive
-causes a slide to be emitted with the contents thus far (but whose
-alignment takes into account contents yet to be added); and other
-elements have the same meaning as in @racket[ppict-add].
+Produce slide(s) using @tech{progressive picts}. See @racket[ppict-do]
+for an explanation of @racket[ppict-do-fragment]s.
 
 Note that like @racket[slide] but unlike @racket[ppict-do*], the
 number of slides produced is one greater than the number of
-@racket[#:next] uses; a slide is created for the final pict.
+@racket[#:next] uses; that is, a slide is created for the final pict.
 
 Remember to include @racket[gap-size] after updating the current
 placer if you want @racket[slide]-like spacing.

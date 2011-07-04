@@ -1,5 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
+                     racket/syntax
                      syntax/parse
                      syntax/parse/experimental/contract
                      "private/ppict-syntax.rkt")
@@ -7,29 +8,32 @@
          slideshow/pict
          "private/ppict.rkt")
 
-(define-syntax (ppict-do stx)
+(define-for-syntax (ppict-do*-transformer who stx)
   (syntax-parse stx
-    [(_ base p ...)
+    [(_ base . fs)
      #:declare base (expr/c #'pict?)
-     #:declare p (fragment 'ppict-do)
-     #'(let-values ([(final _picts)
-                     (internal-ppict-do 'ppict-do base.c (list p.code ...))])
-         final)]))
+     #:declare fs (fragment-sequence who #'xp #'rpss)
+     #'(let ([xp base.c] [rpss null])
+         fs.code)]))
+
+(define-syntax (ppict-do stx)
+  #`(let-values ([(final _picts)
+                  #,(ppict-do*-transformer 'ppict-do stx)])
+      final))
 
 (define-syntax (ppict-do* stx)
-  (syntax-parse stx
-    [(_ base p ...)
-     #:declare base (expr/c #'pict?)
-     #:declare p (fragment 'ppict-do)
-     #'(internal-ppict-do 'ppict-do* base.c (list p.code ...))]))
+  (ppict-do*-transformer 'ppict-do* stx))
 
 ;; ----
 
 (provide ppict-do
-         ppict-do*)
+         ppict-do*
+         ppict-do-state)
 
 (provide ppict?
-         placer?)
+         placer?
+         refpoint-placer?
+         tag-path?)
 
 (provide/contract
  [ppict-go
@@ -41,15 +45,13 @@
        pict?)]
  [ppict-placer
   (-> ppict? placer?)]
- [placer
-  (-> any/c boolean?)]
  [coord
   (->* (real? real?)
        (align/c
         #:abs-x real?
         #:abs-y real?
         #:compose procedure?)
-       placer?)]
+       refpoint-placer?)]
  [grid
   (->* (exact-positive-integer? exact-positive-integer?
         exact-integer? exact-integer?)
@@ -57,8 +59,26 @@
         #:abs-x real?
         #:abs-y real?
         #:compose procedure?)
-       placer?)]
+       refpoint-placer?)]
  [cascade
   (->* ()
        ((or/c real? 'auto) (or/c real? 'auto))
-       placer?)])
+       placer?)]
+ [at-find-pict
+  (->* ((or/c tag-path? pict-path?))
+       (procedure?
+        align/c
+        #:abs-x real?
+        #:abs-y real?
+        #:compose procedure?)
+       refpoint-placer?)]
+ [merge-refpoints
+  (-> refpoint-placer? refpoint-placer?
+      refpoint-placer?)]
+
+ [tag-pict
+  (-> pict? symbol? pict?)]
+ [pict-tag
+  (-> pict? (or/c symbol? #f))]
+ [find-tag
+  (-> pict? tag-path? (or/c pict-path? #f))])
