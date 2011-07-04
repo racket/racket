@@ -1355,6 +1355,33 @@
                   (promise-running? p)) B)
         |#
 
+        ;Kernel Structs, check that their hidden identifiers type
+        ;Currently broken in test-suite because of binding differences
+        #;
+        (tc-e (void exn
+                    exn:fail
+                    exn:fail:contract
+                    exn:fail:contract:arity
+                    exn:fail:contract:divide-by-zero
+                    exn:fail:contract:non-fixnum-result
+                    exn:fail:contract:continuation
+                    exn:fail:contract:variable
+                    exn:fail:syntax
+                    exn:fail:read
+                    exn:fail:read:eof
+                    exn:fail:read:non-char
+                    exn:fail:filesystem
+                    exn:fail:filesystem:exists
+                    exn:fail:filesystem:version
+                    exn:fail:network
+                    exn:fail:out-of-memory
+                    exn:fail:unsupported
+                    exn:fail:user
+                    exn:break
+                    arity-at-least
+                    date
+                    srcloc) -Void)
+
 
         )
   (test-suite
