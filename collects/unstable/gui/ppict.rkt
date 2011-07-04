@@ -53,4 +53,8 @@
         exact-nonnegative-integer? exact-nonnegative-integer?)
        (align/c
         #:compose procedure?)
+       placer?)]
+ [cascade
+  (->* ()
+       ((or/c real? 'auto) (or/c real? 'auto))
        placer?)])

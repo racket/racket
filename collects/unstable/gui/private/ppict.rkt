@@ -56,57 +56,92 @@ In a placer function's arguments:
 
 ;; ----
 
-;; row, column indexes are 0-based
 (define (grid cols rows col row [align 'cc]
-              #:compose [composer (align->vcomposer align)]
+              #:abs-x [abs-x 0]
+              #:abs-y [abs-y 0]
+              #:compose [compose (halign->vcompose (align->h align))]
               #:sep [sep 0])
+  ;; row, column indexes are 1-based
   (define halign (align->h align))
   (define valign (align->v align))
-  (define refxfrac (/ (+ col (align->frac halign)) cols))
-  (define refyfrac (/ (+ row (align->frac valign)) rows))
-  (coord refxfrac refyfrac align #:compose composer #:sep sep))
+  (define xfrac (/ (+ (sub1 col) (align->frac halign)) cols))
+  (define yfrac (/ (+ (sub1 row) (align->frac valign)) rows))
+  (refpoint* xfrac yfrac abs-x abs-y halign valign compose sep))
 
-(define (coord refxfrac refyfrac [align 'cc]
-               #:compose [composer (align->vcomposer align)]
+(define (coord xfrac yfrac [align 'cc]
+               #:abs-x [abs-x 0]
+               #:abs-y [abs-y 0]
+               #:compose [compose (halign->vcompose (align->h align))]
                #:sep [sep 0]
                #:internal:skip [skip #f])
   (define halign (align->h align))
   (define valign (align->v align))
+  (refpoint* xfrac yfrac abs-x abs-y halign valign compose sep))
+
+(define (refpoint* xfrac yfrac dxabs dyabs
+                   halign valign compose sep)
   (placer
    (lambda (scene picts)
      (define scene-w (pict-width scene))
      (define scene-h (pict-height scene))
-     (define refx (* scene-w refxfrac))
-     (define refy (* scene-h refyfrac))
+     (define dx (+ (* scene-w xfrac) dxabs))
+     (define dy (+ (* scene-h yfrac) dyabs))
      (define-values (newpict newsep)
-       (apply-composer composer sep (cons skip picts)))
+       (apply-compose compose sep picts))
      (define newpict-w (pict-width newpict))
      (define newpict-h (pict-height newpict))
-     (define localrefx (* newpict-w (align->frac halign)))
-     (define localrefy (* newpict-h (align->frac valign)))
      (define newscene
-       (lt-superimpose scene (inset newpict (- refx localrefx) (- refy localrefy) 0 0)))
+       (let ([localrefx (* newpict-w (align->frac halign))]
+             [localrefy (* newpict-h (align->frac valign))])
+         (lt-superimpose scene (inset newpict (- dx localrefx) (- dy localrefy) 0 0))))
      (let ([result-pict (refocus newscene scene)])
-       (cond [(and (eq? valign 't) (eq? composer (align->vcomposer align)))
-              ;; ie, going top-down and composer is the natural composer for this align
+       (cond [(and (eq? valign 't) (eq? compose (halign->vcompose halign)))
+              ;; ie, going top-down and compose is the natural compose for this align
               (mk-ppict result-pict
-                        (coord refxfrac refyfrac align
-                               #:compose composer
-                               #:sep newsep
-                               #:internal:skip (blank 0 newpict-h)))]
-             [(and (eq? halign 'l) (eq? composer (align->hcomposer align)))
+                        (refpoint* 0 0 dx (+ dy newpict-h) halign valign compose newsep))]
+             [(and (eq? halign 'l) (eq? compose (valign->hcompose valign)))
+              ;; ie, going left-right and compose is the natural compose ...
               (mk-ppict result-pict
-                        (coord refxfrac refyfrac align
-                               #:compose composer
-                               #:sep newsep
-                               #:internal:skip (blank newpict-w 0)))]
+                        (refpoint* 0 0 (+ dx newpict-w) dy halign valign compose newsep))]
              [else result-pict])))))
 
 ;; ----
 
-;; apply-composer : composer real (listof (U #f pict real)) -> (values pict real)
+;; cascade : -> placer
+(define (cascade [step-x0 'auto] [step-y0 'auto])
+  ;; Auto cascade by largest bounding box.
+  ;; FIXME: add align arg, determines position of each pict w/in bbox
+  (placer
+   (lambda (scene elems)
+     (for/or ([e (in-list elems)])
+       (when (real? e)
+         (error 'cascade "spacing changes not allowed: ~e" e)))
+     (let* ([picts (filter pict? elems)]
+            [max-w (apply max 1 (map pict-width picts))]  ;; avoid 0
+            [max-h (apply max 1 (map pict-height picts))] ;; avoid 0
+            [auto-step-x (/ (- (pict-width scene) max-w) (+ 1 (length picts)))]
+            [auto-step-y (/ (- (pict-height scene) max-h) (+ 1 (length picts)))]
+            [step-x (if (eq? step-x0 'auto) auto-step-x step-x0)]
+            [step-y (if (eq? step-y0 'auto) auto-step-y step-y0)]
+            [bbox (blank max-w max-h)]
+            [positioned-picts
+             (for/list ([pict (in-list picts)]
+                        [i (in-naturals 1)])
+               (inset (cc-superimpose bbox pict)
+                      (* i step-x) (* i step-y) 0 0))]
+            [newscene
+             (lt-superimpose scene
+                             (apply lt-superimpose positioned-picts))]
+            [result-pict (refocus newscene scene)])
+       ;; Can't continue a cascade, since depends on number of picts.
+       ;; FIXME: If step is given rather than computed, then we can.
+       result-pict))))
+
+;; ----
+
+;; apply-compose : compose real (listof (U #f pict real)) -> (values pict real)
 ;; Returns composed pict and last given separator num in elems (or init-sep, if none)
-(define (apply-composer composer init-sep elems)
+(define (apply-compose compose init-sep elems)
   (define (start-loop sep elems)
     (cond [(and (pair? elems) (real? (car elems)))
            (start-loop (car elems) (cdr elems))]
@@ -118,7 +153,7 @@ In a placer function's arguments:
     (cond [(and (pair? elems) (real? (car elems)))
            (join-loop base (car elems) (cdr elems))]
           [(and (pair? elems) (pict? (car elems)))
-           (join-loop (composer sep base (car elems))
+           (join-loop (compose sep base (car elems))
                       sep
                       (cdr elems))]
           [(null? elems) base]))
@@ -145,17 +180,17 @@ In a placer function's arguments:
     ((lc cc rc) 'c)
     ((lb cb rb) 'r)))
 
-(define (align->vcomposer align)
-  (case align
-    ((lt lc lb) vl-append)
-    ((ct cc cb) vc-append)
-    ((rt rc rb) vr-append)))
+(define (halign->vcompose halign)
+  (case halign
+    ((l) vl-append)
+    ((c) vc-append)
+    ((r) vr-append)))
 
-(define (align->hcomposer align)
+(define (valign->hcompose align)
   (case align
-    ((lt ct rt) ht-append)
-    ((lc cc rc) hc-append)
-    ((lb cb rb) hb-append)))
+    ((t) ht-append)
+    ((c) hc-append)
+    ((b) hb-append)))
 
 ;; ----
 

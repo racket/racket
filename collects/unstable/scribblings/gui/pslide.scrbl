@@ -35,7 +35,7 @@ compact notation for sequences of those two operations.
 base
 (define circles-down-1
   (ppict-do base
-            #:go (grid 2 2 1 0 'ct)
+            #:go (grid 2 2 2 1 'ct)
             10
             (circle 20)
             (circle 20)
@@ -192,24 +192,58 @@ another progressive pict only if
 
 Returns a placer that places picts according to a position in a
 virtual grid. The @racket[row] and @racket[col] indexes are numbered
-starting at @racket[0].
+starting at @racket[1].
 
 Uses of @racket[grid] can be translated into uses of @racket[coord],
 but the translation depends on the alignment. For example,
-@racket[(grid 2 2 0 0 'lt)] is equivalent to @racket[(coord 0 0 'lt)],
-but @racket[(grid 2 2 0 0 'rt)] is equivalent to @racket[(coord 1/2 0 'rt)].
+@racket[(grid 2 2 1 1 'lt)] is equivalent to @racket[(coord 0 0 'lt)],
+but @racket[(grid 2 2 1 1 'rt)] is equivalent to @racket[(coord 1/2 0 'rt)].
 
 @examples[#:eval the-eval
 (define none-for-me-thanks
   (ppict-do base
-            #:go (grid 2 2 0 0 'lt)
+            #:go (grid 2 2 1 1 'lt)
             (text "You do not like")
             (colorize (text "green eggs and ham?") "darkgreen")))
 none-for-me-thanks
 (ppict-do none-for-me-thanks
-          #:go (grid 2 2 1 0 'rb)
+          #:go (grid 2 2 2 1 'rb)
           (colorize (text "I do not like them,") "red")
           (text "Sam-I-am."))
+]
+}
+
+@defproc[(cascade [step-x (or/c real? 'auto) 'auto]
+                  [step-y (or/c real? 'auto) 'auto])
+         placer?]{
+
+Returns a placer that places picts by evenly spreading them diagonally
+across the base pict in ``cascade'' style. This placer does not
+support changing the spacing by including a real number within the
+pict sequence.
+
+When a list picts is to be placed, their bounding boxes are normalized
+to the maximum width and height of all picts in the list; each pict is
+centered in its new bounding box. The picts are then cascaded so there
+is @racket[step-x] space between each of the picts' left edges; there
+is also @racket[step-x] space between the base pict's left edge and
+the first pict's left edge. Similarly for @racket[step-y] and the
+vertical spacing.
+
+If @racket[step-x] or @racket[step-y] is @racket['auto], the spacing
+between the centers of the picts to be placed is determined
+automatically so that the inter-pict spacing is the same as the
+spacing between the last pict and the base.
+
+@examples[#:eval the-eval
+(ppict-do base
+          #:go (cascade)
+          (colorize (filled-rectangle 100 100) "red")
+          (colorize (filled-rectangle 100 100) "blue"))
+(ppict-do base
+          #:go (cascade 40 20)
+          (colorize (filled-rectangle 100 100) "red")
+          (colorize (filled-rectangle 100 100) "blue"))
 ]
 }
 
