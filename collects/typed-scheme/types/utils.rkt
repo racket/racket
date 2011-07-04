@@ -11,19 +11,8 @@
          racket/contract
          (for-syntax racket/base syntax/parse))
 
-(provide fv fv/list fi
-         instantiate-poly
-         instantiate-poly-dotted
-         tc-result?
-         tc-result-equal?
-         effects-equal?
-         tc-result-t
-         unfold
-         tc-error/expr
-         lookup-fail
-         lookup-type-fail
-         combine-results
-         current-poly-struct)
+
+(provide effects-equal?) ;;Never Used
 
 
 ;; unfold : Type -> Type
@@ -86,7 +75,7 @@
   (match tc
     [(tc-results: t) t]))
 
-(provide tc-result: tc-results: tc-result1: tc-result? tc-results? tc-results-t Result1: Results:)
+(provide tc-result: tc-results: tc-result1: Result1: Results:)
 
 (define-match-expander Result1:
   (syntax-parser
@@ -163,11 +152,11 @@
    (andmap eq? fs1 fs2)))
 
 
-;; fv : Type -> Listof[Name]
+;; fv : Type -> Listof[Symbol]
 (define (fv t) (hash-map (free-vars* t) (lambda (k v) k)))
 (define (fi t) (for/list ([(k v) (in-hash (free-idxs* t))]) k))
 
-;; fv/list : Listof[Type] -> Listof[Name]
+;; fv/list : Listof[Type] -> Listof[Symbol]
 (define (fv/list ts) (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
 
 (define (tc-error/expr msg #:return [return (make-Union null)] #:stx [stx (current-orig-stx)] . rest)
@@ -191,11 +180,35 @@
 
 ;; a parameter for the current polymorphic structure being defined
 ;; to allow us to prevent non-regular datatypes
+(define-struct poly (name vars) #:prefab)
 (define current-poly-struct (make-parameter #f))
 
+;; UNUSED
 ;; a table indicating what variables should be abstracted away before using this expected type
 ;; keyed on the numeric Rep sequence
 (define to-be-abstr
   (make-weak-hash))
 
 (provide to-be-abstr)
+
+
+(provide/cond-contract
+ [unfold (Mu? . -> . Type/c)]
+ [instantiate-poly ((or/c Poly? PolyDots?) (listof Type/c) . -> . Type/c)]
+ [instantiate-poly-dotted (PolyDots? (listof Type/c) Type/c symbol? . -> . Type/c)]
+ [tc-result? (any/c . -> . boolean?)]
+ [tc-result-t (tc-result? . -> . Type/c)]
+ [tc-result-equal? (tc-result? tc-result? . -> . boolean?)]
+ [tc-results? (any/c . -> . boolean?)]
+ [tc-error/expr ((string?) (#:return any/c #:stx syntax?) #:rest (listof any/c) . ->* . any/c)]
+
+ [fv (Rep? . -> . (listof symbol?))]
+ [fi (Rep? . -> . (listof symbol?))]
+ [fv/list ((listof Type/c) . -> . (listof symbol?))]
+ [lookup-fail (identifier? . -> . Type/c)]
+ [lookup-type-fail (identifier? . -> . Type/c)]
+ [combine-results ((listof tc-results?) . -> . tc-results?)]
+ [current-poly-struct (parameter/c (or/c #f poly?))]
+
+ )
+

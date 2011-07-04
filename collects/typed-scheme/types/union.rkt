@@ -3,10 +3,12 @@
 (require "../utils/utils.rkt"
          (rep type-rep rep-utils)
 	 (utils tc-utils)
+     (prefix-in c: racket/contract)
 	 (types utils subtype abbrev printer comparison)
          racket/match)
 
-(provide Un)
+(provide/cond-contract
+ [Un (() #:rest (c:listof Type/c) . c:->* . Type/c)])
 
 (define (make-union* set)
   (match set

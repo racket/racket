@@ -172,7 +172,10 @@ at least theoretically.
          define/cond-contract/provide)
 
 (define-syntax-rule (define/cond-contract/provide (name . args) c . body)
-  (begin (define/cond-contract (name . args) c . body)
+  (begin (define/cond-contract name c
+           (begin
+            (define (name . args) body)
+            name))
          (provide/cond-contract [name c])))
 
 ;; these are versions of the contract forms conditionalized by `enable-contracts?'
