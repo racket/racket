@@ -24,9 +24,15 @@
 
 (define current-seen (make-parameter (empty-set)))
 
-(define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
-(define (remember s t A) (cons (seen-before s t) A))
-(define (seen? s t) (member (seen-before s t) (current-seen)))
+(define (seen-before s t)
+  (cons (Type-seq s) (Type-seq t)))
+(define/cond-contract (remember s t A)
+ (Type/c Type/c (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)) . -> .
+              (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)))
+ (cons (seen-before s t) A))
+(define/cond-contract (seen? s t)
+ (Type/c Type/c . -> . boolean?)
+ (member (seen-before s t) (current-seen)))
 
 
 (define (map/cset f cset)
@@ -299,9 +305,11 @@
 ;; implements the V |-_X S <: T => C judgment from Pierce+Turner, extended with
 ;; the index variables from the TOPLAS paper
 (define/cond-contract (cgen V X Y S T)
-  ((listof symbol?) (listof symbol?) (listof symbol?) Type? Type? . -> . cset?)
+  ((listof symbol?) (listof symbol?) (listof symbol?) Type/c Type/c . -> . cset?)
   ;; useful quick loop
-  (define (cg S T) (cgen V X Y S T))
+  (define/cond-contract (cg S T)
+   (Type/c Type/c . -> . cset?)
+   (cgen V X Y S T))
   ;; this places no constraints on any variables in X
   (define empty (empty-cset X Y))
   ;; this constrains just x (which is a single var)
@@ -377,7 +385,8 @@
           [((Name: n) (Name: n*))
            (if (free-identifier=? n n*)
                null
-               (cg (resolve-once S) (resolve-once T)))]
+               (let ((rn (resolve-once S)) (rn* (resolve-once)))
+                (if (and rn rn*) (cg rn rn*) (fail! S T))))]
           ;; pairs are pointwise
           [((Pair: a b) (Pair: a* b*))
            (cset-meet (cg a a*) (cg b b*))]
@@ -447,8 +456,12 @@
           [((? Mu? s) t) (cg (unfold s) t)]
 
           ;; resolve applications
-          [((App: _ _ _) _) (cg (resolve-once S) T)]
-          [(_ (App: _ _ _)) (cg S (resolve-once T))]
+          [((App: _ _ _) _)
+           (let ((S* (resolve-once S)))
+            (if S* (cg S* T) (fail! S T)))]
+          [(_ (App: _ _ _))
+           (let ((T* (resolve-once T)))
+            (if T* (cg S T*) (fail! S T)))]
 
           ;; values are covariant
           [((Values: ss) (Values: ts))
