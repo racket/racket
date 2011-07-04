@@ -12,7 +12,7 @@
                                          "out.sxref")
                              fasl->s-exp))))))
 
-(unless (equal? '(form ((lib "racket/contract.rkt") ->))
+(unless (equal? '(form ((lib "racket/contract/base.rkt") ->))
                 (xref-binding->definition-tag 
                  xref 
                  (list '(lib "contract.rkt" "racket") '->)
