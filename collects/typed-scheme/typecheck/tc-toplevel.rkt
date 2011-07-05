@@ -285,6 +285,14 @@
     (define syntax-provide? #f)
     (define provide-tbl
       (for/fold ([h (make-immutable-free-id-table)]) ([p (in-list provs)])
+        (define-syntax-class unknown-provide-form
+         (pattern
+          (~and name
+           (~or (~datum protect) (~datum for-syntax) (~datum for-label) (~datum for-meta)
+                (~datum struct) (~datum all-from) (~datum all-from-except)
+                (~datum all-defined) (~datum all-defined-except)
+                (~datum prefix-all-defined) (~datum prefix-all-defined-except)
+                (~datum expand)))))
         (syntax-parse p #:literals (#%provide)
           [(#%provide form ...)
            (for/fold ([h h]) ([f (syntax->list #'(form ...))])
@@ -298,8 +306,8 @@
                   (when (def-stx-binding? (dict-ref def-tbl #'in #f))
                     (set! syntax-provide? #t))
                   (dict-set h #'in #'out)]
-                 [((~datum protect) . _)
-                  (tc-error "provide: protect not supported by Typed Racket")]
+                 [(name:unknown-provide-form . _)
+                  (tc-error "provide: ~a not supported by Typed Racket" (syntax-e #'name.name))]
                  [_ (int-err "unknown provide form")])))]
           [_ (int-err "non-provide form! ~a" (syntax->datum p))])))
     ;; compute the new provides
