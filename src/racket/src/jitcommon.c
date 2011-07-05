@@ -907,7 +907,9 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
   jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R0);
   CHECK_LIMIT();
   JIT_UPDATE_THREAD_RSPTR();
+  __END_SHORT_JUMPS__(1);
   scheme_generate_non_tail_call(jitter, 3, 0, 0, 0, 0, 0, 1);
+  __START_SHORT_JUMPS__(1);
   CHECK_LIMIT();
   if (setter) {
     jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(4));
