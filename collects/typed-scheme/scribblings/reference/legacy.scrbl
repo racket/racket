@@ -22,3 +22,4 @@ keyword with @racket[require/typed].}
 @defalias[Tuple List]
 @defalias[Parameter Parameterof]
 @defalias[Pair Pairof]
+@defalias[values Values]
