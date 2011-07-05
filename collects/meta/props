@@ -1939,6 +1939,7 @@ path/s is either such a string or a list of them.
 "collects/tests/stress.rkt" responsible (jay)
 "collects/tests/stxparse" responsible (ryanc)
 "collects/tests/stxparse/stxclass.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/tests/syntax" responsible (stamourv)
 "collects/tests/syntax-color" responsible (mflatt)
 "collects/tests/syntax-color/paren-tree.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/syntax-color/token-tree.rktl" drdr:command-line (racket "-f" *)
