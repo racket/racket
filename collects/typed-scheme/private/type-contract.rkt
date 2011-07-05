@@ -204,7 +204,7 @@
 	[(Poly: vs b)
          (if from-typed?
              ;; in positive position, no checking needed for the variables
-             (parameterize ([vars (append (for/list ([v vs]) (list v #'any/c)))])
+             (parameterize ([vars (append (for/list ([v vs]) (list v #'any/c)) (vars))])
                (t->c b))
              ;; in negative position, use `parameteric/c'
              (match-let ([(Poly-names: vs-nm _) ty])
