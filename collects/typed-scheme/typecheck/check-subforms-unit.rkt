@@ -33,23 +33,25 @@
          ;; if this needs to be checked
          #:when (syntax-property form 'typechecker:with-type)
          ;; the form should be already ascribed the relevant type
-	 (tc-expr form)]
+         (tc-expr form)]
         [stx
          ;; this is a handler function
          #:when (syntax-property form 'typechecker:exn-handler)
          (let ([t (tc-expr form)])
            (match t
-	     [(tc-result1:
-	       (and t
-		    (Function: (list (arr: (list _) _ _ _ (list (Keyword: _ _ #f) ...)) ...))))
-	      (set! handler-tys (cons (get-result-ty t) handler-tys))]
-	     [(tc-results: t)
-	      (tc-error "Exception handler must be a single-argument function, got \n~a" t)]))]
+             [(tc-result1:
+               (and t
+                    (Function: (list (arr: (list _) _ _ _ (list (Keyword: _ _ #f) ...)) ...))))
+              (set! handler-tys (cons (get-result-ty t) handler-tys))]
+             [(tc-results: t)
+              (tc-error "Exception handler must be a single-argument function, got \n~a" t)]))]
         [stx
          ;; this is the body of the with-handlers
          #:when (syntax-property form 'typechecker:exn-body)
-         (match-let ([(tc-results: ts) (tc-expr form)])
-           (set! body-ty (-values ts)))]
+         (match (tc-expr form)
+          [(tc-result1: t) (set! body-ty t)]
+          [(tc-results: ts) (tc-expr form)
+           (tc-error "Exception handler body must return a single value, got \n~a" (length ts))])]
         [(a . b)
 	 (loop #'a)
 	 (loop #'b)]
