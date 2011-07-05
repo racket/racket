@@ -481,14 +481,15 @@ and one that combines several modules) via your own
 Associates the @racket[mod-path]s to all bindings defined within the
 enclosing section, except as overridden by other
 @racket[declare-exporting] declarations in nested sub-sections.  The
-list of @racket[mod-path]s is shown, for example, when the user hovers
-the mouse over one of the bindings defined within the section.
+list of @racket[mod-path]s before @racket[#:use-sources] is shown, for
+example, when the user hovers the mouse over one of the bindings
+defined within the section.
 
-More significantly, the first @racket[mod-path] plus the
-@racket[#:use-sources] @racket[mod-path]s determine the binding that
-is documented by each @racket[defform], @racket[defproc], or similar
-form within the section that contains the @racket[declare-exporting]
-declaration:
+More significantly, the first @racket[mod-path] before
+@racket[#:use-sources] plus the @racket[mod-path]s after
+@racket[#:use-sources] determine the binding that is documented by
+each @racket[defform], @racket[defproc], or similar form within the
+section that contains the @racket[declare-exporting] declaration:
 
 @itemize[
 
@@ -497,14 +498,46 @@ declaration:
        @racket[mod-path].}
 
  @item{If @racket[#:use-sources] @racket[mod-path]s are supplied, then
-       they are tried in order. The first one to provide an export
-       with the same symbolic name and
-       @racket[free-label-identifier=?] to the given name is used as
-       the documented binding. This binding is assumed to be the same
-       as the identifier as exported by the first @racket[mod-path] in
-       the @racket[declare-exporting] declaration.}
+       they are tried in order before the first @racket[mod-path]. The
+       @racket[mod-path] that provides an export with the same
+       symbolic name and @racket[free-label-identifier=?] to the given
+       name is used as the documented binding. This binding is assumed
+       to be the same as the identifier as exported by the first
+       @racket[mod-path] in the @racket[declare-exporting]
+       declaration.}
 
 ]
+
+Use @racket[#:use-sources] sparingly, but it is needed when
+
+@itemlist[
+
+ @item{bindings are documented as originating from a module
+       @racket[_M], but the bindings are actually re-exported from
+       some module @racket[_P]; and}
+
+ @item{other documented modules also re-export the bindings from
+       @racket[_P], but they are documented as re-exporting from
+       @racket[_M].}
+
+]
+
+For example, the @racket[parameterize] binding of
+@racketmodname[mzscheme] is documented as re-exported from
+@racketmodname[racket/base], but @racket[parameterize] happens to be
+implemented in a private module and re-exported by both
+@racketmodname[racket/base] and @racketmodname[mzscheme].  Importing
+@racket[parameterize] from @racketmodname[mzscheme] does not go
+through @racketmodname[racket/base], so a search for documentation on
+@racket[parameterize] in @racketmodname[mzscheme] would not
+automatically connect to the documentation of
+@racketmodname[racket/base]. To make the connection, the documentation
+of @racketmodname[racket/base] declares the private module to be a
+source through @racket[#:use-sources], so that any re-export of
+@racket[parameterize] from the private module connects to the
+documentation for @racketmodname[racket/base] (unless a re-export has
+its own documentation, which would override the automatic connection
+when searching for documentation).
 
 The initial @racket[mod-path]s sequence can be empty if
 @racket[mod-path]s are given with @racket[#:use-sources]. In that
