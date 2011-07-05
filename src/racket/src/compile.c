@@ -61,8 +61,12 @@ ROSYM static Scheme_Object *protected_symbol;
 ROSYM static Scheme_Object *quote_symbol;
 ROSYM static Scheme_Object *letrec_syntaxes_symbol;
 ROSYM static Scheme_Object *values_symbol;
+ROSYM static Scheme_Object *call_with_values_symbol;
 
 THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
+
+THREAD_LOCAL_DECL(struct Scheme_Object *cwv_stx);
+THREAD_LOCAL_DECL(int cwv_stx_phase);
 
 /* locals */
 static Scheme_Object *lambda_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
@@ -285,6 +289,7 @@ void scheme_init_compile (Scheme_Env *env)
   REGISTER_SO(quote_symbol);
   REGISTER_SO(letrec_syntaxes_symbol);
   REGISTER_SO(values_symbol);
+  REGISTER_SO(call_with_values_symbol);
 
   app_symbol    = scheme_intern_symbol("#%app");
   datum_symbol  = scheme_intern_symbol("#%datum");
@@ -293,6 +298,7 @@ void scheme_init_compile (Scheme_Env *env)
   quote_symbol  = scheme_intern_symbol("quote");
   letrec_syntaxes_symbol = scheme_intern_symbol("letrec-syntaxes+values");
   values_symbol = scheme_intern_symbol("values");
+  call_with_values_symbol = scheme_intern_symbol("call-with-values");
 
   REGISTER_SO(app_expander);
   REGISTER_SO(datum_expander);
@@ -313,6 +319,7 @@ void scheme_init_compile (Scheme_Env *env)
 void scheme_init_compile_places()
 {
   REGISTER_SO(quick_stx);
+  REGISTER_SO(cwv_stx);
 }
 
 Scheme_Object *
@@ -4377,7 +4384,7 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
 
     /* Look for (call-with-values (lambda () M) (lambda (id ...) N)) */ 
     if (SCHEME_STX_SYMBOLP(name)) {
-      Scheme_Object *at_first, *at_second, *the_end, *cwv_stx;
+      Scheme_Object *at_first, *at_second, *the_end;
       at_first = SCHEME_STX_CDR(form);
       if (SCHEME_STX_PAIRP(at_first)) {
         at_second = SCHEME_STX_CDR(at_first);
@@ -4386,8 +4393,12 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
           if (SCHEME_STX_NULLP(the_end)) {
             Scheme_Object *orig_at_second = at_second;
 
-            cwv_stx = scheme_datum_to_syntax(scheme_intern_symbol("call-with-values"), 
-                                             scheme_false, scheme_sys_wraps(env), 0, 0);
+            if (!cwv_stx || (env->genv->phase != cwv_stx_phase)) {
+              cwv_stx_phase = env->genv->phase;
+              cwv_stx = scheme_datum_to_syntax(call_with_values_symbol, 
+                                               scheme_false, scheme_sys_wraps(env), 0, 0);
+            }
+
             if (scheme_stx_module_eq(name, cwv_stx, 0)) {
               Scheme_Object *first, *orig_first;
               orig_first = SCHEME_STX_CAR(at_first);

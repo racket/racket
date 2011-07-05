@@ -151,6 +151,8 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *cached_ds_stx_;
   struct Scheme_Object *cached_dvs_stx_;
   int cached_stx_phase_;
+  struct Scheme_Object *cwv_stx_;
+  int cwv_stx_phase_;
   struct Scheme_Cont *offstack_cont_;
   struct Scheme_Overflow *offstack_overflow_;
   struct Scheme_Overflow_Jmp *scheme_overflow_jmp_;
@@ -484,6 +486,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define cached_ds_stx XOA (scheme_get_thread_local_variables()->cached_ds_stx_)
 #define cached_dvs_stx XOA (scheme_get_thread_local_variables()->cached_dvs_stx_)
 #define cached_stx_phase XOA (scheme_get_thread_local_variables()->cached_stx_phase_)
+#define cwv_stx XOA (scheme_get_thread_local_variables()->cwv_stx_)
+#define cwv_stx_phase XOA (scheme_get_thread_local_variables()->cwv_stx_phase_)
 #define offstack_cont XOA (scheme_get_thread_local_variables()->offstack_cont_)
 #define offstack_overflow XOA (scheme_get_thread_local_variables()->offstack_overflow_)
 #define scheme_overflow_jmp XOA (scheme_get_thread_local_variables()->scheme_overflow_jmp_)

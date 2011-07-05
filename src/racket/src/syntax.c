@@ -1758,7 +1758,9 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn,
 
   if (((Module_Renames *)mrn)->needs_unmarshal) {
     ((Module_Renames *)nmrn)->needs_unmarshal = 1;
-  }  
+  }
+
+  ((Module_Renames *)nmrn)->sealed = ((Module_Renames *)mrn)->sealed;
 
   return nmrn;
 }
@@ -1772,6 +1774,7 @@ Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *_mrns,
   int i;
 
   mrns2 = scheme_make_module_rename_set(mrns->kind, NULL, new_insp);
+  ((Module_Renames_Set *)mrns2)->sealed = mrns->sealed;
   if (mrns->rt) {
     mrn = scheme_stx_shift_rename((Scheme_Object *)mrns->rt, old_midx, new_midx, new_insp);
     scheme_add_module_rename_to_set(mrns2, mrn);
@@ -4218,14 +4221,13 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
   WRAP_POS wraps;
   Scheme_Object *result, *result_from;
   int is_in_module = 0, skip_other_mods = 0, sealed = STX_SEAL_ALL, floating_checked = 0;
-  int no_lexical = !free_id_recur;
+  int no_lexical = !free_id_recur, unsealed_reason = 0;
   Scheme_Object *phase = orig_phase;
   Scheme_Object *bdg = NULL, *floating = NULL;
 
-  if (!free_id_recur
-      && SAME_OBJ(phase, scheme_make_integer(0))
-      && ((Scheme_Stx *)a)->u.modinfo_cache)
-    return ((Scheme_Stx *)a)->u.modinfo_cache;
+  result = ((Scheme_Stx *)a)->u.modinfo_cache;
+  if (result && SAME_OBJ(phase, scheme_make_integer(0)))
+    return result;
 
   WRAP_POS_INIT(wraps, ((Scheme_Stx *)a)->wraps);
 
@@ -4238,10 +4240,19 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
       if (result)
         can_cache = (sealed >= STX_SEAL_BOUND); /* If it becomes bound, it can't become unbound. */
 
+      if (free_id_recur && free_id_recur->count)
+        can_cache = 0;
+
       if (!result)
 	result = SCHEME_STX_VAL(a);
-      
-      if (can_cache && SAME_OBJ(orig_phase, scheme_make_integer(0)) && !free_id_recur)
+
+#if 0
+      printf("%p %p %s (%d) %d %p %d\n", 
+             a, orig_phase, SCHEME_SYMBOLP(result) ? SCHEME_SYM_VAL(result) : "!?", 
+             can_cache, sealed, free_id_recur, unsealed_reason);
+#endif 
+
+      if (can_cache && SAME_OBJ(orig_phase, scheme_make_integer(0)))
         ((Scheme_Stx *)a)->u.modinfo_cache = result;
  
       return result;
@@ -4260,8 +4271,10 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
         
         if ((!is_in_module || (mrns->kind != mzMOD_RENAME_TOPLEVEL))
             && !skip_other_mods) {
-          if (mrns->sealed < sealed)
+          if (mrns->sealed < sealed) {
             sealed = mrns->sealed;
+            unsealed_reason = 2;
+          }
         }
 
         mrn = extract_renames(mrns, phase);
@@ -4276,8 +4289,10 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	  /* Module rename: */
 	  Scheme_Object *rename, *glob_id;
 
-          if (mrn->sealed < sealed)
+          if (mrn->sealed < sealed) {
             sealed = mrn->sealed;
+            unsealed_reason = 3;
+          }
           
 	  if (mrn->needs_unmarshal) {
 	    /* Use resolve_env to trigger unmarshal, so that we
@@ -4310,14 +4325,16 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
           if (free_id_recur && mrn->free_id_renames) {
             rename = scheme_hash_get(mrn->free_id_renames, glob_id);
             if (rename && SCHEME_STXP(rename)) {
-              int sealed;
+              int sd;
               rename = extract_module_free_id_binding((Scheme_Object *)mrn,
                                                       glob_id, 
                                                       rename,
-                                                      &sealed,
+                                                      &sd,
                                                       free_id_recur);
-              if (!sealed)
+              if (!sd) {
                 sealed = 0;
+                unsealed_reason = 4;
+              }
             }
           } else
             rename = NULL;
@@ -4386,7 +4403,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 
       do {
         if (rib) {
-          if (!*rib->sealed) sealed = 0;
+          if (!*rib->sealed) { sealed = 0; unsealed_reason = 1; }
           rename = rib->rename;
           rib = rib->next;
         }
@@ -4434,8 +4451,10 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
                 names[6] = NULL;
 
                 modname = resolve_env(NULL, a, orig_phase, 1, names, NULL, NULL, &rib_dep, 0, free_id_recur);
-                if (rib_dep)
+                if (rib_dep) {
                   sealed = 0;
+                  unsealed_reason = 5;
+                }
 
                 if (!SCHEME_FALSEP(modname)
                     && !SAME_OBJ(names[0], scheme_undefined)) {
@@ -7306,6 +7325,20 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
   return result;
 }
 
+static int quick_check_graph(Scheme_Object *o, int fuel)
+{
+  if (!fuel) return 0;
+
+  if (SCHEME_PAIRP(o))
+    return quick_check_graph(SCHEME_CDR(o),
+                             quick_check_graph(SCHEME_CAR(o), fuel - 1));
+
+  if (HAS_CHAPERONE_SUBSTX(o))
+    return 0;
+  else
+    return fuel;
+}
+
 static Scheme_Object *general_datum_to_syntax(Scheme_Object *o, 
                                               Scheme_Unmarshal_Tables *ut,
                                               Scheme_Object *stx_src,
@@ -7325,7 +7358,7 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
   if (SCHEME_STXP(o))
     return o;
 
-  if (can_graph && HAS_CHAPERONE_SUBSTX(o))
+  if (can_graph && !quick_check_graph(o, 10))
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
   else
     ht = NULL;
