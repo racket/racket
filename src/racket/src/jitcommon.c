@@ -1121,8 +1121,6 @@ static int common3(mz_jit_state *jitter, void *_data)
 	  }
           CHECK_LIMIT();
           /* Might return, if arg was chaperone */
-          if (ii == -1) 
-            jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
           jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
           JIT_UPDATE_THREAD_RSPTR();
           if (!iii)

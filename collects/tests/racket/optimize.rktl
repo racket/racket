@@ -636,7 +636,14 @@
       (test-setter make-bytes 0 7 'bytes-set! bytes-set! bytes-ref #f)
       (test-setter make-string #\a #\7 'string-set! string-set! string-ref #f)
       (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref #f)
-      (test-setter make-fxvector 1 7 'fxvector-set! fxvector-set! fxvector-ref #f))
+      (test-setter make-fxvector 1 7 'fxvector-set! fxvector-set! fxvector-ref #f)
+      
+      (let ([chap-vec (lambda (vec)
+                        (chaperone-vector vec (lambda (vec i val) val) (lambda (vec i val) val)))])
+        (test-setter (lambda (n v) (chap-vec (make-vector n v)))
+                     #f 7 'vector-set! vector-set! vector-ref #t)
+        (test-setter (lambda (n v) (chap-vec (chap-vec (make-vector n v))))
+                     #f 7 'vector-set! vector-set! vector-ref #t)))
 
     (err/rt-test (apply (list-ref (list (lambda (v) (vector-set! v 0 #t))) (random 1)) 
                         (list (vector-immutable 1 2 3))))
