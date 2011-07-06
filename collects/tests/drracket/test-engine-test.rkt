@@ -29,10 +29,10 @@
 (define (common-signatures-*sl)
   (test-expression "(: foo Integer) (define foo 5)"
 		   ""
-		   #:repl-expected "define: cannot redefine name: foo")
+		   #:repl-expected "foo: this name was defined previously and cannot be re-defined")
   (test-expression "(: foo Integer) (define foo \"bar\")"
 		   ""
-		   #:repl-expected "define: cannot redefine name: foo"
+		   #:repl-expected "foo: this name was defined previously and cannot be re-defined"
 		   #:signature-violations-expected
 		   (list (make-signature-violation "\"bar\"" 1 7))))
 

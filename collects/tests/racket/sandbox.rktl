@@ -384,7 +384,7 @@
    (make-evaluator! '(special beginner)
                     (make-prog "(define l null)" "(define x 3.5)"))
    --eval--
-   (cond [null? l 0]) =err> "expected an open parenthesis"
+   (cond [null? l 0]) =err> "no open parenthesis"
    --top--
    (eq? (ev "6") (ev "(sub1 (* 2 3.5))"))
    (eq? (ev "6") (ev "(sub1 (* 2 x))"))

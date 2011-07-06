@@ -274,7 +274,7 @@
 
 (t 'bad-cond m:upto-int/lam
    (cond)
-   :: error: "cond: expected a question--answer clause after `cond', but nothing's there")
+   :: error: "cond: expected a clause after cond, but nothing's there")
 
 (t 'just-else m:upto-int/lam
    (cond [else 3])

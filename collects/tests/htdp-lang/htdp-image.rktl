@@ -1386,7 +1386,7 @@
              (require (lib "image.rkt" "teachpack/htdp"))
              overlay))
     (lambda (exn)
-      (regexp-match #rx"must be applied to arguments" 
+      (regexp-match #rx"no open parenthesis" 
 	(exn-message exn)))))
 
 (report-errs)
