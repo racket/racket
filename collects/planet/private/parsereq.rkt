@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require mzlib/match
-         "private/short-syntax-helpers.rkt"
-         "private/data.rkt")
+         "short-syntax-helpers.rkt"
+         "data.rkt")
 
 (provide (struct-out request)
          parse-package-string

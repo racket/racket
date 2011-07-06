@@ -6,15 +6,17 @@
          this-package-version-maj
          this-package-version-min
          this-package-version-symbol
-         this-package-in)
+         this-package-in
+         make-planet-symbol
+         package-version->symbol)
 
 (require
-  planet/util
-  (for-syntax
-    racket/base
-    racket/require-transform
-    syntax/parse
-    planet/syntax))
+ "private/version.rkt"
+ (for-syntax
+  racket/base
+  racket/require-transform
+  syntax/parse
+  planet/syntax))
 
 (define-syntax this-package-in
   (make-require-transformer

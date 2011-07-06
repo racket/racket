@@ -1,7 +1,6 @@
 #lang racket
 
 (require mzlib/etc
-         planet/util
          rackunit
          rackunit/text-ui
          planet/syntax

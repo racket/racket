@@ -611,3 +611,15 @@ Various common pieces of code that both the client and server need to access
   ;; tree->list : tree[x] -> sexp-tree[x]
   (define (tree->list tree)
     (cons (branch-node tree) (map tree->list (branch-children tree))))
+  
+  
+
+  (define (repository-tree)
+    (define (id x) x)
+    (filter-tree-by-pattern
+     (directory->tree
+      (CACHE-DIR)
+      (lambda (x)
+        (not (regexp-match? #rx"/(?:[.]git.*|[.]svn|CVS)$" (path->string x))))
+      4)
+     (list id id id string->number string->number)))
