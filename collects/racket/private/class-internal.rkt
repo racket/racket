@@ -3867,16 +3867,16 @@
 ;; wrapped one and the original class was a primitive one, then the method
 ;; will automatically unwrap both the object and any wrapped arguments on entry.
 (define (find-method/who who in-object name)
-  (unless (object? in-object)
-    (obj-error who "target is not an object: ~e for method: ~a"
-               in-object name))
-  (let* ([cls (object-ref in-object)]
-         [pos (hash-ref (class-method-ht cls) name #f)])
-    (if pos
-      (values (vector-ref (class-methods cls) pos) in-object)
-      (obj-error who "no such method: ~a~a"
-                 name
-                 (for-class (class-name cls))))))
+  (let ([cls (object-ref in-object #f)])
+    (if cls
+        (let ([pos (hash-ref (class-method-ht cls) name #f)])
+          (if pos
+              (values (vector-ref (class-methods cls) pos) in-object)
+              (obj-error who "no such method: ~a~a"
+                         name
+                         (for-class (class-name cls)))))
+        (obj-error who "target is not an object: ~e for method: ~a"
+                   in-object name))))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
   (let ([check-and-get-index
