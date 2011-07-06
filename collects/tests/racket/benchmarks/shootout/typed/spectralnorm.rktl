@@ -16,7 +16,7 @@
           (for: ([i : Integer (in-range N)])
                (unsafe-flvector-set!
                 y i
-                (let L ([a 0.0] [j 0])
+                (let: L : Float ([a : Float 0.0] [j : Integer 0])
                   (if (unsafe-fx= j N) a
                       (L (unsafe-fl+ a (unsafe-fl* (unsafe-flvector-ref x j) (A i j)))
                          (unsafe-fx+ j 1)))))))]
@@ -25,7 +25,7 @@
           (for: ([i : Integer (in-range N)])
                (unsafe-flvector-set!
                 y i
-                (let L ([a 0.0] [j 0])
+                (let: L : Float ([a : Float 0.0] [j : Integer 0])
                   (if (unsafe-fx= j N) a
                       (L (unsafe-fl+ a (unsafe-fl* (unsafe-flvector-ref x j) (A j i)))
                          (unsafe-fx+ j 1)))))))]
