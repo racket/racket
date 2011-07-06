@@ -275,12 +275,20 @@
                          (-> index-type -Flonum -FlVector))]
 
    [flvector-length (-> -FlVector -NonNegFixnum)]
-   [flvector-ref (-> -FlVector index-type -Flonum)]
-   [flvector-set! (-> -FlVector index-type -Flonum -Void)]
+   [flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
+                        (-> -FlVector -Fixnum -Flonum)
+                        (-> -FlVector index-type -Flonum))]
+   [flvector-set! (cl->* (-> -FlVector -NonNegFixnum -Flonum -Void)
+                         (-> -FlVector -Fixnum -Flonum -Void)
+                         (-> -FlVector index-type -Flonum -Void))]
 
    [unsafe-flvector-length (-> -FlVector -NonNegFixnum)]
-   [unsafe-flvector-ref (-> -FlVector index-type -Flonum)]
-   [unsafe-flvector-set! (-> -FlVector index-type -Flonum -Void)]
+   [unsafe-flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
+                               (-> -FlVector -Fixnum -Flonum)
+                               (-> -FlVector index-type -Flonum))]
+   [unsafe-flvector-set! (cl->* (-> -FlVector -NonNegFixnum -Flonum -Void)
+                                (-> -FlVector -Fixnum -Flonum -Void)
+                                (-> -FlVector index-type -Flonum -Void))]
 
 
    [bytes-ref (-> -Bytes index-type -Byte)]
