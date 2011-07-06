@@ -1552,6 +1552,7 @@ void scheme_place_check_for_interruption()
 }
 
 static void place_set_result(Scheme_Object *result)
+/* always called as a place terminates */
 {
   intptr_t status;
 
@@ -1566,6 +1567,7 @@ static void place_set_result(Scheme_Object *result)
   place_object->result = status;
   scheme_signal_received_at(place_object->parent_signal_handle);
   place_object->parent_signal_handle = NULL;
+  place_object->signal_handle = NULL;
   mzrt_mutex_unlock(place_object->lock);
 }
 
@@ -1673,8 +1675,6 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   }
 
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
-
-  place_obj->signal_handle = NULL;
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
   scheme_place_instance_destroy(place_obj->die);
