@@ -204,7 +204,7 @@
   (public [append-item append])
   (define (append-item i label help-str-or-submenu chckable?)
     (atomically
-     (let ([item-gtk (let ([label (fixup-mneumonic label)])
+     (let ([item-gtk (let ([label (fixup-mnemonic label)])
                        (as-gtk-allocation
                         ((if (and chckable?
                                   (not (help-str-or-submenu . is-a? . menu%)))
@@ -258,7 +258,7 @@
     (let ([gtk (find-gtk item)])
       (when gtk
         (gtk_label_set_text_with_mnemonic (gtk_bin_get_child gtk) 
-                                          (fixup-mneumonic str)))))
+                                          (fixup-mnemonic str)))))
 
   (define/public (enable item on?)
     (let ([gtk (find-gtk item)])

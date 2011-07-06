@@ -14,7 +14,7 @@
  (protect-out menu-bar%
               gtk_menu_item_new_with_mnemonic
               gtk_menu_shell_append
-              fixup-mneumonic))
+              fixup-mnemonic))
 
 (define-gtk gtk_menu_bar_new (_fun -> _GtkWidget))
 (define-gtk gtk_menu_shell_append (_fun _GtkWidget _GtkWidget -> _void))
@@ -26,17 +26,8 @@
 
 (define-gtk gtk_widget_set_usize (_fun _GtkWidget _int _int -> _void))
 
-(define (fixup-mneumonic title)
-  (regexp-replace*
-   "&&"
-   (regexp-replace*
-    #rx"&([^&])"
-    (regexp-replace*
-     #rx"_" 
-     (regexp-replace #rx"\t.*$" title "")
-     "__")
-    "_\\1")
-   "&"))
+(define (fixup-mnemonic title)
+  (mnemonic-string (regexp-replace #rx"\t.*$" title "")))
 
 (define-signal-handler connect-select "select"
   (_fun _GtkWidget -> _void)
@@ -136,7 +127,7 @@
     (let ([l (list-ref menus pos)])
       (let ([item-gtk (car l)])
 	(gtk_label_set_text_with_mnemonic (gtk_bin_get_child item-gtk) 
-                                          (fixup-mneumonic str)))))
+                                          (fixup-mnemonic str)))))
     
   (define/public (enable-top pos on?)
     (gtk_widget_set_sensitive (car (list-ref menus pos)) on?))
@@ -159,7 +150,7 @@
   (define (append-menu menu title)
     (send menu set-parent this)
     (atomically
-     (let* ([item (let ([title (fixup-mneumonic title)])
+     (let* ([item (let ([title (fixup-mnemonic title)])
                     (as-gtk-allocation
                      (gtk_menu_item_new_with_mnemonic title)))]
             [item-wx (new top-menu% [parent this] [gtk item])])

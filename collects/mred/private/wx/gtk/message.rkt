@@ -13,8 +13,7 @@
  (protect-out message%
               
               gtk_label_new_with_mnemonic
-              gtk_label_set_text_with_mnemonic
-              mnemonic-string))
+              gtk_label_set_text_with_mnemonic))
 
 ;; ----------------------------------------
 
@@ -24,17 +23,6 @@
 (define-gtk gtk_image_new_from_stock (_fun _string _int -> _GtkWidget))
 (define-gtk gtk_misc_set_alignment (_fun _GtkWidget _float _float -> _void))
 (define-gtk gtk_image_set_from_pixbuf (_fun _GtkWidget _GdkPixbuf -> _void))
-
-(define (mnemonic-string s)
-  (if (regexp-match? #rx"&" s)
-      (regexp-replace*
-       #rx"_&"
-       (regexp-replace*
-        #rx"&(.)"
-        (regexp-replace* #rx"_" s "__")
-        "_\\1")
-       "\\&")
-      (regexp-replace* #rx"_" s "__")))
 
 (define (gtk_label_new_with_mnemonic s)
   (let ([l (gtk_label_new s)])

@@ -2,6 +2,7 @@
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
+         racket/string
          racket/draw/unsafe/glib
          (only-in '#%foreign ctype-c->scheme)
          "../common/utils.rkt"
@@ -47,7 +48,8 @@
               gdk_screen_get_default
 
               ;; for declaring derived structures:
-              _GtkObject))
+              _GtkObject)
+ mnemonic-string)
 
 (define gdk-lib 
   (case (system-type)
@@ -182,3 +184,16 @@
                  (g_slist_free gl)))))
 
 (define-gdk gdk_screen_get_default (_fun -> _GdkScreen))
+
+
+(define (mnemonic-string orig-s)
+  (string-join
+   (for/list ([s (in-list (regexp-split #rx"&&" orig-s))])
+     (regexp-replace*
+      #rx"&(.)"
+      (regexp-replace*
+       #rx"_" 
+       s
+       "__")
+      "_\\1"))
+   "&"))

@@ -270,6 +270,10 @@
 					 "6 && Half-D&ozen"
 					 m
 					 void)
+			    (make-object menu-item%
+					 "&&_A"
+					 m
+					 void)
 			    (let mloop ([m m][sub-at-50? #t])
 			      (let ([sm (if (and sub-at-50?
 						 (send e button-down? 'middle))
