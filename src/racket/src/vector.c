@@ -887,12 +887,18 @@ static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *unsafe_struct_ref (int argc, Scheme_Object *argv[])
 {
-  return ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])];
+  if (SCHEME_CHAPERONEP(argv[0]))
+    return scheme_struct_ref(argv[0], SCHEME_INT_VAL(argv[1]));
+  else
+    return ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])];
 }
 
 static Scheme_Object *unsafe_struct_set (int argc, Scheme_Object *argv[])
 {
-  ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])] = argv[2];
+  if (SCHEME_CHAPERONEP(argv[0]))
+    scheme_struct_set(argv[0], SCHEME_INT_VAL(argv[1]), argv[2]);
+  else
+    ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])] = argv[2];
   return scheme_void;
 }
 

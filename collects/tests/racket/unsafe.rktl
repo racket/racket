@@ -307,15 +307,24 @@
               #:literal-ok? #f))
   (test-bin 65535 'unsafe-u16vector-ref (u16vector 10 65535 187) 1)
 
-  (for ([star (list values (add-star "star"))])
+  (let ()
     (define-struct posn (x [y #:mutable] z))
-    (test-bin 'a unsafe-struct-ref (make-posn 'a 'b 'c) 0 #:literal-ok? #f)
-    (test-bin 'b unsafe-struct-ref (make-posn 'a 'b 'c) 1 #:literal-ok? #f)
-    (let ([p (make-posn 100 200 300)])
+    (for ([star (list values (add-star "star"))])
+      (test-bin 'a unsafe-struct-ref (make-posn 'a 'b 'c) 0 #:literal-ok? #f)
+      (test-bin 'b unsafe-struct-ref (make-posn 'a 'b 'c) 1 #:literal-ok? #f)
+      (let ([p (make-posn 100 200 300)])
+        (test-tri 500 (star 'unsafe-struct-set!) p 1 500
+                  #:pre (lambda () (set-posn-y! p 0)) 
+                  #:post (lambda (x) (posn-y p))
+                  #:literal-ok? #f)))
+    (let ([p (chaperone-struct (make-posn 100 200 300)
+                               posn-y (lambda (p v) v)
+                               set-posn-y! (lambda (p v) v))])
       (test-tri 500 'unsafe-struct-set! p 1 500
                 #:pre (lambda () (set-posn-y! p 0)) 
                 #:post (lambda (x) (posn-y p))
                 #:literal-ok? #f)))
+    
   ;; test unboxing:
   (test-tri 5.4 '(lambda (x y z) (unsafe-fl+ x (unsafe-f64vector-ref y z))) 1.2 (f64vector 1.0 4.2 6.7) 1)
   (test-tri 3.2 '(lambda (x y z) 
