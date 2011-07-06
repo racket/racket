@@ -1443,7 +1443,6 @@ place_bi_channel_val {
 
 place_object_val {
  mark:
-
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Object));
 }
@@ -1463,6 +1462,7 @@ place_async_channel_val {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   gcMARK2(pac->msgs, gc);
   gcMARK2(pac->msg_memory, gc);
+  gcMARK2(pac->wakeup_signal, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
