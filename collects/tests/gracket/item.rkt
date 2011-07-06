@@ -266,6 +266,10 @@
 					 "[on-demand hook]"
 					 m
 					 void)
+			    (make-object menu-item%
+					 "6 && Half-D&ozen"
+					 m
+					 void)
 			    (let mloop ([m m][sub-at-50? #t])
 			      (let ([sm (if (and sub-at-50?
 						 (send e button-down? 'middle))
@@ -750,7 +754,8 @@
 			tab grp)]
 	   [canvas  (make-object popup-test-canvas% 
 				 items
-				 (list "h slider" "v slider"
+				 (list "combo"
+                                       "h slider" "v slider"
 				       "v gauge" "v gauge"
 				       ; "text msg" "image msg"
 				       "text"

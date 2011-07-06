@@ -61,7 +61,7 @@
         (send submenu install menu label enabled?)
         (let ([item (as-objc-allocation
                      (tell (tell MyMenuItem alloc) 
-                           initWithTitle: #:type _NSString (regexp-replace #rx"\t.*" label "")
+                           initWithTitle: #:type _NSString (clean-menu-label (regexp-replace #rx"\t.*" label ""))
                            action: #:type _SEL #f
                            keyEquivalent: #:type _NSString ""))])
           (set-ivar! item wxb (->wxb this))
