@@ -10,7 +10,7 @@
                racket/promise racket/system
                (only-in string-constants/private/only-once maybe-print-message)
                (only-in racket/match/runtime match:error matchable? match-equality-test)
-               racket/unsafe/ops)
+               racket/unsafe/ops racket/flonum)
  (utils tc-utils)
  (types union convenience)
  (rename-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
@@ -266,6 +266,22 @@
    [vector-copy! (-poly (a) ((-vec a) index-type (-vec a) [index-type index-type] . ->opt . -Void))]
    [make-vector (-poly (a) (cl-> [(index-type) (-vec (Un -Integer a))]
                                  [(index-type a) (-vec a)]))]
+
+   ;; flvector ops
+
+   [flvector? (make-pred-ty -FlVector)]
+   [flvector (->* (list) -Flonum -FlVector)]
+   [make-flvector (cl->* (-> index-type -FlVector)
+                         (-> index-type -Flonum -FlVector))]
+
+   [flvector-length (-> -FlVector -NonNegFixnum)]
+   [flvector-ref (-> -FlVector index-type -Flonum)]
+   [flvector-set! (-> -FlVector index-type -Flonum -Void)]
+
+   [unsafe-flvector-length (-> -FlVector -NonNegFixnum)]
+   [unsafe-flvector-ref (-> -FlVector index-type -Flonum)]
+   [unsafe-flvector-set! (-> -FlVector index-type -Flonum -Void)]
+
 
    [bytes-ref (-> -Bytes index-type -Byte)]
    [unsafe-bytes-ref (-> -Bytes index-type -Byte)]

@@ -1861,19 +1861,3 @@
 [unsafe-make-flrectangular make-flrectangular-type]
 [unsafe-flreal-part flreal-part-type]
 [unsafe-flimag-part flimag-part-type]
-
-
-;; flvector ops
-
-[flvector? (make-pred-ty -FlVector)]
-[flvector (varop -Flonum -FlVector)]
-[make-flvector (cl->* (-> -Int -FlVector)
-                      (-> -Int -Flonum -FlVector))]
-
-[flvector-length (-> -FlVector -NonNegFixnum)]
-[flvector-ref (-> -FlVector -Int -Flonum)]
-[flvector-set! (-> -FlVector -Int -Flonum -Void)]
-
-[unsafe-flvector-length (-> -FlVector -NonNegFixnum)]
-[unsafe-flvector-ref (-> -FlVector -Int -Flonum)]
-[unsafe-flvector-set! (-> -FlVector -Int -Flonum -Void)]
