@@ -1812,7 +1812,7 @@ static RBNode *recolor_rb(int red, RBNode *rb)
                  rb->right);
 }
 
-static RBNode *rb_find(uintptr_t code, RBNode *s)
+XFORM_NONGCING static RBNode *rb_find(uintptr_t code, RBNode *s)
 {
   while (1) {
     if (!s)
@@ -2411,6 +2411,31 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
   return tree2;
 }
 
+Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
+{
+  uintptr_t h;
+  RBNode *rb;
+
+  h = PTR_TO_LONG((Scheme_Object *)key);
+
+  rb = rb_find(h, tree->root);
+  if (rb) {
+    if (!rb->key) {
+      /* Have list of keys & vals: */
+      Scheme_Object *prs = rb->val, *a;
+      while (prs) {
+        a = SCHEME_CAR(prs);
+        if (SAME_OBJ(SCHEME_CAR(a), key))
+          return SCHEME_CDR(a);
+        prs = SCHEME_CDR(prs);
+      }
+    } else
+      return rb->val;
+  }
+
+  return NULL;
+}
+
 Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
 {
   uintptr_t h;
@@ -2423,7 +2448,7 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
     else
       h = to_unsigned_hash(scheme_eqv_hash_key(key));
   } else {
-    h = PTR_TO_LONG((Scheme_Object *)key);
+    return scheme_eq_hash_tree_get(tree, key);
   }
 
   rb = rb_find(h, tree->root);
@@ -2433,31 +2458,23 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
       Scheme_Object *prs = rb->val, *a;
       while (prs) {
         a = SCHEME_CAR(prs);
-        if (kind) {
-          if (kind == 1) {
-            if (scheme_equal(SCHEME_CAR(a), key))
-              return SCHEME_CDR(a);
-          } else {
-            if (scheme_eqv(SCHEME_CAR(a), key))
-              return SCHEME_CDR(a);
-          }
+        if (kind == 1) {
+          if (scheme_equal(SCHEME_CAR(a), key))
+            return SCHEME_CDR(a);
         } else {
-          if (SAME_OBJ(SCHEME_CAR(a), key))
+          if (scheme_eqv(SCHEME_CAR(a), key))
             return SCHEME_CDR(a);
         }
         prs = SCHEME_CDR(prs);
       }
     } else {
-      if (kind) {
-        if (kind == 1) {
-          if (scheme_equal(key, rb->key))
-            return rb->val;
-        } else {
-          if (scheme_eqv(key, rb->key))
-            return rb->val;
-        }
-      } else if (SAME_OBJ(key, rb->key))
-        return rb->val;
+      if (kind == 1) {
+        if (scheme_equal(key, rb->key))
+          return rb->val;
+      } else {
+        if (scheme_eqv(key, rb->key))
+          return rb->val;
+      }
     }
   }
 

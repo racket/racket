@@ -381,6 +381,7 @@ Scheme_Hash_Table *(*scheme_clone_hash_table)(Scheme_Hash_Table *bt);
 Scheme_Hash_Tree *(*scheme_make_hash_tree)(int kind);
 Scheme_Hash_Tree *(*scheme_hash_tree_set)(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_hash_tree_get)(Scheme_Hash_Tree *tree, Scheme_Object *key);
+Scheme_Object *(*scheme_eq_hash_tree_get)(Scheme_Hash_Tree *tree, Scheme_Object *key);
 intptr_t (*scheme_hash_tree_next)(Scheme_Hash_Tree *tree, intptr_t pos);
 int (*scheme_hash_tree_index)(Scheme_Hash_Tree *tree, intptr_t pos, Scheme_Object **_key, Scheme_Object **_val);
 int (*scheme_hash_tree_equal)(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);

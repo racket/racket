@@ -285,6 +285,7 @@
 #define scheme_make_hash_tree (scheme_extension_table->scheme_make_hash_tree)
 #define scheme_hash_tree_set (scheme_extension_table->scheme_hash_tree_set)
 #define scheme_hash_tree_get (scheme_extension_table->scheme_hash_tree_get)
+#define scheme_eq_hash_tree_get (scheme_extension_table->scheme_eq_hash_tree_get)
 #define scheme_hash_tree_next (scheme_extension_table->scheme_hash_tree_next)
 #define scheme_hash_tree_index (scheme_extension_table->scheme_hash_tree_index)
 #define scheme_hash_tree_equal (scheme_extension_table->scheme_hash_tree_equal)

@@ -1258,6 +1258,20 @@ static int can_direct_native(Scheme_Object *p, int num_rands, intptr_t *extract_
   return 0;
 }
 
+static int is_noncm_hash_ref(Scheme_Object *rator, int num_rands, Scheme_App_Rec *app)
+{
+  /* hash-ref acts like a non-cm prim if there's no procedure 3rd argument */
+  if (SAME_OBJ(rator, scheme_hash_ref_proc) && ((num_rands == 2) || (num_rands == 3))) {
+    if (num_rands == 3) {
+      if ((SCHEME_TYPE(app->args[3]) < _scheme_values_types_)
+          || SCHEME_PROCP(app->args[3]))
+        return 0;
+    }
+    return 1;
+  }
+
+  return 0;
+}
 
 static jit_direct_arg *check_special_direct_args(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
                                                  int args_already_in_place)
@@ -1353,6 +1367,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	&& ((num_rands <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
 	    || (((Scheme_Primitive_Proc *)rator)->mina < 0))
 	&& (scheme_is_noncm(rator, jitter, 0, 0)
+            || is_noncm_hash_ref(rator, num_rands, app)
             /* It's also ok to directly call `values' if multiple values are ok: */
             || (multi_ok && SAME_OBJ(rator, scheme_values_func))))
       direct_prim = 1;

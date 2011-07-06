@@ -33,6 +33,7 @@ READ_ONLY Scheme_Object *scheme_mcons_proc;
 READ_ONLY Scheme_Object *scheme_list_proc;
 READ_ONLY Scheme_Object *scheme_list_star_proc;
 READ_ONLY Scheme_Object *scheme_box_proc;
+READ_ONLY Scheme_Object *scheme_hash_ref_proc;
 /* read only locals */
 ROSYM static Scheme_Object *weak_symbol;
 ROSYM static Scheme_Object *equal_symbol;
@@ -582,11 +583,9 @@ scheme_init_list (Scheme_Env *env)
 						    "hash-set",
 						    3, 3),
 			     env);
-  scheme_add_global_constant("hash-ref",
-			     scheme_make_prim_w_arity(hash_table_get,
-						      "hash-ref",
-						      2, 3),
-			     env);
+  REGISTER_SO(scheme_hash_ref_proc);
+  scheme_hash_ref_proc = scheme_make_prim_w_arity(hash_table_get, "hash-ref", 2, 3);
+  scheme_add_global_constant("hash-ref", scheme_hash_ref_proc, env);
   scheme_add_global_constant("hash-remove!",
 			     scheme_make_noncm_prim(hash_table_remove_bang,
 						    "hash-remove!",
@@ -2217,38 +2216,11 @@ static Scheme_Object *hash_table_put(int argc, Scheme_Object *argv[])
   return (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)v, argv[1], argv[2]);
 }
 
-static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
+static Scheme_Object *hash_failed(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v;
 
-  v = argv[0];
-
-  if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
-                                  || SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(v))
-                                  || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v))))
-    v = scheme_chaperone_hash_get(v, argv[1]);
-  else if (SCHEME_BUCKTP(v)) {
-    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
-    if (t->mutex) scheme_wait_sema(t->mutex, 0);
-    v = (Scheme_Object *)scheme_lookup_in_table(t, (char *)argv[1]);
-    if (t->mutex) scheme_post_sema(t->mutex);
-  } else if (SCHEME_HASHTRP(v)) {
-    v = scheme_hash_tree_get((Scheme_Hash_Tree *)v, argv[1]);
-  } else if (!SCHEME_HASHTP(v)) {
-    scheme_wrong_type("hash-ref", "hash", 0, argc, argv);
-    return NULL;
-  } else if (((Scheme_Hash_Table *)v)->mutex) {
-    Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
-    scheme_wait_sema(t->mutex, 0);
-    v = scheme_hash_get(t, argv[1]);
-    scheme_post_sema(t->mutex);
-  } else {
-    v = scheme_hash_get((Scheme_Hash_Table *)v, argv[1]);
-  }
-
-  if (v)
-    return v;
-  else if (argc == 3) {
+  if (argc == 3) {
     v = argv[2];
     if (SCHEME_PROCP(v))
       return _scheme_tail_apply(v, 0, NULL);
@@ -2260,6 +2232,70 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
 		     argv[1]);
     return scheme_void;
   }
+}
+
+static Scheme_Object *gen_hash_table_get(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+
+  v = argv[0];
+  
+  if (SCHEME_HASHTP(v)) {
+    if (((Scheme_Hash_Table *)v)->mutex) {
+      Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
+      scheme_wait_sema(t->mutex, 0);
+      v = scheme_hash_get(t, argv[1]);
+      scheme_post_sema(t->mutex);
+    } else {
+      v = scheme_hash_get((Scheme_Hash_Table *)v, argv[1]);
+    }
+  } else if (SCHEME_HASHTRP(v)) {
+    v = scheme_hash_tree_get((Scheme_Hash_Tree *)v, argv[1]);
+  } else if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
+                                         || SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(v))
+                                         || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v))))
+    v = scheme_chaperone_hash_get(v, argv[1]);
+  else if (SCHEME_BUCKTP(v)) {
+    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
+    if (t->mutex) scheme_wait_sema(t->mutex, 0);
+    v = (Scheme_Object *)scheme_lookup_in_table(t, (char *)argv[1]);
+    if (t->mutex) scheme_post_sema(t->mutex);
+  } else {
+    scheme_wrong_type("hash-ref", "hash", 0, argc, argv);
+    return NULL;
+  }
+
+  if (v)
+    return v;
+  else 
+    return hash_failed(argc, argv);
+}
+
+static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+
+  /* fast path is designed to avoid need for XFORM */
+  v = argv[0];
+  if (SCHEME_HASHTP(v)) {
+    if (!((Scheme_Hash_Table *)v)->make_hash_indices) {
+      v = scheme_eq_hash_get((Scheme_Hash_Table *)v, argv[1]);
+      if (v)
+        return v;
+      else
+        return hash_failed(argc, argv);
+    }
+  } else if (SCHEME_HASHTRP(v)) {
+    if (!(SCHEME_HASHTR_FLAGS(((Scheme_Hash_Tree *)v)) & 0x3)) {
+      v = scheme_eq_hash_tree_get((Scheme_Hash_Tree *)v, argv[1]);
+      if (v)
+        return v;
+      else
+        return hash_failed(argc, argv);
+    }
+  }
+
+  return gen_hash_table_get(argc, argv);
 }
 
 static Scheme_Object *hash_table_remove_bang(int argc, Scheme_Object *argv[])
