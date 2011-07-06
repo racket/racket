@@ -164,6 +164,8 @@ scheme_init_unsafe_vector (Scheme_Env *env)
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-vector-length", p, env);
 
+  /* just use unsafe_vector_X for "unsafe-vector*-X", since there's
+     no speed advantage in an interpreted dispatch to the function, anyway */
   p = scheme_make_immed_prim(unsafe_vector_len, "unsafe-vector*-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
@@ -192,6 +194,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-struct-ref", p, env);
 
+  /* as above for vectors: use unsafe_struct_X for "unsafe-struct*-X" */
   p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct*-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
