@@ -288,6 +288,23 @@ spacing between the last pict and the base.
 ]
 }
 
+@defproc[(tile [cols exact-positive-integer?]
+               [rows exact-positive-integer?])
+         placer?]{
+
+Returns a placer that places picts by tiling them in a grid
+@racket[cols] columns wide and @racket[rows] rows high.
+
+@examples[#:eval the-eval
+(ppict-do base
+          #:go (tile 2 2)
+          (circle 50)
+          (rectangle 50 50)
+          (jack-o-lantern 50)
+          (standard-fish 50 30 #:color "red"))
+]
+}
+
 @defproc[(at-find-pict [find-path (or/c tag-path? pict-path?)]
                        [finder procedure? cc-find]
                        [align (or/c 'lt 'ct 'rt 'lc 'cc 'rc 'lb 'cb 'rb) 'cc]

@@ -9,6 +9,9 @@
 #|
 TODO
 - [lcr]bl alignments... not sure about [lcr]tl
+- document composer contract
+- generalize ppict-add to ppict-add* (put 'next support there)
+- find a way to support slide animation
 |#
 
 ;; ============================================================
@@ -79,24 +82,20 @@ In a placer function's arguments:
                   (+ depy ya))))
       (define-values (newpict newsep)
         (apply-compose compose sep (cons (and cont? (blank 0)) picts)))
-      (define newpict-w (pict-width newpict))
-      (define newpict-h (pict-height newpict))
       (define newscene
-        (let ([localrefx (* newpict-w (align->frac halign))]
-              [localrefy (* newpict-h (align->frac valign))])
-          (pin-over scene (- dx localrefx) (- dy localrefy) newpict)))
+        (pin-over/align scene dx dy halign valign newpict))
       (cond [(and (eq? valign 't) (eq? compose (halign->vcompose halign)))
              ;; ie, going top-down and compose is the natural compose for this align
              (mk-ppict newscene
                        (new refpoint%
-                            (xa dx) (ya (+ dy newpict-h)) (depxy #f)
+                            (xa dx) (ya (+ dy (pict-height newpict))) (depxy #f)
                             (halign halign) (valign valign)
                             (compose compose) (sep newsep) (cont? #t)))]
             [(and (eq? halign 'l) (eq? compose (valign->hcompose valign)))
              ;; ie, going left-right and compose is the natural compose ...
              (mk-ppict newscene
                        (new refpoint%
-                            (xa (+ dx newpict-w)) (ya dy) (depxy #f)
+                            (xa (+ dx (pict-width newpict))) (ya dy) (depxy #f)
                             (halign halign) (valign valign)
                             (compose compose) (sep newsep) (cont? #t)))]
             [else newscene]))
@@ -155,9 +154,8 @@ In a placer function's arguments:
     (super-new)
 
     (define/public (place scene elems)
-      (for/or ([e (in-list elems)])
-        (when (real? e)
-          (error 'cascade "spacing changes not allowed: ~e" e)))
+      (for ([e (in-list elems)])
+        (when (real? e) (error 'cascade "spacing changes not allowed: ~e" e)))
       (let* ([picts (filter pict? elems)]
              [max-w (apply max 1 (map pict-width picts))]  ;; avoid 0
              [max-h (apply max 1 (map pict-height picts))] ;; avoid 0
@@ -181,6 +179,39 @@ In a placer function's arguments:
   ;; FIXME: add align arg, determines position of each pict w/in bbox
   (new cascade% (step-x0 step-x0) (step-y0 step-y0)))
 
+(define tile%
+  (class* object% (placer<%>)
+    (init-field cols rows
+                [start-at 0])
+    (super-new)
+
+    (define/public (place scene elems)
+      (for ([e (in-list elems)])
+        (when (real? e) (error 'tile "spacing changes not allowed: ~e" e)))
+      (let* ([picts (filter pict? elems)]
+             [scene-w (pict-width scene)]
+             [scene-h (pict-height scene)]
+             [dx (/ scene-w cols)]
+             [dy (/ scene-h rows)]
+             [newscene
+              (for/fold ([scene scene])
+                  ([pict (in-list picts)]
+                   [i (in-naturals start-at)])
+                (let ([r (quotient i cols)]
+                      [c (remainder i cols)])
+                  (pin-over/align scene
+                                  (+ (/ dx 2) (* c dx))
+                                  (+ (/ dy 2) (* r dy))
+                                  'c 'c pict)))])
+        (mk-ppict newscene
+                  (new tile%
+                       (cols cols)
+                       (rows rows)
+                       (start-at (+ start-at (length picts)))))))))
+
+(define (tile cols rows)
+  (new tile% (cols cols) (rows rows)))
+
 ;; at-find-pict : ... -> placer
 (define (at-find-pict path
                       [find cc-find]
@@ -198,6 +229,11 @@ In a placer function's arguments:
                     (error 'at-find-path "failed finding ~e" path))
                   (find p pict-path))))
        (halign halign) (valign valign) (compose compose)))
+
+(define (pin-over/align scene x y halign valign pict)
+  (let ([localrefx (* (pict-width pict) (align->frac halign))]
+        [localrefy (* (pict-height pict) (align->frac valign))])
+    (pin-over scene (- x localrefx) (- y localrefy) pict)))
 
 ;; ----
 

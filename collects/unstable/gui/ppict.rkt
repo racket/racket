@@ -64,6 +64,9 @@
   (->* ()
        ((or/c real? 'auto) (or/c real? 'auto))
        placer?)]
+ [tile
+  (-> exact-positive-integer? exact-positive-integer?
+      placer?)]
  [at-find-pict
   (->* ((or/c tag-path? pict-path?))
        (procedure?
