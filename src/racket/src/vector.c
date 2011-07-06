@@ -50,8 +50,13 @@ static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_vector_star_len (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_vector_star_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_vector_star_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_struct_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_struct_set (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_struct_star_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_struct_star_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_string_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_string_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_string_set (int argc, Scheme_Object *argv[]);
@@ -164,9 +169,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-vector-length", p, env);
 
-  /* just use unsafe_vector_X for "unsafe-vector*-X", since there's
-     no speed advantage in an interpreted dispatch to the function, anyway */
-  p = scheme_make_immed_prim(unsafe_vector_len, "unsafe-vector*-length", 1, 1);
+  p = scheme_make_immed_prim(unsafe_vector_star_len, "unsafe-vector*-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-vector*-length", p, env);
@@ -176,7 +179,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-vector-ref", p, env);
 
-  p = scheme_make_immed_prim(unsafe_vector_ref, "unsafe-vector*-ref", 2, 2);
+  p = scheme_make_immed_prim(unsafe_vector_star_ref, "unsafe-vector*-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-vector*-ref", p, env);
@@ -185,7 +188,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-vector-set!", p, env);  
 
-  p = scheme_make_immed_prim(unsafe_vector_set, "unsafe-vector*-set!", 3, 3);
+  p = scheme_make_immed_prim(unsafe_vector_star_set, "unsafe-vector*-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-vector*-set!", p, env);  
 
@@ -194,8 +197,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-struct-ref", p, env);
 
-  /* as above for vectors: use unsafe_struct_X for "unsafe-struct*-X" */
-  p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct*-ref", 2, 2);
+  p = scheme_make_immed_prim(unsafe_struct_star_ref, "unsafe-struct*-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-struct*-ref", p, env);
@@ -204,7 +206,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-struct-set!", p, env);  
 
-  p = scheme_make_immed_prim(unsafe_struct_set, "unsafe-struct*-set!", 3, 3);
+  p = scheme_make_immed_prim(unsafe_struct_star_set, "unsafe-struct*-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-struct*-set!", p, env);  
 
@@ -885,6 +887,25 @@ static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
+static Scheme_Object *unsafe_vector_star_len (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *vec = argv[0];
+  intptr_t n;
+  n = SCHEME_VEC_SIZE(vec);
+  return scheme_make_integer(n);
+}
+
+static Scheme_Object *unsafe_vector_star_ref (int argc, Scheme_Object *argv[])
+{
+  return SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])];
+}
+
+static Scheme_Object *unsafe_vector_star_set (int argc, Scheme_Object *argv[])
+{
+  SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])] = argv[2];
+  return scheme_void;
+}
+
 static Scheme_Object *unsafe_struct_ref (int argc, Scheme_Object *argv[])
 {
   if (SCHEME_CHAPERONEP(argv[0]))
@@ -899,6 +920,17 @@ static Scheme_Object *unsafe_struct_set (int argc, Scheme_Object *argv[])
     scheme_struct_set(argv[0], SCHEME_INT_VAL(argv[1]), argv[2]);
   else
     ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])] = argv[2];
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_struct_star_ref (int argc, Scheme_Object *argv[])
+{
+  return ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])];
+}
+
+static Scheme_Object *unsafe_struct_star_set (int argc, Scheme_Object *argv[])
+{
+  ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])] = argv[2];
   return scheme_void;
 }
 
