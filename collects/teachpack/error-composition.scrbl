@@ -6,7 +6,7 @@
 @title[#:tag "error-guidelines"]{Error Message Composition Guidelines for *SL}
 
 These guidelines distill our current thoughts on writing good error messages for
-novices, as informed by our research.  Please apply these to all code you write
+novices, as informed by @seclink["research"]{our research}.  Please apply these to all code you write
 that's intended for beginners, including libraries and Teachpacks. It will
 ensure your error messages harmonizes with those of the teaching languages.
 
@@ -37,7 +37,7 @@ friendly nor antagonistic.}
 @item{If an expression contains multiple errors, report the leftmost error first:
 e.g., the error in (define 1 2 3) is @emph{``expected the variable name, but found a
 number''}, not @emph{``expected 2 parts after define, but found 3''}. Before raising an
-error about a sub-part, call @racket[local-syntax-expand] on all sub-expressions to
+error about a sub-part, call @racket[syntax-local-expand-expression] on all sub-expressions to
 the left to trigger their errors.}
 
 @item{State the number of parts instead of saying ``found too many parts.'' Write the
@@ -142,4 +142,28 @@ then say that the expressions ``evaluate to'' a value. Function calls are a
 special case of expression. Prefer ``the function call returns'', instead of
 ``it evaluates to'', except when trying to draw attention to you evaluation of
 the arguments.}]
+
+
+@section[#:tag "research"]{Supporting Research}
+
+These guidelines arose from the collections of research studies held at
+Worcester Polytechnic Institute, Brown University, and Northeastern
+University. People who are interested in learning the details of our
+experiments, our results should read the following two papers.
+
+@itemize[
+@item{@hyperlink["http://www.cs.brown.edu/~sk/Publications/Papers/Published/mfk-mind-lang-novice-inter-error-msg/"]{Mind Your Language: On Novices’ Interactions with Error Messages}
+
+This paper reports on a series of studies that explore beginning students’
+interactions with the vocabulary and source-expression highlighting in
+DrRacket. Our findings demonstrate that the error message DrRacket's old error
+messages significantly failed to convey information accurately to students.}
+
+@item{@hyperlink["http://www.cs.brown.edu/~sk/Publications/Papers/Published/mfk-measur-effect-error-msg-novice-sigcse/"]{Measuring
+the Effectiveness of Error Messages Designed for Novice Programmers} 
+
+This paper presents a finegrained grading rubric for evaluating the performance
+of individual error messages. We applied the rubric to a courseworth of student
+work, which allowed us to characterize some ways error messages fail.}]
+
 
