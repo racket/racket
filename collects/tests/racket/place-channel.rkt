@@ -169,38 +169,44 @@
   (let ()
     (define p1 (place ch
                       (define in (place-channel-get ch))
-                      (displayln (place-channel-get in))))
+                      (test 'val place-channel-get in)))
     (define p2 (place ch
                       (define in (place-channel-get ch))
                       (sleep 1)
                       (define t (thread
                                  (lambda () 
-                                   (displayln (place-channel-get in)))))
+                                   (test 'val place-channel-get in))))
                       (sleep 1)
-                      (printf "bye\n")
                       'done))
     (define-values (in out) (place-channel))
     (place-channel-put p1 in)
     (place-channel-put p2 in)
     (sleep 4)
     (place-channel-put out 'val)
-    (sleep 4))
+    (sleep 4)
+    (place-channel-put out 'val)
+    (place-wait p1)
+    (place-wait p2)
+    (test (void) printf "Matthew's example completes"))
 
   ; test signal-handle vector growing
   (let ()
     (define ps (for/list ([i (in-range 4)])
-      (place ch (define in (place-channel-get ch)) (displayln (place-channel-get in)))))
+      (place ch (define in (place-channel-get ch))
+             (test #t not (not (member (place-channel-get in) (list 'val1 'val2 'val3 'val4)))))))
     (define-values (in out) (place-channel))
     (for ([p ps]) (place-channel-put p in))
     (sleep 4)
     (for ([x (list 'val1 'val2 'val3 'val4)]) (place-channel-put out x))
     (sleep 4)
-    (for ([p ps]) (place-wait p)))
+    (for ([p ps]) (place-wait p))
+    (test (void) printf "signal-handle vector growing completes"))
 
   ; test signal-handle vector shrinking
   (let ()
     (define ps (for/list ([i (in-range 4)])
-      (place ch (define in (place-channel-get ch)) (displayln (place-channel-get in)))))
+      (place ch (define in (place-channel-get ch))
+             (test #t not (not (member (place-channel-get in) (list 'val1 'val2 'val3 'val4)))))))
     (define-values (in out) (place-channel))
     (for ([p ps]) (place-channel-put p in))
     (sleep 4)
@@ -210,13 +216,16 @@
 
     (define p0 (place ch 
                       (define in (place-channel-get ch))
-                      (for ([i (in-range 4)]) 
-                           (printf "p0 got ~a\n" (place-channel-get in)))))
+                      (test 'p0val1 place-channel-get in)
+                      (test 'p0val2 place-channel-get in)
+                      (test 'p0val3 place-channel-get in)
+                      (test 'p0val4 place-channel-get in)))
     (place-channel-put p0 in)
     (for ([x (list 'p0val1 'p0val2 'p0val3)]) (place-channel-put out x))
     (sleep 4)
     (place-channel-put out 'p0val4)
-    (for ([p ps]) (place-wait p0)))
+    (for ([p ps]) (place-wait p0))
+    (test (void) printf "signal-handle vector growing completes"))
 
 
 

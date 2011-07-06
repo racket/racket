@@ -2184,7 +2184,7 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
       }
     }
     else {
-      printf("Opps not a valid ch->wakeup_signal\n");
+      printf("Oops not a valid ch->wakeup_signal\n");
       exit(1);
     }
   }
@@ -2240,7 +2240,7 @@ static void register_place_object_with_channel(Scheme_Place_Async_Channel *ch, S
     ch->wakeup_signal = v;
   }
   else {
-    printf("Opps not a valid ch->wakeup_signal\n");
+    printf("Oops not a valid ch->wakeup_signal\n");
     exit(1);
   }
 }
