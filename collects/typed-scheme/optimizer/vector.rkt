@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/parse unstable/syntax
-         racket/match
+         racket/match racket/flonum
          (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
          (rep type-rep)
@@ -16,6 +16,10 @@
   ;; we need the * versions of these unsafe operations to be chaperone-safe
   (pattern (~literal vector-ref)  #:with unsafe #'unsafe-vector-ref  #:with unsafe-no-impersonator #'unsafe-vector*-ref)
   (pattern (~literal vector-set!) #:with unsafe #'unsafe-vector-set! #:with unsafe-no-impersonator #'unsafe-vector*-set!))
+(define-syntax-class flvector-op
+  #:commit
+  (pattern (~literal flvector-ref)  #:with unsafe #'unsafe-flvector-ref)
+  (pattern (~literal flvector-set!) #:with unsafe #'unsafe-flvector-set!))
 
 (define-syntax-class known-length-vector-expr
   #:commit
@@ -69,25 +73,40 @@
   (pattern (#%plain-app op:vector-op v:expr i:fixnum-expr new:expr ...)
            #:with opt
            (begin (log-optimization "vector access splitting" this-syntax)
-                  (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))])
+                  (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))]
+                        [i-known-nonneg? (subtypeof? #'i -NonNegFixnum)])
                     #`(let ([new-i #,((optimize) #'i)]
                             [new-v #,((optimize) #'v)])
                         ;; do the impersonator check up front, to avoid doing it twice (length and op)
                         (if (impersonator? new-v)
                             (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-vector-length v))])
-                                    (if (subtypeof? #'i -NonNegFixnum)
+                                    (if i-known-nonneg?
                                         ;; we know it's nonnegative, one-sided check
                                         one-sided
                                         #`(and (unsafe-fx>= new-i 0)
                                                #,one-sided)))
                                 (op.unsafe new-v new-i #,@(syntax-map (optimize) #'(new ...)))
-                                #,safe-fallback)
+                                #,safe-fallback) ; will error. to give the right error message
                             ;; not an impersonator, can use unsafe-vector* ops
                             (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-vector*-length v))])
-                                    (if (subtypeof? #'i -NonNegFixnum)
-                                        ;; we know it's nonnegative, one-sided check
+                                    (if i-known-nonneg?
                                         one-sided
                                         #`(and (unsafe-fx>= new-i 0)
                                                #,one-sided)))
                                 (op.unsafe-no-impersonator new-v new-i #,@(syntax-map (optimize) #'(new ...)))
-                                #,safe-fallback)))))))
+                                #,safe-fallback))))))
+  ;; similarly for flvectors
+  (pattern (#%plain-app op:flvector-op v:expr i:fixnum-expr new:expr ...)
+           #:with opt
+           (begin (log-optimization "flvector access splitting" this-syntax)
+                  (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))]
+                        [i-known-nonneg? (subtypeof? #'i -NonNegFixnum)])
+                    #`(let ([new-i #,((optimize) #'i)]
+                            [new-v #,((optimize) #'v)])
+                        (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-flvector-length v))])
+                                (if i-known-nonneg?
+                                    one-sided
+                                    #`(and (unsafe-fx>= new-i 0)
+                                           #,one-sided)))
+                            (op.unsafe new-v new-i #,@(syntax-map (optimize) #'(new ...)))
+                            #,safe-fallback))))))
