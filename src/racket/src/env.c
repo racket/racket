@@ -281,13 +281,16 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_spawn_master_place();
 #endif
   
+
   env = place_instance_init(stack_base, 1);
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   {
-    void *signal_fd;
-    signal_fd = scheme_get_signal_handle();
-    GC_set_put_external_event_fd(signal_fd);
+    void *signal_handle;
+    place_object = (Scheme_Place_Object*) scheme_make_place_object();
+    signal_handle = scheme_get_signal_handle();
+    GC_set_put_external_event_fd(signal_handle);
+    place_object->signal_handle = signal_handle;
   }
 #endif
 

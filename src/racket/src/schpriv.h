@@ -3618,7 +3618,21 @@ typedef struct Scheme_Place {
   intptr_t result; /* set when place_obj becomes NULL */
 } Scheme_Place;
 
+typedef struct Scheme_Place_Object {
+  Scheme_Object so;
+  mzrt_mutex *lock;
+  char die;
+  char pbreak;
+  void *signal_handle;
+  void *parent_signal_handle; /* set to NULL when the place terminates */
+  intptr_t result; /* initialized to 1, reset when parent_signal_handle becomes NULL */
+  /*Thread_Local_Variables *tlvs; */
+} Scheme_Place_Object;
+
+#define SCHEME_PLACE_OBJECTP(o) (SCHEME_TYPE(o) == scheme_place_object_type)
+
 Scheme_Env *scheme_place_instance_init();
+Scheme_Object *scheme_make_place_object();
 void scheme_place_instance_destroy(int force);
 void scheme_kill_green_thread_timer();
 void scheme_place_check_for_interruption();

@@ -1441,6 +1441,13 @@ place_bi_channel_val {
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Bi_Channel));
 }
 
+place_object_val {
+ mark:
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Object));
+}
+
 place_val {
  mark:
   Scheme_Place *pr = (Scheme_Place *)p;

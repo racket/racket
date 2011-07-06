@@ -27,6 +27,27 @@ static int place_bi_channel_val_FIXUP(void *p, struct NewGC *gc) {
 #define place_bi_channel_val_IS_CONST_SIZE 1
 
 
+static int place_object_val_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Object));
+}
+
+static int place_object_val_MARK(void *p, struct NewGC *gc) {
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Object));
+}
+
+static int place_object_val_FIXUP(void *p, struct NewGC *gc) {
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Object));
+}
+
+#define place_object_val_IS_ATOMIC 0
+#define place_object_val_IS_CONST_SIZE 1
+
+
 static int place_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));
