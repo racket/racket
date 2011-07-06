@@ -1,5 +1,6 @@
 #;
 (
+TR opt: invalid-vector-ref.rkt 10:2 (vector-ref x 0) -- vector access splitting
 )
 
 #lang typed/scheme
