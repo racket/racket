@@ -136,5 +136,4 @@ also be written with @racket[unquote-splicing].}
 
 @section[#:tag "beginner-abbr-pre-defined"]{Pre-defined Functions}
 
-@prim-op-defns['(lib "htdp-beginner-abbr.ss" "lang") #'here '()]
-
+@prim-op-defns['(lib "htdp-beginner-abbr.rkt" "lang") #'here '()]

@@ -6,8 +6,8 @@
            test-engine/scheme-tests)
 
   ;; Implements the forms:
-  (require "private/teach.ss"
-	   "private/teach-module-begin.ss")
+  (require "private/teach.rkt"
+           "private/teach-module-begin.rkt")
 
   ;; syntax:
   (provide (rename-out

@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require mzlib/etc 
+(require mzlib/etc
          mzlib/list
-         (for-syntax "firstorder.ss"
+         (for-syntax "firstorder.rkt"
                      scheme/base))
 
 (provide rewrite-contract-error-message
@@ -21,7 +21,6 @@
 
 (define (exn-needs-rewriting? exn)
   (exn:fail:contract? exn))
-  
 
 (define (ensure-number n-or-str)
   (if (string? n-or-str) (string->number n-or-str) n-or-str))

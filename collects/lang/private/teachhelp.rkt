@@ -1,13 +1,13 @@
 (module teachhelp mzscheme
-  (require "firstorder.ss"
+  (require "firstorder.rkt"
            "rewrite-error-message.rkt"
            stepper/private/shared)
 
   (require-for-syntax stepper/private/shared)
-  
-  (provide make-undefined-check 
-	   make-first-order-function)
-  
+
+  (provide make-undefined-check
+           make-first-order-function)
+
   (define (make-undefined-check check-proc tmp-id)
     (let ([set!-stx (datum->syntax-object check-proc 'set!)])
       (make-set!-transformer

@@ -1,10 +1,10 @@
 (module htdp-advanced scheme/base
-  (require "private/teach.ss"
-	   "private/teach-module-begin.ss"
-	   mzlib/etc
-	   mzlib/list
-	   mzlib/pretty
-	   syntax/docprovide
+  (require "private/teach.rkt"
+           "private/teach-module-begin.rkt"
+           mzlib/etc
+           mzlib/list
+           mzlib/pretty
+           syntax/docprovide
            scheme/promise
            test-engine/scheme-tests
            "posn.rkt")

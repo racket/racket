@@ -113,5 +113,4 @@ the function.}
 
 @section[#:tag "intm-w-lambda-pre-defined"]{Pre-defined Functions}
 
-@prim-op-defns['(lib "htdp-intermediate-lambda.ss" "lang") #'here '()]
-
+@prim-op-defns['(lib "htdp-intermediate-lambda.rkt" "lang") #'here '()]

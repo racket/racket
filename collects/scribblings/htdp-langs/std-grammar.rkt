@@ -1,6 +1,6 @@
 #reader scribble/reader
 #lang racket/base
-(require "common.ss"
+(require "common.rkt"
          scribble/decode)
 
 (provide prim-nonterms
@@ -18,8 +18,8 @@
    form ...
    [test-case @#,racket[(check-expect expression expression)]
               @#,racket[(check-within expression expression expression)]
-	      @#,racket[(check-member-of expression expression (... ...))]
-	      @#,racket[(check-range expression expression expression)]
+              @#,racket[(check-member-of expression expression (... ...))]
+              @#,racket[(check-range expression expression expression)]
               @#,racket[(check-error expression expression)]
               @#,racket[(check-error expression)]]
    (...

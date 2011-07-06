@@ -23,7 +23,7 @@
 
          ;; this module is shared between the drscheme's namespace (so loaded here) 
          ;; and the user's namespace in the teaching languages
-         "private/set-result.ss"
+         "private/set-result.rkt"
          "private/rewrite-error-message.rkt"
 
          "private/continuation-mark-key.rkt"

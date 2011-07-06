@@ -1,6 +1,6 @@
 #reader scribble/reader
 #lang racket/base
-(require "common.ss"
+(require "common.rkt"
          scribble/decode
          scribble/struct
          scribble/racket

@@ -4,15 +4,15 @@
 
 (module htdp-beginner scheme/base
   (require mzlib/etc
-	   mzlib/list
-	   syntax/docprovide
+           mzlib/list
+           syntax/docprovide
            "private/rewrite-error-message.rkt"
            (for-syntax "private/rewrite-error-message.rkt")
            (for-syntax scheme/base))
 
   ;; Implements the forms:
-  (require "private/teach.ss"
-           "private/teach-module-begin.ss"
+  (require "private/teach.rkt"
+           "private/teach-module-begin.rkt"
            test-engine/scheme-tests)
 
   ;; syntax:
@@ -54,9 +54,9 @@
 ; 	   Property
 ; 	   check-property for-all ==> expect expect-within expect-member-of expect-range
 	   )
-  
-  (require (for-syntax "private/firstorder.ss"))
-    
+
+  (require (for-syntax "private/firstorder.rkt"))
+
 
   (define-syntax (in-rator-position-only stx)
     (syntax-case stx ()

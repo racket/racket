@@ -317,5 +317,4 @@ Like @racket[when], but the @racket[body-expression] is evaluated when the
 
 @section[#:tag "advanced-pre-defined"]{Pre-Defined Functions}
 
-@prim-op-defns['(lib "htdp-advanced.ss" "lang") #'here '()]
-
+@prim-op-defns['(lib "htdp-advanced.rkt" "lang") #'here '()]

@@ -56,18 +56,18 @@
 
   (require "rewrite-error-message.rkt")
 
-  (require-for-syntax "teachhelp.ss"
+  (require-for-syntax "teachhelp.rkt"
                       "rewrite-error-message.rkt"
-                      "teach-shared.ss"
+                      "teach-shared.rkt"
                       "rewrite-error-message.rkt"
-		      syntax/kerncase
-		      syntax/stx
-		      syntax/struct
-		      syntax/context
-		      mzlib/include
-		      scheme/list
-		      (rename racket/base racket:define-struct define-struct)
-		      (only racket/base syntax->datum datum->syntax)
+                      syntax/kerncase
+                      syntax/stx
+                      syntax/struct
+                      syntax/context
+                      mzlib/include
+                      scheme/list
+                      (rename racket/base racket:define-struct define-struct)
+                      (only racket/base syntax->datum datum->syntax)
                       (rename racket/base kw-app #%app)
                       racket/struct-info
                       stepper/private/shared
