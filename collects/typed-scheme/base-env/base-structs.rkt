@@ -7,7 +7,9 @@
  (except-in (rep filter-rep object-rep type-rep) make-arr)
  (types convenience union)
  (only-in (types convenience) [make-arr* make-arr])
- (typecheck tc-structs))
+ (typecheck tc-structs)
+ ;;For tests
+ (prefix-in k: '#%kernel))
 
 (require (for-template racket/base (prefix-in k: '#%kernel)))
 

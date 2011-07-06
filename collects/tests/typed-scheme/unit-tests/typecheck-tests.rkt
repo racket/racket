@@ -1356,8 +1356,6 @@
         |#
 
         ;Kernel Structs, check that their hidden identifiers type
-        ;Currently broken in test-suite because of binding differences
-        #;
         (tc-e (void exn
                     exn:fail
                     exn:fail:contract
