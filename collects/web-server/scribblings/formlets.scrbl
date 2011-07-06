@@ -120,7 +120,7 @@ Most users will want to use the syntactic shorthand for creating @tech{formlet}s
  These forms @emph{may not} appear nested inside @racket[unquote] or @racket[unquote-splicing]. For example, this is illegal:
  @racketblock[
   (formlet (div ,@(for/list ([i (in-range 10)])
-                    `(p ,(text-input . => . name))))
+                    `(p ,((text-input) . => . name))))
            name)
   ]
 }
