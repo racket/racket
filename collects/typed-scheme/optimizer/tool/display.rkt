@@ -1,14 +1,16 @@
 #lang racket/base
 
-(require racket/string racket/pretty racket/class racket/gui/base
+(require racket/string unstable/pretty racket/class racket/gui/base
          unstable/sequence)
 
 (provide format-message make-color-table)
 
 (define (format-message stxs+msgs)
   (string-join (for/list ([(stx msg) (in-pairs stxs+msgs)])
-                 (format "~a\n~a"
-                         (pretty-format (syntax->datum stx))
+                 (format "~a:~a: ~a~a"
+                         (syntax-line stx)
+                         (syntax-column stx)
+                         (pretty-format/write (syntax->datum stx))
                          msg))
                "\n\n"))
 
