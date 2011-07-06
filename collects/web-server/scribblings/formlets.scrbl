@@ -164,7 +164,7 @@ to be @emph{syntactically} an @|xexpr|. You may discover you want to use a more 
  @racketblock[
   (formlet* `(div ,@(for/list ([i (in-range 1 10)])
                       `(p ,(number->string i)
-                          ,(text-input . =>* . name))))
+                          ,((text-input) . =>* . name))))
             name)
   ]
  @racket[name] is bound to a list of strings, not a single string, where the first element is the string that
@@ -173,7 +173,7 @@ to be @emph{syntactically} an @|xexpr|. You may discover you want to use a more 
  In this example, it is clear that this is the desired behavior. However, sometimes the value of a formlet's
  result may be surprising. For example, in
  @racketblock[
-  (formlet* `(div (p ,(text-input . =>* . name)))
+  (formlet* `(div (p ,((text-input) . =>* . name)))
             name)
   ]
  @racket[name] is bound to a list of strings, because @racket[formlet*] cannot syntactically determine if
