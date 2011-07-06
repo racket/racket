@@ -1734,7 +1734,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
       }
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);
-      if (ii == 1) {
+      if (i == 1) {
         /* second argument was pushed early */
         jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
       } else {
