@@ -201,4 +201,6 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_build_list_offset scheme_build_list_offset
 # define ts_wrong_argument_count wrong_argument_count
 # define ts_vector_check_chaperone_of vector_check_chaperone_of
+# define ts_scheme_checked_list_ref scheme_checked_list_ref
+# define ts_scheme_checked_list_tail scheme_checked_list_tail
 #endif
