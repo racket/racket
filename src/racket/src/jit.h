@@ -1260,3 +1260,70 @@ void scheme_jit_register_traversers(void);
 #ifdef MZ_USE_LWC
 Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args);
 #endif
+
+
+/**********************************************************************/
+
+/* Arithmetic operation codes. Used in jitarith.c and jitinline.c. */
+
+// +, add1, fx+, unsafe-fx+, fl+, unsafe-fl+
+#define ARITH_ADD      1
+// -, sub1, fx-, unsafe-fx-, fl-, unsafe-fl-
+#define ARITH_SUB     -1
+// *, fx*, unsafe-fx*, fl*, unsafe-fl*
+#define ARITH_MUL      2
+// /, fl/, unsafe-fl/
+#define ARITH_DIV     -2
+// quotient, fxquotient, unsafe-fxquotient
+#define ARITH_QUOT    -3
+// remainder, fxremainder, unsafe-fxremainder
+#define ARITH_REM     -4
+// modulo, fxmodulo, unsafe-fxmodulo
+#define ARITH_MOD     -5
+// bitwise-and, fxand, unsafe-fxand
+#define ARITH_AND      3
+// bitwise-ior, fxior, unsafe-fxior
+#define ARITH_IOR      4
+// bitwise-xor, fxxor, unsafe-fxxor
+#define ARITH_XOR      5
+// arithmetic-shift, fxlshift, unsafe-fxlshift
+#define ARITH_LSH      6
+// fxrshift, unsafe-fxrshift
+#define ARITH_RSH     -6
+// bitwise-not, fxnot, unsafe-fxnot
+#define ARITH_NOT      7
+// min, fxmin, unsafe-fxmin, flmin, unsafe-flmin
+#define ARITH_MIN      9
+// max, fxmax, unsafe-fxmax, flmax, unsafe-flmax
+#define ARITH_MAX      10
+// abs, fxabs, unsafe-fxabs, flabs, unsafe-flabs
+#define ARITH_ABS      11
+// exact->inexact, real->double-flonum, unsafe-fx->fl, ->fl, fx->fl
+#define ARITH_EX_INEX  12
+// sqrt, flsqrt, unsafe-flsqrt
+#define ARITH_SQRT     13
+// flfloor, flceiling, flround, fltruncate, flsin,  flcos, fltan,
+// flasin, flacos, flatan, flexp, fllog
+#define ARITH_FLUNOP   14
+// inexact->exact, unsafe-fl->fx, fl->exact-integer, fl->fx
+#define ARITH_INEX_EX  15
+
+
+/* Comparison codes. Used in jitarith.c and jitinline.c. */
+
+// zero?, =, fx=, unsafe-fx=, fl=, unsafe-fl=
+#define CMP_EQUAL  0
+// >=, fx>=, unsafe-fx>=, fl>=, unsafe-fl>=
+#define CMP_GEQ    1
+// <=, fx<=, unsafe-fx<=, fl<=, unsafe-fl<=
+#define CMP_LEQ   -1
+// >, fx>, unsafe-fx>, fl>, unsafe-fl>, positive?
+#define CMP_GT     2
+// <, fx<, unsafe-fx<, fl<, unsafe-fl<, negative?
+#define CMP_LT    -2
+// bitwise-bit-test?
+#define CMP_BIT    3
+// even?
+#define CMP_EVENP  4
+// odd?
+#define CMP_ODDP  -4
