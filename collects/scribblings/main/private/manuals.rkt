@@ -113,7 +113,11 @@
          (lambda (sec)
            (let ([docs (filter (lambda (doc) (eq? (car doc) (sec-cat sec)))
                                docs)])
-             (cond [(pair? docs)
+             (cond [(and (null? docs) (string? (sec-label sec)))
+                    ;; Drop section if it contains no manuals,
+                    ;; *unless* the section label contains a link.
+                    null]
+                   [else
                     (list*
                      (plain-line (hspace 1))
                      (plain-line (let loop ([s (sec-label sec)])
@@ -143,7 +147,6 @@
                                                              (caadr x)))))
                                                 renderer part resolve-info))])
                                     (string-ci<? (str ad) (str bd)))
-                                  (> (car ad) (car bd)))))))]
-                   [else null])))
+                                  (> (car ad) (car bd)))))))])))
          sections))))
     (make-delayed-block contents)))
