@@ -372,7 +372,9 @@
                                                        (list 'interp-match 
                                                              (list 'quote pat)
                                                              'e
-                                                             (list 'quote-syntax (list->vector (reverse (unbox interp-box))))
+                                                             (if (null? (unbox interp-box))
+                                                                 #f
+                                                                 (list 'quote-syntax (list->vector (reverse (unbox interp-box)))))
                                                              lit-comp))))
                                              mtch)]
                                    [m
