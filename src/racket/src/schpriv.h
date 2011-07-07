@@ -3623,7 +3623,9 @@ typedef struct Scheme_Place {
 
 typedef struct Scheme_Place_Object {
   Scheme_Object so;
+#if defined(MZ_USE_PLACES)
   mzrt_mutex *lock;
+#endif
   char die;
   char pbreak;
   void *signal_handle;
