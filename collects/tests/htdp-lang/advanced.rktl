@@ -55,7 +55,7 @@
 (htdp-top-pop 1)
 
 (htdp-syntax-test #'begin0 "begin0: expected an open parenthesis before begin0, but found none")
-(htdp-syntax-test #'(begin0) "begin: expected at least one expression after begin0, but nothing's there")
+(htdp-syntax-test #'(begin0) "begin0: expected at least one expression after begin0, but nothing's there")
 
 (htdp-test 1 'begin0 (begin0 1))
 (htdp-test 2 'begin0 (begin0 2 1))

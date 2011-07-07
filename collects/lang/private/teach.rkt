@@ -2515,7 +2515,7 @@
       (syntax-case stx ()
 	[(_)
 	 (teach-syntax-error
-	  'begin
+	  'begin0
 	  stx
 	  #f
 	  "expected at least one expression after begin0, but nothing's there")]
