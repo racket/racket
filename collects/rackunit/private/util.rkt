@@ -29,7 +29,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
-         mzlib/etc
+         racket/runtime-path
          "check.rkt"
          "test-suite.rkt"
          "test-case.rkt")
@@ -38,30 +38,28 @@
          test-suite*
          check-regexp-match)
 
-;; Requires a module and exposes some of its unprovided
-;; (non-syntax!)  identifiers.
+(define-namespace-anchor this-ns)
+
+;; Requires a module and exposes some of its unprovided identifiers.
 ;; USAGE: (require/expose MODULE-NAME (IDS ...))
 ;;   where MODULE-NAME is as in the MzRacket manual (i.e.,
 ;;   a standard module spec) and IDS are the un-provided
 ;;   identifiers that you wish to expose in the current
 ;;   module.
-(define-syntax (require/expose stx)
-  (syntax-case stx ()
-    [(_ mod (ids ...))
-     (quasisyntax/loc stx
-       (begin
-         (require (only-in mod))
-         (define-values (ids ...)
-           (parameterize
-               ([current-load-relative-directory
-                 #,(datum->syntax
-                    stx
-                    `(,#'this-expression-source-directory)
-                    stx)])
-             (let ([ns (module->namespace 'mod)])
-               (parameterize ([current-namespace ns])
-                 (values
-                  (namespace-variable-value 'ids)...)))))))]))
+(define-syntax require/expose
+  (syntax-rules ()
+    [(_ mod (id ...))
+     (begin
+       (require (only-in mod))
+       (define-runtime-module-path the-resolved-mod mod)
+       (define-values (id ...)
+         (let ([the-mod (resolved-module-path-name the-resolved-mod)])
+           ;; Use the correct module-registry:
+           (parameterize ((current-namespace (namespace-anchor->namespace this-ns)))
+             ;; Get the module namespace:
+             (parameterize ((current-namespace (module->namespace the-mod)))
+               ;; Use eval so id-macros (eg struct constructors, names w/ contracts) work:
+               (values (eval 'id) ...))))))]))
 
 (define-syntax test-suite*
   (syntax-rules ()
