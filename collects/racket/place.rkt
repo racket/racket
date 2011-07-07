@@ -146,6 +146,8 @@
 (define-for-syntax (gen-create-place stx)
  (syntax-case stx ()
    [(_ ch body ...)
+     (unless (identifier? #'ch)
+          (raise-syntax-error #f "expected an indentifier" stx #'ch))
      (with-syntax ([interal-def-name
                     (syntax-local-lift-expression #'(lambda (ch) body ...))]
                    [funcname (datum->syntax stx (generate-temporary #'place/anon))])
