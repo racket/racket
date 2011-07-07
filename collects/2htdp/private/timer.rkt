@@ -12,7 +12,7 @@
 
 (provide clock-mixin start-stop<%>)
 
-(define start-stop<%> (interface () start! ptock pptock stop!))
+(define start-stop<%> (interface () start! ptock pptock name-of-tick-handler stop!))
 
 (define clock-mixin
   (mixin (start-stop<%>) ()
@@ -36,4 +36,6 @@
       (super stop! w))
     (define/override (pptock w)
       (tick w))
+    (define/override (name-of-tick-handler)
+      (object-name tick))
     (super-new)))

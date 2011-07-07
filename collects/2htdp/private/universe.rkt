@@ -122,6 +122,8 @@
       ;; tick, tock : deal with a tick event for this world 
       (def/cback pubment (ptock) (let ([on-tick (lambda (w) (pptock w))]) on-tick))
       (define/public (pptock w) (void))
+      (define/public (name-of-tick-handler)
+        "the on-tick-handler")
       
       ;; IWorld -> Void 
       ;; effect: remove from given iworld from iworlds 
