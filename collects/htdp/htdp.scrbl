@@ -2,14 +2,14 @@
 
 @(require scribble/manual (for-label scheme))
 
-@title[#:style '(toc) #:tag "htdp"]{HtDP TeachPacks}
+@title[#:style '(toc) #:tag "htdp"]{How to Design HtDP TeachPacks}
 
-@section{TeachPacks}
+@section{What are TeachPacks}
 
 TeachPacks for "How to Design Programs" provide functionality that extends
-the teaching languages for specific exercises. The extensions fit smoothly 
-to the teaching languages so that students don't get nonsensical error
-messages or undocumented language features through the backdoor. 
+ the teaching languages for specific exercises. The extensions fit smoothly
+ to the teaching languages so that students don't get nonsensical error
+ messages or undocumented language features through the backdoor.
 
 @; -----------------------------------------------------------------------------
 @section{Errors} 
