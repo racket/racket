@@ -51,8 +51,6 @@ static Scheme_Object *immutablep (int argc, Scheme_Object *argv[]);
 static Scheme_Object *length_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *append_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *reverse_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *list_tail_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *list_ref_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *memv (int argc, Scheme_Object *argv[]);
 static Scheme_Object *memq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *member (int argc, Scheme_Object *argv[]);
@@ -264,16 +262,15 @@ scheme_init_list (Scheme_Env *env)
 						     "reverse",
 						     1, 1),
 			      env);
-  scheme_add_global_constant ("list-tail",
-			      scheme_make_immed_prim(list_tail_prim,
-						     "list-tail",
-						     2, 2),
-			      env);
-  scheme_add_global_constant ("list-ref",
-			      scheme_make_immed_prim(list_ref_prim,
-						     "list-ref",
-						     2, 2),
-			      env);
+
+  p = scheme_make_immed_prim(scheme_checked_list_tail, "list-tail", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant ("list-tail", p, env);
+
+  p = scheme_make_immed_prim(scheme_checked_list_ref, "list-ref", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant ("list-ref",p, env);
+
   scheme_add_global_constant ("memq",
 			      scheme_make_immed_prim(memq,
 						     "memq",
@@ -1330,14 +1327,14 @@ do_list_ref(char *name, int takecar, int argc, Scheme_Object *argv[])
     return lst;
 }
 
-static Scheme_Object *
-list_tail_prim(int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_list_tail(int argc, Scheme_Object *argv[])
 {
   return do_list_ref("list-tail", 0, argc, argv);
 }
 
-static Scheme_Object *
-list_ref_prim(int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_list_ref(int argc, Scheme_Object *argv[])
 {
   return do_list_ref("list-ref", 1, argc, argv);
 }

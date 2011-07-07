@@ -2368,6 +2368,93 @@ static int common8(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common8_5(mz_jit_state *jitter, void *_data)
+{
+  int i;
+
+  /* list_{ref,tail}_code */
+  /* first argument is in R0, second in R1 */
+  for (i = 0; i < 2; i++) {
+    void *code;
+    GC_CAN_IGNORE jit_insn *refslow, *refloop, *refdone, *ref, *refr;
+
+    code = jit_get_ip().ptr;
+    if (i == 0)
+      sjc.list_tail_code = code;
+    else
+      sjc.list_ref_code = code;
+
+    mz_prolog(JIT_R2);
+    
+    __START_SHORT_JUMPS__(1);
+    
+    /* Save original arguments: */
+    jit_movr_p(JIT_V1, JIT_R0);
+    mz_set_local_p(JIT_R1, JIT_LOCAL3);
+
+    ref = jit_bmsi_l(jit_forward(), JIT_R1, 0x1);
+
+    refslow = _jit.x.pc;
+    
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    JIT_UPDATE_THREAD_RSPTR();
+    mz_get_local_p(JIT_R1, JIT_LOCAL3);
+    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+    jit_str_p(JIT_RUNSTACK, JIT_V1);
+    CHECK_LIMIT();
+    jit_movi_i(JIT_R0, 2);
+    mz_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_R0);
+    __END_SHORT_JUMPS__(1);
+    if (i == 0) {
+      mz_finish_prim_lwe(ts_scheme_checked_list_tail, refr);
+    } else {
+      mz_finish_prim_lwe(ts_scheme_checked_list_ref, refr);
+    }
+    __START_SHORT_JUMPS__(1);
+    jit_retval(JIT_R0);
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    JIT_UPDATE_THREAD_RSPTR();
+    CHECK_LIMIT();
+    mz_epilog(JIT_R2);
+
+    mz_patch_branch(ref);
+
+    /* Handle simple cases: small fixnum index */
+    jit_rshi_l(JIT_R1, JIT_R1, 1);
+    (void)jit_blti_l(refslow, JIT_R1, 0);
+    (void)jit_bgti_l(refslow, JIT_R1, 10000);
+    
+    refloop = _jit.x.pc;
+    if (i == 0) {
+      refdone = jit_beqi_l(jit_forward(), JIT_R1, 0);
+    } else
+      refdone = NULL;
+    (void)jit_bmsi_l(refslow, JIT_R0, 0x1);
+    (void)mz_bnei_t(refslow, JIT_R0, scheme_pair_type, JIT_R2);
+    if (i == 1) {
+      refdone = jit_beqi_l(jit_forward(), JIT_R1, 0);
+    }
+    jit_subi_l(JIT_R1, JIT_R1, 1);
+    jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CDR(0x0));
+    (void)jit_jmpi(refloop);
+
+    mz_patch_branch(refdone);
+    if (i == 1) {
+      jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CAR(0x0));
+    }
+    mz_epilog(JIT_R2);
+    CHECK_LIMIT();
+
+    __END_SHORT_JUMPS__(1);
+
+    scheme_jit_register_sub_func(jitter, code, scheme_false);
+  }
+
+  return 1;
+}
+
 static int common9(mz_jit_state *jitter, void *_data)
 {
   int i;
@@ -2551,6 +2638,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common6(jitter, _data)) return 0;
   if (!common7(jitter, _data)) return 0;
   if (!common8(jitter, _data)) return 0;
+  if (!common8_5(jitter, _data)) return 0;
   if (!common9(jitter, _data)) return 0;
   if (!common10(jitter, _data)) return 0;
   return 1;

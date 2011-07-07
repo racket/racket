@@ -3485,6 +3485,8 @@ Scheme_Object *scheme_checked_cadr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cdar(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cddr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_length(Scheme_Object *v);
+Scheme_Object *scheme_checked_list_tail(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_list_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_mcar(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_mcdr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_set_mcar (int argc, Scheme_Object *argv[]);

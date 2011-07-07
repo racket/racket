@@ -2327,6 +2327,16 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       jit_ori_l(JIT_R0, JIT_R0, 0x1);
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "list-ref")
+               || IS_NAMED_PRIM(rator, "list-tail")) {
+      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+
+      if (IS_NAMED_PRIM(rator, "list-ref"))
+        (void)jit_calli(sjc.list_ref_code);
+      else
+        (void)jit_calli(sjc.list_tail_code);
+
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "set-mcar!")
                || IS_NAMED_PRIM(rator, "set-mcdr!")) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;
