@@ -390,6 +390,12 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
         /* can omit an unsafe op */
+        int i;
+        for (i = app->num_args; i--; ) {
+	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info,
+                                     deeper_than + (resolved ? app->num_args : 0)))
+	    return 0;
+	}
         return 1;
       }
     }
