@@ -2,7 +2,7 @@
 ;; syntax-case and syntax
 
 (module stxcase '#%kernel
-  (#%require "stx.rkt" "small-scheme.rkt" '#%paramz
+  (#%require "stx.rkt" "small-scheme.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
              (for-syntax "stx.rkt" "small-scheme.rkt" "sc.rkt" '#%kernel))
 
@@ -409,29 +409,23 @@
                                                                        [(= tail-pattern-var pos)
                                                                         (cond
                                                                          [(eq? pos 0) 'tail]
-                                                                         [(eq? pos 1) (quote-syntax cdr)]
-                                                                         [(eq? pos 2) (quote-syntax cddr)]
-                                                                         [(eq? pos 3) (quote-syntax cdddr)]
-                                                                         [(eq? pos 4) (quote-syntax cddddr)]
+                                                                         [(eq? pos 1) (quote-syntax unsafe-cdr)]
                                                                          [else 'tail])]
-                                                                       [(eq? pos 0) (quote-syntax car)]
-                                                                       [(eq? pos 1) (quote-syntax cadr)]
-                                                                       [(eq? pos 2) (quote-syntax caddr)]
-                                                                       [(eq? pos 3) (quote-syntax cadddr)]
+                                                                       [(eq? pos 0) (quote-syntax unsafe-car)]
                                                                        [else #f])])
                                                         (cond
                                                          [(eq? accessor 'tail)
                                                           (if (zero? pos)
                                                               rslt
                                                               (list
-                                                               (quote-syntax list-tail)
+                                                               (quote-syntax unsafe-list-tail)
                                                                rslt
                                                                pos))]
                                                          [accessor (list
                                                                     accessor
                                                                     rslt)]
                                                          [else (list
-                                                                (quote-syntax list-ref)
+                                                                (quote-syntax unsafe-list-ref)
                                                                 rslt
                                                                 pos)])))))
                                                  pattern-vars temp-vars)

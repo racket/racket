@@ -2338,6 +2338,34 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         (void)jit_calli(sjc.list_tail_code);
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-list-ref")
+               || IS_NAMED_PRIM(rator, "unsafe-list-tail")) {
+      if (SCHEME_INTP(app->rand2)) {
+        intptr_t v = SCHEME_INT_VAL(app->rand2);
+        if ((v >= 0) && (v <= 10)) {
+          mz_runstack_skipped(jitter, 2);
+          scheme_generate_non_tail(app->rand1, jitter, 0, 1, 0);
+          CHECK_LIMIT();
+          mz_runstack_unskipped(jitter, 2);
+
+          while (v--) {
+            jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CDR(0x0));
+          }
+          if (IS_NAMED_PRIM(rator, "unsafe-list-ref"))
+            jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CAR(0x0));
+
+          return 1;
+        }
+      }
+
+      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+
+      if (IS_NAMED_PRIM(rator, "unsafe-list-ref"))
+        (void)jit_calli(sjc.list_ref_code);
+      else
+        (void)jit_calli(sjc.list_tail_code);
+
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "set-mcar!")
                || IS_NAMED_PRIM(rator, "set-mcdr!")) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;

@@ -148,6 +148,8 @@ static Scheme_Object *table_placeholder_p(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_car (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_cdr (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_list_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_list_tail (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_mcar (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_mcdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_mcar (int argc, Scheme_Object *argv[]);
@@ -732,6 +734,16 @@ scheme_init_unsafe_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-cdr", p, env);
+
+  p = scheme_make_folding_prim(unsafe_list_ref, "unsafe-list-tail", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant ("unsafe-list-ref", p, env);
+
+  p = scheme_make_folding_prim(unsafe_list_tail, "unsafe-list-tail", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant ("unsafe-list-tail", p, env);
 
   p = scheme_make_immed_prim(unsafe_mcar, "unsafe-mcar", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -3455,6 +3467,38 @@ static Scheme_Object *unsafe_cdr (int argc, Scheme_Object *argv[])
 {
   if (scheme_current_thread->constant_folding) return scheme_checked_cdr(argc, argv);
   return SCHEME_CDR(argv[0]);
+}
+
+static Scheme_Object *unsafe_list_ref (int argc, Scheme_Object *argv[])
+{
+  int i;
+  Scheme_Object *v;
+
+  if (scheme_current_thread->constant_folding) return scheme_checked_list_ref(argc, argv);
+  
+  v = argv[0];
+  i = SCHEME_INT_VAL(argv[1]);
+  while (i--) {
+    v = SCHEME_CDR(v);
+  }
+  
+  return SCHEME_CAR(v);
+}
+
+static Scheme_Object *unsafe_list_tail (int argc, Scheme_Object *argv[])
+{
+  int i;
+  Scheme_Object *v;
+
+  if (scheme_current_thread->constant_folding) return scheme_checked_list_tail(argc, argv);
+  
+  v = argv[0];
+  i = SCHEME_INT_VAL(argv[1]);
+  while (i--) {
+    v = SCHEME_CDR(v);
+  }
+  
+  return v;
 }
 
 static Scheme_Object *unsafe_mcar (int argc, Scheme_Object *argv[])

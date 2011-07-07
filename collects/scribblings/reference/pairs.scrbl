@@ -213,11 +213,13 @@ the list's first element is position @racket[0]. If the list has
 @exnraise[exn:fail:contract].
 
 The @racket[lst] argument need not actually be a list; @racket[lst]
-must merely start with a chain of at least @racket[pos] pairs.
+must merely start with a chain of at least @racket[(add1 pos)] pairs.
+
 @mz-examples[
 (list-ref (list 'a 'b 'c) 0)
 (list-ref (list 'a 'b 'c) 1)
 (list-ref (list 'a 'b 'c) 2)
+(list-ref (cons 1 2) 0)
 ]}
 
 
@@ -232,6 +234,8 @@ The @racket[lst] argument need not actually be a list; @racket[lst]
 must merely start with a chain of at least @racket[pos] pairs.
 @mz-examples[
 (list-tail (list 1 2 3 4) 2)
+(list-ref (cons 1 2) 1)
+(list-ref 'not-a-pair 0)
 ]}
 
 
