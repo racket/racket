@@ -58,67 +58,70 @@
 (define-syntax-rule (prim-variables (section-prefix) empty true false)
   (make-splice
    (list
+    @section[#:tag (string-append section-prefix " Pre-Defined Variables")]{Pre-Defined Variables}
 
-@section[#:tag (string-append section-prefix " Pre-Defined Variables")]{Pre-Defined Variables}
-@defthing[empty empty?]{
+    @defthing[empty empty?]{
 
-The empty list.}
+    The empty list.}
 
-@defthing[true boolean?]{
+    @defthing[true boolean?]{
 
-The true value.}
+    The true value.}
 
-@defthing[false boolean?]{
+    @defthing[false boolean?]{
 
-The false value.}
+    The false value.})))
 
-)))
+;; ----------------------------------------
 
 (define-syntax-rule (define-forms/normal define)
+  (gen-define-forms/normal #'define @racket[define]))
 
-(make-splice
- (list
-@defform*[[(define (... (name variable variable ...)) expression)]]{
+(define (gen-define-forms/normal define-id define-elem)
+  ;; Since `define' has a source location different from the use site,
+  ;; use the `#:id [spec-id bind-id]' form in `defform*':
+  (list
+   @defform*[#:id [define define-id]
+             [(define (name variable variable ...) expression)]]{
 
-Defines a function named @racket[name]. The @racket[expression] is the body
-of the function. When the function is called,
-the values of the arguments are inserted into the body in place of the
-@racket[variable]s. The function returns the value of that new expression.
+   Defines a function named @racket[name]. The @racket[expression] is the body
+   of the function. When the function is called,
+   the values of the arguments are inserted into the body in place of the
+   @racket[variable]s. The function returns the value of that new expression.
 
-The function name's cannot be the same as that of another function or
-variable.}
+   The function name's cannot be the same as that of another function or
+   variable.}
 
-@defform/none[#:literals (define) (define name expression)]{
+   @defform/none[(@#,define-elem name expression)]{
 
-Defines a variable called @racket[name] with the the value of
-@racket[expression]. The variable name's cannot be the same as that of
-another function or variable, and @racket[name] itself must not appear in
-@racket[expression].}
+   Defines a variable called @racket[name] with the the value of
+   @racket[expression]. The variable name's cannot be the same as that of
+   another function or variable, and @racket[name] itself must not appear in
+   @racket[expression].}))
 
-)))
+;; ----------------------------------------
 
 (define-syntax-rule (define-form/explicit-lambda define lambda)
+  (gen-define-form/explicit-lambda @racket[define] 
+                                   #'lambda @racket[lambda]))
 
-(make-splice
- (list
-    
-@defform/none[#:literals (define lambda)
-              (... (define name (lambda (variable variable ...) expression)))]{
+(define (gen-define-form/explicit-lambda define-elem lambda-id lambda-elem)
+  (list
+   @defform/none[(#,define-elem name (#,lambda-elem (variable variable ...) expression))]{
 
-An alternate way on defining functions. The @racket[name] is the name of
-the function, which cannot be the same as that of another function or
-variable. 
+   An alternate way on defining functions. The @racket[name] is the name of
+   the function, which cannot be the same as that of another function or
+   variable. 
 
-@defidform/inline[lambda] cannot be used outside of this alternate syntax.
-}
-)))
+   A @defidform/inline[#,lambda-id] cannot be used outside of this alternate syntax.}))
 
+;; ----------------------------------------
 
 (define-syntax-rule (prim-forms 
                      (section-prefix)
                      define 
                      lambda
-                     define-struct
+                     define-struct [ds-extra ...]
                      define-wish
                      cond
                      else
@@ -130,210 +133,241 @@ variable.
                      check-error
                      check-member-of
                      check-range
-                     require)
-  (make-splice
-   (list
+                     require
+                     true
+                     false)
+  (gen-prim-forms #'define-struct @racket[define-struct] (list ds-extra ...)
+                  #'cond @racket[cond]
+                  #'else @racket[else]
+                  #'if @racket[if]
+                  #'or @racket[or]
+                  #'and @racket[and]
+                  #'check-expect @racket[check-expect]
+                  #'check-within @racket[check-within]
+                  #'check-error @racket[check-error]
+                  #'check-member-of @racket[check-member-of]
+                  #'check-range @racket[check-range]
+                  #'require @racket[require]
+                  @racket[true] @racket[false]))
 
+(define (gen-prim-forms define-struct-id define-struct-elem ds-extras
+                        cond-id cond-elem
+                        else-id else-elem
+                        if-id if-elem
+                        and-id and-elem
+                        or-id or-elem
+                        check-expect-id check-expect-elem
+                        check-within-id check-within-elem
+                        check-error-id check-error-elem
+                        check-member-of-id check-member-of-elem
+                        check-range-id check-range-elem
+                        require-id require-elem
+                        true-elem false-elem)
+  (list
+   @; ----------------------------------------------------------------------
 
+  @defform*[#:id [define-struct define-struct-id]
+            [(define-struct structure-name (field-name ...))]]{
 
-@; ----------------------------------------------------------------------
+   Defines a new structure called @racket[field-name]. The structure's fields are
+   named by the @racket[field-name]s. After the @define-struct-elem, the following new
+   functions are available:
 
+   @itemize[
 
-@defform*[[(... (define-struct structure-name (field-name ...)))]]{
+     @item{@racketidfont{make-}@racket[structure-name] : takes in a number of
+           arguments equal to the number of fields in the structure,
+           and creates a new instance of that structure.}
 
-Defines a new structure called @racket[field-name]. The structure's fields are
-named by the @racket[field-name]s. After the @racket[define-struct], the following new
-functions are available:
+     @item{@racket[structure-name]@racketidfont{-}@racket[field-name] : takes in an
+           instance of the structure and returns the value in the field named by
+           @racket[field-name].}
 
-@itemize[
+     @item{@racket[structure-name]@racketidfont{?} : takes in any value, and returns
+           @true-elem if the value is an instance of the structure.}
+   ]
 
- @item{@racketidfont{make-}@racket[structure-name] : takes in a number of
-       arguments equal to the number of fields in the structure,
-       and creates a new instance of that structure.}
+   The name of the new functions introduced by @define-struct-elem
+   must not be the same as that of other functions or variables,
+   otherwise @define-struct-elem reports an error.
 
- @item{@racket[structure-name]@racketidfont{-}@racket[field-name] : takes in an
-       instance of the structure and returns the value in the field named by
-       @racket[field-name].}
+   @ds-extras}
 
- @item{@racket[structure-name]@racketidfont{?} : takes in any value, and returns
-       @racket[true] if the value is an instance of the structure.}
+  #|
 
-]
-
-The name of the new functions introduced by @racket[define-struct] must not be the same as that of other functions or
-variables, otherwise @racket[define-struct] reports an error.}
-
-#|
-
-@defform*[[(define-wish name)]]{                           
+  @defform*[[(define-wish name)]]{                           
                            
-Defines a function called @racket[name] that we wish exists but have not
-implemented yet. The wished-for function can be called with one argument, and
-are reported in the test report for the current program.
+  Defines a function called @racket[name] that we wish exists but have not
+  implemented yet. The wished-for function can be called with one argument, and
+  are reported in the test report for the current program.
 
-The name of the function cannot be the same as another function or variable.}
-
-
-@defform/none[#:literals (define-wish)
-              (define-wish name expression)]{
-Similar to the above form, defines a wished-for function named @racket[name]. If the 
-wished-for function is called with one value, it returns the values of @racket[expression]. }
-|#
-
-@; ----------------------------------------------------------------------
+  The name of the function cannot be the same as another function or variable.}
 
 
-@defform*[[(... (name expression expression ...))]]{
+  @defform/none[#:literals (define-wish)
+                (define-wish name expression)]{
+  Similar to the above form, defines a wished-for function named @racket[name]. If the 
+  wished-for function is called with one value, it returns the values of @racket[expression]. }
+  |#
 
-Calls the function named @racket[name]. The value of the call is the value of
-@racket[name]'s body when every one of the function's variables are
-replaced by the values of the corresponding @racket[expression]s.
+  @; ----------------------------------------------------------------------
 
-The function named @racket[name] must defined before it can be called. The
-number of argument @racket[expression]s must be the same as the number of arguments
-expected by the function.}
+  @defform/none[(name expression expression ...)]{
 
+  Calls the function named @racket[name]. The value of the call is the
+  value of @racket[name]'s body when every one of the function's
+  variables are replaced by the values of the corresponding
+  @racket[expression]s.
 
-@; ----------------------------------------------------------------------
+  The function named @racket[name] must defined before it can be called. The
+  number of argument @racket[expression]s must be the same as the number of arguments
+  expected by the function.}
 
+  @; ----------------------------------------------------------------------
 
-@defform*[#:literals (cond else)
-          [(... (cond [question-expression answer-expression] ...))
-           (... (cond [question-expression answer-expression] ... [else answer-expression]))]]{
+  @defform*[#:id [cond cond-id]
+            #:literals (else)
+            [(cond [question-expression answer-expression] ...)
+             (#,cond-elem [question-expression answer-expression]
+                          ... 
+                          [#,else-elem answer-expression])]]{
 
-Chooses a clause base on a condition. @racket[cond] finds the first
-@racket[question-expression] which evaluates to @racket[true], then it evaluates
-the corresponding @racket[answer-expression].
+    Chooses a clause base on a condition by finding the first
+    @racket[question-expression] that evaluates to @true-elem, then
+    evaluates the corresponding @racket[answer-expression].
 
-If none of the @racket[question-expression]s evaluates to @racket[true],
-@racket[cond]'s value is the @racket[answer-expression] of the
-@racket[else] clause. If there is no @racket[else], @racket[cond] reports
-an error. If the result of a @racket[question-expression] is neither
-@racket[true] nor @racket[false], @racket[cond] also reports an error.
+    If none of the @racket[question-expression]s evaluates to @true-elem,
+    @cond-elem's value is the @racket[answer-expression] of the
+    @else-elem clause. If there is no @else-elem, @cond-elem reports
+    an error. If the result of a @racket[question-expression] is neither
+    @true-elem nor @false-elem, @cond-elem also reports an error.
 
+    An @defidform/inline[#,else-id] cannot be used outside of @|cond-elem|.}
 
-@defidform/inline[else] cannot be used outside of @racket[cond].
-}
+  @; ----------------------------------------------------------------------
 
+  @defform*[#:id [if if-id]
+            [(if test-expression then-expression else-expression)]]{
 
-@; ----------------------------------------------------------------------
+   When the value of the @racket[test-expression] is @true-elem,
+   @if-elem evaluates the @racket[then-expression]. When the test is
+   @false-elem, @if-elem evaluates the @racket[else-expression].
 
+   If the @racket[test-expression] is neither @true-elem nor
+   @false-elem, @if-elem reports an error.}
 
-@defform*[[(if test-expression then-expression else-expression)]]{
+  @; ----------------------------------------------------------------------
 
-When the value of the @racket[test-expression] is @racket[true],
-@racket[if] evaluates the @racket[then-expression]. When the test is
-@racket[false], @racket[if] evaluates the @racket[else-expression].
+  @defform*[#:id [and and-id]
+            [(and expression expression expression ...)]]{
 
-If the @racket[test-expression] is neither @racket[true] nor
-@racket[false], @racket[if] reports an error.}
+    Evaluates to @true-elem if all the @racket[expression]s are
+    @|true-elem|. If any @racket[expression] is false, the @and-elem
+    expression immediately evaluates to @false-elem (and the expressions to the
+    right of that expression are not evaluated.)
 
-@; ----------------------------------------------------------------------
+    If any of the expressions evaluate to a value other than @true-elem or
+    @false-elem, @and-elem reports an error.}
 
-
-@defform*[[(... (and expression expression expression ...))]]{
-
-@racket[and] evaluates to @racket[true] if all the @racket[expression]s are
-@racket[true]. If any @racket[expression] is false, the @racket[and]
-expression immediately evaluates to @racket[false] (the expressions to the
-right of that expression are not evaluated.)
-
-If any of the expressions evaluate to a value other than @racket[true] or
-@racket[false], it is an error.}
-
-@; ----------------------------------------------------------------------
-
-
-@defform*[[(... (or expression expression expression ...))]]{
-
-@racket[or] evaluates to @racket[true] as soon as one of the
-@racket[expression]s is @racket[true] (the expressions to the right of that
-expression are not evaluated.) If all the @racket[expression] are false,
-@racket[or] is @racket[false].
-
-If any of the expressions evaluate to a value other than @racket[true] or
-@racket[false], @racket[or] reports an error.}
-
-@; ----------------------------------------------------------------------
+  @; ----------------------------------------------------------------------
 
 
-@defform*[[(check-expect expression expected-expression)]]{
+  @defform*[#:id [or or-id]
+            [(or expression expression expression ...)]]{
 
-Checks that the first @racket[expression] evaluates to the same value as the
-@racket[expected-expression].}
+    Evaluates to @true-elem as soon as one of the
+    @racket[expression]s is @true-elem (and the expressions to the right of that
+    expression are not evaluated.) If all of the @racket[expression]s are false,
+    the @or-elem expression evaluates to @racket[false].
 
-@defform*[[(check-within expression expected-expression delta-expression)]]{
+    If any of the expressions evaluate to a value other than @true-elem or
+    @false-elem, @or-elem reports an error.}
 
-Checks that the first @racket[expression] evaluates to a value within
-@racket[delta-expression] of the @racket[expected-expression]. If
-@racket[delta-expression] is not a number, @racket[check-within] report an
-error.}
+  @; ----------------------------------------------------------------------
 
-@defform*[[(check-error expression expression)
-           (check-error expression)]]{
+  @defform*[#:id [check-expect check-expect-id]
+            [(check-expect expression expected-expression)]]{
 
-Checks that the first @racket[expression] reports an error,
-where the error messages matches the string produced by the second
-@racket[expression], if it is present.}
-
-@defform*[[(... (check-member-of expression expression expression ...))]]{
-
-Checks that the first @racket[expression] produces the same value as one of
-the following @racket[expression]s.}
-
-@defform*[[(check-range expression expression expression)]]{
-
-Checks that the first @racket[expression] produces a number in between the numbers
-produced by the second and third @racket[expression]s, inclusive.}
-                                                               
-
-@; ----------------------------------------------------------------------
+   Checks that the first @racket[expression] evaluates to the same value as the
+   @racket[expected-expression].}
 
 
-@defform*[[(require string)]]{
+  @defform*[#:id [check-within check-within-id]
+            [(check-within expression expected-expression delta-expression)]]{
 
-Makes the definitions of the module specified by @racket[string]
-available in the current module (i.e., the current file), where @racket[string]
-refers to a file relative to the current file.
-
-The @racket[string] is constrained in several ways to avoid problems
-with different path conventions on different platforms: a @litchar{/}
-is a directory separator, @litchar{.} always means the current
-directory, @litchar{..} always means the parent directory, path
-elements can use only @litchar{a} through @litchar{z} (uppercase or
-lowercase), @litchar{0} through @litchar{9}, @litchar{-}, @litchar{_},
-and @litchar{.}, and the string cannot be empty or contain a leading
-or trailing @litchar{/}.}
-
-@defform/none[#:literals (require)
-              (require module-name)]{
-
-Accesses a file in an installed library. The library name is an identifier
-with the same constraints as for a relative-path string (though without the
-quotes), with the additional constraint that it must not contain a
-@litchar{.}.}
-
-@defform/none[#:literals (require lib)
-              (... (require (lib string string ...)))]{
-
-Accesses a file in an installed library, making its definitions
-available in the current module (i.e., the current file). The first
-@racket[string] names the library file, and the remaining
-@racket[string]s name the collection (and sub-collection, and so on)
-where the file is installed. Each string is constrained in the same
-way as for the @racket[(require string)] form.}
+   Checks that the first @racket[expression] evaluates to a value within
+   @racket[delta-expression] of the @racket[expected-expression]. If
+   @racket[delta-expression] is not a number, @check-within-elem reports an
+   error.}
 
 
-@defform/none[#:literals (require planet)
-              (require (planet string (string string number number)))]{
+  @defform*[#:id [check-error check-error-id]
+            [(check-error expression expression)
+             (#,check-error-elem expression)]]{
+
+   Checks that the first @racket[expression] reports an error,
+   where the error messages matches the string produced by the second
+   @racket[expression], if it is present.}
 
 
-Accesses a library that is distributed on the internet via the PLaneT
-server, making it definitions available in the current module (i.e.,
-current file).}
+  @defform*[#:id [check-member-of check-member-of-id]
+            [(check-member-of expression expression expression ...)]]{
 
-)))
+   Checks that the first @racket[expression] produces the same value
+   as one of the following @racket[expression]s.}
 
+
+  @defform*[#:id [check-range check-range-id]
+            [(check-range expression expression expression)]]{
+
+   Checks that the first @racket[expression] produces a number in
+   between the numbers produced by the second and third
+   @racket[expression]s, inclusive.}
+
+  @; ----------------------------------------------------------------------
+
+  @defform*[#:id [require require-id]
+            [(require string)]]{
+
+   Makes the definitions of the module specified by @racket[string]
+   available in the current module (i.e., the current file), where
+   @racket[string] refers to a file relative to the current file.
+
+   The @racket[string] is constrained in several ways to avoid
+   problems with different path conventions on different platforms: a
+   @litchar{/} is a directory separator, @litchar{.} always means the
+   current directory, @litchar{..} always means the parent directory,
+   path elements can use only @litchar{a} through @litchar{z}
+   (uppercase or lowercase), @litchar{0} through @litchar{9},
+   @litchar{-}, @litchar{_}, and @litchar{.}, and the string cannot be
+   empty or contain a leading or trailing @litchar{/}.}
+
+
+  @defform/none[(#,require-elem module-name)]{
+
+   Accesses a file in an installed library. The library name is an
+   identifier with the same constraints as for a relative-path string
+   (though without the quotes), with the additional constraint that it
+   must not contain a @litchar{.}.}
+
+  @defform/none[(#,require-elem (lib string string ...))]{
+
+  Accesses a file in an installed library, making its definitions
+  available in the current module (i.e., the current file). The first
+  @racket[string] names the library file, and the remaining
+  @racket[string]s name the collection (and sub-collection, and so on)
+  where the file is installed. Each string is constrained in the same
+  way as for the @racket[(#,require-elem string)] form.}
+
+
+  @defform/none[#:literals (planet)
+                (#,require-elem (planet string (string string number number)))]{
+
+  Accesses a library that is distributed on the internet via the
+  @|PLaneT| server, making it definitions available in the current module
+  (i.e., current file).}))
+
+;; ----------------------------------------
 
 (define-syntax-rule 
   (intermediate-forms lambda
@@ -346,119 +380,150 @@ current file).}
                       let*
                       let
                       time)
+  (gen-intermediate-forms #'lambda @racket[lambda]
+                          #'quote @racket[quote]
+                          #'quasiquote @racket[quasiquote]
+                          #'unquote @racket[unquote]
+                          #'unquote-splicing @racket[unquote-splicing]
+                          #'local @racket[local]
+                          #'letrec @racket[letrec]
+                          #'let* @racket[let*]
+                          #'let @racket[let]
+                          #'time @racket[time]))
 
-  (make-splice
-   (list
+(define (gen-intermediate-forms lambda-id lambda-elem
+                                quote-id quote-elem
+                                quasiquote-id quasiquote-elem
+                                unquote-id unquote-elem
+                                unquote-splicing-id unquote-splicing-elem
+                                local-id local-elem
+                                letrec-id letrec-elem
+                                let*-id let*-elem
+                                let-id let-elem
+                                time-id time-elem)
+  (list
+  @deftogether[(
+   @defform/none[(unsyntax @elem{@racketvalfont{'}@racket[name]})]
+   @defform/none[(unsyntax @elem{@racketvalfont{'}@racket[part]})]
+   @defform[#:id [quote quote-id] (quote name)]
+   @defform/none[(#,quote-elem part)]
+  )]{
 
-@deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[name]})]
-@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[part]})]
-@defform[(quote name)]
-@defform/none[(quote part)]
-)]{
+   A quoted name is a symbol. A quote part is an abbreviation for a nested lists.
 
-A quoted name is a symbol. A quote part is an abbreviation for a nested lists.
-
-Normally, this quotation is written with a @litchar{'}, like
-@racket['(apple banana)], but it can also be written with @racket[quote], like
-@racket[(@#,racket[quote] (apple banana))].}
-
-
-@deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{`}@racket[name]})]
-@defform/none[(unsyntax @elem{@racketvalfont{`}@racket[part]})]
-@defform[(quasiquote name)]
-@defform/none[(quasiquote part)]
-)]{
-
-Like @racket[quote], but also allows escaping to expression ``unquotes.''
-
-Normally, quasi-quotations are written with a backquote, @litchar{`}, like
-@racket[`(apple ,(+ 1 2))], but they can also be written with
-@racket[quasiquote], like
-@racket[(@#,racket[quasiquote] (apple ,(+ 1 2)))].}
-
-
-@deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{,}@racket[expression]})]
-@defform[(unquote expression)]
-)]{
-
-Under a single quasiquote, @racketfont{,}@racket[expression] escapes from
-the quote to include an evaluated expression whose result is inserted
-into the abbreviated list.
-
-Under multiple quasiquotes, @racketfont{,}@racket[expression] is really
-the literal @racketfont{,}@racket[expression], decrementing the quasiquote count
-by one for @racket[expression].
-
-Normally, an unquote is written with @litchar{,}, but it can also be
-written with @racket[unquote].}
+   Normally, this quotation is written with a @litchar{'}, like
+   @racket['(apple banana)], but it can also be written with
+   @quote-elem, like @racket[(@#,quote-elem (apple banana))].}
 
 
-@deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont[",@"]@racket[expression]})]
-@defform[(unquote-splicing expression)]
-)]{
+  @deftogether[(
+   @defform/none[(unsyntax @elem{@racketvalfont{`}@racket[name]})]
+   @defform/none[(unsyntax @elem{@racketvalfont{`}@racket[part]})]
+   @defform[#:id [quasiquote quasiquote-id]
+            (quasiquote name)]
+   @defform/none[(#,quasiquote-elem part)]
+  )]{
 
-Under a single quasiquote, @racketfont[",@"]@racket[expression] escapes from
-the quote to include an evaluated expression whose result is a list to
-splice into the abbreviated list.
+   Like @quote-elem, but also allows escaping to expression
+   ``unquotes.''
 
-Under multiple quasiquotes, a splicing unquote is like an unquote;
-that is, it decrements the quasiquote count by one.
-
-Normally, a splicing unquote is written with @litchar{,}, but it can
-also be written with @racket[unquote-splicing].}
-
-@defform[(... (local [definition ...] expression))]{
-
-Groups related definitions for use in @racket[expression]. Each
-@racket[definition] can be either a variable definition, a function
-definition, or a structure definition, using the usual syntax. 
-
-When evaluating @racket[local], each @racket[definition] is evaluated in
-order, and finally the body @racket[expression] is evaluated. Only the
-expressions within the @racket[local] (including the right-hand-sides of
-the @racket[definition]s and the @racket[expression]) may refer to the
-names defined by the @racket[definition]s. If a name defined in the
-@racket[local] is the same as a top-level binding, the inner one
-``shadows'' the outer one. That is, inside the @racket[local], any
-references to that name refer to the inner one.}
-
-@; ----------------------------------------------------------------------
+   Normally, quasi-quotations are written with a backquote,
+   @litchar{`}, like @racket[`(apple ,(+ 1 2))], but they can also be
+   written with @quasiquote-elem, like
+   @racket[(@quasiquote-elem (apple ,(+ 1 2)))].}
 
 
-@defform[(... (letrec ([name expr-for-let] ...) expression))]{
+  @deftogether[(
+   @defform/none[(unsyntax @elem{@racketvalfont{,}@racket[expression]})]
+   @defform[#:id [unquote unquote-id]
+            (unquote expression)]
+  )]{
 
-Like @racket[local], but with a simpler syntax. Each @racket[name] defines
-a variables (or a functions) with the value of the corresponding
-@racket[expr-for-let].  If @racket[expr-for-let] is a @racket[lambda],
-@racket[letrec] defines a function, otherwise it defines a variable.}
+   Under a single quasiquote, @racketfont{,}@racket[expression]
+   escapes from the quote to include an evaluated expression whose
+   result is inserted into the abbreviated list.
 
-@defform[(... (let* ([name expr-for-let] ...) expression))]{
+   Under multiple quasiquotes, @racketfont{,}@racket[expression] is
+   really the literal @racketfont{,}@racket[expression], decrementing
+   the quasiquote count by one for @racket[expression].
 
-Like @racket[letrec], but each @racket[name] can only be used in
-@racket[expression], and in @racket[expr-for-let]s occuring after that
-@racket[name].}
-
-@defform[(... (let ([name expr-for-let] ...) expression))]{
-
-Like @racket[letrec], but the defined @racket[name]s can be used only in
-the last @racket[expression], not the @racket[expr-for-let]s next to the
-@racket[name]s.}
+   Normally, an unquote is written with @litchar{,}, but it can also be
+   written with @|unquote-elem|.}
 
 
-@; ----------------------------------------------------------------------
+  @deftogether[(
+   @defform/none[(unsyntax @elem{@racketvalfont[",@"]@racket[expression]})]
+   @defform[#:id [unquote-splicing unquote-splicing-id]
+            (unquote-splicing expression)]
+  )]{
+
+   Under a single quasiquote, @racketfont[",@"]@racket[expression]
+   escapes from the quote to include an evaluated expression whose
+   result is a list to splice into the abbreviated list.
+
+   Under multiple quasiquotes, a splicing unquote is like an unquote;
+   that is, it decrements the quasiquote count by one.
+
+   Normally, a splicing unquote is written with @litchar{,}, but it
+   can also be written with @|unquote-splicing-elem|.}
 
 
-@defform[(time expression)]{
+  @defform[#:id [local local-id]
+           (local [definition ...] expression)]{
 
-Measures the time taken to evaluate @racket[expression]. After evaluating
-@racket[expression], @racket[time] prints out the time taken by the
-evaluation (including real time, time taken by the cpu, and the time spent
-collecting free memory). The value of @racket[time] is the same as that of @racket[expression].}
-)))
+   Groups related definitions for use in @racket[expression]. Each
+   @racket[definition] can be either a variable definition, a function
+   definition, or a structure definition, using the usual syntax.
+
+   When evaluating @local-elem, each @racket[definition] is evaluated
+   in order, and finally the body @racket[expression] is
+   evaluated. Only the expressions within the @local-elem (including
+   the right-hand-sides of the @racket[definition]s and the
+   @racket[expression]) may refer to the names defined by the
+   @racket[definition]s. If a name defined in the @local-elem is the
+   same as a top-level binding, the inner one ``shadows'' the outer
+   one. That is, inside the @local-elem, any references to that name
+   refer to the inner one.}
+
+  @; ----------------------------------------------------------------------
+
+  @defform[#:id [letrec letrec-id]
+           (letrec ([name expr-for-let] ...) expression)]{
+
+   Like @local-elem, but with a simpler syntax. Each @racket[name]
+   defines a variable (or a function) with the value of the
+   corresponding @racket[expr-for-let].  If @racket[expr-for-let] is a
+   @lambda-elem, @letrec-elem defines a function, otherwise it
+   defines a variable.}
+
+
+  @defform[#:id [let* let*-id]
+           (let* ([name expr-for-let] ...) expression)]{
+
+   Like @letrec-elem, but each @racket[name] can only be used in
+   @racket[expression], and in @racket[expr-for-let]s occuring after
+   that @racket[name].}
+
+
+  @defform[#:id [let let-id]
+           (let ([name expr-for-let] ...) expression)]{
+
+   Like @letrec-elem, but the defined @racket[name]s can be used only
+   in the last @racket[expression], not the @racket[expr-for-let]s
+   next to the @racket[name]s.}
+
+  @; ----------------------------------------------------------------------
+
+  @defform[#:id [time time-id]
+            (time expression)]{
+
+   Measures the time taken to evaluate @racket[expression]. After
+   evaluating @racket[expression], @racket[time] prints out the time
+   taken by the evaluation (including real time, time taken by the
+   CPU, and the time spent collecting free memory). The value of
+   @time-elem is the same as that of @racket[expression].}))
+
+;; ----------------------------------------
 
 (define (prim-ops lib ctx-stx)
   (let ([ops (map (lambda (cat)

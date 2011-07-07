@@ -117,7 +117,7 @@ also be written with @racket[unquote-splicing].}
 @prim-forms[("beginner-abbr")
             define 
             lambda
-            define-struct
+            define-struct []
             define-wish
             cond
             else
@@ -129,7 +129,8 @@ also be written with @racket[unquote-splicing].}
             check-error
             check-member-of
             check-range
-            require]
+            require
+            true false]
 
 
 @; ----------------------------------------

@@ -69,10 +69,10 @@
 @(define-form/explicit-lambda define lambda)
 
 @(prim-forms 
-                     ("beginner")
+                     ("intermediate")
                      define 
                      lambda
-                     define-struct
+                     define-struct []
                      define-wish
                      cond
                      else
@@ -84,7 +84,8 @@
                      check-error
                      check-member-of
                      check-range
-                     require)
+                     require
+                     true false)
 
 
 

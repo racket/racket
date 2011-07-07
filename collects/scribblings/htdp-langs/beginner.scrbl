@@ -36,6 +36,9 @@
 @prim-nonterms[("beginner") define define-struct]
 
 @prim-variables[("beginner") empty true false]
+
+@; --------------------------------------------------
+
 @section[#:tag "beginner-syntax"]{Syntax}
 
 @deftogether[(
@@ -46,14 +49,13 @@
 A quoted @racket[name] is a symbol. A symbol is a value, just like
 @racket[0] or @racket[empty].}
 
-
 @(define-forms/normal define)
 @(define-form/explicit-lambda define lambda)
 
 @(prim-forms ("beginner")
              define 
              lambda
-             define-struct
+             define-struct []
              define-wish
              cond
              else
@@ -65,7 +67,10 @@ A quoted @racket[name] is a symbol. A symbol is a value, just like
              check-error
              check-member-of
              check-range
-             require)
+             require
+             true false)
+
+@; --------------------------------------------------
              
 @section[#:tag "beginner-pre-defined"]{Pre-defined Functions}
 

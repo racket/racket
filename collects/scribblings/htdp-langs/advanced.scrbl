@@ -97,14 +97,12 @@ arguments, and (naturally) function calls can invoke functions of zero arguments
 
 @defform[(lambda (variable ...) expression)]{
 
-Creates a function that takes as many arguments as given @racket[variables]s,
+Creates a function that takes as many arguments as given @racket[variable]s,
 and whose body is @racket[expression].}
 
 @defform[(λ (variable ...) expression)]{
 
 The Greek letter @racket[λ] is a synonym for @racket[lambda].}
-
-
 
 @defform/none[(expression expression ...)]{
 
@@ -117,19 +115,6 @@ The function being called must come from either a definition appearing before th
 function call, or from a @racket[lambda] expression. The number of argument
 @racket[expression]s must be the same as the number of arguments expected by
 the function.}
-
-
-
-In Advanced, @racket[define-struct] introduces one additional function:
-
-@itemize[
-
- @item{@racketidfont{set-}@racket[structure-name]@racketidfont{-}@racket[field-name]@racketidfont{!}
-       : takes an instance of the structure and a value, and changes
-       the instance's field to the given value.}
-
-]}
-
 
 @; ----------------------------------------------------------------------
 
@@ -299,7 +284,12 @@ Like @racket[when], but the @racket[body-expression] is evaluated when the
 @(prim-forms ("advanced")
              define 
              lambda
-             define-struct
+             define-struct 
+             @{In Advanced, @racket[define-struct] introduces one additional function:
+              @itemize[
+               @item{@racketidfont{set-}@racket[_structure-name]@racketidfont{-}@racket[_field-name]@racketidfont{!}
+                : takes an instance of the structure and a value, and
+                changes the instance's field to the given value.}]}
              define-wish
              cond
              else
@@ -311,7 +301,8 @@ Like @racket[when], but the @racket[body-expression] is evaluated when the
              check-error
              check-member-of
              check-range
-             require)
+             require
+             true false)
 
 @; ----------------------------------------
 

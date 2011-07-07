@@ -52,7 +52,7 @@
 
 @defform[(lambda (variable variable ...) expression)]{
 
-Creates a function that takes as many arguments as given @racket[variables]s,
+Creates a function that takes as many arguments as given @racket[variable]s,
 and whose body is @racket[expression].}
 
 @defform[(λ (variable variable ...) expression)]{
@@ -94,10 +94,10 @@ the function.}
 
 @(define-forms/normal define)
 
-@(prim-forms ("beginner")
+@(prim-forms ("intermediate-lam")
              define 
              lambda
-             define-struct
+             define-struct []
              define-wish
              cond
              else
@@ -109,7 +109,8 @@ the function.}
              check-error
              check-member-of
              check-range
-             require)
+             require
+             true false)
 
 @section[#:tag "intm-w-lambda-pre-defined"]{Pre-defined Functions}
 
