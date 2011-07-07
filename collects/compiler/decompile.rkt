@@ -138,7 +138,7 @@
         ,(let-values ([(globs defns) (decompile-prefix prefix)])
            `(let ()
              ,@defns
-             ,(decompile-expr rhs globs '(#%globals) closed))))]
+             ,(decompile-form rhs globs '(#%globals) closed))))]
     [(struct seq (forms))
      `(begin ,@(map (lambda (form)
                       (decompile-form form globs stack closed))
