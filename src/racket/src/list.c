@@ -724,11 +724,13 @@ scheme_init_unsafe_list (Scheme_Env *env)
   scheme_null->type = scheme_null_type;
 
   p = scheme_make_folding_prim(unsafe_car, "unsafe-car", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-car", p, env);
 
   p = scheme_make_folding_prim(unsafe_cdr, "unsafe-cdr", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-cdr", p, env);
 
   p = scheme_make_immed_prim(unsafe_mcar, "unsafe-mcar", 1, 1);
@@ -748,7 +750,7 @@ scheme_init_unsafe_list (Scheme_Env *env)
   scheme_add_global_constant ("unsafe-set-mcdr!", p, env);
   
   p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("unsafe-unbox", p, env);
 
   p = scheme_make_immed_prim(unsafe_unbox_star, "unsafe-unbox*", 1, 1);
