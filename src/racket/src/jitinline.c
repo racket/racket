@@ -367,6 +367,15 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   return 1;
 }
 
+static int is_cXr_prim(const char *name) 
+{
+  int i;
+  if (name[0] != 'c') return 0;
+  for (i = 1; (name[i] == 'a') || (name[i] == 'd'); i++) { }
+  if (name[i] != 'r') return 0;
+  return !name[i+1];
+}
+
 static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
                                  Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3);
 
@@ -608,12 +617,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
     return 1;
   } else if (!for_branch) {
-    if (IS_NAMED_PRIM(rator, "car")
-	|| IS_NAMED_PRIM(rator, "cdr")
-	|| IS_NAMED_PRIM(rator, "cadr")
-	|| IS_NAMED_PRIM(rator, "cdar")
-	|| IS_NAMED_PRIM(rator, "caar")
-	|| IS_NAMED_PRIM(rator, "cddr")) {
+    if (is_cXr_prim(((Scheme_Primitive_Proc *)rator)->name)) {
 #     define MAX_LEVELS 2
       GC_CAN_IGNORE jit_insn *reffail = NULL, *ref;
       int steps, i;
@@ -650,7 +654,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
               } else {
                 (void)jit_calli(sjc.bad_cdr_code);
               }
-            } else {
+            } else if (steps == 2) {
               if (name[1] == 'a') {
                 if (name[2] == 'a') {
                   (void)jit_calli(sjc.bad_caar_code);
@@ -664,6 +668,9 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                   (void)jit_calli(sjc.bad_cddr_code);
                 }
               }
+            } else {
+              (void)jit_movi_p(JIT_R0, ((Scheme_Primitive_Proc *)rator)->prim_val);
+              (void)jit_calli(sjc.bad_cXr_code);
             }
             __START_TINY_JUMPS__(1);
             mz_patch_branch(ref);

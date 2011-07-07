@@ -210,6 +210,7 @@ struct scheme_jit_common_record {
   void *call_original_nary_arith_code;
   void *bad_car_code, *bad_cdr_code;
   void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
+  void *bad_cXr_code;
   void *bad_mcar_code, *bad_mcdr_code;
   void *bad_set_mcar_code, *bad_set_mcdr_code;
   void *imag_part_code, *real_part_code, *make_rectangular_code;

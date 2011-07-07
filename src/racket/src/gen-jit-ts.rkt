@@ -193,7 +193,8 @@
     z_p
     si_s
     sis_v
-    ss_i))
+    ss_i
+    iSp_v))
 
 (with-output-to-file "jit_ts_def.c"
   #:exists 'replace

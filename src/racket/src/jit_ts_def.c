@@ -223,3 +223,12 @@ static int ts_ ## id(Scheme_Object* g51, Scheme_Object* g52) \
   else \
     return id(g51, g52); \
 }
+#define define_ts_iSp_v(id, src_type) \
+static void ts_ ## id(int g53, Scheme_Object** g54, void* g55) \
+   XFORM_SKIP_PROC \
+{ \
+  if (scheme_use_rtcall) \
+     scheme_rtcall_iSp_v("[" #id "]", src_type, id, g53, g54, g55); \
+  else \
+     id(g53, g54, g55); \
+}

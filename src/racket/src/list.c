@@ -321,127 +321,101 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("cddr", p, env);
 
-  scheme_add_global_constant ("caaar",
-			      scheme_make_folding_prim(caaar_prim,
-                                                       "caaar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("caadr",
-			      scheme_make_folding_prim(caadr_prim,
-                                                       "caadr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cadar",
-			      scheme_make_folding_prim(cadar_prim,
-                                                       "cadar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cdaar",
-			      scheme_make_folding_prim(cdaar_prim,
-                                                       "cdaar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cdadr",
-			      scheme_make_folding_prim(cdadr_prim,
-                                                       "cdadr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cddar",
-			      scheme_make_folding_prim(cddar_prim,
-                                                       "cddar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("caddr",
-			      scheme_make_folding_prim(caddr_prim,
-                                                       "caddr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cdddr",
-			      scheme_make_folding_prim(cdddr_prim,
-                                                       "cdddr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cddddr",
-			      scheme_make_folding_prim(cddddr_prim,
-                                                       "cddddr",
-                                                       1, 1, 1),
-			      env);
+  p = scheme_make_folding_prim(caaar_prim, "caaar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caaar", p, env);
 
-  scheme_add_global_constant ("cadddr",
-			      scheme_make_folding_prim(cadddr_prim,
-                                                       "cadddr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cdaddr",
-			      scheme_make_folding_prim(cdaddr_prim,
-                                                       "cdaddr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cddadr",
-			      scheme_make_folding_prim(cddadr_prim,
-                                                       "cddadr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cdddar",
-			      scheme_make_folding_prim(cdddar_prim,
-                                                       "cdddar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("caaddr",
-			      scheme_make_folding_prim(caaddr_prim,
-                                                       "caaddr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cadadr",
-			      scheme_make_folding_prim(cadadr_prim,
-                                                       "cadadr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("caddar",
-			      scheme_make_folding_prim(caddar_prim,
-                                                       "caddar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cdaadr",
-			      scheme_make_folding_prim(cdaadr_prim,
-                                                       "cdaadr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cdadar",
-			      scheme_make_folding_prim(cdadar_prim,
-                                                       "cdadar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cddaar",
-			      scheme_make_folding_prim(cddaar_prim,
-                                                       "cddaar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cdaaar",
-			      scheme_make_folding_prim(cdaaar_prim,
-                                                       "cdaaar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("cadaar",
-			      scheme_make_folding_prim(cadaar_prim,
-                                                       "cadaar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("caadar",
-			      scheme_make_folding_prim(caadar_prim,
-                                                       "caadar",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("caaadr",
-			      scheme_make_folding_prim(caaadr_prim,
-                                                       "caaadr",
-                                                       1, 1, 1),
-			      env);
-  scheme_add_global_constant ("caaaar",
-			      scheme_make_folding_prim(caaaar_prim,
-                                                       "caaaar",
-                                                       1, 1, 1),
-			      env);
+  p = scheme_make_folding_prim(caadr_prim, "caadr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caadr", p, env);
+
+  p = scheme_make_folding_prim(cadar_prim, "cadar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cadar", p, env);
+
+  p = scheme_make_folding_prim(cdaar_prim, "cdaar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdaar", p, env);
+
+  p = scheme_make_folding_prim(cdadr_prim, "cdadr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdadr", p, env);
+
+  p = scheme_make_folding_prim(cddar_prim, "cddar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cddar", p, env);
+
+  p = scheme_make_folding_prim(caddr_prim, "caddr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caddr", p, env);
+
+  p = scheme_make_folding_prim(cdddr_prim, "cdddr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdddr", p, env);
+
+  p = scheme_make_folding_prim(cddddr_prim, "cddddr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cddddr", p, env);
+
+  p = scheme_make_folding_prim(cadddr_prim, "cadddr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cadddr", p, env);
+
+  p = scheme_make_folding_prim(cdaddr_prim, "cdaddr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdaddr", p, env);
+
+  p = scheme_make_folding_prim(cddadr_prim, "cddadr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cddadr", p, env);
+
+  p = scheme_make_folding_prim(cdddar_prim, "cdddar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdddar", p, env);
+
+  p = scheme_make_folding_prim(caaddr_prim, "caaddr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caaddr", p, env);
+
+  p = scheme_make_folding_prim(cadadr_prim, "cadadr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cadadr", p, env);
+
+  p = scheme_make_folding_prim(caddar_prim, "caddar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caddar", p, env);
+
+  p = scheme_make_folding_prim(cdaadr_prim, "cdaadr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdaadr", p, env);
+
+  p = scheme_make_folding_prim(cdadar_prim, "cdadar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdadar", p, env);
+
+  p = scheme_make_folding_prim(cddaar_prim, "cddaar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cddaar", p, env);
+
+  p = scheme_make_folding_prim(cdaaar_prim, "cdaaar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdaaar", p, env);
+
+  p = scheme_make_folding_prim(cadaar_prim, "cadaar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cadaar", p, env);
+
+  p = scheme_make_folding_prim(caadar_prim, "caadar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caadar", p, env);
+  
+  p = scheme_make_folding_prim(caaadr_prim, "caaadr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caaadr", p, env);
+
+  p = scheme_make_folding_prim(caaaar_prim, "caaaar", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caaaar", p, env);
 
   REGISTER_SO(scheme_box_proc);
   p = scheme_make_immed_prim(box, BOX, 1, 1);

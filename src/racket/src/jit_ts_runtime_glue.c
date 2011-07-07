@@ -348,3 +348,17 @@ case SIG_ss_i:
      
      break;
   }
+case SIG_iSp_v:
+  {
+     prim_iSp_v f = (prim_iSp_v)future->prim_func;
+     
+     JIT_TS_LOCALIZE(int, arg_i0); JIT_TS_LOCALIZE(Scheme_Object**, arg_S1); JIT_TS_LOCALIZE(void*, arg_p2);
+     
+     future->arg_S1 = NULL; future->arg_p2 = NULL;
+     ADJUST_RS_ARG(future, arg_S1);
+     
+     f(arg_i0, arg_S1, arg_p2);
+     
+     
+     break;
+  }

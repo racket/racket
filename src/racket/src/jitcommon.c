@@ -83,6 +83,12 @@ static Scheme_Object *apply_checked_fail(Scheme_Object **args)
   return _scheme_apply(args[2], 3, a);
 }
 
+static void apply_prim_to_fail(int argc, Scheme_Object **argv, void *_p)
+{
+  Scheme_Primitive_Closure_Proc *p = (Scheme_Primitive_Closure_Proc *)_p;
+  (void)p(argc, argv, NULL);
+}
+
 static Scheme_Object *vector_check_chaperone_of(Scheme_Object *o, Scheme_Object *orig, int setter)
 {
   if (!scheme_chaperone_of(o, orig))
@@ -288,8 +294,8 @@ static int common1(mz_jit_state *jitter, void *_data)
   GC_CAN_IGNORE jit_insn *ref;
 
   /* *** [bad_][m]{car,cdr,...,{imag,real}_part}_code *** */
-  /* Argument is in R0 for car/cdr, R2 otherwise */
-  for (i = 0; i < 12; i++) {
+  /* Argument is in R2 for cXX+r, R0 otherwise */
+  for (i = 0; i < 13; i++) {
     void *code;
     
     code = jit_get_ip().ptr;
@@ -330,11 +336,14 @@ static int common1(mz_jit_state *jitter, void *_data)
     case 11:
       sjc.bad_flimag_part_code = code;
       break;
+    case 12:
+      sjc.bad_cXr_code = code;
+      break;
     }
     mz_prolog(JIT_R1);
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     CHECK_RUNSTACK_OVERFLOW();
-    if ((i < 2) || (i > 5)) {
+    if ((i != 12) && ((i < 2) || (i > 5))) {
       jit_str_p(JIT_RUNSTACK, JIT_R0);
     } else {
       jit_str_p(JIT_RUNSTACK, JIT_R2);
@@ -342,7 +351,12 @@ static int common1(mz_jit_state *jitter, void *_data)
     JIT_UPDATE_THREAD_RSPTR();
     CHECK_LIMIT();
     jit_movi_i(JIT_R1, 1);
-    jit_prepare(2);
+    if (i == 12) {
+      jit_prepare(3);
+      jit_pusharg_p(JIT_R0);
+    } else {
+      jit_prepare(2);
+    }
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R1);
     switch (i) {
@@ -381,6 +395,9 @@ static int common1(mz_jit_state *jitter, void *_data)
       break;
     case 11:
       (void)mz_finish_lwe(ts_scheme_checked_flimag_part, ref);
+      break;
+    case 12:
+      (void)mz_finish_lwe(ts_apply_prim_to_fail, ref);
       break;
     }
     CHECK_LIMIT();

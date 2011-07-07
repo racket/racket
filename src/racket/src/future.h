@@ -95,6 +95,7 @@ typedef struct future_t {
   Scheme_Object *arg_s2;
   Scheme_Object **arg_S2;
   int arg_i2;
+  void *arg_p2;
 
   const char *arg_str0;
   const char *arg_str1;
