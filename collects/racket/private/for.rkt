@@ -570,40 +570,49 @@
       (raise-type-error 'in-input-port-chars "input-port" p))
     (in-producer (lambda () (read-char p)) eof))
 
+  (define (check-in-port r p)
+    (unless (and (procedure? r) (procedure-arity-includes? r 1))
+      (raise-type-error 'in-port "procedure (arity 1)" r))
+    (unless (input-port? p) (raise-type-error 'in-port "input-port" p)))
+
   (define in-port
     (case-lambda
       [()  (in-port read (current-input-port))]
       [(r) (in-port r (current-input-port))]
       [(r p)
-       (unless (and (procedure? r) (procedure-arity-includes? r 1))
-         (raise-type-error 'in-port "procedure (arity 1)" r))
-       (unless (input-port? p) (raise-type-error 'in-port "input-port" p))
+       (check-in-port r p)
        (in-producer (lambda () (r p)) eof)]))
+
+  (define (check-in-lines p mode)
+    (unless (input-port? p) (raise-type-error 'in-lines "input-port" p))
+    (unless (memq mode '(linefeed return return-linefeed any any-one))
+      (raise-type-error
+       'in-lines
+       "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
+       mode)))
 
   (define in-lines
     (case-lambda
       [()  (in-lines (current-input-port) 'any)]
       [(p) (in-lines p 'any)]
       [(p mode)
-       (unless (input-port? p) (raise-type-error 'in-lines "input-port" p))
-       (unless (memq mode '(linefeed return return-linefeed any any-one))
-         (raise-type-error
-          'in-lines
-          "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
-          mode))
+       (check-in-lines p mode)
        (in-producer (lambda () (read-line p mode)) eof)]))
   
+  (define (check-in-bytes-lines p mode)
+    (unless (input-port? p) (raise-type-error 'in-bytes-lines "input-port" p))
+    (unless (memq mode '(linefeed return return-linefeed any any-one))
+      (raise-type-error
+       'in-bytes-lines
+       "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
+       mode)))
+
   (define in-bytes-lines
     (case-lambda
       [()  (in-bytes-lines (current-input-port) 'any)]
       [(p) (in-bytes-lines p 'any)]
       [(p mode)
-       (unless (input-port? p) (raise-type-error 'in-bytes-lines "input-port" p))
-       (unless (memq mode '(linefeed return return-linefeed any any-one))
-         (raise-type-error
-          'in-bytes-lines
-          "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
-          mode))
+       (check-in-bytes-lines p mode)
        (in-producer (lambda () (read-bytes-line p mode)) eof)]))
 
   (define (in-hash ht)
@@ -1715,11 +1724,7 @@
         [[(id) (_ r p)]
          #'[(id) (*in-producer
                   (let ([r* r] [p* p])
-                    (unless (and (procedure? r*)
-                                 (procedure-arity-includes? r* 1))
-                      (raise-type-error 'in-port "procedure (arity 1)" r*))
-                    (unless (input-port? p*)
-                      (raise-type-error 'in-port "input-port" p*))
+                    (check-in-port r* p*)
                     (lambda () (r* p*)))
                   eof)]])))
 
@@ -1732,14 +1737,7 @@
         [[(id) (_ p mode)]
          #'[(id) (*in-producer
                   (let ([p* p] [mode* mode])
-                    (unless (input-port? p*)
-                      (raise-type-error 'in-lines "input-port" p*))
-                    (unless (memq mode* '(linefeed return return-linefeed any
-                                          any-one))
-                      (raise-type-error
-                       'in-lines
-                       "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
-                       mode*))
+                    (check-in-lines p* mode*)
                     (lambda () (read-line p* mode*)))
                   eof)]])))
   
@@ -1752,14 +1750,7 @@
         [[(id) (_ p mode)]
          #'[(id) (*in-producer
                   (let ([p* p] [mode* mode])
-                    (unless (input-port? p*)
-                      (raise-type-error 'in-bytes-lines "input-port" p*))
-                    (unless (memq mode* '(linefeed return return-linefeed any
-                                          any-one))
-                      (raise-type-error
-                       'in-bytes-lines
-                       "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
-                       mode*))
+                    (check-in-bytes-lines p* mode*)
                     (lambda () (read-bytes-line p* mode*)))
                   eof)]])))
 
@@ -1770,8 +1761,7 @@
         [[(id) (_ p)]
          #'[(id) (*in-producer
                   (let ([p* p])
-                    (unless (input-port? p*)
-                      (raise-type-error 'in-input-port-bytes "input-port" p*))
+                    (unless (input-port? p*) (in-input-port-bytes p*))
                     (lambda () (read-byte p*)))
                   eof)]])))
 
@@ -1782,8 +1772,7 @@
         [[(id) (_ p)]
          #'[(id) (*in-producer
                   (let ([p* p])
-                    (unless (input-port? p*)
-                      (raise-type-error 'in-input-port-chars "input-port" p*))
+                    (unless (input-port? p*) (in-input-port-chars p*))
                     (lambda () (read-char p*)))
                   eof)]])))
   
