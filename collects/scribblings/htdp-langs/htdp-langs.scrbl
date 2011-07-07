@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt" (for-label lang/htdp-beginner))
 
-@title[#:tag "top"]{@italic{How to Design Programs} Languages}
+@title[#:style 'toc #:tag "top"]{@italic{How to Design Programs} Languages}
 
 The languages documented in this manual are provided by DrRacket to be
 used with the @italic{@link["http://www.htdp.org/"]{How to Design

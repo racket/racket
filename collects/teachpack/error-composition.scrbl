@@ -101,9 +101,10 @@ not appreciate anyway).
   @list[@para{function header}
         @para{@samp{after define}, @samp{after the name},
           @samp{after the first argument}, ...}]
-  @list[@para{keyword}
+  @list[@para{keyword, form, syntax} 
         @para{mention the construct directly by name, such as
-          @samp{expected a variable but found a cond}}]
+          @samp{expected a variable but found a cond}. Use @samp{syntax}
+                only when talking about many constructs in aggregate.}]
   @list[@para{built-in}  @para{Nothing --- avoid this term}]
   @list[@para{macro} @para{Nothing --- avoid this term}]]]
 

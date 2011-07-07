@@ -2,7 +2,7 @@
 @(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-intermediate-lambda))
 
-@title[#:style 'toc #:tag "intermediate-lam"]{Intermediate Student with Lambda}
+@title[#:tag "intermediate-lam"]{Intermediate Student with Lambda}
 
 @declare-exporting[lang/htdp-intermediate-lambda]
 
@@ -91,6 +91,9 @@ the function.}
 @; ----------------------------------------------------------------------
 
 @section[#:tag "intm-w-lambda-common-syntax"]{Common Syntax}
+
+The following syntaxes behave the same in the @emph{Intermediate with Lambda}
+level as they did in the @secref["intermediate"] level.
 
 @(define-forms/normal define)
 

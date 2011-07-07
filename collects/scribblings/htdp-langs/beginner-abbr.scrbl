@@ -4,7 +4,7 @@
 
 
 
-@title[#:style 'toc #:tag "beginner-abbr"]{Beginning Student with List Abbreviations}
+@title[#:tag "beginner-abbr"]{Beginning Student with List Abbreviations}
 
 @declare-exporting[lang/htdp-beginner-abbr]
 
@@ -108,7 +108,10 @@ also be written with @racket[unquote-splicing].}
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "beginner-abbr-common-syntax"]{Common Syntax}
+@section[#:tag "beginner-abbr-common-syntax"]{Common Syntaxes}
+
+The following syntaxes behave the same in the @emph{Beginner with List
+Abbreviations} level as they did in the @secref["beginner"] level.
 
 @(define-forms/normal define)
 @(define-form/explicit-lambda define lambda)
