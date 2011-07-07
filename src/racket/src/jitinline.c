@@ -1572,6 +1572,8 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
         --jitter->unbox_depth;
       }
     }
+    if (can_chaperone)
+      mz_patch_ucbranch(pref);
     if (!result_ignored)
       (void)jit_movi_p(JIT_R0, scheme_void);
   } else {
@@ -1586,9 +1588,9 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       else
         scheme_generate_alloc_double(jitter, 0);
     }
+    if (can_chaperone)
+      mz_patch_ucbranch(pref);
   }
-  if (can_chaperone)
-    mz_patch_ucbranch(pref);
 
   return 1;
 }

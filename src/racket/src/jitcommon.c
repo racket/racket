@@ -887,7 +887,7 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
   jit_ldxi_p(JIT_R1, JIT_R2, &((Scheme_Chaperone *)0x0)->redirects);
 
   /* if chaperone was for properties, only, then we're done */
-  ref = mz_beqi_t(jit_forward(), JIT_R1, scheme_vector_type, JIT_R2);
+  ref = mz_beqi_t(jit_forward(), JIT_R1, scheme_vector_type, JIT_V1);
 
   if (setter)
     jit_ldxi_p(JIT_V1, JIT_R1, &SCHEME_CDR(0x0)); /* rator */
@@ -934,7 +934,7 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
   JIT_UPDATE_THREAD_RSPTR();
-  mz_finish_lwe(ts_vector_check_chaperone_of, refrts);
+  (void)mz_finish_lwe(ts_vector_check_chaperone_of, refrts);
   jit_retval(JIT_R0);
   CHECK_LIMIT();
             
