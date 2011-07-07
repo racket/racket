@@ -78,6 +78,8 @@
                 (lambda (all one) "expects a "))
           (list #rx"list or cyclic list"
                 (lambda (all) "list"))
+          (list (regexp-quote "#(struct:object:image% ...)")
+                (lambda (all) "an image"))
           (list (regexp-quote "#(struct:object:image-snip% ...)")
                 (lambda (all) "an image"))
           (list (regexp-quote "#(struct:object:cache-image-snip% ...)")
