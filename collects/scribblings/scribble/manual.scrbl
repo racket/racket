@@ -640,7 +640,8 @@ it's best to document a related group of procedures at once.}
 @defform/subs[(defform maybe-id maybe-literals form-datum maybe-contracts
                 pre-flow ...)
               ([maybe-id code:blank
-                         (code:line #:id id)]
+                         (code:line #:id id)
+                         (code:line #:id [id id-expr])]
                [maybe-literals code:blank
                                (code:line #:literals (literal-id ...))]
                [maybe-contracts code:blank
@@ -648,18 +649,24 @@ it's best to document a related group of procedures at once.}
                                                         ...))])]{
 
 Produces a sequence of flow elements (encapsulated in a
-@racket[splice]) to document a syntatic form named by @racket[id]
-whose syntax is described by @racket[form-datum]. If no @racket[#:id] is used
-to specify @racket[id], then @racket[form-datum] must have the form
-@racket[(id . _datum)].
+@racket[splice]) to document a syntatic form named by @racket[id] (or the
+result of @racket[id-expr]) whose syntax is described by
+@racket[form-datum]. If no @racket[#:id] is used to specify
+@racket[id], then @racket[form-datum] must have the form @racket[(id
+. _datum)].
 
-The @racket[id] is indexed, and it is also registered so that
-@racket[racket]-typeset uses of the identifier (with the same
-for-label binding) are hyperlinked to this documentation.
+If @racket[#:id [id id-expr]] is supplied, then @racket[id] is the
+identifier as it appears in the @racket[form-datum] (to be replaced by
+a defining instance), and @racket[id-expr] produces the identifier to
+be documented. This split between @racket[id] and @racket[id-expr]
+roles is useful for functional abstraction of @racket[defform].
 
-The @racket[defmodule] or @racket[declare-exporting] requirements, as
-well as the binding requirements for @racket[id], are the same as for
-@racket[defproc].
+The @racket[id] (or result of @racket[id-expr]) is indexed, and it is
+also registered so that @racket[racket]-typeset uses of the identifier
+(with the same for-label binding) are hyperlinked to this
+documentation. The @racket[defmodule] or @racket[declare-exporting]
+requirements, as well as the binding requirements for @racket[id] (or
+result of @racket[id-expr]), are the same as for @racket[defproc].
 
 The @tech{decode}d @racket[pre-flow] documents the form. In this
 description, a reference to any identifier in @racket[form-datum] via
@@ -718,11 +725,13 @@ Like @racket[defform], but without registering a definition.}
 Like @racket[defform], but with a plain @racket[id] as the form.}
 
 
-@defform[(defidform/inline id)]{
+@defform*[[(defidform/inline id)
+           (defidform/inline (@#,racket[unsyntax] id-expr))]]{
 
-Like @racket[defidform], but @racket[id] is typeset as an inline
-element. Use this form sparingly, because the typeset form does not
-stand out to the reader as a specification of @racket[id].}
+Like @racket[defidform], but @racket[id] (or the result of
+@racket[id-expr], analogous to @racket[defform]) is typeset as an
+inline element. Use this form sparingly, because the typeset form does
+not stand out to the reader as a specification of @racket[id].}
 
 
 @defform[(specform maybe-literals datum maybe-contracts
