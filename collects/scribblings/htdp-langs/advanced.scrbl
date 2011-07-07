@@ -2,7 +2,7 @@
 @(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-advanced))
 
-@title[#:style 'toc #:tag "advanced"]{Advanced Student}
+@title[#:tag "advanced"]{Advanced Student}
 
 @declare-exporting[lang/htdp-advanced]
 
@@ -265,6 +265,9 @@ Like @racket[when], but the @racket[body-expression] is evaluated when the
 
 
 @section[#:tag "advanced-common-syntax"]{Common Syntax}
+
+The following syntaxes behave the same in the @emph{Advanced}
+level as they did in the @secref["intermediate-lam"] level.
 
 
 @(intermediate-forms lambda

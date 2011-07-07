@@ -3,7 +3,7 @@
           (for-label lang/htdp-beginner))
 
 
-@title[#:style 'toc #:tag "beginner"]{Beginning Student}
+@title[#:tag "beginner"]{Beginning Student}
 
 @declare-exporting[lang/htdp-beginner #:use-sources (lang/htdp-beginner lang/private/teachprims)]
 

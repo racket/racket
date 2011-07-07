@@ -3,7 +3,7 @@
           (for-label lang/htdp-intermediate))
 
 
-@title[#:style 'toc #:tag "intermediate"]{Intermediate Student}
+@title[#:tag "intermediate"]{Intermediate Student}
 
 @declare-exporting[lang/htdp-intermediate]
 
@@ -64,6 +64,9 @@
 @; ----------------------------------------------------------------------
 
 @section[#:tag "intermediate-common-syntax"]{Common Syntax}
+
+The following syntaxes behave the same in the @emph{Intermediate} level as they
+did in the @secref["beginner-abbr"] level.
 
 @(define-forms/normal define)
 @(define-form/explicit-lambda define lambda)
