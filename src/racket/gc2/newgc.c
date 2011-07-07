@@ -2242,7 +2242,9 @@ int GC_merely_accounting()
 /* administration / initialization                                           */
 /*****************************************************************************/
 
+#ifdef MZ_USE_PLACES
 static void free_child_gc(void);
+#endif
 
 inline static int page_mmu_type(mpage *page) {
   switch (page->size_class) { 
@@ -4579,6 +4581,7 @@ void GC_dump_variable_stack(void **var_stack,
 /*                              GC free all                                   */
 /******************************************************************************/
 
+#ifdef MZ_USE_PLACES
 static void free_child_gc(void)
 {
   NewGC *gc = GC_get_GC();
@@ -4610,6 +4613,7 @@ static void free_child_gc(void)
   mmu_free(gc->mmu);
   free(gc);
 }
+#endif
 
 void GC_free_all(void)
 {
