@@ -137,7 +137,33 @@
      [(i-n _ ...)
       #'i-n])
    (->opt [-Input-Port -Symbol] (-seq -Bytes))]
-
+  ;; check-in-bytes-lines
+  [(syntax-parse (local-expand #'(for ([i (in-bytes-lines 0)]) i)
+                               'expression #f)
+                 #:literals (let-values let)
+     [(let-values ((_ (let _ (c . _) . _))
+                   . _)
+        . _)                   
+      #'c])
+   (-> Univ Univ Univ)]
+  ;; check-in-lines
+  [(syntax-parse (local-expand #'(for ([i (in-lines 0)]) i)
+                               'expression #f)
+                 #:literals (let-values #%app let)
+     [(let-values ((_ (let _ (c . _) . _))
+                   . _)
+        . _)                   
+      #'c])
+   (-> Univ Univ Univ)]
+  ;; check-in-port
+  [(syntax-parse (local-expand #'(for ([i (in-port 0)]) i)
+                               'expression #f)
+                 #:literals (let-values #%app let)
+     [(let-values ((_ (let _ (c . _) . _))
+                   . _)
+        . _)                   
+      #'c])
+   (-> Univ Univ Univ)]
   ;; from the expansion of `with-syntax'
   [(syntax-parse (local-expand #'(with-syntax ([x 1]) #'(x)) 'expression null)
      #:literals (let-values #%plain-app #%plain-lambda if letrec-syntaxes+values)
