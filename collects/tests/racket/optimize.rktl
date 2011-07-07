@@ -830,6 +830,15 @@
                 (car (cdr (car x)))))
            '(lambda (w z) w))
 
+(test-comp '(lambda (w z)
+              (let ([x (list* w z)]
+                    [y (list* z w)])
+                (error "bad")
+                (equal? x y)))
+           '(lambda (w z)
+              (error "bad")
+              (equal? (list* w z) (list* z w))))
+
 (test-comp '(let ([x 1][y 2]) x)
 	   '1)
 (test-comp '(let ([x 1][y 2]) (+ y x))
