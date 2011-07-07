@@ -2138,8 +2138,16 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
 
   if (!cnt && ch->wakeup_signal) {
     /*wake up possibly sleeping single receiver */  
-    if (SCHEME_PLACE_OBJECTP(ch->wakeup_signal))
-      scheme_signal_received_at(((Scheme_Place_Object *) ch->wakeup_signal)->signal_handle);
+    if (SCHEME_PLACE_OBJECTP(ch->wakeup_signal)) {
+      Scheme_Place_Object *place_obj;
+      place_obj = ((Scheme_Place_Object *) ch->wakeup_signal);
+
+      mzrt_mutex_lock(place_obj->lock);
+      if (place_obj->signal_handle) {
+        scheme_signal_received_at(place_obj->signal_handle);
+      }
+      mzrt_mutex_unlock(place_obj->lock);
+    }
     /*wake up possibly sleeping multiple receiver */  
     else if (SCHEME_VECTORP(ch->wakeup_signal)) {
       Scheme_Object *v = ch->wakeup_signal;
@@ -2149,12 +2157,16 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
       for (i = 0; i < size; i++) {
         Scheme_Place_Object *o3;
         o3 = (Scheme_Place_Object *)SCHEME_VEC_ELS(v)[i];
-        if (o3 && o3->signal_handle != NULL) {
-          scheme_signal_received_at(o3->signal_handle);
-          alive++;
+        if (o3) {
+          mzrt_mutex_lock(o3->lock);
+          if (o3->signal_handle != NULL) {
+            scheme_signal_received_at(o3->signal_handle);
+            alive++;
+          }
+          else
+            SCHEME_VEC_ELS(v)[i] = NULL;
+          mzrt_mutex_unlock(o3->lock);
         }
-        else
-          SCHEME_VEC_ELS(v)[i] = NULL;
       }
       /* shrink if more than half are unused */
       if (alive < (size / 2)) {
