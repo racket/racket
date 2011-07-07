@@ -2955,8 +2955,13 @@
         [(_ a b) (syntax/loc stx (cons a b))]))
     ;; For expressions (cdr check via `the-cons'):
     (lambda (stx)
-      (syntax-case stx ()
-        [(_ a b) (syntax/loc stx (the-cons a b))])))
+      (with-syntax
+          ([the-cons/tagged (stepper-syntax-property
+                             #'the-cons
+                             'stepper-prim-name
+                             #'cons)])
+        (syntax-case stx ()
+          [(_ a b) (syntax/loc stx (the-cons/tagged a b))]))))
 
 (provide signature :
 	 -> mixed one-of predicate combined)

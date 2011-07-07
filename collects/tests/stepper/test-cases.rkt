@@ -1369,7 +1369,7 @@
 
   (t1 'empty-begin
       m:advanced "(begin)"
-      `((error "begin: expected a sequence of expressions after `begin', but nothing's there")))
+      `((error "begin: expected at least one expression after begin, but nothing's there")))
 
   ;;;;;;;;;;;;
   ;;
@@ -1379,7 +1379,7 @@
   
   (t1 'empty-begin0
       m:advanced "(begin0)"
-      `((error "begin0: expected a sequence of expressions after `begin0', but nothing's there")))
+      `((error "begin0: expected at least one expression after begin0, but nothing's there")))
   
   (t1 'trivial-begin0
       m:advanced "(begin0 3)"
