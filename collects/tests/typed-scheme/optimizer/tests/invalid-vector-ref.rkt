@@ -1,6 +1,6 @@
 #;
 (
-TR opt: invalid-vector-ref.rkt 10:2 (vector-ref x 0) -- vector access splitting
+TR opt: invalid-vector-ref.rkt 10:2 (vector-ref x 0) -- vector partial bounds checking elimination
 )
 
 #lang typed/scheme

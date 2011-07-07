@@ -74,7 +74,9 @@
   ;; we can do the bounds checking separately, to eliminate some of the checks
   (pattern (#%plain-app op:vector-op v:expr i:fixnum-expr new:expr ...)
            #:with opt
-           (begin (log-optimization "vector access splitting" this-syntax)
+           (begin (log-optimization "vector partial bounds checking elimination"
+                                    "Partial bounds checking elimination."
+                                    this-syntax)
                   (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))]
                         [i-known-nonneg? (subtypeof? #'i -NonNegFixnum)])
                     #`(let ([new-i #,((optimize) #'i)]
@@ -100,7 +102,9 @@
   ;; similarly for flvectors
   (pattern (#%plain-app op:flvector-op v:expr i:fixnum-expr new:expr ...)
            #:with opt
-           (begin (log-optimization "flvector access splitting" this-syntax)
+           (begin (log-optimization "flvector partial bounds checking elimination"
+                                    "Partial bounds checking elimination."
+                                    this-syntax)
                   (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))]
                         [i-known-nonneg? (subtypeof? #'i -NonNegFixnum)])
                     #`(let ([new-i #,((optimize) #'i)]

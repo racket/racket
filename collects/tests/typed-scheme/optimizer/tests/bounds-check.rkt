@@ -1,13 +1,13 @@
 #;
 (
-TR opt: bounds-check.rkt 25:2 (vector-ref v i) -- vector access splitting
-TR opt: bounds-check.rkt 28:2 (vector-set! v i n) -- vector access splitting
-TR opt: bounds-check.rkt 31:2 (vector-ref v i) -- vector access splitting
-TR opt: bounds-check.rkt 34:2 (vector-set! v i n) -- vector access splitting
-TR opt: bounds-check.rkt 46:2 (flvector-ref v i) -- flvector access splitting
-TR opt: bounds-check.rkt 49:2 (flvector-set! v i n) -- flvector access splitting
-TR opt: bounds-check.rkt 52:2 (flvector-ref v i) -- flvector access splitting
-TR opt: bounds-check.rkt 55:2 (flvector-set! v i n) -- flvector access splitting
+TR opt: bounds-check.rkt 25:2 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: bounds-check.rkt 28:2 (vector-set! v i n) -- vector partial bounds checking elimination
+TR opt: bounds-check.rkt 31:2 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: bounds-check.rkt 34:2 (vector-set! v i n) -- vector partial bounds checking elimination
+TR opt: bounds-check.rkt 46:2 (flvector-ref v i) -- flvector partial bounds checking elimination
+TR opt: bounds-check.rkt 49:2 (flvector-set! v i n) -- flvector partial bounds checking elimination
+TR opt: bounds-check.rkt 52:2 (flvector-ref v i) -- flvector partial bounds checking elimination
+TR opt: bounds-check.rkt 55:2 (flvector-set! v i n) -- flvector partial bounds checking elimination
 3
 4
 5
