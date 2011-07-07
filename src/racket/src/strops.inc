@@ -18,7 +18,10 @@ X(scheme_make_sized_offset, _string)(Xchar *chars, intptr_t d, intptr_t len, int
   if (copy) {
     Xchar *naya;
 
-    naya = (Xchar *)scheme_malloc_fail_ok(scheme_malloc_atomic, (len + 1) * sizeof(Xchar));
+    if (len < 100)
+      naya = (Xchar *)scheme_malloc_atomic((len + 1) * sizeof(Xchar));
+    else
+      naya = (Xchar *)scheme_malloc_fail_ok(scheme_malloc_atomic, (len + 1) * sizeof(Xchar));
     SCHEME_X_STR_VAL(str) = naya;
     memcpy(naya, chars + d, len * sizeof(Xchar));
     naya[len] = 0;
