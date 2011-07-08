@@ -29,7 +29,7 @@
                          (#:positive (or/c syntax? string? module-path-index?
                                            'from-macro 'use-site 'unknown)
                           #:negative (or/c syntax? string? module-path-index?
-                                           'from-macro 'same-as-use-site 'unknown)
+                                           'from-macro 'use-site 'unknown)
                           #:name (or/c identifier? string? symbol? #f)
                           #:macro (or/c identifier? string? symbol? #f)
                           #:context (or/c syntax? #f)))])
