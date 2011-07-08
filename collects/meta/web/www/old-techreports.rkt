@@ -176,7 +176,6 @@
     (mysterx    "*...!"    steck  "MysterX: Using Windows COM Objects in Scheme")
     (mzcom      "*...!"    steck  "MzCOM: Scheme as a Windows COM Object")
     (srfi       "*...!"    plt    "SRFIs: Libraries")
-    (htdp-lib   "*...!"    plt    "HtDP: Languages as Libraries")
     (swindle    "*...!"    plt    "Swindle")
     (syntax     "*...!"    plt    "Syntax: Meta-Programming Helpers")
     (typed-scheme "*...!"  samth  "Typed Scheme: Scheme with Static Types")
