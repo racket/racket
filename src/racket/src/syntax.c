@@ -2432,10 +2432,9 @@ static Scheme_Object *taint_intern(Scheme_Object *v)
   Scheme_Bucket *b;
 
   b = scheme_bucket_from_table(taint_intern_table, (const char *)v);
-  if (b->val)
-    v = b->val;
-  else
-    b->val = v;
+  if (!b->val)
+    b->val = scheme_true;
+  v = (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
 
   return v;
 }
