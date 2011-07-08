@@ -1,3 +1,7 @@
+Version 5.1.2.2
+Changed the location-creation semantics of internal definitions
+ and `letrec-syntaxes+values'
+
 Version 5.1.2, July 2011
 Replaced syntax certificates with syntax taints:
  Added syntax-tainted?, syntax-arm, syntax-disarm, syntax-rearm,

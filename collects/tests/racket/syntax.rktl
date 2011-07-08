@@ -1389,5 +1389,53 @@
   (test #t exn? (caar (map try (list pipeline2)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Semantics of internal definitions != R5RS
+
+(test 0 'racket-int-def (call-with-continuation-prompt
+                         (lambda ()
+                           (let ([v 0]
+                                 [k #f]
+                                 [q void])
+                             (define f (let/cc _k (set! k _k)))
+                             (define g v) ; fresh location each evaluation
+                             (if f
+                                 (begin
+                                   (set! q (lambda () g))
+                                   (set! v 1)
+                                   (k #f))
+                                 (q))))))
+(test 1 'racket-int-def (call-with-continuation-prompt
+                         (lambda ()
+                           (let ([v 0]
+                                 [k #f]
+                                 [q void])
+                             (#%stratified-body
+                              (define f (let/cc _k (set! k _k)))
+                              (define g v) ; same location both evaluations
+                              (if f
+                                  (begin
+                                    (set! q (lambda () g))
+                                    (set! v 1)
+                                    (k #f))
+                                  (q)))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that the compiler is not too agressive with `letrec' -> `let*'
+
+(test "#<undefined>\nready\n"
+      get-output-string
+      (let ([p (open-output-string)])
+        (parameterize ([current-output-port p])
+          (let ([restart void])
+            (letrec ([dummy1 (let/cc k (set! restart k))]
+                     [dummy2 (displayln maybe-ready)]
+                     [maybe-ready 'ready])
+              (let ([rs restart])
+                (set! restart void)
+                (rs #f)))))
+        p))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -689,8 +689,9 @@
 (test #t has-stx-property? (expand #'(let () (define-struct x (a)) 12)) #f 'define-struct 'origin)
 
 ;; Disappearing syntax decls:
-(test #t has-stx-property? (expand #'(let () (define-syntax x 1) (define y 12) 10)) 'letrec-values 'x 'disappeared-binding)
-(test #t has-stx-property? (expand #'(let () (define-struct s (x)) 10)) 'letrec-values 's 'disappeared-binding)
+(test #t has-stx-property? (expand #'(let () (define-syntax x 1) (define y 12) 10)) 'let-values 'x 'disappeared-binding)
+(test #t has-stx-property? (expand #'(let () (define-syntax x 1) (define y y) 10)) 'letrec-values 'x 'disappeared-binding)
+(test #t has-stx-property? (expand #'(let () (define-struct s (x)) 10)) 'let-values 's 'disappeared-binding)
 (test #t has-stx-property? (expand #'(let () (define-syntax x 1) 10)) 'let-values 'x 'disappeared-binding)
 (test #f has-stx-property? (expand #'(fluid-let-syntax ([x 1]) 10)) 'let-values 'x 'disappeared-binding)
 

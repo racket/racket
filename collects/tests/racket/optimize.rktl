@@ -1112,6 +1112,41 @@
                          [y (lambda () (x))])
                   (list (x) (y) h)))))
 
+(test-comp '(lambda (f a)
+              (define x (f y))
+              (define y (m))
+              (define-syntax-rule (m) 10)
+              (f "hi!\n")
+              (define z (f (lambda () (+ x y a))))
+              (define q (p))
+              (define p (q))
+              (list x y z))
+           '(lambda (f a)
+              (letrec ([x (f y)]
+                       [y 10])
+                (f "hi!\n")
+                (let ([z (f (lambda () (+ x y a)))])
+                  (letrec ([q (p)]
+                           [p (q)])
+                    (list x y z))))))
+
+(test-comp '(lambda (f a)
+              (#%stratified-body
+               (define x (f y))
+               (define y (m))
+               (define-syntax-rule (m) 10)
+               (define z (f (lambda () (+ x y a))))
+               (define q (p))
+               (define p (q))
+               (list x y z)))
+           '(lambda (f a)
+              (letrec-values ([(x) (f y)]
+                              [(y) 10]
+                              [(z) (f (lambda () (+ x y a)))]
+                              [(q) (p)]
+                              [(p) (q)])
+                (list x y z))))
+
 (test-comp '(procedure? add1)
            #t)
 (test-comp '(procedure? (lambda (x) x))

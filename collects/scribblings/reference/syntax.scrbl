@@ -1296,7 +1296,7 @@ expression.
 
 Refers to a module-level or local binding, when @racket[id] is
 not bound as a transformer (see @secref["expansion"]). At run-time,
-the reference evaluates to the value in the location associated with
+the reference evaluates to the value in the @tech{location} associated with
 the binding.
 
 When the expander encounters an @racket[id] that is not bound by a
@@ -1334,7 +1334,7 @@ introduces @racketidfont{#%top} identifiers.
            (#%variable-reference)]]{
 
 Produces an opaque @deftech{variable reference} value representing the
-location of @racket[id], which must be bound as a @tech{top-level
+@tech{location} of @racket[id], which must be bound as a @tech{top-level
 variable} or @tech{module-level variable}. If no @racket[id] is
 supplied, the resulting value refers to an ``anonymous'' variable
 defined within the enclosing context (i.e., within the enclosing
@@ -1593,7 +1593,7 @@ Like @racket[lambda], but without support for keyword or optional arguments.
            (let proc-id ([id init-expr] ...) body ...+)]]{
 
 The first form evaluates the @racket[val-expr]s left-to-right, creates
-a new location for each @racket[id], and places the values into the
+a new @tech{location} for each @racket[id], and places the values into the
 locations. It then evaluates the @racket[body]s, in which the
 @racket[id]s are bound. The last @racket[body] expression is in
 tail position with respect to the @racket[let] form. The @racket[id]s
@@ -1622,7 +1622,7 @@ within the @racket[body]s to the procedure itself.}
 @defform[(let* ([id val-expr] ...) body ...+)]{
 
 Similar to @racket[let], but evaluates the @racket[val-expr]s one by
-one, creating a location for each @racket[id] as soon as the value is
+one, creating a @tech{location} for each @racket[id] as soon as the value is
 available. The @racket[id]s are bound in the remaining @racket[val-expr]s
 as well as the @racket[body]s, and the @racket[id]s need not be
 distinct; later bindings shadow earlier bindings.
@@ -1635,7 +1635,7 @@ distinct; later bindings shadow earlier bindings.
 
 @defform[(letrec ([id val-expr] ...) body ...+)]{
 
-Similar to @racket[let], but the locations for all @racket[id]s are
+Similar to @racket[let], but the @tech{locations} for all @racket[id]s are
 created first and filled with @|undefined-const|, and all
 @racket[id]s are bound in all @racket[val-expr]s as well as the
 @racket[body]s. The @racket[id]s must be distinct according to
@@ -1654,7 +1654,7 @@ created first and filled with @|undefined-const|, and all
 @defform[(let-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @racket[let], except that each @racket[val-expr] must produce as many
 values as corresponding @racket[id]s, otherwise the
-@exnraise[exn:fail:contract]. A separate location is created for each
+@exnraise[exn:fail:contract]. A separate @tech{location} is created for each
 @racket[id], all of which are bound in the @racket[body]s.
 
 @mz-examples[
@@ -1664,7 +1664,7 @@ values as corresponding @racket[id]s, otherwise the
 
 @defform[(let*-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @racket[let*], except that each @racket[val-expr] must produce as many
-values as corresponding @racket[id]s. A separate location is created
+values as corresponding @racket[id]s. A separate @tech{location} is created
 for each @racket[id], all of which are bound in the later
 @racket[val-expr]s and in the @racket[body]s.
 
@@ -1676,7 +1676,7 @@ for each @racket[id], all of which are bound in the later
 
 @defform[(letrec-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @racket[letrec], except that each @racket[val-expr] must produce as
-many values as corresponding @racket[id]s. A separate location is
+many values as corresponding @racket[id]s. A separate @tech{location} is
 created for each @racket[id], all of which are initialized to
 @|undefined-const| and bound in all @racket[val-expr]s
 and in the @racket[body]s.
@@ -1738,17 +1738,39 @@ within all @racket[trans-expr]s.}
                                  ([(val-id ...) val-expr] ...)
             body ...+)]{
 
-Combines @racket[letrec-syntaxes] with @racket[letrec-values]: each
-@racket[trans-id] and @racket[val-id] is bound in all
-@racket[trans-expr]s and @racket[val-expr]s.
+Combines @racket[letrec-syntaxes] with a variant of
+@racket[letrec-values]: each @racket[trans-id] and @racket[val-id] is
+bound in all @racket[trans-expr]s and @racket[val-expr]s.
 
 The @racket[letrec-syntaxes+values] form is the core form for local
 compile-time bindings, since forms like @racket[letrec-syntax] and
-internal @racket[define-syntax] expand to it. In a fully expanded
+@tech{internal-definition contexts} expand to it. In a fully expanded
 expression (see @secref["fully-expanded"]), the @racket[trans-id]
-bindings are discarded and the form reduces to @racket[letrec], but
+bindings are discarded and the form reduces to a combination of
+@racket[letrec-values] or @racket[let-values], but
 @racket[letrec-syntaxes+values] can appear in the result of
 @racket[local-expand] with an empty stop list.
+
+For variables bound by @racket[letrec-syntaxes+values], the
+@tech{location}-creation rules differ slightly from
+@racket[letrec-values]. The @racket[[(val-id ...) val-expr]] binding
+clauses are partitioned into minimal sets of clauses that satisfy the
+following rule: if a clause has a @racket[val-id] binding that is
+referenced (in a full expansion) by the @racket[val-expr] of an
+earlier clause, the two clauses and all in between are in the same
+set. If a set consists of a single clause whose @racket[val-expr] does
+not refer to any of the clause's @racket[val-id]s, then
+@tech{locations} for the @racket[val-id]s are created @emph{after} the
+@racket[val-expr] is evaluated. Otherwise, @tech{locations} for all
+@racket[val-id]s in a set are created just before the first
+@racket[val-expr] in the set is evaluated.
+
+The end result of the @tech{location}-creation rules is that scoping
+and evaluation order are the same as for @racket[letrec-values], but
+the compiler has more freedom to optimize away @tech{location}
+creation. The rules also correspond to a nesting of
+@racket[let-values] and @racket[letrec-values], which is how
+@racket[letrec-syntaxes+values] for a fully-expanded expression.
 
 See also @racket[local], which supports local bindings with
 @racket[define], @racket[define-syntax], and more.}
@@ -1760,9 +1782,9 @@ See also @racket[local], which supports local bindings with
 
 @defform[(local [definition ...] body ...+)]{
 
-Like @racket[letrec], except that the bindings are expressed in the
-same way as in the top-level or in a module body: using
-@racket[define], @racket[define-values], @racket[define-syntax],
+Like @racket[letrec-syntaxes+values], except that the bindings are
+expressed in the same way as in the top-level or in a module body:
+using @racket[define], @racket[define-values], @racket[define-syntax],
 @racket[struct], etc.  Definitions are distinguished from
 non-definitions by partially expanding @racket[definition] forms (see
 @secref["partial-expansion"]). As in the top-level or in a module
@@ -2508,7 +2530,10 @@ provides a hook to control interactive evaluation through
 
 Like @racket[(let () defn-or-expr ...)] for an
 @tech{internal-definition context} sequence, except that an expression
-is not allowed to precede a definition.
+is not allowed to precede a definition, and all definitions are
+treated as referring to all other definitions (i.e., @tech{locations}
+for variables are all allocated first, like @racket[letrec] and
+unlike @racket[letrec-syntaxes+values]).
 
 The @racket[#%stratified-body] form is useful for implementing
 syntactic forms or languages that supply a more limited kind of
