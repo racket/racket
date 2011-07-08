@@ -42,8 +42,8 @@
 (define (log->report log)
   (define (log-entry->report-entry l)
     (match l
-      [(log-entry kind msg stx (? number? pos))
-       (define stxs+msgs `((,stx . ,msg)))
+      [(log-entry kind msg stx located-stx (? number? pos))
+       (define stxs+msgs `((,located-stx . ,msg)))
        (define start     (sub1 pos))
        (define end       (+ start (syntax-span stx)))
        (if (opt-log-entry? l)

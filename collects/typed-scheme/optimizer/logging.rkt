@@ -25,13 +25,15 @@
 (define log-so-far '())
 
 ;; msg is for consumption by the DrRacket tool
-(struct log-entry (kind msg stx pos) #:prefab)
+(struct log-entry (kind msg stx located-stx pos) #:prefab)
 ;; for optimizations only (not missed optimizations, those are below)
 (struct opt-log-entry log-entry () #:prefab)
 
 
 (define (log-optimization kind msg stx)
-  (let ([new-entry (opt-log-entry kind msg stx (syntax-position stx))])
+  (let ([new-entry
+         (opt-log-entry kind msg
+                        stx (locate-stx stx) (syntax-position stx))])
     (set! log-so-far (cons new-entry log-so-far))))
 
 ;;--------------------------------------------------------------------
@@ -71,10 +73,11 @@
 ;; process
 (define (combine-missed-optmizations parent child)
   (missed-opt-log-entry
-   (log-entry-kind parent) ; same as child's
-   (log-entry-msg  parent)
-   (log-entry-stx  parent) ; we report the outermost one
-   (log-entry-pos  parent)
+   (log-entry-kind        parent) ; same as child's
+   (log-entry-msg         parent)
+   (log-entry-stx         parent) ; we report the outermost one
+   (log-entry-located-stx parent)
+   (log-entry-pos         parent)
 
    (remove-duplicates
     (append (remove (log-entry-stx child)
@@ -95,7 +98,8 @@
          ;; implicitly
          [irritants (if (list? irritants) irritants (list irritants))]
          [new
-          (missed-opt-log-entry kind msg stx (syntax-position stx)
+          (missed-opt-log-entry kind msg
+                                stx (locate-stx stx) (syntax-position stx)
                                 irritants '() 1)]
          ;; check if the new one is the child of an old one
          ;; for/first is ok, since we can only have one parent in the list
@@ -144,8 +148,8 @@
 (define (sort-log)
   (sort (remove-duplicates log-so-far)
         (match-lambda*
-         [(list (log-entry kind-x msg-x stx-x pos-x)
-                (log-entry kind-y msg-y stx-y pos-y))
+         [(list (log-entry kind-x msg-x stx-x loc-stx-x pos-x)
+                (log-entry kind-y msg-y stx-y loc-stx-y pos-y))
           (cond [(not (or pos-x pos-y))
                  ;; neither have location, sort by message
                  (string<? msg-x msg-y)]
@@ -184,7 +188,7 @@
 ;; For command-line printing purposes.
 ;; Not as user friendly as what's produced by the DrRacket tool.
 (define (format-log-entry entry)
-  (define stx (locate-stx (log-entry-stx entry)))
+  (define stx (log-entry-located-stx entry))
   (define msg
     (format "~a ~a ~s -- ~a"
             (syntax-source-file-name stx)
