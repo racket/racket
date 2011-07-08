@@ -6,10 +6,7 @@
           "parse-common.rkt"
           (for-label racket/class))
 
-@title[#:tag "exprc"]{Experimental: Contracts on macro sub-expressions}
-
-@emph{This section involves facilities that are experimental and
-subject to change.}
+@title[#:tag "exprc"]{Contracts on macro sub-expressions}
 
 Just as procedures often expect certain kinds of values as arguments,
 macros often have expectations about the expressions they are

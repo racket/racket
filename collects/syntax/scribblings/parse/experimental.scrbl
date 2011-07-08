@@ -13,23 +13,8 @@ The following facilities are experimental.
 
 @defmodule[syntax/parse/experimental/contract]
 
-Macros can apply contracts to their sub-expressions using the
-@racket[expr/c] syntax class.
-
-@defproc[(expr/c [contract-expr syntax?]
-                 [#:positive pos-blame 'use-site]
-                 [#:negative neg-blame 'from-macro]
-                 [#:name expr-name #f]
-                 [#:macro macro-name #f]
-                 [#:context ctx #f])
-         (attributes c)]{
-
-Accepts an expression (@racket[expr]) and computes an attribute
-@racket[c] that represents the expression wrapped with the contract
-represented by @racket[contract-expr].
-
-See @secref{exprc} for an example.
-}
+This module is deprecated; it reprovides @racket[expr/c] for backward
+compatibility.
 
 @section{Contracts for syntax classes}
 
