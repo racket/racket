@@ -27,5 +27,3 @@ This chapter covers the teachpacks for @italic{How to Design Programs}.
 @; removed: @include-section["htdc/scribblings/htdc.scrbl"]
 
 @include-section["2htdp/scribblings/2htdp.scrbl"]
-
-@include-section["error-composition.scrbl"]

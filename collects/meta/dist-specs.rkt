@@ -564,7 +564,6 @@ plt-extras :+= (package: "lang/" #:docs "htdp-langs/")
 ;; -------------------- htdp, tests, teachpacks
 plt-extras :+=
   (package: "htdp/")
-  (doc: "htdp-lib")
   (- (package: "teachpack/") (collects: "teachpack/deinprogramm/"))
   (- (package: "2htdp/")
      "uchat/") ; Matthias doesn't want this in now
