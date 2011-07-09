@@ -602,15 +602,7 @@ defined with " (racket define) " or " (racket define-struct) ", or any one of:")
                                            (namespace-syntax-introduce (datum->syntax #f (car func))))))
                                       not-in-ns))
                                 (let ([desc-strs (cddr func)])
-                                  (printf "prim-ops:605 ~v~n" (list id (cadr func)
-                                                                    (typeset-type
-                                                                     (cadr
-                                                                      func))
-                                                                    (to-paragraph 
-                                                                    (typeset-type
-                                                                     (cadr
-                                                                      func)))))
-                                  (defthing/proc
+3                                  (defthing/proc
                                     id
                                     (to-paragraph (typeset-type (cadr func)))
                                     desc-strs)))))
