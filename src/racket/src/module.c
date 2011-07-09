@@ -824,11 +824,10 @@ static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv)
 static Scheme_Object *check_resolver(int argc, Scheme_Object **argv)
 {
   if (scheme_check_proc_arity(NULL, 1, 0, argc, argv)
-      && scheme_check_proc_arity(NULL, 3, 0, argc, argv)
       && scheme_check_proc_arity(NULL, 4, 0, argc, argv))
     return argv[0];
 
-  scheme_wrong_type("current-module-name-resolver", "procedure of arity 1, 3, and 4", 0, argc, argv);
+  scheme_wrong_type("current-module-name-resolver", "procedure of arity 1 and 4", 0, argc, argv);
 
   return NULL;
 }
@@ -839,7 +838,7 @@ current_module_name_resolver(int argc, Scheme_Object *argv[])
   return scheme_param_config("current-module-name-resolver",
 			     scheme_make_integer(MZCONFIG_CURRENT_MODULE_RESOLVER),
 			     argc, argv,
-			     -1, check_resolver, "procedure of arity 1, 3, and 4", 1);
+			     -1, check_resolver, "procedure of arity 1 and 4", 1);
 }
 
 static Scheme_Object *prefix_p(int argc, Scheme_Object **argv)
