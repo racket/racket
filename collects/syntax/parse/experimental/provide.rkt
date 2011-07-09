@@ -137,7 +137,7 @@
     [(_ [scname c:stxclass-ctc] ...)
      #:declare scname (static stxclass? "syntax class")
      (parameterize ((current-syntax-context stx))
-       #`(begin (define pos-module-source (quote-module-path))
+       #`(begin (define pos-module-source (quote-module-name))
                 #,@(for/list ([scname (in-list (syntax->list #'(scname ...)))]
                               [stxclass (in-list (attribute scname.value))]
                               [rec (in-list (attribute c.rec))])

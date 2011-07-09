@@ -24,7 +24,7 @@ improve method arity mismatch contract violation error messages?
          "misc.rkt")
 
 (define-syntax-parameter current-contract-region
-  (λ (stx) #'(quote-module-path)))
+  (λ (stx) #'(quote-module-name)))
 
 (define-syntax (contract stx)
   (syntax-case stx ()
