@@ -42,69 +42,10 @@
 
 @; ----------------------------------------
 
-@section[#:tag "beginner-abbr-syntax"]{Syntax for Abbreviations}
+@section[#:tag "beginner-abbr-syntax"]{Syntaxes for Beginning Student with List Abbreviations}
 
+@(beginner-abbr-forms quote quasiquote unquote unquote-splicing)
 
-@deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[name]})]
-@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[part]})]
-@defform[(quote name)]
-@defform/none[(quote part)]
-)]{
-
-A quoted name is a symbol. A quote part is an abbreviation for a nested lists.
-
-Normally, this quotation is written with a @litchar{'}, like
-@racket['(apple banana)], but it can also be written with @racket[quote], like
-@racket[(@#,racket[quote] (apple banana))].}
-
-
-@deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{`}@racket[name]})]
-@defform/none[(unsyntax @elem{@racketvalfont{`}@racket[part]})]
-@defform[(quasiquote name)]
-@defform/none[(quasiquote part)]
-)]{
-
-Like @racket[quote], but also allows escaping to expression ``unquotes.''
-
-Normally, quasi-quotations are written with a backquote, @litchar{`}, like
-@racket[`(apple ,(+ 1 2))], but they can also be written with
-@racket[quasiquote], like
-@racket[(@#,racket[quasiquote] (apple ,(+ 1 2)))].}
-
-
-@deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont{,}@racket[expression]})]
-@defform[(unquote expression)]
-)]{
-
-Under a single quasiquote, @racketfont{,}@racket[expression] escapes from
-the quote to include an evaluated expression whose value is inserted
-into the abbreviated list.
-
-Under multiple quasiquotes, @racketfont{,}@racket[expression] is really
-the literal @racketfont{,}@racket[expression], decrementing the quasiquote count
-by one for @racket[expression].
-
-Normally, an unquote is written with @litchar{,}, but it can also be
-written with @racket[unquote].}
-
-
-@deftogether[(
-@defform/none[(unsyntax @elem{@racketvalfont[",@"]@racket[expression]})]
-@defform[(unquote-splicing expression)]
-)]{
-
-Under a single quasiquote, @racketfont[",@"]@racket[expression] escapes from
-the quote to include an evaluated expression whose result is a list to
-splice into the abbreviated list.
-
-Under multiple quasiquotes, a splicing unquote is like an unquote;
-that is, it decrements the quasiquote count by one.
-
-Normally, a splicing unquote is written with @litchar{,}, but it can
-also be written with @racket[unquote-splicing].}
 
 
 @; ----------------------------------------------------------------------
@@ -133,7 +74,8 @@ Abbreviations} level as they did in the @secref["beginner"] level.
             check-member-of
             check-range
             require
-            true false]
+            true false
+             #:with-beginner-function-call #t]
 
 
 @; ----------------------------------------

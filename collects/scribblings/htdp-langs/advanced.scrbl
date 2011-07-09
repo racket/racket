@@ -91,8 +91,9 @@
 @; ----------------------------------------------------------------------
 @section[#:tag "advanced-syntax"]{Syntax for Advanced}
 
-In Advanced, @racket[define] and @racket[lambda] can define functions of zero
-arguments, and (naturally) function calls can invoke functions of zero arguments.
+In Advanced, @racket[set!] can be used to change variables. @racket[define] and
+@racket[lambda] can define functions of zero arguments, and function calls can
+invoke functions of zero arguments.
 
 
 @defform[(lambda (variable ...) expression)]{
@@ -155,8 +156,8 @@ the @racket[begin] expression is the value of the first @racket[expression].}
 @defform[(set! variable expression)]{
 
 Evaluates @racket[expression], and then changes the definition @racket[variable]
-to have @racket[expression]'s value. The @racket[variable] must be defined or
-bound by @racket[define], @racket[letrec], @racket[let*], or @racket[let].}
+to have @racket[expression]'s value. The @racket[variable] must be defined 
+by @racket[define], @racket[letrec], @racket[let*], or @racket[let].}
 
 
 @defform[(delay expression)]{
@@ -243,7 +244,7 @@ and its value is matched against the pattern in each clause, where the clauses a
 considered in order. The first clause that contains a matching pattern provides
 an answer @racket[expression] whose value is the result of the whole
 @racket[match] expression. This @racket[expression] may reference identifiers
-bound in the matching pattern. If none of the clauses contains a matching
+defined in the matching pattern. If none of the clauses contains a matching
 pattern, it is an error.}
 
 @; ----------------------------------------------------------------------
@@ -264,22 +265,20 @@ Like @racket[when], but the @racket[body-expression] is evaluated when the
 @racket[test-expression] produces @racket[false] instead of @racket[true].}
 
 
-@section[#:tag "advanced-common-syntax"]{Common Syntax}
+@section[#:tag "advanced-common-syntax"]{Common Syntaxes}
 
 The following syntaxes behave the same in the @emph{Advanced}
 level as they did in the @secref["intermediate-lam"] level.
 
 
 @(intermediate-forms lambda
-                     quote
-                     quasiquote
-                     unquote
-                     unquote-splicing
                      local
                      letrec
                      let*
                      let
-                     time)
+                     time
+                     define
+                     define-struct)
 
 
 @(define-forms/normal define)
@@ -305,7 +304,8 @@ level as they did in the @secref["intermediate-lam"] level.
              check-member-of
              check-range
              require
-             true false)
+             true false
+             #:with-beginner-function-call #f)
 
 @; ----------------------------------------
 

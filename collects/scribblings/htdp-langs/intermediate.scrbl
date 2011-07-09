@@ -50,23 +50,24 @@
 
 @section[#:tag "intermediate-syntax"]{Syntax for Intermediate}
 
+
 @(intermediate-forms lambda
-                     quote
-                     quasiquote
-                     unquote
-                     unquote-splicing
                      local
                      letrec
                      let*
                      let
-                     time)
+                     time
+                     define
+                     define-struct)
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "intermediate-common-syntax"]{Common Syntax}
+@section[#:tag "intermediate-common-syntax"]{Common Syntaxes}
 
 The following syntaxes behave the same in the @emph{Intermediate} level as they
 did in the @secref["beginner-abbr"] level.
+
+@(beginner-abbr-forms quote quasiquote unquote unquote-splicing)
 
 @(define-forms/normal define)
 @(define-form/explicit-lambda define lambda)
@@ -88,7 +89,8 @@ did in the @secref["beginner-abbr"] level.
                      check-member-of
                      check-range
                      require
-                     true false)
+                     true false
+                     #:with-beginner-function-call #t)
 
 
 

@@ -76,21 +76,19 @@ the function.}
 
 
 @(intermediate-forms lambda
-                     quote
-                     quasiquote
-                     unquote
-                     unquote-splicing
                      local
                      letrec
                      let*
                      let
-                     time)
+                     time
+                     define
+                     define-struct)
 
 
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "intm-w-lambda-common-syntax"]{Common Syntax}
+@section[#:tag "intm-w-lambda-common-syntax"]{Common Syntaxes}
 
 The following syntaxes behave the same in the @emph{Intermediate with Lambda}
 level as they did in the @secref["intermediate"] level.
@@ -113,7 +111,8 @@ level as they did in the @secref["intermediate"] level.
              check-member-of
              check-range
              require
-             true false)
+             true false
+             #:with-beginner-function-call #f)
 
 @section[#:tag "intm-w-lambda-pre-defined"]{Pre-defined Functions}
 
