@@ -409,5 +409,5 @@ type.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_type.inc
 vector.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h
-vadliate.@LTO@: $(COMMON_HEADERS) \
+validate.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/mzmark_validate.inc
