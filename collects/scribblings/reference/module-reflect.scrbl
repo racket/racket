@@ -64,7 +64,7 @@ resolver}, which manages the conversion from other kinds of module
 references to a @tech{resolved module path}. For example,
 when the expander encounters @racket[(require _module-path)] where
 @racket[_module-path] is not an identifier, then the expander passes
-@racket['_module-path] to the module name resolver to obtain a symbol
+@racket['@#,racket[_module-path]] to the module name resolver to obtain a symbol
 or resolved module path. When such a @racket[require] appears within a
 module, the @deftech{module path resolver} is also given the name of
 the enclosing module, so that a relative reference can be converted to
@@ -81,7 +81,7 @@ A @tech{module name resolver} takes one and four arguments:
   is ignored.}
  
   @item{When given four arguments, the first is a module path, either
-  equivalent to a quoted @racket[module-path] for @racket[require] or
+  equivalent to a quoted @racket[_module-path] for @racket[require] or
   a file system path.  The second is name for the source module, if
   any, to which the path is relative; if the second argument is
   @racket[#f], the module path is relative to @racket[(or
