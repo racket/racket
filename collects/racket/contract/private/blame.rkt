@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/srcloc racket/pretty)
+(require syntax/srcloc racket/pretty setup/path-to-relative)
 
 (provide blame?
          make-blame
@@ -63,8 +63,8 @@
     b)))
 
 (define (default-blame-format b x custom-message)
-  (let* ([source-message (regexp-replace #rx": *$" (source-location->prefix (blame-source b)) "")]
-         [positive-message (show/display (blame-positive b))]
+  (let* ([source-message (source-location->string (blame-source b))]
+         [positive-message (show/display (convert-blame-party (blame-positive b)))]
          
          [contract-message (format "  contract: ~a" (show/write (blame-contract b)))]
          [contract-message+at (if (regexp-match #rx"\n$" contract-message)
@@ -98,7 +98,7 @@
                     "\n"))
         contract-message+at)]
       [else
-       (define negative-message (show/display (blame-negative b)))
+       (define negative-message (show/display (convert-blame-party (blame-negative b))))
        (define start-of-message
          (if (blame-value b)
              (format "~a: contract violation," (blame-value b))
@@ -140,6 +140,11 @@
   (let ([port (open-output-string)])
     (pretty-write v port)
     (get-output-string port)))
+
+(define (convert-blame-party x)
+  (cond
+    [(path? x) (path->relative-string/library x)]
+    [else x]))
 
 (define show/display (show pretty-format/display))
 (define show/write (show pretty-format/write))
