@@ -586,10 +586,9 @@
   ;;                  Make zo                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define-syntax-rule (control-io print-verbose body ...)
+  (define (control-io print-verbose thunk)
     (if (make-verbose)
-      (begin 
-        body ...)
+      (thunk)
       (let* ([oop (current-output-port)]
              [dir-table (make-hash)]
              [doing-path (lambda (path)
@@ -600,7 +599,7 @@
                                  (print-verbose oop path)))))])
         (parameterize ([current-output-port (if (verbose) (current-output-port) (open-output-nowhere))]
                        [compile-notify-handler doing-path])
-          body ...))))
+          (thunk)))))
 
   (define (clean-cc dir info)
     ;; Clean up bad .zos:
@@ -619,8 +618,7 @@
                 (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
                 (delete-file (build-path c p)))))))))
 
-  (define-syntax-rule (with-specified-mode body ...)
-    (let ([thunk (lambda () body ...)])
+  (define (with-specified-mode thunk)
       (if (not (compile-mode))
         (thunk)
         ;; Use the indicated mode
@@ -645,7 +643,7 @@
                                            [use-compiled-file-paths orig-kinds]
                                            [current-compile orig-compile])
                               (thunk)))])
-            (thunk))))))
+            (thunk)))))
 
   ;; We keep timestamp information for all files that we try to compile.
   ;; That's O(N) for an installation of size N, but the constant is small,
@@ -657,18 +655,19 @@
       (begin-record-error cc "making"
         (setup-printf "making" "~a" (cc-name cc))
         (control-io
-          (lambda (p where)
+         (lambda (p where)
             (set! gcs 2)
             (setup-fprintf p #f " in ~a"
                            (path->relative-string/setup
                             (path->complete-path where (cc-path cc)))))
+         (lambda ()
           (let ([dir (cc-path cc)]
                 [info (cc-info cc)])
             (clean-cc dir info)
             (compile-directory-zos dir info 
                                    #:managed-compile-zo caching-managed-compile-zo
                                    #:skip-path (and (avoid-main-installation) (find-collects-dir))
-                                   #:skip-doc-sources? (not (make-docs)))))))
+                                   #:skip-doc-sources? (not (make-docs))))))))
     (match gcs
       [0 0]
       [else 
@@ -702,6 +701,7 @@
         (compile-cc (collection->cc (list (string->path "racket"))) 0)
         (managed-compile-zo (collection-file-path "parallel-build-worker.rkt" "setup"))
         (with-specified-mode
+         (lambda ()
           (let ([cct (move-to-begining (list "compiler" "raco" "racket") 
                                        (move-to-end "drscheme" 
                                                     (sort-collections-tree 
@@ -712,11 +712,12 @@
                   (clean-cc dir info))) cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct))
           (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
-            (compile-cc cc gcs)))]
+            (compile-cc cc gcs))))]
       [else
         (with-specified-mode
+         (lambda ()
           (for/fold ([gcs 0]) ([cc ccs-to-compile])
-            (compile-cc cc gcs)))]))
+            (compile-cc cc gcs))))]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Info-Domain Cache               ;;
