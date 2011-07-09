@@ -11,6 +11,7 @@
          pen-cap?
          pen-join?
          real-valued-posn?
+         step-count?
          check-mode/color-combination)
 
 (require htdp/error
