@@ -2933,6 +2933,14 @@
    (λ (x) 
      (and (exn? x)
           (regexp-match (regexp-quote "|x y|: 123456789") (exn-message x)))))
+
+  ;; test to make sure the collects directories are appropriately prefixed
+  (contract-error-test
+    #'(contract symbol? "not a symbol" 'pos 'neg 'not-a-symbol #'here)
+    (lambda (x)
+      (and (exn? x)
+        (regexp-match? #px"<collects>"
+          (exn-message x)))))
    
   (test/neg-blame
    '->i-protect-shared-state
@@ -11447,7 +11455,7 @@ so that propagation occurs.
        (eval '(g 12)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"^g.*contract from 'pce9-bug" (exn-message x)))))
+          (regexp-match #rx"^g.*contract from pce9-bug" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -11460,7 +11468,7 @@ so that propagation occurs.
        (eval '(g 'a)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"^g.*contract from 'pce10-bug" (exn-message x)))))
+          (regexp-match #rx"^g.*contract from pce10-bug" (exn-message x)))))
    
   (contract-eval
    `(,test
