@@ -219,7 +219,8 @@ static void parse_requires(Scheme_Object *form,
                            Scheme_Object *redef_modname,
                            int unpack_kern, int copy_vars, int can_save_marshal, 
                            int eval_exp, int eval_run,
-                           int *all_simple);
+                           int *all_simple,
+                           Scheme_Hash_Table *modix_cache);
 static void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
                            Scheme_Hash_Table *all_provided,
                            Scheme_Hash_Table *all_reprovided,
@@ -1183,7 +1184,7 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
                  NULL, 
                  1, copy, 0, 
                  (etonly ? 1 : -1), !etonly,
-                 NULL);
+                 NULL, NULL);
 
   scheme_append_rename_set_to_env(rns, env);
 
@@ -3137,7 +3138,7 @@ Scheme_Object *scheme_make_modidx(Scheme_Object *path,
     modidx->base = scheme_false;
 
   modidx->resolved = resolved;
-  
+
   return (Scheme_Object *)modidx;
 }
 
@@ -5943,7 +5944,7 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                  redef_modname, 
                  0, 0, 1, 
                  1, 0,
-                 all_simple);
+                 all_simple, NULL);
 
   return e;
 }
@@ -6017,6 +6018,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   int maybe_has_lifts = 0;
   Scheme_Object *redef_modname;
   Scheme_Object *observer;
+  Scheme_Hash_Table *modidx_cache;
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
@@ -6095,6 +6097,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   /* Put initial requires into the table:
      (This is redundant for the rename set, but we need to fill
      the `all_requires' table, etc.) */
+  modidx_cache = scheme_make_hash_table_equal();
   {
     Scheme_Module *iim;
     Scheme_Object *nmidx, *orig_src;
@@ -6113,6 +6116,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
                                iim, nmidx,
                                scheme_make_integer(0),
                                NULL, 1);
+
+    scheme_hash_set(modidx_cache, ((Scheme_Modidx *)nmidx)->path, nmidx);
   }
 
   {
@@ -6491,7 +6496,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
                          redef_modname, 
                          0, 0, 1, 
                          1, 0,
-                         all_simple_renames);
+                         all_simple_renames, modidx_cache);
 
 	  if (rec[drec].comp)
 	    e = NULL;
@@ -8763,7 +8768,8 @@ void parse_requires(Scheme_Object *form,
                     Scheme_Object *redef_modname,
                     int unpack_kern, int copy_vars, int can_save_marshal, 
                     int eval_exp, int eval_run,
-                    int *all_simple) 
+                    int *all_simple,
+                    Scheme_Hash_Table *modidx_cache) 
 {
   Scheme_Object *ll = form, *mode = scheme_make_integer(0), *just_mode = NULL, *x_mode, *x_just_mode;
   Scheme_Module *m;
@@ -9052,9 +9058,16 @@ void parse_requires(Scheme_Object *form,
         rename_env = env;
       }
       
-      idx = scheme_make_modidx(scheme_syntax_to_datum(idxstx, 0, NULL), 
-                               base_modidx,
-                               scheme_false);
+      name = scheme_syntax_to_datum(idxstx, 0, NULL);
+      if (modidx_cache)
+        idx = scheme_hash_get(modidx_cache, name);
+      else
+        idx = NULL;
+      if (!idx) {
+        idx = scheme_make_modidx(name, base_modidx, scheme_false);
+        if (modidx_cache)
+          scheme_hash_set(modidx_cache, name, idx);
+      }
 
       name = _module_resolve(idx, idxstx, NULL, 1);
 
@@ -9210,7 +9223,7 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
                  NULL,
                  !env->module, 0, 0, 
                  -1, 1,
-                 NULL);
+                 NULL, NULL);
 
   scheme_append_rename_set_to_env(rn_set, env);
 
@@ -9265,7 +9278,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
                  NULL, 
                  0, 0, 0, 
                  1, 0,
-                 NULL);
+                 NULL, NULL);
 
   if (rec && rec[drec].comp) {
     /* Dummy lets us access a top-level environment: */
