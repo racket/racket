@@ -1750,13 +1750,14 @@
 			(stepper-syntax-property
 			 (quasisyntax/loc stx
 			   (let ()
-			     (define #,(gensym) 1) ; this ensures that the expansion of 'local' looks
-					; roughly the same, even if the local has no defs.
-			     mapping ...
-			     stx-def ...
-			     (define-values (tmp-id ...) def-expr)
-			     ...
-			     . exprs))
+                             (#%stratified-body
+                              (define #,(gensym) 1) ; this ensures that the expansion of 'local' looks
+					            ; roughly the same, even if the local has no defs.
+                              mapping ...
+                              stx-def ...
+                              (define-values (tmp-id ...) def-expr)
+                              ...
+                              . exprs)))
 			 'stepper-hint
 			 'comes-from-local)))))))]
 	   [(_ def-non-seq . __)
@@ -1805,12 +1806,13 @@
 			  [(rhs-expr ...) (map allow-local-lambda 
 					       (syntax->list (syntax (rhs-expr ...))))])
 	      (quasisyntax/loc stx
-		(letrec-syntaxes+values ([(name) (make-undefined-check
-						  (quote-syntax check-not-undefined)
-						  (quote-syntax tmp-id))]
-					 ...)
-		    ([(tmp-id) rhs-expr] 
-		     ...)
+                (#%stratified-body
+                  (define-syntaxes (name) (make-undefined-check
+                                           (quote-syntax check-not-undefined)
+                                           (quote-syntax tmp-id)))
+                  ...
+                  (define-values (tmp-id) rhs-expr)
+                  ...
 		  expr)))]
 	   [_else (bad-let-form 'letrec stx stx)]))))
     
