@@ -304,8 +304,9 @@
          (tc/lambda/check form #'(formals ...) #'(body ...) expected)]
         ;; send
         [(let-values (((_) meth))
-           (let-values (((_ _) (~and find-app (#%plain-app find-method/who _ rcvr _))))
-             (#%plain-app _ _ args ...)))
+           (let-values (((_) rcvr))
+             (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
+               (#%plain-app _ _ args ...))))
          (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
         ;; let
         [(let-values ([(name ...) expr] ...) . body)
@@ -367,8 +368,9 @@
        (tc/lambda form #'(formals ...) #'(body ...))]
       ;; send
       [(let-values (((_) meth))
-         (let-values (((_ _) (~and find-app (#%plain-app find-method/who _ rcvr _))))
-           (#%plain-app _ _ args ...)))
+         (let-values (((_) rcvr))
+           (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
+             (#%plain-app _ _ args ...))))
        (tc/send #'find-app #'rcvr #'meth #'(args ...))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
