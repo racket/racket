@@ -9,6 +9,19 @@
   
   ;; -------------------------------------------------------------------------
 
+  (define-for-syntax (pattern-failure user-stx pattern)
+    (let*-values ([(sexpr) (syntax->datum user-stx)]
+                  [(msg)
+                   (if (pair? sexpr)
+                       (format "use does not match pattern: ~.s"
+                               (cons (car sexpr) pattern))
+                       (if (symbol? sexpr)
+                           (format "use does not match pattern: ~.s"
+                                   (cons sexpr pattern))
+                           (error 'internal-error
+                                  "something bad happened")))])
+      (raise-syntax-error #f msg user-stx)))
+
   (define-syntax define-syntax-rule
     (lambda (stx)
       (let-values ([(err) (lambda (what . xs)
@@ -22,18 +35,7 @@
                (lambda (user-stx)
                  (syntax-case** dr #t user-stx () free-identifier=?
                    [(_ . pattern) (syntax-protect (syntax/loc user-stx template))]
-                   [_ (let*-values
-                          ([(sexpr) (syntax->datum user-stx)]
-                           [(msg)
-                            (if (pair? sexpr)
-                              (format "use does not match pattern: ~.s"
-                                      (cons (car sexpr) 'pattern))
-                              (if (symbol? sexpr)
-                                (format "use does not match pattern: ~.s"
-                                        (cons sexpr 'pattern))
-                                (error 'internal-error
-                                       "something bad happened")))])
-                           (raise-syntax-error #f msg user-stx))]))))]
+                   [_ (pattern-failure user-stx 'pattern)]))))]
           [(_ (name . ptrn) tmpl)         (err "expected an identifier" #'name)]
           [(_ (name . ptrn))              (err "missing template")]
           [(_ (name . ptrn) tmpl etc . _) (err "too many forms" #'etc)]
