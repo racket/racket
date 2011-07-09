@@ -41,6 +41,9 @@
 
 @section[#:tag "beginner-syntax"]{Syntax}
 
+@(define-forms/normal define)
+@(define-form/explicit-lambda define lambda)
+
 @deftogether[(
 @defform/none[(unsyntax @elem{@racketvalfont{'}@racket[name]})]
 @defform[(quote name)]
@@ -48,9 +51,6 @@
 
 A quoted @racket[name] is a symbol. A symbol is a value, just like
 @racket[0] or @racket[empty].}
-
-@(define-forms/normal define)
-@(define-form/explicit-lambda define lambda)
 
 @(prim-forms ("beginner")
              define 
@@ -68,7 +68,9 @@ A quoted @racket[name] is a symbol. A symbol is a value, just like
              check-member-of
              check-range
              require
-             true false)
+             true false
+             #:with-beginner-function-call #t
+             )
 
 @; --------------------------------------------------
              

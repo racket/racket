@@ -14,6 +14,7 @@
          prim-forms
          define-forms/normal
          define-form/explicit-lambda
+         beginner-abbr-forms
          intermediate-forms
          prim-ops
          prim-op-defns)
@@ -135,7 +136,8 @@
                      check-range
                      require
                      true
-                     false)
+                     false
+                     #:with-beginner-function-call with-beginner-function-call)
   (gen-prim-forms #'define-struct @racket[define-struct] (list ds-extra ...)
                   #'cond @racket[cond]
                   #'else @racket[else]
@@ -148,7 +150,8 @@
                   #'check-member-of @racket[check-member-of]
                   #'check-range @racket[check-range]
                   #'require @racket[require]
-                  @racket[true] @racket[false]))
+                  @racket[true] @racket[false]
+                  with-beginner-function-call))
 
 (define (gen-prim-forms define-struct-id define-struct-elem ds-extras
                         cond-id cond-elem
@@ -162,28 +165,29 @@
                         check-member-of-id check-member-of-elem
                         check-range-id check-range-elem
                         require-id require-elem
-                        true-elem false-elem)
+                        true-elem false-elem
+                        with-beginner-function-call)
   (list
    @; ----------------------------------------------------------------------
 
   @defform*[#:id [define-struct define-struct-id]
             [(define-struct structure-name (field-name ...))]]{
 
-   Defines a new structure called @racket[field-name]. The structure's fields are
+   Defines a new structure called @racket[structure-name]. The structure's fields are
    named by the @racket[field-name]s. After the @define-struct-elem, the following new
    functions are available:
 
    @itemize[
 
-     @item{@racketidfont{make-}@racket[structure-name] : takes in a number of
+     @item{@racketidfont{make-}@racket[structure-name] : takes a number of
            arguments equal to the number of fields in the structure,
            and creates a new instance of that structure.}
 
-     @item{@racket[structure-name]@racketidfont{-}@racket[field-name] : takes in an
+     @item{@racket[structure-name]@racketidfont{-}@racket[field-name] : takes an
            instance of the structure and returns the value in the field named by
            @racket[field-name].}
 
-     @item{@racket[structure-name]@racketidfont{?} : takes in any value, and returns
+     @item{@racket[structure-name]@racketidfont{?} : takes any value, and returns
            @true-elem if the value is an instance of the structure.}
    ]
 
@@ -212,16 +216,17 @@
 
   @; ----------------------------------------------------------------------
 
-  @defform/none[(name expression expression ...)]{
-
-  Calls the function named @racket[name]. The value of the call is the
-  value of @racket[name]'s body when every one of the function's
-  variables are replaced by the values of the corresponding
-  @racket[expression]s.
-
-  The function named @racket[name] must defined before it can be called. The
-  number of argument @racket[expression]s must be the same as the number of arguments
-  expected by the function.}
+  @(if with-beginner-function-call
+       @defform/none[(name expression expression ...)]{
+        Calls the function named @racket[name]. The value of the call is the
+        value of @racket[name]'s body when every one of the function's
+        variables are replaced by the values of the corresponding
+        @racket[expression]s.
+     
+        The function named @racket[name] must defined before it can be called. The
+        number of argument @racket[expression]s must be the same as the number of arguments
+        expected by the function.}
+       @elem[])
 
   @; ----------------------------------------------------------------------
 
@@ -232,7 +237,7 @@
                           ... 
                           [#,else-elem answer-expression])]]{
 
-    Chooses a clause base on a condition by finding the first
+    Chooses a clause based on some condition. @racket[cond] finds the first
     @racket[question-expression] that evaluates to @true-elem, then
     evaluates the corresponding @racket[answer-expression].
 
@@ -241,8 +246,8 @@
     @else-elem clause. If there is no @else-elem, @cond-elem reports
     an error. If the result of a @racket[question-expression] is neither
     @true-elem nor @false-elem, @cond-elem also reports an error.
-
-    An @defidform/inline[#,else-id] cannot be used outside of @|cond-elem|.}
+    
+    @defidform/inline[#,else-id] cannot be used outside of @|cond-elem|.}
 
   @; ----------------------------------------------------------------------
 
@@ -262,7 +267,7 @@
             [(and expression expression expression ...)]]{
 
     Evaluates to @true-elem if all the @racket[expression]s are
-    @|true-elem|. If any @racket[expression] is false, the @and-elem
+    @|true-elem|. If any @racket[expression] is @|false-elem|, the @and-elem
     expression immediately evaluates to @false-elem (and the expressions to the
     right of that expression are not evaluated.)
 
@@ -277,13 +282,14 @@
 
     Evaluates to @true-elem as soon as one of the
     @racket[expression]s is @true-elem (and the expressions to the right of that
-    expression are not evaluated.) If all of the @racket[expression]s are false,
-    the @or-elem expression evaluates to @racket[false].
+    expression are not evaluated.) If all of the @racket[expression]s are @|false-elem|,
+    the @or-elem expression evaluates to @|false-elem|.
 
     If any of the expressions evaluate to a value other than @true-elem or
     @false-elem, @or-elem reports an error.}
 
   @; ----------------------------------------------------------------------
+
 
   @defform*[#:id [check-expect check-expect-id]
             [(check-expect expression expected-expression)]]{
@@ -302,12 +308,12 @@
 
 
   @defform*[#:id [check-error check-error-id]
-            [(check-error expression expression)
+            [(check-error expression match-expression)
              (#,check-error-elem expression)]]{
 
-   Checks that the first @racket[expression] reports an error,
-   where the error messages matches the string produced by the second
-   @racket[expression], if it is present.}
+   Checks that the @racket[expression] reports an error,
+   where the error messages matches the string produced by the
+   @racket[matchexpression], if it is present.}
 
 
   @defform*[#:id [check-member-of check-member-of-id]
@@ -318,11 +324,11 @@
 
 
   @defform*[#:id [check-range check-range-id]
-            [(check-range expression expression expression)]]{
+            [(check-range expression low-expression high-expression)]]{
 
    Checks that the first @racket[expression] produces a number in
-   between the numbers produced by the second and third
-   @racket[expression]s, inclusive.}
+   between the numbers produced by @racket[low-expression] and
+   @racket[high-expression], inclusive.}
 
   @; ----------------------------------------------------------------------
 
@@ -369,111 +375,122 @@
 
 ;; ----------------------------------------
 
+(define-syntax-rule
+  (beginner-abbr-forms quote quasiquote unquote unquote-splicing)
+  (gen-beginner-abbr-forms #'quote @racket[quote]
+                           #'quasiquote @racket[quasiquote]
+                           #'unquote @racket[unquote]
+                           #'unquote-splicing @racket[unquote-splicing]))
+
+(define (gen-beginner-abbr-forms quote-id quote-elem
+                                 quasiquote-id quasiquote-elem
+                                 unquote-id unquote-elem
+                                 unquote-splicing-id unquote-splicing-elem)
+  
+  (list
+   @deftogether[(
+    @defform/none[(unsyntax @elem{@racketvalfont{'}@racket[name]})]
+    @defform/none[(unsyntax @elem{@racketvalfont{'}@racket[part]})]
+    @defform[#:id [quote quote-id] (quote name)]
+    @defform/none[(#,quote-elem part)]
+   )]{
+ 
+    A quoted name is a symbol. A quoted part is an abbreviation for a nested lists.
+ 
+    Normally, this quotation is written with a @litchar{'}, like
+    @racket['(apple banana)], but it can also be written with
+    @quote-elem, like @racket[(@#,quote-elem (apple banana))].}
+ 
+ 
+   @deftogether[(
+    @defform/none[(unsyntax @elem{@racketvalfont{`}@racket[name]})]
+    @defform/none[(unsyntax @elem{@racketvalfont{`}@racket[part]})]
+    @defform[#:id [quasiquote quasiquote-id]
+             (quasiquote name)]
+    @defform/none[(#,quasiquote-elem part)]
+   )]{
+ 
+    Like @quote-elem, but also allows escaping to expression
+    ``unquotes.''
+ 
+    Normally, quasi-quotations are written with a backquote,
+    @litchar{`}, like @racket[`(apple ,(+ 1 2))], but they can also be
+    written with @quasiquote-elem, like
+    @racket[(@quasiquote-elem (apple ,(+ 1 2)))].}
+ 
+ 
+   @deftogether[(
+    @defform/none[(unsyntax @elem{@racketvalfont{,}@racket[expression]})]
+    @defform[#:id [unquote unquote-id]
+             (unquote expression)]
+   )]{
+ 
+    Under a single quasiquote, @racketfont{,}@racket[expression]
+    escapes from the quote to include an evaluated expression whose
+    result is inserted into the abbreviated list.
+ 
+    Under multiple quasiquotes, @racketfont{,}@racket[expression] is
+    really the literal @racketfont{,}@racket[expression], decrementing
+    the quasiquote count by one for @racket[expression].
+ 
+    Normally, an unquote is written with @litchar{,}, but it can also be
+    written with @|unquote-elem|.}
+ 
+ 
+   @deftogether[(
+    @defform/none[(unsyntax @elem{@racketvalfont[",@"]@racket[expression]})]
+    @defform[#:id [unquote-splicing unquote-splicing-id]
+             (unquote-splicing expression)]
+   )]{
+ 
+    Under a single quasiquote, @racketfont[",@"]@racket[expression]
+    escapes from the quote to include an evaluated expression whose
+    result is a list to splice into the abbreviated list.
+ 
+    Under multiple quasiquotes, a splicing unquote is like an unquote;
+    that is, it decrements the quasiquote count by one.
+ 
+    Normally, a splicing unquote is written with @litchar{,}, but it
+    can also be written with @|unquote-splicing-elem|.}
+
+    ))
+
+
 (define-syntax-rule 
   (intermediate-forms lambda
-                      quote
-                      quasiquote
-                      unquote
-                      unquote-splicing
                       local
                       letrec
                       let*
                       let
-                      time)
+                      time
+                      define
+                      define-struct)
   (gen-intermediate-forms #'lambda @racket[lambda]
-                          #'quote @racket[quote]
-                          #'quasiquote @racket[quasiquote]
-                          #'unquote @racket[unquote]
-                          #'unquote-splicing @racket[unquote-splicing]
                           #'local @racket[local]
                           #'letrec @racket[letrec]
                           #'let* @racket[let*]
                           #'let @racket[let]
-                          #'time @racket[time]))
+                          #'time @racket[time]
+                          @racket[define] 
+                          @racket[define-struct]))
 
 (define (gen-intermediate-forms lambda-id lambda-elem
-                                quote-id quote-elem
-                                quasiquote-id quasiquote-elem
-                                unquote-id unquote-elem
-                                unquote-splicing-id unquote-splicing-elem
                                 local-id local-elem
                                 letrec-id letrec-elem
                                 let*-id let*-elem
                                 let-id let-elem
-                                time-id time-elem)
+                                time-id time-elem
+                                define-elem
+                                define-struct-elem
+                                )
   (list
-  @deftogether[(
-   @defform/none[(unsyntax @elem{@racketvalfont{'}@racket[name]})]
-   @defform/none[(unsyntax @elem{@racketvalfont{'}@racket[part]})]
-   @defform[#:id [quote quote-id] (quote name)]
-   @defform/none[(#,quote-elem part)]
-  )]{
-
-   A quoted name is a symbol. A quote part is an abbreviation for a nested lists.
-
-   Normally, this quotation is written with a @litchar{'}, like
-   @racket['(apple banana)], but it can also be written with
-   @quote-elem, like @racket[(@#,quote-elem (apple banana))].}
-
-
-  @deftogether[(
-   @defform/none[(unsyntax @elem{@racketvalfont{`}@racket[name]})]
-   @defform/none[(unsyntax @elem{@racketvalfont{`}@racket[part]})]
-   @defform[#:id [quasiquote quasiquote-id]
-            (quasiquote name)]
-   @defform/none[(#,quasiquote-elem part)]
-  )]{
-
-   Like @quote-elem, but also allows escaping to expression
-   ``unquotes.''
-
-   Normally, quasi-quotations are written with a backquote,
-   @litchar{`}, like @racket[`(apple ,(+ 1 2))], but they can also be
-   written with @quasiquote-elem, like
-   @racket[(@quasiquote-elem (apple ,(+ 1 2)))].}
-
-
-  @deftogether[(
-   @defform/none[(unsyntax @elem{@racketvalfont{,}@racket[expression]})]
-   @defform[#:id [unquote unquote-id]
-            (unquote expression)]
-  )]{
-
-   Under a single quasiquote, @racketfont{,}@racket[expression]
-   escapes from the quote to include an evaluated expression whose
-   result is inserted into the abbreviated list.
-
-   Under multiple quasiquotes, @racketfont{,}@racket[expression] is
-   really the literal @racketfont{,}@racket[expression], decrementing
-   the quasiquote count by one for @racket[expression].
-
-   Normally, an unquote is written with @litchar{,}, but it can also be
-   written with @|unquote-elem|.}
-
-
-  @deftogether[(
-   @defform/none[(unsyntax @elem{@racketvalfont[",@"]@racket[expression]})]
-   @defform[#:id [unquote-splicing unquote-splicing-id]
-            (unquote-splicing expression)]
-  )]{
-
-   Under a single quasiquote, @racketfont[",@"]@racket[expression]
-   escapes from the quote to include an evaluated expression whose
-   result is a list to splice into the abbreviated list.
-
-   Under multiple quasiquotes, a splicing unquote is like an unquote;
-   that is, it decrements the quasiquote count by one.
-
-   Normally, a splicing unquote is written with @litchar{,}, but it
-   can also be written with @|unquote-splicing-elem|.}
-
 
   @defform[#:id [local local-id]
            (local [definition ...] expression)]{
 
    Groups related definitions for use in @racket[expression]. Each
-   @racket[definition] can be either a variable definition, a function
-   definition, or a structure definition, using the usual syntax.
+   @racket[definition] can be either a @define-elem or a
+   @|define-struct-elem|. 
 
    When evaluating @local-elem, each @racket[definition] is evaluated
    in order, and finally the body @racket[expression] is
@@ -585,6 +602,14 @@ defined with " (racket define) " or " (racket define-struct) ", or any one of:")
                                            (namespace-syntax-introduce (datum->syntax #f (car func))))))
                                       not-in-ns))
                                 (let ([desc-strs (cddr func)])
+                                  (printf "prim-ops:605 ~v~n" (list id (cadr func)
+                                                                    (typeset-type
+                                                                     (cadr
+                                                                      func))
+                                                                    (to-paragraph 
+                                                                    (typeset-type
+                                                                     (cadr
+                                                                      func)))))
                                   (defthing/proc
                                     id
                                     (to-paragraph (typeset-type (cadr func)))
