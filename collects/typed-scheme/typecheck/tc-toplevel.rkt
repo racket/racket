@@ -310,7 +310,7 @@
       #`(begin
           #,(if (null? (syntax-e #'(new-provs ...)))
                 #'(begin)
-                #'(define the-variable-reference (quote-module-path)))
+                #'(define the-variable-reference (quote-module-name)))
            #,(env-init-code syntax-provide? provide-tbl def-tbl)
            #,(tname-env-init-code)
            #,(talias-env-init-code)

@@ -74,7 +74,7 @@
                            #`(contract contract-id
                                        id
                                        pos-module-source
-                                       (quote-module-path)
+                                       (quote-module-name)
                                        'external-id
                                        #,srcloc-code))))))])
            (when key (hash-set! saved-id-table key lifted-id))
@@ -687,7 +687,7 @@
                                  (syntax-property
                                   (quasisyntax/loc stx
                                     (begin
-                                      (define pos-module-source (quote-module-path))
+                                      (define pos-module-source (quote-module-name))
                                       
                                       #,@(if no-need-to-check-ctrct?
                                              (list)

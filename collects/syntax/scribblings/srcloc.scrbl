@@ -2,7 +2,8 @@
 @(require scribble/eval
           (for-label racket/base 
                      syntax/srcloc
-                     syntax/location))
+                     syntax/location
+                     setup/path-to-relative))
 
 @(define unsyntax #f)
 
@@ -290,43 +291,63 @@ the whole macro application if no @racket[form] is given.
 
 }
 
-@deftogether[(
-@defform[(quote-module-name)]
-@defform[(quote-module-path)]
-)]{
+@defform[(quote-module-name)]{
 
-Quote the name of the module in which the form is compiled.  The
-@racket[quote-module-name] form produces a string or a symbol, while
-@racket[quote-module-path] produces a @tech[#:doc reference-path]{module path}.
-
-These forms use relative names for modules found in the collections or PLaneT
-cache; their results are suitable for printing, but not for accessing libraries
-programmatically, such as via @racket[dynamic-require].
+Quotes the name of the module in which the form is compiled as a path or symbol,
+or @racket['top-level] when used outside of a module.  To produce a name
+suitable for use in printed messages, apply
+@racket[path->relative-string/library] when the result is a path.
 
 @defexamples[#:eval (new-evaluator)
 (module A racket
   (require syntax/location)
   (define-syntax-rule (name) (quote-module-name))
-  (define-syntax-rule (path) (quote-module-path))
   (define a-name (name))
-  (define a-path (path))
   (provide (all-defined-out)))
 (require 'A)
 a-name
-a-path
 (module B racket
   (require syntax/location)
   (require 'A)
   (define b-name (name))
-  (define b-path (path))
   (provide (all-defined-out)))
 (require 'B)
 b-name
-b-path
 (quote-module-name)
-(quote-module-path)
 [current-namespace (module->namespace (quote 'A))]
 (quote-module-name)
+]
+
+}
+
+@defform[(quote-module-path)]{
+
+@emph{This form is deprecated, as it does not produce module paths that reliably
+indicate collections or PLaneT packages.  Please use @racket[quote-module-name]
+and @racket[path->relative-string/library] to produce human-readable module
+names in printed messages.}
+
+Quotes the name of the module in which the form is compiled as a
+@tech[#:doc reference-path]{module path} using @racket[quote] or @racket[file],
+or produces @racket['top-level] when used outside of a module.
+
+@defexamples[#:eval (new-evaluator)
+(module A racket
+  (require syntax/location)
+  (define-syntax-rule (path) (quote-module-path))
+  (define a-path (path))
+  (provide (all-defined-out)))
+(require 'A)
+a-path
+(module B racket
+  (require syntax/location)
+  (require 'A)
+  (define b-path (path))
+  (provide (all-defined-out)))
+(require 'B)
+b-path
+(quote-module-path)
+[current-pathspace (module->pathspace (quote 'A))]
 (quote-module-path)
 ]
 

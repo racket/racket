@@ -40,7 +40,7 @@
                    [_ #f])]
                 [else #f])])
     (base-wrap-expr/c expr ctc-expr
-                      #:positive #'(quote-module-path)
+                      #:positive #'(quote-module-name)
                       #:negative neg-source-expr
                       #:expr-name (cond [(and expr-name macro-name)
                                           (format "~a of ~a" expr-name macro-name)]
@@ -64,7 +64,7 @@
 
 (define (get-source-expr source ctx)
   (cond [(eq? source 'use-site)
-         #'(quote-module-path)]
+         #'(quote-module-name)]
         [(eq? source 'unknown)
          #'(quote "unknown")]
         [(eq? source 'from-macro)

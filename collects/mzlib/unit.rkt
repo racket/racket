@@ -1684,7 +1684,7 @@
                      (((wrap-code ...) ...)
                       (map (λ (os ov tbs)
                              (define rename-bindings 
-                               (get-member-bindings def-table os #'(quote-module-path)))
+                               (get-member-bindings def-table os #'(quote-module-name)))
                              (map (λ (tb i v c)
                                     (if c
                                         (with-syntax ([ctc-stx
