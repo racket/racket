@@ -616,7 +616,8 @@
                                                                          (or (syntax-property to-exp 'stepper-properties)
                                                                              null)))]
            [attached (syntax-property attached 'user-source (syntax-source from-exp))]
-           [attached (syntax-property attached 'user-position (syntax-position from-exp))])
+           [attached (syntax-property attached 'user-position (syntax-position from-exp))]
+           [attached (syntax-property attached 'user-origin (syntax-property from-exp 'origin))])
       attached))
 
   ;; transfer info from reconstructed expressions to other reconstructed
@@ -628,7 +629,8 @@
                                                                          (or (syntax-property to-exp 'stepper-properties)
                                                                              null)))]
            [attached (syntax-property attached 'user-source (syntax-property from-exp 'user-source))]
-           [attached (syntax-property attached 'user-position (syntax-property from-exp 'user-position))])
+           [attached (syntax-property attached 'user-position (syntax-property from-exp 'user-position))]
+           [attached (syntax-property attached 'user-origin (syntax-property from-exp 'user-origin))])
       attached))
 
   (define (values-map fn . lsts)
