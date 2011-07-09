@@ -626,8 +626,8 @@
 (require (prefix-in m2: 'm2))
 
 (m2:z)
-(test-contract-error "'m2" "U@" "not a symbol" (m2:w))
-(test-contract-error "'m1" "U@" "not a string" (m2:v))
+(test-contract-error "m2" "U@" "not a symbol" (m2:w))
+(test-contract-error "m1" "U@" "not a string" (m2:v))
 
 (test-syntax-error "no y in sig1"
   (unit/c (import (sig1 [y number?]))
@@ -700,7 +700,7 @@
 
 (require (prefix-in m4: 'm4))
 
-(test-contract-error "'m4" "f" "not an x"
+(test-contract-error "m4" "f" "not an x"
   (m4:f 3))
 
 (require (prefix-in m3: 'm3))
