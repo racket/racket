@@ -25,7 +25,7 @@
                                name)])
 	 #'(begin
              ;; Make sure that `implementation' is bound:
-             (define-values () (begin implementation (values)))
+             (define-values () (begin (lambda () implementation) (values)))
              ;; Bind `name':
              (define-syntax name 
                (fo:make-first-order
