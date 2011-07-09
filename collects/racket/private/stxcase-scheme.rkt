@@ -5,7 +5,7 @@
 
 (module stxcase-scheme '#%kernel
   (#%require "small-scheme.rkt" "stx.rkt" "stxcase.rkt" "with-stx.rkt" "stxloc.rkt"
-             (for-syntax '#%kernel "small-scheme.rkt" "stx.rkt" "stxcase.rkt" "with-stx.rkt" 
+             (for-syntax '#%kernel "small-scheme.rkt" "stx.rkt" "stxcase.rkt"
                          "stxloc.rkt"))
 
   (-define (check-duplicate-identifier names)
