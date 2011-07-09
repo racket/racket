@@ -251,6 +251,8 @@ SHARED_OK static gid_t egid;
 
 void scheme_init_file(Scheme_Env *env)
 {
+  Scheme_Object *p;
+
   REGISTER_SO(up_symbol);
   REGISTER_SO(relative_symbol);
   REGISTER_SO(same_symbol);
@@ -305,11 +307,10 @@ void scheme_init_file(Scheme_Env *env)
   windows_symbol = scheme_intern_symbol("windows");
   unix_symbol = scheme_intern_symbol("unix");
 
-  scheme_add_global_constant("path?", 
-			     scheme_make_prim_w_arity(path_p, 
-						      "path?", 
-						      1, 1), 
-			     env);
+  p = scheme_make_prim_w_arity(path_p, "path?", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("path?", p, env);
+
   scheme_add_global_constant("path-for-some-system?", 
 			     scheme_make_folding_prim(general_path_p, 
                                                       "path-for-some-system?", 

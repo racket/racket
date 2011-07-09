@@ -473,6 +473,9 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "bytes?")) {
     generate_inlined_type_test(jitter, app, scheme_byte_string_type, scheme_byte_string_type, 0, for_branch, branch_short, need_sync);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "path?")) {
+    generate_inlined_type_test(jitter, app, SCHEME_PLATFORM_PATH_KIND, SCHEME_PLATFORM_PATH_KIND, 0, for_branch, branch_short, need_sync);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "eof-object?")) {
     generate_inlined_constant_test(jitter, app, scheme_eof, NULL, for_branch, branch_short, need_sync);
     return 1;
