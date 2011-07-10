@@ -10,7 +10,8 @@
          path->relative-string/setup
          path->relative-string/library)
 
-(define (make-path->relative-string dirs [default (lambda (x) x)])
+(define (make-path->relative-string
+         dirs [default (lambda (x) (if (path? x) (path->string x) x))])
   (unless (and (list? dirs)
                (andmap (lambda (x)
                          (and (pair? x)
