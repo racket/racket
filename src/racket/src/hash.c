@@ -2276,6 +2276,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
     }
   } else {
     h = PTR_TO_LONG((Scheme_Object *)key);
+    h = h >> 2;
   }
 
   if (!val) {
@@ -2417,6 +2418,7 @@ Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *ke
   RBNode *rb;
 
   h = PTR_TO_LONG((Scheme_Object *)key);
+  h = h >> 2;
 
   rb = rb_find(h, tree->root);
   if (rb) {
@@ -2429,7 +2431,7 @@ Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *ke
           return SCHEME_CDR(a);
         prs = SCHEME_CDR(prs);
       }
-    } else
+    } else if (SAME_OBJ(rb->key, key))
       return rb->val;
   }
 
