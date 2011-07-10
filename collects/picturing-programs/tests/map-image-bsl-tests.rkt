@@ -24,7 +24,7 @@
 (check-expect (name->color "black") (make-color 0 0 0))
 (check-expect (name->color "blue") (make-color 0 0 255))
 (check-expect (name->color "plaid") false)
-(check-error (name->color 7) "name->color: expected a string or symbol, but found 7")
+(check-error (name->color 7) "name->color: Expected a string or symbol, but found 7")
 
 (check-expect (color=? (make-color 5 10 15) (make-color 5 10 15)) true)
 (check-expect (color=? (make-color 5 10 15) (make-color 5 15 10)) false)
@@ -36,26 +36,26 @@
 (check-expect (color=? (make-color 5 10 15 255) (make-color 5 10 15)) true)
 (check-expect (color=? (make-color 5 10 15 0) false) true)
 (check-expect (color=? (make-color 5 10 15 20) false) false)
-(check-error (color=? "white" 3) "colorize: expected a color, but found 3")
+(check-error (color=? "white" 3) "colorize: Expected a color, but found 3")
 (check-error (color=? "plaid" "white") "color=?: Expected a color or color name as first argument, but found \"plaid\"")
 (check-error (color=? "white" "plaid") "color=?: Expected a color or color name as second argument, but found \"plaid\"")
 
 ; Test cases for map3-image:
 ;(check-error (map3-image 5 + + pic:bloch)
-;             "map3-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
+;             "map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
 ; Actually, the above is caught by Check Syntax, before map3-image has a chance to check anything.
 (check-error (map3-image sqrt + + pic:bloch)
-             "map3-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
+             "map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
 ;(check-error (map3-image + 5 + pic:bloch)
-;             "map3-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument")
+;             "map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument")
 (check-error (map3-image + sqrt + pic:bloch)
-             "map3-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument")
+             "map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument")
 ;(check-error (map3-image + + 5 pic:bloch)
-;             "map3-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
+;             "map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
 (check-error (map3-image + + sqrt pic:bloch)
-             "map3-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
+             "map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
 (check-error (map3-image + + + 5)
-             "map3-image: Expected image as fourth argument, but found 5")
+             "map3-image: Expected an image as fourth argument, but found 5")
 
 ; red-id : x y r g b -> num
 (define (red-id x y r g b) r)
@@ -98,23 +98,23 @@
 
 "Test cases for map4-image:"
 ;(check-error (map4-image 5 + + + pic:bloch)
-;             "map4-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
+;             "map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
 (check-error (map4-image sqrt + + + pic:bloch)
-             "map4-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(r) as first argument")
+             "map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(r) as first argument")
 ;(check-error (map4-image + 5 + + pic:bloch)
-;             "map4-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument")
+;             "map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument")
 (check-error (map4-image + sqrt + + pic:bloch)
-             "map4-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument")
+             "map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument")
 ;(check-error (map4-image + + 5 + pic:bloch)
-;             "map4-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument")
+;             "map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument")
 (check-error (map4-image + + sqrt + pic:bloch)
-             "map4-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument")
+             "map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument")
 ;(check-error (map4-image + + + 5 pic:bloch)
-;             "map4-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(a) as fourth argument")
+;             "map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(a) as fourth argument")
 (check-error (map4-image + + + sqrt pic:bloch)
-             "map4-image: Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(alpha) as fourth argument")
+             "map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(alpha) as fourth argument")
 (check-error (map4-image + + + + 5)
-             "map4-image: Expected image as fifth argument, but found 5")
+             "map4-image: Expected an image as fifth argument, but found 5")
 ; red-id6 : x y r g b a -> num
 (define (red-id6 x y r g b a) r)
 ; green-id6 : x y r g b a -> num
@@ -150,11 +150,11 @@
 
 ; Test cases for map-image:
 ;(check-error (map-image 5 pic:bloch)
-;             "map-image: Expected function with contract num(x) num(y) color -> color as first argument")
+;             "map-image: Expected a function with contract num(x) num(y) color -> color as first argument")
 (check-error (map-image sqrt pic:bloch)
-             "map-image: Expected function with contract num(x) num(y) color -> color as first argument")
+             "map-image: Expected a function with contract num(x) num(y) color -> color as first argument")
 (check-error (map-image + 5)
-             "map-image: Expected image as second argument, but found 5")
+             "map-image: Expected an image as second argument, but found 5")
 
 ; color-id : x y color -> color
 (define (color-id x y c)
@@ -187,7 +187,7 @@
 (define ex6 (map-image kill-red bloch)) ex6
 (define (return-5 x y c) 5)
 
-(check-error (map-image return-5 bloch) "colorize: expected a color, but found 5")
+(check-error (map-image return-5 bloch) "colorize: Expected a color, but found 5")
 
 "Test cases for build3-image:"
 (define (x-gradient-2 x y) (min 255 (* 4 x)))
@@ -196,19 +196,19 @@
 "(build3-image 60 40 zero-2-args x-gradient-2 y-gradient-2) should be a 60x40 rectangle with no red, green increasing from left to right, and blue increasing from top to bottom:"
 (build3-image 60 40 zero-2-args x-gradient-2 y-gradient-2)
 (check-error (build3-image "hello" true sqrt sqrt sqrt)
-             "build3-image: Expected natural number as first argument, but found \"hello\"")
+             "build3-image: Expected a natural number as first argument, but found \"hello\"")
 (check-error (build3-image 17 true sqrt sqrt sqrt)
-             "build3-image: Expected natural number as second argument, but found true")
+             "build3-image: Expected a natural number as second argument, but found true")
 (check-error (build3-image 17 24 sqrt sqrt sqrt)
-             "build3-image: Expected function with contract num(x) num(y) -> color as third argument")
+             "build3-image: Expected a function with contract num(x) num(y) -> color as third argument")
 (check-error (build3-image 17 24 x-gradient-2 sqrt sqrt)
-             "build3-image: Expected function with contract num(x) num(y) -> color as fourth argument")
+             "build3-image: Expected a function with contract num(x) num(y) -> color as fourth argument")
 (check-error (build3-image 17 24 x-gradient-2 y-gradient-2 sqrt)
-             "build3-image: Expected function with contract num(x) num(y) -> color as fifth argument")
+             "build3-image: Expected a function with contract num(x) num(y) -> color as fifth argument")
 
 (define (return-minus-5 x y) -5)
 (check-error (build3-image 17 24 x-gradient-2 y-gradient-2 return-minus-5)
-             "make-color: expected an integer between 0 and 255 as third argument, given: -5")
+             "make-color: Expected an integer between 0 and 255 as third argument, given: -5")
 
 "Test cases for build4-image:"
 "(build4-image 50 50 x-gradient-2 x-gradient-2 zero-2-args y-gradient-2) should be a square, increasingly yellow from left to right and increasingly alpha from top to bottom.  On a blue background."
@@ -225,9 +225,9 @@
 "(build-image 100 100 (lambda (x y) (make-color (* x 2.5) (* y 2.5) 0))):"
 (build-image 100 100 a-gradient)
 "should be a 100x100 square with a color gradient increasing in red from left to right, and in green from top to bottom"
-(check-error (build-image 3.2 100 a-gradient) "build-image: Expected natural number as first argument, but found 3.2")
-(check-error (build-image 100 -2 a-gradient) "build-image: Expected natural number as second argument, but found -2")
-(check-error (build-image 100 100 sqrt) "build-image: Expected function with contract num(x) num(y) -> color as third argument")
+(check-error (build-image 3.2 100 a-gradient) "build-image: Expected a natural number as first argument, but found 3.2")
+(check-error (build-image 100 -2 a-gradient) "build-image: Expected a natural number as second argument, but found -2")
+(check-error (build-image 100 100 sqrt) "build-image: Expected a function with contract num(x) num(y) -> color as third argument")
 
 
 

@@ -86,7 +86,7 @@
 (define (name->color name)
   (unless (or (string? name) (symbol? name))
     (error 'name->color 
-	(format "expected a string or symbol, but found ~v" name)))
+	(format "Expected a string or symbol, but found ~v" name)))
   (let [[result (send the-color-database find-color 
                       (if (string? name)
                           name
@@ -101,7 +101,7 @@
   (cond [(color? thing) thing]
         [(eqv? thing #f) transparent]
         [(image-color? thing) (name->color thing)]
-        [else (error 'colorize (format "expected a color, but found ~v" thing))]))
+        [else (error 'colorize (format "Expected a color, but found ~v" thing))]))
 
 ; colorize-func : (... -> broad-color) -> (... -> color)
 (define (colorize-func f)
@@ -214,11 +214,11 @@
 (define (build-image w h f)
   (unless (natural? w)
     (error 'build-image
-	(format "Expected natural number as first argument, but found ~v" w)))
+	(format "Expected a natural number as first argument, but found ~v" w)))
   (unless (natural? h)
     (error 'build-image
-	(format "Expected natural number as second argument, but found ~v" h)))
-  (check-procedure-arity f 2 'build-image "Expected function with contract num(x) num(y) -> color as third argument")
+	(format "Expected a natural number as second argument, but found ~v" h)))
+  (check-procedure-arity f 2 'build-image "Expected a function with contract num(x) num(y) -> color as third argument")
   (build-image-internal w h (colorize-func f)))
 
 ; build-image/extra : natural(width) natural(height) (nat nat any -> broad-color) any -> image
@@ -227,11 +227,11 @@
 (define (build-image/extra w h f extra)
   (unless (natural? w)
     (error 'build-image/extra
-	(format "Expected natural number as first argument, but found ~v" w)))
+	(format "Expected a natural number as first argument, but found ~v" w)))
   (unless (natural? h)
     (error 'build-image/extra
-	(format "Expected natural number as second argument, but found ~v" h)))
-  (check-procedure-arity f 3 'build-image/extra "Expected function with contract num(x) num(y) any -> color as third argument")
+	(format "Expected a natural number as second argument, but found ~v" h)))
+  (check-procedure-arity f 3 'build-image/extra "Expected a function with contract num(x) num(y) any -> color as third argument")
   (build-image-internal w h
                         (colorize-func (lambda (x y) (f x y extra)))))
 
@@ -240,13 +240,13 @@
 (define (build3-image w h rfunc gfunc bfunc)
   (unless (natural? w)
     (error 'build3-image
-	(format "Expected natural number as first argument, but found ~v" w)))
+	(format "Expected a natural number as first argument, but found ~v" w)))
   (unless (natural? h)
     (error 'build3-image
-	(format "Expected natural number as second argument, but found ~v" h)))
-  (check-procedure-arity rfunc 2 'build3-image "Expected function with contract num(x) num(y) -> color as third argument")
-  (check-procedure-arity gfunc 2 'build3-image "Expected function with contract num(x) num(y) -> color as fourth argument")
-  (check-procedure-arity bfunc 2 'build3-image "Expected function with contract num(x) num(y) -> color as fifth argument")
+	(format "Expected a natural number as second argument, but found ~v" h)))
+  (check-procedure-arity rfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as third argument")
+  (check-procedure-arity gfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as fourth argument")
+  (check-procedure-arity bfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as fifth argument")
   (build-image-internal w h
                         (lambda (x y)
                           (make-color (rfunc x y) (gfunc x y) (bfunc x y)))))
@@ -256,14 +256,14 @@
 (define (build4-image w h rfunc gfunc bfunc afunc)
   (unless (natural? w)
     (error 'build-image
-	(format "Expected natural number as first argument, but found ~v" w)))
+	(format "Expected a natural number as first argument, but found ~v" w)))
   (unless (natural? h)
     (error 'build-image
-	(format "Expected natural number as second argument, but found ~v" h)))
-  (check-procedure-arity rfunc 2 'build-image "Expected function with contract num(x) num(y) -> color as third argument")
-  (check-procedure-arity gfunc 2 'build-image "Expected function with contract num(x) num(y) -> color as fourth argument")
-  (check-procedure-arity bfunc 2 'build-image "Expected function with contract num(x) num(y) -> color as fifth argument")
-  (check-procedure-arity afunc 2 'build-image "Expected function with contract num(x) num(y) -> color as sixth argument")
+	(format "Expected a natural number as second argument, but found ~v" h)))
+  (check-procedure-arity rfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as third argument")
+  (check-procedure-arity gfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as fourth argument")
+  (check-procedure-arity bfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as fifth argument")
+  (check-procedure-arity afunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as sixth argument")
   (build-image-internal w h
                         (lambda (x y)
                           (make-color (rfunc x y) (gfunc x y) (bfunc x y) (afunc x y)))))
@@ -288,20 +288,20 @@
 
 ; map-image : (int int color -> broad-color) image -> image
 (define (map-image f img)
-  (check-procedure-arity f 3 'map-image "Expected function with contract num(x) num(y) color -> color as first argument")
+  (check-procedure-arity f 3 'map-image "Expected a function with contract num(x) num(y) color -> color as first argument")
   (unless (image? img)
     (error 'map-image
-	(format "Expected image as second argument, but found ~v" img)))
+	(format "Expected an image as second argument, but found ~v" img)))
   (map-image-internal (colorize-func f) img))
 
 ; map-image/extra : (nat nat color X -> broad-color) image X -> image
 ; Like map-image, but passes a fixed extra argument to every call of the function.
 ; For students who don't yet know function closures.
 (define (map-image/extra f img extra)
-  (check-procedure-arity f 4 'map-image/extra "Expected function with contract num(x) num(y) color other -> color as first argument")
+  (check-procedure-arity f 4 'map-image/extra "Expected a function with contract num(x) num(y) color other -> color as first argument")
   (unless (image? img)
     (error 'map-image/extra
-	(format "Expected image as second argument, but found ~v" img)))
+	(format "Expected an image as second argument, but found ~v" img)))
   (map-image-internal (colorize-func (lambda (x y c) (f x y c extra))) img))
 
 
@@ -315,12 +315,12 @@
 ; image -> image
 ; Note: by default, preserves alpha values from old image.
 (define (map3-image rfunc gfunc bfunc pic)
-  (check-procedure-arity rfunc 5 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
-  (check-procedure-arity gfunc 5 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument")
-  (check-procedure-arity bfunc 5 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
+  (check-procedure-arity rfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
+  (check-procedure-arity gfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument")
+  (check-procedure-arity bfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
   (unless (image? pic)
     (error 'map3-image
-	(format "Expected image as fourth argument, but found ~v" pic)))
+	(format "Expected an image as fourth argument, but found ~v" pic)))
    (map-image-internal
       (lambda (x y c)
           (make-color (rfunc x y (color-red c) (color-green c) (color-blue c))
@@ -336,13 +336,13 @@
 ;  (int(x) int(y) int(r) int(g) int(b) int(a) -> int(a))
 ;  image -> image
 (define (map4-image rfunc gfunc bfunc afunc pic)
-  (check-procedure-arity rfunc 6 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(r) as first argument")
-  (check-procedure-arity gfunc 6 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument")
-  (check-procedure-arity bfunc 6 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument")
-  (check-procedure-arity afunc 6 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(alpha) as fourth argument")
+  (check-procedure-arity rfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(r) as first argument")
+  (check-procedure-arity gfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument")
+  (check-procedure-arity bfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument")
+  (check-procedure-arity afunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(alpha) as fourth argument")
   (unless (image? pic)
     (error 'map4-image
-	"Expected image as fifth argument, but found ~v" pic))
+	"Expected an image as fifth argument, but found ~v" pic))
    (map-image-internal
       (lambda (x y c)
           (make-color (rfunc x y (color-red c) (color-green c) (color-blue c) (color-alpha c))
