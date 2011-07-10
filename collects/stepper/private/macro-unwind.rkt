@@ -199,6 +199,15 @@
                           [(let-values) #'let]
                           [(letrec-values) #'letrec]))]
                    [new-bodies (map (lambda (body) (unwind body settings)) (syntax->list #'bodies))])
+       ;; is there a nested let-form that should be combined with this one?
+       #;(syntax-case #`new-bodies ()
+         [(only-body)
+          (same-source? stx #'only-body)
+          (syntax-case #'only-body ()
+            [(let/*/rec bindings inner-body ...)
+             ]
+            [else 
+             (error "internal error 20110709: nested expr in let/*/rec had same source, but wasn't a let/*/rec")])])
        ;; is this let and the nested one part of a let*?
        (syntax-case #`new-bodies (let*)
          [((let* bindings inner-body ...))
