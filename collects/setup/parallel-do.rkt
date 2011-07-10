@@ -171,15 +171,15 @@
       (path->complete-path p (or (path-only (current-executable-path))
                                  (find-system-path 'orig-dir))))))
 
-(define (parallel-do-event-loop module-path funcname initialmsg jobqueue nprocs [stopat #f])
+(define (parallel-do-event-loop module-path funcname initialmsg work-queue nprocs [stopat #f])
   (define use-places (place-enabled?))
 ;  (define use-places #f)
   (define (spawn id)
     (define wrkr (if use-places (new PlaceWorker%) (new Worker%)))
     (wrkr/spawn wrkr id module-path funcname initialmsg)
     wrkr)
-  (define (jobs?) (queue/has jobqueue))
-  (define (empty?) (not (queue/has jobqueue)))
+  (define (jobs?) (queue/has work-queue))
+  (define (empty?) (not (queue/has work-queue)))
   (define workers #f)
   (define breaks #t)
   (dynamic-wind
@@ -206,7 +206,7 @@
           ;; Send work to idle worker
           [(and (jobs?) (pair? idle))
            (match-define (cons wrkr idle-rest) idle)
-           (define-values (job cmd-list) (queue/get jobqueue (wrkr/id wrkr)))
+           (define-values (job cmd-list) (queue/get work-queue (wrkr/id wrkr)))
            (let retry-loop ([wrkr wrkr]
                             [error-count error-count]) 
              (error-threshold error-count)
@@ -233,12 +233,12 @@
                                     (kill/remove-dead-worker node-worker wrkr))])
                       (let ([msg (if use-places e (wrkr/recv wrkr))])
                         (if (pair? msg)
-                          (if (queue/work-done jobqueue node wrkr msg)
+                          (if (queue/work-done work-queue node wrkr msg)
                             (loop (cons wrkr idle) (remove node-worker inflight) (add1 count) error-count)
                             (loop idle inflight count error-count))
                           (begin
                             (kill/remove-dead-worker node-worker wrkr)
-                            (queue/work-done jobqueue node wrkr (string-append msg (wrkr/read-all wrkr)))))))))]
+                            (queue/work-done work-queue node wrkr (string-append msg (wrkr/read-all wrkr)))))))))]
                 [else 
                   (eprintf "parallel-do-event-loop match node-worker failed.\n")
                   (eprintf "trying to match:\n~a\n" node-worker)]))
@@ -371,10 +371,10 @@
         
 (define-syntax (parallel-do stx)
   (syntax-case stx (define-worker)
-    [(_ worker-count initalmsg workqueue (define-worker (name args ...) body ...))
+    [(_ worker-count initalmsg work-queue (define-worker (name args ...) body ...))
       (with-syntax ([interal-def-name (syntax-local-lift-expression #'(lambda-worker (args ...) body ...))])
         (syntax-local-lift-provide #'(rename interal-def-name name)))
-      #'(let ([wq workqueue])
+      #'(let ([wq work-queue])
         (define module-path (path->string (resolved-module-path-name (variable-reference->resolved-module-path (#%variable-reference)))))
         (parallel-do-event-loop module-path 'name initalmsg wq worker-count)
         (queue/results wq))]))
