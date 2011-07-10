@@ -8548,7 +8548,7 @@ scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
 {
   Scheme_Config *config;
   Scheme_Object *port, *reader, *getter;
-  Scheme_Object *inport, *name, *a[2];
+  Scheme_Object *inport, *name, *a[4], *v;
 
   config = scheme_current_config();
   port = scheme_get_param(config, MZCONFIG_OUTPUT_PORT);
@@ -8569,7 +8569,31 @@ scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
 
   a[0] = name;
   a[1] = inport;
-  return _scheme_apply(reader, 2, a);
+  v = _scheme_apply(reader, 2, a);
+
+  a[0] = inport;
+  if (SCHEME_TRUEP(scheme_terminal_port_p(1, a))) {
+    a[0] = port;
+    if (SCHEME_TRUEP(scheme_terminal_port_p(1, a))) {
+      intptr_t line, col, pos;
+      scheme_tell_all(port, &line, &col, &pos);
+      if ((col > 0) && (line > 0)) {
+        /* input and output are terminals (assume the same one), 
+           and the output port counts lines: tell output port
+           that it's on a new line: */
+        a[0] = port;
+        a[1] = scheme_make_integer(line + 1);
+        a[2] = scheme_make_integer(0);
+        if (pos > 0)
+          a[3] = scheme_make_integer(pos + 2); /* incremet plus 0-adjust */
+        else
+          a[3] = scheme_false;
+        scheme_set_port_location(4, a);
+      }
+    }
+  }
+
+  return v;
 }
   
 Scheme_Object *

@@ -14,7 +14,10 @@ default @racket[print] mode, but with newlines and whitespace inserted
 to avoid lines longer than @racket[(pretty-print-columns)], as
 controlled by @racket[(pretty-print-current-style-table)]. The printed
 form ends in a newline, unless the @racket[pretty-print-columns]
-parameter is set to @racket['infinity].
+parameter is set to @racket['infinity]. When @racket[port] has line
+counting enabled (see @secref["linecol"]), then printing is sensitive
+to the column when printing starts---both for determining an initial
+line break and indenting subsequent lines.
 
 In addition to the parameters defined in this section,
 @racket[pretty-print] conforms to the @racket[print-graph],

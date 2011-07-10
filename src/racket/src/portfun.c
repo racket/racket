@@ -125,6 +125,7 @@ static Scheme_Object *global_port_print_handler(int, Scheme_Object **args);
 static Scheme_Object *global_port_count_lines(int, Scheme_Object **args);
 static Scheme_Object *port_count_lines(int, Scheme_Object **args);
 static Scheme_Object *port_next_location(int, Scheme_Object **args);
+static Scheme_Object *set_port_next_location(int, Scheme_Object **args);
 
 static Scheme_Object *sch_default_read_handler(void *ignore, int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_default_display_handler(int argc, Scheme_Object *argv[]);
@@ -254,7 +255,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY2("load",                  load,                   1, 1, 0, -1, env);
   GLOBAL_PRIM_W_ARITY2("make-pipe",             sch_pipe,               0, 3, 2,  2, env);
   GLOBAL_PRIM_W_ARITY2("port-next-location",    port_next_location,     1, 1, 3,  3, env);
-
+  GLOBAL_PRIM_W_ARITY("set-port-next-location!",  set_port_next_location, 4, 4, env);
 
   GLOBAL_NONCM_PRIM("read",                           read_f,                         0, 1, env);
   GLOBAL_NONCM_PRIM("read/recursive",                 read_recur_f,                   0, 4, env);
@@ -4092,6 +4093,16 @@ static Scheme_Object *port_next_location(int argc, Scheme_Object *argv[])
   a[2] = ((pos < 0) ? scheme_false : scheme_make_integer_value(pos+1));
 
   return scheme_values(3, a);
+}
+
+static Scheme_Object *set_port_next_location(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_INPUT_PORTP(argv[0]) && !SCHEME_OUTPUT_PORTP(argv[0]))
+    scheme_wrong_type("set-port-next-location!", "port", 0, argc, argv);
+
+  scheme_set_port_location(argc, argv);
+  
+  return scheme_void;
 }
 
 typedef struct {

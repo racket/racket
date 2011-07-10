@@ -425,6 +425,7 @@ scheme_output_tell
 scheme_tell_line
 scheme_tell_column
 scheme_tell_all
+scheme_set_port_location
 scheme_count_lines
 scheme_close_input_port
 scheme_close_output_port

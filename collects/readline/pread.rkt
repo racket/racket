@@ -100,7 +100,7 @@
 (define (readline-bytes/hist p force-keep?)
   (when (eq? readline-output-port (current-output-port))
     (let-values ([(line col pos) (port-next-location readline-output-port)])
-      (when (< 0 col) (newline readline-output-port))))
+      (when (and col (positive? col)) (newline readline-output-port))))
   (let ([s (readline-bytes p)]) (add-to-history s force-keep?) s))
 
 (exit-handler

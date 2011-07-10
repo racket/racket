@@ -473,6 +473,7 @@
 #define scheme_tell_line (scheme_extension_table->scheme_tell_line)
 #define scheme_tell_column (scheme_extension_table->scheme_tell_column)
 #define scheme_tell_all (scheme_extension_table->scheme_tell_all)
+#define scheme_set_port_location (scheme_extension_table->scheme_set_port_location)
 #define scheme_count_lines (scheme_extension_table->scheme_count_lines)
 #define scheme_close_input_port (scheme_extension_table->scheme_close_input_port)
 #define scheme_close_output_port (scheme_extension_table->scheme_close_output_port)

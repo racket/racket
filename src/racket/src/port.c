@@ -3386,19 +3386,69 @@ scheme_tell_column (Scheme_Object *port)
   return col;
 }
 
+
+static void extract_next_location(const char *who, int argc, Scheme_Object **a, int delta,
+                                  intptr_t *_line, intptr_t *_col, intptr_t *_pos)
+{
+  int i, j;
+  intptr_t v;
+  intptr_t line = -1, col = -1, pos = -1;
+
+  for (j = 0; j < 3; j++) {
+    v = -1;
+    i = j + delta;
+    if (SCHEME_TRUEP(a[i])) {
+      if (scheme_nonneg_exact_p(a[i])) {
+        if (SCHEME_INTP(a[i])) {
+          v = SCHEME_INT_VAL(a[i]);
+          if ((j != 1) && !v) {
+            v = -1;
+          }
+        }
+      }
+      if (v == -1) {
+        if (argc < 0)
+          a[0] = a[i];
+        scheme_wrong_type(who, 
+                          ((j == 1) ? "non-negative exact integer or #f" : "positive exact integer or #f"),
+                          ((argc > 0) ? i : -1), argc, a);
+        return;
+      }
+    }
+
+    switch (j) {
+    case 0:
+      line = v;
+      break;
+    case 1:
+      col = v;
+      break;
+    case 2:
+      pos = v;
+      break;
+    }
+  }
+
+  /* Internally, positions count from 0 instead of 1 */
+  if (pos > -1)
+    pos--;
+
+  if (_line) *_line = line;
+  if (_col) *_col = col;
+  if (_pos) *_pos = pos;
+}
+
 void
 scheme_tell_all (Scheme_Object *port, intptr_t *_line, intptr_t *_col, intptr_t *_pos)
 {
   Scheme_Port *ip;
-  intptr_t line = -1, col = -1, pos = -1;
   
   ip = scheme_port_record(port);
 
   if (ip->count_lines && ip->location_fun) {
     Scheme_Location_Fun location_fun;
     Scheme_Object *r, *a[3];
-    intptr_t v;
-    int got, i;
+    int got;
     
     location_fun = ip->location_fun;
     r = location_fun(ip);
@@ -3416,47 +3466,36 @@ scheme_tell_all (Scheme_Object *port, intptr_t *_line, intptr_t *_col, intptr_t 
     a[1] = scheme_multiple_array[1];
     a[2] = scheme_multiple_array[2];
 
-    for (i = 0; i < 3; i++) {
-      v = -1;
-      if (SCHEME_TRUEP(a[i])) {
-	if (scheme_nonneg_exact_p(a[i])) {
-	  if (SCHEME_INTP(a[i])) {
-	    v = SCHEME_INT_VAL(a[i]);
-	    if ((i != 1) && !v) {
-	      a[0] = a[i];
-	      scheme_wrong_type("user port next-location", 
-				((i == 1) ? "non-negative exact integer or #f" : "positive exact integer or #f"),
-				-1, -1, a);
-	      return;
-	    }
-	  }
-	}
-      }
-      switch(i) {
-      case 0:
-	line = v;
-	break;
-      case 1:
-	col = v;
-	break;
-      case 2:
-	pos = v;
-	break;
-      }
-    }
-
-    /* Internally, positions count from 0 instead of 1 */
-    if (pos > -1)
-      pos--;
+    extract_next_location("user port next-location", -1, a, 0, _line, _col, _pos);
   } else {
+    intptr_t line, col, pos;
+
     line = scheme_tell_line(port);
     col = scheme_tell_column(port);
     pos = scheme_tell(port);
-  }
 
-  if (_line) *_line = line;
-  if (_col) *_col = col;
-  if (_pos) *_pos = pos;  
+    if (_line) *_line = line;
+    if (_col) *_col = col;
+    if (_pos) *_pos = pos;
+  }
+}
+
+void scheme_set_port_location(int argc, Scheme_Object **argv)
+{
+  Scheme_Port *ip;
+  intptr_t line, col, pos;
+  
+  extract_next_location("set-port-next-location!", argc, argv, 
+                        1, &line, &col, &pos);
+
+  
+  ip = scheme_port_record(argv[0]);
+  
+  if (ip->count_lines) {
+    ip->readpos = pos;
+    ip->lineNumber = line;
+    ip->column = col;
+  }
 }
 
 void

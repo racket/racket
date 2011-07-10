@@ -4,7 +4,7 @@
 @title[#:tag "customport"]{Custom Ports}
 
 The @racket[make-input-port] and @racket[make-output-port] procedures
-create custom ports with arbitrary control procedures (much like
+create @deftech{custom ports} with arbitrary control procedures (much like
 implementing a device driver). Custom ports are mainly useful to
 obtain fine control over the action of committing bytes as read or
 written.

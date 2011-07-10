@@ -807,6 +807,7 @@ MZ_EXTERN intptr_t scheme_output_tell(Scheme_Object *port);
 MZ_EXTERN intptr_t scheme_tell_line(Scheme_Object *port);
 MZ_EXTERN intptr_t scheme_tell_column(Scheme_Object *port);
 MZ_EXTERN void scheme_tell_all(Scheme_Object *port, intptr_t *line, intptr_t *col, intptr_t *pos);
+MZ_EXTERN void scheme_set_port_location(int argc, Scheme_Object **argv);
 MZ_EXTERN void scheme_count_lines(Scheme_Object *port);
 MZ_EXTERN void scheme_close_input_port(Scheme_Object *port);
 MZ_EXTERN void scheme_close_output_port(Scheme_Object *port);

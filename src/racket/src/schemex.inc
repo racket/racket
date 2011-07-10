@@ -473,6 +473,7 @@
   scheme_extension_table->scheme_tell_line = scheme_tell_line;
   scheme_extension_table->scheme_tell_column = scheme_tell_column;
   scheme_extension_table->scheme_tell_all = scheme_tell_all;
+  scheme_extension_table->scheme_set_port_location = scheme_set_port_location;
   scheme_extension_table->scheme_count_lines = scheme_count_lines;
   scheme_extension_table->scheme_close_input_port = scheme_close_input_port;
   scheme_extension_table->scheme_close_output_port = scheme_close_output_port;

@@ -38,6 +38,11 @@ the port becomes unknown, and line and column tacking is disabled.
 Return-linefeed combinations are treated as a single character
 position only when line and column counting is enabled.
 
+@tech{Custom ports} can define their own counting functions, which are
+not subject to the rules above, except that the counting functions are
+invoked only when tracking is specifically enabled with
+@racket[port-count-lines!].
+
 @;------------------------------------------------------------------------
 
 @defproc[(port-count-lines! [port port?]) void?]{
@@ -79,6 +84,18 @@ the point when line counting is enabled.
 
 Even with line counting enabled, a port may return @racket[#f] values
 if it somehow cannot keep track of lines, columns, or positions.}
+
+
+@defproc[(set-port-next-location! [port port?]
+                                  [line (or/c exact-positive-integer? #f)]
+                                  [column (or/c exact-nonnegative-integer? #f)]
+                                  [position (or/c exact-positive-integer? #f)])
+         void?]{
+
+Sets the next line, column, and position for @racket[port]. If line
+counting has not been enabled for @racket[port] or if @racket[port] is
+a @tech{custom port} that defines its own counting function, then 
+@racket[set-port-next-location!] has no effect.}
 
 
 @defboolparam[port-count-lines-enabled on?]{

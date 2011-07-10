@@ -514,7 +514,7 @@
 					  (adjust-locs line col pos))))])
 	     (port-count-lines! p2)
 	     p2)))])
-  (let ([plain (let ([p (open-input-string "Hello\n\n world")])
+  (let ([plain (let ([p (open-input-string "Hello\n\n world 1\n2")])
 		 (port-count-lines! p)
 		 p)]
 	[double (mk (lambda (l c p)
@@ -536,6 +536,14 @@
     (test-values '(#f #f #f) (lambda () (port-next-location none)))
     (err/rt-test (port-next-location bad))
 
+    ;; `set-port-next-location!' should have no effect on custom ports:
+    (set-port-next-location! double 1 1 1)
+    (test-values '(2 10 12) (lambda () (port-next-location double)))
+    (set-port-next-location! none 1 1 1)
+    (test-values '(#f #f #f) (lambda () (port-next-location none)))
+    (set-port-next-location! bad 1 1 1)
+    (err/rt-test (port-next-location bad))
+
     (let ([stx (read-syntax #f plain)])
       (test 3 syntax-line stx)
       (test 1 syntax-column stx)
@@ -555,7 +563,19 @@
     
     (test-values '(3 6 14) (lambda () (port-next-location plain)))
     (test-values '(6 12 28) (lambda () (port-next-location double)))
-    (test-values '(#f #f #f) (lambda () (port-next-location none)))))
+    (test-values '(#f #f #f) (lambda () (port-next-location none)))
+
+    ;; Check `set-port-next-location!':
+    (set-port-next-location! plain 100 13 1023)
+    (test-values '(100 13 1023) (lambda () (port-next-location plain)))
+    (let ([stx (read-syntax #f plain)])
+      (test 100 syntax-line stx)
+      (test 14 syntax-column stx)
+      (test 1024 syntax-position stx))
+    (let ([stx (read-syntax #f plain)])
+      (test 101 syntax-line stx)
+      (test 0 syntax-column stx)
+      (test 1026 syntax-position stx))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Check that if the initial commit thread is killed, then

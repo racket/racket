@@ -329,7 +329,14 @@ result of
 @racketblock[
 (let ([in ((current-get-interaction-input-port))])
   ((current-read-interaction) (object-name in) in))
-]}
+]
+
+If the input and output ports are both terminals (in the sense of
+@racket[terminal-port?]) and if the output port appears to be counting
+lines (because @racket[port-next-location] returns a non-@racket[#f]
+line and column), then the output port's line is incremented and its
+column is reset to @racket[0] via @racket[set-port-next-location!] 
+before returning the read result.}
 
 
 @defparam[current-get-interaction-input-port proc (-> input-port?)]{
