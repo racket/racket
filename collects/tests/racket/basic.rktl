@@ -2388,9 +2388,11 @@
   (check-all-bad hash-iterate-key)
   (check-all-bad hash-iterate-value))
 
-(test (list 1 2 3) hash-keys #hasheq((1 . a)(2 . b)(3 . c)))
-(test (list 'a 'b 'c) hash-values #hasheq((1 . a)(2 . b)(3 . c)))
-(test (list (cons 1 'a) (cons 2 'b) (cons 3 'c)) hash->list #hasheq((1 . a)(2 . b)(3 . c)))
+(test (list 1 2 3) sort (hash-keys #hasheq((1 . a) (2 . b) (3 . c))) <)
+(test (list 'a 'b 'c) 
+      sort (hash-values #hasheq((1 . a) (2 . b) (3 . c))) string<? #:key symbol->string)
+(test (list (cons 1 'a) (cons 2 'b) (cons 3 'c)) 
+      sort (hash->list #hasheq((1 . a) (2 . b) (3 . c))) < #:key car)
 
 (err/rt-test (hash-set*! im-t 1 2) exn:fail?)
 (err/rt-test (hash-set* (make-hasheq null) 1 2) exn:fail?)
@@ -2494,6 +2496,19 @@
                (values (a i) (a (a i))))])
     (test (equal-hash-code ht) values (equal-hash-code ht2))
     (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2))))
+
+;; Check that immutable hash trees aren't confused by an
+;; "is a list" bit set in a key:
+(let ()
+  (define p (list 1 2 3 4))
+  (define ht (hasheq p 1 'a 7 'b 10 'c 13))
+  (test 1 hash-ref ht p #f)
+  (list? p)
+  (list? p)
+  (list? (list* 1 2 p))
+  (list? (list* 1 2 p))
+  (list? (list* 1 2 p))
+  (test 1 hash-ref ht p #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc

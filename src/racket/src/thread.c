@@ -258,12 +258,6 @@ typedef struct Thread_Cell {
   Scheme_Object so;
   char inherited, assigned;
   Scheme_Object *def_val;
-  /* A thread's thread_cell table maps cells to keys weakly.
-     This table maps keys to values weakly. The two weak
-     levels ensure that thread cells are properly GCed
-     when the value of a thread cell references the thread
-     cell. */
-  Scheme_Bucket_Table *vals;
 } Thread_Cell;
 
 #ifdef MZ_PRECISE_GC
@@ -6436,7 +6430,7 @@ static Scheme_Object *do_param(void *_data, int argc, Scheme_Object *argv[])
 
   pos[0] = data->key;
   pos[1] = data->defcell;
-  
+
   return scheme_param_config("parameter-procedure", 
 			     (Scheme_Object *)(void *)pos,
 			     argc, argv2,
