@@ -11,15 +11,15 @@ and functionality to students using the teaching languages.
 
 
 @itemize[
-@item{HTdP Teachpacks are added to a student's program by clicking on the
+@item{HtDP Teachpacks are added to a student's program by clicking on the
 ``Language'' menu and selecting ``add Teachpack''. Students can then install a
 new Teachpack by clicking ``Add Teachpack to List'' and choosing the Teachpack
 file from the filesystem.}
 
-@item{HTdP Libraries are brought into the student's program using a
+@item{HtDP Libraries are brought into the student's program using a
 @racket[require] statement.}]
 
-Under the hood, HTdP Teachpacks and HTdP Libraries are implemented the same way,
+Under the hood, HtDP Teachpacks and HtDP Libraries are implemented the same way,
 using normal Racket @secref[#:doc '(lib "scribblings/guide/guide.scrbl") "modules"]. 
 
 When implementing an extension intended for students, pay a special attention to
@@ -29,8 +29,8 @@ uses vocabulary or phrases the students has not learned yet.  The teaching langu
 also ensure that students cannot stumble by accident onto challenging or
 confusing features intended for professional or for higher-level students.
 
-This manual describes library support for authors of HTdP Teachpacks, libraries,
-and customized teaching languages. Use the HTdP
+This manual describes library support for authors of HtDP Teachpacks, libraries,
+and customized teaching languages. Use the HtDP
 @seclink["error-reporting"]{error reporting functions} to create error messages
 that integrate smoothly with those of the teaching languages. Before composing
 new error messages, we recommend you read the @seclink["error-guidelines"]{error
