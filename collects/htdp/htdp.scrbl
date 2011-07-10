@@ -20,7 +20,7 @@ file from the filesystem.}
 @racket[require] statement.}]
 
 Under the hood, HTdP Teachpacks and HTdP Libraries are implemented the same way,
-using normal Racket @secref[#:doc '(lib "scribblings/guide/module.scrbl") "modules"]. 
+using normal Racket @secref[#:doc '(lib "scribblings/guide/guide.scrbl") "modules"]. 
 
 When implementing an extension intended for students, pay a special attention to
 the error messages. The error messages of DrRacket's teaching languages go to
