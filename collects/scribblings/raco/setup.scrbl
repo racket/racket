@@ -1189,31 +1189,52 @@ than specified in the contract above, it is returned as-is.}
 
 @defmodule[setup/path-to-relative]
 
-@defproc[(path->relative-string/library [path path-string?]
-                                        [default any/c (lambda (x) x)])
-         any]{
+@defproc[(path->relative-string/library
+          [path path-string?]
+          [default (or/c (-> path-string? any/c) any/c)
+                   (lambda (x) (if (path? x) (path->string x) x))])
+         any/c]{
   Produces a string suitable for display in error messages.  If the path
   is an absolute one that is inside the @filepath{collects} tree, the
   result will be a string that begins with @racket["<collects>/"].
   Similarly, a path in the user-specific collects results in a prefix of
   @racket["<user-collects>/"], and a @PLaneT path results in
-  @racket["<planet>/"].  If the path is not absolute, or if it is not in
-  any of these, the @racket[default] determines the result: if it is a
-  procedure, it is applied onto the path to get the result, otherwise it
-  is returned.
+  @racket["<planet>/"].
+
+  If the path is not absolute, or if it is not in any of these, it is
+  returned as-is (converted to a string if needed).  If @racket[default]
+  is given, it specifies the return value instead: it can be a procedure
+  which is applied onto the path to get the result, or the result
+  itself.
+
+  Note that this function can be a non-string only if @racket[default]
+  is given, and it does not return a string.
 }
 
-@defproc[(path->relative-string/setup [path path-string?]
-                                      [default any/c (lambda (x) x)])
+@defproc[(path->relative-string/setup
+          [path path-string?]
+          [default (or/c (-> path-string? any/c) any/c)
+                   (lambda (x) (if (path? x) (path->string x) x))])
          any]{
   Similar to @racket[path->relative-string/library], but more suited for
   output during compilation: @filepath{collects} paths are shown with no
   prefix, and in the user-specific collects with just a
   @racket["<user>"] prefix.
+
+  If the path is not absolute, or if it is not in any of these, it is
+  returned as-is (converted to a string if needed).  If @racket[default]
+  is given, it specifies the return value instead: it can be a procedure
+  which is applied onto the path to get the result, or the result
+  itself.
+
+  Note that this function can be a non-string only if @racket[default]
+  is given, and it does not return a string.
 }
 
-@defproc[(make-path->relative-string [dirs (listof (cons (-> path?) string?))]
-                                     [default any/c (lambda (x) x)])
+@defproc[(make-path->relative-string
+          [dirs (listof (cons (-> path?) string?))]
+          [default (or/c (-> path-string? any/c) any/c)
+                   (lambda (x) (if (path? x) (path->string x) x))])
          (path-string? any/c . -> . any)]{
   This function produces functions like
   @racket[path->relative-string/library] and
