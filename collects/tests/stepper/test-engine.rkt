@@ -102,15 +102,22 @@
     (if (unbox error-has-occurred-box)
         (begin (fprintf (current-error-port) "...Error has occurred during test: ~v\n" name)
                #f)
-        #t)
-    ))
+        #t)))
+
+(provide/contract [string->expanded-syntax-list (-> ll-model? string? (listof syntax?))])
+(define (string->expanded-syntax-list ll-model exp-str)
+  (define expander-thunk ((string->expander-thunk ll-model exp-str)))
+  (let loop ()
+    (define next (expander-thunk))
+    (cond [(eof-object? next) '()]
+          [else (cons next (loop))])))
+
 
 
 
 
 ;; test-sequence/many : model-or-models/c string? steps? -> (void)
 ;; run a given test through a bunch of language models (or just one).
-
 (define (test-sequence/many models exp-str expected-steps extra-files error-box)
   (cond [(list? models)(for-each (lambda (model) (test-sequence model exp-str expected-steps extra-files error-box))
                                  models)]
@@ -120,30 +127,33 @@
 ;; given a language model and an expression and a sequence of steps,
 ;; check to see whether the stepper produces the desired steps
 (define (test-sequence the-ll-model exp-str expected-steps extra-files error-box)
-  (match the-ll-model
-    [(struct ll-model (namespace-spec render-settings enable-testing?))
-     (let ([filename (build-path test-directory "stepper-test")])
-       (for ([f (in-list extra-files)])
-         (define filename (first f))
-         (define content (second f))
-         (when (file-exists? filename)
-           (fprintf (current-error-port) 'run-one-test "file ~s exists, truncating...\n")
-           (delete-file filename))
-         (display-to-file content filename))
-       (call-with-output-file filename
-         (lambda (port) (fprintf port "~a" exp-str))
-         #:exists
-         'truncate)
+  (parameterize ([current-directory test-directory])
+    (for ([f (in-list extra-files)])
+      (display-to-file (second f) (first f) #:exists 'truncate))
+    (define expander-thunk (string->expander-thunk the-ll-model exp-str))
+    (match the-ll-model
+      [(struct ll-model (namespace-spec render-settings enable-testing?))
        (unless (display-only-errors)
          (printf "testing string: ~v\n" exp-str))
-       (let* ([port (open-input-file filename)]
-              [module-id (gensym "stepper-module-name-")]
-              ;; thunk this so that syntax errors happen within the error handlers:
-              [expanded-thunk 
-               (lambda () (expand-teaching-program port read-syntax namespace-spec '() #f module-id enable-testing?))])
-         (test-sequence/core render-settings expanded-thunk expected-steps error-box))
+       (test-sequence/core render-settings expander-thunk expected-steps error-box)
+       (delete-file "stepper-test")
        (for ([f (in-list extra-files)])
-         (delete-file (first f))))]))
+         (delete-file (first f)))])))
+
+
+;; given a language level model and a string, produce a thunk that returns
+;; syntax objects expanded in the given language:
+;; EFFECT: creates a file called "stepper-test" in test-directory
+(define (string->expander-thunk the-ll-model exp-str)
+  (parameterize ([current-directory test-directory])
+    (match the-ll-model
+      [(struct ll-model (namespace-spec render-settings enable-testing?))
+       (let ([filename "stepper-test"])
+         (display-to-file exp-str filename #:exists 'truncate)
+         (let* ([port (open-input-file filename)]
+                [module-id (gensym "stepper-module-name-")])
+           ;; thunk this so that syntax errors happen within the error handlers:
+           (lambda () (expand-teaching-program port read-syntax namespace-spec '() #f module-id enable-testing?))))])))
 
 ;; test-sequence/core : render-settings? boolean? syntax? steps?
 ;; this is a front end for calling the stepper's "go"; the main 
@@ -282,7 +292,6 @@
       (begin (warn error-box 'not-equal?
                    "~.s:\nactual:   ~e =/= \nexpected: ~e\n  here's the diff: ~e" name actual expected (sexp-diff actual expected))
              #f)))
-
 
 
 

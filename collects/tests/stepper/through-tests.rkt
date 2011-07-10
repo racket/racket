@@ -98,6 +98,24 @@
       #;(run-tests '(check-expect forward-ref check-within check-within-bad
                                   check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
-      (run-test 'qq1)
+      (run-test 'let*-deriv)
+      #;(run-test 'letrec1)
       #;(run-test 'require-test)
+
+      #;(string->expanded-syntax-list m:mz "(if true 3 4)"
+                                    #;"(define (a3 x) (if true x x))")
+      #;(string->expanded-syntax-list m:intermediate "(letrec ([z 19] [a (lambda (x) (a x))] [b 4]) (+ (a 4) b))")
+      
+      #;(syntax-case
+          (first (string->expanded-syntax-list m:intermediate 
+                                               "(if true 3 4)"
+                                               #;"(letrec ([z 19] [a (lambda (x) (a x))] [b 4]) (+ (a 4) b))"))
+        ()
+        [(_ _ _ 
+            (_ _ (_ _ (_ _ it) _))) #'it])
       ))
+  
+  
+  
+  
+  
