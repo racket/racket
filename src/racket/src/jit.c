@@ -3312,7 +3312,7 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   if (ndata->code != scheme_on_demand_jit_code)
     return;
 
-  ndata->arity_code = NULL; /* => in progress */
+  ndata->arity_code = sjc.in_progress_on_demand_jit_arity_code; /* => in progress */
 
   scheme_generate_one(NULL, do_generate_closure, &gdata, 1, data->name, ndata);
 
