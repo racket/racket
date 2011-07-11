@@ -377,6 +377,10 @@ scheme_init_number (Scheme_Env *env)
   scheme_add_global_constant("real->single-flonum", p, env);
 
   p = scheme_make_folding_prim(real_to_double_flonum, "real->double-flonum", 1, 1, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  else
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
   scheme_add_global_constant("real->double-flonum", p, env);
   
   scheme_add_global_constant("exact?", 
