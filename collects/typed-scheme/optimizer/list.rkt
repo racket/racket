@@ -41,12 +41,16 @@
                                     [_ -1])))) ; sure to fail the next check
                     (<= 0 ival (sub1 len)))
            #:with opt
-           (begin (log-optimization "known-length list op" #'op)
+           (begin (log-optimization "known-length list op"
+                                    "List access specialization."
+                                    this-syntax)
                   #`(op.unsafe l.opt #,((optimize) #'i))))
   ;; We know the length of known-length lists statically.
   (pattern (#%plain-app (~and op (~literal length)) l:known-length-list-expr)
            #:with opt
-           (begin (log-optimization "known-length list length" #'op)
+           (begin (log-optimization "known-length list length"
+                                    "Static list length computation."
+                                    this-syntax)
                   (match (type-of #'l)
                     [(tc-result1: (List: es))
                      #`(begin l.opt #,(length es))]))))
