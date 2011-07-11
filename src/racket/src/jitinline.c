@@ -1111,7 +1111,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                || IS_NAMED_PRIM(rator, "fllog")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_FLUNOP, 0, 0, NULL, 1, 0, -1, NULL);
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "exact->inexact")) {
+    } else if (IS_NAMED_PRIM(rator, "exact->inexact")
+	       || IS_NAMED_PRIM(rator, "real->double-flonum")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_EX_INEX, 0, 0, NULL, 1, 0, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fx->fl")) {
