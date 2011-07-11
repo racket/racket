@@ -686,6 +686,16 @@
 (test 2.25 real->double-flonum 2.25)
 (test 2.25 real->double-flonum 2.25f0)
 
+;; to make sure they work when jitted
+(define (r->s-f x) (real->single-flonum x))
+(define (r->d-f x) (real->double-flonum x))
+(test 2.0f0 r->s-f 2)
+(test 2.25f0 r->s-f 2.25)
+(test 2.25f0 r->s-f 2.25f0)
+(test 2.0 r->d-f 2)
+(test 2.25 r->d-f 2.25)
+(test 2.25 r->d-f 2.25f0)
+
 (err/rt-test (* 'a 0))
 (err/rt-test (+ 'a 0))
 (err/rt-test (/ 'a 0))
