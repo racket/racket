@@ -729,6 +729,12 @@ static int common2(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   scheme_jit_register_helper_func(jitter, scheme_on_demand_jit_code);
 
+  /* Used for the state of a function that is being JITted 
+     (for a kind of cycle detection) without breaking concurrent 
+     future threads that might try to call the function. */
+  sjc.in_progress_on_demand_jit_arity_code = jit_get_ip().ptr;
+  (void)jit_jmpi(sjc.on_demand_jit_arity_code);
+
   /* *** app_values_tail_slow_code *** */
   /* RELIES ON jit_prolog(NATIVE_ARG_COUNT) FROM ABOVE */
   /* Rator in V1, arguments are in thread's multiple-values cells. */

@@ -227,7 +227,7 @@ struct scheme_jit_common_record {
   void *fxvector_ref_code, *fxvector_ref_check_index_code, *fxvector_set_code, *fxvector_set_check_index_code;
   void *struct_raw_ref_code, *struct_raw_set_code;
   void *syntax_e_code;
-  void *on_demand_jit_arity_code;
+  void *on_demand_jit_arity_code, *in_progress_on_demand_jit_arity_code;
   void *get_stack_pointer_code;
   void *stack_cache_pop_code;
   void *struct_pred_code, *struct_pred_multi_code;
