@@ -5,7 +5,7 @@
          (for-template scheme/base)
          "../utils/utils.rkt"
          (optimizer utils logging
-                    number fixnum float float-complex vector string pair
+                    number fixnum float float-complex vector string list pair
                     sequence box struct dead-code apply unboxed-let))
 
 (provide optimize-top)
@@ -30,6 +30,7 @@
   (pattern e:float-complex-opt-expr   #:with opt #'e.opt)
   (pattern e:vector-opt-expr          #:with opt #'e.opt)
   (pattern e:string-opt-expr          #:with opt #'e.opt)
+  (pattern e:list-opt-expr            #:with opt #'e.opt)
   (pattern e:pair-opt-expr            #:with opt #'e.opt)
   (pattern e:sequence-opt-expr        #:with opt #'e.opt)
   (pattern e:box-opt-expr             #:with opt #'e.opt)
