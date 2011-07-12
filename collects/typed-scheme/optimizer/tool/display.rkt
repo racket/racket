@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require racket/string unstable/pretty racket/class racket/gui/base
-         unstable/sequence)
+(require racket/string racket/class racket/gui/base
+         unstable/sequence unstable/pretty)
 
 (provide format-message make-color-table)
 
@@ -11,7 +11,7 @@
                          (syntax-line stx)
                          (syntax-column stx)
                          (pretty-format/write (syntax->datum stx))
-                         msg))
+                         (break-lines msg)))
                "\n\n"))
 
 (define lowest-badness-color  (make-object color% "pink"))
