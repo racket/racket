@@ -15,12 +15,15 @@
                      "ops.rkt"
                      "syntax.rkt"
                      "parse.rkt"
+                     "parse2.rkt"
                      "literals.rkt"
                      )
          syntax/parse
          "literals.rkt"
          "debug.rkt"
-         ;; "typed-utils.rkt"
+         ;; (prefix-in honu: "honu.rkt")
+         (prefix-in honu: "macro2.rkt")
+         ;; "typed-utils.ss"
          )
 
 (require (for-meta 2 scheme/base "util.rkt"))
@@ -283,13 +286,6 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 
 |#
 
-(define-syntax (define-honu-syntax stx)
-  (let-values ([(id rhs) (normalize-definition stx #'lambda #f)])
-    (with-syntax ([id id]
-                  [rhs rhs])
-      (syntax/loc stx
-                 (define-syntax id (make-honu-transformer rhs))))))
-
 (define-syntax (define-honu-infix-syntax stx)
   (let-values ([(id rhs) (normalize-definition stx #'lambda #f)])
     (with-syntax ([id id]
@@ -297,8 +293,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       (syntax/loc stx
                  (define-syntax id (make-honu-infix-transformer rhs))))))
 
-
-(define-honu-syntax honu-macro-item
+(honu:define-honu-syntax honu-macro-item
   (lambda (stx ctx)
     (syntax-parse stx
       #:literals (#%braces)
@@ -307,7 +302,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
        (values #'(define-syntax-class name [pattern x])
                #'rest)])))
 
-(define-honu-syntax honu-scheme
+(honu:define-honu-syntax honu-scheme
   (lambda (stx ctx)
     (syntax-parse stx #:literals (semicolon)
       [(_ template semicolon rest ...)
@@ -315,7 +310,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       [else (raise-syntax-error 'scheme "need a semicolon probably" stx)]
       )))
 
-(define-honu-syntax honu-keywords
+(honu:define-honu-syntax honu-keywords
   (lambda (stx ctx)
     (syntax-parse stx #:literals (semicolon)
       [(_ keyword:honu-identifier ... semicolon . rest)
@@ -326,7 +321,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
                                           ...))))
                #'rest)])))
 
-(define-honu-syntax honu-if
+(honu:define-honu-syntax honu-if
   (lambda (stx ctx)
     (define (parse-complete-block stx)
       ;; (debug "Parsing complete block ~a\n" (syntax->datum stx))
@@ -392,7 +387,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      (parse-an-expr #'(expr ...))]
     [else (raise-syntax-error 'honu-unparsed-expr "Invalid expression syntax" stx)]))
 
-(define-honu-syntax scheme-syntax
+(honu:define-honu-syntax scheme-syntax
   (lambda (body ctx)
     (syntax-parse body
       [(_ template . rest)
@@ -402,7 +397,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
            (apply-scheme-syntax #'#'template))
          #'rest)])))
 
-(define-honu-syntax honu-provide
+(honu:define-honu-syntax honu-provide
   (lambda (body ctx)
     (syntax-parse body #:literals (semicolon)
       [(_ x:honu-identifier ... semicolon . rest)
@@ -412,7 +407,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
            #'(provide x.x ...))
          #'rest)])))
 
-(define-honu-syntax honu-require
+(honu:define-honu-syntax honu-require
   (lambda (body ctx)
     (define-syntax-class for-syntax-form
                          #:literals (#%parens honu-for-syntax)
@@ -447,10 +442,25 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
              body))
          #'rest)])))
 
+(define-for-syntax (honu-expand forms)
+  (parse forms))
+
+(define-for-syntax (honu-compile forms)
+  #'(void))
+
+(provide honu-var)
+(honu:define-honu-syntax honu-var
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ name:id honu-= anything . rest)
+       (values
+         #'(define name anything)
+         #'rest)])))
+
 (define-syntax (honu-unparsed-begin stx)
   (emit-remark "Honu unparsed begin!" stx)
   (debug "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))
-  #'(void))
+  (honu-compile (honu-expand (stx-cdr stx))))
 
 (define-syntax (#%dynamic-honu-module-begin stx)
   (syntax-case stx ()

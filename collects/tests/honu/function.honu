@@ -1,5 +1,6 @@
 #lang honu
 
+/*
 provide function;
 macro function ()
   { _ name:identifier (args:identifier ...) { body ... } }
@@ -7,3 +8,4 @@ macro function ()
                          (honu-unparsed-begin body ...)) }
   { _ (args:identifier ...) { body ... }}
   { #sx scheme:syntax #sx(lambda (args_result ...) (honu-unparsed-begin body ...)) }
+  */

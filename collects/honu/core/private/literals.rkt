@@ -25,4 +25,4 @@
                 honu-for-syntax
                 honu-for-template)
 
-(define-literal-set cruft (#%parens #%brackets #%braces semicolon))
+(define-literal-set cruft (#%parens #%brackets #%braces semicolon honu-=))

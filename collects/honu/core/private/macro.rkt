@@ -2,8 +2,9 @@
 
 (require "honu-typed-scheme.rkt"
          "literals.rkt"
-         "parse.rkt"
-         "syntax.rkt"
+         "parse.ss"
+         "syntax.ss"
+         (prefix-in honu: "honu.rkt")
          syntax/parse
          (for-syntax macro-debugger/emit)
          (for-meta 2 macro-debugger/emit
@@ -22,6 +23,7 @@
                      scheme/pretty
                      scheme/trace))
 
+#;
 (provide (all-defined-out))
 
 (define-syntax (ensure-defined stx)
@@ -176,10 +178,9 @@
                            #'(x* ...))]
                 [else stx]))
 
-
 (provide (for-syntax unpull))
 
-(define-honu-syntax honu-pattern
+(honu:define-honu-syntax honu-pattern
   (lambda (stx ctx)
     (syntax-parse stx #:literal-sets ([cruft #:at stx])
       #:literals (honu-literal)
@@ -211,7 +212,7 @@
                                                                      final-pattern)))))
          #'rest)])))
 
-(define-honu-syntax honu-infix-macro
+(honu:define-honu-syntax honu-infix-macro
   (lambda (stx ctx)
     (debug "Infix macro!\n")
     (define-splicing-syntax-class patterns
@@ -232,7 +233,7 @@
                  (with-syntax ()
                    (apply-scheme-syntax
                    (syntax/loc stx
-                               (define-honu-infix-syntax name
+                               (honu:define-honu-infix-syntax name
                                  (lambda (stx ctx)
                                    (debug "~a pattern is ~a\n" 'name '(pattern.fixed ... ...))
                                    (syntax-parse stx
@@ -268,7 +269,7 @@
       [else (raise-syntax-error 'honu-macro "fail" stx)]
       )))
 
-(define-honu-syntax honu-macro
+(honu:define-honu-syntax honu-macro
   (lambda (stx ctx)
     (define-splicing-syntax-class patterns
                          #:literal-sets ([cruft #:phase (syntax-local-phase-level)])

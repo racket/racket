@@ -17,10 +17,14 @@
          "private/more.rkt"
          (for-template racket/base)
          (for-template "private/literals.rkt")
+         #;
          (for-syntax "private/more.rkt")
+         #;
          (for-syntax "private/syntax.rkt")
+         (prefix-in macro: "private/macro2.rkt")
+         #;
          (for-syntax "private/macro.rkt")
-         "private/macro.rkt")
+         "private/macro.ss")
 
 (define-for-syntax (syntax-to-string stx)
   (format "original '~a' - ~a" (syntax->datum stx) (to-honu-string stx)))
@@ -57,6 +61,7 @@
                      (honu-and and)
                      (honu-comma |,|)
                      (honu-. |.|)
+                     [honu-var var]
                      (expression-comma expression_comma)
                      )
 
@@ -85,15 +90,22 @@
                                  (ellipses-repeat repeat)
                                  (honu-identifier identifier)
                                  (expression-comma expression_comma)
+                                 #;
                                  (honu-macro macro)
                                  (parse-an-expr parse)
                                  (... scheme:...)
                                  (honu-body:class body)
+                                 #;
                                  (honu-syntax syntax)
+                                 #;
                                  (honu-expression-syntax expressionSyntax)
+                                 #;
                                  (honu-+ +)
+                                 #;
                                  (honu-scheme scheme2)
+                                 #;
                                  (scheme-syntax scheme:syntax)
+                                 #;
                                  (scheme-syntax schemeSyntax)
                                  ))
          #%braces #%parens #%brackets
@@ -120,6 +132,7 @@
          str
          in-range
          honu-struct
+         macro:macro
          (rename-out
            (struct scheme-struct)
            (syntax real-syntax)
@@ -127,15 +140,20 @@
            (honu-if if)
            (honu-provide provide)
            (honu-macro-item macroItem)
+           #;
            (honu-macro macro)
+           #;
            (honu-infix-macro infixMacro)
            (honu-identifier identifier)
            (honu-identifier identifier123)
            (honu-require require)
            (honu-for-syntax forSyntax)
            (honu-for-template forTemplate)
+           #;
            (honu-syntax syntax)
+           #;
            (honu-pattern pattern)
            (honu-keywords keywords)
+           #;
            (scheme-syntax scheme:syntax)
            ))
