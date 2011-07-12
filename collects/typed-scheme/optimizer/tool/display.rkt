@@ -7,7 +7,7 @@
 
 (define (format-message stxs+msgs)
   (string-join (for/list ([(stx msg) (in-pairs stxs+msgs)])
-                 (format "~a:~a: ~a~a"
+                 (format "~a:~a: ~a\n~a"
                          (syntax-line stx)
                          (syntax-column stx)
                          (pretty-format/write (syntax->datum stx))
@@ -21,11 +21,9 @@
                    [width  500]
                    [height 300]))
   (define editor-canvas
-    (new editor-canvas% [parent win] [editor text]
-         [style '(no-hscroll)]))
+    (new editor-canvas% [parent win] [editor text] [style '(no-hscroll)]))
   (send text auto-wrap #t)
-  (send text insert-port (open-input-string
-                          (format-message stxs+msgs)))
+  (send text insert-port (open-input-string (format-message stxs+msgs)))
   (send text lock #t)
   (send win show #t))
 
