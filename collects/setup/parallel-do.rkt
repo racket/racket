@@ -22,9 +22,9 @@
          send/msg
          recv/req
          worker/die
-         WorkQueue<%>
+         work-queue<%>
          define/class/generics
-         ListQueue)
+         list-queue)
 
 (define-syntax-rule (mk-generic func clss method args ...)
   (begin
@@ -47,7 +47,7 @@
 ;  (begin a ...)
 )
 
-(define Worker<%> (interface ()
+(define worker<%> (interface ()
   spawn
   send/msg
   kill
@@ -58,7 +58,7 @@
   get-id
   get-out))
 
-(define Worker% (class* object% (Worker<%>)
+(define worker% (class* object% (worker<%>)
   (field [id 0]
          [process-handle null]
          [out null]
@@ -110,7 +110,7 @@
   (define/public (wait) (subprocess-wait process-handle))
   (super-new)))
 
-(define PlaceWorker% (class* object% (Worker<%>)
+(define place-worker% (class* object% (worker<%>)
   (init-field [id 0]              
               [pl null])
              
@@ -134,14 +134,14 @@
   (super-new))) 
 
 
-(define WorkQueue<%> (interface ()
+(define work-queue<%> (interface ()
   get-job
   work-done
   has-jobs?
   jobs-cnt
   get-results))
 
-(define/class/generics/provide Worker<%>
+(define/class/generics/provide worker<%>
   (wrkr/spawn spawn id worker-cmdline-list initialcode initialmsg)
   (wrkr/send  send/msg msg)
   (wrkr/kill  kill)
@@ -153,7 +153,7 @@
   (wrkr/wait  wait))
 
 
-(define/class/generics/provide WorkQueue<%>
+(define/class/generics/provide work-queue<%>
   (queue/get        get-job wrkrid)
   (queue/work-done  work-done node wrkr msg)
   (queue/has        has-jobs?)
@@ -175,7 +175,7 @@
   (define use-places (place-enabled?))
 ;  (define use-places #f)
   (define (spawn id)
-    (define wrkr (if use-places (new PlaceWorker%) (new Worker%)))
+    (define wrkr (if use-places (new place-worker%) (new worker%)))
     (wrkr/spawn wrkr id module-path funcname initialmsg)
     wrkr)
   (define (jobs?) (queue/has work-queue))
@@ -260,7 +260,7 @@
             ;(printf " ~a" (add1 i)) (flush-output))(printf "\n")
             )]))))
 
-(define ListQueue% (class* object% (WorkQueue<%>)
+(define list-queue% (class* object% (work-queue<%>)
   (init-field queue create-job-thunk success-thunk failure-thunk)
   (field [results null])
 
@@ -280,8 +280,8 @@
   (define/public (jobs-cnt) (length queue))
   (super-new)))
 
-(define (ListQueue list-of-work create-job-thunk job-success-thunk job-failure-thunk)
-  (make-object ListQueue% list-of-work create-job-thunk job-success-thunk job-failure-thunk))
+(define (list-queue list-of-work create-job-thunk job-success-thunk job-failure-thunk)
+  (make-object list-queue% list-of-work create-job-thunk job-success-thunk job-failure-thunk))
 
 (define-syntax-rule (define-parallel-keyword-error d x)
   (d x (lambda (stx) (raise-syntax-error 'x "only allowed inside parallel worker definition" stx))))

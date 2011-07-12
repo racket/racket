@@ -140,7 +140,7 @@
                     (parallel-do 
                       worker-count
                       (lambda (workerid) (list workerid program-name (verbose) only-dirs latex-dest auto-main? auto-user?))
-                      (ListQueue
+                      (list-queue
                         docs
                         (lambda (x) (s-exp->fasl (serialize x)))
                         (lambda (work r outstr errstr) (printf "~a" outstr) (printf "~a" errstr) (deserialize (fasl->s-exp r)))
@@ -323,7 +323,7 @@
               (parallel-do 
                 worker-count
                 (lambda (workerid) (list workerid (verbose) latex-dest))
-                (ListQueue
+                (list-queue
                   need-rerun
                   (lambda (i) 
                     (say-rendering i)

@@ -23,7 +23,7 @@
 ;  (begin a ...)
 )
 
-(define Lock-Manager% (class object%
+(define lock-manager% (class object%
   (field (locks (make-hash)))
   (define/public (lock fn wrkr)
     (let ([v (hash-ref locks fn #f)])
@@ -42,7 +42,7 @@
         (hash-remove! locks fn)]))
   (super-new)))
 
-(define/class/generics Lock-Manager%
+(define/class/generics lock-manager%
   (lm/lock lock fn wrkr)
   (lm/unlock unlock fn))
 
@@ -50,9 +50,9 @@
   (cond [(path? x) (path->bytes x)]
         [(string? x) (string->bytes/locale x)]))
 
-(define CollectsQueue% (class* object% (WorkQueue<%>) 
+(define collects-queue% (class* object% (work-queue<%>) 
   (init-field cclst printer append-error)
-  (field (lock-mgr (new Lock-Manager%)))
+  (field (lock-mgr (new lock-manager%)))
   (field (hash (make-hash)))
   (inspect #f)
 
@@ -164,9 +164,9 @@
     (define/public (get-results) (void))
     (super-new)))
 
-(define FileListQueue% (class* object% (WorkQueue<%>) 
+(define file-list-queue% (class* object% (work-queue<%>) 
   (init-field filelist handler)
-  (field (lock-mgr (new Lock-Manager%)))
+  (field (lock-mgr (new lock-manager%)))
   (inspect #f)
 
   (define/public (work-done work wrkr msg)
@@ -259,9 +259,9 @@
 (define (parallel-compile-files list-of-files
                                 #:worker-count [worker-count (processor-count)]
                                 #:handler [handler void])
-  (parallel-build (make-object FileListQueue% list-of-files handler) worker-count))
+  (parallel-build (make-object file-list-queue% list-of-files handler) worker-count))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a processes ---" worker-count)
-  (define collects-queue (make-object CollectsQueue% collects-tree setup-fprintf append-error))
+  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error))
   (parallel-build collects-queue worker-count))
