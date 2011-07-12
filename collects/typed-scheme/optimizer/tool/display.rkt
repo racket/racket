@@ -11,7 +11,7 @@
                          (syntax-line stx)
                          (syntax-column stx)
                          (pretty-format/write (syntax->datum stx))
-                         (break-lines msg)))
+                         msg))
                "\n\n"))
 
 (define lowest-badness-color  (make-object color% "pink"))

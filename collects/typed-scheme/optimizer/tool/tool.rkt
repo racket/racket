@@ -70,10 +70,12 @@
                    (define text (new read-only-text%))
                    (define win (new dialog%
                                     [label "Performance Report"]
-                                    [width  700]
+                                    [width  500]
                                     [height 300]))
                    (define editor-canvas
-                     (new editor-canvas% [parent win] [editor text]))
+                     (new editor-canvas% [parent win] [editor text]
+                          [style '(no-hscroll)]))
+                   (send text auto-wrap #t)
                    (send text insert-port (open-input-string
                                            (format-message stxs+msgs)))
                    (send text init-done)
