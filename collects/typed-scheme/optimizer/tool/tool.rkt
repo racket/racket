@@ -15,19 +15,6 @@
    bitmap%
    (collection-file-path "performance-report.png" "icons") 'png/mask))
 
-(define read-only-text%
-  (class text%
-    ;; we allow an initial grace period where write are allowed, to
-    ;; initialize the editor
-    (define init-done? #f)
-    (define/augment (can-delete? start len)
-      (not init-done?))
-    (define/augment (can-insert? start len)
-      (not init-done?))
-    (define/public (init-done)
-      (set! init-done? #t))
-    (super-new)))
-
 ;; performance-report-callback : drracket:unit:frame<%> -> void
 (define (performance-report-callback drr-frame)
   (send (send drr-frame get-definitions-text) add-highlights))
@@ -67,7 +54,7 @@
            (send this highlight-range start end color)
            (send this set-clickback start end
                  (lambda (ed start end)
-                   (define text (new read-only-text%))
+                   (define text (new text%))
                    (define win (new dialog%
                                     [label "Performance Report"]
                                     [width  500]
@@ -78,7 +65,7 @@
                    (send text auto-wrap #t)
                    (send text insert-port (open-input-string
                                            (format-message stxs+msgs)))
-                   (send text init-done)
+                   (send text lock #t)
                    (send win show #t)))
            ;; record highlights to undo them later
            (cons (list start end color)
