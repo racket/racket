@@ -61,4 +61,15 @@ symmetry with @racket[pretty-format/write] and @racket[pretty-format/display].
 
 }
 
+@addition{@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]}
+@defproc[(break-lines [s string?] [columns exact-nonnegative-integer? (pretty-print-columns)])
+         string?]{
+Splits the string @racket[s] into multiple lines, each of width at most
+@racket[columns], splitting only at whitespace boundaries.
+@examples[#:eval the-eval
+(display (break-lines "This string is more than 80 characters long. It is 98 characters long, nothing more, nothing less."))
+]
+}
+
+
 @(close-eval the-eval)
