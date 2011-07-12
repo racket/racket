@@ -497,6 +497,10 @@ the state transitions / contracts are:
                                'framework:overwrite-mode-keybindings
                                (string-constant enable-overwrite-mode-keybindings)
                                values values)
+                   (make-check editor-panel
+                               'framework:automatic-parens
+                               (string-constant enable-automatic-parens)
+                               values values)
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
   

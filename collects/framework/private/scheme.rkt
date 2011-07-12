@@ -34,6 +34,8 @@
 (init-depend mred^ framework:keymap^ framework:color^ framework:mode^
              framework:text^ framework:editor^)
 
+
+
 (define (scheme-paren:get-paren-pairs)
   '(("(" . ")")
     ("[" . "]")
@@ -575,7 +577,7 @@
                          (let* ([text (get-text contains id-end)])
                            (or (get-keyword-type text tabify-prefs)
                                'other)))))]
-               [procedure-indent
+               [procedure-indent 
                 (λ ()
                   (case (get-proc)
                     [(begin define) 1]

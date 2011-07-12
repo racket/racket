@@ -722,6 +722,8 @@ please adhere to these guidelines:
   (overwrite-mode "Overwrite Mode")
   (enable-overwrite-mode-keybindings "Enable overwrite mode keybindings")
   
+  (enable-automatic-parens "Enable automatic parentheses") ; should "and square brackets and quotes" appear here?
+  
  (preferences-info "Configure your preferences")
  (preferences-menu-item "Preferences...")
 

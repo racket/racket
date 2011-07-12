@@ -10,6 +10,7 @@
          (only-in srfi/13 string-prefix? string-prefix-length)
          "sig.rkt")
 
+
   (import mred^
           [prefix finder: framework:finder^]
           [prefix handler: framework:handler^]
@@ -19,7 +20,12 @@
   (export (rename framework:keymap^
                   [-get-file get-file]))
   (init-depend mred^)
-  
+
+;; if I put this in main.rkt with the others, it doesn't happen
+;; early enough... ? JBC, 2011-07-12
+(preferences:set-default 'framework:automatic-parens #f boolean?)  
+
+
   (define user-keybindings-files (make-hash))
   
   (define (add-user-keybindings-file spec)
@@ -1093,6 +1099,15 @@
           (add "insert-\"\"-pair" (make-insert-brace-pair "\"" "\""))
           (add "insert-||-pair" (make-insert-brace-pair "|" "|"))
           (add "insert-lambda-template" insert-lambda-template)
+          ;; HACK: in order to allow disabling of insert-pair bindings,
+          ;; I'm adding functions that simply insert the corresponding
+          ;; character. I bet there's a much cleaner way to do this;
+          ;; there may be existing functions that insert single characters,
+          ;; or a way to "pop" bindings off of a keybindings.
+          (add "insert (" (lambda (txt evt) (send txt insert #\()))
+          (add "insert {" (lambda (txt evt) (send txt insert #\{)))
+          (add "insert \"" (lambda (txt evt) (send txt insert #\")))
+         
           
           (add "toggle-anchor" toggle-anchor)
           (add "center-view-on-line" center-view-on-line)
@@ -1340,6 +1355,25 @@
           (map "c:f6" "shift-focus")
           (map "a:tab" "shift-focus")
           (map "a:s:tab" "shift-focus-backwards")
+          
+          (let ()
+            (define (add-automatic-paren-bindings)
+              (map "~c:s:(" "insert-()-pair")
+              (map "~c:s:{" "insert-{}-pair")
+              (map "~c:s:\"" "insert-\"\"-pair"))
+            (define (remove-automatic-paren-bindings)
+              ;; how the heck is this going to work? we want to "pop" these bindings off...
+              ;; this is a crude approximation:
+              (map "~c:s:(" "insert (")
+              (map "~c:s:{" "insert {")
+              (map "~c:s:\"" "insert \""))
+            (when (preferences:get 'framework:automatic-parens)
+              (add-automatic-paren-bindings))
+            (preferences:add-callback 
+             'framework:automatic-parens
+             (lambda (id new-val)
+               (cond [new-val (add-automatic-paren-bindings)]
+                     [else    (remove-automatic-paren-bindings)]))))
           ))))
   
   (define setup-search
