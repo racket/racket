@@ -45,30 +45,24 @@
 
     (define (highlight-entry l)
       (match l
-        [(report-entry stxs+msgs start end)
-         (let* ([opt?  (opt-report-entry? l)] ; opt or missed opt?
-                [color (if opt?
-                           "lightgreen"
-                           (vector-ref color-table
-                                       (missed-opt-report-entry-badness l)))])
+        [(report-entry subs start end badness)
+         (let ([color (if (= badness 0)
+                          "lightgreen"
+                          (vector-ref color-table badness))])
            (send this highlight-range start end color)
-           (send this set-clickback start end (popup-callback stxs+msgs))
+           (send this set-clickback start end (popup-callback l))
            ;; record highlights to undo them later
            (cons (list start end color)
                  ;; missed optimizations have irritants, circle them
-                 (if opt?
-                     '()
-                     (filter values ; remove irritants w/o location
-                             (map highlight-irritant
-                                  (missed-opt-report-entry-irritants l))))))]))
+                 (filter values ; remove irritants w/o location
+                         (map highlight-irritant
+                              (append-map missed-opt-report-entry-irritants
+                                          (filter missed-opt-report-entry?
+                                                  subs))))))]))
 
     (define/public (add-highlights)
       (define report (generate-report this))
-      (define max-badness
-        (for/fold ([max-badness 0])
-            ([l (in-list report)]
-             #:when (missed-opt-report-entry? l))
-          (max max-badness (missed-opt-report-entry-badness l))))
+      (define max-badness (apply max (map report-entry-badness report)))
       (unless (= max-badness 0) ; no missed opts, color table code would error
         (set! color-table (make-color-table max-badness)))
       (define new-highlights (map highlight-entry report))

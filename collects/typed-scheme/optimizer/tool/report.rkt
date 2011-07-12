@@ -6,17 +6,22 @@
          typed-scheme/optimizer/logging)
 
 (provide (struct-out report-entry)
+         (struct-out sub-report-entry)
          (struct-out opt-report-entry)
          (struct-out missed-opt-report-entry)
          generate-report)
 
 ;; Similar to the log-entry family of structs, but geared towards GUI display.
 ;; Also designed to contain info for multiple overlapping log entries.
-;; stxs+msgs is a list of syntax-message pairs
-(struct report-entry (stxs+msgs start end))
-(struct opt-report-entry        report-entry ())
-(struct missed-opt-report-entry report-entry (badness irritants))
-
+;; - subs is a list of sub-report-entry, corresponding to all the entries
+;;   between start and end
+;; - badness is 0 for a report-entry containing only optimizations
+;;   otherwise, it's the sum for all the subs
+(struct report-entry (subs start end badness))
+;; multiple of these can be contained in a report-entry
+(struct sub-report-entry (stx msg))
+(struct opt-report-entry        sub-report-entry ())
+(struct missed-opt-report-entry sub-report-entry (badness irritants))
 
 (define (generate-report this)
   (collapse-report (log->report (generate-log this))))
@@ -43,35 +48,28 @@
   (define (log-entry->report-entry l)
     (match l
       [(log-entry kind msg stx located-stx (? number? pos))
-       (define stxs+msgs `((,located-stx . ,msg)))
        (define start     (sub1 pos))
        (define end       (+ start (syntax-span stx)))
-       (if (opt-log-entry? l)
-           (opt-report-entry stxs+msgs start end)
-           (missed-opt-report-entry stxs+msgs start end
-                                    (missed-opt-log-entry-badness   l)
-                                    (missed-opt-log-entry-irritants l)))]
+       (report-entry (list (if (opt-log-entry? l)
+                               (opt-report-entry located-stx msg)
+                               (missed-opt-report-entry
+                                located-stx msg
+                                (missed-opt-log-entry-badness   l)
+                                (missed-opt-log-entry-irritants l))))
+                     start end
+                     (if (opt-log-entry? l) ; badness
+                         0
+                         (missed-opt-log-entry-badness l)))]
       [_ #f])) ; no source location, ignore
   (filter values (map log-entry->report-entry log)))
 
 (define (merge-entries prev l)
-  (define new-stxs+msgs
-    (append (report-entry-stxs+msgs prev) (report-entry-stxs+msgs l)))
-  (match (list prev l)
-    [`(,(missed-opt-report-entry ss+ms1 start1 end1 bad1 irr1)
-       ,(missed-opt-report-entry ss+ms2 start2 end2 bad2 irr2))
-     ;; we take start1 and end1 since prev includes l
-     (missed-opt-report-entry new-stxs+msgs start1 end1
-                              (+ bad1 bad2) (append irr1 irr2))]
-    [(or `(,(missed-opt-report-entry ss+ms1 start1 end1 bad irr)
-           ,(report-entry ss+ms2 start2 end2))
-         `(,(report-entry ss+ms1 start1 end1)
-           ,(missed-opt-report-entry ss+ms2 start2 end2 bad irr)))
-     ;; since missed opts are more important to report, they win
-     (missed-opt-report-entry new-stxs+msgs start1 end1 bad irr)]
-    [`(,(report-entry ss+ms1 start1 end1) ,(report-entry ss+ms2 start2 end2))
-     ;; both are opts
-     (report-entry new-stxs+msgs start1 end1)]))
+  (match* (prev l)
+    [((report-entry subs1 start1 end1 badness1)
+      (report-entry subs2 start2 end2 badness2))
+     (report-entry (append subs1 subs2)
+                   start1 end1 ; prev includes l
+                   (+ badness1 badness2))]))
 
 ;; detect overlapping reports and merge them
 (define (collapse-report orig-report)
@@ -82,8 +80,8 @@
                [prev #f])
         ([l (in-list report)])
       (match* (prev l)
-        [((report-entry stxs+msgs1 start1 end1)
-          (report-entry stxs+msgs2 start2 end2))
+        [((report-entry subs1 start1 end1 badness1)
+          (report-entry subs2 start2 end2 badness2))
          (=> unmatch)
          (if (< start2 end1) ; l in within prev
              ;; merge the two

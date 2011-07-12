@@ -1,30 +1,32 @@
 #lang racket/base
 
-(require racket/string racket/class racket/gui/base
+(require racket/string racket/class racket/gui/base racket/match racket/port
+         "report.rkt"
          unstable/sequence unstable/pretty)
 
 (provide popup-callback make-color-table)
 
-(define (format-message stxs+msgs)
-  (string-join (for/list ([(stx msg) (in-pairs stxs+msgs)])
-                 (format "~a:~a: ~a\n~a"
-                         (syntax-line stx)
-                         (syntax-column stx)
-                         (pretty-format/write (syntax->datum stx))
-                         msg))
-               "\n\n"))
+(define (format-message stx msg)
+  (let* ([location (format "~a:~a: " (syntax-line stx) (syntax-column stx))]
+         [message  (format "~a~a\n\n~a" location (syntax->datum stx) msg)])
+    ;; return the message and the starting location of the syntax object
+    (values message (string-length location))))
 
-(define ((popup-callback stxs+msgs) ed start end)
+(define ((popup-callback entry) ed start end)
+  (match-define (report-entry subs start end badness) entry)
   (define text (new text%))
-  (define win (new dialog%
-                   [label "Performance Report"]
-                   [width  500]
-                   [height 300]))
-  (define editor-canvas
-    (new editor-canvas% [parent win] [editor text] [style '(no-hscroll)]))
-  (send text auto-wrap #t)
-  (send text insert-port (open-input-string (format-message stxs+msgs)))
-  (send text lock #t)
+  (define win (new dialog% [label "Performance Report"]
+                   [width 500] [height 300]))
+  (define pane (new vertical-pane% [parent win] [alignment '(left center)]))
+  (for ([s (in-list subs)])
+    (match-define (sub-report-entry stx msg) s)
+    (define-values (message stx-start) (format-message stx msg))
+    (define text (new text%))
+    (send text auto-wrap #t)
+    (send text insert-port (open-input-string message))
+    (send text lock #t)
+    (new editor-canvas% [parent pane] [editor text]
+         [style '(no-hscroll no-vscroll)]))
   (send win show #t))
 
 (define lowest-badness-color  (make-object color% "pink"))
