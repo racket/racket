@@ -86,7 +86,7 @@
 (define (name->color name)
   (unless (or (string? name) (symbol? name))
     (error 'name->color 
-	(format "Expected a string or symbol, but found ~v" name)))
+	(format "Expected a string or symbol, but received ~v" name)))
   (let [[result (send the-color-database find-color 
                       (if (string? name)
                           name
@@ -101,7 +101,7 @@
   (cond [(color? thing) thing]
         [(eqv? thing #f) transparent]
         [(image-color? thing) (name->color thing)]
-        [else (error 'colorize (format "Expected a color, but found ~v" thing))]))
+        [else (error 'colorize (format "Expected a color, but received ~v" thing))]))
 
 ; colorize-func : (... -> broad-color) -> (... -> color)
 (define (colorize-func f)
@@ -119,10 +119,10 @@
         [rc2 (colorize c2)]]
     (unless (color? rc1)
       (error 'color=?
-	(format "Expected a color or color name as first argument, but found ~v" c1)))
+	(format "Expected a color or color name as first argument, but received ~v" c1)))
     (unless (color? rc2)
       (error 'color=?
-	(format "Expected a color or color name as second argument, but found ~v" c2)))
+	(format "Expected a color or color name as second argument, but received ~v" c2)))
     (and (= (color-alpha rc1) (color-alpha rc2)) ; Both alphas MUST be equal.
          (or (= (color-alpha rc1) 0)             ; If both are transparent, ignore rgb.
              (and (= (color-red rc1) (color-red rc2))
@@ -214,10 +214,10 @@
 (define (build-image w h f)
   (unless (natural? w)
     (error 'build-image
-	(format "Expected a natural number as first argument, but found ~v" w)))
+	(format "Expected a natural number as first argument, but received ~v" w)))
   (unless (natural? h)
     (error 'build-image
-	(format "Expected a natural number as second argument, but found ~v" h)))
+	(format "Expected a natural number as second argument, but received ~v" h)))
   (check-procedure-arity f 2 'build-image "Expected a function with contract num(x) num(y) -> color as third argument")
   (build-image-internal w h (colorize-func f)))
 
@@ -227,10 +227,10 @@
 (define (build-image/extra w h f extra)
   (unless (natural? w)
     (error 'build-image/extra
-	(format "Expected a natural number as first argument, but found ~v" w)))
+	(format "Expected a natural number as first argument, but received ~v" w)))
   (unless (natural? h)
     (error 'build-image/extra
-	(format "Expected a natural number as second argument, but found ~v" h)))
+	(format "Expected a natural number as second argument, but received ~v" h)))
   (check-procedure-arity f 3 'build-image/extra "Expected a function with contract num(x) num(y) any -> color as third argument")
   (build-image-internal w h
                         (colorize-func (lambda (x y) (f x y extra)))))
@@ -240,10 +240,10 @@
 (define (build3-image w h rfunc gfunc bfunc)
   (unless (natural? w)
     (error 'build3-image
-	(format "Expected a natural number as first argument, but found ~v" w)))
+	(format "Expected a natural number as first argument, but received ~v" w)))
   (unless (natural? h)
     (error 'build3-image
-	(format "Expected a natural number as second argument, but found ~v" h)))
+	(format "Expected a natural number as second argument, but received ~v" h)))
   (check-procedure-arity rfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as third argument")
   (check-procedure-arity gfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as fourth argument")
   (check-procedure-arity bfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as fifth argument")
@@ -256,10 +256,10 @@
 (define (build4-image w h rfunc gfunc bfunc afunc)
   (unless (natural? w)
     (error 'build-image
-	(format "Expected a natural number as first argument, but found ~v" w)))
+	(format "Expected a natural number as first argument, but received ~v" w)))
   (unless (natural? h)
     (error 'build-image
-	(format "Expected a natural number as second argument, but found ~v" h)))
+	(format "Expected a natural number as second argument, but received ~v" h)))
   (check-procedure-arity rfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as third argument")
   (check-procedure-arity gfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as fourth argument")
   (check-procedure-arity bfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as fifth argument")
@@ -291,7 +291,7 @@
   (check-procedure-arity f 3 'map-image "Expected a function with contract num(x) num(y) color -> color as first argument")
   (unless (image? img)
     (error 'map-image
-	(format "Expected an image as second argument, but found ~v" img)))
+	(format "Expected an image as second argument, but received ~v" img)))
   (map-image-internal (colorize-func f) img))
 
 ; map-image/extra : (nat nat color X -> broad-color) image X -> image
@@ -301,7 +301,7 @@
   (check-procedure-arity f 4 'map-image/extra "Expected a function with contract num(x) num(y) color other -> color as first argument")
   (unless (image? img)
     (error 'map-image/extra
-	(format "Expected an image as second argument, but found ~v" img)))
+	(format "Expected an image as second argument, but received ~v" img)))
   (map-image-internal (colorize-func (lambda (x y c) (f x y c extra))) img))
 
 
@@ -320,7 +320,7 @@
   (check-procedure-arity bfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
   (unless (image? pic)
     (error 'map3-image
-	(format "Expected an image as fourth argument, but found ~v" pic)))
+	(format "Expected an image as fourth argument, but received ~v" pic)))
    (map-image-internal
       (lambda (x y c)
           (make-color (rfunc x y (color-red c) (color-green c) (color-blue c))
@@ -342,7 +342,7 @@
   (check-procedure-arity afunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(alpha) as fourth argument")
   (unless (image? pic)
     (error 'map4-image
-	"Expected an image as fifth argument, but found ~v" pic))
+	"Expected an image as fifth argument, but received ~v" pic))
    (map-image-internal
       (lambda (x y c)
           (make-color (rfunc x y (color-red c) (color-green c) (color-blue c) (color-alpha c))
