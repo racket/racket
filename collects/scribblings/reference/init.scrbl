@@ -40,3 +40,9 @@ as a member of a list of runtime-configuration specification (as
 returned by a module's language-information function for the key
 @racket['configure-runtime]) to obtain the same runtime configuration as
 for the @racketmodname[racket/base] language.
+
+@defmodule*[(racket/kernel)]{The @racketmodname[racket/kernel] library
+is a minimal initial environment intended for scripts that require low
+startup time. It re-exports the bindings of the
+@indexed-racket['#%kernel], along with a binding for
+@racket[#%top-interaction].}
