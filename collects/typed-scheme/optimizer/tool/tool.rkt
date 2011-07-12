@@ -52,21 +52,7 @@
                            (vector-ref color-table
                                        (missed-opt-report-entry-badness l)))])
            (send this highlight-range start end color)
-           (send this set-clickback start end
-                 (lambda (ed start end)
-                   (define text (new text%))
-                   (define win (new dialog%
-                                    [label "Performance Report"]
-                                    [width  500]
-                                    [height 300]))
-                   (define editor-canvas
-                     (new editor-canvas% [parent win] [editor text]
-                          [style '(no-hscroll)]))
-                   (send text auto-wrap #t)
-                   (send text insert-port (open-input-string
-                                           (format-message stxs+msgs)))
-                   (send text lock #t)
-                   (send win show #t)))
+           (send this set-clickback start end (popup-callback stxs+msgs))
            ;; record highlights to undo them later
            (cons (list start end color)
                  ;; missed optimizations have irritants, circle them

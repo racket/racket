@@ -3,7 +3,7 @@
 (require racket/string racket/class racket/gui/base
          unstable/sequence unstable/pretty)
 
-(provide format-message make-color-table)
+(provide popup-callback make-color-table)
 
 (define (format-message stxs+msgs)
   (string-join (for/list ([(stx msg) (in-pairs stxs+msgs)])
@@ -13,6 +13,21 @@
                          (pretty-format/write (syntax->datum stx))
                          msg))
                "\n\n"))
+
+(define ((popup-callback stxs+msgs) ed start end)
+  (define text (new text%))
+  (define win (new dialog%
+                   [label "Performance Report"]
+                   [width  500]
+                   [height 300]))
+  (define editor-canvas
+    (new editor-canvas% [parent win] [editor text]
+         [style '(no-hscroll)]))
+  (send text auto-wrap #t)
+  (send text insert-port (open-input-string
+                          (format-message stxs+msgs)))
+  (send text lock #t)
+  (send win show #t))
 
 (define lowest-badness-color  (make-object color% "pink"))
 (define highest-badness-color (make-object color% "red"))
