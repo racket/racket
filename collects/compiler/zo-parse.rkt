@@ -595,8 +595,8 @@
       ; A reference 
       [(integer? a) 
        (unmarshal-stx-get/decode cp a (lambda (cp v) (aloop v)))]
-      ; A mark (not actually a number as the C says, but a (list <num>)
-      [(and (pair? a) (number? (car a)))
+      ; A mark wraped in a list
+      [(and (pair? a) (number? (car a)) (null? (cdr a)))
        (make-wrap-mark (car a))]
       
       [(vector? a) 
