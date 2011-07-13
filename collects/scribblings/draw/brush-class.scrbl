@@ -9,13 +9,13 @@ A brush is a drawing tool with a color and a style that is used for
  filling in areas, such as the interior of a rectangle or ellipse.  In
  a monochrome destination, all non-white brushes are drawn as black.
 
-In addition to its color and style, a brush can have a stipple bitmap.
+In addition to its color and style, a brush can have a @deftech{brush stipple} bitmap.
  Painting with a
  stipple brush is similar to calling @method[dc<%> draw-bitmap] with
  the stipple bitmap in the filled region.
 
 As an alternative to a color, style, and stipple, a brush can have a
- gradient that is a @racket[linear-gradient%] or
+ @deftech{gradient} that is a @racket[linear-gradient%] or
  @racket[radial-gradient%]. When a brush has a gradient and the target
  for drawing is not monochrome, then other brush settings are
  ignored. With a gradient, for each point in a drawing destination,
@@ -23,9 +23,14 @@ As an alternative to a color, style, and stipple, a brush can have a
  ending colors and starting and ending lines (for a linear gradient)
  or circles (for a radial gradient); a gradient-assigned color is
  applied for each point that is touched when drawing with the brush.
+ By default, coordinates in the gradient are transformed by the
+ drawing context's transformation when the brush is used, but a brush
+ can have its own @deftech{gradient transformation} that is used, instead.
+ A gradient transformation has the same representation and meaning as for
+ @xmethod[dc<%> get-transformation].
 
-A brush's style is one of the following (but is ignored if the brush
- has a gradient and the target is not monochrome):
+A @deftech{brush style} is one of the following (but is ignored if the brush
+ has a @tech{gradient} and the target is not monochrome):
 
 @itemize[
 
@@ -33,13 +38,13 @@ A brush's style is one of the following (but is ignored if the brush
        interior of the drawn shape).}
 
  @item{@indexed-racket['solid] --- Draws using the brush's color. If a
-        monochrome stipple is installed into the brush, black pixels
+        monochrome @tech{brush stipple} is installed into the brush, black pixels
         from the stipple are transferred to the destination using the
         brush's color, and white pixels from the stipple are not
         transferred.}
 
  @item{@indexed-racket['opaque] --- The same as @racket['solid] for a color
-        stipple. For a monochrome stipple, white pixels from 
+        @tech{brush stipple}. For a monochrome stipple, white pixels from 
         the stipple are
         transferred to the destination using the destination's
         background color.}
@@ -52,7 +57,7 @@ A brush's style is one of the following (but is ignored if the brush
  @item{@indexed-racket['panel] --- The same as @racket['solid], accepted 
         only for partial backward compatibility.}
 
- @item{The following modes correspond to built-in stipples drawn in
+ @item{The following modes correspond to built-in @tech{brush stipples} drawn in
        @racket['solid] mode:
 
   @itemize[
@@ -64,7 +69,7 @@ A brush's style is one of the following (but is ignored if the brush
   @item{@indexed-racket['vertical-hatch] --- vertical lines}
   ]
 
-        However, when a specific stipple is installed into the brush,
+        However, when a specific @tech{brush stipple} is installed into the brush,
         the above modes are ignored and @racket['solid] is
         used, instead.}
 
@@ -92,14 +97,16 @@ To avoid creating multiple brushes with the same characteristics, use
                  [gradient (or/c #f 
                                  (is-a?/c linear-gradient%)
                                  (is-a?/c radial-gradient%))
-                           #f])]{
+                           #f]
+                 [transformation (or/c #f (vector/c (vector/c real? real? real? 
+                                                              real? real? real?)
+                                                     real? real? real? real? real?))])]{
 
-Creates a brush with the given color, style, stipple, and gradient. For
- the case that the color is specified using a name, see
- @racket[color-database<%>] for information about color names; if the
- name is not known, the brush's color is black.
+Creates a brush with the given color, @tech{brush style}, @tech{brush stipple}, @tech{gradient}, and
+ @tech{gradient transformation}. For the case that the color is specified
+ using a name, see @racket[color-database<%>] for information about
+ color names; if the name is not known, the brush's color is black.}
 
-}
 
 @defmethod[(get-color)
            (is-a?/c color%)]{
@@ -111,18 +118,15 @@ Returns the brush's color.
 @defmethod[(get-stipple)
            (or/c (is-a?/c bitmap%) #f)]{
 
-Gets the stipple bitmap, or @racket[#f] if the brush has no stipple.
+Gets the @tech{brush stipple} bitmap, or @racket[#f] if the brush has no stipple.}
 
-}
 
 @defmethod[(get-gradient)
            (or/c (is-a?/c linear-gradient%)
                  (is-a?/c radial-gradient%)
                  #f)]{
 
-Gets the gradient, or @racket[#f] if the brush has no gradient.
-
-}
+Gets the @tech{gradient}, or @racket[#f] if the brush has no gradient.}
 
 
 @defmethod[(get-style)
@@ -132,10 +136,20 @@ Gets the gradient, or @racket[#f] if the brush has no gradient.
                      'fdiagonal-hatch 'cross-hatch 
                      'horizontal-hatch 'vertical-hatch)]{
 
-Returns the brush's style. See @racket[brush%] for information about
-brush styles.
+Returns the @tech{brush style}. See @racket[brush%] for information about
+brush styles.}
 
-}
+
+@defmethod[(get-transformation) (or/c #f (vector/c (vector/c real? real? real? real? real? real?)
+                                                   real? real? real? real? real?))]{
+
+Returns the brush's @tech{gradient transformation}, if any.
+
+If a brush with a gradient also has a transformation, then the
+transformation applies to the gradient's coordinates instead of the
+target drawing context's transformation; otherwise, the target drawing
+context's transformation applies to gradient coordinates.}
+
 
 @defmethod*[([(set-color [color (is-a?/c color%)])
               void?]
@@ -158,7 +172,7 @@ For the case that the color is specified using a string, see
 @defmethod[(set-stipple [bitmap (or/c (is-a?/c bitmap%) #f)])
            void?]{
 
-Sets or removes the stipple bitmap, where @racket[#f] removes the
+Sets or removes the @tech{brush stipple} bitmap, where @racket[#f] removes the
  stipple. See @racket[brush%] for information about drawing with
  stipples.
 
@@ -176,7 +190,7 @@ If @racket[bitmap] is modified while is associated with a brush, the
                                        'horizontal-hatch 'vertical-hatch)])
            void?]{
 
-Sets the brush's style. See
+Sets the @tech{brush style}. See
 @racket[brush%] for information about the possible styles.
 
 A brush cannot be modified if it was obtained from a

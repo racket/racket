@@ -5,7 +5,9 @@
          "syntax.rkt"
          "local.rkt"
          "bitmap.rkt"
-         "gradient.rkt")
+         "gradient.rkt"
+         "transform.rkt"
+         "dc-intf.rkt")
 
 (provide brush%
          brush-list% the-brush-list
@@ -33,7 +35,8 @@
   (init [(_color color) black]
         [(_style style) 'solid]
         [(_stipple stipple) #f]
-        [(_gradient gradient) #f])
+        [(_gradient gradient) #f]
+        [(_transformation transformation) #f])
 
   (set! color
         (cond
@@ -56,12 +59,13 @@
   (define lock-count 0)
   (define stipple #f)
   (define gradient #f)
+  (define transformation #f)
 
   (when _gradient
     (unless (or (_gradient . is-a? . linear-gradient%)
                 (_gradient . is-a? . radial-gradient%))
       (raise-type-error (init-name 'brush%)
-                        "linear-gradient%, radial-gradient%, or #f"
+                        "linear-gradient% object, radial-gradient% object, or #f"
                         _gradient))
     (set! gradient _gradient))
 
@@ -71,6 +75,15 @@
                         "bitmap% or #f"
                         _stipple))
     (set-stipple _stipple))
+
+  (when _transformation
+    (unless (transformation-vector? _transformation)
+      (raise-type-error (init-name 'brush%)
+                        "transformation-vector"
+                        _transformation))
+    (when _gradient
+      (set! transformation (transformation-vector->immutable
+                            _transformation))))
 
   (super-new)
 
@@ -99,6 +112,7 @@
 
   (define/public (get-color) color)
   (define/public (get-gradient) gradient)
+  (define/public (get-transformation) transformation)
 
   (def/public (get-stipple) stipple)
   (def/public (set-stipple [(make-or-false bitmap%) s]) 

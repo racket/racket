@@ -21,6 +21,7 @@
          "dc-intf.rkt"
          "dc-path.rkt"
          "point.rkt"
+         "transform.rkt"
          "local.rkt"
          "../unsafe/bstr.rkt")
 
@@ -47,16 +48,6 @@
 
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
-
-(define (transformation-vector? v)
-  (and (vector? v)
-       (= 6 (vector-length v))
-       (matrix-vector? (vector-ref v 0))
-       (real? (vector-ref v 1))
-       (real? (vector-ref v 2))
-       (real? (vector-ref v 3))
-       (real? (vector-ref v 4))
-       (real? (vector-ref v 5))))
 
 ;; dc-backend : interface
 ;;
@@ -461,13 +452,16 @@
         (reset-effective!)
         (reset-matrix)))
 
+    (define/private (vector->matrix m)
+      (make-cairo_matrix_t (vector-ref m 0)
+                           (vector-ref m 1)
+                           (vector-ref m 2)
+                           (vector-ref m 3)
+                           (vector-ref m 4)
+                           (vector-ref m 5)))
+
     (def/public (set-initial-matrix [matrix-vector? m])
-      (set! matrix (make-cairo_matrix_t (vector-ref m 0)
-                                        (vector-ref m 1)
-                                        (vector-ref m 2)
-                                        (vector-ref m 3)
-                                        (vector-ref m 4)
-                                        (vector-ref m 5)))
+      (set! matrix (vector->matrix m))
       (reset-effective!)
       (reset-align!)
       (reset-matrix))
@@ -682,7 +676,7 @@
                (lambda (x) (align-x x)) (lambda (y) (align-y y))
                #:init-matrix (lambda (cr) (init-cr-matrix cr))))))
 
-    (define/public (get-clipping-matrix)
+    (define/private (get-current-matrix)
       (let* ([cm (make-cairo_matrix_t (cairo_matrix_t-xx matrix)
                                       (cairo_matrix_t-yx matrix)
                                       (cairo_matrix_t-xy matrix)
@@ -692,6 +686,10 @@
         (cairo_matrix_translate cm origin-x origin-y)
         (cairo_matrix_scale cm scale-x scale-y)
         (cairo_matrix_rotate cm (- rotation))
+        cm))
+    
+    (define/public (get-clipping-matrix)
+      (let* ([cm (get-current-matrix)])
         (vector (cairo_matrix_t-xx cm)
                 (cairo_matrix_t-yx cm)
                 (cairo_matrix_t-xy cm)
@@ -761,7 +759,7 @@
           (cairo_set_source cr p)
           (cairo_pattern_destroy p))))
 
-    (define/private (make-gradient-pattern cr gradient)
+    (define/private (make-gradient-pattern cr gradient transformation)
       (define p 
         (if (is-a? gradient linear-gradient%)
             (call-with-values (lambda () (send gradient get-line)) cairo_pattern_create_linear)
@@ -775,7 +773,17 @@
                  [b (norm (color-blue c))]
                  [a (color-alpha c)])
             (cairo_pattern_add_color_stop_rgba p offset r g b a)))
+      (when transformation
+        (cairo_identity_matrix cr)
+        (init-cr-matrix cr)
+        (cairo_translate cr scroll-dx scroll-dy)        
+        (cairo_transform cr (vector->matrix (vector-ref transformation 0)))
+        (cairo_translate cr (vector-ref transformation 1) (vector-ref transformation 2))
+        (cairo_scale cr (vector-ref transformation 3) (vector-ref transformation 4))
+        (cairo_rotate cr (- (vector-ref transformation 5))))
       (cairo_set_source cr p)
+      (when transformation
+        (do-reset-matrix cr))
       (cairo_pattern_destroy p))
 
     ;; Stroke, fill, and flush the current path
@@ -821,7 +829,7 @@
                   [gradient (send brush get-gradient)])
               (if (and gradient
                        (not (collapse-bitmap-b&w?)))
-                  (make-gradient-pattern cr gradient)
+                  (make-gradient-pattern cr gradient (send brush get-transformation))
                   (if st
                       (install-stipple st col s 
                                        (lambda () brush-stipple-s)

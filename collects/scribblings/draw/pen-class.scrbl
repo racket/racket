@@ -13,12 +13,12 @@ A pen is a drawing tool with a color, width, and style. A pen draws
  lines and outlines, such as the outline of a rectangle. In a
  monochrome destination, all non-white pens are drawn as black.
 
-In addition to its color, width, and style, a pen can have a stipple
- bitmap. Painting with a stipple pen is similar to
+In addition to its color, width, and style, a pen can have a @deftech{pen stipple}
+ bitmap. Drawing with a stipple pen is similar to
  calling @method[dc<%> draw-bitmap] with the stipple bitmap in region
  painted by the pen.
 
-A pen's style is one of the following:
+A @deftech{pen style} is one of the following:
 
 @itemize[
 
@@ -26,7 +26,7 @@ A pen's style is one of the following:
        outline of the drawn shape).}
 
  @item{@indexed-racket['solid] --- Draws using the pen's color. If a
-        (monochrome) stipple is installed into the pen, black pixels
+        (monochrome) @tech{pen stipple} is installed into the pen, black pixels
         from the stipple are transferred to the destination using the
         brush's color, and white pixels from the stipple are not
         transferred.}
@@ -37,7 +37,7 @@ A pen's style is one of the following:
  @item{@indexed-racket['hilite] --- Draws with black and a @racket[0.3] alpha.}
 
  @item{The following special pen modes use the pen's color, and they only
-       apply when a stipple is not used:
+       apply when a @tech{pen stipple} is not used:
     @itemize[
   @item{@indexed-racket['dot]}
   @item{@indexed-racket['long-dash]}
@@ -80,9 +80,8 @@ When drawing in @racket['smoothed] or @racket['aligned] mode, a pen's
                  [stipple (or/c #f (is-a?/c bitmap%)) 
                           #f])]{
 
-Creates a pen with the given color, width, style, cap style (see
- @method[pen% get-cap]), join style (see @method[pen% get-join]), and
- stipple.  For the case that the color is specified using a name, see
+Creates a pen with the given color, width, @tech{pen style}, @tech{cap style}, @tech{join style}, and
+ @tech{pen stipple} bitmap.  For the case that the color is specified using a name, see
  @racket[color-database<%>] for information about color names; if the
  name is not known, the pen's color is black.
 
@@ -91,7 +90,7 @@ Creates a pen with the given color, width, style, cap style (see
 @defmethod[(get-cap)
            (one-of/c 'round 'projecting 'butt)]{
 
-Returns the pen cap style, which determines the shape of a line at
+Returns the pen @deftech{cap style}, which determines the shape of a line at
 each of its ending points when drawn by @method[dc<%> draw-line] or at the
 non-connecting ends of lines when drawn by @method[dc<%> draw-lines] or
 @method[dc<%> draw-path]. The default is @racket['round], which draws the
@@ -141,7 +140,7 @@ Returns the pen's color object.
 @defmethod[(get-join)
            (one-of/c 'round 'bevel 'miter)]{
 
-Returns the pen join style that is used between multiple lines
+Returns the pen @deftech{join style} that is used between multiple lines
 connected through @method[dc<%> draw-lines], @method[dc<%>
 draw-rectangle], @method[dc<%> draw-polygon], or @method[dc<%>
 draw-path].  The join style fills the space that would be left at the
@@ -198,7 +197,7 @@ Each of the end points of the lines i with a red dot.
 @defmethod[(get-stipple)
            (or/c (is-a?/c bitmap%) #f)]{
 
-Gets the current stipple bitmap, or returns @racket[#f] if no stipple
+Gets the current @tech{pen stipple} bitmap, or returns @racket[#f] if no stipple
  bitmap is installed.
 
 }
@@ -209,7 +208,7 @@ Gets the current stipple bitmap, or returns @racket[#f] if no stipple
                      'xor-dot 'xor-long-dash 'xor-short-dash 
                      'xor-dot-dash)]{
 
-Returns the pen style. See @racket[pen%] for information about
+Returns the @tech{pen style}. See @racket[pen%] for information about
 possible styles.
 
 }
@@ -224,7 +223,7 @@ Returns the pen width.
 @defmethod[(set-cap [cap-style (one-of/c 'round 'projecting 'butt)])
            void?]{
 
-Sets the pen cap style. See @method[pen% get-cap] for information about cap
+Sets the pen @tech{cap style}. See @method[pen% get-cap] for information about cap
  styles.
 
 A pen cannot be modified if it was obtained from a @racket[pen-list%]
@@ -251,7 +250,7 @@ A pen cannot be modified if it was obtained from a
 @defmethod[(set-join [join-style (one-of/c 'round 'bevel 'miter)])
            void?]{
 
-Sets the pen join style. See @method[pen% get-join] for information about join
+Sets the pen @tech{join style}. See @method[pen% get-join] for information about join
  styles.
 
 A pen cannot be modified if it was obtained from a
@@ -262,7 +261,7 @@ A pen cannot be modified if it was obtained from a
 @defmethod[(set-stipple [bitmap (or/c (is-a?/c bitmap%) #f)])
            void?]{
 
-Sets the pen stipple bitmap, where @racket[#f] turns off the stipple bitmap.
+Sets the pen @tech{pen stipple} bitmap, where @racket[#f] turns off the stipple bitmap.
 
 If @racket[bitmap] is modified while is associated with a pen, the
  effect on the pen is unspecified. A pen cannot be modified if it was
@@ -277,7 +276,7 @@ If @racket[bitmap] is modified while is associated with a pen, the
                                        'xor-dot-dash)])
            void?]{
 
-Sets the pen style. See @racket[pen%] for information about the
+Sets the @tech{pen style}. See @racket[pen%] for information about the
  possible styles.
 
 A pen cannot be modified if it was obtained from a

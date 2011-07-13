@@ -6,13 +6,13 @@
          "../unsafe/cairo.rkt"
          "fmod.rkt"
          "point.rkt"
+         "transform.rkt"
          (only-in scheme/base 
                   [append s:append]
                   [reverse s:reverse]))
 
 (provide dc-path%
-         do-path
-         matrix-vector?)
+         do-path)
 
 (define-local-member-name
   get-closed-points
@@ -21,12 +21,6 @@
 
 (define 2pi (* 2.0 pi))
 (define pi/2 (/ pi 2.0))
-
-(define (matrix-vector? m)
-  (and (vector? m)
-       (= 6 (vector-length m))
-       (for/and ([e (in-vector m)])
-         (real? e))))
 
 (define dc-path%
   (class object%
