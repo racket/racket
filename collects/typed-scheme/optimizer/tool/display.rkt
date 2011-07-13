@@ -38,7 +38,7 @@
   (send pane insert
         (new editor-snip% [editor location-text] [with-border? #f]))
 
-  (define syntax-text (new text:basic%)) ; will have a scrollbar
+  (define syntax-text (new text:basic%))
   ;; typeset the syntax as code
   (send syntax-text change-style tt-style-delta)
   (send syntax-text insert-port
@@ -53,7 +53,9 @@
       ;; higher than what's actually displayed), but unless we make the
       ;; located version of irritants available, this is the best we can do
       (send syntax-text highlight-range
-            start (+ start len) "red" #f 'high 'hollow-ellipse)))
+            start (+ start len) "pink" #f 'high 'rectangle)))
+  (send syntax-text set-max-width (- popup-width 20)) ; minus the scrollbar
+  (send syntax-text auto-wrap #t)
   (send syntax-text lock #t)
   (send pane insert
         (new editor-snip% [editor syntax-text] [max-width popup-width]
