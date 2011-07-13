@@ -12,21 +12,27 @@
     ;; return the message and the starting location of the syntax object
     (values message (string-length location))))
 
+(define popup-width  500)
+(define popup-height 300)
+
 (define ((popup-callback entry) ed start end)
   (match-define (report-entry subs start end badness) entry)
   (define text (new text%))
   (define win (new dialog% [label "Performance Report"]
-                   [width 500] [height 300]))
-  (define pane (new vertical-pane% [parent win] [alignment '(left center)]))
+                   [width popup-width] [height popup-height]))
+  (define pane (new text% [auto-wrap #t]))
+  (new editor-canvas% [parent win] [editor pane] [style '(no-hscroll)])
   (for ([s (in-list subs)])
     (match-define (sub-report-entry stx msg) s)
     (define-values (message stx-start) (format-message stx msg))
-    (define text (new text%))
-    (send text auto-wrap #t)
+    (define text (new text% [auto-wrap #t]))
+    (send text set-max-width (- popup-width 20)) ; minus the scrollbar
     (send text insert-port (open-input-string message))
+    (send text auto-wrap #t)
     (send text lock #t)
-    (new editor-canvas% [parent pane] [editor text]
-         [style '(no-hscroll no-vscroll)]))
+    (send pane insert (new editor-snip% [editor text] [max-width popup-width]
+                           [with-border? #f] [bottom-margin 10]))
+    (send pane insert-port (open-input-string "\n")))
   (send win show #t))
 
 (define lowest-badness-color  (make-object color% "pink"))
