@@ -7,15 +7,6 @@
 
 (provide popup-callback make-color-table)
 
-(define (format-message stx msg)
-  (let* ([location (format "~a:~a: " (syntax-line stx) (syntax-column stx))]
-         [message  (format "~a~a\n\n~a" location (syntax->datum stx) msg)]
-         [start    (string-length location)]
-         [len      (string-length (format "~a" (syntax->datum stx)))])
-    ;; return the message, the starting location of the syntax object and
-    ;; its end location
-    (values message start (+ start len))))
-
 (define popup-width  500)
 (define popup-height 300)
 
@@ -37,31 +28,48 @@
 ;; editor, to simplify irritant highlighting
 (define ((format-sub-report-entry pane) s)
   (match-define (sub-report-entry stx msg) s)
-  (define-values (message stx-start stx-end) (format-message stx msg))
-  (define text (new text:basic% [auto-wrap #t]))
-  ;; display the message, which includes source location and syntax
-  (send text insert-port (open-input-string message))
+
+  ;; the location, the syntax and the message are in separate editors
+  (define location-text (new text:basic% [auto-wrap #t]))
+  (define location (format "~a:~a:" (syntax-line stx) (syntax-column stx)))
+  (send location-text insert-port (open-input-string location))
+  (send location-text lock #t)
+  ;; add to the main editor
+  (send pane insert
+        (new editor-snip% [editor location-text] [with-border? #f]))
+
+  (define syntax-text (new text:basic%)) ; will have a scrollbar
   ;; typeset the syntax as code
-  (send text change-style tt-style-delta stx-start stx-end)
+  (send syntax-text change-style tt-style-delta)
+  (send syntax-text insert-port
+        (open-input-string (format "~a" (syntax->datum stx))))
   ;; circle irritants, if necessary
   (when (missed-opt-report-entry? s)
     (for ([i (in-list (missed-opt-report-entry-irritants s))]
           #:when (syntax-position i))
-      (define start-index (- (syntax-position i) (syntax-position stx)))
-      (define start       (+ start-index stx-start))
-      (define len         (syntax-span i))
+      (define start (- (syntax-position i) (syntax-position stx)))
+      (define len   (syntax-span i))
       ;; will be off if there are comments inside an irritant (span will be
       ;; higher than what's actually displayed), but unless we make the
       ;; located version of irritants available, this is the best we can do
-      (send text highlight-range
+      (send syntax-text highlight-range
             start (+ start len) "red" #f 'high 'hollow-ellipse)))
+  (send syntax-text lock #t)
+  (send pane insert
+        (new editor-snip% [editor syntax-text] [max-width popup-width]
+             [with-border? #f] [bottom-margin 10]))
+
+  (define message-text (new text:basic% [auto-wrap #t]))
+  (send message-text insert-port (open-input-string msg))
   ;; adjust display
-  (send text set-max-width (- popup-width 20)) ; minus the scrollbar
-  (send text auto-wrap #t)
-  (send text lock #t)
-  ;; add to the main editor
-  (send pane insert (new editor-snip% [editor text] [max-width popup-width]
-                         [with-border? #f] [bottom-margin 10]))
+  (send message-text set-max-width (- popup-width 20)) ; minus the scrollbar
+  (send message-text auto-wrap #t)
+  (send message-text lock #t)
+  (send pane insert
+        (new editor-snip% [editor message-text] [max-width popup-width]
+             [with-border? #f] [top-margin 10] [bottom-margin 15]))
+
+  ;; to place the next sub-entry below
   (send pane insert-port (open-input-string "\n")))
 
 (define lowest-badness-color  (make-object color% "pink"))
