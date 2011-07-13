@@ -73,8 +73,8 @@
         "Evaluates the arcsine (inverse of sin) of a number.")
       (acos (number -> number)
         "Evaluates the arccosine (inverse of cos) of a number.")
-      (atan (number -> number)
-        "Evaluates the arctan (inverse of tan) of a number.")    
+      (atan (number [number] -> number)
+        "Evaluates the arctan of the given number or the ratio of the two given numbers.")    
     
       (sinh (number -> number)
         "Evaluates the hyperbolic sine of a number.")
