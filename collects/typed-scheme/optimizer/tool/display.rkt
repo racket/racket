@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/string racket/class racket/gui/base racket/match racket/port
+         framework
          "report.rkt"
          unstable/sequence unstable/pretty)
 
@@ -37,11 +38,23 @@
 (define ((format-sub-report-entry pane) s)
   (match-define (sub-report-entry stx msg) s)
   (define-values (message stx-start stx-end) (format-message stx msg))
-  (define text (new text% [auto-wrap #t]))
+  (define text (new text:basic% [auto-wrap #t]))
   ;; display the message, which includes source location and syntax
   (send text insert-port (open-input-string message))
   ;; typeset the syntax as code
   (send text change-style tt-style-delta stx-start stx-end)
+  ;; circle irritants, if necessary
+  (when (missed-opt-report-entry? s)
+    (for ([i (in-list (missed-opt-report-entry-irritants s))]
+          #:when (syntax-position i))
+      (define start-index (- (syntax-position i) (syntax-position stx)))
+      (define start       (+ start-index stx-start))
+      (define len         (syntax-span i))
+      ;; will be off if there are comments inside an irritant (span will be
+      ;; higher than what's actually displayed), but unless we make the
+      ;; located version of irritants available, this is the best we can do
+      (send text highlight-range
+            start (+ start len) "red" #f 'high 'hollow-ellipse)))
   ;; adjust display
   (send text set-max-width (- popup-width 20)) ; minus the scrollbar
   (send text auto-wrap #t)
