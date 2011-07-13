@@ -85,7 +85,7 @@
     each frame in the group.
   }
 
-  @defmethod*[(((can-close-all?) void?))]{
+  @defmethod*[(((can-close-all?) boolean?))]{
     Call this method to make sure that closing all of the frames in the frame
     groups is permitted by the user. The function @method[group:% on-close-all]
     is expected to be called just after this method is called.
