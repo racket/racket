@@ -21,7 +21,8 @@
   (define win (new dialog% [label "Performance Report"]
                    [width popup-width] [height popup-height]))
   (define pane (new text% [auto-wrap #t]))
-  (new editor-canvas% [parent win] [editor pane] [style '(no-hscroll)])
+  (define canvas
+    (new editor-canvas% [parent win] [editor pane] [style '(no-hscroll)]))
   (for ([s (in-list subs)])
     (match-define (sub-report-entry stx msg) s)
     (define-values (message stx-start) (format-message stx msg))
@@ -33,6 +34,7 @@
     (send pane insert (new editor-snip% [editor text] [max-width popup-width]
                            [with-border? #f] [bottom-margin 10]))
     (send pane insert-port (open-input-string "\n")))
+  (send canvas scroll-to 0 0 0 0 #t) ; display the beginning
   (send win show #t))
 
 (define lowest-badness-color  (make-object color% "pink"))
