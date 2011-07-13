@@ -62,7 +62,7 @@ When a @racket[bits] byte string is provided: Creates a monochrome
                             [y real?]
                             [width exact-nonnegative-integer?]
                             [height exact-nonnegative-integer?]
-                            [pixels (and/c bytes? mutable?)]
+                            [pixels (and/c bytes? (not/c immutable?))]
                             [just-alpha? any/c #f]
                             [pre-multiplied? any/c #f])
            void?]{
