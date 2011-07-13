@@ -32,15 +32,21 @@
   (send canvas scroll-to 0 0 0 0 #t) ; display the beginning
   (send win show #t))
 
+;; each sub-entry is displayed in its own text%, contained in the main
+;; editor, to simplify irritant highlighting
 (define ((format-sub-report-entry pane) s)
   (match-define (sub-report-entry stx msg) s)
   (define-values (message stx-start stx-end) (format-message stx msg))
   (define text (new text% [auto-wrap #t]))
-  (send text set-max-width (- popup-width 20)) ; minus the scrollbar
+  ;; display the message, which includes source location and syntax
   (send text insert-port (open-input-string message))
+  ;; typeset the syntax as code
   (send text change-style tt-style-delta stx-start stx-end)
+  ;; adjust display
+  (send text set-max-width (- popup-width 20)) ; minus the scrollbar
   (send text auto-wrap #t)
   (send text lock #t)
+  ;; add to the main editor
   (send pane insert (new editor-snip% [editor text] [max-width popup-width]
                          [with-border? #f] [bottom-margin 10]))
   (send pane insert-port (open-input-string "\n")))
