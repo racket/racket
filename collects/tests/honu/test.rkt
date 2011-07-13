@@ -1,20 +1,18 @@
 #lang racket/base
 
 (require 
-  "test1.rkt"
-  (prefix-in macro_ "macro2.rkt")
-  (rename-in "literals.rkt"
+  (prefix-in macro_ honu/core/private/macro2)
+  (rename-in honu/core/private/literals
              [honu-= =]
              [semicolon |;|])
-  (rename-in (only-in "honu-typed-scheme.rkt" honu-var)
+  (rename-in (only-in honu/core/private/honu-typed-scheme honu-var)
              [honu-var var])
   (for-syntax racket/base
-              "test1.rkt"
-              "macro2.rkt"
+              honu/core/private/macro2
               syntax/stx
               racket/port
               syntax/parse
-              (prefix-in parse: "parse2.rkt"))
+              (prefix-in parse: honu/core/private/parse2))
   racket/port)
 
 (define-syntax (fake-module-begin stx)
