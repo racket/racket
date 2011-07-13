@@ -70,6 +70,7 @@
       [(#%plain-app f arg)
        (let ([fn (syntax->datum #'f)])
          (or (eq? fn 'lazy-proc)
+             (eq? fn 'make-lazy-proc)
              (eq? fn 'force) (eq? fn '!) (eq? fn '!!)
              (eq? fn '!list) (eq? fn '!!list)
              (equal? fn '(#%plain-app parameter-procedure))))
