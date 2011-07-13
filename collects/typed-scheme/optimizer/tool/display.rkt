@@ -8,40 +8,42 @@
 
 (define (format-message stx msg)
   (let* ([location (format "~a:~a: " (syntax-line stx) (syntax-column stx))]
-         [message  (format "~a~a\n\n~a" location (syntax->datum stx) msg)])
-    ;; return the message and the starting location of the syntax object
-    (values message (string-length location))))
+         [message  (format "~a~a\n\n~a" location (syntax->datum stx) msg)]
+         [start    (string-length location)]
+         [len      (string-length (format "~a" (syntax->datum stx)))])
+    ;; return the message, the starting location of the syntax object and
+    ;; its end location
+    (values message start (+ start len))))
 
 (define popup-width  500)
 (define popup-height 300)
 
-(define ((popup-callback entry) ed start end)
+(define tt-style-delta (new style-delta%))
+(send tt-style-delta set-family 'modern)
 
+(define ((popup-callback entry) ed start end)
   (match-define (report-entry subs start end badness) entry)
-  (define text (new text%))
   (define win (new dialog% [label "Performance Report"]
                    [width popup-width] [height popup-height]))
   (define pane (new text% [auto-wrap #t]))
   (define canvas
     (new editor-canvas% [parent win] [editor pane] [style '(no-hscroll)]))
-  (define tt-style-delta (new style-delta%))
-  (send tt-style-delta set-family 'modern)
-
-  (for ([s (in-list subs)])
-    (match-define (sub-report-entry stx msg) s)
-    (define-values (message stx-start) (format-message stx msg))
-    (define text (new text% [auto-wrap #t]))
-    (send text set-max-width (- popup-width 20)) ; minus the scrollbar
-    (send text insert-port (open-input-string message))
-    (send text change-style tt-style-delta
-          stx-start (+ stx-start (syntax-span stx)))
-    (send text auto-wrap #t)
-    (send text lock #t)
-    (send pane insert (new editor-snip% [editor text] [max-width popup-width]
-                           [with-border? #f] [bottom-margin 10]))
-    (send pane insert-port (open-input-string "\n")))
+  (for-each (format-sub-report-entry pane) subs)
   (send canvas scroll-to 0 0 0 0 #t) ; display the beginning
   (send win show #t))
+
+(define ((format-sub-report-entry pane) s)
+  (match-define (sub-report-entry stx msg) s)
+  (define-values (message stx-start stx-end) (format-message stx msg))
+  (define text (new text% [auto-wrap #t]))
+  (send text set-max-width (- popup-width 20)) ; minus the scrollbar
+  (send text insert-port (open-input-string message))
+  (send text change-style tt-style-delta stx-start stx-end)
+  (send text auto-wrap #t)
+  (send text lock #t)
+  (send pane insert (new editor-snip% [editor text] [max-width popup-width]
+                         [with-border? #f] [bottom-margin 10]))
+  (send pane insert-port (open-input-string "\n")))
 
 (define lowest-badness-color  (make-object color% "pink"))
 (define highest-badness-color (make-object color% "red"))
