@@ -16,6 +16,7 @@
 (define popup-height 300)
 
 (define ((popup-callback entry) ed start end)
+
   (match-define (report-entry subs start end badness) entry)
   (define text (new text%))
   (define win (new dialog% [label "Performance Report"]
@@ -23,12 +24,17 @@
   (define pane (new text% [auto-wrap #t]))
   (define canvas
     (new editor-canvas% [parent win] [editor pane] [style '(no-hscroll)]))
+  (define tt-style-delta (new style-delta%))
+  (send tt-style-delta set-family 'modern)
+
   (for ([s (in-list subs)])
     (match-define (sub-report-entry stx msg) s)
     (define-values (message stx-start) (format-message stx msg))
     (define text (new text% [auto-wrap #t]))
     (send text set-max-width (- popup-width 20)) ; minus the scrollbar
     (send text insert-port (open-input-string message))
+    (send text change-style tt-style-delta
+          stx-start (+ stx-start (syntax-span stx)))
     (send text auto-wrap #t)
     (send text lock #t)
     (send pane insert (new editor-snip% [editor text] [max-width popup-width]
