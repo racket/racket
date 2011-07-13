@@ -43,10 +43,14 @@ Configures (where <dest> is some temporary area):
   pkg-config: --prefix=<dest>
   libpng: --prefix=<dest>
   pixman: --prefix=<dest>
-  Cairo: PATH=<dest>/bin --disable-xlib --disable-ft --disable-fc --prefix=<dest>
+  Cairo: PATH=<dest>/bin:... --disable-xlib --disable-ft --disable-fc --prefix=<dest>
   gettext: --prefix=<dest>
-  glib: PATH=<dest>/bin CFLAGS=-I<dest>/include LDFLAGS=-L<dest>/lib --prefix=<dest>
-  Pango: PATH=<dest>/bin --without-x --with-included-modules=yes --with-dynamic-modules=no
+  glib: PATH=<dest>/bin:... CFLAGS=-I<dest>/include LDFLAGS=-L<dest>/lib --prefix=<dest>
+  Pango: PATH=<dest>/bin:... --without-x --with-included-modules=yes --with-dynamic-modules=no
+
+ To support 10.4, add
+  CC=gcc-4.0 CPPFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4"
+ for all packages.
 
  Note: PATH above ensures that pkg-config binaries are used to find
  things in <dest> rather than some other area, such as /opt/local.
