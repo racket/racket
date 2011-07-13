@@ -2,7 +2,10 @@
 
 (require (for-syntax racket/base))
 
+#;
 (provide (all-defined-out))
+
+(provide honu-transformer? make-honu-transformer)
 
 (define-values (prop:honu-transformer honu-transformer? honu-transformer-ref)
                (make-struct-type-property 'honu-transformer))
@@ -20,3 +23,26 @@
       "procedure (arity 2)"
       proc))
   (make-honu-trans proc))
+
+(provide (rename-out [prop:honu-operator? honu-operator?])
+         make-honu-operator
+         (rename-out [-honu-operator-ref honu-operator-ref]))
+(define-values (prop:honu-operator prop:honu-operator? prop:honu-operator-ref)
+               (make-struct-type-property 'honu-operator))
+
+#;
+(provide honu-operator?)
+(define-values (struct:honu-operator -make-honu-operator honu-operator? -honu-operator-ref honu-operator-set!)
+               (make-struct-type 'honu-operator #f 2 0 #f 
+                                 (list (list prop:honu-operator #t))
+                                 (current-inspector) 0))
+
+(define (make-honu-operator precedence proc)
+  (unless (and (procedure? proc)
+               (procedure-arity-includes? proc 2))
+    (raise-type-error
+      'define-honu-operator/syntax
+      "procedure (arity 2)"
+      proc))
+  (-make-honu-operator precedence proc))
+

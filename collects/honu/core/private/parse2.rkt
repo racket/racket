@@ -42,6 +42,11 @@
     (with-syntax ([check check])
       #'(syntax-local-value check #'check (lambda () #f))))) 
 
+(define (bound-to-operator? check)
+  (let ([value (get-value check)])
+    (debug "operator? ~a ~a\n" check value)
+    (transformer:honu-operator? value)))
+
 (define (bound-to-macro? check)
   (let ([value (get-value check)])
     (debug "macro? ~a ~a\n" check value)
@@ -53,6 +58,10 @@
 (define (honu-macro? something)
   (and (identifier? something)
        (bound-to-macro? something)))
+
+(define (honu-operator? something)
+  (and (identifier? something)
+       (bound-to-operator? something)))
 
 (define (semicolon? what)
   (define-literal-set check (semicolon))
@@ -81,16 +90,32 @@
                                                                   current))])
                                        parsed
                                        (more-parsing . rest)))))]
+         [(honu-operator? #'head)
+          (define new-precedence (transformer:honu-operator-ref (syntax-local-value #'head) 0))
+          (define operator-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 1))
+          (define association 'left)
+          (define check
+            (case association
+              [(left) >]
+              [(right) >=]))
+          (printf "new precedence ~a\n" new-precedence)
+          (if (check new-precedence precedence)
+            (do-parse #'(rest ...) new-precedence
+                      (lambda (stuff)
+                        (operator-transformer left stuff))
+                      current)
+            (left current))]
          [(semicolon? #'head)
           (with-syntax ([so-far left])
             #'(splicing-let-syntax ([more (lambda (stx)
                                             (parse #'(rest ...)))])
                 so-far (more)))]
-
          [(identifier? #'head)
           (do-parse #'(rest ...) precedence #'head current)]
          [else (syntax-parse #'head
                  #:literal-sets (cruft)
+                 [x:number (do-parse #'(rest ...)
+                                     precedence (left #'x) current)]
                  [(#%parens args ...)
                   (debug "function call ~a\n" left)
                   (with-syntax ([left left])
@@ -101,7 +126,7 @@
 
          )]))
 
-  (do-parse input 0 #'(void) #'(void)))
+  (do-parse input 0 (lambda (x) x) #'(void)))
 
 (define (parse2 forms)
   (debug "parse forms ~a\n" forms)

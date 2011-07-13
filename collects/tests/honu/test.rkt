@@ -3,7 +3,8 @@
 (require 
   (prefix-in macro_ honu/core/private/macro2)
   (rename-in honu/core/private/honu2
-             [honu-function honu_function])
+             [honu-function honu_function]
+             [honu-+ honu_plus])
   (rename-in honu/core/private/literals
              [honu-= =]
              [semicolon |;|])
@@ -41,3 +42,7 @@
                                        print(x)
                                        }))
   (test 5))
+
+
+(let ()
+  (fake-module-begin #hx(1 honu_plus 1)))

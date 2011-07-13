@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "macro2.rkt"
+         "operator.rkt"
          (for-syntax syntax/parse
                      "literals.rkt"
                      "parse2.rkt"
@@ -20,3 +21,10 @@
                                       (parse #'(code ...)))])
                (do-parse)))
          #'rest)])))
+
+(provide honu-+)
+(define-honu-operator/syntax honu-+ 1
+                             (lambda (left right)
+                               (with-syntax ([left left]
+                                             [right right])
+                                 #'(+ left right))))
