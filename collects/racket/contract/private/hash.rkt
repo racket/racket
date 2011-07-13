@@ -99,9 +99,9 @@
       (when first-order?
         (for ([(k v) (in-hash val)])
           (unless (contract-first-order-passes? dom-ctc k)
-            (fail "expected <~s> for key, got ~v" (contract-name dom-ctc) k))
+            (fail "expected: ~s for key, got ~v" (contract-name dom-ctc) k))
           (unless (contract-first-order-passes? rng-ctc v)
-            (fail "expected <~s> for value, got ~v" (contract-name rng-ctc) v))))
+            (fail "expected: ~s for value, got ~v" (contract-name rng-ctc) v))))
         #t)))
 
 (define (hash/c-first-order ctc)

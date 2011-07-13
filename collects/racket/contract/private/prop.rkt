@@ -211,7 +211,7 @@
 (define (((first-order-projection name first-order) b) x)
   (if (first-order x)
     x
-    (raise-blame-error b x "expected <~s>, given: ~e" name x)))
+    (raise-blame-error b x "expected: ~s, given: ~e" name x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

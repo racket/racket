@@ -87,7 +87,7 @@
              "self-contract violation:"))
        (string-append
         (format "~a ~a\n" start-of-message custom-message)
-        (format "  contract from ~a~a blaming ~a~a" 
+        (format "  contract from: ~a~a blaming: ~a~a" 
                 positive-message
                 (if (regexp-match #rx"\n" positive-message)
                     " "
@@ -105,7 +105,7 @@
              "contract violation:"))
        (string-append
         (format "~a ~a\n" start-of-message custom-message)
-        (format "  contract from ~a~a blaming ~a~a" 
+        (format "  contract from: ~a~a blaming: ~a~a" 
                 negative-message 
                 (if (regexp-match #rx"\n" negative-message)
                     " "

@@ -35,9 +35,9 @@
       [(_ a ...)
        (syntax (contract-eval `(,test a ...)))]))
 
-  (define (contract-error-test exp exn-ok?)
+  (define (contract-error-test name exp exn-ok?)
     (test #t 
-          'contract-error-test 
+          name
           (contract-eval `(with-handlers ((exn? (λ (x) (and (,exn-ok? x) #t)))) ,exp))))
 
   (define (contract-syntax-error-test name exp [reg #rx""])
@@ -2916,6 +2916,7 @@
   
   ;; test to make sure the values are in the error messages
   (contract-error-test
+   'contract-error-test1
    #'((contract (->i ([x number?]) #:pre (x) #f any)
                 (λ (x) x)
                 'pos
@@ -2925,6 +2926,7 @@
      (and (exn? x)
           (regexp-match #rx"x: 123456789" (exn-message x)))))
   (contract-error-test
+   'contract-error-test2
    #'((contract (->i ([|x y| number?]) #:pre (|x y|) #f any)
                 (λ (x) x)
                 'pos
@@ -2936,6 +2938,7 @@
 
   ;; test to make sure the collects directories are appropriately prefixed
   (contract-error-test
+   'contract-error-test3
     #'(contract symbol? "not a symbol" 'pos 'neg 'not-a-symbol #'here)
     (lambda (x)
       (and (exn? x)
@@ -3547,6 +3550,7 @@
    1)
   
   (contract-error-test
+   'contract-error-test4
    #'(contract (or/c (-> integer? integer?) (-> boolean? boolean?))
                (λ (x) x)
                'pos
@@ -4019,6 +4023,7 @@
   (ctest #f impersonator-contract? proj:bad-prime-box-list/c)
   
   (contract-error-test
+   'contract-error-test5
    '(contract proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
    exn:fail?)
   
@@ -9414,6 +9419,7 @@ so that propagation occurs.
   
   ;; Make sure that proxies cannot be used as the domain contract in hash/c.
   (contract-error-test
+   'contract-error-test6
    '(let ([proxy-ctc
            (make-contract
             #:name 'proxy-ctc
@@ -10937,6 +10943,7 @@ so that propagation occurs.
   
   ;; make sure unbound identifier exception is raised.
   (contract-error-test
+   'contract-error-test7
    #'(begin
        (eval '(module pos scheme/base
                 (require scheme/contract)
@@ -11345,6 +11352,7 @@ so that propagation occurs.
    3)
   
   (contract-error-test
+   'contract-error-test8
    #'(begin
        (eval '(module pce1-bug scheme/base
                 (require scheme/contract)
@@ -11356,6 +11364,7 @@ so that propagation occurs.
           (regexp-match #rx"the-defined-variable1: self-contract violation" (exn-message x)))))
   
   (contract-error-test
+   'contract-error-test9
    #'(begin
        (eval '(module pce2-bug scheme/base
                 (require scheme/contract)
@@ -11368,6 +11377,7 @@ so that propagation occurs.
           (regexp-match #rx"the-defined-variable2: contract violation" (exn-message x)))))
   
   (contract-error-test
+   'contract-error-test10
    #'(begin
        (eval '(module pce3-bug scheme/base
                 (require scheme/contract)
@@ -11380,6 +11390,7 @@ so that propagation occurs.
           (regexp-match #rx"the-defined-variable3" (exn-message x)))))
   
   (contract-error-test
+   'contract-error-test11
    #'(begin
        (eval '(module pce4-bug scheme/base
                 (require scheme/contract)
@@ -11392,6 +11403,7 @@ so that propagation occurs.
           (regexp-match #rx"^the-defined-variable4" (exn-message x)))))
 
   (contract-error-test
+   'contract-error-test12
    #'(begin
        (eval '(module pce5-bug scheme/base
                 (require scheme/contract)
@@ -11406,6 +11418,7 @@ so that propagation occurs.
           (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
   
   (contract-error-test
+   'contract-error-test13
    #'(begin
        (eval '(module pce6-bug scheme/base
                 (require scheme/contract)
@@ -11421,6 +11434,7 @@ so that propagation occurs.
           (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
   
   (contract-error-test
+   'contract-error-test14
    #'(begin
        (eval '(module pce7-bug scheme/base
                 (require scheme/contract)
@@ -11434,6 +11448,7 @@ so that propagation occurs.
           (regexp-match #rx"cannot set!" (exn-message x)))))
   
   (contract-error-test
+   'contract-error-test15
    #'(begin
        (eval '(module pce8-bug1 scheme/base
                 (require scheme/contract)
@@ -11445,6 +11460,7 @@ so that propagation occurs.
           (regexp-match #rx"pce8-bug" (exn-message x)))))
 
   (contract-error-test
+   'contract-error-test16
    #'(begin
        (eval '(module pce9-bug scheme
                 (define (f x) "wrong")
@@ -11455,9 +11471,10 @@ so that propagation occurs.
        (eval '(g 12)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"^g.*contract from pce9-bug" (exn-message x)))))
+          (regexp-match #rx"^g.*contract from: pce9-bug" (exn-message x)))))
   
   (contract-error-test
+   'contract-error-test17
    #'(begin
        (eval '(module pce10-bug scheme
                 (define (f x) "wrong")
@@ -11468,7 +11485,7 @@ so that propagation occurs.
        (eval '(g 'a)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"^g.*contract from pce10-bug" (exn-message x)))))
+          (regexp-match #rx"^g.*contract from: pce10-bug" (exn-message x)))))
    
   (contract-eval
    `(,test
@@ -11495,7 +11512,7 @@ so that propagation occurs.
 ;                                                            
 ;                                                            
 ;                                                            
-
+  
   (let ()
     ;; build-and-run : (listof (cons/c string[filename] (cons/c string[lang-line] (listof sexp[body-of-module]))) -> any
     ;; sets up the files named by 'test-case', dynamically requires the first one, deletes the files

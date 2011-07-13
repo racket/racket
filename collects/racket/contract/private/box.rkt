@@ -31,7 +31,7 @@
         [(dont-care) (void)])
       (when first-order?
         (unless (contract-first-order-passes? elem-ctc (unbox val))
-          (fail "expected <~s>, got ~v" (contract-name elem-ctc) val)))
+          (fail "expected: ~s, got ~v" (contract-name elem-ctc) val)))
       #t)))
 
 (define (box/c-first-order ctc)

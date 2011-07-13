@@ -22,7 +22,7 @@
                    (raise-blame-error
                     blame
                     val
-                    "expected <~s>, given: ~e"
+                    "expected: ~s, given: ~e"
                     (contract-name ctc)
                     val))))
      null
@@ -102,7 +102,7 @@
                       (raise-blame-error
                        blame
                        val
-                       "expected <~s>, given: ~e"
+                       "expected: ~s, given: ~e"
                        (contract-name ctc)
                        val)))
           (interleave-lifts

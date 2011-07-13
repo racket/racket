@@ -148,7 +148,7 @@
                           (raise-blame-error
                            blame
                            val
-                           "expected <~s>, given: ~e"
+                           "expected: ~s, given: ~e"
                            (contract-name ctc)
                            val)))
               lifts3
@@ -186,7 +186,7 @@
                   (raise-blame-error
                    blame
                    val
-                   "expected <~s>, given: ~e"
+                   "expected: ~s, given: ~e"
                    (contract-name ctc)
                    val)))
              lifts3
@@ -268,7 +268,7 @@
                        (raise-blame-error
                         blame
                         val
-                        "expected <~s>, given: ~e"
+                        "expected: ~s, given: ~e"
                         (contract-name ctc)
                         val))))
          (append
@@ -329,7 +329,7 @@
                        (raise-blame-error
                         blame
                         val
-                        "expected <~s>, given: ~e"
+                        "expected: ~s, given: ~e"
                         (contract-name ctc)
                         val))))        
          (append lifts-hdp lifts-tlp) 

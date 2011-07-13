@@ -327,7 +327,7 @@
                  (raise-blame-error
                   blame
                   val
-                  "expected <~s>, given ~a, which isn't ~s"
+                  "expected: ~s, given ~a, which isn't ~s"
                   (contract-name ctc)
                   val
                   (contract-name (car ctcs))))])))))
@@ -565,7 +565,7 @@
               (λ (val)
                 (unless (predicate? val)
                   (raise-blame-error blame val
-                                     "expected <~a>, given: ~e"
+                                     "expected: ~s, given: ~e"
                                      'type-name val))
                 (check-all p-app val))))
           (cond
