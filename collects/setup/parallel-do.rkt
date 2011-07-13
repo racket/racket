@@ -58,88 +58,90 @@
   get-id
   get-out))
 
-(define worker% (class* object% (worker<%>)
-  (field [id 0]
-         [process-handle null]
-         [out null]
-         [in null]
-         [err null]
-         [module-path null]
-         [funcname null])
+(define worker% 
+  (class* object% (worker<%>)
+    (field [id 0]
+           [process-handle null]
+           [out null]
+           [in null]
+           [err null]
+           [module-path null]
+           [funcname null])
 
-  (define/public (spawn _id _module-path _funcname [initialmsg #f])
-    (set! module-path _module-path)
-    (set! funcname _funcname)
-    (define worker-cmdline-list (list (current-executable-path) "-X" (path->string (current-collects-path)) "-e" "(eval(read))"))
-    (define dynamic-require-cmd `((dynamic-require (string->path ,module-path) (quote ,funcname)) #f))
-    (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
-      (set! id _id)
-      (set! process-handle _process-handle)
-      (set! out _out)
-      (set! in _in)
-      (set! err _err)
-      (send/msg dynamic-require-cmd)
-      (when initialmsg (send/msg (s-exp->fasl (serialize (initialmsg id)))))))
-  (define/public (send/msg msg) 
-    (with-handlers ([exn:fail?
-      (lambda (x)
-          (eprintf "While sending message to parallel-do worker: ~a ~a\n" id (exn-message x))
-          (exit 1))])
-    (DEBUG_COMM (eprintf "CSENDING ~v ~v\n" id msg))
-    (write msg in) (flush-output in)))
-  (define/public (recv/msg)
-    (with-handlers ([exn:fail?
-      (lambda (x)
-          (eprintf "While receiving message from parallel-do worker ~a ~a\n" id (exn-message x))
-          (exit 1))])
-    (define r (read out))
-    (DEBUG_COMM (eprintf "CRECEIVNG ~v ~v\n" id r))
-    r))
-  (define/public (read-all) (port->string out))
-  (define/public (get-id) id)
-  (define/public (get-out) out)
-  (define/public (kill)
-    (DEBUG_COMM (eprintf "KILLING WORKER ~a\n" id))
-    (close-output-port in)
-    (close-input-port out)
-    (subprocess-kill process-handle #t))
-  (define/public (break) (kill))
-  (define/public (kill/respawn worker-cmdline-list [initialmsg #f])
-    (kill)
-    (spawn id module-path funcname [initialmsg #f]))
-  (define/public (wait) (subprocess-wait process-handle))
-  (super-new)))
+    (define/public (spawn _id _module-path _funcname [initialmsg #f])
+      (set! module-path _module-path)
+      (set! funcname _funcname)
+      (define worker-cmdline-list (list (current-executable-path) "-X" (path->string (current-collects-path)) "-e" "(eval(read))"))
+      (define dynamic-require-cmd `((dynamic-require (string->path ,module-path) (quote ,funcname)) #f))
+      (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
+        (set! id _id)
+        (set! process-handle _process-handle)
+        (set! out _out)
+        (set! in _in)
+        (set! err _err)
+        (send/msg dynamic-require-cmd)
+        (when initialmsg (send/msg (s-exp->fasl (serialize (initialmsg id)))))))
+    (define/public (send/msg msg) 
+      (with-handlers ([exn:fail?
+        (lambda (x)
+            (eprintf "While sending message to parallel-do worker: ~a ~a\n" id (exn-message x))
+            (exit 1))])
+      (DEBUG_COMM (eprintf "CSENDING ~v ~v\n" id msg))
+      (write msg in) (flush-output in)))
+    (define/public (recv/msg)
+      (with-handlers ([exn:fail?
+        (lambda (x)
+            (eprintf "While receiving message from parallel-do worker ~a ~a\n" id (exn-message x))
+            (exit 1))])
+      (define r (read out))
+      (DEBUG_COMM (eprintf "CRECEIVNG ~v ~v\n" id r))
+      r))
+    (define/public (read-all) (port->string out))
+    (define/public (get-id) id)
+    (define/public (get-out) out)
+    (define/public (kill)
+      (DEBUG_COMM (eprintf "KILLING WORKER ~a\n" id))
+      (close-output-port in)
+      (close-input-port out)
+      (subprocess-kill process-handle #t))
+    (define/public (break) (kill))
+    (define/public (kill/respawn worker-cmdline-list [initialmsg #f])
+      (kill)
+      (spawn id module-path funcname [initialmsg #f]))
+    (define/public (wait) (subprocess-wait process-handle))
+    (super-new)))
 
-(define place-worker% (class* object% (worker<%>)
-  (init-field [id 0]              
-              [pl null])
-             
-  (define/public (spawn _id module-path funcname [initialmsg #f])
+(define place-worker% 
+  (class* object% (worker<%>)
+    (init-field [id 0]              
+                [pl null])
+               
+    (define/public (spawn _id module-path funcname [initialmsg #f])
       (set! id _id)
       (set! pl (dynamic-place (string->path module-path) funcname))
       (when initialmsg (send/msg (s-exp->fasl (serialize (initialmsg id))))))
-  (define/public (send/msg msg)
-    (DEBUG_COMM (eprintf "CSENDING ~v ~v\n" pl msg))
-    (place-channel-put pl msg))
-  (define/public (recv/msg)
-    (define r (place-channel-get pl))
-    (DEBUG_COMM (eprintf "CRECEIVNG ~v ~v\n" pl r))
-    r)
-  (define/public (read-all) "")
-  (define/public (get-id) id) 
-  (define/public (get-out) pl)
-  (define/public (kill) #f)
-  (define/public (break) (place-break pl))
-  (define/public (wait) (place-wait pl))
-  (super-new))) 
+    (define/public (send/msg msg)
+      (DEBUG_COMM (eprintf "CSENDING ~v ~v\n" pl msg))
+      (place-channel-put pl msg))
+    (define/public (recv/msg)
+      (define r (place-channel-get pl))
+      (DEBUG_COMM (eprintf "CRECEIVNG ~v ~v\n" pl r))
+      r)
+    (define/public (read-all) "")
+    (define/public (get-id) id) 
+    (define/public (get-out) pl)
+    (define/public (kill) #f)
+    (define/public (break) (place-break pl))
+    (define/public (wait) (place-wait pl))
+    (super-new))) 
 
 
-(define work-queue<%> (interface ()
-  get-job
-  work-done
-  has-jobs?
-  jobs-cnt
-  get-results))
+  (define work-queue<%> (interface ()
+    get-job
+    work-done
+    has-jobs?
+    jobs-cnt
+    get-results))
 
 (define/class/generics/provide worker<%>
   (wrkr/spawn spawn id worker-cmdline-list initialcode initialmsg)
@@ -260,25 +262,26 @@
             ;(printf " ~a" (add1 i)) (flush-output))(printf "\n")
             )]))))
 
-(define list-queue% (class* object% (work-queue<%>)
-  (init-field queue create-job-thunk success-thunk failure-thunk)
-  (field [results null])
+(define list-queue% 
+  (class* object% (work-queue<%>)
+    (init-field queue create-job-thunk success-thunk failure-thunk)
+    (field [results null])
 
-  (define/public (work-done work workerid msg)
-    (match msg
-      [(list (list 'DONE result) stdout stderr)
-        (set! results (cons (success-thunk work result stdout stderr) results))]
-      [(list (list 'ERROR errmsg) stdout stderr)
-        (failure-thunk work errmsg stdout stderr)]))
-  (define/public (get-job workerid)
-    (match queue
-      [(cons h t)
-        (set! queue t)
-        (values h (create-job-thunk h))]))
-  (define/public (has-jobs?) (not (null? queue)))
-  (define/public (get-results) (reverse results))
-  (define/public (jobs-cnt) (length queue))
-  (super-new)))
+    (define/public (work-done work workerid msg)
+      (match msg
+        [(list (list 'DONE result) stdout stderr)
+          (set! results (cons (success-thunk work result stdout stderr) results))]
+        [(list (list 'ERROR errmsg) stdout stderr)
+          (failure-thunk work errmsg stdout stderr)]))
+    (define/public (get-job workerid)
+      (match queue
+        [(cons h t)
+          (set! queue t)
+          (values h (create-job-thunk h))]))
+    (define/public (has-jobs?) (not (null? queue)))
+    (define/public (get-results) (reverse results))
+    (define/public (jobs-cnt) (length queue))
+    (super-new)))
 
 (define (list-queue list-of-work create-job-thunk job-success-thunk job-failure-thunk)
   (make-object list-queue% list-of-work create-job-thunk job-success-thunk job-failure-thunk))
