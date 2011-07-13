@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 (provide debug)
 
-(define-for-syntax verbose? #f)
+(define-for-syntax verbose? (getenv "HONU_DEBUG"))
 (define-syntax (debug stx)
   (if verbose?
     (syntax-case stx ()

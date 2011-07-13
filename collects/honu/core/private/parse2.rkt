@@ -63,7 +63,7 @@
   (define (do-parse stream precedence left current)
     (debug "parse ~a precedence ~a left ~a current ~a\n" stream precedence left current)
     (syntax-parse stream
-      [() #'(void)]
+      [() left]
       [(head rest ...)
        (cond
          [(honu-macro? #'head)
@@ -101,7 +101,7 @@
 
          )]))
 
-  (do-parse input 0 #f #f))
+  (do-parse input 0 #'(void) #'(void)))
 
 (define (parse2 forms)
   (debug "parse forms ~a\n" forms)

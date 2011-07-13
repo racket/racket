@@ -2,6 +2,8 @@
 
 (require 
   (prefix-in macro_ honu/core/private/macro2)
+  (rename-in honu/core/private/honu2
+             [honu-function honu_function])
   (rename-in honu/core/private/literals
              [honu-= =]
              [semicolon |;|])
@@ -33,3 +35,9 @@
 
 (fake-module-begin #hx(var x = 2;
                        print(x)))
+
+(let ()
+  (fake-module-begin #hx(honu_function test(x){
+                                       print(x)
+                                       }))
+  (test 5))
