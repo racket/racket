@@ -36,7 +36,7 @@
 (define (log-pair-missed-opt stx irritant)
   (log-missed-optimization
    "car/cdr on a potentially empty list"
-   "According to its type, the circled list could be empty. Access to it cannot be safely optimized. To fix this, restrict the type to non-empty lists, maybe by wrapping this expression in a check for non-emptiness."
+   "According to its type, the highlighted list could be empty. Access to it cannot be safely optimized. To fix this, restrict the type to non-empty lists, maybe by wrapping this expression in a check for non-emptiness."
    stx irritant))
 
 (define pair-opt-msg "Pair check elimination.")
