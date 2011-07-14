@@ -121,21 +121,25 @@
                     ;; use cases for computing exact intermediate results, then converting them to
                     ;; floats at the end.
                     (when (or safe-to-opt? missed-optimization?)
-                      (for ([subexpr (in-list (syntax->list #'(f1 f2 fs ...)))]
-                            #:when (or (in-real-layer? subexpr)
-                                       (in-rational-layer? subexpr)))
-                        (syntax-parse subexpr
-                          ;; Only warn about subexpressions that actually perform exact arithmetic.
-                          ;; There's not much point in warning about literals/variables that will
-                          ;; be coerced anyway, or about things like:
-                          ;; (vector-ref vector-of-rationals x)
-                          ;; which don't perform arithmetic despite returning numbers.
-                          [e:arith-expr
-                           (log-missed-optimization
-                            "exact ops inside float expr"
-                            "This expression has a Float type, but the highlighted subexpression(s) use exact arithmetic. The extra precision of the exact arithmetic will be lost. Using Float types in these subexpression(s) may result in performance gains without significant precision loss."
-                            this-syntax subexpr)]
-                          [_ #f])))
+                      (define extra-precision-subexprs
+                        (filter
+                         values
+                         (for/list ([subexpr (in-list (syntax->list #'(f1 f2 fs ...)))]
+                                    #:when (or (in-real-layer? subexpr)
+                                               (in-rational-layer? subexpr)))
+                           (syntax-parse subexpr
+                             ;; Only warn about subexpressions that actually perform exact arithmetic.
+                             ;; There's not much point in warning about literals/variables that will
+                             ;; be coerced anyway, or about things like:
+                             ;; (vector-ref vector-of-rationals x)
+                             ;; which don't perform arithmetic despite returning numbers.
+                             [e:arith-expr #'e]
+                             [_ #f]))))
+                      (when (not (null? extra-precision-subexprs))
+                        (log-missed-optimization
+                         "exact ops inside float expr"
+                         "This expression has a Float type, but the highlighted subexpression(s) use exact arithmetic. The extra precision of the exact arithmetic will be lost. Using Float types in these subexpression(s) may result in performance gains without significant precision loss."
+                         this-syntax extra-precision-subexprs)))
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "binary float" float-opt-msg this-syntax)
