@@ -60,6 +60,13 @@
                (map (loop init-line!) (syntax->list c))
                (printf ")")
                (set! col (+ col 1))]
+              [(vector? (syntax-e c))
+               (advance c init-line!)
+               (printf "#(")
+               (set! col (+ col 2))
+               (map (loop init-line!) (vector->list (syntax-e c)))
+               (printf ")")
+               (set! col (+ col 1))]
               [else
                (advance c init-line!)
                (let ([s (format "~s" (syntax-e c))])
