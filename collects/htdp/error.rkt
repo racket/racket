@@ -13,6 +13,23 @@
 (define (natural? w)
   (and (number? w) (integer? w) (>= w 0)))
 
+; starts-with-vowel? : string -> boolean
+(define (starts-with-vowel? s)
+  (and
+   (not (string=? s ""))
+   (member (string-ref s 0) (list #\a #\e #\i #\o #\u))))
+
+; add-article : anything -> string
+; (add-article 'color) should be "a color"
+; (add-article 'acronym) should be "an acronym"
+(define (add-article thing)
+  (let ((s (format "~a" thing)))
+    (string-append
+     (if (starts-with-vowel? s)
+         "an "
+         "a ")
+     s)))
+
 ;; (_ -> Boolean) (listof X) -> (union X false)
 (define (find-non pred? l)
   (let ([r (filter (compose not pred?) l)])
@@ -81,7 +98,8 @@
 (define (check-result pname pred? expected given . other-given)
   (if (pred? given)
       given
-      (tp-error pname "is expected to return a ~a, but it returned ~v" expected 
+      (tp-error pname "is expected to return ~a, but it returned ~v" 
+                (add-article expected) 
                 (if (pair? other-given)
                     (car other-given)
                     given))))
@@ -114,8 +132,8 @@
 ;; check-arg : sym bool str (or/c str non-negative-integer) TST -> void
 (define (check-arg pname condition expected arg-posn given)
   (unless condition
-    (tp-error pname "expects a ~a as ~a argument, given ~e"
-              expected 
+    (tp-error pname "expects ~a as ~a argument, given ~e"
+              (add-article expected) 
               (spell-out arg-posn)
               given)))
 
