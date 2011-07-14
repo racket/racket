@@ -460,7 +460,9 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 (define-syntax (honu-unparsed-begin stx)
   (emit-remark "Honu unparsed begin!" stx)
   (debug "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))
-  (honu-compile (honu-expand (stx-cdr stx))))
+  (define expanded (honu-expand (stx-cdr stx)))
+  (debug "expanded ~a\n" expanded)
+  expanded)
 
 (define-syntax (#%dynamic-honu-module-begin stx)
   (syntax-case stx ()

@@ -45,6 +45,12 @@
                                        }))
   (test 5))
 
+(let ()
+  (fake-module-begin #hx(honu_function test(x){
+                                       print(x)
+                                       }
+                         test(2))))
+
 
 (let ()
   (fake-module-begin #hx(1 honu_plus 1)))

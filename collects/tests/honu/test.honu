@@ -1,0 +1,28 @@
+#lang honu
+
+/*
+function test(t, a, b){
+  if (a != b){
+    display(t);
+    display(" failed!");
+    newline();
+    display("Got ");
+    display(a);
+    display(". Expected ");
+    display(b);
+    newline();
+  }
+}
+*/
+
+function test1(){
+  print(5)
+/*
+  var x = 3;
+  const y = 2;
+  test("x = 3", x, 3);
+  test("y = 2", y, 2);
+  */
+}
+
+test1()

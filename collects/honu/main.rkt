@@ -11,6 +11,7 @@
     ...))
 
 (provide-module "core/main.rkt"
-                "private/struct.honu"
-                "private/function.honu"
-                "private/common.honu")
+                ;;"private/struct.honu"
+                ;;"private/function.honu"
+                ;;"private/common.honu"
+                )

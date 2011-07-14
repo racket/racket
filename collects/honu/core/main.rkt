@@ -1,5 +1,19 @@
 #lang racket/base
 
+(require "private/honu-typed-scheme.rkt"
+         "private/honu2.rkt"
+         (prefix-in literal: "private/literals.rkt"))
+
+(provide #%top
+         #%datum
+         print
+         (rename-out [#%dynamic-honu-module-begin #%module-begin]
+                     [honu-function function]
+                     [literal:#%braces #%braces]
+                     [literal:#%parens #%parens])
+         )
+
+#|
 (require (for-syntax racket/base))
 (require (for-meta 2 racket/base))
 (require racket/class)
@@ -157,3 +171,4 @@
            #;
            (scheme-syntax scheme:syntax)
            ))
+|#

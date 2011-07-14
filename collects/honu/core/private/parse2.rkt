@@ -105,7 +105,10 @@
                           ((syntax-local-value #'head) #'(head rest ...) #f)])
               (with-syntax ([parsed parsed]
                             [rest unparsed])
-                (do-parse #'rest precedence (lambda (x) x) #'parsed)
+                (do-parse #'rest precedence (lambda (x)
+                                              (with-syntax ([x x])
+                                                #'(begin parsed x)))
+                          (left current))
                 #;
                 #'(splicing-let-syntax ([more-parsing (lambda (stx)
                                                         (do-parse (stx-cdr stx)
@@ -144,15 +147,18 @@
                                      precedence left #'x)]
                  [(#%parens args ...)
                   (debug "function call ~a\n" left)
-                  (with-syntax ([current current])
-                    #'(current args ...))
+                  (do-parse #'(rest ...)
+                            0
+                            (lambda (x) x)
+                            (left (with-syntax ([current current])
+                                    #'(current args ...))))
                   #;
                   (error 'parse "function call")]
                  [else (error 'what "dont know ~a" #'head)])]
 
          )]))
 
-  (do-parse input 0 (lambda (x) x) #f))
+  (do-parse input 0 (lambda (x) x) #'(void)))
 
 (define (parse2 forms)
   (debug "parse forms ~a\n" forms)
