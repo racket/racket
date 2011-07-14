@@ -936,14 +936,20 @@ the @racket[point-count] argument determines how many points the star has.
 Placing images into scenes is particularly useful when building worlds
 and universes using @racket[2htdp/universe].
 
-@defproc[(empty-scene [width (and/c real? (not/c negative?))]
-                      [height (and/c real? (not/c negative?))])
-         image?]{
+@defproc*[([(empty-scene [width (and/c real? (not/c negative?))]
+	                 [height (and/c real? (not/c negative?))])
+	    image?]
+            [(empty-scene [width (and/c real? (not/c negative?))]
+                          [height (and/c real? (not/c negative?))]
+		          [color image-color?])
+            image?])]{
 
-Creates an empty scene, i.e., a rectangle with a black outline.
+Creates an empty scene, i.e., a white rectangle with a black outline.
 
 @image-examples[(empty-scene 160 90)]
-                                                                 
+
+The three-argument version creates a rectangle of the specified color with
+a black outline. 
 }
 
 @defproc[(place-image [image image?] [x real?] [y real?] [scene image?]) image?]{
