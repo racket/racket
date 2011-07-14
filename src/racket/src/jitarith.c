@@ -1085,8 +1085,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           va = JIT_R0;
         } else {
           if (simple_rand) {
-            pos = mz_remap(SCHEME_LOCAL_POS(rand));
-            mz_rs_ldxi(JIT_R1, pos);
+            scheme_generate(rand, jitter, 0, 0, 0, JIT_R1, NULL);
           }
           if (!unsafe_fx && !unsafe_fl) {
             /* check both fixnum bits at once by ANDing into R2: */

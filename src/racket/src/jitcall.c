@@ -1639,9 +1639,9 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
                && (!direct_self || !is_tail || no_call || (i + 1 < num_rands))
                && !inline_direct_args) {
       int r0;
-      r0 = (mz_CURRENT_R0_STATUS_VALID() ? mz_CURRENT_R0_STATUS() : -1);
+      r0 = mz_CURRENT_REG_STATUS_VALID();
       mz_rs_stxi(i + offset, JIT_R0);
-      if (r0 > -1) mz_RECORD_R0_STATUS(r0);
+      mz_SET_REG_STATUS_VALID(r0);
     }
   }
   /* not sync'd... */

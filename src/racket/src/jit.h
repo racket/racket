@@ -310,7 +310,7 @@ typedef struct {
   Scheme_Native_Closure *nc; /* for extract_globals and extract_closure_local, only */
   Scheme_Closure_Data *self_data;
   void *status_at_ptr;
-  int reg_status;
+  int r0_status, r1_status;
   void *patch_depth;
   int rs_virtual_offset;
   int unbox, unbox_depth;
@@ -340,10 +340,11 @@ typedef struct {
   Branch_Info_Addr *addrs;
 } Branch_Info;
 
-#define mz_RECORD_R0_STATUS(s) (jitter->status_at_ptr = _jit.x.pc, jitter->reg_status = (s))
-#define mz_CURRENT_R0_STATUS_VALID() (jitter->status_at_ptr == _jit.x.pc)
-#define mz_CURRENT_R0_STATUS() (jitter->reg_status)
-#define mz_CLEAR_R0_STATUS() (jitter->status_at_ptr = 0)
+#define mz_CURRENT_REG_STATUS_VALID() (jitter->status_at_ptr == _jit.x.pc)
+#define mz_SET_REG_STATUS_VALID(v) (jitter->status_at_ptr = (v ? _jit.x.pc : 0))
+
+#define mz_SET_R0_STATUS_VALID(v) (jitter->status_at_ptr = (v ? _jit.x.pc : 0), \
+                                   jitter->r1_status = -1)
 
 /* If JIT_THREAD_LOCAL is defined, then access to global variables
    goes through a thread_local_pointers table. Call
@@ -511,8 +512,12 @@ static void *top4;
    register. */
 
 #if 1
-# define mz_rs_dec(n) (((jitter->reg_status >= 0) ? jitter->reg_status += (n) : 0), jitter->rs_virtual_offset -= (n))
-# define mz_rs_inc(n) (jitter->reg_status -= (n), jitter->rs_virtual_offset += (n))
+# define mz_rs_dec(n) (((jitter->r0_status >= 0) ? jitter->r0_status += (n) : 0), \
+                       ((jitter->r1_status >= 0) ? jitter->r1_status += (n) : 0), \
+                       jitter->rs_virtual_offset -= (n))
+# define mz_rs_inc(n) (jitter->r0_status -= (n), \
+                       jitter->r1_status -= (n), \
+                       jitter->rs_virtual_offset += (n))
 # define mz_rs_ldxi(reg, n) jit_ldxi_p(reg, JIT_RUNSTACK, WORDS_TO_BYTES(((n) + jitter->rs_virtual_offset)))
 # define mz_rs_ldr(reg) mz_rs_ldxi(reg, 0)
 # define mz_rs_stxi(n, reg) jit_stxi_p(WORDS_TO_BYTES(((n) + jitter->rs_virtual_offset)), JIT_RUNSTACK, reg)

@@ -1340,7 +1340,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
     CHECK_LIMIT();
     scheme_mz_flostack_restore(jitter, flostack, flostack_pos, !for_branch, 1);
     FOR_LOG(--jitter->log_depth);
-    /* mz_CLEAR_R0_STATUS(); --- not needed, since stack doesn't change */
+    /* mz_SET_REG_STATUS_VALID(0); --- not needed, since stack doesn't change */
     return v;
   }
 
@@ -1429,7 +1429,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
     }
 
     jitter->pushed_marks = save_pushed_marks;
-    mz_CLEAR_R0_STATUS();
+    mz_SET_REG_STATUS_VALID(0);
 
     END_JIT_DATA(21);
   }
@@ -1654,7 +1654,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
     scheme_signal_error("internal error: self position moved across branch");
 
   /* False branch */
-  mz_CLEAR_R0_STATUS();
+  mz_SET_REG_STATUS_VALID(0);
   scheme_mz_runstack_saved(jitter);
   flostack = scheme_mz_flostack_save(jitter, &flostack_pos);
   __START_SHORT_JUMPS__(then_short_ok);
@@ -1718,7 +1718,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   if (nsrs1)
     jitter->need_set_rs = 1;
 
-  mz_CLEAR_R0_STATUS();
+  mz_SET_REG_STATUS_VALID(0);
 
   return 1;
 }
@@ -1820,19 +1820,44 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
       LOG_IT(("local %d [%d]\n", pos, SCHEME_LOCAL_FLAGS(obj)));
       if (!result_ignored && (!flonum || !jitter->unbox)) {
-        int old_r0 = -1;
-        if (mz_CURRENT_R0_STATUS_VALID()) old_r0 = mz_CURRENT_R0_STATUS();
-        if (pos != old_r0) {
+        int valid, old_r0 = -1, old_r1 = -1;
+
+        if (mz_CURRENT_REG_STATUS_VALID()) {
+          valid = 1;
+          old_r0 = jitter->r0_status;
+          old_r1 = jitter->r1_status;
+        } else
+          valid = 0;
+
+        if (pos == old_r0) {
+          if (target != JIT_R0) {
+            jit_movr_p(target, JIT_R0);
+            if (target == JIT_R1)
+              jitter->r1_status = pos;
+            mz_SET_REG_STATUS_VALID(1);
+          }
+        } else if (pos == old_r1) {
+          if (target != JIT_R1) {
+            jit_movr_p(target, JIT_R1);
+            if (target == JIT_R0)
+              jitter->r1_status = pos;
+            mz_SET_REG_STATUS_VALID(1);
+          }
+        } else {
           mz_rs_ldxi(target, pos);
           VALIDATE_RESULT(target);
-          if (target == JIT_R0)
-            mz_RECORD_R0_STATUS(pos);
-          else {
-            /* R0 is unchanged */
-            mz_RECORD_R0_STATUS(old_r0);
+          if (target == JIT_R0) {
+            jitter->r0_status = pos;
+            jitter->r1_status = old_r1;
+            mz_SET_REG_STATUS_VALID(1);
+          } else if (target == JIT_R1) {
+            jitter->r1_status = pos;
+            jitter->r0_status = old_r0;
+            mz_SET_REG_STATUS_VALID(1);
+          } else if (valid) {
+            /* R0 and R1 are unchanged */
+            mz_SET_REG_STATUS_VALID(1);
           }
-        } else if (target != JIT_R0) {
-          jit_movr_p(target, JIT_R0);
         }
       }
       if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_CLEAR_ON_READ) {
@@ -2721,7 +2746,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       if (!unused) {
         mz_rs_str(JIT_R0);
-        mz_RECORD_R0_STATUS(0);
+        jitter->r0_status = 0;
+        jitter->r1_status = -1;
+        mz_SET_REG_STATUS_VALID(1);
       }
       
       END_JIT_DATA(17);

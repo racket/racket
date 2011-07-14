@@ -177,7 +177,7 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
 				      Branch_Info *for_branch, int branch_short, int need_sync)
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *ref5;
-  int int_ok, r0_set, r0;
+  int int_ok, reg_valid;
 
   int_ok = ((lo_ty <= scheme_integer_type) && (scheme_integer_type <= hi_ty));
 
@@ -194,13 +194,9 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
 
   __START_SHORT_JUMPS__(branch_short);
 
-  r0_set = 0;
-  r0 = 0;
+  reg_valid = 0;
   if (for_branch) {
-    if (mz_CURRENT_R0_STATUS_VALID()) {
-      r0_set = 1;
-      r0 = mz_CURRENT_R0_STATUS();
-    }
+    reg_valid = mz_CURRENT_REG_STATUS_VALID();
     scheme_prepare_branch_jump(jitter, for_branch);
     CHECK_LIMIT();
   }
@@ -256,9 +252,7 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
 
     /* In case true is a fall-through, note that the test 
        didn't disturb R0: */
-    if (r0_set) {
-      mz_RECORD_R0_STATUS(r0);
-    }
+    mz_SET_R0_STATUS_VALID(reg_valid);
 
     scheme_branch_for_true(jitter, for_branch);
     CHECK_LIMIT();
@@ -1261,6 +1255,7 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 
       scheme_generate_non_tail(rand1, jitter, 0, 1, 0); /* no sync... */
       CHECK_LIMIT();
+
       jit_movr_p(JIT_R1, JIT_R0);
 
       scheme_generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
@@ -1268,9 +1263,18 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 
       if (order_matters) {
         /* Swap arguments: */
+        int reg_status;
+        reg_status = mz_CURRENT_REG_STATUS_VALID();
         jit_movr_p(JIT_R2, JIT_R0);
         jit_movr_p(JIT_R0, JIT_R1);
         jit_movr_p(JIT_R1, JIT_R2);
+        if (reg_status) {
+          int pos;
+          pos = jitter->r0_status;
+          jitter->r0_status = jitter->r1_status;
+          jitter->r1_status = pos;
+          mz_SET_REG_STATUS_VALID(1);
+        }
       } else
         direction = -1;
 
@@ -1673,7 +1677,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
     if (SCHEME_TYPE(a1) > _scheme_values_types_) {
       /* Compare to constant: */
-      int retptr;
+      int retptr, reg_status;
 
       mz_runstack_skipped(jitter, 2);
 
@@ -1697,6 +1701,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         scheme_prepare_branch_jump(jitter, for_branch);
         CHECK_LIMIT();
       }
+
+      reg_status = mz_CURRENT_REG_STATUS_VALID();
       
 #ifdef JIT_PRECISE_GC
       if (retptr) {
@@ -1707,6 +1713,14 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	ref = mz_bnei_p(jit_forward(), JIT_R0, a1);
 
       if (for_branch) {
+        /* In case true is a fall-through, note that the test 
+           didn't disturb R0 (and maybe not R1): */
+#ifdef JIT_PRECISE_GC
+        if (retptr)
+          mz_SET_R0_STATUS_VALID(reg_status);
+        else
+#endif
+          mz_SET_REG_STATUS_VALID(reg_status);
         scheme_add_branch_false(for_branch, ref);
         scheme_branch_for_true(jitter, for_branch);
         CHECK_LIMIT();
