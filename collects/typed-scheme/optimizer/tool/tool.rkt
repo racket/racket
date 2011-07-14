@@ -46,7 +46,7 @@
       (unless (= max-badness 0) ; no missed opts, color table code would error
         (set! color-table (make-color-table max-badness)))
       (define new-highlights (map highlight-entry report))
-      (set! highlights (append (apply append new-highlights) highlights)))
+      (set! highlights (append new-highlights highlights)))
 
     (define (clear-highlights)
       (for ([h (in-list highlights)])
