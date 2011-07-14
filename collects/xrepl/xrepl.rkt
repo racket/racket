@@ -647,7 +647,8 @@
    "optional, without it you go back to the toplevel.  A module name can"
    "specify an existing file as with the ,require command.  (Note that this"
    "can be used even in languages that don't have the `enter!' binding.)"]
-  (eval-sexpr-for-user `(,(enter!-id) ,(getarg 'modspec))))
+  (eval-sexpr-for-user `(,(enter!-id) ,(getarg 'modspec)
+                                      #:dont-re-require-enter)))
 
 (defcommand (toplevel top) #f
   "go back to the toplevel"
