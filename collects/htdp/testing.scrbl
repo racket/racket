@@ -1,25 +1,26 @@
 #lang scribble/doc
 
-@(require scribble/manual)
+@(require scribble/manual
+          (for-label test-engine/racket-tests))
 
 @title{Testing} 
 
 @; -----------------------------------------------------------------------------
-@defmodule[htdp/testing #:use-sources (test-engine/scheme-tests)]
+@defmodule[htdp/testing #:use-sources (test-engine/racket-tests)]
 
-The library re-exports the following identifiers from test-engine/scheme-tests:
+The library re-exports the following identifiers from test-engine/racket-tests:
 
- @racket[build-test-engine]
- @racket[builder]
- @racket[display-results]
- @racket[error-handler]
- @racket[exn:fail:wish]
- @racket[generate-report]
- @racket[get-test-engine]
- @racket[reset-tests]
- @racket[run-tests]
- @racket[scheme-test-data]
- @racket[signature-test-info%]
+@defproc[(build-test-engine) void?]
+@defproc[(builder) void?]
+@defproc[(display-results) void?]
+@defproc[(error-handler) void?]
+@defproc[(exn:fail:wish) void?]
+@defproc[(generate-report) void?]
+@defproc[(get-test-engine) void?]
+@defproc[(reset-tests) void?]
+@defproc[(run-tests) void?]
+@defproc[(scheme-test-data) void?]
+@defproc[(signature-test-info%) void?]
 
 
 @(require scribble/eval

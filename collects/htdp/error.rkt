@@ -114,7 +114,7 @@
 ;; check-arg : sym bool str (or/c str non-negative-integer) TST -> void
 (define (check-arg pname condition expected arg-posn given)
   (unless condition
-    (tp-error pname "expects a ~a as ~a argument, given: ~e"
+    (tp-error pname "expects a ~a as ~a argument, given ~e"
               expected 
               (spell-out arg-posn)
               given)))

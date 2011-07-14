@@ -1,6 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual scribble/eval)
+@(require scribble/manual scribble/eval
+          (for-label lang/prim lang/imageeq lang/posn racket/gui/base))
 @(define (htdp-ref s) @secref[#:doc '(lib "scribblings/htdp-langs/htdp-langs.scrbl") s])
 
 @title{HtDP Languages as Libraries}
@@ -72,7 +73,7 @@ libraries in legacy form. It provides the bindings of
 @defmodule[lang/plt-pretty-big]
 
 The @racketmodname[lang/plt-pretty-big] module extends
-@racket[lang/plt-pretty-big-text] with @racketmodname[scheme/gui/base]
+@racket[lang/plt-pretty-big-text] with @racketmodname[racket/gui/base]
 and @racketmodname[lang/imageeq].  This language corresponds to the
 @onscreen{Pretty Big} legacy language in DrRacket.
 

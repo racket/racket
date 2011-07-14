@@ -1,6 +1,8 @@
 #lang scribble/doc
 
-@(require scribble/manual)
+@(require scribble/manual
+          (for-label htdp/error)
+          )
 
 @title[#:tag "error-reporting"]{Error Reporting Functions} 
 

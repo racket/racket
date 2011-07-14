@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require test-engine/scheme-tests)
+(require test-engine/racket-tests)
 
 (define (generate-report) (test)#;(void))
 
-(provide (all-from-out test-engine/scheme-tests)
+(provide (all-from-out test-engine/racket-tests)
          generate-report)
