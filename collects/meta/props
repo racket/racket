@@ -2069,6 +2069,7 @@ path/s is either such a string or a list of them.
 "collects/xml/text-box-tool.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/xml/text-snipclass.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/xml/xml-snipclass.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/xrepl" responsible (eli)
 "doc/release-notes/COPYING-libscheme.txt" responsible (mflatt)
 "doc/release-notes/COPYING.txt" responsible (mflatt)
 "doc/release-notes/drracket" responsible (robby)
