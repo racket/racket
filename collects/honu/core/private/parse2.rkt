@@ -68,11 +68,34 @@
   (and (identifier? what)
        ((literal-set->predicate check) what)))
 
+;; 1 + 1
+;; ^
+;;  left: identity
+;;  current: 1
+;; 1 + 1
+;;   ^
+;;  left: (lambda (x) (+ 1 x))
+;;  current: #f
+;; 1 + 1
+;;     ^
+;;  left: (lambda (x) (+ 1 x))
+;;  current: 1
+;;
+;; 1 + 1 * 2
+;;       ^
+;;  left: (lambda (x) (left (* 1 x)))
+;;  current: #f
+;;
+;; 1 + 1 * 2
+;;         ^
+;;  left: (lambda (x) (left (* 1 x)))
+;;  current: 2
+
 (define (parse input)
   (define (do-parse stream precedence left current)
     (debug "parse ~a precedence ~a left ~a current ~a\n" stream precedence left current)
     (syntax-parse stream
-      [() left]
+      [() (left current)]
       [(head rest ...)
        (cond
          [(honu-macro? #'head)
@@ -82,7 +105,7 @@
                           ((syntax-local-value #'head) #'(head rest ...) #f)])
               (with-syntax ([parsed parsed]
                             [rest unparsed])
-                (do-parse #'rest precedence #'parsed current)
+                (do-parse #'rest precedence (lambda (x) x) #'parsed)
                 #;
                 #'(splicing-let-syntax ([more-parsing (lambda (stx)
                                                         (do-parse (stx-cdr stx)
@@ -94,39 +117,42 @@
           (define new-precedence (transformer:honu-operator-ref (syntax-local-value #'head) 0))
           (define operator-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 1))
           (define association 'left)
-          (define check
+          (define higher
             (case association
               [(left) >]
               [(right) >=]))
           (printf "new precedence ~a\n" new-precedence)
-          (if (check new-precedence precedence)
+          (if (higher new-precedence precedence)
             (do-parse #'(rest ...) new-precedence
                       (lambda (stuff)
-                        (operator-transformer left stuff))
-                      current)
-            (left current))]
+                        (left (operator-transformer current stuff)))
+                      #f)
+            (do-parse #'(head rest ...)
+                      0
+                      (lambda (x) x)
+                      (left current)))]
          [(semicolon? #'head)
-          (with-syntax ([so-far left])
+          (with-syntax ([so-far (left current)])
             #'(splicing-let-syntax ([more (lambda (stx)
                                             (parse #'(rest ...)))])
                 so-far (more)))]
          [(identifier? #'head)
-          (do-parse #'(rest ...) precedence #'head current)]
+          (do-parse #'(rest ...) precedence left #'head)]
          [else (syntax-parse #'head
                  #:literal-sets (cruft)
                  [x:number (do-parse #'(rest ...)
-                                     precedence (left #'x) current)]
+                                     precedence left #'x)]
                  [(#%parens args ...)
                   (debug "function call ~a\n" left)
-                  (with-syntax ([left left])
-                    #'(left args ...))
+                  (with-syntax ([current current])
+                    #'(current args ...))
                   #;
                   (error 'parse "function call")]
                  [else (error 'what "dont know ~a" #'head)])]
 
          )]))
 
-  (do-parse input 0 (lambda (x) x) #'(void)))
+  (do-parse input 0 (lambda (x) x) #f))
 
 (define (parse2 forms)
   (debug "parse forms ~a\n" forms)

@@ -4,7 +4,9 @@
   (prefix-in macro_ honu/core/private/macro2)
   (rename-in honu/core/private/honu2
              [honu-function honu_function]
-             [honu-+ honu_plus])
+             [honu-+ honu_plus]
+             [honu-* honu_times]
+             [honu-- honu_minus])
   (rename-in honu/core/private/literals
              [honu-= =]
              [semicolon |;|])
@@ -46,3 +48,9 @@
 
 (let ()
   (fake-module-begin #hx(1 honu_plus 1)))
+
+(let ()
+  (fake-module-begin #hx(1 honu_plus 1 honu_minus 4)))
+
+(let ()
+  (fake-module-begin #hx(1 honu_plus 1 honu_minus 4 honu_times 8)))

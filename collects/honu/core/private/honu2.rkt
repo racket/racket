@@ -22,9 +22,27 @@
                (do-parse)))
          #'rest)])))
 
+(define-syntax-rule (define-binary-operator name precedence operator)
+                    (begin
+                      (provide name)
+                      (define-honu-operator/syntax name precedence
+                                                   (lambda (left right)
+                                                     (with-syntax ([left left]
+                                                                   [right right])
+                                                       #'(operator left right))))))
+
 (provide honu-+)
 (define-honu-operator/syntax honu-+ 1
                              (lambda (left right)
                                (with-syntax ([left left]
                                              [right right])
                                  #'(+ left right))))
+
+(provide honu--)
+(define-honu-operator/syntax honu-- 1
+                             (lambda (left right)
+                               (with-syntax ([left left]
+                                             [right right])
+                                 #'(- left right))))
+
+(define-binary-operator honu-* 2 *)
