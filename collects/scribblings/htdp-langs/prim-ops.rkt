@@ -5,7 +5,7 @@
          scribble/struct
          scribble/racket
          racket/list
-         scheme/pretty
+         racket/pretty
          syntax/docprovide
          (for-syntax racket/base)
          )
@@ -33,7 +33,7 @@
 (define (typeset-type type)
   (let-values ([(in out) (make-pipe)])
     (parameterize ([pretty-print-columns 50])
-      (pretty-print type out))
+      (pretty-write type out))
     (port-count-lines! in)
     (read-syntax #f in)))
 
