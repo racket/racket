@@ -2,7 +2,7 @@
 
 run() {
   exe="gracket"
-  if [ "x$1" = "x-t" ]; then exe="racket"; fi
+  if [ "x$1" = "x-t" ]; then exe="racket"; shift; fi
   "$exe" "$1"
   echo "done:--- $1 ---"
   echo ""
