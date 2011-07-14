@@ -40,3 +40,4 @@ Additional @racket[flag]s can customize aspects of @racket[enter!]:
   again.  In some cases this might not be desirable (e.g., in a tool
   that uses @racket[racket/enter])---use a
   @racket[#:dont-re-require-enter] to diable this.}]
+}
