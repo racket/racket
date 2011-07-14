@@ -253,9 +253,9 @@
      (check-arg fn-name (and (integer? arg) (<= 0 arg 255)) 
                 'integer\ between\ 0\ and\ 255 i arg)
      arg]
-    [(real-0-255)
+    [(int-0-255)
      (check-arg fn-name (and (integer? arg) (<= 0 arg 255)) 
-                'real\ number\ between\ 0\ and\ 255 i arg)
+                'integer\ between\ 0\ and\ 255 i arg)
      arg]
     
     [(pen-style)
