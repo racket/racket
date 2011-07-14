@@ -67,12 +67,13 @@
   }
 
   @defmethod*[(((tabify (start-pos exact-integer?
-                                   (send this text get-start-position)))
+                                   (send this get-start-position)))
                 void?))]{
     Tabs the line containing by @racket[start-pos]
   }
 
-  @defmethod*[(((tabify-selection (start exact-integer?) (end exact-integer?))
+  @defmethod*[(((tabify-selection (start exact-integer? (send this get-start-position))
+                                  (end exact-integer? (send this get-end-position)))
                 void?))]{
     Sets the tabbing for the lines containing positions @racket[start]
     through @racket[end].

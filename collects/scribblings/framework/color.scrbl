@@ -207,7 +207,7 @@
     be inserted, even if it is not the right kind.  If @racket[flash?] is true,
     the matching open parenthesis will be flashed.
   }
-  @defmethod*[(((classify-position (position exact-nonnegative-integer?)) symbol?))]{
+  @defmethod*[(((classify-position (position exact-nonnegative-integer?)) (or/c symbol? #f)))]{
 
     Return a symbol for the lexer-determined token type for the token that
     contains the item after @racket[position].
