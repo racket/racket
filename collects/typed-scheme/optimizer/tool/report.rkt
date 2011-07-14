@@ -85,9 +85,9 @@
          (=> unmatch)
          (if (< start2 end1) ; l in within prev
              ;; merge the two
-             (values (cons (merge-entries prev l) (cdr new-report))
-                     ;; we don't advance, since we merged
-                     prev)
+             (let ([merged (merge-entries prev l)])
+               (values (cons merged (cdr new-report))
+                       merged))
              (unmatch))]
         [(prev l) ; no overlap, just add to the list
          (values (cons l new-report) l)])))
