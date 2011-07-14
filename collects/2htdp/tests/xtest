@@ -1,43 +1,30 @@
-#!/bin/tcsh
+#!/bin/sh
 
-gracket bad-draw.rkt
-echo "done:--- bad-draw.rkt ---" echo ""
-racket batch-io.rkt 
-echo "done:--- batch-io.rkt  ---" echo ""
-gracket clause-once.rkt
-echo "done:--- clause-once.rkt ---" echo ""
-gracket full-scene-visible.rkt 
-echo "done:--- full-scene-visible.rkt  ---" echo ""
-gracket image-too-large.rkt
-echo "done:--- image-too-large.rkt  ---" echo ""
-gracket image-equality-performance-htdp.rkt 
-echo "done:--- image-equality-performance-htdp.rkt  ---" echo ""
-gracket image-equality-performance.rkt 
-echo "done:--- image-equality-performance.rkt  ---" echo ""
-gracket mouse-evt.rkt 
-echo "done:--- mouse-evt.rkt  ---" echo ""
-gracket on-tick-defined.rkt 
-echo "done:--- on-tick-defined.rkt  ---" echo ""
-gracket perform-robby.rkt 
-echo "done:--- perform-robby.rkt  ---" echo ""
-gracket profile-robby.rkt 
-echo "done:--- profile-robby.rkt  ---" echo ""
-gracket release.rkt
-echo "done:--- release.rkt ---" echo ""
-gracket stop.rkt 
-echo "done:--- stop.rkt  ---" echo ""
-gracket test-image.rkt 
-echo "done:--- test-image.rkt  ---" echo ""
-gracket ufo-rename.rkt 
-echo "done:--- ufo-rename.rkt  ---" echo ""
-gracket server-rename.rkt 
-echo "done:--- server-rename.rkt  ---" echo ""
-gracket world0-stops.rkt 
-echo "done:--- world0-stops.rkt  ---" echo ""
-gracket record.rkt 
-echo "done:--- record.rkt  ---" echo ""
-gracket record-stop-when.rkt 
-echo "done:--- record-stop-when.rkt  ---" echo ""
+run() {
+  exe="gracket"
+  if [ "x$1" = "x-t" ]; then exe="racket"; fi
+  "$exe" "$1"
+  echo "done:--- $1 ---"
+  echo ""
+}
 
-gracket stop-when-crash.rkt 
-echo "done:--- stop-when-crash.rkt  ---" echo ""
+run bad-draw.rkt
+run -t batch-io.rkt
+run clause-once.rkt
+run full-scene-visible.rkt
+run image-too-large.rkt
+run image-equality-performance-htdp.rkt
+run image-equality-performance.rkt
+run mouse-evt.rkt
+run on-tick-defined.rkt
+run perform-robby.rkt
+run profile-robby.rkt
+run release.rkt
+run stop.rkt
+run test-image.rkt
+run ufo-rename.rkt
+run server-rename.rkt
+run world0-stops.rkt
+run record.rkt
+run record-stop-when.rkt
+run stop-when-crash.rkt

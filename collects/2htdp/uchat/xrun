@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/bin/sh
 
-mred server.ss &
-mred chatter.ss -e"(run* 'go)" &
+gracket server.rkt &
+gracket chatter.rkt -e"(run* 'go)" &
