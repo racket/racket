@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/string racket/class racket/gui/base racket/match racket/port
-         framework
+         framework syntax/to-string
          "report.rkt"
          unstable/sequence unstable/pretty)
 
@@ -43,7 +43,7 @@
   ;; typeset the syntax as code
   (send syntax-text change-style tt-style-delta)
   (send syntax-text insert-port
-        (open-input-string (format "~a" (syntax->datum stx))))
+        (open-input-string (syntax->string #`(#,stx)))) ; takes a list of stxs
   ;; circle irritants, if necessary
   (when (missed-opt-report-entry? s)
     (for ([i (in-list (missed-opt-report-entry-irritants s))]
