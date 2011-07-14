@@ -16,13 +16,13 @@ function test(t, a, b){
 */
 
 function test1(){
-  print(5)
-/*
   var x = 3;
+/*
   const y = 2;
   test("x = 3", x, 3);
   test("y = 2", y, 2);
   */
+  print(x)
 }
 
 test1()

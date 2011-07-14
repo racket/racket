@@ -9,6 +9,9 @@
          print
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-function function]
+                     [honu-var var]
+                     [literal:honu-= =]
+                     [literal:semicolon |;|]
                      [literal:#%braces #%braces]
                      [literal:#%parens #%parens])
          )

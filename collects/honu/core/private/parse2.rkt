@@ -135,6 +135,13 @@
                       (lambda (x) x)
                       (left current)))]
          [(semicolon? #'head)
+          (do-parse #'(rest ...) 0
+                    (lambda (stuff)
+                      (with-syntax ([stuff stuff]
+                                    [current (left current)])
+                        #'(begin current stuff)))
+                    #'(void))
+         #;
           (with-syntax ([so-far (left current)])
             #'(splicing-let-syntax ([more (lambda (stx)
                                             (parse #'(rest ...)))])

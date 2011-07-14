@@ -47,6 +47,7 @@
 
 (let ()
   (fake-module-begin #hx(honu_function test(x){
+                                       print(x);
                                        print(x)
                                        }
                          test(2))))
