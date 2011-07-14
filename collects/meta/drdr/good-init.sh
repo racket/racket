@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/sh
+
 export PLTSTDERR="info"
 PLTROOT="/opt/plt/plt"
 LOGS="/opt/plt/logs"
@@ -19,7 +20,7 @@ kill_all() {
 
 run_loop () { # <basename> <kill?>
   while true; do
-    if [[ "x$2" = "xyes" ]]; then
+    if [ "x$2" = "xyes" ]; then
       echo "clearing unattached shm regions"
       ipcs -ma | awk '0 == $6 {print $2}' | xargs -n 1 ipcrm -m
     fi
@@ -31,7 +32,7 @@ run_loop () { # <basename> <kill?>
     wait "$!"
     echo "$1: died"
     rm "$LOGS/$1.pid"
-    if [[ "x$2" = "xyes" ]]; then
+    if [ "x$2" = "xyes" ]; then
       echo "killing processes"
       kill_all
     fi
