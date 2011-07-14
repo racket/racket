@@ -1016,7 +1016,7 @@ a black outline.
 @defproc[(scene+line [image image?]
                      [x1 real?] [y1 real?]
                      [x2 real?] [y2 real?]
-                     [color image-color?])
+                     [pen-or-color (or/c pen? image-color?)])
          image?]{
 
   Adds a line to the image @racket[scene], starting from the point (@racket[x1],@racket[y1])
