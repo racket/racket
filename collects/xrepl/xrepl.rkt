@@ -73,36 +73,26 @@
   (and (symbol? sym)
        (with-handlers ([exn? (λ (_) #f)]) (module->imports `',sym) #t)))
 
-;; support visual column-aware output
-;; right after an input expression is entered the terminal won't show the
-;; newline, so as far as column counting goes it's still after the prompt which
-;; leads to bad output in practice.  (at least in the common case where IO
-;; share the same terminal.)  This will be redundant with the already-added
-;; `port-set-next-location!'.
-(define last-output-port       #f)
-(define last-output-line       #f)
-(define last-output-visual-col #f)
+(define last-output-port #f)
 (define (maybe-new-output-port)
   (unless (eq? last-output-port (current-output-port))
+    (when last-output-port (flush-output last-output-port)) ; just in case
     (set! last-output-port (current-output-port))
     (flush-output last-output-port)
-    (port-count-lines! last-output-port)
-    (let-values ([(line col pos) (port-next-location last-output-port)])
-      (set! last-output-line line)
-      (set! last-output-visual-col col))))
+    (port-count-lines! last-output-port)))
 (define (fresh-line)
   (maybe-new-output-port)
   (flush-output last-output-port)
-  (let-values ([(line col pos) (port-next-location last-output-port)])
-    (unless (eq? col (if (eq? line last-output-line) last-output-visual-col 0))
-      (newline))))
+  (define-values [line col pos] (port-next-location last-output-port))
+  (unless (eq? col 0) (newline)))
 (define (prompt-shown)
+  ;; right after an input expression is entered the terminal won't show the
+  ;; newline, so as far as column counting goes it's still after the prompt
+  ;; which leads to bad output in practice.  (at least in the common case where
+  ;; IO share the same terminal.)
   (maybe-new-output-port)
-  ;; if there was a way to change the location of stdout we'd set the column to
-  ;; 0 here...
-  (let-values ([(line col pos) (port-next-location last-output-port)])
-    (set! last-output-line line)
-    (set! last-output-visual-col col)))
+  (define-values [line col pos] (port-next-location last-output-port))
+  (set-port-next-location! last-output-port line 0 pos))
 
 ;; wrapped `printf' (cheap but effective), aware of the visual col
 (define wrap-prefix (make-parameter ""))
@@ -114,9 +104,7 @@
     (write-string (car strs) o)
     (for ([str (in-list (cdr strs))])
       (define-values [line col pos] (port-next-location o))
-      (define vcol
-        (if (eq? line last-output-line) (- col last-output-visual-col) col))
-      (if ((+ vcol (string-length str)) . >= . wcol)
+      (if ((+ col (string-length str)) . >= . wcol)
         (begin (newline o) (write-string pfx o))
         (write-string " " o))
       (write-string str o))))
