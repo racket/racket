@@ -29,20 +29,6 @@
     (define highlights  '())
     (define color-table #f)
 
-    (define (highlight-irritant i)
-      (define pos (syntax-position i))
-      (and pos
-           (let ([start (sub1 pos)]
-                 [end   (sub1 (+ pos (syntax-span i)))]
-                 [color "red"]
-                 [caret-space #f]
-                 [style 'hollow-ellipse])
-             ;; high priority, to display above the coloring
-             (send this highlight-range
-                   start end color caret-space 'high style)
-             ;; info needed to remove the highlight
-             (list start end color caret-space style))))
-
     (define (highlight-entry l)
       (match l
         [(report-entry subs start end badness)
@@ -51,14 +37,8 @@
                           (vector-ref color-table badness))])
            (send this highlight-range start end color)
            (send this set-clickback start end (popup-callback l))
-           ;; record highlights to undo them later
-           (cons (list start end color)
-                 ;; missed optimizations have irritants, circle them
-                 (filter values ; remove irritants w/o location
-                         (map highlight-irritant
-                              (append-map missed-opt-report-entry-irritants
-                                          (filter missed-opt-report-entry?
-                                                  subs))))))]))
+           ;; record highlight to undo it later
+           (list start end color))]))
 
     (define/public (add-highlights)
       (define report (generate-report this))
