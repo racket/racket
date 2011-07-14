@@ -5,7 +5,7 @@
          scribble/struct
          scribble/racket
          racket/list
-         racket/pretty
+         scheme/pretty
          syntax/docprovide
          (for-syntax racket/base)
          )
