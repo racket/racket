@@ -263,5 +263,13 @@
     (try-combos (map add-chaperone procs) add-chaperone)))
 
 ;; ----------------------------------------
+;; Check error reporting of `procedure-reduce-keyword-arity'
+
+(err/rt-test (procedure-reduce-keyword-arity void 1 '(#:b #:a) null)
+             (lambda (exn) (regexp-match #rx"3rd argument" (exn-message exn))))
+(err/rt-test (procedure-reduce-keyword-arity void 1 null '(#:b #:a))
+             (lambda (exn) (regexp-match #rx"4th argument" (exn-message exn))))
+
+;; ----------------------------------------
 
 (report-errs)

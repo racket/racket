@@ -216,9 +216,9 @@ arity-reduced procedure) or @racket[arity] must be the empty list
           (or/c (listof keyword?) #f))]{
 
 Returns information about the keyword arguments required and accepted
-by a procedure. The first result is a list of keywords (sorted by
+by a procedure. The first result is a list of distinct keywords (sorted by
 @racket[keyword<?]) that are required when applying @racket[proc]. The
-second result is a list of accepted keywords (sorted by
+second result is a list of distinct accepted keywords (sorted by
 @racket[keyword<?]), or @racket[#f] to mean that any keyword is
 accepted. When the second result is a list, every element in the first
 list is also in the second list.
@@ -239,7 +239,7 @@ requiring any keyword arguments). See also
 @racket[procedure-reduce-keyword-arity].
 
 When the result is called with keyword arguments, then @racket[proc]
-is called; the first argument is a list of keywords sorted by
+is called; the first argument is a list of distinct keywords sorted by
 @racket[keyword<?], the second argument is a parallel list containing a
 value for each keyword, and the remaining arguments are the
 by-position arguments.
@@ -266,7 +266,7 @@ obtains its result from @racket[plain-proc].
 
 Like @racket[procedure-reduce-arity], but constrains the keyword
 arguments according to @racket[required-kws] and @racket[allowed-kws],
-which must be sorted using @racket[keyword<?]. If @racket[allowed-kws]
+which must be sorted using @racket[keyword<?] and contain no duplicates. If @racket[allowed-kws]
 is @racket[#f], then the resulting procedure still accepts any
 keyword, otherwise the keywords in @racket[required-kws] must be a
 subset of those in @racket[allowed-kws]. The original @racket[proc]

@@ -221,7 +221,7 @@
            (loop (cdr ks))]
           [(keyword<? (car ks) (cadr ks))
            (loop (cdr ks))]
-          [else (type-error "sorted list of keywords" 1)]))
+          [else (type-error "sorted list of distinct keywords" 1)]))
       (unless (list? kw-vals)
         (type-error "list" 2))
       (unless (= (length kws) (length kw-vals))
@@ -1044,13 +1044,13 @@
 
       (unless (and (list? req-kw) (andmap keyword? req-kw)
                    (sorted? req-kw))
-        (raise-type-error 'procedure-reduce-keyword-arity "sorted list of keywords" 
+        (raise-type-error 'procedure-reduce-keyword-arity "sorted list of distinct keywords" 
                           2 proc arity req-kw allowed-kw))
       (when allowed-kw
         (unless (and (list? allowed-kw) (andmap keyword? allowed-kw)
                      (sorted? allowed-kw))
-          (raise-type-error 'procedure-reduce-keyword-arity "sorted list of keywords or #f" 
-                            2 proc arity req-kw allowed-kw))
+          (raise-type-error 'procedure-reduce-keyword-arity "sorted list of distinct keywords or #f" 
+                            3 proc arity req-kw allowed-kw))
         (unless (subset? req-kw allowed-kw)
           (raise-mismatch-error 'procedure-reduce-keyword-arity 
                                 "allowed-keyword list does not include all required keywords: "
