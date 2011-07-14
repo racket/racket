@@ -549,6 +549,15 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     return 1;
     break;
 
+  case scheme_sequence_type:
+    if (depth) {
+      Scheme_Sequence *seq = (Scheme_Sequence *)obj;
+
+      return scheme_is_simple(seq->array[seq->count - 1], depth - 1, 
+                              just_markless, jitter, stack_start);
+    }
+    break;
+
   case scheme_branch_type:
     if (depth) {
       Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)obj;
