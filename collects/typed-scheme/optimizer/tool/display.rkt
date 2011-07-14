@@ -37,6 +37,7 @@
   ;; add to the main editor
   (send pane insert
         (new editor-snip% [editor location-text] [with-border? #f]))
+  (send pane insert-port (open-input-string "\n"))
 
   (define syntax-text (new text:basic%))
   ;; typeset the syntax as code
@@ -60,6 +61,7 @@
   (send pane insert
         (new editor-snip% [editor syntax-text] [max-width popup-width]
              [with-border? #f] [bottom-margin 10]))
+  (send pane insert-port (open-input-string "\n"))
 
   (define message-text (new text:basic% [auto-wrap #t]))
   (send message-text insert-port (open-input-string msg))
@@ -72,7 +74,7 @@
              [with-border? #f] [top-margin 10] [bottom-margin 15]))
 
   ;; to place the next sub-entry below
-  (send pane insert-port (open-input-string "\n")))
+  (send pane insert-port (open-input-string "\n\n")))
 
 (define lowest-badness-color  (make-object color% "pink"))
 (define highest-badness-color (make-object color% "red"))
