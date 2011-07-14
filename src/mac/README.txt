@@ -49,7 +49,9 @@ Configures (where <dest> is some temporary area):
   Pango: PATH=<dest>/bin:... --without-x --with-included-modules=yes --with-dynamic-modules=no
 
  To support 10.4, add
-  CC=gcc-4.0 CPPFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4"
+  CC=gcc-4.0 
+  CPPFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4"
+  LDFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4"
  for all packages.
 
  Note: PATH above ensures that pkg-config binaries are used to find
