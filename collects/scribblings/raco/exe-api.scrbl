@@ -159,7 +159,7 @@ below. When a module declares run-time paths via
 path (for use both by immediate execution and for creating a
 distribution that contains the executable).
 
-If @racket[collects-dest] is a path insteda of @racket[#f], then
+If @racket[collects-dest] is a path instead of @racket[#f], then
 instead of embedding collection-based modules into the executable, the
 modules (in compiled form, only) are copied into collections in the
 @racket[collects-dest] directory.
