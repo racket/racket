@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/class racket/gui/base racket/match)
+(require racket/class racket/gui/base racket/match
+         unstable/syntax)
 
 (require (prefix-in tr: typed-scheme/typed-reader)
          typed-scheme/optimizer/logging)
@@ -32,10 +33,28 @@
   (define input    (open-input-text-editor this))
   (port-count-lines! input)
   (define log '())
+  (define good-portname-cache #f)
+  (define (right-file? f) ; does the log-entry refer to the file we're in?
+    (cond [(and good-portname-cache ; cache is populated
+                (equal? f good-portname-cache))
+           #t]
+          ;; no cache, ask directly
+          [(send this port-name-matches? f)
+           (set! good-portname-cache f) ; populate cache
+           #t]
+          [else ; different file
+           #f]))
   (with-intercepted-tr-logging
    (lambda (l)
-     (set! log (cons (cdr (vector-ref l 2)) ; log-entry struct
-                     log)))
+     (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
+     (define stx (log-entry-stx log-entry-data))
+     (define path (if (and (syntax-source-directory stx)
+                           (syntax-source-file-name stx))
+                      (build-path (syntax-source-directory stx)
+                                  (syntax-source-file-name stx))
+                      #f))
+     (when (right-file? path)
+       (set! log (cons log-entry-data log))))
    (lambda ()
      (parameterize ([current-namespace  (make-base-namespace)]
                     [read-accept-reader #t])
