@@ -42,7 +42,8 @@
 
     (define/public (add-highlights)
       (define report (generate-report this))
-      (define max-badness (apply max (map report-entry-badness report)))
+      (define max-badness
+        (apply max (cons 0 (map report-entry-badness report))))
       (unless (= max-badness 0) ; no missed opts, color table code would error
         (set! color-table (make-color-table max-badness)))
       (define new-highlights (map highlight-entry report))
