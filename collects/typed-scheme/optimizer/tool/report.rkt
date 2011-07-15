@@ -33,6 +33,9 @@
   (define input    (open-input-text-editor this))
   (port-count-lines! input)
   (define log '())
+  (define unsaved-file?
+    (and (symbol? portname)
+         (regexp-match #rx"^unsaved-editor" (symbol->string portname))))
   (define good-portname-cache #f)
   (define (right-file? f) ; does the log-entry refer to the file we're in?
     (cond [(and good-portname-cache ; cache is populated
@@ -42,6 +45,10 @@
           [(send this port-name-matches? f)
            (set! good-portname-cache f) ; populate cache
            #t]
+          [unsaved-file?
+           ;; we assume that any log entry without a filename comes from
+           ;; the unsaved editor
+           (not f)]
           [else ; different file
            #f]))
   (with-intercepted-tr-logging
