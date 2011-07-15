@@ -198,7 +198,7 @@ Like @racket[for/vector] or @racket[for*/vector], but for
 @defproc[(shared-flvector [x flonum?] ...) flvector?]{
 
 Creates a @tech{flvector} containing the given inexact real numbers.
-When @tech{places} are enabled, the new @tech{flvector} is 
+For communication among @tech{places}, the new @tech{flvector} is 
 allocated in the @tech{shared memory space}.
 
 @mz-examples[#:eval fl-eval (shared-flvector 2.0 3.0 4.0 5.0)]}
@@ -210,7 +210,7 @@ allocated in the @tech{shared memory space}.
 
 Creates a @tech{flvector} with @racket[size] elements, where every
 slot in the @tech{flvector} is filled with @racket[x].
-When @tech{places} are enabled, the new @tech{flvector} is 
+For communication among @tech{places}, the new @tech{flvector} is 
 allocated in the @tech{shared memory space}.
 
 @mz-examples[#:eval fl-eval (make-shared-flvector 4 3.0)]}

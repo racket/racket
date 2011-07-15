@@ -174,7 +174,7 @@ string.
 @defproc[(make-shared-bytes [k exact-nonnegative-integer?] [b byte? 0])
 bytes?]{ Returns a new mutable byte string of length @racket[k] where each
 position in the byte string is initialized with the byte @racket[b].
-When @secref["places"] are enabled, the new byte string is allocated in the
+For communication among @tech{places}, the new byte string is allocated in the
 @tech{shared memory space}.
 
 @mz-examples[(make-shared-bytes 5 65)]}
@@ -183,7 +183,7 @@ When @secref["places"] are enabled, the new byte string is allocated in the
 @defproc[(shared-bytes [b byte?] ...) bytes?]{ Returns a new mutable byte
 string whose length is the number of provided @racket[b]s, and whose
 positions are initialized with the given @racket[b]s.
-When @secref["places"] are enabled, the new byte string is allocated in the
+For communication among @tech{places}, the new byte string is allocated in the
 @tech{shared memory space}.
 
 @mz-examples[(shared-bytes 65 112 112 108 101)]}

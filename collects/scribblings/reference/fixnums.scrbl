@@ -180,7 +180,7 @@ Like @racket[for/vector] or @racket[for*/vector], but for
 @defproc[(shared-fxvector [x fixnum?] ...) fxvector?]{
 
 Creates a @tech{fxvector} containing the given @tech{fixnums}.
-When @tech{places} are enabled, the new @tech{fxvector} is 
+For communication among @tech{places}, the new @tech{fxvector} is 
 allocated in the @tech{shared memory space}.
 
 @mz-examples[#:eval flfx-eval (shared-fxvector 2 3 4 5)]}
@@ -192,7 +192,7 @@ allocated in the @tech{shared memory space}.
 
 Creates a @tech{fxvector} with @racket[size] elements, where every
 slot in the @tech{fxvector} is filled with @racket[x].
-When @tech{places} are enabled, the new @tech{fxvector} is 
+For communication among @tech{places}, the new @tech{fxvector} is 
 allocated in the @tech{shared memory space}.
 
 @mz-examples[#:eval flfx-eval (make-shared-fxvector 4 3)]}
