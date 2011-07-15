@@ -149,7 +149,8 @@ v4 todo:
 (define (matches-arity-exactly? val min-arity max-arity contract-req-kwds contract-opt-kwds)
   (define proc-arity (procedure-arity val)) 
   (and (let-values ([(vr va) (procedure-keywords val)])
-         (and va (equal? vr contract-req-kwds) (equal? va contract-opt-kwds)))
+         (and va (equal? vr contract-req-kwds) 
+	         (keywords-match? va contract-req-kwds contract-opt-kwds)))
        (cond
          [(number? proc-arity) (and (number? max-arity)
                                     (= min-arity max-arity)
@@ -172,6 +173,21 @@ v4 todo:
                      (and (= i fst)
                           (loop (cdr arity)
                                 (+ i 1)))))]))])))
+
+(define (keywords-match? accepted-keywords contract-req-kwds contract-opt-kwds)
+  (let loop ([accepted accepted-keywords]
+             [req-kwds contract-req-kwds]
+             [opt-kwds contract-opt-kwds])
+    (cond
+      [(null? accepted) (and (null? opt-kwds) (null? req-kwds))]
+      [else
+       (let ([kwd (car accepted)])
+         (cond
+          [(and (pair? req-kwds) (eq? (car req-kwds) kwd))
+           (loop (cdr accepted) (cdr req-kwds) opt-kwds)]
+          [(and (pair? opt-kwds) (eq? (car opt-kwds) kwd))
+           (loop (cdr accepted) req-kwds (cdr opt-kwds))]
+          [else #f]))])))
 
 (define-for-syntax (create-chaperone blame val pre post this-args doms opt-doms dom-rest req-kwds opt-kwds rngs)
   (with-syntax ([blame blame]
