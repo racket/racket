@@ -2,10 +2,9 @@
 
 @(require scribble/manual 
           (for-label [only-in lang/htdp-advanced set!]
-          [only-in lang/htdp-intermediate let]  
-          [only-in lang/htdp-beginner define]
-          [only-in racket/base syntax-local-expand-expression]
-          ))
+                     [only-in lang/htdp-intermediate let]  
+                     [only-in lang/htdp-beginner define]
+                     [only-in racket/base syntax-local-expand-expression]))
 
 @(require scribble/decode)
 
@@ -51,7 +50,7 @@ from other teachpacks.
     nor antagonistic.}
 
   @item{If an expression contains multiple errors, report the leftmost
-    error first.  E.g., the error in @racket{(define 1 2 3)} is
+    error first.  E.g., the error in @racket[(define 1 2 3)] is
     @samp{expected the variable name, but found a number}, not
     @samp{expected 2 parts after define, but found 3}.  Before raising
     an error about a sub-part of a macro, call
@@ -71,7 +70,7 @@ Use only the following vocabulary words to describe code:
       @list[@para{structure name} @para{type name} @para{field name} @para{binding}]]]
 
 @itemize[
-  @item{Use binding for the square-braced pair in a @racket{let}
+  @item{Use binding for the square-braced pair in a @racket[let]
     and similar binding forms.}
 
   @item{Use @word{argument} for actual arguments and @word{variable} for
@@ -86,6 +85,8 @@ Use only the following vocabulary words to describe code:
 
 @section{Words For Describing Runtime Behavior}
 
+Use the following vocabulary words to describe how code runs:
+
 @itemize[
   @item{When specifying a function's behavior, say @samp{the function
     takes ... and returns ...}}
@@ -94,12 +95,18 @@ Use only the following vocabulary words to describe code:
     expects ... but received ...}}
 
   @item{As much as possible, identify expressions and the value they evaluate
-    to, e.g. @samp{the value of @racket{(f x)} is 5}.  If it is necessary to
+    to, e.g. @samp{the value of @racket[(f x)] is 5}.  If it is necessary to
     mention evaluation order, such as when the context discusses mutable state,
     say that the expression @samp{evaluates to} a value.  Function calls
     are a special case of expression.  Prefer @samp{the function call returns ...}
     to @samp{the function call evaluates to ...}, except when trying to draw attention to
-    the evaluation of the arguments.}]
+    the evaluation of the arguments.}
+
+  @item{@racket[set!] and
+    @racketidfont{set-}@racket[_structure-name]@racketidfont{-}@racket[_field-name]@racketidfont{!}
+    @word{mutate} variables and structure instances, respectively. Avoid using
+    the verb @word{sets} when discussing mutation, and reserve the verbs
+    @word{changes} and @word{updates} for functional updates.}]
 
 
 @section{Prohibited Words}
@@ -157,7 +164,7 @@ not appreciate anyway).
     [Rationale: Students learn this distinction when they learn about
     lambda.  The first is the lambda implicit in the definition, the
     second is the variable introduced by the definition that can appear
-    as the first argument to @racket{set!}, the third is the particular
+    as the first argument to @racket[set!], the third is the particular
     sequence of letters.  But BSL should avoid this complexity, and
     ASL’s error messages should maintain consistency with BSL.]}
 

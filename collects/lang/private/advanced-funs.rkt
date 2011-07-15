@@ -31,7 +31,7 @@
     (with-input-from-string (string (-> any) -> any)
       "Turns the given string into input for read* operations.")
     (with-output-to-string (string (-> any) -> any)
-      "Produces a string from all write/display/print operations.")
+      "Returns a string from all write/display/print operations.")
     
     
     (print (any -> void)
@@ -63,7 +63,7 @@
     
     (assoc 
      (any (listof any) -> (listof any) or false)
-     "Produces the first element on the list whose first is equal? to v; otherwise it produces false."))
+     "Returns the first element on the list whose first is equal? to v; otherwise it returns false."))
    
    ("Misc"
     (gensym (-> symbol?)
@@ -75,7 +75,7 @@
     
     (force (delay -> any) "Finds the delayed value; see also delay.")
     (promise? (any -> boolean) "Determines if a value is delayed.")
-    (void (-> void) "Produces a void value.")
+    (void (-> void) "Returns a void value.")
     (void? (any -> boolean) "Determines if a value is void."))
    
    ("Posns"
