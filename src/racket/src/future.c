@@ -2256,6 +2256,7 @@ void scheme_check_future_work()
     if (ft) {
       fs->future_waiting_atomic = ft->next_waiting_atomic;
       ft->next_waiting_atomic = NULL;
+      ft->in_queue_waiting_for_lwc = 0;
       if ((ft->status == WAITING_FOR_PRIM) && ft->rt_prim_is_atomic) {
         ft->status = HANDLING_PRIM;
         ft->want_lw = 0; /* we expect to handle it quickly,
@@ -2441,8 +2442,12 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
     if (insist_to_suspend) {
       /* couldn't capture the continuation locally, so ask
          the runtime thread to capture it: */
-      future->next_waiting_lwc = fs->future_waiting_lwc;
-      fs->future_waiting_lwc = future;
+      if (!future->in_queue_waiting_for_lwc) { 
+        future->next_waiting_lwc = fs->future_waiting_lwc;
+        fs->future_waiting_lwc = future;
+        future->in_queue_waiting_for_lwc = 1;
+      }
+
       future->want_lw = 1;
     }
   }
@@ -2478,6 +2483,7 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   future = fts->thread->current_ft;
 
   if (future) {
+    future->want_lw = 0;
     if (future->no_retval) {
       record_fevent(FEVENT_RTCALL_ABORT, fid);
       future->status = FINISHED;

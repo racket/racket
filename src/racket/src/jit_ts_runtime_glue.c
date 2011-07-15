@@ -362,3 +362,17 @@ case SIG_iSp_v:
      
      break;
   }
+case SIG_sss_s:
+  {
+     prim_sss_s f = (prim_sss_s)future->prim_func;
+     GC_CAN_IGNORE Scheme_Object* retval;
+     JIT_TS_LOCALIZE(Scheme_Object*, arg_s0); JIT_TS_LOCALIZE(Scheme_Object*, arg_s1); JIT_TS_LOCALIZE(Scheme_Object*, arg_s2);
+     
+     future->arg_s0 = NULL; future->arg_s1 = NULL; future->arg_s2 = NULL;
+     
+     retval = 
+     f(arg_s0, arg_s1, arg_s2);
+     future->retval_s = retval;
+     send_special_result(future, retval);
+     break;
+  }

@@ -31,7 +31,8 @@
                                                          exact-integer?
                                                          exact-nonnegative-integer?
                                                          exact-positive-integer?
-                                                         thing?))
+                                                         thing?
+                                                         continuation-mark-set-first))
 				  (let ([s (with-handlers ([exn? exn-message])
 					     (proc (if fixnum? 10 'bad)))]
 					[name (symbol->string name)])
@@ -68,21 +69,25 @@
 	 [bin0 (lambda (v op arg1 arg2)
 		 ;; (printf "Trying ~a ~a ~a\n" op arg1 arg2);
 		 (let ([name `(,op ,arg1 ,arg2)])
-		   (test v name ((eval `(lambda (x) (,op x ,arg2))) arg1))
-		   (test v name ((eval `(lambda (x) (,op ,arg1 x))) arg2))
+		   (test v name ((eval `(lambda (x) (,op x ',arg2))) arg1))
+		   (test v name ((eval `(lambda (x) (,op ',arg1 x))) arg2))
 		   (test v name ((eval `(lambda (x y) (,op x y))) arg1 arg2))
+		   (test v name ((eval `(lambda (x y) 
+                                          (let ([z 'not-a-legitimate-argument])
+                                            (,op (begin (set! z y) x) z))))
+                                 arg1 arg2))
 		   (when (boolean? v)
 		     ;; (printf " for branch...\n")
-		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op x ,arg2) 'yes 'no))) arg1))
-		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op ,arg1 x) 'yes 'no))) arg2)))))]
+		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op x ',arg2) 'yes 'no))) arg1))
+		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op ',arg1 x) 'yes 'no))) arg2)))))]
 	 [bin-exact (lambda (v op arg1 arg2 [check-fixnum-as-bad? #f])
-		      (check-error-message op (eval `(lambda (x) (,op x ,arg2))))
-		      (check-error-message op (eval `(lambda (x) (,op ,arg1 x))))
+		      (check-error-message op (eval `(lambda (x) (,op x ',arg2))))
+		      (check-error-message op (eval `(lambda (x) (,op ',arg1 x))))
                       (when check-fixnum-as-bad?
-                        (check-error-message op (eval `(lambda (x) (,op x ,arg2))) #t)
+                        (check-error-message op (eval `(lambda (x) (,op x ',arg2))) #t)
                         (check-error-message op (eval `(lambda (x) (,op x 10))) #t)
                         (unless (fixnum? arg2)
-                          (check-error-message op (eval `(lambda (x) (,op ,arg1 x))) #t)))
+                          (check-error-message op (eval `(lambda (x) (,op ',arg1 x))) #t)))
 		      (bin0 v op arg1 arg2))]
 	 [bin-int (lambda (v op arg1 arg2 [check-fixnum-as-bad? #f])
                     (bin-exact v op arg1 arg2 check-fixnum-as-bad?)
@@ -668,6 +673,11 @@
     (bin-exact #t 'procedure-arity-includes? (lambda (x) x) 1)
     (bin-exact #f 'procedure-arity-includes? (lambda (x) x) 2)
     (bin-exact #t 'procedure-arity-includes? (lambda x x) 2)
+
+    (bin-exact #f 'continuation-mark-set-first #f 'key)
+    (with-continuation-mark
+        'key 'the-value
+      (bin-exact 'the-value 'continuation-mark-set-first #f 'key))
 
     (un0 'yes 'thing-ref a-rock)
     (bin0 'yes 'thing-ref a-rock 99)

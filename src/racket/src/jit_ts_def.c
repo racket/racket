@@ -232,3 +232,12 @@ static void ts_ ## id(int g53, Scheme_Object** g54, void* g55) \
   else \
      id(g53, g54, g55); \
 }
+#define define_ts_sss_s(id, src_type) \
+static Scheme_Object* ts_ ## id(Scheme_Object* g56, Scheme_Object* g57, Scheme_Object* g58) \
+   XFORM_SKIP_PROC \
+{ \
+  if (scheme_use_rtcall) \
+    return scheme_rtcall_sss_s("[" #id "]", src_type, id, g56, g57, g58); \
+  else \
+    return id(g56, g57, g58); \
+}

@@ -47,6 +47,61 @@ static Scheme_Object *ts_scheme_make_fsemaphore(int argc, Scheme_Object **argv)
 # define ts_scheme_make_fsemaphore scheme_make_fsemaphore
 #endif
 
+static Scheme_Object *cont_mark_set_first_try_fast(Scheme_Object *cms, Scheme_Object *key)
+  XFORM_SKIP_PROC
+{
+  Scheme_Object *r;
+  Scheme_Object *nullableCms;
+  Scheme_Object *prompt_tag; 
+  
+  prompt_tag = SCHEME_PTR_VAL(scheme_default_prompt_tag);
+  if (key == scheme_parameterization_key || key == scheme_break_enabled_key) 
+    prompt_tag = NULL;
+
+  nullableCms = SCHEME_FALSEP(cms) ? NULL : cms;
+  
+  /*Fast path here */
+  if (!nullableCms) { 
+    intptr_t findpos, bottom, startpos, minbottom; 
+    intptr_t pos; 
+    Scheme_Object *val = NULL;
+    Scheme_Cont_Mark *seg; 
+    Scheme_Thread *p = scheme_current_thread;
+  
+    startpos = (intptr_t)MZ_CONT_MARK_STACK;
+    if (!p->cont_mark_stack_segments) 
+      startpos = 0;
+
+    bottom = p->cont_mark_stack_bottom; 
+    findpos = startpos;
+    minbottom = findpos - 16;
+    if (bottom < minbottom) 
+      bottom = minbottom;
+
+    while (findpos-- > bottom) { 
+      seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+      pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+
+      if (SAME_OBJ(seg[pos].key, key)) { 
+        val = seg[pos].val;
+        break;
+      } else if (SAME_OBJ(seg[pos].key, prompt_tag)) { 
+        break;
+      }
+    }
+
+    if (val) { 
+      return val;
+    }
+  }
+
+  /* Otherwise, slow path */
+  r = ts_scheme_extract_one_cc_mark_to_tag(nullableCms, key, prompt_tag);
+  if (!r) r = scheme_false;
+
+  return r;
+}
+
 static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, 
                              int order_matters, int skipped);
 
@@ -2671,6 +2726,26 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       mz_rs_inc(2); /* no sync */
       mz_runstack_popped(jitter, 2);
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "continuation-mark-set-first")) {
+      GC_CAN_IGNORE jit_insn *refr;
+
+      LOG_IT(("inlined continuation-mark-set-first\n"));
+
+      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      CHECK_LIMIT();
+      /* R0 has the first argument, R1 has the second argument */
+
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR();
+
+      jit_prepare(2);
+      jit_pusharg_p(JIT_R1);
+      jit_pusharg_p(JIT_R0);
+      mz_finish_prim_lwe(cont_mark_set_first_try_fast, refr);
+      jit_retval(JIT_R0);
+      CHECK_LIMIT();
 
       return 1;
     }

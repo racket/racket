@@ -40,9 +40,17 @@ typedef void (*prim_allocate_values_t)(int, Scheme_Thread *);
 #define WAITING_FOR_FSEMA 6
 #define SUSPENDED 7
 
+/* FSRC_OTHER means: descriptive string is provided for logging,
+   called function *DOES NOT NEED* to lookup continuation marks. */
 #define FSRC_OTHER 0
+/* FSRC_RATOR means: Racket function provided, so use it in logging,
+   called function can lookup continuation marks. */
 #define FSRC_RATOR 1
-#define FSRC_PRIM 2
+/* FSRC_PRIM means: Racket primitive provided, so use it in logging,
+   called function can lookup continuation marks. */
+#define FSRC_PRIM  2
+/* FSRC_MARKS means: like FSRC_OTHER, but
+   called function may need to lookup continuation marks. */
 #define FSRC_MARKS 3
 
 typedef struct future_t {
@@ -67,7 +75,9 @@ typedef struct future_t {
 
   /* Runtime call stuff */
   int want_lw; /* flag to indicate waiting for lw capture */
-  int in_touch_queue; /* flag to indicate waiting for lw capture */
+  /* flag to indicate whether the future is in the "waiting for lwc" queue */
+  int in_queue_waiting_for_lwc;   
+  int in_touch_queue;   
   int rt_prim_is_atomic;
   double time_of_request;
   const char *source_of_request;

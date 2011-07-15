@@ -408,11 +408,13 @@ scheme_init_fun (Scheme_Env *env)
 						      "continuation-mark-set->list*",
 						      2, 4),
 			     env);
-  scheme_add_global_constant("continuation-mark-set-first",
-			     scheme_make_prim_w_arity(extract_one_cc_mark,
-						      "continuation-mark-set-first",
-						      2, 4),
-			     env);
+
+  o = scheme_make_prim_w_arity(extract_one_cc_mark,
+                               "continuation-mark-set-first",
+                               2, 4);
+  SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("continuation-mark-set-first", o, env);
+
   scheme_add_global_constant("call-with-immediate-continuation-mark",
 			     scheme_make_prim_w_arity2(call_with_immediate_cc_mark,
                                                        "call-with-immediate-continuation-mark",

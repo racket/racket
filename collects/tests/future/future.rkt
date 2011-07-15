@@ -16,6 +16,190 @@ We should also test deep continuations.
 
 ;; ----------------------------------------
 
+(check-equal?
+ 'yes
+ (let/ec k
+   (call-with-exception-handler
+    (lambda (exn)
+      (k (continuation-mark-set-first #f 'special)))
+    (lambda ()
+      (touch
+       (future
+        (lambda ()
+          (with-continuation-mark
+              'special 'yes
+            (set-box! 1 1)))))))))
+
+(check-equal?
+ 'yes
+ (let/ec k
+   (call-with-exception-handler
+    (lambda (exn)
+      (k (continuation-mark-set-first #f 'special)))
+    (lambda ()
+      (touch
+       (future
+        (lambda ()
+          (with-continuation-mark
+              'special 'yes
+            (vector-ref (chaperone-vector
+                         (vector 1)
+                         (lambda (vec i val) 2)
+                         (lambda (vec i val) val))
+                        0)))))))))
+
+;; ----------------------------------------
+
+(check-equal?
+ #f
+ (touch
+  (future
+   (lambda ()
+     (continuation-mark-set-first
+      #f
+      'key)))))
+
+(check-equal?
+ 'an-arbitrary-value
+ (touch
+  (future
+   (lambda ()
+     (with-continuation-mark
+         'key 'an-arbitrary-value
+       (continuation-mark-set-first
+        #f
+        'key))))))
+
+(check-equal?
+ 'an-arbitrary-value
+ (let ([f (future
+           (lambda ()
+             (continuation-mark-set-first
+              #f
+              'key)))])
+   (with-continuation-mark
+       'key 'an-arbitrary-value
+     (touch f))))
+
+(check-equal?
+ #f
+ (touch
+  (future
+   (lambda ()
+     (with-continuation-mark
+         'key 'an-arbitrary-value
+       (continuation-mark-set-first
+        #f
+        'other-key))))))
+
+(check-equal?
+ 'another-value
+ (touch
+  (future
+   (lambda ()
+     (with-continuation-mark
+         'key 'an-arbitrary-value
+       (with-continuation-mark
+           'other-key 'another-value
+         (continuation-mark-set-first
+          #f
+          'other-key)))))))
+
+(check-equal?
+ 'an-arbitrary-value
+ (touch
+  (future
+   (lambda ()
+     (with-continuation-mark
+         'key 'an-arbitrary-value
+       (with-continuation-mark
+           'other-key 'another-value
+         (continuation-mark-set-first
+          #f
+          'key)))))))
+
+(check-equal?
+ 'an-arbitrary-value
+ (touch
+  (future
+   (lambda ()
+     (with-continuation-mark
+         'key 'an-arbitrary-value
+       (values
+        (with-continuation-mark
+            'other-key 'another-value
+          (continuation-mark-set-first
+           #f
+           'key))))))))
+
+(check-equal?
+ 1
+ (touch
+  (future
+   (lambda ()
+     (let nt-loop ([x 100])
+       (if (zero? x)
+           (continuation-mark-set-first
+            #f
+            'key)
+           (values
+            (with-continuation-mark
+                'key x
+              (nt-loop (sub1 x))))))))))
+
+(check-equal?
+ 77
+ (touch
+  (future
+   (lambda ()
+     (with-continuation-mark
+         'deep-key 77
+       (let nt-loop ([x 100])
+         (if (zero? x)
+             (continuation-mark-set-first
+              #f
+              'deep-key)
+             (values
+              (with-continuation-mark
+                  'key x
+                (nt-loop (sub1 x)))))))))))
+
+(check-equal?
+ 77
+ (touch
+  (future
+   (lambda ()
+     (with-continuation-mark
+         'early-key 77
+       (let nt-loop ([x 100])
+         (if (zero? x)
+             (continuation-mark-set-first
+              #f
+              'early-key)
+             (with-continuation-mark
+                 x (sqrt x)
+               (nt-loop (sub1 x))))))))))
+
+(check-equal?
+ 1050
+ (touch
+  (future
+   (lambda ()
+     (with-continuation-mark
+         'early-key 77
+       (let nt-loop ([x 100])
+         (if (zero? x)
+             (continuation-mark-set-first
+              #f
+              50)
+             (with-continuation-mark
+                 x (+ 1000 x)
+               (nt-loop (sub1 x))))))))))
+
+;(error "stop")
+
+;; ----------------------------------------
+
 (check-equal? 2 
               (touch (future (λ () 2))))
 
@@ -508,8 +692,5 @@ We should also test deep continuations.
   (for/fold ([t (future (lambda () 0))]) ([i (in-range 10000)])
     (future (lambda () (touch t))))))
 
+;; ----------------------------------------
 
-
-
-
- 
