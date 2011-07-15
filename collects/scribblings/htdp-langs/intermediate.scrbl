@@ -13,32 +13,32 @@
 (check-expect check-within check-member-of check-range check-error require)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
-             expression
+             expr
              test-case
              library-require]
-[definition (define (name variable variable ...) expression)
-            (define name expression)
-            (define name (lambda (variable variable ...) expression))
+[definition (define (name variable variable ...) expr)
+            (define name expr)
+            (define name (lambda (variable variable ...) expr))
             (define-struct name (name ...))]
-[expression (local [definition ...] expression)
-      (letrec ([name expr-for-let] ...) expression)
-      (let ([name expr-for-let] ...) expression)
-      (let* ([name expr-for-let] ...) expression)
-      (code:line (name expression expression ...) )
-      (cond [expression expression] ... [expression expression])
-      (cond [expression expression] ... [else expression])
-      (if expression expression expression)
-      (and expression expression expression ...)
-      (or expression expression expression ...)
-      (time expression)
+[expr (local [definition ...] expr)
+      (letrec ([name expr-for-let] ...) expr)
+      (let ([name expr-for-let] ...) expr)
+      (let* ([name expr-for-let] ...) expr)
+      (code:line (name expr expr ...) )
+      (cond [expr expr] ... [expr expr])
+      (cond [expr expr] ... [else expr])
+      (if expr expr expr)
+      (and expr expr expr ...)
+      (or expr expr expr ...)
+      (time expr)
       (code:line name)
       (code:line @#,elem{@racketvalfont{'}@racket[_quoted]})
       (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]})
       number
       string
       character]
-[expr-for-let (lambda (variable variable ...) expression)
-              expression]
+[expr-for-let (lambda (variable variable ...) expr)
+              expr]
 ]
 
 @prim-nonterms[("intermediate") define define-struct]
