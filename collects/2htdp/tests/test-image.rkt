@@ -1380,7 +1380,7 @@
       =>
       128)
 
-;; Rotation by 0 should produce an equivalent object
+;; Rotation by 0 should return an equivalent object
 (test (rotate 0 (make-object image-snip% green-blue-20x10-bitmap))
       =>
       (to-img (make-object image-snip% green-blue-20x10-bitmap)))

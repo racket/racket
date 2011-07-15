@@ -312,22 +312,22 @@
              (#,check-error-elem expression)]]{
 
    Checks that the @racket[expression] reports an error,
-   where the error messages matches the string produced by the
-   @racket[matchexpression], if it is present.}
+   where the error messages matches the
+   value of @racket[matchexpression], if it is present.}
 
 
   @defform*[#:id [check-member-of check-member-of-id]
             [(check-member-of expression expression expression ...)]]{
 
-   Checks that the first @racket[expression] produces the same value
-   as one of the following @racket[expression]s.}
+   Checks that the value of the first @racket[expression] as that of
+   one of the following @racket[expression]s.}
 
 
   @defform*[#:id [check-range check-range-id]
             [(check-range expression low-expression high-expression)]]{
 
-   Checks that the first @racket[expression] produces a number in
-   between the numbers produced by @racket[low-expression] and
+   Checks that the value of the first @racket[expression] is a number in
+   between the value of the @racket[low-expression] and the
    @racket[high-expression], inclusive.}
 
   @; ----------------------------------------------------------------------

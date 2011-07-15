@@ -91,7 +91,8 @@
 @; ----------------------------------------------------------------------
 @section[#:tag "advanced-syntax"]{Syntax for Advanced}
 
-In Advanced, @racket[set!] can be used to change variables. @racket[define] and
+In Advanced, @racket[set!] can be used to mutate variables, and
+@racket[define-struct]'s structures are mutatable. @racket[define] and
 @racket[lambda] can define functions of zero arguments, and function calls can
 invoke functions of zero arguments.
 
@@ -155,17 +156,17 @@ the @racket[begin] expression is the value of the first @racket[expression].}
 
 @defform[(set! variable expression)]{
 
-Evaluates @racket[expression], and then changes the definition @racket[variable]
+Evaluates @racket[expression], and then mutates the @racket[variable]
 to have @racket[expression]'s value. The @racket[variable] must be defined 
 by @racket[define], @racket[letrec], @racket[let*], or @racket[let].}
 
 
 @defform[(delay expression)]{
 
-Produces a ``promise'' to evaluate @racket[expression]. The @racket[expression]
+Returns a ``promise'' to evaluate @racket[expression]. The @racket[expression]
 is not evaluated until the promise is forced with @racket[force]; when
 the promise is forced, the result is recorded, so that any further
-@racket[force] of the promise immediately produces the remembered value.}
+@racket[force] of the promise immediately returns the remembered value.}
 
 
 
@@ -262,7 +263,7 @@ error.}
 @defform[(unless test-expression body-expression)]{
 
 Like @racket[when], but the @racket[body-expression] is evaluated when the
-@racket[test-expression] produces @racket[false] instead of @racket[true].}
+@racket[test-expression] evaluates to @racket[false] instead of @racket[true].}
 
 
 @section[#:tag "advanced-common-syntax"]{Common Syntaxes}
@@ -291,7 +292,7 @@ level as they did in the @secref["intermediate-lam"] level.
               @itemize[
                @item{@racketidfont{set-}@racket[_structure-name]@racketidfont{-}@racket[_field-name]@racketidfont{!}
                 : takes an instance of the structure and a value, and
-                changes the instance's field to the given value.}]}
+                mutates the instance's field to the given value.}]}
              define-wish
              cond
              else

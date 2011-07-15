@@ -154,12 +154,12 @@ they can be syntactically restricted to application positions.
   @racket[id] is exported as the primitive operator named
   @racket[id]. An alternative to @racket[define-higher-order-primitive].}
 
-@defform[(first-order->higher-order expr)]{
+@defform[(first-order->higher-order expression)]{
 
-If @racket[expr] is an identifier for a first-order function (either a
-primitive or a function defined within Beginner Student), produces the
+If @racket[expression] is the name of a first-order function (either a
+primitive or a function defined within Beginner Student), returns the
 function as a value; otherwise, the form is equivalent to
-@racket[expr].
+@racket[expression].
 
 This form is mainly useful for implementing syntactic forms that, like
 the application of a higher-order primitive, allow first-order bindings
