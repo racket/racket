@@ -196,8 +196,6 @@ We should also test deep continuations.
                  x (+ 1000 x)
                (nt-loop (sub1 x))))))))))
 
-;(error "stop")
-
 ;; ----------------------------------------
 
 (check-equal? 2 
