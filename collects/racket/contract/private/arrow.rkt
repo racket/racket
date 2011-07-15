@@ -385,7 +385,7 @@ v4 todo:
      (define basic-checker-name 
        (if (null? req-kwd)
            (λ args
-             (unless (<= min-arity (length args) max-arity)
+             (unless (valid-number-of-args? args)
                (define args-len (length args))
                (raise-blame-error blame val
                                   "received ~a argument~a, expected ~a"
