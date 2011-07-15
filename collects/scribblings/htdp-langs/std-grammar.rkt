@@ -16,12 +16,12 @@
   (racketgrammar*
    #:literals lits
    form ...
-   [test-case @#,racket[(check-expect expression expression)]
-              @#,racket[(check-within expression expression expression)]
-              @#,racket[(check-member-of expression expression (... ...))]
-              @#,racket[(check-range expression expression expression)]
-              @#,racket[(check-error expression expression)]
-              @#,racket[(check-error expression)]]
+   [test-case @#,racket[(check-expect expr expr)]
+              @#,racket[(check-within expr expr expr)]
+              @#,racket[(check-member-of expr expr (... ...))]
+              @#,racket[(check-range expr expr expr)]
+              @#,racket[(check-error expr expr)]
+              @#,racket[(check-error expr)]]
    (...
     [library-require @#,racket[(require string)]
                      @#,racket[(require (lib string string ...))]
@@ -55,8 +55,8 @@
                  @#,racket[(quasiquoted ...)]
                  @#,elem{@racketvalfont{'}@racket[quasiquoted]}
                  @#,elem{@racketvalfont{`}@racket[quasiquoted]}
-                 @#,elem{@racketfont{,}@racket[expression]}
-                 @#,elem{@racketfont[",@"]@racket[expression]}])))
+                 @#,elem{@racketfont{,}@racket[expr]}
+                 @#,elem{@racketfont[",@"]@racket[expr]}])))
 
 (define-syntax-rule (prim-nonterms (section-prefix) define define-struct)
   

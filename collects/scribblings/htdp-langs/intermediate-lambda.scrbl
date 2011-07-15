@@ -12,25 +12,25 @@
 (check-expect check-within check-member-of check-range check-error require)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
-             expression
+             expr
              test-case
              library-require]
-[definition (define (name variable variable ...) expression)
-            (define name expression)
+[definition (define (name variable variable ...) expr)
+            (define name expr)
             (define-struct name (name ...))]
-[expression (lambda (variable variable ...) expression)
-      (λ (variable variable ...) expression)
-      (local [definition ...] expression)
-      (letrec ([name expression] ...) expression)
-      (let ([name expression] ...) expression)
-      (let* ([name expression] ...) expression)
-      (code:line (expression expression expression ...))
-      (cond [expression expression] ... [expression expression])
-      (cond [expression expression] ... [else expression])
-      (if expression expression expression)
-      (and expression expression expression ...)
-      (or expression expression expression ...)
-      (time expression)
+[expr (lambda (variable variable ...) expr)
+      (λ (variable variable ...) expr)
+      (local [definition ...] expr)
+      (letrec ([name expr] ...) expr)
+      (let ([name expr] ...) expr)
+      (let* ([name expr] ...) expr)
+      (code:line (expr expr expr ...))
+      (cond [expr expr] ... [expr expr])
+      (cond [expr expr] ... [else expr])
+      (if expr expr expr)
+      (and expr expr expr ...)
+      (or expr expr expr ...)
+      (time expr)
       (code:line name)
       (code:line prim-op)
       (code:line @#,elem{@racketvalfont{'}@racket[_quoted]})
