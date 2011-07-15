@@ -203,7 +203,8 @@
       (display-extra-source-info stx)
       (display-symbol-property-info stx)
       (display-marks stx)
-      (display-taint stx))
+      ;; Disable until correct:
+      (when #f (display-taint stx)))
 
     ;; display-source-info : syntax -> void
     (define/private (display-source-info stx)
