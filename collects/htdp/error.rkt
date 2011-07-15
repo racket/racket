@@ -1,98 +1,58 @@
-#lang scheme/base
-(require scheme/class
-         lang/private/rewrite-error-message)
+#lang racket/base
 
-;; --------------------------------------------------------------------------
-(provide check-arg check-arity check-proc check-result 
-         check-list-list check-color
-         check-fun-res check-dependencies
+(require lang/private/rewrite-error-message)
+
+;; -----------------------------------------------------------------------------
+;; this module provides one-point functionality to report errors in teachpacks 
+
+;; -----------------------------------------------------------------------------
+(provide check-arg
+         check-list-list
+         check-arity
+         check-proc
+         check-result 
+         check-fun-res
+         check-color
+         check-dependencies
          natural?
-         find-non tp-exn? number->ord
+         number->ord
+         find-non 
+         tp-exn?
          tp-error)
 
-(define (natural? w)
-  (and (number? w) (integer? w) (>= w 0)))
-
-; starts-with-vowel? : string -> boolean
-(define (starts-with-vowel? s)
-  (and
-   (not (string=? s ""))
-   (member (string-ref s 0) (list #\a #\e #\i #\o #\u))))
-
-; add-article : anything -> string
-; (add-article 'color) should be "a color"
-; (add-article 'acronym) should be "an acronym"
-(define (add-article thing)
-  (let ((s (format "~a" thing)))
-    (string-append
-     (if (starts-with-vowel? s)
-         "an "
-         "a ")
-     s)))
-
-;; (_ -> Boolean) (listof X) -> (union X false)
-(define (find-non pred? l)
-  (let ([r (filter (compose not pred?) l)])
-    (if (null? r) #f (car r))))
-
-
-;(: check-fun-res (∀ (γ) (∀ (β α ...) (α ...α -> β)) (_ -γ-> boolean) _ -> γ))
-(define (check-fun-res f pred? type)
-  (lambda x 
-    (define r (apply f x))
-    (check-result (object-name f) pred? type r)
-    r))
-
-;; check-dependencies : Symbol x Boolean x FormatString x Any* -> Void
-(define (check-dependencies pname condition fmt . args)
+;; check-arg : sym bool str (or/c str non-negative-integer) TST -> void
+(define (check-arg pname condition expected arg-posn given)
   (unless condition
-    (tp-error pname (apply format fmt args))))
-
-#| Tests ------------------------------------------------------------------
-  (not (find-non list? '((1 2 3) (a b c))))
-  (symbol? (find-non number? '(1 2 3 a)))
-  (symbol? (find-non list? '((1 2 3) a (b c))))
-  |#
-
-(define-struct (tp-exn exn) ())
-
-(define (tp-error name fmt . args)
-  (raise 
-   (make-exn:fail:contract #; make-tp-exn 
-    (string-append (format "~a: " name) (apply format fmt args))
-    (current-continuation-marks))))
-
-(define (number->ord i)
-  (if (= i 0)
-      "zeroth"
-      (case (modulo i 10)
-        [(0 4 5 6 7 8 9) (format "~ath" i)]
-        [(1) (format "~ast" i)]
-        [(2) (format "~and" i)]
-        [(3) (format "~ard" i)])))
-
-;; spell-out : number-or-string -> string
-(define (spell-out arg-posn)
-  (cond
-    [(string? arg-posn) arg-posn]
-    [(number? arg-posn)
-     (case arg-posn
-       [(1) "first"]
-       [(2) "second"]
-       [(3) "third"]
-       [(4) "fourth"]
-       [(5) "fifth"]
-       [(6) "sixth"]
-       [(7) "seventh"]
-       [(8) "eighth"]
-       [(9) "ninth"]
-       [(10) "tenth"]
-       [else (number->ord arg-posn)])]))
+    (tp-error pname "expects ~a as ~a argument, given ~e"
+              (add-article expected) 
+              (spell-out arg-posn)
+              given)))
 
 ;; Symbol (union true String) String X -> void
 (define (check-list-list pname condition pred given)
   (when (string? condition)
     (tp-error pname (string-append condition (format "\nin ~e" given)))))
+
+;; check-arity : sym num (list-of TST) -> void
+(define (check-arity name arg# args)
+  (unless (= (length args) arg#)
+    (tp-error name (argcount-error-message arg# (length args)))))
+
+;; check-proc : sym (... *->* ...) num (union sym str) (union sym str) -> void
+(define (check-proc name f exp-arity arg# arg-err)
+  (unless (procedure? f)
+    (tp-error name "expected a function as ~a argument; given ~e" arg# f))
+  (let ([arity-of-f (procedure-arity f)])
+    (unless (procedure-arity-includes? f exp-arity)
+      (tp-error name "expected function of ~a as ~a argument; given function of ~a "
+                arg-err arg# 
+                (cond
+                  [(number? arity-of-f)
+                   (if (= arity-of-f 1)
+                       (format "1 argument")
+                       (format "~s arguments" arity-of-f))]
+                  [(arity-at-least? arity-of-f) "variable number of arguments"]
+                  [else (format "multiple arities (~s)" arity-of-f)])))))
 
 ;; Symbol (_ -> Boolean) String X  X *-> X 
 (define (check-result pname pred? expected given . other-given)
@@ -129,33 +89,75 @@
                 "expected the name ~e to be a color, but did not recognize it"
                 given))))
 
-;; check-arg : sym bool str (or/c str non-negative-integer) TST -> void
-(define (check-arg pname condition expected arg-posn given)
+;; (: check-fun-res (∀ (γ) (∀ (β α ...) (α ...α -> β)) (_ -γ-> boolean) _ -> γ))
+(define (check-fun-res f pred? type)
+  (lambda x 
+    (check-result (object-name f) pred? type (apply f x))))
+
+;; check-dependencies : Symbol x Boolean x FormatString x Any* -> Void
+(define (check-dependencies pname condition fmt . args)
   (unless condition
-    (tp-error pname "expects ~a as ~a argument, given ~e"
-              (add-article expected) 
-              (spell-out arg-posn)
-              given)))
+    (tp-error pname (apply format fmt args))))
 
-;; check-arity : sym num (list-of TST) -> void
-(define (check-arity name arg# args)
-  (if (= (length args) arg#)
-      (void)
-      (tp-error name (argcount-error-message arg# (length args)))))
+(define-struct (tp-exn exn) ())
 
-;; check-proc :
-;;   sym (... *->* ...) num (union sym str) (union sym str) -> void
-(define (check-proc proc f exp-arity arg# arg-err)
-  (unless (procedure? f)
-    (tp-error proc "expected a function as ~a argument; given ~e" arg# f))
-  (let ([arity-of-f (procedure-arity f)])
-    (unless (procedure-arity-includes? f exp-arity) ; (and (number? arity-of-f) (>= arity-of-f exp-arity))
-      (tp-error proc "expected function of ~a as ~a argument; given function of ~a "
-                arg-err arg# 
-                (cond
-                  [(number? arity-of-f)
-                   (if (= arity-of-f 1)
-                       (format "1 argument")
-                       (format "~s arguments" arity-of-f))]
-                  [(arity-at-least? arity-of-f) "variable number of arguments"]
-                  [else (format "multiple arities (~s)" arity-of-f)])))))
+(define (tp-error name fmt . args)
+  (raise 
+   (make-exn:fail:contract 
+    (string-append (format "~a: " name) (apply format fmt args))
+    (current-continuation-marks))))
+
+(define (number->ord i)
+  (if (= i 0)
+      "zeroth"
+      (case (modulo i 10)
+        [(0 4 5 6 7 8 9) (format "~ath" i)]
+        [(1) (format "~ast" i)]
+        [(2) (format "~and" i)]
+        [(3) (format "~ard" i)])))
+
+;; (_ -> Boolean) (listof X) -> (union X false)
+;; (not (find-non list? '((1 2 3) (a b c))))
+;; (symbol? (find-non number? '(1 2 3 a)))
+;; (symbol? (find-non list? '((1 2 3) a (b c))))
+(define (find-non pred? l)
+  (let ([r (filter (compose not pred?) l)])
+    (if (null? r) #f (car r))))
+
+(define (natural? w)
+  (and (number? w) (integer? w) (>= w 0)))
+
+;; add-article : anything -> string
+;; (add-article 'color) should be "a color"
+;; (add-article 'acronym) should be "an acronym"
+(define (add-article thing)
+  (let ((s (format "~a" thing)))
+    (string-append
+     (if (starts-with-vowel? s)
+         "an "
+         "a ")
+     s)))
+
+;; starts-with-vowel? : string -> boolean
+(define (starts-with-vowel? s)
+  (and
+   (not (string=? s ""))
+   (member (string-ref s 0) (list #\a #\e #\i #\o #\u))))
+
+;; spell-out : number-or-string -> string
+(define (spell-out arg-posn)
+  (cond
+    [(string? arg-posn) arg-posn]
+    [(number? arg-posn)
+     (case arg-posn
+       [(1) "first"]
+       [(2) "second"]
+       [(3) "third"]
+       [(4) "fourth"]
+       [(5) "fifth"]
+       [(6) "sixth"]
+       [(7) "seventh"]
+       [(8) "eighth"]
+       [(9) "ninth"]
+       [(10) "tenth"]
+       [else (number->ord arg-posn)])]))
