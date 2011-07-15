@@ -5,9 +5,13 @@
 
 @note-init-lib[racket/enter]
 
-@defform*[[(enter! module-path)
-           (enter! #f)
-           (enter! module-path flag ...+)]]{
+@defform*/subs[[(enter! module-path)
+                (enter! #f)
+                (enter! module-path flag ...+)]
+               ([flag #:quiet
+                      #:verbose-reload
+                      #:verbose
+                      #:dont-re-require-enter])]{
 
 Intended for use in a @tech{REPL}, such as when @exec{racket} is
 started in interactive mode. When a @racket[module-path] is provided
@@ -28,16 +32,19 @@ are first loaded (either directly or indirectly through transitive
 
 Additional @racket[flag]s can customize aspects of @racket[enter!]:
 @itemize[
-@item{When @racket[enter!] loads or re-loads a module from a file, it
-  can print a message to @racket[(current-error-port)].  Use a
+
+ @item{When @racket[enter!] loads or re-loads a module from a file, it
+  can print a message to @racket[(current-error-port)].  Use the
   @racket[#:verbose] flag to print a message about such loads and
   re-loads, @racket[#:verbose-reload] to print a message only for
   re-loaded modules, and @racket[#:quiet] for no printouts.  The default
   reporting corresponds to @racket[#:verbose-reload].}
-@item{After switching namespaces to the designated module,
+
+ @item{After switching namespaces to the designated module,
   @racket[enter!] automatically requires @racket[racket/enter] into the
   namespace, so that @racket[enter!] can be used to switch namespaces
-  again.  In some cases this might not be desirable (e.g., in a tool
-  that uses @racket[racket/enter])---use a
-  @racket[#:dont-re-require-enter] to diable this.}]
+  again.  In some cases, requiring @racket[racket/enter] 
+  might not be desirable (e.g., in a tool
+  that uses @racket[racket/enter]); use the
+  @racket[#:dont-re-require-enter] flag to disable the require.}]
 }
