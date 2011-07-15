@@ -16,8 +16,6 @@
          framework/private/bday
          syntax/moddep
          mrlib/cache-image-snip
-         compiler/embed
-         wxme/wxme
          setup/dirs
          test-engine/racket-tests
 
@@ -27,7 +25,8 @@
          "private/rewrite-error-message.rkt"
 
          "private/continuation-mark-key.rkt"
-
+         "private/create-htdp-executable.rkt"
+         
          "stepper-language-interface.rkt"
          "debugger-language-interface.rkt"
          "run-teaching-program.rkt"
@@ -49,6 +48,7 @@
   
   (define user-installed-teachpacks-collection "installed-teachpacks")
   (define teachpack-installation-dir (build-path (find-user-collects-dir) user-installed-teachpacks-collection))
+  
   
   (define tool@
     (unit 
@@ -456,56 +456,8 @@
                  dist-filename
                  #t
                  (λ (exe-name)
-                   (create-embedding-executable 
-                    exe-name
-                    #:modules `((#f ,program-filename))
-                    #:cmdline `("-l" 
-                                "scheme/base"
-                                "-e"
-                                ,(format "~s" `(#%require ',(filename->require-symbol program-filename))))
-                    #:src-filter
-                    (λ (path) (cannot-compile? path))
-                    #:get-extra-imports
-                    (λ (path cm)
-                      (call-with-input-file path
-                        (λ (port)
-                          (cond
-                            [(is-wxme-stream? port)
-                             (append
-                              ;; Extract snip-related modules:
-                              (let-values ([(snip-class-names data-class-names)
-                                            (extract-used-classes port)])
-                                (list*
-                                 '(lib "wxme/read.ss")
-                                 '(lib "mred/mred.ss")
-                                 reader-module
-                                 (filter
-                                  values
-                                  (map (λ (x) (string->lib-path x #t))
-                                       (append
-                                        snip-class-names
-                                        data-class-names)))))
-                              ;; Extract reader-related modules:
-                              (begin
-                                (file-position port 0)
-                                (let ([mods null])
-                                  (parameterize ([current-reader-guard
-                                                  (let ([g (current-reader-guard)])
-                                                    (lambda (p)
-                                                      (set! mods (cons p mods))
-                                                      (g p)))])
-                                    (read-language (wxme-port->port port) (lambda () #f)))
-                                  mods)))]
-                            [else
-                             '()]))))
-                    #:mred? #t))))))
+                   (create-htdp-lang-executable program-filename exe-name reader-module))))))
 
-          (define/private (filename->require-symbol fn)
-            (let-values ([(base name dir) (split-path fn)])
-              (string->symbol
-               (path->string
-                (path-replace-suffix name #"")))))
-          
           (define/private (get-export-names sexp)
             (let* ([sym-name ((current-module-name-resolver) sexp #f #f)]
                    [no-ext-name (substring (symbol->string sym-name)
@@ -696,27 +648,6 @@
           (define/override (get-metadata-lines) 3)
           
           (super-new)))
-      
-      ;; cannot-compile? : path -> boolean
-      ;; returns #t if the file cannot be compiled, #f otherwise
-      (define (cannot-compile? path)
-        (call-with-input-file path
-          (λ (port) 
-            (let ([ok-to-compile-names 
-                   (map (λ (x) (format "~s" x))
-                        '(wxtext
-                          (lib "comment-snip.ss" "framework")
-                          (lib "xml-snipclass.ss" "xml")
-                          (lib "scheme-snipclass.ss" "xml")))])
-              (and (is-wxme-stream? port)
-                   (let-values ([(snip-class-names data-class-names)
-                                 (extract-used-classes port)])
-                     (not (and (andmap
-                                (λ (used-name) (member used-name ok-to-compile-names))
-                                snip-class-names)
-                               (andmap
-                                (λ (used-name) (member used-name ok-to-compile-names))
-                                data-class-names)))))))))
       
       (define (get-teachpack-from-user parent)
         (define tp-dirs (list "htdp" "2htdp"))
