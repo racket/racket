@@ -844,16 +844,21 @@ static Scheme_Object *trivial_copy(Scheme_Object *so)
     case scheme_false_type:
     case scheme_null_type:
     case scheme_void_type:
-    case scheme_place_bi_channel_type: /* allocated in the master and can be passed along as is */
       return so;
     case scheme_place_type:
+      scheme_hash_key(((Scheme_Place *) so)->channel);
       return ((Scheme_Place *) so)->channel;
       break;
+    case scheme_place_bi_channel_type: /* allocated in the master and can be passed along as is */
+      scheme_hash_key(so);
+      return so;
     case scheme_byte_string_type:
     case scheme_flvector_type:
     case scheme_fxvector_type:
-      if (SHARED_ALLOCATEDP(so))
+      if (SHARED_ALLOCATEDP(so)) {
+        scheme_hash_key(so);
         return so;
+    }
   }
 
   return NULL;
