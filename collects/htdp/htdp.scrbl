@@ -22,12 +22,26 @@ file from the filesystem.}
 Under the hood, HtDP Teachpacks and HtDP Libraries are implemented the same way,
 using normal Racket @secref[#:doc '(lib "scribblings/guide/guide.scrbl") "modules"]. 
 
-When implementing an extension intended for students, pay a special attention to
-the error messages. The error messages of DrRacket's teaching languages go to
-great length to ensure that students are never confronted with messages that
-uses vocabulary or phrases the students has not learned yet.  The teaching languages
-also ensure that students cannot stumble by accident onto challenging or
-confusing features intended for professional or for higher-level students.
+When implementing such an extension for students, pay a special attention
+to two aspects: 
+@itemlist[#:style 'ordered
+
+@item{@bold{choice of construct}: The teaching languages limit the
+expressive power in comparison to plain Racket. One goal is to teach
+``design subject to constraints,'' and the other one is to help restrict
+the set of explanations for student errors. With regard to the first, we
+consider it imperative that new teachpacks and libraries avoid features
+intended for upper-level students or professionals.}
+
+@item{@bold{error messages}: The error messages from the teaching languages
+go to great length to never confront students messages that uses vocabulary
+or phrases outside of the scope of the chosen level. While teachpacks and
+libraries can be used at all levels, they should ideally restrict the
+vocabulary in error message to the lowest level language in which they are
+to be used.}
+
+]
+
 
 This manual describes library support for authors of HtDP Teachpacks, libraries,
 and customized teaching languages. Use the HtDP
@@ -38,7 +52,6 @@ message composition guidelines} that informed the design of the error messages
 of DrRacket's teaching languages.
 
 @local-table-of-contents[#:style 'immediate-only]
-
 
 @include-section["error-composition.scrbl"]
 
