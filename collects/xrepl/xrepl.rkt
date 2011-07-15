@@ -96,7 +96,11 @@
   (let-values ([(line col pos) (port-next-location last-output-port)])
     (unless (eq? col (if (eq? line last-output-line) last-output-visual-col 0))
       (newline))))
-(define (prompt-shown)
+(define (zero-column!)
+  ;; there's a problem whenever there's some printout followed by a read: the
+  ;; cursor will at column zero, but the port counting will think that it's
+  ;; still right after the printout; call this function in such cases to adjust
+  ;; the column to 0.
   (maybe-new-output-port)
   ;; if there was a way to change the location of stdout we'd set the column to
   ;; 0 here...
@@ -1021,6 +1025,7 @@
   (define expr  "(require xrepl)")
   (define dexpr "(dynamic-require 'xrepl #f)")
   (define contents (file->string init-file))
+  (read-line) ; discard the newline for further input
   (define (look-for comment-rx expr)
     (let ([m (regexp-match-positions
               (format "(?<=\r?\n|^) *;+ *~a *\r?\n *~a *(?=\r?\n|$)"
@@ -1030,9 +1035,7 @@
   (define existing? (look-for (regexp-quote comment) expr))
   (define existing-readline?
     (look-for "load readline support[^\r\n]*" "(require readline/rep)"))
-  (define (yes?)
-    (flush-output)
-    (begin0 (regexp-match? #rx"^[yY]" (getarg 'string)) (prompt-shown)))
+  (define (yes?) (flush-output) (regexp-match? #rx"^[yY]" (getarg 'line)))
   (cond
     [existing?
      (printf "; already installed, nothing to do\n")
@@ -1187,7 +1190,7 @@
 (provide make-command-reader)
 (define (make-command-reader)
   (define (plain-reader prefix) ; a plain reader, without readline
-    (display prefix) (display "> ") (flush-output)
+    (display prefix) (display "> ") (flush-output) (zero-column!)
     (let ([in ((current-get-interaction-input-port))])
       ((current-read-interaction) (object-name in) in)))
   (define RL ; no direct dependency on readline
@@ -1233,7 +1236,7 @@
       (define input
         (if from-queue?
           (begin0 (car more-inputs) (set! more-inputs (cdr more-inputs)))
-          (begin (fresh-line) (begin0 (reader (get-prefix)) (prompt-shown)))))
+          (begin (fresh-line) (reader (get-prefix)))))
       (syntax-case input ()
         [(uq cmd) (eq? 'unquote (syntax-e #'uq))
          (let ([r (run-command (syntax->datum #'cmd))])
