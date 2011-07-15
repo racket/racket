@@ -1972,56 +1972,56 @@
 
 (test/exn (rectangle 10 10 "solid" (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^rectangle: expects a image-color")
+          #rx"^rectangle: expects an image-color")
 
 (test/exn (rectangle 10 10 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^rectangle: expects a image-color")
+          #rx"^rectangle: expects an image-color")
 
 (test/exn (circle 10 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^circle: expects a image-color")
+          #rx"^circle: expects an image-color")
 
 (test/exn (ellipse 10 10 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^ellipse: expects a image-color")
+          #rx"^ellipse: expects an image-color")
 
 (test/exn (triangle 10 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^triangle: expects a image-color")
+          #rx"^triangle: expects an image-color")
 
 (test/exn (right-triangle 10 12 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^right-triangle: expects a image-color")
+          #rx"^right-triangle: expects an image-color")
 
 (test/exn (isosceles-triangle 10 120 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^isosceles-triangle: expects a image-color")
+          #rx"^isosceles-triangle: expects an image-color")
 
 (test/exn (square 10 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^square: expects a image-color")
+          #rx"^square: expects an image-color")
 
 (test/exn (rhombus 40 45 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^rhombus: expects a image-color")
+          #rx"^rhombus: expects an image-color")
 
 (test/exn (regular-polygon 40 6 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^regular-polygon: expects a image-color")
+          #rx"^regular-polygon: expects an image-color")
 
 (test/exn (star 40 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^star: expects a image-color")
+          #rx"^star: expects an image-color")
 
 (test/exn (star-polygon 40 7 3 'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^star-polygon: expects a image-color")
+          #rx"^star-polygon: expects an image-color")
 
 (test/exn (polygon (list (make-posn 0 0) (make-posn 100 0) (make-posn 100 100))
                    'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
-          #rx"^polygon: expects a image-color")
+          #rx"^polygon: expects an image-color")
 (test/exn (polygon (list (make-posn 0 0+1i) (make-posn 100 0) (make-posn 100 100))
                    'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
