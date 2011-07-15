@@ -3403,18 +3403,10 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
     m = (Scheme_Module *)scheme_hash_get(env->module_registry->loaded, name);
 
     if (!m) {
-      char *mred_note;
-
-      if (!strcmp(SCHEME_SYM_VAL(SCHEME_PTR_VAL(name)), "#%mred-kernel")
-	  && !(scheme_strncmp(scheme_banner(), "Welcome to Racket", 17)))
-	mred_note = "; need to run in gracket instead of racket";
-      else
-	mred_note = "";
-
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: unknown module: %D%s",
+		       "%s: unknown module: %D",
 		       who ? who : "require", 
-		       name, mred_note);
+		       name);
       return NULL;
     }
   }
