@@ -2,11 +2,10 @@
 
 (require 2htdp/universe)
 
-(define s "")
-(define x 0)
+(define txt "expected to return a scene but this is a string")
 
-(with-handlers ((exn? (lambda _ "success!")))
+(with-handlers ((exn? (lambda (e) (unless (string=? (exn-message e) txt) (raise e)))))
   (big-bang 0
-            (on-tick (lambda (w) (begin (set! x (+ x 1)) w)))
-            (to-draw (lambda (w) (set! s (number->string w))))))
+            (on-tick add1)
+            (to-draw (lambda (w) (error txt)))))
           

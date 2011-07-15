@@ -258,10 +258,14 @@
                  (pdraw))
                (queue-callback 
                 (lambda ()
-                  (with-handlers ([exn? (handler #t)])
+                  (define H (handler #t))
+                  (with-handlers ([exn? H])
                     ; (define tag (object-name transform))
                     (define nw (transform (send world get) arg ...))
-                    (define (d) (pdraw) (set-draw#!))
+                    (define (d) 
+                      (with-handlers ((exn? H))
+                        (pdraw))
+                      (set-draw#!))
                     ;; ---
                     ;; [Listof (Box [d | void])]
                     (define w '()) 

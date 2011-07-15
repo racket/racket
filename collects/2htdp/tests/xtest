@@ -9,6 +9,8 @@ run() {
 }
 
 run bad-draw.rkt
+run error-in-tick.rkt
+run error-in-draw.rkt
 run -t batch-io.rkt
 run clause-once.rkt
 run full-scene-visible.rkt
