@@ -235,7 +235,7 @@ v4 todo:
                                      post ...
                                      rng-results]
                                     [args
-                                     (bad-number-of-results blame val rng-len args)]))))
+                                     (bad-number-of-results blame val rng-len (length args))]))))
                            null)])
           (let* ([min-method-arity (length doms)]
                  [max-method-arity (+ min-method-arity (length opt-doms))]
@@ -1863,12 +1863,11 @@ v4 todo:
     [else
      passes?]))
 
-(define (bad-number-of-results blame val rng-len)
-  (let ([num-values (length rng-len)])
-    (raise-blame-error blame val 
-                       "expected ~a value~a, returned ~a value~a"
-                       rng-len (if (= rng-len 1) "" "s")
-                       num-values (if (= num-values 1) "" "s"))))
+(define (bad-number-of-results blame val rng-len num-values)
+  (raise-blame-error blame val 
+                     "expected ~a value~a, returned ~a value~a"
+                     rng-len (if (= rng-len 1) "" "s")
+                     num-values (if (= num-values 1) "" "s")))
 
 ;; timing & size tests
 
