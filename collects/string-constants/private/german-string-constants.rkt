@@ -622,6 +622,8 @@
  (overwrite-mode "Überschreib-Modus")
  (enable-overwrite-mode-keybindings "Tastenbelegungen für Überschreib-Modus aktivieren")
 
+ (enable-automatic-parens "Automatische Klammerung einschalten") ; should "and square brackets and quotes" appear here?
+
  (preferences-info "Die Einstellungen konfigurieren")
  (preferences-menu-item "Einstellungen...")
 
