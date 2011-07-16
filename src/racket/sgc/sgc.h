@@ -34,7 +34,7 @@ SGC_EXTERN void *GC_base(void *);
 
 SGC_EXTERN void GC_dump(void);
 
-SGC_EXTERN intptr_t GC_get_memory_use();
+SGC_EXTERN long GC_get_memory_use();
 
 SGC_EXTERN void GC_end_stubborn_change(void *);
 

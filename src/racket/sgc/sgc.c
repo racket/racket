@@ -2108,9 +2108,11 @@ void GC_dump(void)
   FPRINTF(STDERR, "End Map\n");
 }
 
-intptr_t GC_get_memory_use()
+long GC_get_memory_use()
 {
-  return mem_real_use;
+  /* returns a `long' instead of `intptr_t' for compatibility
+     with the Boehm GC */
+  return (long)mem_real_use;
 }
 
 void GC_end_stubborn_change(void *p)
