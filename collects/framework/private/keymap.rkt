@@ -1373,7 +1373,8 @@
              'framework:automatic-parens
              (lambda (id new-val)
                (cond [new-val (add-automatic-paren-bindings)]
-                     [else    (remove-automatic-paren-bindings)]))))
+                     [else    (remove-automatic-paren-bindings)])))
+            (void))
           ))))
   
   (define setup-search
