@@ -562,6 +562,7 @@
            [(partly-smoothed) CAIRO_ANTIALIAS_GRAY]
            [(smoothed) CAIRO_ANTIALIAS_SUBPIXEL]))
         (cairo_font_options_set_hint_metrics o2 CAIRO_HINT_METRICS_OFF)
+        ;; good idea?: (cairo_font_options_set_hint_style o2 CAIRO_HINT_STYLE_NONE)
         (pango_cairo_context_set_font_options context o2)
         (cairo_font_options_destroy o2)))
 

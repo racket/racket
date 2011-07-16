@@ -85,7 +85,7 @@ See also
 
 
 @defconstructor*/make[(()
-                       ([size (integer-in 1 255)]
+                       ([size (integer-in 1 1024)]
                         [family (one-of/c 'default 'decorative 'roman 'script 
                                           'swiss 'modern 'symbol 'system)]
                         [style (one-of/c 'normal 'italic 'slant) 'normal]
@@ -95,7 +95,7 @@ See also
                                              'smoothed 'unsmoothed) 
                                    'default]
                         [size-in-pixels? any/c #f])
-                       ([size (integer-in 1 255)]
+                       ([size (integer-in 1 1024)]
                         [face string?]
                         [family (one-of/c 'default 'decorative 'roman 'script 
                                           'swiss 'modern 'symbol 'system)]
@@ -144,7 +144,7 @@ face and family specifications, only.
 }
 
 @defmethod[(get-point-size)
-           (integer-in 1 255)]{
+           (integer-in 1 1024)]{
 
 Gets the font's size (roughly the height). Despite the method name,
  the size may be in logical units instead of points, depending on the

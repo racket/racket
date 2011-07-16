@@ -44,7 +44,7 @@ this procedure is preferred because it defaults @racket[alpha?] in a
 more useful way.}
 
 
-@defproc[(make-font [#:size size (integer-in 1 255) 12]
+@defproc[(make-font [#:size size (integer-in 1 1024) 12]
                     [#:face face (or/c string? #f) #f]
                     [#:family family (one-of/c 'default 'decorative 'roman 'script 
                                                'swiss 'modern 'symbol 'system)

@@ -32,7 +32,7 @@
 			      l)))
 
 (define (size? v) (and (exact-positive-integer? v)
-                       (byte? v)))
+                       (v . <= . 1024)))
 
 (define-local-member-name s-set-table-key)
 
@@ -306,7 +306,7 @@
                    #:underlined? [underlined? #f]
                    #:smoothing [smoothing 'default]
                    #:size-in-pixels? [size-in-pixels? #f])
-  (unless (size? size) (raise-type-error 'make-font "exact integer in [1, 255]" size))
+  (unless (size? size) (raise-type-error 'make-font "exact integer in [1, 1024]" size))
   (unless (or (not face) (string? face)) (raise-type-error 'make-font "string or #f" face))
   (unless (family-symbol? family) (raise-type-error 'make-font "family-symbol" family))
   (unless (style-symbol? style) (raise-type-error 'make-font "style-symbol" style))

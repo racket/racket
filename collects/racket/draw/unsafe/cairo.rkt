@@ -177,6 +177,7 @@
 (define-cairo cairo_set_font_options (_fun _cairo_t _cairo_font_options_t -> _void))
 (define-cairo cairo_font_options_set_antialias (_fun _cairo_font_options_t _int -> _void))
 (define-cairo cairo_font_options_set_hint_metrics (_fun _cairo_font_options_t _int -> _void))
+(define-cairo cairo_font_options_set_hint_style (_fun _cairo_font_options_t _int -> _void))
 
 (define-cairo cairo_show_glyphs (_fun _cairo_t _cairo_glyph_t-pointer _int -> _void))
 
@@ -402,6 +403,14 @@
   CAIRO_HINT_METRICS_DEFAULT
   CAIRO_HINT_METRICS_OFF
   CAIRO_HINT_METRICS_ON)
+
+(define-enum
+  0
+  CAIRO_HINT_STYLE_DEFAULT
+  CAIRO_HINT_STYLE_NONE
+  CAIRO_HINT_STYLE_SLIGHT
+  CAIRO_HINT_STYLE_MEDIUM
+  CAIRO_HINT_STYLE_FULL)
 
 (define-enum
   0
