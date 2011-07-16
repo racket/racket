@@ -23,11 +23,11 @@
   (pattern (p ...+ . fs)
            #:with code
            #`(let*-values ([(#,xp-var picts)
-                            (internal-ppict-do '#,who #,xp-var
-                                               (syntax-parameterize
-                                                   ([ppict-do-state
-                                                     (make-rename-transformer #'#,xp-var)])
-                                                 (list p.code ...)))]
+                            (ppict-add/internal '#,who #,xp-var
+                                                (syntax-parameterize
+                                                    ([ppict-do-state
+                                                      (make-rename-transformer #'#,xp-var)])
+                                                    (list p.code ...)))]
                            [(#,rpss-var)
                             (cons picts #,rpss-var)])
                fs.code))

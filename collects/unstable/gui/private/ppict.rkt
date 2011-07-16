@@ -43,10 +43,9 @@ In a placer function's arguments:
 
 ;; ----
 
-;; ppict-add : ppict (U pict real #f) ... -> ppict
-(define (ppict-add dp . picts)
-  (let ([pl (ppict-placer dp)])
-    (send pl place (ppict-pict dp) picts)))
+(define-syntax-parameter ppict-do-state
+  (lambda (stx)
+    (raise-syntax-error #f "used out of context" stx)))
 
 ;; ppict-go : pict placer -> ppict
 (define (ppict-go dp pl)
@@ -54,6 +53,45 @@ In a placer function's arguments:
          (mk-ppict (ppict-pict dp) pl)]
         [(pict? dp)
          (mk-ppict dp pl)]))
+
+;; ppict-add : ppict (U pict real #f 'next) ... -> ppict
+(define (ppict-add dp . parts)
+  (let-values ([(final intermediates)
+                (ppict-add/internal 'ppict-add dp parts)])
+    final))
+
+;; ppict-add* : ppict (U pict real #f 'next) ... -> (values ppict (listof pict))
+(define (ppict-add* dp . parts)
+  (ppict-add/internal 'ppict-add* dp parts))
+
+;; ppict-add/internal : symbol pict (listof (U pict real #f 'next))
+;;                   -> (values pict (listof pict)
+;; In second return value, one pict per 'next occurrence.
+;; FIXME: avoid applying ghost to previously ghosted pict?
+(define (ppict-add/internal who base parts)
+  (unless (ppict? base) (error who "missing placer"))
+  (let ([placer (ppict-placer base)]
+        [base-pict (ppict-pict base)]
+        [elem-chunks
+         ;; (listof (listof pict?))
+         ;;   length is N+1, where N is number of 'next in chunk
+         ;;   ghosted before visible
+         (let elab ([chunk parts])
+           (cond [(and (pair? chunk) (eq? 'next (car chunk)))
+                  (let ([elab-rest (elab (cdr chunk))])
+                    (cons (map ghost* (car elab-rest)) elab-rest))]
+                 [(and (pair? chunk) (not (eq? 'next (car chunk))))
+                  (for/list ([elem-chunk (in-list (elab (cdr chunk)))])
+                    (cons (car chunk) elem-chunk))]
+                 [(null? chunk) (list null)]))])
+    (let out-loop ([chunks elem-chunks] [rpicts null])
+      (cond [(null? (cdr chunks))
+             (values (send placer place base-pict (car chunks))
+                     (reverse rpicts))]
+            [else
+             (out-loop (cdr chunks)
+                       (cons (send placer place base-pict (car chunks))
+                             rpicts))]))))
 
 ;; ----
 
@@ -291,46 +329,6 @@ In a placer function's arguments:
     ((b) hb-append)))
 
 ;; ----
-
-(define-syntax-parameter ppict-do-state
-  (lambda (stx)
-    (raise-syntax-error #f "used out of context" stx)))
-
-;; internal-ppict-do : pict (listof (U pict real #f 'next))
-;;                  -> (values pict (listof pict))
-(define (internal-ppict-do who base parts)
-  (unless (ppict? base)
-    (error who "missing placer"))
-  (do-chunk base parts))
-
-;; ----
-
-;; A chunk is (listof (U pict real #f 'next))
-
-;; do-chunk : ppict (listof (U pict real #f 'next)) -> (values ppict (listof pict))
-;; In second return value, one pict per 'next occurrence.
-;; FIXME: avoid applying ghost to previously ghosted pict?
-(define (do-chunk base chunk)
-  (let ([elem-chunks
-         ;; (listof (listof pict?))
-         ;;   length is N+1, where N is number of 'next in chunk
-         ;;   ghosted before visible
-         (let elab ([chunk chunk])
-           (cond [(and (pair? chunk) (eq? 'next (car chunk)))
-                  (let ([elab-rest (elab (cdr chunk))])
-                    (cons (map ghost* (car elab-rest)) elab-rest))]
-                 [(and (pair? chunk) (not (eq? 'next (car chunk))))
-                  (for/list ([elem-chunk (in-list (elab (cdr chunk)))])
-                    (cons (car chunk) elem-chunk))]
-                 [(null? chunk) (list null)]))])
-    (let out-loop ([chunks elem-chunks] [rpicts null])
-      (cond [(null? (cdr chunks))
-             (values (apply ppict-add base (car chunks))
-                     (reverse rpicts))]
-            [else
-             (out-loop (cdr chunks)
-                       (cons (apply ppict-add base (car chunks))
-                             rpicts))]))))
 
 (define (ghost* x)
   (if (pict? x) (ghost x) x))

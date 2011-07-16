@@ -41,8 +41,13 @@
  [ppict-add
   (->* (ppict?)
        ()
-       #:rest (listof (or/c pict? real? #f))
+       #:rest (listof (or/c pict? real? #f 'next))
        pict?)]
+ [ppict-add*
+  (->* (ppict?)
+       ()
+       #:rest (listof (or/c pict? real? #f 'next))
+       (values pict? (listof pict?)))]
  [ppict-placer
   (-> ppict? placer?)]
  [coord

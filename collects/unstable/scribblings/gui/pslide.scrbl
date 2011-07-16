@@ -143,13 +143,21 @@ Creates a @tech{progressive pict} with the given base pict @racket[p]
 and the placer @racket[pl].
 }
 
+@deftogether[[
 @defproc[(ppict-add [pp ppict?]
-                    [elem (or/c pict? real? #f)] ...)
-         pict?]{
+                    [elem (or/c pict? real? #f 'next)] ...)
+         pict?]
+@defproc[(ppict-add* [pp ppict?]
+                     [elem (or/c pict? real? #f 'next)] ...)
+         (values pict? (listof pict?))]]]{
 
 Creates a new pict by adding each @racket[elem] pict on top of
 @racket[pp] according to @racket[pp]'s placer. The result pict may or
-may not be a @tech{progressive pict}, depending on the placer used.
+may not be a @tech{progressive pict}, depending on the placer
+used. The @racket[ppict-add] function only the final pict; any
+occurrences of @racket['next] are ignored. The @racket[ppict-add*]
+function returns two values: the final pict and a list of all partial
+picts emitted due to @racket['next] (the final pict is not included).
 
 An @racket[elem] that is a real number changes the spacing for
 subsequent additions. A @racket[elem] that is @racket[#f] is
