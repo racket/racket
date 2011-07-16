@@ -17,7 +17,7 @@
                                            (quote 
                                             quote-syntax #%top
                                             #%plain-lambda case-lambda
-                                            let-values letrec-values
+                                            let-values letrec-values letrec-syntaxes+values
                                             begin begin0 set!
                                             with-continuation-mark
                                             if #%plain-app #%expression

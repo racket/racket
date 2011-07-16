@@ -17,7 +17,8 @@
 
 A syntactic form like @racket[syntax-case*], except that the literals
 are built-in as the names of the primitive Racket forms as
-exported by @racketmodname[scheme/base]; see @secref[#:doc refman
+exported by @racketmodname[scheme/base], including 
+@racket[letrec-syntaxes+values]; see @secref[#:doc refman
 "fully-expanded"].
 
 The @racket[trans?-expr] boolean expression replaces the comparison
@@ -28,8 +29,8 @@ or transformer-phase comparisons. The @racket[clause]s are the same as in
 The primitive syntactic forms must have their normal bindings in the
 context of the @racket[kernel-syntax-case] expression. Beware that
 @racket[kernel-syntax-case] does not work in a module whose language
-is @racket[mzscheme], since the binding of @mzscheme-if from
-@racket[mzscheme] is different than the primitive @racket[if].}
+is @racketmodname[mzscheme], since the binding of @mzscheme-if from
+@racketmodname[mzscheme] is different than the primitive @racket[if].}
 
 
 @defform[(kernel-syntax-case* stx-expr trans?-expr (extra-id ...) clause ...)]{
