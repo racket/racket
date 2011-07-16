@@ -168,6 +168,8 @@
          (insert-at-tail* se sexpr phase)]
         [(letrec-values bindings . body)
          (insert-at-tail* se sexpr phase)]
+        [(letrec-syntaxes+values sbindings bindings . body)
+         (insert-at-tail* se sexpr phase)]
         
         [(begin . _)
          (insert-at-tail* se sexpr phase)]
@@ -406,7 +408,6 @@
                            (rebuild mb (map cons bodys bodyl)))))))))])]
          
          [(#%expression e)
-          top?
           (rearm expr #`(#%expression #,(annotate (syntax e) phase)))]
          
          ;; No way to wrap
@@ -468,6 +469,16 @@
                fm]
               [_
                (with-mark expr fm)]))]
+         ;; This case is needed for `#lang errortrace ...', which uses
+         ;; `local-expand' on the module body.
+         [(letrec-syntaxes+values sbindings ([vars rhs] ...) . body)
+          (let ([fm (rearm
+                     expr
+                     (annotate-let disarmed-expr phase
+                                   (syntax (vars ...))
+                                   (syntax (rhs ...))
+                                   (syntax body)))])
+            (with-mark expr fm))]
 
          ;; Wrap RHS
          [(set! var rhs)
