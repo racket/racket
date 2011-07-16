@@ -241,7 +241,7 @@ from @racketmodname[ffi/unsafe], determines the type of value supplied
 to the @racket[proc].}
 
 
-@section{License Issues}
+@section[#:tag "readline-license"]{License Issues}
 
 GNU's @|readline| library is covered by the GPL, and that applies to
 code that links with it.  Racket is licensed with the LGPL, so the

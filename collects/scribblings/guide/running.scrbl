@@ -34,7 +34,7 @@ confguration options, like @Flag{j}), then it starts a @tech{REPL}
 with a @litchar{> } prompt:
 
 @verbatim[#:indent 2]{
-  Welcome to Racket
+  @(regexp-replace #rx"\n+$" (banner) "")
   > 
 }
 
