@@ -27,7 +27,10 @@
 
   (define setup-program-name (make-parameter "raco setup"))
 
-  (define-flag-param parallel-workers (min (processor-count) 8))
+  (define-flag-param parallel-workers (min (processor-count) 
+                                           (if (fixnum? (arithmetic-shift 1 40))
+                                               8    ; 64-bit machine
+                                               4))) ; 32-bit machine
   (define-flag-param verbose #f)
   (define-flag-param make-verbose #f)
   (define-flag-param compiler-verbose #f)
