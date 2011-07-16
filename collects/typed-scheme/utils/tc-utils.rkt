@@ -139,7 +139,7 @@ don't depend on any other portion of the system
 (define (int-err msg . args)
   (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
                                           (apply format msg args)
-                                          (format "\nwhile typechecking\n~aoriginally\n~a"
+                                          (format "\nwhile typechecking:\n~a\noriginally:\n~a"
                                                   (syntax->datum (current-orig-stx))
                                                   (syntax->datum (locate-stx (current-orig-stx)))))
                            (current-continuation-marks))))
