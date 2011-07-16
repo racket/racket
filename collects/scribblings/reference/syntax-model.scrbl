@@ -254,8 +254,10 @@ comparisons are made using @racket[free-transformer-identifier=?]
 instead of @racket[free-identifier=?]).
 
 In addition to the grammar above, @racket[letrec-syntaxes+values] can
-appear in a fully local-expanded expression, such as the result from
-@racket[local-expand] when the stop list is empty.
+appear in a fully local-expanded expression, as can
+@racket[#%expression] in any expression position. For example,
+@racket[letrec-syntaxes+values] and @racket[#%expression] can appear
+in the result from @racket[local-expand] when the stop list is empty.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "expand-steps"]{Expansion Steps}

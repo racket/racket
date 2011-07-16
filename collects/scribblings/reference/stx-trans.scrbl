@@ -215,7 +215,8 @@ instead of a list, then @racket[stx] is expanded only as long as the
 outermost form of @racket[stx] is a macro (i.e., expansion does not
 proceed to sub-expressions). A fully expanded form can include the
 bindings listed in @secref["fully-expanded"] plus the
-@racket[letrec-syntaxes+values] form.
+@racket[letrec-syntaxes+values] form and @racket[#%expression]
+in any expression position.
 
 The optional @racket[intdef-ctx] argument must be either @racket[#f],
 the result of @racket[syntax-local-make-definition-context], or a list
