@@ -306,8 +306,9 @@
   
   (define (make-annotate top? name)
     (lambda (expr phase)
+      (define disarmed-expr (disarm expr))
       (test-coverage-point
-       (kernel-syntax-case/phase (disarm expr) phase
+       (kernel-syntax-case/phase disarmed-expr phase
          [_
           (identifier? expr)
           (let ([b (identifier-binding expr phase)])
@@ -354,13 +355,13 @@
             (rearm
              expr
              (rebuild 
-              expr 
+              disarmed-expr 
               (list (cons #'rhs with-coverage)))))]
          [(begin . exprs)
           top?
           (rearm
            expr
-           (annotate-seq expr
+           (annotate-seq disarmed-expr
                          (syntax exprs)
                          annotate-top phase))]
          [(define-syntaxes (name ...) rhs)
@@ -372,7 +373,7 @@
                                     (add1 phase)))])
             (rearm
              expr
-             (rebuild expr (list (cons #'rhs marked)))))]
+             (rebuild disarmed-expr (list (cons #'rhs marked)))))]
          
          [(define-values-for-syntax (name ...) rhs)
           top?
@@ -383,7 +384,7 @@
                                     (add1 phase)))])
             (rearm
              expr
-             (rebuild expr (list (cons #'rhs marked)))))]
+             (rebuild disarmed-expr (list (cons #'rhs marked)))))]
          
          [(module name init-import mb)
           (syntax-case (disarm #'mb) ()
@@ -397,7 +398,7 @@
                  (rearm
                   expr
                   (rebuild
-                   expr
+                   disarmed-expr
                    (list (cons
                           mb
                           (rearm
@@ -442,21 +443,21 @@
                expr
                (keep-lambda-properties
                 expr
-                (rebuild expr (map cons clauses clausel))))))]
+                (rebuild disarmed-expr (map cons clauses clausel))))))]
          
          ;; Wrap RHSs and body
          [(let-values ([vars rhs] ...) . body)
           (with-mark expr
                      (rearm
                       expr
-                      (annotate-let expr phase
+                      (annotate-let disarmed-expr phase
                                     (syntax (vars ...))
                                     (syntax (rhs ...))
                                     (syntax body))))]
          [(letrec-values ([vars rhs] ...) . body)
           (let ([fm (rearm
                      expr
-                     (annotate-let expr phase
+                     (annotate-let disarmed-expr phase
                                    (syntax (vars ...))
                                    (syntax (rhs ...))
                                    (syntax body)))])
@@ -478,7 +479,7 @@
             (with-mark expr
                        (rearm
                         expr
-                        (rebuild expr (list (cons #'rhs new-rhs))))))]
+                        (rebuild disarmed-expr (list (cons #'rhs new-rhs))))))]
          
          ;; Wrap subexpressions only
          [(begin e)
@@ -490,12 +491,12 @@
           (with-mark expr
                      (rearm
                       expr
-                      (annotate-seq expr #'body annotate phase)))]
+                      (annotate-seq disarmed-expr #'body annotate phase)))]
          [(begin0 . body)
           (with-mark expr
                      (rearm
                       expr
-                      (annotate-seq expr #'body annotate phase)))]
+                      (annotate-seq disarmed-expr #'body annotate phase)))]
          [(if tst thn els)
           (let ([w-tst (annotate (syntax tst) phase)]
                 [w-thn (annotate (syntax thn) phase)]
@@ -503,22 +504,22 @@
             (with-mark expr
                        (rearm
                         expr
-                        (rebuild expr (list (cons #'tst w-tst)
-                                            (cons #'thn w-thn)
-                                            (cons #'els w-els))))))]
+                        (rebuild disarmed-expr (list (cons #'tst w-tst)
+                                                     (cons #'thn w-thn)
+                                                     (cons #'els w-els))))))]
          [(if tst thn)
           (let ([w-tst (annotate (syntax tst) phase)]
                 [w-thn (annotate (syntax thn) phase)])
             (with-mark expr
                        (rearm
                         expr
-                        (rebuild expr (list (cons #'tst w-tst)
-                                            (cons #'thn w-thn))))))]
+                        (rebuild disarmed-expr (list (cons #'tst w-tst)
+                                                     (cons #'thn w-thn))))))]
          [(with-continuation-mark . body)
           (with-mark expr
                      (rearm
                       expr
-                      (annotate-seq expr (syntax body)
+                      (annotate-seq disarmed-expr (syntax body)
                                     annotate phase)))]
          
          ;; Wrap whole application, plus subexpressions
@@ -538,7 +539,7 @@
            [else
             (with-mark expr (rearm
                              expr
-                             (annotate-seq expr (syntax body)
+                             (annotate-seq disarmed-expr (syntax body)
                                            annotate phase)))])]
          
          [_else
