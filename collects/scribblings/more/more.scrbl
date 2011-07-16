@@ -75,7 +75,7 @@ start @exec{racket} with no command-line arguments:
 
 @verbatim[#:indent 2]{
   $ racket
-  Welcome to Racket
+  @(regexp-replace #rx"\n+$" (banner) "")
   > 
 }
 
