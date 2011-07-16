@@ -8,7 +8,7 @@
 ;; tick field, which the super-class uses to define the callback.
 
 
-(require "check-aux.rkt")
+(require "check-aux.rkt" "stop.rkt")
 
 (provide clock-mixin start-stop<%>)
 
@@ -19,13 +19,21 @@
     (inherit ptock)
     (init-field [on-tick #f])
     (field [rate  0]
+           [limit #f]
            [tick  void]
-           [timer (new timer% [notify-callback (lambda () (ptock))])])
-    (cond
-      [(cons? on-tick)      (set! rate (second on-tick))
-                            (set! tick (first on-tick))]
-      [(procedure? on-tick) (set! rate RATE)
-                            (set! tick on-tick)]
+           [tick# 0]
+           [timer (new timer% [notify-callback (lambda () (set! tick# (+ tick# 1)) (ptock))])])
+    (match on-tick
+      [`(,handler ,r ,l) 
+       (set! limit l)
+       (set! rate r)
+       (set! tick (first on-tick))]
+      [`(,handler ,r) 
+       (set! rate r)
+       (set! tick handler)]
+      [(? procedure? handler)
+       (set! rate RATE)
+       (set! tick handler)]
       [else (void)])
     (define/override (start!)
       (unless (<= rate 0)
@@ -35,7 +43,9 @@
       (send timer stop)
       (super stop! w))
     (define/override (pptock w)
-      (tick w))
+      (if (and limit (> tick# limit))
+          (make-stop-the-world w)
+          (tick w)))
     (define/override (name-of-tick-handler)
       (object-name tick))
     (super-new)))

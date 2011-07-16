@@ -8,6 +8,7 @@
          "timer.rkt"    
          "last.rkt"
          "clauses-spec-aux.rkt"
+         "stop.rkt"
          htdp/error
          (only-in mzlib/etc evcase)
          string-constants)
@@ -85,8 +86,11 @@
             (with-handlers ([exn? handler])
               (define ___  (begin 'dummy body ...))
 	      (define n (if (object-name name) (object-name name) name))
-              (define-values (u mails bad) 
-                (bundle> n (name (send universe get) a ...)))
+              (define nxt (name (send universe get) a ...))
+              (define-values (u mails bad)
+                (if (stop-the-world? nxt)
+                    (error 'stop! "the universe stopped: ~e" (stop-the-world-world nxt))
+                    (bundle> n nxt)))
               (send universe set (format "value returned from ~a" 'name) u)
               (unless (boolean? to-string) (send gui add (to-string u)))
               (broadcast mails)

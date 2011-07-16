@@ -167,6 +167,7 @@ The design of a world program demands that you come up with a data
               ([clause
 		 (on-tick tick-expr)
 		 (on-tick tick-expr rate-expr)
+		 (on-tick tick-expr rate-expr limit-expr)
 		 (on-key key-expr)
 		 (on-release release-expr)
 		 (on-mouse mouse-expr)
@@ -250,6 +251,18 @@ current world. The clock ticks at the rate of 28 times per second.}}
 tells DrRacket to call the @racket[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks every @racket[rate-expr] seconds.}}
+
+@item{
+@defform/none[#:literals(on-tick)
+              (on-tick tick-expr rate-expr limit-expr)
+              #:contracts
+              ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))]
+               [rate-expr (and/c real? positive?)]
+	       [limit-expr (and/c integer? positive?)])]{
+tells DrRacket to call the @racket[tick-expr] function on the current
+world every time the clock ticks. The result of the call becomes the
+current world. The clock ticks every @racket[rate-expr] seconds. 
+The world ends when the clock has ticked more than @scheme[limit-expr] times.}}
 
 @item{A @tech{KeyEvent} represents key board events. 
 
@@ -714,6 +727,14 @@ As mentioned, all event handlers may return @tech{WorldState}s or
                [rate-expr (and/c real? positive?)])]{
 }
 
+@defform/none[#:literals (on-tick)
+              (on-tick tick-expr rate-expr)
+              #:contracts
+              ([tick-expr (-> (unsyntax @tech{WorldState}) (or/c (unsyntax @tech{WorldState}) package?))]
+               [rate-expr (and/c real? positive?)]
+	       [limit-expr (and/c integer? positive?)])]{
+}
+
 @defform/none[#:literals (on-key)
               (on-key key-expr)
               #:contracts
@@ -955,6 +976,7 @@ The @tech{server} itself is created with a description that includes the
 		 (on-msg msg-expr)
 		 (on-tick tick-expr)
 		 (on-tick tick-expr rate-expr)
+		 (on-tick tick-expr rate-expr limit-expr)
 		 (on-disconnect dis-expr)
 		 (state boolean-expr)
 		 (to-string render-expr)
@@ -1034,7 +1056,18 @@ optional handlers:
                [rate-expr (and/c real? positive?)])]{ 
  tells DrRacket to apply @racket[tick-expr] as above; the clock ticks
  every  @racket[rate-expr] seconds.}
-}
+
+@defform/none[#:literals (on-tick)
+              (on-tick tick-expr rate-expr)
+              #:contracts
+              ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
+               [rate-expr (and/c real? positive?)]
+               [limit-expr (and/c integer? positive?)])]{ 
+ tells DrRacket to apply @racket[tick-expr] as above; the clock ticks
+ every  @racket[rate-expr] seconds. The universe stops when the clock has
+ ticked more than @scheme[limit-expr] times.}
+ }
+
 
 @item{
  @defform[(on-disconnect dis-expr)

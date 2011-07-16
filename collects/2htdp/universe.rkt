@@ -56,7 +56,14 @@
              #'(list 
                 (proc> 'on-tick (f2h f) 1)
                 (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
-                      "positive number" "rate"))])]
+                      "positive number" "rate"))]
+            [(_ f rate limit)
+             #'(list 
+                (proc> 'on-tick (f2h f) 1)
+                (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
+                      "positive number" "rate")
+                (num> 'on-tick limit (lambda (x) (and (integer? x) (positive? x)))
+                      "positive integer" "limit"))])]
   ;; -- state specifies whether to display the current state 
   [state DEFAULT #'#f (expr-with-check any> "expected a boolean or a string")]
   ;; Any -> Boolean 

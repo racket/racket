@@ -36,12 +36,12 @@
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
            [_ (err tag p)])))]
-    [(_ arity except extra)
+    [(_ arity except extra ...)
      (lambda (tag)
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
-           extra
+           extra ...
            [_ (err tag p)])))]))
 
 (define (err spec p . xtras)
