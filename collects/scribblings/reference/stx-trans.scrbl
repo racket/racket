@@ -623,6 +623,9 @@ Thus, the result is an identifier corresponding to the innermost
 shadowing of @racket[id-stx] in the current context if it is shadowed,
 and a module-contextless version of @racket[id-stx] otherwise.
 
+If @racket[id-stx] is @tech{tainted} or @tech{armed}, then the
+resulting identifier is @tech{tainted}.
+
 @transform-time[]}
 
 
@@ -699,7 +702,11 @@ instance of @racket[_orig-id], so that it captures uses with the same
 lexical context as the use of @racket[_m-id].
 
 More typically, however, @racket[syntax-local-make-delta-introducer]
-should be used, since it cooperates with @tech{rename transformers}.}
+should be used, since it cooperates with @tech{rename transformers}.
+
+If @racket[ext-stx] is @tech{tainted} or @tech{armed}, then an
+identifier result from the created procedure is @tech{tainted}.}
+
 
 @defproc[(syntax-local-make-delta-introducer [id identifier?])
          (identifier? . -> . identifier?)]{

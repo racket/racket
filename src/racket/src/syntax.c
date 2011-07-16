@@ -7970,7 +7970,7 @@ Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from)
 
 static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], Scheme_Object *p)
 {
-  Scheme_Object *r, *delta;
+  Scheme_Object *r, *delta, *taint_p;
 
   r = argv[0];
 
@@ -7978,10 +7978,14 @@ static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], S
     scheme_wrong_type("delta-introducer", "syntax", 0, argc, argv);
 
   delta = SCHEME_PRIM_CLOSURE_ELS(p)[0];
+  taint_p = SCHEME_PRIM_CLOSURE_ELS(p)[1];
 
   for(; !SCHEME_NULLP(delta); delta = SCHEME_CDR(delta)) {
     r = scheme_add_remove_mark(r, SCHEME_CAR(delta));
   }
+
+  if (SCHEME_TRUEP(taint_p))
+    r = scheme_stx_taint(r);
 
   return r;
 }
@@ -8018,7 +8022,7 @@ static Scheme_Object *extract_phase(const char *who, int pos, int argc, Scheme_O
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *orig_m1, *m1, *m2, *delta, *a[1];
+  Scheme_Object *orig_m1, *m1, *m2, *delta, *a[2];
   int l1, l2;
   Scheme_Object *phase;
 
@@ -8091,8 +8095,12 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
   }
 
   a[0] = delta;
+  if (scheme_stx_is_clean(argv[0]))
+    a[1] = scheme_false;
+  else
+    a[2] = scheme_true;
 
-  return scheme_make_prim_closure_w_arity(delta_introducer, 1, a, "delta-introducer", 1, 1);
+  return scheme_make_prim_closure_w_arity(delta_introducer, 2, a, "delta-introducer", 1, 1);
 }
 
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
