@@ -2088,6 +2088,10 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     sym = scheme_stx_strip_module_context(sym);
     /* Add current module context, if any */
     sym = local_module_introduce(1, &sym);
+
+    if (!scheme_stx_is_clean(orig_sym))
+      sym = scheme_stx_taint(sym);
+
     return sym;
   }
 
@@ -2101,6 +2105,9 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     scheme_set_rename(rn, 0, result);
 
     result = scheme_add_rename(result, rn);
+
+    if (!scheme_stx_is_clean(orig_sym))
+      result = scheme_stx_taint(result);
 
     return result;
   }

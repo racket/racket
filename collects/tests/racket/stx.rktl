@@ -1528,5 +1528,36 @@
   (test #t syntax-tainted? (round-trip (syntax-touch (syntax-arm (quote-syntax foo))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that attacks are thwarted via `syntax-local-get-shadower'
+;; or `make-syntax-delta-introducer':
+
+(module secret-value-42 racket
+   (define secret 42)
+   (define-syntax-rule (m) (even? secret))
+   (provide m))
+(require 'secret-value-42)
+
+(define-syntax (evil-via-shadower stx)
+  (syntax-case stx ()
+    [(_ e)
+     (let* ([ee (local-expand #'e 'expression null)]
+            [id (with-syntax ([(app f x) ee]) #'f)]
+            [okid (syntax-local-get-shadower id)])
+       #`(let ([#,okid values])
+           #,ee))]))
+
+(define-syntax (evil-via-delta-introducer stx)
+  (syntax-case stx ()
+    [(_ e)
+     (let* ([ee (local-expand #'e 'expression null)]
+            [id (with-syntax ([(app f x) ee]) #'f)]
+            [okid ((make-syntax-delta-introducer id #'e) #'even?)])
+       #`(let ([#,okid values])
+           #,ee))]))
+
+(syntax-test #'(evil-via-shadower (m)))
+(syntax-test #'(evil-via-delta-introducer (m)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
