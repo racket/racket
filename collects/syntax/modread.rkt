@@ -1,26 +1,10 @@
 (module modread mzscheme
-  (require racket/contract)
+  (require racket/contract
+           "private/modread.rkt")
   
   (provide with-module-reading-parameterization)
   (provide/contract
    [check-module-form ((or/c syntax? eof-object?) symbol? (or/c string? path? false/c) . -> . any)])
-
-  (define (with-module-reading-parameterization thunk)
-    (parameterize ([read-case-sensitive #t]
-                   [read-square-bracket-as-paren #t]
-                   [read-curly-brace-as-paren #t]
-                   [read-accept-box #t]
-                   [read-accept-compiled #t]
-                   [read-accept-bar-quote #t]
-                   [read-accept-graph #t]
-                   [read-decimal-as-inexact #t]
-                   [read-accept-dot #t]
-                   [read-accept-infix-dot #t]
-                   [read-accept-quasiquote #t]
-                   [read-accept-reader #t]
-                   [read-accept-lang #t]
-                   [current-readtable #f])
-      (thunk)))
 
   (define (raise-wrong-module-name filename expected-name name)
     (error 'load-handler

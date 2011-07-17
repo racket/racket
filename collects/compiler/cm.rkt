@@ -7,7 +7,8 @@
          scheme/list
          scheme/path
          racket/promise
-         openssl/sha1)
+         openssl/sha1
+         syntax/private/modread)
 
 (provide make-compilation-manager-load/use-compiled-handler
          managed-compile-zo
@@ -465,11 +466,13 @@
       -inf.0))
 
 (define (try-file-sha1 path dep-path)
-  (with-handlers ([exn:fail:filesystem? (lambda (exn) #f)])
-    (string-append
-     (call-with-input-file* path sha1)
-     (with-handlers ([exn:fail:filesystem? (lambda (exn) "")])
-       (call-with-input-file* dep-path (lambda (p) (cdadr (read p))))))))
+  (with-module-reading-parameterization
+   (lambda ()
+     (with-handlers ([exn:fail:filesystem? (lambda (exn) #f)])
+       (string-append
+        (call-with-input-file* path sha1)
+        (with-handlers ([exn:fail:filesystem? (lambda (exn) "")])
+          (call-with-input-file* dep-path (lambda (p) (cdadr (read p))))))))))
 
 (define (get-compiled-sha1 mode path)
   (define-values (dir name) (get-compilation-dir+name mode path))
@@ -492,9 +495,11 @@
   (define orig-path (simple-form-path path0))
   (define (read-deps path)
     (with-handlers ([exn:fail:filesystem? (lambda (ex) (list (version) '#f))])
-      (call-with-input-file
-          (path-add-suffix (get-compilation-path mode path) #".dep")
-        read)))
+      (with-module-reading-parameterization
+       (lambda ()
+         (call-with-input-file
+             (path-add-suffix (get-compilation-path mode path) #".dep")
+           read)))))
   (define (do-check)
     (let* ([main-path orig-path]
            [alt-path (rkt->ss orig-path)]
