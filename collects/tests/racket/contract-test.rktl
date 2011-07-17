@@ -887,6 +887,15 @@
      1))
 
   (test/pos-blame
+   'contract-arrow-values5
+   '((contract (-> integer? (values integer? integer?))
+               (lambda (x) x)
+               'pos
+               'neg)
+     1))
+
+  
+  (test/pos-blame
    'contract-arrow-keyword1
    '(contract (-> integer? any)
               (λ (x #:y y) x)
