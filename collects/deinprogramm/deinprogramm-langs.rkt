@@ -1379,7 +1379,7 @@
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-	   (reader-module '(lib "DMdA-beginner-reader.rkt" "deinprogramm"))
+	   (reader-module '(lib "DMdA-beginner-reader.ss" "deinprogramm"))
 	   (stepper:supported #t)))
 	
 	(add-deinprogramm-language
@@ -1394,7 +1394,7 @@
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-	   (reader-module '(lib "DMdA-vanilla-reader.rkt" "deinprogramm"))
+	   (reader-module '(lib "DMdA-vanilla-reader.ss" "deinprogramm"))
 	   (stepper:supported #t)))
 
         (add-deinprogramm-language
@@ -1409,7 +1409,7 @@
            (sharing-printing #t)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
-	   (reader-module '(lib "DMdA-assignments-reader.rkt" "deinprogramm"))
+	   (reader-module '(lib "DMdA-assignments-reader.ss" "deinprogramm"))
 	   (stepper:supported #f)
 	   (debugger:supported #t)))
 
@@ -1425,6 +1425,6 @@
            (sharing-printing #t)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
-	   (reader-module '(lib "DMdA-advanced-reader.rkt" "deinprogramm"))
+	   (reader-module '(lib "DMdA-advanced-reader.ss" "deinprogramm"))
 	   (stepper:supported #f)
 	   (debugger:supported #t))))))
