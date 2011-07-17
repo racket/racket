@@ -5,7 +5,7 @@
 
 @defmodule[syntax/modcode]
 
-@defproc[(get-module-code [module-path-v module-path?]
+@defproc[(get-module-code [path path?]
                           [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) "compiled"]
                           [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
                           [#:compile compile-proc0 (any/c . -> . any) compile] 
@@ -24,7 +24,7 @@
          any]{
 
 Returns a compiled expression for the declaration of the module
-specified by @racket[module-path-v].
+specified by @racket[path].
 
 The @racket[compiled-subdir] argument defaults to @racket["compiled"];
 it specifies the sub-directory to search for a compiled version of the
@@ -74,7 +74,7 @@ A parameter whose value is used like @racket[open-input-file] to read
 a module source or @filepath{.zo} file.}
 
 
-@defstruct[(exn:get-module-code exn) ([path path?])]{
+@defstruct[(exn:get-module-code exn:fail) ([path path?])]{
 
 An exception structure type for exceptions raised by
 @racket[get-module-code].}
