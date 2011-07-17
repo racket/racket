@@ -1,14 +1,14 @@
 #lang scheme/base
 (require syntax/modcode
          syntax/modresolve
+         syntax/modread
          setup/main-collects
 	 unstable/file
          scheme/file
          scheme/list
          scheme/path
          racket/promise
-         openssl/sha1
-         syntax/private/modread)
+         openssl/sha1)
 
 (provide make-compilation-manager-load/use-compiled-handler
          managed-compile-zo
