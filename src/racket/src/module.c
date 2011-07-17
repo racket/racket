@@ -4769,6 +4769,8 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
       src = prefix;
     else
       src = scheme_intern_resolved_module_path(src);
+    if (SCHEME_FALSEP(src))
+      src = name;
     insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
   }
   else {
