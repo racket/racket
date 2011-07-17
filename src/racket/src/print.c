@@ -2565,7 +2565,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           int is_sym;
           
           modname = ((Scheme_Env *)obj)->module->modname;
-          is_sym = SCHEME_SYMBOLP(SCHEME_PTR_VAL(modname));
+          is_sym = !SCHEME_PATHP(SCHEME_PTR_VAL(modname));
           print_utf8_string(pp, (is_sym ? "'" : "\""), 0, 1);
           print(SCHEME_PTR_VAL(modname), 0, 0, ht, mt, pp);
           PRINTADDRESS(pp, modname);
