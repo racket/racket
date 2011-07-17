@@ -519,5 +519,13 @@
   (test #t regexp-match? #rx"<namespace:'" (get-output-string s)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check "source" name of built-in module:
+
+(parameterize ([current-namespace (module->namespace ''#%network)])
+  (test '#%network 
+        variable-reference->module-source
+        (eval (datum->syntax #'here '(#%variable-reference)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
