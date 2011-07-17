@@ -314,6 +314,7 @@ static void init_unsafe(Scheme_Env *env)
   pt = unsafe_env->module->me->rt;
   scheme_populate_pt_ht(pt);
   scheme_protect_primitive_provide(unsafe_env, NULL);
+  unsafe_env->attached = 1;
 
 #if USE_COMPILED_STARTUP
   if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT)) {
@@ -339,6 +340,7 @@ static void init_flfxnum(Scheme_Env *env)
   pt = flfxnum_env->module->me->rt;
   scheme_populate_pt_ht(pt);
   scheme_protect_primitive_provide(flfxnum_env, NULL);
+  flfxnum_env->attached = 1;
 
 #if USE_COMPILED_STARTUP
   if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT)) {
@@ -363,6 +365,7 @@ static void init_futures(Scheme_Env *env)
   pt = futures_env->module->me->rt;
   scheme_populate_pt_ht(pt);
   scheme_protect_primitive_provide(futures_env, NULL);
+  futures_env->attached = 1;
 
 #if USE_COMPILED_STARTUP
   if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT + EXPECTED_FUTURES_COUNT)) {

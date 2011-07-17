@@ -2628,17 +2628,20 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
 
   name = scheme_module_resolve(scheme_make_modidx(name, scheme_false, scheme_false), 1);
 
-  modchain = env->modchain;
-  menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(modchain), name);
+  menv = get_special_modenv(name);
   if (!menv) {
-    if (scheme_hash_get(env->module_registry->loaded, name))
-      scheme_arg_mismatch("module->namespace",
-			  "module not instantiated in the current namespace: ",
-			  name);
-    else
-      scheme_arg_mismatch("module->namespace",
-			  "unknown module in the current namespace: ",
-			  name);
+    modchain = env->modchain;
+    menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(modchain), name);
+    if (!menv) {
+      if (scheme_hash_get(env->module_registry->loaded, name))
+        scheme_arg_mismatch("module->namespace",
+                            "module not instantiated in the current namespace: ",
+                            name);
+      else
+        scheme_arg_mismatch("module->namespace",
+                            "unknown module in the current namespace: ",
+                            name);
+    }
   }
 
   {
