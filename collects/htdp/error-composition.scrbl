@@ -89,7 +89,7 @@ Use the following vocabulary words to describe how code runs:
 
 @itemize[
   @item{When specifying a function's behavior, say @samp{the function
-    takes ... and returns ...}}
+    takes ... and produces ...}}
 
   @item{When describing a contract violation, say @samp{the function
     expects ... but received ...}}
@@ -98,7 +98,7 @@ Use the following vocabulary words to describe how code runs:
     to, e.g. @samp{the value of @racket[(f x)] is 5}.  If it is necessary to
     mention evaluation order, such as when the context discusses mutable state,
     say that the expression @samp{evaluates to} a value.  Function calls
-    are a special case of expression.  Prefer @samp{the function call returns ...}
+    are a special case of expression.  Prefer @samp{the function call produces ...}
     to @samp{the function call evaluates to ...}, except when trying to draw attention to
     the evaluation of the arguments.}
 

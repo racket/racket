@@ -290,13 +290,13 @@
 	"Evaluates the number of items on a list.")
       (memq (any (listof any) -> (union false list))
 	"Determines whether some value is on some list"
-	" if so, it returns the suffix of the list that starts with x"
-	" if not, it returns false."
+	" if so, it produces the suffix of the list that starts with x"
+	" if not, it produces false."
 	" (It compares values with the eq? predicate.)")
       (memv (any (listof any) -> (union false list))
 	"Determines whether some value is on the list"
-	" if so, it returns the suffix of the list that starts with x"
-	" if not, it returns false."
+	" if so, it produces the suffix of the list that starts with x"
+	" if not, it produces false."
 	" (It compares values with the eqv? predicate.)")
       ((beginner-member? member?) (any (listof any) -> boolean)
 	"Determines whether some value is on the list"
@@ -405,7 +405,7 @@
       (string (char ... -> string)
 	"Builds a string of the given characters.")
       (make-string (nat char -> string)
-	"Returns a string of given length"
+	"Produces a string of given length"
 	" from a single given character.")
       (string-ref (string nat -> char)
 	"Extracts the i-the character from a string.")
@@ -455,7 +455,7 @@
 	"Converts a string into a symbol.")
       (string->number (string -> (union number false))
 	"Converts a string into a number,"
-	" return false if impossible.")
+	" produce false if impossible.")
       (string->list (string -> (listof char))
 	"Converts a string into a list of characters.")
       (list->string ((listof char) -> string)

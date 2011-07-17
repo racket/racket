@@ -106,7 +106,7 @@
   "foldl : first argument must be a function that expects two arguments, given #<procedure:car>")
 
 (htdp-err/rt-test (build-string 2 add1)
-  "build-string : the second argument must be a function that returns a character, given #<procedure:add1>, which returned 1 when given 0")
+  "build-string : the second argument must be a function that produces a character, given #<procedure:add1>, which produced 1 when given 0")
 
 (htdp-test 0 '+ (+))
 (htdp-test 1 '+ (+ 1))

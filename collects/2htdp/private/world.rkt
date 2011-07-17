@@ -129,7 +129,7 @@
        (height (if (pair? to-draw) (third to-draw) #f)))
       
       ;; the visible world 
-      (field [enable-images-button void] ;; used if stop-when call returns #t
+      (field [enable-images-button void] ;; used if stop-when call produces #t
              [disable-images-button void]
              [visible (new pasteboard%)])
       
@@ -338,7 +338,7 @@
         (show (ppdraw)))
       
       ;; -> Scene
-      ;; return the scene for the this state
+      ;; produce the scene for the this state
       (define/public (ppdraw)
         (check-scene-result (name-of draw 'your-draw) (draw (send world get))))
       
