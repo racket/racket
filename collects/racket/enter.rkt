@@ -74,24 +74,30 @@
              [path (path->complete-path path dir)]
              [path (normal-case-path (simplify-path path))])
         ;; Record module timestamp and dependencies:
+        (define-values (ts actual-path) (get-timestamp path))
         (let ([a-mod (mod name
-                          (get-timestamp path)
+                          ts
                           (if code
                             (append-map cdr (module-compiled-imports code))
                             null))])
           (hash-set! loaded path a-mod))
         ;; Evaluate the module:
-        (eval code))
+        (parameterize ([current-module-declare-source actual-path])
+          (eval code)))
       ;; Not a module:
       (begin (notify path) (orig path name)))))
 
 (define (get-timestamp path)
-  (file-or-directory-modify-seconds path #f
-    (lambda ()
-      (if (regexp-match? #rx#"[.]rkt$" (path->bytes path))
-        (file-or-directory-modify-seconds
-         (path-replace-suffix path #".ss") #f (lambda () -inf.0))
-        -inf.0))))
+  (let ([ts (file-or-directory-modify-seconds path #f (lambda () #f))])
+    (if ts
+        (values ts path)
+        (if (regexp-match? #rx#"[.]rkt$" (path->bytes path))
+            (let* ([alt-path (path-replace-suffix path #".ss")]
+                   [ts (file-or-directory-modify-seconds alt-path #f (lambda () #f))])
+              (if ts
+                  (values ts alt-path)
+                  (values -inf.0 path)))
+            (values -inf.0 path)))))
 
 (define (check-latest mod flags)
   (define mpi (module-path-index-join mod #f))
@@ -106,11 +112,12 @@
         (define mod (hash-ref loaded npath #f))
         (when mod
           (for-each loop (mod-depends mod))
-          (define ts (get-timestamp npath))
+          (define-values (ts actual-path) (get-timestamp npath))
           (when (ts . > . (mod-timestamp mod))
             (define orig (current-load/use-compiled))
             (parameterize ([current-load/use-compiled
                             (enter-load/use-compiled orig #f flags)]
-                           [current-module-declare-name rpath])
+                           [current-module-declare-name rpath]
+                           [current-module-declare-source actual-path])
               ((enter-load/use-compiled orig #t flags)
                npath (mod-name mod)))))))))
