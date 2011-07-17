@@ -139,5 +139,13 @@
 (delete-directory/files dir)
 
 ;; ----------------------------------------
+;; Check that cm sets reader for .dep files:
+
+(parameterize ([current-readtable (make-readtable #f #\( 'terminating-macro void)])
+  (parameterize ([current-namespace (make-base-namespace)])
+    (parameterize ([current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)])
+      (test (void) dynamic-require 'compiler/cm #f))))
+
+;; ----------------------------------------
 
 (report-errs)
