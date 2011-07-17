@@ -10,7 +10,7 @@
            make-exn:get-module-code)
 
   (provide/contract
-   [get-module-code (->* ((or/c path? module-path?))
+   [get-module-code (->* (path?)
                          (#:sub-path 
                           (and/c path-string? relative-path?)
                           (and/c path-string? relative-path?)
@@ -74,7 +74,7 @@
                 v))))
         (lambda () (close-input-port p)))))
 
-  (define-struct (exn:get-module-code exn) (path))
+  (define-struct (exn:get-module-code exn:fail) (path))
 
   (define (get-module-code path
                            #:sub-path [sub-path0 "compiled"]
@@ -85,8 +85,6 @@
                            #:notify [notify void]
                            #:source-reader [read-src-syntax read-syntax]
                            #:rkt-try-ss? [rkt-try-ss? #t])
-    (unless (path-string? path)
-      (raise-type-error 'get-module-code "path or string (sans nul)" path))
     (let*-values ([(orig-path) (resolve path)]
                   [(base orig-file dir?) (split-path path)]
                   [(main-file alt-file)
