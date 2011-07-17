@@ -157,7 +157,7 @@ they can be syntactically restricted to application positions.
 @defform[(first-order->higher-order expression)]{
 
 If @racket[expression] is the name of a first-order function (either a
-primitive or a function defined within Beginner Student), returns the
+primitive or a function defined within Beginner Student), produces the
 function as a value; otherwise, the form is equivalent to
 @racket[expression].
 

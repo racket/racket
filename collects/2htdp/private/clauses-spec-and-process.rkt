@@ -91,7 +91,7 @@
          (if r ((third s) r) (fourth s)))
        Spec))
 
-;; check whether rec? occurs, returns list of keyword x clause pairs 
+;; check whether rec? occurs, produces list of keyword x clause pairs 
 (define (clauses-use-kwd stx:list ->rec? tag kwds)
   (define kwd-in? (->kwds-in kwds))
   (map (lambda (stx)

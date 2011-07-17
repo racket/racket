@@ -352,8 +352,8 @@ namespace.
                       (define r (f i))
                       (unless (char? r)
                         (hocheck 'build-string
-                                 "the second argument must be a function that returns a character, ~
-                                  given ~e, which returned ~e when given ~e" f r i))
+                                 "the second argument must be a function that produces a character, ~
+                                  given ~e, which produced ~e when given ~e" f r i))
                       r))))
 
 

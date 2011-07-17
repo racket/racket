@@ -35,13 +35,13 @@
 (convert-file IN f2c OUT)
 (with-input-from-file OUT check-convert-out)
 
-(check-error (convert-file IN list OUT) "convert: The conversion function must return a number; but it returned (212)")
+(check-error (convert-file IN list OUT) "convert: The conversion function must produce a number; but it produced (212)")
 
 (check-error (convert-file IN first OUT) "first: expected argument of type <non-empty list>; given 212")
 
-(check-error (convert-file IN fx OUT) "convert: The conversion function must return a number; but it returned xyz")
+(check-error (convert-file IN fx OUT) "convert: The conversion function must produce a number; but it produced xyz")
 
-(check-error (convert-file IN f2c 10) "convert-file: expected <string> as third argument, given: 10")
+(check-error (convert-file IN f2c 10) "convert-file: expects a string as third argument, given 10")
 
 ;; ----------------------------------------------------------------------------
 ;; convert by repl: 

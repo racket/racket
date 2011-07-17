@@ -163,10 +163,10 @@ by @racket[define], @racket[letrec], @racket[let*], or @racket[let].}
 
 @defform[(delay expression)]{
 
-Returns a ``promise'' to evaluate @racket[expression]. The @racket[expression]
+Produces a ``promise'' to evaluate @racket[expression]. The @racket[expression]
 is not evaluated until the promise is forced with @racket[force]; when
 the promise is forced, the result is recorded, so that any further
-@racket[force] of the promise immediately returns the remembered value.}
+@racket[force] of the promise immediately produces the remembered value.}
 
 
 
@@ -263,7 +263,7 @@ error.}
 @defform[(unless test-expression body-expression)]{
 
 Like @racket[when], but the @racket[body-expression] is evaluated when the
-@racket[test-expression] evaluates to @racket[false] instead of @racket[true].}
+@racket[test-expression] produces @racket[false] instead of @racket[true].}
 
 
 @section[#:tag "advanced-common-syntax"]{Common Syntaxes}

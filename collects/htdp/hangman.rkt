@@ -114,7 +114,7 @@
 (define message-panel #f)
 
 ;; setup-gui : str ->* message% panel%
-;; to return a status message and a panel where winning/losing can be announced
+;; to produce a status message and a panel where winning/losing can be announced
 ;; effect: set up a new frame, arrange the GUI, and display (blank) status word 
 (define (setup-gui status)
   (local (#| --------------------------------------------------------------

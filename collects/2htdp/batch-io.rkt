@@ -41,7 +41,7 @@
  
  write-file ;; String String -> String 
  ;; (write-file filename str) writes str to filename; 
- ;; returns the file name as a confirmation that the write succeeded 
+ ;; produces the file name as a confirmation that the write succeeded 
  )      
 
 ;; -----------------------------------------------------------------------------

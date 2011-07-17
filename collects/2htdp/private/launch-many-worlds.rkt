@@ -6,7 +6,7 @@
   launch-many-worlds
   ;; (launch-many-worlds e1 ... e2)
   ;; run expressions e1 through e2 in parallel,
-  ;; return all values
+  ;; produce all values
   )
 
 (define-syntax-rule 

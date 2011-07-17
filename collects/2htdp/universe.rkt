@@ -35,7 +35,7 @@
 (provide
  launch-many-worlds
  ;; (launch-many-worlds e1 ... e2)
- ;; run expressions e1 through e2 in parallel, return all values in same order
+ ;; run expressions e1 through e2 in parallel, produce all values in same order
  )
 
 (provide-primitive
@@ -130,7 +130,7 @@
    ;; ******************************************************************
    DEFAULT #'(lambda (u w) (make-bundle u '() '()))
    ;; this is the wrong default function 
-   ;; instead of K there should be a function that returns a bundle 
+   ;; instead of K there should be a function that produces a bundle 
    (function-with-arity 2)
    ;; ******************************************************************
    ]
