@@ -453,7 +453,7 @@ customize and extend it, but this will be added in the future.
 
 Meanwhile, if you're interested in tweaking XREPL, the @cmd[enter]
 command can be used as usual to go into its implementation.  For
-example:
+example --- change an XREPL parameter:
 @verbatim[#:indent 4]{
     -> ,en xrepl/xrepl
     xrepl/xrepl> ,e
@@ -463,6 +463,14 @@ example:
     123
     -> ~
     123}
+or add a command:
+@verbatim[#:indent 4]{
+  -> ,en xrepl/xrepl
+  xrepl/xrepl> (defcommand eli "stuff" "eli says" ["Make eli say stuff"]
+                 (printf "Eli says: ~a\n" (getarg 'line)))
+  xrepl/xrepl> ,top
+  -> ,eli moo
+  Eli says: moo}
 While this is not intended as @emph{the} way to extend and customize
 XREPL, it is a useful debugging tool should you want to do so.
 
