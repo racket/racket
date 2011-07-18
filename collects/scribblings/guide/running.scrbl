@@ -38,8 +38,9 @@ with a @litchar{> } prompt:
   > 
 }
 
-@margin-note{For information on GNU Readline support, see
-@racketmodname[readline].}
+@margin-note{For enhancing your @tech{REPL} experience, see
+  @racketmodname[xrepl]; for information on GNU Readline support, see
+  @racketmodname[readline].}
 
 To initialize the @tech{REPL}'s environment, @exec{racket} first
 requires the @racketmodname[racket/init] module, which provides all of
