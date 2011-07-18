@@ -133,7 +133,13 @@
                              ;; be coerced anyway, or about things like:
                              ;; (vector-ref vector-of-rationals x)
                              ;; which don't perform arithmetic despite returning numbers.
-                             [e:arith-expr #'e]
+                             [(~and e:arith-expr (op args ...))
+                              ;; if a subexpression has any float args, it will be reported as a
+                              ;; float-real mix missed opt, so this report would be redundant
+
+                              #:when (for/and ([s (in-list (syntax->list #'(args ...)))])
+                                       (not (in-float-layer? s)))
+                              #'e]
                              [_ #f]))))
                       (when (not (null? extra-precision-subexprs))
                         (log-missed-optimization
