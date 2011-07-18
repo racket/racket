@@ -147,8 +147,8 @@
       (let ([ch (peek-char)])
         (if (memq ch skip) (begin (read-char) (loop)) ch)))))
 
-(define (here-path)
-  (let ([x (here-source)]) (if (path? x) x eof)))
+(define (here-path [no-path eof])
+  (let ([x (here-source)]) (if (path? x) x no-path)))
 (define (here-mod-or-eof)
   (let ([x (here-source)])
     (if (not x)
@@ -285,7 +285,9 @@
 (defcommand (shell sh ls cp mv rm md rd git svn) "<shell-command>"
   "run a shell command"
   ["`sh' runs a shell command (via `system'), the aliases run a few useful"
-   "unix commands.  (Note: `ls' has some default arguments set.)"]
+   "unix commands.  (Note: `ls' has some default arguments set.)"
+   "If the REPL is inside some module's namespace, the command can use $F"
+   "which is set to the full path to this module's source file."]
   (let* ([arg (getarg 'line)]
          [arg (if (equal? "" arg) #f arg)]
          [cmd (current-command)])
@@ -294,12 +296,15 @@
       [(shell) (set! cmd 'sh)])
     (let ([cmd (cond [(eq? 'sh cmd) #f]
                      [(symbol? cmd) (symbol->string cmd)]
-                     [else cmd])])
+                     [else cmd])]
+          [here (here-path #f)])
+      (putenv "F" (if here (path->string here) ""))
       (unless (system (cond [(and (not cmd) (not arg)) (getenv "SHELL")]
                             [(not cmd) arg]
                             [(not arg) cmd]
                             [else (string-append cmd " " arg)]))
-        (eprintf "(exit with an error status)\n")))))
+        (eprintf "(exit with an error status)\n"))
+      (when here (putenv "F" "")))))
 
 (defcommand (edit e) "<file> ..."
   "edit files in your $EDITOR"

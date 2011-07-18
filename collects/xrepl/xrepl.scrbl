@@ -81,6 +81,10 @@ available.
   Use @cmd[shell] (or @cmd[sh]) to run a generic shell command (via
   @racket[system]).  For convenience, a few synonyms are provided ---
   they run the specified executables (still using @racket[system]).
+
+  When the REPL is in the context of a module with a known source file,
+  the shell command can use the @envvar{F} environment variable as the
+  path to the file.  Otherwise, @envvar{F} is set to an empty string.
 }
 
 @defcmd[edit]{
