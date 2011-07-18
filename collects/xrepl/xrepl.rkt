@@ -16,6 +16,8 @@
 ;; ----------------------------------------------------------------------------
 ;; utilities
 
+(define home-dir (find-system-path 'home-dir))
+
 ;; autoloads: avoid loading a ton of stuff to minimize startup penalty
 (define autoloaded-specs (make-hasheq))
 (define (autoloaded? sym) (hash-ref autoloaded-specs sym #f))
@@ -145,20 +147,35 @@
       (let ([ch (peek-char)])
         (if (memq ch skip) (begin (read-char) (loop)) ch)))))
 
-(define (getarg kind [flag 'req])
+(define (here-path)
+  (let ([x (here-source)]) (if (path? x) x eof)))
+(define (here-mod-or-eof)
+  (let ([x (here-source)])
+    (if (not x)
+      eof
+      (datum->syntax #f
+        (cond [(symbol? x) (and (module-name? x) `',x)]
+              [(path? x)   (let ([s (path->string x)])
+                             (if (absolute-path? x) `(file ,s) s))]
+              [else (error 'here-mod-or-eof "internal error: ~s" x)])))))
+
+(define (getarg kind [flag 'req] #:default [dflt #f])
   (define (argerror fmt . args)
     (apply cmderror #:default-who 'getarg fmt args))
   (define (missing) (argerror "missing ~a argument" kind))
   (define (get read)
-    (let loop ([flag flag])
-      (case flag
-        [(req)   (let ([x (if (eq? #\newline (skip-spaces/peek)) eof (read))])
-                   (if (eof-object? x) (missing) x))]
-        [(opt)   (and (not (eq? #\newline (skip-spaces/peek))) (loop 'req))]
-        [(list)  (let ([x (loop 'opt)])
-                   (if x (cons x (loop 'list)) '()))]
-        [(list+) (cons (loop 'req) (loop 'list))]
-        [else (error 'getarg "unknown flag: ~e" flag)])))
+    (define 1st (if (eq? #\newline (skip-spaces/peek)) eof (read)))
+    (define 1st? (not (eof-object? 1st)))
+    (define (dflt*) (let ([r (dflt)]) (if (eof-object? r) (missing) r)))
+    (case flag
+      [(req opt) (cond [1st? 1st]           [dflt (dflt*)]
+                       [(eq? 'opt flag) #f] [else (missing)])]
+      [(list list+)
+       (define (more)
+         (if (eq? #\newline (skip-spaces/peek)) '() (cons (read) (more))))
+       (cond [1st? (cons 1st (more))] [dflt (list (dflt*))]
+             [(eq? 'list flag) '()]   [else (missing)])]
+      [else (error 'getarg "unknown flag: ~e" flag)]))
   (define (read-string-arg)
     (define ch (skip-spaces/peek " \t\r\n"))
     (let* ([i (current-input-port)]
@@ -187,18 +204,12 @@
     (and arg (if (memq flag '(list list+)) (map convert arg) (convert arg))))
   (let loop ([kind kind])
     (case kind
-      [(line)    (get read-line-arg)]
-      [(string)  (get read-string-arg)]
-      [(path)    (translate (loop 'string) expand-user-path)]
-      [(path*)   (if (eq? flag 'list)
-                   (let ([args (getarg 'path 'list)])
-                     (if (pair? args)
-                       args
-                       (let ([x (here-source)]) (if (path? x) (list x) '()))))
-                   (error 'getarg "'path* must always be used with 'list"))]
-      [(sexpr)   (get read)]
-      [(syntax)  (translate (get read-syntax) namespace-syntax-introduce)]
-      [(modspec) (translate (loop 'syntax) process-modspec)]
+      [(line)     (get read-line-arg)]
+      [(string)   (get read-string-arg)]
+      [(path)     (translate (loop 'string) expand-user-path)]
+      [(sexpr)    (get read)]
+      [(syntax)   (translate (get read-syntax) namespace-syntax-introduce)]
+      [(modspec)  (translate (loop 'syntax) process-modspec)]
       [else (error 'getarg "unknown arg kind: ~e" kind)])))
 
 (define (run-command cmd)
@@ -260,14 +271,14 @@
   ["Sets `current-directory'; expands user paths.  With no arguments, goes"
    "to your home directory.  An argument of `-' indicates the previous"
    "directory."]
-  (let* ([arg (or (getarg 'path 'opt) (find-system-path 'home-dir))]
+  (let* ([arg (or (getarg 'path 'opt) home-dir)]
          [arg (if (equal? arg (string->path "-")) (cdr (last-2dirs)) arg)])
     (if (directory-exists? arg)
       (begin (current-directory arg) (report-directory-change 'cd))
       (eprintf "cd: no such directory: ~a\n" arg))))
 
 (defcommand pwd #f
-  "read the current directory"
+  "display the current directory"
   ["Displays the value of `current-directory'."]
   (report-directory-change 'pwd))
 
@@ -303,13 +314,14 @@
                    (string-append "$EDITOR ("env") not found in your path")
                    "no $EDITOR variable"))
          (run-command 'drracket)]
-        [(not (apply system* exe (getarg 'path* 'list)))
+        [(not (apply system* exe (getarg 'path 'list #:default here-path)))
          (eprintf "(exit with an error status)\n")]
         [else (void)]))
 
 (define ->running-dr #f)
 (define (->dr . xs) (unless ->running-dr (start-dr)) (->running-dr xs))
 (define (start-dr)
+  (printf "; starting DrRacket...\n")
   (define c (make-custodian))
   (define ns ((dynamic-require 'racket/gui 'make-gui-namespace)))
   (parameterize ([current-custodian c]
@@ -425,7 +437,7 @@
    "* -quit: exits the running instance.  Quitting the application as usual"
    "  will only close the visible window, but it will still run in a hidden"
    "  window.  This command should not be needed under normal circumstances."]
-  (let ([args (getarg 'path* 'list)])
+  (let ([args (getarg 'path 'list #:default here-path)])
     (if (null? args)
       (->dr 'new)
       (let* ([cmd (let ([s (path->string (car args))])
@@ -439,7 +451,7 @@
 
 (defcommand (apropos ap) "<search-for> ..."
   "look for a binding"
-  ["Additional string arguments restrict matches shown.  The search specs can"
+  ["Additional arguments restrict the shown matches.  The search specs can"
    "have symbols (which specify what to look for in bound names), and regexps"
    "(for more complicated matches)."]
   (let* ([look (map (λ (s) (cond [(symbol? s)
@@ -603,16 +615,20 @@
 
 (define rr-modules (make-hash)) ; hash to remember reloadable modules
 
-(defcommand (require-reloadable reqr rr) "<module-spec> ...+"
+(define last-rr-specs '())
+
+(defcommand (require-reloadable reqr rr) "<simple-module-spec> ..."
   "require a module, make it reloadable"
   ["Same as ,require but the module is required in a way that makes it"
    "possible to reload later.  If it was already loaded then it is reloaded."
    "Note that this is done by setting `compile-enforce-module-constants' to"
    "#f, which prohibits some optimizations."]
+  (let ([s (getarg 'modspec 'list)]) (when (pair? s) (set! last-rr-specs s)))
+  (when (null? last-rr-specs) (cmderror "missing modspec arguments"))
   (parameterize ([compile-enforce-module-constants
                   (compile-enforce-module-constants)])
     (compile-enforce-module-constants #f)
-    (for ([spec (in-list (getarg 'modspec 'list+))])
+    (for ([spec (in-list last-rr-specs)])
       (define datum    (syntax->datum spec))
       (define resolved ((current-module-name-resolver) datum #f #f #f))
       (define path     (resolved-module-path-name resolved))
@@ -629,14 +645,17 @@
 
 (define enter!-id (make-lazy-identifier 'enter! 'racket/enter))
 
-(defcommand (enter en) "[<module-spec>] [noisy?]"
+(defcommand (enter en) "[<simple-module-spec>] [noisy?]"
   "require a module and go into its namespace"
-  ["Uses `enter!' to go into the module's namespace; the module name is"
-   "optional, without it you go back to the toplevel.  A module name can"
-   "specify an existing file as with the ,require command.  (Note that this"
+  ["Uses `enter!' to go into the module's namespace.  A module name can"
+   "specify an existing file as with the ,require command.  If no module is"
+   "given, and the REPL is already in some module's namespace, then `enter!'"
+   "is used with that module, causing it to reload if needed.  (Note that this"
    "can be used even in languages that don't have the `enter!' binding.)"]
-  (eval-sexpr-for-user `(,(enter!-id) ,(getarg 'modspec)
-                                      #:dont-re-require-enter)))
+  (eval-sexpr-for-user `(,(enter!-id)
+                         ,(getarg 'modspec #:default here-mod-or-eof)
+                         ,@(getarg 'syntax 'list)
+                         #:dont-re-require-enter)))
 
 (defcommand (toplevel top) #f
   "go back to the toplevel"
@@ -645,7 +664,7 @@
 
 (defcommand (load ld) "<filename> ..."
   "load a file"
-  ["Uses `load' to load the specified file(s)"]
+  ["Uses `load' to load the specified file(s)."]
   (more-inputs* (map (λ (name) #`(load #,name)) (getarg 'path 'list))))
 
 ;; ----------------------------------------------------------------------------
@@ -668,9 +687,9 @@
    "little easier to read information.  You can provide an initial number"
    "that specifies how many times to run the expression -- in this case,"
    "the expression will be executed that many times, extreme results are"
-   "be removed (top and bottom 2/7ths), and the remaining results will"
-   "be averaged.  Two garbage collections are triggered before each run;"
-   "the resulting value(s) are from the last run."]
+   "removed (top and bottom 2/7ths), and the remaining results will be"
+   "averaged.  Two garbage collections are triggered before each run; the"
+   "resulting value(s) are from the last run."]
   (more-inputs #`(#,(time-id) #,@(getarg 'syntax 'list))))
 
 (define trace-id (make-lazy-identifier 'trace 'racket/trace))
@@ -743,7 +762,7 @@
    "  * : show profiling results by time"
    "  # : show profiling results by counts"
    "  ! : clear profiling results"
-   "  Multiple commands can be combined, for example \",prof *!-\" will show"
+   "  Multiple flags can be combined, for example \",prof *!-\" will show"
    "  profiler results, clear them, and turn it off."
    "* With no arguments, turns the errortrace profiler on if it's off, and if"
    "  it's on it shows the collected results and clears them."
@@ -828,7 +847,7 @@
          [t (make-hasheq)])
     (hash-set! t (current-namespace-name) (cons (current-namespace) r))
     t))
-(defcommand (switch-namespace switch) "[<name>] [! [<init>]]"
+(defcommand (switch-namespace switch) "[<name>] [? | - | ! [<init>]]"
   "switch to a different repl namespace"
   ["Switch to the <name> namespace, creating it if needed.  The <name> of a"
    "namespace is a symbol or an integer where a `*' indicates the initial one;"
@@ -838,7 +857,9 @@
    "that was used for the current namespace.  If `! <init>' is used, it"
    "indicates that a new namespace will be created even if it exists, using"
    "`<init>' as the initial module, and if just `!' is used, then this happens"
-   "with the existing namespace's init or with the current one's."
+   "with the existing namespace's init or with the current one's.  You can"
+   "also use `-' and a name to drop the corresponding namespace (allowing it"
+   "to be garbage-collected), and `?' to list all known namespaces."
    "A few examples:"
    "  ,switch !             reset the current namespace"
    "  ,switch ! racket      reset it using the `racket' language"
@@ -847,53 +868,85 @@
    "  ,switch foo ! racket  switch to newly made `foo', even if it exists"
    "  ,switch foo !         same, but using the same <init> as it was created"
    "                        with, or same as the current if it's new"
+   "  ,switch ?             list known namespaces, showing the above two"
+   "  ,switch - r5rs        drop the `r5rs' namespace"
    "(Note that you can use `^' etc to communicate values between namespaces.)"]
-  (define-values (name force-reset? init)
-    (match (getarg 'sexpr 'list)
-      [(list '!)           (values #f   #t #f  )]
-      [(list '! init)      (values #f   #t init)]
-      [(list name)         (values name #f #f  )]
-      [(list name '!)      (values name #t #f  )]
-      [(list name '! init) (values name #t init)]
-      [(list) (cmderror "what do you want to do?")]
-      [_      (cmderror "syntax error, see ,help switch-namespace")]))
-  (unless (or (not name) (symbol? name) (fixnum? name))
-    (cmderror "bad namespace name, must be symbol or fixnum"))
-  (define old-namespace (current-namespace))
-  (define (is-require-able? name)
-    (with-handlers ([void (λ (_) #f)])
-      ;; name is not a string => no need to set the current directory
-      (file-exists? (modspec->path name))))
-  ;; if there's an <init>, then it must be forced
-  (let* ([name (or name (current-namespace-name))]
-         [init
-          (cond [init]
-                [(or force-reset? (not (hash-ref namespaces name #f)))
-                 (cdr (or (hash-ref namespaces name #f)
-                          (and (is-require-able? name) (cons #f name))
-                          (hash-ref namespaces (current-namespace-name) #f)
-                          ;; just in case
-                          (hash-ref namespaces default-namespace-name #f)))]
-                [else #f])])
-    (when init
-      (printf "*** ~a `~s' namespace with ~s ***\n"
-              (if (hash-ref namespaces name #f)
-                "Resetting the" "Initializing a new")
-              name
-              (->relname init))
-      (current-namespace (make-base-empty-namespace))
-      (namespace-require init)
-      (hash-set! namespaces name (cons (current-namespace) init))))
-  (when (and name (not (eq? name (current-namespace-name))))
-    (printf "*** switching to the `~s' namespace ***\n" name)
-    (let ([x (hash-ref namespaces (current-namespace-name))])
-      (unless (eq? (car x) old-namespace)
-        (printf "*** (note: saving current namespace for `~s')\n"
-                (current-namespace-name))
-        (hash-set! namespaces (current-namespace-name)
-                   (cons old-namespace (cdr x)))))
-    (current-namespace-name name)
-    (current-namespace (car (hash-ref namespaces name)))))
+  (define (list-namespaces)
+    (printf "; namespaces and their languages:\n")
+    (define nss (sort (map (λ (x) (cons (format "~s" (car x)) (cddr x)))
+                           (hash-map namespaces cons))
+                      string<? #:key car))
+    (define maxlen (apply max (map (λ (x) (string-length (car x))) nss)))
+    (for ([x (in-list nss)])
+      (printf "; ~a:~a ~s\n"
+              (car x)
+              (make-string (- maxlen (string-length (car x))) #\space)
+              (cdr x))))
+  (define (delete name)
+    (when (eq? name default-namespace-name)
+      (cmderror "cannot drop the default namespace"))
+    (when (eq? name (current-namespace-name))
+      (cmderror "cannot drop the current namespace"))
+    (unless (hash-ref namespaces name #f)
+      (cmderror "unknown namespace name: ~s" name))
+    (hash-remove! namespaces name)
+    (printf "; namespace dropped: ~s\n" name))
+  (define (switch name force-reset? init)
+    (unless (or (not name) (symbol? name) (fixnum? name))
+      (cmderror "bad namespace name, must be symbol or fixnum"))
+    (define old-namespace (current-namespace))
+    (define (is-require-able? name)
+      (with-handlers ([void (λ (_) #f)])
+        ;; name is not a string => no need to set the current directory
+        (file-exists? (modspec->path name))))
+    ;; if there's an <init>, then it must be forced
+    (let* ([name (or name (current-namespace-name))]
+           [init
+            (cond [init]
+                  [(or force-reset? (not (hash-ref namespaces name #f)))
+                   (when (eq? name default-namespace-name)
+                     ;; no deep reason for this, but might be usful to keep it
+                     ;; possible to ,en xrepl/xrepl to change options etc
+                     (cmderror "cannot reset the default namespace"))
+                   (cdr (or (hash-ref namespaces name #f)
+                            (and (is-require-able? name) (cons #f name))
+                            (hash-ref namespaces (current-namespace-name) #f)
+                            ;; just in case
+                            (hash-ref namespaces default-namespace-name #f)))]
+                  [else #f])])
+      (when init
+        (printf "; *** ~a `~s' namespace with ~s ***\n"
+                (if (hash-ref namespaces name #f)
+                  "Resetting the" "Initializing a new")
+                name
+                (->relname init))
+        (current-namespace (make-base-empty-namespace))
+        (namespace-require init)
+        (hash-set! namespaces name (cons (current-namespace) init))))
+    (when (and name (not (eq? name (current-namespace-name))))
+      (printf "; *** switching to the `~s' namespace ***\n" name)
+      (let ([x (hash-ref namespaces (current-namespace-name))])
+        (unless (eq? (car x) old-namespace)
+          (printf "; (note: saving current namespace for `~s')\n"
+                  (current-namespace-name))
+          (hash-set! namespaces (current-namespace-name)
+                     (cons old-namespace (cdr x)))))
+      (current-namespace-name name)
+      (current-namespace (car (hash-ref namespaces name)))))
+  (define (syntax-error)
+    (cmderror "syntax error, see ,help switch-namespace"))
+  (match (getarg 'sexpr 'list)
+    [(list) (cmderror "what do you want to do?")]
+    [(list '?)           (list-namespaces)]
+    [(list '? _ ...)     (syntax-error)]
+    [(list '- name)      (delete name)]
+    [(list '- _ ...)     (syntax-error)]
+    [(list '!)           (switch #f   #t #f  )]
+    [(list '! init)      (switch #f   #t init)]
+    [(list name)         (switch name #f #f  )]
+    [(list name '!)      (switch name #t #f  )]
+    [(list name '! init) (switch name #t init)]
+    [_      (syntax-error)]))
 
 ;; ----------------------------------------------------------------------------
 ;; syntax commands
@@ -915,13 +968,17 @@
   ["With no arguments, will show the previously set (or expanded) syntax"
    "additional arguments serve as an operation to perform:"
    "- `^' sets the syntax from the last entered expression"
+   "- other sexprs set the current syntax explicitly"
    "- `+' will `expand-once' the syntax and show the result (can be used again"
    "      for additional `expand-once' steps)"
    "- `!' will `expand' the syntax and show the result"
    "- `*' will use the syntax stepper to show expansion steps, leaving macros"
    "      from racket/base intact (does not change the currently set syntax)"
-   "- `**' similar to `*', but expanding everything"]
-  (for ([stx (in-list (getarg 'syntax 'list))])
+   "- `**' similar to `*', but expanding everything"
+   "Note that you can specify several syntaxes and operations in a single"
+   "invocation."]
+  (define args (getarg 'syntax 'list))
+  (for ([stx (in-list (if (null? args) '(#f) args))])
     (define (show/set label stx)
       (printf "~a\n" label)
       (current-syntax stx)
@@ -940,23 +997,6 @@
        (if (syntax? stx)
          (begin (printf "syntax set\n") (current-syntax stx))
          (cmderror "internal error: ~s ~s" stx (syntax? stx)))])))
-
-;; ----------------------------------------------------------------------------
-;; meta evaluation hook
-
-;; questionable value, (and need to display the resulting values etc)
-#;
-(defcommand meta "<expr>"
-  "meta evaluation"
-  ["Evaluate the given expression where bindings are taken from the xrepl"
-   "module.  This is convenient when you're in a namespace that does not have"
-   "a specific binding -- for example, you might be using a language that"
-   "doesn't have `current-namespace', so to get it, you can use"
-   "`,eval (current-namespace)'.  The evaluation happens in the repl namespace"
-   "as usual, only the bindings are taken from the xrepl module -- so you can"
-   "use `^' to refer to the result of such an evaluation."]
-  (eval (datum->syntax #'here `(#%top-interaction . ,(getarg 'sexpr))))
-  (void))
 
 ;; ----------------------------------------------------------------------------
 ;; dynamic log output control
@@ -994,6 +1034,23 @@
                                 l m (if v (format " ~.s" v) "")))
                (flush-output)])
             (loop))))))))
+
+;; ----------------------------------------------------------------------------
+;; meta evaluation hook
+
+;; questionable value, (and need to display the resulting values etc)
+#;
+(defcommand meta "<expr>"
+  "meta evaluation"
+  ["Evaluate the given expression where bindings are taken from the xrepl"
+   "module.  This is convenient when you're in a namespace that does not have"
+   "a specific binding -- for example, you might be using a language that"
+   "doesn't have `current-namespace', so to get it, you can use"
+   "`,eval (current-namespace)'.  The evaluation happens in the repl namespace"
+   "as usual, only the bindings are taken from the xrepl module -- so you can"
+   "use `^' to refer to the result of such an evaluation."]
+  (eval (datum->syntax #'here `(#%top-interaction . ,(getarg 'sexpr))))
+  (void))
 
 ;; ----------------------------------------------------------------------------
 ;; setup xrepl in the user's racketrc file
@@ -1113,8 +1170,8 @@
           (namespace-set-variable-value! id (void))))
       (when res (save-values! res)))))
 
-(provide make-command-evaluator)
-(define (make-command-evaluator builtin-evaluator)
+(provide make-xrepl-evaluator)
+(define (make-xrepl-evaluator builtin-evaluator)
   (λ (expr)
     ;; not useful: catches only escape continuations
     ;; (with-handlers ([exn:break? (λ (e) (last-break-exn e) (raise e))]) ...)
@@ -1125,7 +1182,6 @@
 ;; ----------------------------------------------------------------------------
 ;; capture ",..." and run the commands, use readline/rep when possible
 
-(define home-dir (expand-user-path "~"))
 (define get-prefix ; to show before the "> " prompt
   (let ()
     (define (choose-path x)
@@ -1159,7 +1215,13 @@
       (unless (and (equal? (current-namespace) last-namespace)
                    (equal? curdir last-directory))
         (report-directory-change)
-        (set! prefix (get-prefix))
+        (set! prefix
+              (with-handlers
+                  ([exn? (λ (e)
+                           (eprintf "error during prompt calculation: ~a\n"
+                                    (exn-message e))
+                           "[internal-error]")])
+                (get-prefix)))
         (set! last-namespace (current-namespace))
         (set! last-directory curdir))
       prefix)))
@@ -1171,8 +1233,8 @@
         #:constructor-name more-inputs* #:omit-define-syntaxes)
 (define (more-inputs . inputs) (more-inputs* inputs))
 
-(provide make-command-reader)
-(define (make-command-reader)
+(provide make-xrepl-reader)
+(define (make-xrepl-reader)
   (define (plain-reader prefix) ; a plain reader, without readline
     (display prefix) (display "> ") (flush-output) (zero-column!)
     (let ([in ((current-get-interaction-input-port))])
