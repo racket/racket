@@ -26,21 +26,23 @@ language:
 @(define typed-mod
 @racketmod[
 typed/racket
-(define-struct: pt ([x : Real] [y : Real]))
+(struct: pt ([x : Real] [y : Real]))
 
-(: mag (pt -> Number))
-(define (mag p)
-  (sqrt (+ (sqr (pt-x p)) (sqr (pt-y p)))))
+(: distance (pt pt -> Real))
+(define (distance p1 p2)
+  (sqrt (+ (sqr (- (pt-x p2) (pt-x p1)))
+           (sqr (- (pt-y p2) (pt-y p1))))))
 ]
 )
 
 @racketmod[
 racket
-(define-struct pt (x y))
+(struct pt (x y))
 
-(code:contract mag : pt -> number)
-(define (mag p)
-  (sqrt (+ (sqr (pt-x p)) (sqr (pt-y p)))))
+(code:contract distance : pt pt -> real)
+(define (distance p1 p2)
+  (sqrt (+ (sqr (- (pt-x p2) (pt-x p1)))
+           (sqr (- (pt-y p2) (pt-y p1))))))
 ]
 
 Here is the same program, in @racketmodname[typed/racket]:

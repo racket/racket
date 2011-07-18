@@ -36,31 +36,32 @@ form from @racketmodname[racket]---when porting a program from
 @racketmodname[racket] to @racketmodname[typed/racket], uses of
 @racket[struct] should be changed to @racket[struct:].
 
-@racketblock[(: mag (pt -> Number))]
+@racketblock[(: distance (pt pt -> Real))]
 
-This declares that @racket[mag] has the type @racket[(pt -> Number)].
-@;{@racket[mag] must be defined at the top-level of the module containing
+This declares that @racket[distance] has the type @racket[(pt pt -> Real)].
+@;{@racket[distance] must be defined at the top-level of the module containing
 the declaration.}
 
-The type @racket[(pt -> Number)] is a function type, that is, the type
-of a procedure.  The input type, or domain, is a single argument of
+The type @racket[(pt pt -> Real)] is a function type, that is, the type
+of a procedure.  The input type, or domain, is two arguments of
 type @racket[pt], which refers to an instance of the @racket[pt]
 structure.  The @racket[->] both indicates that this is a function
-type and separates the domain from  the range, or output type, in this
-case @racket[Number].
+type and separates the domain from the range, or output type, in this
+case @racket[Real].
 
 @racketblock[
-(define (mag p)
-  (sqrt (+ (sqr (pt-x p)) (sqr (pt-y p)))))
+(define (distance p1 p2)
+  (sqrt (+ (sqr (- (pt-x p2) (pt-x p1)))
+           (sqr (- (pt-y p2) (pt-y p1))))))
 ]
 
 This definition is unchanged from the untyped version of the code.
-The goal of Typed Racket is to  allow almost all definitions to be
+The goal of Typed Racket is to allow almost all definitions to be
 typechecked without change.  The typechecker verifies that the body of
 the function has the type @racket[Real], under the assumption that
-@racket[p] has the type @racket[pt], taking these types from the
-earlier type declaration.  Since the body does have this type, the
-program is accepted.
+@racket[p1] and @racket[p2] have type @racket[pt], taking these types
+from the earlier type declaration.  Since the body does have this type,
+the program is accepted.
 
 
 @section{Datatypes and Unions}
