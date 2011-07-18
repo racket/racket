@@ -438,7 +438,7 @@ to paint the screen margins, too.
 
 The default assembler uses @racket[titlet] to turn a title string (if
 any) to a pict. See also @racket[current-titlet] and
-@racket[set-title-h!],.
+@racket[set-title-h!].
 
 The slide assembler is @emph{not} responsible for adding page
 numbers to the slide; that job belongs to the viewer. See also
