@@ -21,7 +21,8 @@
 (provide 
  (protect-out frame%
               display-size
-              display-origin))
+              display-origin
+	      display-count))
 
 (define-user32 SetLayeredWindowAttributes (_wfun _HWND _COLORREF _BYTE _DWORD -> _BOOL))
 (define-user32 GetActiveWindow (_wfun -> _HWND))
@@ -34,6 +35,12 @@
                                   -> (unless r (failed 'DrawMenuBar))))
 
 (define-user32 IsZoomed (_wfun _HWND -> _BOOL))
+
+(define-user32 EnumDisplayMonitors (_wfun _HDC 
+					  _pointer 
+					  (_wfun #:atomic? #t _pointer _HDC _RECT-pointer _pointer 
+						 -> _BOOL)
+					  _pointer -> _BOOL))
 
 (define-user32 SystemParametersInfoW (_wfun _UINT _UINT _pointer _UINT -> (r : _BOOL)
                                             -> (unless r (failed 'SystemParametersInfo))))
@@ -58,27 +65,60 @@
 
 (define SPI_GETWORKAREA            #x0030)
 
-(define (display-size xb yb all?)
-  (if all?
-      (atomically
-       (let ([hdc (GetDC #f)])
-	 (set-box! xb (GetDeviceCaps hdc HORZRES))
-	 (set-box! yb (GetDeviceCaps hdc VERTRES))
-	 (ReleaseDC #f hdc)))
-      (let ([r (make-RECT 0 0 0 0)])
-	(SystemParametersInfoW SPI_GETWORKAREA 0 r 0)
-	(set-box! xb (- (RECT-right r) (RECT-left r)))
-	(set-box! yb (- (RECT-bottom r) (RECT-top r))))))
+(define (get-all-screen-rects)
+  (let ([rects null])
+    (EnumDisplayMonitors #f #f (lambda (mon dc r ptr)
+				 (set! rects (cons
+					      (list (RECT-left r)
+						    (RECT-top r)
+						    (RECT-right r)
+						    (RECT-bottom r))
+					      rects))
+				 #t)
+			 #f)
+    (reverse rects)))
 
-(define (display-origin xb yb avoid-bars?)
-  (if avoid-bars?
-      (let ([r (make-RECT 0 0 0 0)])
-        (SystemParametersInfoW SPI_GETWORKAREA 0 r 0)
-        (set-box! xb (RECT-left r))
-        (set-box! yb (RECT-top r)))
-      (begin
-        (set-box! xb 0)
-        (set-box! yb 0))))
+(define (display-size xb yb all? num)
+  (cond
+   [(positive? num)
+    (let ([rs (get-all-screen-rects)])
+      (unless (num . < . (length rs))
+	(error 'get-display-size "no such monitor: ~v" num))
+      (let ([r (list-ref rs num)])
+	(set-box! xb (- (caddr r) (car r)))
+	(set-box! yb (- (cadddr r) (cadr r)))))]
+   [all?
+    (atomically
+     (let ([hdc (GetDC #f)])
+       (set-box! xb (GetDeviceCaps hdc HORZRES))
+       (set-box! yb (GetDeviceCaps hdc VERTRES))
+       (ReleaseDC #f hdc)))]
+   [else
+    (let ([r (make-RECT 0 0 0 0)])
+      (SystemParametersInfoW SPI_GETWORKAREA 0 r 0)
+      (set-box! xb (- (RECT-right r) (RECT-left r)))
+      (set-box! yb (- (RECT-bottom r) (RECT-top r))))]))
+
+(define (display-origin xb yb avoid-bars? num)
+  (cond
+   [(positive? num)
+    (let ([rs (get-all-screen-rects)])
+      (unless (num . < . (length rs))
+	(error 'get-display-left-top-inset "no such monitor: ~v" num))
+      (let ([r (list-ref rs num)])
+	(set-box! xb (- (car r)))
+	(set-box! yb (- (cadr r)))))]
+   [avoid-bars?
+    (let ([r (make-RECT 0 0 0 0)])
+      (SystemParametersInfoW SPI_GETWORKAREA 0 r 0)
+      (set-box! xb (RECT-left r))
+      (set-box! yb (RECT-top r)))]
+   [else
+    (set-box! xb 0)
+    (set-box! yb 0)]))
+
+(define (display-count)
+  (length (get-all-screen-rects)))
 
 (define mouse-frame #f)
 
@@ -391,7 +431,7 @@
 	  [wh (box 0)]
 	  [wx (box 0)]
 	  [wy (box 0)])
-      (display-size sw sh #f)
+      (display-size sw sh #f 0)
       (if wrt
 	  (begin
 	    (send wrt get-size ww wh)

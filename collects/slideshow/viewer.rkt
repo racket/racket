@@ -412,11 +412,11 @@
       (define-values (screen-left-inset screen-top-inset)
 	(if config:keep-titlebar?
 	    (values 0 0)
-	    (get-display-left-top-inset)))
+	    (get-display-left-top-inset #:monitor config:screen-number)))
 
       (define fullscreen?
         (and (not config:keep-titlebar?)
-             (let-values ([(w h) (get-display-size #t)])
+             (let-values ([(w h) (get-display-size #t #:monitor config:screen-number)])
                (and (= config:actual-screen-w w)
                     (= config:actual-screen-h h)))))
 

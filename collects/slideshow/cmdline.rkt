@@ -1,8 +1,7 @@
-(module cmdline mzscheme
+(module cmdline racket/base
   (require mzlib/class
            mzlib/unit
            mzlib/file
-           mzlib/etc
            mzlib/contract
            mred
            mzlib/cmdline
@@ -10,7 +9,7 @@
            texpict/utils
            mzlib/math
            "sig.rkt"
-           (prefix start: "start-param.rkt"))
+           (prefix-in start: "start-param.rkt"))
 
   (provide cmdline@)
 
@@ -44,8 +43,12 @@
     (define use-prefetch-in-preview? #f)
     (define print-target #f)
     (define smoothing? #t)
+    (define screen-number 0)
     
     (define init-page 0)
+
+    (define no-stretch? #f)
+    (define screen-set? #f)
     
     (define (die name . args)
       (fprintf (current-error-port) "~a: ~a\n" name (apply format args))
@@ -56,6 +59,11 @@
        "slideshow"
        (current-command-line-arguments)
        [once-each
+	(("-M" "--monitor") monitor "display to <monitor> (count from 0)"
+	 (let ([n (string->number monitor)])
+	   (unless (and n (exact-nonnegative-integer? n))
+	     (die 'slideshow "argument to -M is not an exact non-negative integer: ~a" monitor))
+	   (set! screen-number n)))
         (("-d" "--preview") "show next-slide preview (useful on a non-mirroring display)" 
          (set! two-frames? #t))
         (("-p" "--print") "print"
@@ -70,19 +78,14 @@
          (set! condense? #t))
         (("-t" "--start") page "set the starting page"
          (let ([n (string->number page)])
-           (unless (and n 
-                        (integer? n)
-                        (exact? n)
-                        (positive? n))
+           (unless (and n (exact-positive-integer? n))
              (die 'slideshow "argument to -t is not a positive exact integer: ~a" page))
            (set! init-page (sub1 n))))
         (("-q" "--quad") "show four slides at a time"
          (set! quad-view? #t)
          (set! pixel-scale 1/2))
         (("-n" "--no-stretch") "don't stretch the slide window to fit the screen"
-         (when (> actual-screen-w screen-w)
-           (set! actual-screen-w screen-w)
-           (set! actual-screen-h screen-h)))
+	 (set! no-stretch? #t))
         (("-s" "--size") w h "use a <w> by <h> window"
          (let ([nw (string->number w)]
                [nh (string->number h)])
@@ -90,6 +93,7 @@
              (die 'slideshow "bad width: ~e" w))
            (unless (and nh (< 0 nh 10000))
              (die 'slideshow "bad height: ~e" h))
+	   (set! screen-set? #t)
            (set! actual-screen-w nw)
            (set! actual-screen-h nh)))
         (("-a" "--squash") "scale to full window, even if not 4:3 aspect"
@@ -138,6 +142,17 @@
                          slide-module-file)])]))
 
     (define printing? (and printing-mode #t))
+
+    (unless (zero? screen-number)
+      (define-values (w h) (get-display-size #t #:monitor screen-number))
+      (unless screen-set?
+	(set!-values (actual-screen-w actual-screen-h) (values w h)))
+      (set!-values (use-screen-w use-screen-h) (values w h)))
+
+    (when no-stretch?
+      (when (> actual-screen-w screen-w)
+	(set! actual-screen-w screen-w)
+	(set! actual-screen-h screen-h)))
 
     (when (or printing-mode condense?)
       (set! use-transitions? #f))

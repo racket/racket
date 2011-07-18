@@ -79,6 +79,7 @@ get-choices-from-user
 get-color-from-user
 get-default-shortcut-prefix
 get-directory
+get-display-count
 get-display-depth
 get-display-left-top-inset
 get-display-size

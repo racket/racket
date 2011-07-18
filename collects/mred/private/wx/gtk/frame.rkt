@@ -21,6 +21,7 @@
  (protect-out frame%
               display-origin
               display-size
+	      display-count
               location->window))
 
 ;; ----------------------------------------
@@ -488,22 +489,28 @@
 (define-gdk gdk_screen_get_height (_fun _GdkScreen -> _int))
 
 (define-gdk gdk_screen_get_monitor_geometry (_fun _GdkScreen _int _GdkRectangle-pointer -> _void))
+(define-gdk gdk_screen_get_n_monitors (_fun _GdkScreen -> _int))
 
-(define (monitor-rect num)
+(define (monitor-rect who num)
   (let ([s (gdk_screen_get_default)]
 	[r (make-GdkRectangle 0 0 0 0)])
+    (unless (num . < . (gdk_screen_get_n_monitors s))
+      (error who "no such monitor: ~v" num))
     (gdk_screen_get_monitor_geometry s num r)
     r))
 
-(define (display-origin x y all?)
-  (let ([r (monitor-rect 0)])
-    (set-box! x (GdkRectangle-x r))
-    (set-box! y (GdkRectangle-y r))))
+(define (display-origin x y all? num)
+  (let ([r (monitor-rect 'get-display-left-top-inset num)])
+    (set-box! x (- (GdkRectangle-x r)))
+    (set-box! y (- (GdkRectangle-y r)))))
 
-(define (display-size w h all?)
-  (let ([r (monitor-rect 0)])
+(define (display-size w h all? num)
+  (let ([r (monitor-rect 'get-display-size num)])
     (set-box! w (GdkRectangle-width r))
     (set-box! h (GdkRectangle-height r))))
+
+(define (display-count)
+  (gdk_screen_get_n_monitors (gdk_screen_get_default)))
 
 (define (location->window x y)
   (for/or ([f (in-hash-keys all-frames)])

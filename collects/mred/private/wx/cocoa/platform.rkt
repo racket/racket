@@ -61,6 +61,7 @@
    bell
    display-size
    display-origin
+   display-count
    flush-display
    fill-private-color
    cancel-quit
