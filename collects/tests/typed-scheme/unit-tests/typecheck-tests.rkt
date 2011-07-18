@@ -1354,6 +1354,10 @@
         (tc-e (let: ((p : (Promise Symbol) (delay 's)))
                   (promise-running? p)) B)
         |#
+        
+        ;; excetion handling
+        [tc-e (with-handlers ([void (λ (x) (values 0 0))]) (values  "" ""))
+              #:ret (ret (list (t:Un -Zero -String) (t:Un -Zero -String)))]
 
         ;Kernel Structs, check that their hidden identifiers type
         (tc-e (void exn
