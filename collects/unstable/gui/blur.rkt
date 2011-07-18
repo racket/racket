@@ -6,7 +6,7 @@
          racket/draw
          racket/pretty
          racket/math
-         racket/future
+         unstable/future
          slideshow/pict)
 
 ;; TODO: use clipping regions to avoid computing unused pixels
@@ -28,14 +28,6 @@
   (->* ((is-a?/c bitmap%) exact-nonnegative-integer?)
        (exact-nonnegative-integer?)
        void?)])
-
-(define-syntax (for/async stx)
-  (syntax-case stx ()
-    [(_ (clause ...) . body)
-     #`(let ([fs
-              (for/fold/derived #,stx ([fs null]) (clause ...)
-                (cons (future (lambda () . body)) fs))])
-         (for-each touch fs))]))
 
 ;; ----
 
