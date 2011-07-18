@@ -100,7 +100,7 @@ top-level. The functions also can be accessed by importing
 handlers.
 
 As a language name, @racketmodname[errortrace] chains to another
-language that is specified immediately after @racketmodname[at-exp],
+language that is specified immediately after @racketmodname[errortrace],
 but instruments the module for debugging in the same way as if
 @racketmodname[errortrace] is required before loading the module from
 source. Using the @racketmodname[errortrace] meta-language is one way
