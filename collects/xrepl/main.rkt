@@ -9,5 +9,5 @@
 ;; (compile-enforce-module-constants #f)
 
 ;; create the command repl reader, and value-saving evaluator
-(current-prompt-read (make-command-reader))
-(current-eval (make-command-evaluator (current-eval)))
+(current-prompt-read (make-xrepl-reader))
+(current-eval (make-xrepl-evaluator (current-eval)))
