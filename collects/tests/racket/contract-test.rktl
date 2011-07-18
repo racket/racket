@@ -87,22 +87,25 @@
                            (loop (cdr exp)))]
         [else exp])))
   
+  ;; blame : (or/c 'pos 'neg string?)
+  ;;   if blame is a string, expect to find the string (format "blaming: ~a" blame) in the exn message
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
         (define reg
-          (case blame
-            [(pos) #rx"self-contract violation"]
-            [(neg) #rx"blaming neg"]
-            [else (error 'test/spec-failed "unknown blame name ~s" blame)]))
-        (regexp-match? reg msg))
+          (cond
+            [(eq? blame 'pos) #rx"self-contract violation[:,].*blaming: pos"]
+            [(eq? blame 'neg) #rx"blaming: neg"]
+            [(string? blame) (string-append "blaming: " (regexp-quote blame))]
+            [else #f]))
+        (and reg (regexp-match? reg msg)))
       (printf "testing: ~s\n" name)
       (contract-eval
        `(,thunk-error-test 
           (lambda () ,expression)
           (datum->syntax #'here ',expression)
           (lambda (exn)
-            (and (exn? exn)
+            (and (exn:fail:contract:blame? exn)
                  (,has-proper-blame? (exn-message exn))))))
       (let/ec k
         (let ([rewritten (rewrite expression k)])
@@ -111,11 +114,11 @@
              (lambda () ,rewritten)
              (datum->syntax #'here ',rewritten)
              (lambda (exn)
-               (and (exn? exn)
+               (and (exn:fail:contract:blame? exn)
                     (,has-proper-blame? (exn-message exn))))))))))
   
-  (define (test/pos-blame name expression) (test/spec-failed name expression "pos"))
-  (define (test/neg-blame name expression) (test/spec-failed name expression "neg"))
+  (define (test/pos-blame name expression) (test/spec-failed name expression 'pos))
+  (define (test/neg-blame name expression) (test/spec-failed name expression 'neg))
   
   (define (test/well-formed stx)
     (contract-eval
@@ -137,7 +140,7 @@
         (contract-eval `(,test #t flat-contract? ,contract))
         (test/spec-failed (format "~a fail" name)
                           `(contract ,contract ',fail 'pos 'neg)
-                          "pos")
+                          'pos)
         (test/spec-passed/result
          (format "~a pass" name)
          `(contract ,contract ',pass 'pos 'neg)
@@ -4252,7 +4255,7 @@
 		 (+ n 1))
 	       (foo-dc13 #t)))
       (eval '(require 'foo-dc13)))
-   "'foo-dc13")
+   "foo-dc13")
   
   (test/spec-failed
    'define/contract14
@@ -4267,7 +4270,7 @@
 	       (require 'foo-dc14)
 	       (foo-dc14 #t)))
       (eval '(require 'bar-dc14)))
-   "'foo-dc14")
+   "foo-dc14")
 
   (test/spec-failed
    'define/contract15
@@ -4280,7 +4283,7 @@
 		 (+ n 1))))
       (eval '(require 'foo-dc15))
       (eval '(foo-dc15 #t)))
-   "'foo-dc15")
+   "foo-dc15")
   
   ;; Let's see how units + define/contract interact
   
@@ -10723,7 +10726,7 @@ so that propagation occurs.
                (provide/contract (x integer?))))
       (eval '(require 'contract-test-suite3))
       (eval 'x))
-   "'contract-test-suite3")
+   "contract-test-suite3")
   
   (test/spec-passed
    'provide/contract4
@@ -10900,7 +10903,7 @@ so that propagation occurs.
                             (make-s 1 2)
                             [s-a #f])))
       (eval '(require 'pc11b-n)))
-   "'n")
+   "n")
 |#
   
   (test/spec-passed
@@ -10969,7 +10972,7 @@ so that propagation occurs.
                (define i #f)
                (provide/contract [i integer?])))
       (eval '(require 'pos)))
-   "'pos")
+   "pos")
   
   ;; this is really a positive violation, but name the module `neg' just for an addl test
   (test/spec-failed
@@ -10980,7 +10983,7 @@ so that propagation occurs.
                (define i #f)
                (provide/contract [i integer?])))
       (eval '(require 'neg)))
-   "'neg")
+   "neg")
   
   ;; this test doesn't pass yet ... waiting for support from define-struct
   
@@ -11209,7 +11212,7 @@ so that propagation occurs.
                (require 'provide/contract30-m2)
                (f #f)))
       (eval '(require 'provide/contract30-m3)))
-   "'provide/contract30-m2")
+   "provide/contract30-m2")
   
   (test/spec-passed/result
    'provide/contract31
