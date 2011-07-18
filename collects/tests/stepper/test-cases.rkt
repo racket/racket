@@ -1948,6 +1948,25 @@
                        (else ,clause2))}
         -> ,def {(cond (else ,clause2))} 
         -> ,def {,clause2} -> ,def {10})
+     )
+   (let* ([make-test1 (λ (x) `(> 0 ,x))]
+          [make-test2 (λ (x) `(< 0 ,x))]
+          [test1 (make-test1 0)]
+          [test2 (make-test2 0)]
+          [test12 (make-test1 2)]
+          [test22 (make-test2 2)]
+          [make-clause1 (λ (x) `(* ,x 10))]
+          [make-clause2 (λ (x) `(+ ,x 10))]
+          [clause1 (make-clause1 0)]
+          [clause2 (make-clause2 0)]
+          [clause12 (make-clause1 2)]
+          [clause22 (make-clause2 2)]
+          [cnd (λ (x) `(cond (,(make-test1 x) ,err)
+                             (,(make-test2 x) ,(make-clause1 x))
+                             (else ,(make-clause2 x))))]
+          [make-def (λ (x) `(define (f x) ,(cnd x)))]
+          [def (make-def 'x)]
+          [lam (λ (x) `(lambda (x) ,(cnd x)))])
      (t 'lazy-cond2 m:lazy
         ,def (f 2)
         :: ,def ({f} 2) -> ,def ({,(lam 'x)} 2)
