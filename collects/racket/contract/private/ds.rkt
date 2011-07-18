@@ -460,7 +460,9 @@ it around flattened out.
                             partials
                             #f
                             #f
-                            stronger-ribs)))))))]))
+                            stronger-ribs
+                            ;; opt'd struct contracts don't use chaperones yet
+                            #f)))))))]))
           )))))
 
 (define-syntax (define-contract-struct stx)

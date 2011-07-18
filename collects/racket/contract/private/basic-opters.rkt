@@ -30,7 +30,8 @@
      null
      (syntax (pred val))
      #f
-     null)))
+     null
+     #t)))
 
 ;;
 ;; built-in predicate opters
@@ -41,6 +42,9 @@
 (define/opter (boolean? opt/i opt/info stx)
   (syntax-case stx (boolean?)
     [boolean? (opt/pred opt/info #'boolean?)]))
+(define/opter (string? opt/i opt/info stx)
+  (syntax-case stx (string?)
+    [string? (opt/pred opt/info #'string?)]))
 (define/opter (integer? opt/i opt/info stx)
   (syntax-case stx (integer?)
     [integer? (opt/pred opt/info #'integer?)]))
@@ -69,7 +73,8 @@
             null
             #'#t
             #f
-            null)]))
+            null
+            #t)]))
 
 ;;
 ;; false/c
@@ -82,12 +87,13 @@
 ;; flat-contract helper
 ;;
 (define-for-syntax (opt/flat-ctc opt/info pred checker)
-  (syntax-case pred (null? number? integer? boolean? pair? not)
+  (syntax-case pred (null? number? integer? boolean? string? pair? not)
     ;; Better way of doing this?
     [null? (opt/pred opt/info pred)]
     [number? (opt/pred opt/info pred)]
     [integer? (opt/pred opt/info pred)]
     [boolean? (opt/pred opt/info pred)]
+    [string? (opt/pred opt/info pred)]
     [pair? (opt/pred opt/info pred)]
     [pred
      (let* ((lift-vars (generate-temporaries (syntax (pred error-check))))
@@ -113,7 +119,8 @@
           null
           (syntax (lift-pred val))
           #f
-          null)))]))
+          null
+          #t)))]))
 
 ;;
 ;; flat-contract and friends

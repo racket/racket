@@ -148,7 +148,8 @@ which are then called when the contract's fields are explored
         null
         #f
         #f
-        null)]
+        null
+        #f)]
       [else (opt/i (opt/info-change-val id opt/info)
                    stx)]))
   
@@ -186,7 +187,7 @@ which are then called when the contract's fields are explored
              [(id (x ...) ctc-exp)
               (and (identifier? (syntax id))
                    (andmap identifier? (syntax->list (syntax (x ...)))))
-              (let*-values ([(next lifts superlifts partials _ _2 _3)
+              (let*-values ([(next lifts superlifts partials _ _2 _3 chaperone?)
                              (opt/enforcer-clause let-var (syntax ctc-exp))]
                             [(maker-arg)
                              (with-syntax ([val (opt/info-val opt/info)]
@@ -220,7 +221,7 @@ which are then called when the contract's fields are explored
                           (syntax->list (syntax (x ...)))))]
              [(id ctc-exp)
               (identifier? (syntax id))
-              (let*-values ([(next lifts superlifts partials _ __ stronger-ribs)
+              (let*-values ([(next lifts superlifts partials _ __ stronger-ribs chaperone?)
                              (opt/enforcer-clause let-var (syntax ctc-exp))]
                             [(maker-arg)
                              (with-syntax ((val (opt/info-val opt/info)))

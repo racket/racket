@@ -44,7 +44,8 @@ v4 todo:
          contracted-function-proc
          contracted-function-ctc
          make-contracted-function
-         matches-arity-exactly?)
+         matches-arity-exactly?
+         bad-number-of-results)
 
 (define-syntax-parameter making-a-method #f)
 (define-for-syntax (make-this-parameters id)

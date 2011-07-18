@@ -181,4 +181,5 @@
                    [partial-flat-var partial-flat-var])
        #'(partial-flat-var val))
      lift-var
-     null)))
+     null
+     #f)))
