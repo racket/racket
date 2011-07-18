@@ -13,7 +13,7 @@
 
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
 (define/cond-contract (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
-  ((syntax? syntax? arr? (c:listof tc-results?) (c:or/c #f tc-results?)) (#:check boolean?) . c:->* . tc-results?)
+  ((syntax? (c:and/c syntax? syntax->list) arr? (c:listof tc-results?) (c:or/c #f tc-results?)) (#:check boolean?) . c:->* . tc-results?)
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
     [((arr: dom (Values: (and results (list (Result: t-r f-r o-r) ...))) rest #f (and kws (list (Keyword: _ _ #f) ...)))
