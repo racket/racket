@@ -27,11 +27,11 @@
 (define (seen-before s t)
   (cons (Type-seq s) (Type-seq t)))
 (define/cond-contract (remember s t A)
- (Type/c Type/c (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)) . -> .
+ (Type? Type? (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)) . -> .
               (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)))
  (cons (seen-before s t) A))
 (define/cond-contract (seen? s t)
- (Type/c Type/c . -> . boolean?)
+ (Type? Type? . -> . boolean?)
  (member (seen-before s t) (current-seen)))
 
 
@@ -139,7 +139,8 @@
           (hash-set! dotted-var-store key all)
           all))))
 
-(define (cgen/filter V X Y s t)
+(define/cond-contract (cgen/filter V X Y s t)
+  ((listof symbol?) (listof symbol?) (listof symbol?) Filter? Filter? . -> . cset?)
   (match* (s t)
     [(e e) (empty-cset X Y)]
     [(e (Top:)) (empty-cset X Y)]
@@ -149,21 +150,24 @@
     [(_ _) (fail! s t)]))
 
 ;; s and t must be *latent* filter sets
-(define (cgen/filter-set V X Y s t)
+(define/cond-contract (cgen/filter-set V X Y s t)
+  ((listof symbol?) (listof symbol?) (listof symbol?) FilterSet? FilterSet? . -> . cset?)
   (match* (s t)
     [(e e) (empty-cset X Y)]
     [((FilterSet: s+ s-) (FilterSet: t+ t-))
      (cset-meet (cgen/filter V X Y s+ t+) (cgen/filter V X Y s- t-))]
     [(_ _) (fail! s t)]))
 
-(define (cgen/object V X Y s t)
+(define/cond-contract (cgen/object V X Y s t)
+  ((listof symbol?) (listof symbol?) (listof symbol?) Object? Object? . -> . cset?)
   (match* (s t)
     [(e e) (empty-cset X Y)]
     [(e (Empty:)) (empty-cset X Y)]
     ;; FIXME - do something here
     [(_ _) (fail! s t)]))
 
-(define (cgen/arr V X Y s-arr t-arr)
+(define/cond-contract (cgen/arr V X Y s-arr t-arr)
+  ((listof symbol?) (listof symbol?) (listof symbol?) Type? Type? . -> . cset?)
   (define (cg S T) (cgen V X Y S T))
   (match* (s-arr t-arr)
     ;; the simplest case - no rests, drests, keywords
@@ -287,7 +291,8 @@
               (cset-meet* (list arg-mapping darg-mapping ret-mapping)))])]
     [(_ _) (fail! s-arr t-arr)]))
 
-(define (cgen/flds V X Y flds-s flds-t)
+(define/cond-contract (cgen/flds V X Y flds-s flds-t)
+  ((listof symbol?) (listof symbol?) (listof symbol?) Type? Type? . -> . cset?)
   (cset-meet*
    (for/list ([s (in-list flds-s)] [t (in-list flds-t)])
      (match* (s t)
@@ -305,10 +310,10 @@
 ;; implements the V |-_X S <: T => C judgment from Pierce+Turner, extended with
 ;; the index variables from the TOPLAS paper
 (define/cond-contract (cgen V X Y S T)
-  ((listof symbol?) (listof symbol?) (listof symbol?) Type/c Type/c . -> . cset?)
+  ((listof symbol?) (listof symbol?) (listof symbol?) Type? Type? . -> . cset?)
   ;; useful quick loop
   (define/cond-contract (cg S T)
-   (Type/c Type/c . -> . cset?)
+   (Type? Type? . -> . cset?)
    (cgen V X Y S T))
   ;; this places no constraints on any variables in X
   (define empty (empty-cset X Y))
@@ -677,23 +682,29 @@
              ;; constraint explosion.
              (cset-meet (cgen V X Y s t) expected-cset))))
 
+
+
 ;; X : variables to infer
 ;; Y : indices to infer
 ;; S : actual argument types
 ;; T : formal argument types
 ;; R : result type
-;; expected : boolean
+;; expected : #f or the expected type
 ;; returns a substitution
 ;; if R is #f, we don't care about the substituion
 ;; just return a boolean result
-(define (infer X Y S T R [expected #f])
-  (with-handlers ([exn:infer? (lambda _ #f)])
-    (let* ([expected-cset (if expected
-                              (cgen null X Y R expected)
-                              (empty-cset '() '()))]
-           [cs  (cgen/list null X Y S T #:expected-cset expected-cset)]
-           [cs* (cset-meet cs expected-cset)])
-          (if R (subst-gen cs* Y R) #t))))
+(define infer
+ (let ()
+  (define/contract (infer X Y S T R [expected #f])
+    (((listof symbol?) (listof symbol?) (listof Type/c) (listof Type/c) Type?) ((or/c #f Type?)) . ->* . (or/c boolean? substitution/c))
+    (with-handlers ([exn:infer? (lambda _ #f)])
+      (let* ([expected-cset (if expected
+                                (cgen null X Y R expected)
+                                (empty-cset '() '()))]
+             [cs  (cgen/list null X Y S T #:expected-cset expected-cset)]
+             [cs* (cset-meet cs expected-cset)])
+            (if R (subst-gen cs* Y R) #t))))
+  infer)) ;to export a variable binding and not syntax
 
 ;; like infer, but T-var is the vararg type:
 (define (infer/vararg X Y S T T-var R [expected #f])
