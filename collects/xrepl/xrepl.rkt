@@ -164,17 +164,21 @@
     (apply cmderror #:default-who 'getarg fmt args))
   (define (missing) (argerror "missing ~a argument" kind))
   (define (get read)
-    (define 1st (if (eq? #\newline (skip-spaces/peek)) eof (read)))
+    (define (get-one)
+      (cond [(eq? read read-line-arg) (read)]
+            [(eq? #\newline (skip-spaces/peek)) eof]
+            [else (read)]))
+    (define (get-list)
+      (let ([x (get-one)]) (if (eof-object? x) '() (cons x (get-list)))))
+    (define 1st (get-one))
     (define 1st? (not (eof-object? 1st)))
     (define (dflt*) (let ([r (dflt)]) (if (eof-object? r) (missing) r)))
     (case flag
       [(req opt) (cond [1st? 1st]           [dflt (dflt*)]
                        [(eq? 'opt flag) #f] [else (missing)])]
       [(list list+)
-       (define (more)
-         (if (eq? #\newline (skip-spaces/peek)) '() (cons (read) (more))))
-       (cond [1st? (cons 1st (more))] [dflt (list (dflt*))]
-             [(eq? 'list flag) '()]   [else (missing)])]
+       (cond [1st? (cons 1st (get-list))] [dflt (list (dflt*))]
+             [(eq? 'list flag) '()]       [else (missing)])]
       [else (error 'getarg "unknown flag: ~e" flag)]))
   (define (read-string-arg)
     (define ch (skip-spaces/peek " \t\r\n"))
