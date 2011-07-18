@@ -21,17 +21,28 @@
 
 @defproc[(blur [p pict?]
                [h-radius (and/c real? (not/c negative?))]
-               [v-radius (and/c real? (not/c negative?)) h-radius])
+               [v-radius (and/c real? (not/c negative?)) h-radius]
+               [#:mode mode (or/c 'gaussian 'iterated-box 'single-box) 'iterated-box])
          pict?]{
 
-Applies a gaussian blur to @racket[p]. The blur radii,
-@racket[h-radius] and @racket[v-radius], control the blurriness of the
-resulting pict.
+Blurs @racket[p] using a gaussian blur (if @racket[mode] is
+@racket['gaussian]), an iterated box blur that approximates a gaussian
+blur (if @racket[mode] is @racket['iterated-box]), or a single box
+blur (if @racket[mode] is @racket['single-box]). The @racket[h-radius]
+and @racket[v-radius] arguments control the strength of the horizontal
+and vertical components of the blur, respectively. They are given in
+terms of pict units, which may not directly correspond to screen pixels.
 
-Note: blurring is fairly slow. It takes time proportional to
+The @racket['gaussian] blur mode is quite slow for large blur
+radii. It takes work proportional to
 @racketblock[(* (pict-width p) (pict-height p) (+ h-radius v-radius))]
-although it may be sped up by a factor of up to
-@racket[(processor-count)] due to its use of @racket[future]s.
+The @racket['iterated-box] blur mode is much faster; it takes work
+proportional to
+@racketblock[(* (pict-width p) (pict-height p))]
+The genuine @racket['gaussian] mode generally produces smoother and
+lighter images, but the @racket['iterated-box] approximation is
+acceptable for most uses. All modes may be sped up by a factor of up
+to @racket[(processor-count)] due to the use of @racket[future]s.
 
 @examples[#:eval the-eval
 (blur (text "blur" null 40) 5)
@@ -45,15 +56,22 @@ the pict should be @racket[inset] by the blur radius.
 @examples[#:eval the-eval
 (inset (blur (text "more blur" null 40) 10) 10)
 ]
+
+Genuine @racket['gaussian] blur compared with @racket['iterated-box] blur:
+@examples[#:eval the-eval
+(vl-append (inset (blur (text "blur" null 40) 10 #:mode 'gaussian) 10)
+           (inset (blur (text "blur" null 40) 10 #:mode 'iterated-box) 10))
+]
 }               
 
 @defproc[(blur-bitmap! [bitmap (is-a?/c bitmap%)]
                        [h-radius (and/c real? (not/c negative?))]
-                       [v-radius (and/c real? (not/c negative?)) h-radius])
+                       [v-radius (and/c real? (not/c negative?)) h-radius]
+                       [#:mode mode (or/c 'gaussian 'iterated-box 'single-box) 'iterated-box])
          void?]{
 
 Blurs @racket[bitmap] using blur radii @racket[h-radius] and
-@racket[v-radius].
+@racket[v-radius] and mode @racket[mode].
 }
 
 @defproc[(shadow [p pict?]
@@ -61,7 +79,8 @@ Blurs @racket[bitmap] using blur radii @racket[h-radius] and
                  [dx real? 0]
                  [dy real? dx]
                  [#:color color (or/c #f string? (is-a?/c color%)) #f]
-                 [#:shadow-color shadow-color (or/c #f string? (is-a?/c color%)) #f])
+                 [#:shadow-color shadow-color (or/c #f string? (is-a?/c color%)) #f]
+                 [#:mode mode (or/c 'gaussian 'iterated-box 'single-box) 'iterated-box])
          pict?]{
 
 Creates a shadow effect by superimposing @racket[p] over a
@@ -69,9 +88,10 @@ blurred version of @racket[p]. The shadow is offset from @racket[p] by
 (@racket[dx], @racket[dy]) units.
 
 If @racket[color] is not @racket[#f], the foreground part is
-@racket[(colorize p color)] instead. If @racket[shadow-color] is not
-@racket[#f], the shadow part is produced by blurring @racket[(colorize p
-shadow-color)].
+@racket[(colorize p color)]; otherwise it is just @racket[p]. If
+@racket[shadow-color] is not @racket[#f], the shadow part is produced
+by blurring @racket[(colorize p shadow-color)]; otherwise it is
+produced by blurring @racket[p].
 
 The resulting pict has the same bounding box as @racket[p].
 
