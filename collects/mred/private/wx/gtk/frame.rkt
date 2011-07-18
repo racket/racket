@@ -487,11 +487,23 @@
 (define-gdk gdk_screen_get_width (_fun _GdkScreen -> _int))
 (define-gdk gdk_screen_get_height (_fun _GdkScreen -> _int))
 
-(define (display-origin x y all?) (set-box! x 0) (set-box! y 0))
+(define-gdk gdk_screen_get_monitor_geometry (_fun _GdkScreen _int _GdkRectangle-pointer -> _void))
+
+(define (monitor-rect num)
+  (let ([s (gdk_screen_get_default)]
+	[r (make-GdkRectangle 0 0 0 0)])
+    (gdk_screen_get_monitor_geometry s num r)
+    r))
+
+(define (display-origin x y all?)
+  (let ([r (monitor-rect 0)])
+    (set-box! x (GdkRectangle-x r))
+    (set-box! y (GdkRectangle-y r))))
+
 (define (display-size w h all?)
-  (let ([s (gdk_screen_get_default)])
-    (set-box! w (gdk_screen_get_width s))
-    (set-box! h (gdk_screen_get_height s))))
+  (let ([r (monitor-rect 0)])
+    (set-box! w (GdkRectangle-width r))
+    (set-box! h (GdkRectangle-height r))))
 
 (define (location->window x y)
   (for/or ([f (in-hash-keys all-frames)])
