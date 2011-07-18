@@ -282,6 +282,13 @@
              (#%plain-module-begin
               (#%require (for-syntax scheme/mzscheme))
               (let-values ([(or-part) 'a])
+                (if or-part or-part (#%expression 'b)))
+              'c)))
+         (macro ;; FIXME: 'untag-expr
+           (module m mzscheme
+             (#%plain-module-begin
+              (#%require (for-syntax scheme/mzscheme))
+              (let-values ([(or-part) 'a])
                 (if or-part or-part 'b))
               'c)))]
         #:no-hidden-steps)
@@ -313,6 +320,12 @@
               (let-values ([(or-part) 'a])
                 (if or-part or-part (or 'b))))))
          (macro
+           (module m mzscheme
+             (#%plain-module-begin
+              (#%require (for-syntax scheme/mzscheme))
+              (let-values ([(or-part) 'a])
+                (if or-part or-part (#%expression 'b))))))
+         (macro ;; FIXME: 'untag-expr
            (module m mzscheme
              (#%plain-module-begin
               (#%require (for-syntax scheme/mzscheme))

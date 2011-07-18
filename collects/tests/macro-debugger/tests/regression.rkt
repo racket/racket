@@ -115,21 +115,25 @@
     ;; Fixed 5/17/2007
     (test-case "hiding: keeping lifts in sync"
       (let ([freshname (gensym)])
-        (eval `(module ,freshname mzscheme
-                 (require (lib "contract.rkt"))
-                 (provide/contract [f (integer? . -> . integer?)]
-                                   [c integer?])
+        (eval `(module ,freshname racket/base
+                 (require racket/contract)
+                 (provide/contract
+                  [f (-> integer? integer?)]
+                  [c integer?])
                  (define (f x) (add1 x))
                  (define c 1)))
         (let ([rs (parameterize ((macro-policy standard-policy))
                     (reductions
                      (trace `(module m mzscheme
-                               (require ',freshname)
+                               (require (quote ,freshname))
                                (define (g y) c)
                                (define h c)
                                (add1 (g 2))))))])
+          (printf "not a step:\n~s\n"
+                  (for/or ([s rs]) (and (not (step? s)) s)))
           (check-pred list? rs)
-          (check-true (andmap step? rs)))))
+          (for ([x (in-list rs)])
+            (check-true (not (misstep? x)))))))
 
     ;; Bug from samth (6/5/2007)
     ;; problem seems to come from define-syntax -> letrec-syntaxes+values

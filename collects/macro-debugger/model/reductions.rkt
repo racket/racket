@@ -135,7 +135,7 @@
         [#:with-visible-form
          [#:left-foot]
          [#:set-syntax (stx-car (stx-cdr #'?form))]
-         [#:step 'macro]]
+         [#:step 'macro]] ;; FIXME: 'untag-expr
         [#:pass2]
         [#:set-syntax (stx-car (stx-cdr oldform))]
         [#:rename ?form untag])]
@@ -199,7 +199,8 @@
                    srenames
                    'rename-lsv]
         [#:binders #'(?svars ... ?vvars ...)]
-        [BindSyntaxes (?srhs ...) srhss]
+        [#:when (pair? srhss) ;; otherwise, we're coming from a block expansion
+                [BindSyntaxes (?srhs ...) srhss]]
         ;; If vrenames is #f, no var bindings to rename
         [#:when vrenames
                 [#:rename (((?vvars ?vrhs) ...) . ?body) vrenames 'rename-lsv]

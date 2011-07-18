@@ -216,9 +216,17 @@
           (lambda () 'a (define-values (x) 'b) 'c)
           [#:steps
            (rename-lambda (lambda () 'a (define-values (x) 'b) 'c))
-           (block->letrec (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))
-           (rename-letrec-values (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))]
-          #:same-hidden-steps)]
+           (block->letrec (lambda () (letrec-values ([() (begin 'a (values))] [(x) 'b]) 'c)))
+           (rename-letrec-values
+            (lambda () (letrec-values ([() (begin 'a (values))] [(x) 'b]) 'c)))
+           (tag-app (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))
+           ;; FIXME: should have TAG step for transform to nested let-values
+           ]
+          [#:hidden-steps
+           (rename-lambda (lambda () 'a (define-values (x) 'b) 'c))
+           (block->letrec (lambda () (letrec-values ([() (begin 'a (values))] [(x) 'b]) 'c)))
+           (rename-letrec-values
+            (lambda () (letrec-values ([() (begin 'a (values))] [(x) 'b]) 'c)))])]
 
   [#:suite
    "Top-level begin"
