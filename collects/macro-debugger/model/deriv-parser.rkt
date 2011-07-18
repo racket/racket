@@ -504,8 +504,8 @@
      [(enter-block (? BlockPass1) block->list (? EL))
       (make bderiv $1 (and $4 (wlderiv-es2 $4))
             $2 'list $4)]
-     [(enter-block BlockPass1 block->letrec (? EL))
-      (make bderiv $1 (and $4 (wlderiv-es2 $4))
+     [(enter-block BlockPass1 block->letrec (? EE))
+      (make bderiv $1 (and $4 (list (wderiv-e2 $4)))
             $2 'letrec $4)])
 
     ;; BlockPass1 Answer = (list-of BRule)

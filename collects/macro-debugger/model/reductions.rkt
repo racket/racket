@@ -506,10 +506,12 @@
         [#:pass2]
         [#:if (eq? trans 'letrec)
               (;; FIXME: foci (difficult because of renaming?)
-               [#:walk (wlderiv-es1 pass2) 'block->letrec])
+               [#:walk (list (wderiv-e1 pass2)) 'block->letrec]
+               [#:pattern (?expr)]
+               [Expr ?expr pass2])
               ([#:rename ?block (wlderiv-es1 pass2)]
-               [#:set-syntax (wlderiv-es1 pass2)])]
-        [List ?block pass2])]
+               [#:set-syntax (wlderiv-es1 pass2)]
+               [List ?block pass2])])]
     [#f
      (R)]))
 

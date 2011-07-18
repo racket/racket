@@ -120,7 +120,8 @@
 (define-struct (lderiv node) (?1 derivs) #:transparent)
 
 ;; A BDeriv is
-;;   (make-bderiv <Node(Stxs)> (list-of BRule) (U 'list 'letrec) LDeriv)
+;;   (make-bderiv <Node(Stxs)> (list-of BRule) (U 'list 'letrec) LDeriv/Deriv)
+;;   pass2 is Deriv if 'letrec, LDeriv if 'list
 (define-struct (bderiv node) (pass1 trans pass2) #:transparent)
 
 ;; A BRule is one of
