@@ -85,13 +85,22 @@ static ssize_t block_cache_free(BlockCache* bc) {
 static block_desc *bc_alloc_std_block(block_group *bg) {
   int this_block_size = bg->block_size;
   void *r = os_alloc_pages(this_block_size);
-  void *ps = align_up_ptr(r, APAGE_SIZE);
+  block_desc *bd;
+  void *ps;
+
+  if (!r) return NULL;
+
+  ps = align_up_ptr(r, APAGE_SIZE);
 
   if (this_block_size < BC_MAX_BLOCK_SIZE) {
     bg->block_size <<= 1;
   }
 
-  block_desc *bd = (block_desc*) ofm_malloc(sizeof(block_desc));
+  bd = (block_desc*) ofm_malloc(sizeof(block_desc));
+  if (!bd) {
+    os_free_pages(r, this_block_size);
+    return NULL;
+  }
   bd->block = r;
   bd->free = ps;
   bd->size = this_block_size;
@@ -151,8 +160,10 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
     }
   }
   else {
+    block_desc *bd;
     newbl = 1;
-    block_desc *bd = bc_alloc_std_block(bg);
+    bd = bc_alloc_std_block(bg);
+    if (!bd) return NULL;
     gclist_add(free_head, &(bd->gclist));
     (*size_diff) += bd->size;
     /* printf("ALLOC BLOCK %i %p %p-%p size %li %p\n", expect_mprotect, bg, bd->block, bd->block + bd->size, bd->size, bd->free); */
