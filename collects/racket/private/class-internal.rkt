@@ -2576,7 +2576,7 @@
         (fail "no public method ~a" m)))
     (for ([m (class/c-absents ctc)])
       (when (hash-ref method-ht m #f)
-        (fail "class already contains public method ~a")))
+        (fail "class already contains public method ~a" m)))
     (for ([m (class/c-inherits ctc)])
       (unless (hash-ref method-ht m #f)
         (fail "no public method ~a" m)))
