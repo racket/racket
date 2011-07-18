@@ -157,8 +157,12 @@
                   (do-parse #'(rest ...)
                             0
                             (lambda (x) x)
-                            (left (with-syntax ([current current])
-                                    #'(current args ...))))
+                            (left (with-syntax ([current current]
+                                                [(parsed-args ...)
+                                                 (if (null? (syntax->list #'(args ...)))
+                                                   '()
+                                                   (list (parse #'(args ...))))])
+                                    #'(current parsed-args ...))))
                   #;
                   (error 'parse "function call")]
                  [else (error 'what "dont know ~a" #'head)])]

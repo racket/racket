@@ -22,7 +22,8 @@ function test1(){
   test("x = 3", x, 3);
   test("y = 2", y, 2);
   */
-  print(x)
+  print(x + 2);
+  print(x ^ 2)
 }
 
 test1()

@@ -46,3 +46,5 @@
                                  #'(- left right))))
 
 (define-binary-operator honu-* 2 *)
+(define-binary-operator honu-/ 2 /)
+(define-binary-operator honu-^ 2 expt)
