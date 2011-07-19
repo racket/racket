@@ -888,6 +888,9 @@
         (tc-e (path->directory-path "foo") -Path)
         (tc-e (path->directory-path (string->some-system-path "foo" 'unix)) -SomeSystemPath)
 
+        (tc-e (resolve-path "foo") -Path)
+        (tc-e (expand-user-path "foo") -Path)
+
         ;;String Tests
         (tc-e (string? "a") #:ret (ret B (-FS -top -bot)))
         (tc-e (string? 2) #:ret (ret B (-FS -bot -top)))
