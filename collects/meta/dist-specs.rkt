@@ -511,9 +511,6 @@ mz-extras :+= (collects: "rnrs/")
 ;; -------------------- readline
 mz-extras :+= (package: "readline/")
 
-;; -------------------- readline
-mz-extras :+= (package: "xrepl/")
-
 ;; -------------------- wxme
 mz-extras :+= (collects: "wxme/")
 

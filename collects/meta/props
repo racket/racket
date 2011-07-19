@@ -1979,7 +1979,6 @@ path/s is either such a string or a list of them.
 "collects/tests/xml" responsible (jay)
 "collects/tests/xml/test-clark.rkt" drdr:command-line #f drdr:timeout 300
 "collects/tests/xml/xml-snip-bug.rkt" drdr:command-line (gracket "-t" *)
-"collects/tests/xrepl" responsible (eli)
 "collects/tests/zo-size.rkt" responsible (jay)
 "collects/tex2page" responsible (jay)
 "collects/texpict" responsible (mflatt robby)
@@ -2070,7 +2069,6 @@ path/s is either such a string or a list of them.
 "collects/xml/text-box-tool.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/xml/text-snipclass.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/xml/xml-snipclass.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/xrepl" responsible (eli)
 "doc/release-notes/COPYING-libscheme.txt" responsible (mflatt)
 "doc/release-notes/COPYING.txt" responsible (mflatt)
 "doc/release-notes/drracket" responsible (robby)
