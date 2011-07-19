@@ -12,6 +12,9 @@ These features are currently experimental and subject to change.
 
 @defform[(:type t)]{Prints the type @racket[_t].}
 
+@defform[(:print-type e)]{Prints the type of @racket[_e]. This prints the whole
+types, which can sometimes be quite large.}
+
 @defform[(declare-refinement id)]{Declares @racket[id] to be usable in
 refinement types.}
 

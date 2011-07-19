@@ -73,7 +73,7 @@
                              #f]
                             [(tc-result1: t f o)
                              (let-values ([(t pruned?) (cleanup-type t)])
-                               (format "- : ~a~a\n" t (if pruned? " and more..." "")))]
+                               (format "- : ~a~a\n" t (if pruned? "\nUse :print-type to see more." "")))]
                             [(tc-results: t)
                              ;; map the first component and ormap the second.
                              (define-values (ts any-pruned?)
@@ -84,7 +84,7 @@
                                    (values (cons t ts) (or pruned? new-pruned?)))))
                              (format "- : ~a~a\n"
                                      (cons 'Values (reverse ts))
-                                     (if any-pruned? " and more...\n" ""))]
+                                     (if any-pruned? " \nUse :print-type to see more." ""))]
                             [x (int-err "bad type result: ~a" x)])])
               (if ty-str
                   #`(let ([type '#,ty-str])

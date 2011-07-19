@@ -37,8 +37,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
          racket/flonum ; for for/flvector and for*/flvector
          mzlib/etc
          (for-syntax
+          racket/match
           syntax/parse
-	  racket/syntax
+          racket/syntax
           racket/base
           racket/struct-info
           syntax/struct
@@ -49,7 +50,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../utils/tc-utils.rkt"
           "../env/type-name-env.rkt"
           "../private/type-contract.rkt"
-          "for-clauses.rkt")
+          "for-clauses.rkt"
+          "../typecheck/tc-toplevel.rkt"
+          "../types/utils.rkt")
          "../types/numeric-predicates.rkt")
 (provide index?) ; useful for assert, and racket doesn't have it
 
@@ -171,6 +174,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ ty:expr)
      #`(display #,(format "~a\n" (parse-type #'ty)))]))
+
+;; Prints the _entire_ type. May be quite large.
+(define-syntax (:print-type stx)
+  (syntax-parse stx
+    [(_ e:expr)
+     #`(display #,(format "~a\n"
+                          (match (tc-toplevel-form #'e)
+                            [(tc-result1: t f o) t]
+                            [(tc-results: t) (cons 'Values t)])))]))
 
 (define-syntax (require/opaque-type stx)
   (define-syntax-class name-exists-kw
