@@ -27,7 +27,7 @@
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
     [(Struct: name parent flds proc poly? pred-id cert maker-id)
-     `(make-Struct ,(sub name) ,(sub parent)
+     `(make-Struct (quote-syntax ,name) ,(sub parent)
                    ,(sub flds) ,(sub proc) ,(sub poly?)
                    (quote-syntax ,pred-id) (syntax-local-certifier)
                    (quote-syntax ,maker-id))]

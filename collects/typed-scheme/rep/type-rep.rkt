@@ -286,7 +286,7 @@
   [#:fold-rhs (*fld (type-rec-id t) acc mutable?)]
   [#:intern (list t (hash-id acc) mutable?)])
 
-;; name : symbol
+;; name : identifier
 ;; parent : Struct
 ;; flds : Listof[fld]
 ;; proc : Function Type
@@ -295,7 +295,7 @@
 ;; cert : syntax certifier for pred-id
 ;; acc-ids : names of the accessors
 ;; maker-id : name of the constructor
-(def-type Struct ([name symbol?]
+(def-type Struct ([name identifier?]
                   [parent (or/c #f Struct? Name?)]
                   [flds (listof fld?)]
                   [proc (or/c #f Function?)]

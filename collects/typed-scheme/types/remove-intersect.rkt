@@ -60,12 +60,14 @@
               (list (Struct: n _ flds _ _ _ _ _) (Value: '())))
           #f]
          [(list (Struct: n _ flds _ _ _ _ _)
-                (Struct: n _ flds* _ _ _ _ _))
+                (Struct: n* _ flds* _ _ _ _ _)) (=> nevermind)
+          (unless (free-identifier=? n n*) (nevermind))
           (for/and ([f flds] [f* flds*])
             (match* (f f*)
               [((fld: t _ _) (fld: t* _ _)) (overlap t t*)]))]
          [(list (Struct: n #f _ _ _ _ _ _)
-                (StructTop: (Struct: n #f _ _ _ _ _ _)))
+                (StructTop: (Struct: n* #f _ _ _ _ _ _))) (=> nevermind)
+          (unless (free-identifier=? n n*) (nevermind))
           #t]
          ;; n and n* must be different, so there's no overlap
          [(list (Struct: n #f flds _ _ _ _ _)

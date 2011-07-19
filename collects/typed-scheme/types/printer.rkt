@@ -146,7 +146,7 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt _ _) (fp "~s" n)]
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: (== promise-sym) #f  (list (fld: t _ _)) _    _ _ _ _) (fp "(Promise ~a)" t)]
+    [(Struct: (? (lambda (nm) (free-identifier=? promise-id nm)))  #f  (list (fld: t _ _)) _    _ _ _ _) (fp "(Promise ~a)" t)]
     [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
      (fp "#(struct:~a ~a" nm t)
      (when proc

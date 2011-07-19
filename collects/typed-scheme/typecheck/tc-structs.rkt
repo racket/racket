@@ -118,13 +118,12 @@
            any/c)
   ;; create the approriate names that define-struct will bind
   (define-values (struct-type-id maker pred getters setters) (struct-names nm flds setters?))
-  (let* ([name (syntax-e nm)]
-         [fld-names flds]
+  (let* ([fld-names flds]
          [this-flds (for/list ([t (in-list types)]
                                [g (in-list getters)])
                        (make-fld t g setters?))]
          [flds (append parent-fields this-flds)]
-         [sty (make-Struct name parent flds proc-ty poly? pred
+         [sty (make-Struct nm parent flds proc-ty poly? pred
                            ;; this check is so that the tests work
                            (if (syntax-transforming?) (syntax-local-certifier) values)
                            (or maker* maker))]

@@ -20,7 +20,7 @@
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
-(provide (all-defined-out)
+(provide (except-out (all-defined-out) Promise)
          (rename-out [make-Listof -lst]
                      [make-MListof -mlst]))
 
@@ -107,12 +107,12 @@
 
 ;; basic types
 
-(define promise-sym (string->uninterned-symbol "Promise"))
 
+(define Promise #f)
+(define promise-id #'Promise)
 (define make-promise-ty
-  (let ([s promise-sym])
-    (lambda (t)
-      (make-Struct s #f (list (make-fld t #'values #f)) #f #f #'promise? values #'values))))
+ (lambda (t)
+   (make-Struct promise-id #f (list (make-fld t #'values #f)) #f #f #'promise? values #'values)))
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
