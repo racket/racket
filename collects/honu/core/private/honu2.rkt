@@ -2,6 +2,8 @@
 
 (require "macro2.rkt"
          "operator.rkt"
+         (only-in "literals.rkt"
+                  semicolon)
          (for-syntax syntax/parse
                      "literals.rkt"
                      "parse2.rkt"
@@ -18,9 +20,10 @@
        (values
          #'(define (name arg ...)
              (let-syntax ([do-parse (lambda (stx)
-                                      (parse #'(code ...)))])
+                                      (parse-all #'(code ...)))])
                (do-parse)))
-         #'rest)])))
+         #'rest
+         #t)])))
 
 (define-syntax-rule (define-binary-operator name precedence operator)
                     (begin

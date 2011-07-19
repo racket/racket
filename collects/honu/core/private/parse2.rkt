@@ -17,7 +17,7 @@
 (require (for-template racket/base
                        racket/splicing))
 
-(provide parse)
+(provide parse parse-all)
 
 #;
 (define-literal-set literals
@@ -65,8 +65,10 @@
 
 (define (semicolon? what)
   (define-literal-set check (semicolon))
-  (and (identifier? what)
-       ((literal-set->predicate check) what)))
+  (define is (and (identifier? what)
+                    ((literal-set->predicate check) what)))
+  (debug "Semicolon? ~a ~a\n" what is)
+  is)
 
 ;; 1 + 1
 ;; ^
@@ -91,24 +93,32 @@
 ;;  left: (lambda (x) (left (* 1 x)))
 ;;  current: 2
 
+;; parse one form
+;; return the parsed stuff and the unparsed stuff
 (define (parse input)
   (define (do-parse stream precedence left current)
     (debug "parse ~a precedence ~a left ~a current ~a\n" stream precedence left current)
     (syntax-parse stream
-      [() (left current)]
+      [() (values (left current) #'())]
       [(head rest ...)
        (cond
          [(honu-macro? #'head)
           (begin
             (debug "Honu macro ~a\n" #'head)
-            (let-values ([(parsed unparsed)
+            (let-values ([(parsed unparsed terminate?)
                           ((syntax-local-value #'head) #'(head rest ...) #f)])
               (with-syntax ([parsed parsed]
                             [rest unparsed])
-                (do-parse #'rest precedence (lambda (x)
-                                              (with-syntax ([x x])
-                                                #'(begin parsed x)))
-                          (left current))
+                (if terminate?
+                  (values (left #'parsed)
+                          #'rest)
+                  (do-parse #'rest precedence
+                            (lambda (x) x)
+                            #;
+                            (lambda (x)
+                              (with-syntax ([x x])
+                                #'(begin parsed x)))
+                            (left #'parsed)))
                 #;
                 #'(splicing-let-syntax ([more-parsing (lambda (stx)
                                                         (do-parse (stx-cdr stx)
@@ -135,6 +145,9 @@
                       (lambda (x) x)
                       (left current)))]
          [(semicolon? #'head)
+          (values (left current)
+                  #'(rest ...))
+          #;
           (do-parse #'(rest ...) 0
                     (lambda (stuff)
                       (with-syntax ([stuff stuff]
@@ -151,9 +164,18 @@
          [else (syntax-parse #'head
                  #:literal-sets (cruft)
                  [x:number (do-parse #'(rest ...)
-                                     precedence left #'x)]
+                                     precedence
+                                     left #'x)]
                  [(#%parens args ...)
                   (debug "function call ~a\n" left)
+                  (values (left (with-syntax ([current current]
+                                              [(parsed-args ...)
+                                               (if (null? (syntax->list #'(args ...)))
+                                                 '()
+                                                 (list (parse-all #'(args ...))))])
+                                  #'(current parsed-args ...)))
+                          #'(rest ...))
+                  #;
                   (do-parse #'(rest ...)
                             0
                             (lambda (x) x)
@@ -170,6 +192,24 @@
          )]))
 
   (do-parse input 0 (lambda (x) x) #'(void)))
+
+(define (empty-syntax? what)
+  (syntax-parse what
+    [() #t]
+    [else #f]))
+
+(define (parse-all code)
+  (let loop ([all '()]
+             [code code])
+    (define-values (parsed unparsed)
+                   (parse code))
+    (debug "Parsed ~a unparsed ~a\n" (syntax->datum parsed)
+           (syntax->datum unparsed))
+    (if (empty-syntax? unparsed)
+      (with-syntax ([(use ...) (reverse (cons parsed all))])
+        #'(begin use ...))
+      (loop (cons parsed all)
+            unparsed))))
 
 (define (parse2 forms)
   (debug "parse forms ~a\n" forms)

@@ -17,6 +17,7 @@
                      [honu-^ ^]
                      [literal:honu-= =]
                      [literal:semicolon |;|]
+                     [literal:honu-comma |,|]
                      [literal:#%braces #%braces]
                      [literal:#%parens #%parens])
          )

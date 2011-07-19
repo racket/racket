@@ -26,4 +26,9 @@ function test1(){
   print(x ^ 2)
 }
 
-test1()
+function test2(x){
+  print(x)
+}
+
+test1();
+test2(5);

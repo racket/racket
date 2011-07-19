@@ -1,0 +1,36 @@
+honu forms -> expanded, parsed into racket code
+to expand honu forms we have to parse the code again
+
+1. start with raw honu code
+2. wrap it with (honu-unparsed-begin ...)
+3. run macro processor, eventually spit out s-expressions
+   honu macros will only produce honu syntax, but primitive
+   forms can produce s-expressions
+so what should parsing 'expression' as a syntax class produce?
+eventually 1 + 1 should be converted into (+ 1 1) but what should be the
+representation of this as an expression within a macro?
+  x:expression
+maybe just the unparsed form
+  x == 1 + 1
+with possibly some accessors to tell stuff about the expression
+so if a macro appears when an expression wants to parse then the macro
+will be parsed and the result will be passed along
+  foo x:expression
+  foo some_macro 1 + 1
+where some_macro is
+  some_macro x:expression => "ok"
+then foo will get
+  x => "ok"
+as opposed to
+  x => some_macro 1 + 1
+when should honu syntax be converted to racket?
+at the top level. if we know what context we are expanding then we can compile
+top-level things
+
+Parsing:
+  macro invocation starts parsing process. parse one expression, get back a top level form and unparsed syntax. the top level form has to be local-expanded to eventually produce some low-level racket syntax (like define).
+  (honu-parse stuff ...)
+
+  (define-syntax (honu-parse stx) ...)
+  
+Should call parse on stx and return 

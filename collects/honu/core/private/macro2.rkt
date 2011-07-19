@@ -37,7 +37,7 @@
                  (syntax-parse stx
                    [(_ syntax-parse-pattern . more)
                     (values #'(let-syntax ([do-parse (lambda (stx)
-                                                       (parse stx))])
+                                                       (parse-all stx))])
                                 (do-parse action ...))
                             #'more)]))))
          #'rest)])))

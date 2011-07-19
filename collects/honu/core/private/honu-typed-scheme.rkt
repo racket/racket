@@ -443,7 +443,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
          #'rest)])))
 
 (define-for-syntax (honu-expand forms)
-  (parse forms))
+  (parse-all forms))
 
 (define-for-syntax (honu-compile forms)
   #'(void))
@@ -452,10 +452,15 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 (honu:define-honu-syntax honu-var
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ name:id honu-= anything . rest)
+      [(_ name:id honu-= . rest)
+       (define-values (parsed unparsed)
+                      (parse #'rest))
        (values
-         #'(define name anything)
-         #'rest)])))
+         (with-syntax ([parsed parsed])
+           #'(define name parsed))
+         (with-syntax ([unparsed unparsed])
+         #'unparsed)
+         #t)])))
 
 (define-syntax (honu-unparsed-begin stx)
   (emit-remark "Honu unparsed begin!" stx)
@@ -469,4 +474,4 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
     [(_ forms ...)
      (begin
        (debug "Module begin ~a\n" (syntax->datum #'(forms ...)))
-       #'(#%plain-module-begin (honu-unparsed-begin forms ...)))]))
+       #'(#%module-begin (honu-unparsed-begin forms ...)))]))

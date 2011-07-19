@@ -6,6 +6,7 @@
              [honu-function honu_function]
              [honu-+ honu_plus]
              [honu-* honu_times]
+             [honu-/ honu_division]
              [honu-- honu_minus])
   (rename-in honu/core/private/literals
              [honu-= =]
@@ -24,7 +25,7 @@
   (syntax-case stx ()
     [(_ stuff)
      (let ()
-       (define output (parse:parse (stx-cdr #'stuff)))
+       (define output (parse:parse-all (stx-cdr #'stuff)))
        (printf "Output: ~a\n" (syntax->datum output))
        output)]))
 
@@ -36,8 +37,15 @@
                          }
                          foo 5))
 
+                   #;
+(fake-module-begin #hx(2))
+
+(fake-module-begin #hx(1;2))
+
 (fake-module-begin #hx(var x = 2;
                        print(x)))
+
+#|
 
 (let ()
   (fake-module-begin #hx(honu_function test(x){
@@ -61,3 +69,4 @@
 
 (let ()
   (fake-module-begin #hx(1 honu_plus 1 honu_minus 4 honu_times 8)))
+|#
