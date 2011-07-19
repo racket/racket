@@ -134,4 +134,5 @@
              operation: #:type _int NSCompositeCopy fraction: #:type _CGFloat 1.0))
     (tellv NSGraphicsContext restoreGraphicsState)
     (CGContextRestoreGState cg)
+    (cairo_surface_mark_dirty surface)
     bm))
