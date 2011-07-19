@@ -6,8 +6,8 @@
 (define top-level "top-level")
 
 (define (match-blame re msg)
-  (or (regexp-match? (format "blaming ~a" re) msg)
-      (regexp-match? (format "self-contract violation:.*blaming ~a" re) msg)))
+  (or (regexp-match? (format "blaming: ~a" re) msg)
+      (regexp-match? (format "self-contract violation:.*blaming: ~a" re) msg)))
 
 (define (match-obj re msg)
   (or (regexp-match? (format "~a: contract violation" re) msg)
