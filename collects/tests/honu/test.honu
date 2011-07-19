@@ -15,7 +15,7 @@ function test(t, a, b){
 }
 */
 
-function test1(){
+test1(){
   var x = 3;
 /*
   const y = 2;
@@ -26,9 +26,11 @@ function test1(){
   print(x ^ 2)
 }
 
-function test2(x){
+test2(x){
   print(x)
 }
 
-test1();
-test2(5);
+// test1();
+// test2(5);
+
+function(z){ print(z) }(12)

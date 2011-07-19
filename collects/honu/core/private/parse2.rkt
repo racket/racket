@@ -98,7 +98,7 @@
 (define (parse input)
   (define (do-parse stream precedence left current)
     (debug "parse ~a precedence ~a left ~a current ~a\n" stream precedence left current)
-    (syntax-parse stream
+    (syntax-parse stream #:literal-sets (cruft)
       [() (values (left current) #'())]
       [(head rest ...)
        (cond
@@ -159,37 +159,40 @@
             #'(splicing-let-syntax ([more (lambda (stx)
                                             (parse #'(rest ...)))])
                 so-far (more)))]
-         [(identifier? #'head)
-          (do-parse #'(rest ...) precedence left #'head)]
-         [else (syntax-parse #'head
-                 #:literal-sets (cruft)
-                 [x:number (do-parse #'(rest ...)
-                                     precedence
-                                     left #'x)]
-                 [(#%parens args ...)
-                  (debug "function call ~a\n" left)
-                  (values (left (with-syntax ([current current]
-                                              [(parsed-args ...)
-                                               (if (null? (syntax->list #'(args ...)))
-                                                 '()
-                                                 (list (parse-all #'(args ...))))])
-                                  #'(current parsed-args ...)))
-                          #'(rest ...))
-                  #;
-                  (do-parse #'(rest ...)
-                            0
-                            (lambda (x) x)
-                            (left (with-syntax ([current current]
-                                                [(parsed-args ...)
-                                                 (if (null? (syntax->list #'(args ...)))
-                                                   '()
-                                                   (list (parse #'(args ...))))])
-                                    #'(current parsed-args ...))))
-                  #;
-                  (error 'parse "function call")]
-                 [else (error 'what "dont know ~a" #'head)])]
-
-         )]))
+         [else
+           (syntax-parse #'(head rest ...)
+             [(function:identifier (#%parens args ...) (#%braces code ...) . rest)
+              (values #'(define (function args ...)
+                          (let-syntax ([parse-more (lambda (stx)
+                                                     (parse-all #'(code ...)))])
+                            (parse-more)))
+                      #'rest)]
+             [else (syntax-parse #'head
+                     #:literal-sets (cruft)
+                     [x:identifier (do-parse #'(rest ...) precedence left #'x)]
+                     [x:number (do-parse #'(rest ...) precedence left #'x)]
+                     [(#%parens args ...)
+                      (debug "function call ~a\n" left)
+                      (values (left (with-syntax ([current current]
+                                                  [(parsed-args ...)
+                                                   (if (null? (syntax->list #'(args ...)))
+                                                     '()
+                                                     (list (parse-all #'(args ...))))])
+                                      #'(current parsed-args ...)))
+                              #'(rest ...))
+                      #;
+                      (do-parse #'(rest ...)
+                                0
+                                (lambda (x) x)
+                                (left (with-syntax ([current current]
+                                                    [(parsed-args ...)
+                                                     (if (null? (syntax->list #'(args ...)))
+                                                       '()
+                                                       (list (parse #'(args ...))))])
+                                        #'(current parsed-args ...))))
+                      #;
+                      (error 'parse "function call")]
+                     [else (error 'what "dont know ~a" #'head)])])])]))
 
   (do-parse input 0 (lambda (x) x) #'(void)))
 

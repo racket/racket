@@ -14,16 +14,16 @@
 (define-honu-syntax honu-function
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ name:identifier (#%parens arg:identifier ...)
+      [(_ (#%parens arg:identifier ...)
           (#%braces code ...)
           . rest)
        (values
-         #'(define (name arg ...)
+         #'(lambda (arg ...)
              (let-syntax ([do-parse (lambda (stx)
                                       (parse-all #'(code ...)))])
                (do-parse)))
          #'rest
-         #t)])))
+         #f)])))
 
 (define-syntax-rule (define-binary-operator name precedence operator)
                     (begin
