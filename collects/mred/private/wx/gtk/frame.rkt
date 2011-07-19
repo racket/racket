@@ -263,7 +263,7 @@
                 (send p get-size sw-box sh-box)
                 (set-box! sx-box (send p get-x))
                 (set-box! sy-box (send p get-y)))
-              (display-size sw-box sh-box #t)))
+              (display-size sw-box sh-box #t 0)))
         (let* ([sw (unbox sw-box)]
                [sh (unbox sh-box)]
                [fw (unbox w-box)]
