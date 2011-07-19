@@ -1,6 +1,5 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval scribble/bnf "guide-utils.rkt"
-          (only-in scribble/core link-element)
           (for-label racket/enter))
 
 @(define piece-eval (make-base-eval))
@@ -134,9 +133,6 @@ When using command-line @exec{racket} instead of DrRacket, you'd save
 the above text in a file using your favorite editor. If you save it as
 @filepath{extract.rkt}, then after starting @exec{racket} in the same
 directory, you'd evaluate the following sequence:
-
-@margin-note{If you use @racketmodname[xrepl], you can use
-  @(link-element "plainlink" (litchar ",enter extract.rkt") `(xrepl "enter")).}
 
 @interaction[
 #:eval piece-eval
