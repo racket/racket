@@ -23,7 +23,8 @@
 (define (autoloaded? sym) (hash-ref autoloaded-specs sym #f))
 (define-syntax-rule (defautoload libspec id ...)
   (begin (define (id . args)
-           (set! id (dynamic-require 'libspec 'id))
+           (set! id (parameterize ([current-namespace hidden-namespace])
+                      (dynamic-require 'libspec 'id)))
            (hash-set! autoloaded-specs 'libspec #t)
            (hash-set! autoloaded-specs 'id #t)
            (apply id args))
@@ -38,13 +39,25 @@
 ;; similar, but just for identifiers
 (define-namespace-anchor anchor)
 (define (here-namespace) (namespace-anchor->namespace anchor))
+(define hidden-namespace (make-base-namespace))
+(define initial-namespace (current-namespace))
+;; when `racket/enter' initializes, it grabs the `current-namespace' to get
+;; back to -- which means it should be instantiated in a top level namespace
+;; rather than in (here-namespace); but if we use `initial-namespace' we
+;; essentially rely on the user to not kill `enter!' (eg, (define enter! 4)).
+;; the solution is to make a `hidden-namespace' where we store these bindings,
+;; then instantiate needed modules in the initial namespace and immediately
+;; attach the modules to the hidden one then use it, so changes to the binding
+;; in `initial-namespace' doesn't affect us.
 (define (make-lazy-identifier sym from)
   (define id #f)
-  (λ () (or id (parameterize ([current-namespace (here-namespace)])
-                 (eval (namespace-syntax-introduce
-                        (datum->syntax #f #`(require #,from))))
-                 (set! id (namespace-symbol->identifier sym))
-                 id))))
+  (λ () (or id (begin (parameterize ([current-namespace initial-namespace])
+                        (namespace-require from))
+                      (parameterize ([current-namespace hidden-namespace])
+                        (namespace-attach-module initial-namespace from)
+                        (namespace-require from)
+                        (set! id (namespace-symbol->identifier sym))
+                        id)))))
 
 ;; makes it easy to use meta-tools without user-namespace contamination
 (define (eval-sexpr-for-user form)
@@ -58,10 +71,9 @@
   (if (path-string? x) (path->relative-string/setup x) x))
 
 (define (here-source) ; returns a path, a symbol, or #f (= not in a module)
-  (let* ([x (datum->syntax #'here '(#%variable-reference))]
-         [x (eval (namespace-syntax-introduce x))]
-         [x (variable-reference->module-source x)])
-    x))
+  (variable-reference->module-source
+   (eval (namespace-syntax-introduce
+          (datum->syntax #f `(,#'#%variable-reference))))))
 
 (define (phase->name phase [fmt #f])
   (define s
@@ -967,7 +979,7 @@
   (λ () (let ([base-stxs #f])
           (unless base-stxs
             (set! base-stxs ; all ids that are bound to a syntax in racket/base
-                  (parameterize ([current-namespace (here-namespace)])
+                  (parameterize ([current-namespace hidden-namespace])
                     (let-values ([(vals stxs) (module->exports 'racket/base)])
                       (map (λ (s) (namespace-symbol->identifier (car s)))
                            (cdr (assq 0 stxs)))))))
