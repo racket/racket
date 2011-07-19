@@ -113,14 +113,14 @@
    [(-values (list -Number)) (-values (list Univ))]
 
    [(-poly (b) ((Un (make-Base 'foo #'dummy values #'values)
-                    (-struct 'bar #f
+                    (-struct #'bar #f
                              (list (make-fld -Number #'values #f) (make-fld b #'values #f))
                              #'values))
                 . -> . (-lst b)))
-    ((Un (make-Base 'foo #'dummy values #'values) (-struct 'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f)) #'values))
+    ((Un (make-Base 'foo #'dummy values #'values) (-struct #'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f)) #'values))
      . -> . (-lst (-pair -Number (-v a))))]
-   [(-poly (b) ((-struct 'bar #f (list (make-fld -Number #'values #f) (make-fld b #'values #f)) #'values) . -> . (-lst b)))
-    ((-struct 'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f)) #'values) . -> . (-lst (-pair -Number (-v a))))]
+   [(-poly (b) ((-struct #'bar #f (list (make-fld -Number #'values #f) (make-fld b #'values #f)) #'values) . -> . (-lst b)))
+    ((-struct #'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f)) #'values) . -> . (-lst (-pair -Number (-v a))))]
 
    [(-poly (a) (a . -> . (make-Listof a))) ((-v b) . -> . (make-Listof (-v b)))]
    [(-poly (a) (a . -> . (make-Listof a))) ((-pair -Number (-v b)) . -> . (make-Listof (-pair -Number (-v b))))]
@@ -132,9 +132,9 @@
    (FAIL (-> Univ) (null Univ . ->* . Univ))
 
    [(cl->* (-Number . -> . -String) (-Boolean . -> . -String)) ((Un -Boolean -Number) . -> . -String)]
-   [(-struct 'a #f null #'values) (-struct 'a #f null #'values)]
-   [(-struct 'a #f (list (make-fld -String #'values #f)) #'values) (-struct 'a #f (list (make-fld -String #'values #f)) #'values)]
-   [(-struct 'a #f (list (make-fld -String #'values #f)) #'values) (-struct 'a #f (list (make-fld Univ #'values #f)) #'values)]
+   [(-struct #'a #f null #'values) (-struct #'a #f null #'values)]
+   [(-struct #'a #f (list (make-fld -String #'values #f)) #'values) (-struct #'a #f (list (make-fld -String #'values #f)) #'values)]
+   [(-struct #'a #f (list (make-fld -String #'values #f)) #'values) (-struct #'a #f (list (make-fld Univ #'values #f)) #'values)]
    ))
 
 (define-go

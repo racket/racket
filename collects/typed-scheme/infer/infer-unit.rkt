@@ -292,7 +292,7 @@
     [(_ _) (fail! s-arr t-arr)]))
 
 (define/cond-contract (cgen/flds V X Y flds-s flds-t)
-  ((listof symbol?) (listof symbol?) (listof symbol?) Type? Type? . -> . cset?)
+  ((listof symbol?) (listof symbol?) (listof symbol?) (listof fld?) (listof fld?)  . -> . cset?)
   (cset-meet*
    (for/list ([s (in-list flds-s)] [t (in-list flds-t)])
      (match* (s t)
@@ -378,7 +378,8 @@
 
           ;; two structs with the same name and parent
           ;; just check pairwise on the fields
-          [((Struct: nm p flds proc _ _ _ _) (Struct: nm p flds* proc* _ _ _ _))
+          [((Struct: nm p flds proc _ _ _ _) (Struct: nm* p flds* proc* _ _ _ _)) (=> nevermind)
+           (unless (free-identifier=? nm nm*) (nevermind))
            (let ([proc-c
                   (cond [(and proc proc*)
                          (cg proc proc*)]

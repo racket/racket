@@ -221,7 +221,7 @@
       (match par
         [(Poly: _ (Struct: p-name _ _ _ _ _ _ _)) p-name]
         [(Struct: p-name _ _ _ _ _ _ _) p-name]))
-    (or (equal? s-name p-name)
+    (or (free-identifier=? s-name p-name)
         (match s
           [(Poly: _ (? Struct? s*)) (in-hierarchy? s* par)]
           [(Struct: _ (and (Name: _) p) _ _ _ _ _ _) (in-hierarchy? (resolve-once p) par)]
@@ -361,7 +361,8 @@
 	      [(s (Union: es)) (or (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)
                                    (fail! s t))]
 	      ;; subtyping on immutable structs is covariant
-	      [((Struct: nm _ flds proc _ _ _ _) (Struct: nm _ flds* proc* _ _ _ _))
+	      [((Struct: nm _ flds proc _ _ _ _) (Struct: nm* _ flds* proc* _ _ _ _)) (=> nevermind)
+               (unless (free-identifier=? nm nm*) (nevermind))
                (let ([A (cond [(and proc proc*) (subtype* proc proc*)]
                               [proc* (fail! proc proc*)]
                               [else A0])])
@@ -388,7 +389,9 @@
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
-	      [((Struct: (== promise-sym) _ (list t) _ _ _ _ _) (Struct: (== promise-sym) _ (list t*) _ _ _ _ _)) (subtype* A0 t t*)]
+          [((Struct: (? (lambda (n) (free-identifier=? n promise-id))) _ (list t) _ _ _ _ _)
+            (Struct: (? (lambda (n) (free-identifier=? n promise-id))) _ (list t*) _ _ _ _ _))
+           (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise
 	      [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; trivial case for Result

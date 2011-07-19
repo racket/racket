@@ -39,12 +39,12 @@
    [(-mu x (Un -Number -Symbol x)) (-mu y (Un -Number -Symbol y))]
    ;; found bug
    [FAIL (Un (-mu heap-node
-                  (-struct 'heap-node #f
+                  (-struct #'heap-node #f
                            (map fld* (list (-base 'comparator) -Number (-v a) (Un heap-node (-base 'heap-empty))))
                            #'values))
              (-base 'heap-empty))
          (Un (-mu heap-node
-                  (-struct 'heap-node #f
+                  (-struct #'heap-node #f
                            (map fld* (list (-base 'comparator) -Number (-pair -Number -Number) (Un heap-node (-base 'heap-empty)))) #'values))
              (-base 'heap-empty))]))
 
