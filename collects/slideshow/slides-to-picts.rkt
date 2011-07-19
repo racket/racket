@@ -42,10 +42,10 @@
                                           (define commentary-on-slide? #f))]
 		  [((CORE : core^)) core@ CONFIG VIEWER]
 		  [((VIEWER : viewer^)) (unit
-                                          (import)
+                                          (import (prefix c: core^))
                                           (export viewer^)
                                           (define (add-talk-slide! s)
-                                            (set! slides (cons s slides))
+                                            (set! slides (cons (list s (c:get-margin)) slides))
                                             (when (and stop-after
                                                        ((length slides) . >= . stop-after))
                                               (escape (void))))
@@ -59,17 +59,19 @@
                                           (define enable-click-advance! void)
                                           (define set-page-numbers-visible! void)
                                           (define add-click-region! void)
-                                          (define done-making-slides void))]))))
+                                          (define done-making-slides void))
+                   CORE]))))
 	(parameterize ([current-namespace ns])
 	  (let/ec k
 	    (set! escape k)
 	    (dynamic-require `(file ,file) #f)))
 	(map (lambda (s)
-	       (let ([drawer (sliderec-drawer s)])
+	       (let ([drawer (sliderec-drawer (car s))]
+                     [margin (cadr s)])
 		 (dc (lambda (dc x y)
 		       (let-values ([(orig-xs orig-ys) (send dc get-scale)])
 			 (send dc set-scale (* orig-xs xs) (* orig-ys ys))
-			 (drawer dc (+ (/ x xs) 20) (+ (/ y ys) 20))
+			 (drawer dc (+ (/ x xs) margin) (+ (/ y ys) margin))
 			 (send dc set-scale orig-xs orig-ys)))
 		     w h 0 0)))
 	     (reverse slides))))))
