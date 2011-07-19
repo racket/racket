@@ -696,7 +696,7 @@
 ;; just return a boolean result
 (define infer
  (let ()
-  (define/contract (infer X Y S T R [expected #f])
+  (define/cond-contract (infer X Y S T R [expected #f])
     (((listof symbol?) (listof symbol?) (listof Type/c) (listof Type/c) Type?) ((or/c #f Type?)) . ->* . (or/c boolean? substitution/c))
     (with-handlers ([exn:infer? (lambda _ #f)])
       (let* ([expected-cset (if expected
