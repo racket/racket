@@ -3159,18 +3159,63 @@ static Scheme_Object *make_clones(Scheme_Compiled_Let_Value *retry_start,
   return first;
 }
 
+static int set_one_code_flags(Scheme_Object *value, int flags,
+                              Scheme_Object *first, Scheme_Object *second, 
+                              int set_flags, int mask_flags, int just_tentative,
+                              int merge_flonum)
+{
+  Scheme_Case_Lambda *cl, *cl2, *cl3;
+  Scheme_Closure_Data *data, *data2, *data3;
+  int i, count;
+
+  if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(value))) {
+    count = 1;
+    cl = NULL;
+    cl2 = NULL;
+    cl3 = NULL;
+  } else {
+    cl = (Scheme_Case_Lambda *)value;
+    cl2 = (Scheme_Case_Lambda *)first;
+    cl3 = (Scheme_Case_Lambda *)second;
+    count = cl->count;
+  }
+
+  for (i = 0; i < count; i++) {
+    if (cl) {
+      data = (Scheme_Closure_Data *)cl->array[i];
+      data2 = (Scheme_Closure_Data *)cl2->array[i];
+      data3 = (Scheme_Closure_Data *)cl3->array[i];          
+    } else {
+      data = (Scheme_Closure_Data *)value;
+      data2 = (Scheme_Closure_Data *)first;
+      data3 = (Scheme_Closure_Data *)second;
+    }
+
+    if (merge_flonum) {
+      merge_closure_flonum_map(data, data2);
+      merge_closure_flonum_map(data, data3);
+      merge_closure_flonum_map(data, data2);
+    }        
+      
+    if (!just_tentative || (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_RESULT_TENTATIVE)) {
+      flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
+      SCHEME_CLOSURE_DATA_FLAGS(data2) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data2) & mask_flags);
+      SCHEME_CLOSURE_DATA_FLAGS(data3) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data3) & mask_flags);
+    }
+  }
+
+  return flags;
+}
+
 static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
                           Scheme_Compiled_Let_Value *pre_body,
                           Scheme_Object *clones,
                           int set_flags, int mask_flags, int just_tentative,
                           int merge_flonum)
 {
-  Scheme_Case_Lambda *cl, *cl2, *cl3;
   Scheme_Compiled_Let_Value *clv;
   Scheme_Object *value, *first;
   int flags = CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS;
-  Scheme_Closure_Data *data, *data2, *data3;
-  int i, count;
 
   /* The first in a clone pair is the one that is consulted for
      references. The second one is the clone, and it's the one whose
@@ -3183,43 +3228,11 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
     if (IS_COMPILED_PROC(value)) {
       first = SCHEME_CAR(clones);
 
-      if (first) {
-        if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(value))) {
-          count = 1;
-          cl = NULL;
-          cl2 = NULL;
-          cl3 = NULL;
-        } else {
-          cl = (Scheme_Case_Lambda *)value;
-          cl2 = (Scheme_Case_Lambda *)SCHEME_CAR(first);
-          cl3 = (Scheme_Case_Lambda *)SCHEME_CDR(first);
-          count = cl->count;
-        }
-
-        for (i = 0; i < count; i++) {
-          if (cl) {
-            data = (Scheme_Closure_Data *)cl->array[i];
-            data2 = (Scheme_Closure_Data *)cl2->array[i];
-            data3 = (Scheme_Closure_Data *)cl3->array[i];          
-          } else {
-            data = (Scheme_Closure_Data *)value;
-            data2 = (Scheme_Closure_Data *)SCHEME_CAR(first);
-            data3 = (Scheme_Closure_Data *)SCHEME_CDR(first);
-          }
-
-          if (merge_flonum) {
-            merge_closure_flonum_map(data, data2);
-            merge_closure_flonum_map(data, data3);
-            merge_closure_flonum_map(data, data2);
-          }        
-      
-          if (!just_tentative || (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_RESULT_TENTATIVE)) {
-            flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
-            SCHEME_CLOSURE_DATA_FLAGS(data2) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data2) & mask_flags);
-            SCHEME_CLOSURE_DATA_FLAGS(data3) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data3) & mask_flags);
-          }
-        }
-      }
+      if (first)
+        flags = set_one_code_flags(value, flags,
+                                   SCHEME_CAR(first), SCHEME_CDR(first),
+                                   set_flags, mask_flags, just_tentative, 
+                                   merge_flonum);
 
       clones = SCHEME_CDR(clones);
     }
@@ -4352,7 +4365,6 @@ static int set_code_closure_flags(Scheme_Object *clones,
                                   int just_tentative)
 {
   Scheme_Object *clone, *orig, *first;
-  Scheme_Closure_Data *data;
   int flags = CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS;
 
   /* The first in a clone pair is the one that is consulted for
@@ -4365,13 +4377,10 @@ static int set_code_closure_flags(Scheme_Object *clones,
     clone = SCHEME_CAR(first);
     orig = SCHEME_CDR(first);
 
-    data = (Scheme_Closure_Data *)orig;
-    if (!just_tentative || (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_RESULT_TENTATIVE)) {
-      flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
-      SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
-      data = (Scheme_Closure_Data *)clone;
-      SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
-    }
+    flags = set_one_code_flags(orig, flags,
+                               orig, clone,
+                               set_flags, mask_flags, just_tentative, 
+                               0);
 
     clones = SCHEME_CDR(clones);
   }
