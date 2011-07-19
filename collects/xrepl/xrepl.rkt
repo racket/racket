@@ -945,7 +945,7 @@
         (namespace-require init)
         (hash-set! namespaces name (cons (current-namespace) init))))
     (when (and name (not (eq? name (current-namespace-name))))
-      (printf "; *** switching to the `~s' namespace ***\n" name)
+      (printf "; *** Switching to the `~s' namespace ***\n" name)
       (let ([x (hash-ref namespaces (current-namespace-name))])
         (unless (eq? (car x) old-namespace)
           (printf "; (note: saving current namespace for `~s')\n"
@@ -984,6 +984,19 @@
                       (map (λ (s) (namespace-symbol->identifier (car s)))
                            (cdr (assq 0 stxs)))))))
           (λ (id) (not (ormap (λ (s) (free-identifier=? id s)) base-stxs))))))
+(define (macro-stepper . args)
+  (define-values [i o] (make-pipe))
+  (parameterize ([current-output-port o])
+    (thread (λ () (apply expand/step-text args) (close-output-port o))))
+  (let loop ()
+    (define l (read-line i))
+    (unless (eof-object? l)
+      ;; hack: beautify the stepper's output -- remove empty line, indent code
+      (unless (equal? "" l)
+        (printf (if (regexp-match? #px"^[A-Z][a-z]+\\b" l)
+                  "; ---- ~a ----\n" "; ~a\n")
+                l))
+      (loop))))
 (defcommand (syntax stx st) "[<expr>] [<flag> ...]"
   "set syntax object to inspect, and control it"
   ["With no arguments, will show the previously set (or expanded) syntax"
@@ -1001,22 +1014,22 @@
   (define args (getarg 'syntax 'list))
   (for ([stx (in-list (if (null? args) '(#f) args))])
     (define (show/set label stx)
-      (printf "~a\n" label)
+      (printf "; ~a\n" label)
       (current-syntax stx)
-      (pretty-write (syntax->datum stx)))
+      (display "; ") (pretty-write (syntax->datum stx)))
     (define (cur) (or (current-syntax) (cmderror "no syntax set yet")))
     (case (and stx (if (identifier? stx) (syntax-e stx) '--none--))
-      [(#f) (show/set "current syntax:" (cur))]
+      [(#f) (show/set "Current syntax:" (cur))]
       [(^)  (if (last-input-syntax)
-              (show/set "using last expression:" (last-input-syntax))
+              (show/set "Using last expression:" (last-input-syntax))
               (cmderror "no expression entered yet"))]
       [(+)  (show/set "expand-once ->" (expand-once (cur)))]
       [(!)  (show/set "expand ->" (expand (cur)))]
-      [(*)  (printf "stepper:\n") (expand/step-text (cur) (not-in-base))]
-      [(**) (printf "stepper:\n") (expand/step-text (cur))]
+      [(*)  (printf "; Stepper:\n") (macro-stepper (cur) (not-in-base))]
+      [(**) (printf "; Stepper:\n") (macro-stepper (cur))]
       [else
        (if (syntax? stx)
-         (begin (printf "syntax set\n") (current-syntax stx))
+         (begin (printf "; Syntax set\n") (current-syntax stx))
          (cmderror "internal error: ~s ~s" stx (syntax? stx)))])))
 
 ;; ----------------------------------------------------------------------------
