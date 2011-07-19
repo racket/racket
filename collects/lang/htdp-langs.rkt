@@ -475,16 +475,18 @@
                               ;; Extract snip-related modules:
                               (let-values ([(snip-class-names data-class-names)
                                             (extract-used-classes port)])
+                                (define names (append snip-class-names data-class-names))
                                 (list*
                                  '(lib "wxme/read.ss")
                                  '(lib "mred/mred.ss")
                                  reader-module
                                  (filter
                                   values
-                                  (map (λ (x) (string->lib-path x #t))
-                                       (append
-                                        snip-class-names
-                                        data-class-names)))))
+                                  (append
+                                   (map (λ (x) (string->lib-path x #t))
+                                        names)
+                                   (map (λ (x) (string->lib-path x #f))
+                                        names)))))
                               ;; Extract reader-related modules:
                               (begin
                                 (file-position port 0)
