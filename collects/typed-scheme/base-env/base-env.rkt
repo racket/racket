@@ -888,11 +888,11 @@
  (cl->* (-> -Pathlike -Path)
         (-> -SomeSystemPathlike -SomeSystemPath))]
 
-[resolve-path (-> -Path -Path)]
+[resolve-path (-> -Pathlike -Path)]
 [cleanse-path
  (cl->* (-> -Pathlike -Path)
         (-> -SomeSystemPathlike -SomeSystemPath))]
-[expand-user-path (-> -Path -Path)]
+[expand-user-path (-> -Pathlike -Path)]
 
 [simplify-path
  (cl->*
