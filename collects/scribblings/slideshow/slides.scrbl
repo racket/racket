@@ -316,12 +316,25 @@ A width commonly used for layout.}
 
 @defthing[bullet pict?]{
 
-A filled bullet used by default by @racket[item].}
+A filled bullet used by default by @racket[item].
+
+It is either @racket[(t "\u2022")], if that character
+is available in the font that @racket[t] uses,
+or it uses an implementation similar to @racket[o-bullet],
+but not hollow (using @racket[disk], not @racket[circle]).
+}
 
 
 @defthing[o-bullet pict?]{
 
-A hollow bullet used by default by @racket[subitem].}
+A hollow bullet used by default by @racket[subitem].
+                                   
+It's implementation is:
+@racketblock[(baseless
+              (cc-superimpose 
+               (circle (/ gap-size 2)) 
+               (blank 0 gap-size)))]
+}
 
 
 @defidform[client-w]{
