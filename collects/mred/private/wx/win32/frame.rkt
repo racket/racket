@@ -482,8 +482,8 @@
 
   (define/public (is-maximized?)
     (if (is-shown?)
-        hidden-zoomed?
-        (IsZoomed hwnd)))
+        (IsZoomed hwnd)
+        hidden-zoomed?))
   
   (define/public (maximize on?)
     (if (is-shown?)
