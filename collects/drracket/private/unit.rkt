@@ -1140,19 +1140,20 @@ module browser threading seems wrong.
     (define super-frame%
       (drracket:frame:mixin
        (drracket:frame:basics-mixin 
-        (frame:searchable-text-mixin 
-         (frame:searchable-mixin
-          (frame:text-info-mixin 
-           (frame:delegate-mixin
-            (frame:status-line-mixin
-             (frame:info-mixin
-              (frame:text-mixin
-               (frame:open-here-mixin
-                (frame:editor-mixin
-                 (frame:standard-menus-mixin
-                  (frame:register-group-mixin
-                   (frame:basic-mixin
-                    frame%)))))))))))))))
+        (frame:size-pref-mixin
+         (frame:searchable-text-mixin 
+          (frame:searchable-mixin
+           (frame:text-info-mixin 
+            (frame:delegate-mixin
+             (frame:status-line-mixin
+              (frame:info-mixin
+               (frame:text-mixin
+                (frame:open-here-mixin
+                 (frame:editor-mixin
+                  (frame:standard-menus-mixin
+                   (frame:register-group-mixin
+                    (frame:basic-mixin
+                     frame%))))))))))))))))
     
     (define tab%
       (class* object% (drracket:rep:context<%> tab<%>)
@@ -2760,32 +2761,6 @@ module browser threading seems wrong.
         
         (inherit get-menu-bar get-focus-object get-edit-target-object)
         
-        (inherit is-maximized?)
-        (define/override (on-size w h)
-          (unless (is-maximized?)
-            (preferences:set 'drracket:unit-window-width w)
-            (preferences:set 'drracket:unit-window-height h))
-          (preferences:set 'drracket:unit-window-max? (is-maximized?))
-          (super on-size w h))
-        
-        (define on-move-timer-args #f)
-        (define on-move-timer #f)
-        (define/override (on-move x y)
-          (cond
-            [on-move-timer
-             (set! on-move-timer-args (cons x y))]
-            [else
-             (set! on-move-timer-args (cons x y))
-             (set! on-move-timer 
-                   (new timer% 
-                        [notify-callback
-                         (λ () 
-                           (set! on-move-timer #f)
-                           (set! on-move-timer-args #f)
-                           (preferences:set 'drracket:frame:initial-position on-move-timer-args))]
-                        [interval 1000]
-                        [just-once? #t]))]))
-        
         (define/override (get-editor) definitions-text)
         (define/override (get-canvas)
           (initialize-definitions-canvas)
@@ -4004,13 +3979,10 @@ module browser threading seems wrong.
         (init-definitions-text (car tabs))
         
         (super-new
-         (filename filename)
-         (style '(toolbar-button))
-         (width (preferences:get 'drracket:unit-window-width))
-         (height (preferences:get 'drracket:unit-window-height)))
-        (inherit maximize)
-        (when (preferences:get 'drracket:unit-window-max?)
-          (maximize #t))
+         [filename filename]
+         [style '(toolbar-button)]
+         [size-preferences-key 'drracket:unit-window-size]
+         [position-preferences-key 'drracket:unit-window-position])
         
         (initialize-menus)
         
@@ -4805,17 +4777,11 @@ module browser threading seems wrong.
            [else
             (create-new-drscheme-frame name)])]))
 
-    (define first-frame? #t)
     (define (create-new-drscheme-frame filename)
       (let* ([drs-frame% (drracket:get/extend:get-unit-frame)]
              [frame (new drs-frame% (filename filename))])
-        (when first-frame?
-          (let ([pos (preferences:get 'drracket:frame:initial-position)])
-            (when pos
-              (send frame move (car pos) (cdr pos)))))
         (send frame update-toolbar-visibility)
         (send frame initialize-module-language)
         (send frame show #t)
         (send (send frame get-interactions-text) initialize-console)
-        (set! first-frame? #f)
         frame)))

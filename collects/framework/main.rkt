@@ -630,12 +630,25 @@
 
  (proc-doc/names
   frame:setup-size-pref
-  (symbol? number? number? . -> . void)
-  (size-pref-sym width height)
+  (->* (symbol? number? number?) 
+       (#:maximized? 
+        boolean?
+        #:position-preferences 
+        (or/c #f symbol?))
+       void?)
+  ((size-pref-sym width height)
+   ((maximized? #f)
+    (position-preferences-sym #f)))
   @{Initializes a preference for the @racket[frame:size-pref] mixin.
     
     The first argument should be the preferences symbol, and the second and
-    third should be the default width and height, respectively.})
+    third should be the default width and height, respectively. If the
+    window should be maximized by default, pass @racket[#t] for the
+    @racket[maximized?] argument.
+    
+    If @racket[position-preferences-sym] is passed, then that symbol will be
+    used to track the position of the window.
+    })
 
  (proc-doc/names
   frame:add-snip-menu-items

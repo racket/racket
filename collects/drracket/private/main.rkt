@@ -137,12 +137,6 @@
                                                (andmap string? (cdr x))))
                                         x))))
 (drr:set-default 'drracket:defs/ints-horizontal #f boolean?)
-(drr:set-default 'drracket:unit-window-max? #f boolean?)
-(drr:set-default 'drracket:frame:initial-position #f 
-                         (λ (x) (or (not x)
-                                    (and (pair? x)
-                                         (number? (car x))
-                                         (number? (cdr x))))))
 
 (drr:set-default 'drracket:child-only-memory-limit (* 1024 1024 128)
                          (λ (x) (or (boolean? x)
@@ -202,8 +196,11 @@
   (let-values ([(w h) (get-display-size)])
     (set! frame-width (min frame-width (- w window-trimming-upper-bound-width)))
     (set! frame-height (min frame-height (- h window-trimming-upper-bound-height))))
-  (drr:set-default 'drracket:unit-window-width frame-width number?)
-  (drr:set-default 'drracket:unit-window-height frame-height number?))
+  (frame:setup-size-pref 'drracket:unit-window-size 
+                         frame-width
+                         frame-height 
+                         #:position-preferences
+                         'drracket:unit-window-position))
 
 (drr:set-default 'drracket:backtrace-window-width 400 number?)
 (drr:set-default 'drracket:backtrace-window-height 300 number?)

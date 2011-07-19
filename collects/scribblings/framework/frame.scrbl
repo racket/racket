@@ -164,30 +164,29 @@
 
 }
 @defmixin[frame:size-pref-mixin (frame:basic<%>) (frame:size-pref<%>)]{
-  @defconstructor[((size-preferences-key symbol?)
-                   (label label-string?)
-                   (parent (or/c (is-a?/c frame%) false/c) #f)
-                   (x (or/c (integer-in -10000 10000) false/c) #f)
-                   (y (or/c (integer-in -10000 10000) false/c) #f)
-                   (style (listof (or/c 'no-resize-border 'no-caption 'no-system-menu 'hide-menu-bar 'mdi-parent 'mdi-child 'toolbar-button 'float 'metal)) null)
-                   (enabled any/c #t)
-                   (border (integer-in 0 1000) 0)
-                   (spacing (integer-in 0 1000) 0)
-                   (alignment (list/c (or/c 'left 'center 'right) (or/c 'top 'center 'bottom)) '(center top))
-                   (min-width (integer-in 0 10000) graphical-minimum-width)
-                   (min-height (integer-in 0 10000) graphical-minimum-height)
-                   (stretchable-width any/c #t) (stretchable-height any/c #t))]{
+  @defconstructor/auto-super[([size-preferences-key symbol?]
+                              [position-preferences-key (or/c symbol? #f) #f]
+                              [width (or/c (integer-in 0 10000) #f) #f]
+                              [height (or/c (integer-in 0 10000) #f) #f]
+                              [x (or/c (integer-in -10000 10000) #f) #f]
+                              [y (or/c (integer-in -10000 10000) false/c) #f])]{
 
-    The size @racket[size-preferences-key] symbol is used with
+    The  @racket[size-preferences-key] symbol is used with
     @racket[preferences:get] and @racket[preferences:set] to track the current
     size.
+    
+    If present, the @racket[position-preferences-key] symbol is used with
+    @racket[preferences:get] and @racket[preferences:set] to track the current
+    position.
 
-    Passes the @racket[width] and @racket[height] initialization arguments to
-    the superclass based on the current value of the preference.
+    Passes the @racket[x], @racket[y], and @racket[width] and @racket[height] 
+    initialization arguments to the superclass and calls @method[frame% maximize]
+    based on the current values of the preferences.
 
     See also @racket[frame:setup-size-pref].
 
   }
+                                                                               
   @defmethod*[#:mode override (((on-size (width number?) (height number?)) void?))]{
 
     Updates the preferences, according to the width and

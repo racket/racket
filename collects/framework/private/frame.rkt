@@ -1,7 +1,8 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require string-constants
-         scheme/class
+         racket/class
+         racket/contract
          mzlib/include
          "search.rkt"
          "sig.rkt"
@@ -232,21 +233,133 @@
 
 (define size-pref-mixin
   (mixin (basic<%>) (size-pref<%>)
-    (init-field size-preferences-key)
+    (init-field size-preferences-key
+                [position-preferences-key #f])
+    (inherit is-maximized?)
     (define/override (on-size w h)
-      (preferences:set size-preferences-key (list w h)))
-    (let ([lst (preferences:get size-preferences-key)])
-      (super-new [width (car lst)] [height (cadr lst)]))))
+      (cond
+        [(is-maximized?)
+         (define old (preferences:get size-preferences-key)) 
+         (preferences:set size-preferences-key (cons #t (cdr old)))]
+        [else
+         (preferences:set size-preferences-key (list #f w h))])
+      (super on-size w h))
+    
+    (define on-move-timer-arg-x #f)
+    (define on-move-timer-arg-y #f)
+    (define on-move-timer-arg-max? #f)
+    (define on-move-timer #f)
+    (define/override (on-move x y)
+      (when position-preferences-key
+        (unless on-move-timer
+          (set! on-move-timer 
+                (new timer% 
+                     [notify-callback
+                      (λ () 
+                        (unless on-move-timer-arg-max?
+                          (define-values (monitor delta-x delta-y) (find-closest on-move-timer-arg-x on-move-timer-arg-y))
+                          (preferences:set position-preferences-key (list monitor delta-x delta-y))))])))
+        (set! on-move-timer-arg-x x)
+        (set! on-move-timer-arg-y y)
+        (set! on-move-timer-arg-max? (is-maximized?))
+        (send on-move-timer stop)
+        (send on-move-timer start 250 #t))
+      (super on-move x y))
+    
+    ;; if all of the offsets have some negative direction, then
+    ;; just keep the thing relative to the original montior; otherwise
+    ;; make it relative to whatever origin it is closest to.
+    (define/private (find-closest x y)
+      (define closest 0)
+      (define-values (delta-x delta-y dist) (find-distance x y 0))
+      
+      (for ([m (in-range 1 (get-display-count))])
+        (define-values (new-delta-x new-delta-y new-dist) 
+          (find-distance x y m))
+        (when (and (new-delta-x . >= . 0)
+                   (new-delta-y . >= . 0))
+          (when (< new-dist dist)
+            (set! closest m)
+            (set!-values (delta-x delta-y dist) (values new-delta-x new-delta-y new-dist)))))
+      
+      (values closest delta-x delta-y))
+    
+    (define/private (find-distance x y mon)
+      (define-values (delta-x delta-y)
+        (let-values ([(l t) (get-display-left-top-inset #:monitor 0)])
+          (values (- x l) (- y t))))
+      (values delta-x
+              delta-y
+              (sqrt (+ (* delta-x delta-x)
+                       (* delta-y delta-y)))))
+    
+    (inherit maximize)
+    (let ()
+      (define-values (maximized? w h) (apply values (preferences:get size-preferences-key)))
+      (define-values (x y)
+        (cond
+          [position-preferences-key
+           (define-values (monitor delta-x delta-y) (apply values (preferences:get position-preferences-key)))
+           (define-values (l t) (get-display-left-top-inset #:monitor monitor))
+           (define-values (m-w m-h) (get-display-size))
+           (values (- delta-x l) (- delta-y t))]
+          [else
+           (values #f #f)]))
+      (define (window-origin-visible? x y)
+        (for/or ([m (in-range 0 (get-display-count))])
+          (define-values (mw mh) (get-display-size #:monitor m))
+          (define-values (mx my) (get-display-left-top-inset #:monitor m))
+          (and (<= (- mx) x (+ mx mw))
+               (<= (- my) y (+ my mh)))))
+      (define (already-one-there? x y w h)
+        (for/or ([fr (in-list (get-top-level-windows))])
+          (and (equal? x (send fr get-x))
+               (equal? y (send fr get-y))
+               (equal? w (send fr get-width))
+               (equal? h (send fr get-height))
+               (equal? maximized? (send fr is-maximized?)))))
+      (cond
+        [(or (and (already-one-there? x y w h)
+                  (not maximized?))
+             (not (window-origin-visible? x y)))
+         ;; these are the situations where we look for a different position of the window
+         (let loop ([n 50]
+                    [x 0]
+                    [y 0])
+           (cond
+             [(zero? n)
+              (super-new)]
+             [(already-one-there? x y w h)
+              (define-values (dw dh) (get-display-size #:monitor 0))
+              (define sw (- dw w))
+              (define sh (- dh h))
+              (if (or (<= sw 0)
+                      (<= sh 0))
+                (super-new)
+                (loop (- n 1) 
+                      (modulo (+ x 20) (- dw w))
+                      (modulo (+ y 20) (- dh h))))]
+             [else
+              (super-new [width w] [height h] [x x] [y y])]))]
+        [else
+         (super-new [width w] [height h] [x x] [y y])])
+      (when maximized?
+        (maximize #t)))))
 
-(define (setup-size-pref size-preferences-key w h)
+(define (setup-size-pref size-preferences-key w h 
+                         #:maximized? [maximized? #f]
+                         #:position-preferences [position-preferences-key #f])
   (preferences:set-default size-preferences-key 
-                           (list w h)
-                           (λ (x)
-                             (and (pair? x)
-                                  (pair? (cdr x))
-                                  (null? (cddr x))
-                                  (number? (car x))
-                                  (number? (cadr x))))))
+                           (list maximized? w h)
+                           (list/c boolean?
+                                   exact-nonnegative-integer?
+                                   exact-nonnegative-integer?))
+  (when position-preferences-key
+    (preferences:set-default position-preferences-key 
+                             (list 0 0 0)
+                             (list/c exact-nonnegative-integer?
+                                     exact-integer?
+                                     exact-integer?))))
 
 (define register-group<%> (interface ()))
 (define register-group-mixin
