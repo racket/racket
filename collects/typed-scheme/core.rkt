@@ -5,9 +5,9 @@
          (for-template racket/base)
          (private with-types type-contract)
          (except-in syntax/parse id)
-         racket/match racket/syntax unstable/match
+         racket/match racket/syntax unstable/match racket/list
          (types utils convenience)
-         (typecheck typechecker provide-handling tc-toplevel)
+         (typecheck typechecker provide-handling tc-toplevel tc-app-helper)
          (env type-name-env type-alias-env)
          (r:infer infer)
          (rep type-rep)
@@ -42,6 +42,19 @@
            ;; use the regular %#module-begin from `racket/base' for top-level printing
            (arm #`(#%module-begin optimized-body ... #,after-code check-syntax-help))))))]))
 
+;; Don't display the whole types at the REPL. Some case-lambda types are just too large to print.
+;; Returns the type to be printed, and whether the type was pruned or not.
+(define (cleanup-type t)
+  (match t
+    ;; function type, prune if possible.
+    [(Function: (list (arr: doms rngs rests drests kws) ...))
+     (let-values ([(pdoms rngs rests drests) (possible-domains doms rests drests rngs #f)])
+       (let ([res (make-Function (map make-arr
+                                      pdoms rngs rests drests (make-list (length pdoms) null)))])
+         (values res (not (equal? res t)))))]
+    ;; not a function type. display as is.
+    [_ (values t #f)]))
+
 (define (ti-core stx)
   (syntax-parse stx
     [(_ . ((~datum module) . rest))
@@ -56,11 +69,22 @@
          [(head:invis-kw . _) (arm #'optimized-body)]
          [_ (let ([ty-str (match type
                             ;; don't print results of type void
-                            [(tc-result1: (== -Void type-equal?)) #f]
+                            [(tc-result1: (== -Void type-equal?))
+                             #f]
                             [(tc-result1: t f o)
-                             (format "- : ~a\n" t)]
+                             (let-values ([(t pruned?) (cleanup-type t)])
+                               (format "- : ~a~a\n" t (if pruned? " and more..." "")))]
                             [(tc-results: t)
-                             (format "- : ~a\n" (cons 'Values t))]
+                             ;; map the first component and ormap the second.
+                             (define-values (ts any-pruned?)
+                               (for/fold ([ts '()]
+                                          [pruned? #f])
+                                   ([orig t])
+                                 (let-values ([(t new-pruned?) (cleanup-type orig)])
+                                   (values (cons t ts) (or pruned? new-pruned?)))))
+                             (format "- : ~a~a\n"
+                                     (cons 'Values (reverse ts))
+                                     (if any-pruned? " and more...\n" ""))]
                             [x (int-err "bad type result: ~a" x)])])
               (if ty-str
                   #`(let ([type '#,ty-str])
