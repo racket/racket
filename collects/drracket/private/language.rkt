@@ -393,44 +393,50 @@
                           
                      [pretty-print-columns width]
                      [pretty-print-size-hook
-                      (λ (value display? port)
-                        (cond
-                          [(not (port-writes-special? port)) #f]
-                          [(is-a? value snip%) 1]
-                          [(use-number-snip? value) 1]
-                          [(syntax? value) 1]
-                          [(to-snip-value? value) 1]
-                          [else #f]))]
+                      (let ([oh (pretty-print-size-hook)])
+                        (λ (value display? port)
+                          (cond
+                            [(not (port-writes-special? port)) (oh value display? port)]
+                            [(is-a? value snip%) 1]
+                            [(use-number-snip? value) 1]
+                            [(syntax? value) 1]
+                            [(to-snip-value? value) 1]
+                            [else (oh value display? port)])))]
                      [pretty-print-print-hook
-                      (λ (value display? port)
-                        (cond
-                          [(image-core:image? value)
-                           
-                           ;; do this computation here so that any failures
-                           ;; during drawing happen under the user's custodian
-                           (image-core:compute-image-cache value) 
-                           
-                           (write-special value port)
-                           1]
-                          [(is-a? value snip%)
-                           (write-special value port)
-                           1]
-                          [(use-number-snip? value)
-                           (write-special
-                            (case (simple-settings-fraction-style settings)
-                              [(mixed-fraction) 
-                               (number-snip:make-fraction-snip value #f)]
-                              [(mixed-fraction-e)
-                               (number-snip:make-fraction-snip value #t)]
-                              [(repeating-decimal)
-                               (number-snip:make-repeating-decimal-snip value #f)]
-                              [(repeating-decimal-e)
-                               (number-snip:make-repeating-decimal-snip value #t)])
-                            port)
-                           1]
-                          [(syntax? value)
-                           (write-special (render-syntax/snip value) port)]
-                          [else (write-special (value->snip value) port)]))]
+                      (let ([oh (pretty-print-print-hook)])
+                        (λ (value display? port)
+                          (cond
+                            [(not (port-writes-special? port)) (oh value display? port)]
+                            [(is-a? value snip%)
+                             (cond
+                               [(image-core:image? value)
+                             
+                                ;; do this computation here so that any failures
+                                ;; during drawing happen under the user's custodian
+                                (image-core:compute-image-cache value) 
+                                (write-special value port)
+                                1]
+                               [else
+                                (write-special value port)
+                                1])]
+                            [(use-number-snip? value)
+                             (write-special
+                              (case (simple-settings-fraction-style settings)
+                                [(mixed-fraction) 
+                                 (number-snip:make-fraction-snip value #f)]
+                                [(mixed-fraction-e)
+                                 (number-snip:make-fraction-snip value #t)]
+                                [(repeating-decimal)
+                                 (number-snip:make-repeating-decimal-snip value #f)]
+                                [(repeating-decimal-e)
+                                 (number-snip:make-repeating-decimal-snip value #t)])
+                              port)
+                             1]
+                            [(syntax? value)
+                             (write-special (render-syntax/snip value) port)]
+                            [(to-snip-value? value)
+                             (write-special (value->snip value) port)]
+                            [else (oh value display? port)])))]
                      [print-graph
                       ;; only turn on print-graph when using `write' or `print' printing 
                       ;; style, because the sharing is being taken care of

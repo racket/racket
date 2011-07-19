@@ -16,6 +16,7 @@
          framework/private/bday
          syntax/moddep
          mrlib/cache-image-snip
+         (prefix-in ic: mrlib/image-core)
          setup/dirs
          test-engine/racket-tests
 
@@ -192,6 +193,12 @@
 	  ;; set-printing-parameters : settings ( -> TST) -> TST
 	  ;; is implicitly exposed to the stepper.  watch out!  --  john
           (define/public (set-printing-parameters settings thunk)
+            (define img-str "#<image>")
+            (define (is-image? val)
+              (or (is-a? val ic:image%)         ;; 2htdp/image
+                  (is-a? val cache-image-snip%) ;; htdp/image
+                  (is-a? val image-snip%)       ;; literal image constant
+                  (is-a? val bitmap%)))         ;; works in other places, so include it here too
             (parameterize ([pc:booleans-as-true/false #t]
                            [pc:abbreviate-cons-as-list (get-abbreviate-cons-as-list)]
                            [pc:current-print-convert-hook
@@ -202,6 +209,21 @@
                                   [else (ph val basic sub)])))]
                            [pretty-print-show-inexactness #t]
                            [pretty-print-exact-as-decimal #t]
+                           [pretty-print-print-hook
+                            (let ([oh (pretty-print-print-hook)])
+                              (λ (val display? port)
+                                (if (and (not (port-writes-special? port))
+                                         (is-image? val))
+                                    (begin (display img-str port)
+                                           (string-length img-str))
+                                    (oh val display? port))))]
+                           [pretty-print-size-hook
+                            (let ([oh (pretty-print-size-hook)])
+                              (λ (val display? port)
+                                (if (and (not (port-writes-special? port))
+                                         (is-image? val))
+                                    (string-length img-str)
+                                    (oh val display? port))))]
                            [pc:use-named/undefined-handler
                             (lambda (x)
                               (and (get-use-function-output-syntax?)
