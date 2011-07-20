@@ -273,11 +273,11 @@
                                   (reverse parts-acc)))))))))))
 
 ;; Wrapper over possible-domains that works on types.
-(define (cleanup-type t)
+(define (cleanup-type t [expected #f])
   (match t
     ;; function type, prune if possible.
     [(Function: (list (arr: doms rngs rests drests kws) ...))
-     (let-values ([(pdoms rngs rests drests) (possible-domains doms rests drests rngs #f)])
+     (let-values ([(pdoms rngs rests drests) (possible-domains doms rests drests rngs (and expected (ret expected)))])
        (let ([res (make-Function (map make-arr
                                       pdoms rngs rests drests (make-list (length pdoms) null)))])
          res))]

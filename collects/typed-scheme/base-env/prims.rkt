@@ -51,7 +51,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../env/type-name-env.rkt"
           "../private/type-contract.rkt"
           "for-clauses.rkt"
+          "../tc-setup.rkt"
           "../typecheck/tc-toplevel.rkt"
+          "../typecheck/tc-app-helper.rkt"
           "../types/utils.rkt")
          "../types/numeric-predicates.rkt")
 (provide index?) ; useful for assert, and racket doesn't have it
@@ -180,10 +182,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ e:expr)
      #`(display #,(format "~a\n"
-                          (tc-setup #'e #'e 'top-level expanded tc-toplevel-form type
+                          (tc-setup #'stx #'e 'top-level expanded tc-toplevel-form type
                                     (match type
                                       [(tc-result1: t f o) t]
                                       [(tc-results: t) (cons 'Values t)]))))]))
+
+;; given a function and a desired return type, fill in the blanks
+(define-syntax (:query-result-type stx)
+  (syntax-parse stx
+    [(_ op:expr desired-type:expr)
+     (let ([expected (parse-type #'desired-type)])
+       (tc-setup #'stx #'op 'top-level expanded tc-toplevel-form type
+                 (match type
+                   [(tc-result1: (and t (Function: _)) f o)
+                    #`(display #,(format "~a\n" (cleanup-type t expected)))]
+                   [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]))
 
 (define-syntax (require/opaque-type stx)
   (define-syntax-class name-exists-kw
