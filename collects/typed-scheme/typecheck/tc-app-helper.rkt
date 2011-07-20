@@ -199,8 +199,6 @@
                                    t])])
                   (subtype rng expected-ty))])))
 
-  ;; original info that the error message would have used
-  ;; kept in case we discard all the cases
   (define orig (map list doms rngs rests drests))
 
   ;; iterate in lock step over the function types we analyze and the parts
