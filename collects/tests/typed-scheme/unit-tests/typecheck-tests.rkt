@@ -1380,9 +1380,10 @@
                     exn:break
                     arity-at-least
                     date
-                    srcloc) -Void)
-
-
+                    srcloc) 
+              -Void)
+        [tc-e (raise (exn:fail:contract "1" (current-continuation-marks))) (t:Un)]
+        [tc-err (exn:fail:contract)]
         )
   (test-suite
    "check-type tests"
