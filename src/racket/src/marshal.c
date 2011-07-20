@@ -923,7 +923,10 @@ static Scheme_Object *write_variable(Scheme_Object *obj)
   sym = (Scheme_Object *)(SCHEME_VAR_BUCKET(obj))->key;
     
   home = scheme_get_bucket_home((Scheme_Bucket *)obj);
-  m = home->module;
+  if (home)
+    m = home->module;
+  else
+    m = NULL;
     
   /* If we get a writeable variable (instead of a module variable),
      it must be a reference to a module referenced directly by its
