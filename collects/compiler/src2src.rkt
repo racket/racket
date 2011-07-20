@@ -1576,7 +1576,7 @@
 	 norm?))))
 
   (define (parse-let % rec? stx env loop)
-    (syntax-case stx ()
+    (syntax-case (syntax-disarm stx code-insp) ()
       [(_ ([vars rhs] ...) . body)
        (let* ([varses (syntax->list (syntax (vars ...)))]
 	      [rhses (syntax->list (syntax (rhs ...)))]
