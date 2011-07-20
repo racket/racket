@@ -429,7 +429,7 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
   Scheme_Object *name, *val, *base_stack_depth, *dummy;
   int sdepth;
 
-  if (!SCHEME_VECTORP(data)
+  if (!SAME_TYPE(SCHEME_TYPE(data), (for_stx ? scheme_define_for_syntax_type : scheme_define_syntaxes_type))
       || (SCHEME_VEC_SIZE(data) < 4))
     scheme_ill_formed_code(port);
 
