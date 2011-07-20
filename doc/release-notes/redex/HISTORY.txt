@@ -1,10 +1,34 @@
+v5.1.2
+
   * added support for typsetting define-relation relations
 
   * made apply-reduction-relation* call remove-duplicates
     on the result of apply-reduction-relation
 
+  * extended render-reduction-relation-rules to accept rule indices
+    in addition to rule names
+
+  * added the to-lw/stx procedure
+
+  * fixed domain checking for unioned reduction relations
+
   * added the #:cache-all? argument to apply-reduction-relation*
     and the current-cache-all? parameter
+
+  * fixed stepper's handling of symbols that required || quoting
+
+  * removed all undocumented exports
+
+  * added the redex-let form
+
+  * added the #:source argument to generate-term
+
+  * changed redex-match to hide bindings for named ellipses such
+    as ..._x
+
+  * improve test-->E failure message
+
+  * fixed misc. bugs in examples and typos in documentation
 
 v5.1.1
 
