@@ -180,9 +180,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ e:expr)
      #`(display #,(format "~a\n"
-                          (match (tc-toplevel-form #'e)
-                            [(tc-result1: t f o) t]
-                            [(tc-results: t) (cons 'Values t)])))]))
+                          (tc-setup #'e #'e 'top-level expanded tc-toplevel-form type
+                                    (match type
+                                      [(tc-result1: t f o) t]
+                                      [(tc-results: t) (cons 'Values t)]))))]))
 
 (define-syntax (require/opaque-type stx)
   (define-syntax-class name-exists-kw
