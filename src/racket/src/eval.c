@@ -815,7 +815,10 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
                                   exprs, which);
   } else {
     Module_Variable *mv = (Module_Variable *)expr;
-    
+
+    if ((!insp || SCHEME_FALSEP(insp)) && !mv->insp)
+      insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+
     return link_module_variable(scheme_modidx_shift(mv->modidx,
                                                     src_modidx,
                                                     dest_modidx),
