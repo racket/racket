@@ -48,3 +48,9 @@ racket
 Here is the same program, in @racketmodname[typed/racket]:
 
 @|typed-mod|
+
+@section{Using Typed Racket from the Racket REPL}
+
+It is possible to use Typed Racket from the Racket REPL. To do so, start Racket
+with the following command line:
+@commandline{racket -I typed/racket}
