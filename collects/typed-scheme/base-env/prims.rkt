@@ -195,7 +195,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (tc-setup #'stx #'op 'top-level expanded tc-toplevel-form type
                  (match type
                    [(tc-result1: (and t (Function: _)) f o)
-                    #`(display #,(format "~a\n" (cleanup-type t expected)))]
+                    (let ([cleaned (cleanup-type t expected)])
+                      #`(display
+                         #,(match cleaned
+                             [(Function: '())
+                              "Desired return type not in the given function's range."]
+                             [(Function: arrs)
+                              (format "~a\n" cleaned)])))]
                    [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]))
 
 (define-syntax (require/opaque-type stx)
