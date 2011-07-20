@@ -288,16 +288,16 @@
      (c-> identifier? (or/c #f identifier?) (listof identifier?)
           (listof Type/c) (or/c #f identifier?) #;(listof fld?)
           any/c)
-  (let* ([parent-name (if parent (make-Name parent) #f)]
-         [parent-flds (if parent (get-parent-flds parent-name) null)])
-    (let ((defs (mk/register-sty nm flds parent-name parent-flds tys
-                     #:mutable #t)))
-      (if kernel-maker
-        (let* ((result-type (lookup-type-name nm))
-               (ty (->* tys result-type)))
-          (register-type kernel-maker ty)
-          (cons (make-def-binding kernel-maker ty) defs))
-        defs))))
+  (define parent-name (if parent (make-Name parent) #f))
+  (define parent-flds (if parent (get-parent-flds parent-name) null))
+  (define parent-tys (map fld-t parent-flds))
+  (define defs (mk/register-sty nm flds parent-name parent-flds tys #:mutable #t))
+  (if kernel-maker
+      (let* ([result-type (lookup-type-name nm)]
+             [ty (->* (append parent-tys tys) result-type)])
+        (register-type kernel-maker ty)
+        (cons (make-def-binding kernel-maker ty) defs))
+      defs))
 
 
 ;; syntax for tc/builtin-struct
