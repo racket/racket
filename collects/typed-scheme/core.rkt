@@ -42,19 +42,6 @@
            ;; use the regular %#module-begin from `racket/base' for top-level printing
            (arm #`(#%module-begin optimized-body ... #,after-code check-syntax-help))))))]))
 
-;; Don't display the whole types at the REPL. Some case-lambda types are just too large to print.
-;; Returns the type to be printed, and whether the type was pruned or not.
-(define (cleanup-type t)
-  (match t
-    ;; function type, prune if possible.
-    [(Function: (list (arr: doms rngs rests drests kws) ...))
-     (let-values ([(pdoms rngs rests drests) (possible-domains doms rests drests rngs #f)])
-       (let ([res (make-Function (map make-arr
-                                      pdoms rngs rests drests (make-list (length pdoms) null)))])
-         (values res (not (equal? res t)))))]
-    ;; not a function type. display as is.
-    [_ (values t #f)]))
-
 (define (ti-core stx)
   (syntax-parse stx
     [(_ . ((~datum module) . rest))
@@ -72,19 +59,20 @@
                             [(tc-result1: (== -Void type-equal?))
                              #f]
                             [(tc-result1: t f o)
-                             (let-values ([(t pruned?) (cleanup-type t)])
-                               (format "- : ~a~a\n" t (if pruned? "\nUse :print-type to see more." "")))]
+                             ;; Don't display the whole types at the REPL. Some case-lambda types
+                             ;; are just too large to print.
+                             (let ([tc (cleanup-type t)])
+                               (format "- : ~a~a\n" tc (if (equal? tc t)
+                                                           ""
+                                                           "\nUse :print-type to see more.")))]
                             [(tc-results: t)
-                             ;; map the first component and ormap the second.
-                             (define-values (ts any-pruned?)
-                               (for/fold ([ts '()]
-                                          [pruned? #f])
-                                   ([orig t])
-                                 (let-values ([(t new-pruned?) (cleanup-type orig)])
-                                   (values (cons t ts) (or pruned? new-pruned?)))))
+                             (define new-ts (map cleanup-type t))
                              (format "- : ~a~a\n"
-                                     (cons 'Values (reverse ts))
-                                     (if any-pruned? " \nUse :print-type to see more." ""))]
+                                     (cons 'Values new-ts)
+                                     ;; did any get pruned?
+                                     (if (not (andmap equal? t new-ts))
+                                         " \nUse :print-type to see more."
+                                         ""))]
                             [x (int-err "bad type result: ~a" x)])])
               (if ty-str
                   #`(let ([type '#,ty-str])

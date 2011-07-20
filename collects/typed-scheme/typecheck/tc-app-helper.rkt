@@ -272,6 +272,18 @@
                                   orig
                                   (reverse parts-acc)))))))))))
 
+;; Wrapper over possible-domains that works on types.
+(define (cleanup-type t)
+  (match t
+    ;; function type, prune if possible.
+    [(Function: (list (arr: doms rngs rests drests kws) ...))
+     (let-values ([(pdoms rngs rests drests) (possible-domains doms rests drests rngs #f)])
+       (let ([res (make-Function (map make-arr
+                                      pdoms rngs rests drests (make-list (length pdoms) null)))])
+         res))]
+    ;; not a function type. keep as is.
+    [_ t]))
+
 (define (poly-fail f-stx args-stx t argtypes #:name [name #f] #:expected [expected #f])
   (match t
     [(or (Poly-names:
