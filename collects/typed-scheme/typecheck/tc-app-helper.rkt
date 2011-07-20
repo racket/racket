@@ -121,33 +121,39 @@
            [nl+spc (if expected "\n       " "\n         ")])
        ;; we restrict the domains shown in the error messages to those that
        ;; are useful
-       (let-values ([(pdoms rngs rests drests) (possible-domains doms rests drests rngs expected)])
-         (if (= (length pdoms) 1)
-             ;; if we narrowed down the possible cases to a single one, have
-             ;; tc/funapp1 generate a better error message
-             (begin (tc/funapp1 f-stx args-stx
-                                (make-arr (car pdoms) (car rngs)
-                                          (car rests) (car drests) null)
-                                arg-tys expected)
-                    return)
-             ;; if not, print the message as usual
-             (let* ([pdoms (map make-printable pdoms)]
-                    [err-doms
-                     (string-append
-                      label
-                      (stringify (if expected
-                                     (map stringify-domain pdoms rests drests rngs)
-                                     (map stringify-domain pdoms rests drests))
-                                 nl+spc)
-                      "\nArguments: "
-                      arguments-str
-                      "\n"
-                      (if expected
-                          (format "Expected result: ~a\n" (make-printable expected))
-                          ""))])
-               (tc-error/expr
-                #:return return
-                (msg-thunk err-doms))))))])) ; generate message
+       (let-values ([(pdoms prngs prests pdrests) (possible-domains doms rests drests rngs expected)])
+         ;; if we somehow eliminate all the cases (bogus expected type) fall back to showing the
+         ;; extra cases
+         (let-values ([(pdoms rngs rests drests)
+                       (if (null? pdoms)
+                           (values doms rngs rests drests)
+                           (values pdoms prngs prests pdrests))])
+           (if (= (length pdoms) 1)
+               ;; if we narrowed down the possible cases to a single one, have
+               ;; tc/funapp1 generate a better error message
+               (begin (tc/funapp1 f-stx args-stx
+                                  (make-arr (car pdoms) (car rngs)
+                                            (car rests) (car drests) null)
+                                  arg-tys expected)
+                      return)
+               ;; if not, print the message as usual
+               (let* ([pdoms (map make-printable pdoms)]
+                      [err-doms
+                       (string-append
+                        label
+                        (stringify (if expected
+                                       (map stringify-domain pdoms rests drests rngs)
+                                       (map stringify-domain pdoms rests drests))
+                                   nl+spc)
+                        "\nArguments: "
+                        arguments-str
+                        "\n"
+                        (if expected
+                            (format "Expected result: ~a\n" (make-printable expected))
+                            ""))])
+                 (tc-error/expr
+                  #:return return
+                  (msg-thunk err-doms)))))))])) ; generate message
 
 
 ;; to avoid long and confusing error messages, in the case of functions with
@@ -266,11 +272,7 @@
                             (loop (cdr cases) (cdr parts)
                                   (cons (car parts) parts-acc)))) ; we keep this one
 
-                      ;; if we somehow eliminate all the cases (bogus expected
-                      ;; type) fall back to the showing extra cases
-                      (unzip4 (if (null? parts-acc)
-                                  orig
-                                  (reverse parts-acc)))))))))))
+                      (unzip4 (reverse parts-acc))))))))))
 
 ;; Wrapper over possible-domains that works on types.
 (define (cleanup-type t [expected #f])
