@@ -14,7 +14,7 @@ This module provides tools for logging.
 
 @defproc[(with-logging-to-port
            [port output-port?] [proc (-> any)]
-           [#:level level (or/c 'fatal 'error 'warning 'info 'debug) 'info])
+           [#:level level (or/c 'fatal 'error 'warning 'info 'debug) 'debug])
          any]{
 
 Runs @racket[proc], outputting any logging of level @racket[level] or higher to
@@ -38,7 +38,7 @@ Runs @racket[proc], outputting any logging of level @racket[level] or higher to
 			      any/c)
 			     any)]
            [proc (-> any)]
-           [#:level level (or/c 'fatal 'error 'warning 'info 'debug) 'info])
+           [#:level level (or/c 'fatal 'error 'warning 'info 'debug) 'debug])
          any]{
 
 Runs @racket[proc], calling @racket[interceptor] on any log message of level
@@ -60,3 +60,28 @@ as arguments. Returns whatever @racket[proc] returns.
       (+ 2 2))
     #:level 'warning)
   warning-counter)]}
+
+
+A lower-level interface to logging is also available.
+
+@deftogether[[
+  @defproc[(start-recording
+            [#:level level (or/c 'fatal 'error 'warning 'info 'debug) 'debug])
+           listener?]
+  @defproc[(stop-recording [listener listener?])
+           (listof (vector/c (or/c 'fatal 'error 'warning 'info 'debug)
+                             string?
+                             any/c))]]]{
+
+@racket[start-recording] starts recording log messages of the desired level or
+higher. Messages will be recorded until stopped by passing the returned
+listener object to @racket[stop-recording]. @racket[stop-recording] will then
+return a list of the log messages that have been reported.
+
+@defexamples[
+#:eval the-eval
+(define l (start-recording #:level 'warning))
+(log-warning "1")
+(log-warning "2")
+(stop-recording l)
+]}
