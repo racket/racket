@@ -25,10 +25,9 @@
 ;; the optimizations we expected did indeed happen
 (define (compare-logs name dir)
   (test-suite "Log Comparison"
-              (check-equal?
-               ;; ugly, but otherwise rackunit spews the entire logs to
-               ;; stderr, and they can be quite long
-               #t
+              ;; ugly, but otherwise rackunit spews the entire logs to
+              ;; stderr, and they can be quite long
+              (check-true
                (equal?
                 ;; actual log
                 (with-input-from-string
