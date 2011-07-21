@@ -384,22 +384,24 @@
   (define (opt/arrow-ctc doms rngs)
     (let*-values ([(dom-vars rng-vars) (values (generate-temporaries doms)
                                                (generate-temporaries rngs))]
-                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom)
+                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom doms-chaperone?)
                    (let loop ([vars dom-vars]
                               [doms doms]
                               [next-doms null]
                               [lifts-doms null]
                               [superlifts-doms null]
                               [partials-doms null]
-                              [stronger-ribs null])
+                              [stronger-ribs null]
+                              [chaperone? #t])
                      (cond
                        [(null? doms) (values (reverse next-doms)
                                              lifts-doms
                                              superlifts-doms
                                              partials-doms
-                                             stronger-ribs)]
+                                             stronger-ribs
+                                             chaperone?)]
                        [else
-                        (let-values ([(next lift superlift partial _ __ this-stronger-ribs)
+                        (let-values ([(next lift superlift partial _ __ this-stronger-ribs this-chaperone?)
                                       (opt/i (opt/info-swap-blame opt/info) (car doms))])
                           (loop (cdr vars)
                                 (cdr doms)
@@ -410,23 +412,26 @@
                                 (append lifts-doms lift)
                                 (append superlifts-doms superlift)
                                 (append partials-doms partial)
-                                (append this-stronger-ribs stronger-ribs)))]))]
-                  [(next-rngs lifts-rngs superlifts-rngs partials-rngs stronger-ribs-rng)
+                                (append this-stronger-ribs stronger-ribs)
+                                (and chaperone? this-chaperone?)))]))]
+                  [(next-rngs lifts-rngs superlifts-rngs partials-rngs stronger-ribs-rng rngs-chaperone?)
                    (let loop ([vars rng-vars]
                               [rngs rngs]
                               [next-rngs null]
                               [lifts-rngs null]
                               [superlifts-rngs null]
                               [partials-rngs null]
-                              [stronger-ribs null])
+                              [stronger-ribs null]
+                              [chaperone? #t])
                      (cond
                        [(null? rngs) (values (reverse next-rngs)
                                              lifts-rngs
                                              superlifts-rngs
                                              partials-rngs
-                                             stronger-ribs)]
+                                             stronger-ribs
+                                             chaperone?)]
                        [else
-                        (let-values ([(next lift superlift partial _ __ this-stronger-ribs)
+                        (let-values ([(next lift superlift partial _ __ this-stronger-ribs this-chaperone?)
                                       (opt/i opt/info (car rngs))])
                           (loop (cdr vars)
                                 (cdr rngs)
@@ -437,7 +442,8 @@
                                 (append lifts-rngs lift)
                                 (append superlifts-rngs superlift)
                                 (append partials-rngs partial)
-                                (append this-stronger-ribs stronger-ribs)))]))])
+                                (append this-stronger-ribs stronger-ribs)
+                                (and this-chaperone? chaperone?)))]))])
       (values
        (with-syntax ((blame (opt/info-blame opt/info))
                      ((dom-arg ...) dom-vars)
@@ -455,26 +461,29 @@
        (append partials-doms partials-rngs)
        #f
        #f
-       (append stronger-ribs-dom stronger-ribs-rng))))
+       (append stronger-ribs-dom stronger-ribs-rng)
+       (and rngs-chaperone? doms-chaperone?))))
   
   (define (opt/arrow-any-ctc doms)
     (let*-values ([(dom-vars) (generate-temporaries doms)]
-                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom)
+                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom doms-chaperone?)
                    (let loop ([vars dom-vars]
                               [doms doms]
                               [next-doms null]
                               [lifts-doms null]
                               [superlifts-doms null]
                               [partials-doms null]
-                              [stronger-ribs null])
+                              [stronger-ribs null]
+                              [chaperone? #t])
                      (cond
                        [(null? doms) (values (reverse next-doms)
                                              lifts-doms
                                              superlifts-doms
                                              partials-doms
-                                             stronger-ribs)]
+                                             stronger-ribs
+                                             chaperone?)]
                        [else
-                        (let-values ([(next lift superlift partial flat _ this-stronger-ribs)
+                        (let-values ([(next lift superlift partial flat _ this-stronger-ribs this-chaperone?)
                                       (opt/i (opt/info-swap-blame opt/info) (car doms))])
                           (loop (cdr vars)
                                 (cdr doms)
@@ -485,7 +494,8 @@
                                 (append lifts-doms lift)
                                 (append superlifts-doms superlift)
                                 (append partials-doms partial)
-                                (append this-stronger-ribs stronger-ribs)))]))])
+                                (append this-stronger-ribs stronger-ribs)
+                                (and chaperone? this-chaperone?)))]))])
       (values
        (with-syntax ((blame (opt/info-blame opt/info))
                      ((dom-arg ...) dom-vars)
@@ -500,7 +510,8 @@
        partials-doms
        #f
        #f
-       stronger-ribs-dom)))
+       stronger-ribs-dom
+       doms-chaperone?)))
   
   (syntax-case* stx (-> values any) module-or-top-identifier=?
     [(-> dom ... (values rng ...))
