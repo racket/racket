@@ -1129,7 +1129,7 @@
 [namespace-attach-module (->opt -Namespace -Module-Path [-Namespace] Univ)]
 [namespace-unprotect-module (->opt -Inspector -Module-Path [-Namespace] -Void)]
 [namespace-module-registry (-> -Namespace Univ)]
-[module->namespace (-> (-mu x (-lst (Un Sym -String -Nat x (-val #f)))) -Namespace)]
+[module->namespace (-> -Module-Path -Namespace)]
 [namespace-syntax-introduce (-poly (a) (-> (-Syntax a) (-Syntax a)))]
 [module-provide-protected? (-> -Module-Path-Index Sym B)]
 
