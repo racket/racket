@@ -41,12 +41,19 @@
 
   ;; expand and capture log messages
   (define listener #f)
+  (define exception #f)
   (define done-chan (make-channel))
   (drracket:eval:expand-program
    (drracket:language:make-text/pos
     this 0 (send this last-position))
    (send this get-next-settings) #t
-   (lambda () (set! listener (start-recording #:level 'warning)))
+   (lambda () ; init
+     (uncaught-exception-handler
+      (lambda (e)
+        (set! exception e) ; something went wrong, save exception and die
+        (channel-put done-chan 'done) ; let the rest of the program carry on
+        (custodian-shutdown-all (current-custodian)))) ; kill ourselves
+     (set! listener (start-recording #:level 'warning)))
    void ; kill
    (lambda (term k)
      (if (eof-object? term)
@@ -54,6 +61,9 @@
                 (channel-put done-chan 'done))
          (k)))) ; not done, keep going
   (channel-get done-chan) ; wait for expansion to finish
+
+  (when exception ; something went wrong, will be caught upstream
+    (raise exception))
 
   (define (post-process-log-entry l)
     ;; make sure the message is indeed from the optimizer
