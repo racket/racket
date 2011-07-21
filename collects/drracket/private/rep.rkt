@@ -1280,7 +1280,8 @@ TODO
                               (queue-callback (λ () (new-log-message vec))))
                             (loop))))))))
                  
-                 (let ([drscheme-exit-handler
+                 (initialize-parameters snip-classes)
+                 (let ([drracket-exit-handler
                         (λ (x)
                           (parameterize-break
                            #f
@@ -1289,15 +1290,13 @@ TODO
                                (queue-callback
                                 (λ ()
                                   (set! user-exit-code 
-                                        (if (and (integer? x)
-                                                 (<= 0 x 255))
-                                            x
+                                        (if (exact-integer? x)
+                                            (modulo x 256)
                                             0))
                                   (semaphore-post s))))
                              (semaphore-wait s)
                              (custodian-shutdown-all user-custodian))))])
-                   (exit-handler drscheme-exit-handler))
-                 (initialize-parameters snip-classes))))
+                   (exit-handler drracket-exit-handler)))))
             
 
             (queue-user/wait

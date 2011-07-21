@@ -167,6 +167,11 @@
       (for-each (λ (snip-class) (send (get-the-snip-class-list) add snip-class))
                 snip-classes)
       
+      (let ([cust (current-custodian)])
+        (define (drracket-plain-exit-handler arg)
+          (custodian-shutdown-all cust))
+        (exit-handler drracket-plain-exit-handler))
+      
       (current-thread-group (make-thread-group))
       (current-command-line-arguments #())
       (current-pseudo-random-generator (make-pseudo-random-generator))
