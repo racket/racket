@@ -207,12 +207,16 @@ Returns @racket[#t] if @racket[st] compares elements with @racket[eqv?],
 Returns @racket[#t] if @racket[st] compares elements with @racket[eq?],
 @racket[#f] if it compares with @racket[equal?] or @racket[eqv?].}
 
-@defproc[(set/c [contract contract?] [#:cmp cmp (or/c 'dont-care 'equal 'eqv 'eq) 'dont-care]) contract?]{
+@defproc[(set/c [contract chaperone-contract?] [#:cmp cmp (or/c 'dont-care 'equal 'eqv 'eq) 'dont-care]) contract?]{
   Constructs a contract that recognizes sets whose elements match @racket[contract].
                                                                  
   If @racket[cmp] is @racket['dont-care], then the equality notion of the set is not considered
   when checking the contract. Otherwise, the contract accepts only sets with the corresponding
   notion of equality.
+  
+  If @racket[cmp] is @racket['eq] or @racket['eqv], then @racket[contract] must be a flat contract.
+  If @racket[contract] is not a flat contract, then @racket[cmp] cannot be @racket['eq] or @racket['eqv]
+  and the resulting contract can only be applied to sets that use @racket[equal?] for equality.
 }
 
 @defproc[(in-set [st set?]) sequence?]{

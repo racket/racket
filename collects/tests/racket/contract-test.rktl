@@ -9385,6 +9385,19 @@ so that propagation occurs.
                         (struct/c s alpha)))
   
   (ctest #t flat-contract? (set/c integer?))
+  (ctest #f flat-contract? (set/c (-> integer? integer?)))
+  (ctest #t chaperone-contract? (set/c (-> integer? integer?)))
+  
+  ;; Make sure that impersonators cannot be used as the element contract in set/c.
+  (contract-error-test
+   'contract-error-test-set
+   '(let ([proxy-ctc
+           (make-contract
+            #:name 'proxy-ctc
+            #:first-order values
+            #:projection (λ (b) values))])
+      (set/c proxy-ctc))
+   exn:fail?)
           
   ;; Hash contracts with flat domain/range contracts
   (ctest #t contract?              (hash/c any/c any/c #:immutable #f))
@@ -9941,7 +9954,7 @@ so that propagation occurs.
   (test-name '(set/c boolean? #:cmp 'equal) (set/c boolean? #:cmp 'equal))
   (test-name '(set/c char? #:cmp 'eq) (set/c char? #:cmp 'eq))
   (test-name '(set/c (set/c char?) #:cmp 'eqv) (set/c (set/c char? #:cmp 'dont-care) #:cmp 'eqv))
-  (test-name '(set/c (-> char? char?) #:cmp 'eqv) (set/c (-> char? char?) #:cmp 'eqv))
+  (test-name '(set/c (-> char? char?) #:cmp 'equal) (set/c (-> char? char?) #:cmp 'equal))
   
   ;; NOT YET RELEASED
   #;

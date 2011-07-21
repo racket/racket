@@ -85,6 +85,28 @@
                               (lambda (set hc) (add1 (hc (set-ht set)))))
   #:property prop:sequence (lambda (v) (*in-set v)))
 
+;; Not currently exporting this because I'm not sure whether this is the right semantics
+;; for it yet, but it follows most closely the semantics of the old set/c implementation
+;; (while still returning a chaperone).
+(define (chaperone-set s elem-chaperone)
+  (when (or (set-eq? s)
+            (set-eqv? s))
+    (raise-type-error 'chaperone-set "equal-based set" s))
+  (chaperone-struct s
+                    set-ht
+                    (let ([cached-ht #f])
+                      (λ (st ht)
+                        (if cached-ht cached-ht
+                            (let ([new-ht (make-immutable-hash
+                                           (hash-map ht (λ (k v)
+                                                          ;; should be a check of the return here,
+                                                          ;; but until this is exported, it's only
+                                                          ;; used by set/c, which is sure to pass
+                                                          ;; a chaperone-respecting function.
+                                                          (cons (elem-chaperone s k) v))))])
+                              (set! cached-ht new-ht)
+                              new-ht))))))
+
 (define (set . elems)
   (make-set (make-immutable-hash (map (lambda (k) (cons k #t)) elems))))
 (define (seteq . elems)
@@ -328,9 +350,19 @@
         (raise-type-error 'set/c 
                           "(or/c 'dont-care 'equal? 'eq? 'eqv)" 
                           cmp))
-      (if (flat-contract? ctc)
-          (flat-set/c ctc cmp (flat-contract-predicate ctc))
-          (make-set/c ctc cmp)))
+      (cond
+        [(flat-contract? ctc)
+         (flat-set/c ctc cmp (flat-contract-predicate ctc))]
+        [(chaperone-contract? ctc)
+         (if (memq cmp '(eq eqv))
+             (raise-type-error 'set/c
+                               "flat contract"
+                               ctc)
+             (make-set/c ctc cmp))]
+        [else
+         (raise-type-error 'set/c
+                           "chaperone contract"
+                           ctc)]))
     set/c))
 
 (define (set/c-name c)
@@ -347,45 +379,51 @@
        (contract-stronger? (set/c-ctc this)
                            (set/c-ctc that))))
 
+(define (check-set/c ctc)
+  (let ([elem-ctc (set/c-ctc ctc)]
+        [pred (get-pred ctc)]
+        [name (get-name ctc)])
+    (λ (val fail [first-order? #f])
+      (unless (pred val)
+        (fail "expected a <~a>, got ~a" name val))
+      (when first-order?
+        (for ([e (in-set val)])
+          (unless (contract-first-order-passes? elem-ctc e)
+            (fail "expected: ~s, got ~v" (contract-name elem-ctc) e))))
+      #t)))
+
+(define (set/c-first-order ctc)
+  (let ([check (check-set/c ctc)])
+    (λ (val)
+      (let/ec return
+        (check val (λ _ (return #f)) #t)))))
+
 (define (set/c-proj c)
   (let ([proj (contract-projection (set/c-ctc c))]
-        [pred (get-pred c)])
+        [check (check-set/c c)])
     (λ (blame)
       (let ([pb (proj blame)])
         (λ (s)
-          (if (pred s)
-              (cond
-                [(set-equal? s)
-                 (for/set ((e (in-set s)))
-                          (pb e))]
-                [(set-eqv? s)
-                 (for/seteqv ((e (in-set s)))
-                             (pb e))]
-                [(set-eq? s)
-                 (for/seteq ((e (in-set s)))
-                            (pb e))])
-              (raise-blame-error
-               blame
-               s
-               "expected a <~a>, got ~v" 
-               (get-name c)
-               s)))))))
+          (check s (λ args (apply raise-blame-error blame s args)))
+          (chaperone-set s (λ (s v) (pb v))))))))
 
 (define-struct set/c (ctc cmp)
-  #:property prop:contract
-  (build-contract-property 
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property 
    #:name set/c-name
-   #:first-order get-pred
+   #:first-order set/c-first-order
    #:stronger set/c-stronger
    #:projection set/c-proj))
 
-(define (flat-first-order c)
-  (let ([inner-pred (flat-set/c-pred c)]
-        [pred (get-pred c)])
-    (λ (s)
-      (and (pred s)
-           (for/and ((e (in-set s)))
-             (inner-pred e))))))
+(define (flat-set/c-proj c)
+  (let ([proj (contract-projection (set/c-ctc c))]
+        [check (check-set/c c)])
+    (λ (blame)
+      (let ([pb (proj blame)])
+        (λ (val)
+          (check val (λ args (apply raise-blame-error blame val args)))
+          (for ([e (in-set val)]) (pb e))
+          val)))))
 
 (define-values (flat-set/c flat-set/c-pred)
   (let ()
@@ -393,9 +431,9 @@
       #:property prop:flat-contract
       (build-flat-contract-property 
        #:name set/c-name
-       #:first-order flat-first-order
+       #:first-order set/c-first-order
        #:stronger set/c-stronger
-       #:projection set/c-proj))
+       #:projection flat-set/c-proj))
     (values make-flat-set/c flat-set/c-pred)))
 
 ;; ----
