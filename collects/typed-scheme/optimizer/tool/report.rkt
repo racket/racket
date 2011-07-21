@@ -38,22 +38,40 @@
            (not f)]
           [else ; different file
            #f]))
-  (with-intercepted-tr-logging
-   (lambda (l)
-     (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
-     (define stx (log-entry-stx log-entry-data))
-     (define path (if (and (syntax-source-directory stx)
-                           (syntax-source-file-name stx))
-                      (build-path (syntax-source-directory stx)
-                                  (syntax-source-file-name stx))
-                      #f))
-     (when (right-file? path)
-       (set! log (cons log-entry-data log))))
-   (lambda ()
-     (parameterize ([current-namespace  (make-base-namespace)]
-                    [read-accept-reader #t])
-       (expand (tr:read-syntax portname input)))))
-  log)
+
+  ;; expand and capture log messages
+  (define listener #f)
+  (define done-chan (make-channel))
+  (drracket:eval:expand-program
+   (drracket:language:make-text/pos
+    this 0 (send this last-position))
+   (send this get-next-settings) #t
+   (lambda () (set! listener (start-recording #:level 'warning)))
+   void ; kill
+   (lambda (term k)
+     (if (eof-object? term)
+         (begin (set! log (stop-recording listener)) ; done, stash the log
+                (channel-put done-chan 'done))
+         (k)))) ; not done, keep going
+  (channel-get done-chan) ; wait for expansion to finish
+
+  (define (post-process-log-entry l)
+    ;; make sure the message is indeed from the optimizer
+    (cond [(log-message-from-tr-opt? l)
+           (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
+           (define stx (log-entry-stx log-entry-data))
+           (define path (if (and (syntax-source-directory stx)
+                                 (syntax-source-file-name stx))
+                            (build-path (syntax-source-directory stx)
+                                        (syntax-source-file-name stx))
+                            #f))
+           ;; it also needs to come from the right file
+           (if (right-file? path)
+               log-entry-data ; payload
+               #f)]
+          [else #f])) ; drop it
+
+  (filter values (map post-process-log-entry log)))
 
 ;; converts log-entry structs to report-entry structs for further
 ;; processing
