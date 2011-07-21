@@ -54,7 +54,8 @@
         (channel-put done-chan 'done) ; let the rest of the program carry on
         (custodian-shutdown-all (current-custodian)))) ; kill ourselves
      (set! listener (start-recording #:level 'warning)))
-   void ; kill
+   (lambda () ; kill
+     (channel-put done-chan 'done))
    (lambda (term k)
      (if (eof-object? term)
          (begin (set! log (stop-recording listener)) ; done, stash the log
