@@ -1,5 +1,6 @@
 #lang racket/base
 (require ffi/unsafe
+	 ffi/winapi
          racket/class
          "utils.rkt"
          "types.rkt"
@@ -19,6 +20,8 @@
               do-backing-flush
               request-flush-delay
               cancel-flush-delay))
+
+(define-gdi32 SelectClipRgn (_wfun _pointer _pointer -> _int))
 
 (define win32-bitmap%
   (class bitmap%
@@ -69,6 +72,21 @@
     (define canvas cnvs)
 
     (super-new [transparent? transparent?])
+
+    (inherit internal-get-bitmap)
+    (define/override (reset-clip cr)
+      (super reset-clip cr)
+      ;; Work around a Cairo(?) bug. When a clipping
+      ;; region is set, we draw text, and then the clipping
+      ;; region is changed, the change doesn't take
+      ;; until we draw more text --- but only under Win64,
+      ;; and only with DDB surfaces.
+      (when win64?
+	(let ([bm (internal-get-bitmap)])
+	  (when (bm . is-a? . win32-bitmap%)
+	    (SelectClipRgn (cairo_win32_surface_get_dc
+			    (send bm get-cairo-surface))
+			   #f)))))
 
     (define gl #f)
     (define/override (get-gl-context)
