@@ -16,30 +16,9 @@
 
 
 (define (generate-log this)
-  (define portname (send this get-port-name))
-  (define input    (open-input-text-editor this))
-  (port-count-lines! input)
-  (define log '())
-  (define unsaved-file?
-    (and (symbol? portname)
-         (regexp-match #rx"^unsaved-editor" (symbol->string portname))))
-  (define good-portname-cache #f)
-  (define (right-file? f) ; does the log-entry refer to the file we're in?
-    (cond [(and good-portname-cache ; cache is populated
-                (equal? f good-portname-cache))
-           #t]
-          ;; no cache, ask directly
-          [(send this port-name-matches? f)
-           (set! good-portname-cache f) ; populate cache
-           #t]
-          [unsaved-file?
-           ;; we assume that any log entry without a filename comes from
-           ;; the unsaved editor
-           (not f)]
-          [else ; different file
-           #f]))
 
   ;; expand and capture log messages
+  (define log '())
   (define listener #f)
   (define exception #f)
   (define done-chan (make-channel))
@@ -66,6 +45,26 @@
   (when exception ; something went wrong, will be caught upstream
     (raise exception))
 
+  (define portname (send this get-port-name))
+  (define unsaved-file?
+    (and (symbol? portname)
+         (regexp-match #rx"^unsaved-editor" (symbol->string portname))))
+  (define good-portname-cache #f)
+  (define (right-file? f) ; does the log-entry refer to the file we're in?
+    (cond [(and good-portname-cache ; cache is populated
+                (equal? f good-portname-cache))
+           #t]
+          ;; no cache, ask directly
+          [(send this port-name-matches? f)
+           (set! good-portname-cache f) ; populate cache
+           #t]
+          [unsaved-file?
+           ;; we assume that any log entry without a filename comes from
+           ;; the unsaved editor
+           (not f)]
+          [else ; different file
+           #f]))
+
   (define (post-process-log-entry l)
     ;; make sure the message is indeed from the optimizer
     (cond [(log-message-from-tr-opt? l)
@@ -82,7 +81,9 @@
                #f)]
           [else #f])) ; drop it
 
-  (filter values (map post-process-log-entry log)))
+  (for/list ([l (in-list (map post-process-log-entry log))]
+             #:when l)
+    l))
 
 ;; converts log-entry structs to report-entry structs for further
 ;; processing
