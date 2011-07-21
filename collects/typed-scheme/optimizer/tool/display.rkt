@@ -2,7 +2,7 @@
 
 (require racket/string racket/class racket/gui/base racket/match racket/port
          framework syntax/to-string
-         "report.rkt"
+         "report-structs.rkt"
          unstable/sequence unstable/pretty)
 
 (provide popup-callback make-color-table)
