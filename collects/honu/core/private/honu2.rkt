@@ -25,6 +25,30 @@
          #'rest
          #f)])))
 
+(provide honu-var)
+(define-honu-syntax honu-var
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ name:id honu-= . rest)
+       ;; parse one expression
+       (define-values (parsed unparsed)
+                      (parse #'rest))
+       (values
+         (with-syntax ([parsed parsed])
+           #'(define name parsed))
+         (with-syntax ([unparsed unparsed])
+         #'unparsed)
+         #t)])))
+
+(provide honu-val)
+(define-honu-syntax honu-val
+  (lambda (code context)
+    (syntax-parse code
+      [(_ rest ...)
+       (define-values (parsed unparsed)
+                      (parse #'(rest ...)))
+       (values parsed unparsed #t)])))
+
 (define-syntax-rule (define-binary-operator name precedence operator)
                     (begin
                       (provide name)

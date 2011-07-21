@@ -70,6 +70,24 @@
   (debug "Semicolon? ~a ~a\n" what is)
   is)
 
+(define-literal-set argument-stuff [honu-comma])
+
+(define (parse-arguments arguments)
+  (define-syntax-class val
+    [pattern x:identifier #:when (equal? 'val (syntax-e #'x))])
+  (let loop ([out '()]
+             [arguments arguments])
+    (syntax-parse arguments #:literal-sets (argument-stuff)
+      [(x:val name:identifier honu-comma more ...)
+       (loop (cons #'name out) #'(more ...))]
+      [(name:identifier honu-comma more ...)
+       (loop (cons #'name out) #'(more ...))]
+      [(x:val name:identifier)
+       (loop (cons #'name out) #'())]
+      [(name:identifier)
+       (loop (cons #'name out) #'())]
+      [() (reverse out)])))
+
 ;; 1 + 1
 ;; ^
 ;;  left: identity
@@ -162,10 +180,12 @@
          [else
            (syntax-parse #'(head rest ...)
              [(function:identifier (#%parens args ...) (#%braces code ...) . rest)
-              (values #'(define (function args ...)
+              (values (with-syntax ([(parsed-arguments ...)
+                                     (parse-arguments #'(args ...))])
+                        #'(define (function parsed-arguments ...)
                           (let-syntax ([parse-more (lambda (stx)
                                                      (parse-all #'(code ...)))])
-                            (parse-more)))
+                            (parse-more))))
                       #'rest)]
              [else (syntax-parse #'head
                      #:literal-sets (cruft)

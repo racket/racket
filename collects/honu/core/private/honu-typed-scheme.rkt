@@ -448,19 +448,6 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 (define-for-syntax (honu-compile forms)
   #'(void))
 
-(provide honu-var)
-(honu:define-honu-syntax honu-var
-  (lambda (code context)
-    (syntax-parse code #:literal-sets (cruft)
-      [(_ name:id honu-= . rest)
-       (define-values (parsed unparsed)
-                      (parse #'rest))
-       (values
-         (with-syntax ([parsed parsed])
-           #'(define name parsed))
-         (with-syntax ([unparsed unparsed])
-         #'unparsed)
-         #t)])))
 
 (define-syntax (honu-unparsed-begin stx)
   (emit-remark "Honu unparsed begin!" stx)

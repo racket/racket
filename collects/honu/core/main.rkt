@@ -10,6 +10,7 @@
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-function function]
                      [honu-var var]
+                     [honu-val val]
                      [honu-+ +]
                      [honu-- -]
                      [honu-* *]
