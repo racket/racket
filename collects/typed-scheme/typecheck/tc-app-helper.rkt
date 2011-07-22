@@ -243,9 +243,9 @@
           ;; this point, we've reversed the list) is the most general of
           ;; all, subsuming all the others. If that's the case, just go
           ;; with it. Otherwise, go the slow way.
-          (define potentially-most-general (car fun-tys-ret-any))
-          (if (andmap (lambda (c) (subtype potentially-most-general c))
-                      fun-tys-ret-any)
+          (if (and (not (null? fun-tys-ret-any))
+                   (andmap (lambda (c) (subtype (car fun-tys-ret-any) c))
+                           fun-tys-ret-any))
               ;; Yep. Return early.
               (apply values (map list (car parts-acc)))
 
