@@ -238,22 +238,34 @@
                       (make-Function (list (make-arr dom (-values (list Univ))
                                                      rest drest null)))])
                     candidates)])
-          (let loop ([cases fun-tys-ret-any]
-                     [parts parts-acc]
-                     ;; accumulators
-                     ;; final pass, we only need the parts to print the
-                     ;; error message
-                     [parts-acc '()])
-            (if (not (null? cases))
-                ;; if a case is a supertype of another, we discard it
-                (let ([head (car cases)])
-                  (if (is-subsumed-in? head (remove head fun-tys-ret-any))
-                      (loop (cdr cases) (cdr parts)
-                            parts-acc) ; we discard this one
-                      (loop (cdr cases) (cdr parts)
-                            (cons (car parts) parts-acc)))) ; we keep this one
 
-                (unzip4 (reverse parts-acc))))))))
+          ;; Heuristic: often, the last case in the definition (first at
+          ;; this point, we've reversed the list) is the most general of
+          ;; all, subsuming all the others. If that's the case, just go
+          ;; with it. Otherwise, go the slow way.
+          (define potentially-most-general (car fun-tys-ret-any))
+          (if (andmap (lambda (c) (subtype potentially-most-general c))
+                      fun-tys-ret-any)
+              ;; Yep. Return early.
+              (apply values (map list (car parts-acc)))
+
+              ;; No luck, do it the slow way
+              (let loop ([cases fun-tys-ret-any]
+                         [parts parts-acc]
+                         ;; accumulators
+                         ;; final pass, we only need the parts to print the
+                         ;; error message
+                         [parts-acc '()])
+                (if (not (null? cases))
+                    ;; if a case is a supertype of another, we discard it
+                    (let ([head (car cases)])
+                      (if (is-subsumed-in? head (remove head fun-tys-ret-any))
+                          (loop (cdr cases) (cdr parts)
+                                parts-acc) ; we discard this one
+                          (loop (cdr cases) (cdr parts)
+                                (cons (car parts) parts-acc)))) ; we keep this one
+
+                    (unzip4 (reverse parts-acc)))))))))
 
 ;; Wrapper over possible-domains that works on types.
 (define (cleanup-type t [expected #f])
