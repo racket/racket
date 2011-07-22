@@ -178,11 +178,6 @@
 
   ;; is fun-ty subsumed by a function type in others?
   (define (is-subsumed-in? fun-ty others)
-    ;; assumption: domains go from more specific to less specific
-    ;;  thus, a domain can only be subsumed by another that is further down
-    ;;  the list.
-    ;; this is reasonable because a more specific domain coming after a more
-    ;; general domain would never be matched
     ;; a case subsumes another if the first one is a subtype of the other
     (ormap (lambda (x) (subtype x fun-ty))
            others))
