@@ -1,4 +1,12 @@
 ------------------------------------------------------------------------
+Version 5.1.2				  [Fri Jul 22 15:27:37 EDT 2011]
+
+* The error messages of the image and universe teachpacks have been 
+  revised substantially. They will be improved again next release. 
+
+* 5.1.3: the on-tick clause now takes a max number of ticks 
+  
+------------------------------------------------------------------------
 Version 5.1.1				  [Tue Apr 26 22:38:44 EDT 2011]
 
 * bug fix in registration process for universe 
