@@ -194,9 +194,13 @@
                                      (length selector-ids))
                              stx))
        (unless predicate-id
-         (error 'struct/c "could not determine predicate for ~s" 'struct-name))
+         (raise-syntax-error 'struct/c 
+                             (format "could not determine predicate for ~s" (syntax-e #'struct-name))
+                             stx))
        (unless (andmap values selector-ids)
-         (error 'struct/c "could not determine selectors for ~s" 'struct-name))
+         (raise-syntax-error 'struct/c
+                             (format "could not determine selectors for ~s" (syntax-e #'struct-name))
+                             stx))
        
        (let ([combined-ids (for/list ([n (in-naturals)]
                                       [ctc-name (in-list ctc-names)]
@@ -210,20 +214,23 @@
                          [((mut-count mut-ctc-x mut-ref mut-set) ...) mutables])
              (syntax
               (let ([ctc-x (coerce-contract 'struct/c args)] ...)
-                
-                (unless (chaperone-contract? imm-ctc-x)
-                  (error 'struct/c "expected a chaperone contract for immutable field ~v, got ~e"
-                         imm-count imm-ctc-x))
-                ...
-                
                 (let ([immutables (list (list imm-count imm-ctc-x imm-ref) ...)]
                       [mutables (list (list mut-count mut-ctc-x mut-ref mut-set) ...)])
-                  (cond
-                    [(and (null? mutables) (andmap (λ (l) (flat-contract? (second l))) immutables))
-                     (make-flat-struct/c 'struct-name predicate-id immutables mutables)]
-                    [(andmap (λ (l) (chaperone-contract? (second l))) mutables)
-                     (make-chaperone-struct/c 'struct-name predicate-id immutables mutables)]
-                    [else
-                     (make-impersonator-struct/c 'struct-name predicate-id immutables mutables)]))))))))]
+                  (struct/c/proc 'struct-name predicate-id immutables mutables))))))))]
     [(_ struct-name anything ...)
      (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))]))
+
+(define (struct/c/proc struct-name predicate immutables mutables)
+  (for ([lst (in-list immutables)])
+    (define imm-count (list-ref lst 0))
+    (define imm-ctc (list-ref lst 1))
+    (unless (chaperone-contract? imm-ctc)
+      (error 'struct/c "expected a chaperone contract for immutable field ~v (counting from 0), got ~e"
+             imm-count imm-ctc)))
+  (cond
+    [(and (null? mutables) (andmap (λ (l) (flat-contract? (second l))) immutables))
+     (make-flat-struct/c struct-name predicate immutables mutables)]
+    [(andmap (λ (l) (chaperone-contract? (second l))) mutables)
+     (make-chaperone-struct/c struct-name predicate immutables mutables)]
+    [else
+     (make-impersonator-struct/c struct-name predicate immutables mutables)]))
