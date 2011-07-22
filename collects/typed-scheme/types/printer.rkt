@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require unstable/sequence racket/require racket/match
+(require unstable/sequence racket/require racket/match racket/list
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt" "rep/rep-utils.rkt"
                   "types/abbrev.rkt" "types/numeric-tower.rkt" "types/subtype.rkt"
                   "utils/utils.rkt" "utils/tc-utils.rkt"))
@@ -59,6 +59,23 @@
     [(Path: pes i) (fp "~a" (append pes (list i)))]
     [else (fp "(Unknown Object: ~a)" (struct->vector c))]))
 
+;; Unions are represented as a flat list of branches. In some cases, it would
+;; be nicer to print them using higher-level descriptions instead.
+;; Currently, this special-cases numbers, since they're the worst offenders as
+;; far as large union types go, but a general solution would be to use min-set-
+;; coverage with all the known type names as the sets, and elems being what to
+;; cover.
+(define (print-union elems)
+  ;; isolate the numeric part of the union
+  (define-values (subs-of-number rest)
+    (partition (lambda (t) (subtype t -Number)) elems))
+  ;; and see if it can be more succintly expressed
+  (define ancestor (and (not (null? subs-of-number))
+                        (has-name? ((get-union-maker) subs-of-number))))
+  (if ancestor
+      (cons ancestor rest)
+      elems))
+
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
 (define (print-type c port write?)
@@ -89,9 +106,9 @@
          [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
           (fp "-> ~a" t)]
          [(Values: (list (Result: t
-				  (FilterSet: (TypeFilter: ft pth id)
-					      (NotTypeFilter: ft pth id))
-				  (Empty:))))
+                                  (FilterSet: (TypeFilter: ft pth id)
+                                              (NotTypeFilter: ft pth id))
+                                  (Empty:))))
           (if (null? pth)
               (fp "-> ~a : ~a" t ft)
               (begin (fp "-> ~a : ~a @" t ft)
@@ -176,7 +193,7 @@
     [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
     [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
     [(Set: e) (fp "(Setof ~a)" e)]
-    [(Union: elems) (fp "~a" (cons 'U elems))]
+    [(Union: elems) (fp "~a" (cons 'U (print-union elems)))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
     [(ListDots: dty dbound)
      (fp "(List ~a ...~a~a)" dty (if (special-dots-printing?) "" " ") dbound)]
