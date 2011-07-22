@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require unstable/sequence racket/require racket/match racket/list
+(require unstable/sequence racket/require racket/match racket/list (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt" "rep/rep-utils.rkt"
                   "types/abbrev.rkt" "types/numeric-tower.rkt" "types/subtype.rkt"
                   "utils/utils.rkt" "utils/tc-utils.rkt"))
@@ -61,20 +61,49 @@
 
 ;; Unions are represented as a flat list of branches. In some cases, it would
 ;; be nicer to print them using higher-level descriptions instead.
-;; Currently, this special-cases numbers, since they're the worst offenders as
-;; far as large union types go, but a general solution would be to use min-set-
-;; coverage with all the known type names as the sets, and elems being what to
-;; cover.
-(define (print-union elems)
-  ;; isolate the numeric part of the union
-  (define-values (subs-of-number rest)
-    (partition (lambda (t) (subtype t -Number)) elems))
-  ;; and see if it can be more succintly expressed
-  (define ancestor (and (not (null? subs-of-number))
-                        (has-name? ((get-union-maker) subs-of-number))))
-  (if ancestor
-      (cons ancestor rest)
-      elems))
+;; We do set coverage, with the elements of the union being what we want to
+;; cover, and all the names types we know about being the sets.
+(define (print-union t)
+  (match-define (Union: elems) t)
+  (define valid-names
+    ;; We keep only unions, and only those that are subtypes of t.
+    ;; It's no use attempting to cover t with things that go outside of t.
+    (filter (lambda (p)
+              (match p
+                [(cons name (and t* (Union: elts)))
+                 (subtype t* t)]
+                [_ #f]))
+            ((current-type-names))))
+  ;; names and the sets themselves (not the union types)
+  ;; we use srfi/1 lsets as sets, to use custom type equality.
+  (define candidates
+    (map (match-lambda [(cons name (Union: elts)) (cons name elts)])
+         valid-names))
+  ;; some types in the union may not be coverable by the candidates
+  ;; (e.g. type variables, etc.)
+  (define-values (uncoverable coverable)
+    (apply s:lset-diff+intersection type-equal? elems (map cdr candidates)))
+  ;; set cover, greedy algorithm, ~lg n approximation
+  (let loop ([to-cover   coverable]
+             [candidates candidates]
+             [coverage   '()])
+    (cond [(null? to-cover) ; done
+           (append (map car coverage) uncoverable)] ; we want the names
+          [else
+           ;; pick the candidate that covers the most uncovered types
+           (define (covers-how-many? c)
+             (length (s:lset-intersection type-equal? (cdr c) to-cover)))
+           (define-values (next _)
+             (for/fold ([next      (car candidates)]
+                        [max-cover (covers-how-many? (car candidates))])
+                 ([c candidates])
+               (let ([how-many? (covers-how-many? c)])
+                 (if (> how-many? max-cover)
+                     (values c how-many?)
+                     (values next max-cover)))))
+           (loop (s:lset-difference type-equal? to-cover (cdr next))
+                 (remove next candidates)
+                 (cons next coverage))])))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
@@ -193,7 +222,7 @@
     [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
     [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
     [(Set: e) (fp "(Setof ~a)" e)]
-    [(Union: elems) (fp "~a" (cons 'U (print-union elems)))]
+    [(Union: elems) (fp "~a" (cons 'U (print-union c)))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
     [(ListDots: dty dbound)
      (fp "(List ~a ...~a~a)" dty (if (special-dots-printing?) "" " ") dbound)]
