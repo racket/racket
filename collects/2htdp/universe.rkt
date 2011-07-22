@@ -225,7 +225,7 @@
     "wheel-down"))
 
 (define-syntax (big-bang stx)
-  (define world0 "expects an expression for the initial world and at least one clause, but nothing's there")
+  (define world0 "expects an expression for the initial world and at least one clause")
   (syntax-case stx ()
     [(big-bang) (raise-syntax-error #f world0 stx)]
     [(big-bang w clause ...)
@@ -241,7 +241,7 @@
             [dom (syntax->list #'(clause ...))])
        (cond
          [(and (not (contains-clause? #'to-draw dom)) (not (contains-clause? #'on-draw dom)))
-          (raise-syntax-error #f "expects at least one clause after the initial world, but nothing's there" stx)]
+          (raise-syntax-error #f "expects a [to-draw handler] clause, missing" stx)]
          [else 
           (stepper-syntax-property
            #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args))
@@ -321,8 +321,8 @@
 
 (define-syntax (universe stx)
   (syntax-case stx ()
-    [(universe) (raise-syntax-error #f "expects an expression for the initial world and at least one clause, but nothing's there" stx)]
-    [(universe u) (raise-syntax-error #f "expects at least one clause after the initial world, but nothing's there" stx)]
+    [(universe) (raise-syntax-error #f "expects an expression for the initial world" stx)]
+    [(universe u) (raise-syntax-error #f "expects at least an on-new and an on-msg clause after the initial world" stx)]
     [(universe u bind ...)
      (let* ([args (->args 'universe stx #'u #'(bind ...) UniSpec void)]
             [dom (syntax->list #'(bind ...))])
