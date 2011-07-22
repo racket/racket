@@ -2194,8 +2194,18 @@
 
 (test (convertible? (circle 20 "solid" "red")) => #t)
 (test (bytes? (convert (circle 20 "solid" "red") 'png-bytes)) => #t)
-
-
+(let ()
+  (define tmpfile (make-temporary-file "2htdpimage-test-~a"))
+  (define i (circle 15 "solid" "red"))
+  (call-with-output-file tmpfile
+    (lambda (p)
+      (display (convert i 'png-bytes) p))
+    #:exists 'truncate)
+  (define i2 (rotate 0 (read-bitmap tmpfile))) ;; add rotate to be sure we get an image so that equal? works properly
+  (delete-file tmpfile)
+  (test (image-width i2) => 30)
+  (test (image-height i2) => 30)
+  (test i2 => i))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
