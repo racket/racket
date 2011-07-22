@@ -1242,11 +1242,7 @@
                (with-syntax ([((rhs stuff ...) ...) (if relation?
                                                         #'((,(and (term raw-rhses) ...)) ...)
                                                         #'((raw-rhses ...) ...))])
-                 (parameterize ([is-term-fn? 
-                                 (let ([names (syntax->list #'(original-names ...))])
-                                   (λ (x) (and (not (null? names))
-                                               (identifier? (car names))
-                                               (free-identifier=? x (car names)))))])
+                 (parameterize ()
                    (with-syntax ([(lhs ...) #'((lhs-clauses ...) ...)]
                                  [name (let loop ([name (if contract-name
                                                             contract-name
