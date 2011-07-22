@@ -232,48 +232,33 @@
             (loop (cdr cases) (cdr parts)
                   candidates parts-acc)) ; we discard this one
 
-        ;; discard subsumed cases (supertype modulo filters)
-        (let loop ([cases candidates]
-                   [parts parts-acc]
-                   ;; accumulators
-                   [candidates '()]
-                   [parts-acc '()])
-          (if (not (null? cases))
-              (let ([head (car cases)] [tail (cdr cases)])
-                (if (is-subsumed-in? head tail)
-                    (loop tail (cdr parts)
-                          candidates parts-acc) ; we discard this one
-                    (loop tail (cdr parts)
-                          (cons head candidates) ; we keep this one
-                          (cons (car parts) parts-acc))))
+        ;; among the domains that fit with the expected type, we only
+        ;; need to keep the most liberal
+        ;; since we only care about permissiveness of domains, we
+        ;; reconstruct function types with a return type of any then test
+        ;; for subtyping
+        (let ([fun-tys-ret-any
+               (map (match-lambda
+                     [(Function: (list (arr: dom _ rest drest _)))
+                      (make-Function (list (make-arr dom (-values (list Univ))
+                                                     rest drest null)))])
+                    candidates)])
+          (let loop ([cases fun-tys-ret-any]
+                     [parts parts-acc]
+                     ;; accumulators
+                     ;; final pass, we only need the parts to print the
+                     ;; error message
+                     [parts-acc '()])
+            (if (not (null? cases))
+                ;; if a case is a supertype of another, we discard it
+                (let ([head (car cases)])
+                  (if (is-subsumed-in? head (remove head fun-tys-ret-any))
+                      (loop (cdr cases) (cdr parts)
+                            parts-acc) ; we discard this one
+                      (loop (cdr cases) (cdr parts)
+                            (cons (car parts) parts-acc)))) ; we keep this one
 
-              ;; among the domains that fit with the expected type, we only
-              ;; need to keep the most liberal
-              ;; since we only care about permissiveness of domains, we
-              ;; reconstruct function types with a return type of any then test
-              ;; for subtyping
-              (let ([fun-tys-ret-any
-                     (map (match-lambda
-                           [(Function: (list (arr: dom _ rest drest _)))
-                            (make-Function (list (make-arr dom (-values (list Univ))
-                                                           rest drest null)))])
-                          candidates)])
-                (let loop ([cases fun-tys-ret-any]
-                           [parts parts-acc]
-                           ;; accumulators
-                           ;; final pass, we only need the parts to print the
-                           ;; error message
-                           [parts-acc '()])
-                  (if (not (null? cases))
-                      ;; if a case is a supertype of another, we discard it
-                      (let ([head (car cases)])
-                        (if (is-subsumed-in? head (remove head fun-tys-ret-any))
-                            (loop (cdr cases) (cdr parts)
-                                  parts-acc) ; we discard this one
-                            (loop (cdr cases) (cdr parts)
-                                  (cons (car parts) parts-acc)))) ; we keep this one
-
-                      (unzip4 (reverse parts-acc))))))))))
+                (unzip4 (reverse parts-acc))))))))
 
 ;; Wrapper over possible-domains that works on types.
 (define (cleanup-type t [expected #f])
