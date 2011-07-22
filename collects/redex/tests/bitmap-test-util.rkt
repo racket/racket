@@ -1,6 +1,7 @@
 #lang scheme/gui
 (require framework
          slideshow/pict
+         racket/runtime-path
          "../pict.rkt"
          "../reduction-semantics.rkt")
 
@@ -22,11 +23,13 @@
         (λ () test-exp)
         bitmap-filename)]))
 
+(define-runtime-path bmps-dir (format "bmps-~a" (system-type)))
+
 (define (test/proc line-number pict-thunk raw-bitmap-filename)
   (set! tests (+ tests 1))
   (let* ([pict (set-fonts/call pict-thunk)]
          [bitmap-filename 
-          (build-path (format "bmps-~a" (system-type))
+          (build-path bmps-dir
                       raw-bitmap-filename)]
          [old-bitmap (if (file-exists? bitmap-filename)
                          (make-object bitmap% bitmap-filename)
