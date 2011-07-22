@@ -1384,21 +1384,7 @@
                                    (syntax defs)))
                               'disappeared-use
                               (map syntax-local-introduce 
-                                   (syntax->list #'(original-names ...)))))))))))))))]
-      [(_ prev-metafunction name lang clauses ...)
-       (begin
-         (unless (identifier? #'name)
-           (raise-syntax-error 'define-metafunction "expected the name of a language" stx #'name))
-         (unless (identifier? #'lang)
-           (raise-syntax-error 'define-metafunction "expected the name of a language" stx #'lang))
-         (for-each 
-          (λ (clause)
-            (syntax-case clause ()
-              [(a b) (void)]
-              [else
-               (raise-syntax-error 'define-metafunction "expected a lhs and rhs clause" stx clause)]))
-          (syntax->list (syntax (clauses ...))))
-         (raise-syntax-error 'define-metafunction "missing error check for bad syntax" stx))]))
+                                   (syntax->list #'(original-names ...)))))))))))))))]))
 
   (define (defined-name declared-name clauses orig-stx)
     (with-syntax ([(((used-names _ ...) _ ...) ...) clauses])
