@@ -222,30 +222,30 @@
              [candidates '()] ; from cases
              [parts-acc '()]) ; from parts
 
-    ;; discard subsumed cases (supertype modulo filters)
+    ;; keep only the domains for which the associated function type
+    ;; is consistent with the expected type
     (if (not (null? cases))
-        (let ([head (car cases)] [tail (cdr cases)])
-          (if (is-subsumed-in? head tail)
-              (loop tail (cdr parts)
-                    candidates parts-acc) ; we discard this one
-              (loop tail (cdr parts)
-                    (cons head candidates) ; we keep this one
-                    (cons (car parts) parts-acc))))
+        (if (returns-subtype-of-expected? (car cases))
+            (loop (cdr cases) (cdr parts)
+                  (cons (car cases) candidates) ; we keep this one
+                  (cons (car parts) parts-acc))
+            (loop (cdr cases) (cdr parts)
+                  candidates parts-acc)) ; we discard this one
 
-        ;; keep only the domains for which the associated function type
-        ;; is consistent with the expected type
+        ;; discard subsumed cases (supertype modulo filters)
         (let loop ([cases candidates]
                    [parts parts-acc]
                    ;; accumulators
                    [candidates '()]
                    [parts-acc '()])
           (if (not (null? cases))
-              (if (returns-subtype-of-expected? (car cases))
-                  (loop (cdr cases) (cdr parts)
-                        (cons (car cases) candidates) ; we keep this one
-                        (cons (car parts) parts-acc))
-                  (loop (cdr cases) (cdr parts)
-                        candidates parts-acc)) ; we discard this one
+              (let ([head (car cases)] [tail (cdr cases)])
+                (if (is-subsumed-in? head tail)
+                    (loop tail (cdr parts)
+                          candidates parts-acc) ; we discard this one
+                    (loop tail (cdr parts)
+                          (cons head candidates) ; we keep this one
+                          (cons (car parts) parts-acc))))
 
               ;; among the domains that fit with the expected type, we only
               ;; need to keep the most liberal
