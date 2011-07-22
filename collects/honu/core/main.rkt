@@ -6,7 +6,7 @@
 
 (provide #%top
          #%datum
-         print
+         print printf
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-function function]
                      [honu-var var]

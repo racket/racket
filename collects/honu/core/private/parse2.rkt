@@ -134,6 +134,11 @@
 ;; return the parsed stuff and the unparsed stuff
 (define (parse input)
   (define (do-parse stream precedence left current)
+    (define-syntax-class atom
+      [pattern x:identifier]
+      [pattern x:str]
+      [pattern x:number])
+
     (debug "parse ~a precedence ~a left ~a current ~a\n" stream precedence left current)
     (syntax-parse stream #:literal-sets (cruft)
       [() (values (left current) #'())]
@@ -171,7 +176,7 @@
             (case association
               [(left) >]
               [(right) >=]))
-          (printf "new precedence ~a\n" new-precedence)
+          (debug "new precedence ~a\n" new-precedence)
           (if (higher new-precedence precedence)
             (do-parse #'(rest ...) new-precedence
                       (lambda (stuff)
@@ -211,8 +216,7 @@
                       #'rest)]
              [else (syntax-parse #'head
                      #:literal-sets (cruft)
-                     [x:identifier (do-parse #'(rest ...) precedence left #'x)]
-                     [x:number (do-parse #'(rest ...) precedence left #'x)]
+		     [x:atom (do-parse #'(rest ...) precedence left #'x)]
                      [(#%parens args ...)
                       (debug "function call ~a\n" left)
                       (values (left (with-syntax ([current current]

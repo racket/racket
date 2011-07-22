@@ -22,8 +22,9 @@ test1(){
   test("x = 3", x, 3);
   test("y = 2", y, 2);
   */
-  print(x + 2);
-  print(x ^ 2)
+  printf("x is ~a\n", x + 2);
+  // print(x + 2);
+  // print(x ^ 2)
 }
 
 val test2(val x, val y){
@@ -31,7 +32,7 @@ val test2(val x, val y){
   print(y)
 }
 
-// test1();
+test1();
 test2(5, 9);
 
 // function(z){ print(z) }(12)
