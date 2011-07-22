@@ -201,18 +201,21 @@
 
   (define orig (map list doms rngs rests drests))
 
+  (define cases
+    (map (compose make-Function list make-arr)
+         doms
+         (map (match-lambda ; strip filters
+               [(Values: (list (Result: t _ _) ...))
+                (-values t)]
+               [(ValuesDots: (list (Result: t _ _) ...) _ _)
+                (-values t)])
+              rngs)
+         rests drests (make-list (length doms) null)))
+
   ;; iterate in lock step over the function types we analyze and the parts
   ;; that we will need to print the error message, to make sure we throw
   ;; away cases consistently
-  (let loop ([cases (map (compose make-Function list make-arr)
-                         doms
-                         (map (match-lambda ; strip filters
-                               [(Values: (list (Result: t _ _) ...))
-                                (-values t)]
-                               [(ValuesDots: (list (Result: t _ _) ...) _ _)
-                                (-values t)])
-                              rngs)
-                         rests drests (make-list (length doms) null))]
+  (let loop ([cases cases]
              ;; the parts we'll need to print the error message
              [parts orig]
              ;; accumulators
