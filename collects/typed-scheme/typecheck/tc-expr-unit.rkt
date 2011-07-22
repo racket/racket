@@ -75,7 +75,8 @@
     [i:bytes -Bytes]
     [i:byte-pregexp -Byte-PRegexp]
     [i:byte-regexp -Byte-Regexp]
-    [i:regexp -Regexp]
+    [i:pregexp -PRegexp]
+    [i:regexp  -Regexp]
     [(i ...)
      (match expected
        [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))

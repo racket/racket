@@ -19,7 +19,7 @@
           syntax/stx
           scheme/contract
 	  racket/syntax
-          (rename-in (except-in (utils utils stxclass-util) bytes byte-regexp regexp byte-pregexp #;pregexp)
+          (rename-in (except-in (utils utils stxclass-util) bytes byte-regexp regexp byte-pregexp pregexp)
                      [id* id]
                      [keyword* keyword])))
 

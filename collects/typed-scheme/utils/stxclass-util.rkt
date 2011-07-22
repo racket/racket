@@ -39,6 +39,7 @@
 (define-pred-stxclass atom atom?)
 (define-pred-stxclass byte-pregexp byte-pregexp?)
 (define-pred-stxclass byte-regexp byte-regexp?)
+(define-pred-stxclass pregexp pregexp?)
 (define-pred-stxclass regexp regexp?)
 (define-pred-stxclass bytes bytes?)
 (define-pred-stxclass id symbol?)
