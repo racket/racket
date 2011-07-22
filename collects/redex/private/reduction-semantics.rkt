@@ -1429,42 +1429,20 @@
        (values #f #f (list #'any) (check-clauses stx syn-error-name (syntax->list rest) relation?))]
       [else
        (syntax-case rest ()
-         [(id colon more ...)
+         [(id separator more ...)
           (identifier? #'id)
           (cond
             [relation?
-             (unless (memq (syntax-e #'colon) '(⊂ ⊆))
-               (raise-syntax-error syn-error-name
-                                   "expected ⊂ or ⊆ to follow the relation's name"
-                                   stx #'colon))
-             (let ([more (syntax->list #'(more ...))])
-               (when (null? more)
+             (let-values ([(contract clauses) 
+                           (parse-relation-contract #'(separator more ...) syn-error-name stx)])
+               (when (null? clauses)
                  (raise-syntax-error syn-error-name 
-                                     (format "expected a sequence of patterns separated by x or × to follow ~a" 
-                                             (syntax-e #'colon))
+                                     "expected clause definitions to follow domain contract"
                                      stx))
-               (let loop ([more (cdr more)]
-                          [arg-pats (list (car more))])
-                 (cond
-                   [(null? more) 
-                    (raise-syntax-error syn-error-name 
-                                        "expected clause definitions to follow domain contract"
-                                        stx)]
-                   [(memq (syntax-e (car more)) '(x ×))
-                    (when (null? (cdr more))
-                      (raise-syntax-error syn-error-name 
-                                          (format "expected a pattern to follow ~a" (syntax-e (car more)))
-                                          stx (car more)))
-                    (loop (cddr more)
-                          (cons (cadr more) arg-pats))]
-                   [else
-                    (values #'id
-                            (reverse arg-pats)
-                            (list #'any)
-                            (check-clauses stx syn-error-name more relation?))])))]
+               (values #'id contract (list #'any) (check-clauses stx syn-error-name clauses #t)))]
             [else
-             (unless (eq? ': (syntax-e #'colon))
-               (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'colon))
+             (unless (eq? ': (syntax-e #'separator))
+               (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'separator))
              (let loop ([more (syntax->list #'(more ...))]
                         [dom-pats '()])
                (cond
@@ -1567,7 +1545,33 @@
                                  "expected a side-condition or where clause"
                                  stuff)]))
         (syntax->list stuffs)))
-     (syntax->list extras))))
+     (syntax->list extras)))
+  
+  (define (parse-relation-contract after-name syn-error-name orig-stx)
+    (syntax-case after-name ()
+      [(subset . rest-pieces)
+       (unless (memq (syntax-e #'subset) '(⊂ ⊆))
+         (raise-syntax-error syn-error-name
+                             "expected ⊂ or ⊆ to follow the relation's name"
+                             orig-stx #'subset))
+       (let ([more (syntax->list #'rest-pieces)])
+         (when (null? more)
+           (raise-syntax-error syn-error-name 
+                               (format "expected a sequence of patterns separated by x or × to follow ~a" 
+                                       (syntax-e #'subset))
+                               orig-stx
+                               #'subset))
+         (let loop ([more (cdr more)]
+                    [arg-pats (list (car more))])
+           (cond
+             [(and (not (null? more)) (memq (syntax-e (car more)) '(x ×)))
+              (when (null? (cdr more))
+                (raise-syntax-error syn-error-name 
+                                    (format "expected a pattern to follow ~a" (syntax-e (car more)))
+                                    orig-stx (car more)))
+              (loop (cddr more)
+                    (cons (cadr more) arg-pats))]
+             [else (values (reverse arg-pats) more)])))])))
 
 ;; Defined as a macro instead of an ordinary phase 1 function so that the
 ;; to-lw/proc calls occur after bindings are established for all meta-functions

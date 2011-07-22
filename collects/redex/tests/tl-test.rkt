@@ -1122,6 +1122,18 @@
    (define-relation grammar R)
    #rx"expected the name of the relation")
   
+  (test-syn-err
+   (define-relation grammar R ⊆)
+   #rx"expected a sequence of patterns separated by")
+  
+  (test-syn-err
+   (define-relation grammar foo ⊆ c)
+   #rx"expected clause definitions")
+  
+  (test-syn-err
+   (define-relation grammar foo ⊆ c ×)
+   #rx"expected a pattern")
+  
 ;                    ;;                         ;                                        ;;                    ;                 
 ;                     ;                 ;                                                 ;            ;                         
 ;   ;; ;;   ;;;    ;; ; ;;  ;;   ;;;;  ;;;;;  ;;;     ;;;  ;; ;;          ;; ;;   ;;;     ;     ;;;   ;;;;;  ;;;     ;;;  ;; ;;  
