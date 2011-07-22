@@ -65,21 +65,20 @@
                              ;; are just too large to print.
                              (let ([tc (cleanup-type t)])
                                (format "- : ~a~a\n"
-                                       tc (if (or did-I-suggest-:print-type-already?
-                                                  (equal? tc t))
-                                              ""
-                                              (begin (set! did-I-suggest-:print-type-already? #t)
-                                                     :print-type-message))))]
+                                       tc
+                                       (cond [(equal? tc t) ""]
+                                             [did-I-suggest-:print-type-already? " ..."]
+                                             [else (set! did-I-suggest-:print-type-already? #t)
+                                                   :print-type-message])))]
                             [(tc-results: t)
                              (define new-ts (map cleanup-type t))
                              (format "- : ~a~a\n"
                                      (cons 'Values new-ts)
                                      ;; did any get pruned?
-                                     (if (or did-I-suggest-:print-type-already?
-                                             (andmap equal? t new-ts))
-                                         ""
-                                         (begin (set! did-I-suggest-:print-type-already? #t)
-                                                :print-type-message)))]
+                                     (cond [(andmap equal? t new-ts) ""]
+                                           [did-I-suggest-:print-type-already? " ..."]
+                                           [else (set! did-I-suggest-:print-type-already? #t)
+                                                 :print-type-message]))]
                             [x (int-err "bad type result: ~a" x)])])
               (if ty-str
                   #`(let ([type '#,ty-str])
