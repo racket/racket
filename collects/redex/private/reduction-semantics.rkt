@@ -1244,25 +1244,7 @@
                                                         #'((raw-rhses ...) ...))])
                  (parameterize ()
                    (with-syntax ([(lhs ...) #'((lhs-clauses ...) ...)]
-                                 [name (let loop ([name (if contract-name
-                                                            contract-name
-                                                            (car (syntax->list #'(original-names ...))))]
-                                                  [names (if contract-name
-                                                             (syntax->list #'(original-names ...))
-                                                             (cdr (syntax->list #'(original-names ...))))])
-                                         (cond
-                                           [(null? names) name]
-                                           [else
-                                            (unless (eq? (syntax-e name) (syntax-e (car names)))
-                                              (raise
-                                               (make-exn:fail:syntax
-                                                (if contract-name
-                                                    "define-metafunction: expected each clause and the contract to use the same name"
-                                                    "define-metafunction: expected each clause to use the same name")
-                                                (current-continuation-marks)
-                                                (list name
-                                                      (car names)))))
-                                            (loop name (cdr names))]))])
+                                 [name (defined-name contract-name pats orig-stx)])
                      (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
                        (raise-syntax-error syn-error-name "the extended and extending metafunctions cannot share a name" orig-stx prev-metafunction))
                      (parse-extras #'((stuff ...) ...))
@@ -1418,6 +1400,27 @@
           (syntax->list (syntax (clauses ...))))
          (raise-syntax-error 'define-metafunction "missing error check for bad syntax" stx))]))
 
+  (define (defined-name declared-name clauses orig-stx)
+    (with-syntax ([(((used-names _ ...) _ ...) ...) clauses])
+      (let loop ([name (if declared-name
+                           declared-name
+                           (car (syntax->list #'(used-names ...))))]
+                 [names (if declared-name
+                            (syntax->list #'(used-names ...))
+                            (cdr (syntax->list #'(used-names ...))))])
+        (cond
+          [(null? names) name]
+          [else
+           (unless (eq? (syntax-e name) (syntax-e (car names)))
+             (raise-syntax-error 
+              #f
+              (if declared-name
+                  "expected each clause and the contract to use the same name"
+                  "expected each clause to use the same name")
+              orig-stx
+              name (list (car names))))
+           (loop name (cdr names))]))))
+  
   (define (split-out-contract stx syn-error-name rest relation?)
     ;; initial test determines if a contract is specified or not
     (cond
