@@ -43,6 +43,7 @@
            (arm #`(#%module-begin optimized-body ... #,after-code check-syntax-help))))))]))
 
 (define did-I-suggest-:print-type-already? #f)
+(define :print-type-message " ... [Use (:print-type <expr>) to see more.]")
 (define (ti-core stx)
   (syntax-parse stx
     [(_ . ((~datum module) . rest))
@@ -68,7 +69,7 @@
                                                   (equal? tc t))
                                               ""
                                               (begin (set! did-I-suggest-:print-type-already? #t)
-                                                     "\nUse :print-type to see more."))))]
+                                                     :print-type-message))))]
                             [(tc-results: t)
                              (define new-ts (map cleanup-type t))
                              (format "- : ~a~a\n"
@@ -78,7 +79,7 @@
                                              (andmap equal? t new-ts))
                                          ""
                                          (begin (set! did-I-suggest-:print-type-already? #t)
-                                                " \nUse :print-type to see more.")))]
+                                                :print-type-message)))]
                             [x (int-err "bad type result: ~a" x)])])
               (if ty-str
                   #`(let ([type '#,ty-str])
