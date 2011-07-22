@@ -7,8 +7,17 @@
 (error-print-source-location #f)
 
 (define legal "big-bang: ~a clauses are not allowed when using big-bang")
-(define double 
-  "big-bang: the on-tick clause appears twice")
+(define double "big-bang: the on-tick clause appears twice")
+(define atleast "big-bang: expects a [to-draw handler] clause, missing")
+
+;; is the mandatort to-draw clause specified 
+(with-handlers ((exn:fail:syntax? 
+                 (lambda (x) 
+                   (unless (string=? (exn-message x) atleast) (raise x)))))
+  (eval '(module a scheme 
+           (require 2htdp/universe)
+           (local ((define (run) (big-bang 0 (on-tick add1))))
+             10))))
 
 (with-handlers ((exn:fail:syntax? 
                  (lambda (x) 
