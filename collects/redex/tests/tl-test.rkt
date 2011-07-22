@@ -1027,6 +1027,11 @@
        [(f x)])
      #rx"expected a pattern and a right-hand side"))
   
+  (test-syn-err (define-metafunction (junk) also-junk)
+                #rx"expected an identifier")
+  (test-syn-err (define-metafunction junk also-junk)
+                #rx"expected an identifier")
+  
 ;                                                                                                 
 ;                                                                                                 
 ;                                                                                                 

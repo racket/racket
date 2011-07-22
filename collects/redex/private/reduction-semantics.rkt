@@ -1222,8 +1222,9 @@
                                  (if prev-metafunction
                                      'define-metafunction/extension
                                      'define-metafunction))])
-         (unless (identifier? #'lang)
-           (raise-syntax-error syn-error-name "expected an identifier in the language position" orig-stx #'lang))
+         (define lang-nts
+           ;; keep this near the beginning, so it signals the first error (PR 10062)
+           (relevant-nts #'lang orig-stx syn-error-name))
          (when (null? (syntax-e #'rest))
            (raise-syntax-error syn-error-name "no clauses" orig-stx))
          (when prev-metafunction
@@ -1231,14 +1232,11 @@
             prev-metafunction
             (λ ()
               (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
-         (let ([lang-nts (language-id-nts #'lang 'define-metafunction)])  ;; keep this near the beginning, so it signals the first error (PR 10062)
+         (let ()
            (let-values ([(contract-name dom-ctcs codom-contracts pats)
                          (split-out-contract orig-stx syn-error-name #'rest relation?)])
              (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
-                           [(lhs-for-lw ...)
-                            (with-syntax ([((lhs-for-lw _ ...) ...) pats])
-                              (map (λ (x) (to-lw/proc (datum->syntax #f (cdr (syntax-e x)) x)))
-                                   (syntax->list #'(lhs-for-lw ...))))])
+                           [(lhs-for-lw ...) (lhs-lws pats)])
                (with-syntax ([((rhs stuff ...) ...) (if relation?
                                                         #'((,(and (term raw-rhses) ...)) ...)
                                                         #'((raw-rhses ...) ...))])
@@ -1249,15 +1247,7 @@
                        (raise-syntax-error syn-error-name "the extended and extending metafunctions cannot share a name" orig-stx prev-metafunction))
                      (parse-extras #'((stuff ...) ...))
                      (let-values ([(lhs-namess lhs-namess/ellipsess)
-                                   (let loop ([lhss (syntax->list (syntax (lhs ...)))])
-                                     (if (null? lhss)
-                                         (values null null)
-                                         (let-values ([(namess namess/ellipsess)
-                                                       (loop (cdr lhss))]
-                                                      [(names names/ellipses)
-                                                       (extract-names lang-nts syn-error-name #t (car lhss))])
-                                           (values (cons names namess)
-                                                   (cons names/ellipses namess/ellipsess)))))])
+                                   (bound-names (syntax->list (syntax (lhs ...))) lang-nts syn-error-name)])
                        (with-syntax ([(rhs/wheres ...)
                                       (map (λ (sc/b rhs names names/ellipses)
                                              (bind-withs
@@ -1386,6 +1376,27 @@
                               (map syntax-local-introduce 
                                    (syntax->list #'(original-names ...)))))))))))))))]))
 
+  (define (bound-names lhss nts syn-error-name)
+    (let loop ([lhss lhss])
+      (if (null? lhss)
+          (values null null)
+          (let-values ([(namess namess/ellipsess)
+                        (loop (cdr lhss))]
+                       [(names names/ellipses)
+                        (extract-names nts syn-error-name #t (car lhss))])
+            (values (cons names namess)
+                    (cons names/ellipses namess/ellipsess))))))
+  
+  (define (lhs-lws clauses)
+    (with-syntax ([((lhs-for-lw _ ...) ...) clauses])
+      (map (λ (x) (to-lw/proc (datum->syntax #f (cdr (syntax-e x)) x)))
+           (syntax->list #'(lhs-for-lw ...)))))
+  
+  (define (relevant-nts lang orig-stx syn-error-name)
+    (unless (identifier? lang)
+      (raise-syntax-error #f "expected an identifier in the language position" orig-stx lang))
+    (language-id-nts lang syn-error-name))
+  
   (define (defined-name declared-name clauses orig-stx)
     (with-syntax ([(((used-names _ ...) _ ...) ...) clauses])
       (let loop ([name (if declared-name
