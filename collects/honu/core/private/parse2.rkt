@@ -70,6 +70,13 @@
   (debug "Semicolon? ~a ~a\n" what is)
   is)
 
+(define (comma? what)
+  (define-literal-set check (honu-comma))
+  (define is (and (identifier? what)
+                    ((literal-set->predicate check) what)))
+  (debug "Comma? ~a ~a\n" what is)
+  is)
+
 (define-literal-set argument-stuff [honu-comma])
 
 (define (parse-arguments arguments)
@@ -87,6 +94,18 @@
       [(name:identifier)
        (loop (cons #'name out) #'())]
       [() (reverse out)])))
+
+(define (parse-call-arguments arguments)
+  (if (null? (syntax->list arguments))
+    '()
+    (let loop ([used '()]
+	       [rest arguments])
+      (if (empty-syntax? rest)
+	(reverse used)
+	(let-values ([(parsed unparsed)
+		      (parse rest)])
+          (loop (cons parsed used)
+		unparsed))))))
 
 ;; 1 + 1
 ;; ^
@@ -162,6 +181,9 @@
                       0
                       (lambda (x) x)
                       (left current)))]
+	 [(comma? #'head)
+	  (values (left current)
+		  #'(rest ...))]
          [(semicolon? #'head)
           (values (left current)
                   #'(rest ...))
@@ -195,9 +217,7 @@
                       (debug "function call ~a\n" left)
                       (values (left (with-syntax ([current current]
                                                   [(parsed-args ...)
-                                                   (if (null? (syntax->list #'(args ...)))
-                                                     '()
-                                                     (list (parse-all #'(args ...))))])
+						   (parse-call-arguments #'(args ...)) ])
                                       #'(current parsed-args ...)))
                               #'(rest ...))
                       #;

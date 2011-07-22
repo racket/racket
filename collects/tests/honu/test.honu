@@ -26,11 +26,12 @@ test1(){
   print(x ^ 2)
 }
 
-val test2(val x){
-  print(x)
+val test2(val x, val y){
+  print(x);
+  print(y)
 }
 
 // test1();
-test2(5);
+test2(5, 9);
 
-function(z){ print(z) }(12)
+// function(z){ print(z) }(12)
