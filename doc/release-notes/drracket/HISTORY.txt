@@ -1,9 +1,15 @@
+------------------------------
+        Version 5.1.2
+------------------------------
+
    . The EoPL language is no longer available via the Language
      dialog in DrRacket; use 
 
        #lang eopl
 
      and the 'language declared in the source' language in DrRacket.
+
+   . Minor bug fixes
 
 ------------------------------
         Version 5.1.1
