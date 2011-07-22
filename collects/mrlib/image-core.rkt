@@ -231,8 +231,8 @@ has been moved out).
 (define (to-bitmap img)  
   (let* ([bb (send img get-bb)]
          [bm (make-bitmap
-              (add1 (inexact->exact (ceiling (bb-right bb)))) 
-              (add1 (inexact->exact (ceiling (bb-bottom bb)))))]
+              (inexact->exact (ceiling (bb-right bb)))
+              (inexact->exact (ceiling (bb-bottom bb))))]
          [bdc (new bitmap-dc% [bitmap bm])])
     (send bdc erase)
     (render-image img bdc 0 0)
