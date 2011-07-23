@@ -353,7 +353,7 @@
     (cons 'require-form-type read-require)
     (cons 'varref-form-type read-#%variable-ref)
     (cons 'apply-values-type read-apply-values)
-    (cons 'sequence-splice-type read-splice))))
+    (cons 'splice-sequence-type read-splice))))
 
 (define (get-reader type)
   (hash-ref type-readers type
