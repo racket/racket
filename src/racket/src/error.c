@@ -202,12 +202,14 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %- = skip int
 
   %L = line number as intptr_t, -1 means no line
-  %e = error number for strerror()
+  %e = error number for strerror()/FormatMessage()
   %E = error number for platform-specific error string
   %Z = potential platform-specific error number; additional char*
        is either NULL or a specific error message
   %N = boolean then error number like %E (if boolean is 0)
        or error number for scheme_hostname_error()
+  %m = boolean then error number like %e, which
+       is used only if the boolean is 1
 */
 
 static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list args, char **_s)
@@ -259,6 +261,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	ints[ip++] = mzVA_ARG(args, int);
 	break;
       case 'N':
+      case 'm':
 	ints[ip++] = mzVA_ARG(args, int);
 	ints[ip++] = mzVA_ARG(args, int);
 	break;
@@ -389,14 +392,19 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	  }
 	  break;
 	case 'e':
+        case 'm':
 	case 'E':
 	case 'Z':
 	case 'N':
 	  {
-	    int en, he;
+	    int en, he, none = 0;
 	    char *es;
-
-	    if (type == 'N') {
+            
+	    if (type == 'm') {
+              none = !ints[ip++];
+	      type = 'e';
+              he = 0;
+	    } else if (type == 'N') {
 	      he = ints[ip++];
 	      type = 'E';
 	    } else
@@ -412,7 +420,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    if (he)
 	      es = (char *)scheme_hostname_error(en);
 
-	    if (en || es) {
+	    if ((en || es) && !none) {
 #ifdef NO_STRERROR_AVAILABLE
 	      if (!es)
 		es = "Unknown error";
@@ -443,8 +451,13 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	      sprintf((char *)t, "%s; errno=%d", es, en);
 	      tlen = strlen(t);
 	    } else {
-	      t = "errno=?";
-	      tlen = 7;
+              if (none) {
+                t = "";
+                tlen = 0;
+              } else {
+                t = "errno=?";
+                tlen = 7;
+              }
 	    }
 
 	  }

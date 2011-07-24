@@ -3834,7 +3834,7 @@ failed:
 static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 {
   char *src, *dest, *reason = NULL;
-  int pre_exists = 0;
+  int pre_exists = 0, has_err_val = 0, err_val = 0;
   Scheme_Object *bss, *bsd;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
@@ -3885,12 +3885,16 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 
     s = fopen(src, "rb");
     if (!s) {
+      err_val = errno;
+      has_err_val = 1;
       reason = "cannot open source file";
       goto failed;
     }
 
     d = fopen(dest, "wb");
     if (!d) {
+      err_val = errno;
+      has_err_val = 1;
       fclose(s);
       reason = "cannot open destination file";
       goto failed;
@@ -3916,6 +3920,8 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 	else if (errno != EINTR)
 	  break;
       }
+      err_val = errno;
+      has_err_val = 0;
       reason = "cannot set destination's mode";
     } else
       reason = "read or write failed";
@@ -3927,15 +3933,23 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
     return scheme_void;
   
   reason = "copy failed";
-  if (GetLastError() == ERROR_ALREADY_EXISTS)
+  err_val = GetLastError();
+  if ((err_val == ERROR_FILE_EXISTS)
+      || (err_val == ERROR_ALREADY_EXISTS))
     pre_exists = 1;
+  has_err_val = 1;
 #endif
 
   scheme_raise_exn(pre_exists ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
-		   "copy-file: %s; cannot copy: %q to: %q",
+		   "copy-file: %s; cannot copy: %q to: %q%s%m%s",
 		   reason,
 		   filename_for_error(argv[0]),
-		   filename_for_error(argv[1]));
+		   filename_for_error(argv[1]),
+		   has_err_val ? " (" : "",
+		   has_err_val,
+		   err_val,
+		   has_err_val ? ")" : "");
+
   return NULL;
 }
 
