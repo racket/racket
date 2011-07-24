@@ -687,17 +687,18 @@
                               x0
                               (+ x (- w (- x0 x) w0))))]
 		  [set-rgn (lambda (rgn flip?)
-			     (let ([dy (if flip? (/ h 2) 0)])
+                             (let ([dy (if flip? (/ h 2) 0)]
+                                   [wf (λ (x) (* (if (eq? 'left direction) x (+ 1 (* x -1))) w))])
 			       (if mouth-open?
 				   (send rgn set-polygon
-					 (list (make-object point% 0 dy)
-					       (make-object point% w dy)
-					       (make-object point% w (- (* 1/2 h) dy))
-					       (make-object point% (* 1/6 w) (- (* 1/2 h) dy))
-					       (make-object point% 0 (if flip?
-                                                                         (* 1/6 mouth-open-amt h)
-                                                                         (+ (* 1/3 h)
-                                                                            (* 1/6 (- 1 mouth-open-amt) h)))))
+					 (list (make-object point% (wf 0) dy)
+					       (make-object point% (wf 1) dy)
+					       (make-object point% (wf 1) (- (* 1/2 h) dy))
+					       (make-object point% (wf 1/6) (- (* 1/2 h) dy))
+                                               (make-object point% (wf 0) (if flip?
+                                                                              (* 1/6 mouth-open-amt h)
+                                                                              (+ (* 1/3 h)
+                                                                                 (* 1/6 (- 1 mouth-open-amt) h)))))
 					 x (+ y dy))
 				   (send rgn set-rectangle 
 					 x (+ y dy)
@@ -708,7 +709,6 @@
                dark-color color
                (lambda (ii)
 		 (define i (* ii (min 1 (* w 1/100))))
-
                  (send dc draw-polygon (list (make-object point% (flip-rel (+ (* 1/2 w) i)) (* 1/10 h))
                                              (make-object point% (flip-rel (- (* 3/4 w) i)) (+ 0 i))
                                              (make-object point% (flip-rel (- (* 3/4 w) i)) (- (* 2/10 h) i)))
@@ -750,8 +750,8 @@
                 (send dc set-pen color 1 'solid)
                 (let ([y (+ y (/ h 2))])
                   (send dc draw-line 
-                        (+ x (* 1/6 w)) y 
-                        (+ x w -6) y))
+                        (+ x (if (eq? direction 'left) (* 1/6 w) 6)) y
+                        (+ x (if (eq? direction 'left) w (* 5/6 w)) -6) y))
                 (send dc set-pen no-pen))
 
               (color-series
