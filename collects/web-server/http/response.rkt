@@ -317,7 +317,7 @@
                       #f))
                 ranges))
   (if (null? converted)
-      (error (format "No satisfiable ranges in ~a/~a." ranges total-file-length))
+      (error 'convert-http-ranges "No satisfiable ranges in ~a/~a." ranges total-file-length)
       converted))
 
 ;; make-206-response : integer bytes integer integer (alist-of integer integer) bytes -> basic-response
