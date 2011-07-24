@@ -173,8 +173,10 @@
                           (add1 next-unknown-promise)))])]
               ; STC: handle lists here, instead of deferring to render-to-sexp fn
               ; because there may be nested promises
-              [(null? val) #'empty]
-              [(list? val)
+              #;[(null? val) #'empty]
+              [(and (not (null? val))
+                    (list? val)
+                    (ormap promise? val))
                (with-syntax 
                    ([(reconed-vals ...)
                      (map 
@@ -183,7 +185,9 @@
                  (if (render-settings-constructor-style-printing? render-settings)
                      #'(#%plain-app list reconed-vals ...)
                      #'`(reconed-vals ...)))]
-              [(pair? val)
+              [(and (pair? val)
+                    (or (promise? (car val))
+                        (promise? (cdr val))))
                (with-syntax 
                    ([reconed-car
                      (recon-value (car val) render-settings 
