@@ -33,7 +33,7 @@
     [(list-rest (? symbol?) _)
      (match x
        [(list-rest (list (list (? symbol?) (? string?)) ...) rs)
-        (se-path/tag-body p rs)]
+        (append-map (curry se-path/xexpr p) rs)]
        [(? list?)
         (append-map (curry se-path/xexpr p) x)]
        [_
@@ -51,10 +51,10 @@
 (define (se-path*/list p x)
   (append (se-path/xexpr p x)
           (match x
-            [(list-rest (list (cons (? symbol?) (? string?)) ...) rs)
-             (se-path*/list p rs)]
-            [(? list?)
-             (append-map (curry se-path*/list p) x)]
+            [(list (? symbol? tag) (list (list (? symbol?) (? string?)) ...) rs ...)
+             (append-map (curry se-path*/list p) rs)]
+            [(list (? symbol? tag) rs ...)
+             (append-map (curry se-path*/list p) rs)]
             [_
              empty])))
 (define (se-path* p x)

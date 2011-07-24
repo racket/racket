@@ -475,6 +475,36 @@ looks like the following, if re-formatted by:
 
 @section{Simple X-expression Path Queries}
 
+@(require (for-label xml/path))
 @defmodule[xml/path]
 
-XXX
+This library provides a simple path query library for X-expressions.
+
+@defthing[se-path? contract?]{
+ A sequence of symbols followed by an optional keyword.
+
+ The prefix of symbols specifies a path of tags from the leaves with an implicit any sequence to the root. The final, optional keyword specifies an attribute. 
+}
+
+@defproc[(se-path*/list [p se-path?] [xe xexpr?])
+         (listof any/c)]{
+ Returns a list of all values specified by the path @racket[p] in the X-expression @racket[xe].         
+}
+
+@defproc[(se-path* [p se-path?] [xe xexpr?])
+         any/c]{
+ Returns the first answer from @racket[(se-path*/list p xe)].
+}
+
+@(define path-eval (make-base-eval))
+@interaction-eval[#:eval path-eval (require xml/path)]
+@examples[
+#:eval path-eval
+       (define some-page 
+         '(html (body (p ([class "awesome"]) "Hey") (p "Bar"))))
+       (se-path*/list '(p) some-page)
+       (se-path* '(p) some-page)
+       (se-path* '(p #:class) some-page)                 
+       (se-path*/list '(body) some-page)
+       (se-path*/list '() some-page)
+]
