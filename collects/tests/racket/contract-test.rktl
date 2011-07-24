@@ -11376,6 +11376,51 @@ so that propagation occurs.
       (eval 'provide/contract35-three))
    3)
   
+  (test/spec-passed/result
+   'provide/contract36
+   '(begin
+      
+      (eval '(module provide/contract36-m racket/base
+               (require racket/contract)
+               (struct a (x))
+               (struct b a ())
+               (provide/contract
+                [struct a ((x symbol?))]
+                [struct (b a) ((x symbol?))])))
+
+      (eval '(module provide/contract36-n racket/base
+               (require 'provide/contract36-m)
+               (provide new-b-x)
+               (define new-b-x
+                 (a-x
+                  (struct-copy b (b 'x)
+                               [x #:parent a 'y])))))
+
+      (eval '(require 'provide/contract36-n))
+      (eval 'new-b-x))
+   'y)
+  
+  (test/spec-failed
+   'provide/contract37
+   '(begin
+      
+      (eval '(module provide/contract37-m racket/base
+               (require racket/contract)
+               (struct a (x))
+               (struct b a ())
+               (provide/contract
+                [struct a ((x symbol?))]
+                [struct (b a) ((x symbol?))])))
+
+      (eval '(module provide/contract37-n racket/base
+               (require 'provide/contract37-m)
+               (struct-copy b (b 'x)
+                            [x #:parent a 5])))
+
+      (eval '(require 'provide/contract37-n)))
+   "provide/contract37-n")
+  
+  
   (contract-error-test
    'contract-error-test8
    #'(begin
