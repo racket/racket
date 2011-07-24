@@ -123,6 +123,8 @@
                                  models)]
         [else (test-sequence models exp-str expected-steps extra-files error-box)]))
 
+(define port null)
+
 ;; test-sequence : ll-model? string? steps? extra-files? -> (void)
 ;; given a language model and an expression and a sequence of steps,
 ;; check to see whether the stepper produces the desired steps
@@ -136,6 +138,7 @@
        (unless (display-only-errors)
          (printf "testing string: ~v\n" exp-str))
        (test-sequence/core render-settings expander-thunk expected-steps error-box)
+       (close-input-port port)
        (delete-file "stepper-test")
        (for ([f (in-list extra-files)])
          (delete-file (first f)))])))
@@ -150,7 +153,8 @@
       [(struct ll-model (namespace-spec render-settings enable-testing?))
        (let ([filename "stepper-test"])
          (display-to-file exp-str filename #:exists 'truncate)
-         (let* ([port (open-input-file filename)]
+         (set! port (open-input-file "stepper-test"))
+         (let* (#;[port (open-input-file filename)]
                 [module-id (gensym "stepper-module-name-")])
            ;; thunk this so that syntax errors happen within the error handlers:
            (lambda () (expand-teaching-program port read-syntax namespace-spec '() #f module-id enable-testing?))))])))
