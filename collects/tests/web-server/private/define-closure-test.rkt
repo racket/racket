@@ -55,11 +55,11 @@
    
    (test-case
     "serialize id procedure"
-    (check = 7 ((deserialize (serialize (make-id))) 7)))
+    (check = 7 ((deserialize (serialize (make-id (lambda () (values))))) 7)))
    
    (test-case
     "id procedure"
-    (check = 7 ((make-id) 7)))
+    (check = 7 ((make-id (lambda () (values))) 7)))
    
    (test-case
     "add-y procedure"
@@ -79,21 +79,21 @@
    
    (test-case
     "simple interpreter case"
-    (check = 3 (evaluate 3 (make-the-empty-env))))
+    (check = 3 (evaluate 3 (make-the-empty-env (lambda () (values))))))
    
    (test-case
     "serialize simple interpreter case"
     (check = 3 ((deserialize (serialize evaluate))
                 3
-                (deserialize (serialize (make-the-empty-env))))))
+                (deserialize (serialize (make-the-empty-env (lambda () (values))))))))
    
    (test-case
     "apply identity"
-    (check = 3 (evaluate '((lambda (x) x) 3) (make-the-empty-env))))
+    (check = 3 (evaluate '((lambda (x) x) 3) (make-the-empty-env (lambda () (values))))))
    
    (test-case
     "serialize environments"
-    (let* ([e0 (make-the-empty-env)]
+    (let* ([e0 (make-the-empty-env (lambda () (values)))]
            [e1 (make-extended-env (lambda () (values e0 'x 1)))]
            [e2 (make-extended-env (lambda () (values e1 'y 2)))]
            [e3 (make-extended-env (lambda () (values e2 'z 3)))]

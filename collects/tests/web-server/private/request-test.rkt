@@ -66,7 +66,8 @@
                                        ip
                                        (open-output-bytes) (make-custodian) #f)
                       8081
-                      (lambda _ (values "s1" "s2"))))))
+                      (lambda _ (values "s1" "s2")))
+                     (void))))
     
     (test-suite
      "POST Bindings"
@@ -75,5 +76,5 @@
      (test-equal? "simple test 2"
                   (get-post-data/raw "hello=world") #"hello=world")
      (test-equal? "simple test 3"
-                  (binding:form-value (bindings-assq #"hello" (get-bindings "hello=world")))
+                  (binding:form-value (bindings-assq #"hello" (force (get-bindings "hello=world"))))
                   #"world")))))

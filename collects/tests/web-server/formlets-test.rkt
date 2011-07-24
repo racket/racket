@@ -658,5 +658,3 @@
    
    ))
 
-(require rackunit/text-ui)
-(run-tests all-formlets-tests)

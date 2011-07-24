@@ -17,7 +17,7 @@
     "with-errors-to-browser"
     (test-case
      "Basic"
-     (check-pred list? (let/ec esc (with-errors-to-browser esc (lambda () (error 'error "Hey!"))))))
+     (check-pred response? (let/ec esc (with-errors-to-browser esc (lambda () (error 'error "Hey!"))))))
     (test-case
      "Basic (succ)"
      (check-true (let/ec esc (with-errors-to-browser esc (lambda () #t))))))
