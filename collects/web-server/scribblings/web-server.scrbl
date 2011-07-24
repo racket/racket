@@ -34,6 +34,8 @@ This manual closes with a frequently asked questions section: @secref["faq"].
 @include-section["templates.scrbl"]
 @include-section["page.scrbl"]
 
+@include-section["test.scrbl"]
+
 @include-section["faq.scrbl"]
 
 @index-section[]

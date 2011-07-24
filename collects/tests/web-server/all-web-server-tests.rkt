@@ -11,7 +11,8 @@
          "stuffers-test.rkt"
          "formlets-test.rkt"
          "dispatch-test.rkt"
-         "servlet-env-test.rkt")
+         "servlet-env-test.rkt"
+         "test-tests.rkt")
 (provide all-web-server-tests)
 
 (define all-web-server-tests  
@@ -28,4 +29,5 @@
    all-managers-tests
    all-private-tests
    all-servlet-tests
-   servlet-env-tests))
+   servlet-env-tests
+   test-tests))

@@ -11,6 +11,7 @@ The @web-server implements many HTTP libraries that are provided by this module.
 @section[#:tag "request-structs"]{Requests}
 @(require (for-label web-server/http/request-structs
                      xml
+                     racket/promise
                      racket/match))
 
 @defmodule[web-server/http/request-structs]{

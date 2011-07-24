@@ -15,7 +15,7 @@
     (check-true
      (let ([ib (open-input-bytes #"")]
            [ob (open-output-bytes)])
-       (new-connection 1 ib ob (current-custodian) #t)
+       (new-connection 1 ib ob (make-custodian) #t)
        (sleep 2)
        (with-handlers ([exn? (lambda _ #t)])
          (read ib) #f))))
@@ -25,7 +25,7 @@
     (check-true
      (let ([ib (open-input-bytes #"")]
            [ob (open-output-bytes)])
-       (new-connection 1 ib ob (current-custodian) #t)
+       (new-connection 1 ib ob (make-custodian) #t)
        (sleep 2)
        (with-handlers ([exn? (lambda _ #t)])
          (write 1 ob) #f))))
@@ -35,7 +35,7 @@
     (check-true
      (let* ([ib (open-input-bytes #"")]
             [ob (open-output-bytes)]
-            [c (new-connection 1 ib ob (current-custodian) #t)])
+            [c (new-connection 1 ib ob (make-custodian) #t)])
        (kill-connection! c)
        (and (with-handlers ([exn? (lambda _ #t)])
               (read ib) #f)
@@ -47,7 +47,7 @@
     (check-true
      (let* ([ib (open-input-bytes #"")]
             [ob (open-output-bytes)]
-            [c (new-connection 1 ib ob (current-custodian) #t)])
+            [c (new-connection 1 ib ob (make-custodian) #t)])
        (adjust-connection-timeout! c 1)
        (sleep 2)
        (and (with-handlers ([exn? (lambda _ #t)])

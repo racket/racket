@@ -14,6 +14,7 @@
                      web-server/dispatchers/dispatch-log
                      racket/serialize
                      web-server/stuffers
+                     web-server/servlet/servlet-structs
                      racket/list))
 
 @defmodule[web-server/servlet-env]

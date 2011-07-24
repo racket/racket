@@ -470,3 +470,11 @@ looks like the following, if re-formatted by:
   </dict>
 </plist>
 }|
+
+@; ----------------------------------------------------------------------
+
+@section{Simple X-expression Path Queries}
+
+@defmodule[xml/path]
+
+XXX

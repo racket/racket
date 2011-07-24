@@ -13,7 +13,7 @@
          "../util.rkt")
 (provide dispatch-servlets-tests)
 
-(current-server-custodian (current-custodian))
+(current-server-custodian (make-custodian))
 
 (define (mkd p)
   (define-values (! u->s)
