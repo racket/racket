@@ -15,9 +15,12 @@
 ; myflip : image -> image
 ; vertical reflection defined by bitmap operations
 (define (myflip pic)
-  (local [(define (other-pixel x y) (get-pixel-color x (- (image-height pic) y) pic))]
+  (local [(define (other-pixel x y) (get-pixel-color x (- (image-height pic) y 1) pic))]
     (build-image (image-width pic) (image-height pic)
                  other-pixel)))
+
+
+(check-expect (myflip pic:bloch) (flip-vertical pic:bloch))
 
 (define RADIUS 1)
 
