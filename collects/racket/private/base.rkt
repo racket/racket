@@ -1,7 +1,7 @@
 (module base "pre-base.rkt"
 
   (#%require "hash.rkt"
-             "list.rkt"
+             "list.rkt" ; shadows `reverse', `mem{q,v,ber}'
              "string.rkt"
              "stxcase-scheme.rkt"
              "qqstx.rkt"

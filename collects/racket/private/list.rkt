@@ -26,6 +26,11 @@
            build-string
            build-list
 
+           (rename-out [alt-reverse reverse]
+                       [alt-memq memq]
+                       [alt-memv memv]
+                       [alt-member member])
+
            compose
            compose1)
 
@@ -405,5 +410,36 @@
               (mk-simple-compose app1 f g)
               (mk-simple-compose app* f g))))
       (values compose1 compose)))
+
+  (define alt-reverse
+    (if (eval-jit-enabled)
+        (let ([reverse 
+               (lambda (l)
+                 (unless (list? l) (raise-type-error 'reverse "list"))
+                 (let loop ([a null] [l l])
+                   (if (null? l)
+                       a
+                       (loop (cons (car l) a) (cdr l)))))])
+          reverse)
+        reverse))
+
+  (define-values (alt-memq alt-memv alt-member)
+    (if (eval-jit-enabled)
+        (let ()
+          (define-syntax-rule (mk id eq?)
+            (let ([id
+                   (lambda (v orig-l)
+                     (let loop ([ls orig-l])
+                       (cond
+                        [(null? ls) #f]
+                        [(not (pair? ls))
+                         (bad-list 'id orig-l)]
+                        [(eq? v (car ls)) ls]
+                        [else (loop (cdr ls))])))])
+              id))
+          (values (mk memq eq?)
+                  (mk memv eqv?)
+                  (mk member equal?)))
+        (values memq memv member)))
 
   )
