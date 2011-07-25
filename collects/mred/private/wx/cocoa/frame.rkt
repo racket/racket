@@ -119,6 +119,13 @@
         (let ([wx (->wx wxb)])
           (when wx
             (send wx force-window-focus))))]
+  [-a _void (windowDidEndSheet: [_id notification])
+      ;; In some cases, the window that has a sheet
+      ;; stays main even as its sheet becomes main, so
+      ;; we need to make the containing window become main
+      ;; when the sheet goes away.
+      (when (equal? self (tell app mainWindow))
+        (tell self windowDidBecomeMain: notification))]
   [-a _void (toggleToolbarShown: [_id sender])
       (when wxb
         (let ([wx (->wx wxb)])
