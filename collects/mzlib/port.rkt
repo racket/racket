@@ -1332,7 +1332,7 @@
                 [newline-convert? #f]
                 [decode-error (lambda (msg port)
                                 (error 'reencode-input-port
-                                       (format "~a: ~e" msg)
+                                       (format "~a: ~~e" msg)
                                        port))])
     (let ([c (let ([c (bytes-open-converter encoding "UTF-8")])
                (if newline-convert? (mcons c #f) c))]

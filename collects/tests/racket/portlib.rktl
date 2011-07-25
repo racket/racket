@@ -722,6 +722,11 @@
     (test #\c read-char ei)
     (test eof read-char ei)))
 
+(err/rt-test
+ (port->bytes (reencode-input-port (open-input-bytes #"\xFF\xFF") "utf-8"))
+ (lambda (exn)
+   (regexp-match? #rx"^reencode-input-port:" (exn-message exn))))
+    
 ;; --------------------------------------------------
 
 (let-values ([(in out) (make-pipe)])
