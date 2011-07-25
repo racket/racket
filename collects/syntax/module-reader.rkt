@@ -262,7 +262,7 @@
                          (eq? read-sym 'read-syntax)
                          (lambda (spec)
                            (lambda ()
-                             (error read-sym "cannot find reader for `#lang ~a ~a'"
+                             (error read-sym "cannot find reader for `#lang ~a ~s'"
                                     self-sym
                                     spec))))])
         (let ([r (convert r)])
