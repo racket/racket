@@ -1419,7 +1419,7 @@
           
           (map "c:g" "hide-search")
           (map "f3" "unhide search and toggle focus")
-          (map "c:s" "search forward")
+          (map "c:s" "unhide search and toggle focus")
           (map "c:r" "search backward")
           (case (system-type)
             [(unix)
