@@ -21,6 +21,10 @@
              for/or for*/or
              for/first for*/first
              for/last for*/last
+             for/sum for*/sum 
+             (rename for/sum Σ) (rename for*/sum Σ*)
+             for/product for*/product 
+             (rename for/product ∏) (rename for*/product ∏*)
              for/hash for*/hash
              for/hasheq for*/hasheq
              for/hasheqv for*/hasheqv
@@ -1436,6 +1440,18 @@
     (lambda (x) x)
     (lambda (rhs) rhs)
     (lambda (x) x))
+
+  (define-for-variants (for/sum for*/sum)
+    ([result 0])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x) #`(+ result #,x)))
+
+  (define-for-variants (for/product for*/product)
+    ([result 1])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x) #`(* result #,x)))
 
   (define-for-variants (for/hash for*/hash)
     ([table #hash()])

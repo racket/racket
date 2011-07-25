@@ -161,6 +161,33 @@ result of the @racket[for/or] expression is
   (error "doesn't get here"))
 ]}
 
+@deftogether[(
+@defform[(for/sum (for-clause ...) body ...+)]
+@defform[(Σ (for-clause ...) body ...+)]
+)]{
+
+Iterates like @racket[for], but each result of the last @racket[body]
+is accumulated into a result with @racket[+].
+
+@examples[
+(for/sum ([i '(1 2 3 4)]) i)
+(Σ ([i (in-range 100)]) i)
+]}
+
+
+@deftogether[(
+@defform[(for/product (for-clause ...) body ...+)]
+@defform[(∏ (for-clause ...) body ...+)]
+)]{
+
+Iterates like @racket[for], but each result of the last @racket[body]
+is accumulated into a result with @racket[*].
+
+@examples[
+(for/product ([i '(1 2 3 4)]) i)
+(∏ ([i (in-range 1 5)]) i)
+]}
+
 
 @defform[(for/lists (id ...) (for-clause ...) body ...+)]{
 
@@ -240,6 +267,10 @@ nested.
 @defform[(for*/hasheqv (for-clause ...) body ...+)]
 @defform[(for*/and (for-clause ...) body ...+)]
 @defform[(for*/or (for-clause ...) body ...+)]
+@defform[(for*/sum (for-clause ...) body ...+)]
+@defform[(Σ* (for-clause ...) body ...+)]
+@defform[(for*/product (for-clause ...) body ...+)]
+@defform[(∏* (for-clause ...) body ...+)]
 @defform[(for*/first (for-clause ...) body ...+)]
 @defform[(for*/last (for-clause ...) body ...+)]
 @defform[(for*/fold ([accum-id init-expr] ...) (for-clause ...) body ...+)]

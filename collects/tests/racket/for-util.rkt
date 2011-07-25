@@ -64,6 +64,10 @@
        (test (list (for/last ([i gen]) i)) 'gen (for/and ([i gen]) (member i `seq)))
        (test `seq 'gen (for/or ([i gen]) (member i `seq)))
        (test (for/first ([i gen]) i) 'gen (for/or ([i gen]) (and (member i `seq) i)))
+       (test (for/sum ([i gen]) (if (number? i) i 0)) 'gen 
+             (for/fold ([n 0]) ([i gen]) (if (number? i) (+ i n) n)))
+       (test (for/product ([i gen]) (if (number? i) i 1)) 'gen 
+             (for/fold ([n 1]) ([i gen]) (if (number? i) (* i n) n)))
        (test #t 'gen (for/and ([(i k) (in-parallel gen `seq)])
                        (equal? i k)))
        (test #f 'gen (for/and ([i gen])
