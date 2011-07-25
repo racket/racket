@@ -664,7 +664,7 @@
        ;; builds a begin expression for the entire contract and provide
        ;; the first syntax object is used for source locations
        (define (code-for-one-id/new-name stx id reflect-id ctrct/no-prop user-rename-id
-                                         [mangle-for-maker? #t]
+                                         [mangle-for-maker? #f]
                                          [provide? #t])
          (let ([no-need-to-check-ctrct? (a:known-good-contract? ctrct/no-prop)]
                [ex-id (or reflect-id id)]
