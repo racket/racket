@@ -10,19 +10,22 @@
 (define-empty-tokens honu-empty-tokens (eof fail whitespace
 					left-parens right-parens
 					left-bracket right-bracket
-					left-brace right-brace))
+					left-brace right-brace
+					end-of-line-comment))
 
 (define-lex-abbrev identifier-first-character (:or (:/ #\a #\z)
 						   (:/ #\A #\Z)))
 (define-lex-abbrev identifier-character identifier-first-character)
 (define-lex-abbrev identifier (:: identifier-first-character
 				  (:+ identifier-character)))
+(define-lex-abbrev number (:+ (:/ #\0 #\9)))
 
 (define honu-lexer
   (lexer-src-pos
     [(eof) (token-eof)]
-    [(char-range #\0 #\9)
-     (token-number (string->number lexeme))]
+    [(:or "#" "//") (token-end-of-line-comment)]
+    [number (token-number (string->number lexeme))]
+    ["." (token-identifier '|.|)]
     ["(" (token-left-parens)]
     [")" (token-right-parens)]
     ["[" (token-left-bracket)]
@@ -30,7 +33,7 @@
     ["{" (token-left-brace)]
     ["}" (token-right-brace)]
     [identifier (token-identifier (string->symbol lexeme))]
-    [(union " ") (token-whitespace)]
+    [(union " " "\t") (token-whitespace)]
     ))
 
 (define (token-eof? token)
@@ -38,6 +41,18 @@
 
 (define (token-whitespace? token)
   (equal? 'whitespace (token-name token)))
+
+(define (token-end-of-line-comment? token)
+  (equal? 'end-of-line-comment (token-name token)))
+
+(define (read-until-end-of-line input)
+  (define (finish? what)
+    (or (eof-object? what)
+	(= (char->integer #\newline) what)))
+  (let loop ()
+    (define what (read-byte input))
+    (when (not (finish? what))
+      (loop))))
 
 (define (lex-string input)
   (define port (open-input-string input))
@@ -48,6 +63,11 @@
 	   [(struct* position-token ([token (? token-eof?)] [start-pos start] [end-pos end]))
 	    ;; (printf "done lexing\n")
 	    (reverse tokens)]
+	   [(struct* position-token ([token (? token-end-of-line-comment?)]
+				     [start-pos start]
+				     [end-pos end]))
+	    (read-until-end-of-line port)
+	    (loop tokens)]
 	   [(struct* position-token ([token (? token-whitespace?)] [start-pos start] [end-pos end]))
 	    (loop tokens)]
 	   [(position-token token start end)
@@ -72,4 +92,10 @@
 		      (token-right-bracket)
 		      (token-left-brace)
 		      (token-right-brace)))
+  (check-equal? (lex-string "foo // 5")
+		(list (token-identifier 'foo)))
+  (check-equal? (lex-string "foo // 5
+			     bar")
+		(list (token-identifier 'foo)
+		      (token-identifier 'bar)))
   )
