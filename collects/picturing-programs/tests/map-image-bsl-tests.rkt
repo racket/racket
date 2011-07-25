@@ -364,3 +364,41 @@ fuzzy-tri
 (diag-mirror pic:bloch)
 "should be the upper-right corner of Dr. Bloch's head, mirrored to the lower-left"
 
+
+; myflip : image -> image
+; vertical reflection defined by bitmap operations
+(define (myflip pic)
+  (build-image/extra (image-width pic) (image-height pic)
+                 myflip-helper pic))
+
+; myflip-helper : number(x) number(y) image -> color
+(check-expect (myflip-helper 10 2 tri) (name->color "orange"))
+(check-expect (myflip-helper 10 49 tri) (make-color 255 255 255 0)) ; Why it's a transparent white
+; rather than a transparent black, I don't know....
+(check-expect (myflip-helper 30 2 tri) (name->color "orange"))
+(check-expect (myflip-helper 30 49 tri) (name->color "orange"))
+(define (myflip-helper x y pic)
+  (get-pixel-color x (- (image-height pic) y 1) pic))
+
+(check-expect (myflip pic:bloch) (flip-vertical pic:bloch))
+
+; add-red : image number -> image
+(define (add-red pic how-much)
+  (map-image/extra add-red-helper pic how-much))
+
+; add-red-helper : num(x) num(y) color number -> color
+(check-expect (add-red-helper 58 19 (make-color 29 59 89) 40)
+              (make-color 69 59 89))
+(check-expect (add-red-helper 214 3 (make-color 250 200 150 100) 30)
+              (make-color 255 200 150 100))
+(define (add-red-helper x y c how-much)
+  (make-color (min 255 (+ how-much (color-red c)))
+              (color-green c)
+              (color-blue c)
+              (color-alpha c)))
+
+(define red-bloch (add-red pic:bloch 50))
+(check-expect (get-pixel-color 30 20 red-bloch)
+              (make-color 133 56 35))
+(check-expect (get-pixel-color 30 50 red-bloch)
+              (make-color 255 173 149))
