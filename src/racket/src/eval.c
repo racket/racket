@@ -158,8 +158,14 @@
 # include "future.h"
 #endif
 
+#ifdef MZ_USE_JIT
+# define INIT_JIT_ON 1
+#else
+# define INIT_JIT_ON 0
+#endif
+
 /* globals */
-SHARED_OK int scheme_startup_use_jit = 1;
+SHARED_OK int scheme_startup_use_jit = INIT_JIT_ON;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 
 /* THREAD LOCAL SHARED */

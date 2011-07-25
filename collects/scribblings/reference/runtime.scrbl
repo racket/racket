@@ -125,7 +125,7 @@ treated as flags for the system).}
 
 A parameter that provides a hint about how much space to reserve for a
 newly created thread's local variables. The actual space used by a
-computation is affected by just-in-time (JIT) compilation, but it is
+computation is affected by @tech{JIT} compilation, but it is
 otherwise platform-independent.}
 
 

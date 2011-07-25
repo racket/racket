@@ -460,11 +460,17 @@ which allows such optimizations.}
 
 @defboolparam[eval-jit-enabled on?]{
 
+@guidealso["JIT"]
+
 A parameter that determines whether the native-code just-in-time
-compiler (JIT) is enabled for code (compiled or not) that is passed to
-the default evaluation handler.  The default is @racket[#t], unless
-the JIT is disabled through the @Flag{j}/@DFlag{no-jit} command-line
-flag to stand-alone Racket (or GRacket), or through the
+compiler (@deftech{JIT}) is enabled for code (compiled or not) that is passed to
+the default evaluation handler. A true parameter value is effective
+only on platforms for which the JIT is supported.
+
+The default is @racket[#t], unless the JIT is not supported by the
+current platform, unless it is disabled through the
+@Flag{j}/@DFlag{no-jit} command-line flag to stand-alone Racket (or
+GRacket), and unless it is disabled through the
 @as-index{@envvar{PLTNOMZJIT}} environment variable (set to any
 value).}
 
