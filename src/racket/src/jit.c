@@ -830,6 +830,24 @@ int scheme_is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Objec
   return scheme_is_relatively_constant_and_avoids_r1_maybe_fp(obj, wrt, 0);
 }
 
+int scheme_needs_only_target_register(Scheme_Object *obj, int and_can_reorder)
+{
+  Scheme_Type t;
+
+  if (scheme_is_constant_and_avoids_r1(obj))
+    return 1;
+
+  t = SCHEME_TYPE(obj);
+  if (SAME_TYPE(t, scheme_local_type)) {
+    if (and_can_reorder && SCHEME_GET_LOCAL_FLAGS(obj))
+      return 0;
+    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+      return 0;
+    return 1;
+  } else 
+    return (t >= _scheme_compiled_values_types_);
+}
+
 /*========================================================================*/
 /*                             branch info                                */
 /*========================================================================*/

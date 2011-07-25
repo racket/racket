@@ -1377,54 +1377,6 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
   return direction;
 }
 
-static int generate_three_args(Scheme_App_Rec *app, mz_jit_state *jitter)
-/* de-sync's rs.
-   Puts arguments in R0, R1, and R2. */
-{
-  int c1, c2;
-
-  c1 = scheme_is_constant_and_avoids_r1(app->args[1]);
-  c2 = scheme_is_constant_and_avoids_r1(app->args[2]);
-
-  if (c1 && c2) {
-    /* we expect this to be a common case for `vector-set!'-like operations,
-       where the vector and index are immediate and the value is computed */
-    mz_runstack_skipped(jitter, 2);
-    mz_rs_dec(1); /* no sync */
-    CHECK_RUNSTACK_OVERFLOW();
-    mz_runstack_pushed(jitter, 1);
-
-    scheme_generate(app->args[3], jitter, 0, 0, 0, JIT_R0, NULL);
-    CHECK_LIMIT();
-
-    mz_rs_str(JIT_R0);
-    
-    scheme_generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL);
-    CHECK_LIMIT();
-    scheme_generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL);
-    CHECK_LIMIT();
-
-    mz_rs_ldr(JIT_R2); /* no sync */
-    mz_rs_inc(1);
-    mz_runstack_popped(jitter, 1);
-    mz_runstack_unskipped(jitter, 2);
-    CHECK_LIMIT();
-  } else {
-    scheme_generate_app(app, NULL, 3, jitter, 0, 0, 2);
-    CHECK_LIMIT();
-    
-    mz_rs_ldxi(JIT_R2, 2);
-    mz_rs_ldr(JIT_R0);
-    mz_rs_ldxi(JIT_R1, 1);
-    
-    mz_rs_inc(3); /* no sync */
-    mz_runstack_popped(jitter, 3);
-    CHECK_LIMIT();
-  }
-
-  return 1;
-}
-
 static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
                                 Branch_Info *for_branch, int branch_short)
 /* de-sync'd ok */
@@ -2814,7 +2766,9 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	|| IS_NAMED_PRIM(rator, "string-set!")
 	|| IS_NAMED_PRIM(rator, "unsafe-string-set!")
 	|| IS_NAMED_PRIM(rator, "bytes-set!")
-	|| IS_NAMED_PRIM(rator, "unsafe-bytes-set!")) {
+	|| IS_NAMED_PRIM(rator, "unsafe-bytes-set!")
+	|| IS_NAMED_PRIM(rator, "unsafe-s16vector-set!")
+	|| IS_NAMED_PRIM(rator, "unsafe-u16vector-set!")) {
       int simple, constval, can_delay_vec, can_delay_index;
       int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
       int pushed, flonum_arg;
@@ -2857,9 +2811,19 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       else if (IS_NAMED_PRIM(rator, "unsafe-string-set!")) {
 	which = 1;
         unsafe = 1;
+        can_chaperone = 0;
       } else if (IS_NAMED_PRIM(rator, "unsafe-bytes-set!")) {
         which = 2;
         unsafe = 1;
+        can_chaperone = 0;
+      } else if (IS_NAMED_PRIM(rator, "unsafe-s16vector-set!")) {
+        which = 4;
+        unsafe = 1;
+        can_chaperone = 0;
+      } else if (IS_NAMED_PRIM(rator, "unsafe-u16vector-set!")) {
+        which = 5;
+        unsafe = 1;
+        can_chaperone = 0;
       } else
 	which = 2;
 
@@ -3000,6 +2964,19 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
                              flonum_arg, result_ignored, can_chaperone, 
                              for_struct, for_fx, 0);
           CHECK_LIMIT();
+        } else if ((which == 4) || (which == 5)) {
+          /* unsafe-{s,u}16vector-set! */
+          jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&(((Scheme_Structure *)0x0)->slots[0]));
+          jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CPTR_VAL(0x0));
+          jit_subi_l(JIT_R1, JIT_R1, 1);
+          jit_rshi_ul(JIT_R2, JIT_R2, 1);
+          if (which == 5)
+            jit_stxr_us(JIT_R1, JIT_R0, JIT_R2);
+          else
+            jit_stxr_s(JIT_R1, JIT_R0, JIT_R2);
+          CHECK_LIMIT();
+          if (!result_ignored)
+            (void)jit_movi_p(JIT_R0, scheme_void);          
 	} else if (which == 1) {
           if (unsafe) {
             jit_rshi_ul(JIT_R1, JIT_R1, 1);
@@ -3036,6 +3013,8 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	  offset = base_offset + (offset * sizeof(double));
 	else if (which == 1)
 	  offset = offset << LOG_MZCHAR_SIZE;
+        else if ((which == 4) || (which == 5))
+          offset *= 2;
 	jit_movi_l(JIT_V1, offset);
 	if (!which) {
           /* vector-set! is relatively simple and worth inlining */
@@ -3044,6 +3023,18 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
                              flonum_arg, result_ignored, can_chaperone, 
                              for_struct, for_fx, check_mutable);
           CHECK_LIMIT();
+        } else if ((which == 4) || (which == 5)) {
+          /* unsafe-{s,u}16vector-set! */
+          jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&(((Scheme_Structure *)0x0)->slots[0]));
+          jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CPTR_VAL(0x0));
+          jit_rshi_ul(JIT_R2, JIT_R2, 1);
+          if (which == 5)
+            jit_stxi_us(offset, JIT_R0, JIT_R2);
+          else
+            jit_stxi_s(offset, JIT_R0, JIT_R2);
+          CHECK_LIMIT();
+          if (!result_ignored)
+            (void)jit_movi_p(JIT_R0, scheme_void);          
 	} else if (which == 3) {
           /* flvector-set! is relatively simple and worth inlining */
           generate_vector_op(jitter, 1, 1, base_offset, 1, unsafe, 
@@ -3137,28 +3128,6 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0)));
       }
       jit_stxr_d_fppop(JIT_R1, JIT_R0, JIT_FPR0);
-      CHECK_LIMIT();
-      
-      if (!result_ignored)
-        (void)jit_movi_p(JIT_R0, scheme_void);
-      
-      return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-s16vector-set!")
-               || IS_NAMED_PRIM(rator, "unsafe-u16vector-set!")) {
-      int is_u;
-      is_u = IS_NAMED_PRIM(rator, "unsafe-u16vector-set!");
-
-      generate_three_args(app, jitter);
-      CHECK_LIMIT();
-
-      jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&(((Scheme_Structure *)0x0)->slots[0]));
-      jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CPTR_VAL(0x0));
-      jit_subi_l(JIT_R1, JIT_R1, 1);
-      jit_rshi_ul(JIT_R2, JIT_R2, 1);
-      if (is_u)
-        jit_stxr_us(JIT_R1, JIT_R0, JIT_R2);
-      else
-        jit_stxr_s(JIT_R1, JIT_R0, JIT_R2);
       CHECK_LIMIT();
       
       if (!result_ignored)

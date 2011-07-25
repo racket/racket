@@ -1247,6 +1247,7 @@ int scheme_is_constant_and_avoids_r1(Scheme_Object *obj);
 int scheme_is_relatively_constant_and_avoids_r1_maybe_fp(Scheme_Object *obj, Scheme_Object *wrt,
                                                          int fp_ok);
 int scheme_is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Object *wrt);
+int scheme_needs_only_target_register(Scheme_Object *obj, int and_can_reorder);
 int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack_start);
 int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_state *jitter, int stack_start);
 #define INIT_SIMPLE_DEPTH 10
