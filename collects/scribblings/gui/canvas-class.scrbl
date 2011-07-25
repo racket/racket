@@ -64,7 +64,7 @@ The @racket[style] argument indicates one or more of the following styles:
  @racket['no-autoclear]}
  
  @item{@racket['no-focus] --- prevents the canvas from accepting the
- keyboard focus when the canvas is clicked, or when the
+ keyboard focus when the canvas is clicked or when the
 @method[window<%> focus]   method is called}
 
  @item{@racket['deleted] --- creates the canvas as initially hidden and without affecting

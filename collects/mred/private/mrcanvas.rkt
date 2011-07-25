@@ -258,7 +258,8 @@
 	  (check-container-parent cwho parent)
 	  (check-instance cwho internal-editor<%> "text% or pasteboard%" #t editor)
 	  (check-style cwho #f '(hide-vscroll hide-hscroll no-vscroll no-hscroll auto-vscroll auto-hscroll
-					      deleted control-border combo transparent no-border resize-corner)
+					      deleted control-border combo transparent no-border resize-corner
+                                              no-focus)
 		       style)
 	  (check-gauge-integer cwho scrolls-per-page)
 	  (check-label-string/false cwho label)

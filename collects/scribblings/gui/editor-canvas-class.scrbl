@@ -14,7 +14,8 @@ An @racket[editor-canvas%] object manages and displays a
                                           'no-hscroll 'no-vscroll 
                                           'hide-hscroll 'hide-vscroll 
                                           'auto-vscroll 'auto-hscroll 
-                                          'resize-corner 'deleted 'transparent)) null]
+                                          'resize-corner 'no-focus 'deleted 
+                                          'transparent)) null]
                  [scrolls-per-page (integer-in 1 10000) 100]
                  [label (or/c label-string? false/c) #f]
                  [wheel-step (or/c (integer-in 1 10000) false/c) 3]
@@ -64,6 +65,10 @@ The @racket[style] list can contain the following flags:
 
  @item{@racket['resize-corner] --- leaves room for a resize control at the canvas's
                                   bottom right when only one scrollbar is visible}
+
+ @item{@racket['no-focus] --- prevents the canvas from accepting the
+                              keyboard focus when the canvas is clicked or when the
+                              @method[window<%> focus] method is called}
 
  @item{@racket['deleted] --- creates the canvas as initially hidden and without affecting
                              @racket[parent]'s geometry; the canvas can be made active

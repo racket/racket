@@ -215,7 +215,8 @@
                                  '(no-autoclear))
                              (keep-style style 'control-border)
                              (keep-style style 'combo)
-                             (keep-style style 'resize-corner))
+                             (keep-style style 'resize-corner)
+                             (keep-style style 'no-focus))
                      name
                      gl-config)
 
