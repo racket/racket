@@ -1078,7 +1078,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       /* rand2 in R0, and rand in R1 unless it's simple */
 
       if (simple_rand || simple_rand2) {
-        int pos, va;
+        int va;
 
         if (simple_rand && SCHEME_INTP(rand)) {
           (void)jit_movi_p(JIT_R1, rand);

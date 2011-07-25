@@ -1296,6 +1296,19 @@
     (test-multi 'vector)
     (test-multi 'vector-immutable)))
 
+;; + fold to fixnum overflow, fx+ doesn't
+(test-comp `(module m racket/base
+              (+ (sub1 (expt 2 30)) (sub1 (expt 2 30))))
+           `(module m racket/base
+              (- (expt 2 31) 2)))
+(test-comp `(module m racket/base
+              (require racket/fixnum)
+              (fx+ (sub1 (expt 2 30)) (sub1 (expt 2 30))))
+           `(module m racket/base
+              (require racket/fixnum)
+              (- (expt 2 31) 2))
+           #f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

@@ -923,6 +923,22 @@ quotient_remainder(int argc, Scheme_Object *argv[])
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO, \
 		     name ": undefined for 0");
 
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+static void check_always_fixnum(const char *name, Scheme_Object *o)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v < -1073741824) || (v > 1073741823)) {
+      scheme_arg_mismatch(name, 
+                          "cannot fold to result that is not a fixnum on some platforms: ",
+                          o);
+    }
+  }
+}
+# define mzWHEN_64_BITS(e) e
+#else
+# define mzWHEN_64_BITS(e) /* empty */
+#endif
 
 #define SAFE_FX(name, s_name, scheme_op, EXTRA_CHECK)        \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
@@ -932,6 +948,7 @@ quotient_remainder(int argc, Scheme_Object *argv[])
    if (!SCHEME_INTP(argv[1])) scheme_wrong_type(s_name, "fixnum", 1, argc, argv); \
    EXTRA_CHECK                                               \
    o = scheme_op(argc, argv);                                \
+   mzWHEN_64_BITS(if (scheme_current_thread->constant_folding) check_always_fixnum(s_name, o);) \
    if (!SCHEME_INTP(o)) scheme_non_fixnum_result(s_name, o); \
    return o;                                                 \
  }
@@ -961,11 +978,11 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
    return scheme_make_integer(v);                            \
  }
 
-UNSAFE_FX(unsafe_fx_plus, +, plus)
-UNSAFE_FX(unsafe_fx_minus, -, minus)
-UNSAFE_FX(unsafe_fx_mult, *, mult)
-UNSAFE_FX(unsafe_fx_div, /, quotient)
-UNSAFE_FX(unsafe_fx_rem, %, rem_prim)
+UNSAFE_FX(unsafe_fx_plus, +, fx_plus)
+UNSAFE_FX(unsafe_fx_minus, -, fx_minus)
+UNSAFE_FX(unsafe_fx_mult, *, fx_mult)
+UNSAFE_FX(unsafe_fx_div, /, fx_div)
+UNSAFE_FX(unsafe_fx_rem, %, fx_rem)
 
 static Scheme_Object *unsafe_fx_mod(int argc, Scheme_Object *argv[])
 {
