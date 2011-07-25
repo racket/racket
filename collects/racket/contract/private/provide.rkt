@@ -651,7 +651,7 @@
          (with-syntax ([(code id) (code-for-one-id/new-name stx id reflect-id ctrct user-rename-id)])
            (syntax code)))
        
-       (define (id-for-one-id user-rename-id reflect-id id [mangle-for-maker? #t])
+       (define (id-for-one-id user-rename-id reflect-id id [mangle-for-maker? #f])
          ((if mangle-for-maker? 
               a:mangle-id-for-maker
               a:mangle-id)
@@ -729,7 +729,6 @@
                         (contract contract-id id pos-module-source 'ignored 'id 
                                   (quote-srcloc id)))
                       (void)))
-                 
                  (syntax (code id-rename)))))))
        
        (define p/c-clauses (syntax->list (syntax (p/c-ele ...))))
