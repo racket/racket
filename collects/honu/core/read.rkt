@@ -93,6 +93,22 @@
 (define (lex-string input)
   (read-tokens (open-input-string input)))
 
+;; make a syntax object out of some symbol and a position-token
+(define (make-syntax datum token)
+  (match token
+    [(position-token token start end)
+     (datum->syntax #f datum
+                    (list "name" (position-line start)
+                          (position-col start)
+                          (position-offset start)
+                          (- (position-offset end)
+                             (position-offset start))))]))
+
+(define (make-syntax-from-token token)
+  (match token
+    [(position-token datum start end)
+     (make-syntax (token-value datum) token)])) 
+
 ;; converts a stream of tokens to a tree
 (define (parse tokens)
   (define (is-first-token what? tokens)
@@ -102,7 +118,7 @@
       [else #f]))
 
   (define (do-atom current tokens table)
-    (do-parse (cons (car tokens) current)
+    (do-parse (cons (make-syntax-from-token (car tokens)) current)
               (cdr tokens)
               table))
   (define (atom? tokens)
@@ -142,7 +158,8 @@
                       (add-dispatch-rule dispatch-table [list next do-end-encloser])
                     [list null? (do-fail failure-name)]))
       (define-values (sub-tree unparsed)
-                     (do-parse (list head) (cdr tokens) added))
+                     (do-parse (list (make-syntax head (car tokens)))
+                               (cdr tokens) added))
       (do-parse (cons sub-tree current) unparsed table)))
 
   (define do-left-parens (make-encloser '#%parens "parentheses" right-parens?))
@@ -166,37 +183,8 @@
          (action current tokens table)]
         [else (loop (cdr use))])))
 
-  (do-parse '() tokens dispatch-table))
-
-(define (parse2 tokens)
-  (let loop ([current '()]
-             [tokens tokens]
-             [stop '()])
-    (if (null? tokens)
-      (reverse current)
-      (match (car tokens)
-        [(position-token token start end)
-         (cond
-           [(or (token-number? token)
-                (token-identifier? token))
-            (loop (cons token current)
-                  (cdr tokens)
-                  stop)]
-           [(token-right-parens? token)
-            (match stop
-              [(list 'parens rest ...)
-               (values (reverse current)
-                       rest)]
-              [else (error 'parse "expected a left parentheses before the right parentheses")])]
-           [(token-left-parens? token)
-            (define-values (parsed more-tokens)
-                           (loop '(#%parens)
-                                 (cdr tokens)
-                                 (cons 'parens stop)))
-            (loop (cons parsed current)
-                  more-tokens
-                  stop)]
-           [else (error 'parse "cannot parse ~a" token)])]))))
+  (datum->syntax #f (do-parse '() tokens dispatch-table)
+                 #f))
 
 ;; strip the source location from the position tokens
 (define (strip tokens)
@@ -206,7 +194,7 @@
       [else token])))
 
 (define (honu-read-syntax [port (current-input-port)])
-  (read-tokens (parse port)))
+  (parse (read-tokens port)))
 
 (define (honu-read [port (current-input-port)])
   (syntax->datum (honu-read-syntax port)))
@@ -243,3 +231,5 @@
   )
 
 (parse (lex-string "f{(1 1) [(5)]}"))
+(honu-read-syntax (open-input-string "f(5)"))
+(honu-read (open-input-string "f(5)"))
