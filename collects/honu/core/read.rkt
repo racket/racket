@@ -55,7 +55,9 @@
                       (define-token? name) ...))
 
 (define-tokens? eof whitespace end-of-line-comment number
-                identifier left-parens right-parens)
+                identifier left-parens right-parens
+                left-bracket right-bracket
+                left-brace right-brace)
 
 (define (read-until-end-of-line input) (define (finish? what)
     (or (eof-object? what)
@@ -65,6 +67,7 @@
     (when (not (finish? what))
       (loop))))
 
+;; read characters from a port and return a stream of tokens
 (define (read-tokens port)
   (let loop ([tokens '()])
     (define next (honu-lexer port))
@@ -92,6 +95,88 @@
 
 ;; converts a stream of tokens to a tree
 (define (parse tokens)
+  (define (is-first-token what? tokens)
+    (match tokens
+      [(list (position-token token start end) rest ...)
+       (what? token)]
+      [else #f]))
+
+  (define (do-atom current tokens table)
+    (do-parse (cons (car tokens) current)
+              (cdr tokens)
+              table))
+  (define (atom? tokens)
+    (is-first-token (lambda (token)
+                      (or (token-identifier? token)
+                          (token-number? token)))
+                    tokens))
+
+  (define (do-empty current tokens table)
+    (reverse current))
+  
+  (define (left-parens? tokens)
+    (is-first-token token-left-parens? tokens))
+  (define (right-parens? tokens)
+    (is-first-token token-right-parens? tokens))
+  (define (left-bracket? tokens)
+    (is-first-token token-left-bracket? tokens))
+  (define (right-bracket? tokens)
+    (is-first-token token-right-bracket? tokens))
+  (define (left-brace? tokens)
+    (is-first-token token-left-brace? tokens))
+  (define (right-brace? tokens)
+    (is-first-token token-right-brace? tokens))
+  (define (do-right-parens current tokens table)
+    (values (reverse current) (cdr tokens)))
+  (define (do-right-bracket current tokens table)
+    (values (reverse current) (cdr tokens)))
+  (define (do-right-brace current tokens table)
+    (values (reverse current) (cdr tokens)))
+  (define (add-dispatch-rule table rule)
+    (cons rule table))
+  (define ((do-fail kind) current tokens table)
+    (error 'parse "expected a right ~a" kind))
+  (define (do-left-parens current tokens table)
+    (define added (add-dispatch-rule
+                    (add-dispatch-rule dispatch-table [list right-parens? do-right-parens])
+                    [list null? (do-fail "parentheses")]))
+    (define-values (sub-tree unparsed)
+                   (do-parse '(#%parens) (cdr tokens) added))
+    (do-parse (cons sub-tree current) unparsed table))
+  (define (do-left-bracket current tokens table)
+    (define added (add-dispatch-rule
+                    (add-dispatch-rule dispatch-table [list right-bracket? do-right-bracket])
+                    [list null? (do-fail "bracket")]))
+    (define-values (sub-tree unparsed)
+                   (do-parse '(#%bracket) (cdr tokens) added))
+    (do-parse (cons sub-tree current) unparsed table))
+  (define (do-left-brace current tokens table)
+    (define added (add-dispatch-rule
+                    (add-dispatch-rule dispatch-table [list right-brace? do-right-brace])
+                    [list null? (do-fail "brace")]))
+    (define-values (sub-tree unparsed)
+                   (do-parse '(#%braces) (cdr tokens) added))
+    (do-parse (cons sub-tree current) unparsed table))
+
+  (define dispatch-table (list [list atom? do-atom]
+                               [list left-parens? do-left-parens]
+                               [list left-bracket? do-left-bracket]
+                               [list left-brace? do-left-brace]
+                               [list null? do-empty]))
+  (define (do-parse current tokens table)
+    ;; (printf "do parse ~a [tokens] ~a table ~a\n" (strip current) (strip tokens) table)
+    (let loop ([use table])
+      (cond
+        [(null? use) (error 'parse "unable to parse ~a" (strip tokens))]
+        [(let ([dispatcher (caar use)])
+           (dispatcher tokens))
+         (define action (cadar use))
+         (action current tokens table)]
+        [else (loop (cdr use))])))
+
+  (do-parse '() tokens dispatch-table))
+
+(define (parse2 tokens)
   (let loop ([current '()]
              [tokens tokens]
              [stop '()])
@@ -107,7 +192,7 @@
                   stop)]
            [(token-right-parens? token)
             (match stop
-              [(list 'right-parens rest ...)
+              [(list 'parens rest ...)
                (values (reverse current)
                        rest)]
               [else (error 'parse "expected a left parentheses before the right parentheses")])]
@@ -115,7 +200,7 @@
             (define-values (parsed more-tokens)
                            (loop '(#%parens)
                                  (cdr tokens)
-                                 (cons 'right-parens stop)))
+                                 (cons 'parens stop)))
             (loop (cons parsed current)
                   more-tokens
                   stop)]
@@ -125,7 +210,8 @@
 (define (strip tokens)
   (for/list ([token tokens])
     (match token
-      [(position-token token start end) token])))
+      [(position-token token start end) token]
+      [else token])))
 
 (define (honu-read-syntax [port (current-input-port)])
   (read-tokens (parse port)))
@@ -164,4 +250,4 @@
                       (token-right-parens)))
   )
 
-(parse (lex-string "f(5)"))
+(parse (lex-string "f{(1 1) [(5)]}"))
