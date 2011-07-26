@@ -1,6 +1,6 @@
 #lang at-exp racket/base
 
-(define verbose? (make-parameter #t))
+(define verbose? (make-parameter #f))
 
 (define global-ns (current-namespace))
 
@@ -15,7 +15,6 @@
                    [current-output-port Oo]
                    [current-error-port  Oo]
                    [current-namespace (make-empty-namespace)]
-                   [error-print-context-length 0] ; easier output
                    [exit-handler (λ (_) (kill-thread repl-thread))])
       (thread (λ ()
                 (namespace-attach-module global-ns 'racket/base)
@@ -83,6 +82,7 @@
   -> «(define enter! 123)»
   -> «(enter! 'foo)»
   procedure application: expected procedure, given: 123; arguments were: 'foo
+  [use ,backtrace to display context]
   -> «,en foo»                          ⇒ but this still works
   'foo> «,top»
   -> «,switch foo»
@@ -90,5 +90,7 @@
   ; *** Switching to the `foo' namespace ***
   foo::-> «,switch *»
   ; *** Switching to the `*' namespace ***
+  -> «bleh»
+  reference to undefined identifier: bleh [,bt for context]
   -> «,ex»
   |=@||}=|

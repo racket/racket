@@ -88,23 +88,28 @@
        (with-handlers ([exn? (λ (_) #f)]) (module->imports `',sym) #t)))
 
 (define last-output-port #f)
-(define (maybe-new-output-port)
-  (unless (eq? last-output-port (current-output-port))
-    (when last-output-port (flush-output last-output-port)) ; just in case
-    (set! last-output-port (current-output-port))
-    (flush-output last-output-port)
-    (port-count-lines! last-output-port)))
-(define (fresh-line)
-  (maybe-new-output-port)
-  (flush-output last-output-port)
-  (define-values [line col pos] (port-next-location last-output-port))
+(define last-error-port  #f)
+(define (maybe-new-output-ports)
+  (define-syntax-rule (maybe last cur)
+    (unless (eq? last cur)
+      (when last (flush-output last)) ; just in case
+      (set! last cur)
+      (flush-output last)
+      (port-count-lines! last)))
+  (maybe last-output-port (current-output-port))
+  (maybe last-error-port (current-error-port)))
+(define (fresh-line [stderr? #f])
+  (maybe-new-output-ports)
+  (define port (if stderr? last-error-port last-output-port))
+  (flush-output port)
+  (define-values [line col pos] (port-next-location port))
   (unless (eq? col 0) (newline)))
 (define (zero-column!)
   ;; there's a problem whenever there's some printout followed by a read: the
   ;; cursor will at column zero, but the port counting will think that it's
   ;; still right after the printout; call this function in such cases to adjust
   ;; the column to 0.
-  (maybe-new-output-port)
+  (maybe-new-output-ports)
   (define-values [line col pos] (port-next-location last-output-port))
   (set-port-next-location! last-output-port line 0 pos))
 
@@ -172,6 +177,8 @@
               [else (error 'here-mod-or-eof "internal error: ~s" x)])))))
 
 (define (getarg kind [flag 'req] #:default [dflt #f])
+  (unless (memq flag '(req opt list list+))
+    (error 'getarg "unknown flag: ~e" flag))
   (define (argerror fmt . args)
     (apply cmderror #:default-who 'getarg fmt args))
   (define (missing) (argerror "missing ~a argument" kind))
@@ -182,16 +189,16 @@
             [else (read)]))
     (define (get-list)
       (let ([x (get-one)]) (if (eof-object? x) '() (cons x (get-list)))))
-    (define 1st (get-one))
+    (define 0th  (get-one))
+    (define 0th? (not (eof-object? 0th)))
+    (define 1st  (if (and (not 0th?) dflt) (dflt) 0th))
     (define 1st? (not (eof-object? 1st)))
-    (define (dflt*) (let ([r (dflt)]) (if (eof-object? r) (missing) r)))
-    (case flag
-      [(req opt) (cond [1st? 1st]           [dflt (dflt*)]
-                       [(eq? 'opt flag) #f] [else (missing)])]
-      [(list list+)
-       (cond [1st? (cons 1st (get-list))] [dflt (list (dflt*))]
-             [(eq? 'list flag) '()]       [else (missing)])]
-      [else (error 'getarg "unknown flag: ~e" flag)]))
+    (cond [1st? (if (memq flag '(list list+))
+                  (cons 1st (if 0th? (get-list) '()))
+                  1st)]
+          [(eq? flag 'opt) #f]
+          [(eq? flag 'list) '()]
+          [else (missing)]))
   (define (read-string-arg)
     (define ch (skip-spaces/peek " \t\r\n"))
     (let* ([i (current-input-port)]
@@ -458,14 +465,14 @@
    "* -quit: exits the running instance.  Quitting the application as usual"
    "  will only close the visible window, but it will still run in a hidden"
    "  window.  This command should not be needed under normal circumstances."]
-  (let ([args (getarg 'path 'list #:default here-path)])
-    (if (null? args)
-      (->dr 'new)
-      (let* ([cmd (let ([s (path->string (car args))])
-                    (and (regexp-match? #rx"^-" s)
-                         (string->symbol (substring s 1))))]
-             [args (if cmd (cdr args) args)])
-        (apply ->dr (or cmd 'open) args)))))
+  (define args (getarg 'path 'list #:default here-path))
+  (if (null? args)
+    (->dr 'new)
+    (let* ([cmd (let ([s (path->string (car args))])
+                  (and (regexp-match? #rx"^-" s)
+                       (string->symbol (substring s 1))))]
+           [args (if cmd (cdr args) args)])
+      (apply ->dr (or cmd 'open) args))))
 
 ;; ----------------------------------------------------------------------------
 ;; binding related commands
@@ -699,6 +706,14 @@
 ;;   (if (last-break-exn)
 ;;     ((exn:break-continuation (last-break-exn)))
 ;;     (cmderror 'continue "no break exception to continue from")))
+
+(define last-backtrace #f)
+(defcommand (backtrace bt) #f
+  "see a backtrace of the last exception"
+  ["Display the last exception with its backtrace."]
+  (printf "; ~a\n"
+          (regexp-replace* #rx"\n+" (or last-backtrace "(no backtrace)")
+                           "\n; ")))
 
 (define time-id
   (make-lazy-identifier 'time* '(only-in unstable/time [time time*])))
@@ -1204,14 +1219,12 @@
           (namespace-set-variable-value! id (void))))
       (when res (save-values! res)))))
 
-(provide make-xrepl-evaluator)
-(define (make-xrepl-evaluator builtin-evaluator)
-  (λ (expr)
-    ;; not useful: catches only escape continuations
-    ;; (with-handlers ([exn:break? (λ (e) (last-break-exn e) (raise e))]) ...)
-    (if (saved-values)
-      (with-saved-values (λ () (builtin-evaluator expr)))
-      (builtin-evaluator expr))))
+(define ((make-xrepl-evaluator orig) expr)
+  ;; not useful: catches only escape continuations
+  ;;   (with-handlers ([exn:break? (λ (e) (last-break-exn e) (raise e))]) ...)
+  (if (saved-values)
+    (with-saved-values (λ () (orig expr)))
+    (orig expr)))
 
 ;; ----------------------------------------------------------------------------
 ;; capture ",..." and run the commands, use readline/rep when possible
@@ -1267,8 +1280,7 @@
         #:constructor-name more-inputs* #:omit-define-syntaxes)
 (define (more-inputs . inputs) (more-inputs* inputs))
 
-(provide make-xrepl-reader)
-(define (make-xrepl-reader)
+(define (make-xrepl-reader orig)
   (define (plain-reader prefix) ; a plain reader, without readline
     (display prefix) (display "> ") (flush-output) (zero-column!)
     (let ([in ((current-get-interaction-input-port))])
@@ -1327,3 +1339,36 @@
                  [else (eprintf "Warning: internal weirdness: ~s\n" r) r]))]
         [_ (begin (unless from-queue? (last-input-syntax input)) input)])))
   reader-loop)
+
+;; ----------------------------------------------------------------------------
+;; a display handler that omits stacktraces (making them available later)
+
+(define ((make-xrepl-display-handler orig) str exn)
+  (fresh-line #t)
+  (define backtrace?
+    (parameterize ([current-error-port (open-output-string)])
+      (orig str exn)
+      (let* ([s (get-output-string (current-error-port))]
+             [s (regexp-replace* #rx"^\n+|\n+$" s "")]
+             [s (regexp-replace* #rx"\n\n+" s "\n")])
+        (and (not (equal? str s))
+             (begin (set! last-backtrace s) #t)))))
+  (define short-msg "[,bt for context]")
+  (define long-msg "[use ,backtrace to display context]")
+  (if backtrace?
+    (let ([short? (and (not (regexp-match? #rx"\n" str))
+                       (<= (+ (string-length str) 1 (string-length short-msg))
+                           (wrap-column)))])
+      (eprintf (if short? "~a ~a\n" "~a\n~a\n")
+               str (if short? short-msg long-msg)))
+    (eprintf "~a\n" str)))
+
+;; ----------------------------------------------------------------------------
+;; set up the xrepl environment
+
+(provide setup-xrepl-environment)
+(define (setup-xrepl-environment)
+  (define (tweak param maker) (param (maker (param))))
+  (tweak error-display-handler make-xrepl-display-handler)
+  (tweak current-eval make-xrepl-evaluator)
+  (tweak current-prompt-read make-xrepl-reader))

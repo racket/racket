@@ -207,6 +207,12 @@ available.
 @; ---------------------------------
 @subsection{Debugging}
 
+@defcmd[backtrace]{
+  Whenever an error is displayed, XREPL will not show its context
+  printout.  Instead, use the @cmd[backtrace] command to display the
+  backtrace for the last error.
+}
+
 @defcmd[time]{
   Times execution of an expression (or expressions).  This is similar to
   @racket{time} but the information that is displayed is a bit easier to
