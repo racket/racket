@@ -126,43 +126,35 @@
     (is-first-token token-left-brace? tokens))
   (define (right-brace? tokens)
     (is-first-token token-right-brace? tokens))
-  (define (do-right-parens current tokens table)
+
+  (define (do-end-encloser current tokens table)
     (values (reverse current) (cdr tokens)))
-  (define (do-right-bracket current tokens table)
-    (values (reverse current) (cdr tokens)))
-  (define (do-right-brace current tokens table)
-    (values (reverse current) (cdr tokens)))
+
   (define (add-dispatch-rule table rule)
     (cons rule table))
   (define ((do-fail kind) current tokens table)
     (error 'parse "expected a right ~a" kind))
-  (define (do-left-parens current tokens table)
-    (define added (add-dispatch-rule
-                    (add-dispatch-rule dispatch-table [list right-parens? do-right-parens])
-                    [list null? (do-fail "parentheses")]))
-    (define-values (sub-tree unparsed)
-                   (do-parse '(#%parens) (cdr tokens) added))
-    (do-parse (cons sub-tree current) unparsed table))
-  (define (do-left-bracket current tokens table)
-    (define added (add-dispatch-rule
-                    (add-dispatch-rule dispatch-table [list right-bracket? do-right-bracket])
-                    [list null? (do-fail "bracket")]))
-    (define-values (sub-tree unparsed)
-                   (do-parse '(#%bracket) (cdr tokens) added))
-    (do-parse (cons sub-tree current) unparsed table))
-  (define (do-left-brace current tokens table)
-    (define added (add-dispatch-rule
-                    (add-dispatch-rule dispatch-table [list right-brace? do-right-brace])
-                    [list null? (do-fail "brace")]))
-    (define-values (sub-tree unparsed)
-                   (do-parse '(#%braces) (cdr tokens) added))
-    (do-parse (cons sub-tree current) unparsed table))
+  ;; add a rule to the dispatch table to expect an ending token then
+  ;; parse the sub-tree and continue
+  (define (make-encloser head failure-name next)
+    (lambda (current tokens table)
+      (define added (add-dispatch-rule
+                      (add-dispatch-rule dispatch-table [list next do-end-encloser])
+                    [list null? (do-fail failure-name)]))
+      (define-values (sub-tree unparsed)
+                     (do-parse (list head) (cdr tokens) added))
+      (do-parse (cons sub-tree current) unparsed table)))
 
+  (define do-left-parens (make-encloser '#%parens "parentheses" right-parens?))
+  (define do-left-bracket (make-encloser '#%bracket "bracket" right-bracket?))
+  (define do-left-brace (make-encloser '#%braces "brace" right-brace?))
+  
   (define dispatch-table (list [list atom? do-atom]
                                [list left-parens? do-left-parens]
                                [list left-bracket? do-left-bracket]
                                [list left-brace? do-left-brace]
                                [list null? do-empty]))
+
   (define (do-parse current tokens table)
     ;; (printf "do parse ~a [tokens] ~a table ~a\n" (strip current) (strip tokens) table)
     (let loop ([use table])
