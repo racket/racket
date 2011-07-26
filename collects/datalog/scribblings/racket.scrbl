@@ -54,6 +54,9 @@ The Datalog database can be directly used by Racket programs through this API.
 
 @defproc[(make-theory) theory/c]{ Creates a theory for use with @racket[datalog]. }
 
+@defproc[(write-theory [t theory/c]) void]{ Writes a theory to the current output port. Source location information is lost. }
+@defproc[(read-theory) theory/c]{ Reads a theory from the current input port. }
+
 @defform[(datalog thy-expr
                   stmt ...)
          #:contracts ([thy-expr theory/c])]{ Executes the statements on the theory given by @racket[thy-expr]. Returns the answers to the final query as a list of substitution dictionaries or returns @racket[empty]. }

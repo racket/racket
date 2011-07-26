@@ -2,7 +2,7 @@
 (require datalog tests/eli-tester)
 
 (define parent (make-theory))
-
+ 
 (test
  (datalog parent
           (! (parent joseph2 joseph1))
@@ -58,6 +58,21 @@
           (? (add1 1 :- X)))
  =>
  (list (hasheq 'X 2))
+ 
+ (let ()
+   (define new-parent
+     (with-input-from-bytes 
+         (with-output-to-bytes (λ () (write-theory parent)))
+       (λ () (read-theory))))
+   (test
+    (datalog new-parent
+             (? (ancestor A B)))
+    =>
+    (list (hasheq 'A 'joseph3 'B 'joseph2)
+          (hasheq 'A 'joseph2 'B 'lucy)
+          (hasheq 'A 'joseph2 'B 'joseph1)
+          (hasheq 'A 'joseph3 'B 'lucy)
+          (hasheq 'A 'joseph3 'B 'joseph1))))
  
  (local [(local-require tests/datalog/examples/ancestor)]
    (datalog theory
