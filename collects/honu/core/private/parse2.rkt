@@ -216,12 +216,12 @@
                       #'rest)]
              [else (syntax-parse #'head
                      #:literal-sets (cruft)
-		     [x:atom (do-parse #'(rest ...) precedence left #'x)]
+                     [x:atom (do-parse #'(rest ...) precedence left #'x)]
                      [(#%parens args ...)
                       (debug "function call ~a\n" left)
                       (values (left (with-syntax ([current current]
                                                   [(parsed-args ...)
-						   (parse-call-arguments #'(args ...)) ])
+                                                   (parse-call-arguments #'(args ...)) ])
                                       #'(current parsed-args ...)))
                               #'(rest ...))
                       #;
@@ -236,7 +236,7 @@
                                         #'(current parsed-args ...))))
                       #;
                       (error 'parse "function call")]
-                     [else (error 'what "dont know ~a" #'head)])])])]))
+                     [else (error 'what "dont know how to parse ~a" #'head)])])])]))
 
   (do-parse input 0 (lambda (x) x) #'(void)))
 

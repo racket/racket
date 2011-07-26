@@ -2,5 +2,8 @@
 
 honu/core/main
 
-#:read read-honu
-#:read-syntax read-honu-syntax
+#:read honu-read 
+#:read-syntax honu-read-syntax
+#:whole-body-readers? #t
+
+(require "../read.rkt")

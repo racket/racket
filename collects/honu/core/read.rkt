@@ -7,13 +7,14 @@
          (for-syntax racket/base
                      syntax/parse))
 
-(define-tokens honu-tokens (number identifier))
+(define-tokens honu-tokens (number identifier string))
 
 (define-empty-tokens honu-empty-tokens
                      [eof fail whitespace
                       left-parens right-parens
                       left-bracket right-bracket
                       left-brace right-brace
+                      block-comment
                       end-of-line-comment])
 
 (define-lex-abbrev digit (:/ #\0 #\9))
@@ -24,19 +25,32 @@
 (define-lex-abbrev identifier (:: identifier-first-character
                                   (:* identifier-character)))
 (define-lex-abbrev number (:+ digit))
+(define-lex-abbrev string (:: #\" (:* (:~ #\")) #\"))
 
 (define honu-lexer
   (lexer-src-pos
     [(eof) (token-eof)]
     [(:or "#" "//") (token-end-of-line-comment)]
+    ["\n" (token-whitespace)]
     [number (token-number (string->number lexeme))]
+    ["/*" (token-block-comment)]
     ["." (token-identifier '|.|)]
+    ["," (token-identifier '|,|)]
+    ["!" (token-identifier '!)]
+    ["=" (token-identifier '=)]
+    ["*" (token-identifier '*)]
+    ["/" (token-identifier '/)]
+    ["+" (token-identifier '+)]
+    [";" (token-identifier '|;|)]
+    ;; strip the quotes from the resulting string
+    ;; TODO: find a more optimal way
+    [string (token-string (substring (substring lexeme 1)
+                                     0 (- (string-length lexeme) 2)))]
     ["(" (token-left-parens)]  [")" (token-right-parens)]
     ["[" (token-left-bracket)] ["]" (token-right-bracket)]
     ["{" (token-left-brace)]   ["}" (token-right-brace)]
     [identifier (token-identifier (string->symbol lexeme))]
-    [(union " " "\t") (token-whitespace)]
-    ))
+    [(union " " "\t") (token-whitespace)]))
 
 (define-syntax (define-token? stx)
   (syntax-parse stx
@@ -54,17 +68,34 @@
                     (begin
                       (define-token? name) ...))
 
-(define-tokens? eof whitespace end-of-line-comment number
+(define-tokens? eof whitespace end-of-line-comment number string
+                block-comment
                 identifier left-parens right-parens
                 left-bracket right-bracket
                 left-brace right-brace)
 
-(define (read-until-end-of-line input) (define (finish? what)
+(define (read-until-end-of-line input)
+  (define (finish? what)
     (or (eof-object? what)
 	(= (char->integer #\newline) what)))
   (let loop ()
     (define what (read-byte input))
     (when (not (finish? what))
+      (loop))))
+
+(define (read-block-comment port)
+  (define comment-lexer
+    (lexer
+      ["*/" 'done]
+      [(eof) eof]
+      [any-char 'continue]))
+
+  (define (finish? what)
+    (or (eq? 'done what)
+        (eof-object? what)))
+
+  (let loop ()
+    (when (not (finish? (comment-lexer port)))
       (loop))))
 
 ;; read characters from a port and return a stream of tokens
@@ -81,6 +112,11 @@
 				     [end-pos end]))
 	    (read-until-end-of-line port)
 	    (loop tokens)]
+       [(struct* position-token ([token (? token-block-comment?)]
+				     [start-pos start]
+				     [end-pos end]))
+        (read-block-comment port)
+	    (loop tokens)]
 	   [(struct* position-token ([token (? token-whitespace?)] [start-pos start] [end-pos end]))
 	    (loop tokens)]
        [else (loop (cons next tokens))]
@@ -94,23 +130,23 @@
   (read-tokens (open-input-string input)))
 
 ;; make a syntax object out of some symbol and a position-token
-(define (make-syntax datum token)
+(define (make-syntax datum token source)
   (match token
     [(position-token token start end)
      (datum->syntax #f datum
-                    (list "name" (position-line start)
+                    (list source (position-line start)
                           (position-col start)
                           (position-offset start)
                           (- (position-offset end)
                              (position-offset start))))]))
 
-(define (make-syntax-from-token token)
+(define (make-syntax-from-token token source)
   (match token
     [(position-token datum start end)
-     (make-syntax (token-value datum) token)])) 
+     (make-syntax (token-value datum) token source)])) 
 
 ;; converts a stream of tokens to a tree
-(define (parse tokens)
+(define (parse source tokens)
   (define (is-first-token what? tokens)
     (match tokens
       [(list (position-token token start end) rest ...)
@@ -118,12 +154,13 @@
       [else #f]))
 
   (define (do-atom current tokens table)
-    (do-parse (cons (make-syntax-from-token (car tokens)) current)
+    (do-parse (cons (make-syntax-from-token (car tokens) source) current)
               (cdr tokens)
               table))
   (define (atom? tokens)
     (is-first-token (lambda (token)
                       (or (token-identifier? token)
+                          (token-string? token)
                           (token-number? token)))
                     tokens))
 
@@ -158,7 +195,7 @@
                       (add-dispatch-rule dispatch-table [list next do-end-encloser])
                     [list null? (do-fail failure-name)]))
       (define-values (sub-tree unparsed)
-                     (do-parse (list (make-syntax head (car tokens)))
+                     (do-parse (list (make-syntax head (car tokens) source))
                                (cdr tokens) added))
       (do-parse (cons sub-tree current) unparsed table)))
 
@@ -183,8 +220,10 @@
          (action current tokens table)]
         [else (loop (cdr use))])))
 
-  (datum->syntax #f (do-parse '() tokens dispatch-table)
-                 #f))
+  (if (null? tokens)
+    eof
+    (datum->syntax #f (do-parse '() tokens dispatch-table)
+                   #f)))
 
 ;; strip the source location from the position tokens
 (define (strip tokens)
@@ -193,11 +232,13 @@
       [(position-token token start end) token]
       [else token])))
 
-(define (honu-read-syntax [port (current-input-port)])
-  (parse (read-tokens port)))
+(provide honu-read-syntax)
+(define (honu-read-syntax [name #f] [port (current-input-port)])
+  (parse name (read-tokens port)))
 
+(provide honu-read)
 (define (honu-read [port (current-input-port)])
-  (syntax->datum (honu-read-syntax port)))
+  (syntax->datum (honu-read-syntax #f port)))
 
 (test-case
   "Basic tests"
@@ -228,8 +269,13 @@
                       (token-left-parens)
                       (token-number 2)
                       (token-right-parens)))
+  (check-equal? (strip (lex-string "8 /* aosidfjasdf329023 */ 5"))
+                (list (token-number 8)
+                      (token-number 5)))
   )
 
-(parse (lex-string "f{(1 1) [(5)]}"))
+#|
+(parse #f (lex-string "f{(1 1) [(5)]}"))
 (honu-read-syntax (open-input-string "f(5)"))
 (honu-read (open-input-string "f(5)"))
+|#
