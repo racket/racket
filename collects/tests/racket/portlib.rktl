@@ -726,7 +726,12 @@
  (port->bytes (reencode-input-port (open-input-bytes #"\xFF\xFF") "utf-8"))
  (lambda (exn)
    (regexp-match? #rx"^reencode-input-port:" (exn-message exn))))
-    
+(err/rt-test
+ (let ([o (reencode-output-port (open-output-bytes) "utf-8")])
+   (display #"\xFF\xFF" o) (flush-output o))
+ (lambda (exn)
+   (regexp-match? #rx"^reencode-output-port:" (exn-message exn))))
+
 ;; --------------------------------------------------
 
 (let-values ([(in out) (make-pipe)])
