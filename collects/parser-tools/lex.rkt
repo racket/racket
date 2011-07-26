@@ -132,14 +132,17 @@
                  (syntax-property
                   (syntax/loc stx
 		    (let ([name act] ...)
-		      (lexer-body start-state-stx 
-				  trans-table-stx
-				  (vector act-name ...)
-				  no-lookahead-stx
-				  spec-act-stx
-				  has-comment-act?-stx
-				  spec-comment-act-stx
-				  eof-act-stx)))
+                      (let ([proc
+                             (lexer-body start-state-stx 
+                                         trans-table-stx
+                                         (vector act-name ...)
+                                         no-lookahead-stx
+                                         spec-act-stx
+                                         has-comment-act?-stx
+                                         spec-comment-act-stx
+                                         eof-act-stx)])
+                        ;; reverse eta to get named procedures:
+                        (lambda (port) (proc port)))))
                   'disappeared-use
                   disappeared-uses)))))))))
 
