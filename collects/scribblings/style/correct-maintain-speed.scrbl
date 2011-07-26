@@ -4,8 +4,8 @@
 
 @title[#:tag "correct-maintain-speed"]{Basic Facts of Life}
 
-@nested[#:style 'inset]{ Favor readers over writers.
- --- Yaron Minsky, JaneStreet, 2010 at Northeastern}
+@nested[#:style 'inset]{ @italic{Favor readers over writers.}
+ --- Yaron Minsky, JaneStreet, 2010 at NEU/CCS}
 
 Write code that is correct; maintainable; and fast. The ordering of these
  adjectives is critical: correct is more important than maintainable;
@@ -14,10 +14,9 @@ Write code that is correct; maintainable; and fast. The ordering of these
 
 @margin-note{This ordering is occasionally wrong. For example, we could
  avoid IEEE floating point numbers nearly all of the time. To make this
- precise, the @scheme[sqrt] function could return a rational number whose
- value was the same as the IEEE float result.  We don't do such silly
- things, however, because we have decided to value speed over precision in
- this context.}
+ precise, the Racket @scheme[sqrt] function could return a rational number
+ close to the IEEE float result.  We don't do such silly things, however,
+ because we have decided to value speed over precision in this context.}
 
 Code is correct.
 
@@ -32,11 +31,11 @@ check} and that everyone else can check.
 @; -----------------------------------------------------------------------------
 @section[#:tag "correctness"]{Correctness}
 
-@nested[#:style 'inset]{I have bug reports, therefore I exist. -- Matthias,
+@nested[#:style 'inset]{@italic{I have bug reports, therefore I exist.} -- Matthias,
 watching Matthew, Robby, Shriram and others create the original code base}
 
-@nested[#:style 'inset]{It is the way we choose to fight our bugs that
- determines our character, not their presence or absence. -- Robby, in response}
+@nested[#:style 'inset]{@italic{It is the way we choose to fight our bugs that
+ determines our character, not their presence or absence.} -- Robby, in response}
 
 Complete correctness is a perfectionist goal beyond the reach of PLT.  All
  software has mistakes. If they are unknown, the software isn't being
@@ -54,20 +53,20 @@ When you debug, formulate a test case first. Put it into the test suite for
  the component so the mistake will never be accidentally re-introduced.
  Second, modify the code to fix the mistake. Do this second to be sure you
  didn't introduce a mistake in your tests; it is all too easy to think
- you've fixed a mistake when in reality your new test just doesn't properly
+ you have fixed a mistake when in reality your new test just doesn't properly
  reveal the old mistake.  Third, re-run the test suite to ensure that the
  mistake is fixed and no existing tests fail.
 
-Create test suites. Editing code without an existing test suite is like
- flying blind.  If there is no existing test suite, you have no idea
- whether changes are introducing any new mistakes or breaking intended
- functionality.  Make a reasonable effort to put in a test case or two for
- the specific functionality that you're adding or modifying.  If there is
- no test suite and you aren't sure how to build one, then ask, see what
- responses you get, and go from there.  In the special case that you found
- a mistake and are fixing it, there should be a way to observe that mistake
- and you should be able to turn that into a test case. If you cannot, you
- have a few options:
+Editing code without an existing test suite is like flying blind.  If there
+ is no existing test suite, you have no idea whether changes are
+ introducing any new mistakes or breaking intended functionality.  Make a
+ reasonable effort to put in a test case or two for the specific
+ functionality that you are adding or modifying.  If there is no test suite
+ and you aren't sure how to build one, then ask, see what responses you
+ get, and go from there.  In the special case that you found a mistake and
+ are fixing it, there should be a way to observe that mistake and you
+ should be able to turn that into a test case. If you cannot, you have a
+ few options:
 
 @itemlist[#:style 'ordered
 
@@ -81,7 +80,7 @@ Create test suites. Editing code without an existing test suite is like
     slides to enable an automated test suite.}
 ]
  As we slowly increase the number of tests across the system, this problem
- will go away for future generations.
+ will go away for future generations of maintainers.
 
 @; -----------------------------------------------------------------------------
 @section{Maintenance}
@@ -94,7 +93,7 @@ Comprehensible code is maintainable.  Maintainable code must be easily
 Code is comprehensible when you can understand its external purpose. To
  this end, code must come with external documentation. Released code must
  have documentation. A change to the external behavior of code must induce
- a simultaneous change to its documentation---"simultaneous" means that the
+ a simultaneous change to its documentation---``simultaneous'' means that the
  two changes are in the same commit to the code base.
 
 Without adherence to basic elements of style and some internal
@@ -106,10 +105,10 @@ Readability is not the same as code with documentation, but documentation
  is a part of it all.  For style rules on documenting code, refer to the
  @hyperlink["http://docs.racket-lang.org/scribble/how-to-doc.html#%28part._reference-style%29"]{style
  guide} in the Scribble manual.  Ideally documentation comes in two parts:
- a "Guide" section, which explains the purpose and suggests use cases, and
- a traditional "Reference" section, which presents the minutae.  Also
+ a ``Guide'' section, which explains the purpose and suggests use cases, and
+ a traditional ``Reference'' section, which presents the minutae.  Also
  consider adding examples for each function and construct in your
- "Reference" section.  Finally, ensure you have all the correct
+ ``Reference'' section.  Finally, ensure you have all the correct
  @tt{for-label} @tt{require}s and make use of other useful
  cross-references.
 
@@ -131,7 +130,7 @@ It is especially the goal for all pieces of the code base that are reused
  elsewhere. Write them using @rkt/base[] so that they don't affect the
  load-time for scripts. See the next section.
 
-As with correctness, performance demands some "testing". At a minimum,
+As with correctness, performance demands some ``testing.'' At a minimum,
  exercise your code on some reasonably large inputs. Add a file to the test
  suite that runs large inputs regularly. For example, a regular test suite
  for a Universe display deals with a 50 x 50 display window; one of its
@@ -141,27 +140,17 @@ As with correctness, performance demands some "testing". At a minimum,
  ensures that it deals correctly with enqueue and dequeue for small queues,
  including empty ones; a stress test suite for the same library would run
  the queue operations on a variety of queue sizes, including very large
- queues of say 10,000 elements.
+ queues of say tens of thousands elements.
 
 Stress tests don't normally have an expected output, so they never
- "pass". The practice of writing stress tests exposes implementation flaws
- or provides comparative data to be used when choosing between two
- APIs. Just writing them and keeping them around reminds us that things can
- go bad and we can detect when performance degrades through some other
- door. Most importantly, a stress test may reveal that your code isn't
- implementing an algorithm with the expected O(.) running time. Finding out
- that much alone is useful. If you can't think of an improvement, just
- document the weakness in the external library and move on.
+ pass. The practice of writing stress tests exposes implementation flaws or
+ provides comparative data to be used when choosing between two APIs. Just
+ writing them and keeping them around reminds us that things can go bad and
+ we can detect when performance degrades through some other door. Most
+ importantly, a stress test may reveal that your code isn't implementing an
+ algorithm with the expected O(.) running time. Finding out that much alone
+ is useful. If you can't think of an improvement, just document the
+ weakness in the external library and move on.
 
 And as you read on, keep in mind that we are not perfectionists. We produce
  reasonable software.
-
-@section{Commit}
-
-So what is the major lesson of this section? When you fix a bug, make sure
- to commit (1) the code delta, (2) the new test case, and (3) the revised
- docs (if applicable) in one batch. If the creation of a single commit is
- too complex of if you wish to factor out one of the commits, please push
- all pieces at once. That way the code base is always in a state where
- code, tests, and documentation are in sync, and readers of commit messages
- can evaluate changes completely.

@@ -33,35 +33,35 @@ Its interface describes which services it provides, and its body implements
  (require "game-basics.rkt")
 
  (provide
-  ;; Strategy = GameState -> Action
+  ;; Strtgy = GameState -> Action
 
-  ;; Strategy
-  ;; a GUI-based plug in for people
+  ;; Strtgy
+  ;; a person's strategy
   human-strategy
 
-  ;; Strategy
+  ;; Strtgy
   ;; a complete tree traversal
   ai-1-strategy
 
-  ;; Strategy
+  ;; Strtgy
   ;; alpha-beta pruning traversal
   ai-2-strategy)
 
- ;; ------------------------------------------------------------------------------------------
+;; ------------------------------------------------------------------
  (define (general-strategy p)
    ... )
 
- ;; ------------------------------------------------------------------------------------------
+;; ------------------------------------------------------------------
  ... some 100 lines ...
  (define human-strategy
    (general-strategy create-gui))
 
- ;; ------------------------------------------------------------------------------------------
+;; ------------------------------------------------------------------
  ... some 100 lines ...
  (define ai-1-strategy
    (general-strategy traversal))
 
- ;; ------------------------------------------------------------------------------------------
+;; ------------------------------------------------------------------
  ... some 100 lines ...
  (define ai-2-strategy
    (general-strategy alpha-beta))))
@@ -76,26 +76,26 @@ Its interface describes which services it provides, and its body implements
 
  (require "game-basics.rkt")
 
- ;; Strategy = GameState -> Action
+ ;; Strtgy = GameState -> Action
 
- ;; ------------------------------------------------------------------------------------------
+;; ------------------------------------------------------------------
  (define (general-strategy p)
    ... )
  ... some 100 lines ...
 
- ;; ------------------------------------------------------------------------------------------
+;; ------------------------------------------------------------------
  (provide
-  ;; Strategy
-  ;; a GUI-based plug in for people
+  ;; Strtgy
+  ;; a person's strategy
   human-strategy)
 
  (define human-strategy
    (general-strategy create-gui))
  ... some 100 lines ...
 
- ;; ------------------------------------------------------------------------------------------
+;; ------------------------------------------------------------------
  (provide
-  ;; Strategy
+  ;; Strtgy
   ;; a complete tree traversal
   ai-1-strategy)
 
@@ -103,9 +103,9 @@ Its interface describes which services it provides, and its body implements
    (general-strategy traversal))
  ... some 100 lines ...
 
- ;; ------------------------------------------------------------------------------------------
+;; ------------------------------------------------------------------
  (provide
-  ;; Strategy
+  ;; Strtgy
   ;; alpha-beta pruning traversal
   ai-2-strategy)
 
