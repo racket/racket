@@ -66,9 +66,10 @@ static void init_type_arrays()
   allocmax = maxtype + 100;
 
   type_names = RAW_MALLOC_N(char *, allocmax);
+  memset(type_names, 0, allocmax * sizeof(char *));
   scheme_type_readers = RAW_MALLOC_N(Scheme_Type_Reader, allocmax);
   n = allocmax * sizeof(Scheme_Type_Reader);
-  memset((char *)scheme_type_readers, 0, n);
+  memset(scheme_type_readers, 0, n);
 
 #ifdef MEMORY_COUNTING_ON
   scheme_type_table_count += n;
@@ -77,7 +78,7 @@ static void init_type_arrays()
 
   scheme_type_writers = RAW_MALLOC_N(Scheme_Type_Writer, allocmax);
   n = allocmax * sizeof(Scheme_Type_Writer);
-  memset((char *)scheme_type_writers, 0, n);
+  memset(scheme_type_writers, 0, n);
 
 #ifdef MEMORY_COUNTING_ON
   scheme_type_table_count += n;
@@ -85,15 +86,15 @@ static void init_type_arrays()
 
   scheme_type_equals = RAW_MALLOC_N(Scheme_Equal_Proc, allocmax);
   n = allocmax * sizeof(Scheme_Equal_Proc);
-  memset((char *)scheme_type_equals, 0, n);
+  memset(scheme_type_equals, 0, n);
 
   scheme_type_hash1s = RAW_MALLOC_N(Scheme_Primary_Hash_Proc, allocmax);
   n = allocmax * sizeof(Scheme_Primary_Hash_Proc);
-  memset((char *)scheme_type_hash1s, 0, n);
+  memset(scheme_type_hash1s, 0, n);
 
   scheme_type_hash2s = RAW_MALLOC_N(Scheme_Secondary_Hash_Proc, allocmax);
   n = allocmax * sizeof(Scheme_Secondary_Hash_Proc);
-  memset((char *)scheme_type_hash2s, 0, n);
+  memset(scheme_type_hash2s, 0, n);
 }
 
 void
@@ -213,6 +214,7 @@ scheme_init_type ()
   set_name(scheme_regexp_type, "<regexp>");
   set_name(scheme_rename_table_type, "<rename-table>");
   set_name(scheme_bucket_type, "<hash-table-bucket>");
+  set_name(scheme_prefix_type, "<runtime-prefix>");
   set_name(scheme_resolve_prefix_type, "<resolve-prefix>");
   set_name(scheme_readtable_type, "<readtable>");
 
@@ -323,35 +325,36 @@ Scheme_Type scheme_make_type(const char *name)
 
     naya = malloc(allocmax * sizeof(char *));
     memcpy(naya, type_names, maxtype * sizeof(char *));
+    memset(naya, 0, maxtype * sizeof(char *));
     free(type_names);
     type_names = (char **)naya;
 
     naya = malloc(n = allocmax * sizeof(Scheme_Type_Reader));
-    memset((char *)naya, 0, n);
+    memset(naya, 0, n);
     memcpy(naya, scheme_type_readers, maxtype * sizeof(Scheme_Type_Reader));
     free(scheme_type_readers);
     scheme_type_readers = (Scheme_Type_Reader *)naya;
 
     naya = malloc(n = allocmax * sizeof(Scheme_Type_Writer));
-    memset((char *)naya, 0, n);
+    memset(naya, 0, n);
     memcpy(naya, scheme_type_writers, maxtype * sizeof(Scheme_Type_Writer));
     free(scheme_type_writers);
     scheme_type_writers = (Scheme_Type_Writer *)naya;
 
     naya = malloc(n = allocmax * sizeof(Scheme_Equal_Proc));
-    memset((char *)naya, 0, n);
+    memset(naya, 0, n);
     memcpy(naya, scheme_type_equals, maxtype * sizeof(Scheme_Equal_Proc));
     free(scheme_type_equals);
     scheme_type_equals = (Scheme_Equal_Proc *)naya;
 
     naya = malloc(n = allocmax * sizeof(Scheme_Primary_Hash_Proc));
-    memset((char *)naya, 0, n);
+    memset(naya, 0, n);
     memcpy(naya, scheme_type_hash1s, maxtype * sizeof(Scheme_Primary_Hash_Proc));
     free(scheme_type_hash1s);
     scheme_type_hash1s = (Scheme_Primary_Hash_Proc *)naya;
 
     naya = malloc(n = allocmax * sizeof(Scheme_Secondary_Hash_Proc));
-    memset((char *)naya, 0, n);
+    memset(naya, 0, n);
     memcpy(naya, scheme_type_hash2s, maxtype * sizeof(Scheme_Secondary_Hash_Proc));
     free(scheme_type_hash2s);
     scheme_type_hash2s = (Scheme_Secondary_Hash_Proc *)naya;
