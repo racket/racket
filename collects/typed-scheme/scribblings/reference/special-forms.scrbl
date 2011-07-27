@@ -147,6 +147,8 @@ variants.
 @defform[(for/or:   type-ann-maybe (for:-clause ...) expr ...+)]
 @defform[(for/first: type-ann-maybe (for:-clause ...) expr ...+)]
 @defform[(for/last: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/sum: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/product: type-ann-maybe (for:-clause ...) expr ...+)]
 @defform[(for*/list: type-ann-maybe (for:-clause ...) expr ...+)]
 @defform[(for*/hash: type-ann-maybe (for:-clause ...) expr ...+)]
 @defform[(for*/hasheq: type-ann-maybe (for:-clause ...) expr ...+)]

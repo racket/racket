@@ -668,7 +668,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for/first: for/first)
   (for/last: for/last)
   (for/vector: for/vector)
-  (for/flvector: for/flvector))
+  (for/flvector: for/flvector)
+  (for/sum: for/sum)
+  (for/product: for/product))
 
 ;; Unlike with the above, the inferencer can handle any number of #:when
 ;; clauses with these 2.

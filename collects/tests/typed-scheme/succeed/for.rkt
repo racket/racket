@@ -113,3 +113,32 @@
                     (k : Integer '(100 200 300)))
                    (+ acc i j k))
        1998)
+
+(check =
+       (for/sum: : Integer
+                 ([i : Integer (in-range 10)])
+                 i)
+       45)
+(check =
+       (for/sum: : Integer
+                 ([i : Integer (in-range 10)]
+                  [j : Integer (in-range 10)])
+                 (+ i j))
+       90)
+
+(check =
+       (for/product: : Integer
+                     ([i : Integer (in-range 10)])
+                     i)
+       0)
+(check =
+       (for/product: : Integer
+                     ([i : Integer (in-range 1 10)])
+                     i)
+       362880)
+(check =
+       (for/product: : Integer
+                     ([i : Integer (in-range 1 10)]
+                      [j : Integer (in-range 1 10)])
+                     (+ i j))
+       185794560)
