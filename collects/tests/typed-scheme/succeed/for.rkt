@@ -142,3 +142,21 @@
                       [j : Integer (in-range 1 10)])
                      (+ i j))
        185794560)
+
+;; multiclause versions of these don't currently work properly
+(check =
+       (for*/sum: : Integer
+                  ([i : Integer (in-range 10)])
+                  i)
+       45)
+
+(check =
+       (for*/product: : Integer
+                      ([i : Integer (in-range 10)])
+                      i)
+       0)
+(check =
+       (for*/product: : Integer
+                      ([i : Integer (in-range 1 10)])
+                      i)
+       362880)

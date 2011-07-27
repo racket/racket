@@ -759,7 +759,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for*/first: for*/first)
   (for*/last: for*/last)
   (for*/vector: for*/vector)
-  (for*/flvector: for*/flvector))
+  (for*/flvector: for*/flvector)
+  (for*/sum: for*/sum)
+  (for*/product: for*/product))
 
 ;; Like for/lists: and for/fold:, the inferencer can handle these correctly.
 (define-syntax (for*/lists: stx)
