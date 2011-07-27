@@ -653,6 +653,9 @@ module browser threading seems wrong.
                          (is-a? f -frame<%>))
                 (send f set-color-status! valid?))))
           
+          (define/override (get-can-close-parent)
+            (and tab (send tab get-frame)))
+          
           (inherit is-modified? run-after-edit-sequence)
           (define/override (set-modified mod?)
             (super set-modified mod?)
