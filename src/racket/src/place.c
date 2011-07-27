@@ -997,6 +997,32 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         new_so = (Scheme_Object *) vec;
       }
       break;
+    case scheme_cpointer_type:
+      if (SCHEME_CPTR_FLAGS(so) & 0x1) {
+        if (copy) {
+          Scheme_Object *o;
+          Scheme_Object *o2;
+          if (SCHEME_CPTR_FLAGS(so) & 0x2) {
+            o = (Scheme_Object *)scheme_malloc_small_tagged(sizeof(Scheme_Offset_Cptr));
+            SCHEME_CPTR_FLAGS(o) |= 0x2;
+            ((Scheme_Offset_Cptr *)o)->offset = ((Scheme_Offset_Cptr *)so)->offset;
+          }
+          else
+            o = (Scheme_Object *)scheme_malloc_small_tagged(sizeof(Scheme_Cptr));
+
+          o->type = scheme_cpointer_type;
+          SCHEME_CPTR_FLAGS(o) |= 0x1;
+          SCHEME_CPTR_VAL(o) = SCHEME_CPTR_VAL(so);
+          o2 = shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, copy, can_raise_exn);
+          SCHEME_CPTR_TYPE(o) = o2;
+
+          return o;
+        }
+      }
+      else
+        bad_place_message(so);
+      break;
+
     default:
       new_so = NULL;
       break;
@@ -1803,6 +1829,7 @@ static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **h
     case scheme_windows_path_type:
     case scheme_flvector_type:
     case scheme_fxvector_type:
+    case scheme_cpointer_type:
       break;
     case scheme_symbol_type:
       break;
