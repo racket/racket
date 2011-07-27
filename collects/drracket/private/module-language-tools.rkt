@@ -42,8 +42,10 @@
          toolbar-buttons)
         (set! toolbar-buttons bs)
         (send (get-frame) register-toolbar-buttons toolbar-buttons)
-        (send (send (get-frame) get-toolbar-button-panel) change-children
-              (λ (l) toolbar-buttons)))
+        (send (get-frame) when-initialized
+              (λ ()
+                (send (send (get-frame) get-toolbar-button-panel) change-children
+                      (λ (l) toolbar-buttons)))))
       (super-new)))
   
   (define frame<%> (interface ()))
