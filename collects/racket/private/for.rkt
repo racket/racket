@@ -22,9 +22,7 @@
              for/first for*/first
              for/last for*/last
              for/sum for*/sum 
-             (rename for/sum Σ) (rename for*/sum Σ*)
              for/product for*/product 
-             (rename for/product ∏) (rename for*/product ∏*)
              for/hash for*/hash
              for/hasheq for*/hasheq
              for/hasheqv for*/hasheqv
