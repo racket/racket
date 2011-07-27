@@ -186,7 +186,10 @@
   (define (add-dispatch-rule table rule)
     (cons rule table))
   (define ((do-fail kind) current tokens table)
-    (error 'parse "expected a right ~a" kind))
+    (define line (syntax-line (car current)))
+    (define column (add1 (+ (syntax-span (car current))
+                            (syntax-column (car current)))))
+    (error 'parse "expected a ~a character at line ~a column ~a" kind line column))
   ;; add a rule to the dispatch table to expect an ending token then
   ;; parse the sub-tree and continue
   (define (make-encloser head failure-name next)
@@ -199,9 +202,9 @@
                                (cdr tokens) added))
       (do-parse (cons sub-tree current) unparsed table)))
 
-  (define do-left-parens (make-encloser '#%parens "parentheses" right-parens?))
-  (define do-left-bracket (make-encloser '#%bracket "bracket" right-bracket?))
-  (define do-left-brace (make-encloser '#%braces "brace" right-brace?))
+  (define do-left-parens (make-encloser '#%parens ")" right-parens?))
+  (define do-left-bracket (make-encloser '#%bracket "}" right-bracket?))
+  (define do-left-brace (make-encloser '#%braces "]" right-brace?))
   
   (define dispatch-table (list [list atom? do-atom]
                                [list left-parens? do-left-parens]
@@ -210,10 +213,19 @@
                                [list null? do-empty]))
 
   (define (do-parse current tokens table)
+    (define (fail tokens)
+      (if (null? tokens)
+        (error 'parse "error while parsing")
+        (let ([first (car tokens)])
+          ;; hack to get the current failure behavior
+          (do-parse current '() table)
+          (define line (position-line (position-token-start-pos first)))
+          (define column (position-col (position-token-start-pos first)))
+          (error 'parse "error while parsing on line ~a column ~a" line column))))
     ;; (printf "do parse ~a [tokens] ~a table ~a\n" (strip current) (strip tokens) table)
     (let loop ([use table])
       (cond
-        [(null? use) (error 'parse "unable to parse ~a" (strip tokens))]
+        [(null? use) (fail tokens)]
         [(let ([dispatcher (caar use)])
            (dispatcher tokens))
          (define action (cadar use))
@@ -239,6 +251,10 @@
 (provide honu-read)
 (define (honu-read [port (current-input-port)])
   (syntax->datum (honu-read-syntax #f port)))
+
+(define (count-lines port)
+  (port-count-lines! port)
+  port)
 
 (test-case
   "Basic tests"
@@ -272,10 +288,8 @@
   (check-equal? (strip (lex-string "8 /* aosidfjasdf329023 */ 5"))
                 (list (token-number 8)
                       (token-number 5)))
+  (check-equal? (honu-read (open-input-string "f(5)"))
+                '(f (#%parens 5)))
+  (check-exn exn:fail? (lambda ()
+                         (honu-read (count-lines (open-input-string "({)}")))))
   )
-
-#|
-(parse #f (lex-string "f{(1 1) [(5)]}"))
-(honu-read-syntax (open-input-string "f(5)"))
-(honu-read (open-input-string "f(5)"))
-|#
