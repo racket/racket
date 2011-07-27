@@ -12,10 +12,10 @@ and readability.
 @; -----------------------------------------------------------------------------
 @section{Definitions}
 
-Here are a few of Racket's definitional constructs: @scheme[let], @scheme[let*],
-@scheme[letrec], and @scheme[define]. Except for the last one, all others force
-an increase to the indentation level. We therefore request that you favor
-@scheme[define] over all other features when feasible.
+Racket comes with quite a few definitional constructs, including
+@scheme[let], @scheme[let*], @scheme[letrec], and @scheme[define]. Except
+for the last one, definitional construct increase the indentation level. We
+therefore request that you favor @scheme[define] when feasible.
 
 @compare[
 @racketmod[#:file
@@ -55,10 +55,10 @@ racket
 (cond
   [(empty? l) true]
   [else
-   (define fst (first l))
-   (define rst (rest l))
-   (and (flat-rate fst)
-        (curved fst (chk rst)))])
+   (define f (fir l))
+   (define r (rest l))
+   (and (flat-rate f)
+        (curved f (chk r)))])
 ]
 @racketmod[#:file
 @tt{bad}
@@ -66,12 +66,38 @@ racket
 
 (if (empty? l)
     true
-    (let ([fst (first l)]
-	  [rst (rest l)])
-      (and (flat-rate fst)
-	   (curved fst (chk rst)))))
+    (let ([f (fir l)]
+	  [r (rest l)])
+      (and (flat-rate f)
+	   (curved f (chk r)))))
 ]
 ]
 
 Of course you should also favor @scheme[cond] (and its relatives) over
 @scheme[if] to match the shape of the data definition.
+
+@; -----------------------------------------------------------------------------
+@section{Expressions}
+
+Keep expressions small. Name intermediate results.
+
+
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+(define (distance0 p)
+  (define x (posn-x p))
+  (define y (posn-y p))
+  (sqrt (+ (sqr x) (sqr y))))
+]
+@; -----------------------------------------------------------------------------
+@racketmod[#:file
+@tt{bad}
+racket
+(define (distance0 p)
+  (sqrt
+    (+ (sqr (posn-x p))
+       (sqr (posn-y p)))))
+]
+]

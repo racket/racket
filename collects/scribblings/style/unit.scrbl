@@ -5,19 +5,43 @@
 @title{Units of Code}
 
 @; -----------------------------------------------------------------------------
+@section{Size Matters}
+
+Keep units of code small. Keep modules, classes, functions and methods small.
+
+A module of 10,000 lines of code is too large. A module of 1,000 lines is
+ tolerable. A module of 500 lines of code has the right size.
+
+One module should usually a class and its auxiliary functions, which in
+ turn determines the length of a good-sized class.
+
+And a function (method) of more than 66 lines is barely acceptable. For
+ many years we had a limited syntax transformation language that forced
+ people to create @emph{huge} functions. This is no longer the case, so
+ consider this rule universal.
+
+If a unit of code looks incomprehensible, it is probably too large. Break
+ it up. To bring across what the pieces compute, implement or serve, use
+ meaningful names; see @secref{names}.  If you can't come up with a good
+ name for such pieces, you are probably looking at the wrong kind of
+ division; consider alternatives.
+
+@; -----------------------------------------------------------------------------
 @section{Module Interfaces}
 
-The purpose of a module is to provide some services. @margin-note{The
-modules we discuss in this section coincide with files.}
+The purpose of a module is to provide some services.
 
 @centerline{Equip a module with a short purpose statement.}
+@;
+Often ``short'' means one line; occasionally you may need several lines.
 
-Its interface describes which services it provides, and its body implements
- the services. At least in principle others shouldn't have to read the
- implementation ever, but it is quite likely that they have to read the
- interface.
+A module's interface describes the services it provides; its body
+ implements these services. Others have to read the interface if the
+ external documentation doesn't suffice:
 
 @centerline{Place the interface at the top of the module.}
+@;
+This helps people find the relevant information quickly.
 
 @compare[
 @;%
@@ -33,38 +57,27 @@ Its interface describes which services it provides, and its body implements
  (require "game-basics.rkt")
 
  (provide
-  ;; Strtgy = GameState -> Action
+  ;; Stgy = State -> Action
 
-  ;; Strtgy
-  ;; a person's strategy
+  ;; Stgy
+  ;; people's strategy
   human-strategy
 
-  ;; Strtgy
-  ;; a complete tree traversal
-  ai-1-strategy
+  ;; Stgy
+  ;; complete tree traversal
+  ai-strategy)
 
-  ;; Strtgy
-  ;; alpha-beta pruning traversal
-  ai-2-strategy)
-
-;; ------------------------------------------------------------------
- (define (general-strategy p)
+ (define (general p)
    ... )
 
-;; ------------------------------------------------------------------
  ... some 100 lines ...
  (define human-strategy
-   (general-strategy create-gui))
+   (general create-gui))
 
-;; ------------------------------------------------------------------
  ... some 100 lines ...
- (define ai-1-strategy
-   (general-strategy traversal))
+ (define ai-strategy
+   (general traversal))))
 
-;; ------------------------------------------------------------------
- ... some 100 lines ...
- (define ai-2-strategy
-   (general-strategy alpha-beta))))
 @(begin
 #reader scribble/comment-reader
 (racketmod #:file
@@ -76,51 +89,36 @@ Its interface describes which services it provides, and its body implements
 
  (require "game-basics.rkt")
 
- ;; Strtgy = GameState -> Action
+ ;; Stgy = State -> Action
 
-;; ------------------------------------------------------------------
- (define (general-strategy p)
+ (define (general p)
    ... )
  ... some 100 lines ...
 
-;; ------------------------------------------------------------------
  (provide
-  ;; Strtgy
+  ;; Stgy
   ;; a person's strategy
   human-strategy)
 
  (define human-strategy
-   (general-strategy create-gui))
+   (general create-gui))
  ... some 100 lines ...
 
-;; ------------------------------------------------------------------
  (provide
-  ;; Strtgy
+  ;; Stgy
   ;; a complete tree traversal
-  ai-1-strategy)
+  ai-strategy)
 
- (define ai-1-strategy
-   (general-strategy traversal))
+ (define ai-strategy
+   (general traversal))
  ... some 100 lines ...
-
-;; ------------------------------------------------------------------
- (provide
-  ;; Strtgy
-  ;; alpha-beta pruning traversal
-  ai-2-strategy)
-
- (define ai-2-strategy
-   (general-strategy alpha-beta))))
+))
 ]
 
-As you can see from this comparison, an interface shouldn't just be a
-@scheme[provide] with a list of names. Each identifier should come with a
-purpose statement.
-
-@bold{Note} Following this documentation guideline is most applicable to
-modules that are a component of a large application. It is less relevant
-for a module in the Racket that comes with a full-fledged description in
-the guide.
+As you can see from this comparison, an interface shouldn't just
+@scheme[provide] a list of names. Each identifier should come with a
+purpose statement. Type-like explanations of data also belong into a
+@scheme[provide] specification.
 
 While a one-line purpose statement for a function is usually enough, syntax
 should come with a description of the grammar clause it introduces
@@ -145,10 +143,12 @@ racket
  define-strategy)
 ))]
 
-If the performance of your module doesn't suffer too much from contracts,
- consider using @scheme[provide/contract]. The use of type-like contracts
- (constructor predicates that check only a tag) impose a tolerable overhead
- and still discover simple mistakes.
+Consider using @scheme[provide/contract] for module interfaces.
+ Although contracts affect the performance of your module's services, they
+ provide a specification and they will help you with the inevitable bug
+ reports you will receive. You should definitely consider type-like
+ contracts (constructor predicates that check only a tag); they tend to
+ cost relatively little.
 
 Finally, a module consists of sections. It is good practice to separate the
  sections with comment lines. You may want to write down purpose statements
@@ -157,16 +157,9 @@ Finally, a module consists of sections. It is good practice to separate the
  chapter headings in DrRacket to label the sections of a module.
 
 @; -----------------------------------------------------------------------------
-@section{Functions & Methods, Classes & Units}
+@section{Classes & Units}
 
 @; -----------------------------------------------------------------------------
-@section{Size Matters}
+@section{Functions & Methods}
 
-Keep functions small. Keep classes small. Keep units small. Keep modules small.
 
-Anytime a unit of code looks incomprehensible, it is probably too
-large. Break it up into smaller units. To bring across what these smaller
-units compute, implement or serve, use meaningful names; see
-@secref{names}.  Conversely, if you can't come up with a good name for such
-units, you are probably looking at the wrong kind of division; consider
-alternatives.

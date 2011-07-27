@@ -122,13 +122,7 @@ Having said that, the production of a system like Racket occasionally
 @; -----------------------------------------------------------------------------
 @section{Speed}
 
-Making code fast is an endless task.
-
-Making code @emph{reasonably} fast is the goal.
-
-It is especially the goal for all pieces of the code base that are reused
- elsewhere. Write them using @rkt/base[] so that they don't affect the
- load-time for scripts. See the next section.
+Making code fast is an endless task. Making code @emph{reasonably fast} is the goal.
 
 As with correctness, performance demands some ``testing.'' At a minimum,
  exercise your code on some reasonably large inputs. Add a file to the test

@@ -26,29 +26,25 @@ your code.
  @racketmod[#:file
  @tt{good}
  racket
-
+@;%
  (define (conversion f)
    (* 5/9 (- f 32)))
 ]
-@racketmod[#:file
- @tt{really bad}
- racket
-
+ @filebox[@tt{really bad}
+ @codeblock{#lang racket
  (define (conversion f)
    (* 5/9 (- f 32)
      )
    )
- ]
+ }]
 ]
 
 You are allowed to place all closing parenthesis on a line by itself at the
 end of long sequences, be those definitions or pieces of data.
 
 @compare[
- @racketmod[#:file
- @tt{acceptable}
- racket
-
+ @filebox[@tt{acceptable}
+ @codeblock{#lang racket
  (define modes
    '(edit
      help
@@ -56,12 +52,10 @@ end of long sequences, be those definitions or pieces of data.
      test
      trace
      step
-     )) ;; <--- bug in scribble: the last two are on their own line
-]
-@racketmod[#:file
- @tt{also acceptable}
- racket
-
+     ))
+ }]
+ @filebox[@tt{also acceptable}
+ @codeblock{#lang racket
  (define turn%
    (class object%
      (init-field state)
@@ -73,8 +67,8 @@ end of long sequences, be those definitions or pieces of data.
 
      (define/public (is-placable? place)
        (send state legal? place))
-     )) ;; <--- bug in scribble: the last two are on their own line
- ]
+     ))
+ }]
 ]
 
 @; -----------------------------------------------------------------------------
@@ -85,9 +79,7 @@ on. So use DrRacket's indentation style. Here is what this means.
 @nested[#:style 'inset]{
  For every file in the repository, DrRacket's "indent all" functions leaves
  the file alone.}
-That's all there is to it. @margin-note{See @secref{correctness}. If you
-really believe that DrRacket indents some construct improperly, submit a
-bug report. When the bug report is closed, the discussion is finished.}
+That's all there is to it.
 
 If you prefer to use some other editor (emacs, vi/m, etc), program it so
 that it follows DrRacket's indentation style.
@@ -113,8 +105,6 @@ Examples:
                        (redirect (- x)))
  ]
 ]
-
-@margin-note{We need more of these rules}
 
 @; -----------------------------------------------------------------------------
 @section{Line Breaks}
@@ -150,8 +140,8 @@ Each definition and each local definition deserves at least one line.
 racket
 
 (define (launch x)
-  (define wdt (* 10 x))
-  (define hgt (* 3 x))
+  (define w 9)
+  (define h 33)
   ...)
 ]
 
@@ -160,7 +150,7 @@ racket
 racket
 
 (define (launch x)
-  (define wdt (* 10 x)) (define hgt (* 3 x))
+  (define w 9) (define h 33)
   ...)
 ]
 ]
@@ -189,7 +179,7 @@ racket
 @tt{bad}
 racket
 
-(composition ufo-with-flames
+(composition ufo
              10 v-delta bg)
 
 ]]
@@ -203,10 +193,8 @@ racket
                 10 10
                 (rectangle 10 100 "solid" "red"))
 ]
- In this case, the two arguments on line 2 are both short and conceptually
- related.
-
-@margin-note{We need more of these rules}
+ In this case, the two arguments on line 2 are both conceptually
+ related and short.
 
 @; -----------------------------------------------------------------------------
 @section{Line Width}
@@ -235,12 +223,10 @@ separated by dashes. Racket code benefits from the same convention.
 In addition to regular alphanumeric characters, Racketeers use a few
 special characters.
 
-@column-table[
- @col[? ! "@" ^ %]
- @col[1 2 3 4 5]
- @col[1 2 3 4 5] ]
+@;column-table[ @col[? ! "@" ^ %] @col[1 2 3 4 5] @col[1 2 3 4 5] ]
 
 @row-table[
+ @row[symbol kind example]
  @row[? predicates boolean?]
  @row[! setters    set!]
  @row[% classes    a%]
