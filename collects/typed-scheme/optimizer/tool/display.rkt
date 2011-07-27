@@ -22,6 +22,7 @@
     (new editor-canvas% [parent win] [editor pane] [style '(no-hscroll)]))
   (for-each (format-sub-report-entry pane) subs)
   (send canvas scroll-to 0 0 0 0 #t) ; display the beginning
+  (send pane lock #t)
   (send win show #t))
 
 ;; each sub-entry is displayed in its own text%, contained in the main
