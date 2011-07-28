@@ -59,3 +59,4 @@ Also, we encourage everyone to look over the commit messages. If you see
 @include-section["constructs.scrbl"]
 @include-section["textual.scrbl"]
 @include-section["branch-and-commit.scrbl"]
+@include-section{acknowledgment.scrbl}

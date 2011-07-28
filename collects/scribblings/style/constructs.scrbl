@@ -39,6 +39,32 @@ racket
 ]
 ]
 
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+
+(define-syntax (increment! stx)
+  (syntax-case stx ()
+    [(_ s sn fn i)
+     (with-syntax ([w (r #'s)])
+       (define g (ff #'sn #'w))
+       ...)]))
+]
+@; -----------------------------------------------------------------------------
+@racketmod[#:file
+@tt{bad}
+racket
+
+(define-syntax (increment! stx)
+  (syntax-case stx ()
+    [(_ s sn fn i)
+     (with-syntax ([w (r #'s)])
+       (let ([g (ff #'sn #'w)])
+         ...))]))
+]
+]
+
 @; -----------------------------------------------------------------------------
 @section{Conditionals}
 
@@ -81,7 +107,6 @@ Of course you should also favor @scheme[cond] (and its relatives) over
 
 Keep expressions small. Name intermediate results.
 
-
 @compare[
 @racketmod[#:file
 @tt{good}
@@ -99,5 +124,154 @@ racket
   (sqrt
     (+ (sqr (posn-x p))
        (sqr (posn-y p)))))
+]
+]
+
+@; -----------------------------------------------------------------------------
+@section{Structs vs Lists}
+
+Use @racket[struct]s when you represent a combination of a fixed number of
+values.  Don't use lists.
+
+@; -----------------------------------------------------------------------------
+@section{Lambda vs Define}
+
+While nobody denies that @racket[lambda] is cute, @racket[define]d
+functions have names that tell you what they compute and that helps
+accelerate reading.
+
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+
+(define (process f)
+  (define (complex-step x)
+    ... 10 lines ...)
+  (map complext-step
+       (to-list f)))
+]
+@; -----------------------------------------------------------------------------
+@racketmod[#:file
+@tt{bad}
+racket
+
+(define (process f)
+  (map (lambda (x)
+	 ... 10 lines ...)
+       (to-list f)))
+]
+]
+
+
+@; -----------------------------------------------------------------------------
+@section{List Traversals}
+
+With the availability of @racket[for/fold], @racket[for/list],
+ @racket[for/vector], and friends, programming with for @racket[for] loops
+ has become just as functional as programming with @racket[map] and
+ @racket[foldr]. With @racket[for*] loops, filter, and termination clauses
+ in the iteration specification, these loops are also far more concise than
+ explicit traversal combinators. And with @racket[for] loops, you can
+ decouple the traversal from lists.
+
+@compare[
+@;%
+@(begin
+#reader scribble/comment-reader
+[racketmod #:file
+@tt{good}
+racket
+
+;; [Sequence X] -> Number
+(define (sum-up s)
+  (for/fold ((sum 0)) ((x s))
+    (+ sum x)))
+
+;; examples:
+(sum-up '(1 2 3))
+(sum-up #(1 2 3))
+(sum-up (open-input-string "1 2 3"))
+])
+
+@; -----------------------------------------------------------------------------
+@;%
+@(begin
+#reader scribble/comment-reader
+[racketmod #:file
+@tt{bad}
+racket
+
+;; [Listof X] -> Number
+(define (sum-up s)
+  (for/fold ((sum 0)) ((x s))
+    (+ sum x)))
+
+;; example:
+(sum-up '(1 2 3))
+])
+]
+
+ Note: @racket[for] traversals of user-defined sequences tend to be
+ slow. If performance matters in these cases, you may wish to fall back on
+ your own traversal functions.
+
+@; -----------------------------------------------------------------------------
+@section{Functions vs Macros}
+
+Use functions when possible; do not introduce macros.
+
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+...
+;; Message -> String
+(define (message-name msg)
+  (first (second msg)))
+]
+@; -----------------------------------------------------------------------------
+@racketmod[#:file
+@tt{bad}
+racket
+...
+;; Message -> String
+(define-syntax-rule
+  (message-name msg)
+  ;; ===>
+  (first (second msg)))
+]
+]
+
+@; -----------------------------------------------------------------------------
+@section{Parameters}
+
+If you need to set a parameter, use @racket[parameterize]:
+
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+...
+;; String OutputPort -> Void
+(define (send-to msg op)
+  (parameterize
+    ((current-output-port op))
+    (format-and-display msg))
+  (record-message-in-log msg))
+]
+@; -----------------------------------------------------------------------------
+@racketmod[#:file
+@tt{bad}
+racket
+...
+;; String OutputPort -> Void
+(define (send-to msg op)
+  (define cp
+    (current-output-port))
+  (current-output-port op)
+  (format-and-display msg)
+  (current-output-port cp)
+  (record-message-in-log msg))
 ]
 ]

@@ -220,8 +220,46 @@ These lines help both writers and readers to orient themselves in a file.
 Use meaningful names. The Lisp convention is to use full English words
 separated by dashes. Racket code benefits from the same convention.
 
+@compare[
+@;%
+@(begin
+#reader scribble/comment-reader
+[racketmod #:file
+@tt{good}
+racket
+
+render-game-state
+
+send-message-to-client
+
+traverse-forest
+])
+
+@; -----------------------------------------------------------------------------
+@;%
+@(begin
+#reader scribble/comment-reader
+[racketmod #:file
+@tt{bad}
+racket
+
+rndr-st
+
+sendMessageToClient
+
+trvrs-frst
+])
+]
+@;
+If you cannot give a unit a good name, consider the possibility that it
+isn't a proper unit of code.
+
+You may use dots between parts of names, e.g., @racket[p.x] to suggest that
+field @racket[x] is selected from struct @racket[p].
+
 In addition to regular alphanumeric characters, Racketeers use a few
-special characters.
+special characters by convention, and these characters indicate something
+about the name:
 
 @;column-table[ @col[? ! "@" ^ %] @col[1 2 3 4 5] @col[1 2 3 4 5] ]
 
@@ -233,3 +271,7 @@ special characters.
  @row["@" units      a@]
  @row[^ signatures a^]
 ]
+
+Some Racketeers use the suffix of the name to suggest type(-like)
+information, e.g., @racket[body-xexpr] or @racket[body-xml]. For such uses,
+a colon is commonly found, e.g., @racket[p:posn] or @racket[p:pair-of-numbers].

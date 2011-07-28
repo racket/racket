@@ -27,13 +27,54 @@ If a unit of code looks incomprehensible, it is probably too large. Break
  division; consider alternatives.
 
 @; -----------------------------------------------------------------------------
-@section{Module Interfaces}
+@section{Modules and their Interfaces}
 
-The purpose of a module is to provide some services.
-
+The purpose of a module is to provide some services:
+@;
 @centerline{Equip a module with a short purpose statement.}
 @;
 Often ``short'' means one line; occasionally you may need several lines.
+
+In order to understand a module's services, organize the module in three
+sections below the purpose statement: its imports, its exports, and its
+implementation:
+@;%
+@(begin
+#reader scribble/comment-reader
+ (racketmod #:file
+ @tt{good}
+ racket/base
+
+;; the module implements a tv server
+
+(require 2htdp/universe htdp/image)
+
+(provide
+  tv-launch
+  tv-client)
+
+(define (tv-launch)
+  (universe ...))
+
+(define (tv-client)
+  (big-bang ...))
+))
+@;%
+ If you choose to use @racket[provide/contract], define auxiliary concepts
+  related to the contracts between the @racket[require] and the
+  @racket[provide] sections. A test suite section---if located within the
+  module---should come at the every end, including its specific
+  dependencies, i.e., @racket[require] specifications.
+
+@; -----------------------------------------------------------------------------
+@subsection{Require}
+
+With @racket[require] specifications at the top of the module, you let
+ every reader know what is needed to understand the module. The
+ @racket[require] specification nails down the external dependencies.
+
+@; -----------------------------------------------------------------------------
+@subsection{Provide}
 
 A module's interface describes the services it provides; its body
  implements these services. Others have to read the interface if the
@@ -150,11 +191,28 @@ Consider using @scheme[provide/contract] for module interfaces.
  contracts (constructor predicates that check only a tag); they tend to
  cost relatively little.
 
+@subsection{Uniformity of Interface}
+
+Pick a consistency rule for the names of your functions, classes, and
+methods. Stick to it. For example, you may wish to prefix all exported
+names with the same word, say @racket[syntax-local].
+
+Pick a consistency rule the parameters of your functions and methods. Stick
+to it. For example, if your module implements an abstract data type (ADT),
+all functions on the ADT should consume the ADT-argument first or last.
+
+@subsection{Sections}
+
 Finally, a module consists of sections. It is good practice to separate the
  sections with comment lines. You may want to write down purpose statements
  for sections so that readers can easily understand which part of a module
  implements which service. Alternatively, consider using the large letter
  chapter headings in DrRacket to label the sections of a module.
+
+With @racketmodname[rackunit], test suites can be defined within the
+ module using @racket[define/provide-test-suite]. If you do so, locate the
+ test section at the end of the module and @racket[require] the necessary
+ pieces for testing specifically for the test suites.
 
 @; -----------------------------------------------------------------------------
 @section{Classes & Units}
@@ -163,3 +221,5 @@ Finally, a module consists of sections. It is good practice to separate the
 @section{Functions & Methods}
 
 
+If your function or method consumers more than two parameters, consider
+keyword arguments so that call sites can easily be understood.
