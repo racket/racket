@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/gui/base racket/match
+(require racket/class racket/gui/base racket/match racket/serialize
          unstable/syntax)
 
 (require (prefix-in tr: typed-scheme/typed-reader)
@@ -55,11 +55,12 @@
    (lambda (l)
      (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
      (define stx (log-entry-stx log-entry-data))
-     (define path (if (and (syntax-source-directory stx)
-                           (syntax-source-file-name stx))
-                      (build-path (syntax-source-directory stx)
-                                  (syntax-source-file-name stx))
-                      #f))
+     (define path
+       (if (and (pseudo-syntax-source-directory stx)
+                (pseudo-syntax-source-file-name stx))
+           (build-path (deserialize (pseudo-syntax-source-directory stx))
+                       (deserialize (pseudo-syntax-source-file-name stx)))
+           #f))
      (when (right-file? path)
        (set! log (cons log-entry-data log))))
    (lambda ()
@@ -75,7 +76,7 @@
     (match l
       [(log-entry kind msg stx located-stx (? number? pos))
        (define start     (sub1 pos))
-       (define end       (+ start (syntax-span stx)))
+       (define end       (+ start (pseudo-syntax-span stx)))
        (report-entry (list (if (opt-log-entry? l)
                                (opt-report-entry located-stx msg)
                                (missed-opt-report-entry

@@ -1,9 +1,10 @@
 #lang racket/base
 
 (require racket/string racket/class racket/gui/base racket/match racket/port
-         framework syntax/to-string
+         framework
          "report.rkt"
-         unstable/sequence unstable/pretty)
+         unstable/sequence unstable/pretty
+         typed-scheme/optimizer/logging) ; for pseudo-syntax utils
 
 (provide popup-callback make-color-table)
 
@@ -32,7 +33,9 @@
 
   ;; the location, the syntax and the message are in separate editors
   (define location-text (new text:basic% [auto-wrap #t]))
-  (define location (format "~a:~a:" (syntax-line stx) (syntax-column stx)))
+  (define location (format "~a:~a:"
+                           (pseudo-syntax-line stx)
+                           (pseudo-syntax-column stx)))
   (send location-text insert-port (open-input-string location))
   (send location-text lock #t)
   ;; add to the main editor
@@ -43,14 +46,14 @@
   (define syntax-text (new text:basic%))
   ;; typeset the syntax as code
   (send syntax-text change-style tt-style-delta)
-  (send syntax-text insert-port
-        (open-input-string (syntax->string #`(#,stx)))) ; takes a list of stxs
+  (send syntax-text insert-port (open-input-string (pseudo-syntax-rep stx)))
   ;; circle irritants, if necessary
   (when (missed-opt-report-entry? s)
     (for ([i (in-list (missed-opt-report-entry-irritants s))]
-          #:when (syntax-position i))
-      (define start (- (syntax-position i) (syntax-position stx)))
-      (define len   (syntax-span i))
+          #:when (pseudo-syntax-position i))
+      (define start (- (pseudo-syntax-position i)
+                       (pseudo-syntax-position stx)))
+      (define len   (pseudo-syntax-span i))
       ;; will be off if there are comments inside an irritant (span will be
       ;; higher than what's actually displayed), but unless we make the
       ;; located version of irritants available, this is the best we can do
