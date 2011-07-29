@@ -38,7 +38,7 @@
 
 @prim-nonterms[("beginner-abbr") define define-struct]
 
-@prim-variables[("beginner-abbr") empty true false]
+@prim-variables[("beginner-abbr") empty true false .. ... .... ..... ......]
 
 @; ----------------------------------------
 

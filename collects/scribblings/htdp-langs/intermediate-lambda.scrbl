@@ -42,7 +42,7 @@
 
 @prim-nonterms[("intm-w-lambda") define define-struct]
 
-@prim-variables[("intm-w-lambda") empty true false]
+@prim-variables[("intm-w-lambda") empty true false .. ... .... ..... ......]
 
 
 @; ----------------------------------------------------------------------

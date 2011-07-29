@@ -56,7 +56,9 @@
    (to-paragraph
     (typeset-type (cadr func)))))
 
-(define-syntax-rule (prim-variables (section-prefix) empty true false)
+(define-syntax-rule
+  (prim-variables (section-prefix) empty true false ..2 ..3 ..4 ..5 ..6)
+  ;; ===> 
   (make-splice
    (list
     @section[#:tag (string-append section-prefix " Pre-Defined Variables")]{Pre-Defined Variables}
@@ -71,7 +73,16 @@
 
     @defthing[false boolean?]{
 
-    The false value.})))
+    The false value.}
+
+    @section[#:tag (string-append section-prefix " Template Variables")]{Template Variables}
+    @; MF: I tried abstracting but I failed
+    @defidform[..2]{A placeholder for indicating that a definition is a template.}
+    @defidform[..3]{A placeholder for indicating that a definition is a template.}
+    @defidform[..4]{A placeholder for indicating that a definition is a template.}
+    @defidform[..5]{A placeholder for indicating that a definition is a template.}
+    @defidform[..6]{A placeholder for indicating that a definition is a template.}
+    )))
 
 ;; ----------------------------------------
 

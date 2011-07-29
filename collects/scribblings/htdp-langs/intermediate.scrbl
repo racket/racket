@@ -43,8 +43,7 @@
 
 @prim-nonterms[("intermediate") define define-struct]
 
-@prim-variables[("intermediate") empty true false]
-
+@prim-variables[("intermediate") empty true false .. ... .... ..... ......]
 
 @; ----------------------------------------------------------------------
 

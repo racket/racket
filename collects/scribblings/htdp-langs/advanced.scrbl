@@ -86,7 +86,7 @@
 
 @prim-nonterms[("advanced") define define-struct]
 
-@prim-variables[("advanced") empty true false]
+@prim-variables[("advanced") empty true false .. ... .... ..... ......]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "advanced-syntax"]{Syntax for Advanced}
