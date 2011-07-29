@@ -49,14 +49,14 @@
            #t]
           [good-portname-cache ; cache is populated, but we have the wrong file
            #f]
-          ;; no cache, ask directly
-          [(send this port-name-matches? path)
-           (set! good-portname-cache path) ; populate cache
-           #t]
           [unsaved-file?
            ;; we assume that any log entry without a filename comes from
            ;; the unsaved editor
            (not path)]
+          ;; no cache, ask directly
+          [(send this port-name-matches? path)
+           (set! good-portname-cache path) ; populate cache
+           #t]
           [else ; different file
            #f]))
   (define sandbox
