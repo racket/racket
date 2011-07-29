@@ -36,8 +36,7 @@
          (regexp-match #rx"^unsaved-editor" (symbol->string portname))))
   (define good-portname-cache #f)
   (define (right-file? l) ; does the log-entry refer to the file we're in?
-    (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
-    (define stx (log-entry-stx log-entry-data))
+    (define stx (log-entry-stx l))
     (define path
       (let ([dir  (deserialize (pseudo-syntax-source-directory stx))]
             [file (deserialize (pseudo-syntax-source-file-name stx))])
@@ -59,23 +58,22 @@
            #t]
           [else ; different file
            #f]))
+  (define log '())
   (define sandbox
-    (parameterize ([sandbox-output              'string]
-                   [sandbox-input               input]
-                   [sandbox-make-code-inspector current-code-inspector]
+    (parameterize ([sandbox-make-code-inspector current-code-inspector]
                    [sandbox-eval-limits         #f])
       (make-evaluator 'racket/base)))
   (call-in-sandbox-context sandbox
    (lambda ()
      (with-intercepted-tr-logging
-      write
+      (lambda (l)
+        (define data (cdr (vector-ref l 2))) ; get the log-entry part
+        (set! log (cons data log)))
       (lambda ()
         (parameterize ([current-namespace  (make-base-namespace)]
                        [read-accept-reader #t])
-          (void (expand (tr:read-syntax portname (current-input-port)))))))))
-  (for/list ([x (with-input-from-string (get-output sandbox) read-all)]
-             #:when (right-file? x))
-    (cdr (vector-ref x 2)))) ; get the log-entry part
+          (void (expand (tr:read-syntax portname input))))))))
+  (filter right-file? (reverse log)))
 
 ;; converts log-entry structs to report-entry structs for further
 ;; processing
