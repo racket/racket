@@ -1,51 +1,38 @@
-#lang racket/unit
+#lang racket/base
 
 (require racket/class racket/gui/base racket/match
-         unstable/syntax drracket/tool
-         unstable/logging)
+         unstable/syntax)
 
-(require typed-scheme/optimizer/logging
-         "report-sig.rkt" "report-structs.rkt")
+(require (prefix-in tr: typed-scheme/typed-reader)
+         typed-scheme/optimizer/logging)
 
-(import drracket:tool^)
-(export report^)
+(provide (struct-out report-entry)
+         (struct-out sub-report-entry)
+         (struct-out opt-report-entry)
+         (struct-out missed-opt-report-entry)
+         generate-report)
 
+;; Similar to the log-entry family of structs, but geared towards GUI display.
+;; Also designed to contain info for multiple overlapping log entries.
+;; - subs is a list of sub-report-entry, corresponding to all the entries
+;;   between start and end
+;; - badness is 0 for a report-entry containing only optimizations
+;;   otherwise, it's the sum for all the subs
+(struct report-entry (subs start end badness))
+;; multiple of these can be contained in a report-entry
+(struct sub-report-entry (stx msg))
+(struct opt-report-entry        sub-report-entry ())
+(struct missed-opt-report-entry sub-report-entry (badness irritants))
 
 (define (generate-report this)
   (collapse-report (log->report (generate-log this))))
 
 
 (define (generate-log this)
-
-  ;; expand and capture log messages
-  (define log '())
-  (define listener #f)
-  (define exception #f)
-  (define done-chan (make-channel))
-  (drracket:eval:expand-program
-   (drracket:language:make-text/pos
-    this 0 (send this last-position))
-   (send this get-next-settings) #t
-   (lambda () ; init
-     (uncaught-exception-handler
-      (lambda (e)
-        (set! exception e) ; something went wrong, save exception and die
-        (channel-put done-chan 'done) ; let the rest of the program carry on
-        (custodian-shutdown-all (current-custodian)))) ; kill ourselves
-     (set! listener (start-recording #:level 'warning)))
-   (lambda () ; kill
-     (channel-put done-chan 'done))
-   (lambda (term k)
-     (if (eof-object? term)
-         (begin (set! log (stop-recording listener)) ; done, stash the log
-                (channel-put done-chan 'done))
-         (k)))) ; not done, keep going
-  (channel-get done-chan) ; wait for expansion to finish
-
-  (when exception ; something went wrong, will be caught upstream
-    (raise exception))
-
   (define portname (send this get-port-name))
+  (define input    (open-input-text-editor this))
+  (port-count-lines! input)
+  (define log '())
   (define unsaved-file?
     (and (symbol? portname)
          (regexp-match #rx"^unsaved-editor" (symbol->string portname))))
@@ -64,26 +51,22 @@
            (not f)]
           [else ; different file
            #f]))
-
-  (define (post-process-log-entry l)
-    ;; make sure the message is indeed from the optimizer
-    (cond [(log-message-from-tr-opt? l)
-           (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
-           (define stx (log-entry-stx log-entry-data))
-           (define path (if (and (syntax-source-directory stx)
-                                 (syntax-source-file-name stx))
-                            (build-path (syntax-source-directory stx)
-                                        (syntax-source-file-name stx))
-                            #f))
-           ;; it also needs to come from the right file
-           (if (right-file? path)
-               log-entry-data ; payload
-               #f)]
-          [else #f])) ; drop it
-
-  (for/list ([l (in-list (map post-process-log-entry log))]
-             #:when l)
-    l))
+  (with-intercepted-tr-logging
+   (lambda (l)
+     (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
+     (define stx (log-entry-stx log-entry-data))
+     (define path (if (and (syntax-source-directory stx)
+                           (syntax-source-file-name stx))
+                      (build-path (syntax-source-directory stx)
+                                  (syntax-source-file-name stx))
+                      #f))
+     (when (right-file? path)
+       (set! log (cons log-entry-data log))))
+   (lambda ()
+     (parameterize ([current-namespace  (make-base-namespace)]
+                    [read-accept-reader #t])
+       (expand (tr:read-syntax portname input)))))
+  log)
 
 ;; converts log-entry structs to report-entry structs for further
 ;; processing
