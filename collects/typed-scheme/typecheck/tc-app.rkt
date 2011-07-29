@@ -5,12 +5,12 @@
          "tc-app-helper.rkt" "find-annotation.rkt" "tc-funapp.rkt"
          "tc-subst.rkt" (prefix-in c: racket/contract)
          syntax/parse racket/match racket/trace scheme/list
-	 unstable/sequence  unstable/list
+         unstable/sequence  unstable/list
          ;; fixme - don't need to be bound in this phase - only to make tests work
          scheme/bool
          racket/unsafe/ops
          (only-in racket/private/class-internal make-object do-make-object)
-         (only-in '#%kernel [apply k:apply])
+         (only-in '#%kernel [apply k:apply] [reverse k:reverse])
          ;; end fixme
          (for-syntax syntax/parse scheme/base (utils tc-utils))
          (private type-annotation)
@@ -23,7 +23,7 @@
          '#%paramz
          (for-template
           racket/unsafe/ops racket/fixnum racket/flonum
-          (only-in '#%kernel [apply k:apply])
+          (only-in '#%kernel [apply k:apply] [reverse k:reverse])
           "internal-forms.rkt" scheme/base scheme/bool '#%paramz
           (only-in racket/private/class-internal make-object do-make-object)))
 
@@ -262,7 +262,7 @@
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
                 values apply k:apply not false? list list* call-with-values do-make-object make-object cons
-                map andmap ormap reverse extend-parameterization
+                map andmap ormap reverse k:reverse extend-parameterization
                 vector-ref unsafe-vector-ref unsafe-vector*-ref
                 vector-set! unsafe-vector-set! unsafe-vector*-set!
                 unsafe-struct-ref unsafe-struct*-ref unsafe-struct-set! unsafe-struct*-set!)
@@ -668,7 +668,7 @@
                   [tys (reverse tys-r)])
        (ret (foldr make-Pair last tys)))]
     ;; special case for `reverse' to propagate expected type info
-    [(#%plain-app reverse arg)
+    [(#%plain-app (~or reverse k:reverse) arg)
      (match expected
        [(tc-result1: (Listof: _))
         (tc-expr/check #'arg expected)]

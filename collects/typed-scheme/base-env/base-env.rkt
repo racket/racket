@@ -12,7 +12,7 @@
   (only-in rnrs/lists-6 fold-left)
   '#%paramz
   "extra-procs.rkt"
-  (only-in '#%kernel [apply kernel:apply])
+  (only-in '#%kernel [apply kernel:apply] [reverse kernel:reverse])
   (only-in racket/private/pre-base new-apply-proc)
   scheme/promise scheme/system
   racket/function
@@ -489,6 +489,7 @@
 [touch (-poly (A) ((-future A) . -> . A))]
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
+[kernel:reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
 [length (-poly (a) (-> (-lst a) -Index))]
 [memq (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
