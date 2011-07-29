@@ -39,11 +39,11 @@
     (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
     (define stx (log-entry-stx log-entry-data))
     (define path
-      (if (and (pseudo-syntax-source-directory stx)
-               (pseudo-syntax-source-file-name stx))
-          (build-path (deserialize (pseudo-syntax-source-directory stx))
-                      (deserialize (pseudo-syntax-source-file-name stx)))
-          #f))
+      (let ([dir  (deserialize (pseudo-syntax-source-directory stx))]
+            [file (deserialize (pseudo-syntax-source-file-name stx))])
+        (if (and dir file)
+            (build-path dir file)
+            #f)))
     (cond [(and good-portname-cache ; cache is populated
                 (equal? path good-portname-cache))
            #t]
