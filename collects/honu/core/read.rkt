@@ -25,14 +25,28 @@
 (define-lex-abbrev identifier (:: identifier-first-character
                                   (:* identifier-character)))
 (define-lex-abbrev number (:+ digit))
-(define-lex-abbrev string (:: #\" (:* (:~ #\")) #\"))
+(define-lex-abbrev string-character (:or (:: #\\ any-char)
+                                         (:~ #\")))
+(define-lex-abbrev string (:: #\" (:* string-character) #\"))
+(define-lex-abbrev block-comment (:: "/*"
+                                     (complement (:: any-string "*/" any-string))
+                                     "*/"))
+
+(define-lex-abbrev line-comment (:: (:or "#" "//")
+                                    (:* (:~ "\n"))
+                                    ;; we might hit eof before a \n
+                                    (:? "\n")))
 
 (define honu-lexer
   (lexer-src-pos
     [(eof) (token-eof)]
+    [line-comment (token-whitespace)]
+    #;
     [(:or "#" "//") (token-end-of-line-comment)]
     ["\n" (token-whitespace)]
     [number (token-number (string->number lexeme))]
+    [block-comment (token-whitespace)]
+    #;
     ["/*" (token-block-comment)]
     ["." (token-identifier '|.|)]
     ["," (token-identifier '|,|)]
@@ -44,8 +58,11 @@
     [";" (token-identifier '|;|)]
     ;; strip the quotes from the resulting string
     ;; TODO: find a more optimal way
-    [string (token-string (substring (substring lexeme 1)
-                                     0 (- (string-length lexeme) 2)))]
+    [string (begin
+              #;
+              (printf "Parsed string '~a'\n" lexeme)
+              (token-string (substring (substring lexeme 1)
+                                     0 (- (string-length lexeme) 2))))]
     ["(" (token-left-parens)]  [")" (token-right-parens)]
     ["[" (token-left-bracket)] ["]" (token-right-bracket)]
     ["{" (token-left-brace)]   ["}" (token-right-brace)]
@@ -288,6 +305,12 @@
   (check-equal? (strip (lex-string "8 /* aosidfjasdf329023 */ 5"))
                 (list (token-number 8)
                       (token-number 5)))
+  (check-equal? (strip (lex-string "\"hello\""))
+                (list (token-string "hello")))
+  ;; FIXME: how can we write a string with an escaped character in it?
+  #;
+  (check-equal? (strip (lex-string "\"hel\\\\\"lo\""))
+                (list (token-string "hel\"lo")))
   (check-equal? (honu-read (open-input-string "f(5)"))
                 '(f (#%parens 5)))
   (check-exn exn:fail? (lambda ()
