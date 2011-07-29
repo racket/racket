@@ -12,7 +12,8 @@
   (only-in rnrs/lists-6 fold-left)
   '#%paramz
   "extra-procs.rkt"
-  (only-in '#%kernel [apply kernel:apply] [reverse kernel:reverse])
+  (only-in '#%kernel [apply kernel:apply] [reverse kernel:reverse]
+           [memq kernel:memq] [memv kernel:memv] [member kernel:member])
   (only-in racket/private/pre-base new-apply-proc)
   scheme/promise scheme/system
   racket/function
@@ -493,9 +494,12 @@
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
 [length (-poly (a) (-> (-lst a) -Index))]
 [memq (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
+[kernel:memq (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
 [memv (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
+[kernel:memv (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
 [memf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt (-lst a))))]
 [member (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
+[kernel:member (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
 [findf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt a)))]
 
 [char=? (->* (list -Char -Char) -Char B)]
