@@ -1,9 +1,7 @@
 #lang racket/base
 
-(require racket/class racket/gui/base racket/match racket/serialize
-         unstable/syntax)
-
-(require (prefix-in tr: typed-scheme/typed-reader)
+(require racket/class racket/gui/base racket/match racket/port racket/serialize
+         unstable/syntax unstable/port racket/sandbox
          typed-scheme/optimizer/logging)
 
 (provide (struct-out report-entry)
@@ -32,42 +30,51 @@
   (define portname (send this get-port-name))
   (define input    (open-input-text-editor this))
   (port-count-lines! input)
-  (define log '())
   (define unsaved-file?
     (and (symbol? portname)
          (regexp-match #rx"^unsaved-editor" (symbol->string portname))))
   (define good-portname-cache #f)
-  (define (right-file? f) ; does the log-entry refer to the file we're in?
+  (define (right-file? l) ; does the log-entry refer to the file we're in?
+    (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
+    (define stx (log-entry-stx log-entry-data))
+    (define path
+      (if (and (pseudo-syntax-source-directory stx)
+               (pseudo-syntax-source-file-name stx))
+          (build-path (deserialize (pseudo-syntax-source-directory stx))
+                      (deserialize (pseudo-syntax-source-file-name stx)))
+          #f))
     (cond [(and good-portname-cache ; cache is populated
-                (equal? f good-portname-cache))
+                (equal? path good-portname-cache))
            #t]
           ;; no cache, ask directly
-          [(send this port-name-matches? f)
-           (set! good-portname-cache f) ; populate cache
+          [(send this port-name-matches? path)
+           (set! good-portname-cache path) ; populate cache
            #t]
           [unsaved-file?
            ;; we assume that any log entry without a filename comes from
            ;; the unsaved editor
-           (not f)]
+           (not path)]
           [else ; different file
            #f]))
-  (with-intercepted-tr-logging
-   (lambda (l)
-     (define log-entry-data (cdr (vector-ref l 2))) ; log-entry struct
-     (define stx (log-entry-stx log-entry-data))
-     (define path
-       (if (and (pseudo-syntax-source-directory stx)
-                (pseudo-syntax-source-file-name stx))
-           (build-path (deserialize (pseudo-syntax-source-directory stx))
-                       (deserialize (pseudo-syntax-source-file-name stx)))
-           #f))
-     (when (right-file? path)
-       (set! log (cons log-entry-data log))))
-   (lambda ()
-     (parameterize ([current-namespace  (make-base-namespace)]
-                    [read-accept-reader #t])
-       (expand (tr:read-syntax portname input)))))
-  log)
+  (define sandbox
+    (parameterize ([sandbox-output              'string]
+                   [sandbox-input               input]
+                   [sandbox-make-code-inspector current-code-inspector]
+                   [sandbox-eval-limits         #f])
+      (make-evaluator 'racket/base
+                      '(require (prefix-in tr: typed-scheme/typed-reader)
+                                typed-scheme/optimizer/logging)
+                      `(define portname ,portname))))
+  (sandbox
+   '(with-intercepted-tr-logging
+     write
+     (lambda ()
+       (parameterize ([current-namespace  (make-base-namespace)]
+                      [read-accept-reader #t])
+         (void (expand (tr:read-syntax portname (current-input-port))))))))
+  (for/list ([x (with-input-from-string (get-output sandbox) read-all)]
+             #:when (right-file? x))
+    (cdr (vector-ref x 2)))) ; get the log-entry part
 
 ;; converts log-entry structs to report-entry structs for further
 ;; processing
