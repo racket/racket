@@ -47,6 +47,8 @@
     (cond [(and good-portname-cache ; cache is populated
                 (equal? path good-portname-cache))
            #t]
+          [good-portname-cache ; cache is populated, but we have the wrong file
+           #f]
           ;; no cache, ask directly
           [(send this port-name-matches? path)
            (set! good-portname-cache path) ; populate cache
