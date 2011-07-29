@@ -17,7 +17,14 @@
 
 ;; performance-report-callback : drracket:unit:frame<%> -> void
 (define (performance-report-callback drr-frame)
-  (send (send drr-frame get-definitions-text) add-highlights))
+  (with-handlers
+      ([exn?
+        ;; typechecking failed, report in the interactions window
+        (lambda (e)
+          (define interactions (send drr-frame get-interactions-text))
+          (send interactions reset-console)
+          (send interactions run-in-evaluation-thread (lambda () (raise e))))])
+    (send (send drr-frame get-definitions-text) add-highlights)))
 
 (define highlights-mixin
   (mixin ((class->interface text%)) ()
