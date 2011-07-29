@@ -131,7 +131,7 @@ racket
 @section{Structs vs Lists}
 
 Use @racket[struct]s when you represent a combination of a fixed number of
-values.  Don't use lists.
+values.  Or, don't use lists when structures will do.
 
 @; -----------------------------------------------------------------------------
 @section{Lambda vs Define}
@@ -163,6 +163,11 @@ racket
 ]
 ]
 
+
+@; -----------------------------------------------------------------------------
+@section{Identity Functions}
+
+The identity function is @racket[values]. Try it with @racket[(values 1 2 3)].
 
 @; -----------------------------------------------------------------------------
 @section{List Traversals}
@@ -204,8 +209,7 @@ racket
 
 ;; [Listof X] -> Number
 (define (sum-up s)
-  (for/fold ((sum 0)) ((x s))
-    (+ sum x)))
+  (foldr (lambda (x sum) (+ sum x)) 0 s))
 
 ;; example:
 (sum-up '(1 2 3))
@@ -219,7 +223,8 @@ racket
 @; -----------------------------------------------------------------------------
 @section{Functions vs Macros}
 
-Use functions when possible; do not introduce macros.
+Use functions when possible, Or, do not introduce macros when functions
+will do.
 
 @compare[
 @racketmod[#:file

@@ -12,13 +12,20 @@ Keep units of code small. Keep modules, classes, functions and methods small.
 A module of 10,000 lines of code is too large. A module of 1,000 lines is
  tolerable. A module of 500 lines of code has the right size.
 
-One module should usually a class and its auxiliary functions, which in
+One module should usually contain a class and its auxiliary functions, which in
  turn determines the length of a good-sized class.
 
-And a function (method) of more than 66 lines is barely acceptable. For
- many years we had a limited syntax transformation language that forced
- people to create @emph{huge} functions. This is no longer the case, so
- consider this rule universal.
+And a function (method) of more than 66 lines is usually acceptable. The 66
+is based on the length of a laptop screen with small font. It really means
+"a screen length."
+
+Yes, there are exceptions where functions are more than 1,000 lines long
+ and extremely readable. (The worst part is that I have found 30-line
+ unreadable functions, too.)
+
+For many years we had a limited syntax transformation language that forced
+ people to create @emph{huge} functions. This is no longer the case, so we
+ should try to stick to the rule whenever possible.
 
 If a unit of code looks incomprehensible, it is probably too large. Break
  it up. To bring across what the pieces compute, implement or serve, use
@@ -60,11 +67,50 @@ implementation:
   (big-bang ...))
 ))
 @;%
- If you choose to use @racket[provide/contract], define auxiliary concepts
-  related to the contracts between the @racket[require] and the
-  @racket[provide] sections. A test suite section---if located within the
-  module---should come at the every end, including its specific
-  dependencies, i.e., @racket[require] specifications.
+
+If you choose to use @racket[provide/contract], define auxiliary concepts
+ related to the contracts between the @racket[require] and the
+ @racket[provide] sections:
+@;%
+@(begin
+#reader scribble/comment-reader
+ (racketmod #:file
+ @tt{good}
+ racket/base
+
+;; the module implements a tv server
+
+(require 2htdp/universe htdp/image)
+
+(define player# 3)
+(define plain-board/c
+  (instanceof/c (and/c admin-board%/c board%-contracts/c)))
+
+(define placement/c
+  (flat-named-contract "placement" ...))
+
+(provide/contract
+  [board-init        (-> player#/c plain-board/c)]
+  [create-board      (-> player#/c (listof placement/c)
+                         (or/c plain-board/c string?))]
+  [board-deserialize (-> any/c plain-board/c)])
+
+; implementation:
+(define (board-init n)
+  (new board% ...))
+
+(define (create-board n lop)
+  (define board (board-init n))
+  ...)
+
+(define board%
+  (class ... some 900 lines ...))
+))
+@;%
+
+A test suite section---if located within the module---should come at the
+ every end, including its specific dependencies, i.e., @racket[require]
+ specifications.
 
 @; -----------------------------------------------------------------------------
 @subsection{Require}
@@ -220,6 +266,9 @@ With @racketmodname[rackunit], test suites can be defined within the
 @; -----------------------------------------------------------------------------
 @section{Functions & Methods}
 
-
 If your function or method consumers more than two parameters, consider
 keyword arguments so that call sites can easily be understood.
+
+Please write a purpose statement for your function.
+If you can, add an informal type and/or contract statement.
+

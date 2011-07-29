@@ -91,6 +91,7 @@ Examples:
                     @tt{good}
                     racket
 
+		    (code:comment #, @t{drracket style})
                     (if (positive? (rocket-x r))
                         (launch r)
                         (redirect (- x)))
@@ -100,11 +101,18 @@ Examples:
                      @tt{bad}
                      racket
 
+		     (code:comment #, @t{.el emacs-file if})
                      (if (positive? (rocket-x r))
-                       (launch r)
+                         (launch r)
                        (redirect (- x)))
  ]
 ]
+
+@bold{Caveat}: Until language specifications come with fixed indentation
+rules, we need to use the @emph{default} settings of DrRacket's indentation
+for this rule to make sense. If you add new constructs, say a for loop,
+please contact Robby for advice on how to add a default setting for the
+indentation functionality.
 
 @; -----------------------------------------------------------------------------
 @section{Line Breaks}
