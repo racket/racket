@@ -2,7 +2,8 @@
 
 (require racket/class racket/gui/base racket/match racket/port racket/serialize
          unstable/syntax unstable/port racket/sandbox
-         typed-scheme/optimizer/logging)
+         typed-scheme/optimizer/logging
+         (prefix-in tr: typed-scheme/typed-reader))
 
 (provide (struct-out report-entry)
          (struct-out sub-report-entry)
@@ -61,17 +62,15 @@
                    [sandbox-input               input]
                    [sandbox-make-code-inspector current-code-inspector]
                    [sandbox-eval-limits         #f])
-      (make-evaluator 'racket/base
-                      '(require (prefix-in tr: typed-scheme/typed-reader)
-                                typed-scheme/optimizer/logging)
-                      `(define portname ,portname))))
-  (sandbox
-   '(with-intercepted-tr-logging
-     write
-     (lambda ()
-       (parameterize ([current-namespace  (make-base-namespace)]
-                      [read-accept-reader #t])
-         (void (expand (tr:read-syntax portname (current-input-port))))))))
+      (make-evaluator 'racket/base)))
+  (call-in-sandbox-context sandbox
+   (lambda ()
+     (with-intercepted-tr-logging
+      write
+      (lambda ()
+        (parameterize ([current-namespace  (make-base-namespace)]
+                       [read-accept-reader #t])
+          (void (expand (tr:read-syntax portname (current-input-port)))))))))
   (for/list ([x (with-input-from-string (get-output sandbox) read-all)]
              #:when (right-file? x))
     (cdr (vector-ref x 2)))) ; get the log-entry part
