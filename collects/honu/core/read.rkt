@@ -37,6 +37,15 @@
                                     ;; we might hit eof before a \n
                                     (:? "\n")))
 
+(define (replace-escapes string)
+  (define replacements '([#px"\\\\n" "\n"]
+                         [#px"\\\\t" "\t"]))
+  (for/fold ([string string])
+            ([replace replacements])
+    (define pattern (car replace))
+    (define with (cadr replace))
+    (regexp-replace* pattern string with)))
+
 (define honu-lexer
   (lexer-src-pos
     [(eof) (token-eof)]
@@ -58,11 +67,10 @@
     [";" (token-identifier '|;|)]
     ;; strip the quotes from the resulting string
     ;; TODO: find a more optimal way
-    [string (begin
-              #;
-              (printf "Parsed string '~a'\n" lexeme)
-              (token-string (substring (substring lexeme 1)
-                                     0 (- (string-length lexeme) 2))))]
+    [string (let ()
+              (define raw (substring (substring lexeme 1)
+                                     0 (- (string-length lexeme) 2)))
+              (token-string (replace-escapes raw)))]
     ["(" (token-left-parens)]  [")" (token-right-parens)]
     ["[" (token-left-bracket)] ["]" (token-right-bracket)]
     ["{" (token-left-brace)]   ["}" (token-right-brace)]
