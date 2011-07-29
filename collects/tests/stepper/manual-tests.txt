@@ -5,7 +5,6 @@ language level changes.
 
 Make sure that you get a warning when you change the underlying program, and a
 warning when the program window disappears.
-** closing a tab does not trigger the error message that it should...**
 
 Try stepping backward and forward through programs with correct and erroneous
 (syntax errors, runtime errors) executions.

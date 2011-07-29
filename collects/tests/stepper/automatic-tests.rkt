@@ -35,7 +35,7 @@
     #;(namespace-attach-module outer-namespace 'mzlib/pconvert-prop (current-namespace))
     (namespace-require 'test-engine/racket-tests)
     (if (and (run-all-tests-except 
-              (append '(bad-and bad-cons check-error begin-let-bug prims qq-splice time 
+              (append '(bad-and check-error begin-let-bug prims qq-splice time 
                                 set! local-set! local-struct/i local-struct/ilam)
                       lazy-tests))
              (run-tests lazy-tests))
