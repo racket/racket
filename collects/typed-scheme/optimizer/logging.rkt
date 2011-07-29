@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require racket/set racket/string racket/match racket/list racket/serialize
-         unstable/syntax unstable/logging syntax/to-string
+(require racket/set racket/string racket/match racket/list
+         unstable/syntax unstable/logging
          "../utils/tc-utils.rkt")
 
 (provide log-optimization log-missed-optimization
@@ -10,8 +10,7 @@
          with-intercepted-tr-logging with-tr-logging-to-port
          (struct-out log-entry)
          (struct-out opt-log-entry)
-         (struct-out missed-opt-log-entry)
-         (struct-out pseudo-syntax))
+         (struct-out missed-opt-log-entry))
 
 ;;--------------------------------------------------------------------
 
@@ -27,27 +26,9 @@
 (define log-so-far '())
 
 ;; msg is for consumption by the DrRacket tool
-;; mutability is there only to replace syntax with pseudo-syntax before
-;; printing at the end
-(struct log-entry (kind msg (stx #:mutable) (located-stx #:mutable) pos)
-        #:prefab)
+(struct log-entry (kind msg stx located-stx pos) #:prefab)
 ;; for optimizations only (not missed optimizations, those are below)
 (struct opt-log-entry log-entry () #:prefab)
-
-
-;; syntax objects are not serializable.
-;; this is a prefab struct that holds the information we need from syntax
-;; objects while still being serializable
-;; rep : string (result of syntax->string)
-(struct pseudo-syntax (rep line column position span
-                       source-directory source-file-name)
-        #:prefab)
-(define (syntax->pseudo-syntax stx)
-  (pseudo-syntax (syntax->string #`(#,stx)) ; takes a list of stxs
-                 (syntax-line stx) (syntax-column stx)
-                 (syntax-position stx) (syntax-span stx)
-                 (serialize (syntax-source-directory stx))
-                 (serialize (syntax-source-file-name stx))))
 
 
 (define (log-optimization kind msg stx)
@@ -72,7 +53,7 @@
 ;; that got merged into this miss. we need to keep them around to detect
 ;; future potential merges.
 (struct missed-opt-log-entry log-entry
-        ((irritants #:mutable) (merged-irritants #:mutable) badness)
+        (irritants merged-irritants badness)
         #:prefab)
 
 (define missed-optimizations-log '())
@@ -233,18 +214,8 @@
   (define logger (current-logger))
   (add-missed-opts-to-log)
   (for ([x (sort-log)])
-    (define out (format-log-entry x))
-    (set-log-entry-stx!         x (syntax->pseudo-syntax (log-entry-stx x)))
-    (set-log-entry-located-stx! x (syntax->pseudo-syntax
-                                   (log-entry-located-stx x)))
-    (when (missed-opt-log-entry? x)
-      (set-missed-opt-log-entry-irritants!
-       x (map syntax->pseudo-syntax
-              (missed-opt-log-entry-irritants x)))
-      (set-missed-opt-log-entry-merged-irritants!
-       x (map syntax->pseudo-syntax
-              (missed-opt-log-entry-merged-irritants x))))
-    (log-message logger 'warning out
+    (log-message logger 'warning
+                 (format-log-entry x)
                  (cons optimization-log-key x))))
 
 (define (clear-log)

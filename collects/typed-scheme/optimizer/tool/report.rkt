@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/gui/base racket/match racket/port racket/serialize
+(require racket/class racket/gui/base racket/match racket/port
          unstable/syntax unstable/port racket/sandbox
          typed-scheme/optimizer/logging
          (prefix-in tr: typed-scheme/typed-reader))
@@ -38,8 +38,8 @@
   (define (right-file? l) ; does the log-entry refer to the file we're in?
     (define stx (log-entry-stx l))
     (define path
-      (let ([dir  (deserialize (pseudo-syntax-source-directory stx))]
-            [file (deserialize (pseudo-syntax-source-file-name stx))])
+      (let ([dir  (syntax-source-directory stx)]
+            [file (syntax-source-file-name stx)])
         (if (and dir file)
             (build-path dir file)
             #f)))
@@ -82,7 +82,7 @@
     (match l
       [(log-entry kind msg stx located-stx (? number? pos))
        (define start     (sub1 pos))
-       (define end       (+ start (pseudo-syntax-span stx)))
+       (define end       (+ start (syntax-span stx)))
        (report-entry (list (if (opt-log-entry? l)
                                (opt-report-entry located-stx msg)
                                (missed-opt-report-entry
