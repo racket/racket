@@ -878,10 +878,11 @@ your own permissions, for example,
 @racketblock[
   (let ([guard (current-security-guard)])
     (call-in-sandbox-context
+      ev
       (lambda ()
         (parameterize ([current-security-guard guard])
           (code:comment @#,t{can access anything you want here})
-          ))))
+          (delete-file "/some/file")))))
 ]}
 
 @; ----------------------------------------------------------------------
