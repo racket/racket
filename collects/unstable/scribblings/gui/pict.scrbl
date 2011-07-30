@@ -1,0 +1,341 @@
+#lang scribble/manual
+@(require "../utils.rkt"
+          scribble/eval
+          (for-label slideshow
+                     unstable/contract
+                     unstable/gui/pict))
+
+@(define the-eval (make-base-eval))
+@(the-eval '(require racket/math slideshow/pict unstable/gui/pict))
+
+@title{Pict Utilities}
+
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
+
+@defmodule[unstable/gui/pict]
+
+The functions and macros exported by this module are also exported by
+@racketmodname[unstable/gui/slideshow].
+
+@;{----------------------------------------}
+
+@section{Pict Colors}
+
+@defproc[(color [c color/c] [p pict?]) pict?]{
+
+Applies color @racket[c] to picture @racket[p].  Equivalent to @racket[(colorize
+p c)].
+
+@examples[#:eval the-eval
+(color "red" (disk 20))
+]
+}
+
+@deftogether[(
+@defproc[(red [pict pict?]) pict?]
+@defproc[(orange [pict pict?]) pict?]
+@defproc[(yellow [pict pict?]) pict?]
+@defproc[(green [pict pict?]) pict?]
+@defproc[(blue [pict pict?]) pict?]
+@defproc[(purple [pict pict?]) pict?]
+@defproc[(black [pict pict?]) pict?]
+@defproc[(brown [pict pict?]) pict?]
+@defproc[(gray [pict pict?]) pict?]
+@defproc[(white [pict pict?]) pict?]
+@defproc[(cyan [pict pict?]) pict?]
+@defproc[(magenta [pict pict?]) pict?]
+)]{
+
+These functions apply appropriate colors to picture @racket[p].
+
+@examples[#:eval the-eval
+(red (disk 20))
+]
+}
+
+@deftogether[(
+@defproc[(light [color color/c]) color/c]
+@defproc[(dark [color color/c]) color/c]
+)]{
+
+These functions produce ligher or darker versions of a color.
+
+@examples[#:eval the-eval
+(hc-append (colorize (disk 20) "red")
+           (colorize (disk 20) (dark "red"))
+           (colorize (disk 20) (light "red")))
+]
+}
+
+@defthing[color/c flat-contract?]{
+
+This contract recognizes color strings, @racket[color%] instances, and RGB color
+lists.
+}
+
+@;{----------------------------------------}
+
+@section{Pict Manipulation}
+
+@defproc[(fill [pict pict?] [width (or/c real? #f)] [height (or/c real? #f)])
+         pict?]{
+
+Extends @racket[pict]'s bounding box to a minimum @racket[width] and/or
+@racket[height], placing the original picture in the middle of the space.
+
+@examples[#:eval the-eval
+(frame (fill (disk 20) 40 40))
+]
+}
+
+@subsection{Conditional Manipulations}
+
+These pict transformers all take boolean arguments that determine whether to
+transform the pict or leave it unchanged.  These transformations can be useful
+for staged slides, as the resulting pict always has the same size and shape, and
+its contents always appear at the same position, but changing the boolean
+argument between slides can control when the transformation occurs.
+
+@deftogether[(
+@defproc[(show [pict pict?] [show? truth/c #t]) pict?]
+@defproc[(hide [pict pict?] [hide? truth/c #t]) pict?]
+)]{
+
+These functions conditionally show or hide an image, essentially choosing
+between @racket[pict] and @racket[(ghost pict)].  The only difference between
+the two is the default behavior and the opposite meaning of the @racket[show?]
+and @racket[hide?] booleans.  Both functions are provided for mnemonic purposes.
+}
+
+@defproc[(strike [pict pict?] [strike? truth/c #t]) pict?]{
+
+Displays a strikethrough image by putting a line through the middle of
+@racket[pict] if @racket[strike?] is true; produces @racket[pict] unchanged
+otherwise.
+
+@examples[#:eval the-eval
+(strike (colorize (disk 20) "yellow"))
+]
+}
+
+@defproc[(shade [pict pict?]
+                [shade? truth/c #t]
+                [#:ratio ratio (real-in 0 1) 1/2])
+         pict?]{
+
+Shades @racket[pict] to show with @racket[ratio] of its normal opacity; if
+@racket[ratio] is @racket[1] or @racket[shade?] is @racket[#f], shows
+@racket[pict] unchanged.
+
+@examples[#:eval the-eval
+(shade (colorize (disk 20) "red"))
+]
+}
+
+@subsection{Conditional Combinations}
+
+These pict control flow operators decide which pict of several to use.  All
+branches are evaluated; the resulting pict is a combination of the pict chosen
+by normal conditional flow with @racket[ghost] applied to all the other picts.
+The result is a picture large enough to accommodate each alternative, but showing
+only the chosen one.  This is useful for staged slides, as the pict chosen may
+change with each slide but its size and position will not.
+
+@defform/subs[(pict-if maybe-combine test-expr then-expr else-expr)
+              ([maybe-combine code:blank (code:line #:combine combine-expr)])]{
+
+Chooses either @racket[then-expr] or @racket[else-expr] based on
+@racket[test-expr], similarly to @racket[if].  Combines the chosen, visible
+image with the other, invisible image using @racket[combine-expr], defaulting to
+@racket[pict-combine].
+
+@examples[#:eval the-eval
+(let ([f (lambda (x)
+           (pict-if x
+                    (disk 20)
+                    (disk 40)))])
+  (hc-append 10
+             (frame (f #t))
+             (frame (f #f))))
+]
+}
+
+@defform/subs[(pict-cond maybe-combine [test-expr pict-expr] ...)
+              ([maybe-combine code:blank (code:line #:combine combine-expr)])]{
+
+Chooses a @racket[pict-expr] based on the first successful @racket[test-expr],
+similarly to @racket[cond].  Combines the chosen, visible image with the other,
+invisible images using @racket[combine-expr], defaulting to
+@racket[pict-combine].
+
+@examples[#:eval the-eval
+(let ([f (lambda (x)
+           (pict-cond
+             [(eq? x 'circle) (circle 20)]
+             [(eq? x 'disk) (disk 40)]
+             [(eq? x 'text) (text "ok" null 20)]))])
+  (hc-append 10
+             (frame (f 'circle))
+             (frame (f 'disk))
+             (frame (f 'text))))
+]
+}
+
+@defform/subs[(pict-case test-expr maybe-combine [literals pict-expr] ...)
+              ([maybe-combine code:blank (code:line #:combine combine-expr)])]{
+
+Chooses a @racket[pict-expr] based on @racket[test-expr] and each list of
+@racket[literals], similarly to @racket[case].  Combines the chosen, visible
+image with the other, invisible images using @racket[combine-expr], defaulting
+to @racket[pict-combine].
+
+@examples[#:eval the-eval
+(let ([f (lambda (x)
+           (pict-case x
+             [(circle) (circle 20)]
+             [(disk) (disk 40)]
+             [(text) (text "ok" null 20)]))])
+  (hc-append 10
+             (frame (f 'circle))
+             (frame (f 'disk))
+             (frame (f 'text))))
+]
+}
+
+@defform/subs[(pict-match test-expr maybe-combine [pattern pict-expr] ...)
+              ([maybe-combine code:blank (code:line #:combine combine-expr)])]{
+
+Chooses a @racket[pict-expr] based on @racket[test-expr] and each
+@racket[pattern], similarly to @racket[match].  Combines the chosen, visible
+image with the other, invisible images using @racket[combine-expr], defaulting
+to @racket[pict-combine].
+
+}
+
+@defform[#:id pict-combine pict-combine]{
+
+This syntax parameter determines the default pict combining form used by the
+above macros.  It defaults to @racket[lbl-superimpose].
+}
+
+@defform[(with-pict-combine combine-id body ...)]{
+
+Sets @racket[pict-combine] to refer to @racket[combine-id] within each of the
+@racket[body] terms, which are spliced into the containing context.
+
+@examples[#:eval the-eval
+(let ([f (lambda (x)
+           (with-pict-combine cc-superimpose
+             (pict-case x
+               [(circle) (circle 20)]
+               [(disk) (disk 40)]
+               [(text) (text "ok" null 20)])))])
+  (hc-append 10
+             (frame (f 'circle))
+             (frame (f 'disk))
+             (frame (f 'text))))
+]
+}
+
+@section{Miscellaneous Pict Utilities}
+
+@addition{Vincent St-Amour}
+
+@deftogether[(
+@defproc[(ellipse/border [w real?] [h real?]
+                         [#:color color color/c "white"]
+                         [#:border-color border-color color/c "black"]
+                         [#:border-width border-width real? 2])
+         pict?]
+@defproc[(circle/border [diameter real?]
+                        [#:color color color/c "white"]
+                        [#:border-color border-color color/c "black"]
+                        [#:border-width border-width real? 2])
+         pict?]
+@defproc[(rectangle/border [w real?] [h real?]
+                           [#:color color color/c "white"]
+                           [#:border-color border-color color/c "black"]
+                           [#:border-width border-width real? 2])
+         pict?]
+@defproc[(rounded-rectangle/border [w real?] [h real?]
+                                   [#:color color color/c "white"]
+                                   [#:border-color border-color color/c "black"]
+                                   [#:border-width border-width real? 2])
+         pict?]
+)]{
+These functions create shapes with border of the given color and width.
+
+@examples[#:eval the-eval
+(ellipse/border 40 20 #:border-color "blue")
+(rounded-rectangle/border 40 20 #:color "red")
+]
+}
+
+@addition{Scott Owens}
+
+@deftogether[(
+@defproc[(pin-label-line [label pict?] [pict pict?]
+                         [src-pict pict-path?]
+			 [src-coord-fn (-> pict-path? (values real? real?))]
+                         [dest-pict pict-path?]
+			 [dest-coord-fn (-> pict-path? (values real? real?))]
+			 [#:start-angle start-angle (or/c real? #f) #f]
+			 [#:end-angle end-angle (or/c real? #f) #f]
+			 [#:start-pull start-pull real? 1/4]
+			 [#:end-pull end-pull real? 1/4]
+			 [#:line-width line-width (or/c real? #f) #f]
+			 [#:color color (or/c #f string? (is-a?/c color%)) #f]
+			 [#:under? under? any/c #f]
+			 [#:x-adjust x-adjust real? 0]
+			 [#:y-adjust y-adjust real? 0])
+	 pict?]
+@defproc[(pin-arrow-label-line [label pict?] [arrow-size real?] [pict pict?]
+                         [src-pict pict-path?]
+			 [src-coord-fn (-> pict-path? (values real? real?))]
+                         [dest-pict pict-path?]
+			 [dest-coord-fn (-> pict-path? (values real? real?))]
+			 [#:start-angle start-angle (or/c real? #f) #f]
+			 [#:end-angle end-angle (or/c real? #f) #f]
+			 [#:start-pull start-pull real? 1/4]
+			 [#:end-pull end-pull real? 1/4]
+			 [#:line-width line-width (or/c real? #f) #f]
+			 [#:color color (or/c #f string? (is-a?/c color%)) #f]
+			 [#:under? under? any/c #f]
+			 [#:hide-arrowhead? hide-arrowhead? any/c #f]
+			 [#:x-adjust x-adjust real? 0]
+			 [#:y-adjust y-adjust real? 0])
+	 pict?]
+@defproc[(pin-arrows-label-line [label pict?] [arrow-size real?] [pict pict?]
+                         [src-pict pict-path?]
+			 [src-coord-fn (-> pict-path? (values real? real?))]
+                         [dest-pict pict-path?]
+			 [dest-coord-fn (-> pict-path? (values real? real?))]
+			 [#:start-angle start-angle (or/c real? #f) #f]
+			 [#:end-angle end-angle (or/c real? #f) #f]
+			 [#:start-pull start-pull real? 1/4]
+			 [#:end-pull end-pull real? 1/4]
+			 [#:line-width line-width (or/c real? #f) #f]
+			 [#:color color (or/c #f string? (is-a?/c color%)) #f]
+			 [#:under? under? any/c #f]
+			 [#:hide-arrowhead? hide-arrowhead? any/c #f]
+			 [#:x-adjust x-adjust real? 0]
+			 [#:y-adjust y-adjust real? 0])
+	 pict?]
+)]{
+These functions behave like @racket[pin-line], @racket[pin-arrow-line]
+and @racket[pin-arrows-line] with the addition of a label attached to
+the line.
+
+@examples[#:eval the-eval
+(let* ([a (red (disk 20))]
+       [b (blue (filled-rectangle 20 20))]
+       [p (vl-append a (hb-append (blank 100) b))])
+  (pin-arrow-label-line 
+   (rotate (text "label" null 10) (/ pi -4))
+   10 p
+   a rb-find
+   b lt-find))
+]
+}
+
+@(close-eval the-eval)
