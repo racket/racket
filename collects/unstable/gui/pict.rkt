@@ -356,6 +356,33 @@
  [pin-arrow-label-line pin-arrow-label-line-contract]
  [pin-arrows-label-line pin-arrow-label-line-contract])
 
+;; the following are by ryanc
+
+(define (scale-to p w h #:mode [mode 'preserve])
+  (let* ([w0 (pict-width p)]
+         [h0 (pict-height p)]
+         [wfactor0 (if (zero? w0) 1 (/ w w0))]
+         [hfactor0 (if (zero? h0) 1 (/ h h0))])
+    (let-values ([(wfactor hfactor)
+                  (case mode
+                    ((preserve inset)
+                     (let ([factor (min wfactor0 hfactor0)])
+                       (values factor factor)))
+                    ((distort)
+                     (values wfactor0 hfactor0)))])
+      (let ([scaled-pict (scale p wfactor hfactor)])
+        (case mode
+          ((inset)
+           (cc-superimpose (blank w h) scaled-pict))
+          (else
+           scaled-pict))))))
+
+(provide/contract
+ [scale-to
+  (->* (pict? real? real?)
+       (#:mode (or/c 'preserve 'inset 'distort))
+       pict?)])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  Tagged picts

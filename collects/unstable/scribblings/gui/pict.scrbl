@@ -93,6 +93,30 @@ Extends @racket[pict]'s bounding box to a minimum @racket[width] and/or
 ]
 }
 
+@defproc[(scale-to [pict pict?]
+                   [width real?]
+                   [height real?]
+                   [#:mode mode (or/c 'preserve 'inset 'distort) 'preserve])
+         pict?]{
+
+Scales @racket[pict] so that its width and height are at most
+@racket[width] and @racket[height], respectively. If @racket[mode] is
+@racket['preserve], the width and height are scaled by the same factor
+so @racket[pict]'s aspect ratio is preserved; the result's bounding
+box may be smaller than @racket[width] by @racket[height]. If
+@racket[mode] is @racket['inset], the aspect ratio is preserved as
+with @racket['preserve], but the resulting pict is centered in a
+bounding box of exactly @racket[width] by @racket[height]. If
+@racket[mode] is @racket['distort], the width and height are scaled
+separately.
+
+@examples[#:eval the-eval
+(frame (scale-to (circle 100) 40 20))
+(frame (scale-to (circle 100) 40 20 #:mode 'inset))
+(frame (scale-to (circle 100) 40 20 #:mode 'distort))
+]
+}
+
 @subsection{Conditional Manipulations}
 
 These pict transformers all take boolean arguments that determine whether to
