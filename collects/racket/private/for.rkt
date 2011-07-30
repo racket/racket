@@ -4,6 +4,7 @@
              "misc.rkt"
              "define.rkt"
              "letstx-scheme.rkt"
+             "reverse.rkt"
              '#%unsafe
              (for-syntax '#%kernel
                          "stx.rkt"
@@ -1348,7 +1349,7 @@
 
   (define-for-variants (for/list for*/list)
     ([fold-var null])
-    (lambda (x) `(,#'reverse ,x))
+    (lambda (x) `(,#'alt-reverse ,x))
     (lambda (x) x)
     (lambda (x) `(,#'cons ,x ,#'fold-var)))
 

@@ -1,4 +1,5 @@
 (module list "pre-base.rkt"
+  (require "reverse.rkt")
 
   (provide foldl
            foldr
@@ -26,7 +27,7 @@
            build-string
            build-list
 
-           (rename-out [alt-reverse reverse]
+           (rename-out [alt-reverse reverse] ; defined in "for.rkt"
                        [alt-memq memq]
                        [alt-memv memv]
                        [alt-member member])
@@ -410,18 +411,6 @@
               (mk-simple-compose app1 f g)
               (mk-simple-compose app* f g))))
       (values compose1 compose)))
-
-  (define alt-reverse
-    (if (eval-jit-enabled)
-        (let ([reverse 
-               (lambda (l)
-                 (unless (list? l) (raise-type-error 'reverse "list"))
-                 (let loop ([a null] [l l])
-                   (if (null? l)
-                       a
-                       (loop (cons (car l) a) (cdr l)))))])
-          reverse)
-        reverse))
 
   (define-values (alt-memq alt-memv alt-member)
     (if (eval-jit-enabled)
