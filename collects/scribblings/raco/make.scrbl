@@ -361,7 +361,7 @@ parallel builder should continue without compiling @racket[zo-path].
 @defmodule[setup/parallel-build]{
 
 The @racketmodname[setup/parallel-build] library provides the parallel compilation to bytecode
-functionality of @exec{rack setup} and @exec{raco make}.}
+functionality of @exec{raco setup} and @exec{raco make}.}
 
 @; ----------------------------------------------------------------------
 
@@ -407,7 +407,13 @@ error occurs. The other arguments give more information for each status update.
   [setup-fprintf (->* ([stage string?] [format string?]) 
                       () 
                       #:rest (listof any/c) void)]
-  [append-error (cc? [prefix string?] [exn (or/c exn? null?)] [out string?] [err srtring?] [message string?] . -> . void?)]
+  [append-error (-> cc?
+                    [prefix string?] 
+                    [exn (or/c exn? null?)]
+                    [out string?]
+                    [err srtring?]
+                    [message string?]
+                    void?)]
   [collects-tree (listof any/c)])  (void)]{
 
 The @racket[parallel-compile] internal utility function is used by @exec{rack
