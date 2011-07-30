@@ -54,8 +54,8 @@
     [(:or "#" "//") (token-end-of-line-comment)]
     ["\n" (token-whitespace)]
     [number (token-number (string->number lexeme))]
-    [block-comment (token-whitespace)]
     #;
+    [block-comment (token-whitespace)]
     ["/*" (token-block-comment)]
     ["." (token-identifier '|.|)]
     ["," (token-identifier '|,|)]
@@ -111,6 +111,7 @@
 (define (read-block-comment port)
   (define comment-lexer
     (lexer
+      ["/*" 'nest]
       ["*/" 'done]
       [(eof) eof]
       [any-char 'continue]))
@@ -119,9 +120,14 @@
     (or (eq? 'done what)
         (eof-object? what)))
 
-  (let loop ()
-    (when (not (finish? (comment-lexer port)))
-      (loop))))
+  (let loop ([nesting 1])
+    (define what (comment-lexer port))
+    (cond
+      [(eq? what 'nest) (loop (add1 nesting))]
+      [(eq? what 'done) (when (> nesting 1)
+                          (loop (sub1 nesting)))]
+      [(eof-object? what) (void)]
+      [else (loop nesting)])))
 
 ;; read characters from a port and return a stream of tokens
 (define (read-tokens port)
