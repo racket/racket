@@ -273,6 +273,7 @@ A parameter whose value is called for each file that is loaded and
  @racket[#f], then the file is compiled as usual. The default is
  @racket[(lambda (x) #f)].}
 
+
 @defproc[(file-stamp-in-collection [p path?]) (or/c (cons/c number? promise?) #f)]{
   Calls @racket[file-stamp-in-paths] with @racket[p] and
   @racket[(current-library-collection-paths)].}
@@ -321,12 +322,25 @@ windows, @racket[with-compile-output] creates a second temporary file
 @racket[tmp-path2], renames @racket[p] to @racket[tmp-path2], renames
 @racket[tmp-path] to @racket[p], and finally deletes @racket[tmp-path2].}
 
-@defparam[parallel-lock-client proc ([command (or/c 'lock 'unlock)] [zo-path bytes?] . -> . boolean?)]{
+@defparam[parallel-lock-client proc 
+                               (or/c #f
+                                     (->i ([command (or/c 'lock 'unlock)]
+                                           [file bytes?])
+                                          [res (command) (if (eq? command 'lock)
+                                                             boolean?
+                                                             void?)]))]{
 
-Holds the parallel compilation lock client, which prevents compilation races
-between parallel builders.  The @racket[proc] function takes a command argument
-of either @racket['lock] or @racket['unlock].  The @racket[zo-path] argument
-specifies the path of the zo for which compilation should be locked.
+Holds the parallel compilation lock client, which
+is used by the result of @racket[make-compilation-manager-load/use-compiled-handler] to
+prevent compilation races between parallel builders.  
+
+When @racket[proc] is @racket[#f] (the default), no checking for parallel
+compilation is done (and thus multiple threads or places running compilations
+via @racket[make-compilation-manager-load/use-compiled-handler] will potentially
+corrupt each other's @filepath{.zo} files).
+
+When @racket[proc] is a function, its first argument is a command, indicating
+if it wants to lock or unlock the path specified in the second argument.
 
 When the @racket[proc] @racket['lock] command returns @racket[#t], the current
 builder has obtained the lock for @racket[zo-path].
@@ -336,7 +350,9 @@ release the lock by calling @racket[proc] @racket['unlock] with the exact same
 
 When the @racket[proc] @racket['lock] command returns @racket[#f], another
 parallel builder obtained the lock first and has already compiled the zo.  The
-parallel builder should continue without compiling @racket[zo-path].  
+parallel builder should continue without compiling @racket[zo-path].
+(In this case, @racket[make-compilation-manager-load/use-compiled-handler]'s
+result will not call @racket[proc] with @racket['unlock].)
 
 @examples[
   #:eval cm-eval
@@ -354,6 +370,22 @@ parallel builder should continue without compiling @racket[zo-path].
        (lc 'unlock zo-name)))))
 ]
 }
+
+@defproc[(compile-lock->parallel-lock-client [pc place-channel?])
+         (-> (or/c 'lock 'unlock) bytes? boolean?)]{
+
+  Returns a function that follows the @racket[parallel-lock-client]
+  by communicating over @racket[pc]. The argument must have 
+  be the result of @racket[make-compile-lock].
+}
+
+@defproc[(make-compile-lock) place-channel?]{
+  Creates a @racket[place-channel?] that can be used with
+            @racket[compile-lock->parallel-lock-client] to avoid concurrent
+            compilations of the same racket source files in multiple places.
+}
+
+
 @; ----------------------------------------------------------------------
 
 @section[#:tag "api:parallel-build"]{API for Parallel-Build}

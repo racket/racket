@@ -271,6 +271,7 @@
                    (cons (build-path "compiled" "drracket" "errortrace")
                          (use-compiled-file-paths)))]))
              
+             (parallel-lock-client module-language-parallel-lock-client)
              (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler #t))
              (let* ([cd (find-collects-dir)]
                     [no-dirs (if cd 
@@ -872,4 +873,9 @@
               [else
                (loop (+ pos 1))]))))
       
-      (super-new))))
+      (super-new)))
+  
+  
+  (define module-language-parallel-lock-client
+    (compile-lock->parallel-lock-client
+     (make-compile-lock))))

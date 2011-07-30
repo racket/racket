@@ -1,14 +1,15 @@
-#lang scheme/base
+#lang racket/base
 (require syntax/modcode
          syntax/modresolve
          syntax/modread
          setup/main-collects
 	 unstable/file
-         scheme/file
-         scheme/list
-         scheme/path
+         racket/file
+         racket/list
+         racket/path
          racket/promise
-         openssl/sha1)
+         openssl/sha1
+         racket/place)
 
 (provide make-compilation-manager-load/use-compiled-handler
          managed-compile-zo
@@ -22,7 +23,10 @@
          get-file-sha1
          get-compiled-file-sha1
          with-compile-output
-         parallel-lock-client)
+         parallel-lock-client
+         
+         make-compile-lock
+         compile-lock->parallel-lock-client)
 
 (define manager-compile-notify-handler (make-parameter void))
 (define trace (make-parameter void))
@@ -649,3 +653,46 @@
 
 (define (get-file-sha1 path)
   (get-source-sha1 path))
+
+(define (make-compile-lock)
+  (define-values (manager-side-chan build-side-chan) (place-channel))
+  (struct pending (response-chan bytes))
+  
+  (define currently-locked-files (make-hash))
+  (define pending-requests '())
+  
+  (thread
+   (λ ()
+     (let loop ()
+       (define req (place-channel-get manager-side-chan))
+       (define command (list-ref req 0))
+       (define bytes (list-ref req 1))
+       (define response-manager-side (list-ref req 2))
+       (cond
+         [(eq? command 'lock)
+          (cond
+            [(hash-ref currently-locked-files bytes #f)
+             (set! pending-requests (cons (pending response-manager-side bytes)
+                                          pending-requests))
+             (loop)]
+            [else
+             (hash-set! currently-locked-files bytes #t)
+             (place-channel-put response-manager-side #t)
+             (loop)])]
+         [(eq? command 'unlock)
+          (define (same-bytes? pending) (equal? (pending-bytes pending) bytes))
+          (define to-unlock (filter same-bytes? pending-requests))
+          (set! pending-requests (filter (compose not same-bytes?) pending-requests))
+          (for ([pending (in-list to-unlock)])
+            (place-channel-put (pending-response-chan pending) #f))
+          (hash-remove! currently-locked-files bytes)
+          (loop)]))))
+  
+  build-side-chan)
+
+(define (compile-lock->parallel-lock-client build-side-chan)
+  (λ (command zo-path)
+    (define-values (response-builder-side response-manager-side) (place-channel))
+    (place-channel-put build-side-chan (list command zo-path response-manager-side))
+    (when (eq? command 'lock)
+      (place-channel-get response-builder-side))))
