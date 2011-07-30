@@ -4,7 +4,9 @@
          racket/splicing racket/stxparam racket/draw
          racket/block racket/class
          unstable/define
-         (for-syntax racket/base))
+         (for-syntax racket/base)
+         "private/blur.rkt")
+(provide (all-from-out "private/blur.rkt"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -12,6 +14,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; ryanc: 'inset-to' might be a better name than 'fill'
 (define (fill pict w h)
   (cc-superimpose
    pict

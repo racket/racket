@@ -1,7 +1,12 @@
 #lang scribble/manual
 @(require "../utils.rkt"
           scribble/eval
-          (for-label slideshow
+          (for-label racket/base
+                     racket/contract
+                     racket/class
+                     racket/draw
+                     racket/future
+                     slideshow/pict
                      unstable/contract
                      unstable/gui/pict))
 
@@ -237,7 +242,7 @@ Sets @racket[pict-combine] to refer to @racket[combine-id] within each of the
 ]
 }
 
-@section{Miscellaneous Pict Utilities}
+@section{Shapes with Borders}
 
 @addition{Vincent St-Amour}
 
@@ -270,6 +275,8 @@ These functions create shapes with border of the given color and width.
 (rounded-rectangle/border 40 20 #:color "red")
 ]
 }
+
+@section{Lines with Labels}
 
 @addition{Scott Owens}
 
@@ -337,5 +344,92 @@ the line.
    b lt-find))
 ]
 }
+
+@section{Blur}
+@addition{Ryan Culpepper}
+
+@defproc[(blur [p pict?]
+               [h-radius (and/c real? (not/c negative?))]
+               [v-radius (and/c real? (not/c negative?)) h-radius]
+               [#:mode mode (or/c 'gaussian 'iterated-box 'single-box) 'iterated-box])
+         pict?]{
+
+Blurs @racket[p] using a gaussian blur (if @racket[mode] is
+@racket['gaussian]), an iterated box blur that approximates a gaussian
+blur (if @racket[mode] is @racket['iterated-box]), or a single box
+blur (if @racket[mode] is @racket['single-box]). The @racket[h-radius]
+and @racket[v-radius] arguments control the strength of the horizontal
+and vertical components of the blur, respectively. They are given in
+terms of pict units, which may not directly correspond to screen pixels.
+
+The @racket['gaussian] blur mode can be quite slow, especially for
+large blur radii. It takes work proportional to
+@racketblock[(* (pict-width p) (pict-height p) (+ h-radius v-radius))]
+The default @racket['iterated-box] blur mode is faster; it takes work
+proportional to
+@racketblock[(* (pict-width p) (pict-height p))]
+All modes may be sped up by a factor of up to
+@racket[(processor-count)] due to the use of @racket[future]s.
+
+@examples[#:eval the-eval
+(blur (text "blur" null 40) 5)
+(blur (text "more blur" null 40) 10)
+(blur (text "much blur" null 40) 20)
+(blur (text "horiz. blur" null 40) 10 0)
+]
+The resulting pict has the same bounding box as @racket[p], so when
+picts are automatically @racket[clip]ped (as in Scribble documents),
+the pict should be @racket[inset] by the blur radius.
+@examples[#:eval the-eval
+(inset (blur (text "more blur" null 40) 10) 10)
+]
+
+Genuine @racket['gaussian] blur compared with @racket['iterated-box] blur:
+@examples[#:eval the-eval
+(vl-append (inset (blur (text "blur" null 40) 10 #:mode 'gaussian) 10)
+           (inset (blur (text "blur" null 40) 10 #:mode 'iterated-box) 10))
+]
+}               
+
+@defproc[(shadow [p pict?]
+                 [radius (and/c real? (not/c negative?))]
+                 [dx real? 0]
+                 [dy real? dx]
+                 [#:color color (or/c #f string? (is-a?/c color%)) #f]
+                 [#:shadow-color shadow-color (or/c #f string? (is-a?/c color%)) #f]
+                 [#:mode mode (or/c 'gaussian 'iterated-box 'single-box) 'iterated-box])
+         pict?]{
+
+Creates a shadow effect by superimposing @racket[p] over a
+blurred version of @racket[p]. The shadow is offset from @racket[p] by
+(@racket[dx], @racket[dy]) units.
+
+If @racket[color] is not @racket[#f], the foreground part is
+@racket[(colorize p color)]; otherwise it is just @racket[p]. If
+@racket[shadow-color] is not @racket[#f], the shadow part is produced
+by blurring @racket[(colorize p shadow-color)]; otherwise it is
+produced by blurring @racket[p].
+
+The resulting pict has the same bounding box as @racket[p].
+
+@examples[#:eval the-eval
+(inset (shadow (text "shadow" null 50) 10) 10)
+(inset (shadow (text "shadow" null 50) 10 5) 10)
+(inset (shadow (text "shadow" null 50) 
+               5 0 2 #:color "white" #:shadow-color "red")
+       10)
+]
+}
+
+@defproc[(blur-bitmap! [bitmap (is-a?/c bitmap%)]
+                       [h-radius (and/c real? (not/c negative?))]
+                       [v-radius (and/c real? (not/c negative?)) h-radius]
+                       [#:mode mode (or/c 'gaussian 'iterated-box 'single-box) 'iterated-box])
+         void?]{
+
+Blurs @racket[bitmap] using blur radii @racket[h-radius] and
+@racket[v-radius] and mode @racket[mode].
+}
+
 
 @(close-eval the-eval)

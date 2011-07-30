@@ -13,4 +13,3 @@
 @include-section["gui/pict.scrbl"]
 @include-section["gui/slideshow.scrbl"]
 @include-section["gui/pslide.scrbl"]
-@include-section["gui/blur.scrbl"]
