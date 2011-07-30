@@ -6,7 +6,8 @@
                      "private/ppict-syntax.rkt")
          racket/contract
          slideshow/pict
-         "private/ppict.rkt")
+         "private/ppict.rkt"
+         "private/tag-pict.rkt")
 
 (define-for-syntax (ppict-do*-transformer who stx)
   (syntax-parse stx
@@ -32,8 +33,7 @@
 
 (provide ppict?
          placer?
-         refpoint-placer?
-         tag-path?)
+         refpoint-placer?)
 
 (provide/contract
  [ppict-go
@@ -82,11 +82,4 @@
        refpoint-placer?)]
  [merge-refpoints
   (-> refpoint-placer? refpoint-placer?
-      refpoint-placer?)]
-
- [tag-pict
-  (-> pict? symbol? pict?)]
- [pict-tag
-  (-> pict? (or/c symbol? #f))]
- [find-tag
-  (-> pict? tag-path? (or/c pict-path? #f))])
+      refpoint-placer?)])

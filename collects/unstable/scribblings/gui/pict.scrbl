@@ -13,7 +13,7 @@
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/math slideshow/pict unstable/gui/pict))
 
-@title{Pict Utilities}
+@title[#:tag "pict"]{Pict Utilities}
 
 @unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
@@ -431,5 +431,56 @@ Blurs @racket[bitmap] using blur radii @racket[h-radius] and
 @racket[v-radius] and mode @racket[mode].
 }
 
+
+@subsection{Tagged picts}
+
+@defproc[(tag-pict [p pict?] [tag symbol?]) pict?]{
+
+Returns a pict like @racket[p] that carries a symbolic tag. The tag
+can be used with @racket[find-tag] to locate the pict.
+}
+
+@defproc[(find-tag [p pict?] [find tag-path?])
+         (or/c pict-path? #f)]{
+
+Locates a sub-pict of @racket[p]. Returns a pict-path that can be used
+with functions like @racket[lt-find], etc.
+
+@examples[#:eval the-eval
+(let* ([a (tag-pict (red (disk 20)) 'a)]
+       [b (tag-pict (blue (filled-rectangle 20 20)) 'b)]
+       [p (vl-append a (hb-append (blank 100) b))])
+  (pin-arrow-line 10 p
+                  (find-tag p 'a) rb-find
+                  (find-tag p 'b) lt-find))
+]
+}
+
+@defproc[(find-tag* [p pict?] [find tag-path?])
+         (listof pict-path?)]{
+
+Like @racket[find-tag], but returns all pict-paths corresponding to
+the given tag-path.
+
+@examples[#:eval the-eval
+(let* ([a (lambda () (tag-pict (red (disk 20)) 'a))]
+       [b (lambda () (tag-pict (blue (filled-rectangle 20 20)) 'b))]
+       [as (vc-append 10 (a) (a) (a))]
+       [bs (vc-append 10 (b) (b) (b))]
+       [p (hc-append as (blank 60 0) bs)])
+  (for*/fold ([p p])
+      ([apath (in-list (find-tag* p 'a))]
+       [bpath (in-list (find-tag* p 'b))])
+    (pin-arrow-line 10 p
+                    apath rc-find
+                    bpath lc-find)))
+]
+}
+
+@defproc[(tag-path? [x any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[x] is a symbol or a non-empty list of
+symbols, @racket[#f] otherwise.
+}
 
 @(close-eval the-eval)

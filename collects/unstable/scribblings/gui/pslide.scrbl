@@ -6,13 +6,14 @@
           (for-label racket/base
                      slideshow
                      unstable/gui/ppict
-                     unstable/gui/pslide))
+                     unstable/gui/pslide
+                     unstable/gui/pict))
 
 @title[#:tag "ppict"]{Progressive Picts and Slides}
 @unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require slideshow/pict unstable/gui/ppict))
+@(the-eval '(require slideshow/pict unstable/gui/ppict unstable/gui/private/tag-pict))
 
 @section[#:tag "ppicts"]{Progressive Picts}
 
@@ -350,28 +351,6 @@ reference point is computed by @racket[y-placer].
                                 (at-find-pict 'red-fish))
           (text "red fish"))
 ]
-}
-
-
-@subsection{Tagging picts}
-
-@defproc[(tag-pict [p pict?] [tag symbol?]) pict?]{
-
-Returns a pict like @racket[p] that carries a symbolic tag. The tag
-can be used with @racket[find-tag] to locate the pict.
-}
-
-@defproc[(find-tag [p pict?] [find tag-path?])
-         (or/c pict-path? #f)]{
-
-Locates a sub-pict of @racket[p]. Returns a pict-path that can be used
-with functions like @racket[lt-find], etc.
-}
-
-@defproc[(tag-path? [x any/c]) boolean?]{
-
-Returns @racket[#t] if @racket[x] is a symbol or a non-empty list of
-symbols, @racket[#f] otherwise.
 }
 
 

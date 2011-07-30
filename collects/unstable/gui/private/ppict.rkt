@@ -4,7 +4,8 @@
          racket/class
          racket/stxparam
          racket/contract
-         slideshow/pict)
+         slideshow/pict
+         "tag-pict.rkt")
 
 #|
 TODO
@@ -332,49 +333,6 @@ In a placer function's arguments:
 
 (define (ghost* x)
   (if (pict? x) (ghost x) x))
-
-;; ============================================================
-;; Tagged picts
-
-(struct tagged-pict pict (tag))
-;; tag is symbol
-
-(define (tag-pict p tg)
-  (tagged-pict (pict-draw p)
-               (pict-width p)
-               (pict-height p)
-               (pict-ascent p)
-               (pict-descent p)
-               (list (make-child p 0 0 1 1 0 0))
-               #f
-               (pict-last p)
-               tg))
-
-;; find-tag : pict tag-path -> pict-path
-(define (find-tag p tagpath)
-  (let ([tagpath (if (symbol? tagpath) (list tagpath) tagpath)])
-    (define (loop p tagpath)
-      (cond [(pair? tagpath)
-             (childrenloop (pict-children p) tagpath)]
-            [(null? tagpath)
-             (list p)]))
-    (define (pairloop p tagpath)
-      (or (and (tagged-pict? p)
-               (eq? (tagged-pict-tag p) (car tagpath))
-               (let ([r (loop p (cdr tagpath))])
-                 (and r (cons p r))))
-          (childrenloop (pict-children p) tagpath)))
-    (define (childrenloop children tagpath)
-      (for/or ([c (in-list children)])
-        (pairloop (child-pict c) tagpath)))
-    (loop p tagpath)))
-
-(define (tag-path? x)
-  (or (symbol? x)
-      (and (list? x) (pair? x) (andmap symbol? x))))
-
-(define (pict-tag p)
-  (and (tagged-pict? p) (tagged-pict-tag p)))
 
 ;; ============================================================
 ;; Exports
