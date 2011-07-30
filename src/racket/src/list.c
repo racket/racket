@@ -1109,6 +1109,9 @@ int scheme_is_list(Scheme_Object *obj1)
   }
 
   /* Propagate info further up the chain. */
+  /* We could have a race with JIT-generated code, but the worst
+     should be that we lose a flag setting (dangerous in principle,
+     but not in practice). */
   SCHEME_PAIR_FLAGS(obj2) |= (flags & PAIR_FLAG_MASK);
 
   return (flags & PAIR_IS_LIST);

@@ -292,7 +292,7 @@ SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 # More dependencies
 
 COMMON_HEADERS = $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
-                 $(srcdir)/../include/schthread.h 
+                 $(srcdir)/../include/schthread.h $(srcdir)/mzrt.h $(srcdir)/mzrt_cas.inc
 JIT_HEADERS = $(srcdir)/../src/jit.h \
         $(srcdir)/../src/stypes.h \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
@@ -324,7 +324,7 @@ complex.@LTO@: $(COMMON_HEADERS)  \
 dynext.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/../src/stypes.h $(srcdir)/../src/schemex.h \
          $(srcdir)/schvers.h $(srcdir)/../gc/gc.h $(srcdir)/schemex.h
-env.@LTO@: $(COMMON_HEADERS)  \
+env.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schminc.h $(srcdir)/mzmark_env.inc
 error.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  
@@ -338,7 +338,7 @@ fun.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_fun.inc $(srcdir)/schmap.inc \
 				$(srcdir)/future.h
 future.@LTO@: $(COMMON_HEADERS) $(srcdir)/future.h $(SCONFIG) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_future.inc $(srcdir)/mzrt.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_future.inc \
         $(srcdir)/jit_ts_future_glue.c $(srcdir)/jit_ts_runtime_glue.c $(srcdir)/jit_ts_protos.h
 hash.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_hash.inc

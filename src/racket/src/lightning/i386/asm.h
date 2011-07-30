@@ -457,6 +457,11 @@ typedef _uc		jit_insn;
 #define CMPXCHGLrr(RS,RD)		_OO_Mrm		(0x0fb1		,_b11,_r4(RS),_r4(RD)				)
 #define CMPXCHGLrm(RS,MD,MB,MI,MS)	_OO_r_X		(0x0fb1		     ,_r4(RS)		,MD,MB,MI,MS		)
 
+/* Above variants don't seem to work */
+#define CMPXCHGr(RS, RD)          	(_jit_B(0xF), _O_r_X(0xb1 	     ,_r4(RD)		,0,RS,0,0		))
+#define CMPXCHGWr(RS, RD)          	(_d16(), _jit_B(0xF), _O_r_X(0xb1    ,_r4(RD)		,0,RS,0,0		))
+
+#define LOCK_PREFIX(i) (_jit_B(0xf0), i)
 
 #define DECBr(RD)			_O_Mrm		(0xfe		,_b11,_b001  ,_r1(RD)				)
 #define DECBm(MD,MB,MI,MS)		_O_r_X		(0xfe		     ,_b001		,MD,MB,MI,MS		)
@@ -708,9 +713,6 @@ typedef _uc		jit_insn;
 #define MOVSWLmr(MD, MB, MI, MS, RD)	_OO_r_X		(0x0fbf		     ,_r1(RD)		,MD,MB,MI,MS		)
 
 #define MOVSWQmr(MD, MB, MI, MS, RD)	_qOO_r_X	(0x0fbf		     ,_r1(RD)		,MD,MB,MI,MS		)
-
-#define CMPXCHGr(RS, RD)          	(_jit_B(0xF), _O_r_X(0xb1 	     ,_r4(RD)		,0,RS,0,0		))
-#define LOCK_PREFIX(i) (_jit_B(0xf0), i)
 
 #define MULBr(RS)			_O_Mrm		(0xf6		,_b11,_b100  ,_r1(RS)				)
 #define MULBm(MD,MB,MI,MS)		_O_r_X		(0xf6		     ,_b100		,MD,MB,MI,MS		)

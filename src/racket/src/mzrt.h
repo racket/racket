@@ -85,68 +85,36 @@ int mzrt_sema_destroy(mzrt_sema *sema);
 
 /****************** Compare and Swap *******************************/
 
-static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val) {
-#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && __GNUC__ <= 4 && __GNUC_MINOR__ < 1
-# if defined(__i386__)
-    char result;
-    __asm__ __volatile__("lock; cmpxchgl %3, %0; setz %1"
-        : "=m"(*addr), "=q"(result)
-        : "m"(*addr), "r" (new_val), "a"(old)
-        : "memory");
-    return (int) result;
-# elif defined(__x86_64__)
-    char result;
-    __asm__ __volatile__("lock; cmpxchgq %3, %0; setz %1"
-        : "=m"(*addr), "=q"(result)
-        : "m"(*addr), "r" (new_val), "a"(old)
-        : "memory");
-    return (int) result;
-# elif defined(__POWERPC__) || defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)  \
-  || defined(__powerpc64__) || defined(__ppc64__)
-    size_t oldval;
-    int result = 0;
-#  if defined(__powerpc64__) || defined(__ppc64__) || defined(__64BIT__)
-#   define CAS_I_SIZE "d"
-#  else
-#   define CAS_I_SIZE "w"
-#  endif
-    /* This code is based on Boehm GC's libatomic */
-    __asm__ __volatile__(
-                         "1:l" CAS_I_SIZE "arx %0,0,%2\n" /* load and reserve */
-                         "cmpw %0, %4\n"                  /* if load is not equal to  */
-                         "bne 2f\n"                       /*   old, fail */
-                         "st" CAS_I_SIZE "cx. %3,0,%2\n"  /* else store conditional */
-                         "bne- 1b\n"                      /* retry if lost reservation */
-                         "li %1,1\n"                      /* result = 1;     */
-                         "2:\n"
-                         : "=&r"(oldval), "=&r"(result)
-                         : "r"(addr), "r"(new_val), "r"(old), "1"(result)
-                         : "memory", "cc");
-    
-    return result;
-# else
-#  error mzrt_cas not defined on this platform
-# endif
-
-#elif defined(__GNUC__) && !defined(__INTEL_COMPILER)
-  return __sync_bool_compare_and_swap(addr, old, new_val);
-#elif defined(_MSC_VER)
-# if defined(_AMD64_)
-  return _InterlockedCompareExchange64((LONGLONG volatile *)addr, (LONGLONG)new_val, (LONGLONG)old) == (LONGLONG)old;
-# elif _M_IX86 >= 400
-  return _InterlockedCompareExchange((LONG volatile *)addr, (LONG)new_val, (LONG)old) == (LONG)old;
-# endif
+#define mz_CAS_T uintptr_t
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define mz_CAS_64
 #else
-# error mzrt_cas not defined on this platform
+# define mz_CAS_32
 #endif
-}
+#define mz_MZRT_CAS mzrt_cas
+#include "mzrt_cas.inc"
+#undef mz_CAS_T
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# undef mz_CAS_64
+#else
+# undef mz_CAS_32
+#endif
+#undef mz_MZRT_CAS
+
+#define mz_CAS_T short
+#define mz_CAS_16
+#define mz_MZRT_CAS mzrt_cas16
+#include "mzrt_cas.inc"
+#undef mz_CAS_T
+#undef mz_CAS_16
+#undef mz_MZRT_CAS
 
 static MZ_INLINE void mzrt_ensure_max_cas(uintptr_t *atomic_val, uintptr_t len) {
   int set = 0;
   while(!set) {
     uintptr_t old_val = *atomic_val;
     if (len > old_val) {
-      set = !mzrt_cas((size_t *)atomic_val, old_val, len);
+      set = !mzrt_cas(atomic_val, old_val, len);
     }
     else {
       set = 1;

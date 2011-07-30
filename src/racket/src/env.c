@@ -28,7 +28,6 @@
    initialization sequence (filling the initial namespace). */
 
 #include "schpriv.h"
-#include "mzrt.h"
 #include "schminc.h"
 #include "schmach.h"
 #include "schexpobs.h"

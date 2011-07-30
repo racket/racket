@@ -147,6 +147,11 @@ static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
   return scheme_make_integer(1);
 }
 
+int scheme_is_multiprocessor(int now)
+{
+  return 0;
+}
+
 Scheme_Object *scheme_current_future(int argc, Scheme_Object *argv[])
 {
   future_t *ft = scheme_current_thread->current_ft;
@@ -1909,17 +1914,31 @@ static void init_cpucount(void)
   size_t size = sizeof(cpucount);
 
   if (sysctlbyname("hw.ncpu", &cpucount, &size, NULL, 0))
-	{
-	  cpucount = 1;
-	}
+    cpucount = 2;
 #elif defined(DOS_FILE_SYSTEM)
   SYSTEM_INFO sysinfo;
   GetSystemInfo(&sysinfo);
   cpucount = sysinfo.dwNumberOfProcessors;
 #else
   /* Conservative guess! */
-  cpucount = 1;
+  /* A result of 1 is not conservative, because claiming a
+     uniprocessor means that atomic cmpxchg operations are not used
+     for setting pair flags and hash codes. */
+  cpucount = 2;
 #endif
+}
+
+int scheme_is_multiprocessor(int now)
+{
+  if (cpucount > 1) {
+    if (!now) 
+      return 1;
+    else {
+      Scheme_Future_State *fs = scheme_future_state;
+      return (fs && fs->future_threads_created);
+    }
+  } else
+    return 0;
 }
 
 Scheme_Object *processor_count(int argc, Scheme_Object *argv[])

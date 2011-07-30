@@ -292,6 +292,8 @@ void register_network_evts();
 void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
 
+XFORM_NONGCING int scheme_is_multiprocessor(int now);
+
 /* Type readers & writers for compiled code data */
 typedef Scheme_Object *(*Scheme_Type_Reader)(Scheme_Object *list);
 typedef Scheme_Object *(*Scheme_Type_Writer)(Scheme_Object *obj);
@@ -445,7 +447,7 @@ THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
 #endif
 
 #ifdef MZ_USE_MZRT
-#include "mzrt.h"
+# include "mzrt.h"
 #endif
 
 #ifdef MZ_USE_PLACES

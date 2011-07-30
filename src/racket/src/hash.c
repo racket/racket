@@ -25,7 +25,6 @@
 
 #include "schpriv.h"
 #include "schmach.h"
-#include <string.h>
 #include <ctype.h>
 #include <math.h>
 #include "../gc2/gc2_obj.h"
@@ -53,10 +52,16 @@ static void register_traversers(void);
 #define to_unsigned_hash(v) ((uintptr_t)v)
 
 #ifdef MZ_PRECISE_GC
-/* keygen race conditions below are ok, because keygen is randomness used
-   to create a hashkey. (Make sure that only one thread at a time sets
-   a hash code in a specific object, though.) */
+/* keygen race conditions below are "ok", because keygen is randomness
+   used to create a hashkey. Technically, a race condition allows
+   undefined behavior by some C standards, but we don't expect
+   compilers to actually impose a "catch fire" semantics. Make sure
+   that only one thread at a time sets a hash code in a specific
+   object, though, and watch out for a race with JIT-generated code
+   running in a future and setting flags on pairs. */
 SHARED_OK static uintptr_t keygen;
+
+XFORM_NONGCING extern int scheme_is_multiprocessor();
 
 XFORM_NONGCING static MZ_INLINE
 uintptr_t PTR_TO_LONG(Scheme_Object *o)
@@ -86,7 +91,16 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
       v &= ~0x4000;
 #endif
     if (!v) v = 0x1AD0;
-    o->keyex = v;
+#ifdef MZ_USE_FUTURES
+    if (SCHEME_PAIRP(o) && scheme_is_multiprocessor(1)) {
+      /* Use CAS to avoid losing a hash code due to a conflict with
+         JIT-generated `list?' test, which itself uses CAS to set "is
+         a list" or "not a list" flags on pairs. */
+      while (!mzrt_cas16(&o->keyex, o->keyex, v)) {
+      } 
+    } else
+#endif
+      o->keyex = v;
     keygen += 4;
   }
 

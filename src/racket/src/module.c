@@ -25,7 +25,6 @@
    bindings. */
 
 #include "schpriv.h"
-#include "mzrt.h"
 #include "schmach.h"
 #include "schexpobs.h"
 

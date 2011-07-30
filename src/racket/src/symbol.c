@@ -29,7 +29,6 @@
 #endif
 
 #include "schpriv.h"
-#include "mzrt.h"
 #include <string.h>
 #include <ctype.h>
 #include "schgc.h"

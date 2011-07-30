@@ -1684,6 +1684,9 @@ extern void *scheme_malloc_envunbox(size_t);
 # define MZ_GC_REG()  (__gc_var_stack__[0] = GC_variable_stack, \
                        GC_variable_stack = __gc_var_stack__)
 # define MZ_GC_UNREG() (GC_variable_stack = (void **)__gc_var_stack__[0])
+# ifndef MZ_XFORM
+#  define XFORM_SKIP_PROC /* empty */
+# endif
 #else
 # define MZ_GC_DECL_REG(size)            /* empty */
 # define MZ_GC_VAR_IN_REG(x, v)          /* empty */
