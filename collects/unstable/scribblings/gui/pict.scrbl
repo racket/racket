@@ -456,7 +456,7 @@ Blurs @racket[bitmap] using blur radii @racket[h-radius] and
 }
 
 
-@subsection{Tagged picts}
+@subsection{Tagged Picts}
 
 @defproc[(tag-pict [p pict?] [tag symbol?]) pict?]{
 
@@ -495,7 +495,7 @@ the given tag-path.
   (for*/fold ([p p])
       ([apath (in-list (find-tag* p 'a))]
        [bpath (in-list (find-tag* p 'b))])
-    (pin-arrow-line 10 p
+    (pin-arrow-line 4 p
                     apath rc-find
                     bpath lc-find)))
 ]
@@ -505,6 +505,57 @@ the given tag-path.
 
 Returns @racket[#t] if @racket[x] is a symbol or a non-empty list of
 symbols, @racket[#f] otherwise.
+}
+
+@section{Shadow Frames}
+
+@defproc[(shadow-frame [pict pict?] ...
+                       [#:sep separation real? 5]
+                       [#:margin margin real? 20]
+                       [#:background-color bg-color (or/c string? (is-a?/c color%)) "white"]
+                       [#:frame-color frame-color (or/c string? (is-a?/c color%)) "gray"]
+                       [#:frame-line-width frame-line-width (or/c real? #f) 0]
+                       [#:shadow-side-length shadow-side-length real? 4]
+                       [#:shadow-top-y-offset shadow-top-y-offset real? 10]
+                       [#:shadow-bottom-y-offset shadow-bottom-y-offset real? 4]
+                       [#:shadow-descent shadow-descent (and/c real? (not/c negative?)) 40]
+                       [#:shadow-alpha-factor shadow-alpha-factor real? 3/4]
+                       [#:blur blur-radius (and/c real? (not/c negative?)) 20])
+         pict?]{
+
+Surrounds the @racket[pict]s with a rectangular frame that casts a
+symmetric ``curled paper'' shadow.
+
+The @racket[pict]s are vertically appended with @racket[separation]
+space between them. They are placed on a rectangular background of
+solid @racket[bg-color] with @racket[margin] space on all sides. A
+frame of @racket[frame-color] and @racket[frame-line-width] is added
+around the rectangle. The rectangle casts a shadow that extends
+@racket[shadow-side-length] to the left and right, starts
+@racket[shadow-top-y-offset] below the top of the rectangle and
+extends to @racket[shadow-bottom-y-offset] below the bottom of the
+rectangle in the center and an additional @racket[shadow-descent]
+below that on the sides. The shadow is painted using a linear
+gradient; @racket[shadow-alpha-factor] determines its density at the
+center. Finally, the shadow is blurred by @racket[blur-radius]; all
+previous measurements are pre-blur measurements.
+
+@examples[#:eval the-eval
+(scale (shadow-frame (text "text in a nifty frame" null 60)) 1/2)
+]
+}
+
+@defproc[(arch [outer-width real?]
+               [inner-width real?]
+               [solid-height real?]
+               [leg-height real?])
+         pict?]{
+
+Creates an arch.
+
+@examples[#:eval the-eval
+(colorize (arch 100 80 20 20) "red")
+]
 }
 
 @(close-eval the-eval)

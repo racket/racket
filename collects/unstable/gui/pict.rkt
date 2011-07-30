@@ -403,3 +403,31 @@
  [find-tag*
   (-> pict? tag-path?
       (listof pict-path?))])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  Shadow frame
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require "private/shframe.rkt")
+
+(provide/contract
+ [shadow-frame
+  (->* ()
+       (#:background-color (or/c string? (is-a?/c color%))
+        #:frame-color (or/c string? (is-a?/c color%))
+        #:frame-line-width (or/c real? #f)
+        #:shadow-side-length real?
+        #:shadow-top-y-offset real?
+        #:shadow-bottom-y-offset real?
+        #:shadow-descent (and/c real? (not/c negative?))
+        #:shadow-alpha-factor real?
+        #:blur (and/c real? (not/c negative?))
+        #:margin real?
+        #:sep real?)
+       #:rest (listof pict?)
+       pict?)]
+ [arch
+  (-> real? real? real? real?
+      pict?)])
