@@ -27,7 +27,7 @@
            build-string
            build-list
 
-           (rename-out [alt-reverse reverse] ; defined in "for.rkt"
+           (rename-out [alt-reverse reverse]
                        [alt-memq memq]
                        [alt-memv memv]
                        [alt-member member])
