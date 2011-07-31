@@ -1,8 +1,16 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label scheme
+          (for-label (except-in racket require)
                      string-constants
-                     setup/getinfo))
+                     setup/getinfo
+                     (only-in setup/infotab require)))
+
+@(begin
+  (define-syntax-rule (define-racket-require id)
+   (begin
+    (require (for-label (only-in racket require)))
+    (define id @racket[require])))
+  (define-racket-require racket:require))
 
 @title[#:tag "info.rkt"]{@filepath{info.rkt} File Format}
 
@@ -24,15 +32,17 @@ grammar of @racket[_info-module]:
                  string-append path->string build-path
                  collection-path
                  system-library-subpath
-                 string-constant)
+                 require string-constant)
 [info-module (module info intotab-mod-path
-               (define id info-expr)
+               decl
                ...)]
 [intotab-mod-path setup/infotab
                   (lib "setup/infotab.ss")
                   (lib "setup/infotab.rkt")
                   (lib "infotab.rkt" "setup")
                   (lib "infotab.ss" "setup")]
+[decl (define id info-expr)
+      (require allowed-path)]
 [info-expr (quote datum)
            (quasiquote datum)
            (info-primitive info-expr ...)
@@ -46,6 +56,10 @@ grammar of @racket[_info-module]:
                 string-append
                 path->string build-path collection-path
                 system-library-subpath]
+[allowed-path (lib "string-constant.ss" "string-constants")
+              (lib "string-constants/string-constant.ss")
+              string-constants/string-constant
+              string-constants]
 ]
 
 For example, the following declaration could be the @filepath{info.rkt}
@@ -65,3 +79,8 @@ As illustrated in this example, an @filepath{info.rkt} file can use
 language.
 
 See also @racket[get-info] from @racketmodname[setup/getinfo].
+
+@defform[(require module-path)]{
+
+Like @|racket:require|, but constrained to @racket[_allowed-path] as
+shown in the grammar above.}

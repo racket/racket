@@ -64,4 +64,5 @@
          string-append
          path->string build-path collection-path
          system-library-subpath
-         (rename-out [limited-require require]))
+         (rename-out [limited-require require])
+         lib)
