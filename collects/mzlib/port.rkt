@@ -1468,7 +1468,7 @@
                 [name (object-name port)]
                 [convert-newlines-to #f]
                 [decode-error (lambda (msg port)
-                                (error 'reencode-input-port
+                                (error 'reencode-output-port
                                        (format "~a: ~~e" msg)
                                        port))])
     (let ([c (bytes-open-converter "UTF-8" encoding)]
