@@ -121,7 +121,8 @@ implements the compilation and dependency management used by
 @exec{raco make} and @exec{raco setup}.}
 
 @defproc[(make-compilation-manager-load/use-compiled-handler 
-          [delete-zos-when-rkt-file-does-not-exist? any/c #f])
+          [delete-zos-when-rkt-file-does-not-exist? any/c #f]
+          [#:security-guard security-guard (or/c security-guard? #f) #f])
          (path? (or/c symbol? false/c) . -> . any)]{
 
 Returns a procedure suitable as a value for the
@@ -208,6 +209,15 @@ If the @racket[delete-zos-when-rkt-file-does-not-exist?] argument is a true
 value, then the returned handler will delete @filepath{.zo} files
 when there is no corresponding original source file.
 
+If the @racket[security-guard] argument is supplied, it is used when
+creating @filepath{.zo} files, @filepath{.dep} files, and @filepath{compiled/}
+directories.
+If it is @racket[#f], then
+the security guard in the @racket[current-security-guard] when 
+the files are created is used (not the security guard at the point 
+@racket[make-compilation-manager-load/use-compiled-handler] is called).
+
+
 @emph{Do not} install the result of
 @racket[make-compilation-manager-load/use-compiled-handler] when the
 current namespace contains already-loaded versions of modules that may
@@ -218,7 +228,8 @@ modules may produce compiled files with inconsistent timestamps and/or
 
 
 @defproc[(managed-compile-zo [file path-string?]
-                             [read-src-syntax (any/c input-port? . -> . syntax?) read-syntax]) 
+                             [read-src-syntax (any/c input-port? . -> . syntax?) read-syntax]
+                             [#:security-guard security-guard (or/c security-guard? #f) #f]) 
          void?]{
 
 Compiles the given module source file to a @filepath{.zo}, installing
@@ -230,7 +241,15 @@ to record the timestamps of immediate files used to compile the source
 If @racket[file] is compiled from source, then
 @racket[read-src-syntax] is used in the same way as
 @racket[read-syntax] to read the source module. The normal
-@racket[read-syntax] is used for any required files, however.}
+@racket[read-syntax] is used for any required files, however.
+
+If @racket[security-guard] is not @racket[#f], then the provided security
+guard is used when creating the @filepath{compiled/} directories, as well
+as the @filepath{.dep} and @filepath{.zo} files. If it is @racket[#f], then
+the security guard in the @racket[current-security-guard] when 
+the files are created is used (not the security guard at the point 
+@racket[managed-compile-zo] is called).
+}
 
 
 @defboolparam[trust-existing-zos trust?]{
@@ -242,13 +261,13 @@ out-of-date @filepath{.zo} files instead of re-compiling from source.}
 
 
 @defproc[(make-caching-managed-compile-zo
-          [read-src-syntax (any/c input-port? . -> . syntax?)])
+          [read-src-syntax (any/c input-port? . -> . syntax?)]
+          [#:security-guard security-guard (or/c security-guard? #f) #f])
          (path-string? . -> . void?)]{
 
 Returns a procedure that behaves like @racket[managed-compile-zo]
 (providing the same @racket[read-src-syntax] each time), but a cache
 of timestamp information is preserved across calls to the procedure.}
-
 
 @defparam[manager-compile-notify-handler notify (path? . -> . any)]{
 
@@ -273,7 +292,6 @@ A parameter whose value is called for each file that is loaded and
  @racket[#f], then the file is compiled as usual. The default is
  @racket[(lambda (x) #f)].}
 
-
 @defproc[(file-stamp-in-collection [p path?]) (or/c (cons/c number? promise?) #f)]{
   Calls @racket[file-stamp-in-paths] with @racket[p] and
   @racket[(current-library-collection-paths)].}
@@ -287,7 +305,6 @@ Returns the file-modification date and @racket[delay]ed hash of
  etc.). Otherwise, the result is @racket[#f].
 
  This function is intended for use with @racket[manager-skip-file-handler].}
-
 
 @defproc[(get-file-sha1 [p path?]) (or/c string? #f)]{
 

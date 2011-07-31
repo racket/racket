@@ -23,8 +23,8 @@
          get-file-sha1
          get-compiled-file-sha1
          with-compile-output
-         parallel-lock-client
          
+         parallel-lock-client
          make-compile-lock
          compile-lock->parallel-lock-client)
 
@@ -169,30 +169,42 @@
 ;;  closed and the file is reliably deleted if there's a break
 (define (with-compile-output path proc)
   (let ([bp (current-break-parameterization)]
-        [tmp-path (make-temporary-file "tmp~a" #f (path-only path))]
+        [tmp-path (with-compiler-security-guard (make-temporary-file "tmp~a" #f (path-only path)))]
         [ok? #f])
     (dynamic-wind
      void
      (lambda ()
        (begin0
-         (let ([out (open-output-file tmp-path #:exists 'truncate/replace)])
+         (let ([out (with-compiler-security-guard (open-output-file tmp-path #:exists 'truncate/replace))])
            (dynamic-wind
             void
             (lambda ()
               (call-with-break-parameterization bp (lambda () (proc out tmp-path))))
             (lambda ()
-              (close-output-port out))))
+              (with-compiler-security-guard (close-output-port out)))))
          (set! ok? #t)))
      (lambda ()
-       (if ok?
-           (if (eq? (system-type) 'windows)
-              (let ([tmp-path2 (make-temporary-file "tmp~a" #f (path-only path))])
-                (with-handlers ([exn:fail:filesystem? void])
-                  (rename-file-or-directory path tmp-path2 #t))
-                (rename-file-or-directory tmp-path path #t)
-                (try-delete-file tmp-path2))
-              (rename-file-or-directory tmp-path path #t))
-           (try-delete-file tmp-path))))))
+       (with-compiler-security-guard
+        (if ok?
+            (if (eq? (system-type) 'windows)
+                (let ([tmp-path2 (make-temporary-file "tmp~a" #f (path-only path))])
+                  (with-handlers ([exn:fail:filesystem? void])
+                    (rename-file-or-directory path tmp-path2 #t))
+                  (rename-file-or-directory tmp-path path #t)
+                  (try-delete-file tmp-path2))
+                (rename-file-or-directory tmp-path path #t))
+            (try-delete-file tmp-path)))))))
+
+(define-syntax-rule
+  (with-compiler-security-guard expr)
+  (parameterize ([current-security-guard (pick-security-guard)]) 
+    expr))
+
+(define compiler-security-guard (make-parameter #f))
+
+(define (pick-security-guard)
+  (or (compiler-security-guard)
+      (current-security-guard)))
 
 (define (get-source-sha1 p)
   (with-handlers ([exn:fail:filesystem? (lambda (exn)
@@ -351,7 +363,7 @@
 
   ;; Write the code and dependencies:
   (when code
-    (make-directory*/ignore-exists-exn code-dir)
+    (with-compiler-security-guard (make-directory*/ignore-exists-exn code-dir))
     (with-compile-output zo-name
       (lambda (out tmp-name)
         (with-handlers ([exn:fail?
@@ -573,16 +585,17 @@
       (begin (trace-printf "checking: ~a" orig-path)
              (do-check))))
 
-(define (managed-compile-zo zo [read-src-syntax read-syntax])
-  ((make-caching-managed-compile-zo read-src-syntax) zo))
+(define (managed-compile-zo zo [read-src-syntax read-syntax] #:security-guard [security-guard #f])
+  ((make-caching-managed-compile-zo read-src-syntax #:security-guard security-guard) zo))
 
-(define (make-caching-managed-compile-zo [read-src-syntax read-syntax])
+(define (make-caching-managed-compile-zo [read-src-syntax read-syntax] #:security-guard [security-guard #f])
   (let ([cache (make-hash)])
     (lambda (src)
       (parameterize ([current-load/use-compiled
                       (make-compilation-manager-load/use-compiled-handler/table
                        cache
-                       #f)])
+                       #f
+                       #:security-guard security-guard)])
         (compile-root (car (use-compiled-file-paths))
                       (path->complete-path src)
                       cache
@@ -590,10 +603,14 @@
                       #f)
         (void)))))
 
-(define (make-compilation-manager-load/use-compiled-handler [delete-zos-when-rkt-file-does-not-exist? #f])
-  (make-compilation-manager-load/use-compiled-handler/table (make-hash) delete-zos-when-rkt-file-does-not-exist?))
+(define (make-compilation-manager-load/use-compiled-handler [delete-zos-when-rkt-file-does-not-exist? #f]
+                                                            #:security-guard 
+                                                            [security-guard #f])
+  (make-compilation-manager-load/use-compiled-handler/table (make-hash) delete-zos-when-rkt-file-does-not-exist?
+                                                            #:security-guard security-guard))
 
-(define (make-compilation-manager-load/use-compiled-handler/table cache delete-zos-when-rkt-file-does-not-exist?)
+(define (make-compilation-manager-load/use-compiled-handler/table cache delete-zos-when-rkt-file-does-not-exist?
+                                                                  #:security-guard [security-guard #f])
   (let ([orig-eval (current-eval)]
         [orig-load (current-load)]
         [orig-registry (namespace-module-registry (current-namespace))]
@@ -637,7 +654,8 @@
                            (namespace-module-registry (current-namespace)))]
             [else
              (trace-printf "processing: ~a" path)
-             (compile-root (car modes) path cache read-syntax #f)
+             (parameterize ([compiler-security-guard security-guard])
+               (compile-root (car modes) path cache read-syntax #f))
              (trace-printf "done: ~a" path)])
       (default-handler path mod-name))
     (when (null? modes)
