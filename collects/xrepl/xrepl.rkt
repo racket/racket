@@ -738,7 +738,7 @@
                            "\n; ")))
 
 (define time-id
-  (make-lazy-identifier 'time* '(only-in unstable/time [time time*])))
+  (make-lazy-identifier 'time* 'unstable/time))
 (defcommand time "[<count>] <expr> ..."
   "time an expression"
   ["Times execution of an expression, similar to `time' but prints a"
