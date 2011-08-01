@@ -5,6 +5,25 @@
 @title{Units of Code}
 
 @; -----------------------------------------------------------------------------
+@section{Organization Matters}
+
+We often develop units of code in a bottom-up fashion with some top-down
+planning. There is nothing surprising about this strategy because we build
+code atop of existing libraries, which takes some experimentation, which in
+turn is done in the REPL. We also want testable code quickly, meaning we
+tend to write down those pieces of code first for which we can develop and
+run tests. Readers don't wish to follow our development, however; they wish
+to understand what the code computes without necessarily understanding all
+the details.
+
+So, please take the time to present each unit of code in a top-down
+manner. This starts with the implementation part of a module. Put the
+important functions close to the top, right below any code and comments as
+to what kind of data you use. The rule also applies to classes, where you
+want to expose @racket[public] methods before you tackle @racket[private]
+methods. And the rule applies to units, too.
+
+@; -----------------------------------------------------------------------------
 @section{Size Matters}
 
 Keep units of code small. Keep modules, classes, functions and methods small.
@@ -239,13 +258,15 @@ Consider using @scheme[provide/contract] for module interfaces.
 
 @subsection{Uniformity of Interface}
 
-Pick a consistency rule for the names of your functions, classes, and
-methods. Stick to it. For example, you may wish to prefix all exported
-names with the same word, say @racket[syntax-local].
+Pick a consistency rule for naming your functions, classes, and
+ methods. Stick to it. For example, you may wish to prefix all exported
+ names with the name of the data type that they deal with, say
+ @racket[syntax-local].
 
-Pick a consistency rule the parameters of your functions and methods. Stick
-to it. For example, if your module implements an abstract data type (ADT),
-all functions on the ADT should consume the ADT-argument first or last.
+Pick a consistency rule for naming and ordering the parameters of your
+ functions and methods. Stick to it. For example, if your module implements
+ an abstract data type (ADT), all functions on the ADT should consume the
+ ADT-argument first or last.
 
 @subsection{Sections}
 

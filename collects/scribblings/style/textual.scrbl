@@ -13,8 +13,8 @@ some of those that are easy to check---some automatically and some
 manually. If you find yourself editing a file that violates some of the
 constraints below, edit it into the proper
 shape. @margin-note{@bold{Warning}: On rare occasion a unit test may depend
-on the indentation of a file. This is extremely rare but you should be
-aware of it.}
+on the indentation of a file. This is extremely rare and must be noted at
+the top so that readers do not accidentally re-indent the file.}
 
 @; -----------------------------------------------------------------------------
 @section{Where to Put Parentheses}
@@ -70,16 +70,18 @@ end of long sequences, be those definitions or pieces of data.
      ))
  }]
 ]
+ Doing so is most useful when you expect to add, delete, or swap items in
+ such sequences.
 
 @; -----------------------------------------------------------------------------
 @section{Indentation}
 
 DrRacket indents code and it is the only tool that everyone in PLT agrees
-on. So use DrRacket's indentation style. Here is what this means.
-@nested[#:style 'inset]{
+ on. So use DrRacket's indentation style. Here is what this means.
+ @nested[#:style 'inset]{
  For every file in the repository, DrRacket's "indent all" functions leaves
  the file alone.}
-That's all there is to it.
+That is all there is to it.
 
 If you prefer to use some other editor (emacs, vi/m, etc), program it so
 that it follows DrRacket's indentation style.
@@ -112,7 +114,10 @@ Examples:
 rules, we need to use the @emph{default} settings of DrRacket's indentation
 for this rule to make sense. If you add new constructs, say a for loop,
 please contact Robby for advice on how to add a default setting for the
-indentation functionality.
+indentation functionality. If you add entire languages, say something on
+the order of Typed Racket, we will need to wait for Matthew and Robby to
+provide an indentation protocol on the @verbatim{#lang} line; please be
+patient and use the existing indentation tool anyway.
 
 @; -----------------------------------------------------------------------------
 @section{Line Breaks}
@@ -259,27 +264,51 @@ trvrs-frst
 ])
 ]
 @;
-If you cannot give a unit a good name, consider the possibility that it
-isn't a proper unit of code.
 
-You may use dots between parts of names, e.g., @racket[p.x] to suggest that
-field @racket[x] is selected from struct @racket[p].
+Another widely used convention is to @emph{prefix} a function name with the data
+ type of the main argument. This convention generalizes the selector-style
+ naming scheme of @racket[struct].
+@(begin
+#reader scribble/comment-reader
+[racketmod #:file
+@tt{good}
+racket
 
-In addition to regular alphanumeric characters, Racketeers use a few
-special characters by convention, and these characters indicate something
-about the name:
+board-free-spaces      board-attackable-spaces    board-serialize
+])
+ In contrast, variables use a @emph{suffix} that indicates their type:
+@(begin
+#reader scribble/comment-reader
+[racketmod #:file
+@tt{good}
+racket
+
+(define (win-or-lose? game-state)
+  (define position-nat-nat (game-state-position game-state))
+  (define health-level-nat (game-state-health game-state))
+  (define name-string      (game-state-name game-state))
+  (define name-symbol      (string->symbol name-string))
+  ...)
+])
+ The convention is particularly helpful when the same piece of data shows
+ up in different guises, say, symbols and strings.
+
+Names are bad if they heavily depend on knowledge about the context of the
+ code. It prevents readers from understanding a piece of functionality at
+ an approximate level without also reading large chunks of the surrounding
+ and code.
+
+Finally, in addition to regular alphanumeric characters, Racketeers use a
+ few special characters by convention, and these characters indicate
+ something about the name:
 
 @;column-table[ @col[? ! "@" ^ %] @col[1 2 3 4 5] @col[1 2 3 4 5] ]
 
 @row-table[
  @row[symbol kind example]
- @row[? predicates boolean?]
- @row[! setters    set!]
- @row[% classes    a%]
- @row["@" units      a@]
- @row[^ signatures a^]
+ @row[? "predicates and boolean-valued functions" boolean?]
+ @row[! "setters and field mutators"              set!]
+ @row[% "classes"                                 game-state%]
+ @row[^ "unit signatures"                         game-context^]
+ @row["@" units                                   testing-context@]
 ]
-
-Some Racketeers use the suffix of the name to suggest type(-like)
-information, e.g., @racket[body-xexpr] or @racket[body-xml]. For such uses,
-a colon is commonly found, e.g., @racket[p:posn] or @racket[p:pair-of-numbers].
