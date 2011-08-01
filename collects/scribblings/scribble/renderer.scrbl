@@ -1,5 +1,9 @@
 #lang scribble/doc
-@(require scribble/manual "utils.rkt" (for-label racket/class))
+@(require scribble/manual 
+          "utils.rkt" 
+          (for-label racket/class
+                     scribble/render
+                     scribble/xref))
 
 @(define-syntax-rule (defmodule/local lib . content)
    (begin
@@ -10,15 +14,73 @@
          . content))
      (intro)))
 
-@title[#:tag "renderer"]{Renderer}
+@(begin
+  (define-syntax-rule (def-render-mixin id)
+   (begin
+     (require (for-label scribble/html-render))
+     (define id @racket[render-mixin])))
+  (def-render-mixin html:render-mixin))
 
-A renderer is an object that provides two main methods:
-@racket[collect] and @racket[render]. The first method is called to
-collect global information about the document, including information
-that spans multiple documents rendered together; the collection pass
-tends to be format-independent, and it usually implemented completely
-by the base renderer. The latter method generates the actual output,
-which is naturally specific to a particular format.
+@title[#:tag "renderer"]{Renderers}
+
+A renderer is an object that provides four main methods:
+@racket[traverse], @racket[collect], @racket[resolve], and
+@racketidfont{render}. Each method corresponds to a pass described in
+@secref["core"], and they are chained together by the @racket[render]
+function to render a document.
+
+@section{Rendering Driver}
+
+@defmodule[scribble/render]
+
+@defproc[(render [docs (listof part?)]
+                 [names (listof path-string?)]
+                 [#:render-mixin render-mixin (class? . -> . class?) @#,html:render-mixin]
+                 [#:dest-dir dest-dir (or/c #f path-string?) #f]
+                 [#:prefix-file prefix-file (or/c #f path-string?) #f]
+                 [#:style-file style-file (or/c #f path-string?) #f]
+                 [#:style-extra-files style-extra-files (listof path-string?) #f]
+                 [#:extra-files extra-files (listof path-string?) #f]
+                 [#:xrefs xrefs (listof xref?) null]
+                 [#:info-in-files info-in-files (listof path?) null]
+                 [#:info-out-file info-out-file (or/c #f path-string?) #f]
+                 [#:redirect redirect (or/c #f string?) #f]
+                 [#:redirect-main redirect-main (or/c #f string?) #f]
+                 [#:quiet? quiet? any/c #f])
+          void?]{
+
+Renders the given @racket[docs], each with an output name derived from
+the corresponding element of @racket[names]. A directory path (if any)
+for a name in @racket[names] is discarded, and the file suffix is
+replaced (if any) with a suitable suffix for the output format.
+
+The @racket[render-mixin] argument determines the output format. By
+default, it is @html:render-mixin from @racketmodname[scribble/html-render].
+
+The @racket[dest-dir] argument determines the output directory, which
+is created using @racket[make-directory*] if it is non-@racket[#f] and
+does not exist already.
+
+The @racket[prefix-file], @racket[style-file],
+@racket[extra-style-files], and @racket[extra-files] arguments are
+passed on to the @racket[render%] constructor.
+
+The @racket[xrefs] argument provides extra cross-reference information
+to be used during the documents' @tech{resolve pass}. The
+@racket[info-in-files] arguments supply additional cross-reference
+information in serialized form. When the @racket[info-out-file]
+argument is not @racket[#f], cross-reference information for the
+rendered documents is written in serialized for to the specified file.
+
+The @racket[redirect] and @racket[redirect-main] arguments correspond
+to the @racket[set-external-tag-path] and
+@racket[set-external-root-url] methods of @|html:render-mixin| from
+@racketmodname[scribble/html-render], so they should be
+non-@racket[#f] only for HTML rendering.
+
+If @racket[quiet?] is a true value, output-file information is written
+to the current output port.}
+
 
 @section{Base Renderer}
 
@@ -45,7 +107,11 @@ Represents a renderer.
 
 @defconstructor[([dest-dir path-string?]
                  [refer-to-existing-files any/c #f]
-                 [root-path (or/c path-string? false/c) #f])]{
+                 [root-path (or/c path-string? #f) #f]
+                 [prefix-file (or/c path-string? #f) #f]
+                 [style-file (or/c path-string? #f) #f]
+                 [style-extra-files (listof path-string?) null]
+                 [extra-files (listof path-string?) null])]{
 
 Creates a renderer whose output will go to @racket[dest-dir]. For
 example, @racket[dest-dir] could name the directory containing the
@@ -58,7 +124,15 @@ cross-reference information to record destination files relative to
 @racket[root-path]; when cross-reference information is serialized, it
 can be deserialized via @method[render% deserialize-info] with a
 different root path (indicating that the destination files have
-moved).}
+moved).
+
+The @racket[prefix-file], @racket[style-file], and
+@racket[style-extra-files] arguments set files that control output
+styles in a formal-specific way; see @secref["config-style"] for more
+information.
+
+The @racket[extra-files] argument names files to be copied to the
+output location, such as image files or extra configuration files.}
 
 
 @defmethod[(traverse [srcs (listof part?)]
@@ -148,6 +222,13 @@ Configures the renderer to redirect links to external via
 @racket[url], adding a @racket[tag] query element to the end of the
 URL that contains the Base64-encoded, @racket[print]ed, serialized
 original tag (in the sense of @racket[link-element]) for the link.}
+
+@defmethod[(set-external-root-url [url string?]) void?]{
+
+Configures the renderer to redirect links to documents installed in
+the distribution's documentation directory to the given URL, using the
+URL as a replacement to the path of the distribution's document
+directory.}
 
 }
 

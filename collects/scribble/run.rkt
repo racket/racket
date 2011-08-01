@@ -1,11 +1,8 @@
 #lang racket/base
 
-(require "core.rkt"
-         "base-render.rkt"
-         "xref.rkt"
+(require "xref.rkt"
+         "render.rkt"
          scheme/cmdline
-         scheme/file
-         scheme/class
          raco/command-name
          (prefix-in text:  "text-render.rkt")
          (prefix-in html:  "html-render.rkt")
@@ -103,46 +100,29 @@
                  files))))
 
 (define (build-docs docs files)
-  (define dir (current-dest-directory))
-  (when dir (make-directory* dir))
-  (let ([renderer (new ((current-render-mixin) render%)
-                    [dest-dir dir]
-                    [prefix-file (current-prefix-file)]
-                    [style-file (current-style-file)]
-                    [style-extra-files (reverse (current-style-extra-files))]
-                    [extra-files (reverse (current-extra-files))])])
-    (when (current-redirect)
-      (send renderer set-external-tag-path (current-redirect)))
-    (when (current-redirect-main)
-      (send renderer set-external-root-url (current-redirect-main)))
-    (unless (current-quiet)
-      (send renderer report-output!))
-    (let* ([fns (map (lambda (fn)
-                       (let-values ([(base name dir?) (split-path fn)])
-                         (let ([fn (path-replace-suffix
-                                    (or (current-dest-name) name)
-                                    (send renderer get-suffix))])
-                           (if dir (build-path dir fn) fn))))
-                     files)]
-           [fp (send renderer traverse docs fns)]
-           [info (send renderer collect docs fns fp)])
-      (for ([file (in-list (reverse (current-info-input-files)))])
-        (let ([s (with-input-from-file file read)])
-          (send renderer deserialize-info s info)))
-      (for ([mod+id (in-list (reverse (current-xref-input-modules)))])
-        (let* ([get-xref (dynamic-require (car mod+id) (cdr mod+id))]
-               [xr (get-xref)])
-          (unless (xref? xr)
-            (raise-user-error
-             'scribble "result from `~s' of `~s' is not an xref: ~e"
-             (cdr mod+id) (car mod+id) xr))
-          (xref-transfer-info renderer info xr)))
-      (let ([r-info (send renderer resolve docs fns info)])
-        (send renderer render docs fns r-info)
-        (when (current-info-output-file)
-          (let ([s (send renderer serialize-info r-info)])
-            (with-output-to-file (current-info-output-file)
-              #:exists 'truncate/replace
-              (lambda () (write s)))))))))
+  (render docs
+          (map (lambda (fn)
+                 (let-values ([(base name dir?) (split-path fn)])
+                   (or (current-dest-name) name)))
+               files)
+          #:dest-dir (current-dest-directory)
+          #:render-mixin (current-render-mixin)
+          #:prefix-file (current-prefix-file)
+          #:style-file (current-style-file)
+          #:style-extra-files (reverse (current-style-extra-files))
+          #:extra-files (reverse (current-extra-files))
+          #:redirect (current-redirect)
+          #:redirect-main (current-redirect-main)
+          #:quiet? (current-quiet)
+          #:info-in-files (reverse (current-info-input-files))
+          #:xrefs (for/list ([mod+id (in-list (reverse (current-xref-input-modules)))])
+                    (let* ([get-xref (dynamic-require (car mod+id) (cdr mod+id))]
+                           [xr (get-xref)])
+                      (unless (xref? xr)
+                        (raise-user-error
+                         'scribble "result from `~s' of `~s' is not an xref: ~e"
+                         (cdr mod+id) (car mod+id) xr))
+                      xr))
+          #:info-out-file (current-info-output-file)))
 
 (run)
