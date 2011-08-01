@@ -13,7 +13,7 @@
 
 (define (run fname seed0)
   (define seed (or seed0 (+ 1 (random (expt 2 30)))))
-  (printf "DrDr Ignore! seed: ~s\nname: ~a\n" seed fname)
+  (printf "seed: ~s\nname: ~a\n" seed fname)
   (flush-output)
   (random-seed seed)
   (define bs  (file->bytes fname))
