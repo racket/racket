@@ -1,11 +1,11 @@
 #lang racket/base
 
 ;; An improved `time' variant: better output, and repetitions with averages
-(provide time)
+(provide time*)
 
 (require racket/list)
 
-(define (time* thunk times)
+(define (time/proc thunk times)
   (define throw
     (if (<= times 0)
       (error 'time "bad count: ~e" times)
@@ -43,7 +43,7 @@
             cpu (- cpu gc) gc real))
   (apply values results))
 
-(define-syntax time
+(define-syntax time*
   (syntax-rules ()
-    [(_ n expr0 expr ...) (time* (lambda () expr0 expr ...) n)]
-    [(_ expr0 expr ...)   (time* (lambda () expr0 expr ...) 1)]))
+    [(_ n expr0 expr ...) (time/proc (lambda () expr0 expr ...) n)]
+    [(_ expr0 expr ...)   (time/proc (lambda () expr0 expr ...) 1)]))
