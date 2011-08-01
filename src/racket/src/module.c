@@ -4747,14 +4747,13 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
 {
   Scheme_Module *m;
   Scheme_Env *env;
-  Scheme_Object *prefix, *insp, *src;
+  Scheme_Object *prefix, *insp, *src, *midx;
   Scheme_Config *config;
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
   
   env = scheme_new_module_env(for_env, m, 0);
-
 
   if (!scheme_defining_primitives) {
     config = scheme_current_config();
@@ -4786,6 +4785,9 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   m->dt_requires = scheme_null;
   m->primitive = env;
   m->insp = insp;
+  
+  midx = scheme_make_modidx(scheme_false, scheme_false, name);
+  m->self_modidx = midx;
 
   {
     Scheme_Module_Exports *me;
