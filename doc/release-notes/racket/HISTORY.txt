@@ -7,7 +7,7 @@ Changed the location-creation semantics of internal definitions
  and `letrec-syntaxes+values'
 Added unsafe-list-ref and unsafe-list-tail
 
-Version 5.1.2, July 2011
+Version 5.1.2, August 2011
 Replaced syntax certificates with syntax taints:
  Added syntax-tainted?, syntax-arm, syntax-disarm, syntax-rearm,
   syntax-taint, and syntax-protect
@@ -18,6 +18,9 @@ Replaced syntax certificates with syntax taints:
  Changed the way inspectors are associated to syntax objects
   and variable references in compiled code
 Changed "sequence" to include exact nonnegative integers
+Added #:unless clause to for
+Changed procedure-arity-includes? to report #f for keyword-requiring
+ procedures by default
 mzlib/contract: removed (undocumented) exports:
   chaperone-contract-struct?
   contract-struct-first-order
@@ -32,7 +35,9 @@ mzlib/contract: removed (undocumented) exports:
   opt-contract/info-id
   synthesized-value
   unknown?
-racket/function: added identity, thunk, compose1
+Changed assoc to accept an optional equality predicate
+racket/function: added identity, thunk, thunk*, compose1
+racket/require: added multi-in
 slideshow/pict: added rotate function, and added sxy anf syx
  fields to a child structure
 compiler/zo-struct: removed certificate structures; changed
