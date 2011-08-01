@@ -3,6 +3,7 @@
 (require "manual.rkt" "struct.rkt" "scheme.rkt" "decode.rkt"
          racket/string racket/list racket/file
          racket/sandbox racket/promise racket/port file/convertible
+         racket/gui/dynamic
          (for-syntax racket/base))
 
 (provide interaction
@@ -299,7 +300,12 @@
          e)))))
 
 (define (make-base-eval-factory mod-paths)
-  (let ([ns (delay (let ([ns (make-base-empty-namespace)])
+  (let ([ns (delay (let ([ns 
+                          ;; This namespace-creation choice needs to be consistent
+                          ;; with the sandbox (i.e., with `make-base-eval')
+                          (if gui?
+                              ((gui-dynamic-require 'make-gui-empty-namespace))
+                              (make-base-empty-namespace))])
                      (parameterize ([current-namespace ns])
                        (for ([mod-path (in-list mod-paths)])
                          (dynamic-require mod-path #f)))
@@ -307,22 +313,22 @@
     (lambda ()
       (let ([ev (make-base-eval)]
             [ns (force ns)])
-        ((scribble-eval-handler)
-         ev #f
-         `(,(lambda ()
-              (for ([mod-path (in-list mod-paths)])
-                (namespace-attach-module ns mod-path)))))
+        (call-in-sandbox-context
+         ev
+         (lambda ()
+           (for ([mod-path (in-list mod-paths)])
+             (namespace-attach-module ns mod-path))))
         ev))))
 
 (define (make-eval-factory mod-paths)
   (let ([base-factory (make-base-eval-factory mod-paths)])
     (lambda ()
       (let ([ev (base-factory)])
-        ((scribble-eval-handler)
-         ev #f
-         `(,(lambda ()
-              (for ([mod-path (in-list mod-paths)])
-                (namespace-require mod-path)))))
+        (call-in-sandbox-context
+         ev
+         (lambda ()
+           (for ([mod-path (in-list mod-paths)])
+             (namespace-require mod-path))))
         ev))))
 
 (define (close-eval e)
