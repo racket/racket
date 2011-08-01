@@ -113,20 +113,42 @@
   (define-values [line col pos] (port-next-location last-output-port))
   (set-port-next-location! last-output-port line 0 pos))
 
-;; wrapped `printf' (cheap but effective), aware of the visual col
-(define wrap-prefix (make-parameter ""))
-(define (wprintf fmt . args)
-  (let ([o    (current-output-port)]
-        [wcol (wrap-column)]
-        [pfx  (wrap-prefix)]
-        [strs (regexp-split #rx" +" (apply format fmt args))])
-    (write-string (car strs) o)
-    (for ([str (in-list (cdr strs))])
-      (define-values [line col pos] (port-next-location o))
-      (if ((+ col (string-length str)) . >= . wcol)
-        (begin (newline o) (write-string pfx o))
-        (write-string " " o))
-      (write-string str o))))
+;; wrapped output
+(define-syntax-rule (wrapped-output body ...)
+  (do-wrapped-output (λ () body ...)))
+(define (append-two-spaces s) (string-append s "  "))
+(define (do-wrapped-output thunk [prefix-rx #rx#"^; *"]
+                           [make-soft-prefix append-two-spaces])
+  (define-values [ip op] (make-pipe))
+  (define th (thread (λ () (parameterize ([current-output-port op]) (thunk))
+                           (close-output-port op))))
+  (define o    (current-output-port))
+  (define wcol (wrap-column))
+  (let loop ()
+    (define prefix (let ([m (regexp-try-match prefix-rx ip)])
+                     (if m (bytes->string/utf-8 (car m)) "")))
+    (write-string prefix o)
+    (define soft-prefix #f)
+    (define (soft-newline)
+      (unless soft-prefix (set! soft-prefix (make-soft-prefix prefix)))
+      (newline) (write-string soft-prefix o) (string-length soft-prefix))
+    (let line-loop ([col (string-length prefix)])
+      (define m (regexp-match #rx#"^( +)?(\n|[^ \n]+)" ip))
+      (when m ; #f => at end
+        (define spaces (and (cadr m) (bytes->string/utf-8 (cadr m))))
+        (define str (bytes->string/utf-8 (caddr m)))
+        (if (equal? "\n" str)
+          (begin (newline o) (loop))
+          (let* ([strlen (string-length str)]
+                 [spclen (if spaces (string-length spaces) 0)]
+                 [nextcol (+ col strlen spclen)])
+            (line-loop
+             (if (nextcol . > . wcol)
+               (let ([col (soft-newline)]) (write-string str o) (+ col strlen))
+               (begin (when spaces (write-string spaces o))
+                      (write-string str o) nextcol)))))))
+    (unless (eof-object? (peek-char ip)) (loop)))
+  (thread-wait th)) ; just in case
 
 ;; ----------------------------------------------------------------------------
 ;; toplevel "," commands management
@@ -257,15 +279,16 @@
     (printf "~a~s" indent (car names))
     (when (pair? (cdr names)) (printf " ~s" (cdr names)))
     (printf ": ~a\n" (command-blurb cmd)))
-  (if cmd
-    (begin (show-cmd cmd "; ")
-           (printf ";   usage: ,~a" arg)
-           (let ([a (command-argline cmd)]) (when a (printf " ~a" a)))
-           (printf "\n")
-           (for ([d (in-list (command-desc cmd))])
-             (printf "; ~a\n" d)))
-    (begin (printf "; Available commands:\n")
-           (for-each (λ (c) (show-cmd c ";   ")) (reverse commands-list)))))
+  (wrapped-output
+    (if cmd
+      (begin (show-cmd cmd "; ")
+             (printf ";   usage: ,~a" arg)
+             (let ([a (command-argline cmd)]) (when a (printf " ~a" a)))
+             (printf "\n")
+             (for ([d (in-list (command-desc cmd))])
+               (printf "; ~a\n" d)))
+      (begin (printf "; Available commands:\n")
+             (for-each (λ (c) (show-cmd c ";   ")) (reverse commands-list))))))
 
 ;; ----------------------------------------------------------------------------
 ;; generic commands
@@ -494,12 +517,12 @@
          [syms (if look (filter (λ (s) (look (cdr s))) syms) syms)]
          [syms (sort syms string<? #:key cdr)]
          [syms (map car syms)])
-    (if (null? syms)
-      (printf "; No matches found")
-      (parameterize ([wrap-prefix ";   "])
-        (wprintf "; Matches: ~s" (car syms))
-        (for ([s (in-list (cdr syms))]) (wprintf ", ~s" s))))
-    (printf ".\n")))
+    (wrapped-output
+      (if (null? syms)
+        (printf "; No matches found")
+        (begin (printf "; Matches: ~s" (car syms))
+               (for ([s (in-list (cdr syms))]) (printf ", ~s" s))))
+      (printf ".\n"))))
 
 (defcommand (describe desc id) "[<phase-number>] <identifier-or-module> ..."
   "describe a (bound) identifier"
@@ -512,25 +535,26 @@
       (if (and (pair? xs) (number? (syntax-e (car xs))))
         (values #f (syntax-e (car xs)) (cdr xs))
         (values #t 0 xs))))
-  (for ([id/mod (in-list ids/mods)])
-    (define dtm (syntax->datum id/mod))
-    (define mod
-      (and try-mods?
-           (match dtm
-             [(list 'quote (and sym (? module-name?))) sym]
-             [(? module-name?) dtm]
-             [_ (let ([x (with-handlers ([exn:fail? (λ (_) #f)])
-                           (modspec->path dtm))])
-                  (cond [(or (not x) (path? x)) x]
-                        [(symbol? x) (and (module-name? x) `',x)]
-                        [else (error 'describe "internal error: ~s" x)]))])))
-    (define bind
-      (cond [(identifier? id/mod) (identifier-binding id/mod level)]
-            [mod #f]
-            [else (cmderror "not an identifier or a known module: ~s" dtm)]))
-    (define bind? (or bind (not mod)))
-    (when bind? (describe-binding dtm bind level))
-    (when mod   (describe-module dtm mod bind?))))
+  (wrapped-output
+    (for ([id/mod (in-list ids/mods)])
+      (define dtm (syntax->datum id/mod))
+      (define mod
+        (and try-mods?
+             (match dtm
+               [(list 'quote (and sym (? module-name?))) sym]
+               [(? module-name?) dtm]
+               [_ (let ([x (with-handlers ([exn:fail? (λ (_) #f)])
+                             (modspec->path dtm))])
+                    (cond [(or (not x) (path? x)) x]
+                          [(symbol? x) (and (module-name? x) `',x)]
+                          [else (error 'describe "internal error: ~s" x)]))])))
+      (define bind
+        (cond [(identifier? id/mod) (identifier-binding id/mod level)]
+              [mod #f]
+              [else (cmderror "not an identifier or a known module: ~s" dtm)]))
+      (define bind? (or bind (not mod)))
+      (when bind? (describe-binding dtm bind level))
+      (when mod   (describe-module dtm mod bind?)))))
 (define (describe-binding sym b level)
   (define at-phase (phase->name level " (~a)"))
   (cond
@@ -604,20 +628,18 @@
             relname))
   (if (null? imports)
     (printf ";   no imports.\n")
-    (parameterize ([wrap-prefix ";     "])
-      (for ([imps (in-list imports)])
-        (let ([phase (car imps)] [imps (cdr imps)])
-          (wprintf ";   imports~a: ~a" (phase->name phase "-~a") (car imps))
-          (for ([imp (in-list (cdr imps))]) (wprintf ", ~a" imp))
-          (wprintf ".\n")))))
+    (for ([imps (in-list imports)])
+      (let ([phase (car imps)] [imps (cdr imps)])
+        (printf ";   imports~a: ~a" (phase->name phase "-~a") (car imps))
+        (for ([imp (in-list (cdr imps))]) (printf ", ~a" imp))
+        (printf ".\n"))))
   (define (show-exports exports kind)
-    (parameterize ([wrap-prefix ";   "])
-      (for ([exps (in-list exports)])
-        (let ([phase (car exps)] [exps (cdr exps)])
-          (wprintf ";   direct ~a exports~a: ~a"
-                   kind (phase->name phase "-~a") (car exps))
-          (for ([exp (in-list (cdr exps))]) (wprintf ", ~a" exp))
-          (wprintf ".\n")))))
+    (for ([exps (in-list exports)])
+      (let ([phase (car exps)] [exps (cdr exps)])
+        (printf ";   direct ~a exports~a: ~a"
+                kind (phase->name phase "-~a") (car exps))
+        (for ([exp (in-list (cdr exps))]) (printf ", ~a" exp))
+        (printf ".\n"))))
   (if (and (null? val-exports) (null? stx-exports))
     (printf ";   no direct exports.\n")
     (begin (show-exports val-exports "value")
@@ -1353,15 +1375,10 @@
              [s (regexp-replace* #rx"\n\n+" s "\n")])
         (and (not (equal? str s))
              (begin (set! last-backtrace s) #t)))))
-  (define short-msg "[,bt for context]")
-  (define long-msg "[use ,backtrace to display context]")
-  (if backtrace?
-    (let ([short? (and (not (regexp-match? #rx"\n" str))
-                       (<= (+ (string-length str) 1 (string-length short-msg))
-                           (wrap-column)))])
-      (eprintf (if short? "~a ~a\n" "~a\n~a\n")
-               str (if short? short-msg long-msg)))
-    (eprintf "~a\n" str)))
+  (define msg "[,bt for context]")
+  (parameterize ([current-output-port (current-error-port)])
+    (wrapped-output
+      (if backtrace? (printf "; ~a ~a\n" str msg) (printf "; ~a\n" str)))))
 
 ;; ----------------------------------------------------------------------------
 ;; set up the xrepl environment
