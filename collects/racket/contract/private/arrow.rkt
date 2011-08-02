@@ -392,7 +392,7 @@ v4 todo:
                (unless (memq req-kwd kwds)
                  (raise-blame-error blame val
                                     "expected keyword argument ~a"
-                                    (quote req-kwd))))
+                                    req-kwd)))
              (for ([k (in-list kwds)])
                (unless (memq k all-kwds)
                  (raise-blame-error blame val
