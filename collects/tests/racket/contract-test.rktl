@@ -29,6 +29,9 @@
   (define (contract-expand-once x)
     (parameterize ([current-namespace contract-namespace])
       (expand-once x)))
+
+  (define exn:fail:contract:blame-object (contract-eval 'exn:fail:contract:blame-object))
+  (define exn:fail:contract:blame? (contract-eval 'exn:fail:contract:blame?))
   
   (define-syntax (ctest stx)
     (syntax-case stx ()
@@ -1094,6 +1097,19 @@
                (make-keyword-procedure void)
                'pos 'neg)
      #:a "abcdef"))
+  
+  (contract-error-test
+   'contract-arrow-kwd-name-in-message
+   #'((contract 
+       (-> #:a any/c #:the-missing-keyword-arg-b any/c any)
+       (λ (#:a [a 0] #:the-missing-keyword-arg-b [b 0]) b)
+       'pos
+       'neg)
+      #:a 0)
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match #rx"expected keyword argument #:the-missing-keyword-arg-b"
+                        (exn-message x)))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
@@ -2935,7 +2951,7 @@
                 'neg)
       123456789)
    (λ (x) 
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match #rx"x: 123456789" (exn-message x)))))
   (contract-error-test
    'contract-error-test2
@@ -2945,7 +2961,7 @@
                 'neg)
       123456789)
    (λ (x) 
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match (regexp-quote "|x y|: 123456789") (exn-message x)))))
 
   ;; test to make sure the collects directories are appropriately prefixed
@@ -2953,7 +2969,7 @@
    'contract-error-test3
     #'(contract symbol? "not a symbol" 'pos 'neg 'not-a-symbol #'here)
     (lambda (x)
-      (and (exn? x)
+      (and (exn:fail:contract:blame? x)
         (regexp-match? #px"<collects>"
           (exn-message x)))))
    
@@ -11430,7 +11446,7 @@ so that propagation occurs.
                 (provide/contract [the-defined-variable1 number?])))
        (eval '(require 'pce1-bug)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match #rx"the-defined-variable1: self-contract violation" (exn-message x)))))
   
   (contract-error-test
@@ -11443,7 +11459,7 @@ so that propagation occurs.
        (eval '(require 'pce2-bug))
        (eval '(the-defined-variable2 #f)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match #rx"the-defined-variable2: contract violation" (exn-message x)))))
   
   (contract-error-test
@@ -11456,7 +11472,7 @@ so that propagation occurs.
        (eval '(require 'pce3-bug))
        (eval '(the-defined-variable3 #f)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match #rx"the-defined-variable3" (exn-message x)))))
   
   (contract-error-test
@@ -11469,7 +11485,7 @@ so that propagation occurs.
        (eval '(require 'pce4-bug))
        (eval '((if #t the-defined-variable4 the-defined-variable4) #f)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match #rx"^the-defined-variable4" (exn-message x)))))
 
   (contract-error-test
@@ -11484,7 +11500,7 @@ so that propagation occurs.
                  [struct bad ((string? a) (string? b))])))
        (eval '(require 'pce5-bug)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:syntax? x)
           (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
   
   (contract-error-test
@@ -11500,7 +11516,7 @@ so that propagation occurs.
                  [struct bad ((a string?) (string? b))])))
        (eval '(require 'pce6-bug)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:syntax? x)
           (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
   
   (contract-error-test
@@ -11514,7 +11530,7 @@ so that propagation occurs.
                 (require 'pce7-bug)
                 (set! x 5))))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:syntax? x)
           (regexp-match #rx"cannot set!" (exn-message x)))))
   
   (contract-error-test
@@ -11526,7 +11542,7 @@ so that propagation occurs.
                 (provide/contract [f (-> integer? integer? integer?)])))
        (eval '(require 'pce8-bug1)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match #rx"pce8-bug" (exn-message x)))))
 
   (contract-error-test
@@ -11540,7 +11556,7 @@ so that propagation occurs.
        (eval '(require 'pce9-bug))
        (eval '(g 12)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match #rx"^g.*contract from: pce9-bug" (exn-message x)))))
   
   (contract-error-test
@@ -11554,7 +11570,7 @@ so that propagation occurs.
        (eval '(require 'pce10-bug))
        (eval '(g 'a)))
    (λ (x)
-     (and (exn? x)
+     (and (exn:fail:contract:blame? x)
           (regexp-match #rx"^g.*contract from: pce10-bug" (exn-message x)))))
    
   (contract-eval
@@ -11604,7 +11620,6 @@ so that propagation occurs.
            (delete-file (build-path dir (car f))))
          (delete-directory dir))))
 
-    (define exn:fail:contract:blame-object (contract-eval 'exn:fail:contract:blame-object))
     (define (get-last-part-of-path sexp)
       (define str (format "orig-blame: ~s" sexp))
       (define m (regexp-match #rx"[/\\]([-a-z0-9.]*)[^/\\]*$" str))
@@ -11613,7 +11628,7 @@ so that propagation occurs.
     ;; basic negative blame case
     (let ([blame
            (exn:fail:contract:blame-object 
-            (with-handlers ((exn? values))
+            (with-handlers ((exn:fail:contract:blame? values))
               (build-and-run 
                (list (list "a.rkt"
                            "#lang racket/base"
@@ -11634,7 +11649,7 @@ so that propagation occurs.
     ;; basic positive blame case
     (let ([blame
            (exn:fail:contract:blame-object 
-            (with-handlers ((exn? values))
+            (with-handlers ((exn:fail:contract:blame? values))
               (build-and-run 
                (list (list "a.rkt"
                            "#lang racket/base"
@@ -11655,7 +11670,7 @@ so that propagation occurs.
     ;; positive blame via a re-provide
     (let ([blame
            (exn:fail:contract:blame-object 
-            (with-handlers ((exn? values))
+            (with-handlers ((exn:fail:contract:blame? values))
               (build-and-run 
                (list (list "a.rkt"
                            "#lang racket/base"
@@ -11680,7 +11695,7 @@ so that propagation occurs.
     ;; negative blame via a re-provide
     (let ([blame
            (exn:fail:contract:blame-object 
-            (with-handlers ((exn? values))
+            (with-handlers ((exn:fail:contract:blame? values))
               (build-and-run 
                (list (list "a.rkt"
                            "#lang racket/base"
@@ -11705,7 +11720,7 @@ so that propagation occurs.
     ;; have some sharing in the require graph
     (let ([blame
            (exn:fail:contract:blame-object 
-            (with-handlers ((exn? values))
+            (with-handlers ((exn:fail:contract:blame? values))
               (build-and-run 
                (list (list "client.rkt"
                            "#lang racket/base"
@@ -11810,7 +11825,7 @@ so that propagation occurs.
   (test/neg-blame
    'make-proj-contract-4
    '((contract proj:add1->sub1 sqrt 'pos 'neg) 'dummy))
-    
+
   (report-errs)
   
 ))
