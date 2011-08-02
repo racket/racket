@@ -175,5 +175,16 @@
 (test 'va->ms dynamic-require ''va->ms 'modsrc)
 
 ;; ----------------------------------------
+;; Check that `namespace-attach-module-declaration' doesn't
+;; trigger the module-name resolver in the wrong namespace:
+
+(let ()
+  (define ns0 (make-base-namespace))
+  (eval '(module sample racket (#%module-begin)) ns0)
+  (define ns1 (make-empty-namespace))
+  (parameterize ([current-namespace ns1])
+    (namespace-attach-module-declaration ns0 ''sample ns1)))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -1677,11 +1677,24 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
                                 name);
           else {
             /* instantiate for-label: */
+            Scheme_Cont_Frame_Data cframe;
+            Scheme_Config *config;
+            
+            /* make sure `from_env' is the current namespace, because
+               start_module() may need to resolve module paths: */
+            config = scheme_extend_config(scheme_current_config(),
+                                          MZCONFIG_ENV,
+                                          (Scheme_Object *)from_env);
+            scheme_push_continuation_frame(&cframe);
+            scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+
             start_module(m2, 
                          from_env->label_env, 0, 
                          main_modidx, 
                          0, 0, from_env->phase,
                          scheme_null);
+
+            scheme_pop_continuation_frame(&cframe);
             
             /* try again: */
             menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_env->label_env->modchain), name);
