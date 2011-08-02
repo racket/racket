@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require unstable/sequence racket/require racket/match racket/list (prefix-in s: srfi/1)
+         racket/string
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt" "rep/rep-utils.rkt"
                   "types/abbrev.rkt" "types/numeric-tower.rkt" "types/subtype.rkt"
                   "utils/utils.rkt" "utils/tc-utils.rkt"))
@@ -105,51 +106,66 @@
                  (remove next candidates)
                  (cons next coverage))])))
 
+(define (format-arr a)
+  (match a
+    [(top-arr:) "Procedure"]
+    [(arr: dom rng rest drest kws)
+     (define out (open-output-string))
+     (define (fp . args) (apply fprintf out args))
+     (define (fp/filter fmt ret . rest)
+       (if (print-complex-filters?)
+           (apply fp fmt ret rest)
+           (fp "-> ~a" ret)))
+     (fp "(")
+     (for-each (lambda (t) (fp "~a " t)) dom)
+     (for ([kw kws])
+       (match kw
+         [(Keyword: k t req?)
+          (if req?
+              (fp "~a ~a " k t)
+              (fp "[~a ~a] " k t))]))
+     (when rest
+       (fp "~a ~a " rest (if (special-dots-printing?) "...*" "*")))
+     (when drest
+       (fp "~a ...~a~a "
+           (car drest) (if (special-dots-printing?) "" " ") (cdr drest)))
+     (match rng
+       [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
+        (fp "-> ~a" t)]
+       [(Values: (list (Result: t
+                                (FilterSet: (TypeFilter: ft pth id)
+                                            (NotTypeFilter: ft pth id))
+                                (Empty:))))
+        (if (null? pth)
+            (fp "-> ~a : ~a" t ft)
+            (begin (fp "-> ~a : ~a @" t ft)
+                   (for ([pe pth]) (fp " ~a" pe))))]
+       [(Values: (list (Result: t fs (Empty:))))
+        (fp/filter "-> ~a : ~a" t fs)]
+       [(Values: (list (Result: t lf lo)))
+        (fp/filter "-> ~a : ~a ~a" t lf lo)]
+       [_
+        (fp "-> ~a" rng)])
+     (fp ")")
+     (get-output-string out)]
+    [else (format "(Unknown Function Type: ~a)" (struct->vector a))]))
+
+(define (print-case-lambda t)
+  (match t
+    [(Function: arities)
+     (let ()
+       (match arities
+         [(list) "(case-lambda)"]
+         [(list a) (format-arr a)]
+         [(list a b ...)
+          (format "(case-lambda ~a~a)"
+                  (format-arr a)
+                  (string-append* (map format-arr b)))]))]))
+
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
 (define (print-type c port write?)
   (define (fp . args) (apply fprintf port args))
-  (define (fp/filter fmt ret . rest)
-    (if (print-complex-filters?)
-        (apply fp fmt ret rest)
-        (fp "-> ~a" ret)))
-  (define (print-arr a)
-    (match a
-      [(top-arr:)
-       (fp "Procedure")]
-      [(arr: dom rng rest drest kws)
-       (fp "(")
-       (for-each (lambda (t) (fp "~a " t)) dom)
-       (for ([kw kws])
-         (match kw
-           [(Keyword: k t req?)
-            (if req?
-                (fp "~a ~a " k t)
-                (fp "[~a ~a] " k t))]))
-       (when rest
-         (fp "~a ~a " rest (if (special-dots-printing?) "...*" "*")))
-       (when drest
-         (fp "~a ...~a~a "
-             (car drest) (if (special-dots-printing?) "" " ") (cdr drest)))
-       (match rng
-         [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
-          (fp "-> ~a" t)]
-         [(Values: (list (Result: t
-                                  (FilterSet: (TypeFilter: ft pth id)
-                                              (NotTypeFilter: ft pth id))
-                                  (Empty:))))
-          (if (null? pth)
-              (fp "-> ~a : ~a" t ft)
-              (begin (fp "-> ~a : ~a @" t ft)
-                     (for ([pe pth]) (fp " ~a" pe))))]
-         [(Values: (list (Result: t fs (Empty:))))
-          (fp/filter "-> ~a : ~a" t fs)]
-         [(Values: (list (Result: t lf lo)))
-          (fp/filter "-> ~a : ~a ~a" t lf lo)]
-         [_
-          (fp "-> ~a" rng)])
-       (fp ")")]
-      [else (fp "(Unknown Function Type: ~a)" (struct->vector a))]))
   (define (tuple? t)
     (match t
       [(Pair: a (? tuple?)) #t]
@@ -198,18 +214,8 @@
      (when proc
        (fp " ~a" proc))
      (fp ")")]
-    [(Function: arities)
-     (let ()
-       (match arities
-         [(list) (fp "(case-lambda)")]
-         [(list a) (print-arr a)]
-         [(list a b ...) (fp "(case-lambda ")
-                         (print-arr a)
-                         (for-each
-                          (lambda (e) (fp " ") (print-arr e))
-                          b)
-                         (fp ")")]))]
-    [(arr: _ _ _ _ _) (fp "(arr ") (print-arr c) (fp ")")]
+    [(Function: arities) (fp "~a" (print-case-lambda c))]
+    [(arr: _ _ _ _ _) (fp "(arr ~a)" (format-arr c))]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
     [(HeterogenousVector: e) (fp "(Vector")
                              (for ([i (in-list e)])
