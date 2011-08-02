@@ -207,6 +207,4 @@ _raco()
     return 0
 }
 
-complete -F _raco rico
-complete -F _raco racket-tool
 complete -F _raco raco
