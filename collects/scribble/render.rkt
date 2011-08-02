@@ -9,21 +9,22 @@
          (prefix-in html:  "html-render.rkt"))
 
 (provide/contract 
- [render ((listof part?)
-          (listof path-string?)
-          #:render-mixin (class? . -> . class?)
-          #:dest-dir (or/c #f path-string?)
-          #:prefix-file (or/c #f path-string?)
-          #:style-file (or/c #f path-string?)
-          #:style-extra-files (listof path-string?)
-          #:extra-files (listof path-string?)
-          #:redirect (or/c #f string?)
-          #:redirect-main (or/c #f string?)
-          #:xrefs (listof xref?)
-          #:info-in-files (listof path?)
-          #:info-out-file (or/c #f path-string?)
-          #:quiet? any/c
-          . -> . void?)])
+ [render (((listof part?)
+           (listof path-string?))
+          (#:render-mixin
+           (class? . -> . class?)
+           #:dest-dir (or/c #f path-string?)
+           #:prefix-file (or/c #f path-string?)
+           #:style-file (or/c #f path-string?)
+           #:style-extra-files (listof path-string?)
+           #:extra-files (listof path-string?)
+           #:redirect (or/c #f string?)
+           #:redirect-main (or/c #f string?)
+           #:xrefs (listof xref?)
+           #:info-in-files (listof path?)
+           #:info-out-file (or/c #f path-string?)
+           #:quiet? any/c)
+          . ->* . void?)])
 
 (define (render docs
                 names
