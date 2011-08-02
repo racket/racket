@@ -34,7 +34,7 @@ includes a @racket[latex-defaults] @tech{style property}.
                        (code:line #:indent indent-expr)
                        (code:line #:expand expand-expr)
                        (code:line #:context context-expr)
-                       (code:line #:w/line-numbers line-number-expr)])
+                       (code:line #:line-numbers line-number-expr)])
               #:contracts ([keep-expr any/c]
                            [indent-expr exact-nonnegative-integer?]
                            [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
