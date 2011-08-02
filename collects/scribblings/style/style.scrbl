@@ -35,11 +35,11 @@ Many pieces of the code base don't live up to the rules yet.  Here is how
  @emph{Do} run the test suites, and do @emph{not} change the behavior of
  the file.
 
-Also, we encourage everyone to look over the commit messages. If you see
- problems with the code deltas, let the contributor know. If you see a bug
- fix without docs and tests, let the contributor know. Code should be
- viewed by more than one person because a second person is likely to catch
- logical mistakes, performance problems, and unintended effects.
+Also, look over the commit messages. If you see problems with the code
+ deltas, let the contributor know. If you see a bug fix without docs and
+ tests, let the contributor know. Code should be viewed by more than one
+ person because a second person is likely to catch logical mistakes,
+ performance problems, and unintended effects.
 
 @bold{Request} This document isn't complete and it isn't perfect. Consider
  it a call for improvements and suggestions.  If you have ideas, contact
@@ -53,10 +53,12 @@ Also, we encourage everyone to look over the commit messages. If you see
 
 @; -----------------------------------------------------------------------------
 
-@include-section["correct-maintain-speed.scrbl"]
-@include-section["some-performance.scrbl"]
-@include-section["unit.scrbl"]
-@include-section["constructs.scrbl"]
-@include-section["textual.scrbl"]
-@include-section["branch-and-commit.scrbl"]
+@include-section{correct-maintain-speed.scrbl}
+@include-section{some-performance.scrbl}
+@include-section{unit.scrbl}
+@include-section{constructs.scrbl}
+@include-section{textual.scrbl}
+@include-section{branch-and-commit.scrbl}
 @include-section{acknowledgment.scrbl}
+
+@include-section{todo.scrbl}

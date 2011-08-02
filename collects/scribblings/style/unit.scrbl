@@ -290,6 +290,9 @@ With @racketmodname[rackunit], test suites can be defined within the
 If your function or method consumers more than two parameters, consider
 keyword arguments so that call sites can easily be understood.
 
+Similarly, if your function or method consumers two (or more)
+@emph{optional} parameters, keyword arguments are a must.
+
 Please write a purpose statement for your function.
 If you can, add an informal type and/or contract statement.
 

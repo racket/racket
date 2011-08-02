@@ -260,10 +260,12 @@ rndr-st
 
 sendMessageToClient
 
-trvrs-frst
+traverse_forest
 ])
 ]
 @;
+ Note that _ (the underline character) is also classified as bad
+ Racketeering.
 
 Another widely used convention is to @emph{prefix} a function name with the data
  type of the main argument. This convention generalizes the selector-style
@@ -306,9 +308,27 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
 
 @row-table[
  @row[symbol kind example]
- @row[? "predicates and boolean-valued functions" boolean?]
- @row[! "setters and field mutators"              set!]
- @row[% "classes"                                 game-state%]
- @row[^ "unit signatures"                         game-context^]
- @row["@" units                                   testing-context@]
+ @row[?    "predicates and boolean-valued functions" boolean?]
+ @row[!    "setters and field mutators"              set!]
+ @row["#:" "keywords"                                #:dest-dir]
+ @row[%    "classes"                                 game-state%]
+ @row[<%>  "interfaces"                              dc<%>]
+ @row[^    "unit signatures"                         game-context^]
+ @row["@"  "units"                                   testing-context@]
+ @row["#%" "kernel identifiers"                      #:app]
 ]
+
+@; -----------------------------------------------------------------------------
+@section{Graphical Syntax}
+
+Do not use graphical syntax (comment boxes, XML boxes, etc).
+
+The use of graphical syntax makes it impossible to read files in
+alternative editors. It also messes up some revision control systems.
+When we figure out how to save such files in an editor-compatible way, we
+may relax this constraint.
+
+@; -----------------------------------------------------------------------------
+@section{End of File}
+
+End files with a newline.

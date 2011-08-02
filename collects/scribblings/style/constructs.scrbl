@@ -1,6 +1,6 @@
 #lang scribble/base
 
-@(require "shared.rkt")
+@(require "shared.rkt" scribble/eval)
 
 @title{Choosing the Right Construct}
 
@@ -10,12 +10,19 @@ everything, we prefer certain constructs in certain situations for consistency
 and readability.
 
 @; -----------------------------------------------------------------------------
+@section{Comments}
+
+Following Lisp and Scheme tradition, we use a single semicolon for in-line
+comments (to the end of a line) and two semicolons for comments that start
+a line. Think of the second semicolon as making an emphatic point.
+
+@; -----------------------------------------------------------------------------
 @section{Definitions}
 
 Racket comes with quite a few definitional constructs, including
 @scheme[let], @scheme[let*], @scheme[letrec], and @scheme[define]. Except
-for the last one, definitional construct increase the indentation level. We
-therefore request that you favor @scheme[define] when feasible.
+for the last one, definitional construct increase the indentation level.
+Therefore, favor @scheme[define] when feasible.
 
 @compare[
 @racketmod[#:file
@@ -111,27 +118,35 @@ Keep expressions small. Name intermediate results.
 @racketmod[#:file
 @tt{good}
 racket
-(define (distance0 p)
-  (define x (posn-x p))
-  (define y (posn-y p))
-  (sqrt (+ (sqr x) (sqr y))))
+(define (next-month date)
+  (define day (first date))
+  (define month (second date))
+  (define year (third date))
+  (if (= month 12)
+      `(,(+ day 1) 1 ,year)
+      `(,day ,(+ month 1) ,year)))
 ]
 @; -----------------------------------------------------------------------------
 @racketmod[#:file
 @tt{bad}
 racket
-(define (distance0 p)
-  (sqrt
-    (+ (sqr (posn-x p))
-       (sqr (posn-y p)))))
+(define (next-month d)
+  (if (= (cadr d) 12)
+      `(,(+ (car d) 1) 1 ,(caddr d))
+      `(,(car d)
+	,(+ (cadr d) 1)
+	,(caddr d))))
 ]
 ]
+ (It is difficult to illustrate this point with a small example. Please
+ give intermediate names a try.)
 
 @; -----------------------------------------------------------------------------
 @section{Structs vs Lists}
 
-Use @racket[struct]s when you represent a combination of a fixed number of
-values.  Or, don't use lists when structures will do.
+Use @racket[struct]s when you represent a combination of a small and fixed
+number of values.  For fixed length (long) lists, add a comment or even a
+contract that states the constraints.
 
 @; -----------------------------------------------------------------------------
 @section{Lambda vs Define}
@@ -167,7 +182,12 @@ racket
 @; -----------------------------------------------------------------------------
 @section{Identity Functions}
 
-The identity function is @racket[values]. Try it with @racket[(values 1 2 3)].
+The identity function is @racket[values]:
+
+ @examples[
+ (map values '(a b c))
+ (values 1 2 3)
+ ]
 
 @; -----------------------------------------------------------------------------
 @section{List Traversals}
@@ -196,7 +216,9 @@ racket
 ;; examples:
 (sum-up '(1 2 3))
 (sum-up #(1 2 3))
-(sum-up (open-input-string "1 2 3"))
+(sum-up
+  (open-input-string
+    "1 2 3"))
 ])
 
 @; -----------------------------------------------------------------------------
@@ -216,7 +238,7 @@ racket
 ])
 ]
 
- Note: @racket[for] traversals of user-defined sequences tend to be
+ @bold{Note}: @racket[for] traversals of user-defined sequences tend to be
  slow. If performance matters in these cases, you may wish to fall back on
  your own traversal functions.
 
@@ -236,17 +258,24 @@ racket
   (first (second msg)))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod[#:file
+@(begin
+#reader scribble/comment-reader
+[racketmod #:file
 @tt{bad}
 racket
 ...
 ;; Message -> String
 (define-syntax-rule
   (message-name msg)
-  ;; ===>
+  ;; ==>>
   (first (second msg)))
 ]
+)
 ]
+
+ A function is immediately useful in a higher-order context. For a macro,
+ achieving the same goal takes a lot more work.
+
 
 @; -----------------------------------------------------------------------------
 @section{Parameters}

@@ -37,17 +37,23 @@ watching Matthew, Robby, Shriram and others create the original code base}
 @nested[#:style 'inset]{@italic{It is the way we choose to fight our bugs that
  determines our character, not their presence or absence.} -- Robby, in response}
 
-Complete correctness is a perfectionist goal beyond the reach of PLT.  All
+Since complete correctness is a perfectionist goal, PLT aims to release
+ good code and to improve it as soon as possible and necessary.  All
  software has mistakes. If they are unknown, the software isn't being
  used. The goal is, however, to ensure some basic level of correctness
  before a feature is released and to ensure that the same mistake isn't
  introduced again.
 
-Formulate test suites. Use unit testing. Use random testing. Use fuzz
- testing. Test!
+Add tests to the appropriate test suites; most are found in
+ @tt{collects/tests/} in your PLT repository. @margin-note*{Due to
+ historical reasons, a few collections come with their own local test
+ suites.}  These test suites suggest a culture of testing per tool or
+ language; follow it. Formulate new test suites in the same collection. Use
+ unit testing. Use random testing. Use fuzz testing. Test!
 
-Run the test suites before you commit. Read DrDr's emails; don't ignore
- them.
+Run the test suites before you commit.  Read
+@hyperlink["http://drdr.racket-lang.org/"]{DrDr}'s emails; do not ignore
+them.
 
 When you debug, formulate a test case first. Put it into the test suite for
  the component so the mistake will never be accidentally re-introduced.
@@ -85,16 +91,12 @@ Editing code without an existing test suite is like flying blind.  If there
 @; -----------------------------------------------------------------------------
 @section{Maintenance}
 
-Comprehensible code is maintainable.  Maintainable code must be easily
- readable, and the difficulty is that Racket naturally favors the writer,
- not the reader. And it is precisely for this reason that we need to obey
- rules.
-
-Code is comprehensible when you can understand its external purpose. To
- this end, code must come with external documentation. Released code must
- have documentation. A change to the external behavior of code must induce
- a simultaneous change to its documentation---``simultaneous'' means that the
- two changes are in the same commit to the code base.
+Comprehensible code is maintainable. Code is comprehensible when you can
+ understand its external purpose. To this end, code must come with external
+ documentation. Released code must have documentation. A change to the
+ external behavior of code must induce a simultaneous change to its
+ documentation---``simultaneous'' means that the two changes are in the
+ same ``push'' to the code base.
 
 Without adherence to basic elements of style and some internal
  documentation, code comprehension becomes impossible. The rest of this
@@ -104,13 +106,14 @@ Without adherence to basic elements of style and some internal
 Readability is not the same as code with documentation, but documentation
  is a part of it all.  For style rules on documenting code, refer to the
  @hyperlink["http://docs.racket-lang.org/scribble/how-to-doc.html#%28part._reference-style%29"]{style
- guide} in the Scribble manual.  Ideally documentation comes in two parts:
- a ``Guide'' section, which explains the purpose and suggests use cases, and
- a traditional ``Reference'' section, which presents the minutae.  Also
- consider adding examples for each function and construct in your
- ``Reference'' section.  Finally, ensure you have all the correct
- @tt{for-label} @tt{require}s and make use of other useful
- cross-references.
+ guide} in the Scribble manual.  Ideally documentation comes in two parts,
+ possibly located in the same document: a ``Guide'' section, which explains
+ the purpose and suggests use cases, and a traditional ``Reference''
+ section, which presents the minutae. The documentation for HtDP/2e
+ teachpacks is an example where the two parts are collocated. Also consider
+ adding examples for each function and construct in your ``Reference''
+ section.  Finally, ensure you have all the correct @tt{for-label}
+ @tt{require}s and make use of other useful cross-references.
 
 
 Having said that, the production of a system like Racket occasionally
