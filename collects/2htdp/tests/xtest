@@ -18,6 +18,7 @@ run image-too-large.rkt
 run image-equality-performance-htdp.rkt
 run image-equality-performance.rkt
 run mouse-evt.rkt
+run lauch-many-worlds-proc.rkt
 run on-tick-defined.rkt
 run perform-robby.rkt
 run profile-robby.rkt

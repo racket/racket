@@ -1,17 +1,24 @@
-#lang scheme
+#lang racket 
 
-(require mred/mred mzlib/etc)
+(require mred/mred mzlib/etc htdp/error)
 
 (provide
-  launch-many-worlds
-  ;; (launch-many-worlds e1 ... e2)
-  ;; run expressions e1 through e2 in parallel,
-  ;; produce all values
-  )
+ ;; (launch-many-worlds e1 ... e2)
+ ;; run expressions e1 through e2 in parallel,
+ ;; produce all values
+ launch-many-worlds
+ ;; launch-many-worlds/proc : (-> Any) *-> [Listof Any]
+ launch-many-worlds/proc)
 
 (define-syntax-rule 
   (launch-many-worlds e ...) 
   (launch-many-worlds* (lambda () e) ...))
+
+(define (launch-many-worlds/proc . loth)
+  ;; check args 
+  (for ([th loth][i (in-naturals 1)])
+    (check-proc 'launch-many-worlds/proc th 0 i "no arguments"))
+  (apply launch-many-worlds* loth))
 
 ;; [Listof (-> X)] ->* X ...
 (define (launch-many-worlds* . loth)

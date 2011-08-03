@@ -1149,6 +1149,40 @@ Once you have designed a world program, add a function definition
  stopped, they produce the final states, here @racket[10], @racket[25], and
  @racket[33]. 
 
+For advanced programmers, the library also provides a programmatic
+interface for launching many worlds in parallel. 
+
+@defproc[(launch-many-worlds/proc [thunk-that-runs-a-world (-> any/c)] ...)
+          any]{
+ invokes all given @racket[thunk-that-runs-a-world] in parallel. Typically
+ each argument is a function of no argument that evaluates a @racket[big-bang]
+ expression. When all worlds have stopped, the function expression returns
+ all final worlds in order.}
+
+It is thus possible to decide at run time how many and which worlds to run
+in parallel:
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+> (apply launch-many-worlds/proc 
+         (build-list (random 10)
+                     (lambda (i) (main (number->string i)))))
+0
+9
+1
+2
+3
+6
+5
+4
+8
+7
+))
+@;%
+
+
+
 @; -----------------------------------------------------------------------------
 @section[#:tag "universe-sample"]{A First Sample Universe} 
 

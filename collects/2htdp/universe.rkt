@@ -22,7 +22,7 @@
          "private/universe.rkt"
          "private/universe-image.rkt"
          ;; 
-         (only-in "private/launch-many-worlds.rkt" launch-many-worlds)
+         (only-in "private/launch-many-worlds.rkt" launch-many-worlds launch-many-worlds/proc)
          (only-in "private/stop.rkt" make-stop-the-world)
          (only-in "private/check-aux.rkt" sexp?)
          htdp/error
@@ -33,9 +33,11 @@
 (provide stop-with) ;; World -> STOP
 
 (provide
- launch-many-worlds
  ;; (launch-many-worlds e1 ... e2)
  ;; run expressions e1 through e2 in parallel, produce all values in same order
+ launch-many-worlds
+ ;; launch-many-worlds/proc : (-> Any) *-> [Listof Any]
+ launch-many-worlds/proc
  )
 
 (provide-primitive

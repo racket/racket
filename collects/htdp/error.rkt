@@ -40,19 +40,20 @@
 
 ;; check-proc : sym (... *->* ...) num (union sym str) (union sym str) -> void
 (define (check-proc name f exp-arity arg# arg-err)
+  (define arg#-text (if (number? arg#) (number->ord arg#) arg#))
   (unless (procedure? f)
-    (tp-error name "expected a function as ~a argument; given ~e" arg# f))
-  (let ([arity-of-f (procedure-arity f)])
-    (unless (procedure-arity-includes? f exp-arity)
-      (tp-error name "expected function of ~a as ~a argument; given function of ~a "
-                arg-err arg# 
-                (cond
-                  [(number? arity-of-f)
-                   (if (= arity-of-f 1)
-                       (format "1 argument")
-                       (format "~s arguments" arity-of-f))]
-                  [(arity-at-least? arity-of-f) "variable number of arguments"]
-                  [else (format "multiple arities (~s)" arity-of-f)])))))
+    (tp-error name "expected a function as ~a argument; given ~e" arg#-text f))
+  (define arity-of-f (procedure-arity f))
+  (unless (procedure-arity-includes? f exp-arity)
+    (tp-error name "expected function of ~a as ~a argument; given function of ~a "
+              arg-err arg#-text
+              (cond
+                [(number? arity-of-f)
+                 (if (= arity-of-f 1)
+                     (format "1 argument")
+                     (format "~s arguments" arity-of-f))]
+                [(arity-at-least? arity-of-f) "variable number of arguments"]
+                [else (format "multiple arities (~s)" arity-of-f)]))))
 
 ;; Symbol (_ -> Boolean) String X  X *-> X 
 (define (check-result pname pred? expected given . other-given)
