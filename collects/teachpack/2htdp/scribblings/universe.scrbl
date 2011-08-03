@@ -1153,7 +1153,7 @@ For advanced programmers, the library also provides a programmatic
 interface for launching many worlds in parallel. 
 
 @defproc[(launch-many-worlds/proc [thunk-that-runs-a-world (-> any/c)] ...)
-          any]{
+          (values any @#,racketfont{...})]{
  invokes all given @racket[thunk-that-runs-a-world] in parallel. Typically
  each argument is a function of no argument that evaluates a @racket[big-bang]
  expression. When all worlds have stopped, the function expression returns
