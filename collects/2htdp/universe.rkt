@@ -244,10 +244,12 @@
        (cond
          [(and (not (contains-clause? #'to-draw dom)) (not (contains-clause? #'on-draw dom)))
           (raise-syntax-error #f "expects a [to-draw handler] clause, missing" stx)]
-         [else 
-          (stepper-syntax-property
-           #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args))
-           'stepper-skip-completely #t)]))]))
+         [else
+	   (syntax-property 
+	     (stepper-syntax-property
+	       #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args))
+	       'stepper-skip-completely #t)
+	     'disappeared-use (map (lambda (x) (car (syntax->list x))) dom))]))]))
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
