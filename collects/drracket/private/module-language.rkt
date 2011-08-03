@@ -827,7 +827,7 @@
                    [stretchable-height #f]
                    [parent expand-error-parent-panel]))
         
-        (set! expand-error-message (new message% [parent expand-error-panel] [stretchable-width #t] [label "hi"]))
+        (set! expand-error-message (new error-message% [parent expand-error-panel] [stretchable-width #t] [msg "hi"]))
         (set! expand-error-button-parent-panel
               (new vertical-panel% 
                    [stretchable-width #f]
@@ -866,7 +866,7 @@
           (set! expand-error-srcloc-count srcloc-count)
           (cond
             [expand-error-msg
-             (send expand-error-message set-label expand-error-msg)
+             (send expand-error-message set-msg expand-error-msg)
              (send expand-error-parent-panel change-children
                    (λ (l) (append (remq expand-error-panel l) (list expand-error-panel))))
              (send expand-error-button-parent-panel change-children
@@ -982,6 +982,36 @@
                           [min-width 10]
                           [min-height 10]))))))
   
+  (define error-message%
+    (class canvas%
+      (init-field msg)
+      (inherit refresh get-dc get-client-size)
+      (define/public (set-msg m) 
+        (set! msg m)
+        (refresh))
+      (define/override (on-paint)
+        (define dc (get-dc))
+        (define-values (cw ch) (get-client-size))
+        (send dc set-font error-font)
+        (define-values (tw th td ta) (send dc get-text-extent msg))
+        (send dc set-text-foreground "firebrick")
+        (send dc draw-text msg 2 (- (/ ch 2) (/ th 2))))
+      (super-new [style '(transparent)])
+      
+      (inherit min-height)
+      (let ()
+        (send (get-dc) set-font error-font)
+        (define-values (tw th td ta) (send (get-dc) get-text-extent msg))
+        (min-height (inexact->exact (ceiling th))))))
+  
+  (define error-font
+    (let ([base-font normal-control-font])
+      (send the-font-list find-or-create-font
+            (send normal-control-font get-point-size)
+            (send normal-control-font get-family)
+            'italic
+            (send normal-control-font get-weight))))
+        
   (define yellow-message%
     (class canvas%
       (inherit get-dc refresh get-client-size
