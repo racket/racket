@@ -1531,7 +1531,6 @@
       (refresh-delegate))
     
     (define/private (refresh-delegate)
-      (set! todo '())
       (to-delegate (λ () (refresh-delegate/do-work))))
     
     (define/private (refresh-delegate/do-work)
