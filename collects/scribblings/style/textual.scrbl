@@ -304,8 +304,6 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
  few special characters by convention, and these characters indicate
  something about the name:
 
-@;column-table[ @col[? ! "@" ^ %] @col[1 2 3 4 5] @col[1 2 3 4 5] ]
-
 @row-table[
  @row[symbol kind example]
  @row[?    "predicates and boolean-valued functions" boolean?]
@@ -317,6 +315,10 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
  @row["@"  "units"                                   testing-context@]
  @row["#%" "kernel identifiers"                      #:app]
 ]
+ The use of ``#%'' to prefix names from the kernel language warns readers
+ that these identifiers are extremely special and they need to watch out
+ for subtleties. Identifiers with this prefix are mostly used in modules
+ that define new languages.
 
 @; -----------------------------------------------------------------------------
 @section{Graphical Syntax}
