@@ -50,7 +50,10 @@
               gdk_display_get_default
 
               request-flush-delay
-              cancel-flush-delay)
+              cancel-flush-delay
+	      win-box-valid?
+	      window->win-box
+	      unrealize-win-box)
  gtk->wx
  gtk_widget_show
  gtk_widget_hide)
@@ -698,20 +701,39 @@
 (define-gdk gdk_window_invalidate_rect (_fun _GdkWindow _pointer _gboolean -> _void))
 (define-gdk gdk_window_process_all_updates (_fun -> _void))
 
-(define (request-flush-delay gtk)
+(define (win-box-valid? win-box)
+  (mcar win-box))
+(define (window->win-box win)
+  (mcons win 0))
+(define (unrealize-win-box win-box)
+  (let ([win (mcar win-box)])
+    (when win
+      (set-mcar! win-box #f)
+      (for ([i (in-range (mcdr win-box))])
+	(gdk_window_thaw_updates win)))))
+
+(define (request-flush-delay win-box)
   (do-request-flush-delay 
-   gtk
-   (lambda (gtk)
-     (let ([win (widget-window gtk)])
+   win-box
+   (lambda (win-box)
+     (let ([win (mcar win-box)])
        (and win
-            (gdk_window_freeze_updates win)
-            #t)))
-   (lambda (gtk)
-     (gdk_window_thaw_updates (widget-window gtk)))))
+       	    (begin
+	      (gdk_window_freeze_updates win)
+	      (set-mcdr! win-box (add1 (mcdr win-box)))
+	      #t))))
+   (lambda (win-box)
+     (let ([win (mcar win-box)])
+       (when win
+         (gdk_window_thaw_updates win)
+         (set-mcdr! win-box (sub1 (mcdr win-box))))))))
 
 (define (cancel-flush-delay req)
   (when req
     (do-cancel-flush-delay 
      req
-     (lambda (gtk)
-       (gdk_window_thaw_updates (widget-window gtk))))))
+     (lambda (win-box)
+       (let ([win (mcar win-box)])
+         (when win
+	   (gdk_window_thaw_updates win)
+           (set-mcdr! win-box (sub1 (mcdr win-box)))))))))

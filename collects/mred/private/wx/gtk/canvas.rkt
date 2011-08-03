@@ -227,6 +227,13 @@
   (lambda (gtk)
     (do-value-changed gtk 'vertical)))
 
+(define-signal-handler connect-unrealize "unrealize"
+  (_fun _GtkWidget -> _void)
+  (lambda (gtk)
+    (let ([wx (gtk->wx gtk)])
+      (when wx
+        (send wx unrealize)))))
+
 (define (do-value-changed gtk dir)
   (let ([wx (gtk->wx gtk)])
     (when wx
@@ -401,6 +408,7 @@
                                                       GTK_CAN_FOCUS)))
      (when combo-button-gtk
        (connect-combo-key-and-mouse combo-button-gtk))
+     (connect-unrealize client-gtk)
 
      (when hscroll-adj (connect-value-changed-h hscroll-adj))
      (when vscroll-adj (connect-value-changed-v vscroll-adj))
@@ -455,7 +463,7 @@
      ;; are defined by `canvas-mixin' from ../common/canvas-mixin
      (define/public (queue-paint) (void))
      (define/public (request-canvas-flush-delay)
-       (request-flush-delay client-gtk))
+       (request-flush-delay (get-flush-window)))
      (define/public (cancel-canvas-flush-delay req)
        (cancel-flush-delay req))
      (define/public (queue-canvas-refresh-event thunk)
@@ -480,7 +488,16 @@
 
      (define/public (on-paint) (void))
 
-     (define/public (get-flush-window) client-gtk)
+     (define flush-win-box (mcons #f 0))
+     (define/public (get-flush-window) 
+       (atomically
+        (if (win-box-valid? flush-win-box)
+            flush-win-box
+            (begin
+              (set! flush-win-box (window->win-box (widget-window client-gtk)))
+              flush-win-box))))
+     (define/public (unrealize)
+       (unrealize-win-box flush-win-box))
 
      (define/public (begin-refresh-sequence)
        (send dc suspend-flush))
