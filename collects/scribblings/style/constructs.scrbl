@@ -309,3 +309,6 @@ racket
   (record-message-in-log msg))
 ]
 ]
+
+As the comparison demonstrates, @racket[parameterize] clearly delimits the
+extent of the change, which is an important idea for the reader.
