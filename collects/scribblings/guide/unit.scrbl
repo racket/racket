@@ -40,7 +40,7 @@ The interface of a unit is described in terms of
 following signature, placed in a @filepath{toy-factory-sig.rkt} file,
 describes the exports of a component that implements a toy factory:
 
-@margin-note{By convention, signature names start with @litchar{^}.}
+@margin-note{By convention, signature names end with @litchar{^}.}
 
 @racketmod/eval[[#:file
 "toy-factory-sig.rkt"
@@ -59,7 +59,7 @@ An implementation of the @racket[toy-factory^] signature is written
 using @racket[define-unit] with an @racket[export] clause that names
 @racket[toy-factory^]:
 
-@margin-note{By convention, unit names start with @litchar["@"].}
+@margin-note{By convention, unit names end with @litchar["@"].}
 
 @racketmod/eval[[#:file
 "simple-factory-unit.rkt"
