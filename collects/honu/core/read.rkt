@@ -12,6 +12,7 @@
 (define-empty-tokens honu-empty-tokens
                      [eof fail whitespace
                       left-parens right-parens
+                      parse-error
                       left-bracket right-bracket
                       left-brace right-brace
                       block-comment
@@ -46,6 +47,7 @@
     (define with (cadr replace))
     (regexp-replace* pattern string with)))
 
+(provide honu-lexer)
 (define honu-lexer
   (lexer-src-pos
     [(eof) (token-eof)]
@@ -75,7 +77,8 @@
     ["[" (token-left-bracket)] ["]" (token-right-bracket)]
     ["{" (token-left-brace)]   ["}" (token-right-brace)]
     [identifier (token-identifier (string->symbol lexeme))]
-    [(union " " "\t") (token-whitespace)]))
+    [(union " " "\t") (token-whitespace)]
+    [any-char (token-parse-error)]))
 
 (define-syntax (define-token? stx)
   (syntax-parse stx
@@ -86,15 +89,17 @@
                                                    (syntax->datum #'name))))
                                   #'name))
      (with-syntax ([name? name?])
-       #'(define (name? token)
-           (equal? 'name (token-name token))))]))
+       #'(begin
+           (provide name?)
+           (define (name? token)
+             (equal? 'name (token-name token)))))]))
 
 (define-syntax-rule (define-tokens? name ...)
                     (begin
                       (define-token? name) ...))
 
 (define-tokens? eof whitespace end-of-line-comment number string
-                block-comment
+                block-comment parse-error
                 identifier left-parens right-parens
                 left-bracket right-bracket
                 left-brace right-brace)
@@ -102,7 +107,7 @@
 (define (read-until-end-of-line input)
   (define (finish? what)
     (or (eof-object? what)
-	(= (char->integer #\newline) what)))
+        (= (char->integer #\newline) what)))
   (let loop ()
     (define what (read-byte input))
     (when (not (finish? what))
@@ -135,26 +140,26 @@
     (define next (honu-lexer port))
     ;; (printf "next ~a\n" next)
     (match next
-	   [(struct* position-token ([token (? token-eof?)] [start-pos start] [end-pos end]))
-	    ;; (printf "done lexing\n")
-	    (reverse tokens)]
-	   [(struct* position-token ([token (? token-end-of-line-comment?)]
-				     [start-pos start]
-				     [end-pos end]))
-	    (read-until-end-of-line port)
-	    (loop tokens)]
+      [(struct* position-token ([token (? token-eof?)] [start-pos start] [end-pos end]))
+       ;; (printf "done lexing\n")
+       (reverse tokens)]
+      [(struct* position-token ([token (? token-end-of-line-comment?)]
+                                 [start-pos start]
+                                 [end-pos end]))
+       (read-until-end-of-line port)
+       (loop tokens)]
        [(struct* position-token ([token (? token-block-comment?)]
-				     [start-pos start]
-				     [end-pos end]))
+                                 [start-pos start]
+                                 [end-pos end]))
         (read-block-comment port)
-	    (loop tokens)]
-	   [(struct* position-token ([token (? token-whitespace?)] [start-pos start] [end-pos end]))
-	    (loop tokens)]
+        (loop tokens)]
+       [(struct* position-token ([token (? token-whitespace?)] [start-pos start] [end-pos end]))
+        (loop tokens)]
        [else (loop (cons next tokens))]
        #;
-	   [(position-token token start end)
-	    ;; (printf "next is ~a eof? ~a\n" token (token-eof? token))
-	    (loop (cons token tokens))])))
+       [(position-token token start end)
+        ;; (printf "next is ~a eof? ~a\n" token (token-eof? token))
+        (loop (cons token tokens))])))
 
 ;; convert a string to a stream of tokens
 (define (lex-string input)
