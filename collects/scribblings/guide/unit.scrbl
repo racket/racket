@@ -240,6 +240,8 @@ unit's imports using the exports of other linked units.
 
 @interaction[
 #:eval toy-eval
+(eval:alts (require "toy-factory-sig.rkt") (void))
+(eval:alts (require "toy-store-sig.rkt") (void))
 (eval:alts (require "store-specific-factory-unit.rkt") (void))
 (define-compound-unit/infer toy-store+factory@
   (import)
