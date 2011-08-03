@@ -124,6 +124,9 @@
     ;; error type is a perfectly good fcn type
     [((tc-result1: (Error:)) _) (ret (make-Error))]
     ;; otherwise fail
+    [((tc-result1: (and f-ty (Poly: ns (Function: arrs)))) _)
+     (tc-error/expr #:return (ret (Un))
+                    "Cannot infer type instantiation for type ~a. Please add more type annotations" f-ty)]
     [((tc-result1: f-ty) _)
      (tc-error/expr #:return (ret (Un))
                     "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))
