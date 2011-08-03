@@ -5,5 +5,7 @@ honu
 #:read honu-read
 #:read-syntax honu-read-syntax
 #:whole-body-readers? #t
+#:info honu-info
 
-(require "../core/read.rkt")
+(require "../core/read.rkt"
+         "../core/language.rkt")

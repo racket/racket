@@ -51,8 +51,8 @@
 (define honu-lexer
   (lexer-src-pos
     [(eof) (token-eof)]
-    [line-comment (token-whitespace)]
     #;
+    [line-comment (token-whitespace)]
     [(:or "#" "//") (token-end-of-line-comment)]
     ["\n" (token-whitespace)]
     [number (token-number (string->number lexeme))]
@@ -104,15 +104,23 @@
                 left-bracket right-bracket
                 left-brace right-brace)
 
+;; returns #t if an entire comment was read (with an ending newline)
 (define (read-until-end-of-line input)
   (define (finish? what)
     (or (eof-object? what)
         (= (char->integer #\newline) what)))
+  ;; #t if read a #\newline, otherwise #f
+  (define (clean-end? what)
+    (if (eof-object? what)
+      #f
+      (= (char->integer #\newline) what)))
   (let loop ()
     (define what (read-byte input))
-    (when (not (finish? what))
-      (loop))))
+    (if (not (finish? what))
+      (loop)
+      (clean-end? what))))
 
+;; returns #t if an entire block comment was read
 (define (read-block-comment port)
   (define comment-lexer
     (lexer
@@ -129,9 +137,10 @@
     (define what (comment-lexer port))
     (cond
       [(eq? what 'nest) (loop (add1 nesting))]
-      [(eq? what 'done) (when (> nesting 1)
-                          (loop (sub1 nesting)))]
-      [(eof-object? what) (void)]
+      [(eq? what 'done) (if (> nesting 1)
+                          (loop (sub1 nesting))
+                          #t)]
+      [(eof-object? what) #f]
       [else (loop nesting)])))
 
 ;; read characters from a port and return a stream of tokens
@@ -160,6 +169,82 @@
        [(position-token token start end)
         ;; (printf "next is ~a eof? ~a\n" token (token-eof? token))
         (loop (cons token tokens))])))
+
+;; symbols that can be used for colors
+;;   symbol
+;;   keyword
+;;   comment
+;;   string
+;;   constant
+;;   parenthesis
+;;   error
+;;   other
+(define (honu-name->color token-name)
+  ;; (printf "Get honu color for ~a\n" token-name)
+  (case token-name
+    [(number) 'constant]
+    [(string) 'string]
+    [(parens) 'parenthesis]
+    [(identifier) 'symbol]
+    [else 'other]))
+
+;; implements a lexer that the colorer in drracket expects
+;; FIXME: color comments
+(provide color-lexer)
+(define (color-lexer port offset mode)
+  ;; (printf "Parse at token ~a mode is ~a\n" offset mode)
+  (define lexeme (honu-lexer port))
+  (define need-backup (if mode mode 0))
+  (match lexeme
+    [(position-token token start end)
+     ;; (printf "Lexed ~a\n" token)
+     (define (encloser kind)
+       (values token 'parens kind
+               (position-offset start)
+               (position-offset end)
+               need-backup mode))
+
+     ;; (printf "Get token for at ~a\n" (position-offset start))
+     (cond
+       [(token-eof? token)
+        (values token 'eof #f
+                (position-offset start)
+                (position-offset end)
+                need-backup mode)]
+       [(token-parse-error? token)
+        (define backup (if mode (add1 mode) 1))
+        (values token 
+                'error
+                #f
+                (position-offset start)
+                (position-offset end)
+                backup backup)]
+       [(token-end-of-line-comment? token)
+        (read-until-end-of-line port)
+        (define-values (line column position) (port-next-location port))
+        (values #f 'comment #f
+                (position-offset start)
+                position
+                need-backup need-backup)]
+       [(token-block-comment? token)
+        (read-block-comment port)
+        (define-values (line column position) (port-next-location port))
+        (values #f 'comment #f
+                (position-offset start)
+                position
+                need-backup need-backup)]
+       [(token-left-parens? token)  (encloser '|(|)]
+       [(token-right-parens? token) (encloser '|)|)]
+       [(token-left-bracket? token) (encloser '|[|)]
+       [(token-right-bracket? token)(encloser '|]|)]
+       [(token-left-brace? token)   (encloser '|{|)]
+       [(token-right-brace? token)  (encloser '|}|)]
+       [else (values (format "~a" (token-value token))
+                     (honu-name->color (token-name token))
+                     #f
+                     (position-offset start)
+                     (position-offset end)
+                     need-backup mode)])]))
 
 ;; convert a string to a stream of tokens
 (define (lex-string input)
