@@ -1,10 +1,12 @@
 #lang scheme/base
 
-(require unstable/sequence racket/require racket/match racket/list (prefix-in s: srfi/1)
-         racket/string
-         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt" "rep/rep-utils.rkt"
-                  "types/abbrev.rkt" "types/numeric-tower.rkt" "types/subtype.rkt"
-                  "utils/utils.rkt" "utils/tc-utils.rkt"))
+(require racket/require racket/match racket/list racket/string
+         unstable/sequence
+         (prefix-in s: srfi/1)
+         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
+                  "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
+                  "types/numeric-tower.rkt" "utils/utils.rkt"
+                  "utils/tc-utils.rkt"))
 
 ;; do we attempt to find instantiations of polymorphic types to print?
 ;; FIXME - currently broken
@@ -29,19 +31,30 @@
   (match c
     [(FilterSet: thn els) (fp "(~a | ~a)" thn els)]
     [(NoFilter:) (fp "-")]
-    [(NotTypeFilter: type (list) (? syntax? id)) (fp "(! ~a @ ~a)" type (syntax-e id))]
-    [(NotTypeFilter: type (list) id) (fp "(! ~a @ ~a)" type id)]
-    [(NotTypeFilter: type path (? syntax? id)) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
-    [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path id)]
-    [(TypeFilter: type (list) (? syntax? id)) (fp "(~a @ ~a)" type (syntax-e id))]
-    [(TypeFilter: type (list) id) (fp "(~a @ ~a)" type id)]
-    [(TypeFilter: type path (? syntax? id)) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
-    [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path id)]
+    [(NotTypeFilter: type (list) (? syntax? id))
+     (fp "(! ~a @ ~a)" type (syntax-e id))]
+    [(NotTypeFilter: type (list) id)
+     (fp "(! ~a @ ~a)" type id)]
+    [(NotTypeFilter: type path (? syntax? id))
+     (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
+    [(NotTypeFilter: type path id)
+     (fp "(! ~a @ ~a ~a)" type path id)]
+    [(TypeFilter: type (list) (? syntax? id))
+     (fp "(~a @ ~a)" type (syntax-e id))]
+    [(TypeFilter: type (list) id)
+     (fp "(~a @ ~a)" type id)]
+    [(TypeFilter: type path (? syntax? id))
+     (fp "(~a @ ~a ~a)" type path (syntax-e id))]
+    [(TypeFilter: type path id)
+     (fp "(~a @ ~a ~a)" type path id)]
     [(Bot:) (fp "Bot")]
     [(Top:) (fp "Top")]
-    [(ImpFilter: a c) (fp "(ImpFilter ~a ~a)" a c)]
-    [(AndFilter: a) (fp "(AndFilter") (for ([a0 a]) (fp " ~a" a0))  (fp ")")]
-    [(OrFilter: a) (fp "(OrFilter") (for ([a0 a]) (fp " ~a" a0)) (fp ")")]
+    [(ImpFilter: a c)
+     (fp "(ImpFilter ~a ~a)" a c)]
+    [(AndFilter: a)
+     (fp "(AndFilter") (for ([a0 a]) (fp " ~a" a0))  (fp ")")]
+    [(OrFilter: a)
+     (fp "(OrFilter") (for ([a0 a]) (fp " ~a" a0)) (fp ")")]
     [else (fp "(Unknown Filter: ~a)" (struct->vector c))]))
 
 (define (print-pathelem c port write?)
@@ -208,7 +221,9 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt _ _) (fp "~s" n)]
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: (? (lambda (nm) (free-identifier=? promise-id nm)))  #f  (list (fld: t _ _)) _    _ _ _ _) (fp "(Promise ~a)" t)]
+    [(Struct: (? (lambda (nm) (free-identifier=? promise-id nm)))
+              #f (list (fld: t _ _)) _    _ _ _ _)
+     (fp "(Promise ~a)" t)]
     [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
      (fp "#(struct:~a ~a" nm t)
      (when proc
@@ -236,7 +251,8 @@
     ;; FIXME
     [(Values: (list v)) (fp "~a" v)]
     [(Values: (list v ...)) (fp "~s" (cons 'values v))]
-    [(ValuesDots: v dty dbound) (fp "~s" (cons 'values (append v (list dty '... dbound))))]
+    [(ValuesDots: v dty dbound)
+     (fp "~s" (cons 'values (append v (list dty '... dbound))))]
     [(Param: in out)
      (if (equal? in out)
          (fp "(Parameterof ~a)" in)
@@ -247,7 +263,8 @@
     [(Poly-names: names body)
      #;(fprintf (current-error-port) "POLY SEQ: ~a\n" (Type-seq body))
      (fp "(All ~a ~a)" names body)]
-    #;[(PolyDots-unsafe: n b) (fp "(unsafe-polydots ~a ~a ~a)" (Type-seq c) n b)]
+    #;
+    [(PolyDots-unsafe: n b) (fp "(unsafe-polydots ~a ~a ~a)" (Type-seq c) n b)]
     [(PolyDots-names: (list names ... dotted) body)
      (fp "(All ~a ~a)" (append names (list dotted '...)) body)]
     #;
@@ -257,8 +274,10 @@
                               (Base: 'Boolean _ _ _)
                               (Base: 'Symbol _ _ _)
                               (Base: 'String _ _ _)
-                              (Mu: var (Union: (list (Value: '()) (Pair: (F: x) (F: var)))))
-                              (Mu: y (Union: (list (F: x) (Pair: (F: x) (F: y)))))
+                              (Mu: var (Union: (list (Value: '())
+                                                     (Pair: (F: x) (F: var)))))
+                              (Mu: y (Union: (list (F: x)
+                                                   (Pair: (F: x) (F: y)))))
                               (Vector: (F: x))
                               (Box: (F: x))))))
      (fp "Syntax")]
