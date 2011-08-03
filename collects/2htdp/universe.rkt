@@ -336,7 +336,9 @@
          [(not (contains-clause? #'on-msg dom))
           (raise-syntax-error #f "expects a on-msg clause, but found none" stx)]
          [else ; (and (memq #'on-new dom) (memq #'on-msg dom))
-          #`(run-it ((new-universe universe%) u #,@args))]))]))
+          (syntax-property 
+           #`(run-it ((new-universe universe%) u #,@args))
+           'disappeared-use (map (lambda (x) (car (syntax->list x))) dom))]))]))
 
 ;                                          
 ;                                          
