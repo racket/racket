@@ -465,12 +465,16 @@
       (gtk_widget_set_size_request child-gtk w h)
       (gtk_widget_size_allocate child-gtk (make-GtkAllocation x y w h)))
 
-    (define/public (remember-size w h)
+    (define/public (remember-size x y w h)
       ;; called in event-pump thread
       (unless (and (= save-w w)
-                   (= save-h h))
+                   (= save-h h)
+                   (= save-x x)
+                   (= save-y y))
         (set! save-w w)
         (set! save-h h)
+        (set! save-x x)
+        (set! save-y y)
         (queue-on-size)))
 
     (define/public (queue-on-size) (void))

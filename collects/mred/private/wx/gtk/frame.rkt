@@ -91,6 +91,8 @@
     (let ([wx (gtk->wx gtk)])
       (when wx
         (send wx remember-size 
+              (GdkEventConfigure-x a)
+              (GdkEventConfigure-y a)
               (GdkEventConfigure-width a)
               (GdkEventConfigure-height a))))
     #f))
