@@ -1103,6 +1103,9 @@
       (preferences:add-callback 'drracket:online-compilation cb-proc #t)
       
       (define/private (buffer-modified)
+        (clear-old-error)
+        (set! clear-old-error void)
+        (reset-frame-expand-error)
         (let ([tlw (get-top-level-window)])
           (when expanding-place
             (when (in-module-language tlw)
@@ -1164,9 +1167,11 @@
       (define error-message-str #f)
       (define error-message-srclocs '())
       (define/private (reset-frame-expand-error)
-        (set! error-message-str #f)
-        (set! error-message-srclocs '())
-        (update-frame-expand-error))
+        (unless (and (eq? error-message-str #f)
+                     (eq? error-message-srclocs '()))
+          (set! error-message-str #f)
+          (set! error-message-srclocs '())
+          (update-frame-expand-error)))
       (define/public (update-frame-expand-error)
         (send (send (get-tab) get-frame) set-expand-error
               error-message-str 
