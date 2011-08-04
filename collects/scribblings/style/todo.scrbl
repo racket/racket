@@ -8,7 +8,16 @@
 
 @item{Write a section on when macros, when functions.}
 
+@item{Write a section on how to organize test suites --
+
+Robby: please review the "correctness" section (1.1) and determine what we
+need to add.}
+
 @item{Write a section on how to design test cases.}
 
+@item{Write a section on how to check the stressability of your software.}
+
 @item{Find and link to good/bad examples in the code base.}
+
+@item{Do we need a discussion of life cycles that start in @tt{unstable}?}
 ]

@@ -35,12 +35,14 @@ One module should usually contain a class and its auxiliary functions, which in
  turn determines the length of a good-sized class.
 
 And a function (method) of more than 66 lines is usually acceptable. The 66
-is based on the length of a laptop screen with small font. It really means
-"a screen length."
-
-Yes, there are exceptions where functions are more than 1,000 lines long
- and extremely readable. (The worst part is that I have found 30-line
- unreadable functions, too.)
+ is based on the length of a laptop screen with small font. It really means
+ "a screen length." Yes, there are exceptions where functions are more than
+ 1,000 lines long and extremely readable. Nesting levels and nested loops
+ may look fine to you when you write code, but readers will not appreciate
+ it keeping implicit and tangled dependencies in their mind. It really
+ helps the reader to separate functions (with what you may call manual
+ lambda lifting) into a reasonably flat organization of units that fit on a
+ (laptop) screen and explicit dependencies.
 
 For many years we had a limited syntax transformation language that forced
  people to create @emph{huge} functions. This is no longer the case, so we
@@ -76,7 +78,9 @@ implementation:
 (require 2htdp/universe htdp/image)
 
 (provide
+  ;; launch the tv server function
   tv-launch
+  ;; set up a tv client to receive messages from the tv server
   tv-client)
 
 (define (tv-launch)
@@ -99,7 +103,7 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
 
 ;; the module implements a tv server
 
-(require 2htdp/universe htdp/image)
+(require 2htdp/universe htdp/image xml)
 
 (define player# 3)
 (define plain-board/c
@@ -109,10 +113,13 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
   (flat-named-contract "placement" ...))
 
 (provide/contract
+  ;; initialize the game board for the specified number of players
   [board-init        (-> player#/c plain-board/c)]
+  ;; initialize a board for some players and place the specified tiles
   [create-board      (-> player#/c (listof placement/c)
                          (or/c plain-board/c string?))]
-  [board-deserialize (-> any/c plain-board/c)])
+  ;; create a board from an X-expression representation
+  [board-deserialize (-> xexpr? plain-board/c)])
 
 ; implementation:
 (define (board-init n)
@@ -126,6 +133,9 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
   (class ... some 900 lines ...))
 ))
 @;%
+
+Avoid @racket[(provide (all-defined-out))] except for general-purpose
+ libraries.
 
 A test suite section---if located within the module---should come at the
  every end, including its specific dependencies, i.e., @racket[require]

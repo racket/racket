@@ -2,12 +2,15 @@
 
 @(require "shared.rkt")
 
-@title{Branch and Commit}
+@title[#:tag "branch-and-commit"]{Branch and Commit}
 
+@; -----------------------------------------------------------------------------
 @section{Commit}
 
 @bold{New feature commit:} Commit the new feature, its tests, and its
- documentations as you wish, but please push them together.
+ documentations as you wish, but please push them together. However, do not
+ commit states that don't run. (In Git, this means 'commit' and not just
+ 'push'.)
 
 @bold{Bug fix commit:} When you fix a bug, make sure to commit (1) the
  code delta, (2) the new test case, and (3) the revised docs (if
@@ -19,6 +22,13 @@
 
 @bold{Style change commit:} Submit changes to the style of a file
  separately from changes to its behavior (new features, bugs).
+
+Write meaningful commit messages. The first line (say 80 chars) should
+ provide a concise summary of the commit. If the message must be longer,
+ edit the rest of the message in your text editor and leave a blank line
+ between the summary line and the rest of the message.
+
+To avoid 'merge commits', update your repository with @tt{git --rebase pull}.
 
 @; -----------------------------------------------------------------------------
 @section{No Commit ``Bombs,'' Please}

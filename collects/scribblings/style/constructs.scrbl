@@ -16,6 +16,10 @@ Following Lisp and Scheme tradition, we use a single semicolon for in-line
 comments (to the end of a line) and two semicolons for comments that start
 a line. Think of the second semicolon as making an emphatic point.
 
+Seasoned Schemers, not necessarily Racketeers, also use triple and
+quadruple semicolons. This is considered a courtesy to distinguish file
+headers from section headers.
+
 @; -----------------------------------------------------------------------------
 @section{Definitions}
 
@@ -106,8 +110,14 @@ racket
 ]
 ]
 
-Of course you should also favor @scheme[cond] (and its relatives) over
-@scheme[if] to match the shape of the data definition.
+Also, use @racket[cond] instead of @racket[if] to eliminate explicit
+@racket[begin].
+
+The above ``good'' example would be even better with @racket[match]. In
+ general, use @racket[match] to destructure complex pieces of data.
+
+You should also favor @scheme[cond] (and its relatives) over @scheme[if] to
+ match the shape of the data definition.
 
 @; -----------------------------------------------------------------------------
 @section{Expressions}
@@ -152,7 +162,7 @@ contract that states the constraints.
 @section{Lambda vs Define}
 
 While nobody denies that @racket[lambda] is cute, @racket[define]d
-functions have names that tell you what they compute and that helps
+functions have names that tell you what they compute and that help
 accelerate reading.
 
 @compare[
@@ -178,6 +188,27 @@ racket
 ]
 ]
 
+Even a curried function does not need @racket[lambda].
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+
+(define ((staged-image-composition fixed-image) variable-image)
+  ...)
+]
+@; -----------------------------------------------------------------------------
+@racketmod[#:file
+@tt{acceptable}
+racket
+
+(define (staged-image-composition fixed-image)
+  (lambda (variable-image)
+    ...))
+]
+]
+ The left side signals currying in the very first line of the function,
+ while the reader must read two lines for the version on the right side.
 
 @; -----------------------------------------------------------------------------
 @section{Identity Functions}
@@ -190,7 +221,7 @@ The identity function is @racket[values]:
  ]
 
 @; -----------------------------------------------------------------------------
-@section{List Traversals}
+@section{Traversals}
 
 With the availability of @racket[for/fold], @racket[for/list],
  @racket[for/vector], and friends, programming with for @racket[for] loops
@@ -220,7 +251,6 @@ racket
   (open-input-string
     "1 2 3"))
 ])
-
 @; -----------------------------------------------------------------------------
 @;%
 @(begin
@@ -237,6 +267,7 @@ racket
 (sum-up '(1 2 3))
 ])
 ]
+ See also @racket[for/sum] and @racket[for/product] in Racket.
 
  @bold{Note}: @racket[for] traversals of user-defined sequences tend to be
  slow. If performance matters in these cases, you may wish to fall back on
@@ -245,7 +276,7 @@ racket
 @; -----------------------------------------------------------------------------
 @section{Functions vs Macros}
 
-Use functions when possible, Or, do not introduce macros when functions
+Define functions when possible, Or, do not introduce macros when functions
 will do.
 
 @compare[
@@ -311,4 +342,7 @@ racket
 ]
 
 As the comparison demonstrates, @racket[parameterize] clearly delimits the
-extent of the change, which is an important idea for the reader.
+extent of the change, which is an important idea for the reader. In
+addition, @racket[parameterize] ensures that your code is more likely to
+work with continuations and threads, an important idea for Racket
+programmers.
