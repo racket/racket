@@ -18,7 +18,8 @@
  [blur
   (->* (pict? nneg-real/c)
        (nneg-real/c
-        #:mode (or/c 'gaussian 'iterated-box 'single-box))
+        #:mode (or/c 'gaussian 'iterated-box 'single-box)
+        #:pre-inset? any/c)
        pict?)]
  [shadow
   (->* (pict? nneg-real/c)
@@ -35,10 +36,15 @@
 
 ;; ----
 
-(define (blur p hbr [vbr hbr] #:mode [mode 'iterated-box] #:auto-inset? [auto-inset? #f])
-  (let ([blurred (*blur (inset p hbr vbr) hbr vbr mode)])
-    (cond [auto-inset? blurred]
-          [else (inset blurred (- hbr) (- vbr))])))
+(define (blur p hbr [vbr hbr]
+              #:mode [mode 'iterated-box]
+              #:pre-inset? [pre-inset? #t])
+  (let* ([p
+          (cond [pre-inset? (inset p hbr vbr)]
+                [else p])]
+         [blurred (*blur p hbr vbr mode)])
+    (cond [pre-inset? (inset blurred (- hbr) (- vbr))]
+          [else blurred])))
 
 (define (shadow p br [dx 0] [dy dx]
                 #:color [c #f]
@@ -81,6 +87,10 @@
               (send bdc set-pen (send dc get-pen))
               (send bdc set-brush (send dc get-brush))
               (send bdc set-text-foreground (send dc get-text-foreground))
+              (when (or (zero? hbr*) (zero? vbr*))
+                ;; probably not worth smoothing when about to blur
+                ;; except when blurring by zero
+                (send bdc set-smoothing (send dc get-smoothing)))
               (drawer bdc 0 0)
               (blur! bmp hbr* vbr* mode)
               (send dc set-scale 1.0 1.0)
@@ -187,7 +197,7 @@
 
 ;; iterated box blur
 
-(define (box-line* radius start end get-val set-val)
+(define-syntax-rule (box-line* radius start end get-val set-val)
   (let ([non-zero-alpha?
          (for/or ([outi (in-range start end)])
            (positive? (get-val outi 0)))])
@@ -237,34 +247,30 @@
              (set-val outI 3 0))])))
 
 (define (box-h in out radius w h iterations)
-  (define (get-val i offset) (bytes-ref in (unsafe-fx+ offset (unsafe-fx* 4 i))))
-  (define (set-val i offset v) (bytes-set! out (unsafe-fx+ offset (unsafe-fx* 4 i)) v))
-  (define (get-val* i offset) (bytes-ref out (unsafe-fx+ offset (unsafe-fx* 4 i))))
-  (define (set-val* i offset v) (bytes-set! in (unsafe-fx+ offset (unsafe-fx* 4 i)) v))
   (for/async ([row (in-range h)])
     (for ([iter (in-range iterations)])
-      (box-line* radius (* row w) (* (add1 row) w) 
-                 (if (even? iter) get-val get-val*)
-                 (if (even? iter) set-val set-val*)))))
+      (let ([start (* row w)]
+            [end (* (add1 row) w)]
+            [in (if (even? iter) in out)]
+            [out (if (even? iter) out in)])
+        (define-syntax-rule (get-val i offset)
+          (bytes-ref in (unsafe-fx+ offset (unsafe-fx* 4 i))))
+        (define-syntax-rule (set-val i offset v)
+          (bytes-set! out (unsafe-fx+ offset (unsafe-fx* 4 i)) v))
+        (box-line* radius start end get-val set-val)))))
 
 (define (box-v in out radius w h iterations)
-  (define ((mkget col) i offset)
-    (bytes-ref in (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset)))
-  (define ((mkset col) i offset v)
-    (bytes-set! out (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset) v))
-  (define ((mkget* col) i offset)
-    (bytes-ref out (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset)))
-  (define ((mkset* col) i offset v)
-    (bytes-set! in (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset) v))
   (for/async ([col (in-range w)])
-    (let ([get (mkget col)]
-          [get* (mkget* col)]
-          [set (mkset col)]
-          [set* (mkset* col)])
-      (for ([iter (in-range iterations)])
-        (box-line* radius 0 h 
-                   (if (even? iter) get get*)
-                   (if (even? iter) set set*))))))
+    (for ([iter (in-range iterations)])
+      (let ([start 0]
+            [end h]
+            [in (if (even? iter) in out)]
+            [out (if (even? iter) out in)])
+        (define-syntax-rule (get-val i offset)
+          (bytes-ref in (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset)))
+        (define-syntax-rule (set-val i offset v)
+          (bytes-set! out (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset) v))
+        (box-line* radius start end get-val set-val)))))
 
 ;; ----
 
