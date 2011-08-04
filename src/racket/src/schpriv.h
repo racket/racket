@@ -179,6 +179,7 @@ void scheme_clear_ephemerons(void);
 
 extern int scheme_starting_up;
 
+void scheme_init_finalization(void);
 void scheme_init_portable_case(void);
 void scheme_init_stack_check(void);
 void scheme_init_overflow(void);

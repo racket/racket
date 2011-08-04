@@ -207,8 +207,6 @@ typedef struct Thread_Local_Variables {
   rxpos *maybep_buffer_cache_;
   rxpos *match_stack_buffer_cache_;
   uintptr_t scheme_os_thread_stack_base_;
-  int traversers_registered_;
-  struct Finalizations **save_fns_ptr_;
   struct Scheme_Object *scheme_system_idle_channel_;
   struct Scheme_Object *system_idle_put_evt_;
   void *stack_copy_cache_[STACK_COPY_CACHE_SIZE];
@@ -540,8 +538,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define maybep_buffer_cache XOA (scheme_get_thread_local_variables()->maybep_buffer_cache_)
 #define match_stack_buffer_cache XOA (scheme_get_thread_local_variables()->match_stack_buffer_cache_)
 #define scheme_os_thread_stack_base XOA (scheme_get_thread_local_variables()->scheme_os_thread_stack_base_)
-#define traversers_registered XOA (scheme_get_thread_local_variables()->traversers_registered_)
-#define save_fns_ptr XOA (scheme_get_thread_local_variables()->save_fns_ptr_)
 #define scheme_system_idle_channel XOA (scheme_get_thread_local_variables()->scheme_system_idle_channel_)
 #define system_idle_put_evt XOA (scheme_get_thread_local_variables()->system_idle_put_evt_)
 #define stack_copy_cache XOA (scheme_get_thread_local_variables()->stack_copy_cache_)

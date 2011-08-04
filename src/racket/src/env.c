@@ -218,8 +218,9 @@ Scheme_Env *scheme_basic_env()
   return env;
 }
 
-/* READ-ONLY GLOBAL structures ONE-TIME initialization */
-Scheme_Env *scheme_engine_instance_init() {
+Scheme_Env *scheme_engine_instance_init() 
+/* READ-ONLY GLOBAL structures, ONE-TIME initialization */
+{
   Scheme_Env *env;
   void *stack_base;
   stack_base = (void *) scheme_get_current_os_thread_stack_base();
@@ -231,6 +232,8 @@ Scheme_Env *scheme_engine_instance_init() {
 #endif
 
   scheme_starting_up = 1;
+
+  scheme_init_finalization();
 
   scheme_init_portable_case();
   scheme_init_compenv();
@@ -260,7 +263,7 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_init_ephemerons();
 #endif
 
-/* These calls must be made here so that they allocate out of the master GC */
+  /* These calls must be made here so that they allocate out of the master GC */
   scheme_init_symbol_table();
   scheme_init_module_path_table();
   scheme_init_type();
@@ -279,7 +282,6 @@ Scheme_Env *scheme_engine_instance_init() {
 
   scheme_spawn_master_place();
 #endif
-  
 
   env = place_instance_init(stack_base, 1);
 
