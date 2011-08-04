@@ -63,13 +63,11 @@
                                 ;; all other ignored flags have a single argument
                                 (loop (+ i 2) #t)])))))])
       (let-values ([(new-argc new-argv)
-                    (if (null? args)
-                        (values 0 #f)
-                        (values (add1 (length args))
-                                (cast (cons (ptr-ref argv _bytes 0)
-                                            args)
-                                      (_list i _bytes)
-                                      _pointer)))])
+                    (values (add1 (length args))
+                            (cast (cons (path->bytes (find-system-path 'run-file))
+                                        args)
+                                  (_list i _bytes)
+                                  _pointer))])
         (unless (gtk_init_check new-argc new-argv)
           (error (format
                   "Gtk initialization failed for display ~s"
