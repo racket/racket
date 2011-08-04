@@ -18,8 +18,8 @@ API:
 
    The GRacket executable still offers some additional GUI-specific
    functionality however. Most notably, GRacket is a GUI application
-   under Windows (as opposed to a console application, which is
-   launched slightly differently by the OS), GRacket is a bundle under
+   on Windows (as opposed to a console application, which is
+   launched slightly differently by the OS), GRacket is a bundle on
    Mac OS X (so the dock icon is the Racket logo, for example), and
    GRacket manages single-instance mode for Windows and X.
 
@@ -166,6 +166,11 @@ The `on-subwindow-char' and `on-subwindow-event' methods for controls
 are somewhat more restricted in the actions they can take without
 disabling the control's handling of key and mouse events. See the
 documentation for more information.
+
+The 'mdi-child and 'mdi-parent styles for `frame%' on Windows are no
+longer supported, and the `on-mdi-activate' method has been
+removed. (The styles and method actually lingered in `racket/gui'
+until version 5.1.2.3, but they did not work.)
 
 
 Registry Functions

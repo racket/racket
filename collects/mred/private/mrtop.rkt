@@ -162,14 +162,8 @@
 	  (check-init-pos-integer cwho x)
 	  (check-init-pos-integer cwho y)
 	  (check-style cwho #f '(no-resize-border no-caption no-system-menu 
-						  mdi-parent mdi-child 
 						  toolbar-button hide-menu-bar float metal) 
-		       style)
-	  (when (memq 'mdi-child style)
-	    (when (memq 'mdi-parent style)
-	      (raise-type-error (who->name cwho) 
-				"style list, 'mdi-child and 'mdi-parent are mutually exclusive" 
-				style)))))
+		       style)))
       (rename [super-on-subwindow-char on-subwindow-char])
       (private-field
        [wx #f]
@@ -186,7 +180,6 @@
 		       (lambda (e)
 			 (check-instance '(method frame% on-menu-char) wx:key-event% 'key-event% #f e)
 			 (send wx handle-menu-key e)))]
-	[on-mdi-activate (lambda (on?) (void))]
 	[on-toolbar-button-click (lambda () (void))]
 	[create-status-line (entry-point (lambda () (unless status-line? (do-create-status-line) (set! status-line? #t))))]
 	[set-status-text (lambda (s) (do-set-status-text s))]
@@ -217,16 +210,12 @@
 					    (or x -11111) (or y -11111)
 					    (or width -1) (or height -1)
 					    style)
-			       (memq 'mdi-parent style)))
-	      (send wx set-mdi-parent (memq 'mdi-parent style))
+			       #f))
+	      (send wx set-mdi-parent #f)
 	      wx)
 	    (lambda ()
 	      (let ([cwho '(constructor frame)])
-		(check-container-ready cwho parent)
-		(when (memq 'mdi-child style)
-		  (let ([pwx (and parent (mred->wx parent))])
-		    (unless (and pwx (send pwx get-mdi-parent))
-		      (raise-mismatch-error (who->name cwho) "parent for 'mdi-child frame is not an 'mdi-parent frame: " parent))))))
+		(check-container-ready cwho parent)))
 	    label parent))))))
 
   (define dialog%
