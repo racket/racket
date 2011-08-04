@@ -6,7 +6,7 @@
           "parse-common.rkt"
           (for-label syntax/parse/define))
 
-@title{Defining simple macros}
+@title{Defining Simple Macros}
 
 @defmodule[syntax/parse/define]
 

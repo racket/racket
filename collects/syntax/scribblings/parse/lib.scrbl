@@ -6,9 +6,9 @@
           "parse-common.rkt"
           (for-label syntax/kerncase))
 
-@title{Library syntax classes and literal sets}
+@title{Library Syntax Classes and Literal Sets}
 
-@section{Syntax classes}
+@section{Syntax Classes}
 
 @(begin
    (define-syntax-rule (defstxclass name . pre-flows)
@@ -130,7 +130,7 @@ represents the checked expression.
 }
 
 
-@section{Literal sets}
+@section{Literal Sets}
 
 @defidform[kernel-literals]{
 

@@ -5,7 +5,7 @@
           scribble/eval
           "parse-common.rkt")
 
-@title{Debugging and inspection tools}
+@title{Debugging and Inspection Tools}
 
 @defmodule[syntax/parse/debug]
 

@@ -6,7 +6,7 @@
           "parse-common.rkt"
           (for-label racket/class))
 
-@title[#:tag "exprc"]{Contracts on macro sub-expressions}
+@title[#:tag "exprc"]{Contracts on Macro Sub-expressions}
 
 Just as procedures often expect certain kinds of values as arguments,
 macros often have expectations about the expressions they are

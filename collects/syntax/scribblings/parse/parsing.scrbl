@@ -5,7 +5,7 @@
           scribble/eval
           "parse-common.rkt")
 
-@title{Parsing syntax}
+@title{Parsing Syntax}
 
 This section describes @racket[syntax-parse], the
 @racketmodname[syntax/parse] library's facility for parsing

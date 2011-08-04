@@ -6,7 +6,7 @@
           "parse-common.rkt"
           (for-label racket/class))
 
-@title{More keyword arguments}
+@title{More Keyword Arguments}
 
 This section shows how to express the syntax of @racket[struct]'s
 optional keyword arguments using @racket[syntax-parse] patterns.

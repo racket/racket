@@ -6,7 +6,7 @@
           "parse-common.rkt"
           (for-label racket/class))
 
-@title[#:tag "uniform-meanings"]{Variants with uniform meanings}
+@title[#:tag "uniform-meanings"]{Variants with Uniform Meanings}
 
 Syntax classes not only validate syntax, they also extract some
 measure of meaning from it. From the perspective of meaning, there are

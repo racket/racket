@@ -6,7 +6,7 @@
           "parse-common.rkt"
           (for-label racket/class))
 
-@title[#:tag "varied-meanings"]{Variants with varied meanings}
+@title[#:tag "varied-meanings"]{Variants with Varied Meanings}
 
 As explained in the @seclink["uniform-meanings"]{previous section},
 the meaning of a syntax class can be uniform, or it can be varied;
@@ -35,7 +35,7 @@ enter a new scope'' case.
 This section discusses two ways of representing varied kinds of
 information.
 
-@section{Syntactic normalization}
+@section{Syntactic Normalization}
 
 One approach is based on the observation that the syntactic variants
 already constitute a representation of the information they carry. So
@@ -68,7 +68,7 @@ A normalized syntactic representation is most useful when the
 subsequent case analysis is performed by @racket[syntax-parse] or a
 similar form.
 
-@section{Non-syntax-valued attributes}
+@section{Non-syntax-valued Attributes}
 
 When the information carried by the syntax is destined for complicated
 processing by Racket code, it is often better to parse it into an

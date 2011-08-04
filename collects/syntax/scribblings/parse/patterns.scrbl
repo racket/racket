@@ -11,7 +11,7 @@
           (define def-dotsplus (defhere ...+))))
 @(define-dotsplus-names dotsplus def-dotsplus)
 
-@title[#:tag "stxparse-patterns"]{Syntax patterns}
+@title[#:tag "stxparse-patterns"]{Syntax Patterns}
 
 The grammar of @deftech{syntax patterns} used by
 @racketmodname[syntax/parse] facilities is given in the following
@@ -167,7 +167,7 @@ eh] pattern}
 
 @;{--------}
 
-@section{Single-term patterns}
+@section{Single-term Patterns}
 
 A @deftech{@Spattern} (abbreviated @svar[S-pattern]) is a pattern that
 describes a single term. These are like the traditional patterns used
@@ -587,7 +587,7 @@ ambiguity; it matches any term.
 }
 
 
-@section{Head patterns}
+@section{Head Patterns}
 
 A @deftech{@Hpattern} (abbreviated @svar[H-pattern]) is a pattern that
 describes some number of terms that occur at the head of some list
@@ -769,7 +769,7 @@ Matches a sequence of one element, which must be a term matching
 
 @;{--------}
 
-@section{Ellipsis-head patterns}
+@section{Ellipsis-head Patterns}
 
 An @deftech{@EHpattern} (abbreviated @svar[EH-pattern]) is pattern
 that describes some number of terms, like a @tech{@Hpattern}, but also
@@ -869,7 +869,7 @@ fails with the message either @racket[too-many-message-expr] or
 
 @;{--------}
 
-@section{Action patterns}
+@section{Action Patterns}
 
 An @deftech{@Apattern} (abbreviated @svar[A-pattern]) does not
 describe any syntax; rather, it has an effect such as the binding of

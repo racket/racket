@@ -2,7 +2,7 @@
 @(require scribble/manual
           (for-label syntax/parse))
 
-@title[#:tag "stxparse" #:style '(toc)]{Parsing and specifying syntax}
+@title[#:tag "stxparse" #:style '(toc)]{Parsing and Specifying Syntax}
 
 The @racketmodname[syntax/parse] library provides a framework for
 writing macros and processing syntax. The library provides a powerful

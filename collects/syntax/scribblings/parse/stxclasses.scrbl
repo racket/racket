@@ -5,7 +5,7 @@
           scribble/eval
           "parse-common.rkt")
 
-@title[#:tag "stxparse-specifying"]{Specifying syntax with syntax classes}
+@title[#:tag "stxparse-specifying"]{Specifying Syntax with Syntax Classes}
 
 @declare-exporting[syntax/parse]
 
@@ -161,7 +161,7 @@ the pattern variables.
 
 @;{--------}
 
-@section{Pattern directives}
+@section{Pattern Directives}
 
 @section-index{pattern-directive}
 
@@ -255,7 +255,7 @@ in a @racket[#:do] block.
 
 @;{----------}
 
-@section{Pattern variables and attributes}
+@section{Pattern Variables and Attributes}
 
 An @deftech{attribute} is a name bound by a syntax pattern. An
 attribute can be a @tech{pattern variable} itself, or it can be a

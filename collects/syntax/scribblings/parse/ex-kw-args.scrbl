@@ -6,7 +6,7 @@
           "parse-common.rkt"
           (for-label racket/class))
 
-@title{Optional keyword arguments}
+@title{Optional Keyword Arguments}
 
 This section explains how to write a macro that accepts (simple)
 optional keyword arguments. We use the example @racket[mycond], which

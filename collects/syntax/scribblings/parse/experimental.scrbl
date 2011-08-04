@@ -9,14 +9,14 @@
 
 The following facilities are experimental.
 
-@section{Contracts for macro sub-expressions}
+@section{Contracts for Macro Sub-expressions}
 
 @defmodule[syntax/parse/experimental/contract]
 
 This module is deprecated; it reprovides @racket[expr/c] for backward
 compatibility.
 
-@section{Contracts for syntax classes}
+@section{Contracts for Syntax Classes}
 
 @defmodule[syntax/parse/experimental/provide]
 
@@ -152,7 +152,7 @@ Like @racket[~reflect] but for reified splicing syntax classes.
 
 @;{--------}
 
-@section{Procedural splicing syntax classes}
+@section{Procedural Splicing Syntax Classes}
 
 @defmodule[syntax/parse/experimental/splicing]
 
@@ -178,7 +178,7 @@ optional message argument.
 
 @;{--------}
 
-@section{Ellipsis-head alternative sets}
+@section{Ellipsis-head Alternative Sets}
 
 @defmodule[syntax/parse/experimental/eh]
 
@@ -242,7 +242,7 @@ their attributes with @racket[name].
 ]
 
 
-@section{Syntax class specialization}
+@section{Syntax Class Specialization}
 
 @defmodule[syntax/parse/experimental/specialize]
 

@@ -6,7 +6,7 @@
           "parse-common.rkt"
           (for-label racket/class))
 
-@title{Modules and reusable syntax classes}
+@title{Modules and Reusable Syntax Classes}
 
 As demonstrated in the @secref{stxparse-intro}, the simplest place to
 define a syntax class is within the macro definition that uses it. But
