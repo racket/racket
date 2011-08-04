@@ -46,10 +46,12 @@ Also, look over the commit messages. If you see problems with the code
  the first author via email. If your request gets ignored, appeal to all
  four authors.
 
-@bold{Note} If the style guide doesn't suit your personal style because you
- grew up on something different, fine. Use your @emph{personal style} for
- your @emph{personal programs}, but do use this style guide when you create
- code for the PLT code base.
+@bold{Note} The recommendations in this style guide may not jive with what
+ you grew up with. (They conflict with some of the ideas that the primary
+ author had about style.) But if you do write code that ends up in the
+ Racket code base, please follow the recommendations here. If/when someone
+ else works on your code, this person may ``fix'' your code if it isn't in
+ compliance with the style guide.
 
 @; -----------------------------------------------------------------------------
 

@@ -4,6 +4,10 @@
 
 @title[#:tag "branch-and-commit"]{Branch and Commit}
 
+Working with the code base also requires style rules for actions on the
+repository. Currently we are using Git and below are a few rules on how to
+act in this context.
+
 @; -----------------------------------------------------------------------------
 @section{Commit}
 

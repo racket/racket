@@ -111,18 +111,21 @@ racket
 ]
 
 Also, use @racket[cond] instead of @racket[if] to eliminate explicit
-@racket[begin].
+ @racket[begin].
 
 The above ``good'' example would be even better with @racket[match]. In
  general, use @racket[match] to destructure complex pieces of data.
 
 You should also favor @scheme[cond] (and its relatives) over @scheme[if] to
- match the shape of the data definition.
+ match the shape of the data definition. In particular, the above examples
+ could be formulated with @racket[and] and @racket[or] but doing so would
+ not bring across the recursion as nicely.
 
 @; -----------------------------------------------------------------------------
 @section{Expressions}
 
-Keep expressions small. Name intermediate results.
+Don't nest expressions too deeply. Instead name intermediate results. With
+well-chosen names your expression becomes easy to read.
 
 @compare[
 @racketmod[#:file
@@ -148,8 +151,9 @@ racket
 	,(caddr d))))
 ]
 ]
- (It is difficult to illustrate this point with a small example. Please
- give intermediate names a try.)
+ Clearly ``too deeply'' is subjective. On occasion it also isn't the
+ nesting that makes the expression unreadable but the sheer number of
+ subexpressions. Consider using local definitions for this case, too.
 
 @; -----------------------------------------------------------------------------
 @section{Structs vs Lists}
@@ -210,6 +214,11 @@ racket
  The left side signals currying in the very first line of the function,
  while the reader must read two lines for the version on the right side.
 
+Of course, many constructs (call-with ..) or higher-order functions
+(filter) are made for short @racket[lambda]; don't hesitate to use
+@racket[lambda] for such cases.
+
+
 @; -----------------------------------------------------------------------------
 @section{Identity Functions}
 
@@ -231,6 +240,7 @@ With the availability of @racket[for/fold], @racket[for/list],
  explicit traversal combinators. And with @racket[for] loops, you can
  decouple the traversal from lists.
 
+@margin-note*{See also @racket[for/sum] and @racket[for/product] in Racket.}
 @compare[
 @;%
 @(begin
@@ -267,7 +277,12 @@ racket
 (sum-up '(1 2 3))
 ])
 ]
- See also @racket[for/sum] and @racket[for/product] in Racket.
+ In this example, the @racket[for] loop on the left comes with two
+ advantages. First, a reader doesn't need to absorb an intermediate
+ @racket[lambda]. Second, the @racket[for] loop naturally generalizes to
+ other kinds of sequences. Naturally, the trade-off here is a loss of
+ efficiency; using @racket[in-list] to restrict the @tt{good} example to
+ the same range of data as the @tt{bad} one speeds up the former.
 
  @bold{Note}: @racket[for] traversals of user-defined sequences tend to be
  slow. If performance matters in these cases, you may wish to fall back on
@@ -285,7 +300,7 @@ will do.
 racket
 ...
 ;; Message -> String
-(define (message-name msg)
+(define (name msg)
   (first (second msg)))
 ]
 @; -----------------------------------------------------------------------------
@@ -296,14 +311,11 @@ racket
 racket
 ...
 ;; Message -> String
-(define-syntax-rule
-  (message-name msg)
-  ;; ==>>
+(define-syntax-rule (name msg)
   (first (second msg)))
 ]
 )
 ]
-
  A function is immediately useful in a higher-order context. For a macro,
  achieving the same goal takes a lot more work.
 

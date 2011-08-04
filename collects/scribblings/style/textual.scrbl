@@ -81,7 +81,6 @@ DrRacket indents code and it is the only tool that everyone in PLT agrees
  @nested[#:style 'inset]{
  For every file in the repository, DrRacket's "indent all" functions leaves
  the file alone.}
-That is all there is to it.
 
 If you prefer to use some other editor (emacs, vi/m, etc), program it so
 that it follows DrRacket's indentation style.
@@ -110,7 +109,7 @@ Examples:
  ]
 ]
 
-@bold{Caveat}: Until language specifications come with fixed indentation
+@bold{Caveat 1}: Until language specifications come with fixed indentation
 rules, we need to use the @emph{default} settings of DrRacket's indentation
 for this rule to make sense. If you add new constructs, say a for loop,
 please contact Robby for advice on how to add a default setting for the
@@ -118,6 +117,8 @@ indentation functionality. If you add entire languages, say something on
 the order of Typed Racket, we will need to wait for Matthew and Robby to
 provide an indentation protocol on the @verbatim{#lang} line; please be
 patient and use the existing indentation tool anyway.
+
+@bold{Caveat 2}: This rule does not apply to scribble code.
 
 @; -----------------------------------------------------------------------------
 @section{Line Breaks}
@@ -145,7 +146,8 @@ racket
 ]
 ]
 
-It is acceptable to have an entire, small @racket[if] expressions on one line:
+It is acceptable to have an entire @racket[if] expressions on one line if
+it fits within the specified line width:
 @racketmod[#:file
 @tt{also good}
 racket
@@ -207,6 +209,7 @@ racket
 ]]
 
 Here is an exception:
+@codebox[
 @racketmod[#:file
 @tt{good}
 racket
@@ -214,7 +217,7 @@ racket
 (overlay/offset (rectangle 100 10 "solid" "blue")
                 10 10
                 (rectangle 10 100 "solid" "red"))
-]
+]]
  In this case, the two arguments on line 2 are both conceptually
  related and short.
 
@@ -283,6 +286,7 @@ traverse_forest
 Another widely used convention is to @emph{prefix} a function name with the data
  type of the main argument. This convention generalizes the selector-style
  naming scheme of @racket[struct].
+@codebox[
 @(begin
 #reader scribble/comment-reader
 [racketmod #:file
@@ -290,8 +294,9 @@ Another widely used convention is to @emph{prefix} a function name with the data
 racket
 
 board-free-spaces      board-attackable-spaces    board-serialize
-])
+])]
  In contrast, variables use a @emph{suffix} that indicates their type:
+@codebox[
 @(begin
 #reader scribble/comment-reader
 [racketmod #:file
@@ -304,7 +309,7 @@ racket
   (define name-string      (game-state-name game-state))
   (define name-symbol      (string->symbol name-string))
   ...)
-])
+])]
  The convention is particularly helpful when the same piece of data shows
  up in different guises, say, symbols and strings.
 
@@ -342,6 +347,10 @@ The use of graphical syntax makes it impossible to read files in
 alternative editors. It also messes up some revision control systems.
 When we figure out how to save such files in an editor-compatible way, we
 may relax this constraint.
+
+@section{Spaces}
+
+Don't pollute your code with spaces and extraneous blank lines.
 
 @; -----------------------------------------------------------------------------
 @section{End of File}

@@ -34,15 +34,15 @@ A module of 10,000 lines of code is too large. A module of 1,000 lines is
 One module should usually contain a class and its auxiliary functions, which in
  turn determines the length of a good-sized class.
 
-And a function (method) of more than 66 lines is usually acceptable. The 66
- is based on the length of a laptop screen with small font. It really means
- "a screen length." Yes, there are exceptions where functions are more than
- 1,000 lines long and extremely readable. Nesting levels and nested loops
- may look fine to you when you write code, but readers will not appreciate
- it keeping implicit and tangled dependencies in their mind. It really
- helps the reader to separate functions (with what you may call manual
- lambda lifting) into a reasonably flat organization of units that fit on a
- (laptop) screen and explicit dependencies.
+And a function (method) of more than roughly 66 lines is usually
+ acceptable. The 66 is based on the length of a screen with small font. It
+ really means "a screen length." Yes, there are exceptions where functions
+ are more than 1,000 lines long and extremely readable. Nesting levels and
+ nested loops may look fine to you when you write code, but readers will
+ not appreciate it keeping implicit and tangled dependencies in their
+ mind. It really helps the reader to separate functions (with what you may
+ call manual lambda lifting) into a reasonably flat organization of units
+ that fit on a (laptop) screen and explicit dependencies.
 
 For many years we had a limited syntax transformation language that forced
  people to create @emph{huge} functions. This is no longer the case, so we
@@ -233,8 +233,9 @@ This helps people find the relevant information quickly.
 
 As you can see from this comparison, an interface shouldn't just
 @scheme[provide] a list of names. Each identifier should come with a
-purpose statement. Type-like explanations of data also belong into a
-@scheme[provide] specification.
+purpose statement. Type-like explanations of data may also show up in a
+@scheme[provide] specification so that readers understand what kind of data
+your public functions work on.
 
 While a one-line purpose statement for a function is usually enough, syntax
 should come with a description of the grammar clause it introduces
@@ -297,8 +298,11 @@ With @racketmodname[rackunit], test suites can be defined within the
 @; -----------------------------------------------------------------------------
 @section{Functions & Methods}
 
-If your function or method consumers more than two parameters, consider
-keyword arguments so that call sites can easily be understood.
+If your function or method consumes more than two parameters, consider
+keyword arguments so that call sites can easily be understood.  In
+addition, keyword arguments also ``thin'' out calls because function calls
+don't need to refer to default values of arguments that are considered
+optional.
 
 Similarly, if your function or method consumers two (or more)
 @emph{optional} parameters, keyword arguments are a must.

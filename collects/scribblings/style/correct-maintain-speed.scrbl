@@ -12,10 +12,10 @@
  precise, the Racket @scheme[sqrt] function could return a rational number
  close to the IEEE float result.  We don't do such silly things, however,
  because we have decided to value speed over precision in this context.}
-Write code that is correct; maintainable; and fast. The ordering of these
- adjectives is critical: correct is more important than maintainable;
- maintainable is more important than fast; and fast is important to include,
- because nobody wants to live with slow programs.
+Strive to write code that is correct; maintainable; and fast. The ordering
+ of these adjectives is critical: correct is more important than
+ maintainable; maintainable is more important than fast; and fast is
+ important to include, because nobody wants to live with slow programs.
 
 This section explains these three points as far as the Racket code base is
  concerned. The rest of this guide is to spell out suggestions that should
@@ -76,7 +76,8 @@ If there is no test suite and you aren't sure how to build one, then ask on
 
 @itemlist[#:style 'ordered
 
-  @item{Add functionality to the library to enable testing. Robby and
+  @item{Add functionality to the library to enable testing. Of course,
+  adding functionality means adding external documentation.  Robby and
   Matthew have done so for the GUI library, and there is now a large
   automated test suite for DrRacket. So even GUI programs can come with
   extended test suites.}
@@ -111,7 +112,7 @@ Released code must have documentation. Conversely a change to the external
 
 For style rules on documenting code, refer to the
  @hyperlink["http://docs.racket-lang.org/scribble/how-to-doc.html#%28part._reference-style%29"]{style
- guide} in the Scribble manual.  Ideally documentation comes in two parts,
+ guide in the Scribble manual}.  Ideally documentation comes in two parts,
  possibly located in the same document: a ``Guide'' section, which explains
  the purpose and suggests use cases, and a traditional ``Reference''
  section, which presents the minutiae. The documentation for HtDP/2e
@@ -155,9 +156,9 @@ Stress tests don't normally have an expected output, so they never
  writing them and keeping them around reminds us that things can go bad and
  we can detect when performance degrades through some other door. Most
  importantly, a stress test may reveal that your code isn't implementing an
- algorithm with the expected O(.) running time. Finding out that much alone
- is useful. If you can't think of an improvement, just document the
- weakness in the external library and move on.
+ algorithm with the expected @math{O(.)} running time. Finding out that
+ much alone is useful. If you can't think of an improvement, just document
+ the weakness in the external library and move on.
 
 And as you read on, keep in mind that we are not perfectionists. We produce
  reasonable software.
