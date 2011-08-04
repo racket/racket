@@ -154,7 +154,7 @@
   (path     ; path to file from the installers directory
    file     ; just the file name
    release  ; the release that this installer comes from
-   size     ; human-readable size string
+   size     ; size in bytes
    package  ; package kind symbol 'racket or 'racket-textual
    binary?  ; #t = binary distribution, #f = source distribution
    platform ; platform name string (generic for srcs, cpu-os for bins)
@@ -163,7 +163,7 @@
 (define installer-rx
   (pregexp (string-append
             "^"
-            "([0-9.]+[A-Z]+)"       ; size
+            "([0-9.]+)"             ; size
             "\t"
             "("                     ; path
             "([0-9p.]+)"            ; version
@@ -178,7 +178,7 @@
             "))$")))
 
 (define (make-installer size path version package file type platform suffix)
-  (installer path file (version->release version) size
+  (installer path file (version->release version) (string->number size)
              (string->symbol package) (equal? "bin" type) platform suffix))
 
 (define (parse-installers in)

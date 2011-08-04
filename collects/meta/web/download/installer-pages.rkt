@@ -3,18 +3,24 @@
 (require "resources.rkt" "data.rkt")
 
 (define (render-installer-page installer)
-  (define path (installer-path installer))
-  (define file (installer-file installer))
+  (define path      (installer-path installer))
+  (define file      (installer-file installer))
   (define html-file (string-append (regexp-replace* #rx"\\." file "-") ".html"))
-  (define release (installer-release installer))
-  (define version (release-version release))
-  (define date    (release-date-string release))
-  (define package (package->name (installer-package installer)))
-  (define size (installer-size installer))
-  (define type (if (installer-binary? installer) "" " source"))
-  (define platform (platform->name (installer-platform installer)))
-  (define title @text{Download @package v@|version type| for @platform})
+  (define release   (installer-release installer))
+  (define version   (release-version release))
+  (define date      (release-date-string release))
+  (define package   (package->name (installer-package installer)))
+  (define size      (installer-size installer))
+  (define type      (if (installer-binary? installer) "" " source"))
+  (define platform  (platform->name (installer-platform installer)))
+  (define title     @text{Download @package v@|version type| for @platform})
   (define suffix-desc (suffix->name (installer-suffix installer)))
+  (define human-size
+    (let ([mb (/ size (* 1024 1024))])
+      (if (< mb 10)
+        (let-values ([(q r) (quotient/remainder (round (* mb 10)) 10)])
+          (format "~a.~aM" q r))
+        (format "~aM" (round mb)))))
   (define (row label text)
     @tr[valign: 'top]{
       @td[align: 'right]{@b{@label}:}
@@ -30,12 +36,13 @@
     @table[width: "90%" align: 'center]{
       @tr[valign: 'top]{
         @td[width: "50%"]{
-          @table{@(row "Package" package)
-                 @(row "Version" @list{@version (@date)})
+          @table{@(row "Package"  package)
+                 @(row "Version"  @list{@version (@date)})
                  @(row "Platform" (list platform type))
                  @(row "Type"     suffix-desc)
                  @(row "File"     file)
-                 @(row "Size"     size)}}
+                 @(row "Size"     @span[title: @list{Exact size: @size bytes}]{
+                                    @human-size})}}
         @td[width: "50%"]{
           Download links:
           @div[style: "font-size: 75%; text-align: right; float: right;"]{
