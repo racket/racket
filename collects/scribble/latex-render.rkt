@@ -444,8 +444,7 @@
                    (let ([m (current-table-mode)])
                      (and m
                           (equal? "bigtabular" (car m))
-                          (= 1 (length (car (table-blockss (cadr m))))))))]
-             [boxline "{\\setlength{\\unitlength}{\\linewidth}\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}"])
+                          (= 1 (length (car (table-blockss (cadr m))))))))])
         (if single-column?
             (begin
               (when (string? s-name)
@@ -480,21 +479,17 @@
                               "\\bigtableleftpad"
                               "")
                           (string-append*
-                           (map (lambda (i cell-style)
-                                  (format "~a@{}"
-                                          (cond
-                                           [(memq 'center (style-properties cell-style)) "c"]
-                                           [(memq 'right (style-properties cell-style)) "r"]
-                                           [else "l"])))
-                                (car blockss)
-                                (car cell-styless)))
-                          (if boxed? 
-                              (if (equal? tableform "bigtabular")
-                                  (format "~a \\SEndFirstHead\n" boxline)
-                                  (format "\\multicolumn{~a}{@{}l@{}}{~a} \\\\\n" 
-                                          (length (car blockss))
-                                          boxline))
-                              ""))])
+                           (let ([l
+                                  (map (lambda (i cell-style)
+                                         (format "~a@{}"
+                                                 (cond
+                                                  [(memq 'center (style-properties cell-style)) "c"]
+                                                  [(memq 'right (style-properties cell-style)) "r"]
+                                                  [else "l"])))
+                                       (car blockss)
+                                       (car cell-styless))])
+                             (if boxed? (cons "@{\\SBoxedLeft}" l) l)))
+                          "")])
                 (let loop ([blockss blockss]
                            [cell-styless cell-styless])
                   (let ([flows (car blockss)]

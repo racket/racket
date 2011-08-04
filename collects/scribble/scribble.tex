@@ -8,6 +8,7 @@
 \usepackage{wasysym}
 \usepackage{skull}
 \usepackage{textcomp}
+\usepackage{framed}
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
@@ -60,7 +61,9 @@
 % The `stabular' environment seems to be the lesser of evils among 
 %  page-breaking table environments:
 \newenvironment{bigtabular}{\begin{stabular}}{\end{stabular}}
-% Used to keep the horizontal line for a definition on the same page:
+% For the 'boxed table style:
+\newcommand{\SBoxedLeft}{\textcolor[rgb]{0.6,0.6,1.0}{\vrule width 3pt\hspace{3pt}}}
+% Formerly used to keep the horizontal line for a definition on the same page:
 \newcommand{\SEndFirstHead}[0]{ \nopagebreak \\ }
 % Corrects weirdness when a table is the first thing in
 %  an itemization:
