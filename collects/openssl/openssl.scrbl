@@ -431,10 +431,10 @@ is either @tt{xxxxxxx} or a mangling of Racket's version
 number). The DLLs are distributed as part of Racket.
 
 For Unix variants, @racketmodname[openssl] relies on
-@filepath{libcryto.so} and @filepath{libssl.so}, which must be
+@filepath{libcrypto.so} and @filepath{libssl.so}, which must be
 installed in a standard library location, or in a directory listed by
 @envvar{LD_LIBRARY_PATH}.
 
 For Mac OS X, @racketmodname[openssl] relies on
-@filepath{libssl.dylib} and @filepath{libcryto.dylib}, which are part
+@filepath{libssl.dylib} and @filepath{libcrypto.dylib}, which are part
 of the OS distribution for Mac OS X 10.2 and later.
