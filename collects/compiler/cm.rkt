@@ -156,7 +156,7 @@
   ;; Attempt to delete, but give up if it doesn't work:
   (with-handlers ([exn:fail:filesystem? void])
     (when noisy? (trace-printf "deleting: ~a" path))
-    (delete-file path)))
+    (with-compiler-security-guard (delete-file path))))
 
 (define (compilation-failure mode path zo-name date-path reason)
   (try-delete-file zo-name)
@@ -629,7 +629,7 @@
                  (define to-delete (path-add-suffix (get-compilation-path (car modes) path) #".zo")) 
                  (when (file-exists? to-delete)
                    (trace-printf "deleting:  ~s" to-delete)
-                 (delete-file to-delete))))]
+                   (with-compiler-security-guard (delete-file to-delete)))))]
             [(or (null? (use-compiled-file-paths))
                  (not (equal? (car modes)
                               (car (use-compiled-file-paths)))))
