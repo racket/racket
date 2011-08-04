@@ -187,17 +187,19 @@
             [else (cons i (loop (tell #:type _NSInteger v 
                                       indexGreaterThanIndex: #:type _NSInteger i)))])))))))
     
-  (define/private (visible-range)
-    (tell #:type _NSRange content-cocoa 
-          rowsInRect: #:type _NSRect (tell #:type _NSRect cocoa documentVisibleRect)))
-
-  (define/public (get-first-item)
-    (NSRange-location (visible-range)))
   (define/public (number-of-visible-items)
-    (NSRange-length (visible-range)))
+    (define doc (tell #:type _NSRect cocoa documentVisibleRect))
+    (define h (tell #:type _CGFloat content-cocoa rowHeight))
+    (max 1 (inexact->exact (floor (/ (NSSize-height (NSRect-size doc)) h)))))
+  (define/public (get-first-item)
+    (define doc (tell #:type _NSRect cocoa documentVisibleRect))
+    (NSRange-location (tell #:type _NSRange content-cocoa rowsInRect: #:type _NSRect doc)))
+
   (define/public (set-first-visible-item i)
-    ;; FIXME: visble doesn't mean at top:
-    (tellv content-cocoa scrollRowToVisible: #:type _NSInteger i))
+    (define num-vis (number-of-visible-items))
+    (define start (max 0 (min i (- count num-vis))))
+    (tellv content-cocoa scrollRowToVisible: #:type _NSInteger start)
+    (tellv content-cocoa scrollRowToVisible: #:type _NSInteger (+ start (sub1 num-vis))))
 
   (define/private (replace items i s)
     (append (take items i)

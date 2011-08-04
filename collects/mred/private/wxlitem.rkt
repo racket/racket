@@ -124,7 +124,8 @@
      (class100 (make-control% wx:list-box% 0 0 #t #t) (parent cb label kind x y w h choices style font 
                                                               label-font columns column-order)
        (inherit get-first-item
-		set-first-visible-item)
+		set-first-visible-item
+                number-of-visible-items)
        (private
 	 [scroll (lambda (dir)
 		   (unless list-box-wheel-step
@@ -136,7 +137,7 @@
 		       (set! list-box-wheel-step 3)))
 		   (let ([top (get-first-item)])
 		     (set-first-visible-item
-                      (max 0 (+ top (* list-box-wheel-step dir))))))])
+                      (max 0 (+ top (* (min list-box-wheel-step (number-of-visible-items)) dir))))))])
        (override
 	 [handles-key-code (lambda (x alpha? meta?)
 			     (case x
@@ -144,10 +145,11 @@
 			       [else (and alpha? (not meta?))]))]
 	 [pre-on-char (lambda (w e)
 			(or (super pre-on-char w e)
-			    (case (send e get-key-code)
-			      [(wheel-up) (scroll -1) #t]
-			      [(wheel-down) (scroll 1) #t]
-			      [else #f])))])
+                            (and (not (eq? (system-type) 'macosx)) ; scrolling is built into NSListView 
+                                 (case (send e get-key-code)
+                                   [(wheel-up) (scroll -1) #t]
+                                   [(wheel-down) (scroll 1) #t]
+                                   [else #f]))))])
        (sequence (super-init style parent cb label kind x y w h choices (cons 'deleted style) font 
                              label-font columns column-order)))))
 
