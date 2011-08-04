@@ -37,8 +37,11 @@
                   shadow
                   (mk-shadow-grad-stops w* s-side-len s-alpha))]
          [shadow
-          (cond [(positive? blur-radius) (blur shadow blur-radius)]
-                [else shadow])]
+          (cond [(zero? blur-radius) shadow]
+                [#t ;; use-smart-blur?
+                 (smart-blur shadow w h blur-radius
+                             s-side-len s-top-dy s-bot-dy s-desc)]
+                [else (blur shadow blur-radius)])]
          [result
           (pin-under (cc-superimpose main-box pict)
                      (- s-side-len) s-top-dy
@@ -47,6 +50,48 @@
           (inset result s-side-len 0
                  s-side-len (+ s-desc (- s-top-dy s-bot-dy)))])
     (inset result blur-radius)))
+
+;; smart-blur: blur only visible edges
+(define (smart-blur shadow w0 h0 blur-radius s-side-len s-top-dy s-bot-dy s-desc)
+  (define (blur-part p x1 y1 x2 y2 lpad tpad rpad bpad)
+    (let* ([p (viewport p (- x1 lpad) (- y1 tpad) (+ x2 rpad) (+ y2 bpad))]
+           [p (blur p blur-radius #:pre-inset? #f)]
+           [p (clip (inset p (- lpad) (- tpad) (- rpad) (- bpad)))])
+      p))
+  (define (viewport p x1 y1 x2 y2)
+    (clip (pin-over (blank (- x2 x1) (- y2 y1)) (- x1) (- y1) p)))
+  (let* ([shadow* (inset shadow blur-radius)]
+         [w* (pict-width shadow*)]
+         [h* (pict-height shadow*)]
+         [BR blur-radius]
+
+         [yTopBot (+ BR (- s-top-dy))]
+         [yMidBot (+ yTopBot h0)]
+         [xLeftRight (+ BR s-side-len)]
+
+         [top-part
+          (blur-part shadow*
+                     0 0 w* yTopBot
+                     0 0 0 BR)]
+         [left-part
+          (blur-part shadow*
+                     0 yTopBot xLeftRight yMidBot
+                     0 BR BR BR)]
+         [right-part
+          (blur-part shadow*
+                     (- w* xLeftRight) yTopBot w* yMidBot
+                     BR BR 0 BR)]
+         [bot-part
+          (blur-part shadow*
+                     0 yMidBot w* h*
+                     0 BR 0 0)]
+
+         [result (blank w* h*)]
+         [result (pin-over result 0 0 top-part)]
+         [result (pin-over result 0 yTopBot left-part)]
+         [result (pin-over result (- w* xLeftRight) yTopBot right-part)]
+         [result (pin-over result 0 yMidBot bot-part)])
+    (inset result (- blur-radius))))
 
 (define (mk-shadow-grad-stops w s-side-len s-alpha)
   (let* ([epsA (/ s-side-len w)]
