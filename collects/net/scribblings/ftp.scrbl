@@ -46,13 +46,16 @@ Returns a list of files and directories in the current directory of
 the server, assuming that the server provides directory information in
 the quasi-standard Unix format.
 
-Each file or directory is represented by a list of three strings. The
-first string is either @racket["-"], @racket["d"], or @racket["l"],
-depending on whether the items is a file, directory, or link,
-respectively.  The second item is the file's date; to convert this
+Each file or directory is represented by a list of three or four
+strings.  The first string is either @racket["-"], @racket["d"], or
+@racket["l"], depending on whether the items is a file, directory, or
+link, respectively.  The second item is the file's date; to convert this
 value to seconds consistent with @racket[file-seconds], pass the date
-string to @racket[ftp-make-file-seconds], below.  The third string is
-the name of the file or directory.
+string to @racket[ftp-make-file-seconds].  The third string is the name
+of the file or directory.  If the item is a file (the first string is
+@racket["-"]), and if the line that the server replied with has a size
+in the expected place, then a fourth string containing this size is
+included.
 
 Warning: the FTP protocol has no specification for the reply format, so
 this information can be unreliable.}

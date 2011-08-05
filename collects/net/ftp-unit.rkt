@@ -159,7 +159,9 @@
                       #"250" void (void)))
 
 (define re:dir-line
-  #rx"^(.)......... .* ([A-Z].* .* [0-9][0-9]:?[0-9][0-9]) (.*)$")
+  (regexp (string-append
+           "^(.)(.*) ((?i:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
+           " .* [0-9][0-9]:?[0-9][0-9]) (.*)$")))
 
 (define (ftp-directory-list tcp-ports)
   (define tcp-data (establish-data-connection tcp-ports))
@@ -173,9 +175,15 @@
                       (ftp-connection-out tcp-ports)
                       #"226" print-msg (void))
   (for*/list ([l (in-list lines)]
-              [m (in-value (regexp-match re:dir-line l))]
+              [m (in-value (cond [(regexp-match re:dir-line l) => cdr]
+                                 [else #f]))]
               #:when m)
-    (cdr m)))
+    (define size (cond [(and (equal? "-" (car m))
+                             (regexp-match #rx"([0-9]+) *$" (cadr m)))
+                        => cadr]
+                       [else #f]))
+    (define r `(,(car m) ,@(cddr m)))
+    (if size `(,@r ,size) r)))
 
 (define (ftp-download-file tcp-ports folder filename)
   ;; Save the file under the name tmp.file, rename it once download is
