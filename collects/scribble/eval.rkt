@@ -429,9 +429,6 @@
      (syntax/loc stx
        (titled-interaction who #f #f racketinput* e ...))]))
 
-(define (code-inset p)
-  (make-blockquote 'code-inset (list p)))
-
 (define-syntax (interaction stx)
   (syntax-case stx ()
     [(H e ...) (syntax/loc stx (code-inset (-interaction H e ...)))]))

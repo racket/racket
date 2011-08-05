@@ -465,7 +465,7 @@
   (make-box-splice
    (cons
     (make-blockquote
-     'vertical-inset
+     vertical-inset-style
      (list
       (make-table
        'boxed
@@ -761,7 +761,7 @@
   (make-box-splice
    (cons
     (make-blockquote
-     'vertical-inset
+     vertical-inset-style
      (list main-table))
     (content-thunk))))
 
@@ -788,7 +788,7 @@
   (make-box-splice
    (cons
     (make-blockquote
-     'vertical-inset
+     vertical-inset-style
      (list
       (make-table
        'boxed

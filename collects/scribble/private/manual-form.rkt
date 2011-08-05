@@ -347,7 +347,7 @@
     (make-box-splice
      (cons
       (make-blockquote
-       'vertical-inset
+       vertical-inset-style
        (list
         (make-table
          'boxed
@@ -384,7 +384,7 @@
      "leftindent"
      (cons
       (make-blockquote
-       'vertical-inset
+       vertical-inset-style
        (list
         (make-table
          'boxed

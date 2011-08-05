@@ -184,12 +184,21 @@
  [table-columns ([styles (listof style?)])]
  [table-cells ([styless (listof (listof style?))])]
 
+ [box-mode ([top-name string?]
+            [center-name string?]
+            [bottom-name string?])]
+
  [collected-info ([number (listof (or/c false/c integer?))]
                   [parent (or/c false/c part?)]
                   [info any/c])])
 
 (provide plain)
 (define plain (make-style #f null))
+
+(define (box-mode* name)
+  (box-mode name name name))
+(provide/contract
+ [box-mode* (string? . -> . box-mode?)])
 
 ;; ----------------------------------------
 

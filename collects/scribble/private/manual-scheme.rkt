@@ -4,6 +4,7 @@
          "../scheme.rkt"
          "../search.rkt"
          "../basic.rkt"
+         (only-in "../core.rkt" make-style box-mode)
          racket/list
          "manual-utils.rkt"
          "manual-style.rkt"
@@ -47,9 +48,6 @@
 (define-code racketblock to-block-paragraph)
 (define-code RACKETBLOCK to-block-paragraph UNSYNTAX)
 (define-code RACKETBLOCK0 to-paragraph UNSYNTAX)
-
-(define (code-inset b)
-  (make-blockquote 'code-inset (list b)))
 
 (define (to-block-paragraph v)
   (code-inset (to-paragraph v)))

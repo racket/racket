@@ -102,8 +102,9 @@
 \newcommand{\SCodePreSkip}{\vskip\abovedisplayskip}
 \newcommand{\SCodePostSkip}{\vskip\belowdisplayskip}
 \newenvironment{SCodeFlow}{\SCodePreSkip\begin{list}{}{\topsep=0pt\partopsep=0pt%
-\listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=2ex\rightmargin=0pt%
+\listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=2ex\rightmargin=2ex%
 \itemsep=0pt\parsep=0pt}\item}{\end{list}\SCodePostSkip}
+\newcommand{\SCodeInsetBox}[1]{\setbox1=\hbox{\hbox{\hspace{2ex}#1\hspace{2ex}}}\vbox{\SCodePreSkip\vtop{\box1\SCodePostSkip}}}
 
 % Inset a 'vertical-inset nested flow:
 \newcommand{\SVInsetPreSkip}{\vskip\abovedisplayskip}
@@ -111,6 +112,7 @@
 \newenvironment{SVInsetFlow}{\SVInsetPreSkip\begin{list}{}{\topsep=0pt\partopsep=0pt%
 \listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=0pt\rightmargin=0pt%
 \itemsep=0pt\parsep=0pt}\item}{\end{list}\SVInsetPostSkip}
+\newcommand{\SVInsetBox}[1]{\setbox1=\hbox{\hbox{#1}}\vbox{\SCodePreSkip\vtop{\box1\SCodePostSkip}}}
 
 % The 'compact itemization style:
 \newenvironment{compact}{\begin{itemize}}{\end{itemize}}
@@ -147,6 +149,9 @@
 % When brackets appear in section titles:
 \newcommand{\SOpenSq}{[}
 \newcommand{\SCloseSq}{]}
+
+% Helper for box-mode macros:
+\newcommand{\Svcenter}[1]{$\vcenter{#1}$}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -930,6 +930,7 @@
                     ,@(case (style-name style)
                         [(author) '([class "author"])]
                         [(pretitle) '([class "SPretitle"])]
+                        [(wraps) null]
                         [else null])]
                    ,@contents))))))
 

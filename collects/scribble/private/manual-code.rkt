@@ -5,6 +5,7 @@
          "../core.rkt"
          "../base.rkt"
          "manual-scheme.rkt"
+         "manual-style.rkt"
          scribble/core
          (for-syntax racket/base
                      syntax/parse))
@@ -43,9 +44,6 @@
                                              #`#'#,(car (syntax-e v))))
                                       #'#f))
                      #:line-numbers line-numbers)]))
-
-(define (code-inset p)
-  (make-nested-flow (make-style 'code-inset '()) (list p)))
 
 (define-syntax (codeblock stx) #`(code-inset #,(do-codeblock stx)))
 (define-syntax (codeblock0 stx) (do-codeblock stx))

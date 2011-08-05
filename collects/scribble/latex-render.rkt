@@ -20,6 +20,7 @@
 (define done-link-page-numbers (make-parameter #f))
 (define disable-images (make-parameter #f))
 (define escape-brackets (make-parameter #f))
+(define suppress-newline-content (make-parameter #f))
 
 (define-struct (toc-paragraph paragraph) ())
 
@@ -111,7 +112,7 @@
                   [auths (extract-authors d)])
               (for ([pre (in-list pres)])
                 (printf "\n\n")
-                (do-render-paragraph pre d ri #t))
+                (do-render-paragraph pre d ri #t #f))
               (when date (printf "\\date{~a}\n" date))
               (printf "\\titleAnd~aVersionAnd~aAuthors{" 
                       (if (equal? vers "") "Empty" "")
@@ -120,7 +121,7 @@
               (printf "}{~a}{" vers)
               (for/fold ([first? #t]) ([auth (in-list auths)])
                 (unless first? (printf "\\SAuthorSep{}"))
-                (do-render-paragraph auth d ri #t)
+                (do-render-paragraph auth d ri #t #f)
                 #f)
               (printf "}\n"))))
         (render-part d ri)
@@ -138,7 +139,7 @@
           (let ([pres (extract-pretitle d)])
             (for ([pre (in-list pres)])
               (printf "\n\n")
-              (do-render-paragraph pre d ri #t)))
+              (do-render-paragraph pre d ri #t #f)))
           (let ([no-number? (and (pair? number) 
                                  (or (not (car number))
                                      ((length number) . > . 3)))])
@@ -169,13 +170,23 @@
         null))
 
     (define/override (render-paragraph p part ri)
-      (do-render-paragraph p part ri #f))
+      (do-render-paragraph p part ri #f #f))
 
-    (define/private (do-render-paragraph p part ri show-pre?)
+    (define/private (do-render-paragraph p part ri show-pre? as-box-mode)
       (let* ([sn (style-name (paragraph-style p))]
-             [style (if (eq? sn 'author)
-                        "SAuthor"
-                        sn)])
+             [style (cond
+                     [as-box-mode
+                      (or
+                       (ormap (lambda (a)
+                                (and (box-mode? a)
+                                     ((box-mode-selector as-box-mode) a)))
+                              (style-properties
+                               (paragraph-style p)))
+                       "hbox")]
+                     [(eq? sn 'author) "SAuthor"]
+                     [(eq? sn 'pretitle) #f]
+                     [(eq? sn 'wraps) #f]
+                     [else sn])])
         (unless (and (not show-pre?)
                      (or (eq? sn 'author)
                          (eq? sn 'pretitle)))
@@ -184,7 +195,10 @@
               (printf "\\~a{" style))
             (if (toc-paragraph? p)
                 (printf "\\newpage \\tableofcontents \\newpage")
-                (super render-paragraph p part ri))
+                (if as-box-mode
+                    (parameterize ([suppress-newline-content #t])
+                      (super render-paragraph p part ri))
+                    (super render-paragraph p part ri)))
             (when use-style? (printf "}")))))
       null)
 
@@ -321,7 +335,8 @@
                        [else
                         (printf "\\mbox{\\hphantom{\\Scribtexttt{~a}}}"
                                 (regexp-replace* #rx"." s "x"))]))]
-                  [(newline) (printf "\\\\")]
+                  [(newline) (unless (suppress-newline-content)
+                               (printf "\\\\"))]
                   [else (error 'latex-render
                                "unrecognzied style symbol: ~s" style)])]
                [(string? style-name)
@@ -453,7 +468,8 @@
                (make-nested-flow (make-style "SingleColumn" null) (map car (table-blockss t)))
                part 
                ri
-               #t)
+               #t
+               #f)
               (when (string? s-name)
                 (printf "\\end{~a}" s-name)))
             (unless (or (null? blockss) (null? (car blockss)))
@@ -505,7 +521,7 @@
                                               (loop (cdr flows) (add1 n))]
                                              [else n]))])
                             (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                            (render-table-cell (car flows) part ri (/ twidth cnt) (car cell-styles))
+                            (render-table-cell (car flows) part ri (/ twidth cnt) (car cell-styles) (not index?))
                             (unless (= cnt 1) (printf "}"))
                             (unless (null? (list-tail flows cnt)) (printf " &\n"))))
                         (unless (null? (cdr flows)) (loop (cdr flows)
@@ -522,32 +538,73 @@
                               "")))))))
       null)
 
-    (define/private (render-table-cell p part ri twidth vstyle)
-      (let ([top? (memq 'top (style-properties vstyle))]
-            [center? (memq 'vcenter (style-properties vstyle))])
+    (define/private (render-table-cell p part ri twidth vstyle can-box?)
+      (let* ([top? (or (memq 'top (style-properties vstyle))
+                       (memq 'baseline (style-properties vstyle)))]
+             [bottom? (and (not top?)
+                           (memq 'bottom (style-properties vstyle)))]
+             [center? (and (not bottom?)
+                           (not top?))]
+             [as-box? (and can-box? (boxable? p))])
         (when (style-name vstyle)
           (printf "\\~a{" (style-name vstyle)))
-        (let ([minipage? (and (not (table? p))
-                              (or (not (paragraph? p))
-                                  top? 
-                                  center?))])
-              (when minipage?
-                (printf "\\begin{minipage}~a{~a\\linewidth}\n"
-                        (cond
-                         [top? "[t]"]
-                         [center? "[c]"]
-                         [else ""])
-                        (/ 1.0 twidth)))
-              (if (table? p)
-                  (render-table* p part ri #f (cond
-                                               [center? "[c]"]
-                                               [else "[t]"]))
-                  (render-block p part ri #f))
-              (when minipage?
-                (printf " \\end{minipage}\n")))
+        (let ([minipage? (and can-box? (not as-box?))])
+          (when minipage?
+            (printf "\\begin{minipage}~a{~a\\linewidth}\n"
+                    (cond
+                     [top? "[t]"]
+                     [center? "[c]"]
+                     [else ""])
+                    (/ 1.0 twidth)))
+          (cond
+           [(table? p)
+            (render-table* p part ri #f (cond
+                                         [top? "[t]"]
+                                         [center? "[c]"]
+                                         [else "[b]"]))]
+           [as-box?
+            (render-boxable-block p part ri (cond
+                                             [top? 't]
+                                             [center? 'c]
+                                             [else 'b]))]
+           [else
+            (render-block p part ri #f)])
+          (when minipage?
+            (printf " \\end{minipage}\n")))
         (when (style-name vstyle)
           (printf "}"))
         null))
+
+    (define/private (boxable? p)
+      (or (and (table? p)
+               (for* ([l (in-list (table-blockss p))]
+                      [p (in-list l)])
+                 (boxable? p)))
+          (and (nested-flow? p)
+               (or (and (= 1 (length (nested-flow-blocks p)))
+                        (memq (style-name (nested-flow-style p))
+                              '(code-inset vertical-inset)))
+                   (and
+                    (ormap box-mode? (style-properties (nested-flow-style p)))
+                    (andmap (lambda (p) (boxable? p)) (nested-flow-blocks p)))))
+          (and (paragraph? p)
+               (or (not (style-name (paragraph-style p)))
+                   (ormap box-mode? (style-properties (paragraph-style p)))))))
+
+    (define/private (render-boxable-block p part ri mode)
+      (cond
+       [(table? p)
+        (render-table* p part ri #f (format "[~a]" mode))]
+       [(nested-flow? p)
+        (do-render-nested-flow p part ri #f mode)]
+       [(paragraph? p)
+        (do-render-paragraph p part ri #f mode)]))
+
+    (define/private (box-mode-selector as-box-mode)
+      (case as-box-mode
+        [(t) box-mode-top-name]
+        [(c) box-mode-center-name]
+        [(b) box-mode-bottom-name]))
 
     (define/override (render-itemization t part ri)
       (let* ([style-str (let ([s (style-name (itemization-style t))])
@@ -570,16 +627,27 @@
         (printf "\\end{~a}" mode)
         null))
 
-    (define/private (do-render-nested-flow t part ri single-column?)
-      (let* ([kind (or (let ([s (style-name (nested-flow-style t))])
+    (define/private (do-render-nested-flow t part ri single-column? as-box-mode)
+      (let* ([props (style-properties (nested-flow-style t))]
+             [kind (or (and as-box-mode
+                            (or
+                             (ormap (lambda (a)
+                                      (and (box-mode? a)
+                                           ((box-mode-selector as-box-mode) a)))
+                                    props)
+                             (case (style-name (nested-flow-style t))
+                               [(code-inset) "SCodeInsetBox"]
+                               [(vertical-inset) "SVInsetBox"]
+                               [else (error "unexpected style for box mode")])))
+                       (let ([s (style-name (nested-flow-style t))])
                          (or (and (string? s) s)
                              (and (eq? s 'inset) "quote")
                              (and (eq? s 'code-inset) "SCodeFlow")
                              (and (eq? s 'vertical-inset) "SVInsetFlow")))
                        "Subflow")]
-             [props (style-properties (nested-flow-style t))]
-             [command? (memq 'command props)]
-             [multicommand? (memq 'multicommand props)])
+             [multicommand? (memq 'multicommand props)]
+             [command? (or (and as-box-mode (not multicommand?))
+                           (memq 'command props))])
         (cond
          [command? (printf "\\~a{" kind)]
          [multicommand? (printf "\\~a" kind)]
@@ -588,7 +656,13 @@
                                                    (not (current-table-mode)))
                                                (current-table-mode)
                                                (list "nested-flow" t))])
-          (render-flow (nested-flow-blocks t) part ri #f multicommand?))
+          (if as-box-mode
+              (for-each (lambda (p) 
+                          (when multicommand? (printf "{"))
+                          (render-boxable-block p part ri as-box-mode)
+                          (when multicommand? (printf "}")))
+                        (nested-flow-blocks t))
+              (render-flow (nested-flow-blocks t) part ri #f multicommand?)))
         (cond
          [command? (printf "}")]
          [multicommand? (void)]
@@ -596,7 +670,7 @@
         null))
 
     (define/override (render-nested-flow t part ri)
-      (do-render-nested-flow t part ri #f))
+      (do-render-nested-flow t part ri #f #f))
 
     (define/override (render-compound-paragraph t part ri starting-item?)
       (let ([kind (style-name (compound-paragraph-style t))]

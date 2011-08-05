@@ -417,7 +417,13 @@ recognized:
  @item{@racket['pretitle] --- Typeset before the title of the
        enclosing part.}
 
+ @item{@racket['wraps] --- Like a @racket[#f] style name, but not
+       @tech{boxable} in the sense of @racket[box-mode] for Latex output.}
+
 ]
+
+When a paragraph's style is @racket[#f], then it is @tech{boxable} in the
+sense of @racket[box-mode] for Latex output.
 
 The currently recognized @tech{style properties} are as follows:
 
@@ -443,6 +449,10 @@ The currently recognized @tech{style properties} are as follows:
 
  @item{@racket['never-indents] --- For Latex and @tech{compound
        paragraphs}; see @racket[compound-paragraph].}
+
+ @item{@racket[box-mode] --- For Latex output, uses an alternate
+       rendering form for @tech{boxing contexts} (such as a table cell); see
+       @racket[box-mode].}
 
 ]}
 
@@ -556,10 +566,14 @@ names are recognized:
        surrounding text.}
 
  @item{@racket['code-inset] --- Insets the nested flow relative to
-       surrounding text in a way suitable for code.}
+       surrounding text in a way suitable for code. If the nested flow
+       has a single block, then it is @tech{boxable} in the sense of
+       @racket[box-mode] for Latex output.}
 
  @item{@racket['vertical-inset] --- Insets the nested flow vertically
-       relative to surrounding text, but not horizontally.}
+       relative to surrounding text, but not horizontally. If the
+       nested flow has a single block, then it is @tech{boxable} in the sense
+       of @racket[box-mode] for Latex output.}
 
 ]
 
@@ -583,6 +597,10 @@ The following @tech{style properties} are currently recognized:
 
  @item{@racket['never-indents] --- For Latex and @tech{compound
        paragraphs}; see @racket[compound-paragraph].}
+
+ @item{@racket[box-mode] --- For Latex output, uses an alternate
+       rendering form for @tech{boxing contexts} (such as a table cell); see
+       @racket[box-mode].}
 
 ]}
 
@@ -955,6 +973,7 @@ are used as RGB levels.}
 
 Like @racket[color-property], but sets the background color.}
 
+
 @defstruct[table-cells ([styless (listof (listof style?))])]{
 
 Used as a @tech{style property} for a @racket[table] to set its cells'
@@ -987,11 +1006,53 @@ In addition, for HTML output, @racket[attributes] structures as
 @tech{style properties} can add arbitrary attributes to a cell's
 @tt{<td>} tag.}
 
+
 @defstruct[table-columns ([styles (listof style?)])]{
 
 Like @racket[table-cells], but the @racket[styles] list is duplicated
 for each row in the table. This @tech{style property} is used only when a
 @racket[table-cells] is not present in a style's list of properties.}
+
+@deftogether[(
+@defstruct[box-mode ([top-name string?]
+                     [center-name string?]
+                     [bottom-name string?])]
+@defproc[(box-mode* [name string?]) box-mode?]
+)]{
+
+As a @tech{style property}, indicates that a @tech{nested flow} or
+@tech{paragraph} is @deftech{boxable} when it is used in a
+@deftech{boxing context} for Latex output, but a @tech{nested flow} is
+@tech{boxable} only if its content is also @tech{boxable}.
+
+A @tech{boxing context} starts with a table cell in a multi-column
+table, and the content of a @tech{block} in a @tech{boxing context} is
+also in a @tech{boxing context}. If the cell's content is
+@tech{boxable}, then the content determines the width of the cell,
+otherwise a width is imposed. A @tech{paragraph} with a @racket[#f]
+@tech{style name} is @tech{boxable} as a single line; the
+@racket['wraps] @tech{style name} makes the paragraph
+non-@tech{boxable} so that its width is imposed and its content can
+use multiple lines. A @tech{table} is @tech{boxable} when that all of
+its cell content is boxable.
+
+To generate output in box mode, the @racket[box-mode] property
+supplies Latex macro names to apply to the @tech{nested flow} or
+@tech{paragraph} content. The @racket[top-name] macro is used if the
+box's top line is to be aligned with other boxes, @racket[center-name]
+if the box's center is to be aligned, and @racket[bottom-name] if the
+box's bottom line is to be aligned. The @racket[box-mode*] function
+creates a @racket[box-mode] structure with the same name for all three
+fields.
+
+A @racket[box-mode] @tech{style property} overrides any automatic
+boxed rendering (e.g., for a @tech{paragraph} with @tech{style name}
+@racket[#f]).  If a @tech{block} has both a @racket[box-mode]
+@tech{style property} and a @racket['multicommand] @tech{style
+property}, then the Latex macro @racket[top-name],
+@racket[center-name], or @racket[bottom-name] is applied with a
+separate argument for each of its content.}
+
 
 @defproc[(block? [v any/c]) boolean?]{
 

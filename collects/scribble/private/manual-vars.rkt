@@ -2,7 +2,8 @@
 (require "../decode.rkt"
          "../scheme.rkt"
          "../struct.rkt"
-         (only-in "../core.rkt" style-name 
+         (only-in "../core.rkt" 
+                  make-style style-name 
                   nested-flow? nested-flow-blocks nested-flow-style)
          scheme/contract
          (for-syntax scheme/base
@@ -13,11 +14,15 @@
 
 (define-struct (box-splice splice) ())
 
+(define vertical-inset-style 
+  (make-style 'vertical-inset null))
+
 (provide/contract
  [struct (box-splice splice) ([run list?])]) ; XXX ugly copying
 (provide deftogether *deftogether
          with-racket-variables
-         with-togetherable-racket-variables)
+         with-togetherable-racket-variables
+         vertical-inset-style)
 
 (begin-for-syntax (define-struct deftogether-tag () #:omit-define-syntaxes))
 
@@ -106,7 +111,7 @@
   (make-box-splice
    (cons
     (make-blockquote 
-     'vertical-inset 
+     vertical-inset-style
      (list
       (make-table
        'boxed
@@ -115,7 +120,7 @@
           (unless (and (box-splice? box)
                        (= 1 (length (splice-run box)))
                        (nested-flow? (car (splice-run box)))
-                       (eq? 'vertical-inset (style-name (nested-flow-style (car (splice-run box)))))
+                       (eq? vertical-inset-style (nested-flow-style (car (splice-run box))))
                        (let ([l (nested-flow-blocks (car (splice-run box)))])
                          (= 1 (length l))
                          (table? (car l))
