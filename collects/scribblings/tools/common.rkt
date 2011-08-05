@@ -5,12 +5,14 @@
          scribble/basic
          scribble/extract
          racket/class
-         racket/contract)
-(provide (all-from-out scribble/manual)
-         (all-from-out scribble/basic)
-         (all-from-out scribble/extract)
-         (all-from-out racket/class)
-         (all-from-out racket/contract))
+         racket/contract
+         "doc-util.rkt")
+(provide (all-from-out scribble/manual
+                       scribble/basic
+                       scribble/extract
+                       racket/class
+                       racket/contract
+                       "doc-util.rkt"))
 
 (require (for-label racket/gui/base
                     racket/snip
@@ -30,8 +32,10 @@
                     (all-from-out framework)))
 
 (provide tools-title tools-include tools-include/drs)
+
 (define (tools-title name)
-  (title (tt (format "drracket:~a" name))))
+  (define str (format "drracket:~a" name))
+  (title #:tag str (tt str)))
 
 (define-syntax (tools-include stx)
   (syntax-case stx ()

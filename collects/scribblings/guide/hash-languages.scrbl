@@ -357,7 +357,7 @@ response to a @racket['color-lexer] query.
 The set of symbols that a programming tool uses for queries
 is entirely between the tool and the languages that choose to
 cooperate with it. For example, in addition to @racket['color-lexer],
-DrRacket uses a @racket['drscheme:toolbar-buttons] query to determine
+DrRacket uses a @racket['drracket:toolbar-buttons] query to determine
 which buttons should be available in the toolbar to operate on modules
 using the language.
 

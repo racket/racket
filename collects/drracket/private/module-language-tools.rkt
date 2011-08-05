@@ -156,23 +156,27 @@
               (set! hash-lang-language (get-text 0 pos))
               (set! hash-lang-last-location pos)
               (clear-things-out)
+              (define info-proc 
+                (if (vector? info-result)
+                    (vector-ref info-result 0)
+                    info-result))
+              (define (ctc-on-info-proc-result ctc res)
+                (contract ctc 
+                          res
+                          (if (vector? info-result)
+                              'hash-lang-racket
+                              (get-lang-name pos))
+                          'drracket/private/module-language-tools))
               (when info-result
                 (register-new-buttons
-                 (contract (or/c #f (listof (list/c string?
-                                                    (is-a?/c bitmap%)
-                                                    (-> (is-a?/c drracket:unit:frame<%>) any))))
-                           ((if (vector? info-result)
-                                (vector-ref info-result 0)
-                                info-result)
-                            'drscheme:toolbar-buttons #f)
-                           (if (vector? info-result)
-                               'hash-lang-racket
-                               (get-lang-name pos))
-                           'drracket/private/module-language-tools)
-                 ((if (vector? info-result)
-                      (vector-ref info-result 0)
-                      info-result)
-                  'drscheme:opt-out-toolbar-buttons '())))))))
+                 (ctc-on-info-proc-result (or/c #f (listof (list/c string?
+                                                                   (is-a?/c bitmap%)
+                                                                   (-> (is-a?/c drracket:unit:frame<%>) any))))
+                                          (or (info-proc 'drracket:toolbar-buttons #f)
+                                              (info-proc 'drscheme:toolbar-buttons #f)))
+                 (ctc-on-info-proc-result (or/c #f (listof symbol?))
+                                          (or (info-proc 'drracket:opt-out-toolbar-buttons '())
+                                              (info-proc 'drscheme:opt-out-toolbar-buttons '())))))))))
 
       (inherit get-tab)
       

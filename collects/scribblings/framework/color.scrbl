@@ -201,7 +201,7 @@
     The @racket[position] is the place to put the parenthesis, and
     @racket[char] is the parenthesis to be added (e.g., that the user typed).
     If @racket[fixup?] is true, the right kind of closing parenthesis will be
-    chosen from the set previously passed to @racket[start-colorer]---but only
+    chosen from the set previously passed to @method[color:text<%> start-colorer]---but only
     if an inserted @racket[char] would be colored as a parenthesis (i.e., with
     the @racket['parenthesis] classification).  Otherwise, @racket[char] will
     be inserted, even if it is not the right kind.  If @racket[flash?] is true,

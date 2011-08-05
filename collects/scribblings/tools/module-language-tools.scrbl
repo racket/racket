@@ -1,20 +1,29 @@
 #lang scribble/doc
 @(require "common.rkt")
 
-@(tools-title "module-language-tools")
+@tools-title["module-language-tools"]
 
+@language-info-def[drracket:toolbar-buttons]{
 If the result of @racket[read-language] for a language is a function, 
 DrRacket will query it to determine if there are any new toolbar
 buttons to be used when editing files in this language (when
 DrRacket's language is set to the Module language).
+}
 
-Specifically, DrRacket will pass @indexed-racket['drscheme:toolbar-buttons]
+Specifically, DrRacket will pass @indexed-racket['drracket:toolbar-buttons]
 to the function and expect back a value matching this contract:
-@racketblock[(listof (list/c string?
-                             (is-a?/c bitmap%)
-                             (-> (is-a?/c drracket:unit:frame<%>) any)))]
+@racketblock[(or/c (listof (list/c string?
+                                   (is-a?/c bitmap%)
+                                   (-> (is-a?/c drracket:unit:frame<%>) any)))
+                   #f)]
 which is then used to create new toolbar buttons, one for each list in the
-first. The string is the label on the button; the bitmap is the icon (it should be 16x16),
-and the function is called when the button is clicked.
+first. The string is the label on the button; the bitmap is the icon 
+(it should be 16x16), and the function is called when the button is clicked.
+If the result is @racket[#f], then no toolbar buttons are created.
+
+If @racket['drracket:toolbar-buttons] is not recognized, DrRacket will also
+pass @indexed-racket['drscheme:toolbar-buttons]; this is for backwards
+compatibility and new code should not use it.
+
 
 @(tools-include "module-language-tools")

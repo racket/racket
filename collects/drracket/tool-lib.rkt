@@ -27,7 +27,8 @@ all of the names in the tools library, for use defining keybindings
 (require (for-syntax racket/base))
 
 (require/doc drracket/private/ts ;; probably this also has to be an absolute require
-             racket/base scribble/manual)
+             racket/base scribble/manual
+             scribblings/tools/doc-util)
 
 (require/doc (for-label errortrace/errortrace-key
                         racket/pretty 
@@ -94,12 +95,14 @@ all of the names in the tools library, for use defining keybindings
     These buttons are ``opt out'', meaning that if the language doesn't explicitly ask to not
     have this button (or all such buttons), the button will appear.
     
-    See @racket[read-language] for more details on how language's specify how to opt out.
-    DrRacket will invoke the @tt{get-info} proc from @racket[read-language] with
-    @indexed-racket['drscheme:opt-out-toolbar-buttons]. If the result is a list of symbols, the
-    listed symbols are opted out. If the result is @racket[#f], all buttons are opted
-    out. The default is the empty list, meaning that all opt-out buttons appear.
-    })
+    @language-info-def[drracket:opt-out-toolbar-buttons]{
+      See @racket[read-language] for more details on how a language can opt out.
+      DrRacket will invoke the @tt{get-info} proc from @racket[read-language] with
+      @racket['drracket:opt-out-toolbar-buttons] 
+      (and @indexed-racket['drscheme:opt-out-toolbar-buttons] for backwards compatibility).
+      If the result is a list of symbols, the
+      listed symbols are opted out. If the result is @racket[#f], all buttons are opted
+      out. The default is the empty list, meaning that all opt-out buttons appear.}})
  
  (proc-doc/names
   drracket:module-language-tools:add-online-expansion-handler 

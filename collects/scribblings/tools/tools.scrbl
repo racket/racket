@@ -17,8 +17,7 @@
    (define (FileFirst x) @tt[x]) ;; indexing missing
    
    (define-syntax-rule (item/cap x . ys)
-     (item (indexed-racket x) ": " . ys))) ;; indexing missing
-
+     (item (indexed-racket x) ": " . ys)))
 
 @title{Extending DrRacket}
 
@@ -259,11 +258,39 @@ text ``egg''. If so, it adds ``easter '' just before.
 @section[#:tag "adding-languages"]{Adding Languages to DrRacket}
 @index{adding languages to DrRacket}
 
-@subsection{Adding Module-based Languages to DrRacket}
+@subsection{@tt{#lang}-based Langauges in DrRacket}
+
 If a language can be implemented as a module
 (see @racket[module] for details), then the simplest and
 best way to use the language is via the ``Use the language
 declared the in source'' checkbox in the @onscreen{Language} dialog.
+In this case, DrRacket's appearance can still be customized to
+the language; it uses @racket[read-language] with these arguments
+as the @racket[_key] argument to the @racket[_get-info] function to do so:
+
+@itemize[@item{@language-info-ref[drracket:toolbar-buttons]}
+          @item{@language-info-ref[drracket:opt-out-toolbar-buttons]}
+          @item{@language-info-ref[color-lexer]}]
+
+@language-info-def[color-lexer]{
+  When a language's @racket[_get-info] procedure responds to @racket['color-lexer], it
+  is expected to return a procedure suitable to pass as the @racket[_get-token]
+  argument to @method[color:text<%> start-colorer].
+}
+
+The recognized token styles (specified implicitly via @method[color:text<%> start-colorer]'s 
+@racket[_token-sym->style] argument) are:
+@itemize[@item{@indexed-racket['symbol]}
+          @item{@indexed-racket['keyword]}
+          @item{@indexed-racket['comment]}
+          @item{@indexed-racket['string]}
+          @item{@indexed-racket['constant]}
+          @item{@indexed-racket['parenthesis]}
+          @item{@indexed-racket['error]}
+          @item{@indexed-racket['other]}]
+These precise colors for these identifiers are controlled by the preferences dialog in DrRacket.
+
+@subsection{Adding Module-based Languages to DrRacket}
 
 For backwards compatibility, DrRacket also supports
 and 
@@ -539,7 +566,7 @@ uses Racket mode.
 
 @section{Language-specific capabilities}
 
-@subsection{Customizing DrRacket's behavior}
+@subsection[#:tag "drracket:lang-languages-customization"]{Customizing DrRacket's behavior}
 
 When using the language declared in the source, DrRacket queries  that
 language via @racket[module-compiled-language-info] to determine
