@@ -626,11 +626,12 @@
                                      (cadr name)
                                      (cadr (syntax-e stx-id))))))
                             just-name))]
+                     [sym-length (lambda (s)
+                                   (string-length (symbol->string s)))]
                      [short-width
                       (apply + (length fields) 8
                              (append
-                              (map (lambda (s)
-                                     (string-length (symbol->string s)))
+                              (map sym-length
                                    (append (if (pair? name) name (list name))
                                            (map field-name fields)))
                               (map (lambda (f)
@@ -656,7 +657,19 @@
                           (lambda (c)
                             (if one-right-column?
                                 (list flow-spacer flow-spacer c)
-                                (list flow-spacer flow-spacer c 'cont 'cont)))])
+                                (list flow-spacer flow-spacer c 'cont 'cont)))]
+                         [split-field-line?
+                          (max-proto-width . < . (+ 8
+                                                    (if (pair? name)
+                                                        (+ (sym-length (car name))
+                                                           1
+                                                           (sym-length (cadr name)))
+                                                        (sym-length name))
+                                                    1
+                                                    (if (pair? fields)
+                                                        (sym-length (field-name (car fields)))
+                                                        0)
+                                                    1))])
                     (make-table
                      (if one-right-column?
                          #f
@@ -687,10 +700,29 @@
                                                             (not cname-id))
                                                        (list (racketparenfont ")"))
                                                        null)))))
-                            (list (to-flow (make-element 'no-break the-name))
-                                  (to-flow (make-element
-                                            #f (list spacer (racketparenfont "("))))
-                                  (to-flow (make-element 'no-break (to-element (field-view (car fields)))))))))
+                            (if split-field-line?
+                                (list (to-flow (make-element 'no-break the-name))
+                                      'cont
+                                      'cont)
+                                (list (to-flow (make-element 'no-break the-name))
+                                      (to-flow (make-element
+                                                #f (list spacer (racketparenfont "("))))
+                                      (to-flow (make-element 'no-break 
+                                                             (let ([f (to-element (field-view (car fields)))])
+                                                               (if (null? (cdr fields))
+                                                                   (list f (racketparenfont ")"))
+                                                                   f)))))))))
+                      (if split-field-line?
+                          (list
+                           (list flow-spacer flow-spacer flow-spacer
+                                 (to-flow (make-element
+                                           #f (list spacer (racketparenfont "("))))
+                                 (to-flow (make-element 'no-break 
+                                                        (let ([f (to-element (field-view (car fields)))])
+                                                          (if (null? (cdr fields))
+                                                              (list f (racketparenfont ")"))
+                                                              f))))))
+                          null)
                       (if (short-width . < . max-proto-width)
                           null
                           (let loop ([fields (if (null? fields)
@@ -715,19 +747,35 @@
                                                 e)))))
                                  (loop (cdr fields))))))
                       (if cname-id
-                          (list (a-right-column
-                                 (to-flow (make-element 
-                                           #f
-                                           (append
-                                            (list (to-element (if extra-cname?
-                                                                  '#:extra-constructor-name
-                                                                  '#:constructor-name))
-                                                  (hspace 1)
-                                                  (to-element cname-id))
-                                            (if (and immutable?
-                                                     (not transparent?))
-                                                (list (racketparenfont ")"))
-                                                null))))))
+                          (let ([kw (to-element (if extra-cname?
+                                                    '#:extra-constructor-name
+                                                    '#:constructor-name))]
+                                [nm (to-element cname-id)]
+                                [close? (and immutable?
+                                             (not transparent?))])
+                            (if (max-proto-width . < . (+ 8 ; "(struct "
+                                                          1 ; space between kw & name
+                                                          (element-width kw) 
+                                                          (element-width nm)
+                                                          (if close? 1 0)))
+                                ;; use two lines
+                                (list (a-right-column (to-flow kw))
+                                      (a-right-column 
+                                       (to-flow
+                                        (if close?
+                                            (make-element #f (list nm (racketparenfont ")")))
+                                            nm))))
+                                ;; use one line
+                                (list (a-right-column
+                                       (to-flow (make-element 
+                                                 #f
+                                                 (append
+                                                  (list kw
+                                                        (hspace 1)
+                                                        nm)
+                                                  (if close?
+                                                      (list (racketparenfont ")"))
+                                                      null))))))))
                           null)
                       (cond
                        [(and (not immutable?) transparent?)
