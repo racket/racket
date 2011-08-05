@@ -14,4 +14,5 @@
 
  [url-anchor ([name string?])]
  [alt-tag ([name (and/c string? #rx"^[a-zA-Z0-9]+$")])]
- [attributes ([assoc (listof (cons/c symbol? string?))])])
+ [attributes ([assoc (listof (cons/c symbol? string?))])]
+ [column-attributes ([assoc (listof (cons/c symbol? string?))])])

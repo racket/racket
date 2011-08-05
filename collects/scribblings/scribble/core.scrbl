@@ -483,8 +483,9 @@ The following @tech{style properties} are currently recognized:
 @itemize[
 
  @item{@racket[table-columns] structure --- Provides column-specific
-       styles, but only if a @racket[table-cells] structure is not
-       included as a @tech{style property}.}
+       styles, but only @racket[column-attributes] properties (if any)
+       are used if a @racket[table-cells] structure is included as a
+       @tech{style property}.}
 
  @item{@racket[table-cells] structure --- Provides cell-specific
        styles.}
@@ -1009,9 +1010,18 @@ In addition, for HTML output, @racket[attributes] structures as
 
 @defstruct[table-columns ([styles (listof style?)])]{
 
-Like @racket[table-cells], but the @racket[styles] list is duplicated
-for each row in the table. This @tech{style property} is used only when a
-@racket[table-cells] is not present in a style's list of properties.}
+Like @racket[table-cells], but with support for a
+@racket[column-attributes] property in each style, and the
+@racket[styles] list is otherwise duplicated for each row in the
+table. The non-@racket[column-attributes] parts of a
+@racket[table-columns] are used only when a @racket[table-cells] property is
+not present along with the @racket[table-columns] property.
+
+For HTML table rendering, for each column that has a
+@racket[column-attributes] property in the corresponding element of
+@racket[styles], the attributes are put into an HTML @tt{col} tag
+within the table.}
+
 
 @deftogether[(
 @defstruct[box-mode ([top-name string?]
@@ -1302,12 +1312,19 @@ Defined as
 Used as a @tech{style property} to add arbitrary attributes to an HTML
 tag.}
 
+
 @defstruct[alt-tag ([name (and/c string? #rx"^[a-zA-Z0-9]+$")])]{
 
 Use as a @tech{style property} for an @racket[element],
 @racket[paragraph], or @racket[compound-paragraph] to substitute an
 alternate HTML tag (instead of @tt{<span>}, @tt{<p>}, @tt{div},
 @|etc|).}
+
+
+@defstruct[column-attributes ([assoc (listof (cons/c symbol? string?))])]{
+
+Used as a @tech{style property} on a style with @racket[table-columns]
+to add arbitrary attributes to an HTML @tt{col} tag within the table.}
 
 
 @defstruct[url-anchor ([name string?])]{

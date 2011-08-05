@@ -1264,6 +1264,21 @@
                     [(centered) '([align "center"])]
                     [else '()])
                 ,@(style->attribs (table-style t)))
+          ,@(let ([columns (ormap (lambda (p)
+                                    (and (table-columns? p)
+                                         (map (lambda (s)
+                                                (ormap (lambda (a)
+                                                         (and (column-attributes? a)
+                                                              a))
+                                                       (style-properties s)))
+                                              (table-columns-styles p))))
+                                  (style-properties (table-style t)))])
+              (if (and columns (ormap values columns))
+                  `((colgroup ,@(for/list ([col (in-list columns)])
+                                  `(col ,(if col
+                                             (map (lambda (v) (list (car v) (cdr v))) (column-attributes-assoc col))
+                                             null)))))
+                  null))
           ,@(if (null? (table-blockss t))
                 `((tr (td)))
                 (map make-row

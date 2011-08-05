@@ -5,6 +5,9 @@
          "../search.rkt"
          "../basic.rkt"
          "../manual-struct.rkt"
+         (only-in "../core.rkt" 
+                  make-style make-table-columns)
+         "../html-properties.rkt"
          "qsloc.rkt"
          "manual-utils.rkt"
          "manual-vars.rkt"
@@ -655,7 +658,15 @@
                                 (list flow-spacer flow-spacer c)
                                 (list flow-spacer flow-spacer c 'cont 'cont)))])
                     (make-table
-                     #f
+                     (if one-right-column?
+                         #f
+                         ;; Shift all extra width to last column:
+                         (make-style #f (list
+                                         (make-table-columns
+                                          (for/list ([i 5])
+                                            (if (i . < . 4)
+                                                (make-style #f (list (column-attributes '((width . "0*")))))
+                                                (make-style #f null)))))))
                      (append
                       (list
                        (append
@@ -676,10 +687,10 @@
                                                             (not cname-id))
                                                        (list (racketparenfont ")"))
                                                        null)))))
-                            (list (to-flow the-name)
+                            (list (to-flow (make-element 'no-break the-name))
                                   (to-flow (make-element
                                             #f (list spacer (racketparenfont "("))))
-                                  (to-flow (to-element (field-view (car fields))))))))
+                                  (to-flow (make-element 'no-break (to-element (field-view (car fields)))))))))
                       (if (short-width . < . max-proto-width)
                           null
                           (let loop ([fields (if (null? fields)
