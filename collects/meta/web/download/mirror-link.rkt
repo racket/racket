@@ -1,5 +1,36 @@
 #lang racket/base
 
+#|
+
+This file polls mirror links: (mirror-link <url> <size>) will return the
+url only if it is live, and its size fits the expected size.  Otherwise
+it returns #f.
+
+This is done only if the "KNOWN_MIRRORS_FILE" environment variable is
+set, otherwise all mirror links are included.  If the variable is set,
+it should point at a cache file that holds information about polls, used
+to avoid re-polling all links all the time.
+
+Polling a URL can result in one of four options:
+1. The URL doesn't seem to exist.  In this case, the link is not shown,
+   and the URL will be re-polled if a web-page build is done 15
+   minutes (or more) later.
+2. The URL exists, but no size information is available (via a HEAD
+   query, or via an FTP directory listing).  The link will be shown in
+   this case, but it will be re-polled two days later.  (With a random
+   factor, and a nightly build that happens at the same time, this might
+   mean more days.)  So far, all mirrors provide size information, so
+   this works fine.
+3. The URL exists and we get its size, but the size does not match.  The
+   URL is not shown, and will be re-polled in an hour.  The assumption
+   here is either bad synchronization, or we caught it in progress.
+4. The size is correct, so the URL is shown.  This case still leads to
+   re-polling, but only after a month.  The reason for this is in case a
+   mirror is not maintained -- we'll want the links to eventually
+   disappear.
+
+|#
+
 (require net/url net/ftp)
 
 ;; the mirrors file has (list url secs result) entries containing the url as a
@@ -34,10 +65,9 @@
            [(eq? #t result)
             (and (current-time . > . (+ last-time (* 2 24 60 60)))
                  (zero? (random 3)))]
-           ;; has a bad size, check again after a day
+           ;; has a bad size, check again after an hour
            [(not (= result size))
-            (and (current-time . > . (+ last-time (* 24 60 60)))
-                 (zero? (random 3)))]
+            (current-time . > . (+ last-time (* 60 60)))]
            ;; otherwise check again after a month
            [else (and (current-time . > . (+ last-time (* 30 24 60 60)))
                       (zero? (random 20)))])
@@ -74,8 +104,12 @@
      [else (error 'mirror-link "unrecognizable url scheme: ~a\n" url)])
    url))
 
-;; verifiers return #f for failures, #t for dumb success (= didn't get size),
-;; and a number for success with the remote file's size
+;; Verifiers return #f for failures, #t for dumb success (= didn't get size),
+;; and a number for success with the remote file's size.
+;;
+;; Note: if `net/url' gets to deal with `ftp://' URLs, then only a
+;; single verification function will be needed.  But for that it will
+;; need to mimic HEAD requests too.
 
 (define (verify-http url)
   (call/input-url (string->url url) head-impure-port
@@ -100,7 +134,6 @@
 
 (define (verify-ftp url)
   (define-values [host port? path]
-    ;; FIXME
     (apply values
            (cdr (or (regexp-match #rx"^ftp://([^/:]+)(?::([0-9]+))?(/.*)$" url)
                     (error 'verify-ftp "bad ftp url: ~a" url)))))

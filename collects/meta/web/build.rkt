@@ -41,7 +41,10 @@ exec "$exe" "$0" "$@"
   (set! distribute? #t)]
  [("-e" "--extra") extra
   "extra file to render more content"
-  (set! extra-file extra)])
+  (set! extra-file extra)]
+ #:help-labels
+ " ** Note: set $KNOWN_MIRRORS_FILE to a file if you want to poll mirror"
+ "          links (see top comment in \"download/mirror-link.rkt\").")
 
 (unless build-mode (raise-user-error 'build "build mode not specified"))
 
