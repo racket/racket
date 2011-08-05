@@ -75,7 +75,7 @@
 (define re:date #rx#"(...) *(.*) (..):(..)|(...) *([0-9]*) +(....)")
 
 (define (ftp-make-file-seconds ftp-date-str)
-  (let ([date-list (regexp-match re:date (string->bytes/locale ftp-date-str))])
+  (let ([date-list (regexp-match re:date (string->bytes/utf-8 ftp-date-str))])
     (if (not (list-ref date-list 4))
         (find-seconds 0
                       0
@@ -94,7 +94,7 @@
 (define re:passive #rx#"\\((.*),(.*),(.*),(.*),(.*),(.*)\\)")
 
 (define (establish-data-connection tcp-ports)
-  (fprintf (ftp-connection-out tcp-ports) "PASV\n")
+  (fprintf (ftp-connection-out tcp-ports) "PASV\r\n")
   (let ([response (ftp-check-response
                    (ftp-connection-in tcp-ports)
                    (ftp-connection-out tcp-ports)
@@ -114,7 +114,7 @@
                                          (list-ref reg-list 3)
                                          (list-ref reg-list 4))
                                  (+ (* 256 pn1) pn2))])
-        (fprintf (ftp-connection-out tcp-ports) "TYPE I\n")
+        (fprintf (ftp-connection-out tcp-ports) "TYPE I\r\n")
         (ftp-check-response (ftp-connection-in tcp-ports)
                             (ftp-connection-out tcp-ports)
                             #"200" void (void))
@@ -128,14 +128,14 @@
 
 (define (ftp-establish-connection* in out username password)
   (ftp-check-response in out #"220" print-msg (void))
-  (display (bytes-append #"USER " (string->bytes/locale username) #"\n") out)
+  (display (bytes-append #"USER " (string->bytes/utf-8 username) #"\r\n") out)
   (let ([no-password? (ftp-check-response
                        in out (list #"331" #"230")
                        (lambda (line 230?)
                          (or 230? (regexp-match #rx#"^230" line)))
                        #f)])
     (unless no-password?
-      (display (bytes-append #"PASS " (string->bytes/locale password) #"\n")
+      (display (bytes-append #"PASS " (string->bytes/utf-8 password) #"\r\n")
                out)
       (ftp-check-response in out #"230" void (void))))
   (make-ftp-connection in out))
@@ -145,7 +145,7 @@
     (ftp-establish-connection* tcpin tcpout username password)))
 
 (define (ftp-close-connection tcp-ports)
-  (fprintf (ftp-connection-out tcp-ports) "QUIT\n")
+  (fprintf (ftp-connection-out tcp-ports) "QUIT\r\n")
   (ftp-check-response (ftp-connection-in tcp-ports)
                       (ftp-connection-out tcp-ports)
                       #"221" void (void))
@@ -164,7 +164,7 @@
              (loop)]))))
 
 (define (ftp-cd ftp-ports new-dir)
-  (display (bytes-append #"CWD " (string->bytes/locale new-dir) #"\n")
+  (display (bytes-append #"CWD " (string->bytes/utf-8 new-dir) #"\r\n")
            (ftp-connection-out ftp-ports))
   (ftp-check-response (ftp-connection-in ftp-ports)
                       (ftp-connection-out ftp-ports)
@@ -175,7 +175,7 @@
 
 (define (ftp-directory-list tcp-ports)
   (let ([tcp-data (establish-data-connection tcp-ports)])
-    (fprintf (ftp-connection-out tcp-ports) "LIST\n")
+    (fprintf (ftp-connection-out tcp-ports) "LIST\r\n")
     (ftp-check-response (ftp-connection-in tcp-ports)
                         (ftp-connection-out tcp-ports)
                         (list #"150" #"125") void (void))
@@ -184,7 +184,7 @@
       (ftp-check-response (ftp-connection-in tcp-ports)
                           (ftp-connection-out tcp-ports)
                           #"226" print-msg (void))
-      (map (lambda (l) (map bytes->string/locale l)) dir-list))))
+      (map (lambda (l) (map bytes->string/utf-8 l)) dir-list))))
 
 (define (ftp-download-file tcp-ports folder filename)
   ;; Save the file under the name tmp.file, rename it once download is
@@ -199,8 +199,8 @@
                     "~a"))]
          [new-file (open-output-file tmpfile #:exists 'replace)]
          [tcpstring (bytes-append #"RETR "
-                                  (string->bytes/locale filename)
-                                  #"\n")]
+                                  (string->bytes/utf-8 filename)
+                                  #"\r\n")]
          [tcp-data (establish-data-connection tcp-ports)])
     (display tcpstring (ftp-connection-out tcp-ports))
     (ftp-check-response (ftp-connection-in tcp-ports)
@@ -213,6 +213,3 @@
                         (ftp-connection-out tcp-ports)
                         #"226" print-msg (void))
     (rename-file-or-directory tmpfile (build-path folder filename) #t)))
-
-;; (printf "FTP Client Installed...\n")
-
