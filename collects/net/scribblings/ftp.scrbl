@@ -52,14 +52,20 @@ depending on whether the items is a file, directory, or link,
 respectively.  The second item is the file's date; to convert this
 value to seconds consistent with @racket[file-seconds], pass the date
 string to @racket[ftp-make-file-seconds], below.  The third string is
-the name of the file or directory.}
+the name of the file or directory.
+
+Warning: the FTP protocol has no specification for the reply format, so
+this information can be unreliable.}
 
 
 @defproc[(ftp-make-file-seconds [ftp-date string?]) exact-integer?]{
 
 Takes a date string produced by @racket[ftp-directory-list] and
 converts it to seconds (which can be used with
-@racket[seconds->date]).}
+@racket[seconds->date]).
+
+Warning: the FTP protocol has no specification for the reply format, so
+this information can be unreliable.}
 
 
 @defproc[(ftp-download-file [ftp-conn ftp-connection?]
