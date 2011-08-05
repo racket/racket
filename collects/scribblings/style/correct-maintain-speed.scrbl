@@ -23,7 +23,7 @@ This section explains these three points as far as the Racket code base is
  code base.
 
 @; -----------------------------------------------------------------------------
-@section[#:tag "correctness"]{Correctness}
+@section[#:tag "correctness"]{Correctness and Testing}
 
 @nested[#:style 'inset]{@italic{I have bug reports, therefore I exist.} -- Matthias,
 watching Matthew, Robby, Shriram and others create the original code base}
@@ -45,54 +45,8 @@ We ensure this basic level of correctness with large test suites. Our test
  DrRacket comes with an automatic GUI player that explores its
  functionality.
 
-Most tests suites live in @tt{collects/tests/} in the PLT
- repository. @margin-note*{Due to historical reasons, a few collections
- come with their own local test suites.}  These test suites suggest a
- culture of testing per tool or language. If you add a new collection,
- create a new test suite in the @tt{tests} collection.
-
-Run the test suites before you commit.  After you commit, watch for and
- read(!)  @hyperlink["http://drdr.racket-lang.org/"]{DrDr}'s emails. Do
- @emph{not} ignore them. If you have a tests that regularly fails, consider
- splitting your test directory into two parts: @tt{success} and
- @tt{failure}. The former is for tests that should succeed now, and the
- latter is for tests that are currently intended to fail. See the
- @hyperlink["https://github.com/plt/racket/tree/master/collects/tests/typed-scheme"]{Typed
- Racket testing arrangement} for an example.
-
-When you debug an existing piece of code, formulate a test case first. Put
- it into the test suite for the component so the mistake will never be
- accidentally re-introduced and add a note that points to the problem
- report.  Second, modify the code to fix the mistake. Do this second to be
- sure you didn't introduce a mistake in your tests; it is all too easy to
- think you have fixed a mistake when in reality your new test just doesn't
- properly reveal the old mistake.  Third, re-run the test suite to ensure
- that the mistake is fixed and no existing tests fail.
-
-If there is no test suite and you aren't sure how to build one, then ask on
- the developer mailing list. Perhaps people will explain why there isn't
- one or they will sketch how to create one. Please don't ignore the
- problem. If you cannot build a test suite, you have a few options:
-
-@itemlist[#:style 'ordered
-
-  @item{Add functionality to the library to enable testing. Of course,
-  adding functionality means adding external documentation.  Robby and
-  Matthew have done so for the GUI library, and there is now a large
-  automated test suite for DrRacket. So even GUI programs can come with
-  extended test suites.}
-
-  @item{Add an end-to-end test that may have to be verified by a human.
-  For example, it might be hard to test Slideshow, so you could create a
-  slide set and describe what it should look like so future maintainers to
-  verify when @emph{they} make changes. Consider this the @emph{last and
-  least desirable} option, however.}
-]
-@;
- The lack of tests for some collection will not disappear overnight. But if
- we all contribute a little bit, we will eventually expand the test suites
- to cover the entire code base, and future generations of maintainers will
-  be grateful.
+For details on testing in the context of the Racket code base, see
+ @secref{testing}.
 
 @; -----------------------------------------------------------------------------
 @section{Maintenance}

@@ -20,12 +20,35 @@ Seasoned Schemers, not necessarily Racketeers, also use triple and
 quadruple semicolons. This is considered a courtesy to distinguish file
 headers from section headers.
 
+In addition to ``;'', we have two other mechanisms for commenting code:
+ ``#|...|#'' for blocks and ``#;'' to comment out an expression.
+
+In rare cases there might be a more substantial piece of text or code, and
+ in that case the block comment style can be more convenient than
+ semicolons.  Another use of block comments is for code samples to be
+ copied and pasted into a file.  Either way, block comments are not used
+ for single-line comments.
+
+Expression comments---``#;''---apply to the following S-expression.  This
+ makes them a useful tool for debugging.  They can even be composed in
+ interesting ways with other comments, for example, ``#;#;'' will comment
+ two expressions, and a line with just ``;#;'' gives you a single-character
+ ``toggle'' for the expression that starts on the next line.  But on the
+ flip side, lots tools don't process them properly---treating them instead
+ as a ``#'' followed by a commented line.  For example, in DrRacket
+ S-expression comments are ignored when it comes to syntax coloring, which
+ makes it easy to miss them. In Emacs, the commented text is colored like a
+ comment and treated as text, which makes it difficult to edit as code.
+ The bottom line here is that ``#;'' comments are useful for debugging, but
+ try to avoid leaving them in committed code.  If you really want to use
+ ``#;'', clarify their use with a line comment (``;'').
+
 @; -----------------------------------------------------------------------------
 @section{Definitions}
 
 Racket comes with quite a few definitional constructs, including
 @scheme[let], @scheme[let*], @scheme[letrec], and @scheme[define]. Except
-for the last one, definitional construct increase the indentation level.
+for the last one, definitional constructs increase the indentation level.
 Therefore, favor @scheme[define] when feasible.
 
 @compare[
@@ -90,23 +113,25 @@ prefer them over @scheme[if].
 racket
 
 (cond
-  [(empty? l) true]
+  [(empty? l) #false]
   [else
    (define f (fir l))
    (define r (rest l))
-   (and (flat-rate f)
-        (curved f (chk r)))])
+   (if (discounted? f)
+       (discount-rate f)
+       (curved f (chk r)))])
 ]
 @racketmod[#:file
 @tt{bad}
 racket
 
 (if (empty? l)
-    true
+    #false
     (let ([f (fir l)]
 	  [r (rest l)])
-      (and (flat-rate f)
-	   (curved f (chk r)))))
+      (if (discounted? f)
+          (discount-rate f)
+          (curved f (chk r)))))
 ]
 ]
 
@@ -198,7 +223,7 @@ Even a curried function does not need @racket[lambda].
 @tt{good}
 racket
 
-(define ((staged-image-composition fixed-image) variable-image)
+(define ((cut fx-image) image2)
   ...)
 ]
 @; -----------------------------------------------------------------------------
@@ -206,8 +231,8 @@ racket
 @tt{acceptable}
 racket
 
-(define (staged-image-composition fixed-image)
-  (lambda (variable-image)
+(define (cut fx-image)
+  (lambda (image2)
     ...))
 ]
 ]
@@ -233,7 +258,7 @@ The identity function is @racket[values]:
 @section{Traversals}
 
 With the availability of @racket[for/fold], @racket[for/list],
- @racket[for/vector], and friends, programming with for @racket[for] loops
+ @racket[for/vector], and friends, programming with @racket[for] loops
  has become just as functional as programming with @racket[map] and
  @racket[foldr]. With @racket[for*] loops, filter, and termination clauses
  in the iteration specification, these loops are also far more concise than
@@ -270,8 +295,11 @@ racket
 racket
 
 ;; [Listof X] -> Number
-(define (sum-up s)
-  (foldr (lambda (x sum) (+ sum x)) 0 s))
+(define (sum-up alist)
+  (foldr (lambda (x sum)
+            (+ sum x))
+          0
+          alist))
 
 ;; example:
 (sum-up '(1 2 3))

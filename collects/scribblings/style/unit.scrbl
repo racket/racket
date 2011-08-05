@@ -138,7 +138,7 @@ Avoid @racket[(provide (all-defined-out))] except for general-purpose
  libraries.
 
 A test suite section---if located within the module---should come at the
- every end, including its specific dependencies, i.e., @racket[require]
+ very end, including its specific dependencies, i.e., @racket[require]
  specifications.
 
 @; -----------------------------------------------------------------------------

@@ -30,7 +30,9 @@ act in this context.
 Write meaningful commit messages. The first line (say 80 chars) should
  provide a concise summary of the commit. If the message must be longer,
  edit the rest of the message in your text editor and leave a blank line
- between the summary line and the rest of the message.
+ between the summary line and the rest of the message. The message for bug
+ report fixes should contain ``Close PR NNNNN'' so that bug reports are
+ automatically closed.
 
 To avoid 'merge commits', update your repository with @tt{git --rebase pull}.
 

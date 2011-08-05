@@ -121,6 +121,17 @@ patient and use the existing indentation tool anyway.
 @bold{Caveat 2}: This rule does not apply to scribble code.
 
 @; -----------------------------------------------------------------------------
+@section{Tabs}
+
+Do not use tab characters in your code.  Tabs make it hard to use textual
+ tools like git or diff effectively.  To disable tabs,
+@itemlist[
+@item{in DrRacket: you are all set. It doesn't insert tabs.}
+@item{in Emacs: add (setq indent-tabs-mode nil) to your emacs initialization file.}
+@item{in vi: set expandtab.}
+]
+
+@; -----------------------------------------------------------------------------
 @section{Line Breaks}
 
 Next to indentation, proper line breaks are critical.
@@ -192,19 +203,18 @@ racket
 
 (code:comment #, @t{and})
 
-(composition img
-             (- width  hdelta)
-             (- height vdelta)
-	     bg)
-
+(above img
+       (- width  hdelta)
+       (- height vdelta)
+       bg)
 ]
 
 @racketmod[#:file
 @tt{bad}
 racket
 
-(composition ufo
-             10 v-delta bg)
+(above ufo
+       10 v-delta bg)
 
 ]]
 
@@ -281,7 +291,8 @@ traverse_forest
 ]
 @;
  Note that _ (the underline character) is also classified as bad
- Racketeering.
+ Racketeering within names. It is an acceptable placeholder in syntax
+ patterns, match patterns, and parameters that don't matter.
 
 Another widely used convention is to @emph{prefix} a function name with the data
  type of the main argument. This convention generalizes the selector-style
@@ -331,7 +342,7 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
  @row[<%>  "interfaces"                              dc<%>]
  @row[^    "unit signatures"                         game-context^]
  @row["@"  "units"                                   testing-context@]
- @row["#%" "kernel identifiers"                      #:app]
+ @row["#%" "kernel identifiers"                      #%app]
 ]
  The use of ``#%'' to prefix names from the kernel language warns readers
  that these identifiers are extremely special and they need to watch out
@@ -350,7 +361,7 @@ may relax this constraint.
 
 @section{Spaces}
 
-Don't pollute your code with spaces and extraneous blank lines.
+Don't pollute your code with spaces at the end of lines and extraneous blank lines.
 
 @; -----------------------------------------------------------------------------
 @section{End of File}
