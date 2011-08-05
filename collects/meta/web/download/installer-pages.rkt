@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "resources.rkt" "data.rkt")
+(require "resources.rkt" "data.rkt" "mirror-link.rkt")
 
 (define (render-installer-page installer)
   (define path      (installer-path installer))
@@ -47,10 +47,20 @@
           Download links:
           @div[style: "font-size: 75%; text-align: right; float: right;"]{
             (Choose the nearest site)}
-          @ul{@(map (lambda (m)
-                      @li{@a[href: (list (mirror-url m) path)]{
-                            @(mirror-location m)}})
-                    mirrors)}}}}
+          @ul{@(let ([mirrors
+                      (filter-map
+                       (lambda (m)
+                         (define url
+                           (mirror-link (string-append (mirror-url m) path)
+                                        size))
+                         (and url @li{@a[href: url]{@(mirror-location m)}}))
+                       mirrors)])
+                 (case (length mirrors)
+                   [(0) (error 'installer-page "no available mirror for: ~e"
+                               path)]
+                   [(1) (list mirrors
+                              @li{@small{(no additional mirrors, yet)}})]
+                   [else mirrors]))}}}}
     @;TODO: decide whether this is really needed
     @; (looks redundant now that all of the installers are pretty standard)
     @;section{Installation instructions}

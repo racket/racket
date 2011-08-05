@@ -156,6 +156,8 @@ drtestscript="$scriptdir/test-drracket.rkt"
 bundlescript="$scriptdir/bundle"
 # web build script
 webscript="collects/meta/web/build.rkt"
+# url mirrors file (relative to $maindir)
+knownmirrors="known-mirror-urls"
 # sitemap materials
 sitemapdir="$scriptdir/sitemap"
 
@@ -2013,7 +2015,9 @@ BUILD_WEB() {
   else
     separator "Making web content -- not distributing"
   fi
-  GIT_DIR="$maindir/$cleandir/.git" _run "$PLTHOME/$webscript" $webflags
+  GIT_DIR="$maindir/$cleandir/.git" \
+  KNOWN_MIRRORS_FILE="$maindir/$knownmirrors"
+    _run "$PLTHOME/$webscript" $webflags
 
 }
 
