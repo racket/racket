@@ -11,8 +11,6 @@
 ;; opqaue record to represent an FTP connection:
 (define-struct ftp-connection (in out))
 
-(define tzoffset (date-time-zone-offset (seconds->date (current-seconds))))
-
 (define re:multi-response-start #rx#"^[0-9][0-9][0-9]-")
 (define re:response-end #rx#"^[0-9][0-9][0-9] ")
 
@@ -75,21 +73,24 @@
 (define re:date #rx#"(...) *(.*) (..):(..)|(...) *([0-9]*) +(....)")
 
 (define (ftp-make-file-seconds ftp-date-str)
-  (let ([date-list (regexp-match re:date (string->bytes/utf-8 ftp-date-str))])
-    (if (not (list-ref date-list 4))
-        (find-seconds 0
-                      0
-                      2
-                      (bytes->number (list-ref date-list 6))
-                      (get-month (list-ref date-list 5))
-                      (bytes->number (list-ref date-list 7)))
-        (+ (find-seconds 0
-                         (bytes->number (list-ref date-list 4))
-                         (bytes->number (list-ref date-list 3))
-                         (bytes->number (list-ref date-list 2))
-                         (get-month (list-ref date-list 1))
-                         2002)
-           tzoffset))))
+  (define date-list (regexp-match re:date (string->bytes/utf-8 ftp-date-str)))
+  (if (not (list-ref date-list 4))
+      (find-seconds 0 0 0
+                    (bytes->number (list-ref date-list 6))
+                    (get-month (list-ref date-list 5))
+                    (bytes->number (list-ref date-list 7)))
+      (let* ([cur-secs (current-seconds)]
+             [cur-date (seconds->date cur-secs)]
+             [cur-year (date-year cur-date)]
+             [tzofs    (date-time-zone-offset cur-date)]
+             [minute (bytes->number (list-ref date-list 4))]
+             [hour   (bytes->number (list-ref date-list 3))]
+             [day    (bytes->number (list-ref date-list 2))]
+             [month  (get-month (list-ref date-list 1))]
+             [guess  (+ (find-seconds 0 minute hour day month cur-year) tzofs)])
+        (if (guess . <= . cur-secs)
+          guess
+          (+ (find-seconds 0 minute hour day month (sub1 cur-year)) tzofs)))))
 
 (define re:passive #rx#"\\((.*),(.*),(.*),(.*),(.*),(.*)\\)")
 
