@@ -133,7 +133,7 @@
              [disable-images-button void]
              [visible (new pasteboard%)])
       
-      (define (show-canvas)
+      (define/private (show-canvas)
         (send visible set-cursor (make-object cursor% 'arrow))
         (let ([fst-scene (ppdraw)])
           (if (2:image? fst-scene)
@@ -253,9 +253,6 @@
            ;; Any ... -> Boolean
            (begin
              (define/public (name arg ...) 
-               (define (last-draw)
-                 (set! draw last-picture)
-                 (pdraw))
                (queue-callback 
                 (lambda ()
                   (define H (handler #t))
@@ -279,9 +276,7 @@
                         (begin
                           (set! nw (stop-the-world-world nw))
                           (send world set tag nw)
-                          (cond
-                            [last-picture (last-draw)]
-                            [draw (pdraw)])
+                          (last-draw)
                           (callback-stop! 'name)
                           (enable-images-button))
                         (let ([changed-world? (send world set tag nw)]
@@ -306,9 +301,7 @@
                                [else 
                                 (set! draw# (- draw# 1))])]
                             [stop?
-                             (cond 
-                               [last-picture (last-draw)]
-                               [draw (pdraw)])
+                             (last-draw)
                              (callback-stop! 'name)
                              (enable-images-button)])
                           changed-world?)))))))]))
@@ -347,6 +340,10 @@
       (field [stop (if (procedure? stop-when) stop-when (first stop-when))]
              [last-picture (if (pair? stop-when) (second stop-when) #f)])
       
+      (define/private (last-draw)
+        (when last-picture (set! draw last-picture))
+        (pdraw))
+      
       (define/private (pstop)
         (define result (stop (send world get)))
         (check-result (name-of stop 'your-stop-when) boolean? "boolean" result)
@@ -366,12 +363,18 @@
         (with-handlers ([exn? (handler #t)])
           (when width ;; and height
             (check-scene-dimensions "your to-draw clause" width height))
-          (if draw (show-canvas) (error 'big-bang "internal error: draw can never be false"))
           (when register (register-with-host))
           (define w (send world get))
           (cond
-            [(stop w) (stop! w)]
-            [(stop-the-world? w) (stop! (stop-the-world-world w))])))
+            [(stop w) 
+             (when last-picture (set! draw last-picture))
+             (show-canvas)
+             (stop! w)]
+            [(stop-the-world? w) 
+             (when last-picture (set! draw last-picture))
+             (show-canvas)
+             (stop! (stop-the-world-world w))]
+            [else (show-canvas)])))
       
       (define/public (stop! w)
         (set! live #f)
