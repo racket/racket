@@ -200,7 +200,9 @@ module browser threading seems wrong.
   ;; finds the symbol around the position `pos' (approx)
   (define (find-symbol text pos)
     (cond
-      [(is-a? text scheme:text<%>)
+      [(and (is-a? text scheme:text<%>)
+            (not (send text is-stopped?))
+            (not (send text is-frozen?)))
        (let* ([before (send text get-backward-sexp pos)]
               [before+ (and before (send text get-forward-sexp before))]
               [after (send text get-forward-sexp pos)]
