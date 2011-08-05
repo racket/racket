@@ -9,47 +9,39 @@
          unstable/future
          slideshow/pict)
 
-;; TODO: use clipping regions to avoid computing unused pixels
-;; TODO: tweak parameters so that gaussian and iterated-box modes are closer
-
 (define nneg-real/c (and/c real? (not/c negative?)))
 
 (provide/contract
  [blur
   (->* (pict? nneg-real/c)
        (nneg-real/c
-        #:mode (or/c 'gaussian 'iterated-box 'single-box)
         #:pre-inset? any/c)
        pict?)]
  [shadow
   (->* (pict? nneg-real/c)
        (real? real?
         #:color (or/c #f string? (is-a?/c color%))
-        #:shadow-color (or/c #f string? (is-a?/c color%))
-        #:mode (or/c 'gaussian 'iterated-box 'single-box))
+        #:shadow-color (or/c #f string? (is-a?/c color%)))
        pict?)]
  [blur-bitmap!
   (->* ((is-a?/c bitmap%) exact-nonnegative-integer?)
-       (exact-nonnegative-integer?
-        #:mode (or/c 'gaussian 'iterated-box 'single-box))
+       (exact-nonnegative-integer?)
        void?)])
 
 ;; ----
 
 (define (blur p hbr [vbr hbr]
-              #:mode [mode 'iterated-box]
               #:pre-inset? [pre-inset? #t])
   (let* ([p
           (cond [pre-inset? (inset p hbr vbr)]
                 [else p])]
-         [blurred (*blur p hbr vbr mode)])
+         [blurred (*blur p hbr vbr)])
     (cond [pre-inset? (inset blurred (- hbr) (- vbr))]
           [else blurred])))
 
 (define (shadow p br [dx 0] [dy dx]
                 #:color [c #f]
                 #:shadow-color [shc #f]
-                #:mode [mode 'iterated-box]
                 #:auto-inset? [auto-inset? #f])
   ;; FIXME: should auto-inset also use dx, dy?
   (define (colorize* p c)
@@ -57,12 +49,12 @@
   (let ([result
          (pin-under (colorize* p c)
                     dx dy
-                    (blur (colorize* p shc) br #:mode mode))])
+                    (blur (colorize* p shc) br))])
     (cond [auto-inset? (inset result br)]
           [else result])))
 
-(define (blur-bitmap! bmp hbr [vbr hbr] #:mode [mode 'iterated-box])
-  (blur! bmp hbr vbr mode))
+(define (blur-bitmap! bmp hbr [vbr hbr])
+  (blur! bmp hbr vbr))
 
 ;; ----
 
@@ -70,7 +62,7 @@
 (define MAX-WEIGHT (expt 2 5))
 (define BOX-ITERATIONS 3)
 
-(define (*blur p hbr vbr mode)
+(define (*blur p hbr vbr)
   (let* ([w (pict-width p)]
          [h (pict-height p)]
          [drawer (make-pict-drawer p)])
@@ -92,106 +84,27 @@
                 ;; except when blurring by zero
                 (send bdc set-smoothing (send dc get-smoothing)))
               (drawer bdc 0 0)
-              (blur! bmp hbr* vbr* mode)
+              (blur! bmp hbr* vbr*)
               (send dc set-scale 1.0 1.0)
               (send dc draw-bitmap bmp (* x sx) (* y sy))
               (send dc set-scale sx sy))))
         w h)))
 
-(define (blur! bmp hbr vbr mode)
+(define (blur! bmp hbr vbr)
   (let* ([w (send bmp get-width)]
          [h (send bmp get-height)]
          [pix (make-bytes (* w h 4))]
          [out (make-bytes (* w h 4))])
     (send bmp get-argb-pixels 0 0 w h pix #f #t)
-    (case mode
-      ((gaussian)
-       (let* ([h-cvec (gaussian-cvec hbr)]
-              [v-cvec (gaussian-cvec vbr)])
-         (convolve-h pix out h-cvec w h)
-         (convolve-v out pix v-cvec w h)))
-      ((single-box)
-       (box-h pix out hbr w h 1)
-       (box-v out pix vbr w h 1))
-      ((iterated-box)
-       (let ([hbr (ceil/e (/ hbr BOX-ITERATIONS))]
-             [vbr (ceil/e (/ vbr BOX-ITERATIONS))])
-         (box-h pix out hbr w h BOX-ITERATIONS)
-         (let-values ([(pix* out*)
-                       (cond [(even? BOX-ITERATIONS) (values out pix)]
-                             [else (values pix out)])])
-           (box-v pix* out* vbr w h BOX-ITERATIONS))))
-      (else (error 'blur! "bad mode")))
+    (let ([hbr (ceil/e (/ hbr BOX-ITERATIONS))]
+          [vbr (ceil/e (/ vbr BOX-ITERATIONS))])
+      (box-h pix out hbr w h BOX-ITERATIONS)
+      (let-values ([(pix* out*)
+                    (cond [(even? BOX-ITERATIONS) (values out pix)]
+                          [else (values pix out)])])
+        (box-v pix* out* vbr w h BOX-ITERATIONS)))
     (send bmp set-argb-pixels 0 0 w h pix #f #t)
     (void)))
-
-;; ----
-
-(define (ceil/e x) (inexact->exact (ceiling x)))
-(define (round/e x) (inexact->exact (round x)))
-
-(define (convolve-line* cvec start end get-val set-val)
-  (define CVEC-LEN (vector-length cvec))
-  (define CVEC-HALF (unsafe-fxquotient CVEC-LEN 2))
-  (let ([non-zero-alpha?
-         (for/or ([outi (in-range start end)])
-           (positive? (get-val outi 0)))])
-    (cond [non-zero-alpha?
-           (for ([outi (in-range start end)])
-             (define lo-ci (unsafe-fx+ start (unsafe-fx- CVEC-HALF outi)))
-             (define hi-ci (unsafe-fx+ end (unsafe-fx- CVEC-HALF outi)))
-             (define-values (na nr ng nb sumw)
-               (for/fold ([na 0] [nr 0] [ng 0] [nb 0] [sumw 0])
-                   ([ci (in-range (unsafe-fxmax 0 lo-ci) (unsafe-fxmin hi-ci CVEC-LEN))])
-                 (let ([ini (unsafe-fx+ outi (unsafe-fx- ci CVEC-HALF))]
-                       [w (unsafe-vector-ref cvec ci)])
-                   (values (unsafe-fx+ na (unsafe-fx* w (get-val ini 0)))
-                           (unsafe-fx+ nr (unsafe-fx* w (get-val ini 1)))
-                           (unsafe-fx+ ng (unsafe-fx* w (get-val ini 2)))
-                           (unsafe-fx+ nb (unsafe-fx* w (get-val ini 3)))
-                           (unsafe-fx+ sumw w)))))
-             (set-val outi 0 (unsafe-fxquotient na sumw))
-             (set-val outi 1 (unsafe-fxquotient nr sumw))
-             (set-val outi 2 (unsafe-fxquotient ng sumw))
-             (set-val outi 3 (unsafe-fxquotient nb sumw)))]
-          [else
-           (for ([outi (in-range start end)])
-             (set-val outi 0 0)
-             (set-val outi 1 0)
-             (set-val outi 2 0)
-             (set-val outi 3 0))])))
-
-(define (convolve-h in out cvec w h)
-  (define (get-val i offset) (bytes-ref in (unsafe-fx+ offset (unsafe-fx* 4 i))))
-  (define (set-val i offset v) (bytes-set! out (unsafe-fx+ offset (unsafe-fx* 4 i)) v))
-  (for/async ([row (in-range h)])
-    (convolve-line* cvec (unsafe-fx* row w) (unsafe-fx* (add1 row) w) get-val set-val)))
-
-(define (convolve-v in out cvec w h)
-  (define ((mkget col) i offset)
-    (bytes-ref in (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset)))
-  (define ((mkset col) i offset v)
-    (bytes-set! out (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset) v))
-  (for/async ([col (in-range w)])
-    (convolve-line* cvec 0 h (mkget col) (mkset col))))
-
-(define (gaussian-cvec radius [bias 'none]) ;; .84
-  (define sigma 1)
-  (define (G x)
-    (/ (exp (- (/ (sqr x) (* 2 sigma sigma))))
-       (sqrt (* 2 pi sigma sigma))))
-  (cond [(zero? radius)
-         (vector 1)]
-        [else
-         (build-vector
-          (+ 1 radius radius)
-          (lambda (x)
-            (cond [(and (< x radius) (eq? bias 'left))
-                   0]
-                  [(and (> x radius) (eq? bias 'right))
-                   0]
-                  [else
-                   (ceil/e (* MAX-WEIGHT (G (/ (* 3 sigma (- x radius)) radius))))])))]))
 
 ;; ----
 
@@ -271,6 +184,8 @@
         (define-syntax-rule (set-val i offset v)
           (bytes-set! out (unsafe-fx+ (unsafe-fx* 4 (unsafe-fx+ (unsafe-fx* w i) col)) offset) v))
         (box-line* radius start end get-val set-val)))))
+
+(define (ceil/e x) (inexact->exact (ceiling x)))
 
 ;; ----
 
