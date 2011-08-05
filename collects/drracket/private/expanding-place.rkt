@@ -60,19 +60,24 @@
     (parameterize ([current-custodian cust])
       (thread
        (λ ()
-         (log-info "expanding-place.rkt: starting thread")
+         (log-info "expanding-place.rkt: 01 starting thread")
          (define sema (make-semaphore 0))
+         (log-info "expanding-place.rkt: 02 setting basic parameters")
          (set-basic-parameters/no-gui)
+         (log-info "expanding-place.rkt: 03 setting module language parameters")
          (set-module-language-parameters settings
                                          module-language-parallel-lock-client
                                          #:use-use-current-security-guard? #t)
+         (log-info "expanding-place.rkt: 04 setting directories")
          (when path
            (let-values ([(base name dir?) (split-path path)])
              (current-directory base)
              (current-load-relative-directory base)))
          (define sp (open-input-string program-as-string))
          (port-count-lines! sp)
+         (log-info "expanding-place.rkt: 05 installing security guard")
          (install-security-guard) ;; must come after the call to set-module-language-parameters
+         (log-info "expanding-place.rkt: 06 setting uncaught-exception-handler")
          (uncaught-exception-handler
           (λ (exn)
             (parameterize ([current-custodian orig-cust])
@@ -83,33 +88,34 @@
                  (channel-put exn-chan exn))))
             (semaphore-wait sema)
             ((error-escape-handler))))
-         (log-info "expanding-place.rkt: starting read-syntax")
+         (log-info "expanding-place.rkt: 07 starting read-syntax")
          (define stx
            (parameterize ([read-accept-reader #t])
              (read-syntax the-source sp)))
-         (log-info "expanding-place.rkt: read")
+         (log-info "expanding-place.rkt: 08 read")
          (when (syntax? stx) ;; could be eof
            (define-values (name lang transformed-stx)
              (transform-module path
                                (namespace-syntax-introduce stx)
                                raise-hopeless-syntax-error))
-           (log-info "expanding-place.rkt: starting expansion")
+           (log-info "expanding-place.rkt: 09 starting expansion")
            (define expanded (expand transformed-stx))
-           (log-info "expanding-place.rkt: expanded")
+           (log-info "expanding-place.rkt: 10 expanded")
            (define handler-results
              (for/list ([handler (in-list handlers)])
                (list (handler-key handler)
                      ((handler-proc handler) expanded
                                              path
                                              the-source))))
-           (log-info "expanding-place.rkt: handlers finished")
+           (log-info "expanding-place.rkt: 11 handlers finished")
            (parameterize ([current-custodian orig-cust])
              (thread
               (λ ()
                 (channel-put normal-termination #t)
                 (semaphore-post sema)
                 (channel-put result-chan handler-results))))
-           (semaphore-wait sema))))))
+           (semaphore-wait sema)
+           (log-info "expanding-place.rkt: 12 finished"))))))
   
   (thread
    (λ ()
