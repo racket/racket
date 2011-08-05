@@ -10,14 +10,16 @@ some part of Racket. It assumes programming experience, so if you are
 new to programming, consider instead reading @|HtDP|. If you want an
 especially quick introduction to Racket, start with @|Quick|.
 
-@seclink["to-scheme"]{Chapter 2} provides a brief introduction to
-Racket. From @seclink["datatypes"]{Chapter 3} on, this guide dives
+@seclink["to-scheme"]{Chapter 3} provides a brief introduction to
+Racket. From @seclink["datatypes"]{Chapter 4} on, this guide dives
 into details---covering much of the Racket toolbox, but leaving
 precise details to @|Racket| and other reference manuals.
 
 @table-of-contents[]
 
 @include-section["welcome.scrbl"]
+
+@include-section["editor.scrbl"]
 
 @include-section["to-scheme.scrbl"]
 
