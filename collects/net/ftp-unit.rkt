@@ -163,9 +163,11 @@
            "^(.)(.*) ((?i:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
            " .* [0-9][0-9]:?[0-9][0-9]) (.*)$")))
 
-(define (ftp-directory-list tcp-ports)
+(define (ftp-directory-list tcp-ports [path #f])
   (define tcp-data (establish-data-connection tcp-ports))
-  (fprintf (ftp-connection-out tcp-ports) "LIST\r\n")
+  (if path
+    (fprintf (ftp-connection-out tcp-ports) "LIST ~a\r\n" path)
+    (fprintf (ftp-connection-out tcp-ports) "LIST\r\n"))
   (ftp-check-response (ftp-connection-in tcp-ports)
                       (ftp-connection-out tcp-ports)
                       (list #"150" #"125") void (void))

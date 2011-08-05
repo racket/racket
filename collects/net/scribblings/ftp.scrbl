@@ -31,20 +31,22 @@ supplied username and password.}
 Closes an FTP connection.}
 
 
-@defproc[(ftp-cd [ftp-conn ftp-connection?][new-dir string?]) void?]{
+@defproc[(ftp-cd [ftp-conn ftp-connection?] [new-dir string?]) void?]{
 
 Changes the current directory on the FTP server to @racket[new-dir].
 The @racket[new-dir] argument is not interpreted at all, but simply
 passed on to the server; it must not contain a newline.}
 
-@defproc[(ftp-directory-list [ftp-conn ftp-connection?])
+@defproc[(ftp-directory-list [ftp-conn ftp-connection?]
+                             [path (or/c false/c string?) #f])
          (listof (list/c (one-of/c "-" "d" "l")
                          string?
                          string?))]{
 
-Returns a list of files and directories in the current directory of
-the server, assuming that the server provides directory information in
-the quasi-standard Unix format.
+Returns a list of files and directories in the current directory of the
+server, assuming that the server provides directory information in the
+quasi-standard Unix format.  If a @racket[path] argument is given, use
+it instead of the current directory.
 
 Each file or directory is represented by a list of three or four
 strings.  The first string is either @racket["-"], @racket["d"], or
