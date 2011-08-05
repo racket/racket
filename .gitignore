@@ -26,3 +26,6 @@
 .DS_Store
 *.bak
 TAGS
+
+# to avoid committing it by accident, since we can't distribute it
+/collects/scribble/lncs/llncs.cls
