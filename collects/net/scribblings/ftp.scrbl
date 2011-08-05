@@ -23,10 +23,7 @@ returned by @racket[ftp-establish-connection], @racket[#f] otherwise.}
           ftp-connection?]{
 
 Establishes an FTP connection with the given server using the
-supplied username and password.
-
-The username and password strings are encoded to bytes using the
-current locale's encoding.}
+supplied username and password.}
 
 
 @defproc[(ftp-close-connection [ftp-conn ftp-connection?]) void?]{
@@ -38,8 +35,7 @@ Closes an FTP connection.}
 
 Changes the current directory on the FTP server to @racket[new-dir].
 The @racket[new-dir] argument is not interpreted at all, but simply
-passed on to the server (encoded using the current locale's
-encoding); it must not contain a newline.}
+passed on to the server; it must not contain a newline.}
 
 @defproc[(ftp-directory-list [ftp-conn ftp-connection?])
          (listof (list/c (one-of/c "-" "d" "l")
@@ -56,10 +52,7 @@ depending on whether the items is a file, directory, or link,
 respectively.  The second item is the file's date; to convert this
 value to seconds consistent with @racket[file-seconds], pass the date
 string to @racket[ftp-make-file-seconds], below.  The third string is
-the name of the file or directory.
-
-All strings are decoded from bytes using the current locale's
-encoding.}
+the name of the file or directory.}
 
 
 @defproc[(ftp-make-file-seconds [ftp-date string?]) exact-integer?]{
