@@ -365,6 +365,15 @@ i {
   margin-bottom: 0em;
   margin-right: 0em;
   margin-top: 0em;
+  white-space: nowrap;  
+}
+
+.SVInsetFlow {
+  display: block;
+  margin-left: 0em;
+  margin-bottom: 0em;
+  margin-right: 0em;
+  margin-top: 0em;
 }
 
 .SubFlow {

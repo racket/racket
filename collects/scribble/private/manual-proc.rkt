@@ -464,17 +464,20 @@
                 (append* all-args)))
   (make-box-splice
    (cons
-    (make-table
-     'boxed
-     (append-map
-      do-one
-      stx-ids prototypes all-args arg-contractss arg-valss result-contracts
-      (let loop ([ps prototypes] [accum null])
-        (cond [(null? ps) null]
-              [(ormap (lambda (a) (eq? (extract-id (car ps)) a)) accum)
-               (cons #f (loop (cdr ps) accum))]
-              [else (cons #t (loop (cdr ps)
-                                   (cons (extract-id (car ps)) accum)))]))))
+    (make-blockquote
+     'vertical-inset
+     (list
+      (make-table
+       'boxed
+       (append-map
+        do-one
+        stx-ids prototypes all-args arg-contractss arg-valss result-contracts
+        (let loop ([ps prototypes] [accum null])
+          (cond [(null? ps) null]
+                [(ormap (lambda (a) (eq? (extract-id (car ps)) a)) accum)
+                 (cons #f (loop (cdr ps) accum))]
+                [else (cons #t (loop (cdr ps)
+                                     (cons (extract-id (car ps)) accum)))]))))))
     (content-thunk))))
 
 (define-syntax-rule (defparam id arg contract desc ...)
@@ -757,7 +760,9 @@
            fields field-contracts))))
   (make-box-splice
    (cons
-    main-table
+    (make-blockquote
+     'vertical-inset
+     (list main-table))
     (content-thunk))))
 
 ;; ----------------------------------------
@@ -782,83 +787,86 @@
                    [result-values (map (lambda (x) #f) result-contracts)])
   (make-box-splice
    (cons
-    (make-table
-     'boxed
-     (map
-      (lambda (stx-id name result-contract result-value)
-        (list
-         (make-flow
-          (make-table-if-necessary
-           "argcontract"
-           (let* ([result-block
-                   (and result-value
-                        (if (block? result-value)
-                            result-value
-                            (make-omitable-paragraph (list result-value))))]
-                  [contract-block
-                   (if (block? result-contract)
-                       result-contract
-                       (make-omitable-paragraph (list result-contract)))]
-                  [total-width (+ (string-length (format "~a" name))
-                                  3
-                                  (block-width contract-block)
-                                  (if result-block
-                                      (+ (block-width result-block) 3)
-                                      0))])
-           (append
-            (list
-             (append
-              (list
-               (make-flow
+    (make-blockquote
+     'vertical-inset
+     (list
+      (make-table
+       'boxed
+       (map
+        (lambda (stx-id name result-contract result-value)
+          (list
+           (make-flow
+            (make-table-if-necessary
+             "argcontract"
+             (let* ([result-block
+                     (and result-value
+                          (if (block? result-value)
+                              result-value
+                              (make-omitable-paragraph (list result-value))))]
+                    [contract-block
+                     (if (block? result-contract)
+                         result-contract
+                         (make-omitable-paragraph (list result-contract)))]
+                    [total-width (+ (string-length (format "~a" name))
+                                    3
+                                    (block-width contract-block)
+                                    (if result-block
+                                        (+ (block-width result-block) 3)
+                                        0))])
+               (append
                 (list
-                 (make-omitable-paragraph
+                 (append
                   (list
-                   (let ([target-maker
-                          ((if form? id-to-form-target-maker id-to-target-maker)
-                           stx-id #t)]
-                         [content (list (definition-site name stx-id form?))])
-                     (if target-maker
-                         (target-maker
-                          content
-                          (lambda (tag)
-                            (make-toc-target-element
-                             #f
-                             (list
-                              (make-index-element
-                               #f
-                               content
-                               tag
-                               (list (symbol->string name))
-                               content
-                               (with-exporting-libraries
-                                (lambda (libs) (make-thing-index-desc name libs)))))
-                             tag)))
-                         (car content)))))))
-               (make-flow
-                (list
-                 (make-omitable-paragraph
-                  (list
-                   spacer ":" spacer))))
-               (make-flow (list contract-block)))
-              (if (and result-value
-                       (total-width . < . 60))
-                  (list
-                   (to-flow (make-element #f (list spacer "=" spacer)))
-                   (make-flow (list result-block)))
-                  null)))
-            (if (and result-value
-                     (total-width . >= . 60))
-                (list
-                 (list
-                  (make-table-if-necessary
-                   "argcontract"
-                   (list
-                    (list flow-spacer 
-                          (to-flow (make-element #f (list spacer "=" spacer)))
-                          (make-flow (list result-block)))))
-                  'cont))
-                null)))))))
-      stx-ids names result-contracts result-values))
+                   (make-flow
+                    (list
+                     (make-omitable-paragraph
+                      (list
+                       (let ([target-maker
+                              ((if form? id-to-form-target-maker id-to-target-maker)
+                               stx-id #t)]
+                             [content (list (definition-site name stx-id form?))])
+                         (if target-maker
+                             (target-maker
+                              content
+                              (lambda (tag)
+                                (make-toc-target-element
+                                 #f
+                                 (list
+                                  (make-index-element
+                                   #f
+                                   content
+                                   tag
+                                   (list (symbol->string name))
+                                   content
+                                   (with-exporting-libraries
+                                    (lambda (libs) (make-thing-index-desc name libs)))))
+                                 tag)))
+                             (car content)))))))
+                   (make-flow
+                    (list
+                     (make-omitable-paragraph
+                      (list
+                       spacer ":" spacer))))
+                   (make-flow (list contract-block)))
+                  (if (and result-value
+                           (total-width . < . 60))
+                      (list
+                       (to-flow (make-element #f (list spacer "=" spacer)))
+                       (make-flow (list result-block)))
+                      null)))
+                (if (and result-value
+                         (total-width . >= . 60))
+                    (list
+                     (list
+                      (make-table-if-necessary
+                       "argcontract"
+                       (list
+                        (list flow-spacer 
+                              (to-flow (make-element #f (list spacer "=" spacer)))
+                              (make-flow (list result-block)))))
+                      'cont))
+                    null)))))))
+        stx-ids names result-contracts result-values))))
     (content-thunk))))
 
 (define (defthing/proc id contract descs)

@@ -2,7 +2,8 @@
 (require "../decode.rkt"
          "../scheme.rkt"
          "../struct.rkt"
-         (only-in "../core.rkt" style-name)
+         (only-in "../core.rkt" style-name 
+                  nested-flow? nested-flow-blocks nested-flow-style)
          scheme/contract
          (for-syntax scheme/base
                      syntax/kerncase
@@ -104,21 +105,28 @@
 (define (*deftogether boxes body-thunk)
   (make-box-splice
    (cons
-    (make-table
-     'boxed
-     (map
-      (lambda (box)
-        (unless (and (box-splice? box)
-                     (= 1 (length (splice-run box)))
-                     (table? (car (splice-run box)))
-                     (eq? 'boxed (style-name (table-style (car (splice-run box))))))
-          (error 'deftogether
-                 "element is not a boxing splice containing a single table: ~e"
-                 box))
-        (list (make-flow (list (make-table
-                                "together"
-                                (table-flowss (car (splice-run box))))))))
-      boxes))
+    (make-blockquote 
+     'vertical-inset 
+     (list
+      (make-table
+       'boxed
+       (map
+        (lambda (box)
+          (unless (and (box-splice? box)
+                       (= 1 (length (splice-run box)))
+                       (nested-flow? (car (splice-run box)))
+                       (eq? 'vertical-inset (style-name (nested-flow-style (car (splice-run box)))))
+                       (let ([l (nested-flow-blocks (car (splice-run box)))])
+                         (= 1 (length l))
+                         (table? (car l))
+                         (eq? 'boxed (style-name (table-style (car l))))))
+            (error 'deftogether
+                   "element is not a boxing splice containing a single nested-flow with a single table: ~e"
+                   box))
+          (list (make-flow (list (make-table
+                                  "together"
+                                  (table-flowss (car (nested-flow-blocks (car (splice-run box))))))))))
+        boxes))))
     (body-thunk))))
 
 (define-syntax (deftogether stx)

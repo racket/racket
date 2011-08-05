@@ -346,33 +346,36 @@
   (parameterize ([current-meta-list '(... ...+)])
     (make-box-splice
      (cons
-      (make-table
-       'boxed
-       (append
-        (map
-         (lambda (form form-proc)
-           (list
-            (make-flow
+      (make-blockquote
+       'vertical-inset
+       (list
+        (make-table
+         'boxed
+         (append
+          (map
+           (lambda (form form-proc)
              (list
-              ((or form-proc
-                   (lambda (x)
-                     (make-omitable-paragraph
-                      (list (to-element `(,x . ,(cdr form)))))))
-               (and kw-id
-                    (eq? form (car forms))
-                    (defform-site kw-id)))))))
-         forms form-procs)
-        (if (null? sub-procs)
-          null
-          (list (list flow-empty-line)
-                (list (make-flow
-                       (list (let ([l (map (lambda (sub)
-                                             (map (lambda (f) (f)) sub))
-                                           sub-procs)])
-                               (*racketrawgrammars "specgrammar"
-                                                   (map car l)
-                                                   (map cdr l))))))))
-        (make-contracts-table contract-procs)))
+              (make-flow
+               (list
+                ((or form-proc
+                     (lambda (x)
+                       (make-omitable-paragraph
+                        (list (to-element `(,x . ,(cdr form)))))))
+                 (and kw-id
+                      (eq? form (car forms))
+                      (defform-site kw-id)))))))
+           forms form-procs)
+          (if (null? sub-procs)
+              null
+              (list (list flow-empty-line)
+                    (list (make-flow
+                           (list (let ([l (map (lambda (sub)
+                                                 (map (lambda (f) (f)) sub))
+                                               sub-procs)])
+                                   (*racketrawgrammars "specgrammar"
+                                                       (map car l)
+                                                       (map cdr l))))))))
+          (make-contracts-table contract-procs)))))
       (content-thunk)))))
 
 (define (*specsubform form lits form-thunk subs sub-procs contract-procs content-thunk)
@@ -380,27 +383,30 @@
     (make-blockquote
      "leftindent"
      (cons
-      (make-table
-       'boxed
-       (cons
-        (list
-         (make-flow
+      (make-blockquote
+       'vertical-inset
+       (list
+        (make-table
+         'boxed
+         (cons
           (list
-           (if form-thunk
-             (form-thunk)
-             (make-omitable-paragraph (list (to-element form)))))))
-        (append
-         (if (null? sub-procs)
-             null
-             (list (list flow-empty-line)
-                   (list (make-flow
-                          (list (let ([l (map (lambda (sub)
-                                                (map (lambda (f) (f)) sub))
-                                              sub-procs)])
-                                  (*racketrawgrammars "specgrammar"
-                                                      (map car l)
-                                                      (map cdr l))))))))
-         (make-contracts-table contract-procs))))
+           (make-flow
+            (list
+             (if form-thunk
+                 (form-thunk)
+                 (make-omitable-paragraph (list (to-element form)))))))
+          (append
+           (if (null? sub-procs)
+               null
+               (list (list flow-empty-line)
+                     (list (make-flow
+                            (list (let ([l (map (lambda (sub)
+                                                  (map (lambda (f) (f)) sub))
+                                                sub-procs)])
+                                    (*racketrawgrammars "specgrammar"
+                                                        (map car l)
+                                                        (map cdr l))))))))
+           (make-contracts-table contract-procs))))))
       (flow-paragraphs (decode-flow (content-thunk)))))))
 
 (define (*racketrawgrammars style nonterms clauseses)

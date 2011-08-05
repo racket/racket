@@ -574,7 +574,8 @@
       (let* ([kind (or (let ([s (style-name (nested-flow-style t))])
                          (or (and (string? s) s)
                              (and (eq? s 'inset) "quote")
-                             (and (eq? s 'code-inset) "SCodeFlow")))
+                             (and (eq? s 'code-inset) "SCodeFlow")
+                             (and (eq? s 'vertical-inset) "SVInsetFlow")))
                        "Subflow")]
              [props (style-properties (nested-flow-style t))]
              [command? (memq 'command props)]

@@ -105,6 +105,13 @@
 \listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=2ex\rightmargin=0pt%
 \itemsep=0pt\parsep=0pt}\item}{\end{list}\SCodePostSkip}
 
+% Inset a 'vertical-inset nested flow:
+\newcommand{\SVInsetPreSkip}{\vskip\abovedisplayskip}
+\newcommand{\SVInsetPostSkip}{\vskip\belowdisplayskip}
+\newenvironment{SVInsetFlow}{\SVInsetPreSkip\begin{list}{}{\topsep=0pt\partopsep=0pt%
+\listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=0pt\rightmargin=0pt%
+\itemsep=0pt\parsep=0pt}\item}{\end{list}\SVInsetPostSkip}
+
 % The 'compact itemization style:
 \newenvironment{compact}{\begin{itemize}}{\end{itemize}}
 \newcommand{\compactItem}[1]{\item #1}

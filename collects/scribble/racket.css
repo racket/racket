@@ -6,6 +6,7 @@
 .RktMod, .RktKw, .RktVar, .RktSym,
 .RktRes, .RktOut, .RktCmt, .RktVal {
   font-family: monospace;
+  white-space: inherit;
 }
 
 /* Serif: */
@@ -130,8 +131,17 @@
   vertical-align: bottom;
 }
 
+.RktBlk {
+  white-space: inherit;
+}
+
+.RktBlk tr {
+  white-space: inherit;
+}
+
 .RktBlk td {
   vertical-align: baseline;
+  white-space: inherit;
 }
 
 .argcontract td {
