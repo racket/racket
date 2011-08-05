@@ -1,6 +1,6 @@
 ;; require this file to run all of the test suites for redex.
 
-#lang scheme/base
+#lang racket/base
 (require scheme/runtime-path
          scheme/cmdline
          scheme/match

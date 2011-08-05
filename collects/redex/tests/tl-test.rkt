@@ -1,8 +1,9 @@
-#lang racket/gui
+#lang racket
   (require "../reduction-semantics.rkt"
            "test-util.rkt"
            (only-in "../private/matcher.rkt" make-bindings make-bind)
            racket/match
+           racket/trace
            "../private/struct.rkt")
   
   (reset-count)
@@ -10,7 +11,7 @@
   (define-namespace-anchor this-namespace)
   (parameterize ([current-namespace syn-err-test-namespace])
     (eval (quote-syntax
-           (define-language grammar
+           (define-language syn-err-lang
              (M (M M)
                 number)
              (E hole
@@ -101,22 +102,7 @@
                                             12)))
         '("...."))
 
-  (test-syn-err
-   (let ()
-     (define-language L
-       (n ,3))
-     (void))
-   #rx"define-language:.*unquote disallowed" 1)
-
   (let ()
-    ; error message shows correct form name
-    (test-syn-err
-     (let ()
-       (define-language L)
-       (define-extended-language M L
-         (z () (1 y_1)))
-       (void))
-     #rx"define-extended-language:.*underscore")
     ; non-terminals added by extension can have underscores
     (define-extended-language L base-grammar
       (z () (1 z_1 z_1)))
@@ -411,15 +397,7 @@
         (::= () (number ::=)))
       (test (and (redex-match L ::= '(1 ())) #t) #t)))
   
-  (test-syn-err (define-language (L)) #rx"expected an identifier")
-  (test-syn-err (define-language L (x ::=)) #rx"expected at least one production")
-  (test-syn-err (define-language L (x)) #rx"expected at least one production")
-  (test-syn-err (define-language L ((x))) #rx"expected at least one production")
-  (test-syn-err (define-language L (::= a b)) #rx"expected preceding non-terminal names")
-  (test-syn-err (define-language L (x (y) ::= z)) #rx"expected non-terminal name")
-  (test-syn-err (define-language L (x ::= y ::= z)) #rx"expected production")
-  (test-syn-err (define-language L q) #rx"expected non-terminal definition")
-  (test-syn-err (define-language L ()) #rx"expected non-terminal definition")
+  (exec-syntax-error-tests "syn-err-tests/language-definition.rktd")
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        
@@ -1001,11 +979,10 @@
   
   ;; errors for not-yet-defined metafunctions
   (test (parameterize ([current-namespace (make-empty-namespace)])
-          (namespace-attach-module (namespace-anchor->namespace this-namespace) 'racket/gui)
           (namespace-attach-module (namespace-anchor->namespace this-namespace) 'redex/reduction-semantics)
           (namespace-require 'racket)
           (eval '(module m racket
-                   (require redex)
+                   (require redex/reduction-semantics)
                    (term (q))
                    (define-language L)
                    (define-metafunction L [(q) ()])))
@@ -1021,17 +998,7 @@
             #f))
         "metafunction q applied before its definition")
   
-  (let ()
-    (test-syn-err
-     (define-metafunction grammar
-       [(f x)])
-     #rx"expected a pattern and a right-hand side"))
-  
-  (test-syn-err (define-metafunction (junk) also-junk)
-                #rx"expected an identifier")
-  (test-syn-err (define-metafunction junk also-junk)
-                #rx"expected an identifier")
-  
+  (exec-syntax-error-tests "syn-err-tests/metafunction-definition.rktd")
 ;                                                                                                 
 ;                                                                                                 
 ;                                                                                                 
@@ -1123,21 +1090,7 @@
             'failed)
           'passed))
   
-  (test-syn-err 
-   (define-relation grammar R)
-   #rx"expected the name of the relation")
-  
-  (test-syn-err
-   (define-relation grammar R ⊆)
-   #rx"expected a sequence of patterns separated by")
-  
-  (test-syn-err
-   (define-relation grammar foo ⊆ c)
-   #rx"expected clause definitions")
-  
-  (test-syn-err
-   (define-relation grammar foo ⊆ c ×)
-   #rx"expected a pattern")
+  (exec-syntax-error-tests "syn-err-tests/relation-definition.rktd")
   
 ;                    ;;                         ;                                        ;;                    ;                 
 ;                     ;                 ;                                                 ;            ;                         
@@ -1547,112 +1500,7 @@
     (test (apply-reduction-relation R (term (0 2 3 4 5))) '())
     (test (apply-reduction-relation R (term (1 2 3 4 5 () (6) (7 8) (9 10 11)))) '(yes)))
   
-  (test-syn-err (reduction-relation 
-                 grammar
-                 (~~> (number_1 number_2)
-                      ,(* (term number_1) (term number_2)))
-                 with
-                 [(--> (M a) (M b)) (~~> a b)]
-                 [(~~> (M a) (M b)) (==> a b)])
-                #rx"no rules")
-  
-  (test-syn-err (reduction-relation 
-                 grammar
-                 (~~> (number_1 number_2)
-                      ,(* (term number_1) (term number_2)))
-                 with
-                 [(--> (M a) (M b)) (~~> a b)]
-                 [(~~> (M a) (M b)) (==> a b)])
-                #rx"no rules")
-  
-  (test-syn-err (reduction-relation grammar)
-                #rx"no rules use -->")
-  
-  (test-syn-err (reduction-relation 
-                 grammar
-                 (~~> (number_1 number_2)
-                      ,(* (term number_1) (term number_2))))
-                #rx"~~> relation is not defined")
-  
-  (test-syn-err (reduction-relation 
-                 grammar
-                 (--> (number_1 number_2) 
-                      ,(* (term number_1) (term number_2))
-                      mult)
-                 (--> (number_1 number_2) 
-                      ,(* (term number_1) (term number_2))
-                      mult))
-                #rx"same name on multiple rules"
-                2)
-  
-  (test-syn-err (reduction-relation
-                 grammar
-                 (--> number_1
-                      ()
-                      (where (number_1 ...) '())))
-                #rx"different depths"
-                2)
-  
-  (test-syn-err (redex-match
-                 grammar
-                 ((name x any) (name x any_2) ...))
-                #rx"different depths"
-                2)
-  
-  (test-syn-err (define-language bad-lang5
-                 (e ((name x any) (name x any_2) ...)))
-                #rx"different depths"
-                2)
-  
-  (test-syn-err (reduction-relation 
-                 grammar
-                 (--> 1 2)
-                 (==> 3 4))
-                #rx"==> relation is not defined")
-  
-  (test-syn-err  (reduction-relation 
-                  grammar
-                  (--> 1 2)
-                  (==> 3 4)
-                  with
-                  [(~> a b) (==> a b)])
-                 #rx"~> relation is not defined")
-  
-  (test-syn-err  (reduction-relation
-                  grammar
-                  (==> 1 2)
-                  with
-                  [(--> a b)
-                   (==> a (+ 3 b))])
-                 #rx"expected identifier")
-  
-  (test-syn-err  (reduction-relation
-                  grammar
-                  (==> 1 2)
-                  with
-                  [(--> a b)
-                   (==> (+ 3 a) b)])
-                 #rx"expected identifier")
-  
-  (test-syn-err (define-language bad-lang1 (e name)) #rx"name")
-  (test-syn-err (define-language bad-lang2 (name x)) #rx"name")
-  (test-syn-err (define-language bad-lang3 (x_y x)) #rx"cannot use _")
-  (test-syn-err (define-language bad-lang4 (a 1 2) (b)) #rx"at least one production")
-  (test-syn-err (let ()
-                  (define-language good-lang (a 1 2))
-                  (define-extended-language bad-lang5 good-lang (a) (b 2)))
-                #rx"at least one production")
-  (test-syn-err (define-language bad-lang5 (x 1) (x 2)) #rx"same non-terminal" 2)
-  (test-syn-err (define-language bad-lang6 ((x x) 1)) #rx"same non-terminal" 2)
-  (test-syn-err (let ()
-                  (define-language good-lang)
-                  (define-extended-language bad-lang7 good-lang ((x x) 1)))
-                #rx"same non-terminal" 2)
-  
-  (test-syn-err (redex-match grammar m_1) #rx"before underscore")
-  (test-syn-err (redex-match grammar (variable-except a 2 c)) #rx"expected an identifier")
-  (test-syn-err (redex-match grammar (variable-prefix 7)) #rx"expected an identifier")
-  (test-syn-err (redex-match grammar (cross 7)) #rx"expected an identifier")
+  (exec-syntax-error-tests "syn-err-tests/reduction-relation-definition.rktd")
   
   ;; expect union with duplicate names to fail
   (test (with-handlers ((exn? (λ (x) 'passed)))
@@ -1957,7 +1805,19 @@
              (--> q r y)
              (--> r p x))))
         '(a b c z y x))
-  
+    
+    (let ()
+      (define-judgment-form empty-language
+        mode : I O
+        [(R a a)]
+        [(R a b)])
+      (test (apply-reduction-relation
+             (reduction-relation
+              empty-language
+              (--> a any
+                   (judgment-holds (R a any))))
+             'a)
+            '(b a)))
   
     ;                                                                 
     ;                                                                 
@@ -2003,13 +1863,186 @@
       
       (test (redex-let L ([(n_1 n_1) '(1 1)]) (term n_1))
             1)
-      (test-syn-err
-       (redex-let grammar ([(number) 1] [number 1]) (term number))
-       #rx"redex-let: duplicate pattern variable" 1)
       (test
        (redex-let* L ([(n_1) '(1)] [n_1 1]) (term n_1))
-       1))
+       1)
+      (exec-syntax-error-tests "syn-err-tests/redex-let.rktd"))
   
+
+;                                                                                                                                              
+;                                                                                                                                              
+;                                                                                                                                              
+;       ;            ;;    ;                           ;               ;                                               ;;                      
+;       ;           ;      ;                           ;               ;                               ;              ;                        
+;       ;           ;                                                  ;                               ;              ;                        
+;    ;;;;   ;;;    ;;;     ;    ;;;;    ;;;            ;    ;   ;   ;;;;   ;;;;  ;;;;;   ;;;   ;;;;   ;;;            ;;;    ;;;   ; ;;   ;;;;; 
+;   ;   ;  ;   ;    ;      ;    ;   ;  ;   ;  ;;;;;    ;    ;   ;  ;   ;  ;   ;  ; ; ;  ;   ;  ;   ;   ;     ;;;;;    ;    ;   ;  ;;  ;  ; ; ; 
+;   ;   ;  ;;;;;    ;      ;    ;   ;  ;;;;;           ;    ;   ;  ;   ;  ;   ;  ; ; ;  ;;;;;  ;   ;   ;              ;    ;   ;  ;   ;  ; ; ; 
+;   ;   ;  ;        ;      ;    ;   ;  ;               ;    ;   ;  ;   ;  ;   ;  ; ; ;  ;      ;   ;   ;              ;    ;   ;  ;      ; ; ; 
+;   ;   ;  ;   ;    ;      ;    ;   ;  ;   ;           ;    ;  ;;  ;   ;  ;   ;  ; ; ;  ;   ;  ;   ;   ;              ;    ;   ;  ;      ; ; ; 
+;    ;;;;   ;;;     ;      ;    ;   ;   ;;;            ;     ;; ;   ;;;;   ;;;;  ; ; ;   ;;;   ;   ;    ;;            ;     ;;;   ;      ; ; ; 
+;                                                      ;                      ;                                                                
+;                                                      ;                  ;   ;                                                                
+;                                                    ;;                    ;;;                                                                 
+
+    (exec-syntax-error-tests "syn-err-tests/judgment-form-definition.rktd")
+    (exec-syntax-error-tests "syn-err-tests/judgment-holds.rktd")
+    
+    (let ()
+      (define-language nats
+        (n z (s n)))
+      
+      (define-judgment-form nats
+        mode : I I O
+        sumi ⊆ n × n × n
+        [(sumi z n n)]
+        [(sumi (s n_1) n_2 (s n_3))
+         (sumi n_1 n_2 n_3)])
+      (test (judgment-holds (sumi z (s z) n) n)
+            (list (term (s z))))
+      (test (judgment-holds (sumi (s (s z)) (s z) n) n)
+            (list (term (s (s (s z))))))
+      (test (judgment-holds (sumi ,'z (s z) (s z))) #t)
+      
+      (define-judgment-form nats
+        mode : O O I
+        sumo ⊆ n × n × n
+        [(sumo z n n)]
+        [(sumo (s n_1) n_2 (s n_3))
+         (sumo n_1 n_2 n_3)])
+      (test (judgment-holds (sumo n_1 n_2 z) ([,'n_1 n_1] [,'n_2 n_2]))
+            (list (term ([n_1 z] [n_2 z]))))
+      (test (judgment-holds (sumo n_1 n_2 (s z)) ([,'n_1 n_1] [,'n_2 n_2]))
+            (list (term ([n_1 (s z)] [n_2 z]))
+                  (term ([n_1 z] [n_2 (s z)]))))
+      
+      (define-judgment-form nats
+        mode : O O I
+        [(sumo-ls (s n_1) n_2 n_3)
+         (sumo (s n_1) n_2 n_3)])
+      (test (judgment-holds (sumo-ls n_1 n_2 (s z)) ([,'n_1 n_1] [,'n_2 n_2]))
+            (list (term ([n_1 (s z)] [n_2 z]))))
+      (test (judgment-holds (sumo-ls (s n_1) n_2 (s z))) #t)
+      (test (judgment-holds (sumo-ls z n_2 (s z))) #f)
+      (test (judgment-holds (sumo-ls z n_2 (s z)) whatever) (list))
+      
+      (define-judgment-form nats
+        mode : O O I
+        [(sumo-lz z n_2 n_3)
+         (sumo z n_2 n_3)])
+      (test (judgment-holds (sumo-lz n_1 n_2 (s z)) ([,'n_1 n_1] [,'n_2 n_2]))
+            (list (term ([n_1 z] [n_2 (s z)]))))
+      
+      (define-judgment-form nats
+        mode : O I
+        [(member n_i (n_0 ... n_i n_i+1 ...))])
+      
+      (test (judgment-holds (member n (z (s z) z (s (s z)))) n)
+            (list (term (s (s z))) (term z) (term (s z)) (term z)))
+      
+      (define-judgment-form nats
+        mode : I
+        [(has-zero (n ...))
+         (member z (n ...))])
+      
+      (test (judgment-holds (has-zero ((s z) z (s (s z))))) #t)
+      
+      (define-judgment-form nats
+        mode : I
+        [(le2 n)
+         (le (add2 n) (s (s (s (s z)))))])
+      
+      (define-judgment-form nats
+        mode : I I
+        [(le z n)]
+        [(le (s n_1) (s n_2))
+         (le n_1 n_2)])
+      
+      (define-metafunction nats
+        add2 : n -> n
+        [(add2 n) (s (s n))])
+      
+      (test (judgment-holds (le2 (s (s z)))) #t)
+      (test (judgment-holds (le2 (s (s (s z))))) #f)
+      
+      (define-judgment-form nats
+        mode : I O
+        uses-add2 ⊆ n × n
+        [(uses-add2 n_1 n_2)
+         (sumo n_2 n_3 n_1)
+         (where n_2 (add2 n_3))])
+      
+      (test (judgment-holds (uses-add2 (s (s (s (s z)))) n) n)
+            (list (term (s (s (s z))))))
+      
+      (let-syntax ([test-trace 
+                    (syntax-rules ()
+                      [(_ expr trace-spec expected)
+                       (test (let ([trace (open-output-string)])
+                               (parameterize ([current-output-port trace]
+                                              [current-traced-metafunctions trace-spec])
+                                 expr)
+                               (get-output-string trace))
+                             expected)])])
+        (test-trace (judgment-holds (sumi (s z) (s (s z)) n) n)
+                    '(sumi)
+                    #reader scribble/reader
+                    @string-append{>(sumi '(s z) '(s (s z)) '_)
+                                   > (sumi 'z '(s (s z)) '_)
+                                   < '((sumi z (s (s z)) (s (s z))))
+                                   <'((sumi (s z) (s (s z)) (s (s (s z)))))
+                            
+                                  })
+        (test-trace (judgment-holds (sumo n_1 n_2 (s z)))
+                    'all
+                    #reader scribble/reader
+                    @string-append{>(sumo '_ '_ '(s z))
+                                   > (sumo '_ '_ 'z)
+                                   < '((sumo z z z))
+                                   <'((sumo (s z) z (s z)) (sumo z (s z) (s z)))
+                            
+                                  })
+        (test-trace (letrec ([f (match-lambda
+                                  ['z #t]
+                                  [`(s ,n) (f n)])])
+                      (define-judgment-form nats
+                        mode : I I
+                        [(ext-trace z (side-condition n (f (term n))))]
+                        [(ext-trace (s n_1) n_2)
+                         (ext-trace n_1 n_2)])
+                      (trace f)
+                      (judgment-holds (ext-trace (s z) (s z))))
+                    'all
+                    #reader scribble/reader
+                    @string-append{>(ext-trace '(s z) '(s z))
+                                   > (ext-trace 'z '(s z))
+                                   > >(f '(s z))
+                                   > >(f 'z)
+                                   < <#t
+                                   < '((ext-trace z (s z)))
+                                   <'((ext-trace (s z) (s z)))
+                                  
+                                  })))
+    
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval '(require redex/reduction-semantics))
+      (eval '(define-language L
+               (s a b c)))
+      (eval '(define-judgment-form L
+               mode : I O
+               ctc-fail ⊆ s × s
+               [(ctc-fail a q)]
+               [(ctc-fail b s)
+                (ctc-fail q s)]
+               [(ctc-fail c s)
+                (ctc-fail a s)]))
+      (exec-runtime-error-tests "run-err-tests/judgment-form-contracts.rktd")
+      (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
+    
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval '(require redex/reduction-semantics))
+      (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
+    
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; examples from doc.txt

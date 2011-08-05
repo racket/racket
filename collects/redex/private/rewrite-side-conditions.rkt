@@ -8,6 +8,7 @@
   
   (provide rewrite-side-conditions/check-errs
            extract-names
+           (rename-out [binds? id-binds?])
            raise-ellipsis-depth-error
            make-language-id
            language-id-nts)
@@ -122,7 +123,7 @@
   (define-struct id/depth (id depth))
   
   ;; extract-names : syntax syntax -> (values (listof syntax) (listof syntax[x | (x ...) | ((x ...) ...) | ...]))
-  (define (extract-names all-nts what bind-names? orig-stx [rhs-only? #t])
+  (define (extract-names all-nts what bind-names? orig-stx [mode 'rhs-only])
     (let* ([dups
             (let loop ([stx orig-stx]
                        [names null]
@@ -158,7 +159,10 @@
                                   (loop (car pats) names (+ depth 1))))]))]
                 [x
                  (and (identifier? (syntax x))
-                      ((if rhs-only? binds-in-right-hand-side? binds?)
+                      ((case mode
+                         [(rhs-only) binds-in-right-hand-side?]
+                         [(binds-anywhere) binds?]
+                         [(name-only) (λ (_1 _2 _3) #f)])
                        all-nts bind-names? (syntax x)))
                  (cons (make-id/depth (syntax x) depth) names)]
                 [else names]))]

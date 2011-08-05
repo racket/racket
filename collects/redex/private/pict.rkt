@@ -14,7 +14,8 @@
          "matcher.rkt"
          "arrow.rkt"
          "core-layout.rkt")
-(require (for-syntax racket/base))
+(require (for-syntax racket/base
+                     "term-fn.rkt"))
 
 (provide render-term 
          term->pict
@@ -30,10 +31,12 @@
          relation->pict
          metafunction->pict
          metafunctions->pict
-
+         judgment-form->pict
+         
          render-relation
          render-metafunction
          render-metafunctions
+         render-judgment-form
          
          basic-text
          
@@ -727,9 +730,9 @@
 
 (define-syntax (relation->pict stx)
   (syntax-case stx ()
-    [(_ name1)
+    [(form name1)
      (identifier? #'name1)
-     #'(relation->pict/proc (metafunction name1) 'relation->pict)]))
+     #'(inference-rules-pict/relation 'form (metafunction name1))]))
 
 (define-syntax (render-metafunctions stx)
   (syntax-case stx ()
@@ -753,12 +756,12 @@
 
 (define-syntax (render-relation stx)
   (syntax-case stx ()
-    [(_ name)
+    [(form name)
      (identifier? #'name)
-     #'(render-relation/proc (metafunction name) #f)]
-    [(_ name #:file filename)
+     #'(render-relation/proc 'form (metafunction name) #f)]
+    [(form name #:file filename)
      (identifier? #'name)
-     #'(render-relation/proc (metafunction name) filename)]))
+     #'(render-relation/proc 'form (metafunction name) filename)]))
 
 (define linebreaks (make-parameter #f))
 
@@ -813,8 +816,7 @@
                         (map (lambda (eqn) 
                                (wrapper->pict
                                 (metafunction-call (metafunc-proc-name (metafunction-proc mf))
-                                                   (list-ref eqn 0)
-                                                   (metafunc-proc-multi-arg? (metafunction-proc mf)))))
+                                                   (list-ref eqn 0))))
                              (metafunc-proc-pict-info (metafunction-proc mf))))
                       mfs))]
          [eqns (select-cases all-eqns)]
@@ -927,56 +929,28 @@
                            scs
                            rhss))))])))
 
-(define (metafunction-call name an-lw flattened?)
-  (if flattened?
-      (struct-copy lw an-lw
-                   [e
-                    (list*
-                     ;; the first loc wrapper is just there to make the
-                     ;; shape of this line be one that the apply-rewrites
-                     ;; function (in core-layout.rkt) recognizes as a metafunction
-                     (make-lw "("
-                              (lw-line an-lw)
-                              0
-                              (lw-column an-lw)
-                              0 
-                              #f
-                              #f)
-                     (make-lw name
-                              (lw-line an-lw)
-                              0
-                              (lw-column an-lw)
-                              0 
-                              #f
-                              #t)
-                     (cdr (lw-e an-lw)))])
-      
-      (build-lw
-       (list
-        (build-lw "("
-                  (lw-line an-lw)
-                  0
-                  (lw-column an-lw)
-                  0)
-        (make-lw name
-                 (lw-line an-lw)
-                 0
-                 (lw-column an-lw)
-                 0
-                 #f
-                 #t)
-        an-lw
-        (build-lw ")"
-                  (+ (lw-line an-lw)
-                     (lw-line-span an-lw))
-                  0
-                  (+ (lw-column an-lw)
-                     (lw-column-span an-lw))
-                  0))
-       (lw-line an-lw)
-       (lw-line-span an-lw)
-       (lw-column an-lw)
-       (lw-column-span an-lw))))  
+(define (metafunction-call name an-lw)
+  (struct-copy lw an-lw
+               [e
+                (list*
+                 ;; the first loc wrapper is just there to make the
+                 ;; shape of this line be one that the apply-rewrites
+                 ;; function (in core-layout.rkt) recognizes as a metafunction
+                 (make-lw "("
+                          (lw-line an-lw)
+                          0
+                          (lw-column an-lw)
+                          0 
+                          #f
+                          #f)
+                 (make-lw name
+                          (lw-line an-lw)
+                          0
+                          (lw-column an-lw)
+                          0 
+                          #f
+                          #t)
+                 (cdr (lw-e an-lw)))]))  
 
 (define (add-commas-and-rewrite-parens eles)
   (let loop ([eles eles]
@@ -1044,36 +1018,42 @@
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
        (metafunctions->pict/proc mfs name))]))
 
-(define (render-relation/proc mf filename)
+(define (render-relation/proc form mf filename)
+  (render-pict (λ () (inference-rules-pict/relation form mf))
+               filename))
+
+(define (inference-rules-pict/relation form mf)
+  (unless (metafunc-proc-relation? (metafunction-proc mf))
+    (error form "expected relation as argument, got a metafunction"))
+  (inference-rules-pict (metafunc-proc-name (metafunction-proc mf))
+                        (metafunc-proc-pict-info (metafunction-proc mf))
+                        (metafunc-proc-lang (metafunction-proc mf))))
+
+(define (render-pict make-pict filename)
   (cond
     [filename
-     (save-as-ps (λ () (relation->pict/proc mf 'render-reduction-relation))
-                 filename)]
+     (save-as-ps make-pict filename)]
     [else
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
-       (relation->pict/proc mf 'render-reduction-relation))]))
+       (make-pict))]))
 
-
-(define (relation->pict/proc mf name)
-  (unless (metafunc-proc-relation? (metafunction-proc mf))
-    (error name "expected relation as argument, got a metafunction"))
-  (let* ([all-nts (language-nts (metafunc-proc-lang (metafunction-proc mf)))]
+(define (inference-rules-pict name all-eqns lang)
+  (let* ([all-nts (language-nts lang)]
          [wrapper->pict (lambda (lw) (lw->pict all-nts lw))]
-         [all-eqns (metafunc-proc-pict-info (metafunction-proc mf))]
          [all-conclusions 
           (map (lambda (eqn) 
                  (wrapper->pict
-                  (metafunction-call (metafunc-proc-name (metafunction-proc mf))
-                                     (list-ref eqn 0)
-                                     (metafunc-proc-multi-arg? (metafunction-proc mf)))))
-               (metafunc-proc-pict-info (metafunction-proc mf)))]
+                  (metafunction-call name (list-ref eqn 0))))
+               all-eqns)]
          [eqns (select-cases all-eqns)]
          [conclusions (select-cases all-conclusions)]
          [premisess (map (lambda (eqn)
                            (append (map wrapper->pict (list-ref eqn 2))
                                    (map (match-lambda
                                           [(struct metafunc-extra-where (lhs rhs))
-                                           (where-pict (wrapper->pict lhs) (wrapper->pict rhs))])
+                                           (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
+                                          [(struct metafunc-extra-side-cond (expr))
+                                           (wrapper->pict expr)])
                                         (list-ref eqn 1))))
                          eqns)])
     ((relation-clauses-combine)
@@ -1090,6 +1070,33 @@
 
 (define horizontal-bar-spacing (make-parameter 4))
 (define relation-clauses-combine (make-parameter (λ (l) (apply vc-append 20 l))))
+
+(define-for-syntax (inference-rules-pict/judgment-form form-name)
+  (define jf (syntax-local-value form-name))
+  (syntax-property
+   #`(inference-rules-pict '#,(judgment-form-name jf)
+                           #,(judgment-form-lws jf)
+                           #,(judgment-form-lang jf))
+   'disappeared-use
+   form-name))
+
+(define-syntax (render-judgment-form stx)
+  (syntax-case stx ()
+    [(_ form-name . opt-arg)
+     (if (judgment-form-id? #'form-name)
+         (let ([save-as (syntax-case #'opt-arg ()
+                          [() #'#f]
+                          [(path) #'path])])
+           #`(render-pict (λ () #,(inference-rules-pict/judgment-form #'form-name))
+                          #,save-as))
+         (raise-syntax-error #f "expected a judgment form name" stx #'form-name))]))
+
+(define-syntax (judgment-form->pict stx)
+  (syntax-case stx ()
+    [(_ form-name)
+     (if (judgment-form-id? #'form-name)
+         (inference-rules-pict/judgment-form #'form-name)
+         (raise-syntax-error #f "expected a judgment form name" stx #'form-name))]))
 
 ;                              
 ;                              

@@ -697,6 +697,7 @@ otherwise.
                        (fresh fresh-clause ...)
                        (side-condition racket-expression)
                        (where @#,ttpattern @#,tttterm)
+                       (judgment-holds (judgment-form-id pat/term))
                        (side-condition/hidden racket-expression)
                        (where/hidden @#,ttpattern @#,tttterm)]
                [shortcuts (code:line)
@@ -706,7 +707,9 @@ otherwise.
                [rule-name identifier
                           string 
                           (computed-name racket-expression)]
-               [fresh-clause var ((var1 ...) (var2 ...))])]{
+               [fresh-clause var ((var1 ...) (var2 ...))]
+               [pat/term @#,ttpattern
+                         @#,tttterm])]{
 
 Defines a reduction relation casewise, one case for each of the
 @racket[reduction-case] clauses. 
@@ -791,6 +794,10 @@ metafunction result. The bindings are the same as bindings in a
 @racket[term-let] expression. A @as-index{@racket[where/hidden] clause} is the
 same as a @racket[where] clause, but the clause is not
 rendered when typesetting via @racketmodname[redex/pict].
+
+Each @racket[judgment-holds] clause acts like a @racket[where] clause, where
+the left-hand side pattern incorporates each of the patterns used in the 
+judgment form's output positions.
 
 Each @racket[shortcut] clause defines arrow names in terms of 
 @racket[base-arrow-name] and earlier @racket[shortcut] definitions.
@@ -940,7 +947,7 @@ it is traversing through the reduction graph.
   @racket[reduction-relation]. A @racket[with] form is an
   error elsewhere.  }
 
-@section{Metafunctions and Relations}
+@section{Other Relations}
 
 @declare-exporting[redex/reduction-semantics redex]
 
@@ -1062,35 +1069,157 @@ legtimate inputs according to @racket[metafunction-name]'s contract,
 and @racket[#f] otherwise.
 }
 
-@defform/subs[#:literals ()
-              (define-relation language
-               relation-contract
-               [(name @#,ttpattern ...) @#,tttterm ...] ...)
-               ([relation-contract (code:line)
-                                   (code:line id ⊂ pat x ... x pat)
-                                   (code:line id ⊆ pat × ... × pat)])]{
+@defform/subs[#:literals (mode : I O ⊂ ⊆ × x where)
+             (define-judgment-form language
+               mode-spec
+               maybe-contract
+               [conclusion premise ...] ...)
+             ([mode-spec (code:line mode : use ...)]
+              [use I
+                   O]
+              [maybe-contract (code:line)
+                              (code:line form-id ⊂ @#,ttpattern x ... x @#,ttpattern)
+                              (code:line form-id ⊆ @#,ttpattern × ... × @#,ttpattern)]
+              [conclusion (form-id pat/term ...)]
+              [premise (judgment-form-id pat/term ...)
+                       (where @#,ttpattern @#,tttterm)]
+              [pat/term @#,ttpattern
+                        @#,tttterm])]{
+Defines @racket[form-id] as a relation on terms via a set of inference rules.
+Each rule must be such that its premises can be evaluated left-to-right
+without ``guessing'' values for any of their pattern variables. Redex checks this
+property using the @racket[mode-spec] declaration, which partitions positions
+into inputs @racket[I] and outputs @racket[O]. Output positions in conclusions
+and input positions in premises must be @|tttterm|s with no uses of 
+@racket[unquote]; input positions in conclusions and output positions in 
+premises must be @|ttpattern|s. When the optional @racket[relation-contract] 
+declaration is present, Redex dynamically checks that the terms flowing through
+these positions match the provided patterns, raising an exception recognized by 
+@racket[exn:fail:redex] if not.
 
-The @racket[define-relation] form builds a relation on
-sexpressions according to the pattern and right-hand-side
-expressions. The first argument indicates the language used
-to resolve non-terminals in the pattern expressions. Each of
-the rhs-expressions is implicitly wrapped in @|tttterm|. 
+For example, the following defines addition on natural numbers:
+@interaction[
+#:eval redex-eval
+       (define-language nats
+         (n z (s n)))
+       (define-judgment-form nats
+         mode : I I O
+         sum ⊆ n × n × n
+         [(sum z n n)]
+         [(sum (s n_1) n_2 (s n_3))
+          (sum n_1 n_2 n_3)])]
+                                     
+The @racket[judgment-holds] form checks whether a relation holds for any 
+assignment of pattern variables in output positions.
+@examples[
+#:eval redex-eval
+       (judgment-holds (sum (s (s z)) (s z) (s (s (s z)))))
+       (judgment-holds (sum (s (s z)) (s z) (s (s (s n)))))
+       (judgment-holds (sum (s (s z)) (s z) (s (s (s (s n))))))]
+Alternatively, this form constructs a list of terms based on the satisfying
+pattern variable assignments.
+@examples[
+#:eval redex-eval
+       (judgment-holds (sum (s (s z)) (s z) (s (s (s n)))) n)
+       (judgment-holds (sum (s (s z)) (s z) (s (s (s (s n))))) n)
+       (judgment-holds (sum (s (s z)) (s z) (s (s (s n)))) (s n))]
 
-Relations are like metafunctions in that they are called with
-arguments and return results (unlike in, say, prolog, where a relation
-definition would be able to synthesize some of the arguments based on
-the values of others).
+Declaring different modes for the same inference rules enables different forms
+of computation. For example, the following mode allows @racket[judgment-holds]
+to compute all pairs with a given sum.
+@interaction[
+#:eval redex-eval
+       (define-judgment-form nats
+         mode : O O I
+         sumr ⊆ n × n × n
+         [(sumr z n n)]
+         [(sumr (s n_1) n_2 (s n_3))
+          (sumr n_1 n_2 n_3)])
+       (judgment-holds (sumr n_1 n_2 (s (s z))) (n_1 n_2))]
 
-Unlike metafunctions, relations check all possible ways to match each
-case, looking for a true result and if none of the clauses match, then
-the result is @racket[#f]. If there are multiple expressions on
-the right-hand side of a relation, then all of them must be satisfied
-in order for that clause of the relation to be satisfied.
+A rule's @racket[where] clause premises behave as in @racket[reduction-relation]
+and @racket[define-metafunction].
+@interaction[
+#:eval redex-eval
+       (define-judgment-form nats
+         mode : I I
+         le ⊆ n × n
+         [(le z n)]
+         [(le (s n_1) (s n_2))
+          (le n_1 n_2)])
+       (define-metafunction nats
+         pred : n -> n or #f
+         [(pred z) #f]
+         [(pred (s n)) n])
+       (define-judgment-form nats
+         mode : I I
+         gt ⊆ n × n
+         [(gt n_1 n_2)
+          (where n_3 (pred n_1))
+          (le n_2 n_3)])
+       (judgment-holds (gt (s (s z)) (s z)))
+       (judgment-holds (gt (s z) (s z)))]
 
-The contract specification for a relation restricts the patterns that can
-be used as input to a relation. For each argument to the relation, there
-should be a single pattern, using @racket[x] or @racket[×] to separate
-the argument contracts.
+Redex evaluates premises depth-first, even when it doing so leads to 
+non-termination. For example, consider the following definitions:                                    
+@interaction[
+#:eval redex-eval
+       (define-language vertices
+         (v a b c))
+       (define-judgment-form vertices
+         mode : I O
+         edge ⊆ v × v
+         [(edge a b)]
+         [(edge b c)])
+       (define-judgment-form vertices
+         mode : I I
+         path ⊆ v × v
+         [(path v v)]
+         [(path v_1 v_2)
+          (path v_2 v_1)]
+         [(path v_1 v_3)
+          (edge v_1 v_2)
+          (path v_2 v_3)])]
+Due to the second @racket[path] rule, the follow query fails to terminate:
+@racketinput[(judgment-holds (path a c))]
+}
+ 
+@defform*/subs[((judgment-holds judgment)
+                (judgment-holds judgment @#,tttterm))
+               ([judgment (judgment-form-id pat/term ...)])]{
+In its first form, checks whether @racket[judgment] holds for any assignment of
+the pattern variables in @racket[judgment-id]'s output positions. In its second
+form, produces a list of terms by instantiating the supplied term template with
+each satisfying assignment of pattern variables. 
+See @racket[define-judgment-form] for examples.
+}                                     
+                                     
+@defform[(define-relation language
+          relation-contract
+          [(name @#,ttpattern ...) @#,tttterm ...] ...)]{
+Similar to @racket[define-judgment-form] but suitable only when every position
+is an input. There is no associated form corresponding to 
+@racket[judgment-holds]; querying the result uses the same syntax as 
+metafunction application.
+                  
+@examples[
+#:eval redex-eval
+       (define-language types
+         ((τ σ) int
+                num
+                (τ → τ)))
+
+       (define-relation types
+         subtype ⊆ τ × τ
+         [(subtype int num)]
+         [(subtype (τ_1 → τ_2) (σ_1 → σ_2))
+          (subtype σ_1 τ_1)
+          (subtype τ_2 σ_2)]
+         [(subtype τ τ)])
+
+       (term (subtype int num))
+       (term (subtype (int → int) (num → num)))
+       (term (subtype (num → int) (num → num)))]
 
 Note that relations are assumed to always return the same results for
 the same inputs, and their results are cached, unless
@@ -1098,7 +1227,7 @@ the same inputs, and their results are cached, unless
 relation is called with the same inputs twice, then its right-hand
 sides are evaluated only once.
 }
-
+                                                                      
 @defparam[current-traced-metafunctions traced-metafunctions (or/c 'all (listof symbol?))]{
 
 Controls which metafunctions are currently being traced. If it is
@@ -1940,6 +2069,7 @@ and for use in DrRacket to easily adjust the typesetting:
 @racket[render-language],
 @racket[render-reduction-relation], 
 @racket[render-relation],
+@racket[render-judgment-form],
 @racket[render-metafunctions], and
 @racket[render-lw], 
 and one
@@ -1947,6 +2077,8 @@ for use in combination with other libraries that operate on picts
 @racket[term->pict],
 @racket[language->pict],
 @racket[reduction-relation->pict],
+@racket[relation->pict],
+@racket[judgment-form->pict],
 @racket[metafunction->pict], and
 @racket[lw->pict].
 The primary difference between these functions is that the former list
@@ -2043,12 +2175,7 @@ other tools that combine picts together.
 @defform[(render-metafunctions metafunction-name ...)]{}
 @defform/none[#:literals (render-metafunctions)
               (render-metafunctions metafunction-name ... #:file filename)]{}]]{
-
-If provided with one argument, @racket[render-metafunction]
-produces a pict that renders properly in the definitions
-window in DrRacket. If given two arguments, it writes
-postscript into the file named by @racket[filename] (which
-may be either a string or bytes).
+Like @racket[render-reduction-relation] but for metafunctions.
 
 Similarly, @racket[render-metafunctions] accepts multiple 
 metafunctions and renders them together, lining up all of the
@@ -2077,23 +2204,32 @@ This function sets @racket[dc-for-text-size]. See also
 @deftogether[(@defform[(render-relation relation-name)]{}
               @defform/none[#:literals (render-relation)
                                        (render-relation relation-name filename)]{})]{
-
-If provided with one argument, @racket[render-relation]
-produces a pict that renders properly in the definitions
-window in DrRacket. If given two arguments, it writes
-postscript into the file named by @racket[filename] (which
-may be either a string or bytes).
+Like @racket[render-metafunction] but for relations.
 
 This function sets @racket[dc-for-text-size]. See also
 @racket[relation->pict].
 }
 
+@deftogether[(@defform[(render-judgment-form judgment-form-name)]{}
+              @defform/none[#:literals (render-judgment-form)
+                                       (render-judgment-form judgment-form-name filename)]{})]{
+Like @racket[render-metafunction] but for judgment forms.
+
+This function sets @racket[dc-for-text-size]. See also
+@racket[relation->pict].
+}                                                                                    
+                                                                                    
 @defform[(relation->pict relation-name)]{
   This produces a pict, but without setting @racket[dc-for-text-size].
   It is suitable for use in Slideshow or other libraries that combine
   picts.
 }
 
+@defform[(judgment-form->pict judgment-form-name)]{
+  This produces a pict, but without setting @racket[dc-for-text-size].
+  It is suitable for use in Slideshow or other libraries that combine
+  picts.
+}
 
 @subsection{Customization}
 

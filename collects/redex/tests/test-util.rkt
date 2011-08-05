@@ -3,17 +3,28 @@
 (require "../private/matcher.rkt"
          (for-syntax syntax/parse)
          errortrace/errortrace-lib
-         errortrace/errortrace-key)
+         errortrace/errortrace-key
+         racket/runtime-path)
 (provide test test-syn-err tests reset-count
          syn-err-test-namespace
          print-tests-passed
          equal/bindings?
          test-contract-violation
-         runtime-error-source)
+         test-runtime-err
+         exec-syntax-error-tests
+         exec-runtime-error-tests)
+
+(define-runtime-path this-dir ".")
 
 (define syn-err-test-namespace (make-base-namespace))
 (parameterize ([current-namespace syn-err-test-namespace])
   (eval '(require redex/reduction-semantics)))
+
+(define (read-syntax-test path)
+  (call-with-input-file path
+    (λ (port)
+      (port-count-lines! port)
+      (read-syntax path port))))
 
 (define-syntax (test stx)
   (syntax-case stx ()
@@ -24,40 +35,90 @@
                            "<unknown file>")])
        (syntax/loc stx (test/proc (λ () expected) got line fn)))]))
 
-(define (runtime-error-source sexp src)
-  (let/ec return
-    (cadar
-     (continuation-mark-set->list
-      (exn-continuation-marks
-       (with-handlers ((exn:fail? values))
-         (parameterize ([current-compile (make-errortrace-compile-handler)])
-           (eval (read-syntax src (open-input-string (format "~s" sexp)))))
-         (return 'no-source)))
-      errortrace-key))))
+(define (syntax-error-test-setup thunk)
+  (parameterize ([current-namespace syn-err-test-namespace])
+    (with-handlers ([exn:fail:syntax? 
+                     (λ (exn) 
+                       (values (exn-message exn)
+                               (map source-location (exn:fail:syntax-exprs exn))))])
+      (thunk))))
+(define (runtime-error-test-setup thunk)
+  (parameterize ([current-compile (make-errortrace-compile-handler)])
+    (with-handlers ([exn:fail? 
+                     (λ (exn) 
+                       (values (exn-message exn)
+                               (let ([marks (continuation-mark-set->list
+                                             (exn-continuation-marks exn)
+                                             errortrace-key)])
+                                 (if (null? marks) '() (list (cdar marks))))))])
+      (thunk))))
+
+(define ((exec-error-tests setup exec) path)
+  (for ([test (read-tests (build-path this-dir path))])
+       (exec-error-test test exec setup)))
+(define exec-syntax-error-tests
+  (exec-error-tests syntax-error-test-setup expand))
+(define exec-runtime-error-tests
+  (exec-error-tests runtime-error-test-setup eval))
+
+(define (exec-error-test spec exec setup)
+  (define-values (file line expected-message expected-sources test)
+    (make-error-test spec))
+  (let-values ([(actual-message actual-sources)
+                (setup (λ () (begin (exec test) (values "" '()))))])
+    (test/proc (λ () actual-message) expected-message line file)
+    (test/proc (λ () actual-sources) expected-sources line file)))
+
+(define (make-error-test spec)
+  (syntax-case spec ()
+    [(message named-pieces body)
+     (make-error-test (syntax/loc spec (message named-pieces () body)))]
+    [(message ([loc-name loc-piece] ...) ([non-loc-name non-loc-piece] ...) body)
+     (values (syntax-source spec)
+             (syntax-line spec)
+             (syntax-e #'message)
+             (map source-location (syntax->list #'(loc-piece ...)))
+             #'(let-syntax ([subst 
+                             (λ (stx)
+                               (syntax-case stx ()
+                                 [(_ loc-name ... non-loc-name ...)
+                                  #'body]))])
+                 (subst loc-piece ... non-loc-piece ...)))]))
+
+(define (source-location stx)
+  (list (syntax-source stx) 
+        (syntax-line stx) 
+        (syntax-column stx) 
+        (syntax-position stx)
+        (syntax-span stx)))
+
+(define (read-tests path)
+  (call-with-input-file path
+    (λ (port)
+      (port-count-lines! port)
+      (let loop ()
+        (define test (read-syntax path port))
+        (if (eof-object? test)
+            '()
+            (cons test (loop)))))))
 
 (define-syntax (test-syn-err stx)
-  (syntax-case stx ()
-    [(_ exp msg-re num-locs)
-     (with-syntax ([expected-locs (syntax/loc stx (build-list num-locs (λ (_) src)))])
-       (syntax
-        (let* ([src (gensym)]
-               [p (read-syntax src (open-input-string (format "~s" 'exp)))])
-          (let-values ([(locs msg)
-                        (with-handlers ([exn:fail:syntax?
-                                         (λ (exn)
-                                           (values 
-                                            (if (exn:srclocs? exn)
-                                                (map srcloc-source 
-                                                     ((exn:srclocs-accessor exn) exn))
-                                                null)
-                                            (exn-message exn)))])
-                          (parameterize ([current-namespace syn-err-test-namespace])
-                            (expand p))
-                          (values (void) null))])
-            (test msg msg-re)
-            (test locs expected-locs)))))]
-    [(tse exp msg-re)
-     (syntax/loc stx (tse exp msg-re 1))]))
+  #'(void))
+
+(define-syntax (test-runtime-err stx)
+  #'(void)
+  #;
+  #`(parameterize ([current-compile (make-errortrace-compile-handler)])
+      #,(test-error-location 
+         stx
+         eval
+         #'[exn:fail? 
+            (λ (exn) 
+              (values (exn-message exn)
+                      (let ([marks (continuation-mark-set->list
+                                    (exn-continuation-marks exn)
+                                    errortrace-key)])
+                        (if (null? marks) #f (list (cdar marks))))))])))
 
 (define tests 0)
 (define failures 0)

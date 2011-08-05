@@ -103,81 +103,9 @@
   (define-namespace-anchor here)
   (define ns (namespace-anchor->namespace here))
   
-  (let ([src 'term-template])
-    (test
-     (parameterize ([current-namespace ns])
-       (runtime-error-source
-        '(term-let ([(x ...) '(a b c)]
-                    [((y ...) ...) '((1 2) (4 5 6) (7 8 9))])
-                   (term (((x y) ...) ...)))
-        src))
-     src))
+  (parameterize ([current-namespace ns])
+    (exec-runtime-error-tests "run-err-tests/term.rktd"))
   
-  (let ([src 'term-template-metafunc])
-    (test
-     (parameterize ([current-namespace ns])
-       (runtime-error-source 
-        '(term-let-fn ((f car))
-                      (term-let ([(x ...) '(a b c)]
-                                 [((y ...) ...) '((1 2) (4 5 6) (7 8 9))])
-                                (term ((((f x) y) ...) ...))))
-        src))
-     src))
-  
-  (let ([src 'ellipsis-args])
-    (test
-     (parameterize ([current-namespace ns])
-       (runtime-error-source 
-        '(term-let-fn ((f car))
-                      (term-let ([(x ...) '(a b)]
-                                 [(y ...) '(c d e)])
-                                (term (f ((x y) ...)))))
-        src))
-     src))
-  
-  (let ([src 'ellipsis-args/map])
-    (test
-     (parameterize ([current-namespace ns])
-       (runtime-error-source 
-        '(term-let-fn ((f car))
-                      (term-let ([(x ...) '(a b)]
-                                 [(y ...) '(c d e)])
-                                (term ((f (x y)) ...))))
-        src))
-     src))
-  
-  (let ([src 'ellipsis-args/in-hole])
-    (test
-     (parameterize ([current-namespace ns])
-       (runtime-error-source 
-        '(term-let ([(x ...) '(a b)]
-                    [(y ...) '(c d e)])
-                   (term ((in-hole hole (x y)) ...)))
-        src))
-     src))
-  
-  (let ([src 'term-let-rhs])
-    (test
-     (parameterize ([current-namespace ns])
-       (runtime-error-source
-        '(term-let ([(x ...) 'a])
-                   3)
-        src))
-     src))
-  
-  (test-syn-err (term-let ([(x ...) '(a b c)]) (term x))
-                #rx"missing ellipses")
-
-  (test (parameterize ([current-namespace syn-err-test-namespace])
-          (with-handlers ([exn:fail:syntax?
-                           (λ (exn)
-                             (match (exn:fail:syntax-exprs exn)
-                               [(list e) (syntax->datum e)]
-                               [_ (gensym 'wrong)]))])
-            (expand
-             '(term-let ([((label ...) ...) '()])
-                        (term (label ...))))
-            (gensym 'wrong)))
-        'label)
+  (exec-syntax-error-tests "syn-err-tests/term.rktd")
   
   (print-tests-passed 'term-test.rkt))

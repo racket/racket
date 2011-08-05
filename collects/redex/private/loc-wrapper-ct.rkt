@@ -61,7 +61,8 @@
     [x 
      (and (identifier? #'x)
           (and (syntax-transforming?)
-               (term-fn? (syntax-local-value #'x (λ () #f)))))
+               (or (term-fn? (syntax-local-value #'x (λ () #f)))
+                   (judgment-form? (syntax-local-value #'x (λ () #f))))))
      #`(make-lw
         '#,(syntax-e #'x)
         #,(syntax-line stx) 

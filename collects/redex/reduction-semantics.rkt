@@ -28,6 +28,8 @@
          define-metafunction
          define-metafunction/extension
          define-relation
+         define-judgment-form
+         judgment-holds
          in-domain?
          caching-enabled?
          make-coverage)

@@ -48,10 +48,12 @@
 (provide relation->pict
          metafunction->pict
          metafunctions->pict
+         judgment-form->pict
          
          render-relation
          render-metafunction
-         render-metafunctions)
+         render-metafunctions
+         render-judgment-form)
 
 (provide/contract
  [render-language-nts (parameter/c (or/c false/c (listof (or/c string? symbol?))))]

@@ -115,10 +115,7 @@
         #`(begin
             #,@(free-identifier-mapping-map
                 applied-metafunctions
-                (λ (f _)
-                  (if (eq? (identifier-binding f) 'lexical)
-                      #`(check-defined-lexical #,f '#,f)
-                      #`(check-defined-module (λ () #,f) '#,f))))
+                (λ (f _) (defined-check f "metafunction")))
             #,(let loop ([bs (reverse outer-bindings)])
                 (cond
                   [(null? bs) (syntax (syntax->datum (quasisyntax rewritten)))]
@@ -126,18 +123,6 @@
                                       [fst (car bs)])
                           (syntax (with-syntax (fst)
                                     rec)))])))))]))
-
-(define (check-defined-lexical value name)
-  (when (eq? (letrec ([x x]) x) value)
-    (report-undefined-metafunction name)))
-
-(define (check-defined-module thunk name)
-  (with-handlers ([exn:fail:contract:variable?
-                   (λ (_) (report-undefined-metafunction name))])
-    (thunk)))
-
-(define (report-undefined-metafunction name)
-  (redex-error #f "metafunction ~s applied before its definition" name))
 
 (define-syntax (term-let-fn stx)
   (syntax-case stx ()
