@@ -31,7 +31,10 @@ After you commit, watch for and read(!)
  succeed now, and the latter is for tests that are currently expected to
  fail. See the
  @hyperlink["https://github.com/plt/racket/tree/master/collects/tests/typed-scheme"]{Typed
- Racket testing arrangement} for an example.
+ Racket testing arrangement} for an example. When you create such
+ @tt{failure} tests, you may to disable DrDr's checking like this:
+@nested{@tt{git prop set drdr:command-line "" <file> ...}}
+ This is a Racket-specific @tt{git} command.
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "test-bang"]{Always Test!}

@@ -48,8 +48,8 @@ On occasion, you will find that you are spending a significant amount of
  you will not know for a long time whether the performance implication
  allow a commit to the PLT repository.
 
-@margin-note*{See @hyperlink["http://tmp.barzilay.org/git.txt"]{Eli's
- write-up} on using git in PLT for details.}
+@margin-note*{See @hyperlink["http://tmp.barzilay.org/git.txt"]{Eli
+ Barzilay's write-up} on using git in PLT for details.}
 As a reminder, here are the essential elements of git for working on a
 fork:
 @itemlist[
