@@ -1959,10 +1959,12 @@
                    #f)]
                 [found
                  (λ (text first-pos)
-                   (let* ([last-pos ((if (eq? searching-direction 'forward) + -)
-                                     first-pos (string-length string))]
-                          [start-pos (min first-pos last-pos)]
-                          [end-pos (max first-pos last-pos)])
+                   (define (thunk)
+                     (define last-pos ((if (eq? searching-direction 'forward) + -)
+                                       first-pos (string-length string)))
+                     (define start-pos (min first-pos last-pos))
+                     (define end-pos (max first-pos last-pos))
+                     
                      (send text begin-edit-sequence)
                      (send text set-caret-owner #f 'display)
                      (send text set-position start-pos end-pos #f #f 'local)
@@ -1994,9 +1996,14 @@
                                    end-pos
                                    start-pos))))
                      
-                     (send text end-edit-sequence)
-                     
-                     #t))])
+                     (send text end-edit-sequence))
+                   
+                   (define owner (or (send text get-active-canvas)
+                                     (send text get-canvas)))
+                   (if owner
+                       (send owner call-as-primary-owner thunk)
+                       (thunk))
+                   #t)])
             
             (if (string=? string "")
                 (not-found top-searching-edit #t)
