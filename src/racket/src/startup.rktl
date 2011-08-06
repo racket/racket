@@ -642,7 +642,26 @@
     (lambda (path) path))
 
   (define-values (-module-hash-table-table) (make-weak-hasheq)) ; weak map from namespace to module ht
-  (define-values (-path-cache) (make-weak-hash)) ; weak map from `lib' path + corrent-library-paths to symbols
+
+  ;; weak map from `lib' path + corrent-library-paths to symbols:
+  ;;  We'd like to use a weak `equal?'-based hash table here,
+  ;;  but that's not kill-safe. Instead, we use a non-thread-safe
+  ;;  custom hash table; a race could lose cache entries, but
+  ;;  that's ok.
+  (define CACHE-N 512)
+  (define-values (-path-cache) (make-vector CACHE-N #f)) 
+  (define (path-cache-get p)
+    (let* ([i (modulo (abs (equal-hash-code p)) CACHE-N)]
+           [w (vector-ref -path-cache i)]
+           [l (and w (weak-box-value w))])
+      (and l
+           (let ([a (assoc p l)])
+             (and a (cdr a))))))
+  (define (path-cache-set! p v)
+    (let* ([i (modulo (abs (equal-hash-code p)) CACHE-N)]
+           [w (vector-ref -path-cache i)]
+           [l (and w (weak-box-value w))])
+      (vector-set! -path-cache i (make-weak-box (cons (cons p v) (or l null))))))
   
   (define-values (-loading-filename) (gensym))
   (define-values (-loading-prompt-tag) (make-continuation-prompt-tag 'module-loading))
@@ -748,9 +767,7 @@
                      ;; Non-string result represents an error
                      (cond
                       [(symbol? s)
-                       (or (hash-ref -path-cache
-                                     (cons s (current-library-collection-paths))
-                                     #f)
+                       (or (path-cache-get (cons s (current-library-collection-paths)))
                            (let-values ([(cols file) (split-relative-string (symbol->string s) #f)])
                              (let* ([f-file (if (null? cols)
                                                 "main.rkt"
@@ -763,7 +780,7 @@
                                (build-path p f-file))))]
                       [(string? s)
                        (let* ([dir (get-dir)])
-                         (or (hash-ref -path-cache (cons s dir) #f)
+                         (or (path-cache-get (cons s dir))
                              (let-values ([(cols file) (split-relative-string s #f)])
                                (apply build-path 
                                       dir
@@ -781,9 +798,7 @@
                            (path-ss->rkt (simplify-path s))
                            (list " (a path must be absolute)"))]
                       [(eq? (car s) 'lib)
-                       (or (hash-ref -path-cache
-                                     (cons s (current-library-collection-paths))
-                                     #f)
+                       (or (path-cache-get (cons s (current-library-collection-paths)))
                            (let*-values ([(cols file) (split-relative-string (cadr s) #f)]
                                          [(old-style?) (if (null? (cddr s))
                                                            (and (null? cols)
@@ -898,15 +913,14 @@
                                        (symbol? s)
                                        (and (pair? s)
                                             (eq? (car s) 'lib))))
-                          (hash-set! -path-cache
-                                     (if (string? s)
-                                         (cons s (get-dir))
-                                         (cons s (current-library-collection-paths)))
-                                     (vector filename
-                                             normal-filename
-                                             name
-                                             no-sfx
-                                             modname)))
+                          (path-cache-set! (if (string? s)
+                                               (cons s (get-dir))
+                                               (cons s (current-library-collection-paths)))
+                                           (vector filename
+                                                   normal-filename
+                                                   name
+                                                   no-sfx
+                                                   modname)))
                         ;; Result is the module name:
                         modname))))))])]))
       standard-module-name-resolver))

@@ -186,5 +186,22 @@
     (namespace-attach-module-declaration ns0 ''sample ns1)))
 
 ;; ----------------------------------------
+;; Check that `make-base-empty-namespace' is kill-safe,
+;; which amounts to a test that the module-name resolver
+;; is kill-safe. When the test fails, it probably gets
+;; stuck.
+(let ()
+  (for ([i 100])
+    (let ([th (thread (lambda () 
+                        (let loop ()
+                          (make-base-empty-namespace)
+                          ;;(printf "made\n")
+                          (loop))))])
+      (sleep)
+      ;;(printf "~s\n" i)
+      (kill-thread th)))
+  (test #t namespace? (make-base-empty-namespace)))
+
+;; ----------------------------------------
 
 (report-errs)
