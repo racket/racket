@@ -4723,6 +4723,8 @@ static int arg_count(Scheme_Object *lam, Scheme_Comp_Env *env)
   Scheme_Object *l, *id, *form = lam;
   int cnt = 0;
   DupCheckRecord r;
+
+  lam = scheme_stx_taint_disarm(lam, NULL);
   
   lam = SCHEME_STX_CDR(lam);
   if (!SCHEME_STX_PAIRP(lam)) return -1;
