@@ -14,6 +14,9 @@
 (test #t class? (class object%))
 (syntax-test #'(class object% . 10))
 
+(error-test #'(send 7) (lambda (x) (and (exn:fail:syntax? x) (regexp-match "method" (exn-message x)))))
+(error-test #'(send/apply 7) (lambda (x) (and (exn:fail:syntax? x) (regexp-match "method" (exn-message x)))))
+
 (define (test-init/field init)
   (teval #`(test #t class? (class object% (#,init))))
   (syntax-test #`(class object% (#,init . x)))

@@ -3822,7 +3822,10 @@
                               (flatten-args #'args) #t)))]
           [(form obj name . args)
            (raise-syntax-error
-            #f "method name is not an identifier" stx #'name)])))
+            #f "method name is not an identifier" stx #'name)]
+          [(form obj)
+           (raise-syntax-error
+            #f "expected a method name" stx)])))
     
     (values
      ;; send
