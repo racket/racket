@@ -2,8 +2,10 @@
 
 (require setup/main-collects
          racket/local
-         racket/bool 
+         racket/bool
          racket/block
+         (only racket/function
+               identity)
          (only scheme/base
                build-string
                build-list
@@ -50,8 +52,6 @@
          (rename block begin-with-definitions)
 
          begin-lifted)
-
-(define identity (lambda (x) x))
 
 (define (loop-until start done? next body)
   (let loop ([i start])
