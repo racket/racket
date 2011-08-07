@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide build-expand-context
          generate-expand-context)
@@ -9,6 +9,10 @@
         (cons v c)
         (list v))))
 
-(define (generate-expand-context)
-  (build-expand-context (gensym 'internal-define)))
+(struct in-liberal-define-context ()
+  #:property prop:liberal-define-context #t)
 
+(define (generate-expand-context [liberal-definitions? #f])
+  (build-expand-context (if liberal-definitions?
+                            (in-liberal-define-context)
+                            (gensym 'internal-define))))

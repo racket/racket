@@ -4,7 +4,8 @@
                      syntax/kerncase
                      syntax/boundmap
                      syntax/define
-                     syntax/flatten-begin))
+                     syntax/flatten-begin
+                     syntax/context))
 
 (provide define-package
          package-begin
@@ -141,11 +142,7 @@
                                          stx
                                          exports)])])
          (let* ([def-ctx (syntax-local-make-definition-context)]
-                [ctx (cons (gensym 'intdef)
-                           (let ([orig-ctx (syntax-local-context)])
-                             (if (pair? orig-ctx)
-                                 orig-ctx
-                                 null)))]
+                [ctx (generate-expand-context #t)]
                 [pre-package-id (lambda (id def-ctxes)
                                   (identifier-remove-from-definition-context 
                                    id 

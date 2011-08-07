@@ -388,6 +388,8 @@ extern Scheme_Object *scheme_raise_arity_error_proc;
 extern Scheme_Object *scheme_date;
 #endif
 
+extern Scheme_Object *scheme_liberal_def_ctx_type;
+
 extern Scheme_Object *scheme_module_stx;
 extern Scheme_Object *scheme_begin_stx;
 extern Scheme_Object *scheme_module_begin_stx;

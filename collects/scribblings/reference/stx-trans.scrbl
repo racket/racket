@@ -194,9 +194,8 @@ with an empty context is used, instead.}
 Expands @racket[stx] in the lexical context of the expression
 currently being expanded. The @racket[context-v] argument is used as
 the result of @racket[syntax-local-context] for immediate expansions;
-for a particular @tech{internal-definition context}, generate a unique
-value and @racket[cons] it onto the current result of
-@racket[syntax-local-context] if it is a list.
+a list indicates an @tech{internal-definition context}, and more
+information on the form of the list is below.
 
 When an identifier in @racket[stop-ids] is encountered by the expander
 in a sub-expression, expansions stops for the sub-expression. If
@@ -225,6 +224,17 @@ internal definitions is added to @racket[stx] before it is expanded
 (in reverse order relative to the list). The lexical information is
 also added to the expansion result (because the expansion might
 introduce bindings or references to internal-definition bindings).
+
+For a particular @tech{internal-definition context}, generate a unique
+value and put it into a list for @racket[context-v]. To allow
+@tech{liberal expansion} of @racket[define] forms, the generated value
+should be an instance of a structure with a true value for
+@racket[prop:liberal-define-context]. If the internal-definition
+context is meant to be self-contained, the list for @racket[context-c]
+should contain only the generated value; if the internal-definition
+context is meant to splice into an immediately enclosing context, then
+when @racket[syntax-local-context] produces a list, @racket[cons] the
+generated value onto that list.
 
 @transform-time[]
 
@@ -776,6 +786,24 @@ When an identifier is renamed on import, the result association list
 includes the identifier by its internal name. Use
 @racket[identifier-binding] to obtain more information about the
 identifier.}
+
+@deftogether[(
+@defthing[prop:liberal-define-context struct-type-property?]
+@defproc[(liberal-define-context? [v any/c]) boolean?]
+)]{
+
+An instance of a structure type with a true value for the
+@racket[prop:liberal-define-context] property can be used as an
+element of an @tech{internal-definition context} representation in the
+result of @racket[syntax-local-context] for the second argument of
+@racket[local-expand]. Such a value indicates that the context
+supports @deftech{liberal expansion} of @racket[define] forms into
+potentially multiple @racket[define-values] and
+@racket[define-syntaxes] forms.
+
+The @racket[liberal-define-context?] predicate returns @racket[#t] if
+@arcket[v] is an instance of a structure with a true value for the
+@racket[prop:liberal-define-context] property, @racket[#f] otherwise.}
 
 @; ----------------------------------------------------------------------
 

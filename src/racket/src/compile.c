@@ -5369,7 +5369,8 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
   d[0] = env;
   SCHEME_PTR1_VAL(ctx) = d;
   SCHEME_PTR2_VAL(ctx) = rib;
-  ectx = scheme_make_pair(ctx, scheme_null);
+  ectx = scheme_make_pair(scheme_make_struct_instance(scheme_liberal_def_ctx_type, 0, NULL), 
+                          scheme_null);
   scheme_begin_dup_symbol_check(&r, env);
 
  try_again:

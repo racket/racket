@@ -40,6 +40,7 @@ READ_ONLY Scheme_Object *scheme_recur_symbol;
 READ_ONLY Scheme_Object *scheme_display_symbol;
 READ_ONLY Scheme_Object *scheme_write_special_symbol;
 READ_ONLY Scheme_Object *scheme_app_mark_impersonator_property;
+READ_ONLY Scheme_Object *scheme_liberal_def_ctx_type;;
 
 READ_ONLY static Scheme_Object *location_struct;
 READ_ONLY static Scheme_Object *write_property;
@@ -98,6 +99,8 @@ static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Objec
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self);
 
 static Scheme_Object *make_struct_type(int argc, Scheme_Object *argv[]);
 
@@ -170,6 +173,8 @@ static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv);
 static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_chaperone_property_from_c(Scheme_Object *name);
+
+static Scheme_Object *is_liberal_def_ctx(int argc, Scheme_Object **argv, Scheme_Object *self);
 
 #define PRE_REDIRECTS 2
 
@@ -294,7 +299,13 @@ scheme_init_struct (Scheme_Env *env)
                                                       scheme_struct_property_type);
     scheme_add_global_constant("prop:custom-write", write_property, env);
     scheme_add_global_constant("custom-write?", pred, env);
-    scheme_add_global_constant("custom-write-accessor", access, env);
+
+    a[0] = access;
+    scheme_add_global_constant("custom-write-accessor", 
+                               scheme_make_prim_closure_w_arity(unary_acc, 1, a, 
+                                                                "custom-write-accessor",
+                                                                1, 1),
+                               env);
   }
 
   REGISTER_SO(print_attribute_property);
@@ -310,7 +321,13 @@ scheme_init_struct (Scheme_Env *env)
                                                                 scheme_struct_property_type);
     scheme_add_global_constant("prop:custom-print-quotable", print_attribute_property, env);
     scheme_add_global_constant("custom-print-quotable?", pred, env);
-    scheme_add_global_constant("custom-print-quotable-accessor", access, env);
+
+    a[0] = access;
+    scheme_add_global_constant("custom-print-quotable-accessor", 
+                               scheme_make_prim_closure_w_arity(unary_acc, 1, a, 
+                                                                "custom-print-quotable-accessor",
+                                                                1, 1),
+                               env);
   }
   
   REGISTER_SO(evt_property);
@@ -417,6 +434,27 @@ scheme_init_struct (Scheme_Env *env)
     scheme_checked_proc_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("checked-procedure"),
                                                                              guard);
     scheme_add_global_constant("prop:checked-procedure", scheme_checked_proc_property, env);
+  }
+
+  REGISTER_SO(scheme_liberal_def_ctx_type);
+  {
+    Scheme_Object *a[1], *prop, *pred, *access;
+    
+    a[0] = scheme_intern_symbol("liberal-define-context");
+    prop = make_struct_type_property_from_c(1, a, &pred, &access,
+                                            scheme_struct_property_type);
+    scheme_add_global_constant("prop:liberal-define-context", prop, env);
+
+    a[0] = prop;
+    scheme_add_global_constant("liberal-define-context?", 
+                               scheme_make_prim_closure_w_arity(is_liberal_def_ctx, 1, a, 
+                                                                "liberal-define-context?",
+                                                                1, 1),
+                               env);
+
+    scheme_liberal_def_ctx_type = scheme_make_struct_type_from_string("liberal-define-context", NULL, 0, 
+                                                                      cons(cons(prop, scheme_true), scheme_null),
+                                                                      NULL, 1);
   }
 
   REGISTER_SO(not_free_id_symbol);
@@ -1107,7 +1145,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   memcpy(name, SCHEME_SYM_VAL(argv[0]), len);
   memcpy(name + len, "-accessor", 10);
 
-  v = scheme_make_folding_prim_closure(prop_accessor, 1, a, name, 1, 2, 0);
+  v = scheme_make_prim_closure_w_arity(prop_accessor, 1, a, name, 1, 2);
   ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= (SCHEME_PRIM_IS_STRUCT_OTHER
                                                     | SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER);
   
@@ -1602,6 +1640,13 @@ Scheme_Object *scheme_print_attribute_ref(Scheme_Object *s)
   return scheme_struct_type_property_ref(print_attribute_property, s);
 }
 
+static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self)
+{
+  Scheme_Object *acc = SCHEME_PRIM_CLOSURE_ELS(self)[0];
+
+  return _scheme_apply(acc, argc, argv);
+}
+
 /*========================================================================*/
 /*                  rename and set! transformer properties                */
 /*========================================================================*/
@@ -1786,6 +1831,22 @@ Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv)
   a[1] = argv[3];
   a[2] = argv[4];
   return _scheme_apply(argv[2], 3, a);
+}
+
+/*========================================================================*/
+/*                             liberal-define                             */
+/*========================================================================*/
+
+static Scheme_Object *is_liberal_def_ctx(int argc, Scheme_Object **argv, Scheme_Object *self)
+{
+  Scheme_Object *prop = SCHEME_PRIM_CLOSURE_ELS(self)[0], *val;
+  
+  val = scheme_struct_type_property_ref(prop, argv[0]);
+
+  if (!val || SCHEME_FALSEP(val))
+    return scheme_false;
+  else
+    return scheme_true;
 }
 
 /*========================================================================*/
