@@ -1,12 +1,23 @@
-#lang scheme/gui
+#lang racket/gui
 
-(require mzlib/etc
-         lang/prim
-         htdp/error)
+;; ---------------------------------------------------------------------------------------------------
+;; functions that demonstrate how one and the same function can be used in three different contexts
+
+(require mzlib/etc lang/prim htdp/error)
 
 (provide-higher-order-primitive convert-gui (f2c))
 (provide-higher-order-primitive convert-repl (f2c))
 (provide-higher-order-primitive convert-file (_ f2c _))
+
+;; ---------------------------------------------------------------------------------------------------
+
+(define OUT-ERROR
+  "The conversion function must produce a number; but it produced ~e")
+
+(define CONVERT-FILE-MESSAGE
+  "It appears as if you created the input file with DrRacket. Please use a different text editor")
+
+;; ---------------------------------------------------------------------------------------------------
 
 (define black-pen  (send the-pen-list find-or-create-pen "BLACK" 2 'solid))
 (define red-brush  (send the-brush-list find-or-create-brush "RED" 'solid))
@@ -88,10 +99,6 @@
     (let-values ([(w h a d) (send (get-dc) get-text-extent "100100100")])
       (min-width (+ 4 (inexact->exact w)))
       (min-height (+ 4 (inexact->exact (* 2 h)))))))
-
-;; ------------------------------------------------------------------------
-(define OUT-ERROR
-  "The conversion function must produce a number; but it produced ~e")
 
 ;; ============================================================================
 ;; MODEL
@@ -222,7 +229,7 @@
              (repl))]
           [else (error 'convert "can't happen")])))))
 
-;; ============================================================================
+;; ---------------------------------------------------------------------------------------------------
 
 ;; make-reader-for-f : (number -> number) -> ( -> void)
 ;; make-reader-for-f creates a function that reads numbers from a file
@@ -231,11 +238,14 @@
 ;;         if any of f's results aren't numbers,
 ;;         the function signals an error
 (define (make-reader-for f)
+  (displayln 'convertfile)
   (local ((define (read-until-eof)
             (let ([in (read)])
               (cond
                 [(eof-object? in) (void)]
-                [(number? in) (begin (check-and-print (f in)) (read-until-eof))]
+                [(number? in) 
+                 (check-and-print (f in))
+                 (read-until-eof)]
                 [else (error 'convert "The input must be a number. Given: ~e\n" in)])))
           (define (check-and-print out)
             (cond
@@ -254,6 +264,11 @@
   (check-arg 'convert-file (string? out) "string" "third" out)
   (when (file-exists? out)
     (delete-file out))
-  (with-output-to-file out
-    (lambda () (with-input-from-file in (make-reader-for f)))))
-;  )
+  (with-handlers ((exn:fail:read?
+                   (lambda (x) 
+                     (define message (exn-message x))
+                     (define reader-exception? (regexp-match "#reader" message))
+                     (if reader-exception?
+                         (error 'convert-file CONVERT-FILE-MESSAGE)
+                         (raise x)))))
+    (with-output-to-file out (lambda () (with-input-from-file in (make-reader-for f))))))
