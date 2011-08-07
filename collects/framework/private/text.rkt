@@ -1505,15 +1505,22 @@
         (send new-snip set-style (send snip get-style))
         new-snip))
     
+    ;; todo : (listof (-> void))
+    ;; actions that have happened to this editor, but that
+    ;; have not yet been propogated to the delegate
     (define todo '())
+    
     (define timer (new timer% 
                        [notify-callback
                         (λ ()
-                          (send delegate begin-edit-sequence)
-                          (for ([th (in-list (reverse todo))])
-                            (th))
-                          (send delegate end-edit-sequence)
+                          ;; it should be the case that todo is always '() when the delegate is #f
+                          (when delegate
+                            (send delegate begin-edit-sequence)
+                            (for ([th (in-list (reverse todo))])
+                              (th))
+                            (send delegate end-edit-sequence))
                           (set! todo '()))]))
+    
     (define/private (to-delegate thunk)
       (when delegate
         (send timer stop)
@@ -1524,6 +1531,25 @@
     (inherit get-highlighted-ranges)
     (define/public-final (get-delegate) delegate)
     (define/public-final (set-delegate _d)
+      (set! todo '())
+      
+      (when delegate
+        ;; the delegate may be in a bad state because we've killed the pending todo
+        ;; items; to clear out the bad state, end any edit sequences, and unhighlight
+        ;; any highlighted ranges. The rest of the state is reset if the editor
+        ;; is ever installed as a delegate again (by refresh-delegate)
+        (let loop ()
+          (when (send delegate in-edit-sequence?)
+            (send delegate end-edit-sequence)
+            (loop)))
+        (for ([range (in-list (send delegate get-highlighted-ranges))])
+          (send delegate unhighlight-range
+                (range-start range)
+                (range-end range)
+                (range-color range)
+                (range-caret-space? range)
+                (range-style range))))
+      
       (set! delegate _d)
       (set! linked-snips (if _d
                              (make-hasheq)
