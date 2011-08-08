@@ -1,5 +1,6 @@
 #lang racket/base
 
+#|
 (require 
   (prefix-in macro_ honu/core/private/macro2)
   (rename-in honu/core/private/honu2
@@ -69,4 +70,5 @@
 
 (let ()
   (fake-module-begin #hx(1 honu_plus 1 honu_minus 4 honu_times 8)))
+|#
 |#
