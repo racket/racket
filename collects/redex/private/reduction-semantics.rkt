@@ -1495,8 +1495,7 @@
          (define nts (definition-nts lang stx syn-err-name))
          (define-values (judgment-form-name dup-form-names mode position-contracts clauses)
            (parse-define-judgment-form-body #'body syn-err-name stx))
-         (syntax-property
-          (prune-syntax
+         (define definitions
            #`(begin
                (define-syntax #,judgment-form-name 
                  (judgment-form '#,judgment-form-name '#,mode #'judgment-form-proc #'#,lang #'judgment-form-lws))
@@ -1517,6 +1516,15 @@
                                    [(_ clauses)
                                     (compile-judgment-form-lws (syntax->list #'clauses))]))])
                    (delayed #,clauses)))))
+         (syntax-property
+          (prune-syntax
+           (if (eq? 'top-level (syntax-local-context))
+               ; Introduce the names before using them, to allow
+               ; judgment form definition at the top-level.
+               #`(begin 
+                   (define-syntaxes (judgment-form-proc judgment-form-lws) (values))
+                   #,definitions)
+               definitions))
           'disappeared-use
           (map syntax-local-introduce dup-form-names)))]))
   

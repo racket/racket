@@ -2025,6 +2025,17 @@
                                   })))
     
     (parameterize ([current-namespace (make-base-namespace)])
+      (eval '(require errortrace))
+      (eval '(require redex/reduction-semantics))
+      (eval '(define-language L))
+      (eval '(define-judgment-form L
+               mode : I
+               [(J a)
+                (J b)]
+               [(J b)]))
+      (test (eval '(judgment-holds (J a))) #t))
+    
+    (parameterize ([current-namespace (make-base-namespace)])
       (eval '(require redex/reduction-semantics))
       (eval '(define-language L
                (s a b c)))
