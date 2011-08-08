@@ -45,3 +45,4 @@ setuid on /usr/bin/Xorg
 
 sudo apt-get install postfix
 # Use the Internet site setup
+# Set a relyhost of mail.cs.byu.edu
