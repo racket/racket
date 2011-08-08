@@ -81,7 +81,7 @@
 
 (let ()
   (define-judgment-form lang
-    mode : I O
+    #:mode (id I O)
     [(id e e)])
   (test (render-reduction-relation
          (reduction-relation
@@ -276,7 +276,7 @@
     (n z (s n)))
   
   (define-judgment-form nats
-    mode : I I O
+    #:mode (sum I I O)
     [(sum z n n)]
     [(sum (s n_1) n_2 (s n_3))
      (sum n_1 n_2 n_3)])
@@ -290,7 +290,7 @@
         "judgment-form-rewritten.png")
   
   (define-judgment-form nats
-    mode : I O
+    #:mode (mfw I O)
     [(mfw n_1 n_2)
      (where n_2 (f n_1))])
   
@@ -300,7 +300,7 @@
   (test (render-judgment-form mfw) "judgment-form-metafunction-where.png")
   
   (define-judgment-form nats
-    mode : I O
+    #:mode (nps I O)
     [(nps (name a (s n_1)) n_2)
      (nps z (name n_1 (s (s n_1))))
      (where (name b n_2) z)])
@@ -318,8 +318,8 @@
     (Γ ([x τ] ...)))
   
   (define-judgment-form STLC
-    mode : I I O
-    typeof ⊆ Γ × e × τ
+    #:mode (typeof I I O)
+    #:contract (typeof Γ e τ)
     [(typeof Γ (e_1 e_2) τ)
      (typeof Γ e_1 (τ_2 → τ))
      (typeof Γ e_2 τ_2)]

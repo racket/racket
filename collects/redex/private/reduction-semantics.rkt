@@ -1345,7 +1345,7 @@
          (let ()
            (let*-values ([(contract-name dom-ctcs codom-contracts pats)
                           (split-out-contract orig-stx syn-error-name #'rest relation?)]
-                         [(name _) (defined-name contract-name pats orig-stx)])
+                         [(name _) (defined-name (list contract-name) pats orig-stx)])
              (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
                            [(lhs-for-lw ...) (lhs-lws pats)])
                (with-syntax ([((rhs stuff ...) ...) (if relation?
@@ -1494,7 +1494,7 @@
              [syn-err-name (syntax-e #'def-form-id)])
          (define nts (definition-nts lang stx syn-err-name))
          (define-values (judgment-form-name dup-form-names mode position-contracts clauses)
-           (parse-define-judgment-form-body #'body syn-err-name stx))
+           (parse-judgment-form-body #'body syn-err-name stx))
          (define definitions
            #`(begin
                (define-syntax #,judgment-form-name 
@@ -1528,47 +1528,49 @@
           'disappeared-use
           (map syntax-local-introduce dup-form-names)))]))
   
-  (define (parse-define-judgment-form-body body syn-err-name full-stx)
-    (define-values (mode rest-body)
-      (parse-mode-spec body full-stx))
-    (define-values (declared-form-name contracts clauses)
-      (syntax-case rest-body ()
-        [(form-name . rest-contract+clauses)
-         (identifier? #'form-name)
-         (let-values ([(contracts clauses)
-                       (parse-relation-contract #'rest-contract+clauses syn-err-name full-stx)])
-           (values #'form-name contracts clauses))]
-        [_ (values #f #f (syntax->list rest-body))]))
-    (check-clauses full-stx syn-err-name clauses #t)
-    (check-arity-consistency mode contracts clauses full-stx)
+  (define (parse-judgment-form-body body syn-err-name full-stx)
+    (define-syntax-class pos-mode
+      #:literals (I O)
+      (pattern I)
+      (pattern O))
+    (define-syntax-class mode-spec
+      #:description "mode specification"
+      (pattern (_:id _:pos-mode ...)))
+    (define-syntax-class contract-spec
+      #:description "contract specification"
+      (pattern (_:id _:expr ...)))
+    (define-values (name/mode mode name/contract contract rules)
+      (syntax-parse body #:context full-stx
+        [((~or (~seq #:mode ~! mode:mode-spec)
+               (~seq #:contract ~! contract:contract-spec))
+          ... . rules:expr)
+         (let-values ([(name/mode mode)
+                       (syntax-parse #'(mode ...)
+                         [((name . mode)) (values #'name (syntax->list #'mode))]
+                         [_ (raise-syntax-error 
+                             #f "expected definition to include a mode specification"
+                             full-stx)])]
+                      [(name/ctc ctc)
+                       (syntax-parse #'(contract ...)
+                         [() (values #f #f)]
+                         [((name . contract)) (values #'name (syntax->list #'contract))]
+                         [(_ . dups)
+                          (raise-syntax-error 
+                           syn-err-name "expected at most one contract specification"
+                           #f #f (syntax->list #'dups))])])
+           (values name/mode mode name/ctc ctc #'rules))]))
+    (check-clauses full-stx syn-err-name rules #t)
+    (check-arity-consistency mode contract full-stx)
     (define-values (form-name dup-names)
-      (syntax-case clauses ()
-        [() (raise-syntax-error #f "expected at least one clause after mode" full-stx)]
-        [_ (defined-name declared-form-name clauses full-stx)]))
-    (values form-name dup-names mode contracts clauses))
+      (syntax-case rules ()
+        [() (raise-syntax-error #f "expected at least one rule" full-stx)]
+        [_ (defined-name (list name/mode name/contract) rules full-stx)]))
+    (values form-name dup-names mode contract rules))
   
-  (define (check-arity-consistency mode contracts clauses full-def)
+  (define (check-arity-consistency mode contracts full-def)
     (when (and contracts (not (= (length mode) (length contracts))))
       (raise-syntax-error 
        #f "mode and contract specify different numbers of positions" full-def)))
-  
-  (define (parse-mode-spec body full-stx)
-    (syntax-case body (mode :)
-      [(mode : . rest-body)
-       (let loop ([rest-body #'rest-body]
-                  [pos-modes '()]
-                  [idx 1])
-         (syntax-case rest-body (I O)
-           [(I . more) 
-            (loop #'more (cons 'I pos-modes) (+ 1 idx))]
-           [(O . more)
-            (loop #'more (cons 'O pos-modes) (+ 1 idx))]
-           [_ (values (reverse pos-modes) rest-body)]))]
-      [_ (raise-syntax-error 
-          #f "expected a mode specification after the language declaration"
-          (if (pair? (syntax-e body))
-              (car (syntax-e body))
-              full-stx))]))
   
   (define (lhss-bound-names lhss nts syn-error-name)
     (let loop ([lhss lhss])
@@ -1581,14 +1583,15 @@
             (values (cons names namess)
                     (cons names/ellipses namess/ellipsess))))))
   
-  (define (defined-name declared-name clauses orig-stx)
+  (define (defined-name declared-names clauses orig-stx)
     (with-syntax ([(((used-names _ ...) _ ...) ...) clauses])
       (define-values (the-name other-names)
-        (if declared-name
-            (values declared-name 
-                    (syntax->list #'(used-names ...)))
-            (values (car (syntax->list #'(used-names ...)))
-                    (cdr (syntax->list #'(used-names ...))))))
+        (let ([present (filter values declared-names)])
+          (if (null? present)
+              (values (car (syntax->list #'(used-names ...)))
+                      (cdr (syntax->list #'(used-names ...))))
+              (values (car present) 
+                      (append (cdr present) (syntax->list #'(used-names ...)))))))
       (let loop ([others other-names])
         (cond
           [(null? others) (values the-name other-names)]
@@ -1596,9 +1599,7 @@
            (unless (eq? (syntax-e the-name) (syntax-e (car others)))
              (raise-syntax-error 
               #f
-              (if declared-name
-                  "expected each clause and the contract to use the same name"
-                  "expected each clause to use the same name")
+              "expected the same name in both positions"
               orig-stx
               the-name (list (car others))))
            (loop (cdr others))]))))
@@ -2126,6 +2127,11 @@
             "not bound as a metafunction"
             stx
             #'id)))]))
+
+(define-for-syntax (mode-keyword stx)
+  (raise-syntax-error #f "keyword invalid outside of mode specification" stx))
+(define-syntax I mode-keyword)
+(define-syntax O mode-keyword)
 
 (define-syntax (::= stx)
   (raise-syntax-error #f "cannot be used outside a language definition" stx))
@@ -2720,7 +2726,7 @@
                [else #f]))))
 
 (provide (rename-out [-reduction-relation reduction-relation])
-         --> fresh with ::= ;; macro keywords
+         --> fresh with ::= I O ;; macro keywords
          reduction-relation->rule-names
          extend-reduction-relation
          reduction-relation?

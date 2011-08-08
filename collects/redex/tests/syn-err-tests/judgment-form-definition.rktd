@@ -1,40 +1,75 @@
-(#rx"expected a mode"
- ([bad-def (define-judgment-form syn-err-lang)])
+(#rx"expected an identifier defined by define-language"
+ ([not-lang q])
+ (define-judgment-form not-lang))
+
+(#rx"expected.*I.*or.*O"
+ ([bad-mode q])
+ (define-judgment-form syn-err-lang
+   #:mode (sum I bad-mode O)))
+
+(#rx"expected mode specification"
+ ([bad-spec q])
+ (define-judgment-form syn-err-lang
+   #:mode bad-spec))
+
+(#rx"expected contract specification"
+ ([bad-spec q])
+ (define-judgment-form syn-err-lang
+   #:mode (sum I I O)
+   #:contract bad-spec))
+
+(#rx"expected definition to include a mode specification"
+ ([bad-def (define-judgment-form syn-err-lang
+             #:contract (J)
+             [(J)])])
  bad-def)
-(#rx"expected a mode"
- ([mode-kw mode])
- (define-judgment-form syn-err-lang mode-kw))
-(#rx"expected a clause"
- ([junk 1])
+
+(#rx"expected at most one contract specification"
+ ([dup-spec (J)])
  (define-judgment-form syn-err-lang
-   mode : junk
-   [(q 1)]))
-(#rx"expected at least one clause"
- ([bad-def (define-judgment-form syn-err-lang mode :)])
+  #:mode (J)
+  #:contract (J)
+  #:contract dup-spec))
+
+(#rx"expected at most one contract specification"
+ ([dup-spec1 (J)] [dup-spec2 (J)])
+ (define-judgment-form syn-err-lang
+   #:contract (J)
+   #:mode (J)
+   #:contract dup-spec1
+   #:contract dup-spec2))
+
+(#rx"expected the same name"
+ ([name1 J] [name2 K]) ([name3 J])
+ (define-judgment-form syn-err-lang
+   #:mode (name1)
+   #:contract (name2)
+   [(name3)]))
+
+(#rx"expected the same name"
+ ([name1 J] [name2 K]) ([name3 J])
+ (define-judgment-form syn-err-lang
+   #:mode (name1)
+   #:contract (name3)
+   [(name2)]))
+
+(#rx"expected at least one rule"
+ ([bad-def (define-judgment-form syn-err-lang
+             #:mode (J I)
+             #:contract (J n))])
  bad-def)
-(#rx"expected a pattern to follow"
- ([cross ×])
- (define-judgment-form syn-err-lang
-   mode : I
-   J ⊆ number cross))
-(#rx"use the same name"
- ([name1 J] [name2 K])
- (define-judgment-form syn-err-lang
-   mode : I
-   name1 ⊆ number
-   [(name2 number)]))
 (#rx"malformed premise"
  ([bad-prem (q)])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I
+     #:mode (J I)
      [(J number)
       bad-prem])
    (void)))
 (#rx"different numbers of positions"
  ([bad-def (define-judgment-form syn-err-lang
-             mode : I
-             J ⊆ number × number
+             #:mode (J I)
+             #:contract (J n n)
              [(J number)])])
  bad-def)
 
@@ -42,7 +77,7 @@
  ([unbound number_2])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I O
+     #:mode (J I O)
      [(J number_1 unbound)
       (J number_1 number_1)])
    (void)))
@@ -50,7 +85,7 @@
  ([unbound number_2])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I O
+     #:mode (J I O)
      [(J number_1 number_2)
       (J unbound number_1)])
    (void)))
@@ -58,7 +93,7 @@
  ([unbound number_3])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I O
+     #:mode (J I O)
      [(J number_1 number_2)
       (where number_2 unbound)])
    (void)))
@@ -66,23 +101,23 @@
  ([unbound q])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I O
+     #:mode (J I O)
      [(J number_1 number_2)
       (where number_2 unbound)
       (where (name q number) number_1)])
    (void)))
 (#rx"arity"
- ([bad-conc (J)])
+ ([bad-conc (J)]) ([name J])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I
+     #:mode (name I)
      [bad-conc])
    (void)))
 (#rx"arity"
  ([bad-prem (J)]) ([name J])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I
+     #:mode (name I)
      [(name number)
       bad-prem])
    (void)))
@@ -90,7 +125,7 @@
  ([unq ,(+ 1)])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I
+     #:mode (uses-unquote I)
      [(uses-unquote n)
       (where n unq)])
    (void)))
@@ -98,6 +133,6 @@
  ([unq ,'z])
  (let ()
    (define-judgment-form syn-err-lang
-     mode : I O
+     #:mode (uses-unquote I O)
      [(uses-unquote n unq)])
    (void)))

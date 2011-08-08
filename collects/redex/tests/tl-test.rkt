@@ -1808,7 +1808,7 @@
     
     (let ()
       (define-judgment-form empty-language
-        mode : I O
+        #:mode (R I O)
         [(R a a)]
         [(R a b)])
       (test (apply-reduction-relation
@@ -1893,8 +1893,8 @@
         (n z (s n)))
       
       (define-judgment-form nats
-        mode : I I O
-        sumi ⊆ n × n × n
+        #:mode (sumi I I O)
+        #:contract (sumi n n n)
         [(sumi z n n)]
         [(sumi (s n_1) n_2 (s n_3))
          (sumi n_1 n_2 n_3)])
@@ -1905,8 +1905,8 @@
       (test (judgment-holds (sumi ,'z (s z) (s z))) #t)
       
       (define-judgment-form nats
-        mode : O O I
-        sumo ⊆ n × n × n
+        #:mode (sumo O O I)
+        #:contract (sumo n n n)
         [(sumo z n n)]
         [(sumo (s n_1) n_2 (s n_3))
          (sumo n_1 n_2 n_3)])
@@ -1917,7 +1917,7 @@
                   (term ([n_1 z] [n_2 (s z)]))))
       
       (define-judgment-form nats
-        mode : O O I
+        #:mode (sumo-ls O O I)
         [(sumo-ls (s n_1) n_2 n_3)
          (sumo (s n_1) n_2 n_3)])
       (test (judgment-holds (sumo-ls n_1 n_2 (s z)) ([,'n_1 n_1] [,'n_2 n_2]))
@@ -1927,33 +1927,33 @@
       (test (judgment-holds (sumo-ls z n_2 (s z)) whatever) (list))
       
       (define-judgment-form nats
-        mode : O O I
+        #:mode (sumo-lz O O I)
         [(sumo-lz z n_2 n_3)
          (sumo z n_2 n_3)])
       (test (judgment-holds (sumo-lz n_1 n_2 (s z)) ([,'n_1 n_1] [,'n_2 n_2]))
             (list (term ([n_1 z] [n_2 (s z)]))))
       
       (define-judgment-form nats
-        mode : O I
+        #:mode (member O I)
         [(member n_i (n_0 ... n_i n_i+1 ...))])
       
       (test (judgment-holds (member n (z (s z) z (s (s z)))) n)
             (list (term (s (s z))) (term z) (term (s z)) (term z)))
       
       (define-judgment-form nats
-        mode : I
+        #:mode (has-zero I)
         [(has-zero (n ...))
          (member z (n ...))])
       
       (test (judgment-holds (has-zero ((s z) z (s (s z))))) #t)
       
       (define-judgment-form nats
-        mode : I
+        #:mode (le2 I)
         [(le2 n)
          (le (add2 n) (s (s (s (s z)))))])
       
       (define-judgment-form nats
-        mode : I I
+        #:mode (le I I)
         [(le z n)]
         [(le (s n_1) (s n_2))
          (le n_1 n_2)])
@@ -1966,8 +1966,8 @@
       (test (judgment-holds (le2 (s (s (s z))))) #f)
       
       (define-judgment-form nats
-        mode : I O
-        uses-add2 ⊆ n × n
+        #:mode (uses-add2 I O)
+        #:contract (uses-add2 n n)
         [(uses-add2 n_1 n_2)
          (sumo n_2 n_3 n_1)
          (where n_2 (add2 n_3))])
@@ -2006,7 +2006,7 @@
                                   ['z #t]
                                   [`(s ,n) (f n)])])
                       (define-judgment-form nats
-                        mode : I I
+                        #:mode (ext-trace I I)
                         [(ext-trace z (side-condition n (f (term n))))]
                         [(ext-trace (s n_1) n_2)
                          (ext-trace n_1 n_2)])
@@ -2029,7 +2029,7 @@
       (eval '(require redex/reduction-semantics))
       (eval '(define-language L))
       (eval '(define-judgment-form L
-               mode : I
+               #:mode (J I)
                [(J a)
                 (J b)]
                [(J b)]))
@@ -2040,8 +2040,8 @@
       (eval '(define-language L
                (s a b c)))
       (eval '(define-judgment-form L
-               mode : I O
-               ctc-fail ⊆ s × s
+               #:mode (ctc-fail I O)
+               #:contract (ctc-fail s s)
                [(ctc-fail a q)]
                [(ctc-fail b s)
                 (ctc-fail q s)]

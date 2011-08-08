@@ -1069,17 +1069,17 @@ legtimate inputs according to @racket[metafunction-name]'s contract,
 and @racket[#f] otherwise.
 }
 
-@defform/subs[#:literals (mode : I O ⊂ ⊆ × x where)
+@defform/subs[#:literals (I O where)
              (define-judgment-form language
-               mode-spec
-               maybe-contract
-               [conclusion premise ...] ...)
-             ([mode-spec (code:line mode : use ...)]
-              [use I
-                   O]
-              [maybe-contract (code:line)
-                              (code:line form-id ⊂ @#,ttpattern x ... x @#,ttpattern)
-                              (code:line form-id ⊆ @#,ttpattern × ... × @#,ttpattern)]
+               option ...
+               rule ...)
+             ([option mode-spec
+                      contract-spec]
+              [mode-spec (code:line #:mode (form-id pos-use ...))]
+              [contract-spec (code:line #:contract (form-id @#,ttpattern ...))]
+              [pos-use I
+                       O]
+              [rule [conclusion premise ...]]
               [conclusion (form-id pat/term ...)]
               [premise (judgment-form-id pat/term ...)
                        (where @#,ttpattern @#,tttterm)]
@@ -1088,11 +1088,11 @@ and @racket[#f] otherwise.
 Defines @racket[form-id] as a relation on terms via a set of inference rules.
 Each rule must be such that its premises can be evaluated left-to-right
 without ``guessing'' values for any of their pattern variables. Redex checks this
-property using the @racket[mode-spec] declaration, which partitions positions
+property using the mandatory @racket[mode-spec] declaration, which partitions positions
 into inputs @racket[I] and outputs @racket[O]. Output positions in conclusions
 and input positions in premises must be @|tttterm|s with no uses of 
 @racket[unquote]; input positions in conclusions and output positions in 
-premises must be @|ttpattern|s. When the optional @racket[relation-contract] 
+premises must be @|ttpattern|s. When the optional @racket[contract-spec] 
 declaration is present, Redex dynamically checks that the terms flowing through
 these positions match the provided patterns, raising an exception recognized by 
 @racket[exn:fail:redex] if not.
@@ -1103,8 +1103,8 @@ For example, the following defines addition on natural numbers:
        (define-language nats
          (n z (s n)))
        (define-judgment-form nats
-         mode : I I O
-         sum ⊆ n × n × n
+         #:mode (sum I I O)
+         #:contract (sum n n n)
          [(sum z n n)]
          [(sum (s n_1) n_2 (s n_3))
           (sum n_1 n_2 n_3)])]
@@ -1130,8 +1130,8 @@ to compute all pairs with a given sum.
 @interaction[
 #:eval redex-eval
        (define-judgment-form nats
-         mode : O O I
-         sumr ⊆ n × n × n
+         #:mode (sumr O O I)
+         #:contract (sumr n n n)
          [(sumr z n n)]
          [(sumr (s n_1) n_2 (s n_3))
           (sumr n_1 n_2 n_3)])
@@ -1142,8 +1142,8 @@ and @racket[define-metafunction].
 @interaction[
 #:eval redex-eval
        (define-judgment-form nats
-         mode : I I
-         le ⊆ n × n
+         #:mode (le I I)
+         #:contract (le n n)
          [(le z n)]
          [(le (s n_1) (s n_2))
           (le n_1 n_2)])
@@ -1152,8 +1152,8 @@ and @racket[define-metafunction].
          [(pred z) #f]
          [(pred (s n)) n])
        (define-judgment-form nats
-         mode : I I
-         gt ⊆ n × n
+         #:mode (gt I I)
+         #:contract (gt n n)
          [(gt n_1 n_2)
           (where n_3 (pred n_1))
           (le n_2 n_3)])
@@ -1167,13 +1167,13 @@ non-termination. For example, consider the following definitions:
        (define-language vertices
          (v a b c))
        (define-judgment-form vertices
-         mode : I O
-         edge ⊆ v × v
+         #:mode (edge I O)
+         #:contract (edge v v)
          [(edge a b)]
          [(edge b c)])
        (define-judgment-form vertices
-         mode : I I
-         path ⊆ v × v
+         #:mode (path I I)
+         #:contract (path v v)
          [(path v v)]
          [(path v_1 v_2)
           (path v_2 v_1)]
@@ -1193,10 +1193,23 @@ form, produces a list of terms by instantiating the supplied term template with
 each satisfying assignment of pattern variables. 
 See @racket[define-judgment-form] for examples.
 }                                     
-                                     
-@defform[(define-relation language
-          relation-contract
-          [(name @#,ttpattern ...) @#,tttterm ...] ...)]{
+
+@defidform[I]{
+Recognized specially within @racket[define-judgment-form], the @racket[I] keyword
+is an error elsewhere.
+} 
+@defidform[O]{
+Recognized specially within @racket[define-judgment-form], the @racket[O] keyword
+is an error elsewhere.
+}
+
+@defform/subs[#:literals (⊂ ⊆ × x)
+              (define-relation language
+                relation-contract
+                [(name @#,ttpattern ...) @#,tttterm ...] ...)
+              ([relation-contract (code:line)
+                                  (code:line form-id ⊂ @#,ttpattern x ... x @#,ttpattern)
+                                  (code:line form-id ⊆ @#,ttpattern × ... × @#,ttpattern)])]{
 Similar to @racket[define-judgment-form] but suitable only when every position
 is an input. There is no associated form corresponding to 
 @racket[judgment-holds]; querying the result uses the same syntax as 
