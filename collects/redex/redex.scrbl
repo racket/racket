@@ -1224,7 +1224,12 @@ Similar to @racket[define-judgment-form] but suitable only when every position
 is an input. There is no associated form corresponding to 
 @racket[judgment-holds]; querying the result uses the same syntax as 
 metafunction application.
-                  
+
+The contract specification for a relation restricts the patterns that can
+be used as input to a relation. For each argument to the relation, there
+should be a single pattern, using @racket[x] or @racket[×] to separate
+the argument contracts.
+
 @examples[
 #:eval redex-eval
        (define-language types
