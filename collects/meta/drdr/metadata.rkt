@@ -34,8 +34,6 @@
 (define (path-responsible a-path)
   (get-prop a-path 'responsible #:as-string? #t))
 
-; XXX Document on help page
-; XXX Use in computing "changes?"
 (define (path-random? a-path)
   (get-prop a-path 'drdr:random))
 

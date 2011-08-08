@@ -539,7 +539,7 @@
                                                           and "tests" every push to the Racket code base.}
                                    
                                    @h1{What kind of server?}
-                                   @p{A 64-bit Linux 2.6.32-25 server running Ubuntu 10.04.1 LTS with @,(number->string (number-of-cpus)) cores.}
+                                   @p{A 64-bit Linux 2.6.32-24-server running Ubuntu 10.04.3 LTS with @,(number->string (number-of-cpus)) cores.}
                                    
                                    @h1{How is the build run?}
                                    @p{Every push is built from a clean checkout with the standard separate build directory command sequence, except that @code{make}
@@ -572,7 +572,7 @@
                                    @p{From the data collected from the run, DrDr computes the total test time and whether output has "changed" since the last time the file was tested.}
                                    
                                    @h1{What output patterns constitute a "change"?}
-                                   @p{At the most basic level, if the bytes are different. However, there are two subtleties. First, DrDr knows to ignore the result of @code{time}. Second, the standard output and standard error streams are compared independently. The difference display pages present changed lines with a @span[([class "difference"])]{unique background}.}
+                                   @p{At the most basic level, if the bytes are different. However, there are a few subtleties. First, DrDr knows to ignore the result of @code{time}. Second, the standard output and standard error streams are compared independently. Finally, if the file has the @code{drdr:random} property, then changes do not affect any reporting DrDr would otherwise perform. The difference display pages present changed lines with a @span[([class "difference"])]{unique background}.}
                                    
                                    @h1{How is this site organized?}
                                    @p{Each file's test results are displayed on a separate page, with a link to the previous push on changes. All the files in a directory are collated and indexed recursively. On these pages each column is sortable and each row is clickable. The root of a push also includes the git commit messages with links to the test results of the modified files. The top DrDr page displays the summary information for all the tested pushes.}
