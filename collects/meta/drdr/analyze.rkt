@@ -164,54 +164,56 @@
           (not (path-random? (build-path (revision-trunk-dir cur-rev) (substring (path->string* p) 1)))))
         (not (symbol=? id 'changes))))))
   (define mail-recipients
-    (append (if include-committer?
-                (list committer)
-                empty)
-            responsibles)) 
-  (unless (or (andmap zero? nums)
-              (empty? mail-recipients))
-    (send-mail-message "drdr@racket-lang.org"
-                       (format "[DrDr] R~a ~a"
-                               cur-rev totals)
-                       (map (curry format "~a@racket-lang.org")
-                            mail-recipients)                        
-                       empty empty
-                       (flatten
-                        (list (format "DrDr has finished building push #~a after ~a."
-                                      cur-rev
-                                      (format-duration-ms abs-dur))
-                              ""
-                              (format "http://drdr.racket-lang.org/~a/" 
-                                      cur-rev)
-                              ""
-                              (if include-committer?
-                                  (list
-                                   (format "~a:" committer)
-                                   (format "You are receiving this email because the DrDr test of push #~a\n(which you did) contained a NEW condition that may need inspecting." cur-rev)
-                                   (let ([diff-smash (responsible-ht->status-ht diff)])
-                                     (for/list ([(id paths) (in-hash diff-smash)]
-                                                #:when (not (symbol=? id 'changes)))
-                                       (if (empty? paths)
-                                           empty
-                                           (list (format "  ~a" id)
-                                                 (for/list ([f (in-list paths)]
-                                                            [i (in-range ERROR-LIMIT)])
-                                                   (format "    ~a" (path->url f)))
-                                                 ""))))
-                                   "")
-                                  empty)
-                              (for/list ([r (in-list responsibles)])
-                                (list* (format "~a:" r)
-                                       "You are receiving this email because a file you are responsible for\nhas a condition that may need inspecting."
-                                       (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
-                                                  #:when (not (symbol=? id 'changes)))
-                                         (list (format "  ~a:" id)
-                                               (for/list ([f (in-list files)]
-                                                          [i (in-range ERROR-LIMIT)])
-                                                 (format "    ~a" (path->url f)))
-                                               ""))
-                                       ""))))))
+    (remove-duplicates
+     (append (if include-committer?
+                 (list committer)
+                 empty)
+             responsibles)))
   
+  ; Send messages to everyone...
+  (unless (andmap zero? nums)
+    (for ([r (in-list mail-recipients)])
+      (send-mail-message 
+       "drdr@racket-lang.org"
+       (format "[DrDr] R~a ~a"
+               cur-rev totals)
+       (list (format "~a@racket-lang.org" r))
+       empty empty
+       (flatten
+        (list (format "DrDr has finished building push #~a after ~a."
+                      cur-rev
+                      (format-duration-ms abs-dur))
+              ""
+              (format "http://drdr.racket-lang.org/~a/" 
+                      cur-rev)
+              ""
+              (if (and include-committer? (equal? committer r))
+                  (list
+                   (format "Push #~a (which you did) contained a NEW condition that may need inspecting." cur-rev)
+                   (let ([diff-smash (responsible-ht->status-ht diff)])
+                     (for/list ([(id paths) (in-hash diff-smash)]
+                                #:when (not (symbol=? id 'changes)))
+                       (if (empty? paths)
+                           empty
+                           (list (format "  ~a" id)
+                                 (for/list ([f (in-list paths)]
+                                            [i (in-range ERROR-LIMIT)]
+                                            #:unless (path-random? f))
+                                   (format "    ~a" (path->url f)))
+                                 ""))))
+                   "")
+                  empty)
+              (list* "A file you are responsible for has a condition that may need inspecting."
+                     (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
+                                #:when (not (symbol=? id 'changes)))
+                       (list (format "  ~a:" id)
+                             (for/list ([f (in-list files)]
+                                        [i (in-range ERROR-LIMIT)])
+                               (format "    ~a" (path->url f)))
+                             ""))
+                     ""))))))
+  
+  ; Send message to IRC
   (send-mail-message "drdr"
                      (format "http://drdr.racket-lang.org/~a/" 
                              cur-rev)
