@@ -284,7 +284,7 @@ combination of @racket[choice-evt] involving an event from
 
 @defproc[(handle-evt [evt (and/c evt? (not/c handle-evt?))]
                      [handle (any/c . -> . any)]) 
-         evt?]{
+         handle-evt?]{
 
 Like @racket[wrap], except that @racket[handle] is called in tail
 position with respect to the synchronization request, and without
