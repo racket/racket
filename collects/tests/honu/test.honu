@@ -1,8 +1,5 @@
 #lang honu
 
-1
-
-/*
 /*
 function test(t, a, b){
   if (a != b){
@@ -39,4 +36,3 @@ test1();
 test2(5, 9);
 
 // function(z){ print(z) }(12)
-*/
