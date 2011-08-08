@@ -64,7 +64,7 @@
                   #:servlet-path string?
                   #:servlet-regexp regexp?
                   #:log-file (or/c false/c path-string?)
-                  #:log-format log:log-format/c)
+                  #:log-format (or/c log:log-format/c log:format-req/c))
                  . ->* .
                  void)])
 
@@ -145,7 +145,10 @@
          [log-format 'apache-default])
   (define (dispatcher sema)
     (dispatcher-sequence
-     (and log-file (log:make #:format (log:log-format->format log-format)
+     (and log-file (log:make #:format 
+                             (if (symbol? log-format)
+                                 (log:log-format->format log-format)
+                                 log-format)
                              #:log-path log-file))
      (and quit? (filter:make #rx"^/quit$" (quit-server sema)))
      (dispatch/servlet 
