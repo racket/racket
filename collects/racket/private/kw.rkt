@@ -231,6 +231,7 @@
           "keyword list: ~e; does not match the length of the value list: "
           kws)
          kw-vals))
+      
       (let ([normal-args
              (let loop ([normal-argss (cons normal-args normal-argss)][pos 3])
                (if (null? (cdr normal-argss))
@@ -786,7 +787,8 @@
         (syntax-case rhs ()
           [(lam-id . _)
            (and (let ([ctx (syntax-local-context)])
-                  (or (memq ctx '(top-level module module-begin))
+                  (or (and (memq ctx '(module module-begin))
+                           (compile-enforce-module-constants))
                       (and (list? ctx)
                            (andmap liberal-define-context? ctx))))
                 (identifier? #'lam-id)
@@ -808,7 +810,7 @@
                                 #,(quasisyntax/loc stx 
                                     (define unpack #,kwimpl))
                                 #,(quasisyntax/loc stx 
-                                    (define proc (let ([#,id #,wrap]) #,id))))))))]
+                                    (define proc #,wrap)))))))]
           [_ (plain rhs)]))))
   
   ;; ----------------------------------------
@@ -837,9 +839,10 @@
                     (check-arity (- (length l) 2))
                     (let ([args (cdr (syntax-e stx))])
                       (syntax-protect
-                       (or (generate-direct (cdr (if (pair? args) args (syntax-e args))) null)
-                           (quasisyntax/loc stx
-                             (#%app . #,args))))))))
+                       (generate-direct 
+                        (cdr (if (pair? args) args (syntax-e args))) null
+                        (quasisyntax/loc stx
+                          (#%app . #,args))))))))
           ;; keyword app (maybe)
           (let ([exprs
                  (let ([kw-ht (make-hasheq)])
@@ -892,16 +895,17 @@
                      (syntax-protect
                       (quasisyntax/loc stx
                         (let #,(reverse bind-accum)
-                          #,(or (generate-direct (cdr args) sorted-kws)
-                                (quasisyntax/loc stx
-                                  ((checked-procedure-check-and-extract struct:keyword-procedure
-                                                                        #,(car args)
-                                                                        keyword-procedure-extract 
-                                                                        '#,(map car sorted-kws) 
-                                                                        #,cnt)
-                                   '#,(map car sorted-kws)
-                                   (list #,@(map cdr sorted-kws))
-                                   . #,(cdr args))))))))]
+                          #,(generate-direct 
+                             (cdr args) sorted-kws
+                             (quasisyntax/loc stx
+                               ((checked-procedure-check-and-extract struct:keyword-procedure
+                                                                     #,(car args)
+                                                                     keyword-procedure-extract 
+                                                                     '#,(map car sorted-kws) 
+                                                                     #,cnt)
+                                '#,(map car sorted-kws)
+                                (list #,@(map cdr sorted-kws))
+                                . #,(cdr args))))))))]
                   [(keyword? (syntax-e (car l)))
                    (loop (cddr l)
                          (cdr ids)
@@ -920,115 +924,122 @@
                               kw-pairs)])))))))
 
   (define-syntax (new-app stx)
-    (parse-app stx void (lambda (args kw-args) #f)))
+    (parse-app stx void (lambda (args kw-args orig) orig)))
 
   (define-for-syntax (make-keyword-syntax impl-id wrap-id n-req n-opt rest? req-kws all-kws)
-    (lambda (stx)
-      (syntax-case stx ()
-        [(self arg ...)
-         (let ([warning
-                (lambda (msg)
-                  (let ([l (current-logger)])
-                    (when (log-level? l 'warning)
-                      (log-message
-                       l
-                       'warning
-                       (format "~aexpanson detects ~a for: ~a"
-                               (let ([s (syntax-source stx)]
-                                     [l (syntax-line stx)]
-                                     [c (syntax-column stx)]
-                                     [p (syntax-position stx)])
-                                 (if s
-                                     (if l
-                                         (format "~a:~a:~a: " s l c)
-                                         (format "~a:::~a: " s l p))
-                                     ""))
-                               msg
-                               (syntax-e #'self))
-                       (current-continuation-marks)))))])
-           (if (free-identifier=? #'new-app (datum->syntax stx '#%app))
-               (parse-app (datum->syntax #f (cons #'new-app stx) stx)
-                          (lambda (n)
-                            (when (or (n . < . n-req)
-                                      (and (not rest?)
-                                           (n . > . (+ n-req n-opt))))
-                              (printf "~s\n" (list n n-req n-opt))
-                              (warning "wrong number of by-position arguments")))
-                          (lambda (args kw-args)
-                            (let* ([args (syntax->list (datum->syntax #f args))]
-                                   [n (length args)])
-                              (and (not (or (n . < . n-req)
-                                            (and (not rest?)
-                                                 (n . > . (+ n-req n-opt)))))
-                                   (let loop ([kw-args kw-args] [req-kws req-kws] [all-kws all-kws])
-                                     (cond
-                                      [(null? kw-args) 
-                                       (or (null? req-kws)
-                                           (and
-                                            (warning
-                                             (format "missing required keyword ~a" (car req-kws)))
-                                            #f))]
-                                      [else (let* ([kw (syntax-e (caar kw-args))]
-                                                   [all-kws (let loop ([all-kws all-kws])
-                                                              (cond
-                                                               [(null? all-kws) null]
-                                                               [(keyword<? (car all-kws) kw)
-                                                                (loop (cdr all-kws))]
-                                                               [else all-kws]))])
-                                              (cond
-                                               [(or (null? all-kws)
-                                                    (not (eq? kw (car all-kws))))
-                                                (warning
-                                                 (format "keyword ~a that is not accepted" kw))
-                                                #f]
-                                               [(and (pair? req-kws)
-                                                     (eq? kw (car req-kws)))
-                                                (loop (cdr kw-args) (cdr req-kws) (cdr all-kws))]
-                                               [(and (pair? req-kws)
-                                                     (keyword<? (car req-kws) (car all-kws)))
-                                                (warning
-                                                 (format "missing required keyword ~a" (car req-kws)))
-                                                #f]
-                                               [else
-                                                (loop (cdr kw-args) req-kws (cdr all-kws))]))]))
-                                   (quasisyntax/loc stx
-                                     (#,impl-id 
-                                      ;; keyword arguments:
-                                      #,@(let loop ([kw-args kw-args] [req-kws req-kws] [all-kws all-kws])
-                                           (cond
-                                            [(null? all-kws) null]
-                                            [(and (pair? kw-args)
-                                                  (eq? (syntax-e (caar kw-args)) (car all-kws)))
-                                             (if (and (pair? req-kws)
-                                                      (eq? (car req-kws) (car all-kws)))
-                                                 (cons (cdar kw-args) 
-                                                       (loop (cdr kw-args) (cdr req-kws) (cdr all-kws)))
-                                                 (list* (cdar kw-args) 
-                                                        #'#t
-                                                        (loop (cdr kw-args) req-kws (cdr all-kws))))]
-                                            [else
-                                             (list* #'#f
-                                                    #'#f
-                                                    (loop kw-args req-kws (cdr all-kws)))]))
-                                      ;; required arguments:
-                                      #,@(let loop ([i n-req] [args args])
-                                           (if (zero? i)
-                                               null
-                                               (cons (car args)
-                                                     (loop (sub1 i) (cdr args)))))
-                                      ;; optional arguments:
-                                      #,@(let loop ([i n-opt] [args (list-tail args n-req)])
-                                           (cond
-                                            [(zero? i) null]
-                                            [(null? args) (list* #'#f #'#f (loop (sub1 i) null))]
-                                            [else
-                                             (list* (car args) #'#t (loop (sub1 i) (cdr args)))]))
-                                      ;; rest args:
-                                      #,@(if rest?
-                                             #`((list #,@(list-tail args (min (length args) (+ n-req n-opt)))))
-                                             null)))))))
-               (datum->syntax stx (cons wrap-id #'(arg ...)) stx stx)))]
-        [_ wrap-id])))
+    (make-set!-transformer
+     (lambda (stx)
+       (syntax-case stx (set!)
+         [(set! self rhs)
+          (quasisyntax/loc stx (set! #,wrap-id rhs))]
+         [(self arg ...)
+          (let ([warning
+                 (lambda (msg)
+                   (let ([l (current-logger)])
+                     (when (log-level? l 'warning)
+                       (log-message
+                        l
+                        'warning
+                        (format "~aexpanson detects ~a for: ~a"
+                                (let ([s (syntax-source stx)]
+                                      [l (syntax-line stx)]
+                                      [c (syntax-column stx)]
+                                      [p (syntax-position stx)])
+                                  (if s
+                                      (if l
+                                          (format "~a:~a:~a: " s l c)
+                                          (format "~a:::~a: " s l p))
+                                      ""))
+                                msg
+                                (syntax-e #'self))
+                        (current-continuation-marks)))))])
+            (if (free-identifier=? #'new-app (datum->syntax stx '#%app))
+                (parse-app (datum->syntax #f (cons #'new-app stx) stx)
+                           (lambda (n)
+                             (when (or (n . < . n-req)
+                                       (and (not rest?)
+                                            (n . > . (+ n-req n-opt))))
+                               (printf "~s\n" (list n n-req n-opt))
+                               (warning "wrong number of by-position arguments")))
+                           (lambda (args kw-args orig)
+                             (let* ([args (syntax->list (datum->syntax #f args))]
+                                    [n (length args)])
+                               (or
+                                (and (not (or (n . < . n-req)
+                                              (and (not rest?)
+                                                   (n . > . (+ n-req n-opt)))))
+                                     (let loop ([kw-args kw-args] [req-kws req-kws] [all-kws all-kws])
+                                       (cond
+                                        [(null? kw-args) 
+                                         (or (null? req-kws)
+                                             (and
+                                              (warning
+                                               (format "missing required keyword ~a" (car req-kws)))
+                                              #f))]
+                                        [else (let* ([kw (syntax-e (caar kw-args))]
+                                                     [all-kws (let loop ([all-kws all-kws])
+                                                                (cond
+                                                                 [(null? all-kws) null]
+                                                                 [(keyword<? (car all-kws) kw)
+                                                                  (loop (cdr all-kws))]
+                                                                 [else all-kws]))])
+                                                (cond
+                                                 [(or (null? all-kws)
+                                                      (not (eq? kw (car all-kws))))
+                                                  (warning
+                                                   (format "keyword ~a that is not accepted" kw))
+                                                  #f]
+                                                 [(and (pair? req-kws)
+                                                       (eq? kw (car req-kws)))
+                                                  (loop (cdr kw-args) (cdr req-kws) (cdr all-kws))]
+                                                 [(and (pair? req-kws)
+                                                       (keyword<? (car req-kws) (car all-kws)))
+                                                  (warning
+                                                   (format "missing required keyword ~a" (car req-kws)))
+                                                  #f]
+                                                 [else
+                                                  (loop (cdr kw-args) req-kws (cdr all-kws))]))]))
+                                     (quasisyntax/loc stx
+                                       (if (variable-reference-constant? (#%variable-reference #,wrap-id))
+                                           (#,impl-id 
+                                            ;; keyword arguments:
+                                            #,@(let loop ([kw-args kw-args] [req-kws req-kws] [all-kws all-kws])
+                                                 (cond
+                                                  [(null? all-kws) null]
+                                                  [(and (pair? kw-args)
+                                                        (eq? (syntax-e (caar kw-args)) (car all-kws)))
+                                                   (if (and (pair? req-kws)
+                                                            (eq? (car req-kws) (car all-kws)))
+                                                       (cons (cdar kw-args) 
+                                                             (loop (cdr kw-args) (cdr req-kws) (cdr all-kws)))
+                                                       (list* (cdar kw-args) 
+                                                              #'#t
+                                                              (loop (cdr kw-args) req-kws (cdr all-kws))))]
+                                                  [else
+                                                   (list* #'#f
+                                                          #'#f
+                                                          (loop kw-args req-kws (cdr all-kws)))]))
+                                            ;; required arguments:
+                                            #,@(let loop ([i n-req] [args args])
+                                                 (if (zero? i)
+                                                     null
+                                                     (cons (car args)
+                                                           (loop (sub1 i) (cdr args)))))
+                                            ;; optional arguments:
+                                            #,@(let loop ([i n-opt] [args (list-tail args n-req)])
+                                                 (cond
+                                                  [(zero? i) null]
+                                                  [(null? args) (list* #'#f #'#f (loop (sub1 i) null))]
+                                                  [else
+                                                   (list* (car args) #'#t (loop (sub1 i) (cdr args)))]))
+                                            ;; rest args:
+                                            #,@(if rest?
+                                                   #`((list #,@(list-tail args (min (length args) (+ n-req n-opt)))))
+                                                   null))
+                                           #,orig)))
+                                orig))))
+                (datum->syntax stx (cons wrap-id #'(arg ...)) stx stx)))]
+         [_ wrap-id]))))
   
   ;; Checks given kws against expected. Result is
   ;; (values missing-kw extra-kw), where both are #f if

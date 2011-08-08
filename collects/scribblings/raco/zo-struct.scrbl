@@ -426,11 +426,14 @@ structures that are produced by @racket[zo-parse] and consumed by
   After each expression in @racket[seq] is evaluated, the stack is
   restored to its depth from before evaluating the expression.}
 
-@defstruct+[(varref expr) ([toplevel toplevel?] [dummy toplevel?])]{
-  Represents a @racket[#%variable-reference] form. The @racket[dummy] field
+@defstruct+[(varref expr) ([toplevel (or/c toplevel? #t)] 
+                           [dummy (or/c toplevel? #f)])]{
+  Represents a @racket[#%variable-reference] form. The @racket[toplevel]
+  field is @racket[#t] if the original reference was to a constant local
+  binding. The @racket[dummy] field
   accesses a variable bucket that strongly references its namespace (as
   opposed to a normal variable bucket, which only weakly references its
-  namespace).}
+  namespace); it can be @racket[#f].}
 
 @defstruct+[(assign expr)
             ([id toplevel?]

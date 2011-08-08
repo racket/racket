@@ -1334,11 +1334,11 @@ introduces @racketidfont{#%top} identifiers.
            (#%variable-reference)]]{
 
 Produces an opaque @deftech{variable reference} value representing the
-@tech{location} of @racket[id], which must be bound as a @tech{top-level
-variable} or @tech{module-level variable}. If no @racket[id] is
-supplied, the resulting value refers to an ``anonymous'' variable
-defined within the enclosing context (i.e., within the enclosing
-module, or at the top level if the form is not inside a module).
+@tech{location} of @racket[id], which must be bound as a variable. If
+no @racket[id] is supplied, the resulting value refers to an
+``anonymous'' variable defined within the enclosing context (i.e.,
+within the enclosing module, or at the top level if the form is not
+inside a module).
 
 A @tech{variable reference} can be used with
 @racket[variable-reference->empty-namespace],
@@ -2009,6 +2009,11 @@ At the top level, the top-level binding for @racket[id] is created after
 evaluating @racket[expr], if it does not exist already, and the
 top-level mapping of @racket[id] (in the @techlink{namespace} linked
 with the compiled definition) is set to the binding at the same time.
+
+In a context that allows @tech{liberal expansion} of @racket[define],
+@racket[id] is bound as syntax if @racket[expr] is an immediate
+@racket[lambda] form with keyword arguments or @racket[args] include
+keyword arguments.
 
 @defexamples[
 (define x 10)

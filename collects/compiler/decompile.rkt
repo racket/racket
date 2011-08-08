@@ -259,7 +259,9 @@
     [(struct toplevel (depth pos const? ready?))
      (decompile-tl expr globs stack closed #f)]
     [(struct varref (tl dummy))
-     `(#%variable-reference ,(decompile-tl tl globs stack closed #t))]
+     `(#%variable-reference ,(if (eq? tl #t)
+                                 '<constant-local>
+                                 (decompile-tl tl globs stack closed #t)))]
     [(struct topsyntax (depth pos midpt))
      (list-ref/protect (glob-desc-vars globs) (+ midpt pos) 'topsyntax)]
     [(struct primval (id))

@@ -84,6 +84,7 @@ static int optimize_info_is_ready(Optimize_Info *info, int pos);
 static void optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use);
 static Scheme_Object *optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
                                            int once_used_ok, int context, int *potential_size, int *_mutated);
+static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos, int *is_mutated);
 static void optimize_info_used_top(Optimize_Info *info);
 
 static void optimize_mutated(Optimize_Info *info, int pos);
@@ -1994,6 +1995,20 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     }
   }
 
+  if (SAME_OBJ(scheme_varref_const_p_proc, app->rator)) {
+    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_varref_form_type)) {
+      Scheme_Object *var = SCHEME_PTR1_VAL(app->rand);
+      if (SAME_OBJ(var, scheme_true)) {
+        return scheme_true;
+      } else if (SAME_OBJ(var, scheme_false)) {
+        return scheme_false;
+      } else if (scheme_compiled_propagate_ok(var, info)) {
+        /* can propagate => is a constant */
+        return scheme_true;
+      }
+    }
+  }
+
   if ((SAME_OBJ(scheme_values_func, app->rator)
        || SAME_OBJ(scheme_list_star_proc, app->rator))
       && (scheme_omittable_expr(app->rand, 1, -1, 0, info, -1)
@@ -2753,7 +2768,16 @@ static Scheme_Object *set_shift(Scheme_Object *data, int delta, int after_depth)
 static Scheme_Object *
 ref_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
-  optimize_info_used_top(info);  
+  Scheme_Object *v;
+
+  optimize_info_used_top(info);
+
+  v = SCHEME_PTR1_VAL(data);
+  if (SAME_TYPE(SCHEME_TYPE(v), scheme_local_type)) {
+    int is_mutated = 0;
+    optimize_info_mutated_lookup(info, SCHEME_LOCAL_POS(v), &is_mutated);
+    SCHEME_PTR1_VAL(data) = (is_mutated ? scheme_false : scheme_true);
+  }
 
   info->preserves_marks = 1;
   info->single_result = 1;
@@ -2774,6 +2798,28 @@ ref_shift(Scheme_Object *data, int delta, int after_depth)
   SCHEME_PTR2_VAL(data) = v;
 
   return data;
+}
+
+static Scheme_Object *
+ref_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth)
+{
+  Scheme_Object *naya;
+  Scheme_Object *a, *b;
+  
+  a = SCHEME_PTR1_VAL(data);
+  a = scheme_optimize_clone(dup_ok, a, info, delta, closure_depth);
+  if (!a) return NULL;
+
+  b = SCHEME_PTR2_VAL(data);
+  b = scheme_optimize_clone(dup_ok, a, info, delta, closure_depth);
+  if (!b) return NULL;
+
+  naya = scheme_alloc_object();
+  naya->type = scheme_varref_form_type;
+  SCHEME_PTR1_VAL(naya) = a;
+  SCHEME_PTR2_VAL(naya) = b;
+
+  return naya;
 }
 
 static Scheme_Object *
@@ -5182,7 +5228,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
   case scheme_require_form_type:
     return NULL;
   case scheme_varref_form_type:
-    return NULL;
+    return ref_clone(dup_ok, expr, info, delta, closure_depth);
   case scheme_set_bang_type:
     return set_clone(dup_ok, expr, info, delta, closure_depth);
   case scheme_apply_values_type:
@@ -5744,7 +5790,7 @@ static int optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
 
 static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use, 
                                               int *not_ready, int once_used_ok, int context, int *potential_size,
-                                              int disrupt_single_use, int *is_mutated)
+                                              int disrupt_single_use, int *is_mutated, int just_test)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -5765,6 +5811,8 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
   if (is_mutated)
     if (info->use && (info->use[pos] & 0x1))
       *is_mutated = 1;
+
+  if (just_test) return NULL;
 
   p = info->consts;
   while (p) {
@@ -5844,7 +5892,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 
 	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL,
                                     once_used_ok && !disrupt_single_use, context, 
-                                    potential_size, disrupt_single_use, NULL);
+                                    potential_size, disrupt_single_use, NULL, 0);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
@@ -5871,16 +5919,21 @@ static Scheme_Object *optimize_info_lookup(Optimize_Info *info, int pos, int *cl
                                            int once_used_ok, int context, int *potential_size, int *is_mutated)
 {
   return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok, context, 
-                                 potential_size, 0, is_mutated);
+                                 potential_size, 0, is_mutated, 0);
 }
 
 static int optimize_info_is_ready(Optimize_Info *info, int pos)
 {
   int closure_offset, single_use, ready = 1;
   
-  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0, NULL, 0, NULL);
+  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0, NULL, 0, NULL, 0);
 
   return ready;
+}
+
+static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos, int *is_mutated)
+{
+  return do_optimize_info_lookup(info, pos, 0, NULL, NULL, NULL, 0, 0, NULL, 0, is_mutated, 1);
 }
 
 static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)

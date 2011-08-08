@@ -59,6 +59,16 @@ static Scheme_Object *make_global_ref(Scheme_Object *var, Scheme_Object *dummy)
   return o;
 }
 
+static Scheme_Object *make_global_const_ref(Scheme_Object *var, Scheme_Object *dummy)
+{
+  GC_CAN_IGNORE Scheme_Object *o;
+
+  o = make_global_ref(var, dummy);
+  SCHEME_PAIR_FLAGS(o) |= 0x1;
+
+  return o;
+}
+
 /*========================================================================*/
 /*                               run time                                 */
 /*========================================================================*/
@@ -2298,9 +2308,11 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         finish_branch_with_true(jitter, for_branch);
       else {
         Scheme_Object *dummy;
-        int pos;
+        int pos, is_const;
 
         mz_rs_sync();
+
+        is_const = (SCHEME_PAIR_FLAGS(obj) & 0x1);
 
         dummy = SCHEME_PTR2_VAL(obj);
         obj = SCHEME_PTR1_VAL(obj);
@@ -2314,9 +2326,13 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         CHECK_LIMIT();
 
         /* Load dummy bucket: */
-        pos = SCHEME_TOPLEVEL_POS(dummy);
-        jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
-        CHECK_LIMIT();
+        if (SCHEME_FALSEP(dummy)) {
+          (void)jit_movi_p(JIT_R2, scheme_false);
+        } else {
+          pos = SCHEME_TOPLEVEL_POS(dummy);
+          jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+          CHECK_LIMIT();
+        }
 
         JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
         mz_prepare(2);
@@ -2324,7 +2340,11 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         jit_pusharg_p(JIT_R1);
         {
           GC_CAN_IGNORE jit_insn *refr;
-          (void)mz_finish_lwe(ts_make_global_ref, refr);
+          if (is_const) {
+            (void)mz_finish_lwe(ts_make_global_const_ref, refr);
+          } else {
+            (void)mz_finish_lwe(ts_make_global_ref, refr);
+          }
         }
         CHECK_LIMIT();
         jit_retval(target);

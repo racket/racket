@@ -324,7 +324,14 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
   merge_resolve_tl_map(orig_info, info);
 
   set_app2_eval_type(app);
-        
+
+  if (SAME_OBJ(app->rator, scheme_varref_const_p_proc)) {
+    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_varref_form_type)) {
+      /* drop reference to namespace: */
+      SCHEME_PTR2_VAL(app->rand) = scheme_false;
+    }
+  }
+  
   return (Scheme_Object *)app;
 }
 
@@ -661,10 +668,23 @@ ref_resolve(Scheme_Object *data, Resolve_Info *rslv)
 {
   Scheme_Object *v;
 
-  v = scheme_resolve_expr(SCHEME_PTR1_VAL(data), rslv);
-  SCHEME_PTR1_VAL(data) = v;
   v = scheme_resolve_expr(SCHEME_PTR2_VAL(data), rslv);
   SCHEME_PTR2_VAL(data) = v;
+  
+  v = SCHEME_PTR1_VAL(data);
+  if (SAME_OBJ(v, scheme_true)
+      || SAME_OBJ(v, scheme_false)) {
+    if (SCHEME_TRUEP(v))
+      SCHEME_PAIR_FLAGS(data) |= 0x1; /* => constant */
+    v = SCHEME_PTR2_VAL(data);
+  } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_local_type)) {
+    v = scheme_resolve_expr(v, rslv);
+    if (SAME_TYPE(SCHEME_TYPE(v), scheme_local_type))
+      SCHEME_PAIR_FLAGS(data) |= 0x1; /* because mutable would be unbox */
+    v = SCHEME_PTR2_VAL(data);
+  } else
+    v = scheme_resolve_expr(v, rslv);
+  SCHEME_PTR1_VAL(data) = v;
 
   return data;
 }

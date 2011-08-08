@@ -362,6 +362,7 @@ extern Scheme_Object *scheme_box_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
+extern Scheme_Object *scheme_varref_const_p_proc;
 
 extern Scheme_Object *scheme_define_values_syntax, *scheme_define_syntaxes_syntax;
 extern Scheme_Object *scheme_lambda_syntax;
@@ -2173,6 +2174,7 @@ typedef struct Scheme_Compile_Expand_Info
   char dont_mark_local_use;
   char resolve_module_ids;
   char pre_unwrapped;
+  char testing_constantness;
   int depth;
   int env_already;
 } Scheme_Compile_Expand_Info;

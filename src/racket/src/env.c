@@ -46,6 +46,7 @@ int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
 SHARED_OK int scheme_starting_up;
 
 /* globals READ-ONLY SHARED */
+Scheme_Object *scheme_varref_const_p_proc;
 READ_ONLY static Scheme_Object *kernel_symbol;
 READ_ONLY static Scheme_Env    *kernel_env;
 READ_ONLY static Scheme_Env    *unsafe_env;
@@ -76,6 +77,7 @@ static Scheme_Object *variable_module_source(int, Scheme_Object *[]);
 static Scheme_Object *variable_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_top_level_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_phase(int, Scheme_Object *[]);
+static Scheme_Object *variable_const_p(int, Scheme_Object *[]);
 static Scheme_Object *now_transforming(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value_one(int argc, Scheme_Object *argv[]);
@@ -638,6 +640,12 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("variable-reference->empty-namespace", variable_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->namespace", variable_top_level_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->phase", variable_phase, 1, 1, env);
+
+  REGISTER_SO(scheme_varref_const_p_proc);
+  scheme_varref_const_p_proc = scheme_make_prim_w_arity(variable_const_p, 
+                                                        "variable-reference-constant?", 
+                                                        1, 1);
+  scheme_add_global_constant("variable-reference-constant?", scheme_varref_const_p_proc, env);
 
   GLOBAL_PRIM_W_ARITY("syntax-transforming?", now_transforming, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-value", local_exp_time_value, 1, 3, env);
@@ -1678,6 +1686,25 @@ static Scheme_Object *variable_top_level_namespace(int argc, Scheme_Object *argv
 static Scheme_Object *variable_phase(int argc, Scheme_Object *argv[])
 {
   return do_variable_namespace("variable-reference->phase", 2, argc, argv);
+}
+
+static Scheme_Object *variable_const_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+
+  v = argv[0];
+
+  if (!SAME_TYPE(SCHEME_TYPE(v), scheme_global_ref_type))
+    scheme_wrong_type("variable-reference-constant?", "variable-reference", 0, argc, argv);
+
+  if (SCHEME_PAIR_FLAGS(v) & 0x1)
+    return scheme_true;
+
+  v = SCHEME_PTR1_VAL(v);
+  if (((Scheme_Bucket_With_Flags *)v)->flags & GLOB_IS_IMMUTATED)
+    return scheme_true;
+
+  return scheme_false;
 }
 
 static Scheme_Object *variable_p(int argc, Scheme_Object *argv[])

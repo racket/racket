@@ -359,6 +359,15 @@ correspond to the first two elements of a list produced by
 Return @racket[#t] if @racket[v] is a @tech{variable reference}
 produced by @racket[#%variable-reference], @racket[#f] otherwise.}
 
+
+@defproc[(variable-reference-constant? [varref variable-reference?]) boolean?]{
+
+Returns @racket[#t] if the variable represented by @racket[varref]
+will retain its current value (i.e., @racket[varref] refers to a
+variable that cannot be further modified by @racket[set!] or
+@racket[define]), @racket[#f] otherwise.}
+
+
 @defproc[(variable-reference->empty-namespace [varref variable-reference?])
          namespace?]{
 
@@ -402,3 +411,5 @@ result is @racket[#f].}
          exact-nonnegative-integer?]{
 
 Returns the @tech{phase} of the variable referenced by @racket[varref].}
+
+

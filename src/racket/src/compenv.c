@@ -125,6 +125,7 @@ void scheme_init_compile_recs(Scheme_Compile_Info *src, int drec,
     /* should be always NULL */
     dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
+    dest[i].testing_constantness = 0;
     dest[i].env_already = 0;
     dest[i].comp_flags = src[drec].comp_flags;
   }
@@ -144,6 +145,7 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
     dest[i].value_name = scheme_false;
     dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
+    dest[i].testing_constantness = 0;
     dest[i].env_already = 0;
     dest[i].comp_flags = src[drec].comp_flags;
   }
@@ -167,6 +169,7 @@ void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
   lam[dlrec].value_name = scheme_false;
   lam[dlrec].observer = src[drec].observer;
   lam[dlrec].pre_unwrapped = 0;
+  lam[dlrec].testing_constantness = 0;
   lam[dlrec].env_already = 0;
   lam[dlrec].comp_flags = src[drec].comp_flags;
 }
@@ -851,10 +854,10 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 
   u = COMPILE_DATA(frame)->use[i];
   
-  u |= (((flags & (SCHEME_APP_POS | SCHEME_SETTING | SCHEME_REFERENCING))
+  u |= (((flags & (SCHEME_APP_POS | SCHEME_SETTING))
 	 ? CONSTRAINED_USE
 	 : ((u & (ARBITRARY_USE | ONE_ARBITRARY_USE)) ? ARBITRARY_USE : ONE_ARBITRARY_USE))
-	| ((flags & (SCHEME_SETTING | SCHEME_REFERENCING | SCHEME_LINKING_REF))
+	| ((flags & (SCHEME_SETTING | SCHEME_LINKING_REF))
 	   ? WAS_SET_BANGED
 	   : 0));
 

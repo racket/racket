@@ -17,6 +17,7 @@
 #ifdef JIT_TS_PROCS
 define_ts_bsi_v(call_set_global_bucket, FSRC_MARKS)
 define_ts_ss_s(make_global_ref, FSRC_OTHER)
+define_ts_ss_s(make_global_const_ref, FSRC_OTHER)
 define_ts_iiS_v(lexical_binding_wrong_return_arity, FSRC_MARKS)
 define_ts_siS_v(wrong_argument_count, FSRC_MARKS)
 # ifdef JIT_PRECISE_GC
@@ -150,6 +151,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_call_set_global_bucket call_set_global_bucket
 # define ts_scheme_make_envunbox scheme_make_envunbox
 # define ts_make_global_ref make_global_ref
+# define ts_make_global_const_ref make_global_const_ref
 # define ts_lexical_binding_wrong_return_arity lexical_binding_wrong_return_arity
 # define ts_call_wrong_return_arity call_wrong_return_arity
 # define ts_scheme_unbound_global scheme_unbound_global

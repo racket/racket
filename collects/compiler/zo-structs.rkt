@@ -156,7 +156,7 @@
                                            [body (or/c expr? seq? any/c)])) ; `with-continuation-mark'
 (define-form-struct (beg0 expr) ([seq (listof (or/c expr? seq? any/c))])) ; `begin0'
 (define-form-struct (splice form) ([forms (listof (or/c form? any/c))])) ; top-level `begin'
-(define-form-struct (varref expr) ([toplevel toplevel?] [dummy toplevel?])) ; `#%variable-reference'
+(define-form-struct (varref expr) ([toplevel (or/c toplevel? #t)] [dummy (or/c toplevel? #f)])) ; `#%variable-reference'
 (define-form-struct (assign expr) ([id toplevel?] [rhs (or/c expr? seq? any/c)] [undef-ok? boolean?])) ; top-level or module-level set!
 (define-form-struct (apply-values expr) ([proc (or/c expr? seq? any/c)] [args-expr (or/c expr? seq? any/c)])) ; `(call-with-values (lambda () ,args-expr) ,proc)
 (define-form-struct (primval expr) ([id exact-nonnegative-integer?])) ; direct preference to a kernel primitive

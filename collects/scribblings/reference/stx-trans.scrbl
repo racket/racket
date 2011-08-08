@@ -230,7 +230,7 @@ value and put it into a list for @racket[context-v]. To allow
 @tech{liberal expansion} of @racket[define] forms, the generated value
 should be an instance of a structure with a true value for
 @racket[prop:liberal-define-context]. If the internal-definition
-context is meant to be self-contained, the list for @racket[context-c]
+context is meant to be self-contained, the list for @racket[context-v]
 should contain only the generated value; if the internal-definition
 context is meant to splice into an immediately enclosing context, then
 when @racket[syntax-local-context] produces a list, @racket[cons] the
@@ -795,14 +795,16 @@ identifier.}
 An instance of a structure type with a true value for the
 @racket[prop:liberal-define-context] property can be used as an
 element of an @tech{internal-definition context} representation in the
-result of @racket[syntax-local-context] for the second argument of
+result of @racket[syntax-local-context] or the second argument of
 @racket[local-expand]. Such a value indicates that the context
 supports @deftech{liberal expansion} of @racket[define] forms into
 potentially multiple @racket[define-values] and
-@racket[define-syntaxes] forms.
+@racket[define-syntaxes] forms. The @racket['module] and
+@racket['module-body] contexts implicitly allow @tech{liberal
+expansion}.
 
 The @racket[liberal-define-context?] predicate returns @racket[#t] if
-@arcket[v] is an instance of a structure with a true value for the
+@racket[v] is an instance of a structure with a true value for the
 @racket[prop:liberal-define-context] property, @racket[#f] otherwise.}
 
 @; ----------------------------------------------------------------------

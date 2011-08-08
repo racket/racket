@@ -1397,11 +1397,13 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 
         if (rec[drec].comp) {
           var = scheme_register_toplevel_in_prefix(var, env, rec, drec, 0);
-          if (!imported && env->genv->module)
+          if (!imported && env->genv->module && !rec[drec].testing_constantness)
             SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
         }
+      } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_local_type)) {
+        /* ok */
       } else {
-        scheme_wrong_syntax(NULL, name, form, "identifier does not refer to a top-level or module variable");
+        scheme_wrong_syntax(NULL, name, form, "identifier does not refer to a variable");
       }
 
       if (rec[drec].comp)
@@ -3259,6 +3261,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   rec1.value_name = NULL;
   rec1.observer = NULL;
   rec1.pre_unwrapped = 0;
+  rec1.testing_constantness = 0;
   rec1.env_already = 0;
   rec1.comp_flags = rec[drec].comp_flags;
 
@@ -3451,6 +3454,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   mrec.value_name = NULL;
   mrec.observer = NULL;
   mrec.pre_unwrapped = 0;
+  mrec.testing_constantness = 0;
   mrec.env_already = 0;
   mrec.comp_flags = rec[drec].comp_flags;
 
@@ -4087,6 +4091,11 @@ scheme_inner_compile_list(Scheme_Object *form, Scheme_Comp_Env *env,
       else
 	comp_first = p;
       comp_last = p;
+
+      if (!i && start_app_position && (len == 2)
+          && SAME_OBJ(c, scheme_varref_const_p_proc)) {
+        recs[1].testing_constantness = 1;
+      }
     }
 
     scheme_merge_compile_recs(rec, drec, recs, len);

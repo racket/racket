@@ -317,9 +317,10 @@ static void ref_validate(Scheme_Object *data, Mz_CPort *port,
   validate_toplevel(SCHEME_PTR1_VAL(data), port, stack, tls, depth, delta, 
                     num_toplevels, num_stxes, num_lifts, tl_use_map,
                     0);
-  validate_toplevel(SCHEME_PTR2_VAL(data), port, stack, tls, depth, delta, 
-                    num_toplevels, num_stxes, num_lifts, tl_use_map,
-                    0);
+  if (!SCHEME_FALSEP(SCHEME_PTR2_VAL(data)))
+    validate_toplevel(SCHEME_PTR2_VAL(data), port, stack, tls, depth, delta, 
+                      num_toplevels, num_stxes, num_lifts, tl_use_map,
+                      0);
 }
 
 static void apply_values_validate(Scheme_Object *data, Mz_CPort *port, 

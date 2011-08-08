@@ -425,6 +425,63 @@ static int is_cXr_prim(const char *name)
   return !name[i+1];
 }
 
+static int generate_inlined_constant_varref_test(mz_jit_state *jitter, Scheme_Object *obj,
+                                                 Branch_Info *for_branch, int branch_short, int need_sync)
+{
+  GC_CAN_IGNORE jit_insn *ref1, *ref2;
+  int pos;
+
+  if (SCHEME_PAIR_FLAGS(obj) & 0x1) {
+    jit_movi_p(JIT_R0, scheme_true);
+    return 1;
+  }
+
+  mz_runstack_skipped(jitter, 1);
+
+  obj = SCHEME_PTR1_VAL(obj);
+
+  /* Load global array: */
+  pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
+  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+  /* Load bucket: */
+  pos = SCHEME_TOPLEVEL_POS(obj);
+  jit_ldxi_p(JIT_R1, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+  CHECK_LIMIT();
+  
+  mz_runstack_unskipped(jitter, 1);
+
+  if (need_sync) mz_rs_sync();
+
+  __START_SHORT_JUMPS__(branch_short);
+  
+  if (for_branch) {
+    scheme_prepare_branch_jump(jitter, for_branch);
+    CHECK_LIMIT();
+  }
+
+  jit_ldxi_s(JIT_R1, JIT_R1, &((Scheme_Bucket_With_Flags *)0x0)->flags);
+  ref1 = jit_bmci_ul(jit_forward(), JIT_R1, GLOB_IS_IMMUTATED);
+  CHECK_LIMIT();
+
+  if (for_branch) {
+    scheme_add_branch_false(for_branch, ref1);
+    scheme_branch_for_true(jitter, for_branch);
+  } else {
+    (void)jit_movi_p(JIT_R0, scheme_true);
+    ref2 = jit_jmpi(jit_forward());
+
+    mz_patch_branch(ref1);
+    (void)jit_movi_p(JIT_R0, scheme_false);
+      
+    mz_patch_ucbranch(ref2);
+  }
+  CHECK_LIMIT();
+
+  __END_SHORT_JUMPS__(branch_short);
+  
+  return 1;
+}
+
 static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
                                  Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3);
 
@@ -446,6 +503,12 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       scheme_direct_call_count++;
       return 1;
     }
+  }
+
+  if (SAME_OBJ(rator, scheme_varref_const_p_proc)
+      && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_varref_form_type)) {
+    generate_inlined_constant_varref_test(jitter, app->rand, for_branch, branch_short, need_sync);
+    return 1;
   }
 
   if (!SCHEME_PRIMP(rator))
@@ -1658,7 +1721,6 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     }
   }
-
 
   if (!SCHEME_PRIMP(rator))
     return 0;
