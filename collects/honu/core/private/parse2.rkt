@@ -9,6 +9,7 @@
          "debug.rkt"
          (prefix-in transformer: "transformer.rkt")
          syntax/stx
+         syntax/parse/experimental/splicing
          syntax/parse)
 ;; phase 1
 (require-syntax racket/base)
@@ -205,7 +206,7 @@
                                             (parse #'(rest ...)))])
                 so-far (more)))]
          [else
-           (syntax-parse #'(head rest ...)
+           (syntax-parse #'(head rest ...) #:literal-sets (cruft)
              [(function:identifier (#%parens args ...) (#%braces code ...) . rest)
               (values (with-syntax ([(parsed-arguments ...)
                                      (parse-arguments #'(args ...))])
@@ -216,7 +217,11 @@
                       #'rest)]
              [else (syntax-parse #'head
                      #:literal-sets (cruft)
-                     [x:atom (do-parse #'(rest ...) precedence left #'x)]
+                     [x:atom
+                       (debug "atom ~a current ~a\n" #'x current)
+                       (if current
+                         (values (left current) #'(head rest ...))
+                         (do-parse #'(rest ...) precedence left #'x))]
                      [(#%parens args ...)
                       (debug "function call ~a\n" left)
                       (values (left (with-syntax ([current current]
@@ -238,7 +243,7 @@
                       (error 'parse "function call")]
                      [else (error 'what "dont know how to parse ~a" #'head)])])])]))
 
-  (do-parse input 0 (lambda (x) x) #'(void)))
+  (do-parse input 0 (lambda (x) x) #f))
 
 (define (empty-syntax? what)
   (syntax-parse what
@@ -275,3 +280,20 @@
               parsed
               (more-parsing . rest)))))
       #'(debug "regular parsing\n"))))
+
+;; rest will be some subset of full
+(define (parsed-things full rest)
+  (define full-datum (syntax->datum full))
+  (define rest-datum (syntax->datum rest))
+  (- (length full-datum) (length rest-datum)))
+
+(provide honu-expression)
+(define-primitive-splicing-syntax-class (honu-expression)
+  #:attributes (result)
+  #:description "expression"
+  (lambda (stx fail)
+    (debug "honu expression syntax class\n")
+    (define-values (parsed unparsed)
+                   (parse stx))
+    (debug "parsed ~a\n" parsed)
+    (list (parsed-things stx unparsed) parsed)))

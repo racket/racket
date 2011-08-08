@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; This module implements read related functions such as `read', `read-syntax',
+;; and a colored lexer for drracket
+
 (require rackunit)
 (require parser-tools/lex
          (prefix-in : parser-tools/lex-sre))

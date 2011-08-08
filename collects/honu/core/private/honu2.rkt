@@ -40,6 +40,18 @@
          #'unparsed)
          #t)])))
 
+(provide honu-for)
+(define-honu-syntax honu-for
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ iterator:id honu-= start:honu-expression honu-to end:honu-expression
+          honu-do body:honu-expression . rest)
+       (values
+         #'(for ([iterator (in-range start.result end.result)])
+             body.result)
+         #'rest
+         #t)])))
+
 (provide honu-val)
 (define-honu-syntax honu-val
   (lambda (code context)
