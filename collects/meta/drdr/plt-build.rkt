@@ -348,6 +348,7 @@
        (with-env (["PLTSTDERR" "error"]
                   ["GIT_DIR" (path->string (plt-repository))]
                   ["TMPDIR" (path->string tmp-dir)]
+                  ["PLTDRDR" "yes"]
                   ["PATH" 
                    (format "~a:~a"
                            (path->string 

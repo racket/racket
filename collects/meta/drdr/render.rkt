@@ -555,6 +555,8 @@
                                    
                                    @p{The command-line is always executed with a fresh empty current directory which is removed after the run. But all the files share the same home directory and X server, which are both removed after each push's testing is complete.}
                                    
+                                   @p{When DrDr runs any command, it sets the @code{PLTDRDR} environment variable. You can use this to change the command's behavior. However, it is preferred that you change the command-line directly.}
+                                   
                                    @h1{How many files are "tested" concurrently?}
                                    @p{One per core, or @,(number->string (number-of-cpus)).}
                                    
