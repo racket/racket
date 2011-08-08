@@ -1975,6 +1975,17 @@
       (test (judgment-holds (uses-add2 (s (s (s (s z)))) n) n)
             (list (term (s (s (s z))))))
       
+      (define-judgment-form nats
+        #:mode (hyphens I)
+        [(hyphens b)
+         -----------
+         (hyphens a)]
+        [(hyphens c)
+         -
+         (hyphens b)]
+        [(hyphens c)])
+      (test (judgment-holds (hyphens a)) #t)
+      
       (let-syntax ([test-trace 
                     (syntax-rules ()
                       [(_ expr trace-spec expected)

@@ -1069,7 +1069,7 @@ legtimate inputs according to @racket[metafunction-name]'s contract,
 and @racket[#f] otherwise.
 }
 
-@defform/subs[#:literals (I O where)
+@defform/subs[#:literals (I O where etc.)
              (define-judgment-form language
                option ...
                rule ...)
@@ -1079,12 +1079,22 @@ and @racket[#f] otherwise.
               [contract-spec (code:line #:contract (form-id @#,ttpattern ...))]
               [pos-use I
                        O]
-              [rule [conclusion premise ...]]
+              [rule [conclusion 
+                     premise 
+                     ...]
+                    [premise
+                     ...
+                     dashes
+                     conclusion]]
               [conclusion (form-id pat/term ...)]
               [premise (judgment-form-id pat/term ...)
                        (where @#,ttpattern @#,tttterm)]
               [pat/term @#,ttpattern
-                        @#,tttterm])]{
+                        @#,tttterm]
+              [dashes ---
+                      ----
+                      -----
+                      etc.])]{
 Defines @racket[form-id] as a relation on terms via a set of inference rules.
 Each rule must be such that its premises can be evaluated left-to-right
 without ``guessing'' values for any of their pattern variables. Redex checks this

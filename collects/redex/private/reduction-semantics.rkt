@@ -1539,6 +1539,16 @@
     (define-syntax-class contract-spec
       #:description "contract specification"
       (pattern (_:id _:expr ...)))
+    (define (horizontal-line? id)
+      (regexp-match? #rx"^-+$" (symbol->string (syntax-e id))))
+    (define-syntax-class horizontal-line
+      (pattern x:id #:when (horizontal-line? #'x)))
+    (define (parse-rules rules)
+      (for/list ([rule rules])
+        (syntax-parse rule
+          [(prem ... _:horizontal-line conc)
+           #'(conc prem ...)]
+          [_ rule])))
     (define-values (name/mode mode name/contract contract rules)
       (syntax-parse body #:context full-stx
         [((~or (~seq #:mode ~! mode:mode-spec)
@@ -1558,7 +1568,7 @@
                           (raise-syntax-error 
                            syn-err-name "expected at most one contract specification"
                            #f #f (syntax->list #'dups))])])
-           (values name/mode mode name/ctc ctc #'rules))]))
+           (values name/mode mode name/ctc ctc (parse-rules #'rules)))]))
     (check-clauses full-stx syn-err-name rules #t)
     (check-arity-consistency mode contract full-stx)
     (define-values (form-name dup-names)
