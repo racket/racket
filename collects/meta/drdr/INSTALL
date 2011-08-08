@@ -1,0 +1,47 @@
+0. Copy source to /opt/plt/drdr
+
+1. Create
+
+/opt/plt
+/opt/plt/plt (Racket install)
+/opt/plt/builds
+/opt/plt/future-builds
+/opt/plt/logs
+/opt/plt/builds/<N> (for the first build)
+
+2. Install stuff
+
+sudo apt-get install xorg fluxbox python-software-properties gcc libcairo2 libpango1.0-0 libgtk2.0-0 texlive lib32gmp3 libreadline5 libpcre3-dev libgmp3-dev
+sudo add-apt-repository ppa:git-core/ppa
+sudo apt-get update
+sudo apt-get install git-core
+
+3. Setup git
+
+cd /opt/plt
+git clone http://git.racket-lang.org/plt.git repo
+
+4. Setup firewall
+
+sudo ufw allow 22
+sudo ufw enable
+
+sudo vim /etc/ufw/before.rules
+
+*nat
+:PREROUTING ACCEPT [0:0]
+-A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 9000
+COMMIT
+
+sudo ufw allow 80
+sudo ufw allow 9000
+sudo service ufw restart
+
+5.
+
+setuid on /usr/bin/Xorg
+
+6. 
+
+sudo apt-get install postfix
+# Use the Internet site setup

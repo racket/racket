@@ -1,3 +1,3 @@
 #!/bin/sh
 
-rsync -avz . drdr:/opt/svn/drdr/ --exclude=compiled --delete --exclude=data
+rsync -avz . ${1}drdr:/opt/svn/drdr/ --exclude=compiled --delete --exclude=data

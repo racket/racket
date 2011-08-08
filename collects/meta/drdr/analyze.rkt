@@ -61,11 +61,14 @@
       (for ([pp (in-list (lc->list lc))])
         (define p (bytes->string/utf-8 pp))
         (define bp (base-path p))
-        (for ([responsible (in-list (rendering-responsibles (log-rendering p)))])
-          (hash-update! (hash-ref! responsible->problems responsible make-hasheq)
-                        id
-                        (curry list* bp)
-                        empty))))
+        (for ([responsible 
+               (in-list
+                (rendering-responsibles (log-rendering p)))])
+          (hash-update!
+           (hash-ref! responsible->problems responsible make-hasheq)
+           id
+           (curry list* bp)
+           empty))))
     
     responsible->problems))
 
@@ -118,10 +121,19 @@
     (map lc->number
          (list timeout unclean stderr changes)))
   (define totals
-    (apply format "(timeout ~a) (unclean ~a) (stderr ~a) (changes ~a)" (map number->string nums)))
+    (apply 
+     format
+     "(timeout ~a) (unclean ~a) (stderr ~a) (changes ~a)"
+     (map number->string nums)))
   (define (path->url pth)
     (format "http://drdr.racket-lang.org/~a~a" cur-rev pth))
-  (define responsible-ht (statuses->responsible-ht cur-rev timeout unclean stderr changes))
+  (define responsible-ht
+    (statuses->responsible-ht 
+     cur-rev
+     timeout
+     unclean
+     stderr
+     changes))
   (define responsibles 
     (for/list ([(responsible ht) (in-hash responsible-ht)]
                #:when (ormap (curry hash-has-key? ht)
@@ -142,14 +154,15 @@
      ; There is a condition
      (not (empty? responsibles))
      ; It is different from before
-     diff
+     (hash? diff)
      (for*/or ([(r ht) (in-hash diff)]
                [(id ps) (in-hash ht)])
-       (and (for/or ([p (in-list ps)])
-              ; XXX This squelch should be disabled if the committer changed this file
-              ; XXX But even then it can lead to problems
-              (not (path-random? (build-path (revision-trunk-dir cur-rev) (substring (path->string* p) 1)))))
-            (not (symbol=? id 'changes))))))
+       (and 
+        (for/or ([p (in-list ps)])
+          ; XXX This squelch should be disabled if the committer changed this file
+          ; XXX But even then it can lead to problems
+          (not (path-random? (build-path (revision-trunk-dir cur-rev) (substring (path->string* p) 1)))))
+        (not (symbol=? id 'changes))))))
   (define mail-recipients
     (append (if include-committer?
                 (list committer)

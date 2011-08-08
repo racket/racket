@@ -49,7 +49,8 @@
         (path->string
          (build-path (plt-directory) "plt" "bin" "racket"))
         "-t" 
-        (path->string (build-path (drdr-directory) "make-archive.rkt"))
+        (path->string
+         (build-path (drdr-directory) "make-archive.rkt"))
         "--"
         "--many" (number->string 100))))))
 
@@ -60,8 +61,9 @@
              cur-rev
              (lambda (newer)
                (for ([rev (in-list newer)])
-                 (write-cache! (future-record-path rev)
-                               (get-scm-commit-msg rev (plt-repository)))))
+                 (write-cache! 
+                  (future-record-path rev)
+                  (get-scm-commit-msg rev (plt-repository)))))
              (lambda (prev-rev cur-rev)
                (handle-revision prev-rev cur-rev)
                
