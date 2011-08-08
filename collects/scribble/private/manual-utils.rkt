@@ -14,7 +14,7 @@
  [flow-spacer flow?]
  [flow-empty-line flow?]
  [make-table-if-necessary (content? list? . -> . (list/c (or/c omitable-paragraph? table?)))]
- [max-proto-width exact-nonnegative-integer?])
+ [current-display-width (parameter/c exact-nonnegative-integer?)])
 
 (define spacer (hspace 1))
 
@@ -31,4 +31,4 @@
         (list (make-table style content))))
     (list (make-table style content))))
 
-(define max-proto-width 65)
+(define current-display-width (make-parameter 65))

@@ -11,11 +11,13 @@
          "private/manual-class.rkt"
          "private/manual-unit.rkt"
          "private/manual-vars.rkt"
-         "private/manual-bind.rkt")
+         "private/manual-bind.rkt"
+         "private/manual-utils.rkt")
 
 (provide unsyntax
          make-binding-redirect-elements
          defidentifier
+         current-display-width
          (all-from-out "base.rkt"
                        "private/manual-style.rkt"
                        "private/manual-scheme.rkt"

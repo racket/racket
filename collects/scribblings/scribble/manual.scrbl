@@ -620,7 +620,9 @@ description, references to @svar[arg-id]s using @racket[racket],
 
 The typesetting of all information before the @racket[pre-flow]s
 ignores the source layout, except that the local formatting is
-preserved for contracts and default-values expressions.}
+preserved for contracts and default-values expressions. The information
+is formatted to fit (if possible) in the number of characters specified
+by the @racket[current-display-width] parameter.}
 
 
 @defform[(defproc* ([prototype
@@ -880,6 +882,11 @@ the mouse hovers over the identifier).}
 )]{
 
 Compatibility aliases for @racket[racketgrammar] and @racket[racketgrammar*].}
+
+@defparam[current-display-width w exact-nonnegative-integer?]{
+
+Specifies the target maximum width in characters for the output of
+@racket[defproc] and @racket[defstruct].}
 
 
 @; ------------------------------------------------------------------------

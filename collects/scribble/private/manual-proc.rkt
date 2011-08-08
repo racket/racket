@@ -140,6 +140,7 @@
 (define (*defproc mode within-id
                   stx-ids prototypes arg-contractss arg-valss result-contracts
                   content-thunk)
+  (define max-proto-width (current-display-width))
   (define ((arg->elem show-opt-start?) arg)
     (let* ([e (cond [(not (arg-special? arg))
                      (if (arg-kw arg)
@@ -561,6 +562,7 @@
 (define (*defstruct stx-id name alt-cname-id extra-cname?
                     fields field-contracts immutable? transparent? prefab?
                     content-thunk)
+  (define max-proto-width (current-display-width))
   (define (field-name f) ((if (pair? (car f)) caar car) f))
   (define (field-view f)
     (if (pair? (car f)) (make-shaped-parens (car f) #\[) (car f)))
