@@ -1069,7 +1069,7 @@ legtimate inputs according to @racket[metafunction-name]'s contract,
 and @racket[#f] otherwise.
 }
 
-@defform/subs[#:literals (I O where etc.)
+@defform/subs[#:literals (I O where where/hidden etc.)
              (define-judgment-form language
                option ...
                rule ...)
@@ -1088,7 +1088,8 @@ and @racket[#f] otherwise.
                      conclusion]]
               [conclusion (form-id pat/term ...)]
               [premise (judgment-form-id pat/term ...)
-                       (where @#,ttpattern @#,tttterm)]
+                       (where @#,ttpattern @#,tttterm)
+                       (where/hidden @#,ttpattern @#,tttterm)]
               [pat/term @#,ttpattern
                         @#,tttterm]
               [dashes ---
@@ -1147,9 +1148,9 @@ to compute all pairs with a given sum.
           (sumr n_1 n_2 n_3)])
        (judgment-holds (sumr n_1 n_2 (s (s z))) (n_1 n_2))]
 
-A rule's @racket[where] clause premises behave as in @racket[reduction-relation]
-and @racket[define-metafunction].
-@interaction[
+A rule's @racket[where] and @racket[where/hidden] premises behave as in 
+@racket[reduction-relation] and @racket[define-metafunction].
+@examples[
 #:eval redex-eval
        (define-judgment-form nats
          #:mode (le I I)
