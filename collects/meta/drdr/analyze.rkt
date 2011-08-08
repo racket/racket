@@ -198,7 +198,7 @@
                            (list (format "  ~a" id)
                                  (for/list ([f (in-list paths)]
                                             [i (in-range ERROR-LIMIT)]
-                                            #:unless (path-random? f))
+                                            #:when (not (path-random? f)))
                                    (format "    ~a" (path->url f)))
                                  ""))))
                    "")
