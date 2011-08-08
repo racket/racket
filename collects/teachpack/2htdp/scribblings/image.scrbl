@@ -1652,11 +1652,18 @@ are not lost if the image is later clipped to its bounding box.
 
 In order to use an image as an input to another program (e.g., Photoshop or 
 a web browser), it is necessary to represent it in a format that these programs
-can understand. The @racket[save-image] function provides this functionality, 
+can understand. 
+
+The @racket[save-image] function provides this functionality, 
 writing an image to disk using the @tt{PNG} format. Since this
 format represents an image using a set of pixel values, an image written to disk
 generally contains less information than the image that was written, and cannot be scaled
 or manipulated as cleanly (by any image program).
+
+The @racket[save-svg-image] function writes an @tt{SVG} file format
+representation of the file to the disk that, unlike @racket[save-image] produces
+an image that can still be scaled arbitrarily look as good as scaling the
+image directly via @racket[scale].
 
 @defproc[(save-image [image image?]
                      [filename path-string?]
@@ -1675,5 +1682,20 @@ or manipulated as cleanly (by any image program).
  
  }
 
+@defproc[(save-svg-image [image image?]
+                         [filename path-string?]
+                         [width 
+                          (and/c real? (not/c negative?))
+                          (image-width image)]
+                         [height 
+                          (and/c real? (not/c negative?))
+                          (image-height image)])
+         void?]{
+ Writes an image to the path specified by @racket[filename], using the
+ @tt{SVG} format.
+ 
+ The last two arguments are optional. If present, they determine the width
+ and height of the save image file. If absent, the width and height of the image is used.
+ }
 
 @(close-eval img-eval)

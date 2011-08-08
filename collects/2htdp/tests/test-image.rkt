@@ -2031,6 +2031,9 @@
 (test/exn (save-image "tri.png" (triangle 50 "solid" "purple"))
           =>
           #rx"^save-image:")
+(test/exn (save-svg-image "tri.png" (triangle 50 "solid" "purple"))
+          =>
+          #rx"^save-svg-image:")
 
 (test/exn (pen 1 2 3 4 5)
           =>

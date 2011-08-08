@@ -76,6 +76,21 @@
     (send bdc set-bitmap #f)
     (send bm save-file filename 'png)))
 
+(define/chk (save-svg-image image
+                            filename 
+                            [width (if (image? image) (image-width image) 0)] 
+                            [height (if (image? image) (image-height image) 0)])
+  (call-with-output-file filename
+    (λ (port)
+      (define sdc (new svg-dc% [width width] [height height] [output port]))
+      (send sdc start-doc "")
+      (send sdc start-page)
+      (send sdc set-smoothing 'aligned)
+      (render-image image sdc 0 0)
+      (send sdc end-page)
+      (send sdc end-doc))
+    #:exists 'truncate))
+
 (define (get-right img) (bb-right (send img get-bb)))
 (define (get-bottom img) (bb-bottom (send img get-bb)))
 (define (get-baseline img) (bb-baseline (send img get-bb)))
@@ -1423,6 +1438,7 @@
          
          
          save-image
+         save-svg-image
          bring-between
          
          
