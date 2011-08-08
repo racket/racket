@@ -273,8 +273,8 @@
  (item "The" (code item) "function makes a bulleted"
             "paragraph that is as wide as the slide")
  (item #:bullet (colorize (tt "+") "green")
-       "You can set the bullet, if you like, by using"
-       (code item/bullet))
+       "You can set the bullet, if you like, by using the"
+       (code #:bullet) "argment to" (code item))
  (subitem "Naturally, there is also" (code subitem)))
 
 (slide
