@@ -198,7 +198,9 @@
                            (list (format "  ~a" id)
                                  (for/list ([f (in-list paths)]
                                             [i (in-range ERROR-LIMIT)]
-                                            #:when (not (path-random? f)))
+                                            #:when (not (path-random?
+                                                         (build-path (revision-trunk-dir cur-rev)
+                                                                     (substring (path->string* f) 1)))))
                                    (format "    ~a" (path->url f)))
                                  ""))))
                    "")
