@@ -118,6 +118,9 @@ typedef struct NewGCMasterInfo {
   uintptr_t alive;
   uintptr_t ready;
   void **signal_fds;
+#ifdef POINTER_OWNERSHIP_CHECK
+  struct NewGC **places_gcs;
+#endif
   mzrt_rwlock *cangc;
   mzrt_sema *wait_sema;
 } NewGCMasterInfo;
@@ -136,6 +139,10 @@ typedef struct NewGC {
   Mark2_Proc  *mark_table;   /* the table of mark procs */
   Fixup2_Proc *fixup_table;  /* the table of repair procs */
   PageMap page_maps;
+#ifdef LOCK_PAGE_TABLES_FOR_DEBUG
+  mzrt_mutex *pagetable_lock;
+#endif
+
   /* All non-gen0 pages are held in the following structure. */
   struct mpage *gen1_pages[PAGE_TYPES];
 

@@ -48,6 +48,11 @@ intptr_t mp_ac_freed;
 #define GC_MP_CNT_INC(x) /* empty */
 #endif
 
+#if 0
+#define POINTER_OWNERSHIP_CHECK
+#define LOCK_PAGE_TABLES_FOR_DEBUG
+#endif
+
 #define MZ_PRECISE_GC /* required for mz includes to work right */
 #include <stdlib.h>
 #include <stdio.h>
@@ -463,6 +468,10 @@ inline static void free_page_maps(PageMap page_maps1) {
 /* the page map makes a nice mapping from addresses to pages, allowing
    fairly fast lookup. this is useful. */
 inline static void pagemap_set(PageMap page_maps1, void *p, mpage *value) {
+#ifdef LOCK_PAGE_TABLES_FOR_DEBUG
+  NewGC *gc = GC_get_GC();
+  mzrt_mutex_lock(gc->pagetable_lock);
+#endif
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   uintptr_t pos;
   mpage ***page_maps2;
@@ -484,9 +493,34 @@ inline static void pagemap_set(PageMap page_maps1, void *p, mpage *value) {
 #else
   page_maps1[PAGEMAP32_BITS(p)] = value;
 #endif
+#ifdef LOCK_PAGE_TABLES_FOR_DEBUG
+  mzrt_mutex_unlock(gc->pagetable_lock);
+#endif
 }
 
 inline static mpage *pagemap_find_page(PageMap page_maps1, const void *p) {
+#ifdef LOCK_PAGE_TABLES_FOR_DEBUG
+
+  mpage *result = NULL;
+  NewGC *gc = GC_get_GC();
+  mzrt_mutex_lock(gc->pagetable_lock);
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  mpage ***page_maps2;
+  mpage **page_maps3;
+
+  page_maps2 = page_maps1[PAGEMAP64_LEVEL1_BITS(p)];
+  if (!page_maps2) goto done;
+  page_maps3 = page_maps2[PAGEMAP64_LEVEL2_BITS(p)];
+  if (!page_maps3) goto done;
+  result = page_maps3[PAGEMAP64_LEVEL3_BITS(p)];
+#else
+  result = page_maps1[PAGEMAP32_BITS(p)];
+#endif
+done:
+  mzrt_mutex_unlock(gc->pagetable_lock);
+  return result;
+#else
+
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   mpage ***page_maps2;
   mpage **page_maps3;
@@ -498,6 +532,8 @@ inline static mpage *pagemap_find_page(PageMap page_maps1, const void *p) {
   return page_maps3[PAGEMAP64_LEVEL3_BITS(p)];
 #else
   return page_maps1[PAGEMAP32_BITS(p)];
+#endif
+
 #endif
 }
 
@@ -2327,6 +2363,9 @@ static void NewGCMasterInfo_initialize() {
   MASTERGCINFO->alive = 0;
   MASTERGCINFO->ready = 0;
   MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
+#ifdef POINTER_OWNERSHIP_CHECK
+  MASTERGCINFO->places_gcs = ofm_malloc_zero(sizeof(NewGC*) * MASTERGCINFO->size);
+#endif
   for (i=0; i < 32; i++ ) {
     MASTERGCINFO->signal_fds[i] = (void *)REAPED_SLOT_AVAILABLE;
   }
@@ -2471,6 +2510,9 @@ static intptr_t NewGCMasterInfo_find_free_id() {
     MASTERGCINFO->size++;
     MASTERGCINFO->alive++;
     MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
+#ifdef POINTER_OWERSHIP_CHECK
+    MASTERGCINFO->places_gcs= realloc(MASTERGCINFO->places_gcs, sizeof(NewGC*) * MASTERGCINFO->size);
+#endif
     return MASTERGCINFO->size - 1;
   }
   else {
@@ -2494,6 +2536,9 @@ static void NewGCMasterInfo_register_gc(NewGC *newgc) {
     intptr_t newid = NewGCMasterInfo_find_free_id();
     newgc->place_id = newid;
     MASTERGCINFO->signal_fds[newid] = (void *) CREATED_BUT_NOT_REGISTERED;
+#ifdef POINTER_OWNERSHIP_CHECK
+    MASTERGCINFO->places_gcs[newid] = newgc;
+#endif
   }
   GC_LOCK_DEBUG("UNMGCLOCK NewGCMasterInfo_register_gc\n");
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
@@ -2558,6 +2603,10 @@ static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mu
   NewGC *gc;
 
   gc = ofm_malloc_zero(sizeof(NewGC));
+#ifdef LOCK_PAGE_TABLES_FOR_DEBUG
+  mzrt_mutex_create(&gc->pagetable_lock);
+#endif
+
   /* NOTE sets the constructed GC as the new Thread Specific GC. */
   GC_set_GC(gc);
 
@@ -2626,6 +2675,9 @@ void GC_destruct_child_gc() {
     waiting = MASTERGC->major_places_gc;
     if (!waiting) {
       MASTERGCINFO->signal_fds[gc->place_id] = (void *) REAPED_SLOT_AVAILABLE;
+#ifdef POINTER_OWERSHIP_CHECK
+      MASTERGCINFO->places_gcs[gc->place_id] = NULL;
+#endif
       gc->place_id = -1;
       MASTERGCINFO->alive--;
     }
@@ -2833,6 +2885,22 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
     if (!MASTERGC || !MASTERGC->major_places_gc || !(page = pagemap_find_page(MASTERGC->page_maps, p)))
 #endif
     {
+#ifdef POINTER_OWERSHIP_CHECK
+  mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
+  {
+    int i;
+    int size = MASTERGCINFO->size;
+    for (i = 0; i < size; i++) {
+      if (gc->place_id != i && MASTERGCINFO->signal_fds[i] != (void*) REAPED_SLOT_AVAILABLE) {
+        if((page = pagemap_find_page(MASTERGCINFO->places_gcs[i]->page_maps, p))) {
+          printf("%p is owned by place %i not the current place %i\n", p, i, gc->place_id);  
+          asm("int3");
+        }
+      }
+    }
+  }
+  mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+#endif
       GCDEBUG((DEBUGOUTF,"Not marking %p (no page)\n",p));
       return;
     }
