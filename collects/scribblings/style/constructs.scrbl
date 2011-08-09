@@ -349,6 +349,128 @@ racket
 
 
 @; -----------------------------------------------------------------------------
+@section{Exceptions}
+
+When you handle exceptions, specify the exception as precisely as
+possible.
+
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+...
+;; String [X -> Y] String -> Void
+(define (convert in f out)
+  (with-handlers
+      ((exn:fail:read? X))
+    (with-output-to out
+      (lambda ()
+        (with-input-from in
+          (reader f))))))
+
+;; may raise exn:fail:read
+(define (reader f) ...)
+
+(define (X an-exn) ...)
+]
+@; -----------------------------------------------------------------------------
+@racketmod[#:file
+@tt{bad}
+racket
+...
+;; String [X -> Y] String -> Void
+(define (convert in f out)
+  (with-handlers
+      (((code:hilite (lambda _ #t)) X))
+    (with-output-to out
+      (lambda ()
+        (with-input-from in
+          (reader f))))))
+
+;; may raise exn:fail:read
+(define (reader f) ...)
+
+(define (X an-exn) ...)
+]
+]
+ Using @racket[(lambda _ #t)] as an exception predicate suggests to the
+ reader that you wish to catch every possible exception, including failure
+ and break exceptions. Worse, the reader may think that you didn't remotely
+ consider what exceptions you @emph{should} be catching.
+
+It is equally bad to use @racket[exn?] as the exception predicate  even if
+ you mean to catch all kinds of failures. Doing so catches break
+ exceptions, too. To catch all failures, use @racket[exn:fail?] as shown on
+ the left:
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+...
+;; String [X -> Y] String -> Void
+(define (convert in f out)
+  (with-handlers
+      ((exn:fail? X))
+    (with-output-to out
+      (lambda ()
+        (with-input-from in
+          (reader f))))))
+
+;; may raise exn:fail:read
+(define (reader f) ...)
+
+(define (X an-exn) ...)
+]
+@racketmod[#:file
+@tt{bad}
+racket
+...
+;; String [X -> Y] String -> Void
+(define (convert in f out)
+  (with-handlers
+      (((code:hilite exn?) X))
+    (with-output-to out
+      (lambda ()
+        (with-input-from in
+          (reader f))))))
+
+;; may raise exn:fail:read
+(define (reader f) ...)
+
+(define (X an-exn) ...)
+]
+]
+
+Finally, a handler for a @racket[exn:fail?] clause should never
+ succeed for all possible failures because it silences all kinds of
+ exceptions that you probably want to see:
+@codebox[
+@racketmod[#:file
+@tt{bad}
+racket
+...
+;; String [X -> Y] String -> Void
+(define (convert in f out)
+  (with-handlers ((exn:fail? (lambda (e)
+                               (cond
+				 [(exn:fail:read? e)
+				  (displayln "drracket is special")]
+                                 [else (void)]))))
+    (with-output-to out
+      (lambda ()
+        (with-input-from in
+          (reader f))))))
+
+;; may raise exn:fail:read
+(define (reader f) ...)
+]
+]
+ If you wish to deal with several different kind of failures, say
+ @racket[exn:fail:read?] and @racket[exn:fail:network?], use distinct
+ clauses in @racket[with-handlers] to do so and distribute the branches of
+ your conditional over these clauses.
+
+@; -----------------------------------------------------------------------------
 @section{Parameters}
 
 If you need to set a parameter, use @racket[parameterize]:
