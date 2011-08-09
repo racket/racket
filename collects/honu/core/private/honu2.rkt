@@ -61,6 +61,20 @@
                       (parse #'(rest ...)))
        (values parsed unparsed #t)])))
 
+(provide honu-quote)
+(define-honu-syntax honu-quote
+  (lambda (code context)
+    (syntax-parse code
+      [(_ expression rest ...)
+       (values #'(quote expression) #'(rest ...) #f)])))
+
+(provide honu-quasiquote)
+(define-honu-syntax honu-quasiquote
+  (lambda (code context)
+    (syntax-parse code
+      [(_ expression rest ...)
+       (values #'(quasiquote expression) #'(rest ...) #f)])))
+
 (define-syntax-rule (define-binary-operator name precedence operator)
                     (begin
                       (provide name)

@@ -12,6 +12,8 @@
                      [honu-var var]
                      [honu-val val]
                      [honu-for for]
+                     [honu-quote quote]
+                     [honu-quasiquote quasiquote]
                      [honu-+ +] [honu-- -]
                      [honu-* *] [honu-/ /]
                      [honu-^ ^]

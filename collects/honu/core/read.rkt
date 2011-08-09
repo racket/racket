@@ -65,6 +65,8 @@
     ["." (token-identifier '|.|)]
     ["," (token-identifier '|,|)]
     ["!" (token-identifier '!)]
+    ["'" (token-identifier 'quote)]
+    ["`" (token-identifier 'quasiquote)]
     ["=" (token-identifier '=)]
     ["*" (token-identifier '*)]
     ["/" (token-identifier '/)]
