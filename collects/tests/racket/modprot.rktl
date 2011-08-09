@@ -10,7 +10,7 @@
 (define zero
   '(module zero '#%kernel
 
-     (define-values (prot) 8)
+     (define-values (prot) '(8))
      
      (#%provide (protect prot))))
 
@@ -21,9 +21,9 @@
      (#%require 'zero
                 (for-syntax '#%kernel))
      
-     (define-values (unexp) 5)
+     (define-values (unexp) '(5))
      (define-syntaxes (stx)
-       (lambda (stx) (quote-syntax 13)))
+       (lambda (stx) (quote-syntax '(13))))
 
      (define-syntaxes (nab)
        (lambda (stx)
@@ -88,7 +88,7 @@
   '(module two '#%kernel
      (#%require 'one)
 
-     (define-values (normal) 10)
+     (define-values (normal) '(10))
      
      (nab nabbed)
      (pnab pnabbed)
@@ -111,7 +111,7 @@
   '(module two '#%kernel
      (#%require 'one)
 
-     (define-values (normal) 10)
+     (define-values (normal) '(10))
      
      (nab nabbed)
      (pnab pnabbed)
@@ -244,17 +244,17 @@
              (test #t regexp-match?
                    (if (byte-regexp? v) v (byte-regexp (string->bytes/utf-8 (format "~a\n" v))))
                    (get-output-bytes p))))])
-    (try two/no-protect three/nabbed (if fail-prot? #rx#"unexported .* unexp" #rx#"one 5") fail-three?)
-    (try two/no-protect three/nfnabbed (if (and fail-prot? (not np-ok?)) #rx#"unexported .* unexp" #rx#"two 5") fail-three?)
-    (try two/no-protect three/pnabbed (if fail-pnab? #rx#"protected .* prot" #rx#"zero 8") fail-three?)
-    (try two/no-protect three/nfpnabbed (if (and fail-pnab? (not np-ok?)) #rx#"protected .* prot" #rx#"two 8") (or fail-three? fail-three-comp?))
-    (try two/no-protect three/snabbed (if (and fail-prot? np-ok?) #rx#"unexported .* stx" #rx#"one 13") fail-three?)
-    (try two/no-protect three/nfsnabbed #rx#"two 13" fail-three?)
-    (try two/no-protect three/normal #rx#"two 10" fail-three?)
-    (try two/protect three/nabbed (if fail-prot? #rx#"unexported .* unexp" #rx#"one 5") fail-three?)
-    (try two/protect three/pnabbed (if fail-pnab? #rx#"protected .* prot" #rx#"zero 8") fail-three?)
-    (try two/protect three/snabbed (if (and fail-prot? np-ok?) #rx#"unexported .* stx" #rx#"one 13") fail-three?)
-    (try two/protect three/normal  (if fail-prot? #rx#"protected .* normal" #rx#"two 10") fail-three?)))
+    (try two/no-protect three/nabbed (if fail-prot? #rx#"unexported .* unexp" #rx#"one .5.") fail-three?)
+    (try two/no-protect three/nfnabbed (if (and fail-prot? (not np-ok?)) #rx#"unexported .* unexp" #rx#"two .5.") fail-three?)
+    (try two/no-protect three/pnabbed (if fail-pnab? #rx#"protected .* prot" #rx#"zero .8.") fail-three?)
+    (try two/no-protect three/nfpnabbed (if (and fail-pnab? (not np-ok?)) #rx#"protected .* prot" #rx#"two .8.") (or fail-three? fail-three-comp?))
+    (try two/no-protect three/snabbed (if (and fail-prot? np-ok?) #rx#"unexported .* stx" #rx#"one .13.") fail-three?)
+    (try two/no-protect three/nfsnabbed #rx#"two .13." fail-three?)
+    (try two/no-protect three/normal #rx#"two .10." fail-three?)
+    (try two/protect three/nabbed (if fail-prot? #rx#"unexported .* unexp" #rx#"one .5.") fail-three?)
+    (try two/protect three/pnabbed (if fail-pnab? #rx#"protected .* prot" #rx#"zero .8.") fail-three?)
+    (try two/protect three/snabbed (if (and fail-prot? np-ok?) #rx#"unexported .* stx" #rx#"one .13.") fail-three?)
+    (try two/protect three/normal  (if fail-prot? #rx#"protected .* normal" #rx#"two .10.") fail-three?)))
 
 ;; - - - - - - - - - - - - - - - - - - - -
 

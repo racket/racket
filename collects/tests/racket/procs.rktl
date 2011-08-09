@@ -271,5 +271,13 @@
              (lambda (exn) (regexp-match #rx"4th argument" (exn-message exn))))
 
 ;; ----------------------------------------
+;; Check mutation of direct-called keyword procedure
+
+(let ()
+  (define (f #:x x) (list x))
+  (set! f (lambda (#:y y) (box y)))
+  (test (box 8) (lambda () (f #:y 8))))
+
+;; ----------------------------------------
 
 (report-errs)
