@@ -22,6 +22,7 @@
                      [literal:honu-= =]
                      [literal:semicolon |;|]
                      [literal:honu-comma |,|]
+                     [literal:#%brackets #%brackets]
                      [literal:#%braces #%braces]
                      [literal:#%parens #%parens])
          )

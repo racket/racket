@@ -329,7 +329,7 @@
       (do-parse (cons sub-tree current) unparsed table)))
 
   (define do-left-parens (make-encloser '#%parens ")" right-parens?))
-  (define do-left-bracket (make-encloser '#%bracket "}" right-bracket?))
+  (define do-left-bracket (make-encloser '#%brackets "}" right-bracket?))
   (define do-left-brace (make-encloser '#%braces "]" right-brace?))
   
   (define dispatch-table (list [list atom? do-atom]

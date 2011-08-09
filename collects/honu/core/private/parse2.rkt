@@ -96,17 +96,17 @@
        (loop (cons #'name out) #'())]
       [() (reverse out)])))
 
-(define (parse-call-arguments arguments)
+(define (parse-comma-expression arguments)
   (if (null? (syntax->list arguments))
     '()
     (let loop ([used '()]
-	       [rest arguments])
+               [rest arguments])
       (if (empty-syntax? rest)
-	(reverse used)
-	(let-values ([(parsed unparsed)
-		      (parse rest)])
+        (reverse used)
+        (let-values ([(parsed unparsed)
+                      (parse rest)])
           (loop (cons parsed used)
-		unparsed))))))
+                unparsed))))))
 
 ;; 1 + 1
 ;; ^
@@ -189,12 +189,12 @@
                       0
                       (lambda (x) x)
                       (left final)))]
-	 [(comma? #'head)
-	  (values (left final)
-		  #'(rest ...))]
-     [(semicolon? #'head)
-      (values (left final)
-              #'(rest ...))
+         [(comma? #'head)
+          (values (left final)
+                  #'(rest ...))]
+         [(semicolon? #'head)
+          (values (left final)
+                  #'(rest ...))
           #;
           (do-parse #'(rest ...) 0
                     (lambda (stuff)
@@ -202,54 +202,61 @@
                                     [current (left current)])
                         #'(begin current stuff)))
                     #'(void))
-         #;
+          #;
           (with-syntax ([so-far (left current)])
             #'(splicing-let-syntax ([more (lambda (stx)
                                             (parse #'(rest ...)))])
-                so-far (more)))]
-     [else
-       (syntax-parse #'(head rest ...) #:literal-sets (cruft)
-         [(function:identifier (#%parens args ...) (#%braces code ...) . rest)
-          (values (with-syntax ([(parsed-arguments ...)
-                                 (parse-arguments #'(args ...))])
-                    #'(define (function parsed-arguments ...)
-                        (let-syntax ([parse-more (lambda (stx)
-                                                   (parse-all #'(code ...)))])
-                          (parse-more))))
-                  #'rest)]
-         [else (syntax-parse #'head
-                 #:literal-sets (cruft)
-                 [x:atom
-                   (debug "atom ~a current ~a\n" #'x current)
-                   (if current
-                     (values (left current) stream)
-                     (do-parse #'(rest ...) precedence left #'x))]
-                 [(#%braces stuff ...)
-                  (if current
-                    (values (left current) stream)
-                    (let ()
-                      (define body (parse-all #'(stuff ...)))
-                      (do-parse #'(rest ...) precedence left body)))]
-                 [(#%parens args ...)
-                  (debug "function call ~a\n" left)
-                  (values (left (with-syntax ([current current]
-                                              [(parsed-args ...)
-                                               (parse-call-arguments #'(args ...)) ])
-                                  #'(current parsed-args ...)))
-                          #'(rest ...))
-                  #;
-                  (do-parse #'(rest ...)
-                            0
-                            (lambda (x) x)
-                            (left (with-syntax ([current current]
-                                                [(parsed-args ...)
-                                                 (if (null? (syntax->list #'(args ...)))
-                                                   '()
-                                                   (list (parse #'(args ...))))])
-                                    #'(current parsed-args ...))))
-                  #;
-                  (error 'parse "function call")]
-                 [else (error 'what "dont know how to parse ~a" #'head)])])])]))
+                                   so-far (more)))]
+         [else
+           (syntax-parse #'(head rest ...) #:literal-sets (cruft)
+             [(function:identifier (#%parens args ...) (#%braces code ...) . rest)
+              (values (with-syntax ([(parsed-arguments ...)
+                                     (parse-arguments #'(args ...))])
+                        #'(define (function parsed-arguments ...)
+                            (let-syntax ([parse-more (lambda (stx)
+                                                       (parse-all #'(code ...)))])
+                              (parse-more))))
+                      #'rest)]
+             [else (syntax-parse #'head
+                     #:literal-sets (cruft)
+                     [x:atom
+                       (debug "atom ~a current ~a\n" #'x current)
+                       (if current
+                         (values (left current) stream)
+                         (do-parse #'(rest ...) precedence left #'x))]
+                     [(#%brackets stuff ...)
+                      (define value (with-syntax ([(data ...)
+                                                   (parse-comma-expression #'(stuff ...))])
+                                      #'(list data ...)))
+                      (if current
+                         (values (left current) stream)
+                         (do-parse #'(rest ...) precedence left value))]
+                     [(#%braces stuff ...)
+                      (if current
+                        (values (left current) stream)
+                        (let ()
+                          (define body (parse-all #'(stuff ...)))
+                          (do-parse #'(rest ...) precedence left body)))]
+                     [(#%parens args ...)
+                      (debug "function call ~a\n" left)
+                      (values (left (with-syntax ([current current]
+                                                  [(parsed-args ...)
+                                                   (parse-comma-expression #'(args ...)) ])
+                                      #'(current parsed-args ...)))
+                              #'(rest ...))
+                      #;
+                      (do-parse #'(rest ...)
+                                0
+                                (lambda (x) x)
+                                (left (with-syntax ([current current]
+                                                    [(parsed-args ...)
+                                                     (if (null? (syntax->list #'(args ...)))
+                                                       '()
+                                                       (list (parse #'(args ...))))])
+                                        #'(current parsed-args ...))))
+                      #;
+                      (error 'parse "function call")]
+                     [else (error 'what "dont know how to parse ~a" #'head)])])])]))
 
   (do-parse input 0 (lambda (x) x) #f))
 
