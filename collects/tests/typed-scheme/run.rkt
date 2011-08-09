@@ -39,4 +39,5 @@
                                   (if (missed-opt?) (list missed-optimization-tests)     '())
                                   (if (bench?)      (list (compile-benchmarks))          '())))])])
       (unless (= 0 ((exec) to-run))
-        (eprintf "Typed Racket Tests did not pass.\n"))))
+        (eprintf "Typed Racket Tests did not pass.\n")
+        (exit 1))))
