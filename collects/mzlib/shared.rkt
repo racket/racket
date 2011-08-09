@@ -9,6 +9,8 @@
 
 (provide shared)
 
+(define-for-syntax code-insp (current-code-inspector))
+
 (define undefined (letrec ([x x]) x))
 (require (only-in scheme/base [cons the-cons]))
 

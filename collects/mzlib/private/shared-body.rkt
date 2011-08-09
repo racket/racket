@@ -1,8 +1,9 @@
 
 ;; Used by ../shared.rkt, and also collects/lang/private/teach.rkt
 ;; Besides the usual things, this code expects `undefined' and
-;; `the-cons' to be bound, and it expects `struct-declaration-info?'
-;; from the "struct.rkt" library of the "syntax" collection.
+;; `the-cons', to be bound, it expects `struct-declaration-info?'
+;; from the "struct.rkt" library of the "syntax" collection, and it
+;; expects `code-insp' for-syntax.
 
 (syntax-case stx ()
   [(_ ([name expr] ...) body1 body ...)
@@ -31,7 +32,7 @@
 				    (kernel-form-identifier-list)
 				    names))])
 			   ;; Remove #%app if present...
-			   (syntax-case e (#%plain-app)
+			   (syntax-case (syntax-disarm e code-insp) (#%plain-app)
 			     [(#%plain-app a ...)
 			      (syntax/loc e (a ...))]
 			     [_else e])))
@@ -89,7 +90,8 @@
                            (if (null? rmv-lst)
                                lst
                                (loop (remove (car rmv-lst) lst)
-                                     (cdr rmv-lst)))))])
+                                     (cdr rmv-lst)))))]
+           [disarm (lambda (stx) (syntax-disarm stx code-insp))])
        (with-syntax ([(graph-expr ...)
 		      (map (lambda (expr)
                              (let loop ([expr expr])
@@ -107,7 +109,7 @@
                                                         ph))
                                                  names placeholder-ids ph-used?s))
                                      (loop expr)))
-                               (syntax-case* expr (the-cons mcons append box box-immutable vector vector-immutable) same-special-id?
+                               (syntax-case* (disarm expr) (the-cons mcons append box box-immutable vector vector-immutable) same-special-id?
                                  [(the-cons a d)
                                   (with-syntax ([a (cons-elem #'a)]
                                                 [d (cons-elem #'d)])
@@ -194,7 +196,9 @@
                                       [(vector . _) temp-id]
                                       [(vector-immutable . _) temp-id]
                                       [(make-x . _)
-                                       (struct-decl-for (syntax make-x))
+                                       (syntax-case (syntax-disarm expr code-insp) ()
+                                         [(make-x . _)
+                                          (struct-decl-for (syntax make-x))])
                                        temp-id]
                                       [else #f])])
                                (cond
@@ -217,7 +221,7 @@
 			(map (lambda (name expr)
                                (let loop ([name name] [expr expr])
                                  (with-syntax ([name name])
-                                   (syntax-case* expr (the-cons mcons list list* append box box-immutable vector vector-immutable) 
+                                   (syntax-case* (disarm expr) (the-cons mcons list list* append box box-immutable vector vector-immutable) 
                                                  same-special-id?
                                      [(the-cons a d)
                                       #`(begin #,(loop #`(car name) #'a)

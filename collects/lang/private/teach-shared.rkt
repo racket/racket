@@ -12,6 +12,8 @@
           scheme/base
           (only-in "teachprims.rkt" [advanced-cons the-cons])))
 
+(define code-insp (current-code-inspector))
+
 (define shared/proc
   (lambda (stx make-check-cdr undefined-expr)
     (with-syntax ([undefined undefined-expr])

@@ -428,7 +428,7 @@
            expr
            (keep-lambda-properties
             expr
-            (profile-annotate-lambda name expr expr (syntax body)
+            (profile-annotate-lambda name expr disarmed-expr (syntax body)
                                      phase)))]
          [(case-lambda clause ...)
           (with-syntax ([([args . body] ...)
