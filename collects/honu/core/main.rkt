@@ -6,17 +6,17 @@
 
 (provide #%top
          #%datum
-         print printf
+         print printf true false
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-function function]
                      [honu-var var]
                      [honu-val val]
                      [honu-for for]
-                     [honu-+ +]
-                     [honu-- -]
-                     [honu-* *]
-                     [honu-/ /]
+                     [honu-+ +] [honu-- -]
+                     [honu-* *] [honu-/ /]
                      [honu-^ ^]
+                     [honu-and and]
+                     [honu-or or]
                      [literal:honu-= =]
                      [literal:semicolon |;|]
                      [literal:honu-comma |,|]

@@ -70,20 +70,10 @@
                                                                    [right right])
                                                        #'(operator left right))))))
 
-(provide honu-+)
-(define-honu-operator/syntax honu-+ 1
-                             (lambda (left right)
-                               (with-syntax ([left left]
-                                             [right right])
-                                 #'(+ left right))))
-
-(provide honu--)
-(define-honu-operator/syntax honu-- 1
-                             (lambda (left right)
-                               (with-syntax ([left left]
-                                             [right right])
-                                 #'(- left right))))
-
+(define-binary-operator honu-+ 1 +)
+(define-binary-operator honu-- 1 -)
 (define-binary-operator honu-* 2 *)
 (define-binary-operator honu-/ 2 /)
 (define-binary-operator honu-^ 2 expt)
+(define-binary-operator honu-and 0.5 and)
+(define-binary-operator honu-or 0.5 or)

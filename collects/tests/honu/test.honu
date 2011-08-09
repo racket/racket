@@ -28,11 +28,17 @@ test1(){
 }
 
 val test2(val x, val y){
-  print(x);
-  print(y)
+  printf("~a\n", x);
+  printf("~a\n", y);
+}
+
+val test3(val what){
+    printf("~a and true = ~a\n", what, what and true);
+    printf("~a and false = ~a\n", what, what and false);
 }
 
 test1();
 test2(5, 9);
+test3(true);
 
 // function(z){ print(z) }(12)
