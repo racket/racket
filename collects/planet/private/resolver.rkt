@@ -172,8 +172,8 @@ subdirectory.
     [(name) (void)]
     [(spec module-path stx load? orig-paramz)
      ;; ensure these directories exist
-     (make-directory* (PLANET-DIR))
-     (make-directory* (CACHE-DIR))
+     (try-make-directory* (PLANET-DIR))
+     (try-make-directory* (CACHE-DIR))
      (establish-diamond-property-monitor)
      (planet-resolve spec
                      (current-module-declare-name)
@@ -303,8 +303,9 @@ subdirectory.
                 stx
                 (make-exn:fail
                  (format
-                  "Package ~a loaded twice with multiple incompatible versions:
-~a attempted to load version ~a.~a while version ~a.~a was already loaded by ~a"
+                  (string-append 
+                   "Package ~a loaded twice with multiple incompatible versions:\n"
+                   "~a attempted to load version ~a.~a while version ~a.~a was already loaded by ~a")
                   (pkg-name pkg)
                   (stx->origin-string stx)
                   (pkg-maj pkg)
@@ -471,11 +472,18 @@ subdirectory.
                           (number->string maj)
                           (number->string min))]
          [full-pkg-path (build-path dir name)])
-    (make-directory* dir)
+    (try-make-directory* dir)
     (unless (equal? (normalize-path (uninstalled-pkg-path uninst-p))
                     (normalize-path full-pkg-path))
-      (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
-      (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path))
+      (call-with-file-lock/timeout
+       full-pkg-path
+       'exclusive
+       (λ ()
+         (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
+         (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path))
+       (λ ()
+         (error 'ack!)
+         (log-error (format "planet/resolver.rkt: unable to save the planet package ~a" full-pkg-path)))))
     full-pkg-path))
 
 ;; =============================================================================
@@ -603,12 +611,11 @@ subdirectory.
 ;; raises an exception if some protocol failure occurs in the download process
 (define (download-package/planet pkg)
 
-  (define stupid-internal-define-syntax 
-    (let ([msg (format "downloading ~a from ~a via planet protocol" 
-                       (pkg-spec->string pkg)
-                       (PLANET-SERVER-NAME))])
-      (planet-terse-log 'download (pkg-spec->string pkg))
-      (planet-log msg)))
+  (let ([msg (format "downloading ~a from ~a via planet protocol" 
+                     (pkg-spec->string pkg)
+                     (PLANET-SERVER-NAME))])
+    (planet-terse-log 'download (pkg-spec->string pkg))
+    (planet-log msg))
   
   (define-values (ip op) (tcp-connect (PLANET-SERVER-NAME) (PLANET-SERVER-PORT)))
 

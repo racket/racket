@@ -13,8 +13,68 @@ Various common pieces of code that both the client and server need to access
            "../config.rkt"
            "data.rkt")
   
-  (provide (all-defined-out)
-           (all-from-out "data.rkt"))
+  (provide (all-from-out "data.rkt")
+           (struct-out exn:fail:filesystem:no-directory)
+           (struct-out mz-version)
+           (struct-out branch)
+           (struct-out star)
+           try-make-directory*
+           language-version->repository
+           version->description
+           legal-language?
+           lookup-package
+           lookup-package-by-keys
+           empty-table
+           get-min-core-version
+           pkg->assoc-table
+           points-to?
+           row->package
+           
+           add-hard-link!
+           filter-link-table!
+           get-hard-link-table
+           
+           update-element
+           update/create-element
+           first-n-list-selectors
+           make-assoc-table-row
+           string->mz-version
+           version<=
+           pkg<
+           pkg>
+           pkg=
+           compatible-version?
+           get-best-match
+           get-installed-package
+           make-cutoff-port
+           write-line
+           for-each/n
+           nat?
+           read-n-chars-to-file
+           copy-n-chars
+           repeat-forever
+           build-hash-table
+           categorize
+           drop-last
+           read-all
+           wrap
+           planet-logging-to-stdout
+           planet-log
+           with-logging
+           pkg->info
+           directory->tree
+           filter-tree-by-pattern
+           tree-apply
+           tree->list
+           repository-tree
+           
+           assoc-table-row->name
+           assoc-table-row->path
+           assoc-table-row->maj
+           assoc-table-row->min
+           assoc-table-row->dir
+           assoc-table-row->required-version
+           assoc-table-row->type)
   
   ; ==========================================================================================
   ; CACHE LOGIC
@@ -48,6 +108,14 @@ Various common pieces of code that both the client and server need to access
        (let* ((at (build-assoc-table pkg dir)))
          (get-best-match at pkg))]))
   
+  ; build-assoc-table : FULL-PKG-SPEC path -> assoc-table
+  ; returns a version-number -> directory association table for the given package
+  (define (build-assoc-table pkg dir) 
+    (append 
+     (pkg->assoc-table pkg dir)
+     (hard-links pkg)))
+  
+  
   ;; lookup-package-by-keys : string string nat nat nat -> (list path string string (listof string) nat nat) | #f
   ;; looks up and returns a list representation of the package named by the given owner,
   ;; package name, major and (exact) minor version.
@@ -73,13 +141,6 @@ Various common pieces of code that both the client and server need to access
                 (pkg-min result))
           #f)))
      
-  
-  ; build-assoc-table : FULL-PKG-SPEC path -> assoc-table
-  ; returns a version-number -> directory association table for the given package
-  (define (build-assoc-table pkg dir) 
-    (add-to-table 
-     (pkg->assoc-table pkg dir)
-     (hard-links pkg)))
   
   ;; assoc-table ::= (listof (list n n path))
   (define empty-table '())
@@ -138,19 +199,39 @@ Various common pieces of code that both the client and server need to access
   ;; verify-well-formed-hard-link-parameter! : -> void
   ;; pitches a fit if the hard link table parameter isn't set right
   (define (verify-well-formed-hard-link-parameter!)
-    (unless (and (absolute-path? (HARD-LINK-FILE)) (path-only (HARD-LINK-FILE)))
+    (define hlf (HARD-LINK-FILE))
+    (unless (and (absolute-path? hlf) (path-only hlf))
       (raise (make-exn:fail:contract
               (format
                "The HARD-LINK-FILE setting must be an absolute path name specifying a file; given ~s"
-               (HARD-LINK-FILE))
+               hlf)
               (current-continuation-marks)))))
 
-  ;; get-hard-link-table : -> assoc-table
-  (define (get-hard-link-table)
+  ;; get-hard-link-table/internal : -> assoc-table
+  (define (get-hard-link-table/internal)
     (verify-well-formed-hard-link-parameter!)
     (if (file-exists? (HARD-LINK-FILE))
         (map (lambda (item) (update/create-element 6 (λ (_) 'development-link) (update-element 4 bytes->path item)))
              (with-input-from-file (HARD-LINK-FILE) read-all))
+        '()))
+  
+  (define (with-hard-link-lock t)
+    (let-values ([(base name dir) (split-path (HARD-LINK-FILE))])
+      (try-make-directory* base))
+    (call-with-file-lock/timeout
+     (HARD-LINK-FILE)
+     'exclusive
+     t
+     (λ () 
+       (error 'planet/planet-shared.rkt "unable to obtain lock on ~s" (HARD-LINK-FILE)))))
+  
+  (define (get-hard-link-table)
+    ;; we can only call with-hard-link-lock when the directory containing
+    ;; (HARD-LINK-FILE) exists
+    (if (file-exists? (HARD-LINK-FILE))
+        (with-hard-link-lock
+         (λ ()
+           (get-hard-link-table/internal)))
         '()))
   
   ;; row-for-package? : row string (listof string) num num -> boolean
@@ -171,10 +252,9 @@ Various common pieces of code that both the client and server need to access
   
   ;; save-hard-link-table : assoc-table -> void
   ;; saves the given table, overwriting any file that might be there
+  ;; assumes that the lock on the HARD-LINK table file has been acquired
   (define (save-hard-link-table table)
     (verify-well-formed-hard-link-parameter!)
-    (let-values ([(base name dir) (split-path (HARD-LINK-FILE))])
-      (make-directory* base))
     (with-output-to-file (HARD-LINK-FILE) #:exists 'truncate
       (lambda ()
         (display "")
@@ -188,23 +268,29 @@ Various common pieces of code that both the client and server need to access
   ;; adds the given hard link, clearing any previous ones already in place
   ;; for the same package
   (define (add-hard-link! name path maj min dir)
-    (let ([complete-dir (path->complete-path dir)])
-      (let* ([original-table (get-hard-link-table)]
-             [new-table (cons
-                         (make-assoc-table-row name path maj min complete-dir #f 'development-link)
-                         (filter
-                          (lambda (row) (not (points-to? row name path maj min)))
-                          original-table))])
-        (save-hard-link-table new-table))))
+    (with-hard-link-lock
+     (λ ()
+       (let ([complete-dir (path->complete-path dir)])
+         (let* ([original-table (get-hard-link-table/internal)]
+                [new-table (cons
+                            (make-assoc-table-row name path maj min complete-dir #f 'development-link)
+                            (filter
+                             (lambda (row) (not (points-to? row name path maj min)))
+                             original-table))])
+           (save-hard-link-table new-table))))))
   
   ;; filter-link-table! : (row -> boolean) (row -> any/c) -> void
   ;; removes all rows from the hard link table that don't match the given predicate.
   ;; also updates auxiliary datastructures that might have dangling pointers to
   ;; the removed links
   (define (filter-link-table! f on-delete)
-    (let-values ([(in-links out-links) (srfi1:partition f (get-hard-link-table))])
-      (for-each on-delete out-links)
-      (save-hard-link-table in-links)))
+    (define out-links
+      (with-hard-link-lock
+       (λ ()
+         (let-values ([(in-links out-links) (srfi1:partition f (get-hard-link-table/internal))])
+           (save-hard-link-table in-links)
+           out-links))))
+      (for-each on-delete out-links))
   
   ;; update-element : number (x -> y) (listof any [x in position number]) -> (listof any [y in position number])
   (define (update-element n f l)
@@ -223,10 +309,6 @@ Various common pieces of code that both the client and server need to access
        (cons (f (car l)) (cdr l))]
       [else (cons (car l) (update/create-element (sub1 n) f (cdr l)))]))
        
-  
-  ; add-to-table assoc-table (listof assoc-table-row) -> assoc-table
-  (define add-to-table append) 
-  
   ;; first-n-list-selectors : number -> (values (listof x -> x) ...)
   ;; returns n list selectors for the first n elements of a list
   ;; (useful for defining meaningful names to list-structured data)
@@ -623,3 +705,20 @@ Various common pieces of code that both the client and server need to access
         (not (regexp-match? #rx"/(?:[.]git.*|[.]svn|CVS)$" (path->string x))))
       4)
      (list id id id string->number string->number)))
+
+;; try-make-directory* : path[directory] -> void
+;; tries multiple times to make the directory 'dir'
+;; we only expect the second (or later) attempt to succeed
+;; when two calls to try-make-directory* happen in parallel
+;; (in separate places); this is here to avoid having to use
+;; a lock
+(define (try-make-directory* dir)
+  (let loop ([n 10])
+    (cond
+      [(zero? n)
+       (make-directory* dir)]
+      [else
+       (with-handlers ((exn:fail:filesystem? (λ (x) (loop (- n 1)))))
+         (make-directory* dir))])))
+
+
