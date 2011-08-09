@@ -26,6 +26,8 @@ to demonstrate various different uses of PLT Redex:
   with function contracts, (eager) pair contracts, 
   and a few numeric predicates
 
+  define-judgment-form: example uses of `define-judgment-form'
+
   delim-cont: The model from Flatt, Yu, Findler, and Felleisen's ICFP
   '07 paper "Adding Delimited and Composable Control to a Production
   Programming Environment"
