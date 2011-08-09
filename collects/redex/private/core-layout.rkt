@@ -38,6 +38,7 @@
          just-after
          with-unquote-rewriter
          with-compound-rewriter
+         with-compound-rewriters
          with-atomic-rewriter
          STIX?
          white-bracket-sizing
@@ -98,13 +99,15 @@
                         the-name
                         (blank))))))))
   
-  (define-syntax (with-compound-rewriter stx)
-    (syntax-case stx ()
-      [(_ name transformer e)
-       #'(parameterize ([compound-rewrite-table
-                         (cons (list name transformer)
+  (define-syntax-rule (with-compound-rewriter name rewriter body)
+    (with-compound-rewriters ([name rewriter]) body))
+  (define-syntax with-compound-rewriters
+    (syntax-rules ()
+      [(_ ([name rewriter] ...) body)
+       (parameterize ([compound-rewrite-table
+                       (append (reverse (list (list name rewriter) ...))
                                (compound-rewrite-table))])
-           e)]))
+         body)]))
   
   (define-syntax (with-unquote-rewriter stx)
     (syntax-case stx ()

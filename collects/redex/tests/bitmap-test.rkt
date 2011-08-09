@@ -346,13 +346,11 @@
   (define (rewrite-lookup lws)
     (list "" (list-ref lws 2) "(" (list-ref lws 3) ")"))
   
-  (test (with-compound-rewriter 
-         'typeof rewrite-typeof 
-         (with-compound-rewriter
-          'extend rewrite-extend 
-          (with-compound-rewriter
-           'lookup rewrite-lookup 
-           (render-judgment-form typeof))))
+  (test (with-compound-rewriters
+         (['typeof rewrite-typeof]
+          ['extend rewrite-extend]
+          ['lookup rewrite-lookup])
+         (render-judgment-form typeof))
         "stlc.png"))  
 
 (printf "bitmap-test.rkt: ")

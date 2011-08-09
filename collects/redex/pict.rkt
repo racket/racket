@@ -141,6 +141,7 @@
  [just-after (-> (or/c pict? string? symbol?) lw? lw?)])
 (provide with-unquote-rewriter
          with-compound-rewriter
+         with-compound-rewriters
          with-atomic-rewriter)
 
 (provide/contract

@@ -2620,6 +2620,10 @@ explanation of logical-space):
 }]
 }
 
+@defform[(with-compound-rewriters ([name-symbol proc] ...)
+                                  expression)]{
+Shorthand for nested @racket[with-compound-rewriter] expressions.}                                             
+                                             
 @defstruct[lw ([e (or/c string?
                         symbol?
                         pict? 
