@@ -48,6 +48,9 @@ to demonstrate various different uses of PLT Redex:
 
   semaphores.rkt: a simple threaded language with semaphores
 
+  stlc.rkt: a semantics for a typed CBV language with multi-argument
+  functions, conditionals, and addition
+
   subject-reduction.rkt: demos traces/pred that type checks
   the term.
 
