@@ -153,7 +153,7 @@
     ;; (printf "next ~a\n" next)
     (match next
       [(struct* position-token ([token (? token-eof?)] [start-pos start] [end-pos end]))
-       ;; (printf "done lexing\n")
+       ; (printf "done lexing ~a\n" tokens)
        (reverse tokens)]
       [(struct* position-token ([token (? token-end-of-line-comment?)]
                                  [start-pos start]
@@ -357,7 +357,7 @@
         [else (loop (cdr use))])))
 
   (if (null? tokens)
-    eof
+    (datum->syntax #f '() #f)
     (datum->syntax #f (do-parse '() tokens dispatch-table)
                    #f)))
 
@@ -380,6 +380,7 @@
   (port-count-lines! port)
   port)
 
+#;
 (test-case
   "Basic tests"
   (check-equal? (strip (lex-string "5"))
