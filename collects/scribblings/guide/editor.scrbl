@@ -129,8 +129,11 @@ if has("autocmd")
 endif
 }|
 
-Alternatively, you may want settings that are specific to Racket and not to
-Scheme.  To turn these settings on conditionally on Racket source files, add
+Alternatively, you can use the
+@hyperlink["https://github.com/wlangstroth/vim-racket"]{vim-racket}
+plugin to enable auto-detection, indentation, and syntax highlighting
+specifically for Racket files. Using the plugin is the easiest method, but if you
+would like to roll your own settings or override settings from the plugin, add
 something like the following to your vimrc:
 
 @verbatim|{
@@ -167,13 +170,15 @@ set expandtab
 
 You can enable indentation for Racket by setting both the @tt{lisp} and
 @tt{autoindent} options. However, the indentation is limited and not as
-complete as what you can get in Emacs. Using Dorai Sitaram's
-@hyperlink["http://evalwhen.com/scmindent/index.html"]{scmindent} is
-recommended for better indentation of Racket code. The instructions on how to
+complete as what you can get in Emacs. You can also use Dorai Sitaram's
+@hyperlink["http://evalwhen.com/scmindent/index.html"]{scmindent} for
+better indentation of Racket code. The instructions on how to
 use the indenter are available on the website.
 
 If you use the built-in indenter, you can customize it by setting how to
-indent certain keywords (add this to your .vimrc):
+indent certain keywords. The vim-racket plugin mentioned above sets
+some default keywords for you. You can add keywords yourself in your
+.vimrc like this:
 
 @verbatim|{
 " By default vim will indent arguments after the function name
@@ -190,13 +195,8 @@ set lispwords+=..more..
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=1230"]{Rainbow
 Parenthesis} script for vim can be useful for more visible parenthesis
 matching. Syntax highlighting for Scheme is shipped with vim on many platforms,
-which will work for the most part with Racket.
-
-If you use a racket filetype as shown above, you can copy the "scheme.vim"
-indentation file from wherever your OS has it installed (e.g. on a Debian
-GNU/Linux machine you would find it at @tt{/usr/share/vim/vim73/syntax}) and
-rename it as "racket.vim" in the @tt{syntax} subdirectory of your vim folder.
-You may want to modify the keywords to highlight Racket-specific identifiers.
+which will work for the most part with Racket. The vim-racket script will
+provide good default highlighting settings for you.
 
 @subsection{Structured editing}
 
@@ -211,5 +211,4 @@ If you are installing many vim plugins (not necessary specific to Racket), we
 recommend using a plugin that will make loading other plugins easier.
 @hyperlink["http://www.vim.org/scripts/script.php?script_id=2332"]{Pathogen} is
 one plugin that does this; using it, you can install new plugins by extracting
-new plugins from archives and just put them in a new subdirectory in the
-@tt{bundle} folder.
+them to subdirectories in the @tt{bundle} folder of your vim directory.
