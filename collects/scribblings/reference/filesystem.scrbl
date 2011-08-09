@@ -1070,6 +1070,7 @@ until delay reaches @racket[#:max-delay]. If
 @racket[call-with-file-lock/timeout] fails to obtain the lock,
 @racket[failure-thunk] is called in tail position.  The @racket[kind] argument
 specifies whether the lock is @racket['shared] or @racket['exclusive]
+in the sense of @racket[port-try-file-lock?].
 
 The @racket[filename] argument specifies a file path prefix that is only used
 to generate the lock filename, when @racket[#:get-lock-file] is not present.
