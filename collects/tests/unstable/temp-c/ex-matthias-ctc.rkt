@@ -19,7 +19,7 @@
   (define a (send memory malloc))
   (test
    (send memory free a) 
-   (send memory free "foo") =error> #rx"expected \\<number"
+   (send memory free "foo") =error> #rx"expected: number\\?"
    (send memory free a)))
 
 (require 'b)
