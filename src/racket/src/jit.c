@@ -64,7 +64,7 @@ static Scheme_Object *make_global_const_ref(Scheme_Object *var, Scheme_Object *d
   GC_CAN_IGNORE Scheme_Object *o;
 
   o = make_global_ref(var, dummy);
-  SCHEME_PAIR_FLAGS(o) |= 0x1;
+  SCHEME_VARREF_FLAGS(o) |= 0x1;
 
   return o;
 }

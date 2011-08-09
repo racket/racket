@@ -450,7 +450,7 @@ static Scheme_Object *write_set_bang(Scheme_Object *obj)
 
 Scheme_Object *write_varref(Scheme_Object *o)
 {
-  int is_const = (SCHEME_PAIR_FLAGS(o) & 0x1);
+  int is_const = (SCHEME_VARREF_FLAGS(o) & 0x1);
 
   if (is_const) {
     if (SCHEME_PTR1_VAL(o) != SCHEME_PTR2_VAL(o))
@@ -470,9 +470,10 @@ Scheme_Object *read_varref(Scheme_Object *o)
   data = scheme_alloc_object();
   data->type = scheme_varref_form_type;
   SCHEME_PTR2_VAL(data) = SCHEME_CDR(o);
-  if (SAME_OBJ(SCHEME_CAR(o), scheme_true))
+  if (SAME_OBJ(SCHEME_CAR(o), scheme_true)) {
+    SCHEME_VARREF_FLAGS(data) |= 0x1;
     SCHEME_PTR1_VAL(data) = SCHEME_CDR(o);
-  else
+  } else
     SCHEME_PTR1_VAL(data) = SCHEME_CAR(o);
   
   return data;

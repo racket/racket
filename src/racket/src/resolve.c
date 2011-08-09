@@ -675,12 +675,12 @@ ref_resolve(Scheme_Object *data, Resolve_Info *rslv)
   if (SAME_OBJ(v, scheme_true)
       || SAME_OBJ(v, scheme_false)) {
     if (SCHEME_TRUEP(v))
-      SCHEME_PAIR_FLAGS(data) |= 0x1; /* => constant */
+      SCHEME_VARREF_FLAGS(data) |= 0x1; /* => constant */
     v = SCHEME_PTR2_VAL(data);
   } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_local_type)) {
     v = scheme_resolve_expr(v, rslv);
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_local_type))
-      SCHEME_PAIR_FLAGS(data) |= 0x1; /* because mutable would be unbox */
+      SCHEME_VARREF_FLAGS(data) |= 0x1; /* because mutable would be unbox */
     v = SCHEME_PTR2_VAL(data);
   } else
     v = scheme_resolve_expr(v, rslv);

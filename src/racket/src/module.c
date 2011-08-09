@@ -3473,9 +3473,43 @@ static void setup_accessible_table(Scheme_Module *m)
           }
         }
 
-        if (!j)
+        if (!j) {
+          /* find constants: */
+          int i, cnt = SCHEME_VEC_SIZE(m->body), k;
+          Scheme_Object *form, *tl;
+
+          for (i = 0; i < cnt; i++) {
+            form = SCHEME_VEC_ELS(m->body)[i];
+            if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
+              for (k = SCHEME_VEC_SIZE(form); k-- > 1; ) {
+                tl = SCHEME_VEC_ELS(form)[k];
+                if (SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_CONST) {
+                  int pos = SCHEME_TOPLEVEL_POS(tl);
+                  if (pos < m->prefix->num_toplevels) {
+                    tl = m->prefix->toplevels[pos];
+                    if (SCHEME_SYMBOLP(tl)) {
+                      Scheme_Object *v;
+                      v = scheme_hash_get(ht, tl);
+                      if (!v) scheme_signal_error("internal error: defined name inaccessible");
+                      if ((SCHEME_VEC_SIZE(form) == 2)
+                          && scheme_compiled_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
+                        /* record simple constant from cross-module propagation: */
+                        v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
+                      } else {
+                        /* record simply that it's constant: */
+                        v = scheme_box(v);
+                      }
+                      scheme_hash_set(ht, tl, v);
+                    } else
+                      scheme_signal_error("internal error: strange defn target %d", SCHEME_TYPE(tl));
+                  }
+                }
+              }
+            }
+          }
+
           m->accessible = ht;
-        else
+        } else
           m->et_accessible = ht;
       }
     }
@@ -3555,7 +3589,8 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                                                  Scheme_Object *rename_insp,
 						 int position, int want_pos, 
                                                  int *_protected, int *_unexported,
-                                                 Scheme_Env *from_env, int *_would_complain)
+                                                 Scheme_Env *from_env, int *_would_complain,
+                                                 Scheme_Object **_is_constant)
      /* Returns the actual name when !want_pos, needed in case of
 	uninterned names.  Otherwise, returns a position value on success.
 	If position < -1, then merely checks for protected syntax.
@@ -3677,6 +3712,16 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
         pos = scheme_hash_get(env->module->et_accessible, symbol);
       else
         pos = NULL;
+
+      if (pos) {
+        if (SCHEME_BOXP(pos)) {
+          if (_is_constant) *_is_constant = scheme_void_proc; /* a hack to indicated "unknown constant" */
+          pos = SCHEME_BOX_VAL(pos);
+        } else if (SCHEME_PAIRP(pos)) {
+          if (_is_constant) *_is_constant = SCHEME_CDR(pos);
+          pos = SCHEME_CAR(pos);
+        }
+      }
 
       if (pos) {
         if (position < -1) {

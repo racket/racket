@@ -1309,6 +1309,14 @@
               (- (expt 2 31) 2))
            #f)
 
+;; simple cross-module inlining
+(test-comp `(module m racket/base 
+              (require racket/bool)
+              (list true))
+           `(module m racket/base 
+              (require racket/bool)
+              (list #t)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

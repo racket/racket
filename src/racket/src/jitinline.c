@@ -431,7 +431,7 @@ static int generate_inlined_constant_varref_test(mz_jit_state *jitter, Scheme_Ob
   GC_CAN_IGNORE jit_insn *ref1, *ref2;
   int pos;
 
-  if (SCHEME_PAIR_FLAGS(obj) & 0x1) {
+  if (SCHEME_VARREF_FLAGS(obj) & 0x1) {
     jit_movi_p(JIT_R0, scheme_true);
     return 1;
   }

@@ -4,16 +4,8 @@
          boolean=?
          symbol=?)
 
-(define-syntax-rule (define-constant id val)
-  (...
-   (define-syntax id
-     (syntax-id-rules (set!)
-       [(set! id rhs) (set! val rhs)]
-       [(id . args) (val . args)]
-       [_ val]))))
-
-(define-constant true #t)
-(define-constant false #f)
+(define true #t)
+(define false #f)
 
 (define (false? v) (eq? v #f))
 

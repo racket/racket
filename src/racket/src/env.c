@@ -1697,7 +1697,7 @@ static Scheme_Object *variable_const_p(int argc, Scheme_Object *argv[])
   if (!SAME_TYPE(SCHEME_TYPE(v), scheme_global_ref_type))
     scheme_wrong_type("variable-reference-constant?", "variable-reference", 0, argc, argv);
 
-  if (SCHEME_PAIR_FLAGS(v) & 0x1)
+  if (SCHEME_VARREF_FLAGS(v) & 0x1)
     return scheme_true;
 
   v = SCHEME_PTR1_VAL(v);

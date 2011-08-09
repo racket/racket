@@ -622,7 +622,13 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
   if (o)
     return o;
 
-  o = scheme_make_toplevel(0, cp->num_toplevels, 0, imported ? SCHEME_TOPLEVEL_READY : 0);
+  o = scheme_make_toplevel(0, cp->num_toplevels, 0, 
+                           (imported 
+                            ? (SCHEME_TOPLEVEL_READY 
+                               | ((SCHEME_MODVAR_FLAGS(var) & 0x1)
+                                  ? SCHEME_TOPLEVEL_CONST
+                                  : 0))
+                            : 0));
 
   cp->num_toplevels++;
   scheme_hash_set(ht, var, o);
@@ -877,7 +883,7 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
-					   int pos, intptr_t mod_phase)
+					   int pos, intptr_t mod_phase, int is_constant)
 {
   Scheme_Object *val;
   Scheme_Hash_Table *ht;
@@ -905,13 +911,16 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
       Module_Variable *mv;
       
       mv = MALLOC_ONE_TAGGED(Module_Variable);
-      mv->so.type = scheme_module_variable_type;
+      mv->iso.so.type = scheme_module_variable_type;
       
       mv->modidx = modidx;
       mv->sym = stxsym;
       mv->insp = insp;
       mv->pos = pos;
       mv->mod_phase = (int)mod_phase;
+
+      if (is_constant)
+        SCHEME_MODVAR_FLAGS(mv) |= 0x1;
       
       val = (Scheme_Object *)mv;
       
@@ -1630,7 +1639,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0;
   Scheme_Bucket *b;
   Scheme_Object *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
-  Scheme_Object *find_id_sym = NULL, *rename_insp = NULL;
+  Scheme_Object *find_id_sym = NULL, *rename_insp = NULL, *mod_constant = NULL;
   Scheme_Env *genv;
   intptr_t phase;
 
@@ -1857,7 +1866,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 					find_id, src_find_id, NULL, NULL, rename_insp,
                                         -2, 0, 
 					NULL, NULL,
-                                        env->genv, NULL);
+                                        env->genv, NULL, NULL);
   } else {
     /* Only try syntax table if there's not an explicit (later)
        variable mapping: */
@@ -1880,7 +1889,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     else
       pos = scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
 					      find_id, src_find_id, NULL, NULL, rename_insp, -1, 1,
-					      _protected, NULL, env->genv, NULL);
+					      _protected, NULL, env->genv, NULL, &mod_constant);
     modpos = (int)SCHEME_INT_VAL(pos);
   } else
     modpos = -1;
@@ -1915,13 +1924,18 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
         check_taint(src_find_id);
 	return scheme_hash_module_variable(genv, genv->module->self_modidx, find_id, 
 					   genv->module->insp,
-					   -1, genv->mod_phase);
+					   -1, genv->mod_phase, 0);
       }
     } else
       return NULL;
   }
 
   check_taint(src_find_id);
+
+  if ((flags & SCHEME_ELIM_CONST) 
+      && mod_constant 
+      && !SAME_OBJ(mod_constant, scheme_void_proc))
+    return mod_constant;
 
   /* Used to have `&& !SAME_OBJ(modidx, modname)' below, but that was a bad
      idea, because it causes module instances to be preserved. */
@@ -1934,7 +1948,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
 				       (rename_insp ? rename_insp : genv->module->insp),
-				       modpos, SCHEME_INT_VAL(mod_defn_phase));
+				       modpos, SCHEME_INT_VAL(mod_defn_phase),
+                                       !!mod_constant);
   }
 
   if (!modname 
@@ -1944,7 +1959,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     /* Need to return a variable reference in this case, too. */
     return scheme_hash_module_variable(env->genv, genv->module->self_modidx, find_global_id, 
 				       genv->module->insp,
-				       modpos, genv->mod_phase);
+				       modpos, genv->mod_phase,
+                                       !!mod_constant);
   }
 
   b = scheme_bucket_from_table(genv->toplevel, (char *)find_global_id);

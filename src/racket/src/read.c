@@ -5053,7 +5053,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	pos = read_compact_number(port);
 
 	mv = MALLOC_ONE_TAGGED(Module_Variable);
-	mv->so.type = scheme_module_variable_type;
+	mv->iso.so.type = scheme_module_variable_type;
         if (SCHEME_SYMBOLP(mod))
           mod = scheme_intern_resolved_module_path(mod);
 	mv->modidx = mod;

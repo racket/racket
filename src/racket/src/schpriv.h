@@ -171,7 +171,7 @@ void scheme_clear_ephemerons(void);
 #define PAIR_FLAG_MASK 0x3
 
 #define SCHEME_PAIR_COPY_FLAGS(dest, src) (SCHEME_PAIR_FLAGS((dest)) |= (SCHEME_PAIR_FLAGS((src)) & PAIR_FLAG_MASK))
-      
+
 
 /*========================================================================*/
 /*                             initialization                             */
@@ -2546,7 +2546,7 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
                                             int e_single_result,
                                             int context);
 
-int scheme_compiled_duplicate_ok(Scheme_Object *o);
+int scheme_compiled_duplicate_ok(Scheme_Object *o, int cross_mod);
 int scheme_compiled_propagate_ok(Scheme_Object *o, Optimize_Info *info);
 int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info);
 Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);
@@ -3046,12 +3046,16 @@ typedef struct Scheme_Modidx {
 } Scheme_Modidx;
 
 typedef struct Module_Variable {
-  Scheme_Object so; /* scheme_module_variable_type */
+  Scheme_Inclhash_Object iso; /* 0x1 flag => constant */
   Scheme_Object *modidx;
   Scheme_Object *sym;
   Scheme_Object *insp; /* for checking protected/unexported access */
   int pos, mod_phase;
 } Module_Variable;
+
+#define SCHEME_MODVAR_FLAGS(pr) MZ_OPT_HASH_KEY(&((Module_Variable *)pr)->iso)
+
+#define SCHEME_VARREF_FLAGS(pr) MZ_OPT_HASH_KEY(&((Scheme_Simple_Object *)pr)->iso)
 
 void scheme_add_global_keyword(const char *name, Scheme_Object *v, Scheme_Env *env);
 void scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *v, Scheme_Env *env);
@@ -3100,7 +3104,8 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                                                  Scheme_Object *rename_insp,
 						 int position, int want_pos,
 						 int *_protected, int *_unexported, 
-                                                 Scheme_Env *from_env, int *_would_complain);
+                                                 Scheme_Env *from_env, int *_would_complain,
+                                                 Scheme_Object **_is_constant);
 void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env);
 Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name);
 
@@ -3115,7 +3120,7 @@ int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object 
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
-					   int pos, intptr_t mod_phase);
+					   int pos, intptr_t mod_phase, int is_constant);
 
 
 Scheme_Env *scheme_get_kernel_env();

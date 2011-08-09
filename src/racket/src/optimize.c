@@ -2476,25 +2476,27 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
   return (Scheme_Object *)s;
 }
 
-int scheme_compiled_duplicate_ok(Scheme_Object *fb)
+int scheme_compiled_duplicate_ok(Scheme_Object *fb, int cross_module)
 {
   return (SCHEME_VOIDP(fb)
 	  || SAME_OBJ(fb, scheme_true)
 	  || SCHEME_FALSEP(fb)
-	  || SCHEME_SYMBOLP(fb)
+	  || (SCHEME_SYMBOLP(fb) && (!cross_module || !SCHEME_SYM_WEIRDP(fb)))
 	  || SCHEME_KEYWORDP(fb)
 	  || SCHEME_EOFP(fb)
 	  || SCHEME_INTP(fb)
 	  || SCHEME_NULLP(fb)
 	  || (SCHEME_CHARP(fb) && (SCHEME_CHAR_VAL(fb) < 256))
 	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type)
-          /* Values that are hashed by the printer to avoid
-             duplication: */
-	  || SCHEME_CHAR_STRINGP(fb) 
-          || SCHEME_BYTE_STRINGP(fb)
-          || SAME_TYPE(SCHEME_TYPE(fb), scheme_regexp_type)
-          || SCHEME_NUMBERP(fb)
-	  || SCHEME_PRIMP(fb));
+          || (!cross_module
+              &&
+              /* Values that are hashed by the printer to avoid
+                 duplication: */
+              (SCHEME_CHAR_STRINGP(fb) 
+               || SCHEME_BYTE_STRINGP(fb)
+               || SAME_TYPE(SCHEME_TYPE(fb), scheme_regexp_type)
+               || SCHEME_NUMBERP(fb)
+               || SCHEME_PRIMP(fb))));
 }
 
 static int equivalent_exprs(Scheme_Object *a, Scheme_Object *b)
@@ -2613,7 +2615,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
      for simple constants K. This is useful to expose simple
      tests to the JIT. */
   if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
-      && scheme_compiled_duplicate_ok(fb)) {
+      && scheme_compiled_duplicate_ok(fb, 0)) {
     Scheme_Branch_Rec *b2 = (Scheme_Branch_Rec *)t;
     if (SCHEME_FALSEP(b2->fbranch)) {
       Scheme_Branch_Rec *b3;
@@ -3130,7 +3132,7 @@ int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
 
 int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 {
-  if (scheme_compiled_duplicate_ok(value))
+  if (scheme_compiled_duplicate_ok(value, 0))
     return 1;
 
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_unclosed_procedure_type)) {
@@ -3152,6 +3154,8 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 
 
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_toplevel_type)) {
+    if (SCHEME_TOPLEVEL_FLAGS(value) & SCHEME_TOPLEVEL_CONST)
+      return 1;
     if (info->top_level_consts) {
       int pos;
       pos = SCHEME_TOPLEVEL_POS(value);
@@ -4962,7 +4966,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
       }
 
       if (c) {
-	if (scheme_compiled_duplicate_ok(c))
+	if (scheme_compiled_duplicate_ok(c, 0))
 	  return c;
 
 	/* We can't inline, but mark the top level as a constant, 
@@ -5239,7 +5243,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
     return NULL;
   default:
     if (t > _scheme_compiled_values_types_) {
-      if (dup_ok || scheme_compiled_duplicate_ok(expr))
+      if (dup_ok || scheme_compiled_duplicate_ok(expr, 0))
 	return expr;
     }
   }

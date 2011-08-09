@@ -726,7 +726,8 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 
     if (check_access && !SAME_OBJ(menv, env)) {
       varname = scheme_check_accessible_in_module(menv, insp, NULL, varname, NULL, NULL, 
-                                                  insp, NULL, pos, 0, NULL, NULL, env, NULL);
+                                                  insp, NULL, pos, 0, NULL, NULL, env, NULL,
+                                                  NULL);
     }
   }
 
@@ -1848,8 +1849,8 @@ ref_execute (Scheme_Object *data)
   SCHEME_PTR1_VAL(o) = var;
   SCHEME_PTR2_VAL(o) = (env ? (Scheme_Object *)env : scheme_false);
 
-  if (SCHEME_PAIR_FLAGS(data) & 0x1)
-    SCHEME_PAIR_FLAGS(o) |= 0x1;
+  if (SCHEME_VARREF_FLAGS(data) & 0x1)
+    SCHEME_VARREF_FLAGS(o) |= 0x1;
 
   return o;
 }

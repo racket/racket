@@ -755,7 +755,7 @@ defn_targets_syntax (Scheme_Object *var, Scheme_Comp_Env *env, Scheme_Compile_In
       /* Create a module variable reference, so that idx is preserved: */
       bucket = scheme_hash_module_variable(env->genv, env->genv->module->self_modidx, 
 					   name, env->genv->module->insp, 
-					   -1, env->genv->mod_phase);
+					   -1, env->genv->mod_phase, 0);
     }
     /* Get indirection through the prefix: */
     bucket = scheme_register_toplevel_in_prefix(bucket, env, rec, drec, 0);
@@ -1396,7 +1396,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
         imported = scheme_is_imported(var, env);
 
         if (rec[drec].comp) {
-          var = scheme_register_toplevel_in_prefix(var, env, rec, drec, 0);
+          var = scheme_register_toplevel_in_prefix(var, env, rec, drec, imported);
           if (!imported && env->genv->module && !rec[drec].testing_constantness)
             SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
         }
@@ -5126,7 +5126,7 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
        preserved within the module. */
     c = scheme_hash_module_variable(env->genv, env->genv->module->self_modidx, 
 				    c, env->genv->module->insp,
-				    -1, env->genv->mod_phase);
+				    -1, env->genv->mod_phase, 0);
   } else {
     c = (Scheme_Object *)scheme_global_bucket(c, env->genv);
   }
