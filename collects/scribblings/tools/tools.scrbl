@@ -19,7 +19,7 @@
    (define-syntax-rule (item/cap x . ys)
      (item (indexed-racket x) ": " . ys)))
 
-@title{Extending DrRacket}
+@title{DrRacket Plugins}
 
 @author["Robert Bruce Findler"]
 
