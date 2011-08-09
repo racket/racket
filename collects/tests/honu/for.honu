@@ -1,0 +1,9 @@
+#lang honu
+
+for x = 1 + 5 to 10 do
+  printf("x is ~a\n" x)
+
+for x = 1 to 10 do {
+    var y = x + 1;
+    printf("x ~a y ~a\n", x, y)
+}

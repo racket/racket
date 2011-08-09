@@ -220,8 +220,14 @@
                      [x:atom
                        (debug "atom ~a current ~a\n" #'x current)
                        (if current
-                         (values (left current) #'(head rest ...))
+                         (values (left current) stream)
                          (do-parse #'(rest ...) precedence left #'x))]
+                     [(#%braces stuff ...)
+                      (if current
+                        (values (left current) stream)
+                        (let ()
+                          (define body (parse-all #'(stuff ...)))
+                          (do-parse #'(rest ...) precedence left body)))]
                      [(#%parens args ...)
                       (debug "function call ~a\n" left)
                       (values (left (with-syntax ([current current]
