@@ -23,7 +23,8 @@
 
 (define-lex-abbrev digit (:/ #\0 #\9))
 (define-lex-abbrev identifier-first-character (:or (:/ #\a #\z)
-                                                   (:/ #\A #\Z)))
+                                                   (:/ #\A #\Z)
+                                                   ":"))
 (define-lex-abbrev identifier-character (:or identifier-first-character
                                              digit))
 (define-lex-abbrev identifier (:: identifier-first-character

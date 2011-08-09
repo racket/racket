@@ -91,3 +91,4 @@
 (define-binary-operator honu-^ 2 expt)
 (define-binary-operator honu-and 0.5 and)
 (define-binary-operator honu-or 0.5 or)
+(define-binary-operator honu-cons 0.1 cons)
