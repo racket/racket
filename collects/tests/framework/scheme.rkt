@@ -54,3 +54,38 @@
 (test-indentation 6
                   "(define x\n  (let/ec return\n    (when 1\n      (when 2\n\t\t      3))\n    2))"
                   "(define x\n  (let/ec return\n    (when 1\n      (when 2\n        3))\n    2))")
+
+(define (test-magic-square-bracket which before after)
+  (test
+   (string->symbol (format "scheme:test-magic-square-bracket-~a" which))
+   (λ (x) (equal? x after))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let* ([t (new scheme:text%)]
+              [f (new frame% [label ""] [width 600] [height 600])]
+              [ec (new editor-canvas% [parent f] [editor t])])
+         (send f reflow-container)
+         (send t insert ,before)
+         (send t rewrite-square-paren)
+         (send t get-text))))))
+
+(test-magic-square-bracket 'mt "" "(")
+(test-magic-square-bracket 'mt2 "(() " "(() (")
+(test-magic-square-bracket 'mt3 "([] " "([] [")
+(test-magic-square-bracket 'mt4 "(\"" "(\"[")
+(test-magic-square-bracket 'mt4 "(#\\" "(#\\[")
+(test-magic-square-bracket 'let1 "(let " "(let (")
+(test-magic-square-bracket 'let2 "(let (" "(let ([")
+(test-magic-square-bracket 'let3 "(let loop " "(let loop (")
+(test-magic-square-bracket 'let3 "(let loop (" "(let loop ([")
+(test-magic-square-bracket 'cond1 "(cond " "(cond [")
+(test-magic-square-bracket 'cond2 "(cond [" "(cond [(")
+(test-magic-square-bracket 'with-syntax1 "(syntax-case x " "(syntax-case x (")
+(test-magic-square-bracket 'with-syntax2 "(syntax-case x () " "(syntax-case x () [")
+(test-magic-square-bracket 'with-syntax3 "(syntax-case 'x " "(syntax-case 'x (")
+(test-magic-square-bracket 'with-syntax4 "(syntax-case 'x () " "(syntax-case 'x () [")
+(test-magic-square-bracket 'with-syntax3 "(syntax-case #'x " "(syntax-case #'x (")
+(test-magic-square-bracket 'with-syntax4 "(syntax-case #'x () " "(syntax-case #'x () [")
+(test-magic-square-bracket 'local1 "(local " "(local [")
+(test-magic-square-bracket 'local2 "(local [" "(local [(")
+(test-magic-square-bracket 'local2 "(local [(define x 1)] " "(local [(define x 1)] (")

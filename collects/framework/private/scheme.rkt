@@ -13,6 +13,7 @@
          "../preferences.rkt"
          scheme/match)
 
+
 (import mred^
         [prefix preferences: framework:preferences^]
         [prefix icon: framework:icon^]
@@ -34,7 +35,7 @@
 (init-depend mred^ framework:keymap^ framework:color^ framework:mode^
              framework:text^ framework:editor^)
 
-
+(define-local-member-name stick-to-next-sexp?)
 
 (define (scheme-paren:get-paren-pairs)
   '(("(" . ")")
@@ -879,7 +880,7 @@
           (delete snip-pos (+ snip-pos 1)))
         (set-position pos pos)))
     
-    (define/private (stick-to-next-sexp? start-pos)
+    (define/public (stick-to-next-sexp? start-pos)
       (let ([end-pos (forward-match start-pos (last-position))])
         (and end-pos
              (member (get-text start-pos end-pos)
@@ -1592,7 +1593,9 @@
         [backward-match
          (let ([before-whitespace-pos (send text skip-whitespace backward-match 'backward #t)])
            (loop before-whitespace-pos
-                 (+ n 1)))]
+                 (if (send text stick-to-next-sexp? backward-match)
+                     n
+                     (+ n 1))))]
         [else
          (let* ([afterwards (send text get-forward-sexp pos)]
                 [keyword
