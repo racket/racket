@@ -12,19 +12,23 @@
   #:commit
   ;; if one of the brances of an if is unreachable, we can eliminate it
   ;; we have to keep the test, in case it has side effects
-  (pattern (if tst:expr thn:expr els:expr)
+  (pattern ((~and kw (~literal if)) tst:expr thn:expr els:expr)
            #:when (tautology? #'tst)
            #:with opt
            (begin (log-optimization "dead else branch"
                                     "Unreachable else branch elimination."
                                     #'els)
-                  #`(#%expression (begin #,((optimize) #'tst)
-                                         #,((optimize) #'thn)))))
-  (pattern (if tst:expr thn:expr els:expr)
+                  (quasisyntax/loc/origin 
+                   this-syntax #'kw
+                   (#%expression (begin #,((optimize) #'tst)
+                                        #,((optimize) #'thn))))))
+  (pattern ((~and kw (~literal if)) tst:expr thn:expr els:expr)
            #:when (contradiction? #'tst)
            #:with opt
            (begin (log-optimization "dead then branch"
                                     "Unreachable then branch elimination."
                                     #'thn)
-                  #`(#%expression (begin #,((optimize) #'tst)
-                                         #,((optimize) #'els))))))
+                  (quasisyntax/loc/origin 
+                   this-syntax #'kw
+                   (#%expression (begin #,((optimize) #'tst)
+                                        #,((optimize) #'els)))))))

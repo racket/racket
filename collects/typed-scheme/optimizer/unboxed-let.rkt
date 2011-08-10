@@ -143,21 +143,23 @@
                   ;; in the case where no bindings are unboxed, we create a let
                   ;; that is equivalent to the original, but with all parts
                   ;; optimized
-                  #`(letk.key ...
+                  (quasisyntax/loc/origin this-syntax #'letk.kw
+                   (letk.key ...
                         (opt-candidates.bindings ... ...
                          opt-functions.res ...
                          opt-others.res ...)
-                      #,@(syntax-map (optimize) #'(body ...))))))
+                      #,@(syntax-map (optimize) #'(body ...)))))))
 
 (define-splicing-syntax-class let-like-keyword
   #:commit
   #:literal-sets (kernel-literals)
-  (pattern (~literal let-values)
-           #:with (key ...) #'(let*-values))
-  (pattern (~literal letrec-values)
-           #:with (key ...) #'(letrec-values))
-  (pattern (~seq (~literal letrec-syntaxes+values) stx-bindings)
-           #:with (key ...) #'(letrec-syntaxes+values stx-bindings)))
+  #:attributes ([key 1] kw)
+  (pattern (~and kw (~literal let-values))
+           #:with (key ...) #'(kw))
+  (pattern (~and kw (~literal letrec-values))
+           #:with (key ...) #'(kw))
+  (pattern (~seq (~and kw (~literal letrec-syntaxes+values)) stx-bindings)
+           #:with (key ...) #'(kw stx-bindings)))
 
 
 (define (direct-child-of? v exp)

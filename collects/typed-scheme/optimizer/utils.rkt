@@ -13,7 +13,14 @@
          n-ary->binary
          unboxed-gensym reset-unboxed-gensym
          optimize
-         print-res)
+         print-res
+         syntax/loc/origin quasisyntax/loc/origin)
+
+;; for tracking both origin and source location information
+(define-syntax-rule (syntax/loc/origin loc op body)
+  (syntax-track-origin (syntax/loc loc body) loc op))
+(define-syntax-rule (quasisyntax/loc/origin loc op body)
+  (syntax-track-origin (quasisyntax/loc loc body) loc op))
 
 ;; if set to #t, the optimizer will dump its result to stdout before compilation
 (define *show-optimized-code* #f)
