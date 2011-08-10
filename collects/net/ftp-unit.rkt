@@ -119,7 +119,7 @@
         (ftp-check-response (ftp-connection-in tcp-ports)
                             (ftp-connection-out tcp-ports)
                             #"200" void (void))
-        (close-output-port tcp-data-out)
+        (tcp-abandon-port tcp-data-out)
         tcp-data))))
 
 ;; Used where version 0.1a printed responses:
