@@ -291,7 +291,7 @@ special case of the @racket[syntax-id-rules] form with errors in the
 
 @section{Macro-Generating Macros}
 
-Suppose that we have many identifier like @racket[clock] that we'd
+Suppose that we have many identifiers like @racket[clock] that we'd
 like to redirect to accessor and mutator functions like
 @racket[get-clock] and @racket[put-clock!]. We'd like to be able to
 just write
