@@ -31,7 +31,7 @@
            (;; pmb = #%plain-module-begin
             [(pmb . body2) new-mod]
             ;; add in syntax property on useless expression to draw check-syntax arrows
-            [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))]
+            [check-syntax-help (syntax-property #'(void) 'disappeared-use (disappeared-use-todo))]
             ;; perform the provide transformation from [Culpepper 07]
             [transformed-body (remove-provides #'body2)]
             ;; add the real definitions of contracts on requires

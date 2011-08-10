@@ -38,7 +38,7 @@
 (define (lookup-type-name id [k (lambda () (lookup-type-fail id))])
   (begin0
     (module-identifier-mapping-get the-mapping id k)
-    (add-type-name-reference id)))
+    (add-disappeared-use id)))
 
 
 ;; map over the-mapping, producing a list

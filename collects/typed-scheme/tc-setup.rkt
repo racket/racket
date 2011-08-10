@@ -56,8 +56,8 @@
                                               (cons (syntax-e id) ty)))
                          (type-alias-env-map (lambda (id ty)
                                                (cons (syntax-e id) ty)))))]
-                     ;; reinitialize seen type variables
-                     [type-name-references null])
+                     ;; reinitialize disappeared uses
+                     [disappeared-use-todo null])
         (do-time "Initialized Envs")
         (let ([fully-expanded-stx (disarm* (local-expand stx expand-ctxt null))])
           (when (show-input?)

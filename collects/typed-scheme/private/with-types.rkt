@@ -82,8 +82,8 @@
                                           (cons (syntax-e id) ty)))
                      (type-alias-env-map (lambda (id ty)
                                            (cons (syntax-e id) ty)))))]
-                 ;; reinitialize seen type variables
-                 [type-name-references null]
+                 ;; reinitialize disappeared uses
+                 [disappeared-use-todo null]
                  ;; for error reporting
                  [orig-module-stx stx]
                  [expanded-module-stx expanded-body])
@@ -99,7 +99,7 @@
                 [(ex-cnt ...) ex-cnts]
                 [(region-cnt ...) region-cnts]
                 [body (maybe-optimize expanded-body)]
-                [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))])
+                [check-syntax-help (syntax-property #'(void) 'disappeared-use (disappeared-use-todo))])
     (if expr?
         (quasisyntax/loc stx
           (begin check-syntax-help

@@ -154,11 +154,11 @@ don't depend on any other portion of the system
 ;; are we currently expanding in a typed module (or top-level form)?
 (define typed-context? (box #f))
 
-;; what type names have been referred to in this module?
-(define type-name-references (make-parameter '()))
+;; list of syntax objects that should count as disappeared uses
+(define disappeared-use-todo (make-parameter '()))
 
-(define (add-type-name-reference t)
-  (type-name-references (cons t (type-name-references))))
+(define (add-disappeared-use t)
+  (disappeared-use-todo (cons t (disappeared-use-todo))))
 
 ;; environment constructor
 (define-syntax (make-env stx)
