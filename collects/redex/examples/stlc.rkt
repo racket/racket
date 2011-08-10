@@ -4,9 +4,10 @@
 (define-language λv
   (e (e e ...) (if0 e e e) (+ e e) x v)
   (v (λ ((x t) ...) e) number)
-  (t (-> t ... t) num)
+  (t (t ... -> t) num)
   (E (v ... E e ...) (if0 E e e) (+ E e) (+ v E) hole)
-  (x variable-not-otherwise-mentioned))
+  (x variable-not-otherwise-mentioned)
+  (G ([x t] ...)))
 
 (define red
   (reduction-relation
@@ -69,30 +70,39 @@
                (subst-vars (x_2 any_2) ... any_3))]
   [(subst-vars any) any])
 
+(define-judgment-form λv
+  #:mode (typeof I I O)
+  #:contract (typeof G e t)
+  [(typeof G 1234 num)]
+  [(typeof G number num)]
+  [(typeof G (+ e_1 e_2) num)
+   (typeof G e_1 num)
+   (typeof G e_2 num)]
+  [(typeof G (if0 e_1 e_2 e_3) t)
+   (typeof G e_1 num)
+   (typeof G e_2 t)
+   (typeof G e_3 t)]
+  [(typeof G x t)
+   (where t (lookup G x))]
+  [(typeof G (e_1 e_2 ...) t)
+   (typeof G e_1 (t_2 ... -> t))
+   (typeof G e_2 t_2) ...]
+  [(typeof G (λ ((x_1 t_1) ...) e) (t_1 ... -> t))
+   (typeof (extend G [x_1 t_1] ...) e t)])
+
 (define-metafunction λv
-  tc : e (x t) ... -> t or #f
-  [(tc number (x t) ...)
-   num]
-  [(tc (+ e_1 e_2) (x t) ...) 
-   num
-   (where num (tc e_1 (x t) ...))
-   (where num (tc e_2 (x t) ...))]
-  [(tc (if0 e_1 e_2 e_3) (x t) ...)
-   t_2
-   (where num (tc e_1 (x t) ...))
-   (where t_2 (tc e_2 (x t) ...))
-   (where t_2 (tc e_3 (x t) ...))]
-  [(tc x_1 (x_2 t_2) ... (x_1 t_1) (x_3 t_3) ...)
-   t_1
-   (side-condition (not (member (term x_1) (term (x_2 ...)))))]
-  [(tc (e_1 e_2 ...) (x t) ...)
-   t_3
-   (where (-> t_2 ... t_3) (tc e_1 (x t) ...))
-   (where (t_2 ...) ((tc e_2 (x t) ...) ...))]
-  [(tc (λ ((x_1 t_1) ...) e) (x_2 t_2) ...)
-   (-> t_1 ... t)
-   (where t (tc e (x_1 t_1) ... (x_2 t_2) ...))]
-  [(tc e (x t) ...) #f])
+  lookup : G x -> t or #f
+  [(lookup ([x_0 t_0] ... [x_i t_i] [x_i+1 t_i+1] ...) x_i)
+   t_i]
+  [(lookup G x) #f])
+
+(define-metafunction λv
+  extend : G [x t] ... -> G
+  [(extend G) G]
+  [(extend ([x_0 t_0] ... [x_i t_i] [x_i+1 t_i+1] ...) [x_i t] [x_i+2 t_i+2] ...)
+   (extend ([x_0 t_0] ... [x_i t] [x_i+1 t_i+1] ...) [x_i+2 t_i+2] ...)]
+  [(extend ([x_0 t_0] ...) [x_i t_i] [x_i+1 t_i+1] ...)
+   (extend ([x_0 t_0] ... [x_i t_i]) [x_i+1 t_i+1] ...)])
 
 ;; remove the #; to run an example
 #;
@@ -148,22 +158,55 @@
           (term (+ (+ 1 2) (+ 3 4)))
           (term 10))
 
-(test-equal (term (tc 1)) (term num))
-(test-equal (term (tc (1 1))) (term #f))
-(test-equal (term (tc x (x num))) (term num))
-(test-equal (term (tc x)) (term #f))
-(test-equal (term (tc x (x num) (x (-> num num)))) (term num))
-(test-equal (term (tc ((λ ((x num)) x) 1))) (term num))
-(test-equal (term (tc ((λ ((x num)) x) 1 2))) (term #f))
-(test-equal (term (tc ((λ ((f (-> num num)) (x num)) (f x)) (λ ((x num)) x) 1))) (term num))
-(test-equal (term (tc (+ (+ 1 2) 3))) (term num))
-(test-equal (term (tc (if0 1 (λ ((x num)) x) 3))) (term #f))
-(test-equal (term (tc (if0 1 2 3))) (term num))
-(test-equal (term (tc (λ ((x num)) (x)))) (term #f))
+(define (typecheck G e)
+  (match (judgment-holds (typeof ,G ,e t) t)
+    [(list) #f]
+    [(list t) t]
+    [_ (error 'typecheck
+              "multiple typing derivations for term ~a in environment ~a"
+              e G)]))
 
-(test-equal (term (tc (1 2)))
-            (term #f))
-(test-equal (term (tc (λ ((x num)) (1 2))))
-            (term #f))
+(test-equal (typecheck (term ()) (term 1)) 
+            (term num))
+(test-equal (typecheck (term ()) (term (1 1))) 
+            #f)
+(test-equal (typecheck (term ([x num])) (term x))
+            (term num))
+(test-equal (typecheck (term ()) (term x))
+            #f)
+(test-equal (typecheck (term ()) (term ((λ ((x num)) x) 1)))
+            (term num))
+(test-equal (typecheck (term ()) (term ((λ ((x num)) x) 1 2)))
+            #f)
+(test-equal (typecheck (term ()) 
+                       (term ((λ ((f (num -> num)) (x num))
+                                (f x))
+                              (λ ((x num)) x)
+                              1)))
+            (term num))
+(test-equal (typecheck (term ()) 
+                       (term ((λ ((f (num -> num)) (x num))
+                                (f x))
+                              1
+                              (λ ((x num)) x))))
+            #f)
+(test-equal (typecheck (term ()) (term (+ (+ 1 2) 3)))
+            (term num))
+(test-equal (typecheck (term ()) (term (if0 1 (λ ((x num)) x) 3)))
+            #f)
+(test-equal (typecheck (term ()) (term (if0 1 2 3)))
+            (term num))
+(test-equal (typecheck (term ()) (term (λ ((x num)) (x))))
+            #f)
+(test-equal (typecheck (term ())
+                       (term (λ ((x num))
+                               (λ ((x (num -> num)))
+                                 (x 0)))))
+            (term (num -> ((num -> num) -> num))))
+(test-equal (typecheck (term ())
+                       (term (λ ((x (num -> num)))
+                               (λ ((x num))
+                                 (x 0)))))
+            #f)
 
 (test-results)
