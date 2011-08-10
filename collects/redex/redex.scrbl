@@ -56,9 +56,10 @@
            (list (racketidfont (make-element #f (list (symbol->string 'a0))))
                  (make-element #f (list " " (hspace 1) " " (racketidfont (symbol->string 'a)))) ...)))))
 
-@(define (examples-link relative-path text)
-   (link (string-append "http://git.racket-lang.org/plt/tree/HEAD:/collects/redex/examples/"
-                        relative-path)
+@(define (examples-link relative-path dir? text)
+   (link (format "http://git.racket-lang.org/plt/~a/HEAD:/collects/redex/examples/~a"
+                 (if dir? "tree" "blob")
+                 relative-path)
          (filepath text)))
 
 @(define redex-eval (make-base-eval))
@@ -1220,16 +1221,16 @@ non-termination. For example, consider the following definitions:
 Due to the second @racket[path] rule, the follow query fails to terminate:
 @racketinput[(judgment-holds (path a c))]
 
-The @(examples-link "" "examples") directory demonstrates three use cases:
+The @(examples-link "" #t "examples") directory demonstrates three use cases:
 @itemlist[
-@item{@(examples-link "define-judgment-form/typing-rules.rkt" "typing-rules.rkt") ---
+@item{@(examples-link "define-judgment-form/typing-rules.rkt" #f "typing-rules.rkt") ---
       defines a type system in a way that supports mechanized typesetting.
       When a typing judgment form can be given a mode, it can also be encoded as
       a metafunction using @tech{@racket[where] clauses} as premises, but Redex
       cannot typeset that encoding as inference rules.}
-@item{@(examples-link "define-judgment-form/sos.rkt" "sos.rkt") ---
+@item{@(examples-link "define-judgment-form/sos.rkt" #f "sos.rkt") ---
       defines an SOS-style semantics in a way that supports mechanized typesetting.}
-@item{@(examples-link "define-judgment-form/multi-val.rkt" "multi-val.rkt") ---
+@item{@(examples-link "define-judgment-form/multi-val.rkt" #f "multi-val.rkt") ---
       defines a judgment form that serves as a multi-valued metafunction.}]}
  
 @defform*/subs[((judgment-holds judgment)
