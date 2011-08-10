@@ -86,6 +86,18 @@
                                                                    [right right])
                                                        #'(operator left right))))))
 
+(provide honu-dot)
+(define-honu-operator/syntax honu-dot 10000 'left
+  (lambda (left right)
+    (with-syntax ([left left]
+                  [right right])
+      #'(let ([left* left]
+              [right* right])
+          (cond
+            [(list? left*)
+             (list-ref left* right*)]
+            [else (error 'dot "don't know how to deal with ~a and ~a" left* right*)])))))
+
 (define-binary-operator honu-+ 1 'left +)
 (define-binary-operator honu-- 1 'left -)
 (define-binary-operator honu-* 2 'left *)

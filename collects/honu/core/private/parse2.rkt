@@ -238,12 +238,21 @@
                           (define body (parse-all #'(stuff ...)))
                           (do-parse #'(rest ...) precedence left body)))]
                      [(#%parens args ...)
-                      (debug "function call ~a\n" left)
-                      (values (left (with-syntax ([current current]
-                                                  [(parsed-args ...)
-                                                   (parse-comma-expression #'(args ...)) ])
-                                      #'(current parsed-args ...)))
-                              #'(rest ...))
+                      (if current
+                        (let ()
+                          (debug "function call ~a\n" left)
+                          (values (left (with-syntax ([current current]
+                                                      [(parsed-args ...)
+                                                       (parse-comma-expression #'(args ...)) ])
+                                          #'(current parsed-args ...)))
+                                  #'(rest ...)))
+                        (let ()
+                          (debug "inner expression ~a\n" #'(args ...))
+                          (define-values (inner-expression unparsed) (parse #'(args ...)))
+                          (when (not (empty-syntax? unparsed))
+                            (error 'parse "expression had unparsed elements ~a" unparsed))
+                          (do-parse #'(rest ...) precedence left inner-expression)))
+
                       #;
                       (do-parse #'(rest ...)
                                 0

@@ -17,6 +17,7 @@
                      [honu-+ +] [honu-- -]
                      [honu-* *] [honu-/ /]
                      [honu-^ ^]
+                     [honu-dot |.|]
                      [honu-cons ::]
                      [honu-and and]
                      [honu-or or]
