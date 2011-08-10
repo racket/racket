@@ -211,7 +211,7 @@ when there is no corresponding original source file.
 
 If the @racket[security-guard] argument is supplied, it is used when
 creating @filepath{.zo} files, @filepath{.dep} files, and @filepath{compiled/}
-directories.
+directories, and when it adjusts the timestamps for existing files.
 If it is @racket[#f], then
 the security guard in the @racket[current-security-guard] when 
 the files are created is used (not the security guard at the point 
@@ -244,8 +244,9 @@ If @racket[file] is compiled from source, then
 @racket[read-syntax] is used for any required files, however.
 
 If @racket[security-guard] is not @racket[#f], then the provided security
-guard is used when creating the @filepath{compiled/} directories, as well
-as the @filepath{.dep} and @filepath{.zo} files. If it is @racket[#f], then
+guard is used when creating the @filepath{compiled/} directories, 
+@filepath{.dep} and @filepath{.zo} files, and when it adjusts the timestamps 
+of existing files. If it is @racket[#f], then
 the security guard in the @racket[current-security-guard] when 
 the files are created is used (not the security guard at the point 
 @racket[managed-compile-zo] is called).

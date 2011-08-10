@@ -143,11 +143,12 @@
     dir))
 
 (define (touch path)
-  (file-or-directory-modify-seconds 
-   path
-   (current-seconds)
-   (lambda ()
-     (close-output-port (open-output-file path #:exists 'append)))))
+  (with-compiler-security-guard
+   (file-or-directory-modify-seconds 
+    path
+    (current-seconds)
+    (lambda ()
+      (close-output-port (open-output-file path #:exists 'append))))))
 
 (define (try-file-time path)
   (file-or-directory-modify-seconds path #f (lambda () #f)))
