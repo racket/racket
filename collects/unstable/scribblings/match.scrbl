@@ -3,7 +3,7 @@
           (for-label unstable/match racket/match racket/contract racket/base))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require racket/match unstable/match))
+@(the-eval '(require racket/class racket/match unstable/match))
 
 @title[#:tag "match"]{Match}
 
@@ -62,6 +62,53 @@ result value of @racket[rhs-expr], and continues matching each subsequent
 #:eval the-eval
 (match (list 1 2 3)
   [(as ([a 0]) (list b c d)) (list a b c d)])
+]
+
+}
+
+@addition[@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
+
+@defform/subs[
+  #:literals (field)
+  (object maybe-class field-clause ...)
+  ([maybe-class
+    code:blank
+    class-expr]
+   [field-clause (field field-id maybe-pat)]
+   [maybe-pat
+    code:blank
+    pat])]{
+
+A match expander that checks if the matched value is an object
+and contains the fields named by the @racket[field-id]s. If
+@racket[pat]s are provided, the value in each field is matched to
+its corresponding @racket[pat]. If a @racket[pat] is not provided,
+it defaults to the name of the field.
+
+If @racket[class-expr] is provided, the match expander will also
+check that the supplied object is an instance of the class
+that the given expression evaluates to.
+
+@defexamples[
+#:eval the-eval
+(define point%
+  (class object%
+    (super-new)
+    (init-field x y)))
+
+(match (make-object point% 3 5)
+  [(object point% (field x) (field y))
+   (sqrt (+ (* x x) (* y y)))])
+
+(match (make-object point% 0 0)
+  [(object (field x (? zero?))
+           (field y (? zero?)))
+   'origin])
+
+(match (make-object object%)
+  [(object (field x) (field y))
+   'ok]
+  [_ 'fail])
 ]
 
 }
