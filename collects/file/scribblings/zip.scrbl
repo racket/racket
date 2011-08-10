@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label file/zip file/gunzip scheme/file))
+@(require "common.rkt" (for-label file/zip file/gzip file/gunzip scheme/file))
 
 @title[#:tag "zip"]{@exec{zip} File Creation}
 

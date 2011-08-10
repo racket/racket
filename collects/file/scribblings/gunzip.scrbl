@@ -5,7 +5,7 @@
 
 @defmodule[file/gunzip]{The @racketmodname[file/gunzip] library provides
 utilities to decompress archive files in @exec{gzip} format, or simply
-to deccompress data using the @exec{pkzip} ``inflate'' method.}
+to decompress data using the @exec{pkzip} ``inflate'' method.}
 
 
 @defproc[(gunzip [file path-string?]
