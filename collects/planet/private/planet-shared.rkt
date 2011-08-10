@@ -13,8 +13,73 @@ Various common pieces of code that both the client and server need to access
            "../config.rkt"
            "data.rkt")
   
-  (provide (all-defined-out)
-           (all-from-out "data.rkt"))
+  (provide (all-from-out "data.rkt")
+           (struct-out exn:fail:filesystem:no-directory)
+           (struct-out mz-version)
+           (struct-out branch)
+           (struct-out star)
+           try-make-directory*
+           language-version->repository
+           version->description
+           legal-language?
+           lookup-package
+           lookup-package-by-keys
+           empty-table
+           get-min-core-version
+           points-to?
+           row->package
+           
+           add-hard-link!
+           filter-link-table!
+           get-hard-link-table
+           
+           update-element
+           update/create-element
+           first-n-list-selectors
+           make-assoc-table-row
+           string->mz-version
+           version<=
+           pkg<
+           pkg>
+           pkg=
+           compatible-version?
+           get-best-match
+           get-installed-package
+           make-cutoff-port
+           write-line
+           for-each/n
+           nat?
+           read-n-chars-to-file
+           copy-n-chars
+           repeat-forever
+           build-hash-table
+           categorize
+           drop-last
+           read-all
+           wrap
+           planet-logging-to-stdout
+           planet-log
+           with-logging
+           pkg->info
+           directory->tree
+           filter-tree-by-pattern
+           tree-apply
+           tree->list
+           repository-tree
+           
+           assoc-table-row->name
+           assoc-table-row->path
+           assoc-table-row->maj
+           assoc-table-row->min
+           assoc-table-row->dir
+           assoc-table-row->required-version
+           assoc-table-row->type
+           
+           check/take-installation-lock
+           installed-successfully? 
+           release-installation-lock
+           dir->successful-installation-file
+           dir->metadata-files)
   
   ; ==========================================================================================
   ; CACHE LOGIC
@@ -41,12 +106,17 @@ Various common pieces of code that both the client and server need to access
   ; lookup-package : FULL-PKG-SPEC [path (optional)] -> PKG | #f
   ; returns the directory pointing to the appropriate package in the cache, the user's hardlink table,
   ; or #f if the given package isn't in the cache or the hardlink table
-  (define lookup-package
-    (case-lambda 
-      [(pkg) (lookup-package pkg (CACHE-DIR))]
-      [(pkg dir)
-       (let* ((at (build-assoc-table pkg dir)))
-         (get-best-match at pkg))]))
+  (define (lookup-package pkg [dir (CACHE-DIR)] #:check-success? [check-success? #f])
+    (define at (build-assoc-table pkg dir check-success?))
+    (get-best-match at pkg))
+  
+  ; build-assoc-table : FULL-PKG-SPEC path -> assoc-table
+  ; returns a version-number -> directory association table for the given package
+  (define (build-assoc-table pkg dir check-success?) 
+    (append 
+     (pkg->assoc-table pkg dir check-success?)
+     (hard-links pkg)))
+  
   
   ;; lookup-package-by-keys : string string nat nat nat -> (list path string string (listof string) nat nat) | #f
   ;; looks up and returns a list representation of the package named by the given owner,
@@ -74,13 +144,6 @@ Various common pieces of code that both the client and server need to access
           #f)))
      
   
-  ; build-assoc-table : FULL-PKG-SPEC path -> assoc-table
-  ; returns a version-number -> directory association table for the given package
-  (define (build-assoc-table pkg dir) 
-    (add-to-table 
-     (pkg->assoc-table pkg dir)
-     (hard-links pkg)))
-  
   ;; assoc-table ::= (listof (list n n path))
   (define empty-table '())
   
@@ -95,10 +158,10 @@ Various common pieces of code that both the client and server need to access
                 #f))
           #f)))
   
-  ; pkg->assoc-table : FULL-PKG-SPEC path -> assoc-table
+  ; pkg->assoc-table : FULL-PKG-SPEC path boolean? -> assoc-table
   ; returns the on-disk packages for the given planet package in the
   ; on-disk table rooted at the given directory
-  (define (pkg->assoc-table pkg dir)
+  (define (pkg->assoc-table pkg dir check-success?)
     (define path (build-path (apply build-path dir (pkg-spec-path pkg)) (pkg-spec-name pkg)))
     
     (define (tree-stuff->row-or-false p majs mins)
@@ -107,15 +170,16 @@ Various common pieces of code that both the client and server need to access
         (if (and (path? p) maj min)
             (let* ((the-path         (build-path path majs mins))
                    (min-core-version (get-min-core-version the-path)))
-              (make-assoc-table-row 
-               (pkg-spec-name pkg) 
-               (pkg-spec-path pkg)
-               maj min
-               the-path
-               min-core-version
-               'normal))
+              (and (or (not check-success?)
+                       (installed-successfully? the-path))
+                   (make-assoc-table-row 
+                    (pkg-spec-name pkg) 
+                    (pkg-spec-path pkg)
+                    maj min
+                    the-path
+                    min-core-version
+                    'normal)))
             #f)))
-    
     (if (directory-exists? path)
         (filter
          (λ (x) x)
@@ -138,19 +202,39 @@ Various common pieces of code that both the client and server need to access
   ;; verify-well-formed-hard-link-parameter! : -> void
   ;; pitches a fit if the hard link table parameter isn't set right
   (define (verify-well-formed-hard-link-parameter!)
-    (unless (and (absolute-path? (HARD-LINK-FILE)) (path-only (HARD-LINK-FILE)))
+    (define hlf (HARD-LINK-FILE))
+    (unless (and (absolute-path? hlf) (path-only hlf))
       (raise (make-exn:fail:contract
               (format
                "The HARD-LINK-FILE setting must be an absolute path name specifying a file; given ~s"
-               (HARD-LINK-FILE))
+               hlf)
               (current-continuation-marks)))))
 
-  ;; get-hard-link-table : -> assoc-table
-  (define (get-hard-link-table)
+  ;; get-hard-link-table/internal : -> assoc-table
+  (define (get-hard-link-table/internal)
     (verify-well-formed-hard-link-parameter!)
     (if (file-exists? (HARD-LINK-FILE))
         (map (lambda (item) (update/create-element 6 (λ (_) 'development-link) (update-element 4 bytes->path item)))
              (with-input-from-file (HARD-LINK-FILE) read-all))
+        '()))
+  
+  (define (with-hard-link-lock t)
+    (let-values ([(base name dir) (split-path (HARD-LINK-FILE))])
+      (try-make-directory* base))
+    (call-with-file-lock/timeout
+     (HARD-LINK-FILE)
+     'exclusive
+     t
+     (λ () 
+       (error 'planet/planet-shared.rkt "unable to obtain lock on ~s" (HARD-LINK-FILE)))))
+  
+  (define (get-hard-link-table)
+    ;; we can only call with-hard-link-lock when the directory containing
+    ;; (HARD-LINK-FILE) exists
+    (if (file-exists? (HARD-LINK-FILE))
+        (with-hard-link-lock
+         (λ ()
+           (get-hard-link-table/internal)))
         '()))
   
   ;; row-for-package? : row string (listof string) num num -> boolean
@@ -171,10 +255,9 @@ Various common pieces of code that both the client and server need to access
   
   ;; save-hard-link-table : assoc-table -> void
   ;; saves the given table, overwriting any file that might be there
+  ;; assumes that the lock on the HARD-LINK table file has been acquired
   (define (save-hard-link-table table)
     (verify-well-formed-hard-link-parameter!)
-    (let-values ([(base name dir) (split-path (HARD-LINK-FILE))])
-      (make-directory* base))
     (with-output-to-file (HARD-LINK-FILE) #:exists 'truncate
       (lambda ()
         (display "")
@@ -188,23 +271,29 @@ Various common pieces of code that both the client and server need to access
   ;; adds the given hard link, clearing any previous ones already in place
   ;; for the same package
   (define (add-hard-link! name path maj min dir)
-    (let ([complete-dir (path->complete-path dir)])
-      (let* ([original-table (get-hard-link-table)]
-             [new-table (cons
-                         (make-assoc-table-row name path maj min complete-dir #f 'development-link)
-                         (filter
-                          (lambda (row) (not (points-to? row name path maj min)))
-                          original-table))])
-        (save-hard-link-table new-table))))
+    (with-hard-link-lock
+     (λ ()
+       (let ([complete-dir (path->complete-path dir)])
+         (let* ([original-table (get-hard-link-table/internal)]
+                [new-table (cons
+                            (make-assoc-table-row name path maj min complete-dir #f 'development-link)
+                            (filter
+                             (lambda (row) (not (points-to? row name path maj min)))
+                             original-table))])
+           (save-hard-link-table new-table))))))
   
   ;; filter-link-table! : (row -> boolean) (row -> any/c) -> void
   ;; removes all rows from the hard link table that don't match the given predicate.
   ;; also updates auxiliary datastructures that might have dangling pointers to
   ;; the removed links
   (define (filter-link-table! f on-delete)
-    (let-values ([(in-links out-links) (srfi1:partition f (get-hard-link-table))])
-      (for-each on-delete out-links)
-      (save-hard-link-table in-links)))
+    (define out-links
+      (with-hard-link-lock
+       (λ ()
+         (let-values ([(in-links out-links) (srfi1:partition f (get-hard-link-table/internal))])
+           (save-hard-link-table in-links)
+           out-links))))
+      (for-each on-delete out-links))
   
   ;; update-element : number (x -> y) (listof any [x in position number]) -> (listof any [y in position number])
   (define (update-element n f l)
@@ -223,10 +312,6 @@ Various common pieces of code that both the client and server need to access
        (cons (f (car l)) (cdr l))]
       [else (cons (car l) (update/create-element (sub1 n) f (cdr l)))]))
        
-  
-  ; add-to-table assoc-table (listof assoc-table-row) -> assoc-table
-  (define add-to-table append) 
-  
   ;; first-n-list-selectors : number -> (values (listof x -> x) ...)
   ;; returns n list selectors for the first n elements of a list
   ;; (useful for defining meaningful names to list-structured data)
@@ -547,24 +632,23 @@ Various common pieces of code that both the client and server need to access
   (define-struct (exn:fail:filesystem:no-directory exn:fail:filesystem) (dir))
   
   ;; directory->tree : directory (string -> bool) [nat | bool] [path->X] -> tree[X] | #f
-  (define directory->tree
-    (lambda (directory valid-dir? [max-depth #f] [path->x path->string])
-      (unless (directory-exists? directory)
-        (raise (make-exn:fail:filesystem:no-directory 
-                "Directory ~s does not exist"
-                (current-continuation-marks)
-                directory)))
-      (let-values ([(path name _) (split-path directory)])
-        (let* ((files (directory-list directory))
-               (files (map (lambda (d) (build-path directory d)) files))
-               (files (filter (lambda (d) (and (directory-exists? d) (valid-dir? d))) files)))
-          (make-branch 
-           (path->x name)
-           ;; NOTE: the above line should not use path->string. I don't have time to track this down though
-           (if (equal? max-depth 0) 
-               '()
-               (let ((next-depth (if max-depth (sub1 max-depth) #f)))
-                 (map (lambda (d) (directory->tree d valid-dir? next-depth)) files))))))))
+  (define (directory->tree directory valid-dir? [max-depth #f] [path->x path->string])
+    (unless (directory-exists? directory)
+      (raise (make-exn:fail:filesystem:no-directory 
+              "Directory ~s does not exist"
+              (current-continuation-marks)
+              directory)))
+    (let-values ([(path name _) (split-path directory)])
+      (let* ((files (directory-list directory))
+             (files (map (lambda (d) (build-path directory d)) files))
+             (files (filter (lambda (d) (and (directory-exists? d) (valid-dir? d))) files)))
+        (make-branch 
+         (path->x name)
+         ;; NOTE: the above line should not use path->string. I don't have time to track this down though
+         (if (equal? max-depth 0) 
+             '()
+             (let ((next-depth (if max-depth (sub1 max-depth) #f)))
+               (map (lambda (d) (directory->tree d valid-dir? next-depth)) files)))))))
   
   ;; filter-pattern : (listof pattern-term)
   ;; pattern-term   : (x -> y) | (make-star (tst -> bool) (x -> y))
@@ -594,20 +678,23 @@ Various common pieces of code that both the client and server need to access
   ;; tree-apply : (... -> tst) tree -> listof tst
   ;; applies f to every path from root to leaf and
   ;; accumulates all results in a list
-  (define tree-apply
-    (lambda (f t [depth 0])
-      (let loop ((t t)
-                 (priors '())
-                 (curr-depth 0))
-        (cond
-          [(null? (branch-children t))
-           (if (> curr-depth depth)
-               (list (apply f (reverse (cons (branch-node t) priors))))
-               '())]
-          [else
-           (let ((args (cons (branch-node t) priors)))
-             (apply append
-                    (map (lambda (x) (loop x args (add1 curr-depth))) (branch-children t))))]))))
+  (define (tree-apply f t [depth 0])
+    (let loop ((t t)
+               (priors '())
+               (curr-depth 0))
+      (cond
+        [(null? (branch-children t))
+         (if (> curr-depth depth)
+             (let ([args (reverse (cons (branch-node t) priors))])
+               (if (procedure-arity-includes? f (length args))
+                   (list (apply f args))
+                   '()))
+             '())]
+        [else
+         (let ((args (cons (branch-node t) priors)))
+           (apply append
+                  (map (λ (x) (loop x args (add1 curr-depth)))
+                       (branch-children t))))])))
   
   ;; tree->list : tree[x] -> sexp-tree[x]
   (define (tree->list tree)
@@ -624,3 +711,92 @@ Various common pieces of code that both the client and server need to access
         (not (regexp-match? #rx"/(?:[.]git.*|[.]svn|CVS)$" (path->string x))))
       4)
      (list id id id string->number string->number)))
+
+;; try-make-directory* : path[directory] -> void
+;; tries multiple times to make the directory 'dir'
+;; we only expect the second (or later) attempt to succeed
+;; when two calls to try-make-directory* happen in parallel
+;; (in separate places); this is here to avoid having to use
+;; a lock
+(define (try-make-directory* dir)
+  (let loop ([n 10])
+    (cond
+      [(zero? n)
+       (make-directory* dir)]
+      [else
+       (with-handlers ((exn:fail:filesystem? (λ (x) (loop (- n 1)))))
+         (make-directory* dir))])))
+
+
+
+
+
+;                                                                                              
+;                                                                                              
+;                                                                                              
+;                                                                                              
+;  ;;;                  ;          ;;; ;;;     ;;;                 ;;;     ;;;                 
+;                     ;;;          ;;; ;;;     ;;;                 ;;;                         
+;  ;;; ;;; ;;   ;;;;  ;;;;  ;;;;;  ;;; ;;;     ;;;   ;;;     ;;;   ;;;  ;;;;;; ;;; ;;   ;; ;;; 
+;  ;;; ;;;;;;; ;;; ;; ;;;; ;;;;;;; ;;; ;;;     ;;;  ;;;;;   ;;;;;  ;;; ;;; ;;; ;;;;;;; ;;;;;;; 
+;  ;;; ;;; ;;; ;;;    ;;;  ;;  ;;; ;;; ;;;     ;;; ;;; ;;; ;;;  ;; ;;;;;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;; ;;; ;;;  ;;;;  ;;;    ;;;;; ;;; ;;;     ;;; ;;; ;;; ;;;     ;;;;;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;; ;;; ;;;    ;;; ;;;  ;;; ;;; ;;; ;;;     ;;; ;;; ;;; ;;;  ;; ;;;;;;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;; ;;; ;;; ;; ;;; ;;;; ;;; ;;; ;;; ;;;     ;;;  ;;;;;   ;;;;;  ;;; ;;; ;;; ;;; ;;; ;;;;;;; 
+;  ;;; ;;; ;;;  ;;;;   ;;;  ;;;;;; ;;; ;;;     ;;;   ;;;     ;;;   ;;;  ;;;;;; ;;; ;;;  ;; ;;; 
+;                                                                                          ;;; 
+;                                                                                      ;;;;;;  
+;                                                                                              
+;                                                                                              
+
+
+
+;; check/take-installation-lock : path -> (or/c port #f)
+;; if this function returns #t, then it successfully
+;;   optained the installation lock.
+;; if it returns #f, then we tried to grab the lock, but someone
+;;   else already had it, so we waited until that installation finished 
+(define (check/take-installation-lock dir)
+  (define lf (dir->lock-file dir))
+  ;; make sure the lock file exists
+  (with-handlers ((exn:fail:filesystem:exists? void))
+    (call-with-output-file lf void))
+  (define p (open-output-file lf #:exists 'truncate))
+  (cond
+    [(port-try-file-lock? p 'exclusive)
+     ;; we got the lock; keep the file open
+     p]
+    [else
+     ;; we didn't get the lock; poll for the SUCCESS FILE
+     (planet-log "waiting for someone else to finish installation in ~s" dir)
+     (let loop ()
+       (cond
+         [(file-exists? (dir->successful-installation-file dir))
+          (planet-log "continuing; someone else finished installation in ~s" dir)
+          #f]
+         [else
+          (sleep 2)
+          (loop)]))]))
+
+;; release-installation-lock : port -> void
+;; call this function when check/take-intallation-lock returns #t
+;;  (and the installation has finished)
+;; SIDE-EFFECT: creates the SUCCESS file (before releasing the lock)
+(define (release-installation-lock port)
+  (close-output-port port))
+
+(define (installed-successfully? dir)
+  (file-exists? (dir->successful-installation-file dir)))
+
+(define (dir->successful-installation-file dir)
+  (define-values (base name dir?) (split-path dir))
+  (build-path base (bytes->path (bytes-append (path->bytes name) #".SUCCESS"))))
+
+(define (dir->lock-file dir)
+  (define-values (base name dir?) (split-path dir))
+  (build-path base (bytes->path (bytes-append (path->bytes name) #".LOCK"))))
+
+(define (dir->metadata-files dir)
+  (list (dir->lock-file dir)
+        (dir->successful-installation-file dir)))
+        

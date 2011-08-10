@@ -27,7 +27,7 @@ FILE-NAME      ::= string
 PKG-SPEC       ::= string | (FILE-PATH ... PKG-NAME)
                           | (FILE-PATH ... PKG-NAME VER-SPEC)
 VER-SPEC       ::= Nat | (Nat MINOR)
-MINOR          ::= Nat | (Nat Nat) | (= Nat) | (+ Nat) | (- Nat)
+MINOR          ::= Nat | (Nat Nat) | (= Nat) | (+ Nat) | (- Nat) 
 FILE-PATH      ::= string
 PKG-NAME       ::= string
 OWNER-NAME     ::= string
@@ -172,8 +172,8 @@ subdirectory.
     [(name) (void)]
     [(spec module-path stx load? orig-paramz)
      ;; ensure these directories exist
-     (make-directory* (PLANET-DIR))
-     (make-directory* (CACHE-DIR))
+     (try-make-directory* (PLANET-DIR))
+     (try-make-directory* (CACHE-DIR))
      (establish-diamond-property-monitor)
      (planet-resolve spec
                      (current-module-declare-name)
@@ -303,8 +303,9 @@ subdirectory.
                 stx
                 (make-exn:fail
                  (format
-                  "Package ~a loaded twice with multiple incompatible versions:
-~a attempted to load version ~a.~a while version ~a.~a was already loaded by ~a"
+                  (string-append 
+                   "Package ~a loaded twice with multiple incompatible versions:\n"
+                   "~a attempted to load version ~a.~a while version ~a.~a was already loaded by ~a")
                   (pkg-name pkg)
                   (stx->origin-string stx)
                   (pkg-maj pkg)
@@ -420,7 +421,7 @@ subdirectory.
 
 ;; get/installed-cache : pkg-getter
 (define (get/installed-cache _ pkg-spec success-k failure-k)
-  (let ([p (lookup-package pkg-spec)])
+  (let ([p (lookup-package pkg-spec #:check-success? #t)])
     (if p (success-k p) (failure-k void void (λ (x) x)))))
 
 ;; get-package-from-cache : FULL-PKG-SPEC -> PKG | #f
@@ -453,7 +454,7 @@ subdirectory.
                                  pkg-spec
                                  (pkg-maj p)
                                  (pkg-min p))))
-      (failure-k void void (λ (x) x)))))
+        (failure-k void void (λ (x) x)))))
 
 ;; save-to-uninstalled-pkg-cache! : uninstalled-pkg -> path[file]
 ;; copies the given uninstalled package into the uninstalled-package cache,
@@ -471,11 +472,17 @@ subdirectory.
                           (number->string maj)
                           (number->string min))]
          [full-pkg-path (build-path dir name)])
-    (make-directory* dir)
+    (try-make-directory* dir)
     (unless (equal? (normalize-path (uninstalled-pkg-path uninst-p))
                     (normalize-path full-pkg-path))
-      (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
-      (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path))
+      (call-with-file-lock/timeout
+       full-pkg-path
+       'exclusive
+       (λ ()
+         (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
+         (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path))
+       (λ ()
+         (log-error (format "planet/resolver.rkt: unable to save the planet package ~a" full-pkg-path)))))
     full-pkg-path))
 
 ;; =============================================================================
@@ -546,53 +553,67 @@ subdirectory.
 ;; install the given pkg to the planet cache and return a PKG representing the
 ;; installed file
 (define (install-pkg pkg path maj min)
-  (let ([pkg-path (pkg-spec-path pkg)]
-        [pkg-name (pkg-spec-name pkg)]
-        [pkg-string (pkg-spec->string pkg)])
-    (unless (install?)
-      (raise (make-exn:fail:planet
-              (format
-               "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
-               (list (car pkg-path) pkg-name maj min))
-              (current-continuation-marks))))
-    (let* ([owner (car pkg-path)]
-           [extra-path (cdr pkg-path)]
-           [the-dir
-            (apply build-path (CACHE-DIR)
-                   (append pkg-path (list pkg-name
-                                          (number->string maj)
-                                          (number->string min))))]
-           [was-nested? (planet-nested-install)])
-      (if (directory-exists? the-dir)
-          (raise (make-exn:fail
-                  "PLaneT error: trying to install already-installed package"
-                  (current-continuation-marks)))
-          (parameterize ([planet-nested-install #t])
-            (planet-terse-log 'install pkg-string)
-            (with-logging
-             (LOG-FILE)
-             (lambda ()
-               (printf "\n============= Installing ~a on ~a =============\n"
-                       pkg-name
-                       (current-time))
-               ;; oh man is this a bad hack!
-               (parameterize ([current-namespace (make-base-namespace)])
-                 (let ([ipp (dynamic-require 'setup/plt-single-installer
-                                             'install-planet-package)]
-                       [rud (dynamic-require 'setup/plt-single-installer
-                                             'reindex-user-documentation)]
-                       [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
-                   (parameterize ([msfh (manager-skip-file-handler)]
-                                  [use-compiled-file-paths (list (string->path "compiled"))])
-                     (ipp path the-dir (list owner pkg-name
-                                             extra-path maj min))
-                     (unless was-nested?
-                       (planet-terse-log 'docs-build pkg-string)
-                       (printf "------------- Rebuilding documentation index -------------\n")
-                       (rud)))))))
-            (planet-terse-log 'finish pkg-string)
-            (make-pkg pkg-name pkg-path
-                      maj min the-dir 'normal))))))
+  (define pkg-path (pkg-spec-path pkg))
+  (define pkg-name (pkg-spec-name pkg))
+  (define pkg-string (pkg-spec->string pkg))
+  (unless (install?)
+    (raise (make-exn:fail:planet
+            (format
+             "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
+             (list (car pkg-path) pkg-name maj min))
+            (current-continuation-marks))))
+  (define owner (car pkg-path))
+  (define extra-path (cdr pkg-path))
+  (define the-dir
+    (apply build-path (CACHE-DIR)
+           (append pkg-path (list pkg-name
+                                  (number->string maj)
+                                  (number->string min)))))
+  (define was-nested? (planet-nested-install))
+  
+  (try-make-directory* the-dir)
+  
+  (when (file-exists? (dir->successful-installation-file the-dir))
+    (raise (make-exn:fail
+            "PLaneT error: trying to install already-installed package"
+            (current-continuation-marks))))
+  
+  (parameterize ([planet-nested-install #t])
+    (planet-terse-log 'install pkg-string)
+    (with-logging
+     (LOG-FILE)
+     (lambda ()
+       
+       (define lock/f #f)
+       (dynamic-wind
+        void
+        (λ ()
+          (set! lock/f (check/take-installation-lock the-dir))
+          (when lock/f
+            (printf "\n============= Installing ~a on ~a =============\n"
+                    pkg-name
+                    (current-time))
+            ;; oh man is this a bad hack!
+            (parameterize ([current-namespace (make-base-namespace)])
+              (let ([ipp (dynamic-require 'setup/plt-single-installer
+                                          'install-planet-package)]
+                    [rud (dynamic-require 'setup/plt-single-installer
+                                          'reindex-user-documentation)]
+                    [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
+                (parameterize ([msfh (manager-skip-file-handler)]
+                               [use-compiled-file-paths (list (string->path "compiled"))])
+                  (ipp path the-dir (list owner pkg-name
+                                          extra-path maj min))
+                  (unless was-nested?
+                    (planet-terse-log 'docs-build pkg-string)
+                    (printf "------------- Rebuilding documentation index -------------\n")
+                    (rud)))))
+            (call-with-output-file (dir->successful-installation-file the-dir) void)))
+        (λ () (when lock/f 
+                (release-installation-lock lock/f))))))
+    (planet-terse-log 'finish pkg-string)
+    (make-pkg pkg-name pkg-path
+              maj min the-dir 'normal)))
 
 ;; download-package : FULL-PKG-SPEC -> RESPONSE
 ;; RESPONSE ::= (list #f string) | (list #t path[file] Nat Nat)
@@ -603,12 +624,11 @@ subdirectory.
 ;; raises an exception if some protocol failure occurs in the download process
 (define (download-package/planet pkg)
 
-  (define stupid-internal-define-syntax 
-    (let ([msg (format "downloading ~a from ~a via planet protocol" 
-                       (pkg-spec->string pkg)
-                       (PLANET-SERVER-NAME))])
-      (planet-terse-log 'download (pkg-spec->string pkg))
-      (planet-log msg)))
+  (let ([msg (format "downloading ~a from ~a via planet protocol" 
+                     (pkg-spec->string pkg)
+                     (PLANET-SERVER-NAME))])
+    (planet-terse-log 'download (pkg-spec->string pkg))
+    (planet-log msg))
   
   (define-values (ip op) (tcp-connect (PLANET-SERVER-NAME) (PLANET-SERVER-PORT)))
 
@@ -795,9 +815,9 @@ subdirectory.
   (make-parameter
    (list get/linkage
          get/installed-cache
+         get/uninstalled-cache
          get/uninstalled-cache-dummy
-         get/server
-         get/uninstalled-cache)))
+         get/server)))
 
 ;; ============================================================
 ;; UTILITY

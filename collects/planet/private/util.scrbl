@@ -337,7 +337,7 @@ into the given directory (creating that path if necessary).}
 		     [maj   natural-number/c]
 		     [min   natural-number/c])
 	 any]{
-Removes the specified package from the local planet cache.
+Removes the specified package from the local planet cache, deleting the installed files.
 }
 
 @defproc[(erase-pkg [owner string?]
@@ -345,8 +345,9 @@ Removes the specified package from the local planet cache.
                     [maj   natural-number/c]
                     [min   natural-number/c])
 	 any]{
-Removes the specified package from the local planet cache and deletes
-all of the files corresponding to the package.
+Like @racket[remove-pkg], removes the specified package from the local planet cache and deletes
+all of the files corresponding to the package, but also deletes the cached @filepath{.plt} file
+(so it will be redownloaded later).
 }
              
 @defproc[(display-plt-file-structure [plt-file (or/c path-string? path?)])
