@@ -22,8 +22,9 @@ returned by @racket[ftp-establish-connection], @racket[#f] otherwise.}
                                    [passwd string?])
           ftp-connection?]{
 
-Establishes an FTP connection with the given server using the
-supplied username and password.}
+Establishes an FTP connection with the given server using the supplied
+username and password. The @racket[port-np] argument usually should be
+@racket[21].}
 
 
 @defproc[(ftp-close-connection [ftp-conn ftp-connection?]) void?]{
