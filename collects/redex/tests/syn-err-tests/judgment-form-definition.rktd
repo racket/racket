@@ -59,12 +59,20 @@
              #:contract (J n))])
  bad-def)
 (#rx"malformed premise"
- ([bad-prem (q)])
+ ([bad-prem q])
  (let ()
    (define-judgment-form syn-err-lang
      #:mode (J I)
      [(J number)
       bad-prem])
+   (void)))
+(#rx"expected judgment form name"
+ ([bad-judgment-form q])
+ (let ()
+   (define-judgment-form syn-err-lang
+     #:mode (J I)
+     [(J number)
+      (bad-judgment-form)])
    (void)))
 (#rx"different numbers of positions"
  ([bad-def (define-judgment-form syn-err-lang

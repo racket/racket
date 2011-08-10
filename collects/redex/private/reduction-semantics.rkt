@@ -1938,17 +1938,18 @@
            (for/fold ([acc (foldl pat-pos acc-init conc-in)])
                      ([prem (drop-ellipses #'prems)])
                      (syntax-case prem ()
-                       [(form-name . _)
-                        (judgment-form-id? #'form-name)
-                        (let-values ([(prem-in prem-out) (split-body prem)])
-                          (check-judgment-arity prem)
-                          (for ([pos prem-in]) (tmpl-pos pos acc))
-                          (foldl pat-pos acc prem-out))]
                        [(-where pat tmpl)
                         (where-keyword? #'-where)
                         (begin
                           (tmpl-pos #'tmpl acc)
                           (pat-pos #'pat acc))]
+                       [(form-name . _)
+                        (if (judgment-form-id? #'form-name)
+                            (let-values ([(prem-in prem-out) (split-body prem)])
+                              (check-judgment-arity prem)
+                              (for ([pos prem-in]) (tmpl-pos pos acc))
+                              (foldl pat-pos acc prem-out))
+                            (raise-syntax-error syn-err-name "expected judgment form name" #'form-name))]
                        [_ (raise-syntax-error syn-err-name "malformed premise" prem)])))
          (for ([pos conc-out]) (tmpl-pos pos acc-out))
          acc-out)]))
