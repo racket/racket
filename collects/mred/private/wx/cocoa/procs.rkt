@@ -99,7 +99,7 @@
                              [f (if (zero? num)
                                     (tell #:type _NSRect screen visibleFrame)
                                     (tell #:type _NSRect screen frame))])
-                        (set-box! xb (->long (NSPoint-x (NSRect-origin f))))
+                        (set-box! xb ((if (and all? (zero? num)) + -) (->long (NSPoint-x (NSRect-origin f)))))
                         (unless (zero? num)
                           (let* ([screen0 (tell screens objectAtIndex: #:type _NSUInteger 0)]
                                  [f0 (tell #:type _NSRect screen0 frame)])

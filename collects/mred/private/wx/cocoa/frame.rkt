@@ -468,7 +468,7 @@
         (tell cocoa enableCursorRects)))
 
     (define/public (flip-screen y)
-      (let ([f (tell #:type _NSRect (tell cocoa screen) frame)])
+      (let ([f (tell #:type _NSRect (tell NSScreen mainScreen) frame)])
         (- (NSSize-height (NSRect-size f)) y)))
 
     (define/override (flip y h) (flip-screen (+ y h)))
