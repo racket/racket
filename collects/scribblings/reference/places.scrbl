@@ -56,7 +56,7 @@ kinds of data that places share---enable greater parallelism than
 separate places. At the same time, the setup and communication costs
 for places can be higher than for futures.
 
-For example, the following expression lanches two places, echoes a
+For example, the following expression launches two places, echoes a
 message to each, and then waits for the places to terminate:
 
 @racketblock[
