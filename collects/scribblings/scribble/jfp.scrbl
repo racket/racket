@@ -11,8 +11,11 @@
 
 @defmodulelang[scribble/jfp]{The @racketmodname[scribble/jfp]
 language is like @racketmodname[scribble/manual], but configured with
-Latex style defaults to use the @filepath{jfp.cls} class
-file that is included with Scribble.}
+Latex style defaults to use the @filepath{jfp1.cls} class
+file. The class file is not included with Scribble due to license
+issues, but if the file is not manually installed into the
+@racket[scribble/jfp] collections, then it is downloaded on demand to
+@racket[(find-system-path 'addon-dir)].}
 
 Latex output with @racketmodname[scribble/jfp] uses a main-document
 version supplied to @racket[title] as the short-form document name (to

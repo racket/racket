@@ -4,7 +4,9 @@
          (except-in scribble/base author)
          scribble/decode
          scribble/jfp
+         setup/main-collects
          "../private/defaults.rkt"
+         net/ftp
          (for-syntax scheme/base))
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/jfp)
@@ -22,10 +24,29 @@
     [(_ id . body)
      #'(#%module-begin id (post-process) () . body)]))
 
+(define cls-file
+  (let ([p (scribble-file "jfp/jfp1.cls")])
+    (if (file-exists? (main-collects-relative->path p))
+        p
+        (downloaded-file "jfp1.cls"))))
+
 (define ((post-process) doc)
   (add-defaults doc
                 (string->bytes/utf-8
-                 (format "\\documentclass{jfp}\n\\usepackage{times}\n\\usepackage{qcourier}\n"))
+                 (format "\\documentclass{jfp1}\n\\usepackage{times}\n\\usepackage{qcourier}\n"))
                 (scribble-file "jfp/style.tex")
-                (list (scribble-file "jfp/jfp.cls"))
+                (list cls-file)
                 #f))
+
+(unless (or (not (path? cls-file))
+            (file-exists? cls-file))
+  (log-error (format "File not found: ~a" cls-file))
+  (define site "ftp.cambridge.org")
+  (define path "pub/texarchive/journals/latex/jfp-cls")
+  (define file "jfp1.cls")
+  (log-error (format "Downloading via ftp://~a/~a/~a..." site path file))
+  (define c (ftp-establish-connection site 21 "anonymous" "user@racket-lang.org"))
+  (ftp-cd c path)
+  (let-values ([(base name dir?) (split-path cls-file)])
+    (ftp-download-file c base file))
+  (ftp-close-connection c))

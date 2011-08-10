@@ -4,6 +4,7 @@
          setup/main-collects)
 
 (provide scribble-file
+         downloaded-file
          add-defaults)
 
 (define (add-property properties pred new)
@@ -13,6 +14,9 @@
 
 (define (scribble-file s)
   (path->main-collects-relative (collection-file-path s "scribble")))
+
+(define (downloaded-file s)
+  (build-path (find-system-path 'addon-dir) s))
 
 (define (add-defaults doc pfx styl extras version?)
   (struct-copy part doc [style (make-style (style-name (part-style doc))

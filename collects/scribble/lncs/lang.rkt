@@ -10,6 +10,8 @@
          scribble/html-properties
          scribble/latex-properties
          racket/stxparam
+         net/ftp
+         file/gunzip
          (for-syntax racket/stxparam-exptime 
                      racket/base
                      setup/dirs))
@@ -23,17 +25,6 @@
          email)
 
 (define-syntax (module-begin stx)
-  (unless (file-exists? (collection-file-path "llncs.cls" "scribble" "lncs"))
-    (define cd (find-collects-dir))
-    (raise-syntax-error 'scribble/lncs
-                        (format "Please download the llncs.cls file (in llncs2e.zip) and put it in this directory:\n  ~a~a"
-                                (build-path (find-user-collects-dir)
-                                            "scribble" "lncs")
-                                (if cd
-                                    (format "\nor in this one:\n  ~a"
-                                            (build-path cd "scribble" "lncs"))
-                                    ""))
-                        #f))
   ;; No options, currently, but keep in case we want to support some:
   (syntax-case* stx () (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
     [(_ id ws . body)
@@ -44,11 +35,17 @@
     [(_ id . body)
      #'(#%module-begin id (post-process) () . body)]))
 
+(define cls-file
+  (let ([p (scribble-file "lncs/llncs.cls")])
+    (if (file-exists? (main-collects-relative->path p))
+        p
+        (downloaded-file "llncs.cls"))))
+
 (define ((post-process) doc)
   (add-defaults doc
                 (string->bytes/utf-8 "\\documentclass{llncs}\n") 
                 (scribble-file "lncs/style.tex")
-                (list (scribble-file "lncs/llncs.cls"))
+                (list cls-file)
                 #f))
 
 (define lncs-extras
@@ -58,6 +55,52 @@
     (list
      (make-css-addition (abs "lncs.css"))
      (make-tex-addition (abs "lncs.tex")))))
+
+(unless (or (not (path? cls-file))
+            (file-exists? cls-file))
+  (log-error (format "File not found: ~a" cls-file))
+  (define site "ftp.springer.de")
+  (define path "pub/tex/latex/llncs/latex2e")
+  (define file "llncs2e.zip")
+  (log-error (format "Downloading via ftp://~a/~a/~a..." site path file))
+  (define c (ftp-establish-connection site 21 "anonymous" "user@racket-lang.org"))
+  (ftp-cd c path)
+  (ftp-download-file c (find-system-path 'temp-dir) file)
+  (ftp-close-connection c)
+  (define z (build-path (find-system-path 'temp-dir) file))
+  ;; Poor man's unzip (replace it when we have an `unzip' library):
+  (define i (open-input-file z))
+  (define (skip n) (file-position i (+ (file-position i) n)))
+  (define (get n) 
+    (define s (read-bytes n i))
+    (unless (and (bytes? s) (= n (bytes-length s)))
+      (error "unexpected end of file"))
+    s)
+  (let loop ()
+    (cond
+     [(equal? #"PK\3\4" (get 4))
+      ;; local file header
+      (skip 2)
+      (define data-desc? (bitwise-bit-set? (bytes-ref (get 1) 0) 3))
+      (skip 11)
+      (define sz (integer-bytes->integer (get 4) #f #f))
+      (skip 4)
+      (define name-sz (integer-bytes->integer (get 2) #f #f))
+      (define extra-sz (integer-bytes->integer (get 2) #f #f))
+      (define name (bytes->string/utf-8 (get name-sz) #\?))
+      (skip extra-sz)
+      (if (equal? name "llncs.cls")
+          (call-with-output-file cls-file
+            (lambda (o)
+              (inflate i o)))
+          (begin
+            (skip sz)
+            (when data-desc?
+              skip 12)
+            (loop)))]
+     [else (error "didn't find file in archive")]))
+  (close-input-port i)
+  (delete-file z))
 
 ;; ----------------------------------------
 ;; Abstracts:
@@ -109,7 +152,6 @@
                              (list #'(element (style "LNCSand" lncs-extras) '()))))))))]
     [(_ . rest)
      (raise-syntax-error 'authors "expected a sequence of authors" stx)]))
-
 
 (define-syntax-parameter email-ok #f)
 

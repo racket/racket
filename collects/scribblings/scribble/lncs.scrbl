@@ -14,13 +14,10 @@
   The @racketmodname[scribble/lncs]
 language is like @racketmodname[scribble/manual], but configured with
 Latex style defaults to use the @filepath{llncs.cls} class
-file.
-
-The class file must be downloaded from Springer and installed
-into the @racket[scribble/lncs] collection directory. (Run a module
-in the language @racketmodname[scribble/lncs] to learn the precise paths
-where the file may go.)
-}
+file. The class file is not included with Scribble due to license issues,
+but if the file is not manually installed into the
+@racket[scribble/lncs] collection, then it is downloaded on demand to
+@racket[(find-system-path 'addon-dir)].}
 
 @defproc[(abstract [pre-content pre-content?] ...) block?]{
 
