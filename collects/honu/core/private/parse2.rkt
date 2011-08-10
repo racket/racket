@@ -173,8 +173,8 @@
                                        (more-parsing . rest)))))]
          [(honu-operator? #'head)
           (define new-precedence (transformer:honu-operator-ref (syntax-local-value #'head) 0))
-          (define operator-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 1))
-          (define association 'left)
+          (define association (transformer:honu-operator-ref (syntax-local-value #'head) 1))
+          (define operator-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 2))
           (define higher
             (case association
               [(left) >]

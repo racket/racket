@@ -33,6 +33,7 @@
 (define-lex-abbrev string-character (:or (:: #\\ any-char)
                                          (:~ #\")))
 (define-lex-abbrev string (:: #\" (:* string-character) #\"))
+(define-lex-abbrev operator (:or "+" "=" "*" "/" "-" "^"))
 (define-lex-abbrev block-comment (:: "/*"
                                      (complement (:: any-string "*/" any-string))
                                      "*/"))
@@ -68,10 +69,11 @@
     ["!" (token-identifier '!)]
     ["'" (token-identifier 'quote)]
     ["`" (token-identifier 'quasiquote)]
-    ["=" (token-identifier '=)]
-    ["*" (token-identifier '*)]
-    ["/" (token-identifier '/)]
-    ["+" (token-identifier '+)]
+    ;; ["=" (token-identifier '=)]
+    [operator (token-identifier (string->symbol lexeme))]
+    ;; ["*" (token-identifier '*)]
+    ;; ["/" (token-identifier '/)]
+    ;; ["+" (token-identifier '+)]
     [";" (token-identifier '|;|)]
     ;; strip the quotes from the resulting string
     ;; TODO: find a more optimal way
@@ -342,7 +344,7 @@
   (define (do-parse current tokens table)
     (define (fail tokens)
       (if (null? tokens)
-        (error 'parse "error while parsing")
+        (error 'read "error while reading")
         (let ([first (car tokens)])
           ;; hack to get the current failure behavior
           (do-parse current '() table)

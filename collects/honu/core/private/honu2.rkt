@@ -73,22 +73,24 @@
   (lambda (code context)
     (syntax-parse code
       [(_ expression rest ...)
-       (values #'(quasiquote expression) #'(rest ...) #f)])))
+       (values #'(quasiquote expression)
+               #'(rest ...)
+               #f)])))
 
-(define-syntax-rule (define-binary-operator name precedence operator)
+(define-syntax-rule (define-binary-operator name precedence associativity operator)
                     (begin
                       (provide name)
-                      (define-honu-operator/syntax name precedence
+                      (define-honu-operator/syntax name precedence associativity
                                                    (lambda (left right)
                                                      (with-syntax ([left left]
                                                                    [right right])
                                                        #'(operator left right))))))
 
-(define-binary-operator honu-+ 1 +)
-(define-binary-operator honu-- 1 -)
-(define-binary-operator honu-* 2 *)
-(define-binary-operator honu-/ 2 /)
-(define-binary-operator honu-^ 2 expt)
-(define-binary-operator honu-and 0.5 and)
-(define-binary-operator honu-or 0.5 or)
-(define-binary-operator honu-cons 0.1 cons)
+(define-binary-operator honu-+ 1 'left +)
+(define-binary-operator honu-- 1 'left -)
+(define-binary-operator honu-* 2 'left *)
+(define-binary-operator honu-/ 2 'left /)
+(define-binary-operator honu-^ 2 'right expt)
+(define-binary-operator honu-and 0.5 'left and)
+(define-binary-operator honu-or 0.5 'left or)
+(define-binary-operator honu-cons 0.1 'right cons)

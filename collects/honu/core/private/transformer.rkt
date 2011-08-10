@@ -33,16 +33,16 @@
 #;
 (provide honu-operator?)
 (define-values (struct:honu-operator -make-honu-operator honu-operator? -honu-operator-ref honu-operator-set!)
-               (make-struct-type 'honu-operator #f 2 0 #f 
+               (make-struct-type 'honu-operator #f 3 0 #f 
                                  (list (list prop:honu-operator #t))
                                  (current-inspector) 0))
 
-(define (make-honu-operator precedence proc)
+(define (make-honu-operator precedence associativity proc)
   (unless (and (procedure? proc)
                (procedure-arity-includes? proc 2))
     (raise-type-error
       'define-honu-operator/syntax
       "procedure (arity 2)"
       proc))
-  (-make-honu-operator precedence proc))
+  (-make-honu-operator precedence associativity proc))
 

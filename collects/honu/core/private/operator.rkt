@@ -7,5 +7,5 @@
 (provide define-honu-operator/syntax)
 (define-syntax (define-honu-operator/syntax stx)
   (syntax-parse stx
-    [(_ name precedence function)
-     #'(define-syntax name (make-honu-operator precedence function))]))
+    [(_ name precedence associativity function)
+     #'(define-syntax name (make-honu-operator precedence associativity function))]))
