@@ -286,8 +286,8 @@
     
     (define/private (find-distance x y mon)
       (define-values (delta-x delta-y)
-        (let-values ([(l t) (get-display-left-top-inset #:monitor 0)])
-          (values (- x l) (- y t))))
+        (let-values ([(l t) (get-display-left-top-inset #:monitor mon)])
+          (values (+ x l) (+ y t))))
       (values delta-x
               delta-y
               (sqrt (+ (* delta-x delta-x)
@@ -296,21 +296,18 @@
     (inherit maximize)
     (let ()
       (define-values (maximized? w h) (apply values (preferences:get size-preferences-key)))
-      (define-values (x y)
+      (define-values (x y origin-still-visible?)
         (cond
           [position-preferences-key
            (define-values (monitor delta-x delta-y) (apply values (preferences:get position-preferences-key)))
            (define-values (l t) (get-display-left-top-inset #:monitor monitor))
-           (define-values (m-w m-h) (get-display-size))
-           (values (- delta-x l) (- delta-y t))]
+           (define-values (mw mh) (get-display-size #:monitor monitor))
+           (values (- delta-x l) 
+                   (- delta-y t)
+                   (and (<= 0 l mw)
+                        (<= 0 t mh)))]
           [else
-           (values #f #f)]))
-      (define (window-origin-visible? x y)
-        (for/or ([m (in-range 0 (get-display-count))])
-          (define-values (mw mh) (get-display-size #:monitor m))
-          (define-values (mx my) (get-display-left-top-inset #:monitor m))
-          (and (<= (- mx) x (+ mx mw))
-               (<= (- my) y (+ my mh)))))
+           (values #f #f #f)]))
       (define (already-one-there? x y w h)
         (for/or ([fr (in-list (get-top-level-windows))])
           (and (equal? x (send fr get-x))
@@ -321,7 +318,7 @@
       (cond
         [(or (and (already-one-there? x y w h)
                   (not maximized?))
-             (not (window-origin-visible? x y)))
+             (not origin-still-visible?))
          ;; these are the situations where we look for a different position of the window
          (let loop ([n 50]
                     [x 0]
