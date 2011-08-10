@@ -9,12 +9,14 @@ don't depend on any other portion of the system
 (require "syntax-traversal.rkt" racket/dict
 	 syntax/parse (for-syntax scheme/base syntax/parse) racket/match)
 
-;; a parameter representing the original location of the syntax being currently checked
+;; a parameter representing the original location of the syntax being
+;; currently checked
 (define current-orig-stx (make-parameter #'here))
 (define orig-module-stx (make-parameter #f))
 (define expanded-module-stx (make-parameter #f))
 
-;; a parameter holding the mutated variables for the form currently being checked
+;; a parameter holding the mutated variables for the form currently being
+;; checked
 (define mutated-vars (make-parameter #hash()))
 
 (define (is-var-mutated? id) (dict-ref (mutated-vars) id #f))
@@ -24,16 +26,18 @@ don't depend on any other portion of the system
     (cond [(null? l) null]
           [(null? (cdr l)) l]
           [else (cons (car l) (cons v (intersperse v (cdr l))))]))
-  (apply string-append (intersperse between (map (lambda (s) (format "~a" s)) l))))
+  (apply string-append
+         (intersperse between (map (lambda (s) (format "~a" s)) l))))
 
 ;; helper function, not currently used
 (define (find-origin stx)
-  (cond [(syntax-property stx 'origin) => (lambda (orig)
-                                            (let ([r (reverse orig)])
-                                              (let loop ([r (reverse orig)])
-                                                (if (null? r) #f
-                                                    (if (syntax-source (car r)) (car r)
-                                                        (loop (cdr r)))))))]
+  (cond [(syntax-property stx 'origin)
+         => (lambda (orig)
+              (let ([r (reverse orig)])
+                (let loop ([r (reverse orig)])
+                  (if (null? r) #f
+                      (if (syntax-source (car r)) (car r)
+                          (loop (cdr r)))))))]
         [else #f]))
 
 ;; do we print the fully-expanded syntax in error messages?
@@ -49,10 +53,15 @@ don't depend on any other portion of the system
         [stx (locate-stx e)])
     (when (and (warn-unreachable?)
                (log-level? l 'warning)
-               (and (syntax-transforming?) (syntax-original? (syntax-local-introduce e)))
-               #;(and (orig-module-stx) (eq? (debugf syntax-source-module e) (debugf syntax-source-module (orig-module-stx))))
-	       #;(syntax-source-module stx))
-      (log-message l 'warning (format "Typed Racket has detected unreachable code: ~.s" (syntax->datum (locate-stx e)))
+               (and (syntax-transforming?)
+                    (syntax-original? (syntax-local-introduce e)))
+               #;(and (orig-module-stx)
+                      (eq? (debugf syntax-source-module e)
+                           (debugf syntax-source-module (orig-module-stx))))
+               #;(syntax-source-module stx))
+      (log-message l 'warning
+                   (format "Typed Racket has detected unreachable code: ~.s"
+                           (syntax->datum (locate-stx e)))
                    e))))
 
 (define (locate-stx stx)
@@ -90,20 +99,27 @@ don't depend on any other portion of the system
     [l
      (let ([stxs
             (for/list ([e l])
-              (sync (thread (lambda () (raise-typecheck-error (err-msg e) (err-stx e)))))
+              (sync (thread
+                     (lambda ()
+                       (raise-typecheck-error (err-msg e) (err-stx e)))))
               (err-stx e))])
        (reset!)
        (unless (null? stxs)
-         (raise-typecheck-error (format "Summary: ~a errors encountered" (length stxs)) (apply append stxs))))]))
+         (raise-typecheck-error (format "Summary: ~a errors encountered"
+                                        (length stxs))
+                                (apply append stxs))))]))
 
 (define delay-errors? (make-parameter #f))
 
 (define (tc-error/delayed msg #:stx [stx* (current-orig-stx)] . rest)
   (let ([stx (locate-stx stx*)])
     (unless (syntax? stx)
-      (int-err "erroneous syntax was not a syntax object: ~a ~a" stx (syntax->datum stx*)))
+      (int-err "erroneous syntax was not a syntax object: ~a ~a"
+               stx (syntax->datum stx*)))
     (if (delay-errors?)
-        (set! delayed-errors (cons (make-err (apply format msg rest) (list stx)) delayed-errors))
+        (set! delayed-errors (cons (make-err (apply format msg rest)
+                                             (list stx))
+                                   delayed-errors))
         (raise-typecheck-error (apply format msg rest) (list stx)))))
 
 ;; produce a type error, using the current syntax
@@ -111,13 +127,18 @@ don't depend on any other portion of the system
   (let* ([ostx (current-orig-stx)]
          [ostxs (if (list? ostx) ostx (list ostx))]
          [stxs (map locate-stx ostxs)])
-    ;; If this isn't original syntax, then we can get some pretty bogus error messages.  Note
-    ;; that this is from a macro expansion, so that introduced vars and such don't confuse the user.
+    ;; If this isn't original syntax, then we can get some pretty bogus error
+    ;; messages.  Note that this is from a macro expansion, so that introduced
+    ;; vars and such don't confuse the user.
     (cond
-      [(or (not (orig-module-stx))
-           (for/and ([s ostxs]) (eq? (syntax-source s) (syntax-source (orig-module-stx)))))
-       (raise-typecheck-error (apply format msg rest) stxs)]
-      [else (raise-typecheck-error (apply format (string-append "Error in macro expansion -- " msg) rest) stxs)])))
+     [(or (not (orig-module-stx))
+          (for/and ([s ostxs])
+            (eq? (syntax-source s) (syntax-source (orig-module-stx)))))
+      (raise-typecheck-error (apply format msg rest) stxs)]
+     [else (raise-typecheck-error
+            (apply format (string-append "Error in macro expansion -- " msg)
+                   rest)
+            stxs)])))
 
 ;; produce a type error, given a particular syntax
 (define (tc-error/stx stx msg . rest)
@@ -137,17 +158,22 @@ don't depend on any other portion of the system
 
 ;; raise an internal error - typechecker bug!
 (define (int-err msg . args)
-  (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
-                                          (apply format msg args)
-                                          (format "\nwhile typechecking:\n~a\noriginally:\n~a"
-                                                  (syntax->datum (current-orig-stx))
-                                                  (syntax->datum (locate-stx (current-orig-stx)))))
-                           (current-continuation-marks))))
+  (raise (make-exn:fail:tc
+          (string-append
+           "Internal Typechecker Error: "
+           (apply format msg args)
+           (format "\nwhile typechecking:\n~a\noriginally:\n~a"
+                   (syntax->datum (current-orig-stx))
+                   (syntax->datum (locate-stx (current-orig-stx)))))
+          (current-continuation-marks))))
 
 (define-syntax (nyi stx)
   (syntax-case stx ()
     [(_ str)
-     (quasisyntax/loc stx (int-err "~a: not yet implemented: ~a" str #,(syntax/loc stx (this-expression-file-name))))]
+     (quasisyntax/loc stx
+       (int-err "~a: not yet implemented: ~a"
+                str
+                #,(syntax/loc stx (this-expression-file-name))))]
     [(_) (syntax/loc stx (nyi ""))]))
 
 
@@ -166,7 +192,11 @@ don't depend on any other portion of the system
     #:transparent
     #:attributes (ty id)
     (pattern [nm:identifier ~! ty]
-             #:fail-unless (list? ((if (= 1 (syntax-local-phase-level)) identifier-template-binding identifier-template-binding) #'nm)) "not a bound identifier"
+             #:fail-unless (list? ((if (= 1 (syntax-local-phase-level))
+                                       identifier-template-binding
+                                       identifier-template-binding)
+                                   #'nm))
+             "not a bound identifier"
              #:with id #'(quote-syntax nm))
     (pattern [e:expr ty]
              #:with id #'e))

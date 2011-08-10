@@ -10,8 +10,10 @@
 (define-syntax-class number-opt-expr
   #:commit
   ;; these cases are all identity
-  (pattern (#%plain-app (~and op (~or (~literal +) (~literal *) (~literal min) (~literal max)))
+  (pattern (#%plain-app (~and op (~or (~literal +) (~literal *)
+                                      (~literal min) (~literal max)))
                         f:expr)
            #:with opt
-           (begin (log-optimization "unary number" "Identity elimination." this-syntax)
+           (begin (log-optimization "unary number" "Identity elimination."
+                                    this-syntax)
                   ((optimize) #'f))))
