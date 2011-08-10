@@ -124,3 +124,15 @@
 (#rx"expected an identifier"
  ([not-id 7])
  (redex-match syn-err-lang (cross not-id)))
+
+(#rx"a?: mode specifies a 1-ary relation but use supplied 2 terms"
+ ([bad-judgment (a? a q)])
+ ([name a?])
+ (let ()
+   (define-judgment-form syn-err-lang
+     #:mode (name I)
+     [(name a)])
+   (reduction-relation
+    syn-err-lang
+    (--> 1 1
+         (judgment-holds bad-judgment)))))

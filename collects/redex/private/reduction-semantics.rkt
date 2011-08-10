@@ -479,6 +479,19 @@
   (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/proc (cdr x))))
        (extract-pattern-binds pat)))
 
+(define-for-syntax (check-judgment-arity judgment)
+  (syntax-case judgment ()
+    [(form-name pat ...)
+     (judgment-form-id? #'form-name)
+     (let ([expected (length (judgment-form-mode (syntax-local-value #'form-name)))]
+           [actual (length (syntax->list #'(pat ...)))])
+       (unless (= actual expected)
+         (raise-syntax-error 
+          #f 
+          (format "mode specifies a ~a-ary relation but use supplied ~a term~a" 
+                  expected actual (if (= actual 1) "" "s"))
+          judgment)))]))
+
 (define-syntax-set (do-reduction-relation)
   (define (do-reduction-relation/proc stx)
     (syntax-case stx ()
@@ -1073,12 +1086,12 @@
                    [(computed-name . _)
                     (raise-syntax-error orig-name "malformed computed-name clause" stx (car extras))]
                    [(judgment-holds judgment)
-                    (cons #'judgment (loop (cdr extras)))]
+                    (begin
+                      (check-judgment-arity #'judgment)
+                      (cons #'judgment (loop (cdr extras))))]
                    [_
                     (raise-syntax-error orig-name "unknown extra" stx (car extras))])]))])
       (values the-name computed-name-stx sides/withs/freshs)))
-  
-
   
   ;; table-cons! hash-table sym any -> void
   ;; extends ht at key by `cons'ing hd onto whatever is alrady bound to key (or the empty list, if nothing is)
@@ -1783,14 +1796,6 @@
                     (cons (cadr more) arg-pats))]
              [else (values (reverse arg-pats) more)])))])))
 
-(define-for-syntax (check-judgment-arity judgment)
-  (syntax-case judgment ()
-    [(form-name pat ...)
-     (judgment-form-id? #'form-name)
-     (let ([expected (length (judgment-form-mode (syntax-local-value #'form-name)))])
-       (unless (= (length (syntax->list #'(pat ...))) expected)
-         (raise-syntax-error #f "arity mismatch" judgment)))]))
-
 (define-syntax (judgment-holds stx)
   (syntax-case stx ()
     [(j-h judgment)
@@ -1801,7 +1806,7 @@
             [lang (judgment-form-lang (syntax-local-value #'form-name))]
             [nts (definition-nts lang stx syn-err-name)]
             [judgment (syntax-case stx () [(_ judgment _) #'judgment])])
-       (check-judgment-arity #'(form-name . pats))
+       (check-judgment-arity judgment)
        (bind-withs syn-err-name '() lang nts (list judgment)
                    'flatten #`(list (term #,#'tmpl)) '() '()))]
     [(_ (not-form-name . _) . _)

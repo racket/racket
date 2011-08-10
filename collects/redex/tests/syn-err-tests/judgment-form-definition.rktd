@@ -106,19 +106,27 @@
       (where number_2 unbound)
       (where (name q number) number_1)])
    (void)))
-(#rx"arity"
+(#rx"J: mode specifies a 1-ary relation but use supplied 0 terms"
  ([bad-conc (J)]) ([name J])
  (let ()
    (define-judgment-form syn-err-lang
      #:mode (name I)
      [bad-conc])
    (void)))
-(#rx"arity"
+(#rx"J: mode specifies a 1-ary relation but use supplied 0 terms"
  ([bad-prem (J)]) ([name J])
  (let ()
    (define-judgment-form syn-err-lang
      #:mode (name I)
      [(name number)
+      bad-prem])
+   (void)))
+(#rx"J: mode specifies a 0-ary relation but use supplied 1 term"
+ ([bad-prem (J a)]) ([name J])
+ (let ()
+   (define-judgment-form syn-err-lang
+     #:mode (name)
+     [(name)
       bad-prem])
    (void)))
 (#rx"unquote unsupported"
