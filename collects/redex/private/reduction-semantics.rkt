@@ -316,6 +316,10 @@
       [w/ellipses names/ellipses])
      (hash-set extended (syntax-e name) w/ellipses))))
 
+(define-for-syntax (ellipsis? stx)
+  (and (identifier? stx)
+       (free-identifier=? stx (quote-syntax ...))))
+
 ;; the withs, freshs, and side-conditions come in backwards order
 (define-for-syntax (bind-withs orig-name main lang lang-nts stx where-mode body names w/ellipses)
   (with-disappeared-uses
@@ -386,27 +390,43 @@
                        (verify-names-ok '#,orig-name the-names len-counter)
                        (variables-not-in #,to-not-be-in the-names))])
                    #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
-      [((form-name . pats) . rest-clauses)
+      [((form-name . pats) . after)
        (judgment-form-id? #'form-name)
-       (let*-values ([(judgment-form) (syntax-local-value/record #'form-name (λ (_) #t))]
+       (let*-values ([(premise) (syntax-case stx () [(p . _) #'p])]
+                     [(rest-clauses under-ellipsis?)
+                      (syntax-case #'after ()
+                        [(maybe-ellipsis . more)
+                         (ellipsis? #'maybe-ellipsis)
+                         (values #'more #t)]
+                        [_ (values #'after #f)])]
+                     [(judgment-form) (syntax-local-value/record #'form-name (λ (_) #t))]
                      [(mode) (judgment-form-mode judgment-form)]
                      [(judgment-proc) (judgment-form-proc judgment-form)]
-                     [(input-template output-pre-pattern) (split-by-mode (syntax->list #'pats) mode)]
+                     [(input-template output-pre-pattern) 
+                      (let-values ([(in out) (split-by-mode (syntax->list #'pats) mode)])
+                        (if under-ellipsis?
+                            (let ([ellipsis (syntax/loc premise (... ...))])
+                              (values #`(#,in #,ellipsis) #`(#,out #,ellipsis)))
+                            (values in out)))]
                      [(output-pattern)
                       (rewrite-side-conditions/check-errs lang-nts orig-name #t output-pre-pattern)]
                      [(output-names output-names/ellipses)
-                      (extract-names lang-nts orig-name #t output-pattern)]
+                      (extract-names lang-nts orig-name #t output-pre-pattern)]
                      [(binding-constraints temporaries env+)
                       (generate-binding-constraints output-names output-names/ellipses env orig-name)]
-                     [(rest-body) (loop #'rest-clauses #`(list judgment-output #,to-not-be-in) env+)]
-                     [(call) (quasisyntax/loc #'form-name
-                               (call-judgment-form 
-                                'form-name #,judgment-proc '#,mode (term #,input-template)))])
+                     [(rest-body) (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+)]
+                     [(call)
+                      (let ([input (quasisyntax/loc premise (term #,input-template))])
+                        (define (make-traced input)
+                          (quasisyntax/loc premise
+                            (call-judgment-form 'form-name #,judgment-proc '#,mode #,input)))
+                        (if under-ellipsis?
+                            #`(repeated-premise-outputs #,input (λ (x) #,(make-traced #'x)))
+                            (make-traced input)))])
          (with-syntax ([(output-name ...) output-names]
                        [(output-name/ellipsis ...) output-names/ellipses]
                        [(temp ...) temporaries]
                        [(binding-constraint ...) binding-constraints])
-           (syntax-case stx () [(clause . _) #'clause])
            #`(begin
                (void #,(defined-check judgment-proc "judgment form" #:external #'form-name))
                (for/fold ([outputs '()]) ([sub-output #,call])
@@ -415,12 +435,23 @@
                          (if mtchs
                              (for/fold ([outputs outputs]) ([mtch mtchs])
                                        (let ([temp (lookup-binding (mtch-bindings mtch) 'output-name)] ...)
-                                         (and binding-constraint ...
-                                              (term-let ([output-name/ellipsis temp] ...) 
-                                                        (let ([output-rest #,rest-body])
-                                                          (and output-rest 
-                                                               (append outputs output-rest)))))))
+                                         (define mtch-outputs
+                                           (and binding-constraint ...
+                                                (term-let ([output-name/ellipsis temp] ...) 
+                                                          #,rest-body)))
+                                         (if mtch-outputs
+                                             (append mtch-outputs outputs)
+                                             outputs)))
                              outputs)))))]))))
+
+(define (repeated-premise-outputs inputs premise)
+  (if (null? inputs)
+      '(())
+      (let ([output (premise (car inputs))])
+        (if (null? output)
+            '()
+            (for*/list ([o output] [os (repeated-premise-outputs (cdr inputs) premise)])
+                       (cons o os))))))
 
 (define (call-judgment-form form-name form-proc mode input)
   (define traced (current-traced-metafunctions))
@@ -1500,22 +1531,9 @@
                (define-syntax #,judgment-form-name 
                  (judgment-form '#,judgment-form-name '#,mode #'judgment-form-proc #'#,lang #'judgment-form-lws))
                (define judgment-form-proc
-                 (let-syntax ([delayed
-                               (λ (stx)
-                                 (syntax-case stx ()
-                                   [(_ lang clauses ctcs full-def)
-                                    (let ([nts (definition-nts #'lang #'full-def '#,syn-err-name)])
-                                      (mode-check '#,mode (syntax->list #'clauses) nts '#,syn-err-name)
-                                      (compile-judgment-form-proc
-                                       '#,judgment-form-name '#,mode (syntax->list #'clauses) #'ctcs nts #'lang '#,syn-err-name))]))])
-                   (delayed #,lang #,clauses #,position-contracts #,stx)))
+                 (compile-judgment-form-proc #,judgment-form-name #,lang #,mode #,clauses #,position-contracts #,stx #,syn-err-name))
                (define judgment-form-lws
-                 (let-syntax ([delayed 
-                               (λ (stx)
-                                 (syntax-case stx ()
-                                   [(_ clauses)
-                                    (compile-judgment-form-lws (syntax->list #'clauses))]))])
-                   (delayed #,clauses)))))
+                 (compiled-judgment-form-lws #,clauses))))
          (syntax-property
           (prune-syntax
            (if (eq? 'top-level (syntax-local-context))
@@ -1781,15 +1799,16 @@
      (judgment-form-id? #'form-name)
      (let* ([syn-err-name (syntax-e #'j-h)]
             [lang (judgment-form-lang (syntax-local-value #'form-name))]
-            [nts (definition-nts lang stx syn-err-name)])
+            [nts (definition-nts lang stx syn-err-name)]
+            [judgment (syntax-case stx () [(_ judgment _) #'judgment])])
        (check-judgment-arity #'(form-name . pats))
-       (bind-withs syn-err-name '() lang nts (list #'(form-name . pats))
+       (bind-withs syn-err-name '() lang nts (list judgment)
                    'flatten #`(list (term #,#'tmpl)) '() '()))]
     [(_ (not-form-name . _) . _)
      (not (judgment-form-id? #'form-name))
      (raise-syntax-error #f "expected a judgment form name" stx #'not-form-name)]))
 
-(define-for-syntax (compile-judgment-form-proc name mode clauses contracts nts lang syn-error-name)
+(define-for-syntax (do-compile-judgment-form-proc name mode clauses contracts nts lang syn-error-name)
   (define (compile-clause clause)
     (syntax-case clause ()
       [((_ . conc-pats) . prems)
@@ -1845,7 +1864,7 @@
                [_ #t])) 
            (syntax->list extras))))
 
-(define-for-syntax (compile-judgment-form-lws clauses)
+(define-for-syntax (do-compile-judgment-form-lws clauses)
   (syntax-case clauses ()
     [(((_ . conc-body) . prems) ...)
      (let ([rev-premss
@@ -1893,6 +1912,18 @@
     (syntax-case judgment ()
       [(form-name . body)
        (split-by-mode (syntax->list #'body) (judgment-form-mode (syntax-local-value #'form-name)))]))
+  (define (drop-ellipses prems)
+    (syntax-case prems ()
+      [() '()]
+      [(prem maybe-ellipsis . remaining)
+       (ellipsis? #'maybe-ellipsis)
+       (syntax-case #'prem ()
+         [(form-name . _)
+          (judgment-form-id? #'form-name)
+          (cons #'prem (drop-ellipses #'remaining))]
+         [_ (raise-syntax-error syn-err-name "ellipses must follow judgment form uses" #'maybe-ellipsis)])]
+      [(prem . remaining)
+       (cons #'prem (drop-ellipses #'remaining))]))
   (define (fold-clause pat-pos tmpl-pos acc-init clause)
     (syntax-case clause ()
       [(conc . prems)
@@ -1900,7 +1931,7 @@
          (check-judgment-arity #'conc)
          (define acc-out
            (for/fold ([acc (foldl pat-pos acc-init conc-in)])
-                     ([prem (syntax->list #'prems)])
+                     ([prem (drop-ellipses #'prems)])
                      (syntax-case prem ()
                        [(form-name . _)
                         (judgment-form-id? #'form-name)
@@ -1963,7 +1994,10 @@
                            #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
                        [(side-condition x)
                         #`(make-metafunc-extra-side-cond
-                           #,(to-lw/uq/proc #'x))]))
+                           #,(to-lw/uq/proc #'x))]
+                       [maybe-ellipsis
+                        (ellipsis? #'maybe-ellipsis)
+                        (to-lw/proc #'maybe-ellipsis)]))
                    (in-order-non-hidden hm)))
                 (syntax->list #'seq-of-tl-side-cond/binds))]
           [(((where-bind-id/lw . where-bind-pat/lw) ...) ...)
@@ -1993,6 +2027,25 @@
                            where/sc/lw ...)
                      rhs/lw)
                ...))]))
+
+(define-syntax (compile-judgment-form-proc stx)
+  (syntax-case stx ()
+    [(_ judgment-form-name lang mode clauses ctcs full-def syn-err-name)
+     (let ([nts (definition-nts #'lang #'full-def (syntax-e #'syn-err-name))])
+       (mode-check (syntax->datum #'mode) (syntax->list #'clauses) nts (syntax-e #'syn-err-name))
+       (do-compile-judgment-form-proc
+        (syntax-e #'judgment-form-name) 
+        (syntax->datum #'mode) 
+        (syntax->list #'clauses) 
+        #'ctcs
+        nts
+        #'lang 
+        (syntax-e #'syn-err-name)))]))
+
+(define-syntax (compiled-judgment-form-lws stx)
+  (syntax-case stx ()
+    [(_ clauses)
+     (do-compile-judgment-form-lws (syntax->list #'clauses))]))
 
 (define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pats name relation?)
   (let* ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]

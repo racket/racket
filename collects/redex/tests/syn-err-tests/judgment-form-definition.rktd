@@ -136,3 +136,30 @@
      #:mode (uses-unquote I O)
      [(uses-unquote n unq)])
    (void)))
+
+(#rx"missing ellipses"
+ ([use any_0]) ([ellipsis ...] [def any_0])
+ (let ()
+   (define-judgment-form syn-err-lang
+     #:mode (tmpl-depth I O)
+     [(tmpl-depth (def ellipsis) any)
+      (tmpl-depth use any)])
+   (void)))
+(#rx"same binder.*different depths"
+ ([binder1 any_0] [binder2 any_0])
+ ([ellipsis ...])
+ (let ()
+   (define-judgment-form syn-err-lang
+     #:mode (pat-depth I O)
+     [(pat-depth (binder2 ellipsis) ())
+      (pat-depth () binder1)])
+   (void)))
+(#rx"too many ellipses"
+ ([premise (no-ellipsis any)])
+ ([binder any] [name no-ellipsis] [ellipsis ...])
+ (let ()
+   (define-judgment-form syn-err-lang
+     #:mode (name I)
+     [(name binder)
+      premise ellipsis])
+   (void)))

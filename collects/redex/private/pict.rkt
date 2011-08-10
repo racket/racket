@@ -1053,7 +1053,8 @@
                                           [(struct metafunc-extra-where (lhs rhs))
                                            (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
                                           [(struct metafunc-extra-side-cond (expr))
-                                           (wrapper->pict expr)])
+                                           (wrapper->pict expr)]
+                                          [wrapper (wrapper->pict wrapper)])
                                         (list-ref eqn 1))))
                          eqns)])
     ((relation-clauses-combine)

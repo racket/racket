@@ -1092,11 +1092,13 @@ and @racket[#f] otherwise.
                      dashes
                      conclusion]]
               [conclusion (form-id pat/term ...)]
-              [premise (judgment-form-id pat/term ...)
+              [premise (code:line (judgment-form-id pat/term ...) maybe-ellipsis)
                        (where @#,ttpattern @#,tttterm)
                        (where/hidden @#,ttpattern @#,tttterm)]
               [pat/term @#,ttpattern
                         @#,tttterm]
+              [maybe-ellipsis (code:line)
+                              ...]
               [dashes ---
                       ----
                       -----
@@ -1175,6 +1177,25 @@ A rule's @racket[where] and @racket[where/hidden] premises behave as in
           (le n_2 n_3)])
        (judgment-holds (gt (s (s z)) (s z)))
        (judgment-holds (gt (s z) (s z)))]
+
+A literal ellipsis may follow a judgment premise when a template in one of the
+judgment's input positions contains a pattern variable bound at ellipsis-depth
+one.
+@examples[
+#:eval redex-eval
+       (define-judgment-form nats
+         #:mode (even I)
+         #:contract (even n)
+         [(even z)]
+         [(even (s (s n)))
+          (even n)])
+       (define-judgment-form nats
+         #:mode (all-even I)
+         #:contract (all-even (n ...))
+         [(all-even (n ...))
+          (even n) ...])
+       (judgment-holds (all-even (z (s (s z)) z)))
+       (judgment-holds (all-even (z (s (s z)) (s z))))]
 
 Redex evaluates premises depth-first, even when it doing so leads to 
 non-termination. For example, consider the following definitions:                                    

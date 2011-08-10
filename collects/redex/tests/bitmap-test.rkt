@@ -305,7 +305,20 @@
      (nps z (name n_1 (s (s n_1))))
      (where (name b n_2) z)])
   
-  (test (render-judgment-form nps) "judgment-form-name-patterns.png"))
+  (test (render-judgment-form nps) "judgment-form-name-patterns.png")
+  
+  (define-judgment-form nats
+    #:mode (lt2 I)
+    [(lt2 z)]
+    [(lt2 (s z))])
+  
+  (define-judgment-form nats
+    #:mode (uses-ellipses I)
+    [(uses-ellipses (n ...))
+     (lt2 n) ...
+     (sum z z z)])
+  
+  (test (render-judgment-form uses-ellipses) "judgment-form-ellipsis.png"))
 
 (let ()
   (define-language STLC

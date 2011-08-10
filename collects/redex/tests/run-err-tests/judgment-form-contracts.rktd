@@ -1,12 +1,12 @@
 (#rx"input q at position 1"
- ([judgment ctc-fail])
- (judgment-holds (judgment q s)))
+ ([judgment (ctc-fail q s)])
+ (judgment-holds judgment))
 (#rx"output q at position 2"
- ([judgment ctc-fail])
- (judgment-holds (judgment a s)))
+ ([judgment (ctc-fail a s)])
+ (judgment-holds judgment))
 (#rx"input q at position 1"
- ([judgment ctc-fail])
- (judgment-holds (judgment b s)))
+ ([judgment (ctc-fail b s)])
+ (judgment-holds judgment))
 (#rx"output q at position 2"
- ([judgment ctc-fail])
- (judgment-holds (judgment c s)))
+ ([judgment (ctc-fail c s)])
+ (judgment-holds judgment))

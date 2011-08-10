@@ -1817,7 +1817,7 @@
               (--> a any
                    (judgment-holds (R a any))))
              'a)
-            '(b a)))
+            '(a b)))
   
     ;                                                                 
     ;                                                                 
@@ -1913,8 +1913,8 @@
       (test (judgment-holds (sumo n_1 n_2 z) ([,'n_1 n_1] [,'n_2 n_2]))
             (list (term ([n_1 z] [n_2 z]))))
       (test (judgment-holds (sumo n_1 n_2 (s z)) ([,'n_1 n_1] [,'n_2 n_2]))
-            (list (term ([n_1 (s z)] [n_2 z]))
-                  (term ([n_1 z] [n_2 (s z)]))))
+            (list (term ([n_1 z] [n_2 (s z)]))
+                  (term ([n_1 (s z)] [n_2 z]))))
       
       (define-judgment-form nats
         #:mode (sumo-ls O O I)
@@ -1938,7 +1938,7 @@
         [(member n_i (n_0 ... n_i n_i+1 ...))])
       
       (test (judgment-holds (member n (z (s z) z (s (s z)))) n)
-            (list (term (s (s z))) (term z) (term (s z)) (term z)))
+            (list (term z) (term (s z)) (term z) (term (s (s z)))))
       
       (define-judgment-form nats
         #:mode (has-zero I)
@@ -1974,6 +1974,71 @@
       
       (test (judgment-holds (uses-add2 (s (s (s (s z)))) n) n)
             (list (term (s (s (s z))))))
+      
+      (define-judgment-form nats
+        #:mode (add1 I O)
+        #:contract (add1 n n)
+        [(add1 n (s n))])
+      
+      (define-judgment-form nats
+        #:mode (map-add1 I O)
+        #:contract (map-add1 (n ...) (n ...))
+        [(map-add1 (n ...) (n_+ ...))
+         (add1 n n_+) ...])
+      
+      (test (judgment-holds (map-add1 () (n ...))
+                            (n ...))
+            (list (term ())))
+      
+      (test (judgment-holds (map-add1 (z (s z) (s (s z))) (n ...))
+                            (n ...))
+            (list (term ((s z) (s (s z)) (s (s (s z)))))))
+
+      (define-judgment-form nats
+        #:mode (map-add1-check I O)
+        #:contract (map-add1-check (n ...) (n ...))
+        [(map-add1-check (n ...) ((s n) ...))
+         (add1 n (s n)) ...])
+      
+      (test (judgment-holds (map-add1-check (z (s z) (s (s z))) (n ...))
+                            (n ...))
+            (list (term ((s z) (s (s z)) (s (s (s z)))))))
+      
+      (define-judgment-form nats
+        #:mode (add-some-noz I O)
+        #:contract (add-some-noz n n)
+        [(add-some-noz z z)]
+        [(add-some-noz (s n) (s n))]
+        [(add-some-noz (s n) (s (s n)))])
+      
+      (define-judgment-form nats
+        #:mode (map-add-some-noz I O)
+        #:contract (map-add-some-noz (n ...) (n ...))
+        [(map-add-some-noz (n ...) (n_+ ...))
+         (add-some-noz n n_+) ...])
+      
+      (test (judgment-holds (map-add-some-noz (z (s z) (s (s z))) (n ...))
+                            (n ...))
+            (list (term (z (s (s z)) (s (s (s z)))))
+                  (term (z (s (s z)) (s (s z))))
+                  (term (z (s z) (s (s (s z)))))
+                  (term (z (s z) (s (s z))))))
+      
+      (define-judgment-form nats
+        #:mode (add-some I O)
+        #:contract (add-some n n)
+        [(add-some n n)]
+        [(add-some n (s n))])
+      
+      (define-judgment-form nats
+        #:mode (map-add-some-one I O)
+        #:contract (map-add-some-one (n ...) (n ...))
+        [(map-add-some-one (n ...) ((s n) ...))
+         (add-some n (s n)) ...])
+      
+      (test (judgment-holds (map-add-some-one (z (s z) (s (s z))) (n ...))
+                            (n ...))
+            (list (term ((s z) (s (s z)) (s (s (s z)))))))      
       
       (define-judgment-form nats
         #:mode (hyphens I)
@@ -2059,7 +2124,8 @@
                [(ctc-fail c s)
                 (ctc-fail a s)]))
       (exec-runtime-error-tests "run-err-tests/judgment-form-contracts.rktd")
-      (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
+      (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd")
+      (exec-runtime-error-tests "run-err-tests/judgment-form-ellipses.rktd"))
     
     (parameterize ([current-namespace (make-base-namespace)])
       (eval '(require redex/reduction-semantics))
