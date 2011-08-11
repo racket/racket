@@ -835,7 +835,7 @@
          (one-of/c 'shared 'exclusive)
          (-> a)
          (-> a)
-         #:get-lock-file (-> -Pathlike) #f
+         #:lock-file (-opt -Pathlike) #f
          #:delay -Real #f
          #:max-delay -Real #f
           a))]

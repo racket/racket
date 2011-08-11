@@ -1162,7 +1162,7 @@
               (t:-> -Pathlike ManyUniv))
 
         (tc-e (call-with-file-lock/timeout #f 'exclusive (lambda () 'res) (lambda () 'err)
-                #:get-lock-file (lambda () "lock")
+                #:lock-file "lock"
                 #:delay .01
                 #:max-delay .2) (one-of/c 'res 'err))
 

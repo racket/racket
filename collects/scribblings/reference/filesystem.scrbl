@@ -1056,30 +1056,29 @@ with the given @racket[lock-there], instead.}
           [kind (or/c 'shared 'exclusive)]
           [thunk (-> any)]
           [failure-thunk (-> any)]
-          [#:get-lock-file get-lock-file (or/c path-string? (-> path-string?)) (make-lock-filename filename)]
+          [#:lock-file lock-file (or/c #f path-string?) #f]
           [#:delay delay (and/c real? (not/c negative?)) 0.01]
           [#:max-delay max-delay (and/c real? (not/c negative?)) 0.2])
          any]{
 
-Obtains a lock for the filename returned from @racket[(get-lock-file)] and then
-calls @racket[thunk].  When @racket[thunk] returns,
+Obtains a lock for the filename @racket[lock-file] and then
+calls @racket[thunk].  The @racket[filename] argument specifies 
+a file path prefix that is only used
+to generate the lock filename when @racket[lock-file] is @racket[#f].
+Specifically, when @racket[lock-file] is @racket[#f], then
+@racket[call-with-file-lock/timeout] uses @racket[make-lock-file-name] to build the
+lock filename.
+
+When @racket[thunk] returns, 
 @racket[call-with-file-lock] releases the lock, returning the result of
 @racket[thunk]. The @racket[call-with-file-lock/timeout] function will retry
-after @racket[#:delay] seconds and continue retrying with exponential backoff
-until delay reaches @racket[#:max-delay]. If
+after @racket[delay] seconds and continue retrying with exponential backoff
+until delay reaches @racket[max-delay]. If
 @racket[call-with-file-lock/timeout] fails to obtain the lock,
 @racket[failure-thunk] is called in tail position.  The @racket[kind] argument
 specifies whether the lock is @racket['shared] or @racket['exclusive]
 in the sense of @racket[port-try-file-lock?].
 
-The @racket[filename] argument specifies a file path prefix that is only used
-to generate the lock filename, when @racket[#:get-lock-file] is not present.
-The @racket[call-with-file-lock/timeout] function uses a separate lock file to
-prevent race conditions on @racket[filename], when @racket[filename] has not yet
-been created.  On the Windows platfom, the @racket[call-with-file-lock/timeout]
-function uses a separate lock file (@racket["_LOCKfilename"]), because a lock
-on @racket[filename] would interfere with replacing @racket[filename] via
-@racket[rename-file-or-directory].
 }
 
 @examples[

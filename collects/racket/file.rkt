@@ -175,7 +175,7 @@
     [else 'exists]))
 
 (define (call-with-file-lock/timeout fn kind thunk failure-thunk
-                                     #:get-lock-file [get-lock-file (λ () (make-lock-file-name fn))]
+                                     #:lock-file [lock-file #f]
                                      #:delay [delay 0.01]
                                      #:max-delay [max-delay 0.2])
   
@@ -187,18 +187,14 @@
     (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0)" thunk))
   (unless (and (procedure? thunk) (= (procedure-arity thunk) 0))
     (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0)" failure-thunk))
-  (unless (or (path-string? get-lock-file)
-              (and (procedure? get-lock-file) (= (procedure-arity get-lock-file) 0)))
-    (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0) returning a path-string? or path-string?" get-lock-file))
+  (unless (path-string? lock-file)
+    (raise-type-error 'call-with-file-lock/timeout "path-string? or #f" lock-file))
   (unless (and (real? delay) (not (negative? delay)))
     (raise-type-error 'call-with-file-lock/timeout "non-negative real" delay))
   (unless (and (real? max-delay) (not (negative? max-delay)))
     (raise-type-error 'call-with-file-lock/timeout "non-negative real" max-delay))
   
-  (define real-lock-file 
-    (if (procedure? get-lock-file) (get-lock-file) get-lock-file))
-  (unless (path-string? real-lock-file)
-    (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0) returning a path-string? or path-string?" get-lock-file))
+  (define real-lock-file (or lock-file (make-lock-file-name fn)))
   (let loop ([delay delay])
     (call-with-file-lock 
      kind 
