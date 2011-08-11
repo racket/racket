@@ -205,15 +205,17 @@
                                  ""))))
                    "")
                   empty)
-              (list* "A file you are responsible for has a condition that may need inspecting."
-                     (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
-                                #:when (not (symbol=? id 'changes)))
-                       (list (format "  ~a:" id)
-                             (for/list ([f (in-list files)]
-                                        [i (in-range ERROR-LIMIT)])
-                               (format "    ~a" (path->url f)))
-                             ""))
-                     ""))))))
+              (if (hash-has-key? responsible-ht r)
+                  (list* "A file you are responsible for has a condition that may need inspecting."
+                         (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
+                                    #:when (not (symbol=? id 'changes)))
+                           (list (format "  ~a:" id)
+                                 (for/list ([f (in-list files)]
+                                            [i (in-range ERROR-LIMIT)])
+                                   (format "    ~a" (path->url f)))
+                                 ""))
+                         "")
+                  empty))))))
   
   ; Send message to IRC
   (send-mail-message "drdr"
