@@ -3,6 +3,7 @@
 (require syntax/parse
          "../utils/utils.rkt"
          (for-template scheme/base scheme/fixnum scheme/unsafe/ops)
+         (utils tc-utils)
          (types numeric-tower)
          (optimizer utils logging))
 
@@ -31,13 +32,19 @@
    #'fxxor #'unsafe-fxxor))
 (define-syntax-class fixnum-unary-op
   #:commit
-  (pattern (~or (~literal bitwise-not) (~literal fxnot)) #:with unsafe #'unsafe-fxnot))
+  (pattern (~or (~literal bitwise-not) (~literal fxnot))
+           #:with unsafe (begin (add-disappeared-use this-syntax)
+                                #'unsafe-fxnot)))
 ;; closed on fixnums, but 2nd argument must not be 0
 (define-syntax-class nonzero-fixnum-binary-op
   #:commit
   ;; quotient is not closed. (quotient most-negative-fixnum -1) is not a fixnum
-  (pattern (~or (~literal modulo)    (~literal fxmodulo))    #:with unsafe #'unsafe-fxmodulo)
-  (pattern (~or (~literal remainder) (~literal fxremainder)) #:with unsafe #'unsafe-fxremainder))
+  (pattern (~or (~literal modulo)    (~literal fxmodulo))
+           #:with unsafe (begin (add-disappeared-use this-syntax)
+                                #'unsafe-fxmodulo))
+  (pattern (~or (~literal remainder) (~literal fxremainder))
+           #:with unsafe (begin (add-disappeared-use this-syntax)
+                                #'unsafe-fxremainder)))
 
 ;; these operations are not closed on fixnums, but we can sometimes guarantee
 ;; that results will be within fixnum range
@@ -53,7 +60,8 @@
   #:commit
   (pattern i:id
            #:when (dict-ref tbl #'i #f)
-           #:with unsafe (dict-ref tbl #'i)))
+           #:with unsafe (begin (add-disappeared-use #'i)
+                                (dict-ref tbl #'i))))
 
 
 (define-syntax-class fixnum-expr
@@ -108,16 +116,19 @@
   (pattern (#%plain-app (~and op (~literal -)) f:fixnum-expr)
            #:with opt
            (begin (log-optimization "unary fixnum" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fx- 0 f.opt)))
 
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-expr)
            #:with opt
            (begin (log-optimization "fixnum to float" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fx->fl n.opt)))
 
   (pattern (#%plain-app (~and op (~literal zero?)) n:fixnum-expr)
            #:with opt
            (begin (log-optimization "fixnum zero?" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fx= n.opt 0)))
 
   ;; The following are not closed on fixnums, but we can guarantee that results
@@ -128,6 +139,7 @@
            #:when (check-if-safe this-syntax)
            #:with opt
            (begin (log-optimization "fixnum bounded expr" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   (let ([post-opt (syntax->list #'(n1.opt n2.opt ns.opt ...))])
                     (n-ary->binary #'op.unsafe
                                    (car post-opt) (cadr post-opt) (cddr post-opt)))))
@@ -136,6 +148,7 @@
            #:when (check-if-safe this-syntax)
            #:with opt
            (begin (log-optimization "nonzero fixnum bounded expr" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(op.unsafe n1.opt n2.opt)))
   ;; for fx-specific ops, we need to mimic the typing rules of their generic
   ;; counterparts, since fx-specific ops rely on error behavior for typechecking
@@ -150,6 +163,7 @@
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "fixnum fx+" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fx+ n1.opt n2.opt)))
   (pattern (#%plain-app (~and op (~literal fx-)) n1:fixnum-expr n2:fixnum-expr)
            #:when (let ([safe-to-opt? (and (subtypeof? #'n1 -NonNegFixnum)
@@ -159,6 +173,7 @@
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "fixnum fx-" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fx- n1.opt n2.opt)))
   (pattern (#%plain-app (~and op (~literal fx*)) n1:fixnum-expr n2:fixnum-expr)
            #:when (let ([safe-to-opt? (and (subtypeof? #'n1 -Byte)
@@ -168,6 +183,7 @@
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "fixnum fx*" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fx* n1.opt n2.opt)))
   (pattern (#%plain-app (~and op (~literal fxquotient)) n1:fixnum-expr n2:fixnum-expr)
            #:when (let ([safe-to-opt? (and (subtypeof? #'n1 -NonNegFixnum)
@@ -177,6 +193,7 @@
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "fixnum fxquotient" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fxquotient n1.opt n2.opt)))
   (pattern (#%plain-app (~and op (~or (~literal fxabs) (~literal abs))) n:fixnum-expr)
            #:when (let ([safe-to-opt? (subtypeof? #'n -NonNegFixnum)]) ; (abs min-fixnum) is not a fixnum
@@ -185,15 +202,18 @@
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "fixnum fxabs" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fxabs n.opt)))
 
   (pattern (#%plain-app (~and op (~literal add1)) n:fixnum-expr)
            #:when (check-if-safe this-syntax)
            #:with opt
            (begin (log-optimization "fixnum add1" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fx+ n.opt 1)))
   (pattern (#%plain-app (~and op (~literal sub1)) n:fixnum-expr)
            #:when (check-if-safe this-syntax)
            #:with opt
            (begin (log-optimization "fixnum sub1" fixnum-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fx- n.opt 1))))

@@ -4,6 +4,7 @@
          racket/match
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
+         (utils tc-utils)
          (rep type-rep)
          (types type-table utils)
          (typecheck typechecker)
@@ -58,12 +59,14 @@
                       (begin (log-pair-missed-opt this-syntax #'p) #f))
            #:with opt
            (begin (log-pair-opt this-syntax)
+                  (add-disappeared-use #'op)
                   #`(op.unsafe #,((optimize) #'p))))
   (pattern (#%plain-app op:mpair-op p:expr e:expr ...)
            #:when (or (has-mpair-type? #'p)
                       (begin (log-pair-missed-opt this-syntax #'p) #f))
            #:with opt
            (begin (log-pair-opt this-syntax)
+                  (add-disappeared-use #'op)
                   #`(op.unsafe #,@(syntax-map (optimize) #'(p e ...))))))
 
 

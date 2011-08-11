@@ -4,6 +4,7 @@
          racket/dict racket/flonum
          (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
          "../utils/utils.rkt"
+         (utils tc-utils)
          (types numeric-tower type-table)
          (optimizer utils numeric-utils logging fixnum))
 
@@ -31,7 +32,8 @@
   #:commit
   (pattern i:id
            #:when (dict-ref tbl #'i #f)
-           #:with unsafe (dict-ref tbl #'i)))
+           #:with unsafe (begin (add-disappeared-use #'i)
+                                (dict-ref tbl #'i))))
 
 (define-syntax-class float-expr
   #:commit
@@ -161,37 +163,45 @@
   (pattern (#%plain-app (~and op (~literal -)) f:float-expr)
            #:with opt
            (begin (log-optimization "unary float" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fl- 0.0 f.opt)))
   (pattern (#%plain-app (~and op (~literal /)) f:float-expr)
            #:with opt
            (begin (log-optimization "unary float" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fl/ 1.0 f.opt)))
   (pattern (#%plain-app (~and op (~literal sqr)) f:float-expr)
            #:with opt
            (begin (log-optimization "unary float" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(let ([tmp f.opt]) (unsafe-fl* tmp tmp))))
 
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-expr)
            #:with opt
            (begin (log-optimization "int to float" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(->fl n.opt)))
   ;; we can get rid of it altogether if we're giving it a float
   (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-expr)
            #:with opt
            (begin (log-optimization "float to float" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'f.opt))
 
   (pattern (#%plain-app (~and op (~literal zero?)) f:float-expr)
            #:with opt
            (begin (log-optimization "float zero?" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fl= f.opt 0.0)))
 
   (pattern (#%plain-app (~and op (~literal add1)) n:float-expr)
            #:with opt
            (begin (log-optimization "float add1" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fl+ n.opt 1.0)))
   (pattern (#%plain-app (~and op (~literal sub1)) n:float-expr)
            #:with opt
            (begin (log-optimization "float sub1" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-fl- n.opt 1.0))))

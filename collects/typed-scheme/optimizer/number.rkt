@@ -3,6 +3,7 @@
 (require syntax/parse
          (for-template scheme/base)
          "../utils/utils.rkt"
+         (utils tc-utils)
          (optimizer utils logging))
 
 (provide number-opt-expr)
@@ -16,4 +17,5 @@
            #:with opt
            (begin (log-optimization "unary number" "Identity elimination."
                                     this-syntax)
+                  (add-disappeared-use #'op)
                   ((optimize) #'f))))

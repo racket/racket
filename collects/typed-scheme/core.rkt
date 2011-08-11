@@ -30,14 +30,14 @@
           (with-syntax*
            (;; pmb = #%plain-module-begin
             [(pmb . body2) new-mod]
-            ;; add in syntax property on useless expression to draw check-syntax arrows
-            [check-syntax-help (syntax-property #'(void) 'disappeared-use (disappeared-use-todo))]
             ;; perform the provide transformation from [Culpepper 07]
             [transformed-body (remove-provides #'body2)]
             ;; add the real definitions of contracts on requires
             [transformed-body (change-contract-fixups #'transformed-body)]
             ;; potentially optimize the code based on the type information
-            [(optimized-body ...) (maybe-optimize #'transformed-body)])
+            [(optimized-body ...) (maybe-optimize #'transformed-body)]
+            ;; add in syntax property on useless expression to draw check-syntax arrows
+            [check-syntax-help (syntax-property #'(void) 'disappeared-use (disappeared-use-todo))])
            ;; reconstruct the module with the extra code
            ;; use the regular %#module-begin from `racket/base' for top-level printing
            (arm #`(#%module-begin optimized-body ... #,after-code check-syntax-help))))))]))

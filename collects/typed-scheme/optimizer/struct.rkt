@@ -3,6 +3,7 @@
 (require syntax/parse unstable/syntax
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
+         (utils tc-utils)
          (types type-table)
          (optimizer utils logging))
 
@@ -18,6 +19,7 @@
            #:when (or (struct-accessor? #'op) (struct-mutator? #'op))
            #:with opt
            (let ([idx (struct-fn-idx #'op)])
+             (add-disappeared-use #'op)
              (if (struct-accessor? #'op)
                  (begin (log-optimization "struct ref" struct-opt-msg this-syntax)
                         #`(unsafe-struct-ref  #,((optimize) #'s) #,idx))

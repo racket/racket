@@ -4,6 +4,7 @@
          racket/match
          "../utils/utils.rkt"
          (for-template scheme/base scheme/unsafe/ops)
+         (utils tc-utils)
          (rep type-rep)
          (types type-table utils)
          (optimizer utils logging))
@@ -29,4 +30,5 @@
   (pattern (#%plain-app op:box-op b:box-expr new:expr ...)
            #:with opt
            (begin (log-optimization "box" "Box check elimination." this-syntax)
+                  (add-disappeared-use #'op)
                   #`(op.unsafe b.opt #,@(syntax-map (optimize) #'(new ...))))))

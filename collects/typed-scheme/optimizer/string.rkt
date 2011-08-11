@@ -3,6 +3,7 @@
 (require syntax/parse
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
+         (utils tc-utils)
          (types abbrev)
          (optimizer utils logging))
 
@@ -21,15 +22,17 @@
 
 (define-syntax-class string-opt-expr
   #:commit
-  (pattern (#%plain-app (~literal string-length) s:string-expr)
+  (pattern (#%plain-app (~and op (~literal string-length)) s:string-expr)
            #:with opt
            (begin (log-optimization "string-length"
                                     "String check elimination."
                                     this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-string-length s.opt)))
-  (pattern (#%plain-app (~literal bytes-length) s:bytes-expr)
+  (pattern (#%plain-app (~and op (~literal bytes-length)) s:bytes-expr)
            #:with opt
            (begin (log-optimization "bytes-length"
                                     "Byte string check elimination."
                                     this-syntax)
+                  (add-disappeared-use #'op)
                   #'(unsafe-bytes-length s.opt))))

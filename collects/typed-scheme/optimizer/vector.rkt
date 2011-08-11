@@ -4,6 +4,7 @@
          racket/match racket/flonum
          (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
+         (utils tc-utils)
          (rep type-rep)
          (types type-table utils numeric-tower)
          (optimizer utils logging fixnum))
@@ -40,6 +41,7 @@
            (begin (log-optimization "known-length vector-length"
                                     "Static vector length computation."
                                     this-syntax)
+                  (add-disappeared-use #'op)
                   (match (type-of #'v)
                     [(tc-result1: (HeterogenousVector: es))
                      #`(begin v.opt #,(length es))]))) ; v may have side effects
@@ -49,11 +51,13 @@
   (pattern (#%plain-app (~and op (~literal vector-length)) v:expr)
            #:with opt
            (begin (log-optimization "vector-length" "Vector check elimination." this-syntax)
+                  (add-disappeared-use #'op)
                   #`(unsafe-vector-length #,((optimize) #'v))))
   ;; same for flvector-length
   (pattern (#%plain-app (~and op (~literal flvector-length)) v:expr)
            #:with opt
            (begin (log-optimization "flvector-length" "Float vector check elimination." this-syntax)
+                  (add-disappeared-use #'op)
                   #`(unsafe-flvector-length #,((optimize) #'v))))
   ;; we can optimize vector ref and set! on vectors of known length if we know
   ;; the index is within bounds (for now, literal or singleton type)
@@ -68,6 +72,7 @@
                     (and (integer? ival) (exact? ival) (<= 0 ival (sub1 len))))
            #:with opt
            (begin (log-optimization "vector" "Vector bounds checking elimination." this-syntax)
+                  (add-disappeared-use #'op)
                   #`(op.unsafe v.opt #,((optimize) #'i)
                                #,@(syntax-map (optimize) #'(new ...)))))
 
@@ -77,6 +82,7 @@
            (begin (log-optimization "vector partial bounds checking elimination"
                                     "Partial bounds checking elimination."
                                     this-syntax)
+                  (add-disappeared-use #'op)
                   (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))]
                         [i-known-nonneg? (subtypeof? #'i -NonNegFixnum)])
                     #`(let ([new-i #,((optimize) #'i)]
@@ -105,6 +111,7 @@
            (begin (log-optimization "flvector partial bounds checking elimination"
                                     "Partial bounds checking elimination."
                                     this-syntax)
+                  (add-disappeared-use #'op)
                   (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))]
                         [i-known-nonneg? (subtypeof? #'i -NonNegFixnum)])
                     #`(let ([new-i #,((optimize) #'i)]

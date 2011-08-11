@@ -2,6 +2,7 @@
 
 (require syntax/parse racket/match
          "../utils/utils.rkt"
+         (utils tc-utils)
          (rep type-rep)
          (types abbrev utils type-table)
          (optimizer utils logging)
@@ -44,6 +45,7 @@
            (begin (log-optimization "known-length list op"
                                     "List access specialization."
                                     this-syntax)
+                  (add-disappeared-use #'op)
                   #`(op.unsafe l.opt #,((optimize) #'i))))
   ;; We know the length of known-length lists statically.
   (pattern (#%plain-app (~and op (~literal length)) l:known-length-list-expr)
@@ -51,6 +53,7 @@
            (begin (log-optimization "known-length list length"
                                     "Static list length computation."
                                     this-syntax)
+                  (add-disappeared-use #'op)
                   (match (type-of #'l)
                     [(tc-result1: (List: es))
                      #`(begin l.opt #,(length es))]))))
