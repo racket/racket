@@ -1056,9 +1056,9 @@ with the given @racket[lock-there], instead.}
           [kind (or/c 'shared 'exclusive)]
           [thunk (-> any)]
           [failure-thunk (-> any)]
-          [#:get-lock-file get-lock-file (-> path-string?) (lambda () (make-lock-filename filename))]
-          [#:delay delay real? 0.01]
-          [#:max-delay max-delay real? 0.2])
+          [#:get-lock-file get-lock-file (or/c path-string? (-> path-string?)) (make-lock-filename filename)]
+          [#:delay delay (and/c real? (not/c negative?)) 0.01]
+          [#:max-delay max-delay (and/c real? (not/c negative?)) 0.2])
          any]{
 
 Obtains a lock for the filename returned from @racket[(get-lock-file)] and then
