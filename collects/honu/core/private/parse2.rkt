@@ -16,7 +16,8 @@
 
 ;; phase -1
 (require (for-template racket/base
-                       racket/splicing))
+                       racket/splicing
+                       "extra.rkt"))
 
 (provide parse parse-all)
 
@@ -224,19 +225,27 @@
                        (if current
                          (values (left current) stream)
                          (do-parse #'(rest ...) precedence left #'x))]
+                     ;; [1, 2, 3] -> (list 1 2 3)
                      [(#%brackets stuff ...)
                       (define value (with-syntax ([(data ...)
                                                    (parse-comma-expression #'(stuff ...))])
                                       #'(list data ...)))
+                      (define lookup (with-syntax ([(data ...)
+                                                    (parse-comma-expression #'(stuff ...))]
+                                                   [current current])
+                                       #'(do-lookup current data ...)))
                       (if current
-                         (values (left current) stream)
+                         ;; (values (left current) stream)
+                         (do-parse #'(rest ...) precedence left lookup)
                          (do-parse #'(rest ...) precedence left value))]
+                     ;; block of code
                      [(#%braces stuff ...)
                       (if current
                         (values (left current) stream)
                         (let ()
                           (define body (parse-all #'(stuff ...)))
                           (do-parse #'(rest ...) precedence left body)))]
+                     ;; expression or function application
                      [(#%parens args ...)
                       (if current
                         (let ()

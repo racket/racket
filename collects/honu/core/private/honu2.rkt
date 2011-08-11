@@ -94,6 +94,7 @@
       #'(let ([left* left]
               [right* right])
           (cond
+            #;
             [(list? left*)
              (list-ref left* right*)]
             [else (error 'dot "don't know how to deal with ~a and ~a" left* right*)])))))
