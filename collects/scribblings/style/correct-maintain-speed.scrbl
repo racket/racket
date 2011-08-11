@@ -76,7 +76,7 @@ For style rules on documenting code, refer to the
  @tt{require}s and make use of other useful cross-references.
 
 Having said that, the production of a system like Racket occasionally
- requires experimentation. Once we understand this new pieces of
+ requires experimentation. Once we understand these new pieces of
  functionality, though, it is imperative to discard the ``failure
  branches'' of an experiment and to turn the successful part into a
  maintainable package.  You may even consider converting your code to Typed

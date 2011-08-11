@@ -5,8 +5,8 @@
 @title[#:tag "branch-and-commit"]{Branch and Commit}
 
 Working with the code base also requires style rules for actions on the
-repository. Currently we are using Git and below are a few rules on how to
-act in this context.
+ repository. Currently we are using Git and below are a few rules on how to
+ act in this context.
 
 @; -----------------------------------------------------------------------------
 @section{Commit}
@@ -27,7 +27,7 @@ act in this context.
 @bold{Style change commit:} Submit changes to the style of a file
  separately from changes to its behavior (new features, bugs).
 
-Write meaningful commit messages. The first line (say 80 chars) should
+Write meaningful commit messages. The first line (say 72 chars) should
  provide a concise summary of the commit. If the message must be longer,
  edit the rest of the message in your text editor and leave a blank line
  between the summary line and the rest of the message. The message for bug

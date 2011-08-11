@@ -132,6 +132,28 @@ Do not use tab characters in your code.  Tabs make it hard to use textual
 ]
 
 @; -----------------------------------------------------------------------------
+@section{Line Width}
+
+A line in a Racket file is at most @LINEWIDTH[] characters wide.
+
+If you prefer a narrower width than @LINEWIDTH[], and if you stick to this
+width ``religiously,'' add a note to the top of the file---right below the
+purpose statement---that nobody should violate your file-local rule.
+
+This number is a compromise. People used to recommend a line width of 80 or
+72 column. The number is a historical artifact. It is also a good number
+for several different reasons: printing code in text mode, displaying code
+at reasonable font sizes, comparing several different pieces of code on a
+monitor, and possibly more. So age doesn't make it incorrect. We regularly
+read code on monitors that accommodate close to 250 columns, and on
+occasion, our monitors are even wider. It is time to allow for somewhat
+more width in exchange for meaningful identifiers.
+
+So, when you create a file, add a line with ";; " followed by ctrl-U 99 and
+"-". When you separate "sections" of code in a file, insert the same line.
+These lines help both writers and readers to orient themselves in a file.
+
+@; -----------------------------------------------------------------------------
 @section{Line Breaks}
 
 Next to indentation, proper line breaks are critical.
@@ -158,14 +180,15 @@ racket
 ]
 
 It is acceptable to have an entire @racket[if] expressions on one line if
-it fits within the specified line width:
+it fits within the specified line width (@LINEWIDTH[]):
+@codebox[
 @racketmod[#:file
 @tt{also good}
 racket
 
 (if (positive? x) x (- x))
 ]
-
+]
 
 Each definition and each local definition deserves at least one line.
 
@@ -231,27 +254,6 @@ racket
  In this case, the two arguments on line 2 are both conceptually
  related and short.
 
-@; -----------------------------------------------------------------------------
-@section{Line Width}
-
-A line in a Racket file is at most 102 characters wide.
-
-If you prefer a narrower width than 102, and if you stick to this width
-``religiously,'' add a note to the top of the file---right below the
-purpose statement---that nobody should violate your file-local rule.
-
-This number is a compromise. People used to recommend a line width of 80 or
-72 column. The number is a historical artifact. It is also a good number
-for several different reasons: printing code in text mode, displaying code
-at reasonable font sizes, comparing several different pieces of code on a
-monitor, and possibly more. So age doesn't make it incorrect. We regularly
-read code on monitors that accommodate close to 250 columns, and on
-occasion, our monitors are even wider. It is time to allow for somewhat
-more width in exchange for meaningful identifiers.
-
-So, when you create a file, add a line with ";; " followed by ctrl-U 99 and
-"-". When you separate "sections" of code in a file, insert the same line.
-These lines help both writers and readers to orient themselves in a file.
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "names"]{Names}

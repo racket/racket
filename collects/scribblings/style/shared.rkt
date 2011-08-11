@@ -1,5 +1,6 @@
 #lang s-exp racket
 
+;; ---------------------------------------------------------------------------------------------------
 ; things to be shared among all sections of the style guide
 
 (require (for-label racket)
@@ -14,6 +15,7 @@
          (all-from-out scribble/manual))
 
 (provide
+  LINEWIDTH
   codebox
   compare ;; create a comparison box for two code snippets
   ;; good    ;; label a code fragment 'good' [doesn't work]
@@ -21,6 +23,10 @@
   column-table
   row-table
   rkt rkt/base rkt/gui)
+
+(define (LINEWIDTH) "102")
+
+;; ---------------------------------------------------------------------------------------------------
 
 (define (rkt) (racketmodname racket))
 (define (rkt/base) (racketmodname racket/base))

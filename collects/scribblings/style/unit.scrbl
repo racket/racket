@@ -1,6 +1,6 @@
 #lang scribble/base
 
-@(require "shared.rkt")
+@(require "shared.rkt" (for-label rackunit))
 
 @title{Units of Code}
 
@@ -34,7 +34,7 @@ A module of 10,000 lines of code is too large. A module of 1,000 lines is
 One module should usually contain a class and its auxiliary functions, which in
  turn determines the length of a good-sized class.
 
-And a function (method) of more than roughly 66 lines is usually
+And a function/method/syntax-case of roughly 66 lines is usually
  acceptable. The 66 is based on the length of a screen with small font. It
  really means "a screen length." Yes, there are exceptions where functions
  are more than 1,000 lines long and extremely readable. Nesting levels and
@@ -67,6 +67,7 @@ In order to understand a module's services, organize the module in three
 sections below the purpose statement: its imports, its exports, and its
 implementation:
 @;%
+@codebox[
 @(begin
 #reader scribble/comment-reader
  (racketmod #:file
@@ -88,13 +89,14 @@ implementation:
 
 (define (tv-client)
   (big-bang ...))
-))
+))]
 @;%
 
 If you choose to use @racket[provide/contract], define auxiliary concepts
  related to the contracts between the @racket[require] and the
  @racket[provide] sections:
 @;%
+@codebox[
 @(begin
 #reader scribble/comment-reader
  (racketmod #:file
@@ -131,7 +133,7 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
 
 (define board%
   (class ... some 900 lines ...))
-))
+))]
 @;%
 
 Avoid @racket[(provide (all-defined-out))] except for general-purpose

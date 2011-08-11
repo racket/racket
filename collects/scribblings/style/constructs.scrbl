@@ -78,24 +78,22 @@ racket
 @tt{good}
 racket
 
-(define-syntax (increment! stx)
+(define-syntax (bump stx)
   (syntax-case stx ()
     [(_ s sn fn i)
-     (with-syntax ([w (r #'s)])
-       (define g (ff #'sn #'w))
-       ...)]))
+     (define g (ff #'sn))
+     #'( ....)]))
 ]
 @; -----------------------------------------------------------------------------
 @racketmod[#:file
 @tt{bad}
 racket
 
-(define-syntax (increment! stx)
+(define-syntax (bump stx)
   (syntax-case stx ()
     [(_ s sn fn i)
-     (with-syntax ([w (r #'s)])
-       (let ([g (ff #'sn #'w)])
-         ...))]))
+     (let ([g (ff #'sn)])
+        #'( ....))]))
 ]
 ]
 
@@ -118,8 +116,8 @@ racket
    (define f (fir l))
    (define r (rest l))
    (if (discounted? f)
-       (discount-rate f)
-       (curved f (chk r)))])
+       (rate f)
+       (curved (g r)))])
 ]
 @racketmod[#:file
 @tt{bad}
@@ -130,8 +128,8 @@ racket
     (let ([f (fir l)]
 	  [r (rest l)])
       (if (discounted? f)
-          (discount-rate f)
-          (curved f (chk r)))))
+          (rate f)
+          (curved (g r)))))
 ]
 ]
 
@@ -159,10 +157,9 @@ racket
 (define (next-month date)
   (define day (first date))
   (define month (second date))
-  (define year (third date))
   (if (= month 12)
-      `(,(+ day 1) 1 ,year)
-      `(,day ,(+ month 1) ,year)))
+      `(,(+ day 1) 1)
+      `(,day ,(+ month 1))))
 ]
 @; -----------------------------------------------------------------------------
 @racketmod[#:file
@@ -170,10 +167,11 @@ racket
 racket
 (define (next-month d)
   (if (= (cadr d) 12)
-      `(,(+ (car d) 1) 1 ,(caddr d))
+      `(,(+ (car d) 1)
+	1
+	,(caddr d))
       `(,(car d)
-	,(+ (cadr d) 1)
-	,(caddr d))))
+	,(+ (cadr d) 1))))
 ]
 ]
  Clearly ``too deeply'' is subjective. On occasion it also isn't the
