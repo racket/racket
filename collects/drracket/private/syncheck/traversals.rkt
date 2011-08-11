@@ -54,6 +54,7 @@
              [tl-binding-inits (make-id-set)]
              [tl-templrefs (make-id-set)]
              [tl-requires (make-hash)]
+             [tl-module-lang-requires (make-hash)]
              [tl-require-for-syntaxes (make-hash)]
              [tl-require-for-templates (make-hash)]
              [tl-require-for-labels (make-hash)]
@@ -75,6 +76,7 @@
                              [high-tops (make-id-set)]
                              [binding-inits (make-id-set)]
                              [templrefs (make-id-set)]
+                             [module-lang-requires (make-hash)]
                              [requires (make-hash)]
                              [require-for-syntaxes (make-hash)]
                              [require-for-templates (make-hash)]
@@ -87,6 +89,7 @@
                                           low-tops high-tops
                                           binding-inits
                                           templrefs
+                                          module-lang-requires
                                           requires require-for-syntaxes require-for-templates require-for-labels) 
                          (annotate-variables user-namespace
                                              user-directory
@@ -99,6 +102,7 @@
                                              low-tops
                                              high-tops
                                              templrefs
+                                             module-lang-requires
                                              requires
                                              require-for-syntaxes
                                              require-for-templates
@@ -113,6 +117,7 @@
                                        tl-low-tops tl-high-tops
                                        tl-binding-inits
                                        tl-templrefs
+                                       tl-module-lang-requires
                                        tl-requires
                                        tl-require-for-syntaxes
                                        tl-require-for-templates
@@ -131,6 +136,7 @@
                                       tl-low-tops
                                       tl-high-tops
                                       tl-templrefs
+                                      tl-module-lang-requires
                                       tl-requires
                                       tl-require-for-syntaxes
                                       tl-require-for-templates
@@ -156,6 +162,7 @@
                             low-tops high-tops
                             binding-inits
                             templrefs
+                            module-lang-requires
                             requires require-for-syntaxes require-for-templates require-for-labels)
       
       (let ([tail-ht (make-hasheq)]
@@ -319,6 +326,7 @@
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword sexp varrefs)
+                 (hash-set! module-lang-requires (syntax lang) #t)
                  ((annotate-require-open user-namespace user-directory) (syntax lang))
                  
                  (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang))
@@ -462,6 +470,7 @@
                                 low-tops
                                 high-tops
                                 templrefs
+                                module-lang-requires
                                 requires
                                 require-for-syntaxes
                                 require-for-templates
@@ -589,30 +598,31 @@
             vars))
          (get-idss high-tops))
         
-        (color-unused require-for-labels unused-require-for-labels)
-        (color-unused require-for-templates unused-require-for-templates)
-        (color-unused require-for-syntaxes unused-require-for-syntaxes)
-        (color-unused requires unused-requires)
+        (color-unused require-for-labels unused-require-for-labels module-lang-requires)
+        (color-unused require-for-templates unused-require-for-templates module-lang-requires)
+        (color-unused require-for-syntaxes unused-require-for-syntaxes module-lang-requires)
+        (color-unused requires unused-requires module-lang-requires)
         
         (make-rename-menus id-sets)))
     
-    ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] -> void
-    (define (color-unused requires unused)
+    ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] hash-table[syntax -o> #t] -> void
+    (define (color-unused requires unused module-lang-requires)
       (hash-for-each
        unused
        (λ (k v)
          (for-each (λ (stx) 
-                     (define defs-text (current-annotations))
-                     (define source-editor (find-source-editor stx))
-                     (when (and defs-text source-editor)
-                       (define pos (syntax-position stx))
-                       (define span (syntax-span stx))
-                       (when (and pos span)
-                         (define start (- pos 1))
-                         (define fin (+ start span))
-                         (send defs-text syncheck:add-background-color
-                               source-editor start fin "firebrick")))
-                     (color stx unused-require-style-name 'default-mode))
+                     (unless (hash-ref module-lang-requires stx #f)
+                       (define defs-text (current-annotations))
+                       (define source-editor (find-source-editor stx))
+                       (when (and defs-text source-editor)
+                         (define pos (syntax-position stx))
+                         (define span (syntax-span stx))
+                         (when (and pos span)
+                           (define start (- pos 1))
+                           (define fin (+ start span))
+                           (send defs-text syncheck:add-background-color
+                                 source-editor start fin "firebrick")))
+                       (color stx unused-require-style-name 'default-mode)))
                    (hash-ref requires k)))))
     
     ;; connect-identifier : syntax
