@@ -1044,7 +1044,6 @@ to retry the preferences lookup.
 Before calling @racket[get-preference], the result procedure uses
 @racket[(sleep delay)] to pause. Then, if @racket[(* 2 delay)] is less
 than @racket[max-delay], the result procedure calls
-
 @racket[make-handle-get-preference-locked] to generate a new retry
 procedure to pass to @racket[get-preference], but with a
 @racket[delay] of @racket[(* 2 delay)]. If @racket[(* 2 delay)] is not

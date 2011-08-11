@@ -301,11 +301,13 @@ the current output port (see @racket[current-output-port]) using
                               [mode (or/c 'shared 'exclusive)])
          boolean?]{
 
-Attempts to acquire a lock on the file using the current platform's 
-facilities for file locking. Multiple
-processes can acquire a @racket['shared] lock on a file, but at most
-one process can hold an @racket['exclusive] lock, and @racket['shared]
-and @racket['exclusive] locks are mutually exclusive.
+Attempts to acquire a lock on the file using the current platform's
+facilities for file locking. Multiple processes can acquire a
+@racket['shared] lock on a file, but at most one process can hold an
+@racket['exclusive] lock, and @racket['shared] and @racket['exclusive]
+locks are mutually exclusive. When @racket[mode] is @racket['shared],
+then @racket[port] must be an input port; when @racket[mode] is
+@racket['exclusive], then @racket[port] must be an output port.
 
 The result is @racket[#t] if the requested lock is acquired,
 @racket[#f] otherwise. When a lock is acquired, it is held until
@@ -320,8 +322,7 @@ advisory on other platforms.
 
 Typically, locking is supported only for file ports, and attempting to
 acquire a lock with other kinds of file-stream ports raises an
-@racket[exn:fail:filesystem] exception. Locking is not supported on Solaris,
-where the @racket[exn:fail:unsupported] exception is raised.}
+@racket[exn:fail:filesystem] exception.}
 
 
 @defproc[(port-file-unlock [port file-stream-port?])

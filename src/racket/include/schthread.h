@@ -173,6 +173,9 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *scheme_orig_stderr_port_;
   struct Scheme_Object *scheme_orig_stdin_port_;
   struct mz_fd_set *scheme_fd_set_;
+#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+  struct Scheme_Hash_Table *locked_fd_process_map_;
+#endif
   struct Scheme_Custodian *new_port_cust_;
 #if (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))
   void *scheme_break_semaphore_;
@@ -507,6 +510,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_orig_stderr_port XOA (scheme_get_thread_local_variables()->scheme_orig_stderr_port_)
 #define scheme_orig_stdin_port XOA (scheme_get_thread_local_variables()->scheme_orig_stdin_port_)
 #define scheme_fd_set XOA (scheme_get_thread_local_variables()->scheme_fd_set_)
+#define locked_fd_process_map XOA (scheme_get_thread_local_variables()->locked_fd_process_map_)
 #define new_port_cust XOA (scheme_get_thread_local_variables()->new_port_cust_)
 #define scheme_break_semaphore XOA (scheme_get_thread_local_variables()->scheme_break_semaphore_)
 #define external_event_fd XOA (scheme_get_thread_local_variables()->external_event_fd_)

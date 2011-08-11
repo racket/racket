@@ -235,7 +235,9 @@
       (unless (file-exists? lock-file)
         (with-handlers ([exn:fail:filesystem:exists? (lambda (exn) 'ok)])
           (close-output-port (open-output-file lock-file #:exists 'error))))
-      ((call-with-input-file* 
+      (((if (eq? kind 'exclusive)
+            (lambda (fn proc) (call-with-output-file fn proc #:exists 'update))
+            call-with-input-file*)
         lock-file
         (lambda (p)
           (if (port-try-file-lock? p kind)

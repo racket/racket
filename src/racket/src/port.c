@@ -199,6 +199,10 @@ typedef struct Scheme_Subprocess {
 # define MZ_FDS
 #endif
 
+#ifdef CLOSE_ALL_FDS_AFTER_FORK
+static void close_fds_after_fork(int skip1, int skip2, int skip3);
+#endif
+
 /******************** refcounts ********************/
 
 #if defined(WINDOWS_FILE_HANDLES) || defined(MZ_USE_PLACES)
@@ -313,6 +317,11 @@ THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stderr_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdin_port);
 
 THREAD_LOCAL_DECL(struct mz_fd_set *scheme_fd_set);
+
+#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+THREAD_LOCAL_DECL(Scheme_Hash_Table *locked_fd_process_map);
+static void release_lockf(int fd);
+#endif
 
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdin)(void) = NULL;
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdout)(void) = NULL;
@@ -4840,10 +4849,136 @@ static int try_lock(int fd, int writer, int *_errid)
     *_errid = errno;
     return 0;
   }
+# elif defined(USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
+  /* An lockf() is cancelled if *any* file descriptor to the same file
+     is closed within the same process. We avoid that problem by forking
+     a new process whose only job is to use lockf(). */
+  {
+    int ifds[2], ofds[2], cr;
+
+    if (locked_fd_process_map)
+      if (scheme_hash_get(locked_fd_process_map, scheme_make_integer(fd)))
+        /* already have a lock */
+        return 1;
+
+    if (!pipe(ifds)) {
+      if (!pipe(ofds)) {
+        int pid;
+
+        pid = fork();
+      
+        if (pid > 0) {
+          /* Original process: */
+          int errid = 0;
+        
+          do {
+            cr = close(ifds[1]);
+          } while ((cr == -1) && (errno == EINTR));
+          do {
+            cr = close(ofds[0]);
+          } while ((cr == -1) && (errno == EINTR));
+
+          do{
+            cr = read(ifds[0], &errid, sizeof(int));
+          } while ((cr == -1) && (errno == EINTR));
+          if (cr == -1)
+            errid = errno;
+
+          do {
+            cr = close(ifds[0]);
+          } while ((cr == -1) && (errno == EINTR));
+
+          if (errid) {
+            do {
+              cr = close(ofds[1]);
+            } while ((cr == -1) && (errno == EINTR));
+            
+            if (errid == EAGAIN)
+              *_errid = 0;
+            else
+              *_errid = errid;
+
+            return 0;
+          } else {
+            /* got lock; record fd -> pipe mapping */
+            if (!locked_fd_process_map) {
+              REGISTER_SO(locked_fd_process_map);
+              locked_fd_process_map = scheme_make_hash_table(SCHEME_hash_ptr);
+            }
+            scheme_hash_set(locked_fd_process_map, 
+                            scheme_make_integer(fd), 
+                            scheme_make_pair(scheme_make_integer(ofds[1]),
+                                             scheme_make_integer(pid)));
+            return 1;
+          }
+        } else if (!pid) {
+          /* Child process */
+          int ok = 0;
+          struct flock fl;
+
+          do {
+            cr = close(ifds[0]);
+          } while ((cr == -1) && (errno == EINTR));
+          do {
+            cr = close(ofds[1]);
+          } while ((cr == -1) && (errno == EINTR));
+#ifdef CLOSE_ALL_FDS_AFTER_FORK
+          close_fds_after_fork(ifds[1], ofds[0], fd);
+#endif
+   
+          fl.l_start = 0;
+          fl.l_len = 0;
+          fl.l_type = (writer ? F_WRLCK : F_RDLCK);
+          fl.l_whence = SEEK_SET;
+          fl.l_pid = getpid();
+
+          if (!fcntl(fd, F_SETLK, &fl)) {
+            /* report success: */
+            do {
+              cr = write(ifds[1], &ok, sizeof(int));
+            } while ((cr == -1) && (errno == EINTR));
+            /* wait until a signal to exit: */
+            do {
+              cr = read(ofds[0], &ok, sizeof(int));
+            } while ((cr == -1) && (errno == EINTR));
+          }
+
+          if (!ok) {
+            int errid = errno;
+            do {
+              cr = write(ifds[1], &errid, sizeof(int));
+            } while ((cr == -1) && (errno == EINTR));
+          }
+          _exit(0);
+        } else {
+          int i;
+          *_errid = errno;
+          for (i = 0; i < 2; i++) {
+            do {
+              cr = close(ifds[i]);
+            } while ((cr == -1) && (errno == EINTR));
+            do {
+              cr = close(ofds[i]);
+            } while ((cr == -1) && (errno == EINTR));
+          }
+          return 0;
+        }
+      } else {
+        int i;
+        *_errid = errno;
+        for (i = 0; i < 2; i++) {
+          do {
+            cr = close(ifds[i]);
+          } while ((cr == -1) && (errno == EINTR));
+        }
+        return 0;
+      }
+    } else {
+      *_errid = errno;
+      return 0;
+    }
+  }
 # else
-  /* using fcntl(F_SETFL, ...) isn't really an option, since the
-     any-close-release-the-lock semantics of fcntl()-based locks
-     doesn't work with Racket threads that compete for a lock */
   *_errid = ENOTSUP;
   return 0;
 # endif
@@ -4913,6 +5048,15 @@ Scheme_Object *scheme_file_try_lock(int argc, Scheme_Object **argv)
   if (writer == -1)
     scheme_wrong_type("port-try-file-lock?", "'shared or 'exclusive", 1, argc, argv);
 
+  if (writer && !SCHEME_OUTPORTP(argv[0]))
+    scheme_arg_mismatch("port-try-file-lock?",
+                        "port for 'exclusive locking is not an output port: ",
+                        argv[0]);
+  else if (!writer && !SCHEME_INPORTP(argv[0]))
+    scheme_arg_mismatch("port-try-file-lock?",
+                        "port for 'shared locking is not an input port: ",
+                        argv[0]);
+
   check_already_closed("port-try-file-lock?", argv[0]);
 
   if (try_lock(fd, writer, &errid))
@@ -4927,6 +5071,30 @@ Scheme_Object *scheme_file_try_lock(int argc, Scheme_Object **argv)
    
   return scheme_false;
 }
+
+#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+static void release_lockf(int fd)
+{
+  if (locked_fd_process_map) {
+    Scheme_Object *v;
+    v = scheme_hash_get(locked_fd_process_map, scheme_make_integer(fd));
+    if (v) {
+      int fd2, cr, pid, status;
+
+      fd2 = SCHEME_INT_VAL(SCHEME_CAR(v));
+      pid = SCHEME_INT_VAL(SCHEME_CDR(v));
+      scheme_hash_set(locked_fd_process_map, scheme_make_integer(fd), NULL);
+
+      scheme_block_child_signals(1);
+      do {
+	cr = close(fd2); /* makes the fork()ed process exit */
+      } while ((cr == -1) && (errno == EINTR));
+      waitpid(pid, &status, 0);
+      scheme_block_child_signals(0);
+    }
+  }
+}
+#endif
 
 Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
 {
@@ -4945,6 +5113,10 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
   } while ((ok == -1) && (errno == EINTR));
   ok = !ok;
   errid = errno;
+# elif defined(USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
+  release_lockf(fd);
+  ok = 1;
+  errid = 0;
 # else
   ok = 0;
   errid = ENOTSUP;
@@ -5556,6 +5728,9 @@ fd_close_input(Scheme_Input_Port *port)
      do {
        cr = close(fip->fd);
      } while ((cr == -1) && (errno == EINTR));
+# ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+     release_lockf(fip->fd);
+# endif
    }
  }
 #endif
@@ -6835,6 +7010,9 @@ fd_close_output(Scheme_Output_Port *port)
      do {
        cr = close(fop->fd);
      } while ((cr == -1) && (errno == EINTR));
+# ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+     release_lockf(fop->fd);
+# endif
    }
  }
 #endif
@@ -8340,19 +8518,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	}
 
 #ifdef CLOSE_ALL_FDS_AFTER_FORK
-	/* Actually, unwanted includes everything
-	   except stdio. */
-#ifdef USE_ULIMIT
-	i = ulimit(4, 0);
-#else
-	i = getdtablesize();
-#endif
-	while (i-- > 3) {
-	  int cr;
-	  do {
-	    cr = close(i);
-	  } while ((cr == -1) && (errno == EINTR));
-	}
+        close_fds_after_fork(0, 1, 2);
 #endif
       }
 
@@ -8567,6 +8733,28 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 # endif
 #endif
 }
+
+#ifdef CLOSE_ALL_FDS_AFTER_FORK
+static void close_fds_after_fork(int skip1, int skip2, int skip3)
+{
+  int i;
+
+# ifdef USE_ULIMIT
+  i = ulimit(4, 0);
+# else
+  i = getdtablesize();
+# endif
+  while (i--) {
+    int cr;
+    if ((i != skip1) && (i != skip2) && (i != skip3)) {
+      do {
+        cr = close(i);
+      } while ((cr == -1) && (errno == EINTR));
+    }
+  }
+}
+#endif
+
 
 static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
 {

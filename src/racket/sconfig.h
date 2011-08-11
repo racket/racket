@@ -100,6 +100,7 @@
 #  define SOME_FDS_ARE_NOT_SELECTABLE
 #  define NEED_RESET_STDOUT_BLOCKING
 #  undef USE_FLOCK_FOR_FILE_LOCKS
+#  define USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 #  define USE_TIMEZONE_AND_ALTZONE_VAR
 #  define USE_NULL_TO_DISCONNECT_UDP
 # else
@@ -1054,6 +1055,9 @@
 
  /* USE_FLOCK_FOR_FILE_LOCKS means that flock() is available and works
     for file locking. */
+
+ /* USE_FCNTL_AND_FORK_FOR_FILE_LOCKS means that fnctl() and fork()
+    should be used to implement file locking. */
 
  /* CLOSE_ALL_FDS_AFTER_FORK means that all fds except 0, 1, and 2
     should be closed after performing a fork() for `process'
