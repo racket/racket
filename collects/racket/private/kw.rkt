@@ -23,11 +23,12 @@
              new:procedure->method
              new:procedure-rename
              new:chaperone-procedure
-             new:impersonate-procedure)
-  
+             new:impersonate-procedure
+             (for-syntax kw-expander? kw-expander-impl kw-expander-proc))
+
   ;; ----------------------------------------
 
-  (define-values (prop:keyword-impersonator keyword-impersonator? keyword-impersonator-ref) 
+  (define-values (prop:keyword-impersonator keyword-impersonator? keyword-impersonator-ref)
     (make-struct-type-property 'keyword-impersonator))
   (define (keyword-procedure-impersonator-of v)
     (cond
@@ -442,11 +443,19 @@
                                                   #f)]
                              [core (car (generate-temporaries '(core)))]
                              [unpack (car (generate-temporaries '(unpack)))])
-                 (let ([mk-core 
+                 (let ([mk-core
                         (lambda (kw-core?)
-                          ;; body of procedure, where all keyword and optional
-                          ;; argments come in as a pair of arguments (value and
+                          ;; body of procedure, where all optional
+                          ;; arguments (both keyword and positional)
+                          ;; come in as a pair of arguments (value and
                           ;; whether the value is valid):
+                          ;; the arguments are in the following order:
+                          ;; - optional kw/kw?, interspersed
+                          ;; - mandatory kw
+                          ;; - mandatory positional arguments
+                          ;; - optional positional arguments
+                          ;; - optional positional argument validity flags
+                          ;; - rest arguments
                           (annotate-method
                            (quasisyntax/loc stx
                              (lambda (#,@(if kw-core?
@@ -560,7 +569,7 @@
                                                                 (syntax-local-infer-name stx))]
                                                          [call-fail (mk-kw-arity-stub)])
                                              (syntax-local-lift-expression
-                                              #'(make-required 'n call-fail method? #F)))])
+                                              #'(make-required 'n call-fail method? #f)))])
                         (syntax/loc stx
                           (mk-id
                            (lambda (given-kws given-argc)
@@ -936,8 +945,14 @@
   (define-syntax (new-app stx)
     (parse-app stx void (lambda (args kw-args lifted? orig) orig)))
 
+  (define-values-for-syntax (struct:kw-expander make-kw-expander kw-expander? kw-expander-ref kw-expander-set)
+    (make-struct-type 'kw-expander #f 3 0 #f (list (cons prop:set!-transformer 0)) (current-inspector) 0))
+
+  (define-for-syntax kw-expander-impl (make-struct-field-accessor kw-expander-ref 1 'impl))
+  (define-for-syntax kw-expander-proc (make-struct-field-accessor kw-expander-ref 2 'proc))
+
   (define-for-syntax (make-keyword-syntax get-ids n-req n-opt rest? req-kws all-kws)
-    (make-set!-transformer
+    (make-kw-expander
      (lambda (stx)
        (define-values (impl-id wrap-id) (get-ids))
        (syntax-case stx (set!)
@@ -1070,8 +1085,10 @@
                                                      (quasisyntax/loc stx (#%app #,wrap-id . #,args)))))))))
                                 orig))))
                 (datum->syntax stx (cons wrap-id #'(arg ...)) stx stx)))]
-         [_ wrap-id]))))
-  
+         [_ wrap-id]))
+     (lambda () (define-values (impl-id wrap-id) (get-ids)) impl-id)
+     (lambda () (define-values (impl-id wrap-id) (get-ids)) wrap-id)))
+
   ;; Checks given kws against expected. Result is
   ;; (values missing-kw extra-kw), where both are #f if
   ;; the arguments are ok.
