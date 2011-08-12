@@ -97,13 +97,15 @@
           (cond
             [(honu-struct? left*) (let ([use (honu-struct-get left*)])
                                     (use left* 'right))]
-            [else (error 'dot "don't know how to deal with ~a" 'left)]))
-      #;
-      #'(let ([left* left])
-          (cond
-            [(list? left*)
-             (list-ref left* right)]
-            [else (error 'dot "don't know how to deal with ~a and ~a" 'left 'right)])))))
+            ;; possibly handle other types of data
+            [else (error 'dot "don't know how to deal with ~a" 'left)])))))
+
+(provide honu-flow)
+(define-honu-operator/syntax honu-flow 0.001 'left
+  (lambda (left right)
+    (with-syntax ([left left]
+                  [right right])
+      #'(right left))))
 
 (define-binary-operator honu-+ 1 'left +)
 (define-binary-operator honu-- 1 'left -)

@@ -250,11 +250,11 @@
                       (if current
                         (let ()
                           (debug "function call ~a\n" left)
-                          (values (left (with-syntax ([current current]
+                          (define call (left (with-syntax ([current current]
                                                       [(parsed-args ...)
                                                        (parse-comma-expression #'(args ...)) ])
-                                          #'(current parsed-args ...)))
-                                  #'(rest ...)))
+                                          #'(current parsed-args ...))))
+                          (do-parse #'(rest ...) precedence left call))
                         (let ()
                           (debug "inner expression ~a\n" #'(args ...))
                           (define-values (inner-expression unparsed) (parse #'(args ...)))
