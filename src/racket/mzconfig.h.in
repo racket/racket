@@ -64,6 +64,9 @@ typedef unsigned long uintptr_t;
 #undef MZ_USE_PLACES
 #endif
 
+/* Whether __sync_bool_compare_and_swap() works: */
+#undef MZ_CAS_AVAILABLE
+
 /* Configure use of pthreads for the user-thread timer. */
 #undef USE_PTHREAD_INSTEAD_OF_ITIMER
 

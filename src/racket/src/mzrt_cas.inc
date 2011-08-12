@@ -1,7 +1,9 @@
 XFORM_NONGCING static MZ_INLINE int mz_MZRT_CAS(volatile mz_CAS_T *addr, mz_CAS_T old, mz_CAS_T new_val) 
   XFORM_SKIP_PROC 
 {
-#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && ((__GNUC__ <= 3) || (__GNUC__ == 4 && __GNUC_MINOR__ < 1))
+#ifdef MZ_CAS_AVAILABLE
+  return __sync_bool_compare_and_swap(addr, old, new_val);
+#elif defined(__GNUC__)
 # if defined(__i386__) || defined(__x86_64__)
 #  ifdef mz_CAS_64
 #   define CAS_I_SIZE "q"
@@ -47,8 +49,6 @@ XFORM_NONGCING static MZ_INLINE int mz_MZRT_CAS(volatile mz_CAS_T *addr, mz_CAS_
 #  error mzrt_cas not defined on this platform
 # endif
 
-#elif defined(__GNUC__) && !defined(__INTEL_COMPILER)
-  return __sync_bool_compare_and_swap(addr, old, new_val);
 #elif defined(_MSC_VER)
 # ifdef mz_CAS_64
   return _InterlockedCompareExchange64((__int64 *)addr, (__int64)new_val, (__int64)old) == (__int64)old;

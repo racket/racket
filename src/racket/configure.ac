@@ -937,6 +937,29 @@ if test "${enable_futures}" = "yes" ; then
   enable_mzrt=yes
 fi
 
+############## compare-and-swap ################
+
+if test "${enable_mzrt}" = "yes" ; then
+  [ msg="for compare-and-swap" ]
+  AC_MSG_CHECKING($msg)
+  AC_TRY_RUN(
+   int check1(long *addr, long old, long new_val) {
+     return __sync_bool_compare_and_swap(addr, old, new_val);
+   }
+   int check2(short *addr, short old, short new_val) {
+     return __sync_bool_compare_and_swap(addr, old, new_val);
+   }
+   int main() {
+      long l = 2; short s = 3;
+      return !check1(&l, 2, 4) || !check2(&s, 3, 6);
+   }, cas_available=yes, cas_available=no, cas_available=no)
+  AC_MSG_RESULT($cas_available)
+  if test "${cas_available}" = "yes" ; then
+    AC_DEFINE(MZ_CAS_AVAILABLE,1,[Compare-and-swap available])
+  fi
+fi
+  
+
 ############### OS threads ###################
 
 if test "${enable_mzrt}" = "yes" ; then
