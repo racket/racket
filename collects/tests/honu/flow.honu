@@ -1,0 +1,15 @@
+#lang honu
+
+foo(x){
+    x + 1
+}
+
+bar(x){
+    x * 2
+}
+
+buz(z){
+    z - 4
+}
+
+foo(5) | bar | buz

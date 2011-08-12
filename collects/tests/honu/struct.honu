@@ -1,12 +1,7 @@
 #lang honu
 
-/*
-require (forSyntax "struct-patterns.honu");
+// structure foo (bar) {a, b, c};
+structure foo {a, b, c};
 
-provide struct;
-macro struct () {
-  _ name {field:structField ...} ;
-} {
-  schemeSyntax#sx(honu-struct name (field_name_result ...))
-}
-*/
+var x = foo(1, 2, 3);
+printf("x.a: ~a\n", x.a);
