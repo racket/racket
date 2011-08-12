@@ -323,126 +323,126 @@
 ;; the withs, freshs, and side-conditions come in backwards order
 (define-for-syntax (bind-withs orig-name main lang lang-nts stx where-mode body names w/ellipses)
   (with-disappeared-uses
-  (let loop ([stx stx]
-             [to-not-be-in main]
-             [env (make-immutable-hash
-                   (map (λ (x e) (cons (syntax-e x) e))
-                        names w/ellipses))])
-    (syntax-case stx (fresh)
-      [() body]
-      [((-where x e) y ...)
-       (where-keyword? #'-where)
-       (let-values ([(names names/ellipses) (extract-names lang-nts 'reduction-relation #t #'x)])
-         (define-values (binding-constraints temporaries env+)
-           (generate-binding-constraints names names/ellipses env orig-name))
-         (with-syntax ([(binding-constraints ...) binding-constraints]
-                       [side-conditions-rewritten (rewrite-side-conditions/check-errs
-                                                   lang-nts
-                                                   'reduction-relation
-                                                   #f
-                                                   #'x)]
-                       [(names ...) names]
-                       [(names/ellipses ...) names/ellipses]
-                       [(x ...) temporaries])
-           (let ([rest-body (loop #'(y ...) #`(list x ... #,to-not-be-in) env+)])
-             #`(let* ([mtchs (match-pattern (compile-pattern #,lang `side-conditions-rewritten #t) (term e))]
-                      [result (λ (mtch)
-                                (let ([bindings (mtch-bindings mtch)])
-                                  (let ([x (lookup-binding bindings 'names)] ...)
-                                    (and binding-constraints ...
-                                         (term-let ([names/ellipses x] ...) 
-                                                   #,rest-body)))))])
-                     (if mtchs
-                         #,
-                         (case where-mode
-                           [(flatten)
-                            #`(for/fold ([r '()]) ([m mtchs])
-                                (let ([s (result m)])
-                                  (if s (append s r) r)))]
-                           [(predicate) 
-                            #`(ormap result mtchs)]
-                           [else (error 'unknown-where-mode "~s" where-mode)])
-                         #f)))))]
-      [((-side-condition s ...) y ...)
-       (or (free-identifier=? #'-side-condition #'side-condition)
-           (free-identifier=? #'-side-condition #'side-condition/hidden))
-       #`(and s ... #,(loop #'(y ...) to-not-be-in env))]
-      [((fresh x) y ...)
-       (identifier? #'x)
-       #`(term-let ([x (variable-not-in #,to-not-be-in 'x)]) 
-                   #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
-      [((fresh x name) y ...)
-       (identifier? #'x)
-       #`(term-let ([x (let ([the-name (term name)])
-                         (verify-name-ok '#,orig-name the-name)
-                         (variable-not-in #,to-not-be-in the-name))])
-                   #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
-      [((fresh (y) (x ...)) z ...)
-       #`(term-let ([(y #,'...)
-                     (variables-not-in #,to-not-be-in 
-                                       (map (λ (_ignore_) 'y)
-                                            (term (x ...))))])
-                   #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
-      [((fresh (y) (x ...) names) z ...)
-       #`(term-let ([(y #,'...)
-                     (let ([the-names (term names)]
-                           [len-counter (term (x ...))])
-                       (verify-names-ok '#,orig-name the-names len-counter)
-                       (variables-not-in #,to-not-be-in the-names))])
-                   #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
-      [((form-name . pats) . after)
-       (judgment-form-id? #'form-name)
-       (let*-values ([(premise) (syntax-case stx () [(p . _) #'p])]
-                     [(rest-clauses under-ellipsis?)
-                      (syntax-case #'after ()
-                        [(maybe-ellipsis . more)
-                         (ellipsis? #'maybe-ellipsis)
-                         (values #'more #t)]
-                        [_ (values #'after #f)])]
-                     [(judgment-form) (syntax-local-value/record #'form-name (λ (_) #t))]
-                     [(mode) (judgment-form-mode judgment-form)]
-                     [(judgment-proc) (judgment-form-proc judgment-form)]
-                     [(input-template output-pre-pattern) 
-                      (let-values ([(in out) (split-by-mode (syntax->list #'pats) mode)])
-                        (if under-ellipsis?
-                            (let ([ellipsis (syntax/loc premise (... ...))])
-                              (values #`(#,in #,ellipsis) #`(#,out #,ellipsis)))
-                            (values in out)))]
-                     [(output-pattern)
-                      (rewrite-side-conditions/check-errs lang-nts orig-name #t output-pre-pattern)]
-                     [(output-names output-names/ellipses)
-                      (extract-names lang-nts orig-name #t output-pre-pattern)]
-                     [(binding-constraints temporaries env+)
-                      (generate-binding-constraints output-names output-names/ellipses env orig-name)]
-                     [(rest-body) (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+)]
-                     [(call)
-                      (let ([input (quasisyntax/loc premise (term #,input-template))])
-                        (define (make-traced input)
-                          (quasisyntax/loc premise
-                            (call-judgment-form 'form-name #,judgment-proc '#,mode #,input)))
-                        (if under-ellipsis?
-                            #`(repeated-premise-outputs #,input (λ (x) #,(make-traced #'x)))
-                            (make-traced input)))])
-         (with-syntax ([(output-name ...) output-names]
-                       [(output-name/ellipsis ...) output-names/ellipses]
-                       [(temp ...) temporaries]
-                       [(binding-constraint ...) binding-constraints])
-           #`(begin
-               (void #,(defined-check judgment-proc "judgment form" #:external #'form-name))
-               (for/fold ([outputs '()]) ([sub-output #,call])
-                         (define mtchs
-                           (match-pattern (compile-pattern #,lang `#,output-pattern #t) sub-output))
-                         (if mtchs
-                             (for/fold ([outputs outputs]) ([mtch mtchs])
-                                       (let ([temp (lookup-binding (mtch-bindings mtch) 'output-name)] ...)
-                                         (define mtch-outputs
-                                           (and binding-constraint ...
-                                                (term-let ([output-name/ellipsis temp] ...) 
-                                                          #,rest-body)))
-                                         (if mtch-outputs
-                                             (append mtch-outputs outputs)
-                                             outputs)))
-                             outputs)))))]))))
+   (let loop ([stx stx]
+              [to-not-be-in main]
+              [env (make-immutable-hash
+                    (map (λ (x e) (cons (syntax-e x) e))
+                         names w/ellipses))])
+     (syntax-case stx (fresh)
+       [() body]
+       [((-where x e) y ...)
+        (where-keyword? #'-where)
+        (let-values ([(names names/ellipses) (extract-names lang-nts 'reduction-relation #t #'x)])
+          (define-values (binding-constraints temporaries env+)
+            (generate-binding-constraints names names/ellipses env orig-name))
+          (with-syntax ([(binding-constraints ...) binding-constraints]
+                        [side-conditions-rewritten (rewrite-side-conditions/check-errs
+                                                    lang-nts
+                                                    'reduction-relation
+                                                    #f
+                                                    #'x)]
+                        [(names ...) names]
+                        [(names/ellipses ...) names/ellipses]
+                        [(x ...) temporaries])
+            (let ([rest-body (loop #'(y ...) #`(list x ... #,to-not-be-in) env+)])
+              #`(let* ([mtchs (match-pattern (compile-pattern #,lang `side-conditions-rewritten #t) (term e))]
+                       [result (λ (mtch)
+                                 (let ([bindings (mtch-bindings mtch)])
+                                   (let ([x (lookup-binding bindings 'names)] ...)
+                                     (and binding-constraints ...
+                                          (term-let ([names/ellipses x] ...) 
+                                                    #,rest-body)))))])
+                      (if mtchs
+                          #,
+                          (case where-mode
+                            [(flatten)
+                             #`(for/fold ([r '()]) ([m mtchs])
+                                 (let ([s (result m)])
+                                   (if s (append s r) r)))]
+                            [(predicate) 
+                             #`(ormap result mtchs)]
+                            [else (error 'unknown-where-mode "~s" where-mode)])
+                          #f)))))]
+       [((-side-condition s ...) y ...)
+        (or (free-identifier=? #'-side-condition #'side-condition)
+            (free-identifier=? #'-side-condition #'side-condition/hidden))
+        #`(and s ... #,(loop #'(y ...) to-not-be-in env))]
+       [((fresh x) y ...)
+        (identifier? #'x)
+        #`(term-let ([x (variable-not-in #,to-not-be-in 'x)]) 
+                    #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
+       [((fresh x name) y ...)
+        (identifier? #'x)
+        #`(term-let ([x (let ([the-name (term name)])
+                          (verify-name-ok '#,orig-name the-name)
+                          (variable-not-in #,to-not-be-in the-name))])
+                    #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
+       [((fresh (y) (x ...)) z ...)
+        #`(term-let ([(y #,'...)
+                      (variables-not-in #,to-not-be-in 
+                                        (map (λ (_ignore_) 'y)
+                                             (term (x ...))))])
+                    #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
+       [((fresh (y) (x ...) names) z ...)
+        #`(term-let ([(y #,'...)
+                      (let ([the-names (term names)]
+                            [len-counter (term (x ...))])
+                        (verify-names-ok '#,orig-name the-names len-counter)
+                        (variables-not-in #,to-not-be-in the-names))])
+                    #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
+       [((form-name . pats) . after)
+        (judgment-form-id? #'form-name)
+        (let*-values ([(premise) (syntax-case stx () [(p . _) #'p])]
+                      [(rest-clauses under-ellipsis?)
+                       (syntax-case #'after ()
+                         [(maybe-ellipsis . more)
+                          (ellipsis? #'maybe-ellipsis)
+                          (values #'more #t)]
+                         [_ (values #'after #f)])]
+                      [(judgment-form) (syntax-local-value/record #'form-name (λ (_) #t))]
+                      [(mode) (judgment-form-mode judgment-form)]
+                      [(judgment-proc) (judgment-form-proc judgment-form)]
+                      [(input-template output-pre-pattern) 
+                       (let-values ([(in out) (split-by-mode (syntax->list #'pats) mode)])
+                         (if under-ellipsis?
+                             (let ([ellipsis (syntax/loc premise (... ...))])
+                               (values #`(#,in #,ellipsis) #`(#,out #,ellipsis)))
+                             (values in out)))]
+                      [(output-pattern)
+                       (rewrite-side-conditions/check-errs lang-nts orig-name #t output-pre-pattern)]
+                      [(output-names output-names/ellipses)
+                       (extract-names lang-nts orig-name #t output-pre-pattern)]
+                      [(binding-constraints temporaries env+)
+                       (generate-binding-constraints output-names output-names/ellipses env orig-name)]
+                      [(rest-body) (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+)]
+                      [(call)
+                       (let ([input (quasisyntax/loc premise (term #,input-template))])
+                         (define (make-traced input)
+                           (quasisyntax/loc premise
+                             (call-judgment-form 'form-name #,judgment-proc '#,mode #,input)))
+                         (if under-ellipsis?
+                             #`(repeated-premise-outputs #,input (λ (x) #,(make-traced #'x)))
+                             (make-traced input)))])
+          (with-syntax ([(output-name ...) output-names]
+                        [(output-name/ellipsis ...) output-names/ellipses]
+                        [(temp ...) temporaries]
+                        [(binding-constraint ...) binding-constraints])
+            #`(begin
+                (void #,(defined-check judgment-proc "judgment form" #:external #'form-name))
+                (for/fold ([outputs '()]) ([sub-output #,call])
+                  (define mtchs
+                    (match-pattern (compile-pattern #,lang `#,output-pattern #t) sub-output))
+                  (if mtchs
+                      (for/fold ([outputs outputs]) ([mtch mtchs])
+                        (let ([temp (lookup-binding (mtch-bindings mtch) 'output-name)] ...)
+                          (define mtch-outputs
+                            (and binding-constraint ...
+                                 (term-let ([output-name/ellipsis temp] ...) 
+                                           #,rest-body)))
+                          (if mtch-outputs
+                              (append mtch-outputs outputs)
+                              outputs)))
+                      outputs)))))]))))
 
 (define (repeated-premise-outputs inputs premise)
   (if (null? inputs)
@@ -1391,150 +1391,148 @@
             prev-metafunction
             (λ ()
               (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
-         (let ()
-           (let*-values ([(contract-name dom-ctcs codom-contracts pats)
-                          (split-out-contract orig-stx syn-error-name #'rest relation?)]
-                         [(name _) (defined-name (list contract-name) pats orig-stx)])
-             (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
-                           [(lhs-for-lw ...) (lhs-lws pats)])
-               (with-syntax ([((rhs stuff ...) ...) (if relation?
-                                                        #'((,(and (term raw-rhses) ...)) ...)
-                                                        #'((raw-rhses ...) ...))])
-                 (parameterize ()
-                   (with-syntax ([(lhs ...) #'((lhs-clauses ...) ...)]
-                                 [name name])
-                     (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
-                       (raise-syntax-error syn-error-name "the extended and extending metafunctions cannot share a name" orig-stx prev-metafunction))
-                     (parse-extras #'((stuff ...) ...))
-                     (let-values ([(lhs-namess lhs-namess/ellipsess)
-                                   (lhss-bound-names (syntax->list (syntax (lhs ...))) lang-nts syn-error-name)])
-                       (with-syntax ([(rhs/wheres ...)
-                                      (map (λ (sc/b rhs names names/ellipses)
-                                             (bind-withs
-                                              syn-error-name '()  
-                                              #'effective-lang lang-nts
-                                              sc/b 'flatten
-                                              #`(list (term #,rhs))
-                                              names names/ellipses))
-                                           (syntax->list #'((stuff ...) ...))
-                                           (syntax->list #'(rhs ...))
-                                           lhs-namess lhs-namess/ellipsess)]
-                                     [(rg-rhs/wheres ...)
-                                      (map (λ (sc/b rhs names names/ellipses) 
-                                             (bind-withs
-                                              syn-error-name '()  
-                                              #'effective-lang lang-nts
-                                              sc/b 'predicate
-                                              #`#t
-                                              names names/ellipses))
-                                           (syntax->list #'((stuff ...) ...))
-                                           (syntax->list #'(rhs ...))
-                                           lhs-namess lhs-namess/ellipsess)])
-                         (with-syntax ([(side-conditions-rewritten ...) 
-                                        (map (λ (x) (rewrite-side-conditions/check-errs
-                                                     lang-nts
-                                                     syn-error-name
-                                                     #t
-                                                     x))
-                                             (syntax->list (syntax (lhs ...))))]
-                                       [(rg-side-conditions-rewritten ...) 
-                                        (map (λ (x) (rewrite-side-conditions/check-errs
-                                                     lang-nts
-                                                     syn-error-name
-                                                     #t
-                                                     x))
-                                             (syntax->list (syntax ((side-condition lhs rg-rhs/wheres) ...))))]
-                                       [(clause-src ...)
-                                        (map (λ (lhs)
-                                               (format "~a:~a:~a"
-                                                       (syntax-source lhs)
-                                                       (syntax-line lhs)
-                                                       (syntax-column lhs)))
-                                             pats)]
-                                       [dom-side-conditions-rewritten
-                                        (and dom-ctcs
-                                             (rewrite-side-conditions/check-errs
-                                              lang-nts
-                                              syn-error-name
-                                              #f
-                                              dom-ctcs))]
-                                       [(codom-side-conditions-rewritten ...)
-                                        (map (λ (codom-contract)
-                                               (rewrite-side-conditions/check-errs
-                                                lang-nts
-                                                syn-error-name
-                                                #f
-                                                codom-contract))
-                                             codom-contracts)]
-                                       [(rhs-fns ...)
-                                        (map (λ (names names/ellipses rhs/where)
-                                               (with-syntax ([(names ...) names]
-                                                             [(names/ellipses ...) names/ellipses]
-                                                             [rhs/where rhs/where])
-                                                 (syntax
-                                                  (λ (name bindings)
-                                                    (term-let-fn ((name name))
-                                                                 (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
-                                                                           rhs/where))))))
-                                             lhs-namess lhs-namess/ellipsess
-                                             (syntax->list (syntax (rhs/wheres ...))))]
-                                       [(name2 name-predicate) (generate-temporaries (syntax (name name)))])
-                           (with-syntax ([defs #`(begin
-                                                   (define-values (name2 name-predicate)
-                                                     (let ([sc `(side-conditions-rewritten ...)]
-                                                           [dsc `dom-side-conditions-rewritten])
-                                                       (let ([cases (map (λ (pat rhs-fn rg-lhs src)
-                                                                           (make-metafunc-case
-                                                                            (λ (effective-lang) (compile-pattern effective-lang pat #t))
-                                                                            rhs-fn
-                                                                            rg-lhs src (gensym)))
-                                                                         sc
-                                                                         (list (λ (effective-lang) rhs-fns) ...)
-                                                                         (list (λ (effective-lang) `rg-side-conditions-rewritten) ...)
-                                                                         `(clause-src ...))]
-                                                             [parent-cases 
-                                                              #,(if prev-metafunction
-                                                                    #`(metafunc-proc-cases #,(term-fn-get-id (syntax-local-value prev-metafunction)))
-                                                                    #'null)])
-                                                         (build-metafunction 
-                                                          lang
-                                                          cases
-                                                          parent-cases
-                                                          (λ (f/dom)
-                                                            (make-metafunc-proc
-                                                             (let ([name (lambda (x) (f/dom x))]) name)
-                                                             (generate-lws #,relation?
-                                                                           (lhs ...)
-                                                                           (lhs-for-lw ...)
-                                                                           ((stuff ...) ...)
-                                                                           #,(if relation?
-                                                                                 #'((raw-rhses ...) ...)
-                                                                                 #'(rhs ...)))
-                                                             lang
-                                                             #t ;; multi-args?
-                                                             'name
-                                                             (let ([name (lambda (x) (name-predicate x))]) name)
-                                                             dsc
-                                                             (append cases parent-cases)
-                                                             #,relation?))
-                                                          dsc
-                                                          `(codom-side-conditions-rewritten ...)
-                                                          'name
-                                                          #,relation?))))
-                                                   (term-define-fn name name2))])
-                             (syntax-property
-                              (prune-syntax
-                               (if (eq? 'top-level (syntax-local-context))
-                                   ; Introduce the names before using them, to allow
-                                   ; metafunction definition at the top-level.
-                                   (syntax 
-                                    (begin 
-                                      (define-syntaxes (name2 name-predicate) (values))
-                                      defs))
-                                   (syntax defs)))
-                              'disappeared-use
-                              (map syntax-local-introduce 
-                                   (syntax->list #'(original-names ...)))))))))))))))]))
+         (let*-values ([(contract-name dom-ctcs codom-contracts pats)
+                        (split-out-contract orig-stx syn-error-name #'rest relation?)]
+                       [(name _) (defined-name (list contract-name) pats orig-stx)])
+           (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
+                         [(lhs-for-lw ...) (lhs-lws pats)])
+             (with-syntax ([((rhs stuff ...) ...) (if relation?
+                                                      #'((,(and (term raw-rhses) ...)) ...)
+                                                      #'((raw-rhses ...) ...))])
+               (with-syntax ([(lhs ...) #'((lhs-clauses ...) ...)]
+                             [name name])
+                 (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
+                   (raise-syntax-error syn-error-name "the extended and extending metafunctions cannot share a name" orig-stx prev-metafunction))
+                 (parse-extras #'((stuff ...) ...))
+                 (let-values ([(lhs-namess lhs-namess/ellipsess)
+                               (lhss-bound-names (syntax->list (syntax (lhs ...))) lang-nts syn-error-name)])
+                   (with-syntax ([(rhs/wheres ...)
+                                  (map (λ (sc/b rhs names names/ellipses)
+                                         (bind-withs
+                                          syn-error-name '()  
+                                          #'effective-lang lang-nts
+                                          sc/b 'flatten
+                                          #`(list (term #,rhs))
+                                          names names/ellipses))
+                                       (syntax->list #'((stuff ...) ...))
+                                       (syntax->list #'(rhs ...))
+                                       lhs-namess lhs-namess/ellipsess)]
+                                 [(rg-rhs/wheres ...)
+                                  (map (λ (sc/b rhs names names/ellipses) 
+                                         (bind-withs
+                                          syn-error-name '()  
+                                          #'effective-lang lang-nts
+                                          sc/b 'predicate
+                                          #`#t
+                                          names names/ellipses))
+                                       (syntax->list #'((stuff ...) ...))
+                                       (syntax->list #'(rhs ...))
+                                       lhs-namess lhs-namess/ellipsess)])
+                     (with-syntax ([(side-conditions-rewritten ...) 
+                                    (map (λ (x) (rewrite-side-conditions/check-errs
+                                                 lang-nts
+                                                 syn-error-name
+                                                 #t
+                                                 x))
+                                         (syntax->list (syntax (lhs ...))))]
+                                   [(rg-side-conditions-rewritten ...) 
+                                    (map (λ (x) (rewrite-side-conditions/check-errs
+                                                 lang-nts
+                                                 syn-error-name
+                                                 #t
+                                                 x))
+                                         (syntax->list (syntax ((side-condition lhs rg-rhs/wheres) ...))))]
+                                   [(clause-src ...)
+                                    (map (λ (lhs)
+                                           (format "~a:~a:~a"
+                                                   (syntax-source lhs)
+                                                   (syntax-line lhs)
+                                                   (syntax-column lhs)))
+                                         pats)]
+                                   [dom-side-conditions-rewritten
+                                    (and dom-ctcs
+                                         (rewrite-side-conditions/check-errs
+                                          lang-nts
+                                          syn-error-name
+                                          #f
+                                          dom-ctcs))]
+                                   [(codom-side-conditions-rewritten ...)
+                                    (map (λ (codom-contract)
+                                           (rewrite-side-conditions/check-errs
+                                            lang-nts
+                                            syn-error-name
+                                            #f
+                                            codom-contract))
+                                         codom-contracts)]
+                                   [(rhs-fns ...)
+                                    (map (λ (names names/ellipses rhs/where)
+                                           (with-syntax ([(names ...) names]
+                                                         [(names/ellipses ...) names/ellipses]
+                                                         [rhs/where rhs/where])
+                                             (syntax
+                                              (λ (name bindings)
+                                                (term-let-fn ((name name))
+                                                             (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
+                                                                       rhs/where))))))
+                                         lhs-namess lhs-namess/ellipsess
+                                         (syntax->list (syntax (rhs/wheres ...))))]
+                                   [(name2 name-predicate) (generate-temporaries (syntax (name name)))])
+                       (with-syntax ([defs #`(begin
+                                               (define-values (name2 name-predicate)
+                                                 (let ([sc `(side-conditions-rewritten ...)]
+                                                       [dsc `dom-side-conditions-rewritten])
+                                                   (let ([cases (map (λ (pat rhs-fn rg-lhs src)
+                                                                       (make-metafunc-case
+                                                                        (λ (effective-lang) (compile-pattern effective-lang pat #t))
+                                                                        rhs-fn
+                                                                        rg-lhs src (gensym)))
+                                                                     sc
+                                                                     (list (λ (effective-lang) rhs-fns) ...)
+                                                                     (list (λ (effective-lang) `rg-side-conditions-rewritten) ...)
+                                                                     `(clause-src ...))]
+                                                         [parent-cases 
+                                                          #,(if prev-metafunction
+                                                                #`(metafunc-proc-cases #,(term-fn-get-id (syntax-local-value prev-metafunction)))
+                                                                #'null)])
+                                                     (build-metafunction 
+                                                      lang
+                                                      cases
+                                                      parent-cases
+                                                      (λ (f/dom)
+                                                        (make-metafunc-proc
+                                                         (let ([name (lambda (x) (f/dom x))]) name)
+                                                         (generate-lws #,relation?
+                                                                       (lhs ...)
+                                                                       (lhs-for-lw ...)
+                                                                       ((stuff ...) ...)
+                                                                       #,(if relation?
+                                                                             #'((raw-rhses ...) ...)
+                                                                             #'(rhs ...)))
+                                                         lang
+                                                         #t ;; multi-args?
+                                                         'name
+                                                         (let ([name (lambda (x) (name-predicate x))]) name)
+                                                         dsc
+                                                         (append cases parent-cases)
+                                                         #,relation?))
+                                                      dsc
+                                                      `(codom-side-conditions-rewritten ...)
+                                                      'name
+                                                      #,relation?))))
+                                               (term-define-fn name name2))])
+                         (syntax-property
+                          (prune-syntax
+                           (if (eq? 'top-level (syntax-local-context))
+                               ; Introduce the names before using them, to allow
+                               ; metafunction definition at the top-level.
+                               (syntax 
+                                (begin 
+                                  (define-syntaxes (name2 name-predicate) (values))
+                                  defs))
+                               (syntax defs)))
+                          'disappeared-use
+                          (map syntax-local-introduce 
+                               (syntax->list #'(original-names ...)))))))))))))]))
 
   (define (define-judgment-form/proc stx)
     (not-expression-context stx)
