@@ -494,10 +494,11 @@ Various common pieces of code that both the client and server need to access
   (define planet-log 
     (let ([planet-logger (make-logger 'PLaneT (current-logger))])
       (λ (str . fmt)
+        (define formatted-str (apply format str fmt))
         (parameterize ([current-logger planet-logger])
-          (log-info (apply format str fmt))
+          (log-info formatted-str)
           (when (planet-logging-to-stdout)
-            (apply fprintf (current-output-port) str fmt)
+            (fprintf (current-output-port) "PLaneT: ~a" formatted-str)
             (newline (current-output-port)))))))
   
   ;; note that this function assumes that 'f' prints line-by-line
