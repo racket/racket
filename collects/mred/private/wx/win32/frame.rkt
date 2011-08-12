@@ -404,6 +404,10 @@
         (void (SetCursor (get-wait-cursor)))
         (when saved-child
           (reset-cursor-in-child saved-child default))))
+  
+  (define/override (refresh-all-children)
+    (when saved-child
+      (send saved-child refresh)))
 
   (define/override (get-dialog-level) 0)
 

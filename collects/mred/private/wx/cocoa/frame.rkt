@@ -409,6 +409,10 @@
       (set! saved-child child)
       (on-new-child child #t))
 
+    (define/override (refresh-all-children)
+      (when saved-child
+        (send saved-child refresh)))
+
     (define/override (set-cursor c)
       (when saved-child
         (send saved-child set-cursor c)))

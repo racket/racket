@@ -257,7 +257,7 @@
               set-auto-size 
               adjust-client-delta infer-client-delta
               is-auto-scroll? get-virtual-width get-virtual-height
-              refresh-for-autoscroll
+              refresh-for-autoscroll refresh-all-children
               get-eventspace)
 
      (define is-combo? (memq 'combo style))
@@ -509,8 +509,11 @@
      (define/public (flush)
        (flush-display))
 
-     (define/override (refresh)
+     (define/private (refresh-one)
        (queue-paint))
+     (define/override (refresh)
+       (refresh-one)
+       (refresh-all-children))
 
      (define/public (queue-backing-flush)
        ;; called atomically
@@ -525,7 +528,7 @@
 
      (define/private (reset-dc)
        (send dc reset-backing-retained)
-       (refresh)
+       (refresh-one)
        (send dc set-auto-scroll
              (if (get-virtual-width)
                  (gtk_adjustment_get_value hscroll-adj)

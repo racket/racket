@@ -84,6 +84,10 @@
     (define/override (show on?)
       (super show on?)
       (fix-dc))
+
+    (define/override (refresh-all-children)
+      (for ([child (in-list children)])
+        (send child refresh)))
     
     (define/public (set-item-cursor x y) (void))))
 

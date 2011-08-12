@@ -669,7 +669,9 @@
               (lambda (thunk) (queue-window-event this thunk)))))
 
     (define/public (center a b) (void))
-    (define/public (refresh) (void))
+    (define/public (refresh) (refresh-all-children))
+
+    (define/public (refresh-all-children) (void))
 
     (define/public (screen-to-client x y)
       (let ([xb (box 0)]

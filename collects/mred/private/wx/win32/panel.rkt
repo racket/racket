@@ -81,6 +81,10 @@
       (for ([c (in-list children)])
         (send c show-children)))
 
+    (define/override (refresh-all-children)
+      (for ([child (in-list children)])
+        (send child refresh)))
+
     (define/override (wants-mouse-capture? control-hwnd)
       (ptr-equal? (get-client-hwnd) control-hwnd))
 

@@ -60,6 +60,10 @@
                     (cons child children)
                     (remq child children))))))
 
+    (define/override (refresh-all-children)
+      (for ([child (in-list children)])
+        (send child refresh)))
+
     (define/public (set-item-cursor x y) (void))))
 
 (define (panel-container-mixin %)

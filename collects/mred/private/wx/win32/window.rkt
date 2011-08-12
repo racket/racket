@@ -339,7 +339,7 @@
     (unless (and (= w -1) (= h -1))
       (on-resized))
     (queue-on-size)
-    (refresh))
+    (refresh-one))
   (define/public (move x y)
     (set-size x y -1 -1))
 
@@ -405,7 +405,12 @@
 
   (define/public (is-frame?) #f)
 
-  (define/public (refresh) (void))
+  (define/public (refresh-one) (void))
+  (define/public (refresh)
+    (refresh-one)
+    (refresh-all-children))
+  (define/public (refresh-all-children) (void))
+
   (define/public (on-resized) (void))
 
   (define/public (screen-to-client x y)

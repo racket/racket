@@ -320,6 +320,10 @@
     (define/override (register-child-in-parent on?)
       (void))
 
+    (define/override (refresh-all-children)
+      (when saved-child
+        (send saved-child refresh)))
+
     (define/override (direct-show on?)
       ;; atomic mode
       (if on?

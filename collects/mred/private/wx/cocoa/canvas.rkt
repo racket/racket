@@ -247,6 +247,7 @@
               is-auto-scroll? get-virtual-width get-virtual-height
               reset-auto-scroll
               refresh-for-autoscroll
+              refresh-all-children
               flush)
 
      (define vscroll-ok? (and (or (memq 'vscroll style) 
@@ -313,9 +314,12 @@
      (define/public (get-flush-window)
        (get-cocoa-window))
 
+     (define/private (refresh-one)
+       (queue-paint))
      (define/override (refresh)
        ;; can be called from any thread, including the event-pump thread
-       (queue-paint))
+       (refresh-one)
+       (refresh-all-children))
 
      (define/public (queue-backing-flush)
        ;; called atomically (not expecting exceptions)
@@ -387,7 +391,7 @@
          (send dc set-auto-scroll
                (if (is-auto-scroll?) (scroll-pos h-scroller) 0)
                (if (is-auto-scroll?) (scroll-pos v-scroller) 0)))
-       (when refresh? (refresh)))
+       (when refresh? (refresh-one)))
 
      (define/override (get-client-size xb yb)
        (super get-client-size xb yb)
@@ -686,7 +690,7 @@
                (or ((NSSize-width s2) . < . (NSSize-width s1))
                    ((NSSize-height s2) . < . (NSSize-height s1)))))
             (begin
-              (queue-window-event this (lambda () (refresh)))
+              (queue-window-event this (lambda () (refresh-one)))
               #t)))
 
      (define/public (do-scroll direction scroller)
@@ -765,7 +769,7 @@
        (let ([pos (tell #:type _NSInteger content-cocoa indexOfSelectedItem)])
          (when (pos . > . -1)
            (queue-window-event this (lambda () (on-combo-select pos)))))
-       (refresh))
+       (refresh-one))
 
      (define current-text "")
      (define/public (set-combo-text t)

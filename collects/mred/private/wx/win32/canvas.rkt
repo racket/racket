@@ -308,7 +308,7 @@
        (flush-display))
 
      (define/public (on-paint) (void))
-     (define/override (refresh) (queue-paint))
+     (define/override (refresh-one) (queue-paint))
 
      (define/public (queue-backing-flush)
        (unless for-gl?
@@ -409,7 +409,7 @@
 
     (define/override (reset-dc-for-autoscroll)
       (reset-dc)
-      (refresh))
+      (refresh-one))
 
     (define/override (get-virtual-h-pos)
       (GetScrollPos canvas-hwnd SB_HORZ))
