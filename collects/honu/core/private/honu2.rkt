@@ -2,6 +2,7 @@
 
 (require "macro2.rkt"
          "operator.rkt"
+         "struct.rkt"
          (only-in "literals.rkt"
                   semicolon)
          (for-syntax syntax/parse
@@ -9,6 +10,7 @@
                      "parse2.rkt"
                      racket/base))
 
+(provide (all-from-out "struct.rkt"))
 
 (provide honu-function)
 (define-honu-syntax honu-function
@@ -91,13 +93,17 @@
   (lambda (left right)
     (with-syntax ([left left]
                   [right right])
-      #'(let ([left* left]
-              [right* right])
+      #'(let ([left* left])
           (cond
-            #;
+            [(honu-struct? left*) (let ([use (honu-struct-get left*)])
+                                    (use left* 'right))]
+            [else (error 'dot "don't know how to deal with ~a" 'left)]))
+      #;
+      #'(let ([left* left])
+          (cond
             [(list? left*)
-             (list-ref left* right*)]
-            [else (error 'dot "don't know how to deal with ~a and ~a" left* right*)])))))
+             (list-ref left* right)]
+            [else (error 'dot "don't know how to deal with ~a and ~a" 'left 'right)])))))
 
 (define-binary-operator honu-+ 1 'left +)
 (define-binary-operator honu-- 1 'left -)

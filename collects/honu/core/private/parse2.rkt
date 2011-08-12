@@ -330,3 +330,8 @@
                    (parse stx))
     (debug "parsed ~a\n" parsed)
     (list (parsed-things stx unparsed) parsed)))
+
+(provide identifier-comma-list)
+(define-splicing-syntax-class identifier-comma-list
+                              #:literal-sets (cruft)
+  [pattern (~seq (~seq name:id (~optional honu-comma)) ...)]) 

@@ -21,6 +21,7 @@
                      [honu-cons ::]
                      [honu-and and]
                      [honu-or or]
+                     [honu-structure structure]
                      [literal:honu-= =]
                      [literal:semicolon |;|]
                      [literal:honu-comma |,|]
