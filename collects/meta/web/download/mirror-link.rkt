@@ -17,10 +17,10 @@ Polling a URL can result in one of four options:
    minutes (or more) later.
 2. The URL exists, but no size information is available (via a HEAD
    query, or via an FTP directory listing).  The link will be shown in
-   this case, but it will be re-polled two days later.  (With a random
-   factor, and a nightly build that happens at the same time, this might
-   mean more days.)  So far, all mirrors provide size information, so
-   this works fine.
+   this case, but it will be re-polled two days later.  (With a 1..2
+   random factor, and a nightly build that happens at the same time,
+   this will be around 3-5 days.)  So far, all mirrors provide size
+   information, so this works fine.
 3. The URL exists and we get its size, but the size does not match.  The
    URL is not shown, and will be re-polled in an hour.  The assumption
    here is either bad synchronization, or we caught it in progress.
@@ -54,23 +54,22 @@ Polling a URL can result in one of four options:
   (define entry     (assoc url known-mirrors))
   (define last-time (and entry (cadr entry)))
   (define result    (and entry (caddr entry)))
+  (define R (+ 1 (random))) ; random 1..2 number, to avoid congestion
   (define new
     (and (cond
            ;; failed, check again after 15 minutes (to accomodate re-runs after
            ;; a release was done)
            [(eq? #f result)
             (or (not entry) ; actually missing => try now
-                (current-time . > . (+ last-time (* 15 60))))]
+                (current-time . > . (+ last-time (* 15 60 R))))]
            ;; known but without a size to verify, check again after two days
            [(eq? #t result)
-            (and (current-time . > . (+ last-time (* 2 24 60 60)))
-                 (zero? (random 3)))]
+            (current-time . > . (+ last-time (* 2 24 60 60 R)))]
            ;; has a bad size, check again after an hour
            [(not (= result size))
-            (current-time . > . (+ last-time (* 60 60)))]
+            (current-time . > . (+ last-time (* 60 60 R)))]
            ;; otherwise check again after a month
-           [else (and (current-time . > . (+ last-time (* 30 24 60 60)))
-                      (zero? (random 20)))])
+           [else (current-time . > . (+ last-time (* 30 24 60 60 R)))])
          (list url current-time (thunk))))
   (when new
     ;; keep them sorted by time
