@@ -155,7 +155,9 @@
   #:literal-sets (kernel-literals)
   #:attributes ([key 1] kw)
   (pattern (~and kw (~literal let-values))
-           #:with (key ...) #'(kw))
+           ;; we need let*-values because we bind intermediate unboxed results,
+           ;; and the bindings for the final results refer to them
+           #:with (key ...) #'(let*-values))
   (pattern (~and kw (~literal letrec-values))
            #:with (key ...) #'(kw))
   (pattern (~seq (~and kw (~literal letrec-syntaxes+values)) stx-bindings)
