@@ -1061,7 +1061,9 @@
                                                 #,@(if rest?
                                                        #`((list #,@(list-tail args (min (length args) (+ n-req n-opt)))))
                                                        null))
-                                               #,(quasisyntax/loc stx (#%app #,wrap-id . #,args))))))))
+                                               #,(if lifted?
+                                                     orig
+                                                     (quasisyntax/loc stx (#%app #,wrap-id . #,args)))))))))
                                 orig))))
                 (datum->syntax stx (cons wrap-id #'(arg ...)) stx stx)))]
          [_ wrap-id]))))

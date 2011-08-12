@@ -278,6 +278,11 @@
   (set! f (lambda (#:y y) (box y)))
   (test (box 8) (lambda () (f #:y 8))))
 
+(let ()
+  (define (f #:x [x 1]) x)
+  (test 7 (lambda () (f #:x 7)))
+  (set! f #f))
+
 ;; ----------------------------------------
 
 (report-errs)
