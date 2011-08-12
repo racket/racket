@@ -31,7 +31,7 @@ Polling a URL can result in one of four options:
 
 |#
 
-(require net/url net/ftp)
+(require net/url net/ftp net/sendmail)
 
 ;; the mirrors file has (list url secs result) entries containing the url as a
 ;; string, the time it was checked (the result of `current-seconds'), and the
@@ -50,7 +50,7 @@ Polling a URL can result in one of four options:
 ;; times are different for different results, and the decision whether to check
 ;; one is randomized (cheaply, since it'll be sensitive to how frequently a
 ;; build is done -- usually by the nightly build).
-(define (known-mirror-get url size thunk)
+(define (known-mirror-get url size thunk get-responsible-email)
   (define entry     (assoc url known-mirrors))
   (define last-time (and entry (cadr entry)))
   (define result    (and entry (caddr entry)))
@@ -79,16 +79,32 @@ Polling a URL can result in one of four options:
       (lambda (outp)
         (for ([entry (in-list known-mirrors)])
           (fprintf outp "~s\n" entry)))))
+  (when (and new                              ; we computed a new value
+             (equal? result size)             ; we had a good result
+             (not (equal? (caddr new) size))) ; but now it's bad
+    ;; this means that a good mirror just went bad => nag someone
+    (send-mail-message
+     "eli@barzilay.org" "*** Mirror Link Down ***"
+     ;; FIXME: if these messages are useful, change it to nag the mirror owner
+     ;; instead of a fixed email -- use (list (get-responsible-email))
+     '("eli@barzilay.org") '() '()
+     `("A mirror link that used to be fine is now broken:"
+       ,(format "  ~a" url)
+       ,(format "The expected size is ~a, we now have ~a" size (caddr new))
+       ""
+       "This mirror will not be listed for now, until a re-poll finds it"
+       "working.")))
   (if new (caddr new) result))
 
 ;; use the time when the file is loaded (no point for a finer granularity)
 (define current-time (current-seconds))
 
 (provide mirror-link)
-(define (mirror-link url size)
+(define (mirror-link url size get-responsible-email)
   (and (or (not known-mirrors-file) ; no file => don't check, just use all
            (let ([r (known-mirror-get
-                     url size (lambda () (validate url size)))])
+                     url size (lambda () (validate url size))
+                     get-responsible-email)])
              (or (eq? r #t) (equal? r size))))
        url))
 

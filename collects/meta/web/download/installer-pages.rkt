@@ -51,8 +51,13 @@
                       (filter-map
                        (lambda (m)
                          (define url
-                           (mirror-link (string-append (mirror-url m) path)
-                                        size))
+                           (mirror-link
+                            (string-append (mirror-url m) path)
+                            size
+                            (lambda ()
+                              (format "~a <~a>"
+                                      (mirror-person m)
+                                      (mirror-email m)))))
                          (and url @li{@a[href: url]{@(mirror-location m)}}))
                        mirrors)])
                  (case (length mirrors)
