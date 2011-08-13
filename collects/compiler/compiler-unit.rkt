@@ -178,7 +178,8 @@
                       ;; Add specified doc sources:
                       (if skip-docs?
                           null
-                          (map car (info* 'scribblings (lambda () null)))))]
+                          (map (lambda (s) (if (string? s) (string->path s) s))
+                               (map car (info* 'scribblings (lambda () null))))))]
                [sses (remove* omit-paths sses)])
           (worker null sses)))])
       

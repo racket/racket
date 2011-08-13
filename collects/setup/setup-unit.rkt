@@ -317,19 +317,22 @@
              ;; coll/subcoll
              [omit (omitted-paths ccp getinfo)])
           (let-values ([(dirs files)
-             (if (eq? 'all omit)
-                 (values null null)
-                 (partition (lambda (x) (directory-exists? (build-path ccp x)))
-                   (filter (lambda (p) 
-                             (not (or (member p omit)
-                                      (skip-path? p))))
-                           (directory-list ccp))))])
+                        (if (eq? 'all omit)
+                            (values null null)
+                            (partition (lambda (x) (directory-exists? (build-path ccp x)))
+                                       (filter (lambda (p) 
+                                                 (not (or (member p omit)
+                                                          (skip-path? p))))
+                                               (directory-list ccp))))])
             (let ([children-ccs (map build-collection-tree (filter-map (lambda (x) (make-child-cc cc x)) dirs))]
                       
                   [srcs (append
                            (filter extract-base-filename/ss files)
                            (if (make-docs)
-                               (map car (call-info info 'scribblings (lambda () null) (lambda (x) #f)))
+                               (filter (lambda (p) (not (member p omit)))
+                                       (map
+                                        (lambda (s) (if (string? s) (string->path s) s))
+                                        (map car (call-info info 'scribblings (lambda () null) (lambda (x) #f)))))
                                null))])
               (list cc srcs children-ccs)))))
     (map build-collection-tree collections-to-compile))
