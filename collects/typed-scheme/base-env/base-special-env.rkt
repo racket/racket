@@ -291,7 +291,6 @@
          (-opt (-> Univ)) (-opt Univ) (-opt (-opt -Pathlike))
          -Boolean -Boolean -Boolean
          Univ))]
-
   [((kw-expander-proc (syntax-local-value #'make-handle-get-preference-locked)))
    (let ((lock-there-type (-opt (-> -Path Univ))) (max-delay-type -Real))
      (cl->*
@@ -471,15 +470,17 @@
     . -> .
     (-lst -String))]
 
+
   [((kw-expander-proc (syntax-local-value #'port->bytes-lines)))
    (cl->*
     (->key #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -Bytes))
     (->key -Input-Port #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -Bytes)))]
-  [((kw-expander-impl (syntax-local-value #'port->bytes-lines)))
+#;  [((kw-expander-impl (syntax-local-value #'port->bytes-lines)))
    ((-opt (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)) -Boolean
     (-opt -Input-Port) -Boolean
     . -> .
     (-lst -Bytes))]
+
 
   [((kw-expander-proc (syntax-local-value #'display-lines)))
    (cl->*
@@ -491,4 +492,3 @@
     (-opt -Output-Port) -Boolean
     . -> . -Void)]
   )
-
