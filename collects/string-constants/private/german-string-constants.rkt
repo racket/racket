@@ -113,11 +113,17 @@
  (cs-unused-require "unbenutztes require")
  (cs-free-variable "freie Variable")
 
-  ;; mode sub-menu in the "view" menu
-  (cs-check-syntax-mode "Syntax-Check-Modus")
-  (cs-mode-menu-show-my-obligations "Meine Vertragsobligationen")
-  (cs-mode-menu-show-client-obligations "Vertragsobligationen des Klienten")
-  (cs-mode-menu-show-syntax "Syntaktische Kategorien")
+ ;; mode sub-menu in the "view" menu
+ (cs-check-syntax-mode "Syntax-Check-Modus")
+ (cs-mode-menu-show-my-obligations "Meine Vertragsobligationen")
+ (cs-mode-menu-show-client-obligations "Vertragsobligationen des Klienten")
+ (cs-mode-menu-show-syntax "Syntaktische Kategorien")
+
+ ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
+ (online-expansion-running "Online-Expansion läuft")
+ (only-raw-text-files-supported "Nur reine Textdateien werden unterstützt")
+ (abnormal-termination "Online-Expansion vorzeitig abgebrochen")
+ (jump-to-error "Zum Fehler springen")
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
