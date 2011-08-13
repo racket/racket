@@ -131,6 +131,11 @@
 (test "12\r3" read (open-input-string (string #\" #\1 #\\ #\return #\newline #\2 #\\ #\newline #\return #\3 #\")))
 (test "1\r23" read (open-input-string (string #\" #\1 #\\ #\newline #\return #\2 #\\ #\return #\newline #\3 #\")))
 
+;; test names of file handling procedures (see racket/private/kw-file)
+(test 'open-input-file object-name open-input-file)
+(test 'with-input-from-file object-name with-input-from-file)
+(test 'call-with-output-file object-name call-with-output-file)
+
 ; Test string ports with file-position:
 (let ([s (open-output-string)])
   (test (string) get-output-string s)
