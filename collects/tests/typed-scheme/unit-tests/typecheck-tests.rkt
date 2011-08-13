@@ -22,16 +22,16 @@
          syntax/parse
          (for-syntax (utils tc-utils)
                      (typecheck typechecker)
-	             (env global-env)
-	             (base-env #;base-env #;base-env-numeric
-			       base-env-indexing base-special-env))
+                     (env global-env)
+                     (base-env #;base-env #;base-env-numeric
+                               base-env-indexing base-special-env))
          racket/file
          (for-template
 
             (base-env #;base-env base-types base-types-extra
-				 #;base-env-numeric
+                                 #;base-env-numeric
                                  base-special-env
-				 base-env-indexing))
+                                 base-env-indexing))
          (for-syntax syntax/kerncase syntax/parse))
 
 (require (prefix-in b: (base-env base-env))
@@ -111,10 +111,10 @@
 (define-for-syntax (local-expand/top-level form)
   (let ([form* (local-expand form 'module (kernel-form-identifier-list #'here))])
     (kernel-syntax-case form* #f
-			[(define-syntaxes . _) (raise-syntax-error "don't use syntax defs here!" form)]
-			[(define-values vals body)
-			 (quasisyntax/loc form (define-values vals #,(local-expand #'body 'expression '())))]
-			[e (local-expand #'e 'expression '())])))
+                        [(define-syntaxes . _) (raise-syntax-error "don't use syntax defs here!" form)]
+                        [(define-values vals body)
+                         (quasisyntax/loc form (define-values vals #,(local-expand #'body 'expression '())))]
+                        [e (local-expand #'e 'expression '())])))
 
 ;; check that typechecking this expression fails
 (define-syntax tc-err
@@ -228,11 +228,11 @@
         [tc-e (let: ([x : (Un #f Number) 7])
                     (if x (+ x 1) 3))
               N]
-	[tc-e (let: ([x : Number 1])
-		    (if (and (number? x) #t)
-			(+ x 4)
-			'bc))
-	      N]
+        [tc-e (let: ([x : Number 1])
+                    (if (and (number? x) #t)
+                        (+ x 4)
+                        'bc))
+              N]
         [tc-e/t (let: ((x : Number 3)) (if (boolean? x) (not x) #t)) (-val #t)]
         [tc-e/t (begin 3) -PosByte]
         [tc-e/t (begin #f 3) -PosByte]
@@ -702,7 +702,6 @@
                                        : (-FS (-not-filter (-val #f) #'map) (-filter (-val #f) #'map))))]
 
         ;; error tests
-        [tc-err (#%variable-reference number?)]
         [tc-err (+ 3 #f)]
         [tc-err (let: ([x : Number #f]) x)]
         [tc-err (let: ([x : Number #f]) (+ 1 x))]
@@ -1357,7 +1356,7 @@
         (tc-e (let: ((p : (Promise Symbol) (delay 's)))
                   (promise-running? p)) B)
         |#
-        
+
         ;; excetion handling
         [tc-e (with-handlers ([void (λ (x) (values 0 0))]) (values  "" ""))
               #:ret (ret (list (t:Un -Zero -String) (t:Un -Zero -String)))]
@@ -1385,10 +1384,13 @@
                     exn:break
                     arity-at-least
                     date
-                    srcloc) 
+                    srcloc)
               -Void)
         [tc-e (raise (exn:fail:contract "1" (current-continuation-marks))) (t:Un)]
         [tc-err (exn:fail:contract)]
+        [tc-e (#%variable-reference) -Variable-Reference]
+        [tc-e (#%variable-reference x) -Variable-Reference]
+        [tc-e (#%variable-reference +) -Variable-Reference]
         )
   (test-suite
    "check-type tests"
@@ -1431,14 +1433,13 @@
 #;(define (tc-toplevel-tests)
 #reader typed-scheme/typed-reader
 (test-suite "Tests for tc-toplevel"
-	    (tc-tl 3)
-	    (tc-tl (define: x : Number 4))
-	    (tc-tl (define: (f [x : Number]) : Number x))
-	    [tc-tl (pdefine: (a) (f [x : a]) : Number 3)]
-	    [tc-tl (pdefine: (a b) (mymap [f : (a -> b)] (l : (list-of a))) : (list-of b)
-			     (if (null? l) #{'() : (list-of b)}
-				 (cons (f (car l)) (map f (cdr l)))))]))
+            (tc-tl 3)
+            (tc-tl (define: x : Number 4))
+            (tc-tl (define: (f [x : Number]) : Number x))
+            [tc-tl (pdefine: (a) (f [x : a]) : Number 3)]
+            [tc-tl (pdefine: (a b) (mymap [f : (a -> b)] (l : (list-of a))) : (list-of b)
+                             (if (null? l) #{'() : (list-of b)}
+                                 (cons (f (car l)) (map f (cdr l)))))]))
 
 
 (define-go typecheck-tests #;tc-toplevel-tests)
-

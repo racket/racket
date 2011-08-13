@@ -272,9 +272,9 @@
            (ret -Void))]
         ;; top-level variable reference - occurs at top level
         [(#%top . id) (check-below (tc-id #'id) expected)]
-        ;; weird
+
         [(#%variable-reference . _)
-         (tc-error/expr #:return (ret expected) "#%variable-reference is not supported by Typed Racket")]
+         (ret -Variable-Reference)]
         ;; identifiers
         [x:identifier
            (check-below (tc-id #'x) expected)]
@@ -389,9 +389,9 @@
       [(#%top . id) (tc-id #'id)]
       ;; #%expression
       [(#%expression e) (tc-expr #'e)]
-      ;; weird
+      ;; #%variable-reference
       [(#%variable-reference . _)
-       (tc-error/expr #:return (ret (Un)) "#%variable-reference is not supported by Typed Racket")]
+       (ret -Variable-Reference)]
       ;; identifiers
       [x:identifier (tc-id #'x)]
       ;; application
