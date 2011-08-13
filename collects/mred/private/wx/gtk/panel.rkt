@@ -6,7 +6,8 @@
          "window.rkt"
          "utils.rkt"
          "types.rkt"
-         "const.rkt")
+         "const.rkt"
+         "dc.rkt")
 
 (provide 
  (protect-out panel%
@@ -14,12 +15,34 @@
               panel-container-mixin
 
               gtk_fixed_new
-              gtk_fixed_move))
+              gtk_fixed_move
+
+              gtk_container_set_border_width
+              connect-expose-border))
 
 (define-gtk gtk_fixed_new (_fun -> _GtkWidget))
 (define-gtk gtk_event_box_new (_fun -> _GtkWidget))
 
 (define-gtk gtk_fixed_move (_fun _GtkWidget _GtkWidget _int _int -> _void))
+
+(define-gtk gtk_container_set_border_width (_fun _GtkWidget _int -> _void))
+
+(define-signal-handler connect-expose-border "expose-event"
+  (_fun _GtkWidget _GdkEventExpose-pointer -> _gboolean)
+  (lambda (gtk event)
+    (let* ([win (widget-window gtk)]
+           [gc (gdk_gc_new win)]
+           [gray #x8000])
+      (when gc
+        (gdk_gc_set_rgb_fg_color gc (make-GdkColor 0 gray gray gray))
+        (let ([a (widget-allocation gtk)])
+          (gdk_draw_rectangle win gc #f
+                              0
+                              0
+                              (sub1 (GtkAllocation-width a))
+                              (sub1 (GtkAllocation-height a))))
+        (gdk_gc_unref gc)))
+    #f))
 
 (define (panel-mixin %)
   (class %
@@ -81,15 +104,24 @@
           style
           label)
     
-    (inherit get-gtk set-auto-size set-size)
+    (inherit get-gtk set-auto-size set-size
+             adjust-client-delta)
     
     (define gtk (as-gtk-allocation (gtk_event_box_new)))
+    (define border-gtk (atomically
+                        (and (memq 'border style)
+                             (let ([border-gtk (gtk_fixed_new)])
+                               (gtk_container_add gtk border-gtk)
+                               (gtk_container_set_border_width border-gtk 1)
+                               (connect-expose-border border-gtk)
+                               (gtk_widget_show border-gtk)
+                               border-gtk))))
     (define client-gtk (atomically
                         (let ([client (gtk_fixed_new)])
-                          (gtk_container_add gtk client)
+                          (gtk_container_add (or border-gtk gtk) client)
                           (gtk_widget_show client)
                           client)))
-
+    
     (define/override (get-client-gtk) client-gtk)
 
     (super-new [parent parent]
@@ -98,7 +130,9 @@
                [no-show? (memq 'deleted style)])
 
     ;; Start with a minimum size:
-    (set-size 0 0 1 1)
+    (set-size 0 0 (if border-gtk 3 1) (if border-gtk 3 1))
+    (when border-gtk
+      (adjust-client-delta 2 2))
     
     (connect-key-and-mouse gtk)
     (gtk_widget_add_events gtk (bitwise-ior GDK_BUTTON_PRESS_MASK

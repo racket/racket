@@ -100,17 +100,8 @@
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
 
-(define-gtk gtk_container_set_border_width (_fun _GtkWidget _int -> _void))
-
 (define-gobj g_object_set_bool (_fun _GtkWidget _string _gboolean [_pointer = #f] -> _void)
   #:c-id g_object_set)
-
-(define-gdk gdk_gc_unref (_fun _pointer -> _void)
-  #:wrap (deallocator))
-(define-gdk gdk_gc_new (_fun _GdkWindow -> _pointer)
-  #:wrap (allocator gdk_gc_unref))
-(define-gdk gdk_gc_set_rgb_fg_color (_fun _pointer _GdkColor-pointer -> _void))
-(define-gdk gdk_draw_rectangle (_fun _GdkWindow _pointer _gboolean _int _int _int _int -> _void))
 
 (define _GtkIMContext (_cpointer 'GtkIMContext))
 (define-gtk gtk_im_multicontext_new (_fun -> _GtkIMContext))
@@ -200,22 +191,6 @@
                   (gdk_gc_unref gc))))
             (not (send wx is-panel?)))
           #f))))
-
-(define-signal-handler connect-expose-border "expose-event"
-  (_fun _GtkWidget _GdkEventExpose-pointer -> _gboolean)
-  (lambda (gtk event)
-    (let* ([win (widget-window gtk)]
-           [gc (gdk_gc_new win)]
-           [gray #x8000])
-      (when gc
-        (gdk_gc_set_rgb_fg_color gc (make-GdkColor 0 gray gray gray))
-        (let ([r (GdkEventExpose-area event)])
-          (gdk_draw_rectangle win gc #t 
-                              (GdkRectangle-x r)
-                              (GdkRectangle-y r)
-                              (GdkRectangle-width r)
-                              (GdkRectangle-height r)))
-        (gdk_gc_unref gc)))))
 
 (define-signal-handler connect-value-changed-h "value-changed"
   (_fun _GtkWidget -> _void)

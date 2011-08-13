@@ -18,10 +18,22 @@
 (provide 
  (protect-out dc%
               do-backing-flush
-              x11-bitmap%))
+              x11-bitmap%
+
+              gdk_gc_new
+              gdk_gc_unref
+              gdk_gc_set_rgb_fg_color
+              gdk_draw_rectangle))
 
 (define-gdk gdk_cairo_create (_fun _pointer -> _cairo_t)
   #:wrap (allocator cairo_destroy))
+
+(define-gdk gdk_gc_unref (_fun _pointer -> _void)
+  #:wrap (deallocator))
+(define-gdk gdk_gc_new (_fun _GdkWindow -> _pointer)
+  #:wrap (allocator gdk_gc_unref))
+(define-gdk gdk_gc_set_rgb_fg_color (_fun _pointer _GdkColor-pointer -> _void))
+(define-gdk gdk_draw_rectangle (_fun _GdkWindow _pointer _gboolean _int _int _int _int -> _void))
 
 (define-cstruct _GdkVisual-rec ([type-instance _pointer]
 				[ref_count _uint]

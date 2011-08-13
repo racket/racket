@@ -94,18 +94,6 @@
   #:mixins (MyViewMixin)
   [wxb])
 
-(define-objc-class FrameView NSView 
-  []
-  (-a _void (drawRect: [_NSRect r])
-      (let ([ctx (tell NSGraphicsContext currentContext)])
-        (tellv ctx saveGraphicsState)
-        (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
-              [r (tell #:type _NSRect self bounds)])
-          (CGContextSetRGBFillColor cg 0 0 0 1.0)
-          (CGContextAddRect cg r)
-          (CGContextStrokePath cg))
-        (tellv ctx restoreGraphicsState))))
-
 (define-objc-class CornerlessFrameView NSView 
   []
   (-a _void (drawRect: [_NSRect r])

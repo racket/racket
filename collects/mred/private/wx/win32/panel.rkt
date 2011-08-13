@@ -94,8 +94,6 @@
     
     (define/public (set-item-cursor x y) (void))))
 
-(define WS_EX_STATICEDGE        #x00020000)
-
 (define panel% 
   (class (panel-mixin window%)
     (init parent
@@ -105,14 +103,15 @@
 
     (super-new [parent parent]
                [hwnd 
-                (CreateWindowExW (if (memq 'border style)
-                                     WS_EX_STATICEDGE
-                                     0)
+                (CreateWindowExW 0
                                  (if (send parent is-frame?)
                                      "PLTPanel"
                                      "PLTTabPanel")
                                  #f
-                                 (bitwise-ior WS_CHILD WS_CLIPSIBLINGS)
+                                 (bitwise-ior WS_CHILD WS_CLIPSIBLINGS
+                                              (if (memq 'border style)
+                                                  WS_BORDER
+                                                  0))
                                  0 0 w h
                                  (send parent get-content-hwnd)
                                  #f

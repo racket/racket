@@ -5,17 +5,32 @@
          "../../syntax.rkt"
          "types.rkt"
          "utils.rkt"
+         "cg.rkt"
          "window.rkt")
 
 (provide 
  (protect-out panel%
-              panel-mixin))
+              panel-mixin
 
-(import-class NSView)
+              FrameView))
+
+(import-class NSView NSGraphicsContext)
 
 (define-objc-class MyPanelView NSView
   #:mixins (KeyMouseTextResponder CursorDisplayer)
   [wxb])
+
+(define-objc-class FrameView NSView 
+  []
+  (-a _void (drawRect: [_NSRect r])
+      (let ([ctx (tell NSGraphicsContext currentContext)])
+        (tellv ctx saveGraphicsState)
+        (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
+              [r (tell #:type _NSRect self bounds)])
+          (CGContextSetRGBFillColor cg 0 0 0 1.0)
+          (CGContextAddRect cg r)
+          (CGContextStrokePath cg))
+        (tellv ctx restoreGraphicsState))))
 
 (define (panel-mixin %)
   (class %
@@ -92,14 +107,47 @@
     (define/public (set-item-cursor x y) (void))))
 
 (defclass panel% (panel-mixin window%)
+  (inherit get-cocoa)
   (init parent
         x y w h
         style
         label)
+
+  (define has-border? (memq 'border style))
+
   (super-new [parent parent]
              [cocoa
               (as-objc-allocation
-               (tell (tell MyPanelView alloc)
+               (tell (tell (if has-border? FrameView MyPanelView) alloc)
                      initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
-                                                                (make-NSSize (max 1 w) (max 1 h)))))]
-             [no-show? (memq 'deleted style)]))
+                                                                (make-NSSize (max (if has-border? 3 1) w) 
+                                                                             (max (if has-border? 3 1) h)))))]
+             [no-show? (memq 'deleted style)])
+
+  (define content-cocoa
+    (and has-border?
+         (let* ([c (get-cocoa)]
+                [f (tell #:type _NSRect c frame)])
+           (as-objc-allocation
+            (tell (tell MyPanelView alloc)
+                  initWithFrame: #:type _NSRect (make-NSRect (make-init-point 1 1)
+                                                             (let ([s (NSRect-size f)])
+                                                               (make-NSSize (max 1 (- (NSSize-width s) 2))
+                                                                            (max 1 (- (NSSize-height s) 2))))))))))
+  (when has-border?
+    (let ([cocoa (get-cocoa)])
+      (tell #:type _void cocoa addSubview: content-cocoa)
+      (set-ivar! content-cocoa wxb (->wxb this))))
+
+  (define/override (get-cocoa-content)
+    (if has-border?
+        content-cocoa
+        (super get-cocoa-content)))
+
+  (define/override (set-size x y w h)
+    (super set-size x y w h)
+    (when has-border?
+      (tellv content-cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint 1 1)
+                                                                (make-NSSize (max 1 (- w 2)) (max 1 (- h 2))))))))
+
+

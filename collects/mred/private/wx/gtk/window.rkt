@@ -41,6 +41,7 @@
               (struct-out GtkAllocation) _GtkAllocation-pointer
 
               widget-window
+              widget-allocation
 
               the-accelerator-group
               gtk_window_add_accel_group
@@ -103,6 +104,9 @@
 
 (define (widget-window gtk)
   (GtkWidgetT-window (cast gtk _GtkWidget _GtkWidgetT-pointer)))
+
+(define (widget-allocation gtk)
+  (GtkWidgetT-alloc (cast gtk _GtkWidget _GtkWidgetT-pointer)))
 
 (define-gtk gtk_drag_dest_add_uri_targets (_fun _GtkWidget -> _void))
 (define-gtk gtk_drag_dest_set (_fun _GtkWidget _int (_pointer = #f) (_int = 0) _int -> _void))
