@@ -284,5 +284,15 @@
   (set! f #f))
 
 ;; ----------------------------------------
+;; Check mutation of direct-called keyword procedure
+
+(let ()
+  (define (f1 #:x x) (list x))
+  (test 'f1 object-name f1))
+(let ()
+  (define (f2 #:x [x 8]) (list x))
+  (test 'f2 object-name f2))
+
+;; ----------------------------------------
 
 (report-errs)

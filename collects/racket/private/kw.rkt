@@ -358,7 +358,7 @@
             #f "bad argument sequence" stx (syntax args))]))))
   
   ;; The new `lambda' form:
-  (define-for-syntax (parse-lambda stx non-kw-k kw-k)
+  (define-for-syntax (parse-lambda stx local-name non-kw-k kw-k)
     (syntax-case stx ()
       [(_ args body1 body ...)
        (if (simple-args? #'args)
@@ -531,7 +531,8 @@
                       (mk-unpack)
                       (with-syntax ([kws (map car sorted-kws)]
                                     [no-kws (let ([p (mk-no-kws #t)]
-                                                  [n (syntax-local-infer-name stx)])
+                                                  [n (or local-name
+                                                         (syntax-local-infer-name stx))])
                                               (if n
                                                   #`(let ([#,n #,p]) #,n)
                                                   p))]
@@ -555,7 +556,8 @@
                                     [needed-kws needed-kws]
                                     [no-kws (mk-no-kws #t)]
                                     [with-kws (mk-with-kws)]
-                                    [mk-id (with-syntax ([n (syntax-local-infer-name stx)]
+                                    [mk-id (with-syntax ([n (or local-name
+                                                                (syntax-local-infer-name stx))]
                                                          [call-fail (mk-kw-arity-stub)])
                                              (syntax-local-lift-expression
                                               #'(make-required 'n call-fail method? #F)))])
@@ -574,6 +576,7 @@
              (if (eq? (syntax-local-context) 'expression)
                  (parse-lambda
                   stx
+                  #f
                   (lambda (e) e)
                   (lambda (impl kwimpl wrap core-id unpack-id n-req n-opt rest? req-kws all-kws)
                     (syntax-protect
@@ -796,6 +799,7 @@
                 (or (free-identifier=? #'lam-id #'new-lambda)
                     (free-identifier=? #'lam-id #'new-λ)))
            (parse-lambda rhs
+                         id
                          plain
                          (lambda (impl kwimpl wrap 
                                        core-id unpack-id
