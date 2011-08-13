@@ -48,20 +48,29 @@
 
 ; dc<%> real real real real real real -> void
 ; draw one arrow
-; The reason of the "-0.5" in the definition of start-x and end-x in the let
-; right below is because, well, after numerous experiments done under carefully
-; controlled conditions by a team of independent experts, it was thought to
-; be The Right Thing for the arrows to be drawn correctly, maybe.
-(define (draw-arrow dc uncropped-pre-start-x uncropped-pre-start-y uncropped-pre-end-x uncropped-pre-end-y dx dy)
-  (let ([uncropped-start-x (+ uncropped-pre-start-x dx -0.5)]
+(define (draw-arrow dc uncropped-pre-start-x uncropped-pre-start-y uncropped-pre-end-x uncropped-pre-end-y dx dy
+                    #:pen-width [pen-width #f])
+  (define the-pen-width (or pen-width (send (send dc get-pen) get-width)))
+  (let ([uncropped-start-x (+ uncropped-pre-start-x dx (- (/ the-pen-width 2)))]
         [uncropped-start-y (+ uncropped-pre-start-y dy)]
-        [uncropped-end-x (+ uncropped-pre-end-x dx -0.5)]
+        [uncropped-end-x (+ uncropped-pre-end-x dx (- (/ the-pen-width 2)))]
         [uncropped-end-y (+ uncropped-pre-end-y dy)]
         [old-smoothed (send dc get-smoothing)])
     (let*-values ([(start-x start-y) (crop-to uncropped-start-x uncropped-start-y uncropped-end-x uncropped-end-y)]
                   [(end-x end-y) (crop-to uncropped-end-x uncropped-end-y uncropped-start-x uncropped-start-y)])
       (send dc set-smoothing 'aligned)
+      (define saved-pen (send dc get-pen))
+      (when pen-width
+        (send dc set-pen
+              (let ([p (send dc get-pen)])
+                (send the-pen-list find-or-create-pen 
+                      (send p get-color)
+                      pen-width
+                      (send p get-style)
+                      (send p get-cap)
+                      (send p get-join)))))
       (send dc draw-line start-x start-y end-x end-y)
+      (send dc set-pen saved-pen)
       (when (and (< smallest start-x largest)
                  (< smallest start-y largest))
         (send dc draw-ellipse 

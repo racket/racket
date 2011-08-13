@@ -190,12 +190,13 @@ If the namespace does not, they are colored the unbound color.
     
     (define-struct graphic (pos* locs->thunks draw-fn click-fn))
     
-    (define-struct arrow (start-x start-y end-x end-y) #:mutable)
+    (define-struct arrow (start-x start-y end-x end-y) #:mutable #:transparent)
     (define-struct (var-arrow arrow)
       (start-text start-pos-left start-pos-right
                   end-text end-pos-left end-pos-right
-                  actual? level)) ;; level is one of 'lexical, 'top-level, 'import
-    (define-struct (tail-arrow arrow) (from-text from-pos to-text to-pos))
+                  actual? level) ;; level is one of 'lexical, 'top-level, 'import
+      #:transparent)
+    (define-struct (tail-arrow arrow) (from-text from-pos to-text to-pos) #:transparent)
     
     ;; color : string
     ;; text: text:basic<%>
@@ -777,7 +778,8 @@ If the namespace does not, they are colored the unbound color.
                                [end-y   (arrow-end-y arrow)])
                            (unless (and (= start-x end-x)
                                         (= start-y end-y))
-                             (drracket:arrow:draw-arrow dc start-x start-y end-x end-y dx dy)
+                             (drracket:arrow:draw-arrow dc start-x start-y end-x end-y dx dy
+                                                        #:pen-width 2)
                              (when (and (var-arrow? arrow) (not (var-arrow-actual? arrow)))
                                (let-values ([(fw fh _d _v) (send dc get-text-extent "x")])
                                  (send dc draw-text "?"
@@ -787,7 +789,8 @@ If the namespace does not, they are colored the unbound color.
                       [old-pen   (send dc get-pen)]
                       [old-font  (send dc get-font)]
                       [old-text-foreground (send dc get-text-foreground)]
-                      [old-text-mode (send dc get-text-mode)])
+                      [old-text-mode (send dc get-text-mode)]
+                      [old-alpha (send dc get-alpha)])
                   (send dc set-font
                         (send the-font-list find-or-create-font
                               (send old-font get-point-size)
@@ -795,6 +798,7 @@ If the namespace does not, they are colored the unbound color.
                               'normal
                               'bold))
                   (send dc set-text-foreground templ-color)
+                  (send dc set-alpha 0.5)
                   (hash-for-each tacked-hash-table
                                  (λ (arrow v) 
                                     (when v 
@@ -811,63 +815,67 @@ If the namespace does not, they are colored the unbound color.
                                       (draw-arrow2 arrow))))
                   (when (and cursor-location
                              cursor-text)
-                    (let* ([arrow-record (hash-ref arrow-records cursor-text #f)])
-                      (when arrow-record
-                        (for ([ele (in-list (interval-map-ref arrow-record cursor-location null))])
-                          (cond [(var-arrow? ele)
-                                 (if (var-arrow-actual? ele)
-                                     (begin (send dc set-pen var-pen)
-                                            (send dc set-brush untacked-brush))
-                                     (begin (send dc set-pen templ-pen)
-                                            (send dc set-brush untacked-brush)))
-                                 (draw-arrow2 ele)]
-                                [(tail-arrow? ele)
-                                 (send dc set-pen tail-pen)
-                                 (send dc set-brush untacked-brush)
-                                 (for-each-tail-arrows draw-arrow2 ele)])))))
+                    (define arrow-record (hash-ref arrow-records cursor-text #f))
+                    (define tail-arrows '())
+                    (when arrow-record
+                      (for ([ele (in-list (interval-map-ref arrow-record cursor-location null))])
+                        (cond [(var-arrow? ele)
+                               (if (var-arrow-actual? ele)
+                                   (begin (send dc set-pen var-pen)
+                                          (send dc set-brush untacked-brush))
+                                   (begin (send dc set-pen templ-pen)
+                                          (send dc set-brush untacked-brush)))
+                               (draw-arrow2 ele)]
+                              [(tail-arrow? ele)
+                               (set! tail-arrows (cons ele tail-arrows))])))
+                    
+                    (send dc set-pen tail-pen)
+                    (send dc set-brush untacked-brush)
+                    (for-each-tail-arrows draw-arrow2 tail-arrows))
                   (send dc set-brush old-brush)
                   (send dc set-pen old-pen)
                   (send dc set-font old-font)
                   (send dc set-text-foreground old-text-foreground)
-                  (send dc set-text-mode old-text-mode)))
+                  (send dc set-text-mode old-text-mode)
+                  (send dc set-alpha old-alpha)))
               
               ;; do the drawing before calling super so that the arrows don't
               ;; cross the "#lang ..." line, if it is present.
               (super on-paint before dc left top right bottom dx dy draw-caret))
             
             ;; for-each-tail-arrows : (tail-arrow -> void) tail-arrow -> void
-            (define/private (for-each-tail-arrows f tail-arrow)
+            (define/private (for-each-tail-arrows f tail-arrows)
               ;; call-f-ht ensures that `f' is only called once per arrow
-              (define call-f-ht (make-hasheq))
+              (define call-f-ht (make-hash))
               
-              (define (for-each-tail-arrows/to/from tail-arrow-pos tail-arrow-text
-                                                    tail-arrow-other-pos tail-arrow-other-text)
-                
-                ;; traversal-ht ensures that we don't loop in the arrow traversal.
-                (let ([traversal-ht (make-hasheq)])
-                  (let loop ([tail-arrow tail-arrow])
-                    (unless (hash-ref traversal-ht tail-arrow (λ () #f))
-                      (hash-set! traversal-ht tail-arrow #t)
-                      (unless (hash-ref call-f-ht tail-arrow (λ () #f))
-                        (hash-set! call-f-ht tail-arrow #t)
-                        (f tail-arrow))
-                      (let* ([next-pos (tail-arrow-pos tail-arrow)]
-                             [next-text (tail-arrow-text tail-arrow)]
-                             [arrow-record (hash-ref arrow-records next-text #f)])
-                        (when arrow-record
-                          (for ([ele (in-list (interval-map-ref arrow-record next-pos null))])
-                            (cond
-                             [(tail-arrow? ele)
-                              (let ([other-pos (tail-arrow-other-pos ele)]
-                                    [other-text (tail-arrow-other-text ele)])
-                                (when (and (= other-pos next-pos)
-                                           (eq? other-text next-text))
-                                  (loop ele)))]))))))))
-              
-              (for-each-tail-arrows/to/from tail-arrow-to-pos tail-arrow-to-text
-                                            tail-arrow-from-pos tail-arrow-from-text)
-              (for-each-tail-arrows/to/from tail-arrow-from-pos tail-arrow-from-text
-                                            tail-arrow-to-pos tail-arrow-to-text))
+              (for ([tail-arrow (in-list tail-arrows)])
+                (define (for-each-tail-arrows/to/from tail-arrow-pos tail-arrow-text
+                                                      tail-arrow-other-pos tail-arrow-other-text)
+                  
+                  ;; traversal-ht ensures that we don't loop in the arrow traversal.
+                  (let ([traversal-ht (make-hasheq)])
+                    (let loop ([tail-arrow tail-arrow])
+                      (unless (hash-ref traversal-ht tail-arrow #f)
+                        (hash-set! traversal-ht tail-arrow #t)
+                        (unless (hash-ref call-f-ht tail-arrow #f)
+                          (hash-set! call-f-ht tail-arrow #t)
+                          (f tail-arrow))
+                        (let* ([next-pos (tail-arrow-pos tail-arrow)]
+                               [next-text (tail-arrow-text tail-arrow)]
+                               [arrow-record (hash-ref arrow-records next-text #f)])
+                          (when arrow-record
+                            (for ([ele (in-list (interval-map-ref arrow-record next-pos null))])
+                              (cond
+                                [(tail-arrow? ele)
+                                 (let ([other-pos (tail-arrow-other-pos ele)]
+                                       [other-text (tail-arrow-other-text ele)])
+                                   (when (and (= other-pos next-pos)
+                                              (eq? other-text next-text))
+                                     (loop ele)))]))))))))
+                (for-each-tail-arrows/to/from tail-arrow-to-pos tail-arrow-to-text
+                                              tail-arrow-from-pos tail-arrow-from-text)
+                (for-each-tail-arrows/to/from tail-arrow-from-pos tail-arrow-from-text
+                                              tail-arrow-to-pos tail-arrow-to-text)))
             
             (define last-known-mouse-x #f)
             (define last-known-mouse-y #f)
@@ -1079,7 +1087,7 @@ If the namespace does not, they are colored the unbound color.
                      [(tail-arrow? arrow)
                       (for-each-tail-arrows
                        (λ (arrow) (set! untack-arrows? (or untack-arrows? (arrow-tacked? arrow))))
-                       arrow)]))
+                       (list arrow))]))
                  arrows)
                 (for-each 
                  (λ (arrow)
@@ -1090,7 +1098,7 @@ If the namespace does not, they are colored the unbound color.
                       (for-each-tail-arrows
                        (λ (arrow) 
                          (hash-set! tacked-hash-table arrow (not untack-arrows?)))
-                       arrow)]))
+                       (list arrow))]))
                  arrows))
               (invalidate-bitmap-cache))
             
