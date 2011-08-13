@@ -6,19 +6,28 @@
 (provide render-download-page)
 (define (render-download-page [release current-release] [package 'racket])
   (define version (release-version release))
+  (define combo-style `("background-color: #e8e8e8; color: #808080;"))
   @center-div{
-    @h2{Download @(package->name package)
-                 v@version (@(release-date-string release))}
-    @div[id: "download_panel" style: "display: none;"]{
-      Platform:
-      @select[id: "platform_selector"
-              onchange: "selection_changed();"
-              onkeypress: "selection_changed();"]{
-        @(for/list ([i (in-list all-installers)]
-                    #:when (and (equal? release (installer-release i))
-                                (equal? package (installer-package i))))
-           (installer->page i 'render-option))}
-      @input[type: 'submit value: "Download" onclick: "do_jump();"]
+    @h2{Download @(package->name package) v@version
+        (@(release-date-string release))}
+    @div[id: "download_panel" align: "center" style: "display: none;"]{
+      @input[type: 'submit value: "Download" onclick: "do_jump();"
+             style: '("font-size: 200%; font-weight: bolder;"
+                      " letter-spacing: 0.2em;"
+                      " margin: 0.5ex 0 1ex 0; width: 100%;")]
+      @br
+      @div[style: combo-style]{
+        Platform:
+        @select[id: "platform_selector" style: combo-style
+                onfocus:    '("this.oldcolor=this.style.color;"
+                              " this.style.color='#000000';")
+                onblur:     `("this.style.color=this.oldcolor;")
+                onchange:   "selection_changed();"
+                onkeypress: "selection_changed();"]{
+          @(for/list ([i (in-list all-installers)]
+                      #:when (and (equal? release (installer-release i))
+                                  (equal? package (installer-package i))))
+             (installer->page i 'render-option))}}
       @|br hr|
       @div[align: "center"]{
         @(let ([links (list ((release-page release) "Release Notes")
