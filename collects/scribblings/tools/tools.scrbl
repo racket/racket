@@ -804,6 +804,26 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   The bitmap in the Check Syntax button on the DrRacket frame.
 }
 
+@section{Teaching Languages}
+
+The teaching language are implemented via the tools interface and thus
+not part of DrRacket proper, but one helper library is documented here.
+
+@defmodule[lang/htdp-langs-save-file-prefix]
+
+@defthing[htdp-save-file-prefix (listof string?)]{
+  These strings are used as the prefix in a file saved while using the teaching
+  languages. Each string is on a separate line in the saved file.
+}
+@defproc[(htdp-file-prefix? [ip input-port?]) boolean?]{
+  Determines if the contents of @racket[ip] is one of the possible prefixes that
+  DrRacket saves at the beginning of a teaching language file.
+  
+  In the case that this function returns @racket[#t], it consumes the entire prefix
+  from @racket[ip] (and discards it). In the case that this function returns
+  @racket[#f], it does not consume anything from @racket[ip].
+}
+
 @include-section["get-slash-extend.scrbl"]
 @include-section["unit.scrbl"]
 @include-section["language.scrbl"]

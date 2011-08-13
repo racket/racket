@@ -31,6 +31,8 @@
          "stepper-language-interface.rkt"
          "debugger-language-interface.rkt"
          "run-teaching-program.rkt"
+         "htdp-langs-save-file-prefix.rkt"
+         
          stepper/private/shared
 
          (only-in test-engine/scheme-gui make-formatter)
@@ -633,8 +635,9 @@
           (define/override (get-reader-module) reader-module)
           (define/override (get-metadata modname settings)
             (string-append
-             ";; The first three lines of this file were inserted by DrRacket. They record metadata\n"
-             ";; about the language level of this file in a form that our tools can easily process.\n"
+             (apply string-append
+                    (map (λ (x) (string-append x "\n"))
+                         htdp-save-file-prefix))
              (format "#reader~s~s\n"
                      reader-module
                      `((modname ,modname)
@@ -1005,7 +1008,9 @@
                        [(exn:srclocs? exn) 
                         ((exn:srclocs-accessor exn) exn)]
                        [(exn? exn) 
-                        (let ([cms (continuation-mark-set->list (exn-continuation-marks exn) teaching-languages-continuation-mark-key)])
+                        (let ([cms (continuation-mark-set->list 
+                                    (exn-continuation-marks exn)
+                                    teaching-languages-continuation-mark-key)])
 			  (cond
 			   ((not cms) '())
 			   ((findf (lambda (mark)
