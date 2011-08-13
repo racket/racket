@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer]))
 
@@ -32,6 +32,6 @@
 
 (provide (rename-out [-#%module-begin #%module-begin])
          require
-         (except-out (all-from-out scheme/base) #%module-begin)
+         (except-out (all-from-out racket/base) #%module-begin)
          types rep private utils
          (types-out convenience union filter-ops))

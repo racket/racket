@@ -1,8 +1,6 @@
 #lang s-exp "env-lang.rkt"
 
 (require
-
-
  (for-template
   (except-in racket -> ->* one-of/c)
   racket/unsafe/ops
@@ -739,6 +737,7 @@
 
 ;Section 14.2.5
 ;racket/file
+#|
 [file->string (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -String)]
 [file->bytes (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Bytes)]
 [file->value (->key -Pathlike #:mode (one-of/c 'binary 'text) #f Univ)]
@@ -773,6 +772,7 @@
         #:mode (one-of/c 'binary 'text) #f
         #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
         -Void)]
+|#
 
 [copy-directory/files (-> -Pathlike -Pathlike -Void)]
 [delete-directory/files (-> -Pathlike -Void)]
@@ -790,7 +790,7 @@
 [make-directory* (-> -Pathlike -Void)]
 [make-temporary-file (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)] -Path)]
 
-
+#|
 [get-preference
  (let ((use-lock-type Univ)
        (timeout-lock-there-type (-opt (-> -Path Univ)))
@@ -808,11 +808,12 @@
    (->key Sym (-> Univ) Univ (-opt -Pathlike)
           #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
           Univ)))]
+|#
 
 [put-preferences (->opt (-lst -Symbol) (-lst Univ) [(-> -Path Univ) (-opt -Pathlike)] -Void)]
 [preferences-lock-file-mode (-> (one-of/c 'exists 'file-lock))]
 
-
+#|
 [make-handle-get-preference-locked
  (let ((lock-there-type (-opt (-> -Path Univ))) (max-delay-type -Real))
   (cl->*
@@ -839,6 +840,7 @@
          #:delay -Real #f
          #:max-delay -Real #f
           a))]
+|#
 
 [make-lock-file-name (->opt -Pathlike [-Pathlike] -Pathlike)]
 
@@ -1139,6 +1141,7 @@
 [variable-reference->resolved-module-path (-> -Variable-Reference (-opt -Resolved-Module-Path))]
 [variable-reference->module-source (-> -Variable-Reference (Un Sym (-val #f) -Path))]
 [variable-reference->phase (-> -Variable-Reference -Nat)]
+[variable-reference-constant? (-> -Variable-Reference -Boolean)]
 
 
 
@@ -1401,6 +1404,7 @@
 
 [maybe-print-message (-String . -> . -Void)]
 
+#|
 [sort (-poly (a b) (cl->* ((-lst a) (a a . -> . B)
                           #:cache-keys? B #f
                           . ->key . (-lst a))
@@ -1408,7 +1412,7 @@
                           #:key (a . -> . b) #t
                           #:cache-keys? B #f
                           . ->key . (-lst a))))]
-
+|#
 
 
 ;; scheme/function
@@ -2083,7 +2087,9 @@
 [port-count-lines-enabled (-Param Univ B)]
 
 ;Section 12.1.5
+#|
 [open-input-file (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Input-Port)]
+
 [open-output-file
  (->key -Pathlike
         #:mode (one-of/c 'binary 'text) #f
@@ -2107,6 +2113,7 @@
                                    #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
                                    #:mode (one-of/c 'binary 'text) #f
                                    . ->key .  a))]
+
 [call-with-input-file* (-poly (a) (-Pathlike (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
 [call-with-output-file* (-poly (a) (-Pathlike (-Output-Port . -> . a)
                                    #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
@@ -2123,7 +2130,7 @@
                    #f
                    #:mode (one-of/c 'binary 'text) #f
                    a))]
-
+|#
 
 [port-try-file-lock? (-> (Un -Input-Port -Output-Port) (one-of/c 'shared 'exclusive) B)]
 [port-file-unlock (-> (Un -Input-Port -Output-Port) -Void)]
@@ -2174,6 +2181,7 @@
   (->opt (-> -Input-Port a) [-Input-Port] (-lst a))))]
 [port->string (->opt [-Input-Port] -String)]
 [port->bytes (->opt [-Input-Port] -Bytes)]
+#|
 [port->lines
  (cl->*
   (->key #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -String))
@@ -2183,10 +2191,11 @@
   (->key #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -Bytes))
   (->key -Input-Port #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -Bytes)))]
 
+
 [display-lines (cl->*
  ((-lst Univ) #:separator Univ #f . ->key . -Void)
  ((-lst Univ) -Output-Port #:separator Univ #f . ->key . -Void))]
-
+|#
 
 [call-with-output-string (-> (-> -Output-Port ManyUniv) -String)]
 [call-with-output-bytes (-> (-> -Output-Port ManyUniv) -Bytes)]
