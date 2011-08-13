@@ -11,6 +11,9 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
+(define IN-ERROR
+  "The input must be a number. Given: ~e\n")
+
 (define OUT-ERROR
   "The conversion function must produce a number; but it produced ~e")
 
@@ -231,28 +234,6 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
-;; make-reader-for-f : (number -> number) -> ( -> void)
-;; make-reader-for-f creates a function that reads numbers from a file
-;; converts them according to f, and prints the results
-;; effect: if any of the S-expressions in the file aren't numbers or
-;;         if any of f's results aren't numbers,
-;;         the function signals an error
-(define (make-reader-for f)
-  (displayln 'convertfile)
-  (local ((define (read-until-eof)
-            (let ([in (read)])
-              (cond
-                [(eof-object? in) (void)]
-                [(number? in) 
-                 (check-and-print (f in))
-                 (read-until-eof)]
-                [else (error 'convert "The input must be a number. Given: ~e\n" in)])))
-          (define (check-and-print out)
-            (cond
-              [(number? out) (printf "~s\n" out)]
-              [else (error 'convert OUT-ERROR out)])))
-    read-until-eof))
-
 ;; convert-file : str (num -> num) str -> void
 ;; to read a number from file in, to convert it with f, and to write it to out
 (define (convert-file in f out)
@@ -262,13 +243,46 @@
              "first" in)
   (check-proc 'convert-file f 1 "convert-file" "one argument")
   (check-arg 'convert-file (string? out) "string" "third" out)
-  (when (file-exists? out)
-    (delete-file out))
+  ;; [IPort -> Void] -> Void 
+  ;; perform the actual conversion on the file after optionally reading a prelude 
+  (define (convert-file prefix)
+    (with-output-to-file out #:exists 'replace 
+      (lambda () (with-input-from-file in (make-reader-for f prefix)))))
   (with-handlers ((exn:fail:read?
                    (lambda (x) 
                      (define message (exn-message x))
                      (define reader-exception? (regexp-match "#reader" message))
-                     (if reader-exception?
-                         (error 'convert-file CONVERT-FILE-MESSAGE)
-                         (raise x)))))
-    (with-output-to-file out (lambda () (with-input-from-file in (make-reader-for f))))))
+                     (cond
+                       [reader-exception? 
+                        (with-handlers ((exn:fail:read? 
+                                         (lambda (x)
+                                           (error 'convert-file CONVERT-FILE-MESSAGE))))
+                          (convert-file
+                           (lambda ()
+                             ;; this assumes that DrRacket adds three lines of header
+                             ;; material to files saved in a Menu-selected language 
+                             (read-line)
+                             (read-line)
+                             (read-line))))]
+                       [else (raise x)]))))
+    (convert-file void)))
+
+;; make-reader-for-f : [Number -> Number] [IPort -> Void] -> [ -> void]
+;; make-reader-for-f creates a function that reads numbers from a file
+;; converts them according to f, and prints the results
+;; effect: if any of the S-expressions in the file aren't numbers or
+;;         if any of f's results aren't numbers,
+;;         the function signals an error
+(define (make-reader-for f prefix)
+  (define (read-until-eof)
+    (prefix)
+    (let read-until-eof ()
+      (define in (read))
+      (cond
+        [(eof-object? in) (void)]
+        [(number? in)
+         (define out (f in))
+         (if (number? out) (printf "~s\n" out) (error 'convert OUT-ERROR out))
+         (read-until-eof)]
+        [else (error 'convert IN-ERROR in)])))
+  read-until-eof)
