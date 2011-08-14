@@ -1,10 +1,15 @@
 #lang racket/base
-(require racket/contract
+
+;; ---------------------------------------------------------------------------------------------------
+;; exports the header for a file saved from a drracket buffer in a menu-selected teaching language 
+
+(require racket/contract 
          racket/port)
 
 (provide/contract
  [htdp-save-file-prefix (listof string?)]
  [htdp-file-prefix? (-> input-port? boolean?)])
+
 
 (define htdp-save-file-prefix
   (list ";; The first three lines of this file were inserted by DrRacket. They record metadata"
@@ -27,8 +32,7 @@
     (cond
       [(null? prefix)
        (define l (read-line port 'any))
-       (and (string? l)
-            (regexp-match #rx"^#reader" l))]
+       (and (string? l) (pair? (regexp-match #rx"^#reader" l)))]
       [else
        (define l (read-line port 'any))
        (and (string? l)

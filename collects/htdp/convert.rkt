@@ -3,7 +3,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; functions that demonstrate how one and the same function can be used in three different contexts
 
-(require mzlib/etc lang/prim htdp/error)
+(require mzlib/etc lang/prim lang/htdp-langs-save-file-prefix htdp/error )
 
 (provide-higher-order-primitive convert-gui (f2c))
 (provide-higher-order-primitive convert-repl (f2c))
@@ -243,7 +243,7 @@
              "first" in)
   (check-proc 'convert-file f 1 "convert-file" "one argument")
   (check-arg 'convert-file (string? out) "string" "third" out)
-  ;; [IPort -> Void] -> Void 
+  ;; [ -> Void] -> Void 
   ;; perform the actual conversion on the file after optionally reading a prelude 
   (define (convert-file prefix)
     (with-output-to-file out #:exists 'replace 
@@ -254,20 +254,16 @@
                      (define reader-exception? (regexp-match "#reader" message))
                      (cond
                        [reader-exception? 
-                        (with-handlers ((exn:fail:read? 
-                                         (lambda (x)
-                                           (error 'convert-file CONVERT-FILE-MESSAGE))))
+                        (with-handlers ((exn:fail:read? (lambda (y) (raise x))))
                           (convert-file
                            (lambda ()
-                             ;; this assumes that DrRacket adds three lines of header
-                             ;; material to files saved in a Menu-selected language 
-                             (read-line)
-                             (read-line)
-                             (read-line))))]
+			     (unless (htdp-file-prefix? (current-input-port)) (raise x)))))]
                        [else (raise x)]))))
     (convert-file void)))
 
-;; make-reader-for-f : [Number -> Number] [IPort -> Void] -> [ -> void]
+(define *debug (current-output-port))
+
+;; make-reader-for-f : [Number -> Number] [ -> Void] -> [ -> void]
 ;; make-reader-for-f creates a function that reads numbers from a file
 ;; converts them according to f, and prints the results
 ;; effect: if any of the S-expressions in the file aren't numbers or
