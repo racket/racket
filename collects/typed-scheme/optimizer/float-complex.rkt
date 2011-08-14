@@ -15,7 +15,7 @@
 
 
 ;; contains the bindings which actually exist as separate bindings for each component
-;; associates identifiers to lists (real-binding imag-binding)
+;; associates identifiers to lists (real-binding imag-binding orig-binding-occurrence)
 (define unboxed-vars-table (make-free-id-table))
 
 ;; associates the names of functions with unboxed args (and whose call sites have to
@@ -312,12 +312,17 @@
   (pattern v:id
            #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
            #:when (syntax->datum #'unboxed-info)
-           #:with real-binding (car  (syntax->list #'unboxed-info))
-           #:with imag-binding (cadr (syntax->list #'unboxed-info))
+           #:with real-binding (car   (syntax->list #'unboxed-info))
+           #:with imag-binding (cadr  (syntax->list #'unboxed-info))
+           #:with orig-binding (caddr (syntax->list #'unboxed-info))
            #:with (bindings ...)
            (begin (log-optimization "leave var unboxed"
                                     complex-unboxing-opt-msg
                                     this-syntax)
+                  ;; we need to introduce both the binding and the use at the
+                  ;; same time
+                  (add-disappeared-use (syntax-local-introduce #'v))
+                  (add-disappeared-binding (syntax-local-introduce #'orig-binding))
                   #'()))
 
   ;; else, do the unboxing here
@@ -524,14 +529,19 @@
            #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
            #:when (syntax->datum #'unboxed-info)
            #:when (subtypeof? #'v -FloatComplex)
-           #:with real-binding (car  (syntax->list #'unboxed-info))
-           #:with imag-binding (cadr (syntax->list #'unboxed-info))
+           #:with real-binding (car   (syntax->list #'unboxed-info))
+           #:with imag-binding (cadr  (syntax->list #'unboxed-info))
+           #:with orig-binding (caddr (syntax->list #'unboxed-info))
            #:with (bindings ...) #'()
            ;; unboxed variable used in a boxed fashion, we have to box
            #:with opt
            (begin (log-optimization "unboxed complex variable"
                                     complex-unboxing-opt-msg
                                     this-syntax)
+                  ;; we need to introduce both the binding and the use at the
+                  ;; same time
+                  (add-disappeared-use (syntax-local-introduce #'v))
+                  (add-disappeared-binding (syntax-local-introduce #'orig-binding))
                   (reset-unboxed-gensym)
                   #'(unsafe-make-flrectangular real-binding imag-binding))))
 

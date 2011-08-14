@@ -57,7 +57,8 @@
                          (type-alias-env-map (lambda (id ty)
                                                (cons (syntax-e id) ty)))))]
                      ;; reinitialize disappeared uses
-                     [disappeared-use-todo null])
+                     [disappeared-use-todo      null]
+                     [disappeared-bindings-todo null])
         (do-time "Initialized Envs")
         (let ([fully-expanded-stx (disarm* (local-expand stx expand-ctxt null))])
           (when (show-input?)

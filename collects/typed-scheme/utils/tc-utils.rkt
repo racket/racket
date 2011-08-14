@@ -182,9 +182,11 @@ don't depend on any other portion of the system
 
 ;; list of syntax objects that should count as disappeared uses
 (define disappeared-use-todo (make-parameter '()))
-
 (define (add-disappeared-use t)
   (disappeared-use-todo (cons t (disappeared-use-todo))))
+(define disappeared-bindings-todo (make-parameter '()))
+(define (add-disappeared-binding t)
+  (disappeared-bindings-todo (cons t (disappeared-bindings-todo))))
 
 ;; environment constructor
 (define-syntax (make-env stx)

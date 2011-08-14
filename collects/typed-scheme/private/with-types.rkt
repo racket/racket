@@ -83,7 +83,8 @@
                      (type-alias-env-map (lambda (id ty)
                                            (cons (syntax-e id) ty)))))]
                  ;; reinitialize disappeared uses
-                 [disappeared-use-todo null]
+                 [disappeared-use-todo      null]
+                 [disappeared-bindings-todo null]
                  ;; for error reporting
                  [orig-module-stx stx]
                  [expanded-module-stx expanded-body])
@@ -99,7 +100,11 @@
                 [(ex-cnt ...) ex-cnts]
                 [(region-cnt ...) region-cnts]
                 [body (maybe-optimize expanded-body)]
-                [check-syntax-help (syntax-property #'(void) 'disappeared-use (disappeared-use-todo))])
+                [check-syntax-help (syntax-property
+                                    (syntax-property
+                                     #'(void)
+                                     'disappeared-binding (disappeared-bindings-todo))
+                                    'disappeared-use (disappeared-use-todo))])
     (if expr?
         (quasisyntax/loc stx
           (begin check-syntax-help

@@ -139,7 +139,7 @@
                   (for ((v (in-list (syntax->list #'(opt-candidates.id ...))))
                         (r (in-list (syntax->list #'(opt-candidates.real-binding ...))))
                         (i (in-list (syntax->list #'(opt-candidates.imag-binding ...)))))
-                       (dict-set! unboxed-vars-table v (list r i)))
+                       (dict-set! unboxed-vars-table v (list r i v)))
                   ;; in the case where no bindings are unboxed, we create a let
                   ;; that is equivalent to the original, but with all parts
                   ;; optimized
@@ -321,7 +321,7 @@
 
                        [(memq i to-unbox) ; we unbox the current param, add to the table
                         (dict-set! unboxed-vars-table (car params)
-                                   (list (car real-parts) (car imag-parts)))
+                                   (list (car real-parts) (car imag-parts) (car params)))
                         (loop (cdr params) (add1 i)
                               (cdr real-parts) (cdr imag-parts)
                               boxed)]
