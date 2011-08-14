@@ -19,7 +19,7 @@ precise details to @|Racket| and other reference manuals.
 
 @include-section["welcome.scrbl"]
 
-@include-section["editor.scrbl"]
+@include-section["other-editor.scrbl"]
 
 @include-section["to-scheme.scrbl"]
 

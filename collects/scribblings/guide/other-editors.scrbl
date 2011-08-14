@@ -1,7 +1,7 @@
 #lang scribble/manual
 
-@title{Using Racket with Your Editor of Choice}
-@author["Vincent St-Amour" "Asumu Takikawa" "Jon Rafkind"]
+@title[#:tag "other-editors"]{Using Racket with Your Editor of Choice}
+@; author["Vincent St-Amour" "Asumu Takikawa" "Jon Rafkind"]
 
 Do you want to program with Racket but would rather use your editor of choice
 instead of DrRacket? Then this page is for you.
