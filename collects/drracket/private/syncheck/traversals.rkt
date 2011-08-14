@@ -892,7 +892,7 @@
     ;; finds the filename corresponding to the require in stx
     (define (get-require-filename datum user-namespace user-directory)
       (parameterize ([current-namespace user-namespace]
-                     [current-directory user-directory]
+                     [current-directory (or user-directory (current-directory))]
                      [current-load-relative-directory user-directory])
         (let* ([rkt-path/mod-path
                 (with-handlers ([exn:fail? (λ (x) #f)])

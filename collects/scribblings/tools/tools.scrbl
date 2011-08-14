@@ -619,9 +619,9 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                  (-> void?))]{
   This function creates some local state about a traversal of syntax objects
   and returns two functions. The first one should be called with each of the
-  syntax objects that make up a program (there will be only one if the program
-  is a module) and then the second one should be called to indicate there are no
-  more. 
+  (fully expanded) syntax objects that make up a program (there will be only
+  one if the program is a module) and then the second one should be called to
+  indicate there are no more. 
   
   The optional argument to the first function is called for each sequence
   of binding identifiers encountered in @racket[define-values], @racket[define-syntaxes],
@@ -630,7 +630,8 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   During the dynamic extent of the call to the two result functions, the value
   of the @racket[current-annotations] parameter is consulted and various
   methods are invoked in the corresponding object (if any), to indicate
-  what has been found in the syntax object.
+  what has been found in the syntax object. These methods will only be called
+  if the syntax objects have source locations.
 }
 
 @defparam[current-annotations ca (or/c #f (is-a?/c syncheck-annotations<%>))]{
@@ -760,6 +761,10 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   Supplies all of the methods in @racket[syncheck-annotations<%>]
   with default behavior. Be sure to use this mixin to future-proof
   your code and then override the methods you're interested in.
+  
+  The @racket[syncheck:find-source-object] method ignores its arguments
+  and returns @racket[#f];
+  all of the other methods ignore their arguments and return @racket[(void)].
 }
 
 @(define-syntax-rule 
@@ -767,7 +772,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
    (begin @defidform[x]{Bound to an identifier created with @racket[define-local-member-name]
                                                            that is used in @racket[syncheck-annotations<%>].}
           ...))
-@syncheck-method-id[syncheck:find-source-editor
+@syncheck-method-id[syncheck:find-source-object
                     syncheck:add-background-color
                     syncheck:add-require-open-menu
                     syncheck:add-docs-menu
