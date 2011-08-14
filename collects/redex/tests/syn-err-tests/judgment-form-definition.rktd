@@ -1,3 +1,7 @@
+(#rx"define-judgment-form:.*expression context"
+ ([illegal-def (define-judgment-form L #:mode (J) [(J)])])
+ (values illegal-def))
+
 (#rx"expected an identifier defined by define-language"
  ([not-lang q])
  (define-judgment-form not-lang))

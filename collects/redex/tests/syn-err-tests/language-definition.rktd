@@ -1,3 +1,7 @@
+(#rx"define-language:.*expression context"
+ ([illegal-def (define-language L)])
+ (values illegal-def))
+
 (#rx"define-language:.*unquote disallowed"
  ([illegal-unquote ,3])
  (let ()

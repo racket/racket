@@ -1331,6 +1331,10 @@
     (map (λ (x) (to-lw/proc (datum->syntax #f (cdr (syntax-e x)) x)))
          (syntax->list #'(lhs-for-lw ...)))))
 
+(define-for-syntax (not-expression-context stx)
+  (when (eq? (syntax-local-context) 'expression)
+    (raise-syntax-error #f "not allowed in an expression context" stx)))
+
 ;                                                                                                          
 ;                                                                                                          
 ;                                                                                                          
@@ -1369,6 +1373,7 @@
        (internal-define-metafunction stx #'prev #'rest #f)]))
   
   (define (internal-define-metafunction orig-stx prev-metafunction stx relation?)
+    (not-expression-context orig-stx)
     (syntax-case stx ()
       [(lang . rest)
        (let ([syn-error-name (if relation?
@@ -1532,6 +1537,7 @@
                                    (syntax->list #'(original-names ...)))))))))))))))]))
 
   (define (define-judgment-form/proc stx)
+    (not-expression-context stx)
     (syntax-case stx ()
       [(def-form-id lang . body)
        (let ([lang #'lang]
@@ -2261,6 +2267,7 @@
   parsed)
 
 (define-syntax (define-language stx)
+  (not-expression-context stx)
   (syntax-case stx ()
     [(form-name lang-name . nt-defs)
      (begin
