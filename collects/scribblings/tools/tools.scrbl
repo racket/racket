@@ -804,6 +804,35 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   The bitmap in the Check Syntax button on the DrRacket frame.
 }
 
+@subsection{Disappeared uses and bindings}
+
+@section-index["disappeared-use" "disappeared-binding"]
+
+Check Syntax collects the values of the 
+@racket[syntax-property]s named 
+@racket['disappeared-use] and
+@racket['disappeared-binding] and uses them to add
+additional arrows to the program text. These properties are
+intended for use when a macro discards identifiers that,
+from the programmers perspective, should be binding each other.
+
+For example, here is a macro that discards its arguments, but
+adds properties to the result syntax object so the arguments
+are treated as a binding/bound pair by Check Syntax.
+
+@racketblock[
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ id1 id2)
+       (and (identifier? #'id1) (identifier? #'id2))
+       (syntax-property
+        (syntax-property
+         #'1
+         'disappeared-use (list (syntax-local-introduce #'id1)))
+        'disappeared-binding (list (syntax-local-introduce #'id2)))]))]
+
+See also @racket[current-recorded-disappeared-uses].
+
 @section{Teaching Languages}
 
 The teaching language are implemented via the tools interface and thus
