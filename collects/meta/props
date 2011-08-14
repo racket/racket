@@ -1262,6 +1262,8 @@ path/s is either such a string or a list of them.
 "collects/scribble" responsible (mflatt eli)
 "collects/scribble/html" responsible (eli)
 "collects/scribble/html.rkt" responsible (eli)
+"collects/scribble/jfp/lang.rkt" drdr:command-line (mzc *)
+"collects/scribble/lncs/lang.rkt" drdr:command-line (mzc *)
 "collects/scribble/run.rkt" drdr:command-line (mzc *)
 "collects/scribble/text" responsible (eli)
 "collects/scribble/text.rkt" responsible (eli)
