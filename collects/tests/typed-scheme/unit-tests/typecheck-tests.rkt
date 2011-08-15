@@ -5,7 +5,7 @@
          (for-template scheme/base))
 (require (private type-annotation parse-type)
          (base-env prims
-                   base-types-extra base-special-env
+                   base-types-extra
                    base-env-indexing base-structs)
          (typecheck typechecker)
          (rep type-rep filter-rep object-rep)
@@ -20,18 +20,14 @@
          (env type-name-env type-env-structs init-envs)
          rackunit rackunit/text-ui
          syntax/parse
-         (for-syntax (utils tc-utils)
+         (for-syntax (utils tc-utils) racket/file racket/port
                      (typecheck typechecker)
                      (env global-env)
-                     (base-env #;base-env #;base-env-numeric
-                               base-env-indexing base-special-env))
-         racket/file
+                     (base-env base-env-indexing))
+         racket/file racket/port
          (for-template
-
-            (base-env #;base-env base-types base-types-extra
-                                 #;base-env-numeric
-                                 base-special-env
-                                 base-env-indexing))
+          racket/file racket/port
+            (base-env base-types base-types-extra base-env-indexing))
          (for-syntax syntax/kerncase syntax/parse))
 
 (require (prefix-in b: (base-env base-env))
@@ -39,7 +35,7 @@
 
 (provide typecheck-tests g tc-expr/expand)
 
-(b:init) (n:init) (initialize-structs) (initialize-indexing) (initialize-special)
+(b:init) (n:init) (initialize-structs) (initialize-indexing)
 
 (define N -Number)
 (define B -Boolean)
@@ -864,15 +860,7 @@
               (-lst -Number)]
         [tc-err (list (values 1 2))]
 
-        #| ;; should work but don't (test harness problems)
-        [tc-e (for/list ([(k v) (in-hash #hash((1 . 2)))]) 0) (-lst -Zero)]
-        [tc-e (in-list (list 1 2 3)) (-seq -Integer)]
-        [tc-e (in-vector (vector 1 2 3)) (-seq -Integer)]
-        |#
-        [tc-e (in-hash #hash((1 . 2))) (-seq -Integer -Integer)]
-        [tc-e (in-hash-keys #hash((1 . 2))) (-seq -Integer)]
-        [tc-e (in-hash-values #hash((1 . 2))) (-seq -Integer)]
-
+ 
         ;;Path tests
         (tc-e (bytes->path #"foo" 'unix) -SomeSystemPath)
         (tc-e (bytes->path #"foo") -Path)
@@ -1092,46 +1080,7 @@
         (tc-e (filesystem-root-list) (-lst -Path))
 
 
-        (tc-e (file->string "tmp") -String)
-        (tc-e (file->string "tmp" #:mode 'binary) -String)
-        (tc-e (file->string "tmp" #:mode 'text) -String)
-
-        (tc-e (file->bytes "tmp") -Bytes)
-        (tc-e (file->bytes "tmp" #:mode 'binary) -Bytes)
-        (tc-e (file->bytes "tmp" #:mode 'text) -Bytes)
-
-        (tc-e (file->list "tmp") (-lst Univ))
-        (tc-e ((inst file->list Any) "tmp" #:mode 'binary) (-lst Univ))
-        (tc-e ((inst file->list Any) "tmp" #:mode 'text) (-lst Univ))
-
-        (tc-e (file->list "tmp" (lambda (x) "string")) (-lst -String))
-        (tc-e ((inst file->list String) "tmp" (lambda (x) "string") #:mode 'binary) (-lst -String))
-        (tc-e ((inst file->list String) "tmp" (lambda (x) "string") #:mode 'text) (-lst -String))
-
-        (tc-e (file->lines "tmp") (-lst -String))
-        (tc-e (file->lines "tmp" #:mode 'text) (-lst -String))
-        (tc-e (file->lines "tmp" #:line-mode (first (shuffle '(linefeed return return-linefeed any any-one)))
-                                 #:mode 'binary)  (-lst -String))
-
-
-        (tc-e (file->bytes-lines "tmp") (-lst -Bytes))
-        (tc-e (file->bytes-lines "tmp" #:mode 'text) (-lst -Bytes))
-        (tc-e (file->bytes-lines "tmp" #:line-mode (first (shuffle '(linefeed return return-linefeed any any-one)))
-                                 #:mode 'binary)  (-lst -Bytes))
-
-        (tc-e (display-to-file "a" "tmp" #:mode (if (= 1 2) 'binary 'text)
-                                #:exists (first (shuffle '(error append update replace truncate truncate/replace))))
-              -Void)
-
-        (tc-e (write-to-file "a" "tmp" #:mode (if (= 1 2) 'binary 'text)
-                                #:exists (first (shuffle '(error append update replace truncate truncate/replace))))
-              -Void)
-
-
-        (tc-e (display-lines-to-file (list 2 'esha "esht") "tmp" #:separator #f
-                                #:mode (if (= 1 2) 'binary 'text)
-                                #:exists (first (shuffle '(error append update replace truncate truncate/replace))))
-              -Void)
+        
 
         (tc-e (copy-directory/files "tmp/src" "tmp/dest") -Void)
         (tc-e (delete-directory/files "tmp/src") -Void)
@@ -1152,18 +1101,11 @@
         (tc-e (make-temporary-file "ee~a" 'directory) -Path)
         (tc-e (make-temporary-file "ee~a" "temp" "here") -Path)
 
-        (tc-e (get-preference 'pref (lambda () 'error) 'timestamp #f #:use-lock? #t #:timeout-lock-there #f #:lock-there #f) Univ)
+        
         (tc-e (put-preferences (list 'sym 'sym2) (list 'v1 'v2)) -Void)
 
         (tc-e (preferences-lock-file-mode) (one-of/c 'exists 'file-lock))
 
-        (tc-e (make-handle-get-preference-locked .3 'sym (lambda () 'eseh) 'timestamp #f #:lock-there #f #:max-delay .45)
-              (t:-> -Pathlike ManyUniv))
-
-        (tc-e (call-with-file-lock/timeout #f 'exclusive (lambda () 'res) (lambda () 'err)
-                #:lock-file "lock"
-                #:delay .01
-                #:max-delay .2) (one-of/c 'res 'err))
 
         (tc-e (make-lock-file-name "tmp.file") -Pathlike)
         (tc-e (make-lock-file-name "tmp.dir" "tmp.file") -Pathlike)
@@ -1193,10 +1135,7 @@
         (tc-e (syntax-span #'here) (-opt -Nat))
 
 
-        ;Parameters
-        (tc-e (make-derived-parameter current-input-port
-                                      (lambda: ((s : String)) (open-input-file s))
-                                      object-name) (-Param -String Univ))
+        ;Parameters        
         (tc-e (parameter-procedure=? current-input-port current-output-port) B)
 
         ;Namespaces
@@ -1357,9 +1296,6 @@
                   (promise-running? p)) B)
         |#
 
-        ;; excetion handling
-        [tc-e (with-handlers ([void (λ (x) (values 0 0))]) (values  "" ""))
-              #:ret (ret (list (t:Un -Zero -String) (t:Un -Zero -String)))]
 
         ;Kernel Structs, check that their hidden identifiers type
         (tc-e (void exn

@@ -36,7 +36,9 @@
                   type-annotation-tests
                   module-tests
                   fv-tests
-                  contract-tests)])
+                  contract-tests
+                  ;; this uses dynamic require because the file fails to compile when there's a test failure
+                  (λ () ((dynamic-require "unit-tests/special-env-typecheck-tests.rkt" 'typecheck-special-tests))))])
      (f))))
 
 
