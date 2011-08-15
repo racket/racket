@@ -849,6 +849,17 @@
               (error "bad")
               (equal? (list* w z) (list* z w))))
 
+;; Ok to move `box' past a side effect:
+(test-comp '(let ([h (box 0.0)])
+              (list (printf "hi\n") h))
+           '(list (printf "hi\n") (box 0.0)))
+
+;; Don't move `box' past a `lambda':
+(test-comp '(let ([h (box 0.0)])
+              (lambda () h))
+           '(lambda () (box 0.0))
+           #f)
+
 (test-comp '(let ([x 1][y 2]) x)
 	   '1)
 (test-comp '(let ([x 1][y 2]) (+ y x))

@@ -118,6 +118,7 @@ typedef struct Scheme_Once_Used {
 
   int used;
   int delta;
+  int cross_lambda;
   Optimize_Info *info;
 
   struct Scheme_Once_Used *next;
@@ -522,26 +523,29 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
  return 0;
 }
 
-static int is_movable_prim(Scheme_Object *rator, int n)
+static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
 {
   if (rator && SCHEME_PRIMP(rator)) {
     if (((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)
       return 1;
   }
 
-  if (SAME_OBJ(scheme_void_proc, rator)
-      || SAME_OBJ(scheme_list_proc, rator)
-      || (SAME_OBJ(scheme_cons_proc, rator) && (n == 2))
-      || SAME_OBJ(scheme_list_star_proc, rator)
-      || SAME_OBJ(scheme_vector_proc, rator)
-      || SAME_OBJ(scheme_vector_immutable_proc, rator)
-      || (SAME_OBJ(scheme_box_proc, rator) && (n == 1)))
+  if (SAME_OBJ(scheme_void_proc, rator))
+    return 1;
+
+  if (!cross_lambda
+      && (SAME_OBJ(scheme_list_proc, rator)
+          || (SAME_OBJ(scheme_cons_proc, rator) && (n == 2))
+          || SAME_OBJ(scheme_list_star_proc, rator)
+          || SAME_OBJ(scheme_vector_proc, rator)
+          || SAME_OBJ(scheme_vector_immutable_proc, rator)
+          || (SAME_OBJ(scheme_box_proc, rator) && (n == 1))))
     return 1;
 
   return 0;
 }
 
-static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delta, int fuel)
+static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delta, int cross_lambda, int fuel)
 /* An expression that can't necessarily be constant-folded,
    but can be delayed because it has no side-effects (or is unsafe);
    also not sensitive to being in tail position */
@@ -560,25 +564,25 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delt
     }
     break;
   case scheme_application_type:
-    if (is_movable_prim(((Scheme_App_Rec *)expr)->args[0], ((Scheme_App_Rec *)expr)->num_args)) {
+    if (is_movable_prim(((Scheme_App_Rec *)expr)->args[0], ((Scheme_App_Rec *)expr)->num_args, cross_lambda)) {
       int i;
       for (i = ((Scheme_App_Rec *)expr)->num_args; i--; ) {
-        if (!movable_expression(((Scheme_App_Rec *)expr)->args[i+1], info, delta, fuel - 1))
+        if (!movable_expression(((Scheme_App_Rec *)expr)->args[i+1], info, delta, cross_lambda, fuel - 1))
           return 0;
       }
       return 1;
     }
     break;
   case scheme_application2_type:
-    if (is_movable_prim(((Scheme_App2_Rec *)expr)->rator, 1)) {
-      if (movable_expression(((Scheme_App2_Rec *)expr)->rand, info, delta, fuel - 1))
+    if (is_movable_prim(((Scheme_App2_Rec *)expr)->rator, 1, cross_lambda)) {
+      if (movable_expression(((Scheme_App2_Rec *)expr)->rand, info, delta, cross_lambda, fuel - 1))
         return 1;
     }
     break;
   case scheme_application3_type:
-    if (is_movable_prim(((Scheme_App3_Rec *)expr)->rator, 2)) {
-      if (movable_expression(((Scheme_App3_Rec *)expr)->rand1, info, delta, fuel - 1)
-          && movable_expression(((Scheme_App3_Rec *)expr)->rand2, info, delta, fuel - 1))
+    if (is_movable_prim(((Scheme_App3_Rec *)expr)->rator, 2, cross_lambda)) {
+      if (movable_expression(((Scheme_App3_Rec *)expr)->rand1, info, delta, cross_lambda, fuel - 1)
+          && movable_expression(((Scheme_App3_Rec *)expr)->rand2, info, delta, cross_lambda, fuel - 1))
         return 1;
     }
     break;
@@ -4902,7 +4906,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
           if (((o->vclock == info->vclock)
                && single_valued_noncm_expression(o->expr, 5))
               || ((o->vclock != info->vclock)
-                  && movable_expression(o->expr, info, o->delta, 5))) {
+                  && movable_expression(o->expr, info, o->delta, o->cross_lambda, 5))) {
             val = scheme_optimize_clone(1, o->expr, info, o->delta, 0);
             if (val) {
               info->size -= 1;
@@ -5797,7 +5801,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
                                               int disrupt_single_use, int *is_mutated, int just_test)
 {
   Scheme_Object *p, *n;
-  int delta = 0;
+  int delta = 0, orig_j = j;
 
   while (info) {
     if (info->flags & SCHEME_LAMBDA_FRAME)
@@ -5871,6 +5875,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 
         o->delta = delta;
         o->info = info;
+        o->cross_lambda = (j != orig_j);
         return (Scheme_Object *)o;
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_local_type)) {
 	int pos;
