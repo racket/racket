@@ -72,25 +72,25 @@ language [*]:
      (define-values (f) 
        (with-continuation-mark "#<debug-key-struct>"
          (#%plain-lambda () (#%plain-app "#<procedure:...rivate/marks.rkt:70:2>"))
-         (#%plain-app 
+         (#%plain-app
           call-with-values
-          (#%plain-lambda () 
+          (#%plain-lambda ()
             (with-continuation-mark "#<debug-key-struct>"
-              (#%plain-lambda () (#%plain-app 
+              (#%plain-lambda () (#%plain-app
                                   "#<procedure:...rivate/marks.rkt:70:2>"
                                   (#%plain-lambda () beginner:+)))
               (#%plain-app
                "#<procedure:closure-storing-proc>"
-               (#%plain-lambda (x) 
-                 (begin 
-                   (let-values (((arg0-1643 arg1-1644 arg2-1645) 
+               (#%plain-lambda (x)
+                 (begin
+                   (let-values ([(arg0-1643 arg1-1644 arg2-1645) 
                                  (#%plain-app
                                   values
                                   "#<*unevaluated-struct*>"
                                   "#<*unevaluated-struct*>"
-                                  "#<*unevaluated-struct*>")))
+                                  "#<*unevaluated-struct*>")])
                      (with-continuation-mark "#<debug-key-struct>"
-                       (#%plain-lambda () 
+                       (#%plain-lambda ()
                          (#%plain-app
                           "#<procedure:...rivate/marks.rkt:70:2>"
                           (#%plain-lambda () beginner:+)
@@ -161,12 +161,12 @@ language [*]:
                     #f
                     (#%plain-lambda () (#%plain-app list f))))))))
 
-(let-values (((done-already?) (quote #f)))
-  (#%app dynamic-wind void 
+(let-values ([(done-already?) (quote #f)])
+  (#%app dynamic-wind void
          (lambda () (#%app dynamic-require (quote (quote #%htdp)) (quote #f))) 
-         (lambda () (if done-already? 
+         (lambda () (if done-already?
                         (#%app void)
-                        (let-values () 
+                        (let-values ()
                           (set! done-already? (quote #t))
                           (#%app test*)
                           (#%app current-namespace

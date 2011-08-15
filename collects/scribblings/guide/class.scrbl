@@ -742,8 +742,8 @@ applied first. Then the method-implementing mixins can use
                 (class % ....
                   (define/public (get-color) (void))))
               (lambda (get-color get-price %) ....
-                 (class % ....
-                   (define/override (get-color) 'black))))
+                (class % ....
+                  (define/override (get-color) 'black))))
         (list (local-member-name-key get-price)
               (lambda (get-price get-color %) ....
                 (class % ....
@@ -752,7 +752,7 @@ applied first. Then the method-implementing mixins can use
                 (class % ....
                   (inherit get-color)
                   (define/override (get-price)
-		    .... (get-color) ....))))))
+                    .... (get-color) ....))))))
 ]
 
 With this trait encoding, @racket[trait-alias] adds a new method with
@@ -789,11 +789,11 @@ Using this form in conjunction with trait operators such as
     (define/public (get-color) 'red)))
 
 (define spots+stripes-trait
-  (trait-sum 
-   (trait-exclude (trait-alias spots-trait 
+  (trait-sum
+   (trait-exclude (trait-alias spots-trait
                                get-color get-spots-color)
-                  get-color) 
-   (trait-exclude (trait-alias stripes-trait 
+                  get-color)
+   (trait-exclude (trait-alias stripes-trait
                                get-color get-stripes-color)
                   get-color)
    (trait

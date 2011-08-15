@@ -95,17 +95,22 @@ represented as an X-expression in Racket, by using
 
 @racketblock[
  (define xexpr/c
-  (flat-rec-contract 
-   xexpr
-   (or/c string?
-         (or/c (cons/c symbol? (listof xexpr))
-               (cons/c symbol?
-                       (cons/c (listof (list/c symbol? string?))
-                               (listof xexpr)))))))]
+   (flat-rec-contract
+    xexpr
+    (or/c string?
+          (or/c (cons/c symbol? (listof xexpr))
+                (cons/c symbol?
+                        (cons/c (listof (list/c symbol? string?))
+                                (listof xexpr)))))))]
 
 For example:
 
-The HTML @tt{hello} is represented as @racket["hello"]. Strings are automatically escaped when output. This guarantees valid HTML. Therefore, the value @racket["<b>Unfinished tag"] is rendered as @tt{&lt;b&gt;Unfinished tag} not @tt{<b>Unfinished tag}. Similarly, @racket["<i>Finished tag</i>"] is rendered as @tt{&lt;i&gt;Finished tag&lt;/i&gt;} not @tt{<i>Finished tag</i>}.
+The HTML @tt{hello} is represented as @racket["hello"].  Strings are
+automatically escaped when output.  This guarantees valid HTML.
+Therefore, the value @racket["<b>Unfinished tag"] is rendered as
+@tt{&lt;b&gt;Unfinished tag} not @tt{<b>Unfinished tag}.  Similarly,
+@racket["<i>Finished tag</i>"] is rendered as
+@tt{&lt;i&gt;Finished tag&lt;/i&gt;} not @tt{<i>Finished tag</i>}.
 
 @tt{<p>This is an example</p>} is
 
@@ -400,10 +405,10 @@ web-server/insta
   (local [(define (response-generator embed/url)
             (response/xexpr
              `(html (head (title "Counting example"))
-                    (body 
+                    (body
                      (a ((href ,(embed/url next-number-handler)))
                         ,(number->string n))))))
-                    
+
           (define (next-number-handler request)
             (show-counter (+ n 1) request))]
 

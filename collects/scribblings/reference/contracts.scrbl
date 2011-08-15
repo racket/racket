@@ -997,7 +997,7 @@ is bound to vectors of two elements, the exported identifier and a
 syntax object for the expression that produces the contract controlling
 the export.
 }
-                                      
+
 @subsection{Nested Contract Boundaries}
 @defmodule*/no-declare[(racket/contract/region)]
 @declare-exporting-ctc[racket/contract/region]
@@ -1091,7 +1091,7 @@ The @racket[define-struct/contract] form only allows a subset of the
 
 @subsection{Low-level Contract Boundaries}
 @declare-exporting-ctc[racket/contract/base]
-                                                       
+
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)
            (contract contract-expr to-protect-expr 
@@ -1808,7 +1808,7 @@ are below):
 @; ------------------------------------------------------------------------
 
 @subsection{Utilities for Building New Combinators}
-                                               
+
 @defproc[(contract-stronger? [x contract?] [y contract?]) boolean?]{
   Returns @racket[#t] if the contract @racket[x] accepts either fewer 
   or the same number of values as @racket[y] does.
@@ -1845,7 +1845,7 @@ contract holds.}
 Produces the first-order test used by @racket[or/c] to match values to
 higher-order contracts.
 }
-                                               
+
 @section{Contract Utilities}
 
 @declare-exporting-ctc[racket/contract/base]

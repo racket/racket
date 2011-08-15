@@ -197,35 +197,35 @@ The other big change concerns key event handling and mouse event
 @port[
 @racketblock[
  (define (change w a-key-event)
-    (cond
-      [(key=? a-key-event 'left)  
-       (world-go w -DELTA)]
-      [(key=? a-key-event 'right)
-       (world-go w +DELTA)]
-      [(char? a-key-event)
-       w] 
-      [(key=? a-key-event 'up)
-       (world-go w -DELTA)]
-      [(key=? a-key-event 'down)
-       (world-go w +DELTA)]
-      [else
-       w]))]
+   (cond
+     [(key=? a-key-event 'left)
+      (world-go w -DELTA)]
+     [(key=? a-key-event 'right)
+      (world-go w +DELTA)]
+     [(char? a-key-event)
+      w]
+     [(key=? a-key-event 'up)
+      (world-go w -DELTA)]
+     [(key=? a-key-event 'down)
+      (world-go w +DELTA)]
+     [else
+      w]))]
 @; ---------------------------------
 @racketblock[
  (define (change w a-key-event)
-    (cond
-      [(key=? a-key-event "left")  
-       (world-go w -DELTA)]
-      [(key=? a-key-event "right")
-       (world-go w +DELTA)]
-      [(= (string-length a-key-event) 1)
-       w] 
-      [(key=? a-key-event "up")
-       (world-go w -DELTA)]
-      [(key=? a-key-event "down")
-       (world-go w +DELTA)]
-      [else
-       w]))
+   (cond
+     [(key=? a-key-event "left")
+      (world-go w -DELTA)]
+     [(key=? a-key-event "right")
+      (world-go w +DELTA)]
+     [(= (string-length a-key-event) 1)
+      w]
+     [(key=? a-key-event "up")
+      (world-go w -DELTA)]
+     [(key=? a-key-event "down")
+      (world-go w +DELTA)]
+     [else
+      w]))
 ]]
  Note how the @racket[char?] clause changed. Since all chars are now
  represented as strings containing one ``letter'', the program on the right

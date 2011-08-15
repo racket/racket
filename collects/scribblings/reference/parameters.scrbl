@@ -44,7 +44,7 @@ new parameter value.  A guard procedure can raise an exception to
 reject a change to the parameter's value. The @racket[guard] is not
 applied to the initial @racket[v].}
 
-@defform[(parameterize ((parameter-expr value-expr) ...)
+@defform[(parameterize ([parameter-expr value-expr] ...)
            body ...+)
          #:contracts
          ([parameter-expr parameter?])]{

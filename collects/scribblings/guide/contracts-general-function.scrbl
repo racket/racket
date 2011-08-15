@@ -225,7 +225,7 @@ of numbers or a string into a new string:
 The contract for such a function is formed with the @racket[case->]
  combinator, which combines as many functional contracts as needed: 
 @racketblock[
-(provide/contract 
+(provide/contract
   [report-cost
    (case->
     (integer? integer? . -> . string?)

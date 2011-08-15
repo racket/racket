@@ -23,11 +23,11 @@ the parameter expressions.
     [(_ ((p v:expr) ...) body:expr)
      #:declare p (expr/c #'parameter?
                          #:name "parameter argument")
-     #'(parameterize ((p.c v) ...) body)]))
-(myparameterize ((current-input-port
-                  (open-input-string "(1 2 3)")))
+     #'(parameterize ([p.c v] ...) body)]))
+(myparameterize ([current-input-port
+                  (open-input-string "(1 2 3)")])
   (read))
-(myparameterize (('whoops 'something))
+(myparameterize (['whoops 'something])
   'whatever)
 ]
 

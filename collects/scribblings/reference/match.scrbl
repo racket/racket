@@ -480,9 +480,10 @@ instead of @racket[match].}
  A @racket[match] pattern form that matches an instance of a structure
  type named @racket[struct-id], where the field @racket[field] in the
  instance matches the corresponding @racket[pat].
-                                                
- Any field of @racket[struct-id] may be omitted, and such fields can occur in any order.
- 
+
+ Any field of @racket[struct-id] may be omitted, and such fields can
+ occur in any order.
+
  @defexamples[
   #:eval match-eval
   (define-struct tree (val left right))

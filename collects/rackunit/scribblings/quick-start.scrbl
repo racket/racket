@@ -76,7 +76,7 @@ cases.  Here's a simple test case written using the
 
 @racketblock[
 (test-begin
- (let ((lst (list 2 4 6 9)))
+ (let ([lst (list 2 4 6 9)])
    (check = (length lst) 4)
    (for-each
     (lambda (elt)
@@ -111,7 +111,7 @@ we're testing.  We can give a test case a name with the
 @racketblock[
 (test-case
  "List has length 4 and all elements even"
- (let ((lst (list 2 4 6 9)))
+ (let ([lst (list 2 4 6 9)])
    (check = (length lst) 4)
    (for-each
     (lambda (elt)
@@ -133,7 +133,7 @@ group them into a test suite:
 
      (test-case
       "List has length 4 and all elements even"
-      (let ((lst (list 2 4 6 9)))
+      (let ([lst (list 2 4 6 9)])
         (check = (length lst) 4)
         (for-each
           (lambda (elt)

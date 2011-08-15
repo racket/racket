@@ -3,12 +3,13 @@
           (for-label mzlib/serialize))
 
 @(begin
-  (define-syntax-rule (bind id id2)
-    (begin
-     (require (for-label racket/serialize))
-     (define id (racket define-serializable-struct))
-     (define id2 (racket define-serializable-struct/versions))))
-  (bind racket-define-serializable-struct racket-define-serializable-struct/versions))
+   (define-syntax-rule (bind id id2)
+     (begin
+       (require (for-label racket/serialize))
+       (define id (racket define-serializable-struct))
+       (define id2 (racket define-serializable-struct/versions))))
+   (bind racket-define-serializable-struct
+         racket-define-serializable-struct/versions))
 
 @mzlib[#:mode title serialize]
 

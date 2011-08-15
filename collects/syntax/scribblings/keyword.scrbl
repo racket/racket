@@ -11,8 +11,8 @@
 
 @(begin
    (define the-eval
-     (parameterize ((sandbox-output 'string)
-                    (sandbox-error-output 'string))
+     (parameterize ([sandbox-output 'string]
+                    [sandbox-error-output 'string])
        (make-evaluator 'racket/base #:requires '(syntax/keyword))))
    ;;(void (the-eval '(error-print-source-location #f)))
    (define-syntax-rule (myexamples e ...)

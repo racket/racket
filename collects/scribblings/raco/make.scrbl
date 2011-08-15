@@ -384,8 +384,8 @@ result will not call @racket[proc] with @racket['unlock].)
       (when ok-to-compile?
         (printf "Do compile here ...\n")))
     (lambda ()
-     (when locked?
-       (lc 'unlock zo-name)))))
+      (when locked?
+        (lc 'unlock zo-name)))))
 ]
 }
 

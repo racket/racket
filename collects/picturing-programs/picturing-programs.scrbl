@@ -199,19 +199,19 @@ the bounds of the image, returns a transparent color.}
                       [f (-> natural-number/c natural-number/c color?)])
          image?]{
 
-Builds an image of the specified size and shape by calling the specified function
-on the coordinates of each pixel.  For example,
+Builds an image of the specified size and shape by calling the specified
+function on the coordinates of each pixel.  For example,
 @codeblock|{
 ; fuzz : image -> image
 (define (fuzz pic)
-   (local [; near-pixel : num(x) num(y) -> color
-           (define (near-pixel x y)
-              (get-pixel-color (+ x -3 (random 7))
-                               (+ y -3 (random 7))
-                               pic))]
-      (build-image (image-width pic)
-                   (image-height pic)
-                   near-pixel)))
+  (local [; near-pixel : num(x) num(y) -> color
+          (define (near-pixel x y)
+            (get-pixel-color (+ x -3 (random 7))
+                             (+ y -3 (random 7))
+                             pic))]
+     (build-image (image-width pic)
+                  (image-height pic)
+                  near-pixel)))
 }|
 produces a fuzzy version of the given picture by replacing each pixel with a
 randomly chosen pixel near it.}
@@ -268,7 +268,7 @@ size and shape.  For example,
 @codeblock|{
 ; lose-red : num(x) num(y) color -> color
 (define (lose-red x y old-color)
-   (make-color 0 (color-green old-color) (color-blue old-color)))
+  (make-color 0 (color-green old-color) (color-blue old-color)))
 
 (map-image lose-red my-picture)}|
 produces a copy of @racket[my-picture] with all the red leached out,
@@ -286,9 +286,9 @@ Another example:
 @codeblock|{
 ; apply-gradient : num(x) num(y) color -> color
 (define (apply-gradient x y old-color)
-   (make-color (min (* 3 x) 255)
-               0 
-               (min (* 3 y) 255)))
+  (make-color (min (* 3 x) 255)
+              0
+              (min (* 3 y) 255)))
 
 (map-image apply-gradient my-picture)}|
 produces a picture the size of @racket[my-picture]'s bounding rectangle,
@@ -402,12 +402,12 @@ For example,
 @codeblock|{
 ; bad-gradient : num(x) num(y) -> color
 (define (bad-gradient x y)
-   (make-color (* 2.5 x) (* 1.6 y) 0))
+  (make-color (* 2.5 x) (* 1.6 y) 0))
 (build-image 50 30 bad-gradient)
 
 ; good-gradient : num(x) num(y) -> color
 (define (good-gradient x y)
-   (make-color (real->int (* 2.5 x)) (real->int (* 1.6 y)) 0))
+  (make-color (real->int (* 2.5 x)) (real->int (* 1.6 y)) 0))
 (build-image 50 30 good-gradient)
 }|
 The version using @racket[bad-gradient] crashes because color components must be exact integers.
@@ -462,15 +462,15 @@ its output into a string, which is returned.  Especially useful for testing:
 @codeblock|{
 ; ask : string -> prints output, waits for text input, returns it
 (define (ask question)
-   (begin (display question)
-          (read)))
+  (begin (display question)
+         (read)))
 ; greet : nothing -> prints output, waits for text input, prints output
 (define (greet)
-   (local [(define name (ask "What is your name?"))]
-      (printf "Hello, ~a!" name)))
+  (local [(define name (ask "What is your name?"))]
+    (printf "Hello, ~a!" name)))
 (check-expect
-   (with-io-strings "Steve" greet)
-   "What is your name?Hello, Steve!")}|
+  (with-io-strings "Steve" greet)
+  "What is your name?Hello, Steve!")}|
 }
 
 @; @include-section{worlds.scrbl}

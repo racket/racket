@@ -43,7 +43,7 @@ These functions optimize the construction of dispatchers and launching of server
  
  The servlet is run in the @racket[(current-namespace)].
 }
-                      
+
 @defproc[(serve/launch/wait
           [make-dispatcher (semaphore? . -> . dispatcher/c)]
           [#:connection-close? connection-close? boolean? #f]

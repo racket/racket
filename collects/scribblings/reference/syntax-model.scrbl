@@ -210,9 +210,9 @@ the binding (according to @racket[free-identifier=?]) matters.}
       (if expr expr expr)
       (begin expr ...+)
       (begin0 expr expr ...)
-      (let-values (((id ...) expr) ...)
+      (let-values ([(id ...) expr] ...)
         expr ...+)
-      (letrec-values (((id ...) expr) ...)
+      (letrec-values ([(id ...) expr] ...)
         expr ...+)
       (set! id expr)
       (@#,racket[quote] datum)
@@ -756,21 +756,21 @@ bucket-2
   (syntax-rules ()
     [(def-and-use)
      (begin
-      (code:comment @#,t{Initial reference to @racket[even] precedes definition:})
-      (define (odd x) (if (zero? x) #f (even (sub1 x))))
-      (define (even x) (if (zero? x) #t (odd (sub1 x))))
-      (odd 17))]))
+       (code:comment @#,t{Initial reference to @racket[even] precedes definition:})
+       (define (odd x) (if (zero? x) #f (even (sub1 x))))
+       (define (even x) (if (zero? x) #t (odd (sub1 x))))
+       (odd 17))]))
 (defs-and-uses/fail)
-     
+
 (define-syntax defs-and-uses
   (syntax-rules ()
     [(def-and-use)
      (begin
-      (code:comment @#,t{Declare before definition via no-values @racket[define-syntaxes]:})
-      (define-syntaxes (odd even) (values))
-      (define (odd x) (if (zero? x) #f (even (sub1 x))))
-      (define (even x) (if (zero? x) #t (odd (sub1 x))))
-      (odd 17))]))
+       (code:comment @#,t{Declare before definition via no-values @racket[define-syntaxes]:})
+       (define-syntaxes (odd even) (values))
+       (define (odd x) (if (zero? x) #f (even (sub1 x))))
+       (define (even x) (if (zero? x) #t (odd (sub1 x))))
+       (odd 17))]))
 (defs-and-uses)
 ]
 

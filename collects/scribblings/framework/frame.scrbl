@@ -36,15 +36,15 @@
     @racketblock[
     (class ...
       ...
-     (define status-panel #f)
-     (define/override (make-root-area-container cls parent)
-       (set! status-panel
-             (super make-root-area-container vertical-panel% parent))
-       (let ([root (make-object cls status-panel)])
+      (define status-panel #f)
+      (define/override (make-root-area-container cls parent)
+        (set! status-panel
+              (super make-root-area-container vertical-panel% parent))
+        (let ([root (make-object cls status-panel)])
 
-          (code:comment "... add other children to status-panel ...")
+           (code:comment "... add other children to status-panel ...")
 
-          root))
+           root))
       ...)]
 
     In this example, status-panel will contain a root panel for the other
@@ -186,7 +186,7 @@
     See also @racket[frame:setup-size-pref].
 
   }
-                                                                               
+
   @defmethod*[#:mode override (((on-size (width number?) (height number?)) void?))]{
 
     Updates the preferences, according to the width and

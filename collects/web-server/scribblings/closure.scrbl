@@ -7,20 +7,21 @@
                      web-server/lang/serial-lambda
                      web-server/private/define-closure))
 
-                                              
-The defunctionalization process of the Web Language (see @secref["stateless" #:doc '(lib "web-server/scribblings/web-server.scrbl")])
+The defunctionalization process of the Web Language (see
+@secref["stateless" #:doc '(lib "web-server/scribblings/web-server.scrbl")])
 requires an explicit representation of closures that is serializable.
 
 @defmodule[web-server/lang/serial-lambda]{
- 
+
 @defform[(serial-lambda formals body ...)]{
- Returns @racket[(lambda formals body ...)], except it is serializable.
+  Returns @racket[(lambda formals body ...)], except it is serializable.
 }
-        
+
 @defform[(serial-case-lambda [formals body ...] ...)]{
- Returns @racket[(case-lambda [formals body ...] ...)], except it is serializable.
+ Returns @racket[(case-lambda [formals body ...] ...)], except it is
+ serializable.
 }
-        
+
 }
 
 @section[#:style 'hidden]{Definition Syntax}

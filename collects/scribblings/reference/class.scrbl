@@ -12,15 +12,15 @@
     [(_ s ... s0) (elem (elem ", " (secref s)) ... ", and " (secref s0))]))
 
 (define-syntax (defclassforms stx)
- (syntax-case stx (*)
-  [(_ [* (form ...) (also ...)])
-   #'(defform* (form  ...)
-       "See " @racket[class*] (sees also ...) "; use"
-       " outside the body of a " @racket[class*] " form is a syntax error.")]
-  [(_ [form (also ...)])
-   #'(defclassforms [* (form) (also ...)])]
-  [(_ form ...)
-   #'(begin (defclassforms form) ...)]))
+  (syntax-case stx (*)
+    [(_ [* (form ...) (also ...)])
+     #'(defform* (form  ...)
+         "See " @racket[class*] (sees also ...) "; use"
+         " outside the body of a " @racket[class*] " form is a syntax error.")]
+    [(_ [form (also ...)])
+     #'(defclassforms [* (form) (also ...)])]
+    [(_ form ...)
+     #'(begin (defclassforms form) ...)]))
 
 (define-syntax (defstarshorthands stx)
   (syntax-case stx ()
@@ -292,13 +292,13 @@ interface @racket[(class->interface object%)], and is transparent
   (lambda kw-formals expr ...+)
   (case-lambda (formals expr ...+) ...)
   (#%plain-lambda formals expr ...+)
-  (let-values (((id) method-procedure) ...)
+  (let-values ([(id) method-procedure] ...)
     method-procedure)
-  (letrec-values (((id) method-procedure) ...)
+  (letrec-values ([(id) method-procedure] ...)
     method-procedure)
-  (let-values (((id) method-procedure) ...+) 
+  (let-values ([(id) method-procedure] ...+) 
     id)
-  (letrec-values (((id) method-procedure) ...+) 
+  (letrec-values ([(id) method-procedure] ...+) 
     id)])]{
 
 Produces a class value.
@@ -1366,11 +1366,11 @@ Produces a @tech{trait} that combines all of the methods of the given
 
 @racketblock[
 (define t1
- (trait
-  (define/public (m1) 1)))
+  (trait
+    (define/public (m1) 1)))
 (define t2
- (trait
-  (define/public (m2) 2)))
+  (trait
+    (define/public (m2) 2)))
 (define t3 (trait-sum t1 t2))
 ]
 
@@ -1378,8 +1378,8 @@ creates a trait @racket[t3] that is equivalent to
 
 @racketblock[
 (trait
- (define/public (m1) 1)
- (define/public (m2) 2))
+  (define/public (m1) 1)
+  (define/public (m2) 2))
 ]
 
 but @racket[t1] and @racket[t2] can still be used individually or
@@ -1649,12 +1649,12 @@ Also, method contracts for @racket[object/c] follow those for
 behaves as if its class had been wrapped with the equivalent
 @racket[class/c] contract.
 }
-                             
+
 @defproc[(instanceof/c [class-contract contract?]) contract?]{
 Produces a contract for an object, where the object is an
 instance of a class that conforms to @racket[class-contract].
 }
-                             
+
 @defform/subs[
 #:literals (field -> ->* ->d)
 

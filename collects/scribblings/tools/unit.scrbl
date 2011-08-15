@@ -150,12 +150,12 @@ Calls the definitions text's
 @defmethod[#:mode public-final
                   (remove-bkg-running-color [id symbol?])
                   void?]{
-                         
+
    Removes the color and label added with @racket[id].
-                         
+
    See also @method[drracket:unit:tab<%> add-bkg-running-color].
   }
-                 
+
 }
 
 
@@ -599,7 +599,7 @@ Returns the currently active tab.
 }
 
 @defmethod[(get-tab-count) exact-positive-integer?]{
-  Returns the number of open tabs in the frame.                                                    
+  Returns the number of open tabs in the frame.
 }
 
 @defmethod[(open-in-new-tab [filename (or/c path-string? #f)]) void?]{

@@ -9,9 +9,9 @@
      (apply item @index[(map (lambda (x) (format "~a keybinding" x)) keys) key-str] " : " desc)))
 
 @(define-syntax-rule (def-mod-beg id)
-  (begin
-   (require (for-label racket/base))
-   (define id @racket[#%module-begin])))
+   (begin
+     (require (for-label racket/base))
+     (define id @racket[#%module-begin])))
 @(def-mod-beg mz-mod-begin)
 
 @title{Keyboard Shortcuts}

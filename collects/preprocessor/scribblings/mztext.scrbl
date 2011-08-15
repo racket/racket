@@ -399,7 +399,7 @@ Dispatching-related bindings:
 
 @racketblock[
     (define (ttref)
-      (let ((url (get-arg)) (text (get-arg)))
+      (let ([url (get-arg)] [text (get-arg)])
         (list "<a href=\"" url "\">@tt{" text "}</a>")))
 ]
 

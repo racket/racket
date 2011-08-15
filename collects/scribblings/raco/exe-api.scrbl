@@ -433,7 +433,7 @@ A unit that imports nothing and exports @racket[compiler:embed^].}
 @defproc[(find-exe [gracket? boolean?]
                    [variant (or/c 'cgc '3m) (system-type 'gc)])
          path?]{
-                                                                 
-  Finds the path to the racket (or gracket) executable.                                                                  
+
+  Finds the path to the racket (or gracket) executable.
 }
                

@@ -60,9 +60,9 @@ racket
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) () 
          (r (f lov)
-	    (lambda (r)
-	      (define f@r (f r))
-	      (for/and ((v lov)) (>= f@r (f v))))))])
+            (lambda (r)
+              (define f@r (f r))
+              (for/and ([v lov]) (>= f@r (f v))))))])
 ]
  It is a @emph{dependent} contract that names the two arguments and uses
  the names to impose a predicate on the result. This predicate computes
@@ -84,9 +84,8 @@ racket
          (r (f lov)
             (lambda (r)
               (define f@r (f r))
-              (and
-		(memq r lov)
-		(for/and ((v lov)) (>= f@r (f v)))))))])
+              (and (memq r lov)
+                   (for/and ([v lov]) (>= f@r (f v)))))))])
 ]
  The @racket[memq] function ensures that @racket[r] is @emph{intensionally equal}
  @margin-note*{That is, "pointer equality" for those who prefer to think at
@@ -113,14 +112,14 @@ racket
          (r (f lov)
             (lambda (r)
               (define f@r (f r))
-              (and (for/and ((v lov)) (>= f@r (f v)))		   
+              (and (for/and ([v lov]) (>= f@r (f v)))
                    (eq? (first (memf (lambda (v) (= (f v) f@r)) lov)) 
                         r)))))])
 ]
  That is, the @racket[memf] function determines the first element of
  @racket[lov] whose value under @racket[f] is equal to @racket[r]'s value
  under @racket[f]. If this element is intensionally equal to @racket[r],
- the result of @racket[argmax] is correct.  
+ the result of @racket[argmax] is correct.
 
 This second refinement step introduces two problems. First, both conditions
  recompute the values of @racket[f] for all elements of @racket[lov]. Second,
@@ -157,7 +156,7 @@ racket
 
 @code:comment{@#,dominates1}
 (define (dominates-all f@r f lov)
-  (for/and ((v lov)) (>= (f v) f@r)))
+  (for/and ([v lov]) (>= (f v) f@r)))
 
 @code:comment{@#,first?1}
 (define (is-first-max? r f@r f lov)
@@ -199,7 +198,7 @@ racket
 
 @code:comment{@#,dominates2}
 (define (dominates-all f@r flov)
-  (for/and ((f@v flov)) (>= f@r f@v)))
+  (for/and ([f@v flov]) (>= f@r f@v)))
 
 @code:comment{@#,first?2}
 (define (is-first-max? r f@r lov+flov)

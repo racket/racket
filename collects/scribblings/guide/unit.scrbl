@@ -313,28 +313,28 @@ racket
 
 (define toy-store@-maker
   (lambda (the-color)
-   (unit
-    (import toy-factory^)
-    (export toy-store^)
+    (unit
+     (import toy-factory^)
+     (export toy-store^)
 
-    (define inventory null)
+     (define inventory null)
 
-    (define (store-color) the-color)
+     (define (store-color) the-color)
 
-    (code:comment @#,t{the rest is the same as before})
+     (code:comment @#,t{the rest is the same as before})
 
-    (define (maybe-repaint t)
-      (if (eq? (toy-color t) (store-color))
-          t
-          (repaint t (store-color))))
+     (define (maybe-repaint t)
+       (if (eq? (toy-color t) (store-color))
+           t
+           (repaint t (store-color))))
 
-    (define (stock! n)
-      (set! inventory 
-            (append inventory
-                    (map maybe-repaint
-                         (build-toys n)))))
+     (define (stock! n)
+       (set! inventory
+             (append inventory
+                     (map maybe-repaint
+                          (build-toys n)))))
 
-    (define (get-inventory) inventory))))
+     (define (get-inventory) inventory))))
 
 (provide toy-store@-maker)
 ]

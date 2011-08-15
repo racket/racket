@@ -109,7 +109,7 @@ is prefixed with the special form name as described under
 
 @examples[#:eval the-eval
 (wrong-syntax #'here "expected ~s" 'there)
-(parameterize ((current-syntax-context #'(look over here)))
+(parameterize ([current-syntax-context #'(look over here)])
   (wrong-syntax #'here "expected ~s" 'there))
 ]
 
@@ -117,7 +117,7 @@ A macro using @racket[wrong-syntax] might set the syntax context at the very
 beginning of its transformation as follows:
 @RACKETBLOCK[
 (define-syntax (my-macro stx)
-  (parameterize ((current-syntax-context stx))
+  (parameterize ([current-syntax-context stx])
     (syntax-case stx ()
       ___)))
 ]

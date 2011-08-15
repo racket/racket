@@ -5,11 +5,12 @@
                      web-server/lang/web))
 
 @title[#:tag "considerations"]{Usage Considerations}
-                     
-A stateless servlet has the following process performed on it automatically:
+
+A stateless servlet has the following process performed on it
+automatically:
 @itemize[
- @item{All uses of @racket[letrec] are removed and replaced with equivalent uses of
-       @racket[let] and imperative features.}
+ @item{All uses of @racket[letrec] are removed and replaced with
+       equivalent uses of @racket[let] and imperative features.}
  @item{The program is converted into @link["http://en.wikipedia.org/wiki/Administrative_normal_form"]{ANF} (Administrative Normal Form),
        making all continuations explicit.}
  @item{All continuations and continuations marks are recorded in the
@@ -22,41 +23,47 @@ A stateless servlet has the following process performed on it automatically:
        @racket[lambda].}
 ]
 
-This process allows the continuations captured by your servlet to be serialized.
-This means they may be stored on the client's browser or the server's disk.
+This process allows the continuations captured by your servlet to be
+serialized.  This means they may be stored on the client's browser or
+the server's disk.
 
-This means your servlet has no cost to the server other than execution. This is
-very attractive if you've used Racket servlets and had memory problems.
+This means your servlet has no cost to the server other than
+execution. This is very attractive if you've used Racket servlets and
+had memory problems.
 
-This means your server can restart in the middle of a long running Web interaction
-without the URLs that have been shared with the client expiring.  This is
-very attractive if you've used Racket servlets and had session timeout problems.
+This means your server can restart in the middle of a long running Web
+interaction without the URLs that have been shared with the client
+expiring.  This is very attractive if you've used Racket servlets and
+had session timeout problems.
 
-This process is defined on all of Racket and occurs after macro-expansion,
-so you are free to use all interesting features of Racket. However, there
-are some considerations you must make.
+This process is defined on all of Racket and occurs after
+macro-expansion, so you are free to use all interesting features of
+Racket.  However, there are some considerations you must make.
 
-First, this process drastically changes the structure of your program. It
-will create an immense number of lambdas and structures your program
-did not normally contain. The performance implication of this has not been
-studied with Racket.
+First, this process drastically changes the structure of your program.
+It will create an immense number of lambdas and structures your program
+did not normally contain. The performance implication of this has not
+been studied with Racket.
 
-Second, the defunctionalization process is sensitive to the syntactic structure
-of your program. Therefore, if you change your program in a trivial way, for example,
-changing a constant, then all serialized continuations will be obsolete and will
-error when deserialization is attempted. This is a feature, not a bug! It is a small
-price to pay for protection from the sorts of errors that would occur if your program
+Second, the defunctionalization process is sensitive to the syntactic
+structure of your program. Therefore, if you change your program in a
+trivial way, for example, changing a constant, then all serialized
+continuations will be obsolete and will error when deserialization is
+attempted. This is a feature, not a bug! It is a small price to pay for
+protection from the sorts of errors that would occur if your program
 were changed in a meaningful way.
 
-Third, the values in the lexical scope of your continuations must be serializable
-for the continuations itself to be serializable. This means that you must use
-@racket[define-serializable-struct] rather than @racket[define-struct], and take
-care to use modules that do the same. Similarly, you may not use @racket[parameterize],
-because parameterizations are not serializable.
+Third, the values in the lexical scope of your continuations must be
+serializable for the continuations itself to be serializable. This means
+that you must use @racket[define-serializable-struct] rather than
+@racket[define-struct], and take care to use modules that do the same.
+Similarly, you may not use @racket[parameterize], because
+parameterizations are not serializable.
 
-Fourth, and related, this process only runs on your code, not on the code you
-@racket[require]. Thus, your continuations---to be serializable---must not
-be in the context of another module. For example, the following will fail with an @as-index{"unsafe context"}
+Fourth, and related, this process only runs on your code, not on the
+code you @racket[require]. Thus, your continuations---to be
+serializable---must not be in the context of another module. For
+example, the following will fail with an @as-index{"unsafe context"}
 exception:
 
 @racketblock[

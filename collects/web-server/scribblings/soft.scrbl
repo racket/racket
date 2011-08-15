@@ -20,12 +20,15 @@ and increasing the size of the serialization. This module provides support for t
          soft-state?]{
  Creates a piece of soft state that is computed by @racket[thnk]. This value is serializable.
 }
-                     
+
 @defproc[(soft-state-ref [ss soft-state?])
          any/c]{
- Extracts the value associated with @racket[ss]. If the value is not available (perhaps because of garbage collection, deserialization in an uninitialized process, etc), then the thunk associated with @racket[ss] is invoked and the value is cached.
+ Extracts the value associated with @racket[ss]. If the value is not
+ available (perhaps because of garbage collection, deserialization in an
+ uninitialized process, etc), then the thunk associated with @racket[ss]
+ is invoked and the value is cached.
 }
-               
+
 @defform[(soft-state expr ...)]{
  Equivalent to @racket[(make-soft-state (lambda () expr ...))].
 }

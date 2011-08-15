@@ -3,8 +3,8 @@
 
 @(define-syntax-rule (def base-author)
    (begin
-    (require (for-label scribble/base))
-    (define base-author @racket[author])))
+     (require (for-label scribble/base))
+     (define base-author @racket[author])))
 @(def base-author)
 
 @title{JFP Paper Format}

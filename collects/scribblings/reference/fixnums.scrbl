@@ -196,4 +196,3 @@ For communication among @tech{places}, the new @tech{fxvector} is
 allocated in the @tech{shared memory space}.
 
 @mz-examples[#:eval flfx-eval (make-shared-fxvector 4 3)]}
-                       

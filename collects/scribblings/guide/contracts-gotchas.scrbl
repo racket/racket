@@ -81,26 +81,24 @@ streams like this:
 @interaction[
   #:eval e
 (define stream/c
- (promise/c
-  (or/c
-   null?
-   (cons/c number? stream/c))))
+  (promise/c
+   (or/c null?
+         (cons/c number? stream/c))))
 ]
 @close-eval[e]
- 
+
 Unfortunately, this does not work because the value of
 @racket[stream/c] is needed before it is defined. Put another way, all
 of the combinators evaluate their arguments eagerly, even thought the
 values that they accept do not.
 
-Instead, use 
+Instead, use
 @racketblock[
 (define stream/c
- (promise/c
-  (or/c
-   null?
-   (cons/c 1
-           (recursive-contract stream/c)))))
+  (promise/c
+   (or/c
+    null?
+    (cons/c 1 (recursive-contract stream/c)))))
 ]
 
 The use of @racket[recursive-contract] delays the evaluation of the

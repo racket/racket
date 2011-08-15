@@ -16,8 +16,8 @@
 
 @(define-syntax-rule (def-ext id)
   (begin
-   (require (for-label net/sendurl))
-   (define id (racket send-url))))
+    (require (for-label net/sendurl))
+    (define id (racket send-url))))
 @(def-ext net-send-url)
 
 

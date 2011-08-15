@@ -110,11 +110,11 @@ Raised for errors when handling cookies.}
 @subsection{Creating a cookie}
 
 @racketblock[
-(let ((c (cookie:add-max-age
+(let ([c (cookie:add-max-age
           (cookie:add-path
            (set-cookie "foo" "bar")
            "/servlets")
-          3600)))
+          3600)])
   (print-cookie c))
 ]
 

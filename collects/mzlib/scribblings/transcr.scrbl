@@ -10,13 +10,13 @@ library provides working versions of @racket[transcript-on] and
 @racket[transcript-off].
 
 @(define-syntax-rule (go)
-  (begin
-   (require (for-label mzlib/transcr))
+   (begin
+     (require (for-label mzlib/transcr))
 
-   @deftogether[(
-   @defproc[(transcript-on [filename any/c]) any]
-   @defproc[(transcript-off) any]
-   )]{
+     @deftogether[(
+     @defproc[(transcript-on [filename any/c]) any]
+     @defproc[(transcript-off) any]
+     )]{
 
    Starts/stops recording a transcript at @racket[filename].}))
 @(go)

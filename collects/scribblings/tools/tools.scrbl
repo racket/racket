@@ -640,7 +640,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
 }
 
 @definterface[syncheck-annotations<%> ()]{
-                                       
+
   Classes implementing this interface are
   accceptors of information about a traversal
   of syntax objects. See @racket[make-traversal].
@@ -682,7 +682,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
    Called to indicate that there is a @racket[require] at the location from @racket[start] to @racket[end],
    and that it corresponds to @racket[file]. Check Syntax adds a popup menu.
  }
-                                                                 
+
  @defmethod[(syncheck:add-docs-menu [source-obj (not/c #f)]
                                     [start exact-nonnegative-integer?]
                                     [end exact-nonnegative-integer?]

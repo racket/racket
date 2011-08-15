@@ -27,12 +27,12 @@
                     racket/future))
 
 @(define-syntax-rule (local-module mod . body)
-  (begin
-   (define-syntax-rule (go)
-     (begin
-       (require (for-label mod))
-       . body))
-   (go)))
+   (begin
+     (define-syntax-rule (go)
+       (begin
+         (require (for-label mod))
+         . body))
+     (go)))
 
 @(define ref-src
    '(lib "scribblings/reference/reference.scrbl"))

@@ -44,7 +44,7 @@ the resolvers behavior.
   Returns the path corresponding to the planet package (interpreting the arguments
   the same way as @racket[planet-module-name-resolver] and @racket[(current-module-name-resolver)]).
 }
-                                   
+
 @defproc[(resolve-planet-path [planet-path any/c]) path?]{
   Returns the path where the file named by the require spec @racket[planet-path] is located in the current installation.
 }
@@ -154,7 +154,7 @@ The port on the server the client should connect to if
 @defparam[DEFAULT-PACKAGE-LANGUAGE vers string?]{
   The package language used when communicating with the server to find
   which package to download.
-                                                 
+
   Defaults to @racket[(version)].
 }
 
@@ -180,7 +180,7 @@ The port on the server the client should connect to if
       with ``raco planet link''.
 
 }
-                                                      
+
 @defproc[(get-hard-linked-packages)
          (listof (list/c (and/c path? absolute-path?) string? string? (listof string?) 
                          exact-nonnegative-integer?
@@ -229,7 +229,6 @@ The @racket[pkg] argument must end with @racket[".plt"].
 }
 
 
-                             
 @defproc[(get-package-spec [owner string?]
                            [pkg (and/c string? #rx"[.]plt$")]
                            [maj (or/c #f natural-number/c) #f]
@@ -278,13 +277,14 @@ the output file's name.
 
 See also @racket[build-scribble-docs?] and @racket[force-package-building?]
 }
-                      
+
 @defparam[build-scribble-docs? b boolean?]{
-  Determines if @racket[make-planet-archive] builds scribble docs (or not).                                           
+  Determines if @racket[make-planet-archive] builds scribble docs (or not).
 }
 
 @defparam[force-package-building? b boolean?]{
-  Determines if @racket[make-planet-archive] is more strict and thus aborts more often.                                              
+  Determines if @racket[make-planet-archive] is more strict and thus
+  aborts more often.
 }
 
 @defproc[(download-package [pkg-spec pkg-spec?]) 
@@ -300,7 +300,7 @@ See also @racket[build-scribble-docs?] and @racket[force-package-building?]
   a list, then the server is saying that there is no matching package;
   otherwise the error is some lower-level problem (perhaps no networking, etc.)
 }
-                                        
+
 @defproc[(pkg->download-url [pkg pkg?]) url?]{
   Returns the url for a given package.
 }
@@ -412,13 +412,14 @@ produces a list corresponding to its name and version, exactly like
 @racket[(this-package-version)].  Given any other path, produces @racket[#f].
 
 }
-                                                                              
+
 @defstruct[(exn:fail:planet exn:fail) ([message string?] [continuation-marks continuation-mark-set?])]{
    This exception record is used to report planet-specific exceptions.
 }
 
-@defproc[(pkg? [v any/c]) boolean?]{                                    
-  Determines if its argument is a pkg, the representation of an installed package.
+@defproc[(pkg? [v any/c]) boolean?]{
+  Determines if its argument is a pkg, the representation of an
+  installed package.
 }
 
 @section[#:tag "version.rkt"]{Package Version}
@@ -488,7 +489,7 @@ with Scribble to associate each documented binding with the appropriate package.
   Returns a symbol representing the require spec for @racket[ver],
   as a planet package.
 }
-                               
+
 @section[#:tag "syntax.rkt"]{Macros and Syntax Objects}
 
 @defmodule[planet/syntax]

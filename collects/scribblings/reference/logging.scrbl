@@ -144,8 +144,8 @@ is equivalent to
 @racketblock[
 (let ([l (current-logger)])
   (when (log-level? l '@#,racket[_level])
-   (log-message l '@#,racket[_level] string-expr 
-                (current-continuation-marks))))
+    (log-message l '@#,racket[_level] string-expr 
+                 (current-continuation-marks))))
 ]}
 
 @; ----------------------------------------

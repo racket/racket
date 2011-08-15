@@ -247,7 +247,7 @@ more specific equivalence comparison.}}
 @methspec{See @racket[equal<%>].}
  
 @methimpl{Returns @racket[1].}}
-                    
+
 @defmethod[(find-scroll-step [y real?])
            exact-nonnegative-integer?]{
 

@@ -9,27 +9,27 @@
 
   ;; hacky?
   (define file-eval
-   (lambda ()
-     (let ([the-eval (make-base-eval)])
-       (the-eval '(require (for-syntax racket/base)
-			   racket/file))
-       (the-eval '(define some-file (make-temporary-file)))
-       (the-eval '(define some-other-file (make-temporary-file)))
-       the-eval)))
+    (lambda ()
+      (let ([the-eval (make-base-eval)])
+        (the-eval '(require (for-syntax racket/base)
+                            racket/file))
+        (the-eval '(define some-file (make-temporary-file)))
+        (the-eval '(define some-other-file (make-temporary-file)))
+        the-eval)))
 
   (define-syntax file-examples
     (syntax-rules ()
       [(_ expr ...)
        (let [(my-eval (file-eval))]
-	 (define (clean)
-	   (my-eval '(for [(i (list some-file some-other-file))]
-			  (when (file-exists? i)
-			    (delete-file i)))))
-	 (clean)
-	 (begin0
-	   (defexamples #:eval my-eval
-			expr ...)
-	   (clean)))]))
+         (define (clean)
+           (my-eval '(for [(i (list some-file some-other-file))]
+                          (when (file-exists? i)
+                            (delete-file i)))))
+         (clean)
+         (begin0
+           (defexamples #:eval my-eval
+                        expr ...)
+           (clean)))]))
 
   "")
 

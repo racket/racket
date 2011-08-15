@@ -3,11 +3,11 @@
           (for-label mzlib/sendevent))
 
 @(begin
-  (define-syntax-rule (bind id)
-    (begin
-     (require (for-label scheme/gui/base))
-     (define id (racket send-event))))
-  (bind mred-send-event))
+   (define-syntax-rule (bind id)
+     (begin
+       (require (for-label scheme/gui/base))
+       (define id (racket send-event))))
+   (bind mred-send-event))
 
 @mzlib[#:mode title sendevent]
 

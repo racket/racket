@@ -39,7 +39,7 @@ It does not interpret namespaces either.
                      [offset exact-nonnegative-integer?])]{
 
 Represents a location in an input stream.}
-                                                          
+
 @defthing[location/c contract?]{
  Equivalent to @racket[(or/c location? symbol? false/c)].
 }
@@ -47,7 +47,8 @@ Represents a location in an input stream.}
 @defstruct[source ([start location/c]
                    [stop location/c])]{
 
-Represents a source location. Other structure types extend @racket[source].
+Represents a source location. Other structure types extend
+@racket[source].
 
 When XML is generated from an input stream by @racket[read-xml],
 locations are represented by @racket[location] instances. When XML
@@ -67,7 +68,7 @@ Represents an externally defined DTD.}
                           [inlined false/c])]{
 
 Represents a document type.}
-                                             
+
 @defstruct[comment ([text string?])]{
 
 Represents a comment.}
@@ -76,7 +77,7 @@ Represents a comment.}
                          [instruction string?])]{
 
 Represents a processing instruction.}
-           
+
 @defthing[misc/c contract?]{
  Equivalent to @racket[(or/c comment? p-i?)]
 }
@@ -91,7 +92,7 @@ Represents a document prolog.
                      [element element?]
                      [misc (listof misc/c)])]{
 Represents a document.}
-                                             
+
 @defstruct[(element source) ([name symbol?]
                              [attributes (listof attribute?)]
                              [content (listof content/c)])]{
@@ -174,9 +175,10 @@ and a @racket[_misc] is an instance of the @racket[comment] or
 @racket[p-i] structure types.}
 
 @defthing[xexpr/c contract?]{
- A contract that is like @racket[xexpr?] except produces a better error message when the value is not an @tech{X-expression}.
-}   
-                                                           
+ A contract that is like @racket[xexpr?] except produces a better error
+ message when the value is not an @tech{X-expression}.
+}
+
 @; ----------------------------------------------------------------------
 
 @section{Reading and Writing XML}
@@ -266,7 +268,7 @@ XML document.}
  non-XML objects, such as other structs, in the content of the converted XML
  and leave them in place in the resulting ``@tech{X-expression}''.
 }
-                             
+
 @defproc[(xml->xexpr [content content/c]) xexpr/c]{
 
 Converts document content into an @tech{X-expression}, using

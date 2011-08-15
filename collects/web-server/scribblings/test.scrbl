@@ -35,8 +35,11 @@ This function accepts a servlet function and provides a function that accepts a 
  @item{The optional @racket[#:raw?] keyword controls whether an X-expression or a byte string is returned as a result.}
 ]
 }
-                             
-This facility is designed to be used in concert with a technique of extracting continuation URLs and relevant values; @racketmodname[xml/path] is one way to do this. Here is an extended example that tests an Add-Two-Numbers.com:
+
+This facility is designed to be used in concert with a technique of
+extracting continuation URLs and relevant values;
+@racketmodname[xml/path] is one way to do this. Here is an extended
+example that tests an Add-Two-Numbers.com:
 @(require (for-label xml/path
                      rackunit
                      racket/list

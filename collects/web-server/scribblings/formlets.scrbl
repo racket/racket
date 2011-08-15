@@ -23,9 +23,8 @@ Suppose we want to create an abstraction of entering a date in an HTML form. The
 @racketblock[
 (define date-formlet
   (formlet
-   (div
-    "Month:" ,{input-int . => . month}
-    "Day:" ,{input-int . => . day})
+   (div "Month:" ,{input-int . => . month}
+        "Day:" ,{input-int . => . day})
    (list month day)))
 ]
 
@@ -203,7 +202,7 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
             (values xexpr-forest/c
                     ((listof binding?) . -> . (values (coerce-contract 'formlet/c content) ...))
                     integer?))].
-                               
+
  A @tech{formlet}'s internal representation is a function from an initial input number
  to an @xexpr forest rendering, a processing function, and the next allowable
  input number.
@@ -233,38 +232,41 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
 
 @defproc[(xml-forest [r xexpr-forest/c])
          (formlet/c procedure?)]{
- Constructs a @tech{formlet} with the rendering @racket[r] and the identity procedure as the processing step.
+  Constructs a @tech{formlet} with the rendering @racket[r] and the
+  identity procedure as the processing step.
 }
 
 @defproc[(xml [r xexpr/c])
          (formlet/c procedure?)]{
- Equivalent to @racket[(xml-forest (list r))].
+  Equivalent to @racket[(xml-forest (list r))].
 }
-                                
+
 @defproc[(text [r string?])
          (formlet/c procedure?)]{
- Equivalent to @racket[(xml r)].
+  Equivalent to @racket[(xml r)].
 }
-                                
+
 @defproc[(tag-xexpr [tag symbol?]
                     [attrs (listof (list/c symbol? string?))]
                     [inner (formlet/c any/c)])
          (formlet/c any/c)]{
- Constructs a @tech{formlet} with the rendering @racket[(list (list* tag attrs inner-rendering))] where @racket[inner-rendering] is
- the rendering of @racket[inner] and the processing stage identical to @racket[inner].
+  Constructs a @tech{formlet} with the rendering @racket[(list (list*
+  tag attrs inner-rendering))] where @racket[inner-rendering] is the
+  rendering of @racket[inner] and the processing stage identical to
+  @racket[inner].
 }
 
 @defproc[(formlet-display [f (formlet/c any/c)])
          xexpr-forest/c]{
- Renders @racket[f].
+  Renders @racket[f].
 }
-                        
+
 @defproc[(formlet-process [f (formlet/c any/c ...)]
                           [r request?])
          (values any/c ...)]{
- Runs the processing stage of @racket[f] on the bindings in @racket[r].
+  Runs the processing stage of @racket[f] on the bindings in @racket[r].
 }
-               
+
 }
 
 @section[#:tag "input-formlets"]{Predefined Formlets}
@@ -273,81 +275,90 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
 @defmodule[web-server/formlets/input]{
 
 These @tech{formlet}s are the main combinators for form input.
-      
+
 @defproc[(make-input [render (string? . -> . xexpr/c)])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} is rendered with @racket[render], which is passed the input name, and results in the
- extracted @racket[binding].
-}                                           
-                                             
+ This @tech{formlet} is rendered with @racket[render], which is passed
+ the input name, and results in the extracted @racket[binding].
+}
+
 @defproc[(make-input* [render (string? . -> . xexpr/c)])
          (formlet/c (listof binding?))]{
- This @tech{formlet} is rendered with @racket[render], which is passed the input name, and results in all the
- @racket[binding]s that use the name.
+  This @tech{formlet} is rendered with @racket[render], which is passed
+  the input name, and results in all the @racket[binding]s that use the
+  name.
 }
-                                             
+
 @defproc[(text-input [#:value value (or/c false/c bytes?) #f]
                      [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                      [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
                      [#:read-only? read-only? boolean? #f]
                      [#:attributes attrs (listof (list/c symbol? string?)) empty])
         (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an INPUT element with the TEXT type and the attributes given in the arguments.
+  This @tech{formlet} renders using an INPUT element with the TEXT type
+  and the attributes given in the arguments.
 }
-                                                                                        
+
 @defproc[(password-input [#:value value (or/c false/c bytes?) #f]
                          [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                          [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
                          [#:read-only? read-only? boolean? #f]
                          [#:attributes attrs (listof (list/c symbol? string?)) empty])
         (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an INPUT element with the PASSWORD type and the attributes given in the arguments.
+  This @tech{formlet} renders using an INPUT element with the PASSWORD
+  type and the attributes given in the arguments.
 }
-                                            
+
 @defproc[(textarea-input [#:value value (or/c false/c bytes?) #f]
                          [#:rows rows (or/c false/c number?) #f]
                          [#:cols cols (or/c false/c number?) #f]
                          [#:attributes attrs (listof (list/c symbol? string?)) empty])
         (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an TEXTAREA element with attributes given in the arguments.
+  This @tech{formlet} renders using an TEXTAREA element with attributes
+  given in the arguments.
 }
-                                            
+
 @defproc[(checkbox [value bytes?]
                    [checked? boolean?]
                    [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an INPUT element with the CHECKBOX type and the attributes given in the arguments.
+  This @tech{formlet} renders using an INPUT element with the CHECKBOX
+  type and the attributes given in the arguments.
 }
-                                             
+
 @defproc[(radio [value bytes?] 
                 [checked? boolean?]
                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with the RADIO type and the attributes given in the arguments.
 }
-                                             
-@defproc[(submit [value bytes?]         
+
+@defproc[(submit [value bytes?]
                  [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an INPUT element with the SUBMIT type and the attributes given in the arguments.
+  This @tech{formlet} renders using an INPUT element with the SUBMIT
+  type and the attributes given in the arguments.
 }
-                                             
+
 @defproc[(reset [value bytes?]
                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an INPUT element with the RESET type and the attributes given in the arguments.
+  This @tech{formlet} renders using an INPUT element with the RESET type
+  and the attributes given in the arguments.
 }
 
 @defproc[(file-upload [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an INPUT element with the FILE type and the attributes given in the arguments.
+  This @tech{formlet} renders using an INPUT element with the FILE type
+  and the attributes given in the arguments.
 }
-                                             
+
 @defproc[(hidden [value bytes?] [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an INPUT element with HIDDEN type and the attributes given in the arguments.
+  This @tech{formlet} renders using an INPUT element with HIDDEN type
+  and the attributes given in the arguments.
 }
-                                             
+
 @defproc[(img [alt bytes?] 
               [src bytes?]
               [#:height height (or/c false/c exact-nonnegative-integer?) #f]
@@ -356,25 +367,32 @@ These @tech{formlet}s are the main combinators for form input.
               [#:width width (or/c false/c exact-nonnegative-integer?) #f]
               [#:attributes attrs (listof (list/c symbol? string?)) empty])
       (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using an IMG element with the attributes given in the arguments.   
+  This @tech{formlet} renders using an IMG element with the attributes
+  given in the arguments.
 }
-                          
+
 @defproc[(button [type bytes?]
                  [button-text bytes?]
                  [#:disabled disabled boolean? #f]
                  [#:value value (or/c false/c bytes?) #f]
                  [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using a BUTTON element with the attributes given in the arguments. @racket[button-text] is the text that will appear on the button when rendered.
-}      
-                                                             
+  This @tech{formlet} renders using a BUTTON element with the attributes
+  given in the arguments. @racket[button-text] is the text that will
+  appear on the button when rendered.
+}
+
 @defproc[(multiselect-input [l sequence?]
                             [#:attributes attrs (listof (list/c symbol? string?)) empty]
                             [#:multiple? multiple? boolean? #t]
                             [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]
                             [#:display display (any/c . -> . xexpr/c) (λ (x) x)])
         (formlet/c list?)]{
- This @tech{formlet} renders using an SELECT element with the attributes given with an OPTION for each element of the sequence. If @racket[multiple?] is @racket[#t], then multiple options may be selected. An element is selected if @racket[selected?] returns @racket[#t]. Elements are displayed with @racket[display].
+  This @tech{formlet} renders using an SELECT element with the
+  attributes given with an OPTION for each element of the sequence. If
+  @racket[multiple?] is @racket[#t], then multiple options may be
+  selected. An element is selected if @racket[selected?] returns
+  @racket[#t]. Elements are displayed with @racket[display].
 }
 
 @defproc[(select-input [l sequence?]
@@ -382,51 +400,62 @@ These @tech{formlet}s are the main combinators for form input.
                        [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]
                        [#:display display (any/c . -> . xexpr/c) (λ (x) x)])
         (formlet/c any/c)]{
- This @tech{formlet} renders using an SELECT element with the attributes given with an OPTION for each element of the sequence. An element is selected if @racket[selected?] returns @racket[#t]. Elements are displayed with @racket[display].
+  This @tech{formlet} renders using an SELECT element with the
+  attributes given with an OPTION for each element of the sequence. An
+  element is selected if @racket[selected?] returns
+  @racket[#t]. Elements are displayed with @racket[display].
 }
-                          
+
 @defproc[(required [f (formlet/c (or/c false/c binding?))])
          (formlet/c bytes?)]{
- Constructs a @tech{formlet} that extracts the @racket[binding:form-value] from the binding produced by @racket[f], or errors.
+  Constructs a @tech{formlet} that extracts the
+  @racket[binding:form-value] from the binding produced by @racket[f],
+  or errors.
 }
 
 @defproc[(default 
            [def bytes?]
            [f (formlet/c (or/c false/c binding?))])
          (formlet/c bytes?)]{
- Constructs a @tech{formlet} that extracts the @racket[binding:form-value] from the binding produced by @racket[f], or returns @racket[def].
+  Constructs a @tech{formlet} that extracts the
+  @racket[binding:form-value] from the binding produced by @racket[f],
+  or returns @racket[def].
 }
- 
+
 @defproc[(to-string [f (formlet/c bytes?)])
          (formlet/c string?)]{
- Converts @racket[f]'s output to a string. Equivalent to @racket[(cross (pure bytes->string/utf-8) f)].
-}          
- 
+  Converts @racket[f]'s output to a string. Equivalent to
+  @racket[(cross (pure bytes->string/utf-8) f)].
+}
+
 @defproc[(to-number [f (formlet/c string?)])
          (formlet/c number?)]{
- Converts @racket[f]'s output to a number. Equivalent to @racket[(cross (pure string->number) f)].
-}                             
+  Converts @racket[f]'s output to a number. Equivalent to @racket[(cross
+  (pure string->number) f)].
+}
 
 @defproc[(to-symbol [f (formlet/c string?)])
          (formlet/c symbol?)]{
- Converts @racket[f]'s output to a symbol. Equivalent to @racket[(cross (pure string->symbol) f)].
-}                             
+  Converts @racket[f]'s output to a symbol. Equivalent to
+  @racket[(cross (pure string->symbol) f)].
+}
 
 @defproc[(to-boolean [f (formlet/c bytes?)])
          (formlet/c boolean?)]{
- Converts @racket[f]'s output to a boolean, if it is equal to @racket[#"on"].
+  Converts @racket[f]'s output to a boolean, if it is equal to
+  @racket[#"on"].
 }
-                             
+
 @defthing[input-string (formlet/c string?)]{
- Equivalent to @racket[(to-string (required (text-input)))].
+  Equivalent to @racket[(to-string (required (text-input)))].
 }
 
 @defthing[input-int (formlet/c integer?)]{
- Equivalent to @racket[(to-number input-string)].
+  Equivalent to @racket[(to-number input-string)].
 }
 
 @defthing[input-symbol (formlet/c symbol?)]{
- Equivalent to @racket[(to-symbol input-string)].
+  Equivalent to @racket[(to-symbol input-string)].
 }
 
 }
@@ -446,16 +475,18 @@ A few utilities are provided for using @tech{formlet}s in Web applications.
                                  `(html (head (title "Form Entry"))
                                         (body ,form-xexpr)))])
          (values any/c ...)]{
- Uses @racket[send/suspend] and @racket[response/xexpr] to send @racket[f]'s rendering (wrapped in a FORM tag whose action is
- the continuation URL (wrapped again by @racket[wrapper])) to the client.
- When the form is submitted, the request is passed to the
- processing stage of @racket[f].
+  Uses @racket[send/suspend] and @racket[response/xexpr] to send
+  @racket[f]'s rendering (wrapped in a FORM tag whose action is the
+  continuation URL (wrapped again by @racket[wrapper])) to the client.
+  When the form is submitted, the request is passed to the processing
+  stage of @racket[f].
 }
-               
+
 @defproc[(embed-formlet [embed/url ((request? . -> . any) . -> . string?)]
                         [f (formlet/c any/c ...)])
          xexpr/c]{
- Like @racket[send/formlet], but for use with @racket[send/suspend/dispatch].
+  Like @racket[send/formlet], but for use with
+  @racket[send/suspend/dispatch].
 }
 
 }

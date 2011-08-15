@@ -85,7 +85,7 @@ that number to control the gauge along the bottom of the splash screen.
              exact-nonnegative-integer?
              exact-nonnegative-integer?
              void?)]{
-  Returns the callback that is invoked when redrawing the splash screen.                    
+  Returns the callback that is invoked when redrawing the splash screen.
 }
 @defproc[(set-splash-paint-callback
           [cb

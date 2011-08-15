@@ -7,7 +7,7 @@
                      web-server/servlet))
 
 @defmodule[web-server/servlet/servlet-structs]{
-                                               
+
 Servlets communicate to the Web Server by returning HTTP responses. In order to
 accommodate lightweight programs (and backwards compatibility), the Web Server
 provides an indirection from application-specific response formats and the internal

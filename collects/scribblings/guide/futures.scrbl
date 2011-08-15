@@ -64,18 +64,18 @@ Consider the following core of a Mandelbrot-set computation:
 
 @racketblock[
 (define (mandelbrot iterations x y n)
-  (let ((ci (- (/ (* 2.0 y) n) 1.0))
-        (cr (- (/ (* 2.0 x) n) 1.5)))
-    (let loop ((i 0) (zr 0.0) (zi 0.0))
+  (let ([ci (- (/ (* 2.0 y) n) 1.0)]
+        [cr (- (/ (* 2.0 x) n) 1.5)])
+    (let loop ([i 0] [zr 0.0] [zi 0.0])
       (if (> i iterations)
           i
-          (let ((zrq (* zr zr)) 
-                (ziq (* zi zi)))
+          (let ([zrq (* zr zr)]
+                [ziq (* zi zi)])
             (cond
-             ((> (+ zrq ziq) 4.0) i)
-             (else (loop (add1 i) 
-                         (+ (- zrq ziq) cr) 
-                         (+ (* 2.0 zr zi) ci)))))))))
+              [(> (+ zrq ziq) 4.0) i]
+              [else (loop (add1 i)
+                          (+ (- zrq ziq) cr)
+                          (+ (* 2.0 zr zi) ci))]))))))
 ]
 
 The expressions @racket[(mandelbrot 10000000 62 500 1000)] and
@@ -110,8 +110,8 @@ first the problem:
 
 @racketblock[
 (define (mandelbrot iterations x y n)
-  (let ((ci (- (/ (* 2.0 (->fl y)) (->fl n)) 1.0))
-        (cr (- (/ (* 2.0 (->fl x)) (->fl n)) 1.5)))
+  (let ([ci (- (/ (* 2.0 (->fl y)) (->fl n)) 1.0)]
+        [cr (- (/ (* 2.0 (->fl x)) (->fl n)) 1.5)])
     ....))
 ]
 
@@ -128,18 +128,18 @@ much less allocation:
 
 @racketblock[
 (define (mandelbrot iterations x y n)
-  (let ((ci (fl- (fl/ (* 2.0 (->fl y)) (->fl n)) 1.0))
-        (cr (fl- (fl/ (* 2.0 (->fl x)) (->fl n)) 1.5)))
-    (let loop ((i 0) (zr 0.0) (zi 0.0))
+  (let ([ci (fl- (fl/ (* 2.0 (->fl y)) (->fl n)) 1.0)]
+        [cr (fl- (fl/ (* 2.0 (->fl x)) (->fl n)) 1.5)])
+    (let loop ([i 0] [zr 0.0] [zi 0.0])
       (if (> i iterations)
           i
-          (let ((zrq (fl* zr zr)) 
-                (ziq (fl* zi zi)))
+          (let ([zrq (fl* zr zr)]
+                [ziq (fl* zi zi)])
             (cond
-             ((fl> (fl+ zrq ziq) 4.0) i)
-             (else (loop (add1 i) 
-                         (fl+ (fl- zrq ziq) cr) 
-                         (fl+ (fl* 2.0 (fl* zr zi)) ci)))))))))
+              [(fl> (fl+ zrq ziq) 4.0) i]
+              [else (loop (add1 i)
+                          (fl+ (fl- zrq ziq) cr)
+                          (fl+ (fl* 2.0 (fl* zr zi)) ci))]))))))
 ]
 
 This conversion can speed @racket[mandelbrot] by a factor of 8, even

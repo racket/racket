@@ -98,16 +98,18 @@ URLs to paths on the filesystem.
  This is primarily useful for dispatchers that allow path information after
  the name of a service to be used for data, but where the service is represented
  by a file. The most prominent example is obviously servlets.}
-                    
+
 @defproc[(filter-url->path [regex regexp?]
                                  [url->path url->path/c])
          url->path/c]{
- Runs the underlying @racket[url->path] but will only return if the path, when considered as a string,
- matches the @racket[regex]. This is useful to disallow strange files, like GIFs, from being considered
- servlets when using the servlet dispatchers. It will return a @racket[exn:fail:filesystem:exists?] exception if
- the path does not match.
+ Runs the underlying @racket[url->path] but will only return if the
+ path, when considered as a string, matches the @racket[regex]. This is
+ useful to disallow strange files, like GIFs, from being considered
+ servlets when using the servlet dispatchers. It will return a
+ @racket[exn:fail:filesystem:exists?] exception if the path does not
+ match.
 }
-                     
+
 }
 
 @; ------------------------------------------------------------
@@ -249,35 +251,37 @@ a URL that refreshes the password file, servlet cache, etc.}
                      web-server/configuration/responders))
 
 @defthing[denied?/c contract?]{
- Equivalent to @racket[(request? . -> . (or/c false/c string?))].
- The return is the authentication realm as a string if the request is not authorized and 
- @racket[#f] if the request @emph{is} authorized.
-}         
-                                                                         
+  Equivalent to @racket[(request? . -> . (or/c false/c string?))].  The
+  return is the authentication realm as a string if the request is not
+  authorized and @racket[#f] if the request @emph{is} authorized.
+}
+
 @defproc[(make [denied? denied?/c]
                [#:authentication-responder
                 authentication-responder
                 (url? header? . -> . response?)
                 (gen-authentication-responder "forbidden.html")])
          dispatcher/c]{
- A dispatcher that checks if the request is denied based on @racket[denied?]. If so, then 
- @racket[authentication-responder] is called with a @racket[header] that
- requests credentials. If not, then @racket[next-dispatcher] is
- invoked.
+  A dispatcher that checks if the request is denied based on
+  @racket[denied?]. If so, then @racket[authentication-responder] is
+  called with a @racket[header] that requests credentials. If not, then
+  @racket[next-dispatcher] is invoked.
 }
-                      
+
 @defthing[authorized?/c contract?]{
- Equivalent to @racket[(string? (or/c false/c bytes?) (or/c false/c bytes?) . -> . (or/c false/c string?))].
- The input is the URI as a string and the username and passwords as bytes.
- The return is the authentication realm as a string if the user is not authorized and 
- @racket[#f] if the request @emph{is} authorized.
-}       
-                      
+ Equivalent to
+ @racket[(string? (or/c false/c bytes?) (or/c false/c bytes?) . -> . (or/c false/c string?))].
+ The input is the URI as a string and the username and passwords as
+ bytes.  The return is the authentication realm as a string if the user
+ is not authorized and @racket[#f] if the request @emph{is} authorized.
+}
+
 @defproc[(make-basic-denied?/path [password-file path-string?])
          (values (-> void)
                  authorized?/c)]{
- Creates an authorization procedure based on the given password file. The first returned value 
- is a procedure that refreshes the password cache used by the authorization procedure.
+ Creates an authorization procedure based on the given password
+ file. The first returned value is a procedure that refreshes the
+ password cache used by the authorization procedure.
 
  @racket[password-file] is parsed as:
  @racketblock[(list ([domain : string?]
@@ -361,14 +365,14 @@ a URL that refreshes the password file, servlet cache, etc.}
  If @racket[over-limit] is @racket['kill-old], then the oldest request handler is killed---prioritizing new connections over old.
  (This setting is a little dangerous because requests might never finish if there is constant load.)
 }}
-                      
+
 @(require (for-label
            web-server/web-server
            web-server/http
            (prefix-in limit: web-server/dispatchers/limit)
            (prefix-in filter: web-server/dispatchers/dispatch-filter)
            (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)))
-                                                                                                       
+
 Consider this example:
 @racketmod[
  racket

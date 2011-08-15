@@ -122,7 +122,7 @@ the function.}
 
 
 @defform[(define-datatype dataype-name [variant-name field-name ...] ...)]{
-                                                                  
+
 A short-hand for defining a group of related structures. The following @racket[define-datatype]:
 
 @racketblock[
@@ -237,7 +237,7 @@ of the initial @racket[expression].}
 
 
 @defform[(match expression [pattern expression] ...)]{
-                                          
+
 A @racket[match] form contains one or more clauses that are surrounded by
 square brackets. Each clause contains a pattern---a description of a value---and
 an answer @racket[expression].  The initial @racket[expression] is evaluated,

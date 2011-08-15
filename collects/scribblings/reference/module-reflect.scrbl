@@ -49,14 +49,14 @@ the grammar for @racket[_module-path] for @racket[require],
 @racket[#f] otherwise.}
 
 
-@defparam[current-module-name-resolver proc 
+@defparam[current-module-name-resolver proc
            (case->
             (resolved-module-path? . -> . any)
             ((or/c module-path? path?)
-             (or/c #f resolved-module-path?) 
-             (or/c #f syntax?) 
+             (or/c #f resolved-module-path?)
+             (or/c #f syntax?)
              boolean?
-             . -> . 
+             . -> .
              resolved-module-path?))]{
 
 A parameter that determines the current @deftech{module name

@@ -4,8 +4,8 @@
 
 @(define-syntax-rule (def base-author)
    (begin
-    (require (for-label scribble/base))
-    (define base-author @racket[author])))
+     (require (for-label scribble/base))
+     (define base-author @racket[author])))
 @(def base-author)
 
 @title{LNCS Paper Format}
@@ -47,7 +47,7 @@ arguments to @racket[institutes].
          #:contracts ([pre-content-expr pre-content?])]{
 
 The @racket[pre-content-expr]s are used as the institutions of the authors.
-                                                            
+
 }
 
 @defidform[institute]{For use only in @racket[institutes].}

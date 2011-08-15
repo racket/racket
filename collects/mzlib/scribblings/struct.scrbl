@@ -51,11 +51,11 @@ property.
 
 @examples[
 #:eval struct-eval
-(define-struct/properties point (x y) 
-   ([prop:custom-write (lambda (p port write?)
-                        (fprintf port "(~a, ~a)"
-                                      (point-x p)
-                                      (point-y p)))]))
+(define-struct/properties point (x y)
+  ([prop:custom-write (lambda (p port write?)
+                       (fprintf port "(~a, ~a)"
+                                     (point-x p)
+                                     (point-y p)))]))
 (display (make-point 1 2))
 ]}
 

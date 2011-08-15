@@ -261,7 +261,7 @@ resulting iteration can be performed more efficiently than plain
 @racket[for/vector] or @racket[for*/vector]:
 
 @interaction[
-(let ((chapters '("Intro" "Details" "Conclusion")))
+(let ([chapters '("Intro" "Details" "Conclusion")])
   (for/vector #:length (length chapters) ([i (in-naturals 1)]
                                           [chapter chapters])
     (string-append (number->string i) ". " chapter)))

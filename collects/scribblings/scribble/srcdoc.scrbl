@@ -77,7 +77,7 @@ documentation expressions.}
                            (code:line keyword contract-expr)]
                 [optional contract-expr
                           (code:line keyword contract-expr)])]{
-                          
+
 When used in @racket[provide/doc], exports @racket[id] with the
 contract described by @racket[contract]
 just like using @racket[provide/contract].
@@ -109,7 +109,7 @@ form.}
                          (->i (arg ...) () res)
                          (->i (arg ...) () #:pre (pre-id ...) condition [name res])
                          (->i (arg ...) () #:rest rest res)
-                         
+
                          (->d (arg ...) () (values [id result] ...))
                          (->d (arg ...) () #:pre-cond expr (values [id result] ...))
                          (->d (arg ...) () [id result])
@@ -117,9 +117,9 @@ form.}
                          (->d (arg ...) () #:rest id rest [id result])])]{
 
 Like @racket[proc-doc], but supporting contract forms that embed
-argument names. Only a subset of @racket[->i] and @racket[->d] forms are currently
-supported.}
-                          
+argument names. Only a subset of @racket[->i] and @racket[->d] forms are
+currently supported.}
+
 @defform[(thing-doc id contract-expr dec-expr)]{
 
 Like @racket[proc-doc], but for an export of an arbitrary value.}

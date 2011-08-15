@@ -69,12 +69,12 @@ The @web-server implements many HTTP libraries that are provided by this module.
  
  You are @bold{unlikely to need to construct} a request struct.
 }
-                                         
+
 @defproc[(request-bindings/raw [r request?])
          (listof binding?)]{
  Forces @racket[(request-bindings/raw-promise r)].
 }
-                                         
+
 Here is an example typical of what you will find in many applications:
 @racketblock[
 (define (get-number req)
@@ -181,12 +181,12 @@ Here is an example typical of what you will find in many applications:
    (λ (op) (write-bytes #"Moved" op)))
  ]
 }
-                                                 
+
 @defproc[(response/full [code number?] [message bytes?] [seconds number?] [mime bytes?]
                         [headers (listof header?)] [body (listof bytes?)])
          response?]{
  A constructor for responses where @racket[body] is the response body.
-                                   
+
  Example:
  @racketblock[
   (response/full
@@ -261,7 +261,7 @@ transmission that the server @bold{will not catch}.}
  
  @warning{When using cookies, make sure you follow the advice of the @link["http://cookies.lcs.mit.edu/"]{MIT Cookie Eaters},
           or you will be susceptible to dangerous attacks.} 
-}                                  
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "cookie-parse"]{Extracting Cookies}
@@ -277,9 +277,10 @@ transmission that the server @bold{will not catch}.}
              [value string?]
              [domain (or/c false/c valid-domain?)]
              [path (or/c false/c string?)])]{
-                              
-  While server cookies are represented with @racket[cookie?]s, cookies that come from the client are represented
-  with a @racket[client-cookie] structure.                              
+
+  While server cookies are represented with @racket[cookie?]s, cookies
+  that come from the client are represented with a
+  @racket[client-cookie] structure.
  }
  
  @defproc[(request-cookies [req request?])
@@ -364,7 +365,7 @@ An implementation of HTTP Basic Authentication.
  Returns a pair of the username and password from the authentication
  header in @racket[req] if they are present, or @racket[#f]. 
 }
-                                               
+
 Example:
 @racketmod[
 web-server/insta
@@ -408,32 +409,36 @@ An implementation of HTTP Digest Authentication.
          (or/c false/c (listof (cons/c symbol? string?)))]{
  Returns the Digest credentials from @racket[req] (if they appear) as an association list.
 }         
-                                                          
+
 @defthing[username*realm->password/c contract?]{
- Used to look up the password for a user is a realm.                                                
-                                                
- Equivalent to @racket[(string? string? . -> . string?)].                                                
+ Used to look up the password for a user is a realm.
+
+ Equivalent to @racket[(string? string? . -> . string?)].
 }
 
 @defthing[username*realm->digest-HA1/c contract?]{
  Used to compute the user's secret hash.
-      
+
  Equivalent to @racket[(string? string? . -> . bytes?)].
-} 
-       
+}
+
 @defproc[(password->digest-HA1 [lookup-password username*realm->password/c])
          username*realm->digest-HA1/c]{
- Uses @racket[lookup-password] to find the password, then computes the secret hash of it.
-}      
-                                       
+ Uses @racket[lookup-password] to find the password, then computes the
+ secret hash of it.
+}
+
 @defproc[(make-check-digest-credentials [lookup-HA1 username*realm->digest-HA1/c])
          (string? (listof (cons/c symbol? string?)) . -> . boolean?)]{
- Constructs a function that checks whether particular Digest credentials (the second argument of the returned function)
- are correct given the HTTP method provided as the first argument and the secret hash computed by @racket[lookup-HA1].
- 
- This is will result in an exception if the Digest credentials are missing portions.
-} 
-                                                                     
+ Constructs a function that checks whether particular Digest credentials
+ (the second argument of the returned function) are correct given the
+ HTTP method provided as the first argument and the secret hash computed
+ by @racket[lookup-HA1].
+
+ This is will result in an exception if the Digest credentials are
+ missing portions.
+}
+
 Example:
 @racketmod[
 web-server/insta
@@ -471,7 +476,7 @@ web-server/insta
                      xml))
 
 @defmodule[web-server/http/xexpr]{
-                                  
+
 @defproc[(response/xexpr [xexpr xexpr/c]
                          [#:code code number? 200]
                          [#:message message bytes? #"Okay"]

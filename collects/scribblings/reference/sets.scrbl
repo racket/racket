@@ -209,7 +209,7 @@ Returns @racket[#t] if @racket[st] compares elements with @racket[eq?],
 
 @defproc[(set/c [contract chaperone-contract?] [#:cmp cmp (or/c 'dont-care 'equal 'eqv 'eq) 'dont-care]) contract?]{
   Constructs a contract that recognizes sets whose elements match @racket[contract].
-                                                                 
+
   If @racket[cmp] is @racket['dont-care], then the equality notion of the set is not considered
   when checking the contract. Otherwise, the contract accepts only sets with the corresponding
   notion of equality.

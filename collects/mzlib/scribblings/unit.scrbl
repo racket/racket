@@ -3,16 +3,16 @@
           (for-label mzlib/unit))
 
 @(begin
-  (define-syntax-rule (bind id)
-    (begin
-     (require (for-label racket/unit))
-     (define id (racket struct))))
-  (bind racket-struct)
-  (define-syntax-rule (bindc id)
-    (begin
-     (require (for-label racket/unit))
-     (define id (racket struct/ctc))))
-  (bindc racket-struct/ctc))
+   (define-syntax-rule (bind id)
+     (begin
+       (require (for-label racket/unit))
+       (define id (racket struct))))
+   (bind racket-struct)
+   (define-syntax-rule (bindc id)
+     (begin
+       (require (for-label racket/unit))
+       (define id (racket struct/ctc))))
+   (bindc racket-struct/ctc))
 
 @mzlib[#:mode title unit]
 

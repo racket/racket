@@ -217,13 +217,13 @@ racket
   (+ n 17))
 
 (define-syntax (def-go stx)
- (syntax-case stx ()
-   [(_ go)
-    (protect-syntax
-     #'(define-syntax (go stx)
-         (syntax-case stx ()
-          [(_ x)
-           (protect-syntax #'(unchecked-go 8 x))])))]))
+  (syntax-case stx ()
+    [(_ go)
+     (protect-syntax
+      #'(define-syntax (go stx)
+          (syntax-case stx ()
+            [(_ x)
+             (protect-syntax #'(unchecked-go 8 x))])))]))
 ]
 
 When @racket[def-go] is used inside another module to defined
@@ -247,13 +247,13 @@ racket
     (lambda (stx) (syntax-arm stx insp))))
 
 (define-syntax (def-go stx)
- (syntax-case stx ()
-   [(_ go)
-    (protect-syntax
-     #'(define-syntax (go stx)
-         (syntax-case stx ()
-          [(_ x)
-           (go-syntax-protect #'(unchecked-go 8 x))])))]))
+  (syntax-case stx ()
+    [(_ go)
+     (protect-syntax
+      #'(define-syntax (go stx)
+          (syntax-case stx ()
+           [(_ x)
+            (go-syntax-protect #'(unchecked-go 8 x))])))]))
 ]
 
 @;------------------------------------------------------------------------

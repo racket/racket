@@ -739,8 +739,8 @@ values from the generator.
                   (if (null? x)
                       0
                       (begin
-                       (yield (car x))
-                       (loop (cdr x)))))))
+                        (yield (car x))
+                        (loop (cdr x)))))))
     (g)
     (g)
     (g)
@@ -812,8 +812,8 @@ Produces a @tech{sequence} that encapsulates the @tech{generator} formed by
                              (if (null? x)
                                  my-stop-value
                                  (begin
-                                  (yield (car x))
-                                  (loop (cdr x)))))))
+                                   (yield (car x))
+                                   (loop (cdr x)))))))
 
     (for/list ([i (in-producer my-generator my-stop-value)])
       i)]}

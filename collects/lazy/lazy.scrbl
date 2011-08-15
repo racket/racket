@@ -19,16 +19,16 @@
 
 @(define-syntax-rule (defprocthing* mod id ...)
    (begin
-    (deflazy mod defprocthing id)
-    ...))
+     (deflazy mod defprocthing id)
+     ...))
 
 @(define-syntax-rule (defprocthing id . rest)
    (defthing id procedure? . rest))
 
 @(define-syntax-rule (defidform* mod id ...)
    (begin
-    (deflazy mod defidform id)
-    ...))
+     (deflazy mod defidform id)
+     ...))
 
 @; ----------------------------------------
 

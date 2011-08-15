@@ -93,16 +93,16 @@ provide/contract'd. This is currently buggy so this
 discussion is elided. Here's the expansion of
 the requiring module, just to give an idea:
 
-(module m racket 
+(module m racket
   (require mzlib/contract)
-   (provide/contract [x x-ctc]))
+  (provide/contract [x x-ctc]))
 
 (module n racket (require m) (define (f) ... x ...))
 ==>
-(module n racket 
-   (require (rename m x x-real))
-   (define x (apply-contract x-real x-ctc ...))
-   (define (f) ... x ...))
+(module n racket
+  (require (rename m x x-real))
+  (define x (apply-contract x-real x-ctc ...))
+  (define (f) ... x ...))
 
 The intention is to only do the work of applying the
 contract once (per variable reference to a

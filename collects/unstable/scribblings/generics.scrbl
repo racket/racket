@@ -23,19 +23,27 @@
                [prop:name identifier?]
                [name? identifier?]
                [method identifier?])]{
-                                      
-Defines @racket[name] as a transformer binding for the static information about a new generic group.
 
-Defines @racket[prop:name] as a structure 
-type property. Structure types implementing this generic group should have this property where the value is a vector
-with one element per @racket[method] where each value is
-either @racket[#f] or a procedure with the same arity as specified by @racket[kw-formals*].
-(@racket[kw-formals*] is similar to the @racket[kw-formals] used by @racket[lambda], except no expression is given for optional arguments.)
-The arity of each method is checked by the guard on the structure type property.
+Defines @racket[name] as a transformer binding for the static
+information about a new generic group.
 
-Defines @racket[name?] as a predicate identifying instances of structure types that implement this generic group.
+Defines @racket[prop:name] as a structure type property.  Structure
+types implementing this generic group should have this property where
+the value is a vector with one element per @racket[method] where each
+value is either @racket[#f] or a procedure with the same arity as
+specified by @racket[kw-formals*].  (@racket[kw-formals*] is similar to
+the @racket[kw-formals] used by @racket[lambda], except no expression is
+given for optional arguments.)  The arity of each method is checked by
+the guard on the structure type property.
 
-Defines each @racket[method] as a generic procedure that calls the corresponding method on values where @racket[name?] is true. Each method must have a required by-position argument that is @racket[free-identifier=?] to @racket[name]. This argument is used in the generic definition to locate the specialization.
+Defines @racket[name?] as a predicate identifying instances of structure
+types that implement this generic group.
+
+Defines each @racket[method] as a generic procedure that calls the
+corresponding method on values where @racket[name?] is true. Each method
+must have a required by-position argument that is
+@racket[free-identifier=?] to @racket[name]. This argument is used in
+the generic definition to locate the specialization.
 
 }
 
@@ -56,36 +64,43 @@ where @racket[_prop:name] and @racket[_name?] are created with the lexical
 context of @racket[name].
 
 }
-                                
+
 @defform[(define-methods name definition ...)
          #:contracts
          ([name identifier?])]{
 
-@racket[name] must be a transformer binding for the static information about a new generic group.
-                               
-Expands to a value usable as the property value for the structure type property of the @racket[name] generic group.
-                                                                                       
-If the @racket[definition]s define the methods of @racket[name], then they are used in the property value.
+@racket[name] must be a transformer binding for the static information
+about a new generic group.
 
-If any method of @racket[name] is not defined, then @racket[#f] is used to signify that the structure type does not implement the particular method.
+Expands to a value usable as the property value for the structure type
+property of the @racket[name] generic group.
+
+If the @racket[definition]s define the methods of @racket[name], then
+they are used in the property value.
+
+If any method of @racket[name] is not defined, then @racket[#f] is used
+to signify that the structure type does not implement the particular
+method.
 
 Allows @racket[define/generic] to appear in @racket[definition ...].
 
 }
-                              
+
 @defform[(define/generic local-name method-name)
          #:contracts
          ([local-name identifier?]
           [method-name identifier?])]{
-                                      
-When used inside @racket[define-methods], binds @racket[local-name] to the generic for @racket[method-name]. This is useful for method specializations to use the generic methods on other values.
-                 
+
+When used inside @racket[define-methods], binds @racket[local-name] to
+the generic for @racket[method-name]. This is useful for method
+specializations to use the generic methods on other values.
+
 Syntactically an error when used outside @racket[define-methods].
 
 }
-                                     
+
 @; Examples
-@(require scribble/eval)               
+@(require scribble/eval)
 @(define (new-evaluator)
    (let* ([e (make-base-eval)])
      (e '(require (for-syntax racket/base)

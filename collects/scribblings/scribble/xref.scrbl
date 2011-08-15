@@ -161,7 +161,6 @@ locations, instead of copying to the directory of @racket[dest].}
 
 Transfers cross-reference information to @racket[ci], which is the
 initially collected information from @racket[renderer].}
-                             
 
 
 @defproc[(xref-index [xref xref?]) (listof entry?)]{

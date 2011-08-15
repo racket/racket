@@ -28,9 +28,9 @@ tail position with respect to the @racket[begin] form.
   (if (zero? height)
       (void)
       (begin
-       (display (make-string height #\*))
-       (newline)
-       (print-triangle (sub1 height)))))
+        (display (make-string height #\*))
+        (newline)
+        (print-triangle (sub1 height)))))
 (print-triangle 4)
 ]
 
@@ -55,10 +55,10 @@ positions, instead of forming an expression, the content of
 
 @defexamples[
 (let ([curly 0])
- (begin
-  (define moe (+ 1 curly))
-  (define larry (+ 1 moe)))
- (list larry curly moe))
+  (begin
+    (define moe (+ 1 curly))
+    (define larry (+ 1 moe)))
+  (list larry curly moe))
 ]
 
 This splicing behavior is mainly useful for macros, as we discuss
@@ -114,13 +114,13 @@ result is @racket[#f].
 
 @defexamples[
 (define (enumerate lst)
- (if (null? (cdr lst))
-     (printf "~a.\n" (car lst))
-     (begin
-       (printf "~a, " (car lst))
-       (when (null? (cdr (cdr lst)))
-         (printf "and "))
-      (enumerate (cdr lst)))))
+  (if (null? (cdr lst))
+      (printf "~a.\n" (car lst))
+      (begin
+        (printf "~a, " (car lst))
+        (when (null? (cdr (cdr lst)))
+          (printf "and "))
+        (enumerate (cdr lst)))))
 (enumerate '("Larry" "Curly" "Moe"))
 ]
 

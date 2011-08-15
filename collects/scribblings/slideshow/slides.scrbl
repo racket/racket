@@ -328,7 +328,7 @@ but not hollow (using @racket[disk], not @racket[circle]).
 @defthing[o-bullet pict?]{
 
 A hollow bullet used by default by @racket[subitem].
-                                   
+
 It's implementation is:
 @racketblock[(baseless
               (cc-superimpose 

@@ -139,7 +139,7 @@ For example, the expression
 expands to
 
 @racketblock[
-(let ((or-part x)) (if or-part or-part (or y)))
+(let ([or-part x]) (if or-part or-part (or y)))
 ]
 
 which, in turn, expands to

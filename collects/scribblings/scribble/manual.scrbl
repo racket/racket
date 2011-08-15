@@ -477,7 +477,7 @@ and one that combines several modules) via your own
 @defform/subs[(declare-exporting mod-path ... maybe-sources)
               ([maybe-sources code:blank
                               (code:line #:use-sources (mod-path ...))])]{
-                                 
+
 Associates the @racket[mod-path]s to all bindings defined within the
 enclosing section, except as overridden by other
 @racket[declare-exporting] declarations in nested sub-sections.  The

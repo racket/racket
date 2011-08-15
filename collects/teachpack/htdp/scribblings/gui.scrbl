@@ -82,11 +82,11 @@ Example 2:
 ;; set up window with three "lines":
 ;;    a text field, a message, and two buttons
 ;; fill in text and click OKAY
-(define w 
- (create-window
-  (list
-   (list text1)
-   (list msg1)
-   (list (make-button "OKAY" respond)
-	 (make-button "QUIT" (lambda (e) (hide-window w)))))))
+(define w
+  (create-window
+   (list
+    (list text1)
+    (list msg1)
+    (list (make-button "OKAY" respond)
+          (make-button "QUIT" (lambda (e) (hide-window w)))))))
 ))

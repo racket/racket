@@ -315,8 +315,8 @@ the source form are identifiers. We could use a
   (syntax-case stx ()
     [(rotate a c ...)
      (begin
-      (check-ids stx #'(a c ...))
-      #'(shift-to (c ... a) (a c ...)))]))
+       (check-ids stx #'(a c ...))
+       #'(shift-to (c ... a) (a c ...)))]))
 ]
 
 The @racket[check-ids] function can use the @racket[syntax->list]

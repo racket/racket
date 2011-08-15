@@ -1127,7 +1127,7 @@ For example, the following defines addition on natural numbers:
          [(sum z n n)]
          [(sum (s n_1) n_2 (s n_3))
           (sum n_1 n_2 n_3)])]
-                                     
+
 The @racket[judgment-holds] form checks whether a relation holds for any 
 assignment of pattern variables in output positions.
 @examples[
@@ -1199,7 +1199,7 @@ one.
        (judgment-holds (all-even (z (s (s z)) (s z))))]
 
 Redex evaluates premises depth-first, even when it doing so leads to 
-non-termination. For example, consider the following definitions:                                    
+non-termination. For example, consider the following definitions:
 @interaction[
 #:eval redex-eval
        (define-language vertices
@@ -1241,7 +1241,7 @@ the pattern variables in @racket[judgment-id]'s output positions. In its second
 form, produces a list of terms by instantiating the supplied term template with
 each satisfying assignment of pattern variables. 
 See @racket[define-judgment-form] for examples.
-}                                     
+}
 
 @defidform[I]{
 Recognized specially within @racket[define-judgment-form], the @racket[I] keyword
@@ -1294,7 +1294,7 @@ the same inputs, and their results are cached, unless
 relation is called with the same inputs twice, then its right-hand
 sides are evaluated only once.
 }
-                                                                      
+
 @defparam[current-traced-metafunctions traced-metafunctions (or/c 'all (listof symbol?))]{
 
 Controls which metafunctions are currently being traced. If it is
@@ -1638,7 +1638,7 @@ term that does not match @racket[pattern].}
           (printf "~s\n" (term (number ...)))
           #:attempts 3
           #:source R))
-                      
+
        (redex-check
         empty-lang
         number
@@ -2284,8 +2284,8 @@ Like @racket[render-metafunction] but for judgment forms.
 
 This function sets @racket[dc-for-text-size]. See also
 @racket[relation->pict].
-}                                                                                    
-                                                                                    
+}
+
 @defform[(relation->pict relation-name)]{
   This produces a pict, but without setting @racket[dc-for-text-size].
   It is suitable for use in Slideshow or other libraries that combine
@@ -2508,7 +2508,7 @@ metafunction. It defaults to slideshow's @racket[text] function.
 }
 
 @defproc[(arrow->pict [arrow symbol?]) pict?]{
-  Returns the pict corresponding to @racket[arrow].                                             
+  Returns the pict corresponding to @racket[arrow].
 }
 
 @defproc[(set-arrow-pict! [arrow symbol?] [proc  (-> pict?)]) void?]{
@@ -2660,8 +2660,8 @@ explanation of logical-space):
 
 @defform[(with-compound-rewriters ([name-symbol proc] ...)
                                   expression)]{
-Shorthand for nested @racket[with-compound-rewriter] expressions.}                                             
-                                             
+Shorthand for nested @racket[with-compound-rewriter] expressions.}
+
 @defstruct[lw ([e (or/c string?
                         symbol?
                         pict? 
@@ -2695,8 +2695,8 @@ metafunction application. See @racket[to-lw] for the meanings of the other field
          lw?]{
 Like @racket[make-lw] but specialized for constructing @racket[lw]s that
 do not represent unquoted expressions or metafunction applications.
-}                        
-                        
+}
+
 @defform[(to-lw arg)]{
 
 This form turns its argument into lw structs that

@@ -4,8 +4,8 @@
 
 @(define-syntax-rule (intro id)
    (begin
-    (require (for-label racket/cmdline))
-    (define id (racket command-line))))
+     (require (for-label racket/cmdline))
+     (define id (racket command-line))))
 @(intro racket-command-line)
 
 @mzlib[#:mode title cmdline]

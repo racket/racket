@@ -10,11 +10,11 @@
 @interaction-eval[#:eval kw-eval (require mzlib/kw)]
 
 @(begin
-  (define-syntax-rule (bind id)
-    (begin
-     (require (for-label scheme/base))
-     (define id (racket lambda))))
-  (bind base-lambda))
+   (define-syntax-rule (bind id)
+     (begin
+       (require (for-label scheme/base))
+       (define id (racket lambda))))
+   (bind base-lambda))
 
 @mzlib[#:mode title kw]
 

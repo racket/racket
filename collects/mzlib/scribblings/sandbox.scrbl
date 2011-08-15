@@ -4,11 +4,11 @@
                      (only-in racket/sandbox make-module-evaluator)))
 
 @(begin
-  (define-syntax-rule (bind id)
-    (begin
-     (require (for-label racket/sandbox))
-     (define id (racket make-evaluator))))
-  (bind racket-make-evaluator))
+   (define-syntax-rule (bind id)
+     (begin
+       (require (for-label racket/sandbox))
+       (define id (racket make-evaluator))))
+   (bind racket-make-evaluator))
 
 @mzlib[#:mode title sandbox]
 

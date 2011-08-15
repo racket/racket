@@ -181,15 +181,15 @@ function, we could do the following:
                        #:segments [segments 20]
                        #:color [color 'red]
                        #:width [width 1])
-    (let* ((dash-size (/ (- x-max x-min) segments))
-           (x-lists (build-list
+    (let* ([dash-size (/ (- x-max x-min) segments)]
+           [x-lists (build-list
                      (/ segments 2)
                      (lambda (index)
                        (x-values
                         (/ samples segments)
                         (+ x-min (* 2 index dash-size))
                         (+ x-min (* (add1 (* 2 index)) 
-                           dash-size)))))))
+                           dash-size)))))])
       (lambda (2dview)
         (send 2dview set-line-color color)
         (send 2dview set-line-width width)

@@ -9,11 +9,11 @@
                      (except-in wxme/cache-image reader)))
 
 @(define-syntax-rule (in mod . content)
-  (begin
-   (define-syntax-rule (intro)
-     (begin (require (for-label mod))
-            . content))
-   (intro)))
+   (begin
+     (define-syntax-rule (intro)
+       (begin (require (for-label mod))
+              . content))
+     (intro)))
 
 @title{WXME Decoding}
 

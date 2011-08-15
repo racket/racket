@@ -13,12 +13,12 @@
 @interaction-eval[#:eval etc-eval (require mzlib/etc)]
 
 @(begin
-  (define-syntax-rule (bind id else-id)
-    (begin
-     (require (for-label scheme/base))
-     (define id (racket lambda))
-     (define else-id (racket else))))
-  (bind base-lambda base-else))
+   (define-syntax-rule (bind id else-id)
+     (begin
+       (require (for-label scheme/base))
+       (define id (racket lambda))
+       (define else-id (racket else))))
+   (bind base-lambda base-else))
 
 @mzlib[#:mode title etc]
 
@@ -77,11 +77,11 @@ syntax transformers that share helper functions, though
 (define-syntax-set (let-current-continuation 
                     let-current-escape-continuation)
   (define (mk call-id)
-     (lambda (stx)
-       (syntax-case stx ()
-         [(_ id body1 body ...) 
-          (with-syntax ([call call-id])
-            (syntax (call (lambda (id) body1 body ...))))])))
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ id body1 body ...) 
+         (with-syntax ([call call-id])
+           (syntax (call (lambda (id) body1 body ...))))])))
   (define let-current-continuation/proc
     (mk (quote-syntax call/cc)))
   (define let-current-escape-continuation/proc
@@ -156,12 +156,12 @@ corresponding expression are bound to the multiple variables.
 @examples[
 #:eval etc-eval
 (let+ ([val (values x y) (values 1 2)])
-   (list x y))
+  (list x y))
 
 (let ([x 1])
-   (let+ ([val x 3]
-          [val y x])
-      y))
+  (let+ ([val x 3]
+         [val y x])
+     y))
 ]}
 
 

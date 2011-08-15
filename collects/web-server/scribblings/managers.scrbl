@@ -68,7 +68,7 @@ the users and implementers of managers.
  This exception should be thrown by a manager when a continuation is
  looked up that does not exist.
 }
-                                                       
+
 }
 
 @; ------------------------------------------------------------

@@ -6,11 +6,11 @@
                               read-syntax-inside read-inside)))
 
 @(begin
-  (define-syntax-rule (define-mb name)
-    (begin
-     (require (for-label scheme/base))
-     (define name @racket[#%module-begin])))
-  (define-mb scheme-#%module-begin))
+   (define-syntax-rule (define-mb name)
+     (begin
+       (require (for-label scheme/base))
+       (define name @racket[#%module-begin])))
+   (define-mb scheme-#%module-begin))
 
 @(define guide-doc '(lib "scribblings/guide/guide.scrbl"))
 

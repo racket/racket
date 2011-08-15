@@ -343,7 +343,7 @@ characters, @racket[char-lower-case?] characters, etc.}
 @(define-syntax-rule (lex-sre-doc)
    (...
     (begin
-     (require (for-label parser-tools/lex-sre))
+      (require (for-label parser-tools/lex-sre))
 
 @defform[(* re ...)]{
 
@@ -417,7 +417,7 @@ characters.}
 @(define-syntax-rule (lex-v200-doc)
    (...
     (begin
-     (require (for-label parser-tools/lex-plt-v200))
+      (require (for-label parser-tools/lex-plt-v200))
 
 @t{The @racketmodname[parser-tools/lex-plt-v200] module re-exports
    @racket[*], @racket[+], @racket[?], and @racket[&] from

@@ -47,7 +47,7 @@ Zum Beispiel:
 (define pos (make-vec3 5 5 3))
 (define lookat (make-vec3 0 0 0))
 (define camera
-   (create-camera-matrix pos lookat 70.0 screenWidth screenHeight))
+  (create-camera-matrix pos lookat 70.0 screenWidth screenHeight))
 (code:comment @#,t{render image})
 (render-scene screenWidth screenHeight box camera)
 ]

@@ -6,11 +6,11 @@
                      (only-in setup/infotab require)))
 
 @(begin
-  (define-syntax-rule (define-racket-require id)
-   (begin
-    (require (for-label (only-in racket require)))
-    (define id @racket[require])))
-  (define-racket-require racket:require))
+   (define-syntax-rule (define-racket-require id)
+     (begin
+       (require (for-label (only-in racket require)))
+       (define id @racket[require])))
+   (define-racket-require racket:require))
 
 @title[#:tag "info.rkt"]{@filepath{info.rkt} File Format}
 

@@ -2,9 +2,9 @@
 @(require "common.rkt" (for-label syntax/kerncase))
 
 @(define-syntax-rule (intro id)
-  (begin
-   (require (for-label mzscheme))
-   (define id (racket if))))
+   (begin
+     (require (for-label mzscheme))
+     (define id (racket if))))
 @(intro mzscheme-if)
 
 @; ----------------------------------------------------------------------

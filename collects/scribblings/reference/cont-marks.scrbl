@@ -172,18 +172,18 @@ default error display handler (see
 @secref["errorproc"]).}
 
 @examples[
-(define (extract-current-continuation-marks key) 
-   (continuation-mark-set->list 
-    (current-continuation-marks) 
-    key)) 
+(define (extract-current-continuation-marks key)
+  (continuation-mark-set->list
+   (current-continuation-marks)
+   key))
 
-(with-continuation-mark 'key 'mark 
+(with-continuation-mark 'key 'mark
   (extract-current-continuation-marks 'key))
 
-(with-continuation-mark 'key1 'mark1 
-  (with-continuation-mark 'key2 'mark2 
-    (list 
-     (extract-current-continuation-marks 'key1) 
+(with-continuation-mark 'key1 'mark1
+  (with-continuation-mark 'key2 'mark2
+    (list
+     (extract-current-continuation-marks 'key1)
      (extract-current-continuation-marks 'key2))))
 
 (with-continuation-mark 'key 'mark1 

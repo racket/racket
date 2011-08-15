@@ -6,8 +6,8 @@
 @(begin
   (define-syntax-rule (bind id)
     (begin
-     (require racket/match)
-     (define id (racket match))))
+      (require racket/match)
+      (define id (racket match))))
   (bind racket-match))
 
 @mzlib[#:mode title match]

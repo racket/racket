@@ -40,16 +40,16 @@ The other arguments have the same meaning as for @racket[expr/c].
 @examples[#:eval the-eval
 (define-syntax (myparameterize1 stx)
   (syntax-case stx ()
-    [(_ ((p v)) body)
+    [(_ ([p v]) body)
      (with-syntax ([cp (wrap-expr/c
                         #'parameter? #'p
                         #:name "the parameter argument"
                         #:context stx)])
-       #'(parameterize ((cp v)) body))]))
-(myparameterize1 ((current-input-port
-                   (open-input-string "(1 2 3)")))
+       #'(parameterize ([cp v]) body))]))
+(myparameterize1 ([current-input-port
+                   (open-input-string "(1 2 3)")])
   (read))
-(myparameterize1 (('whoops 'something))
+(myparameterize1 (['whoops 'something])
   'whatever)
 
 (module mod racket

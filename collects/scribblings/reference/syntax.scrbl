@@ -905,18 +905,18 @@ follows.
               chickens))
 
    (module nest2 racket
-    (define-for-syntax eggs 2)
-    (provide (for-syntax eggs)))
+     (define-for-syntax eggs 2)
+     (provide (for-syntax eggs)))
    (require (for-meta 2 racket/base)
             (for-syntax 'nest2))
    (define-syntax (test stx)
-    (define-syntax (show-eggs stx)
-     (printf "Eggs are ~a\n" eggs)
-     #'0)
-    (begin
-     (show-eggs)
-     #'0))
-    (test)
+     (define-syntax (show-eggs stx)
+       (printf "Eggs are ~a\n" eggs)
+       #'0)
+     (begin
+       (show-eggs)
+       #'0))
+   (test)
  ]}
 
  @specsubform[#:literals (for-syntax) 
@@ -2144,8 +2144,8 @@ be defined by the same @racket[define-for-syntax] form.
 @defexamples[#:eval (syntax-eval)
 (define-for-syntax helper 2)
 (define-syntax (make-two syntax-object)
- (printf "helper is ~a\n" helper)
- #'2)
+  (printf "helper is ~a\n" helper)
+  #'2)
 (make-two)
 (code:comment @#,t{`helper' is not bound in the runtime phase})
 helper

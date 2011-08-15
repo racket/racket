@@ -29,9 +29,18 @@ This library provides a simplified version of parameters that are backed by cont
                               [none-v [any/c #f]]
                               [tag continuation-prompt-tag? default-continuation-prompt-tag])
          (listof vector?)]{
- Returns the values of the @racket[mps] up to @racket[tag]. The length of each vector in the result list is the same as the length of @racket[mps], and a value in a particular vector position is the value for the corresponding mark parameter in @racket[mps]. Values for multiple mark parameter appear in a single vector only when the mark parameters are for the same continuation frame in the current continuation. The @racket[none-v] argument is used for vector elements to indicate the lack of a value.
- }
-                          
+  Returns the values of the @racket[mps] up to @racket[tag]. The length
+  of each vector in the result list is the same as the length of
+  @racket[mps], and a value in a particular vector position is the value
+  for the corresponding mark parameter in @racket[mps]. Values for
+  multiple mark parameter appear in a single vector only when the mark
+  parameters are for the same continuation frame in the current
+  continuation. The @racket[none-v] argument is used for vector elements
+  to indicate the lack of a value.
+}
+
 @defform[(mark-parameterize ([mp expr] ...) body-expr ...)]{
- Parameterizes @racket[(begin body-expr ...)] by associating each @racket[mp] with the evaluation of @racket[expr] in the parameterization of the entire expression.
- }
+  Parameterizes @racket[(begin body-expr ...)] by associating each
+  @racket[mp] with the evaluation of @racket[expr] in the
+  parameterization of the entire expression.
+}

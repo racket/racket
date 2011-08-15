@@ -53,9 +53,9 @@ Accepts at least two value-producing expressions. Structurally compares the firs
 value to each value subsequent value specified.
 
 It is an error to produce a function value.}
-                                                                    
+
 @defform[(check-range (test number/c) (min number/c) (max number/c))]{
-                                       
+
 Accepts three number-producing expressions. Performs the following comparison:
 min <= test <= max.}
 

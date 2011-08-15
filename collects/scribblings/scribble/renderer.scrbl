@@ -16,9 +16,9 @@
 
 @(begin
   (define-syntax-rule (def-render-mixin id)
-   (begin
-     (require (for-label scribble/html-render))
-     (define id @racket[render-mixin])))
+    (begin
+      (require (for-label scribble/html-render))
+      (define id @racket[render-mixin])))
   (def-render-mixin html:render-mixin))
 
 @title[#:tag "renderer"]{Renderers}

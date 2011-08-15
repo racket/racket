@@ -94,8 +94,8 @@ apply a function like @racket[+] to all of the items in the list:
 
 @def+int[
 (define (avg lst) (code:comment @#,elem{doesn't always work...})
- (/ (+ (list-ref lst 0) (list-ref lst 1) (list-ref lst 2))
-    (length lst)))
+  (/ (+ (list-ref lst 0) (list-ref lst 1) (list-ref lst 2))
+     (length lst)))
 (avg '(1 2 3))
 (avg '(1 2))
 ]

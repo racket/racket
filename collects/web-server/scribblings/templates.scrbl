@@ -293,16 +293,16 @@ the template to be unescaped, then create a @racket[cdata] structure:
  Expands into
  @racketblock[
   (for/list ([x xs])
-   (begin/text e ...))
+    (begin/text e ...))
  ]
- 
+
  Template Example:
  @verbatim[#:indent 2]|{
   @in[c clients]{
    <tr><td>@(car c), @(cdr c)</td></tr>
   }
  }|
- 
+
  Racket Example:
  @racketblock[
   (in c clients "<tr><td>" (car c) ", " (cdr c) "</td></tr>")

@@ -280,7 +280,8 @@ For communication among @tech{places}, the new byte string is allocated in the
  the other operations.
 @examples[
 (define b
- (bytes->string/utf-8 (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3)))
+  (bytes->string/utf-8
+   (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3)))
 
 (string->bytes/utf-8 b)
 (bytes->string/utf-8 (string->bytes/utf-8 b))
@@ -316,7 +317,7 @@ For communication among @tech{places}, the new byte string is allocated in the
  
 @examples[
 (define b
- (bytes->string/latin-1 (bytes #xfe #xd3 #xd1 #xa5)))
+  (bytes->string/latin-1 (bytes #xfe #xd3 #xd1 #xa5)))
 
 (string->bytes/latin-1 b)
 (bytes->string/latin-1 (string->bytes/latin-1 b))

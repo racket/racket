@@ -247,8 +247,8 @@ Here's the implementation of @racket[fold-test-results] in terms of
      kid-seed)
    (lambda (case name action seed)
      (case-fn
-      (run-test-case name action)
-      seed))
+       (run-test-case name action)
+       seed))
    seed
    test))
 ]

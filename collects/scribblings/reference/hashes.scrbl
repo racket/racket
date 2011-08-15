@@ -180,7 +180,7 @@ Maps @racket[key] to @racket[v] in @racket[hash], overwriting
 any existing mapping for @racket[key].
 
 @see-also-caveats[]}
-                                     
+
 @defproc[(hash-set*! [hash (and/c hash? (not/c immutable?))]
                      [key any/c]
                      [v any/c]
@@ -204,7 +204,7 @@ Functionally extends @racket[hash] by mapping @racket[key] to
 returning the extended hash table.
 
 @see-also-mutable-key-caveat[]}
-                                   
+
 @defproc[(hash-set* [hash (and/c hash? immutable?)]
                     [key any/c]
                     [v any/c]
@@ -329,25 +329,25 @@ otherwise the traversal skips a deleted key or uses the remapped key's
 new value.
 
 @see-also-concurrency-caveat[]}
-                        
+
 @defproc[(hash-keys [hash hash?])
          (listof any/c)]{
 Returns a list of the keys of @racket[hash] in an unspecified order.
-                              
+
 See @racket[hash-map] for information about modifying @racket[hash]
 during @racket[hash-keys]. @see-also-concurrency-caveat[]}
 
 @defproc[(hash-values [hash hash?])
          (listof any/c)]{
 Returns a list of the values of @racket[hash] in an unspecified order.
-                              
+
 See @racket[hash-map] for information about modifying @racket[hash]
 during @racket[hash-values]. @see-also-concurrency-caveat[]}
-                        
+
 @defproc[(hash->list [hash hash?])
          (listof (cons/c any/c any/c))]{
 Returns a list of the key--value pairs of @racket[hash] in an unspecified order.
-                              
+
 See @racket[hash-map] for information about modifying @racket[hash]
 during @racket[hash->list]. @see-also-concurrency-caveat[]}
 

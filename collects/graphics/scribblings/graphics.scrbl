@@ -175,17 +175,17 @@ black white, white black, and is otherwise ill-defined).
                        rgb?)
                  "black"])
          void?]{
-       
+
 Colors the entire contents of @racket[viewport] with @racket[color].}
 
 @defproc[((clear-viewport [viewport viewport?]))
          void?]{
-       
+
 Whitens the entire contents of @racket[viewport].}
 
 @defproc[((flip-viewport [viewport viewport?]))
          void?]{
-       
+
 @tech{Inverts} the entire contents of @racket[viewport].}
 
 
@@ -198,7 +198,7 @@ Copies the content of @racket[source] into @racket[dest].}
 
 @subsection{Pixels}
 
-@defproc[((draw-pixel [viewport viewport?]) 
+@defproc[((draw-pixel [viewport viewport?])
           [p posn?]
           [color (or/c (integer-in 0 299)
                        string?
@@ -208,13 +208,13 @@ Copies the content of @racket[source] into @racket[dest].}
 
 Colors the pixel in @racket[viewport] at @racket[p].}
 
-@defproc[((clear-pixel [viewport viewport?]) 
+@defproc[((clear-pixel [viewport viewport?])
           [p posn?])
          void?]{
 
 Whitens the pixel in @racket[viewport] at @racket[p].}
 
-@defproc[((flip-pixel [viewport viewport?]) 
+@defproc[((flip-pixel [viewport viewport?])
           [p posn?])
          void?]{
 

@@ -36,7 +36,7 @@ As an example,
 
                     (: my-sqr (Real -> Real))
                     (define (my-sqr x)
-                      (* x x))                    
+                      (* x x))
                     (my-sqr 42)]
 }|
 uses an evaluator whose language is @racketmodname[typed/racket/base].

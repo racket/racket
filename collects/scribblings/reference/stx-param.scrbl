@@ -24,7 +24,7 @@ used as a macro that expands to a use of the target identifier, but
 @racket[syntax-local-value] of @racket[id] does not produce
 the target's value.}
 
-@defform[(syntax-parameterize ((id expr) ...) body-expr ...+)]{
+@defform[(syntax-parameterize ([id expr] ...) body-expr ...+)]{
 
 @margin-note/ref{See also @racket[splicing-syntax-parameterize].}
 
