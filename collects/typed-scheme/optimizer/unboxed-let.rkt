@@ -105,11 +105,6 @@
                                     ;; if so, add to the table of functions with
                                     ;; unboxed params, so we can modify its call
                                     ;; sites, its body and its header
-                                    (begin (log-optimization
-                                            "unboxed function -> table"
-                                            arity-raising-opt-msg
-                                            fun-name)
-                                           #t)
                                     (dict-set! unboxed-funs-table fun-name
                                                (list (reverse unboxed)
                                                      (reverse boxed))))]
