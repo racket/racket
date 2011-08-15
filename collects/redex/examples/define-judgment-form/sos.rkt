@@ -134,4 +134,5 @@
    (--> e_1 e_2
         (judgment-holds (small-step e_1 e_2)))))
 
-(traces small-step-rr (term ((λ (x) (add1 x)) 0)))
+(define (trace-λv expr)
+  (traces small-step-rr expr))
