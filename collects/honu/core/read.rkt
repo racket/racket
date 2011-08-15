@@ -24,16 +24,17 @@
 (define-lex-abbrev digit (:/ #\0 #\9))
 (define-lex-abbrev identifier-first-character (:or (:/ #\a #\z)
                                                    (:/ #\A #\Z)
-                                                   ":"))
+                                                   ":" "_"))
 (define-lex-abbrev identifier-character (:or identifier-first-character
                                              digit))
 (define-lex-abbrev identifier (:: identifier-first-character
                                   (:* identifier-character)))
-(define-lex-abbrev number (:+ digit))
+(define-lex-abbrev number (:: (:+ digit) (:? (:: "." (:+ digit)))))
 (define-lex-abbrev string-character (:or (:: #\\ any-char)
                                          (:~ #\")))
 (define-lex-abbrev string (:: #\" (:* string-character) #\"))
-(define-lex-abbrev operator (:or "+" "=" "*" "/" "-" "^" "||" "|" "&&"))
+(define-lex-abbrev operator (:or "+" "=" "*" "/" "-" "^" "||" "|" "&&" "<="
+                                 ">=" "<" ">" "!"))
 (define-lex-abbrev block-comment (:: "/*"
                                      (complement (:: any-string "*/" any-string))
                                      "*/"))

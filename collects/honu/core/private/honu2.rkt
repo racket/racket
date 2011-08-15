@@ -83,10 +83,25 @@
                     (begin
                       (provide name)
                       (define-honu-operator/syntax name precedence associativity
+                                                   ;; binary
                                                    (lambda (left right)
                                                      (with-syntax ([left left]
                                                                    [right right])
-                                                       #'(operator left right))))))
+                                                       #'(operator left right)))
+                                                   ;; unary
+                                                   (lambda (argument)
+                                                     (with-syntax ([argument argument])
+                                                       #'(operator argument))))))
+
+(define-syntax-rule (define-unary-operator name precedence associativity operator)
+                    (begin
+                      (provide name)
+                      (define-honu-operator/syntax name precedence associativity
+                                                   #f
+                                                   ;; unary
+                                                   (lambda (argument)
+                                                     (with-syntax ([argument argument])
+                                                       #'(operator argument))))))
 
 (provide honu-dot)
 (define-honu-operator/syntax honu-dot 10000 'left
@@ -112,6 +127,12 @@
 (define-binary-operator honu-* 2 'left *)
 (define-binary-operator honu-/ 2 'left /)
 (define-binary-operator honu-^ 2 'right expt)
+(define-binary-operator honu-< 0.9 'left <)
+(define-binary-operator honu-<= 0.9 'left <=)
+(define-binary-operator honu-> 0.9 'left >)
+(define-binary-operator honu->= 0.9 'left >=)
 (define-binary-operator honu-and 0.5 'left and)
 (define-binary-operator honu-or 0.5 'left or)
 (define-binary-operator honu-cons 0.1 'right cons)
+
+(define-unary-operator honu-not 0.7 'left not)

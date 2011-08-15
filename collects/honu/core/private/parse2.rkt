@@ -175,7 +175,8 @@
          [(honu-operator? #'head)
           (define new-precedence (transformer:honu-operator-ref (syntax-local-value #'head) 0))
           (define association (transformer:honu-operator-ref (syntax-local-value #'head) 1))
-          (define operator-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 2))
+          (define binary-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 2))
+          (define unary-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 3))
           (define higher
             (case association
               [(left) >]
@@ -184,7 +185,13 @@
           (if (higher new-precedence precedence)
             (do-parse #'(rest ...) new-precedence
                       (lambda (stuff)
-                        (left (operator-transformer current stuff)))
+                        (if current
+                          (if binary-transformer
+                            (left (binary-transformer current stuff))
+                            (error '#'head "cannot be used as a binary operator"))
+                          (if unary-transformer
+                            (left (unary-transformer stuff))
+                            (error '#'head "cannot be used as a unary operator"))))
                       #f)
             (do-parse #'(head rest ...)
                       0
@@ -250,10 +257,10 @@
                       (if current
                         (let ()
                           (debug "function call ~a\n" left)
-                          (define call (left (with-syntax ([current current]
-                                                      [(parsed-args ...)
-                                                       (parse-comma-expression #'(args ...)) ])
-                                          #'(current parsed-args ...))))
+                          (define call (with-syntax ([current current]
+                                                           [(parsed-args ...)
+                                                            (parse-comma-expression #'(args ...)) ])
+                                          #'(current parsed-args ...)))
                           (do-parse #'(rest ...) precedence left call))
                         (let ()
                           (debug "inner expression ~a\n" #'(args ...))

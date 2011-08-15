@@ -11,7 +11,10 @@
     ...))
 
 (provide-module "core/main.rkt"
+                "private/common.rkt"
                 ;;"private/struct.honu"
                 ;;"private/function.honu"
                 ;;"private/common.honu"
                 )
+
+(provide sqr sqrt sin max)
