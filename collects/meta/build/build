@@ -2016,7 +2016,7 @@ BUILD_WEB() {
     separator "Making web content -- not distributing"
   fi
   GIT_DIR="$maindir/$cleandir/.git" \
-  KNOWN_MIRRORS_FILE="$maindir/$knownmirrors"
+  KNOWN_MIRRORS_FILE="$maindir/$knownmirrors" \
     _run "$PLTHOME/$webscript" $webflags
 
 }
