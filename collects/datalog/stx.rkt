@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require (for-syntax syntax/parse
                      racket/local
                      racket/function

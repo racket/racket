@@ -1,5 +1,8 @@
-#lang racket
-(require "../ast.rkt"
+#lang racket/base
+(require racket/match
+         racket/list
+         racket/contract
+         "../ast.rkt"
          "env.rkt")
 
 (define (chase env t)

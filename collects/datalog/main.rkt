@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "runtime.rkt"
          "serialize.rkt"
          "stx.rkt")

@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require parser-tools/lex
          (prefix-in : parser-tools/lex-sre))
 

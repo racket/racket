@@ -1,5 +1,6 @@
-#lang racket
+#lang racket/base
 (require racket/list
+         racket/contract
          "ast.rkt"
          "pretty.rkt"
          "runtime.rkt")

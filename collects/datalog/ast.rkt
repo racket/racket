@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+(require racket/contract
+         racket/match)
 
 (define srcloc/c
   (or/c syntax?

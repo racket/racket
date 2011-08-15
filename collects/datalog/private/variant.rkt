@@ -1,5 +1,9 @@
-#lang racket
-(require "../ast.rkt"
+#lang racket/base
+(require racket/list
+         racket/match
+         racket/contract
+         racket/dict
+         "../ast.rkt"
          "env.rkt")
 
 ; Variants

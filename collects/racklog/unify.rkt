@@ -1,4 +1,10 @@
-#lang racket
+#lang racket/base
+(require (for-syntax racket/base)
+         racket/list
+         racket/match
+         racket/function
+         racket/vector
+         racket/set)
 (provide (all-defined-out))
 
 ; same hash

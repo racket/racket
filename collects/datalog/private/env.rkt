@@ -1,5 +1,7 @@
-#lang racket
-(require "../ast.rkt")
+#lang racket/base
+(require racket/contract
+         racket/list
+         "../ast.rkt")
 
 (define env/c
   (and/c hash? immutable?))

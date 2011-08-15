@@ -1,5 +1,8 @@
-#lang racket
-(require "../ast.rkt"
+#lang racket/base
+(require racket/match
+         racket/function
+         racket/contract
+         "../ast.rkt"
          "env.rkt")
 
 (define (subst-term env t)

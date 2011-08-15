@@ -1,6 +1,8 @@
-#lang racket
+#lang racket/base
 (require parser-tools/lex
          parser-tools/yacc
+         racket/list
+         racket/contract
          "private/lex.rkt"
          "ast.rkt")
 

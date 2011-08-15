@@ -1,5 +1,8 @@
-#lang racket
-(require "private/pprint.rkt"
+#lang racket/base
+(require racket/match
+         racket/list
+         racket/contract
+         "private/pprint.rkt"
          "ast.rkt")
 
 (define (format-datum s)
