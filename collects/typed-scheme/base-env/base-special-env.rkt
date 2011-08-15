@@ -475,7 +475,7 @@
    (cl->*
     (->key #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -Bytes))
     (->key -Input-Port #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -Bytes)))]
-#;  [((kw-expander-impl (syntax-local-value #'port->bytes-lines)))
+  [((kw-expander-impl (syntax-local-value #'port->bytes-lines)))
    ((-opt (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)) -Boolean
     (-opt -Input-Port) -Boolean
     . -> .
