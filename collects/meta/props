@@ -1568,7 +1568,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/common/mk-chicken.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/mk-gambit.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/r5rs-wrap.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/benchmarks/common/typed" responsible (stamourv)
+"collects/tests/racket/benchmarks/common/typed" responsible (stamourv samth)
 "collects/tests/racket/benchmarks/common/typed/cpstak.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/ctak.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/dderiv.rktl" drdr:command-line #f
@@ -1629,7 +1629,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/spellcheck.rkt" drdr:command-line (mzc *)
 "collects/tests/racket/benchmarks/shootout/strcat.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/thread-ring.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed" responsible (stamourv)
+"collects/tests/racket/benchmarks/shootout/typed" responsible (stamourv samth)
 "collects/tests/racket/benchmarks/shootout/typed/ackermann-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/typed/ackermann-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/typed/ackermann.rktl" drdr:command-line #f
