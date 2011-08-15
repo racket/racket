@@ -1,6 +1,7 @@
 #lang racket/base
 (require scribble/doclang
          scribble/core
+         racket/file
          (except-in scribble/base author)
          (prefix-in s/b: scribble/base)
          scribble/decode
@@ -65,6 +66,7 @@
   (log-error (format "Downloading via ftp://~a/~a/~a..." site path file))
   (define c (ftp-establish-connection site 21 "anonymous" "user@racket-lang.org"))
   (ftp-cd c path)
+  (make-directory* (find-system-path 'temp-dir))
   (ftp-download-file c (find-system-path 'temp-dir) file)
   (ftp-close-connection c)
   (define z (build-path (find-system-path 'temp-dir) file))

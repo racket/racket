@@ -7,6 +7,7 @@
          setup/main-collects
          "../private/defaults.rkt"
          net/ftp
+         racket/file
          (for-syntax scheme/base))
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/jfp)
@@ -48,5 +49,6 @@
   (define c (ftp-establish-connection site 21 "anonymous" "user@racket-lang.org"))
   (ftp-cd c path)
   (let-values ([(base name dir?) (split-path cls-file)])
+    (make-directory* base)
     (ftp-download-file c base file))
   (ftp-close-connection c))
