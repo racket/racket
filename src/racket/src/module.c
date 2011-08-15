@@ -941,7 +941,6 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     modidx = scheme_make_modidx(modname, scheme_false, scheme_false);
 
   modname = scheme_module_resolve(modidx, 1);
-  base_phase = env->phase;
 
   if (phase == 1) {
     scheme_prepare_exp_env(env);
@@ -950,6 +949,8 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     else
       env = env->exp_env;
   }
+
+  base_phase = env->phase;
 
   scheme_prepare_compile_env(env);
 
