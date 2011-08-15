@@ -985,7 +985,6 @@
                              (when (or (n . < . n-req)
                                        (and (not rest?)
                                             (n . > . (+ n-req n-opt))))
-                               (printf "~s\n" (list n n-req n-opt))
                                (warning "wrong number of by-position arguments")))
                            (lambda (args kw-args lifted? orig)
                              (let* ([args (syntax->list (datum->syntax #f args))]
