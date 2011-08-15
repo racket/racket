@@ -89,21 +89,21 @@
                             [new-v #,((optimize) #'v)])
                         ;; do the impersonator check up front, to avoid doing it twice (length and op)
                         (if (impersonator? new-v)
-                            (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-vector-length v))])
+                            (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-vector*-length v))])
                                     (if i-known-nonneg?
                                         ;; we know it's nonnegative, one-sided check
                                         one-sided
                                         #`(and (unsafe-fx>= new-i 0)
                                                #,one-sided)))
-                                (op.unsafe new-v new-i #,@(syntax-map (optimize) #'(new ...)))
+                                (op.unsafe-no-impersonator new-v new-i #,@(syntax-map (optimize) #'(new ...)))
                                 #,safe-fallback) ; will error. to give the right error message
                             ;; not an impersonator, can use unsafe-vector* ops
-                            (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-vector*-length v))])
+                            (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-vector-length v))])
                                     (if i-known-nonneg?
                                         one-sided
                                         #`(and (unsafe-fx>= new-i 0)
                                                #,one-sided)))
-                                (op.unsafe-no-impersonator new-v new-i #,@(syntax-map (optimize) #'(new ...)))
+                                (op.unsafe new-v new-i #,@(syntax-map (optimize) #'(new ...)))
                                 #,safe-fallback))))))
   ;; similarly for flvectors
   (pattern (#%plain-app op:flvector-op v:expr i:fixnum-expr new:expr ...)
