@@ -21,5 +21,6 @@
      (constant srcloc (dict-ref a sym))]))
 
 (provide #%module-begin
+         #%top
          #%top-interaction
          racklog-answers->literals)
