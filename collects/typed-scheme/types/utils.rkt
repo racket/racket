@@ -19,21 +19,27 @@
 ;; must be applied to a Mu
 (define (unfold t)
   (match t
-    [(Mu: name b) (substitute t name b #:Un (lambda (tys) (make-Union (sort tys < #:key Type-seq))))]
+    [(Mu: name b)
+     (substitute t name b #:Un (lambda (tys)
+                                 (make-Union (sort tys < #:key Type-seq))))]
     [_ (int-err "unfold: requires Mu type, got ~a" t)]))
 
 (define (instantiate-poly t types)
   (match t
     [(Poly: ns body)
      (unless (= (length types) (length ns))
-       (int-err "instantiate-poly: wrong number of types: expected ~a, got ~a" (length ns) (length types)))
+       (int-err "instantiate-poly: wrong number of types: expected ~a, got ~a"
+                (length ns) (length types)))
      (subst-all (make-simple-substitution ns types) body)]
     [(PolyDots: (list fixed ... dotted) body)
      (unless (>= (length types) (length fixed))
-       (int-err "instantiate-poly: wrong number of types: expected at least ~a, got ~a" (length fixed) (length types)))
+       (int-err
+        "instantiate-poly: wrong number of types: expected at least ~a, got ~a"
+        (length fixed) (length types)))
      (let* ([fixed-tys (take types (length fixed))]
             [rest-tys (drop types (length fixed))]
-            [body* (subst-all (make-simple-substitution fixed fixed-tys) body)])
+            [body* (subst-all (make-simple-substitution fixed fixed-tys)
+                              body)])
        (substitute-dots rest-tys #f dotted body*))]
     [_ (int-err "instantiate-poly: requires Poly type, got ~a" t)]))
 
@@ -41,7 +47,8 @@
   (match t
     [(PolyDots: (list fixed ... dotted) body)
      (unless (= (length fixed) (length types))
-       (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a, types were ~a"
+       (int-err (string-append "instantiate-poly-dotted: wrong number of"
+                               " types: expected ~a, got ~a, types were ~a")
                 (length fixed) (length types) types))
      (let ([body* (subst-all (make-simple-substitution fixed types) body)])
        (substitute-dotted image var dotted body*))]
@@ -49,8 +56,12 @@
 
 
 ;; this structure represents the result of typechecking an expression
-(define-struct/cond-contract tc-result ([t Type/c] [f FilterSet/c] [o Object?]) #:transparent)
-(define-struct/cond-contract tc-results ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)]) #:transparent)
+(define-struct/cond-contract tc-result
+  ([t Type/c] [f FilterSet/c] [o Object?])
+  #:transparent)
+(define-struct/cond-contract tc-results
+  ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)])
+  #:transparent)
 
 (define-match-expander tc-result:
   (syntax-parser
@@ -60,16 +71,21 @@
 (define-match-expander tc-results:
   (syntax-parser
    [(_ tp fp op)
-    #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) #f))]
+    #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...))
+                          #f))]
    [(_ tp fp op dty dbound)
-    #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) (cons dty dbound)))]
+    #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...))
+                          (cons dty dbound)))]
    [(_ tp)
-    #'(struct tc-results ((list (struct tc-result (tp _ _)) (... ...)) #f))]))
+    #'(struct tc-results ((list (struct tc-result (tp _ _)) (... ...))
+                          #f))]))
 
 (define-match-expander tc-result1:
   (syntax-parser
-   [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op))) #f))]
-   [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _))) #f))]))
+   [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op)))
+                                       #f))]
+   [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _)))
+                                 #f))]))
 
 (define (tc-results-t tc)
   (match tc
@@ -157,9 +173,13 @@
 (define (fi t) (for/list ([(k v) (in-hash (free-idxs* t))]) k))
 
 ;; fv/list : Listof[Type] -> Listof[Symbol]
-(define (fv/list ts) (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
+(define (fv/list ts)
+  (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
 
-(define (tc-error/expr msg #:return [return (make-Union null)] #:stx [stx (current-orig-stx)] . rest)
+(define (tc-error/expr msg
+                       #:return [return (make-Union null)]
+                       #:stx [stx (current-orig-stx)]
+                       . rest)
   (apply tc-error/delayed #:stx stx msg rest)
   return)
 
@@ -173,7 +193,8 @@
        (cond [(and (not x) (not y))
               (tc-error/expr "untyped identifier ~a" (syntax-e e))]
              [else
-              (tc-error/expr "untyped identifier ~a imported from module <~a>" (syntax-e e) x)]))]))
+              (tc-error/expr "untyped identifier ~a imported from module <~a>"
+                             (syntax-e e) x)]))]))
 
 (define (lookup-type-fail i)
   (tc-error/expr "~a is not bound as a type" (syntax-e i)))
@@ -184,8 +205,8 @@
 (define current-poly-struct (make-parameter #f))
 
 ;; UNUSED
-;; a table indicating what variables should be abstracted away before using this expected type
-;; keyed on the numeric Rep sequence
+;; a table indicating what variables should be abstracted away before using
+;; this expected type keyed on the numeric Rep sequence
 (define to-be-abstr
   (make-weak-hash))
 
@@ -195,12 +216,14 @@
 (provide/cond-contract
  [unfold (Mu? . -> . Type/c)]
  [instantiate-poly ((or/c Poly? PolyDots?) (listof Type/c) . -> . Type/c)]
- [instantiate-poly-dotted (PolyDots? (listof Type/c) Type/c symbol? . -> . Type/c)]
+ [instantiate-poly-dotted
+  (PolyDots? (listof Type/c) Type/c symbol? . -> . Type/c)]
  [tc-result? (any/c . -> . boolean?)]
  [tc-result-t (tc-result? . -> . Type/c)]
  [tc-result-equal? (tc-result? tc-result? . -> . boolean?)]
  [tc-results? (any/c . -> . boolean?)]
- [tc-error/expr ((string?) (#:return any/c #:stx syntax?) #:rest (listof any/c) . ->* . any/c)]
+ [tc-error/expr ((string?) (#:return any/c #:stx syntax?) #:rest (listof any/c)
+                 . ->* . any/c)]
 
  [fv (Rep? . -> . (listof symbol?))]
  [fi (Rep? . -> . (listof symbol?))]
