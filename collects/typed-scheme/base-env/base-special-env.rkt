@@ -216,7 +216,7 @@
    (->key -Pathlike
           #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f
           #:mode (one-of/c 'binary 'text) #f
-          (-lst -String))]
+          (-lst -Bytes))]
   [((kw-expander-impl (syntax-local-value #'file->bytes-lines)))
    (-> (Un (-val #f) (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)) -Boolean
        (Un (-val #f) (one-of/c 'binary 'text)) -Boolean
