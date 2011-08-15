@@ -1228,14 +1228,15 @@
                  (when ed
                    (define pos (syntax-position var))
                    (define span (syntax-span var))
-                   (define start (- pos 1))
-                   (define fin (+ start span))
-                   (define loc (list ed start fin))
-                   (module-identifier-mapping-put!
-                    id-to-sets
-                    var
-                    (set-add (module-identifier-mapping-get id-to-sets var set)
-                             loc)))))))
+                   (when (and pos span)
+                     (define start (- pos 1))
+                     (define fin (+ start span))
+                     (define loc (list ed start fin))
+                     (module-identifier-mapping-put!
+                      id-to-sets
+                      var
+                      (set-add (module-identifier-mapping-get id-to-sets var set)
+                               loc))))))))
           (module-identifier-mapping-for-each
            id-to-sets
            (λ (id locs)
