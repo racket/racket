@@ -101,17 +101,18 @@
                                  (doms     doms))
                         (cond [(null? params)
                                ;; done. can we unbox anything?
-                               (when (> (length unboxed) 0)
-                                 ;; if so, add to the table of functions with
-                                 ;; unboxed params, so we can modify its call
-                                 ;; sites, its body and its header)
-                                 (log-optimization
-                                  "unboxed function -> table"
-                                  arity-raising-opt-msg
-                                  fun-name)
-                                 (dict-set! unboxed-funs-table fun-name
-                                            (list (reverse unboxed)
-                                                  (reverse boxed))))]
+                               (and (> (length unboxed) 0)
+                                    ;; if so, add to the table of functions with
+                                    ;; unboxed params, so we can modify its call
+                                    ;; sites, its body and its header
+                                    (begin (log-optimization
+                                            "unboxed function -> table"
+                                            arity-raising-opt-msg
+                                            fun-name)
+                                           #t)
+                                    (dict-set! unboxed-funs-table fun-name
+                                               (list (reverse unboxed)
+                                                     (reverse boxed))))]
                               [(and (equal? (car doms) -FloatComplex)
                                     (could-be-unboxed-in?
                                      (car params) #'(begin body ...)))
