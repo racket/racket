@@ -3,8 +3,7 @@
 (require (for-syntax racket/base
                      ;; these requires are needed since their code
                      ;; appears in the residual program
-                     "typecheck/renamer.rkt" "types/type-table.rkt" profile)
-         "base-env/base-special-env.rkt" )
+                     "typecheck/renamer.rkt" "types/type-table.rkt"))
 
 (provide (rename-out [module-begin #%module-begin]
                      [top-interaction #%top-interaction]
@@ -17,12 +16,12 @@
 (define-for-syntax initialized #f)
 (define-for-syntax (do-standard-inits)
   (unless initialized
-      (initialize-special)
-      ((dynamic-require 'typed-scheme/base-env/base-structs 'initialize-structs))
-      ((dynamic-require 'typed-scheme/base-env/base-env-indexing 'initialize-indexing))
-      ((dynamic-require 'typed-scheme/base-env/base-env 'init))
-      ((dynamic-require 'typed-scheme/base-env/base-env-numeric 'init))
-      (set! initialized #t)))
+    ((dynamic-require 'typed-scheme/base-env/base-structs 'initialize-structs))
+    ((dynamic-require 'typed-scheme/base-env/base-env-indexing 'initialize-indexing))    
+    ((dynamic-require 'typed-scheme/base-env/base-env 'init))    
+    ((dynamic-require 'typed-scheme/base-env/base-env-numeric 'init))    
+    ((dynamic-require 'typed-scheme/base-env/base-special-env 'initialize-special))    
+    (set! initialized #t)))
 
 (define-syntax-rule (drivers [name sym] ...)
   (begin

@@ -5,27 +5,24 @@
  "../utils/utils.rkt"
  racket/promise
  string-constants/string-constant
- racket/private/kw racket/file racket/port
- (for-syntax racket/base syntax/parse (only-in racket/syntax syntax-local-eval)
-             (utils tc-utils)
-             (env init-envs)
-             (except-in (rep filter-rep object-rep type-rep) make-arr)
-             (types convenience union)
-             (only-in (types convenience) [make-arr* make-arr])))
+ racket/private/kw racket/file racket/port syntax/parse
+ (for-template (only-in racket/private/kw kw-expander-proc kw-expander-impl)
+               racket/base racket/promise racket/file racket/port string-constants/string-constant)
+ (utils tc-utils)
+ (env init-envs)
+ (except-in (rep filter-rep object-rep type-rep) make-arr)
+ (types convenience union)
+ (only-in (types convenience) [make-arr* make-arr])
+ (for-template )
+ (for-syntax racket/base syntax/parse (only-in racket/syntax syntax-local-eval)))
 
 (define-syntax (define-initial-env stx)
   (syntax-parse stx
     [(_ initialize-env [id-expr ty] ...)
-     (with-syntax ([(id ...)
-                    (for/list ([expr (syntax->list #'(id-expr ...))])
-                      (syntax-local-eval expr))])
-       #`(begin
-           (define-for-syntax initial-env
-             (make-env
-              [id ty] ...))
-           (define-for-syntax (initialize-env)
-             (initialize-type-env initial-env))
-           (provide (for-syntax initialize-env))))]))
+     #`(begin
+         (define initial-env (make-env [id-expr ty] ...))
+         (define (initialize-env) (initialize-type-env initial-env))
+         (provide initialize-env))]))
 
 (define-initial-env initialize-special
   ;; make-promise
@@ -33,6 +30,7 @@
      #:context #'make-promise
      [(_ mp . _) #'mp])
    (-poly (a) (-> (-> a) (-Promise a)))]
+  
   ;; language
   [(syntax-parse (local-expand #'(this-language) 'expression null)
      #:context #'language
