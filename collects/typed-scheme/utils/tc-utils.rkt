@@ -194,10 +194,7 @@ don't depend on any other portion of the system
     #:transparent
     #:attributes (ty id)
     (pattern [nm:identifier ~! ty]
-             #:fail-unless (list? ((if (= 1 (syntax-local-phase-level))
-                                       identifier-template-binding
-                                       identifier-template-binding)
-                                   #'nm))
+             #:fail-when (and (not (list? (identifier-template-binding #'nm))) #'nm)
              "not a bound identifier"
              #:with id #'(quote-syntax nm))
     (pattern [e:expr ty]
