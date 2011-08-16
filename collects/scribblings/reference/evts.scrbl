@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/struct "mz.rkt")
+@(require scribble/struct "mz.rkt" (for-label racket/async-channel))
 
 @(define-syntax-rule (ResultItself x)
    (make-element #f (list "The "
@@ -55,6 +55,16 @@ generate events (see @racket[prop:evt]).
  @racket[channel-put] would not block on
  @racket[_channel]. @ResultItself[_channel-put].}
 
+ @item{@racket[_async-channel] --- a channel returned by
+ @racket[make-async-channel] is ready when @racket[async-channel-get] would not
+ block. The channel's result as an event is the same as the
+ @racket[async-channel-get] result.}
+
+ @item{@racket[_async-channel-put] --- an event returned by
+ @racket[async-channel-put-evt] applied to @racket[_async-channel] is ready when
+ @racket[async-channel-put] would not block on
+ @racket[_async-channel]. @ResultItself[_async-channel-put].}
+
  @item{@racket[_input-port] --- an input port is ready as an event when
  @racket[read-byte] would not block. @ResultItself[_input-port].}
 
@@ -87,6 +97,11 @@ generate events (see @racket[prop:evt]).
  @racket[thread-suspend-evt] applied to @racket[thd] is ready when
  @racket[thd] subsequently suspends execution (if it was not already
  suspended).  The event's result is @racket[thd].}
+
+ @item{@racket[_thread-receive] --- an event returned by
+ @racket[thread-receive-evt] is ready
+ when the synchronizing thread has a message to
+ receive. @ResultItself[_thread-receive].}
 
  @item{@racket[_alarm] --- an event returned by @racket[alarm-evt] is
  ready after a particular date and time.  @ResultItself[_alarm].}
