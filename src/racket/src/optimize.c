@@ -5052,7 +5052,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 }
 
 Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_Info *info, int delta, int closure_depth)
-/* Past closure_depth, need to reverse optimize to unoptimzed with respect to info;
+/* Past closure_depth, need to reverse optimize to unoptimized with respect to info;
    delta is the amount to skip in info to get to the frame that bound the code.
    If dup_ok is 1, then the old copy will be dropped, so it's ok to "duplicate"
    any constant. */

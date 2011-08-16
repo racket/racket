@@ -98,10 +98,10 @@
    lifting (of procedures that close over nothing or only globals).
    Beware that the resulting bytecode object is a graph, not a tree,
    due to sharing (potentially cyclic) of closures that are "empty"
-   but actually refer to other "empty" closures. See "resove.c".
+   but actually refer to other "empty" closures. See "resolve.c".
 
    The fourth pass, "sfs", performs another liveness analysis on stack
-   slows and inserts operations to clear stack slots as necessary to
+   slots and inserts operations to clear stack slots as necessary to
    make execution safe for space. In particular, dead slots need to be
    cleared before a non-tail call into arbitrary Scheme code. This pass
    can mutate the result of the "resolve" pass. See "sfs.c".
