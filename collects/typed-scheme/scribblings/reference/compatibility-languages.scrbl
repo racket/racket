@@ -1,7 +1,7 @@
 #lang scribble/manual
 
 @begin[(require "../utils.rkt")
-       (require (for-label (only-meta-in 0 [except-in typed/racket for])))]
+       (require (for-label (only-meta-in 0 [except-in typed/scheme for])))]
 
 @title{Compatibility Languages}
 
@@ -17,3 +17,29 @@ languages. The @racketmod[typed-scheme] language is equivalent to the
                      typed-scheme/base-env/extra-procs
                      typed-scheme/base-env/base-types
                      typed-scheme/base-env/base-types-extra))
+
+@(define-syntax-rule (def-racket rts rt arr)
+  (begin
+    (require (for-label (only-in typed/racket/base require-typed-struct require/typed ->)))
+    (define arr (racket ->))
+    (define rts (racket require-typed-struct))
+    (define rt (racket require/typed))))
+@(def-racket rts-id rt-id ->-id)
+
+
+@defform/subs[#:literals (struct opaque)
+(require/typed m rt-clause ...)
+([rt-clause [r t]
+            [struct name ([f : t] ...)
+                 struct-option ...]
+            [struct (name parent) ([f : t] ...)
+                 struct-option ...]
+            [opaque t pred]]
+ [struct-option
+   (code:line #:constructor-name constructor-id)
+   (code:line #:extra-constructor-name constructor-id)])]{
+ Similar to @|rt-id|, but as if @racket[#:extra-constructor-name make-name] was supplied.
+}
+
+@defidform[require-typed-struct]{Similar to using the @racket[struct]
+keyword with @racket[require/typed].}
