@@ -97,6 +97,41 @@ produces the typeset result
 
 }
 
+@defform/subs[(code option ... str-expr ...+)
+              ([option (code:line #:lang lang-line-expr)
+                       (code:line #:expand expand-expr)
+                       (code:line #:context context-expr)])
+              #:contracts ([lang-line-expr (or/c #f string?)]
+                           [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
+                           [context-expr syntax-object?])]{
+
+Like @racket[codeblock], but produces an element instead of a
+block. No @hash-lang[] line should appear in the string content;
+instead, it should be provided @racket[#:lang] (as a string
+without @racket["#lang"]) if needed, and the @hash-lang[] line is always stripped
+from the output when provided. Also, each newline in @racket[str-expr]s is collapsed
+along with all surrounding whitespace to a single space.
+
+For example,
+
+@codeblock[#:keep-lang-line? #f]|<|{
+  #lang scribble/manual
+  
+  This is @code[#:lang "at-exp racket"]|{@bold{Hi}}|'s result:
+  @bold{Hi}.
+}|>|
+
+produces the typeset result
+
+@nested[#:style 'inset]{
+  This is @code[#:lang "at-exp racket"]|{@bold{Hi}}|'s result:
+  @bold{Hi}.
+}
+
+}
+
+
+
 @defform/subs[(racketblock maybe-escape datum ...)
               ([maybe-escape code:blank
                             (code:line #:escape escape-id)])]{
