@@ -97,7 +97,9 @@ produces the typeset result
 
 }
 
-@defform[(racketblock datum ...)]{
+@defform/subs[(racketblock maybe-escape datum ...)
+              ([maybe-escape code:blank
+                            (code:line #:escape escape-id)])]{
 
 Typesets the @racket[datum] sequence as a table of Racket code inset
 inset via @racket[nested] with the style @racket['code-inset]. The
@@ -120,20 +122,25 @@ produces the output
 with the @racket[(loop (not x))] indented under @racket[define],
 because that's the way it is idented the use of @racket[racketblock].
 
-Furthermore, @racket[define] is typeset as a keyword (bold and black)
+Furthermore, @racket[define] is typeset as a keyword (in black)
 and as a hyperlink to @racket[define]'s definition in the reference
 manual, because this document was built using a for-label binding of
 @racket[define] (in the source) that matches a definition in the
 reference manual. Similarly, @racket[not] is a hyperlink to the its
 definition in the reference manual.
 
-Use @racket[unsyntax] to escape back to an expression that produces an
-@racket[element]. For example,
+Like other forms defined via @racket[define-code],
+@racket[racketblock] expands identifiers that are bound as
+@tech{element transformers}.
 
-@let[([unsyntax #f])
+An @racket[#:escape] clause specifies an identifier to escape back to
+an expression that produces produces an @racket[element]. But default,
+the escape identifier is @racket[unsyntax]. For example,
+
+@racketblock[
+#:escape nonesuch
 (racketblock
- (racketblock
-   (+ 1 (unsyntax (elem (racket x) (subscript "2"))))))
+  (+ 1 (unsyntax (elem (racket x) (subscript "2")))))
 ]
 
 produces
@@ -142,9 +149,8 @@ produces
 (+ 1 (unsyntax (elem (racket x) (subscript "2"))))
 ]
 
-The @racket[unsyntax] form is regonized via
-@racket[free-identifier=?], so if you want to typeset code that
-includes @racket[unsyntax], you can simply hide the usual binding:
+The @racket[escape-id] that defaults to @racket[unsyntax] is regonized via
+@racket[free-identifier=?], so a binding can hide the escape behavior:
 
 @RACKETBLOCK[
 (racketblock
@@ -153,7 +159,7 @@ includes @racket[unsyntax], you can simply hide the usual binding:
       (syntax (+ 1 (unsyntax x))))))
 ]
 
-Or use @racket[RACKETBLOCK], whose escape form is @racket[UNSYNTAX]
+The @racket[RACKETBLOCK] form's default escape is @racket[UNSYNTAX]
 instead of @racket[unsyntax].
 
 A few other escapes are recognized symbolically:
@@ -199,41 +205,43 @@ A few other escapes are recognized symbolically:
 See also @racketmodname[scribble/comment-reader].
 }
 
-@defform[(RACKETBLOCK datum ...)]{Like @racket[racketblock], but with
-the expression escape @racket[UNSYNTAX] instead of @racket[unsyntax].}
+@defform[(RACKETBLOCK maybe-escape datum ...)]{Like @racket[racketblock], but with
+the default expression escape @racket[UNSYNTAX] instead of @racket[unsyntax].}
 
-@defform[(racketblock0 datum ...)]{Like @racket[racketblock], but
+@defform[(racketblock0 maybe-escape datum ...)]{Like @racket[racketblock], but
 without insetting the code via @racket[nested].}
 
-@defform[(RACKETBLOCK0 datum ...)]{Like @racket[RACKETBLOCK], but
+@defform[(RACKETBLOCK0 maybe-escape datum ...)]{Like @racket[RACKETBLOCK], but
 without insetting the code via @racket[nested].}
 
 @deftogether[(
-@defform[(racketresultblock datum ...)]
-@defform[(racketresultblock0 datum ...)]
-@defform[(RACKETRESULTBLOCK datum ...)]
-@defform[(RACKETRESULTBLOCK0 datum ...)]
+@defform[(racketresultblock maybe-escape datum ...)]
+@defform[(racketresultblock0 maybe-escape datum ...)]
+@defform[(RACKETRESULTBLOCK maybe-escape datum ...)]
+@defform[(RACKETRESULTBLOCK0 maybe-escape datum ...)]
 )]{
 
 Like @racket[racketblock], etc., but colors the typeset text as a
 result  (i.e., a single color with no hyperlinks) instead of code.}
 
 @deftogether[(
-@defform[(racketinput datum ...)]
-@defform[(RACKETINPUT datum ...)]
+@defform[(racketinput maybe-escape datum ...)]
+@defform[(RACKETINPUT maybe-escape datum ...)]
 )]{Like @racket[racketblock] and @racket[RACKETBLOCK], but the
 @racket[datum]s are typeset after a prompt representing a REPL.}
 
 @deftogether[(
-@defform[(racketinput0 datum ...)]
-@defform[(RACKETINPUT0 datum ...)]
+@defform[(racketinput0 maybe-escape datum ...)]
+@defform[(RACKETINPUT0 maybe-escape datum ...)]
 )]{
 Like @racket[racketinput] and @racket[RACKETINPUT], but
 without insetting the code via @racket[nested].}
 
-@defform/subs[(racketmod maybe-file lang datum ...)
+@defform/subs[(racketmod maybe-file maybe-escape lang datum ...)
               ([maybe-file code:blank
-                           (code:line #:file filename-expr)])]{
+                           (code:line #:file filename-expr)]
+               [maybe-escape code:blank
+                            (code:line #:escape escape-id)])]{
 
 Like @racket[racketblock], but the @racket[datum] are typeset inside a
 @racketmodfont{#lang}-form module whose language is @racket[lang].
@@ -247,21 +255,21 @@ If @racket[#:file] is provided, then the code block is typeset using
 @racket[filebox] with @racket[filename-expr] as the filename
 argument.}
 
-@defform[(racketmod0 maybe-file lang datum ...)]{
+@defform[(racketmod0 maybe-file maybe-escape lang datum ...)]{
 Like @racket[racketmod], but
 without insetting the code via @racket[nested].}
 
-@defform[(racket datum ...)]{Like @racket[racketblock], but typeset on
+@defform[(racket maybe-escape datum ...)]{Like @racket[racketblock], but typeset on
 a single line and wrapped with its enclosing paragraph, independent of
 the formatting of @racket[datum].}
 
-@defform[(RACKET datum ...)]{Like @racket[racket], but with the
+@defform[(RACKET maybe-escape datum ...)]{Like @racket[racket], but with the
 @racket[UNSYNTAX] escape like @racket[racketblock].}
 
-@defform[(racketresult datum ...)]{Like @racket[racket], but typeset
+@defform[(racketresult maybe-escape datum ...)]{Like @racket[racket], but typeset
 as a result (i.e., a single color with no hyperlinks).}
 
-@defform[(racketid datum ...)]{Like @racket[racket], but typeset
+@defform[(racketid maybe-escape datum ...)]{Like @racket[racket], but typeset
 as an unbound identifier (i.e., no coloring or hyperlinks).}
 
 @defform*[((racketmodname datum)
@@ -333,15 +341,15 @@ procedure, but use @racket[var] if that cannot work for some reason.}
 in a form definition.}
 
 @deftogether[(
-@defform[(schemeblock datum ...)]
-@defform[(SCHEMEBLOCK datum ...)]
-@defform[(schemeblock0 datum ...)]
-@defform[(SCHEMEBLOCK0 datum ...)]
-@defform[(schemeinput datum ...)]
-@defform[(schememod lang datum ...)]
-@defform[(scheme datum ...)]
-@defform[(SCHEME datum ...)]
-@defform[(schemeresult datum ...)]
+@defform[(schemeblock maybe-escape datum ...)]
+@defform[(SCHEMEBLOCK maybe-escape datum ...)]
+@defform[(schemeblock0 maybe-escape datum ...)]
+@defform[(SCHEMEBLOCK0 maybe-escape datum ...)]
+@defform[(schemeinput maybe-escape datum ...)]
+@defform[(schememod lang maybe-escape datum ...)]
+@defform[(scheme maybe-escape datum ...)]
+@defform[(SCHEME maybe-escape datum ...)]
+@defform[(schemeresult maybe-escape datum ...)]
 @defform[(schemeid datum ...)]
 @defform*[((schememodname datum)
            (schememodname ((unsyntax (racket unsyntax)) expr)))]

@@ -89,7 +89,7 @@
 
 (define-syntax (racketmod0 stx)
   (syntax-case stx ()
-    [(_ #:file filename lang rest ...)
+    [(_ #:file filename #:escape unsyntax-id lang rest ...)
      (with-syntax ([modtag (datum->syntax
                             #'here
                             `(unsyntax (make-element
@@ -106,8 +106,10 @@
            (quasisyntax/loc stx
              (filebox
               filename
-              #,(syntax/loc stx (racketblock0 modtag rest ...))))
-           (syntax/loc stx (racketblock0 modtag rest ...))))]
+              #,(syntax/loc stx (racketblock0 #:escape unsyntax-id modtag rest ...))))
+           (syntax/loc stx (racketblock0 #:escape unsyntax-id modtag rest ...))))]
+    [(_ #:file filename lang rest ...)
+     (syntax/loc stx (racketmod0 #:file #f #:escape unsyntax lang rest ...))]
     [(_ lang rest ...)
      (syntax/loc stx (racketmod0 #:file #f lang rest ...))]))
 

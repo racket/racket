@@ -8,8 +8,11 @@ utilities for evaluating code at document-build time and incorporating
 the results in the document, especially to show example uses of
 defined procedures and syntax.}
 
-@defform*[[(interaction datum ...)
-           (interaction #:eval eval-expr datum ...)]]{
+@defform/subs[(interaction maybe-eval maybe-escape datum ...)
+              ([maybe-eval code:blank
+                            (code:line #:eval eval-expr)]
+               [maybe-escape code:blank
+                            (code:line #:escape escape-id)])]{
 
 Like @racket[racketinput], except that the result for each input
 @racket[datum] is shown on the next line. The result is determined by
@@ -19,27 +22,9 @@ evaluator produced by @racket[eval-expr], if provided.
 The @racket[eval-expr] must produce a sandbox evaluator via
 @racket[make-evaluator] or @racket[make-module-evaluator] with the
 @racket[sandbox-output] and @racket[sandbox-error-output] parameters
-set to @racket['string]. If @racket[eval] is not provided, an
+set to @racket['string]. If @racket[eval-expr] is not provided, an
 evaluator is created using @racket[make-base-eval]. See also
 @racket[make-eval-factory].
-
-As an example,
-@codeblock|{
-#lang scribble/manual
-@(require racket/sandbox
-          scribble/eval)
-@(define my-evaluator
-   (parameterize ([sandbox-output 'string]
-                  [sandbox-error-output 'string])
-     (make-evaluator 'typed/racket/base)))
-@interaction[#:eval my-evaluator
-
-                    (: my-sqr (Real -> Real))
-                    (define (my-sqr x)
-                      (* x x))
-                    (my-sqr 42)]
-}|
-uses an evaluator whose language is @racketmodname[typed/racket/base].
 
 If the value of @racket[current-print] in the sandbox is changed from
 its default value, or if @racket[print-as-expression] in the sandbox
@@ -61,67 +46,77 @@ typeset, while @svar[eval-datum] is evaluated.
 If a @racket[datum] has the form
 @racket[(@#,indexed-racket[eval:check] #,(svar eval-datum) #,(svar
 expect-datum))], then both @svar[eval-datum] and @svar[check-datum]
-are evaluated, and an error is raised if they are not @racket[equal?].}
+are evaluated, and an error is raised if they are not @racket[equal?].
 
-@defform*[[(interaction0 datum ...)
-           (interaction0 #:eval eval-expr datum ...)]]{
+As an example,
+
+@codeblock|{
+#lang scribble/manual
+@(require racket/sandbox
+          scribble/eval)
+@(define my-evaluator
+   (parameterize ([sandbox-output 'string]
+                  [sandbox-error-output 'string])
+     (make-evaluator 'typed/racket/base)))
+@interaction[#:eval my-evaluator
+
+             (: my-sqr (Real -> Real))
+             (define (my-sqr x)
+               (* x x))
+             (my-sqr 42)]
+}|
+
+uses an evaluator whose language is @racketmodname[typed/racket/base].}
+
+@defform[(interaction0 maybe-eval maybe-escape datum ...)]{
 Like @racket[interaction], but without insetting the code via
 @racket[nested].}
 
-@defform*[[(interaction-eval datum)
-           (interaction-eval #:eval eval-expr datum)]]{
+@defform[(interaction-eval maybe-eval maybe-escape datum)]{
 
 Like @racket[interaction], evaluates the @racket[quote]d form of
 @racket[datum], but returns the empty string.}
 
 
-@defform*[[(interaction-eval-show datum)
-           (interaction-eval-show #:eval eval-expr datum)]]{
+@defform[(interaction-eval-show maybe-eval maybe-escape datum)]{
 
 Like @racket[interaction-eval], but produces an element representing
 the printed form of the evaluation result.}
 
 
-@defform*[[(racketblock+eval datum ...)
-           (racketblock+eval #:eval eval-expr datum ...)]]{
+@defform[(racketblock+eval maybe-eval maybe-escape datum ...)]{
 
 Combines @racket[racketblock] and @racket[interaction-eval].}
 
 
-@defform*[[(racketblock0+eval datum ...)
-           (racketblock0+eval #:eval eval-expr datum ...)]]{
+@defform[(racketblock0+eval maybe-eval maybe-escape datum ...)]{
 
 Combines @racket[racketblock0] and @racket[interaction-eval].}
 
 
-@defform*[[(racketmod+eval name datum ...)
-           (racketmod+eval #:eval eval-expr name datum ...)]]{
+@defform[(racketmod+eval maybe-eval maybe-escape name datum ...)]{
 
 Combines @racket[racketmod] and @racket[interaction-eval].}
 
 
-@defform*[[(def+int defn-datum expr-datum ...)
-           (def+int #:eval eval-expr defn-datum expr-datum ...)]]{
+@defform[(def+int maybe-eval maybe-escape defn-datum expr-datum ...)]{
 
 Like @racket[interaction], except the @racket[defn-datum] is
 typeset as for @racket[racketblock] (i.e., no prompt) and a line of
 space is inserted before the @racket[expr-datum]s.}
 
 
-@defform*[[(defs+int (defn-datum ...) expr-datum ...)
-           (defs+int #:eval eval-expr (defn-datum ...) expr-datum ...)]]{
+@defform[(defs+int maybe-eval maybe-escape (defn-datum ...) expr-datum ...)]{
 
 Like @racket[def+int], but for multiple leading definitions.}
 
 
-@defform*[[(examples datum ...)
-           (examples #:eval eval-expr datum ...)]]{
+@defform[(examples maybe-eval maybe-escape datum ...)]{
 
 Like @racket[interaction], but with an ``Examples:'' label prefixed.}
 
 
-@defform*[[(defexamples datum ...)
-           (defexamples #:eval eval-expr datum ...)]]{
+@defform[(defexamples maybe-eval maybe-escape datum ...)]{
 
 Like @racket[examples], but each definition using @racket[define] or
 @racket[define-struct] among the @racket[datum]s is typeset without a
