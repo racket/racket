@@ -2196,7 +2196,10 @@
      (identifier? #'id)
      (let ([v (syntax-local-value #'id (lambda () #f))])
        (if (term-fn? v)
-           #`(make-metafunction #,(term-fn-get-id v))
+           (syntax-property
+            #`(make-metafunction #,(term-fn-get-id v))
+            'disappeared-use
+            (list #'id))
            (raise-syntax-error
             #f
             "not bound as a metafunction"

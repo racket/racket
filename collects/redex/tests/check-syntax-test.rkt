@@ -35,11 +35,12 @@
 (define-namespace-anchor module-anchor)
 (define module-namespace 
   (namespace-anchor->namespace module-anchor))
-(define-values (add-syntax done)
-  (make-traversal module-namespace #f))
 
 ;; judgment forms
 (let ([annotations (new arrow-collector%)])
+  (define-values (add-syntax done)
+    (make-traversal module-namespace #f))
+  
   (define language-def-name #'L)
   (define language-use-name #'L)
   
@@ -71,5 +72,38 @@
              (list (source mode-name) (source premise-name))
              (list (source mode-name) (source render-name))
              (list (source mode-name) (source holds-name)))))
+
+;; metafunctions
+(let ([annotations (new arrow-collector%)])
+  (define-values (add-syntax done)
+    (make-traversal module-namespace #f))
+  
+  (define language-def-name #'L)
+  (define language-use-name #'L)
+  
+  (define contract-name #'f)
+  (define lhs-name #'f)
+  (define rhs-name #'f)
+  (define render-name #'f)
+  (define term-name #'f)
+  
+  (parameterize ([current-annotations annotations]
+                 [current-namespace module-namespace])
+    (add-syntax
+     (expand #`(let ()
+                 (define-language #,language-def-name)
+                 (define-metafunction #,language-use-name
+                   #,contract-name : () -> ()
+                   [(#,lhs-name) (#,rhs-name)])
+                 (render-metafunction #,render-name)
+                 (term (#,term-name)))))
+    (done))
+  
+  (test (send annotations collected-arrows)
+        (set (list (source language-def-name) (source language-use-name))
+             (list (source contract-name) (source lhs-name))
+             (list (source contract-name) (source rhs-name))
+             (list (source contract-name) (source render-name))
+             (list (source contract-name) (source term-name)))))
 
 (print-tests-passed 'check-syntax-test.rkt)
