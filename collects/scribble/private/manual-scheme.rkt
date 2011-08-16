@@ -122,7 +122,11 @@
   (make-element symbol-color (list (to-element/no-color s))))
 
 (define-syntax (keep-s-expr stx)
-  (syntax-case stx ()
+  (syntax-case stx (quote)
+    [(_ ctx '#t #(src line col pos 5))
+     #'(make-long-boolean #t)]
+    [(_ ctx '#f #(src line col pos 6))
+     #'(make-long-boolean #f)]
     [(_ ctx s srcloc)
      (let ([sv (syntax-e
                 (syntax-case #'s (quote)
@@ -134,10 +138,10 @@
                     (identifier? (car sv))
                     (or (free-identifier=? #'cons (car sv))
                         (free-identifier=? #'list (car sv)))))
-         ;; We know that the context is irrelvant
-         #'s
-         ;; Context may be relevant:
-         #'(*keep-s-expr s ctx)))]))
+           ;; We know that the context is irrelvant
+           #'s
+           ;; Context may be relevant:
+           #'(*keep-s-expr s ctx)))]))
 (define (*keep-s-expr s ctx)
   (if (symbol? s)
     (make-just-context s ctx)

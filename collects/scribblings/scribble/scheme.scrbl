@@ -126,6 +126,13 @@ When @racket[to-paragraph] and variants encounter a
 that has a @racket['paren-shape] property with value @racket[shape].}
 
 
+@defstruct[long-boolean ([val boolean?])]{
+
+When @racket[to-paragraph] and variants encounter a
+@racket[long-boolean] structure, it is typeset as @racket[#true] or @racket[#false],
+as opposed to @racket[#t] or @racket[#f].}
+
+
 @defstruct[just-context ([val any/c]
                          [context syntax?])]{
 

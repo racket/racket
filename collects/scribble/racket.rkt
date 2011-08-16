@@ -46,6 +46,7 @@
 
            (struct-out var-id)
            (struct-out shaped-parens)
+           (struct-out long-boolean)
            (struct-out just-context)
            (struct-out alternate-display)
            (struct-out literal-syntax)
@@ -1010,6 +1011,7 @@
 
   (define-struct var-id (sym))
   (define-struct shaped-parens (val shape))
+  (define-struct long-boolean (val))
   (define-struct just-context (val ctx))
   (define-struct alternate-display (id string))
   (define-struct literal-syntax (stx))
@@ -1069,6 +1071,10 @@
       (syntax-property (do-syntax-ize (shaped-parens-val v) col line ht #f qq #f)
                        'paren-shape
                        (shaped-parens-shape v))]
+     [(long-boolean? v)
+      (datum->syntax #f
+                     (and (long-boolean-val v) #t) 
+                     (vector #f line col (+ 1 col) (if (long-boolean-val v) 5 6)))]
      [(just-context? v)
       (let ([s (do-syntax-ize (just-context-val v) col line ht #f qq #f)])
         (datum->syntax (just-context-ctx v)
