@@ -516,7 +516,8 @@ in the sequence.
          (void)]{
   Folds @racket[f] over each element of @racket[s] with @racket[i] as
   the initial accumulator.  If @racket[s] is infinite, this function
-  does not terminate.}
+  does not terminate. @racket[f] takes the accumulator as its first argument
+  and the next sequence element as its second.}
 
 @defproc[(sequence-count [f procedure?] [s sequence?])
          exact-nonnegative-integer?]{
