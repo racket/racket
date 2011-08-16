@@ -35,10 +35,12 @@
            [gray #x8000])
       (when gc
         (gdk_gc_set_rgb_fg_color gc (make-GdkColor 0 gray gray gray))
-        (let ([a (widget-allocation gtk)])
+        (let ([a (widget-allocation gtk)]
+              [no-window? (not (zero? (bitwise-and (get-gtk-object-flags gtk)
+                                                   GTK_NO_WINDOW)))])
           (gdk_draw_rectangle win gc #f
-                              0
-                              0
+                              (if no-window? (GtkAllocation-x a) 0)
+                              (if no-window? (GtkAllocation-y a) 0)
                               (sub1 (GtkAllocation-width a))
                               (sub1 (GtkAllocation-height a))))
         (gdk_gc_unref gc)))
