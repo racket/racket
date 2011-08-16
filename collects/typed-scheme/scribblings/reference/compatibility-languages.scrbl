@@ -18,13 +18,12 @@ languages. The @racketmod[typed-scheme] language is equivalent to the
                      typed-scheme/base-env/base-types
                      typed-scheme/base-env/base-types-extra))
 
-@(define-syntax-rule (def-racket rts rt arr)
+@(define-syntax-rule (def-racket rts rt)
   (begin
-    (require (for-label (only-in typed/racket/base require-typed-struct require/typed ->)))
-    (define arr (racket ->))
+    (require (for-label (only-in typed/racket/base require-typed-struct require/typed)))
     (define rts (racket require-typed-struct))
     (define rt (racket require/typed))))
-@(def-racket rts-id rt-id ->-id)
+@(def-racket rts-id rt-id)
 
 
 @defform/subs[#:literals (struct opaque)
