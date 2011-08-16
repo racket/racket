@@ -1235,6 +1235,7 @@ path/s is either such a string or a list of them.
 "collects/redex/private/traces.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/tests/bitmap-test-util.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/tests/bitmap-test.rkt" drdr:command-line (mzc "-k" *)
+"collects/redex/tests/check-syntax-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/color-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/compiler/matrix-tests.rkt" drdr:command-line #f
 "collects/redex/tests/compiler/redex-tests.rkt" drdr:command-line #f
