@@ -16,11 +16,14 @@
  "contract-tests.rkt"
 
  (r:infer infer infer-dummy)
+ racket/runtime-path
  rackunit rackunit/text-ui)
 
 (provide unit-tests)
 
 (infer-param infer)
+
+(define-runtime-path special "special-env-typecheck-tests.rkt")
 
 (define unit-tests
   (make-test-suite
@@ -38,7 +41,7 @@
                   fv-tests
                   contract-tests
                   ;; this uses dynamic require because the file fails to compile when there's a test failure
-                  (λ () ((dynamic-require "unit-tests/special-env-typecheck-tests.rkt" 'typecheck-special-tests))))])
+                  (λ () ((dynamic-require special 'typecheck-special-tests))))])
      (f))))
 
 
