@@ -29,6 +29,44 @@ includes a @racket[latex-defaults] @tech{style property}.
 @; ------------------------------------------------------------------------
 @section[#:tag "scribble:manual:code"]{Typesetting Code}
 
+The @racket[codeblock] and @racket[code] forms (see
+@secref["all-code"]) typeset code verbatim, adding a layer of color to
+the code based on the same syntax-coloring parsers that are used by
+DrRacket. Input that is parsed as an identifier is further given a
+lexical context and hyperlinked via @racket[for-label] imports.
+
+The @racket[racketblock] and @racket[racket] forms (see
+@secref["racket-code"]) typeset S-expression code roughly verbatim,
+but roughly by quoting the source term with
+@racket[syntax]. Identifiers in the quoted S-expression are
+hyperlinked via @racket[for-label] imports.
+
+The two different approaches to typesetting code---@racket[codeblock]
+and @racket[code] versus @racket[racketbock] and
+@racket[racket]---have different advantages and disadvantages:
+
+@itemlist[
+
+ @item{The @racket[codeblock] and @racket[code] forms work with
+       non-S-expression syntax, and they give authors more control
+       over output (e.g., the literal number @code{2/4} is not
+       normalized to @racket[2/4]). The @racket[codeblock] and
+       @racket[code] forms do not yet support escapes to Scribble
+       element mode, and they cannot adapt spacing based on the width
+       of elements in escapes.}
+
+ @item{The @racket[racketblock] and @racket[racket] forms are more
+       efficient and allow escapes to Scribble element mode. The
+       @racket[racketblock] and @racket[racket] forms are tied to
+       S-expression syntax, however, and they are based on a syntax
+       representation that tends to normalize source terms (e.g., the
+       literal number @code{2/4} is normalized to @racket[2/4]).}
+
+]
+
+@; ----------------------------------------
+@subsection[#:tag "all-code"]{@hash-lang[]-Specified Code}
+
 @defform/subs[(codeblock option ... str-expr ...+)
               ([option (code:line #:keep-lang-line? keep-expr)
                        (code:line #:indent indent-expr)
@@ -58,7 +96,7 @@ When @racket[keep-expr] produces a true value (the default), the first
 line in the input (which is typically @hash-lang[]) is preserved in
 the typeset output, otherwise the first line is dropped. The typeset
 code is indented by the amount specified by @racket[indent-expr],
-which defaults to @racket[2].
+which defaults to @racket[0].
 
 When @racket[expand-expr] produces @racket[#f] (which is the default),
 identifiers in the typeset code are colored and linked based on
@@ -97,6 +135,13 @@ produces the typeset result
 
 }
 
+
+@defform[(codeblock0 option ... str-expr ...+)]{
+
+Like @racket[codeblock], but without the @racket['code-inset]
+@racket[nested] wrapper.}
+
+
 @defform/subs[(code option ... str-expr ...+)
               ([option (code:line #:lang lang-line-expr)
                        (code:line #:expand expand-expr)
@@ -105,10 +150,10 @@ produces the typeset result
                            [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
                            [context-expr syntax-object?])]{
 
-Like @racket[codeblock], but produces an element instead of a
-block. No @hash-lang[] line should appear in the string content;
+Like @racket[codeblock], but produces @tech{content} instead of a
+@tech{block}. No @hash-lang[] line should appear in the string content;
 instead, it should be provided @racket[#:lang] (as a string
-without @racket["#lang"]) if needed, and the @hash-lang[] line is always stripped
+without @racket["#lang "]) if needed, and the @hash-lang[] line is always stripped
 from the output when provided. Also, each newline in @racket[str-expr]s is collapsed
 along with all surrounding whitespace to a single space.
 
@@ -116,7 +161,6 @@ For example,
 
 @codeblock[#:keep-lang-line? #f]|<|{
   #lang scribble/manual
-  
   This is @code[#:lang "at-exp racket"]|{@bold{Hi}}|'s result:
   @bold{Hi}.
 }|>|
@@ -130,7 +174,8 @@ produces the typeset result
 
 }
 
-
+@; ----------------------------------------
+@subsection[#:tag "racket-code"]{Racket Code}
 
 @defform/subs[(racketblock maybe-escape datum ...)
               ([maybe-escape code:blank
@@ -156,12 +201,17 @@ produces the output
 
 with the @racket[(loop (not x))] indented under @racket[define],
 because that's the way it is idented the use of @racket[racketblock].
+Source-location span information is used to preserve @racket[#true]
+versus @racket[#t] and @racket[#false] versus @racket[#f], and
+syntax-object properties are used to preserve square brackets and
+curly braces versus parentheses; otherwise, using syntax objects tends
+to normalize the form of S-expression elements.
 
-Furthermore, @racket[define] is typeset as a keyword (in black)
+In the above example, @racket[define] is typeset as a keyword (in black)
 and as a hyperlink to @racket[define]'s definition in the reference
-manual, because this document was built using a for-label binding of
+manual, because this document was built using a @racket[for-label] binding of
 @racket[define] (in the source) that matches a definition in the
-reference manual. Similarly, @racket[not] is a hyperlink to the its
+reference manual. Similarly, @racket[not] is a hyperlink to its
 definition in the reference manual.
 
 Like other forms defined via @racket[define-code],
@@ -307,6 +357,66 @@ as a result (i.e., a single color with no hyperlinks).}
 @defform[(racketid maybe-escape datum ...)]{Like @racket[racket], but typeset
 as an unbound identifier (i.e., no coloring or hyperlinks).}
 
+@deftogether[(
+@defform[(schemeblock maybe-escape datum ...)]
+@defform[(SCHEMEBLOCK maybe-escape datum ...)]
+@defform[(schemeblock0 maybe-escape datum ...)]
+@defform[(SCHEMEBLOCK0 maybe-escape datum ...)]
+@defform[(schemeinput maybe-escape datum ...)]
+@defform[(schememod lang maybe-escape datum ...)]
+@defform[(scheme maybe-escape datum ...)]
+@defform[(SCHEME maybe-escape datum ...)]
+@defform[(schemeresult maybe-escape datum ...)]
+@defform[(schemeid maybe-escape datum ...)]
+)]{
+
+Compatibility aliases. Each @racketidfont{scheme...} name is an alias for the
+corresponding @racketidfont{racket...} binding.}
+
+@; ------------------------------------------------------------------------
+
+@subsection{Preserving Comments}
+
+@defmodulereader[scribble/comment-reader]
+
+As a reader module, @racketmodname[scribble/comment-reader] reads a
+single S-expression that contains @litchar{;}-based comment lines, and
+it wraps the comments with @racket[code:comment] for use with forms
+like @racket[racketblock]. More precisely,
+@racketmodname[scribble/comment-reader] extends the current reader to
+adjust the parsing of @litchar{;}.
+
+For example, within a Scribble document that imports
+@racketmodname[scribble/manual],
+
+@verbatim[#:indent 2]|{
+  @#reader scribble/comment-reader
+   (racketblock
+    ;; This is not a pipe
+    (make-pipe)
+   )
+}|
+
+generates
+
+@#reader scribble/comment-reader
+ (racketblock
+  ;; This is not a pipe
+  (make-pipe)
+ )
+
+The initial @litchar["@"] is needed above to shift into S-expression
+mode, so that @racketmetafont{#reader} is recognized as a reader
+declaration instead of literal text. Also, the example uses
+@racket[(racketblock ....)]  instead of
+@racketmetafont["@"]@racket[racketblock]@racketmetafont["["]@racket[....]@racketmetafont["]"]
+because the @"@"-reader would drop comments within the
+@racket[racketblock] before giving
+@racketmodname[scribble/comment-reader] a chance to convert them.
+
+@; ------------------------------------------------------------------------
+@subsection{Code Fonts and Styles}
+
 @defform*[((racketmodname datum)
            (racketmodname ((unsyntax (racket unsyntax)) expr)))]{
 Like @racket[racket], but typeset as a module path. If @racket[datum]
@@ -376,16 +486,6 @@ procedure, but use @racket[var] if that cannot work for some reason.}
 in a form definition.}
 
 @deftogether[(
-@defform[(schemeblock maybe-escape datum ...)]
-@defform[(SCHEMEBLOCK maybe-escape datum ...)]
-@defform[(schemeblock0 maybe-escape datum ...)]
-@defform[(SCHEMEBLOCK0 maybe-escape datum ...)]
-@defform[(schemeinput maybe-escape datum ...)]
-@defform[(schememod lang maybe-escape datum ...)]
-@defform[(scheme maybe-escape datum ...)]
-@defform[(SCHEME maybe-escape datum ...)]
-@defform[(schemeresult maybe-escape datum ...)]
-@defform[(schemeid datum ...)]
 @defform*[((schememodname datum)
            (schememodname ((unsyntax (racket unsyntax)) expr)))]
 @defform[(schememodlink datum pre-content-expr ...)]
@@ -404,47 +504,6 @@ in a form definition.}
 
 Compatibility aliases. Each @racketidfont{scheme...} name is an alias for the
 corresponding @racketidfont{racket...} binding.}
-
-@; ------------------------------------------------------------------------
-
-@subsection{Typesetting Comments}
-
-@defmodulereader[scribble/comment-reader]
-
-As a reader module, @racketmodname[scribble/comment-reader] reads a
-single S-expression that contains @litchar{;}-based comment lines, and
-it wraps the comments with @racket[code:comment] for use with forms
-like @racket[racketblock]. More precisely,
-@racketmodname[scribble/comment-reader] extends the current reader to
-adjust the parsing of @litchar{;}.
-
-For example, within a Scribble document that imports
-@racketmodname[scribble/manual],
-
-@verbatim[#:indent 2]|{
-  @#reader scribble/comment-reader
-   (racketblock
-    ;; This is not a pipe
-    (make-pipe)
-   )
-}|
-
-generates
-
-@#reader scribble/comment-reader
- (racketblock
-  ;; This is not a pipe
-  (make-pipe)
- )
-
-The initial @litchar["@"] is needed above to shift into S-expression
-mode, so that @racketmetafont{#reader} is recognized as a reader
-declaration instead of literal text. Also, the example uses
-@racket[(racketblock ....)]  instead of
-@racketmetafont["@"]@racket[racketblock]@racketmetafont["["]@racket[....]@racketmetafont["]"]
-because the @"@"-reader would drop comments within the
-@racket[racketblock] before giving
-@racketmodname[scribble/comment-reader] a chance to convert them.
 
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-modules"]{Documenting Modules}
