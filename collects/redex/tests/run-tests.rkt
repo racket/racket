@@ -26,6 +26,7 @@
      "pict-test.rkt"
      "hole-test.rkt"
      "stepper-test.rkt"
+     "check-syntax-test.rkt"
      "test-docs-complete.rkt")
    (if test-bitmaps? '("bitmap-test.rkt") '())
    (if test-examples?
