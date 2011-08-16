@@ -114,6 +114,11 @@ delimiters} mode colors parentheses and other delimiters according to their
 nesting depth. It makes it easier to know, at a glance, which parentheses
 match.
 
+@subsubsection{ParenFace}
+@hyperlink["http://www.emacswiki.org/emacs/ParenFace"]{ParenFace} lets you
+choose in which face (font, color, etc.) parentheses should be displayed. This
+makes it possible to make "tone down" parentheses.
+
 
 @section{Vim}
 
