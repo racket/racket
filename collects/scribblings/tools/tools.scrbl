@@ -11,6 +11,7 @@
             (for-label framework/framework)
             (for-label drracket/syncheck-drracket-button
                        drracket/check-syntax)
+            scribble/eval
             scribble/extract)
    
    (define (File x) @tt[x])
@@ -765,6 +766,50 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   The @racket[syncheck:find-source-object] method ignores its arguments
   and returns @racket[#f];
   all of the other methods ignore their arguments and return @racket[(void)].
+  
+  @examples[#:eval (let ([evaluator (make-base-eval)])
+                   (evaluator '(require drracket/check-syntax))
+                   evaluator)
+            (require racket/class)
+            (define arrows-collector%
+              (class (annotations-mixin object%)
+                (super-new)
+                (define/override (syncheck:find-source-object stx)
+                  stx)
+                (define/override (syncheck:add-arrow start-source-obj	 
+                                                     start-left	 
+                                                     start-right	 
+                                                     end-source-obj	 
+                                                     end-left	 
+                                                     end-right	 
+                                                     actual?	 
+                                                     phase-level)
+                  (set! arrows 
+                        (cons (list start-source-obj end-source-obj)
+                              arrows)))
+                (define arrows '())
+                (define/public (collected-arrows) arrows)))
+            (define (arrows form)
+              (define base-namespace
+                (make-base-namespace))
+              (define-values (add-syntax done)
+                (make-traversal base-namespace #f))
+              (define collector (new arrows-collector%))
+              (parameterize ([current-annotations collector]
+                             [current-namespace base-namespace])
+                (add-syntax (expand form))
+                (done))
+              (send collector collected-arrows))
+            (define (make-id name pos orig?)
+              (datum->syntax
+               #f
+               name
+               (list #f #f #f pos (string-length (symbol->string name)))
+               (and orig? #'is-orig)))
+            (arrows `(λ (,(make-id 'x 1 #t)) ,(make-id 'x 2 #t)))
+            (arrows `(λ (x) x))
+            (arrows `(λ (,(make-id 'x 1 #f)) ,(make-id 'x 2 #t)))
+            (arrows `(λ (,(make-id 'x 1 #t)) x))]
 }
 
 @(define-syntax-rule 
