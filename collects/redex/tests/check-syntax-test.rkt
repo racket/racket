@@ -7,6 +7,19 @@
 
 (reset-count)
 
+(define-syntax (identifier stx)
+  (syntax-case stx ()
+    [(_ x)
+     (identifier? #'x)
+     #`(let ([p (open-input-string (format "~s" 'x))])
+         (port-count-lines! p)
+         (set-port-next-location! 
+          p
+          #,(syntax-line #'x)
+          #,(syntax-column #'x)
+          #,(syntax-position #'x))
+         (read-syntax '#,(syntax-source #'x) p))]))
+
 (define (source stx)
   (list (syntax-source stx)
         (syntax-line stx)
@@ -64,15 +77,15 @@
   (define-values (add-syntax done)
     (make-traversal module-namespace #f))
   
-  (define language-def-name #'L)
-  (define language-use-name #'L)
+  (define language-def-name (identifier L))
+  (define language-use-name (identifier L))
   
-  (define mode-name #'J)
-  (define contract-name #'J)
-  (define conclusion-name #'J)
-  (define premise-name #'J)
-  (define render-name #'J)
-  (define holds-name #'J)
+  (define mode-name (identifier J))
+  (define contract-name (identifier J))
+  (define conclusion-name (identifier J))
+  (define premise-name (identifier J))
+  (define render-name (identifier J))
+  (define holds-name (identifier J))
   
   (define language-binding 
     (list language-def-name language-use-name))
@@ -106,14 +119,14 @@
   (define-values (add-syntax done)
     (make-traversal module-namespace #f))
   
-  (define language-def-name #'L)
-  (define language-use-name #'L)
+  (define language-def-name (identifier L))
+  (define language-use-name (identifier L))
   
-  (define contract-name #'f)
-  (define lhs-name #'f)
-  (define rhs-name #'f)
-  (define render-name #'f)
-  (define term-name #'f)
+  (define contract-name (identifier f))
+  (define lhs-name (identifier f))
+  (define rhs-name (identifier f))
+  (define render-name (identifier f))
+  (define term-name (identifier f))
   
   (define language-binding
     (list language-def-name language-use-name))
