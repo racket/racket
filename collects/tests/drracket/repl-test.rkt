@@ -13,7 +13,7 @@ This produces an ACK message
 
 |#
 
-(require "drracket-test-util.rkt"
+(require "private/drracket-test-util.rkt"
          mred
          framework)
 

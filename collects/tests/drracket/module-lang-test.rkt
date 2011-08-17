@@ -257,5 +257,5 @@
       "3")
 
 
-(require "drracket-test-util.rkt")
+(require "private/drracket-test-util.rkt")
 (fire-up-drscheme-and-run-tests run-test)
