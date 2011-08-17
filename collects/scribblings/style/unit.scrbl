@@ -136,8 +136,7 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
 ))]
 @;%
 
-Avoid @racket[(provide (all-defined-out))] except for general-purpose
- libraries.
+Avoid @racket[(provide (all-defined-out))].
 
 A test suite section---if located within the module---should come at the
  very end, including its specific dependencies, i.e., @racket[require]
@@ -262,21 +261,25 @@ racket
  define-strategy)
 ))]
 
-Consider using @scheme[provide/contract] for module interfaces.
- Although contracts affect the performance of your module's services, they
- provide a specification and they will help you with the inevitable bug
- reports you will receive. You should definitely consider type-like
- contracts (constructor predicates that check only a tag); they tend to
- cost relatively little.
+Use @scheme[provide/contract] for module interfaces.  Contracts often
+ provide the right level of specification for first-time readers.
+
+At a minimum, you should use type-like contracts, i.e., predicates that
+ check for the constructor of data. They cost almost nothing, especially
+ because exported functions tend to check such constraints internally
+ anyway and contracts tend to render such checks superfluous.
+
+If you discover that contracts create a performance bottleneck, please
+ report the problem to the Racket developer mailing list.
 
 @subsection{Uniformity of Interface}
 
-Pick a consistency rule for naming your functions, classes, and
+Pick a rule for consistently naming your functions, classes, and
  methods. Stick to it. For example, you may wish to prefix all exported
  names with the name of the data type that they deal with, say
  @racket[syntax-local].
 
-Pick a consistency rule for naming and ordering the parameters of your
+Pick a rule for consistently naming and ordering the parameters of your
  functions and methods. Stick to it. For example, if your module implements
  an abstract data type (ADT), all functions on the ADT should consume the
  ADT-argument first or last.
@@ -297,6 +300,8 @@ With @racketmodname[rackunit], test suites can be defined within the
 @; -----------------------------------------------------------------------------
 @section{Classes & Units}
 
+(I will write something here sooner or later.)
+
 @; -----------------------------------------------------------------------------
 @section{Functions & Methods}
 
@@ -309,6 +314,6 @@ optional.
 Similarly, if your function or method consumers two (or more)
 @emph{optional} parameters, keyword arguments are a must.
 
-Please write a purpose statement for your function.
-If you can, add an informal type and/or contract statement.
+Write a purpose statement for your function.  If you can, add an informal
+type and/or contract statement.
 
