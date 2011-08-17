@@ -154,10 +154,12 @@ Polling a URL can result in one of four options:
                     (error 'verify-ftp "bad ftp url: ~a" url)))))
   (define port (or port? 21))
   (define r
-    (let ([c (ftp-establish-connection host port "anonymous" "anonymous@")])
-      (begin0 (ftp-directory-list c path) (ftp-close-connection c))))
+    (with-handlers ([exn:fail? exn-message])
+      (let ([c (ftp-establish-connection host port "anonymous" "anonymous@")])
+        (begin0 (ftp-directory-list c path) (ftp-close-connection c)))))
   (cond [(not (and (list? r) (= 1 (length r)) (list? (car r))))
-         (eprintf "WARNING: failure getting ftp info for ~a\n" url)
+         (eprintf "WARNING: failure getting ftp info for ~a~a\n"
+                  url (if (string? r) (format " (~a)" r) ""))
          #f]
         [(not (= 4 (length (car r))))
          (eprintf "WARNING: no size for: ~a\n" url)
