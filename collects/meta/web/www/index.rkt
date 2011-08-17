@@ -98,7 +98,7 @@
        for constructing images, and DrRacket can display an image result as
        easily as it can display a number result.  In this case, a
        @elemcode{sierpinski} function is defined and called (at the same time)
-       to generate a Sierpinski triangle of depth 6.})
+       to generate a Sierpinski triangle of depth 8.})
     (graphical-example ; ---------------------------------------------
      @code{#lang racket/gui ; A GUI guessing game
            (define f (new frame% [label "Guess"]))
