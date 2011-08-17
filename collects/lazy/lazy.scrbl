@@ -1,8 +1,8 @@
 #lang scribble/doc
-@(require (for-label (except-in lazy delay force)
+@(require (for-label (except-in lazy)
                      (only-in lazy/force ! !! !list !!list)
-                     scheme/contract
-                     (only-in scheme/promise promise?)))
+                     racket/contract
+                     (only-in racket/promise promise?)))
 
 @(define-syntax-rule (deflazy mod def id)
    (begin
@@ -50,7 +50,7 @@ lazy
 
 Function applications are delayed, and promises are automatically
 forced. The language provides bindings that are equivalent to most of
-the @racketmodname[mzscheme] and @racketmodname[scheme/list]
+the @racketmodname[racket/base] and @racketmodname[racket/list]
 libraries. Primitives are strict in the expected places; struct
 constructors are lazy; @racket[if], @racket[and], @racket[or] @|etc|
 are plain (lazy) functions. Strict functionality is provided as-is:
