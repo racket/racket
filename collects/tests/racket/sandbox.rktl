@@ -493,6 +493,11 @@
         =err> "out of mem+o(?:ry)"
         b => 1))
 
+   --top--
+   (make-base-evaluator!)
+   --eval--
+   (syntax-original? #'x) => #t
+
    ))
 
 (report-errs)

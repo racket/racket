@@ -474,10 +474,23 @@
                       (loop (cdr inps) (and n (add1 n))
                             ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
                             ;; (starting from the `n' argument)
-                            (cons (datum->syntax
-                                   #f (car inps)
-                                   (list source n (and n 0) n (and n 1)))
+                            (cons (add-location (car inps)
+                                                (list source n (and n 0) n (and n 1)))
                                   r))))]))))
+
+(define orig-stx (read-syntax 'src (open-input-string "0"))) ; for "is original?" property
+(define (make-orig x loc) (datum->syntax #f x loc orig-stx))
+
+(define (add-location x loc)
+  (cond
+   [(null? x) null]
+   [(pair? x) (make-orig (cons (add-location (car x) loc) 
+                               (add-location (cdr x) loc))
+                         loc)]
+   [(vector? x) (make-orig (for/vector ([i (in-vector x)])
+                             (add-location i loc))
+                           loc)]
+   [else (make-orig x loc)]))
 
 (define ((init-hook-for-language language))
   (cond [(or (not (pair? language))
