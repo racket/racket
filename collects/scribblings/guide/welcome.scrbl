@@ -229,5 +229,13 @@ module system is designed to avoid these problems, so start with
 @hash-lang[], and you'll be happier with Racket in the long run.
 
 @; ----------------------------------------------------------------------
+@section{A Note about Editors}
+
+Racket ships with the DrRacket programming environment. If you are already
+familiar with another editor, it is certainly possible to use it for Racket
+development. To improve your racketeering experience with your editor of
+choice, see @secref["other-editors"].
+
+@; ----------------------------------------------------------------------
 
 @close-eval[piece-eval]
