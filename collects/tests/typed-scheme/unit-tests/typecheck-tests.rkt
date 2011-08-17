@@ -1327,6 +1327,8 @@
         [tc-e (#%variable-reference) -Variable-Reference]
         [tc-e (#%variable-reference x) -Variable-Reference]
         [tc-e (#%variable-reference +) -Variable-Reference]
+        [tc-e (apply (λ: ([x : String] [y : String]) (string-append x y)) (list "foo" "bar")) -String]
+        [tc-e (apply (plambda: (a) ([x : a] [y : a]) x) (list "foo" "bar")) -String]
         )
   (test-suite
    "check-type tests"

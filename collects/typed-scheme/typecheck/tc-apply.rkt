@@ -75,6 +75,11 @@
                          (subtype tail-ty (car (car drests*))))]
                    [_ #f]))
             (do-ret (car rngs*))]
+           ;; the function has no rest argument, but provides all the necessary fixed arguments           
+           [(and (not (car rests*)) (not (car drests*))
+                 (subtype (apply -lst* arg-tys #:tail tail-ty)
+                          (apply -lst* (car doms*))))
+            (do-ret (car rngs*))]
            ;; otherwise, nothing worked, move on to the next case
            [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     ;; apply of simple polymorphic function
@@ -84,7 +89,7 @@
                    [(tail-ty tail-bound) (match (tc-expr/t tail)
                                            [(ListDots: tail-ty tail-bound)
                                             (values tail-ty tail-bound)]
-                                           [t (values t #f)])])
+                                           [t (values t #f)])])       
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (match f-ty
@@ -106,6 +111,13 @@
                                          (car doms*))
                                    (car rests*)
                                    (car rngs*)))
+                => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
+               ;; the function has no rest argument, but provides all the necessary fixed arguments           
+               [(and (not (car rests*)) (not (car drests*)) (not tail-bound)
+                     (infer vars null
+                            (list (apply -lst* arg-tys #:tail tail-ty))
+                            (list (apply -lst* (car doms*)))
+                            (car rngs*)))
                 => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
