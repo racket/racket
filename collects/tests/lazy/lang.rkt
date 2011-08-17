@@ -49,7 +49,7 @@
   (test
    (! (take "nonnum" test-lst1))
    =error>
-   #rx"take: expects type <non-negative exact integer> as 1st .* '\\(1 2 3\\)"
+   #rx"take: expects type <non-negative exact integer> as 1st argument, given: \"nonnum\"; other arguments were: .*\\((list )?1 2 3\\)"
    (! (take -1 test-lst1))
    =error> "take: expects type <non-negative exact integer> as 1st argument"
    (! (take -1 "nonlist"))

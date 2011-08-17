@@ -1,6 +1,7 @@
-(module lazy mzscheme
+#lang racket/base
 
-  (require-for-syntax stepper/private/shared)
+(require (for-syntax racket/base))
+(require (for-syntax stepper/private/shared))
 
   ;; ~ = lazy (or delayed)
   ;; ! = strict (or forced)
@@ -37,7 +38,7 @@
       [(_ ~name val) (identifier? #'~name)
        (let* ([~str (symbol->string (syntax-e #'~name))]
               [str  (string->symbol (regexp-replace #rx"^[~*]" ~str ""))])
-         (with-syntax ([name (datum->syntax-object #'~name str #'~name)])
+         (with-syntax ([name (datum->syntax #'~name str #'~name)])
            #'(define ~name (let ([name val]) (mark-lazy name)))))]
       [(_ (~name . xs) body ...) (identifier? #'~name)
        #'(define* ~name (lambda xs body ...))]))
@@ -116,9 +117,9 @@
   (define-syntax ~begin
     (let ([ids (syntax->list
                 #'(~define ~define-values define-syntax define-syntaxes
-                   define-struct require provide))])
+                   define-struct struct require provide))])
       (define (definition? stx)
-        (ormap (lambda (id) (module-identifier=? id stx)) ids))
+        (ormap (lambda (id) (free-identifier=? id stx)) ids))
       (lambda (stx)
         (syntax-case stx ()
           ;; optimize simple cases
@@ -147,7 +148,7 @@
                                (lambda args (~begin body0 body ...)))
                              'inferred-name n)])
            (syntax/loc stx (lazy-proc lam))))]))
-  (provide (rename ~lambda λ))
+  (provide (rename-out [~lambda λ]))
   
 ;  (defsubst
 ;    (~define (f . xs) body0 body ...) (define f (~lambda xs body0 body ...))
@@ -199,7 +200,7 @@
   ;; produce a first-class tuple-holding struct, and `split-values' turns that
   ;; into multiple values.
   ;; STC: add inspector for lazy stepper
-  (define-struct multiple-values (values) (make-inspector))
+  (struct multiple-values (values) #:inspector (make-inspector))
   (define (split-values x)
     (let ([x (! x)])
       (if (multiple-values? x) (apply values (multiple-values-values x)) x)))
@@ -217,7 +218,7 @@
         x)))
 
   (define* ~values
-    (case-lambda [(x) x] [xs (make-multiple-values xs)]))
+    (case-lambda [(x) x] [xs (multiple-values xs)]))
 
   ;; Redefine multiple-value constructs so they split the results
   (defsubst (~define-values (v ...) body)
@@ -295,7 +296,7 @@
   (provide toplevel-forcer)
   (define toplevel-forcer (make-parameter !))
 
-  (provide (rename ~!%app #%app)) ; all applications are delayed
+  (provide (rename-out [~!%app #%app])) ; all applications are delayed
   (define-syntax (~!%app stx) ; provided as #%app
     #;(define (unwinder stx rec)
       (syntax-case stx (!)
@@ -313,7 +314,7 @@
       [(_ f x ...)
        (cond [(let ([f #'f])
                (and (identifier? f)
-                    (ormap (lambda (s) (module-identifier=? f s))
+                    (ormap (lambda (s) (free-identifier=? f s))
                            strict-names)))
               ;; strict function => special forms => use plain application
               (syntax/loc stx (f x ...))]
@@ -331,10 +332,10 @@
   (defsubst (~!*apply f . xs) (hidden-~ (!*apply f . xs)))
   (defsubst (~!apply  f . xs) (hidden-~ (!apply  f . xs)))
 
-  (provide (rename !apply apply)) ; can only be used through #%app => delayed
+  (provide (rename-out [!apply apply])) ; can only be used through #%app => delayed
 
   ;; do the same special treatment for toplevel variable expressions
-  (provide (rename !top #%top))
+  (provide (rename-out [!top #%top]))
   (define-syntax (!top stx)
     (syntax-case stx ()
       [(_ . id) (if (toplevel?) #'(! (#%top . id)) #'(#%top . id))]))
@@ -351,7 +352,7 @@
 
   (define* *if
     (case-lambda [(e1 e2 e3) (if (! e1) e2 e3)]
-                 [(e1 e2   ) (if (! e1) e2   )]))
+                 [(e1 e2   ) (when (! e1) e2   )]))
   (defsubst (~if e1 e2 e3) (hidden-~ (if (hidden-! e1) e2 e3))
             (~if e1 e2   ) (hidden-~ (if (hidden-! e1) e2   ))
             ~if *if)
@@ -563,7 +564,7 @@
        (with-syntax ([?name (let* ([x (symbol->string (syntax-e #'?~name))]
                                    [x (regexp-replace #rx"^~" x "")]
                                    [x (string->symbol x)])
-                              (datum->syntax-object #'?~name x #'?~name))])
+                              (datum->syntax #'?~name x #'?~name))])
          #'(define* ?~name
              (case-lambda
                [(?proc ?args ... ?l)
@@ -683,7 +684,7 @@
   (define* empty null)
   (define* (empty? x) (null? (! x)))
 
-  (require (rename mzlib/list !last-pair last-pair))
+  (require (only-in racket/list [last-pair !last-pair]))
   (define* (last-pair list) (!last-pair (!list list)))
 
   (define (do-remove name item list =)
@@ -746,7 +747,7 @@
                  (if (! (!*app pred x)) (cons x xs) xs))]
               [else (error 'filter "not a proper list: ~e" list)]))))
 
-  (require (rename mzlib/list !sort sort))
+  (require (only-in racket/base [sort !sort]))
   (define* (sort list less?)
     (let ([less? (! less?)])
       (!sort (!list list) (lambda (x y) (! (!*app less? x y))))))
@@ -754,7 +755,7 @@
   ;; --------------------------------------------------------------------------
   ;; mzlib/etc functionality
 
-  (require (only mzlib/etc boolean=? symbol=?))
+  (require (only-in racket/bool boolean=? symbol=?))
   (define* true  #t)
   (define* false #f)
 
@@ -798,11 +799,11 @@
              (map (lambda (id)
                     (let* ([str (symbol->string (syntax-e id))]
                            [~id (string->symbol (string-append "~" str))])
-                      (datum->syntax-object id ~id id)))
+                      (datum->syntax id ~id id)))
                   (syntax->list #'(id ...)))])
-         #'(provide (all-from-except mzscheme module #%app apply #%top λ
-                                     id ...)
-                    (rename ~id id) ...))]))
+         #'(provide (except-out (all-from-out racket/base) module #%app apply #%top λ
+                                id ...)
+                    (rename-out [~id id] ...)))]))
   (renaming-provide
    lambda define let let* letrec parameterize
    values define-values let-values let*-values letrec-values make-struct-type
@@ -831,7 +832,6 @@
    ;; extra stuff for lazy Scheme
    take cycle)
 
-)
 
 #|
 ;; Some tests

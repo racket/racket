@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/promise (for-syntax scheme/base))
+(require racket/promise (for-syntax racket/base))
 
 (provide (all-defined-out))
 
