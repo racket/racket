@@ -515,9 +515,13 @@ subdirectory.
          (delete-file tmpfile-path)) ;; remove the tmp file, we're done with it
        final)]
     [(list #f str)
-     (string-append "PLaneT could not find the requested package: " str)]
+     (string-append (format "PLaneT could not find the package ~s: "
+                            (pkg-spec->string pkg))
+                    str)]
     [(? string? s)
-     (string-append "PLaneT could not download the requested package: " s)]))
+     (string-append (format "PLaneT could not download the package ~s: "
+                            (pkg-spec->string pkg))
+                    s)]))
 
 (define (download-package pkg)
   (unless (download?)

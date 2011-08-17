@@ -3,7 +3,7 @@
          rackunit
          racket/port)
 
-(define debug? #f)
+(define debug? #t)
 
 (define (install-one package-spec key)
   (define op (open-output-string))
