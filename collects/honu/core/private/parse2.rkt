@@ -97,6 +97,16 @@
        (loop (cons #'name out) #'())]
       [() (reverse out)])))
 
+;; removes syntax that causes expression parsing to stop
+(define (strip-stops code)
+  (define-syntax-class stopper #:literal-sets (cruft)
+    [pattern semicolon]
+    [pattern honu-comma]
+    [pattern colon])
+  (syntax-parse code
+    [(x:stopper rest ...) (strip-stops #'(rest ...))]
+    [else code]))
+
 (define (parse-comma-expression arguments)
   (if (null? (syntax->list arguments))
     '()
@@ -105,9 +115,17 @@
       (if (empty-syntax? rest)
         (reverse used)
         (let-values ([(parsed unparsed)
-                      (parse rest)])
+                      ;; FIXME: don't strip all stops, just comma
+                      (parse (strip-stops rest))])
           (loop (cons parsed used)
                 unparsed))))))
+
+(define (stopper? what)
+  (define-literal-set check (honu-comma semicolon colon))
+  (define is (and (identifier? what)
+                  ((literal-set->predicate check) what)))
+  (debug "Comma? ~a ~a\n" what is)
+  is)
 
 ;; 1 + 1
 ;; ^
@@ -197,24 +215,9 @@
                       0
                       (lambda (x) x)
                       (left final)))]
-         [(comma? #'head)
+         [(stopper? #'head)
           (values (left final)
-                  #'(rest ...))]
-         [(semicolon? #'head)
-          (values (left final)
-                  #'(rest ...))
-          #;
-          (do-parse #'(rest ...) 0
-                    (lambda (stuff)
-                      (with-syntax ([stuff stuff]
-                                    [current (left current)])
-                        #'(begin current stuff)))
-                    #'(void))
-          #;
-          (with-syntax ([so-far (left current)])
-            #'(splicing-let-syntax ([more (lambda (stx)
-                                            (parse #'(rest ...)))])
-                                   so-far (more)))]
+                  stream)]
          [else
            (syntax-parse #'(head rest ...) #:literal-sets (cruft)
              [(function:identifier (#%parens args ...) (#%braces code ...) . rest)
@@ -294,7 +297,7 @@
   (let loop ([all '()]
              [code code])
     (define-values (parsed unparsed)
-                   (parse code))
+                   (parse (strip-stops code)))
     (debug "Parsed ~a unparsed ~a\n" (syntax->datum parsed)
            (syntax->datum unparsed))
     (if (empty-syntax? unparsed)

@@ -1,7 +1,8 @@
-#lang racket
+#lang racket/base
 
 (provide (all-defined-out))
-(require syntax/parse)
+(require syntax/parse
+         (for-syntax racket/base))
 
 ;; macro for defining literal tokens that can be used in macros
 (define-syntax-rule (define-literal name ...)
@@ -25,4 +26,4 @@
                 honu-for-syntax
                 honu-for-template)
 
-(define-literal-set cruft (#%parens #%brackets #%braces semicolon honu-= honu-comma))
+(define-literal-set cruft (#%parens #%brackets #%braces semicolon colon honu-= honu-comma))

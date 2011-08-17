@@ -27,6 +27,7 @@
                      [honu-not not] [honu-not !]
                      [honu-structure structure]
                      [honu-structure struct]
+                     [literal:colon :]
                      [literal:honu-= =]
                      [literal:semicolon |;|]
                      [literal:honu-comma |,|]
