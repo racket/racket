@@ -1,8 +1,8 @@
 #lang racket/base
 (provide (rename-out (module-begin #%module-begin)))
-(require (prefix-in ts: typed/scheme/base)
+(require (prefix-in ts: typed/racket/base)
          (for-syntax racket/base (prefix-in r: typed-scheme/typed-reader))
-         racket/include typed/scheme/base)
+         racket/include typed/racket/base racket/file)
 
 (define-syntax (module-begin stx)
   (let* ([name (symbol->string (syntax-property stx 'enclosing-module-name))]
@@ -21,4 +21,9 @@
         "../wrap-common.rkt"
         [copy-input (-> Void)]
         [remove-input (-> Void)])
-       (copy-input) (include/reader #,fname r:read-syntax) (remove-input))))
+       (define dir (make-temporary-file "input-tmp-~a" 'directory))
+       (current-directory dir)
+       (copy-input) 
+       (include/reader #,fname r:read-syntax)
+       (remove-input)
+       (delete-directory dir))))
