@@ -358,14 +358,14 @@ XFORM_NONGCING static MZ_INLINE void DO_WRAP_POS_INC(Wrap_Pos *w)
 }
 
 #define WRAP_POS Wrap_Pos
-#define WRAP_POS_INIT(w, wr) w.l = wr; WRAP_POS_SET_FIRST(&w)
+#define WRAP_POS_INIT(w, wr) (w.l = wr, WRAP_POS_SET_FIRST(&w))
 
 #define WRAP_POS_INC(w) DO_WRAP_POS_INC(&w)
 
 #define WRAP_POS_INIT_END(w) (w.l = scheme_null, w.a = NULL, w.is_limb = 0, w.pos = 0)
 #define WRAP_POS_END_P(w) SCHEME_NULLP(w.l)
 #define WRAP_POS_FIRST(w) w.a
-#define WRAP_POS_COPY(w, w2) w.l = (w2).l; w.a = (w2).a; w.is_limb = (w2).is_limb; w.pos = (w2).pos
+#define WRAP_POS_COPY(w, w2) (w.l = (w2).l, w.a = (w2).a, w.is_limb = (w2).is_limb, w.pos = (w2).pos)
 
 /* Walking backwards through one chunk: */
 
