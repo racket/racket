@@ -21,7 +21,7 @@
                    (if (bytes? expected)
                        (list expected)
                        expected))
-      (error 'ftp "exected result code ~a, got ~a" expected line))))
+      (error 'ftp "expected result code ~a, got ~a" expected line))))
 
 ;; ftp-check-response : input-port output-port bytes-or-byteslist-or-#f (bytes any -> any) any -> any
 ;;
