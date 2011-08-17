@@ -512,6 +512,9 @@
 (define-syntax pick-example-title
   (syntax-rules ()
     [(_ e) example-title]
+    [(_ #:eval ev e) example-title]
+    [(_ #:escape id e) example-title]
+    [(_ #:eval ev #:escape id e) example-title]
     [(_ . _) examples-title]))
 
 (define-syntax (examples stx)
