@@ -1,5 +1,5 @@
 #lang racket/base
-(require "drracket-test-util.rkt"
+(require "private/drracket-test-util.rkt"
          scribblings/tools/example-src
          racket/unit
          racket/gui/base

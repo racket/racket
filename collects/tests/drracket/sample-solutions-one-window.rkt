@@ -1,6 +1,6 @@
 
 (module sample-solutions-one-window mzscheme
-  (require "drracket-test-util.rkt"
+  (require "private/drracket-test-util.rkt"
            tests/utils/gui
            mzlib/class
            mzlib/list

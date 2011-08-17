@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "drracket-test-util.rkt"
+(require "private/drracket-test-util.rkt"
          racket/class
          framework)
 

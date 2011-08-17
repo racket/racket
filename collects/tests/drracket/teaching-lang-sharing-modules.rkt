@@ -1,5 +1,5 @@
 #lang racket
-(require "drracket-test-util.rkt")
+(require "private/drracket-test-util.rkt")
 
 #|
 

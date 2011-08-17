@@ -1,5 +1,5 @@
 #lang scheme/gui
-(require "drracket-test-util.rkt" mzlib/etc framework scheme/string)
+(require "private/drracket-test-util.rkt" mzlib/etc framework scheme/string)
 
 (provide test t rx run-test in-here write-test-modules)
 

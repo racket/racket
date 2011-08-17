@@ -2,7 +2,7 @@
 (require racket/gui/base
          racket/class
          mrlib/text-string-style-desc
-         "drracket-test-util.rkt"
+         "private/drracket-test-util.rkt"
          (for-syntax racket/base))
 
 ;; Test suite for the coverage annotations in the teaching languages.

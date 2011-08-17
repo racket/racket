@@ -1,3 +1,3 @@
-#lang scheme
-(require "randomly-click.rkt")
+#lang racket/base
+(require "private/randomly-click.rkt")
 (go 'preferences-dialog)

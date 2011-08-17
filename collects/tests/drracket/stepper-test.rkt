@@ -2,7 +2,7 @@
 (module stepper-test mzscheme
   (require mred
            mzlib/class
-           "drracket-test-util.rkt"
+           "private/drracket-test-util.rkt"
            tests/utils/gui
            framework
            mzlib/pretty)

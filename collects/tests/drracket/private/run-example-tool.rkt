@@ -1,5 +1,5 @@
 #lang racket/base
-(require "../drracket-test-util.rkt"
+(require "drracket-test-util.rkt"
          setup/setup-unit
          setup/option-sig
          setup/option-unit

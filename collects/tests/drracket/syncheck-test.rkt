@@ -7,7 +7,7 @@ trigger runtime errors in check syntax.
 
 |#
 
-  (require "drracket-test-util.rkt"
+  (require "private/drracket-test-util.rkt"
            string-constants/string-constant
            tests/utils/gui
            racket/path
