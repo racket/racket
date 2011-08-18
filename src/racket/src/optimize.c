@@ -100,7 +100,7 @@ static void env_make_closure_map(Optimize_Info *frame, mzshort *size, mzshort **
 
 static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags);
 static int optimize_info_get_shift(Optimize_Info *info, int pos);
-static void optimize_info_done(Optimize_Info *info);
+static void optimize_info_done(Optimize_Info *info, Optimize_Info *parent);
 
 static Scheme_Object *estimate_closure_size(Scheme_Object *e);
 static Scheme_Object *no_potential_size(Scheme_Object *value);
@@ -817,7 +817,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
     p = scheme_optimize_expr(p, info, context);
     info->next->single_result = info->single_result;
     info->next->preserves_marks = info->preserves_marks;
-    optimize_info_done(info);
+    optimize_info_done(info, NULL);
 
     if (le_prev) {
       *((Scheme_Object **)(((char *)le_prev) + prev_offset)) = p;
@@ -891,7 +891,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
 
   info->single_result = sub_info->single_result;
   info->preserves_marks = sub_info->preserves_marks;
-  optimize_info_done(sub_info);
+  optimize_info_done(sub_info, NULL);
 
   if (le_prev) {
     *((Scheme_Object **)(((char *)le_prev) + prev_offset)) = p;
@@ -1041,18 +1041,18 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
-                             single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
+                             single_use, scheme_write_to_string(data->name ? data->name : scheme_false, NULL)));
           le = apply_inlined(le, data, sub_info, argc, app, app2, app3, context,
                              nested_count, orig_le, prev, prev_offset);
           if (nested_count)
-            optimize_info_done(sub_info);
+            optimize_info_done(sub_info, NULL);
           return le;
 	} else {
-          LOG_INLINE(fprintf(stderr, "No inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
+          LOG_INLINE(fprintf(stderr, "No inline %s\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL)));
           info->has_nonleaf = 1;
         }
       } else {
-        LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", data->name ? scheme_write_to_string(data->name, NULL) : "???",
+        LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
                            sz, is_leaf, threshold,
                            info->inline_fuel, info->use_psize));
         info->has_nonleaf = 1;
@@ -3460,7 +3460,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           if (!post_bind) {
             info->single_result = sub_info->single_result;
             info->preserves_marks = sub_info->preserves_marks;
-            optimize_info_done(sub_info);
+            optimize_info_done(sub_info, NULL);
           }
 
           return form;
@@ -3485,7 +3485,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	  body = scheme_optimize_expr(clv->value, info, context);
           info->next->single_result = info->single_result;
           info->next->preserves_marks = info->preserves_marks;
-	  optimize_info_done(info);
+	  optimize_info_done(info, NULL);
 	  return body;
 	}
       }
@@ -4078,14 +4078,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     body = pre_body->body;
   }
 
-  if (post_bind) {
-    body_info->size = rhs_info->size;
-    body_info->vclock = rhs_info->vclock;
-  }
-
-  if (split_shift) {
-    optimize_info_done(rhs_info);
-  }
+  if (post_bind)
+    optimize_info_done(rhs_info, body_info);
+  else if (split_shift)
+    optimize_info_done(rhs_info, body_info);
 
   body = scheme_optimize_expr(body, body_info, scheme_optimize_tail_context(context));
   if (head->num_clauses)
@@ -4154,7 +4150,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
   /* Optimized away all clauses? */
   if (!head->num_clauses) {
-    optimize_info_done(body_info);
+    optimize_info_done(body_info, NULL);
     return head->body;
   }
 
@@ -4213,13 +4209,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         value = scheme_optimize_expr(value, sub_info, context);
         info->single_result = sub_info->single_result;
         info->preserves_marks = sub_info->preserves_marks;
-        optimize_info_done(sub_info);
+        optimize_info_done(sub_info, NULL);
         return value;
       }
     }
   }
 
-  optimize_info_done(body_info);
+  optimize_info_done(body_info, NULL);
 
   return form;
 }
@@ -4319,7 +4315,7 @@ optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int cont
   data->closure_size = (cl->base_closure_size
 			+ (cl->has_tl ? 1 : 0));
 
-  optimize_info_done(info);
+  optimize_info_done(info, NULL);
 
   return (Scheme_Object *)data;
 }
@@ -4890,7 +4886,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   case scheme_local_type:
     {
       Scheme_Object *val;
-      int pos, delta, is_mutated;
+      int pos, delta, is_mutated = 0;
 
       info->size += 1;
 
@@ -5983,13 +5979,15 @@ static int optimize_info_get_shift(Optimize_Info *info, int pos)
   return delta;
 }
 
-static void optimize_info_done(Optimize_Info *info)
+static void optimize_info_done(Optimize_Info *info, Optimize_Info *parent)
 {
-  info->next->size += info->size;
-  info->next->psize += info->psize;
-  info->next->vclock = info->vclock;
+  if (!parent) parent = info->next;
+
+  parent->size += info->size;
+  parent->vclock = info->vclock;
+  parent->psize += info->psize;
   if (info->has_nonleaf)
-    info->next->has_nonleaf = 1;
+    parent->has_nonleaf = 1;
 }
 
 /*========================================================================*/
