@@ -200,9 +200,9 @@
 
 ;; rec-ids are identifiers that are of the folded type, so we recur on them.
 ;; kws is e.g. '(#:Type #:Filter #:Object #:PathElem)
-(define-for-syntax (mk-fold ht type-rec-id rec-ids kws)
+(define-for-syntax (mk-fold hashtable type-rec-id rec-ids kws)
   (lambda (stx)
-    (define new-ht (hash-copy ht))
+    (define new-hashtable (hash-copy hashtable))
     (define-syntax-class clause
       (pattern
        ;; Given name, matcher.
@@ -266,7 +266,7 @@
        ;; so we can give special cases for only specific elements.
        (for ([k (attribute clauses.kw)]
              [v (attribute clauses.val)])
-         (hash-set! new-ht k v))
+         (hash-set! new-hashtable k v))
        (with-syntax ([(let-clauses ...)
                       (for/list ([rec-id rec-ids]
                                  [k kws])
@@ -276,7 +276,7 @@
                                                 #'values)])]
                      [(match-clauses ...)
                       ;; create all clauses we fold on, with keyword/body
-                      (hash-map new-ht gen-clause)]
+                      (hash-map new-hashtable gen-clause)]
                      [error-msg (quasisyntax/loc stx (error 'tc "no pattern for ~a" #,fold-target))])
          #`(let (let-clauses ...
                  ;; binds #'fold-target to the given element to fold down.
@@ -291,12 +291,13 @@
 
 (define-syntax (make-prim-type stx)
   (define-syntax-class type-name
-    #:attributes (name define-id key? (fld-names 1) case printer ht rec-id kw pred? (accessors 1))
+    #:attributes (name define-id key? (field-names 1) case printer hashtable rec-id kw pred? (accessors 1))
     #:transparent
     (pattern [name:id ;; e.g. Type
               define-id:id ;; e.g. def-type
               kw:keyword ;; e.g. #:Type
               case:id ;; e.g. type-case
+              printer:id ;; e.g. print-type*
               hashtable:id ;; e.g. type-name-ht
               rec-id:id ;; e.g. type-rec-id
               (~optional (~and #:key ;; only given for Type.
@@ -305,7 +306,7 @@
                          #:defaults ([key? #'#f]
                                      [(field-names 1) null]))]
              #:with (_ _ pred? accessors ...)
-             (build-struct-names #'name (syntax->list #'(fld-names ...)) #f #t #'name)))
+             (build-struct-names #'name (syntax->list #'(field-names ...)) #f #t #'name)))
   (syntax-parse stx
     [(_ i:type-name ...)
      #'(begin
@@ -314,13 +315,13 @@
                   i.name ...
                   i.pred? ...
                   i.accessors ... ... ;; several accessors per type.
-                  (for-syntax i.ht ... i.rec-id ...))
+                  (for-syntax i.hashtable ... i.rec-id ...))
          ;; make type name and populate hashtable with
          ;; keyword to (list match-expander-stx fields fold-rhs.proc #f)
          ;; e.g. def-type type-name-ht #t
-         (define-syntax i.define-id (mk #'i.name #'i.ht i.key?)) ...
-         (define-for-syntax i.ht (make-hasheq)) ...
-         (define-struct/printer (i.name Rep) (i.fld-names ...)
+         (define-syntax i.define-id (mk #'i.name #'i.hashtable i.key?)) ...
+         (define-for-syntax i.hashtable (make-hasheq)) ...
+         (define-struct/printer (i.name Rep) (i.field-names ...)
            (lambda (a b c) ((unbox i.printer) a b c))) ...
          (define-for-syntax i.rec-id #'i.rec-id) ...
          (provide i.case ...)
@@ -341,7 +342,7 @@
                                     rec-ids
                                     ;; '(#:Type #:Filter #:Object #:PathElem)
                                     '(i.kw ...)))
-                         (list i.ht ...)))))]))
+                         (list i.hashtable ...)))))]))
 
 (make-prim-type [Type def-type #:Type type-case print-type* type-name-ht type-rec-id #:key]
                 [Filter def-filter #:Filter filter-case print-filter* filter-name-ht filter-rec-id]
