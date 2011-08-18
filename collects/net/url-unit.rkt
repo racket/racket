@@ -319,13 +319,15 @@
     (if m (read-string (cdar m) port) "")))
 
 ;; purify-http-port : in-port -> in-port
+;; returns a new port, closes the old one when done pumping
 (define (purify-http-port in-port)
   (define-values (in-pipe out-pipe) (make-pipe))
   (thread
    (λ ()
      (define status (http-read-status in-port))
      (define chunked? (http-read-headers in-port))
-     (http-pipe-data chunked? in-port out-pipe)))
+     (http-pipe-data chunked? in-port out-pipe)
+     (close-input-port in-port)))
   in-pipe)
 
 (define (http-read-status ip)
