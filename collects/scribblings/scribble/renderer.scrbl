@@ -46,7 +46,8 @@ function to render a document.
                  [#:info-out-file info-out-file (or/c #f path-string?) #f]
                  [#:redirect redirect (or/c #f string?) #f]
                  [#:redirect-main redirect-main (or/c #f string?) #f]
-                 [#:quiet? quiet? any/c #f])
+                 [#:quiet? quiet? any/c #t]
+                 [#:warn-undefined? warn-undefined? any/c (not quiet?)])
           void?]{
 
 Renders the given @racket[docs], each with an output name derived from
@@ -78,8 +79,12 @@ to the @racket[set-external-tag-path] and
 @racketmodname[scribble/html-render], so they should be
 non-@racket[#f] only for HTML rendering.
 
-If @racket[quiet?] is a true value, output-file information is written
-to the current output port.}
+If @racket[quiet?] is a false value, output-file information is
+written to the current output port.
+
+If @racket[warn-undefined?] is a true value, then references to
+missing cross-reference targets trigger a warning message on the
+current error port.}
 
 
 @section{Base Renderer}

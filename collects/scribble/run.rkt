@@ -91,7 +91,7 @@
     (current-info-input-files
      (cons file (current-info-input-files)))]
    #:once-each
-   [("--quiet") "suppress output-file reporting"
+   [("--quiet") "suppress output-file and undefined-tag reporting"
     (current-quiet #t)]
    #:args (file . another-file)
    (let ([files (cons file another-file)])

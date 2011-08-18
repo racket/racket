@@ -39,7 +39,8 @@
                 #:xrefs [xrefs null]
                 #:info-in-files [info-input-files null]
                 #:info-out-file [info-output-file #f]
-                #:quiet? [quiet? #t])
+                #:quiet? [quiet? #t]
+                #:warn-undefined? [warn-undefined? (not quiet?)])
   (when dest-dir (make-directory* dest-dir))
   (let ([renderer (new (render-mixin render%)
                        [dest-dir dest-dir]
@@ -73,5 +74,11 @@
           (let ([s (send renderer serialize-info r-info)])
             (with-output-to-file info-output-file
               #:exists 'truncate/replace
-              (lambda () (write s))))))
+              (lambda () (write s)))))
+        (when warn-undefined?
+          (let ([undef (send renderer get-undefined r-info)])
+            (unless (null? undef)
+              (eprintf "Warning: some cross references may be broken due to undefined tags:\n")
+              (for ([t (in-list undef)])
+                (eprintf " ~s\n" t))))))
       (void))))
