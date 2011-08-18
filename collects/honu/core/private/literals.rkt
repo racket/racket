@@ -26,4 +26,4 @@
                 honu-for-syntax
                 honu-for-template)
 
-(define-literal-set cruft (#%parens #%brackets #%braces semicolon colon honu-= honu-comma))
+(define-literal-set cruft (#%parens #%brackets #%braces semicolon colon honu-comma))

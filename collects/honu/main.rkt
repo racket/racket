@@ -17,5 +17,7 @@
                 ;;"private/common.honu"
                 )
 
-(provide sqr sqrt sin max
+(provide sqr sqrt sin max else
+         number? symbol?
+         null
          (rename-out [honu-cond cond]))

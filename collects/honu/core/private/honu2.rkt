@@ -31,6 +31,7 @@
 (define-honu-syntax honu-var
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
+                       #:literals (honu-=)
       [(_ name:id honu-= . rest)
        ;; parse one expression
        (define-values (parsed unparsed)
@@ -46,6 +47,7 @@
 (define-honu-syntax honu-for
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
+                       #:literals (honu-=)
       [(_ iterator:id honu-= start:honu-expression honu-to end:honu-expression
           honu-do body:honu-expression . rest)
        (values
@@ -131,6 +133,7 @@
 (define-binary-operator honu-<= 0.9 'left <=)
 (define-binary-operator honu-> 0.9 'left >)
 (define-binary-operator honu->= 0.9 'left >=)
+(define-binary-operator honu-= 0.9 'left =)
 (define-binary-operator honu-and 0.5 'left and)
 (define-binary-operator honu-or 0.5 'left or)
 (define-binary-operator honu-cons 0.1 'right cons)

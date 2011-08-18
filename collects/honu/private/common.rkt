@@ -19,4 +19,4 @@
          #'(cond
              [clause.result body.result] ...)
          #'rest
-         #f)])))
+         #t)])))

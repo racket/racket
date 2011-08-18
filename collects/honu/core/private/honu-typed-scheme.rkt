@@ -456,7 +456,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
     [(_) #'(void)]
     [(_ forms ...)
      (define expanded (honu-expand #'(forms ...)))
-     (debug "expanded ~a\n" expanded)
+     (debug "expanded ~a\n" (syntax->datum expanded))
      expanded]))
 
 (define-syntax (#%dynamic-honu-module-begin stx)

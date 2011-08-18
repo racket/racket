@@ -177,11 +177,10 @@
                   (values (left #'parsed)
                           #'rest)
                   (do-parse #'rest precedence
-                            (lambda (x) x)
+                            left
+                            ;; (lambda (x) x)
+                            #'parsed
                             #;
-                            (lambda (x)
-                              (with-syntax ([x x])
-                                #'(begin parsed x)))
                             (left #'parsed)))
                 #;
                 #'(splicing-let-syntax ([more-parsing (lambda (stx)
@@ -199,7 +198,7 @@
             (case association
               [(left) >]
               [(right) >=]))
-          (debug "new precedence ~a\n" new-precedence)
+          (debug "precedence old ~a new ~a higher? ~a\n" precedence new-precedence (higher new-precedence precedence))
           (if (higher new-precedence precedence)
             (do-parse #'(rest ...) new-precedence
                       (lambda (stuff)
