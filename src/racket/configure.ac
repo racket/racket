@@ -911,6 +911,17 @@ if test "${endianness}" = "big" ; then
   AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
 fi
 
+################### JIT ####################
+
+if test "${enable_jit}" = "no" ; then
+   PREFLAGS="${PREFLAGS} -DMZ_DONT_USE_JIT"
+   if test "${enable_futures}" = "yes" ; then
+     echo configure: cannot enable futures and disable the JIT
+     exit 1
+   fi
+   enable_futures=no
+fi
+
 ############### places ###################
 
 if test "${enable_parallel_by_default}" = "yes" ; then
@@ -1018,12 +1029,6 @@ fi
 if test "${enable_noopt}" = "yes" ; then
   AWKPRG='BEGIN { FS = "(^| )-O(0|1|2|3|4|5|6|7|8|9|())( |$)" } /.*/ { for (i = 1; i < NF; i++) printf "%s ", $i; print $NF }'
   CFLAGS=`echo "$CFLAGS" | awk "$AWKPRG"`
-fi
-
-################### JIT ####################
-
-if test "${enable_jit}" = "no" ; then
-   PREFLAGS="${PREFLAGS} -DMZ_DONT_USE_JIT"
 fi
 
 ############## usersetup ################
