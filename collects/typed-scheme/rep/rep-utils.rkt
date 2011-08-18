@@ -80,7 +80,7 @@
   ;; pattern for the match as
   (define-syntax-class (fold-pat fold-name)
     #:transparent
-    #:attributes (e proc)
+    #:attributes (proc)
     (pattern #:base
              #:with proc #`(procedure-rename
                             (lambda () #,fold-target)
