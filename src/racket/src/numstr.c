@@ -1566,11 +1566,15 @@ static char *double_to_string (double d, int alloc, int was_single)
 #endif
 	s = "0.0";
   } else {
-    /* Initial count for significant digits is 14. That's big enough to
-       get most right, small enough to avoid nonsense digits. But we'll
-       loop in case it's not precise enough to get read-write invariance: */
+    /* Initial count for significant digits is 14 (double) or 6 digits
+       (single). That's big enough to get most right, small enough to
+       avoid nonsense digits. But we'll loop in case it's not precise
+       enough to get read-write invariance: */
     GC_CAN_IGNORE char *loc;
-    digits = 14;
+    if (was_single)
+      digits = 6;
+    else
+      digits = 14;
     loc = scheme_push_c_numeric_locale();
     while (digits < 30) {
       double check;
@@ -1580,8 +1584,13 @@ static char *double_to_string (double d, int alloc, int was_single)
 
       /* Did we get read-write invariance, yet? */
       check = strtod(buffer, &ptr);
-      if (check == d)
-	break;
+      if (was_single) {
+        if ((float)check == (float)d)
+          break;
+      } else {
+        if (check == d)
+          break;
+      }
 
       digits++;
     }
