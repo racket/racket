@@ -1,10 +1,14 @@
 
 (module reader-example racket/base
   (require scribble/struct
+           (only-in scribble/core 
+                    make-style
+                    make-table-columns)
            scribble/decode
            scribble/manual
            scribble/scheme
-           racket/class)
+           racket/class
+           (for-label racket/base))
 
   (provide reader-examples
            read-quote-table
@@ -31,7 +35,10 @@
       (list (make-flow
              (list
               (make-table
-               #f
+               (make-style #f (list (make-table-columns
+                                     (list (make-style #f '(baseline))
+                                           (make-style #f '(baseline))
+                                           (make-style #f '(baseline))))))
                (map (lambda (s)
                       (list (as-flow (list spacer
                                            (litchar s)))
@@ -74,8 +81,10 @@
                                                      [(and (pair? v)
                                                            (eq? v (cdr v))
                                                            (eq? 1 (car v)))
-                                                      (racketblock0 (let ([v (cons 1 #f)]) 
-                                                                      (set-cdr! v v) v))]
+                                                      (racketblock0 (let* ([ph (make-placeholder #f)]
+                                                                           [v (cons 1 ph)])
+                                                                      (placeholder-set! ph v)
+                                                                      (make-reader-graph v)))]
                                                      [(pair? v) `(cons ,(loop (car v)) ,(loop (cdr v)))]
                                                      [(bytes? v) `(bytes ,@(map loop (bytes->list v)))]
                                                      [(char? v) `(integer->char ,(char->integer v))]
