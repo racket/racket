@@ -256,6 +256,28 @@
 ;; CL-PPCRE, which probably is from Perl originally. 
 ;; The tests have been modified to avoid various incompatibilities.
 
+(define (make-reluctant-port bstr)
+  ;; Handing out a single character at a time stresses
+  ;; the regexp matcher's lazy reading of a port:
+  (define pos 0)
+  (define len (bytes-length bstr))
+  (make-input-port
+   'reluctant-bytes
+   (lambda (s)
+     (if (pos . >= . len)
+         eof
+         (begin
+           (bytes-set! s 0 (bytes-ref bstr pos))
+           (set! pos (add1 pos))
+           1)))
+   (lambda (s skip evt)
+     (if ((+ pos skip) . >= . len)
+         eof
+         (begin
+           (bytes-set! s 0 (bytes-ref bstr (+ pos skip)))
+           1)))
+   void))
+
 (map (lambda (t)
        (if (pair? t)
 	   (begin
@@ -263,6 +285,7 @@
 	     (test (caddr t) regexp-match (byte-pregexp (car t)) (bytes-append #"xxxxxxxxxx" (cadr t)) 10)
 	     (test (caddr t) regexp-match (byte-pregexp (car t)) (bytes-append (cadr t) #"xxxxxxxxxx") 0 (bytes-length (cadr t)))
 	     (test (caddr t) regexp-match (byte-pregexp (car t)) (open-input-bytes (cadr t)))
+	     (test (caddr t) regexp-match (byte-pregexp (car t)) (make-reluctant-port (cadr t)))
 	     (test (and (caddr t)
 			(map (lambda (v)
 			       (and v (bytes->string/latin-1 v)))

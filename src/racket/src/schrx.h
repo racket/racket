@@ -230,7 +230,15 @@ typedef struct Regwork {
   Scheme_Object *peekskip;
   char *prefix;
   rxpos prefix_len, prefix_delta;
+  struct rx_lazy_str_t *lazy_string;
 
   int non_tail, rewind_stack_size, rewind_stack_count, rewind_stack_prompt;
   rxpos *rewind_stack;
 } Regwork;
+
+typedef struct rx_lazy_str_t {
+  MZTAG_IF_REQUIRED
+  intptr_t start, done, end, blen;
+  mzchar *chars;
+  char *s;
+} rx_lazy_str_t;

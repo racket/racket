@@ -2177,9 +2177,19 @@ mark_regwork {
   gcMARK2(r->counters, gc);
   gcMARK2(r->peekskip, gc);
   gcMARK2(r->prefix, gc);
+  gcMARK2(r->lazy_string, gc);
   gcMARK2(r->rewind_stack, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Regwork));
+}
+
+mark_lazy_string {
+ mark:
+  rx_lazy_str_t *ls = (rx_lazy_str_t *)p;
+  gcMARK2(ls->s, gc);
+  gcMARK2(ls->chars, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(rx_lazy_str_t));
 }
 
 END regexp;

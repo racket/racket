@@ -2389,7 +2389,7 @@ static MZ_INLINE int in_ranges_ci(char *str, rxpos a, int l, int c)
 /*
  * Forwards.
  */
-static int regtry(regexp *, char *, int, int, rxpos *, rxpos *, rxpos *, rxpos *, int *, Regwork *rw, rxpos, 
+static int regtry(regexp *, char *, int, int, rx_lazy_str_t *, rxpos *, rxpos *, rxpos *, rxpos *, int *, Regwork *rw, rxpos, 
                   char *, rxpos, rxpos, int);
 static int regtry_port(regexp *, Scheme_Object *, Scheme_Object *, int nonblock,
 		       rxpos *, rxpos *, rxpos *, rxpos *, int *,
@@ -2517,10 +2517,13 @@ static char *regprop();
 static int
 regexec(const char *who,
 	regexp *prog, char *string, 
-	/* used only for strings: */
+	/* Used only for (bytes) strings: */
 	int stringpos, int stringlen, int stringorigin,
+        /* For lazy strings: */
+        rx_lazy_str_t *lazy_string,
 	/* Always used: */
 	rxpos *startp, rxpos *maybep, rxpos *endp, rxpos *match_stack,
+        /* For port mode: */
 	Scheme_Object *port, Scheme_Object *unless_evt, int nonblock,
 	/* Used only when port is non-NULL: */
 	char **stringp, int peek, int get_offsets, intptr_t save_prior,
@@ -2539,7 +2542,7 @@ regexec(const char *who,
   }
 
   /* If there is a "must appear" string, look for it. */
-  if (!port && (prog->regmust >= 0)) {
+  if (!port && !lazy_string && (prog->regmust >= 0)) {
     spos = stringpos;
     while (1) {
       int i, l = prog->regmlen, ch, pos;
@@ -2704,7 +2707,7 @@ regexec(const char *who,
 	return 0;
       }
     } else
-      return regtry(prog, string, stringpos, stringlen, startp, maybep, endp, 
+      return regtry(prog, string, stringpos, stringlen, lazy_string, startp, maybep, endp, 
                     match_stack, counters, 0, 
 		    stringorigin, prefix, prefix_len, prefix_offset, 0);
   }
@@ -2781,7 +2784,7 @@ regexec(const char *who,
       }
     }
   } else {
-    if (regtry(prog, string, stringpos, stringlen, 
+    if (regtry(prog, string, stringpos, stringlen, lazy_string,
 	       startp, maybep, endp, match_stack, counters,
 	       0, stringorigin, prefix, prefix_len, prefix_offset, 1))
       return 1;
@@ -2791,11 +2794,14 @@ regexec(const char *who,
   return 0;
 }
 
+#define NEED_INPUT(rw, v, n) if (rw->port && (((v) + (n)) > rw->input_end)) read_more_from_regport(rw, (v) + (n))
+static void read_more_from_regport(Regwork *rw, rxpos need_total);
+
 /*
    - regtry - try match at specific point
    */
 static int			/* 0 failure, 1 success */
-regtry(regexp *prog, char *string, int stringpos, int stringlen, 
+regtry(regexp *prog, char *string, int stringpos, int stringlen, rx_lazy_str_t *lazy_string,
        rxpos *startp, rxpos *maybep, rxpos *endp, rxpos *match_stack, int *counters,
        Regwork *rw, rxpos stringorigin, 
        char *prefix, rxpos prefix_len, rxpos prefix_offset,
@@ -2833,6 +2839,9 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen,
     rw->non_tail = -1;
   else
     rw->non_tail = 0;
+  rw->lazy_string = lazy_string;
+  if (lazy_string)
+    rw->port = scheme_true; /* hack to make NEED_INPUT() work */
 
   for (i = prog->nsubexp; i--; ) {
     startp[i] = rw->input_min - 1;
@@ -2855,6 +2864,10 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen,
       endp[0] = rw->input;
       return 1;
     } else if (unanchored) {
+      if (lazy_string) {
+        NEED_INPUT(rw, stringpos, 1);
+        stringlen = rw->input_end - stringpos;
+      }
       if (!stringlen)
 	return 0;
       stringpos++;
@@ -2863,9 +2876,16 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen,
 	unsigned char *rs = prog->regstart;
 	int c;
 	while (1) {
+	  if (lazy_string) {
+            NEED_INPUT(rw, stringpos, 1);
+            stringlen = rw->input_end - stringpos;
+            string = rw->instr;
+          }
+
 	  if (!stringlen)
 	    return 0;
-	  c = UCHAR(string[stringpos]);
+
+          c = UCHAR(string[stringpos]);
 	  if (rs[c >> 3] & (1 << (c & 0x7)))
 	    break;
 	  stringpos++;
@@ -2883,13 +2903,53 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen,
   }
 }
 
-#define NEED_INPUT(rw, v, n) if (rw->port && (((v) + (n)) > rw->input_end)) read_more_from_regport(rw, (v) + (n))
+#define LAZY_STRING_CHUNK_SIZE 1024
+
+static void read_more_from_lazy_string(Regwork *rw, rxpos need_total)
+{
+  rx_lazy_str_t *ls = rw->lazy_string;
+
+  if (ls->start + ls->done < ls->end) {
+    intptr_t amt = ls->done, blen, tlen;
+    char *s;
+
+    amt = amt ? (2 * amt) : LAZY_STRING_CHUNK_SIZE;
+    if (ls->done + amt < need_total)
+      amt = need_total - ls->done;
+    if (ls->start + ls->done + amt > ls->end)
+      amt = ls->end - ls->start - ls->done;
+
+    blen = scheme_utf8_encode(ls->chars, ls->start + ls->done, ls->start + ls->done + amt,
+                              NULL, 0,
+                              0 /* not UTF-16 */);
+    tlen = blen + ls->blen;
+    s = (char *)scheme_malloc_atomic(tlen);
+    memcpy(s, ls->s, ls->blen);
+    scheme_utf8_encode(ls->chars, ls->start + ls->done, ls->start + ls->done + amt,
+                       (unsigned char *)s, ls->blen,
+                       0 /* not UTF-16 */);
+
+    ls->blen = tlen;
+    ls->s = s;
+    ls->done += amt;
+
+    rw->instr = s;
+    rw->input_end = tlen;
+  } else {
+    /* turn off further port reading */
+    rw->port = NULL;
+  }
+}
 
 static void read_more_from_regport(Regwork *rw, rxpos need_total)
      /* Called when we're about to look past our read-ahead */
 {
   intptr_t got;
   Scheme_Object *peekskip;
+
+  if (rw->lazy_string) {
+    return read_more_from_lazy_string(rw, need_total);
+  }
 
   /* limit reading by rw->input_maxend: */
   if (need_total > rw->input_maxend) {
@@ -3007,7 +3067,7 @@ regtry_port(regexp *prog, Scheme_Object *port, Scheme_Object *unless_evt, int no
     rw.input_maxend = BIGGEST_RXPOS;
   rw.peekskip = peekskip;
 
-  m = regtry(prog, *work_string, skip, (*len) - skip, 
+  m = regtry(prog, *work_string, skip, (*len) - skip, NULL,
 	     startp, maybep, endp, match_stack, counters,
 	     &rw, origin, prefix, prefix_len, prefix_offset, 0);
 
@@ -3359,10 +3419,10 @@ regmatch(Regwork *rw, rxpos prog)
 
 	rw->input = is;
 	if (nongreedy && rw->port) {
-	  /* Get at least one, but then don't
-	     let regrepeat pull in arbitrary code: */
+	  /* Get at least `min' bytes, but then don't
+	     let regrepeat pull in arbitrary bytes: */
 	  Scheme_Object *saveport;
-	  NEED_INPUT(rw, save, 1);
+	  NEED_INPUT(rw, save, min ? min : 1);
 	  saveport = rw->port;
 	  rw->port = NULL;
 	  no = regrepeat(rw, body, maxc);
@@ -5110,6 +5170,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
   int offset = 0, orig_offset, endset, m, was_non_byte, last_bytes_count = last_bytes;
   Scheme_Object *iport, *oport = NULL, *startv = NULL, *endv = NULL, *dropped, *unless_evt = NULL;
   Scheme_Object *last_bytes_str = scheme_false, *srcin;
+  rx_lazy_str_t *lazy_string = NULL;
   
   if (SCHEME_TYPE(argv[0]) != scheme_regexp_type
       && !SCHEME_BYTE_STRINGP(argv[0])
@@ -5243,17 +5304,36 @@ static Scheme_Object *gen_compare(char *name, int pos,
       full_s = SCHEME_BYTE_STR_VAL(srcin);
     else {
       /* Extract substring and UTF-8 encode: */
-      int blen;
-      blen = scheme_utf8_encode(SCHEME_CHAR_STR_VAL(srcin), offset, endset,
-				NULL, 0,
-				0 /* not UTF-16 */);
-      full_s = (char *)scheme_malloc_atomic(blen);
-      scheme_utf8_encode(SCHEME_CHAR_STR_VAL(srcin), offset, endset,
-			 (unsigned char *)full_s, 0,
-			 0 /* not UTF-16 */);
-      orig_offset = offset;
-      offset = 0;
-      endset = blen;
+      if (endset - offset < LAZY_STRING_CHUNK_SIZE) {
+        /* String is short enough to decode in one go: */
+        int blen;
+        blen = scheme_utf8_encode(SCHEME_CHAR_STR_VAL(srcin), offset, endset,
+                                  NULL, 0,
+                                  0 /* not UTF-16 */);
+        full_s = (char *)scheme_malloc_atomic(blen);
+        scheme_utf8_encode(SCHEME_CHAR_STR_VAL(srcin), offset, endset,
+                           (unsigned char *)full_s, 0,
+                           0 /* not UTF-16 */);
+        orig_offset = offset;
+        offset = 0;
+        endset = blen;
+      } else {
+        /* Handle extremely long strings by decoding lazily: */
+        lazy_string = MALLOC_ONE_RT(rx_lazy_str_t);
+#ifdef MZTAG_REQUIRED
+        lazy_string->type = scheme_rt_rx_lazy_string;
+#endif
+        lazy_string->start = offset;
+        lazy_string->end = endset;
+        lazy_string->done = 0;
+        lazy_string->blen = 0;
+        lazy_string->s = NULL;
+        lazy_string->chars = SCHEME_CHAR_STR_VAL(srcin);
+        full_s = NULL;
+        orig_offset = offset;
+        offset = 0;
+        endset = 0;
+      }
       if (r->flags & REGEXP_IS_UTF8)
 	was_non_byte = 1;
       else {
@@ -5291,11 +5371,15 @@ static Scheme_Object *gen_compare(char *name, int pos,
 
   dropped = scheme_make_integer(0);
 
-  m = regexec(name, r, full_s, offset, endset - offset, offset, startp, maybep, endp, match_stack,
+  m = regexec(name, r, full_s, offset, endset - offset, offset, lazy_string,
+              startp, maybep, endp, match_stack,
 	      iport, unless_evt, nonblock,
 	      &full_s, peek, pos, last_bytes_count, oport, 
 	      startv, endv, &dropped, 
               prefix, prefix_len, prefix_offset);
+
+  if (lazy_string)
+    full_s = lazy_string->s;
 
   if (iport) {
     minpos = -prefix_len;
@@ -5624,7 +5708,8 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
     int m;
 
     do {
-      m = regexec(name, r, source, srcoffset, sourcelen - srcoffset, 0, startp, maybep, endp, NULL,
+      m = regexec(name, r, source, srcoffset, sourcelen - srcoffset, 0, NULL,
+                  startp, maybep, endp, NULL,
                   NULL, NULL, 0,
                   NULL, 0, 0, 0, NULL, NULL, NULL, NULL, 
                   prefix, prefix_len, prefix_offset);
@@ -5874,6 +5959,7 @@ void scheme_regexp_initialize(Scheme_Env *env)
 #ifdef MZ_PRECISE_GC
   GC_REG_TRAV(scheme_regexp_type, mark_regexp);
   GC_REG_TRAV(scheme_rt_regwork, mark_regwork);
+  GC_REG_TRAV(scheme_rt_rx_lazy_string, mark_lazy_string);
 #endif
 
   REGISTER_SO(empty_byte_string);

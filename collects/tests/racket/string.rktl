@@ -289,4 +289,22 @@
   (test "x y" string-join '("x" "y") " ")
   (test "x"   string-join '("x") " "))
 
+;; String splitting can take longer than byte-string splitting,
+;;  but it should have the same computational complexity.
+(let ()
+  (define N 100000)
+  (define-values (b bcpu breal bgc) 
+    (time-apply
+     (lambda () (regexp-split #rx#"." (make-bytes N)))
+     null))
+  (define-values (s scpu sreal sgc) 
+    (time-apply
+     (lambda () (regexp-split #rx"." (make-string N)))
+     null))
+  (test #f
+        'split
+        (and ((* 100 (- bcpu bgc)) . < . (- scpu sgc))
+             "suspiciously long time for regexp string split")))
+
+
 (report-errs)
