@@ -82,15 +82,13 @@
     #:transparent
     #:attributes (e proc)
     (pattern #:base
-             #:with e fold-target
              #:with proc #`(procedure-rename
                             (lambda () #,fold-target)
                             '#,fold-name))
     (pattern match-expander:expr
-             ;; Doubly quoted. First unquote at (*1). Second at (*2)
-             #:with e #'#'match-expander
              #:with proc #`(procedure-rename
-                            ;; still doubly quoted.
+                            ;; double quote expander. First unquote below
+                            ;; Second unquote at expansion.
                             (lambda () #'match-expander)
                             '#,fold-name)))
 
@@ -135,8 +133,6 @@
                ;; This tricky beast is for defining the type/filter/etc.'s
                ;; part of the fold. The make-prim-type's given
                ;; rec-ids are bound in this expression's context.
-               ;; The defining primitive's fields' names are bound as
-               ;; the fields' values.
                (~optional [#:fold-rhs (~var fold-rhs (fold-pat #'name.fold))]
                           #:defaults ;; defaults to folding down all fields.
                           ([fold-rhs.proc
@@ -148,6 +144,7 @@
                             #'(procedure-rename
                                (lambda ()
                                  #`(name.*maker (#,type-rec-id flds.i) ...))
+                               ;; rename to fold name for better error messages
                                'name.fold)]))
                ;; how do we contract a value of this type?
                (~optional [#:contract contract:expr]
@@ -183,7 +180,13 @@
             ;; set the type's keyword in the hashtable to its
             ;; match expander, fields and fold-rhs's for further construction.
             (begin-for-syntax
-              (hash-set! #,ht-stx 'name.kw (list #'name.match-expander #'flds.fields fold-rhs.proc #f)))
+             (hash-set! #,ht-stx
+                        'name.kw
+                        (list #'name.match-expander
+                              #'flds.fields
+                              ;; first unquote for match-expander
+                              fold-rhs.proc
+                              #f)))
             #,(quasisyntax/loc stx
                 (with-cond-contract name ([name.*maker contract])
                      #,(quasisyntax/loc #'name
@@ -233,7 +236,9 @@
          ;; makes [(Match-name all-patterns ...) body]
          (define pat (quasisyntax/loc (or src stx)
                                       (#,match-expander  . #,pats)))
-         (quasisyntax/loc (or src stx) (#,pat #,(body-f)))]))
+         (quasisyntax/loc (or src stx) (#,pat
+                                        ;; evaluate thunk containing rhs syntax
+                                        #,(body-f)))]))
 
     (define (no-duplicates? lst)
       (cond [(empty? lst) #t]
