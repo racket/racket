@@ -10,9 +10,9 @@
 @defmodule[scriblib/figure]
 
 @deftogether[(
-@defproc[(figure [tag string?] [caption content?] [pre-flow pre-flow?] ...) block?]
-@defproc[(figure* [tag string?] [caption content?] [pre-flow pre-flow?] ...) block?]
-@defproc[(figure** [tag string?] [caption content?] [pre-flow pre-flow?] ...)
+@defproc[(figure [tag string?] [caption content?] [#:style style style?] [p pre-flow?] ...) block?]
+@defproc[(figure* [tag string?] [caption content?] [#:style style style?] [p pre-flow?] ...) block?]
+@defproc[(figure** [tag string?] [caption content?] [#:style style style?] [p pre-flow?] ...)
 block?]
 @defproc[(figure-here [tag string?] [caption content?] [pre-flow pre-flow?] ...) block?]
 )]{
@@ -30,8 +30,16 @@ generate a figure that spans columns.
 For Latex output, @racket[figure-here] generates a figure to be included at
 the position in the output text where the @racket[figure-here] occurs
 in the source text. For HTML output, all @racket[figure] variants
-place the figure where the use appears in the source text.}
+place the figure where the use appears in the source text.
 
+By default @racket[style] is set so that the content of the figure is centered. 
+For a figure that demands left-aligned text, use @racket[left]. 
+
+}
+
+@defthing[left style?]{
+Implements a style for left-aligned figures.
+}
 
 @defproc[(figure-ref [tag string?]) element?]{
 

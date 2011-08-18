@@ -1,9 +1,20 @@
 
+.Centertext {
+  text-align: center;
+}
+
 .Centerfigure, .CenterfigureMulti, .centerfigureMultiWide, .Herefigure {
+  text-align: center;
+}
+
+.Leftfigure, .LeftfigureMulti, .leftfigureMultiWide {
+  text-align: left;
+}
+
+.Figure {
   margin: 1em 0 1em 0;
   width: 100%;
   border: 1px solid #1818FF;
-  text-align: center;
 }
 
 .CenterfigureMultiWide {
