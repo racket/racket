@@ -160,6 +160,10 @@ in its link-table for that require line.  If one exists, it uses the named
 package directly. If none exists, it checks to see if there is an appropriate
 subdirectory.
 
+4. File Locking Behavior
+
+See the scribble documentation on the planet/resolver module.
+
 ||#
 
 
@@ -337,7 +341,7 @@ subdirectory.
                  [current-eval (call-with-parameterization orig-paramz current-eval)]
                  [use-compiled-file-paths (call-with-parameterization orig-paramz use-compiled-file-paths)]
                  [current-library-collection-paths (call-with-parameterization orig-paramz current-library-collection-paths)])
-    (let-values ([(path pkg) (get-planet-module-path/pkg spec rmp stx)])
+    (let-values ([(path pkg) (get-planet-module-path/pkg/internal spec rmp stx load?)])
       (when load? (add-pkg-to-diamond-registry! pkg stx))
       (do-require path (pkg-path pkg) rmp stx load?))))
 
@@ -351,11 +355,14 @@ subdirectory.
 ;; get-planet-module-path/pkg :PLANET-REQUEST (resolved-module-path | #f) syntax[PLANET-REQUEST] -> (values path PKG)
 ;; returns the matching package and the file path to the specific request
 (define (get-planet-module-path/pkg spec rmp stx)
-  (request->pkg (spec->req spec stx) rmp stx))
+  (get-planet-module-path/pkg/internal spec rmp stx #f))
+  
+(define (get-planet-module-path/pkg/internal spec rmp stx load?)
+  (request->pkg (spec->req spec stx) rmp stx load?))
 
-;; request->pkg : request (resolved-module-path | #f) syntax[PLANET-REQUEST] -> (values path PKG)
-(define (request->pkg req rmp stx)
-  (let* ([result (get-package rmp (request-full-pkg-spec req))])
+;; request->pkg : request (resolved-module-path | #f) syntax[PLANET-REQUEST] boolean -> (values path PKG)
+(define (request->pkg req rmp stx load?)
+  (let* ([result (get-package rmp (request-full-pkg-spec req) load?)])
     (cond [(string? result)
            (raise-syntax-error 'require result stx)]
           [(pkg? result)
@@ -377,11 +384,12 @@ subdirectory.
 ;; eventually, and a function that gets to mess with the error message if the
 ;; entire message eventually fails.
 
-;; get-package : (resolved-module-path | #f) FULL-PKG-SPEC -> (PKG | string)
+;; get-package : (resolved-module-path | #f) FULL-PKG-SPEC boolean -> (PKG | string)
 ;; gets the package specified by pspec requested by the module in the given
 ;; module path, or returns a descriptive error message string if that's not
-;; possible
-(define (get-package rmp pspec)
+;; possible; the boolean indicates if this request is going to require the file,
+;; or if it is just for informational purposes only (to find the file say)
+(define (get-package rmp pspec load?)
   (let loop ([getters (*package-search-chain*)]
              [pre-install-updaters '()]
              [post-install-updaters '()]
@@ -401,6 +409,7 @@ subdirectory.
       ((car getters)
        rmp
        pspec
+       load?
        (λ (pkg)
          (when (uninstalled-pkg? pkg)
            (for-each (λ (u) (u pkg)) pre-install-updaters))
@@ -420,8 +429,8 @@ subdirectory.
 ;; =============================================================================
 
 ;; get/installed-cache : pkg-getter
-(define (get/installed-cache _ pkg-spec success-k failure-k)
-  (let ([p (lookup-package pkg-spec #:check-success? #t)])
+(define (get/installed-cache _ pkg-spec load? success-k failure-k)
+  (let ([p (lookup-package pkg-spec #:to-check (if load? 'success 'unpacked))])
     (if p (success-k p) (failure-k void void (λ (x) x)))))
 
 ;; get-package-from-cache : FULL-PKG-SPEC -> PKG | #f
@@ -431,13 +440,13 @@ subdirectory.
 ;; get/uninstalled-cache-dummy : pkg-getter
 ;; always fails, but records the package to the uninstalled package cache upon
 ;; the success of some other getter later in the chain.
-(define (get/uninstalled-cache-dummy _ pkg-spec success-k failure-k)
+(define (get/uninstalled-cache-dummy _ pkg-spec load? success-k failure-k)
   (failure-k save-to-uninstalled-pkg-cache! void (λ (x) x)))
 
 ;; get/uninstalled-cache : pkg-getter
 ;; note: this does not yet work with minimum-required-version specifiers if you
 ;; install a package and then use an older mzscheme
-(define (get/uninstalled-cache _ pkg-spec success-k failure-k)
+(define (get/uninstalled-cache _ pkg-spec load? success-k failure-k)
   (let ([p (lookup-package pkg-spec (UNINSTALLED-PACKAGE-CACHE))])
     (if (and p (file-exists? (build-path (pkg-path p)
                                          (pkg-spec-name pkg-spec))))
@@ -491,7 +500,7 @@ subdirectory.
 ;; locally.
 ;; =============================================================================
 
-(define (get/server _ pkg-spec success-k failure-k)
+(define (get/server _ pkg-spec load? success-k failure-k)
   (let ([p (get-package-from-server pkg-spec)])
     (cond
       [(pkg-promise? p) (success-k p)]
@@ -584,37 +593,48 @@ subdirectory.
   
   (parameterize ([planet-nested-install #t])
     (planet-terse-log 'install pkg-string)
-    (with-logging
-     (LOG-FILE)
-     (lambda ()
-       
-       (define lock/f #f)
-       (dynamic-wind
-        void
-        (λ ()
-          (set! lock/f (check/take-installation-lock the-dir))
-          (when lock/f
-            (printf "\n============= Installing ~a on ~a =============\n"
-                    pkg-name
-                    (current-time))
-            ;; oh man is this a bad hack!
-            (parameterize ([current-namespace (make-base-namespace)])
-              (let ([ipp (dynamic-require 'setup/plt-single-installer
-                                          'install-planet-package)]
-                    [rud (dynamic-require 'setup/plt-single-installer
-                                          'reindex-user-documentation)]
-                    [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
-                (parameterize ([msfh (manager-skip-file-handler)]
-                               [use-compiled-file-paths (list (string->path "compiled"))])
-                  (ipp path the-dir (list owner pkg-name
-                                          extra-path maj min))
-                  (unless was-nested?
-                    (planet-terse-log 'docs-build pkg-string)
-                    (printf "------------- Rebuilding documentation index -------------\n")
-                    (rud)))))
-            (call-with-output-file (dir->successful-installation-file the-dir) void)))
-        (λ () (when lock/f 
-                (release-installation-lock lock/f))))))
+    (check/take-installation-lock 
+     the-dir
+     (λ ()
+       (with-logging
+        (LOG-FILE)
+        (lambda ()
+          
+          
+          ;; oh man is this a bad hack!
+          (parameterize ([current-namespace (make-base-namespace)])
+            (let ([up (dynamic-require 'setup/unpack 'unpack)]
+                  [fcd (dynamic-require 'setup/dirs 'find-collects-dir)]
+                  [ipp (dynamic-require 'setup/plt-single-installer
+                                        'install-planet-package)]
+                  [rud (dynamic-require 'setup/plt-single-installer
+                                        'reindex-user-documentation)]
+                  [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
+              
+              (printf "\n============= Unpacking ~a =============\n"
+                      pkg-name)
+              (parameterize ([current-directory (or (fcd) (current-directory))])
+                (up path 
+                    (current-directory)
+                    (λ (x) (printf "~a\n" x))
+                    (λ () the-dir)))
+              
+              ;; signal that all of the files are now in place
+              (call-with-output-file (dir->unpacked-file the-dir) void
+                #:exists 'truncate)
+              
+              (printf "\n============= Installing ~a on ~a =============\n"
+                      pkg-name
+                      (current-time))
+              (parameterize ([msfh (manager-skip-file-handler)]
+                             [use-compiled-file-paths (list (string->path "compiled"))])
+                (ipp #f the-dir (list owner pkg-name
+                                        extra-path maj min))
+                (unless was-nested?
+                  (planet-terse-log 'docs-build pkg-string)
+                  (printf "\n============= Rebuilding documentation index =============\n")
+                  (rud)))))
+          (call-with-output-file (dir->successful-installation-file the-dir) void)))))
     (planet-terse-log 'finish pkg-string)
     (make-pkg pkg-name pkg-path
               maj min the-dir 'normal)))

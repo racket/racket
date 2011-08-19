@@ -13,7 +13,7 @@
 
 @title{Utility Libraries}
 
-The planet collection provides configuration and utilities for using PLaneT. 
+The planet collection provides configuration and utilities for using @|PLaneT|. 
 
 @section{Resolver}
 
@@ -32,7 +32,7 @@ the resolvers behavior.
                                          [orig-paramz parameterization?])
            resolved-module-path?))]{
   This implements the @|PLaneT| module resolution process. It is @racket[dynamic-require]d
-  by racket when the first planet module require is needed. It acts much like a 
+  by racket when the first @|PLaneT| module require is needed. It acts much like a 
   @racket[current-module-name-resolver] would, but racket provides it with a special
   @racket[parameterization?] (giving it special privileges) that it uses when installing new packages.
 }
@@ -41,7 +41,7 @@ the resolvers behavior.
                                      [module-path (or/c #f resolved-module-path?)]
                                      [stx (or/c #f syntax?)])
          (values path? pkg?)]{
-  Returns the path corresponding to the planet package (interpreting the arguments
+  Returns the path corresponding to the package (interpreting the arguments
   the same way as @racket[planet-module-name-resolver] and @racket[(current-module-name-resolver)]).
 }
 
@@ -50,16 +50,69 @@ the resolvers behavior.
 }
 
 @defparam[download? dl? boolean?]{
-  A parameter that controls if @PLaneT attempts to download a planet package that isn't already present.
+  A parameter that controls if @PLaneT attempts to download a package that isn't already present.
   If the package isn't present, the resolver will raise the @racket[exn:fail:planet?] exception
   instead of downloading it.
 }
 
 @defparam[install? inst? boolean?]{
-  A parameter that controls if @PLaneT attempts to install a planet package that isn't already installed.
+  A parameter that controls if @PLaneT attempts to install a package that isn't already installed.
   If the package isn't installed, the resolver will raise the @racket[exn:fail:planet?] exception
   instead of installing it.
 }
+
+@subsection{Resolver file locking}
+
+When @|PLaneT| is asked to resolve a module path for loading the file
+(e.g., when the last argument to the @racket[(current-module-name-resolver)]
+is @racket[#t] and that resolver triggers a call to the @|PLaneT| resolver),
+it finds the directory
+where the files are installed, say in this directory, which
+corresponds to version 1.2 of dyoo's closure-compile.plt package:
+
+@centered{@filepath{@racket[(CACHE-DIR)]/dyoo/closure-compile.plt/1/2/}}
+
+If the file
+
+@centered{@filepath{@racket[(CACHE-DIR)]/dyoo/closure-compile.plt/1/2.SUCCESS}}
+
+is there, it assumes that there is no installation needed and it just
+continues, using the path to the file inside that directory.
+
+If the @filepath{2.SUCCESS} file is not there, then it attempts to grab an
+@racket['exclusive] filesystem lock on this file (via @racket[port-try-file-lock?])
+
+@centered{@filepath{@racket[(CACHE-DIR)]/dyoo/closure-compile.plt/1/2.LOCK}}
+
+If it gets the lock, it then proceeds with the installation, calling
+raco setup to do the unpacking, compilation, and docs building.
+After the unpacking has finished, but before beginning compilation and docs
+building, it creates the @filepath{2.UNPACKED} file:
+
+@centered{@filepath{@racket[(CACHE-DIR)]/dyoo/closure-compile.plt/1/2.UNPACKED}}
+
+When compilation and docs build are complete, it creates the @filepath{2.SUCCESS} file:
+
+@centered{@filepath{@racket[(CACHE-DIR)]/dyoo/closure-compile.plt/1/2.SUCCESS}}
+
+and releases the lock on the @filepath{2.LOCK} file.
+
+If it fails to get the lock on @filepath{2.LOCK} and it does not already hold the 
+lock (due to a re-entrant call to the resolver (the resolver knows about locks it 
+holds via an internal parameter that gets created when the @racketmodname[planet/resolver]
+module is instantiated) then it goes into a loop that polls for
+the existence of the @filepath{2.SUCCESS} file; when it that file appears, it
+just continues, without installing anything (since that means someone
+else installed it).
+
+In some situations (e.g., when a new namespace is created and a fresh instantiation of
+@racketmodname[planet/resolver] is created), @|PLaneT| can be fooled into thinking that it
+does not hold the lock on some installation. In order to cope with these situations somewhat,
+@|PLaneT| takes an easier path when the resolver is only looking for information about
+package files (i.e., when the last argument to the resolver is @racket[#f], or when
+@racket[get-planet-module-path/pkg] is called directly (as opposed to being called
+via module resolution). In those cases, @|PLaneT| will look only for the 
+@filepath{2.UNPACKED} file instead of the @filepath{2.SUCCESS} file.
 
 @section{Client Configuration}
 

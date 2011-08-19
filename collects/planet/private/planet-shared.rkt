@@ -76,9 +76,8 @@ Various common pieces of code that both the client and server need to access
            assoc-table-row->type
            
            check/take-installation-lock
-           installed-successfully? 
-           release-installation-lock
            dir->successful-installation-file
+           dir->unpacked-file
            dir->metadata-files)
   
   ; ==========================================================================================
@@ -106,15 +105,15 @@ Various common pieces of code that both the client and server need to access
   ; lookup-package : FULL-PKG-SPEC [path (optional)] -> PKG | #f
   ; returns the directory pointing to the appropriate package in the cache, the user's hardlink table,
   ; or #f if the given package isn't in the cache or the hardlink table
-  (define (lookup-package pkg [dir (CACHE-DIR)] #:check-success? [check-success? #f])
-    (define at (build-assoc-table pkg dir check-success?))
+  (define (lookup-package pkg [dir (CACHE-DIR)] #:to-check [to-check #f])
+    (define at (build-assoc-table pkg dir to-check))
     (get-best-match at pkg))
   
   ; build-assoc-table : FULL-PKG-SPEC path -> assoc-table
   ; returns a version-number -> directory association table for the given package
-  (define (build-assoc-table pkg dir check-success?) 
+  (define (build-assoc-table pkg dir to-check) 
     (append 
-     (pkg->assoc-table pkg dir check-success?)
+     (pkg->assoc-table pkg dir to-check)
      (hard-links pkg)))
   
   
@@ -161,7 +160,7 @@ Various common pieces of code that both the client and server need to access
   ; pkg->assoc-table : FULL-PKG-SPEC path boolean? -> assoc-table
   ; returns the on-disk packages for the given planet package in the
   ; on-disk table rooted at the given directory
-  (define (pkg->assoc-table pkg dir check-success?)
+  (define (pkg->assoc-table pkg dir to-check)
     (define path (build-path (apply build-path dir (pkg-spec-path pkg)) (pkg-spec-name pkg)))
     
     (define (tree-stuff->row-or-false p majs mins)
@@ -170,8 +169,18 @@ Various common pieces of code that both the client and server need to access
         (if (and (path? p) maj min)
             (let* ((the-path         (build-path path majs mins))
                    (min-core-version (get-min-core-version the-path)))
-              (and (or (not check-success?)
-                       (installed-successfully? the-path))
+              (and (cond
+                     [(eq? to-check 'success)
+                      (if (member the-path (held-locks))
+                          ;; this means we're in the process of installing this package
+                          ;; and the files should be already there in the filesystem
+                          ;; so we count that as just having to check if they are unpacked
+                          
+                          (file-exists? (dir->unpacked-file the-path))
+                          (file-exists? (dir->successful-installation-file the-path)))]
+                     [(eq? to-check 'unpacked)
+                      (file-exists? (dir->unpacked-file the-path))]
+                     [else #t])
                    (make-assoc-table-row 
                     (pkg-spec-name pkg) 
                     (pkg-spec-path pkg)
@@ -751,12 +760,12 @@ Various common pieces of code that both the client and server need to access
 
 
 
-;; check/take-installation-lock : path -> (or/c port #f)
+;; check/take-installation-lock : path (-> void) -> (or/c port #f)
 ;; if this function returns #t, then it successfully
 ;;   optained the installation lock.
 ;; if it returns #f, then we tried to grab the lock, but someone
 ;;   else already had it, so we waited until that installation finished 
-(define (check/take-installation-lock dir)
+(define (check/take-installation-lock dir do-installation)
   (define lf (dir->lock-file dir))
   ;; make sure the lock file exists
   (with-handlers ((exn:fail:filesystem:exists? void))
@@ -765,9 +774,13 @@ Various common pieces of code that both the client and server need to access
   (cond
     [(port-try-file-lock? p 'exclusive)
      ;; we got the lock; keep the file open
-     p]
+     (parameterize ([held-locks (cons dir (held-locks))])
+       (dynamic-wind
+        (λ () (void))
+        (λ () (do-installation))
+        (λ () (close-output-port p))))]
     [else
-     ;; we didn't get the lock; poll for the SUCCESS FILE
+     ;; we didn't get the lock (and didn't alreayd have it); poll for the SUCCESS FILE
      (planet-log "waiting for someone else to finish installation in ~s" dir)
      (let loop ()
        (cond
@@ -778,25 +791,17 @@ Various common pieces of code that both the client and server need to access
           (sleep 2)
           (loop)]))]))
 
-;; release-installation-lock : port -> void
-;; call this function when check/take-intallation-lock returns #t
-;;  (and the installation has finished)
-;; SIDE-EFFECT: creates the SUCCESS file (before releasing the lock)
-(define (release-installation-lock port)
-  (close-output-port port))
+(define held-locks (make-parameter '()))
 
-(define (installed-successfully? dir)
-  (file-exists? (dir->successful-installation-file dir)))
+(define (dir->successful-installation-file dir) (dir->something-file dir #".SUCCESS"))
+(define (dir->lock-file dir) (dir->something-file dir #".LOCK"))
+(define (dir->unpacked-file dir) (dir->something-file dir #".UNPACKED"))
 
-(define (dir->successful-installation-file dir)
+(define (dir->something-file dir something)
   (define-values (base name dir?) (split-path dir))
-  (build-path base (bytes->path (bytes-append (path->bytes name) #".SUCCESS"))))
-
-(define (dir->lock-file dir)
-  (define-values (base name dir?) (split-path dir))
-  (build-path base (bytes->path (bytes-append (path->bytes name) #".LOCK"))))
+  (build-path base (bytes->path (bytes-append (path->bytes name) something))))
 
 (define (dir->metadata-files dir)
   (list (dir->lock-file dir)
+        (dir->unpacked-file dir)
         (dir->successful-installation-file dir)))
-        

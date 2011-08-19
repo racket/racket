@@ -20,7 +20,7 @@
 
 ;; get/linkage : pkg-getter [see ../resolver.rkt]
 ;; getter for the linkage table
-(define (get/linkage rmp pkg-specifier success-k failure-k)
+(define (get/linkage rmp pkg-specifier load? success-k failure-k)
   (let ([linked-pkg (get-linkage rmp pkg-specifier)])
     (if linked-pkg
         (success-k linked-pkg)
