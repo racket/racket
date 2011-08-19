@@ -860,6 +860,39 @@
            '(lambda () (box 0.0))
            #f)
 
+;; Make sure that a mutable top-level isn't copy-propagated
+;; across another effect:
+(test-comp '(module m racket/base
+              (define x 10)
+              (define (f y)
+                (let ([old x])
+                  (set! x y)
+                  (set! x old))))
+           '(module m racket/base
+              (define x 10)
+              (define (f y)
+                (let ([old x])
+                   (set! x y)
+                   (set! x x))))
+            #f)
+
+;; Do copy-propagate a reference to a mutable top-level 
+;; across non-effects:
+(test-comp '(module m racket/base
+              (define x 10)
+              (define (f y)
+                (let ([old x])
+                  (list (cons y y)
+                        (set! x old)))))
+           '(module m racket/base
+              (define x 10)
+              (define (f y)
+                (begin
+                  x ; compiler might not determine that `x' is definitely defined
+                  (list (cons y y)
+                        (set! x x)))))
+            #f)
+
 (test-comp '(let ([x 1][y 2]) x)
 	   '1)
 (test-comp '(let ([x 1][y 2]) (+ y x))

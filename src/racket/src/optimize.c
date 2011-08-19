@@ -488,7 +488,7 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
   Scheme_Object *rator = NULL;
 
  switch (SCHEME_TYPE(expr)) {
- case scheme_toplevel_type:
+ case scheme_compiled_toplevel_type:
    return 1;
  case scheme_application_type:
    rator = ((Scheme_App_Rec *)expr)->args[0];
@@ -2718,11 +2718,11 @@ set_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     delta = optimize_info_get_shift(info, pos);
     if (delta)
       var = scheme_make_local(scheme_local_type, pos + delta, 0);
-
-    info->vclock++;
   } else {
     optimize_info_used_top(info);
   }
+
+  info->vclock++;
 
   sb->var = var;
   sb->val = val;
@@ -3156,7 +3156,7 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 
 
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_toplevel_type)) {
-    if (SCHEME_TOPLEVEL_FLAGS(value) >= SCHEME_TOPLEVEL_FIXED)
+    if ((SCHEME_TOPLEVEL_FLAGS(value) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED)
       return 1;
     if (info->top_level_consts) {
       int pos;
