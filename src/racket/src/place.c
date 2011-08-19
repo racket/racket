@@ -617,7 +617,7 @@ static void *mz_proc_thread_signal_worker(void *data) {
       } else if (pid > 0) {
         /* printf("SIGCHILD pid %i with status %i %i\n", pid, status, WEXITSTATUS(status)); */
         if (is_group) {
-          next = unused_status->next;
+          next = unused_status->next_unused;
           if (prev_unused)
             prev_unused->next_unused = next;
           else
