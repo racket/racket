@@ -182,47 +182,53 @@
   (define build-struct-expand-info*
     (lambda (names name-stx fields omit-sel? omit-set? base-name base-getters base-setters)
       (let* ([flds (cdddr names)]
-	     [every-other (lambda (l)
-			    (let loop ([l l])
-			      (cond
-			       [(null? l) null]
-			       [(null? (cdr l)) (list (car l))]
-			       [else (cons (car l) (loop (cddr l)))])))]
-	     [add-#f (lambda (omit? base)
-		       (if omit?
-			   (if (let loop ([l base])
-				 (cond
-				  [(null? l) #t]
-				  [(not (car l)) #f]
-				  [else (loop (cdr l))]))
-			       (append base '(#f))
-			       base)
-			   base))]
-	     [qs (lambda (x) (if (eq? x #t)
-				 x
-				 (and x `(quote-syntax ,x))))]
-         [self-sels (reverse (if omit-sel?
-                                 null
-                                 (map qs (if omit-set? flds (every-other flds)))))]
-         [self-sets (reverse (if omit-sel?
-                                 null
-                                 (if omit-set?
-                                     (map (lambda (sel) #f) self-sels)
-                                     (map qs (every-other (if (null? flds)
-                                                              null
-                                                              (cdr flds)))))))])
-        `(let ()
-           (list
-            ,(qs (car names))
-            ,(qs (cadr names))
-            ,(qs (caddr names))
-            (list 
-             ,@self-sels
-             ,@(map qs (add-#f omit-sel? base-getters)))
-            (list
-             ,@self-sets
-             ,@(map qs (add-#f omit-set? base-setters)))
-            ,(qs base-name))))))
+             [every-other (lambda (l)
+                            (let loop ([l l])
+                              (cond
+                                [(null? l) null]
+                                [(null? (cdr l)) (list (car l))]
+                                [else (cons (car l) (loop (cddr l)))])))]
+             [add-#f (lambda (omit? base)
+                       (if omit?
+                           (if (let loop ([l base])
+                                 (cond
+                                   [(null? l) #t]
+                                   [(not (car l)) #f]
+                                   [else (loop (cdr l))]))
+                               (append base '(#f))
+                               base)
+                           base))]
+             [qs (lambda (x) (if (eq? x #t)
+                                 x
+                                 (and x `(quote-syntax ,x))))]
+             [self-sels (reverse (if omit-sel?
+                                     null
+                                     (map qs (if omit-set? flds (every-other flds)))))]
+             [self-sets (reverse (if omit-sel?
+                                     null
+                                     (if omit-set?
+                                         (map (lambda (sel) #f) self-sels)
+                                         (map qs (every-other (if (null? flds)
+                                                                  null
+                                                                  (cdr flds)))))))]
+             [all-sels
+              `(list 
+                ,@self-sels
+                ,@(map qs (add-#f (or omit-sel? omit-set?) base-getters)))]
+             [all-sets
+              `(list
+                ,@self-sets
+                ,@(map qs (add-#f (or omit-sel? omit-set?) base-setters)))]
+             [ans
+              `(let ()
+                 (list
+                  ,(qs (car names))
+                  ,(qs (cadr names))
+                  ,(qs (caddr names))
+                  ,all-sels
+                  ,all-sets
+                  ,(qs base-name)))])
+        ans)))
 
 
   (define (struct-declaration-info? x)
