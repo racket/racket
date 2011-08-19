@@ -1092,7 +1092,7 @@ in the sense of @racket[port-try-file-lock?].
         (lambda () (printf "Shouldn't get here\n"))
         (lambda () (printf "Failed to obtain lock for file\n"))))
     (lambda () (printf "Shouldn't ger here eithere\n"))
-    #:get-lock-file (lambda () (make-lock-file-name filename)))]
+    #:lock-file (make-lock-file-name filename))]
 
 
 @defproc*[([(make-lock-file-name [path (or path-string? path-for-some-system?)]) 
