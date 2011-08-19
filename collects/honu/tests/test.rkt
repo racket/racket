@@ -83,3 +83,14 @@
 
   @output{'x1
   })
+
+(test
+  @input{
+  if 2 > 1 then
+    1
+  else
+    0
+  }
+
+  @output{1
+  })

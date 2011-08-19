@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (prefix-in racket: racket/base))
+(require (prefix-in racket: (combine-in racket/base racket/list)))
 
 ;; require's and provide's a module
 (define-syntax-rule (provide-module module ...)
@@ -20,4 +20,9 @@
 (provide sqr sqrt sin max else
          number? symbol?
          null
-         (rename-out [honu-cond cond]))
+         null?
+         (rename-out [honu-cond cond]
+                     [null empty]
+                     [racket:empty? empty?]
+                     [racket:first first]
+                     [racket:rest rest]))

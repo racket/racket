@@ -321,6 +321,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
                                           ...))))
                #'rest)])))
 
+#|
 (honu:define-honu-syntax honu-if
   (lambda (stx ctx)
     (define (parse-complete-block stx)
@@ -352,6 +353,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
          (values
            (lambda () result)
            #'rest))])))
+|#
 
 (define true #t)
 (define false #f)

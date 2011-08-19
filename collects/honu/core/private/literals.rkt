@@ -20,6 +20,7 @@
                 honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
                 honu-!= honu-==
                 honu-literal
+                honu-then
                 honu-? honu-: honu-comma honu-. #%braces #%brackets #%parens colon
                 honu-and
                 ellipses-comma ellipses-comma* ellipses-repeat

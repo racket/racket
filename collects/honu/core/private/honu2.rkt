@@ -4,6 +4,7 @@
          "operator.rkt"
          "struct.rkt"
          (only-in "literals.rkt"
+                  honu-then
                   semicolon)
          (for-syntax syntax/parse
                      "literals.rkt"
@@ -55,6 +56,17 @@
              body.result)
          #'rest
          #t)])))
+
+(provide honu-if)
+(define-honu-syntax honu-if
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+                       #:literals (else honu-then)
+      [(_ condition:honu-expression honu-then true:honu-expression else false:honu-expression . rest)
+       (values
+         #'(if condition.result true.result false.result)
+         #'rest
+         #f)])))
 
 (provide honu-val)
 (define-honu-syntax honu-val
