@@ -30,6 +30,8 @@
 
 (define (with-type-helper stx body fvids fvtys exids extys resty expr? ctx)
   (define old-context (unbox typed-context?))
+  (unless (not old-context)
+    (tc-error/stx stx "with-type cannot be used in a typed module."))
   (define ((no-contract t [stx stx]))
     (tc-error/stx stx "Type ~a could not be converted to a contract." t))
   (set-box! typed-context? #t)
