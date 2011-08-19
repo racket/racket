@@ -21,6 +21,7 @@
          number? symbol?
          null
          null?
+         length
          (rename-out [honu-cond cond]
                      [null empty]
                      [racket:empty? empty?]

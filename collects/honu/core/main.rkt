@@ -21,6 +21,8 @@
                      [honu-> >] [honu-< <]
                      [honu->= >=] [honu-<= <=]
                      [honu-= =]
+                     [literal:honu-<- <-]
+                     [honu-map map]
                      [honu-flow \|]
                      [honu-dot |.|]
                      [honu-cons ::]

@@ -19,6 +19,7 @@
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
                 honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
                 honu-!= honu-==
+                honu-<-
                 honu-literal
                 honu-then
                 honu-? honu-: honu-comma honu-. #%braces #%brackets #%parens colon
@@ -27,4 +28,4 @@
                 honu-for-syntax
                 honu-for-template)
 
-(define-literal-set cruft (#%parens #%brackets #%braces semicolon colon honu-comma))
+(define-literal-set cruft (#%parens #%brackets #%braces semicolon colon honu-comma honu-<-))

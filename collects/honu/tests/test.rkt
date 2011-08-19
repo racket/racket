@@ -39,7 +39,9 @@
   (apply string-append "" (append stuff (list "\n"))))
 
 (define (test input output)
-  (same? (run-honu input) output))
+  (define final (run-honu input))
+  (when (not (same? final output))
+    (printf "Not the same!\n'~a'\nvs\n'~a'\n" final output)))
 
 (define (input . stuff)
   (apply string-append "#lang honu\n" stuff))
@@ -94,3 +96,12 @@
 
   @output{1
   })
+
+(test
+  @input{
+  [x + 1: x <- [1, 2, 3]];
+  [x + y: x <- [1, 2, 3], y <- [4, 5, 6]]
+  }
+
+  @output{'(2 3 4)
+  '(5 7 9)})

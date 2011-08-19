@@ -149,5 +149,6 @@
 (define-binary-operator honu-and 0.5 'left and)
 (define-binary-operator honu-or 0.5 'left or)
 (define-binary-operator honu-cons 0.1 'right cons)
+(define-binary-operator honu-map 0.09 'left map)
 
 (define-unary-operator honu-not 0.7 'left not)

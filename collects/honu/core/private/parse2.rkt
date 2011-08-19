@@ -225,17 +225,26 @@
                          (do-parse #'(rest ...) precedence left #'x))]
                      ;; [1, 2, 3] -> (list 1 2 3)
                      [(#%brackets stuff ...)
-                      (define value (with-syntax ([(data ...)
-                                                   (parse-comma-expression #'(stuff ...))])
-                                      #'(list data ...)))
-                      (define lookup (with-syntax ([(data ...)
-                                                    (parse-comma-expression #'(stuff ...))]
-                                                   [current current])
-                                       #'(do-lookup current data ...)))
-                      (if current
-                         ;; (values (left current) stream)
-                         (do-parse #'(rest ...) precedence left lookup)
-                         (do-parse #'(rest ...) precedence left value))]
+                      (syntax-parse #'(stuff ...) #:literal-sets (cruft)
+                        [(work:honu-expression colon (~seq variable:id honu-<- list:honu-expression (~optional honu-comma)) ...)
+                         (define comprehension #'(for/list ([variable list.result]
+                                                            ...)
+                                                   work.result))
+                         (if current
+                           (error 'parse "a list comprehension cannot follow an expression")
+                           (do-parse #'(rest ...) precedence left comprehension))]
+                        [else
+                          (define value (with-syntax ([(data ...)
+                                                       (parse-comma-expression #'(stuff ...))])
+                                          #'(list data ...)))
+                          (define lookup (with-syntax ([(data ...)
+                                                        (parse-comma-expression #'(stuff ...))]
+                                                       [current current])
+                                           #'(do-lookup current data ...)))
+                          (if current
+                            ;; (values (left current) stream)
+                            (do-parse #'(rest ...) precedence left lookup)
+                            (do-parse #'(rest ...) precedence left value))])]
                      ;; block of code
                      [(#%braces stuff ...)
                       (if current
