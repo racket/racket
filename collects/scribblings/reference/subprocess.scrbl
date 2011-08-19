@@ -378,8 +378,8 @@ values:
  @item{an input port piped from the subprocess's standard
        error, and}
 
- @item{a procedure of one argument, either @racket['status],
- @racket['wait], @racket['interrupt], or @racket['kill]:
+ @item{a procedure of one argument, either @racket['status], @racket['wait],
+ @racket['interrupt], @racket['exit-code] or @racket['kill]:
 
    @itemize[
 
