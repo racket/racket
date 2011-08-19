@@ -4,7 +4,7 @@
 @title[#:tag "base64"]{Base 64: Encoding and Decoding}
 
 @defmodule[net/base64]{The @racketmodname[net/base64] library provides
-utilities for Base 64 (mime-standard) encoding and decoding.}
+utilities for Base 64 (MIME-standard) encoding and decoding.}
 
 @section[#:tag "base64-procs"]{Functions}
 
