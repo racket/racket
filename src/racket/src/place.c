@@ -317,7 +317,8 @@ static int do_place_break(Scheme_Place *place) {
 
     place_obj->pbreak = 1;
 
-    scheme_signal_received_at(place_obj->signal_handle);
+    if (place_obj->signal_handle)
+      scheme_signal_received_at(place_obj->signal_handle);
 
     mzrt_mutex_unlock(place_obj->lock);
   }
