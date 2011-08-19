@@ -887,10 +887,21 @@
            '(module m racket/base
               (define x 10)
               (define (f y)
-                (begin
-                  x ; compiler might not determine that `x' is definitely defined
-                  (list (cons y y)
-                        (set! x x)))))
+                (list (cons y y)
+                      (set! x x)))))
+
+;; Treat access to a mutable top-level as an effect:
+(test-comp '(module m racket/base
+              (define x 10)
+              (define (f y)
+                (let ([old x])
+                  (list (cons y x)
+                        (set! x old)))))
+           '(module m racket/base
+              (define x 10)
+              (define (f y)
+                (list (cons y x)
+                      (set! x x))))
             #f)
 
 (test-comp '(let ([x 1][y 2]) x)
