@@ -1094,10 +1094,15 @@ in the sense of @racket[port-try-file-lock?].
     (lambda () (printf "Shouldn't ger here eithere\n"))
     #:get-lock-file (lambda () (make-lock-file-name filename)))]
 
-@defproc*[([(make-lock-file-name [path path-string?]) path-string?]
-           [(make-lock-file-name [dir path-string?] [name path-string?]) path-string?])]{
-Creates a lock filename by prepending @racket["_LOCK"] on windows or @racket[".LOCK"] on all other platforms
-to the file portion of the path.
+
+@defproc*[([(make-lock-file-name [path (or path-string? path-for-some-system?)]) 
+            path?]
+           [(make-lock-file-name [dir (or path-string? path-for-some-system?)] 
+                                 [name path-element?]) 
+            path?])]{
+
+Creates a lock filename by prepending @racket["_LOCK"] on Windows or
+@racket[".LOCK"] on other platforms to the file portion of the path.
 
 @examples[
   #:eval file-eval

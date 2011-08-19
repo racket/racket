@@ -152,7 +152,7 @@ other path is deconstructed with @racket[split-path] and
 elements is necessary.}
 
 
-@defproc[(path-element->string [path path?]) string?]{
+@defproc[(path-element->string [path path-element?]) string?]{
 
 Like @racket[path->string], except that trailing path separators are
 removed (as by @racket[split-path]). On Windows, any
@@ -168,7 +168,7 @@ The @racket[path-element->string] procedure is generally the best
 choice for presenting a pathless file or directory name to a user.}
 
 
-@defproc[(path-element->bytes [path path-string?]) bytes?]{
+@defproc[(path-element->bytes [path path-element?]) bytes?]{
 
 Like @racket[path->bytes], except that any encoding prefix is removed,
 etc., as for @racket[path-element->string].
@@ -562,6 +562,16 @@ directory (i.e., the comparison may produce false negatives).
 An error is signaled by @racket[normalize-path] if the input
 path contains an embedded path for a non-existent directory,
 or if an infinite cycle of soft links is detected.}
+
+
+@defproc[(path-element? [path any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[path] is a path value for some
+platform (see @racket[path-for-some-system?]) such that
+@racket[split-path] applied to @racket[path] would return
+@racket['relative] as its first result and a path as its second
+result. Otherwise, the result is @racket[#f].}
+
 
 @defproc[(path-only [path (or/c path-string? path-for-some-system?)])
          (or/c #f path-for-some-system?)]{

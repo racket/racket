@@ -8,7 +8,8 @@
          file-name-from-path
          path-only
          some-system-path->string
-         string->some-system-path)
+         string->some-system-path
+         path-element?)
 
 (define (simple-form-path p)
   (unless (path-string? p)
@@ -184,4 +185,7 @@
     (raise-type-error 'string->some-system-path "'unix or 'windows" kind))
   (bytes->path (string->bytes/utf-8 path) kind))
 
-
+(define (path-element? path)
+  (and (path-for-some-system? path)
+       (let-values ([(base name d?) (split-path path)])
+         (eq? base 'relative))))

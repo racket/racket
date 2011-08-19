@@ -1,4 +1,5 @@
 #lang racket/base
+(require "path.rkt")
 
 (provide delete-directory/files
          copy-directory/files
@@ -154,20 +155,31 @@
     (unless (eq? table (weak-box-value pref-cache))
       (set! pref-cache (make-weak-box table)))))
 
+(define (make-pathless-lock-file-name name)
+  (bytes->path-element
+   (bytes-append
+    (if (eq? 'windows (system-type))
+        #"_"
+        #".")
+    #"LOCK"
+    (path-element->bytes name))))
 
 (define make-lock-file-name
   (case-lambda
-   [(path) (let-values ([(dir name dir?) (split-path path)])
-             (make-lock-file-name dir name))]
+   [(path)
+    (unless (path-string? path)
+      (raise-type-error 'make-lock-file-name "path string" path))
+    (let-values ([(dir name dir?) (split-path path)])
+      (if (eq? dir 'relative)
+          (make-pathless-lock-file-name name)
+          (make-lock-file-name dir name)))]
    [(dir name)
+    (unless (path-string? dir)
+      (raise-type-error 'make-lock-file-name "path string" dir))
+    (unless (path-element? name)
+      (raise-type-error 'make-lock-file-name "path element" name))
     (build-path dir
-                (bytes->path-element
-                 (bytes-append
-                  (if (eq? 'windows (system-type))
-                      #"_"
-                      #".")
-                  #"LOCK"
-                  (path-element->bytes name))))]))
+                (make-pathless-lock-file-name name))]))
 
 (define (preferences-lock-file-mode)
   (case (system-type)

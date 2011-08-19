@@ -132,5 +132,46 @@
 	(delete-file "filelib-link")
 
 	'done))))
+;; ----------------------------------------
+
+;;----------------------------------------------------------------------
+;; File Locks
+(define tempfile (make-temporary-file))
+(err/rt-test (call-with-file-lock/timeout 10 'shared (lambda () #t) (lambda () #f)))
+(err/rt-test (call-with-file-lock/timeout tempfile 'bogus (lambda () #t) (lambda () #f)))
+(err/rt-test (call-with-file-lock/timeout tempfile 'shared (lambda (x) #t) (lambda () #f)))
+(err/rt-test (call-with-file-lock/timeout tempfile 'exclusive (lambda () #t) (lambda (x) #f)))
+
+(test #t call-with-file-lock/timeout tempfile 'shared (lambda () #t) (lambda () #f))
+(test #t call-with-file-lock/timeout tempfile 'exclusive (lambda () #t) (lambda () #f))
+
+(err/rt-test (call-with-file-lock/timeout tempfile 'exclusive (lambda ()
+    (call-with-file-lock/timeout tempfile 'exclusive (lambda () #f) (lambda () (error))))
+  (lambda () 'uhoh)))
+(err/rt-test (call-with-file-lock/timeout tempfile 'exclusive (lambda ()
+    (call-with-file-lock/timeout tempfile 'shared (lambda () #f) (lambda () (error))))
+  (lambda () 'uhon)))
+(err/rt-test (call-with-file-lock/timeout tempfile 'shared (lambda ()
+    (call-with-file-lock/timeout tempfile 'exclusive (lambda () #f) (lambda () (error))))
+  (lambda () 'uhoh)))
+(test #t call-with-file-lock/timeout tempfile 'shared (lambda ()
+    (call-with-file-lock/timeout tempfile 'shared (lambda () #t) (lambda () #f)))
+  (lambda () 'uhoh))
+
+(test (string->path (if (eq? (system-type) 'windows) "_LOCKstuff" ".LOCKstuff"))
+      make-lock-file-name
+      "stuff")
+(test (string->path (if (eq? (system-type) 'windows) "_LOCKstuff" ".LOCKstuff"))
+      make-lock-file-name
+      "stuff")
+(test (build-path "dir" (if (eq? (system-type) 'windows) "_LOCKstuff" ".LOCKstuff"))
+      make-lock-file-name
+      "dir/stuff")
+(test (build-path "dir" (if (eq? (system-type) 'windows) "_LOCKstuff" ".LOCKstuff"))
+      make-lock-file-name
+      "dir"
+      (string->path "stuff"))
+
+;; ----------------------------------------
 
 (report-errs)
