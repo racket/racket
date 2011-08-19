@@ -186,7 +186,7 @@
     [(struct def-values (ids rhs))
      `(define-values ,(map (lambda (tl)
                              (match tl
-                               [(struct toplevel (depth pos const? mutated?))
+                               [(struct toplevel (depth pos const? set-const?))
                                 (list-ref/protect (glob-desc-vars globs) pos 'def-vals)]))
                            ids)
         ,(decompile-expr rhs globs stack closed))]
@@ -250,10 +250,14 @@
   (match expr
     [(struct toplevel (depth pos const? ready?))
      (let ([id (list-ref/protect (glob-desc-vars globs) pos 'toplevel)])
-       (if (or no-check? const? ready?)
-           id
-           `(#%checked ,id)))]))
-             
+       (cond
+        [no-check? id]
+        [(and (not const?) (not ready?))
+         `(#%checked ,id)]
+        #;[(and const? ready?) `(#%const ,id)]
+        #;[const? `(#%iconst ,id)]
+        [else id]))]))
+
 (define (decompile-expr expr globs stack closed)
   (match expr
     [(struct toplevel (depth pos const? ready?))

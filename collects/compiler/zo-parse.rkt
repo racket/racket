@@ -33,10 +33,13 @@
 ;; Bytecode unmarshalers for various forms
 
 (define (read-toplevel v)
-  (define SCHEME_TOPLEVEL_CONST #x01)
-  (define SCHEME_TOPLEVEL_READY #x02)
+  (define SCHEME_TOPLEVEL_CONST #x02)
+  (define SCHEME_TOPLEVEL_READY #x01)
   (match v
     [(cons depth (cons pos flags))
+     ;; In the VM, the two flag bits are actually interpreted
+     ;; as a number when the toplevel is a reference, but we
+     ;; interpret the bits as flags here for backward compatibility.
      (make-toplevel depth pos 
                     (positive? (bitwise-and flags SCHEME_TOPLEVEL_CONST))
                     (positive? (bitwise-and flags SCHEME_TOPLEVEL_READY)))]

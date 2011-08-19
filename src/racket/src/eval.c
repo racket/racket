@@ -1708,7 +1708,7 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 	  scheme_set_global_bucket("define-values", b, values[i], 1);
 	  scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, 1);
 
-	  if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_CONST) {
+	  if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
             ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
 	  }
 	}
@@ -1740,7 +1740,7 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
       scheme_set_global_bucket("define-values", b, vals, 1);
       scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, 1);
       
-      if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_CONST) {
+      if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
         int flags = GLOB_IS_IMMUTATED;
         if (SCHEME_PROCP(vals_expr) 
             || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_unclosed_procedure_type)

@@ -504,7 +504,7 @@ int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack
   if (depth 
       && jitter->nc 
       && SAME_TYPE(SCHEME_TYPE(a), scheme_toplevel_type)
-      && (SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_CONST)) {
+      && ((SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
     Scheme_Object *p;
     p = scheme_extract_global(a, jitter->nc);
     p = ((Scheme_Bucket *)p)->val;
@@ -722,7 +722,7 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
     int flags;
     return scheme_mz_is_closure(jitter, SCHEME_LOCAL_POS(v), -1, &flags);
   } else if (t == scheme_toplevel_type) {
-    if (SCHEME_TOPLEVEL_FLAGS(v) & SCHEME_TOPLEVEL_CONST) {
+    if ((SCHEME_TOPLEVEL_FLAGS(v) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST) {
       if (jitter->nc) {
 	Scheme_Object *p;
         
@@ -755,18 +755,26 @@ int scheme_ok_to_delay_local(Scheme_Object *obj)
     return 0;
 }
 
+int scheme_can_delay_and_avoids_r1_r2(Scheme_Object *obj)
+{
+  Scheme_Type t = SCHEME_TYPE(obj);
+
+  if (SAME_TYPE(t, scheme_local_type) && scheme_ok_to_delay_local(obj)) {
+    return 1;
+  } else
+    return (t >= _scheme_compiled_values_types_);
+}
+
 int scheme_can_delay_and_avoids_r1(Scheme_Object *obj)
 {
   Scheme_Type t = SCHEME_TYPE(obj);
 
   if (SAME_TYPE(t, scheme_toplevel_type)) {
-    return ((SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_CONST)
+    return (((SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED)
             ? 1
             : 0);
-  } else if (SAME_TYPE(t, scheme_local_type) && scheme_ok_to_delay_local(obj)) {
-    return 1;
   } else
-    return (t >= _scheme_compiled_values_types_);
+    return scheme_can_delay_and_avoids_r1_r2(obj);
 }
 
 int scheme_is_constant_and_avoids_r1(Scheme_Object *obj)
@@ -774,7 +782,7 @@ int scheme_is_constant_and_avoids_r1(Scheme_Object *obj)
   Scheme_Type t = SCHEME_TYPE(obj);
 
   if (SAME_TYPE(t, scheme_toplevel_type)) {
-    return ((SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_CONST)
+    return (((SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED)
             ? 1
             : 0);
   } else if (SAME_TYPE(t, scheme_local_type) && scheme_ok_to_move_local(obj)) {
@@ -1813,8 +1821,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     {
       int can_fail;
       /* Other parts of the JIT rely on this code not modifying R1 */
-      can_fail = !(SCHEME_TOPLEVEL_FLAGS(obj) 
-                   & (SCHEME_TOPLEVEL_CONST | SCHEME_TOPLEVEL_READY));
+      can_fail = ((SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK) < SCHEME_TOPLEVEL_READY);
       if (!can_fail && result_ignored) {
         /* skip */
       } else {

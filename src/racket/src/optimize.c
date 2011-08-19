@@ -231,8 +231,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if (vtype == scheme_toplevel_type) {
     note_match(1, vals, warn_info);
     if (resolved && ((vals == 1) || (vals < 0))) {
-      if (SCHEME_TOPLEVEL_FLAGS(o)
-          & (SCHEME_TOPLEVEL_CONST | SCHEME_TOPLEVEL_READY))
+      if (SCHEME_TOPLEVEL_FLAGS(o) & SCHEME_TOPLEVEL_FLAGS_MASK)
         return 1;
       else
         return 0;
@@ -242,8 +241,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if (vtype == scheme_compiled_toplevel_type) {
     note_match(1, vals, warn_info);
     if ((vals == 1) || (vals < 0)) {
-      if (SCHEME_TOPLEVEL_FLAGS(o)
-          & (SCHEME_TOPLEVEL_CONST | SCHEME_TOPLEVEL_READY))
+      if ((SCHEME_TOPLEVEL_FLAGS(o) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_READY)
         return 1;
       else
         return 0;
@@ -3158,7 +3156,7 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 
 
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_toplevel_type)) {
-    if (SCHEME_TOPLEVEL_FLAGS(value) & SCHEME_TOPLEVEL_CONST)
+    if (SCHEME_TOPLEVEL_FLAGS(value) >= SCHEME_TOPLEVEL_FIXED)
       return 1;
     if (info->top_level_consts) {
       int pos;
@@ -4513,7 +4511,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   Scheme_Object *e, *vars, *old_context;
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
-  Scheme_Hash_Table *consts = NULL, *ready_table = NULL, *re_consts = NULL;
+  Scheme_Hash_Table *consts = NULL, *fixed_table = NULL, *re_consts = NULL;
   int cont, next_pos_ready = -1, inline_fuel, is_proc_def;
 
   old_context = info->context;
@@ -4650,14 +4648,15 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               scheme_hash_set(re_consts, scheme_make_integer(i_m),
                               scheme_make_integer(pos));
 	    } else {
-	      /* At least mark it as ready */
-	      if (!ready_table) {
-		ready_table = scheme_make_hash_table(SCHEME_hash_ptr);
+	      /* At least mark it as fixed */
+              
+	      if (!fixed_table) {
+		fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
 		if (!consts)
 		  consts = scheme_make_hash_table(SCHEME_hash_ptr);
-		scheme_hash_set(consts, scheme_false, (Scheme_Object *)ready_table);
+		scheme_hash_set(consts, scheme_false, (Scheme_Object *)fixed_table);
 	      }
-	      scheme_hash_set(ready_table, scheme_make_integer(tl->position), scheme_true);
+	      scheme_hash_set(fixed_table, scheme_make_integer(tl->position), scheme_true);
 	    }
 	  }
 	} else {
@@ -4670,7 +4669,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	  for (l = vars; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
 	    a = SCHEME_CAR(l);
 
-	    /* Test for ISCONST to indicate no set!: */
+	    /* Test for set!: */
 	    if (!(SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_MUTATED)) {
 	      pos = SCHEME_TOPLEVEL_POS(a);
 
@@ -4794,13 +4793,13 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     }
 
     if (next_pos_ready > -1) {
-      if (!ready_table) {
-        ready_table = scheme_make_hash_table(SCHEME_hash_ptr);
+      if (!fixed_table) {
+        fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
         if (!consts)
           consts = scheme_make_hash_table(SCHEME_hash_ptr);
-        scheme_hash_set(consts, scheme_false, (Scheme_Object *)ready_table);
+        scheme_hash_set(consts, scheme_false, (Scheme_Object *)fixed_table);
       }
-      scheme_hash_set(ready_table, scheme_make_integer(next_pos_ready), scheme_true);
+      scheme_hash_set(fixed_table, scheme_make_integer(next_pos_ready), scheme_true);
       next_pos_ready = -1;
     }
   }
@@ -4979,9 +4978,9 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 	  c = scheme_hash_get((Scheme_Hash_Table *)c, scheme_make_integer(pos));
 
 	  if (c) {
-	    /* We can't inline, but mark the top level as ready,
-	       so we can avoid null checks in JITed code: */
-	    expr = scheme_toplevel_to_flagged_toplevel(expr, SCHEME_TOPLEVEL_READY);
+	    /* We can't inline, but mark the top level as ready and fixed,
+	       so we can avoid null checks in JITed code, etc: */
+	    expr = scheme_toplevel_to_flagged_toplevel(expr, SCHEME_TOPLEVEL_FIXED);
 	  }
 	}
         if (!c)

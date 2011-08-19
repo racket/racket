@@ -2891,7 +2891,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       LOG_IT(("inlined vector-set!\n"));
 
-      if (scheme_can_delay_and_avoids_r1(app->args[1]))
+      if (scheme_can_delay_and_avoids_r1_r2(app->args[1]))
         can_delay_vec = 1;
       else
         can_delay_vec = 0;

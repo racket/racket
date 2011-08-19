@@ -624,10 +624,11 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
 
   o = scheme_make_toplevel(0, cp->num_toplevels, 0, 
                            (imported 
-                            ? (SCHEME_TOPLEVEL_READY 
-                               | ((SCHEME_MODVAR_FLAGS(var) & 0x1)
-                                  ? SCHEME_TOPLEVEL_CONST
-                                  : 0))
+                            ? ((SCHEME_MODVAR_FLAGS(var) & SCHEME_MODVAR_CONST)
+                               ? SCHEME_TOPLEVEL_CONST
+                               : ((SCHEME_MODVAR_FLAGS(var) & SCHEME_MODVAR_FIXED)
+                                  ? SCHEME_TOPLEVEL_FIXED
+                                  : SCHEME_TOPLEVEL_READY))
                             : 0));
 
   cp->num_toplevels++;
@@ -884,6 +885,7 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
 					   int pos, intptr_t mod_phase, int is_constant)
+/* is_constant == 2 => constant over all instantiations and phases */
 {
   Scheme_Object *val;
   Scheme_Hash_Table *ht;
@@ -919,8 +921,10 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
       mv->pos = pos;
       mv->mod_phase = (int)mod_phase;
 
-      if (is_constant)
-        SCHEME_MODVAR_FLAGS(mv) |= 0x1;
+      if (is_constant > 1)
+        SCHEME_MODVAR_FLAGS(mv) |= SCHEME_MODVAR_CONST;
+      else if (is_constant)
+        SCHEME_MODVAR_FLAGS(mv) |= SCHEME_MODVAR_FIXED;
       
       val = (Scheme_Object *)mv;
       
@@ -1636,7 +1640,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
                       Scheme_Object **_lexical_binding_id)
 {
   Scheme_Comp_Env *frame;
-  int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0;
+  int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0, is_constant;
   Scheme_Bucket *b;
   Scheme_Object *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
   Scheme_Object *find_id_sym = NULL, *rename_insp = NULL, *mod_constant = NULL;
@@ -1932,10 +1936,18 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   check_taint(src_find_id);
 
-  if ((flags & SCHEME_ELIM_CONST) 
-      && mod_constant 
-      && !SAME_OBJ(mod_constant, scheme_void_proc))
-    return mod_constant;
+  if (mod_constant) {
+    if (SAME_OBJ(mod_constant, scheme_constant_key))
+      is_constant = 2;
+    else if (SAME_OBJ(mod_constant, scheme_fixed_key))
+      is_constant = 1;
+    else {
+      if (flags & SCHEME_ELIM_CONST) 
+        return mod_constant;
+      is_constant = 2;
+    }
+  } else
+    is_constant = 0;
 
   /* Used to have `&& !SAME_OBJ(modidx, modname)' below, but that was a bad
      idea, because it causes module instances to be preserved. */
@@ -1949,7 +1961,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
 				       (rename_insp ? rename_insp : genv->module->insp),
 				       modpos, SCHEME_INT_VAL(mod_defn_phase),
-                                       !!mod_constant);
+                                       is_constant);
   }
 
   if (!modname 
@@ -1960,7 +1972,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     return scheme_hash_module_variable(env->genv, genv->module->self_modidx, find_global_id, 
 				       genv->module->insp,
 				       modpos, genv->mod_phase,
-                                       !!mod_constant);
+                                       is_constant);
   }
 
   b = scheme_bucket_from_table(genv->toplevel, (char *)find_global_id);

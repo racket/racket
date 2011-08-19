@@ -554,8 +554,8 @@
                         (if (or const? ready?)
                             (cons pos
                                   (bitwise-ior 
-                                   (if const? #x1 0)
-                                   (if ready? #x2 0)))
+                                   (if const? #x2 0)
+                                   (if ready? #x1 0)))
                             pos))
                        out)]
        [(struct topsyntax (depth pos midpt))

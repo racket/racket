@@ -3430,6 +3430,19 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
   return m;
 }
 
+static int is_procedure_expression(Scheme_Object *e)
+{
+  Scheme_Type t;
+
+  if (SCHEME_PROCP(e))
+    return 1;
+
+  t = SCHEME_TYPE(e);
+
+  return ((t == scheme_unclosed_procedure_type)
+          || (t == scheme_case_lambda_sequence_type));
+}
+
 static void setup_accessible_table(Scheme_Module *m)
 {
   if (!m->accessible) {
@@ -3484,7 +3497,7 @@ static void setup_accessible_table(Scheme_Module *m)
             if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
               for (k = SCHEME_VEC_SIZE(form); k-- > 1; ) {
                 tl = SCHEME_VEC_ELS(form)[k];
-                if (SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_CONST) {
+                if (SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_SEAL) {
                   int pos = SCHEME_TOPLEVEL_POS(tl);
                   if (pos < m->prefix->num_toplevels) {
                     tl = m->prefix->toplevels[pos];
@@ -3496,9 +3509,12 @@ static void setup_accessible_table(Scheme_Module *m)
                           && scheme_compiled_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
                         /* record simple constant from cross-module propagation: */
                         v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
+                      } else if (is_procedure_expression(SCHEME_VEC_ELS(form)[0])) {
+                        /* record that it's constant across all instantiations: */
+                        v = scheme_make_pair(v, scheme_constant_key);
                       } else {
-                        /* record simply that it's constant: */
-                        v = scheme_box(v);
+                        /* record that it's fixed for any given instantiations: */
+                        v = scheme_make_pair(v, scheme_fixed_key);
                       }
                       scheme_hash_set(ht, tl, v);
                     } else
@@ -3715,10 +3731,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
         pos = NULL;
 
       if (pos) {
-        if (SCHEME_BOXP(pos)) {
-          if (_is_constant) *_is_constant = scheme_void_proc; /* a hack to indicated "unknown constant" */
-          pos = SCHEME_BOX_VAL(pos);
-        } else if (SCHEME_PAIRP(pos)) {
+        if (SCHEME_PAIRP(pos)) {
           if (_is_constant) *_is_constant = SCHEME_CDR(pos);
           pos = SCHEME_CAR(pos);
         }

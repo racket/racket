@@ -578,14 +578,14 @@ define_values_resolve(Scheme_Object *data, Resolve_Info *rslv)
 
   /* If this is a module-level definition: for each variable, if the
      defined variable doesn't have SCHEME_TOPLEVEL_MUTATED, then
-     resolve to a top-level reference with SCHEME_TOPLEVEL_CONST, so
+     resolve to a top-level reference with SCHEME_TOPLEVEL_SEAL, so
      that we know to set GLOS_IS_IMMUTATED at run time. */
   for (l = vars; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
     if (rslv->in_module
 	&& rslv->enforce_const
 	&& (!(SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_MUTATED))) {
-      a = scheme_toplevel_to_flagged_toplevel(a, SCHEME_TOPLEVEL_CONST);
+      a = scheme_toplevel_to_flagged_toplevel(a, SCHEME_TOPLEVEL_SEAL);
     }
     a = resolve_toplevel(rslv, a, 0);
     SCHEME_CAR(l) = a;
@@ -795,7 +795,8 @@ static int is_lifted_reference(Scheme_Object *v)
     return 1;
 
   return (SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type)
-          && (SCHEME_TOPLEVEL_FLAGS(v) & SCHEME_TOPLEVEL_CONST));
+          && ((SCHEME_TOPLEVEL_FLAGS(v) & SCHEME_TOPLEVEL_FLAGS_MASK)
+              >= SCHEME_TOPLEVEL_CONST));
 }
 
 static int is_closed_reference(Scheme_Object *v)
@@ -2877,7 +2878,7 @@ static int resolve_quote_syntax_pos(Resolve_Info *info)
   return info->prefix->num_toplevels;
 }
 
-static Scheme_Object *resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int keep_ready)
+static Scheme_Object *resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int as_reference)
 {
   int skip, pos;
 
@@ -2890,10 +2891,7 @@ static Scheme_Object *resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, 
   return scheme_make_toplevel(skip + SCHEME_TOPLEVEL_DEPTH(expr), /* depth is 0 (normal) or 1 (exp-time) */
                               pos,
                               1,
-                              SCHEME_TOPLEVEL_FLAGS(expr) & (SCHEME_TOPLEVEL_CONST
-                                                             | (keep_ready 
-                                                                ? SCHEME_TOPLEVEL_READY
-                                                                : 0)));
+                              SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_FLAGS_MASK);
 }
 
 static Scheme_Object *shift_toplevel(Scheme_Object *expr, int delta)

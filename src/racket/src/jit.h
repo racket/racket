@@ -1243,6 +1243,7 @@ void scheme_add_branch_false_movi(Branch_Info *for_branch, jit_insn *ref);
 int scheme_ok_to_move_local(Scheme_Object *obj);
 int scheme_ok_to_delay_local(Scheme_Object *obj);
 int scheme_can_delay_and_avoids_r1(Scheme_Object *obj);
+int scheme_can_delay_and_avoids_r1_r2(Scheme_Object *obj);
 int scheme_is_constant_and_avoids_r1(Scheme_Object *obj);
 int scheme_is_relatively_constant_and_avoids_r1_maybe_fp(Scheme_Object *obj, Scheme_Object *wrt,
                                                          int fp_ok);

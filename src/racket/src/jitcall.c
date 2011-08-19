@@ -1399,11 +1399,12 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	}
       }
     } else if (t == scheme_toplevel_type) {
-      if (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_CONST) {
+      if (0 && (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
         /* We can re-order evaluation of the rator. */
         reorder_ok = 1;
 
-        if (jitter->nc) {
+        if (jitter->nc && 0
+            && ((SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
           Scheme_Object *p;
 
           p = scheme_extract_global(rator, jitter->nc);

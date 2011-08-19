@@ -420,6 +420,10 @@ extern Scheme_Object *scheme_no_arity_property;
 
 extern Scheme_Object *scheme_reduced_procedure_struct;
 
+/* recycle some constants that can't appear in code: */
+#define scheme_constant_key scheme_stack_dump_key
+#define scheme_fixed_key    scheme_default_prompt_tag
+
 /*========================================================================*/
 /*                    thread state and maintenance                        */
 /*========================================================================*/
@@ -1222,8 +1226,28 @@ typedef struct Scheme_Toplevel {
 #define SCHEME_TOPLEVEL_POS(obj)    (((Scheme_Toplevel *)(obj))->position)
 #define SCHEME_TOPLEVEL_FLAGS(obj)  MZ_OPT_HASH_KEY(&((Scheme_Toplevel *)(obj))->iso)
 
-#define SCHEME_TOPLEVEL_CONST   0x1
-#define SCHEME_TOPLEVEL_READY   0x2
+/* The MASK pull out one of the levels for reference (CONST,
+   FIXED, READY, or UNKNOWN) or one of the two levels for a
+   reference (SEAL or not) */
+#define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
+
+/* CONST means that a toplevel is READY and always has the same value,
+   even for different instantiations or phases. */
+#define SCHEME_TOPLEVEL_CONST   3
+/* FIXED is READY plus a promise of no mutation, but the value is
+   not necessarily constant across different instantations or phases. */
+#define SCHEME_TOPLEVEL_FIXED   2
+/* READY means that the toplevel will have a value (i.e., the variable
+   is defined), though it might be mutated later */
+#define SCHEME_TOPLEVEL_READY   1
+/* UNKNOWN means that the variable might not even be defined by the time the
+   toplevel reference is executed */
+#define SCHEME_TOPLEVEL_UNKNOWN   0
+
+#define SCHEME_TOPLEVEL_SEAL   0x1
+
+/* MUTATED is used on the toplevel for a definition, and only until
+   after resolving; it records whether a toplevel is `set!'ed */
 #define SCHEME_TOPLEVEL_MUTATED 0x4
 
 typedef struct Scheme_Quote_Syntax {
@@ -2374,7 +2398,6 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int resolved, i
 
 #define MAX_CONST_TOPLEVEL_DEPTH 16
 #define MAX_CONST_TOPLEVEL_POS 16
-#define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
 
 #define ASSERT_IS_VARIABLE_BUCKET(b) /* if (((Scheme_Object *)b)->type != scheme_variable_type) abort() */
 
@@ -3046,12 +3069,16 @@ typedef struct Scheme_Modidx {
 } Scheme_Modidx;
 
 typedef struct Module_Variable {
-  Scheme_Inclhash_Object iso; /* 0x1 flag => constant */
+  Scheme_Inclhash_Object iso; /* see SCHEME_MODVAR_... flags */
   Scheme_Object *modidx;
   Scheme_Object *sym;
   Scheme_Object *insp; /* for checking protected/unexported access */
   int pos, mod_phase;
 } Module_Variable;
+
+/* See SCHEME_TOPLEVEL_...: */
+#define SCHEME_MODVAR_CONST 0x1
+#define SCHEME_MODVAR_FIXED 0x2
 
 #define SCHEME_MODVAR_FLAGS(pr) MZ_OPT_HASH_KEY(&((Module_Variable *)pr)->iso)
 

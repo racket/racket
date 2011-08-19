@@ -375,12 +375,21 @@ structures that are produced by @racket[zo-parse] and consumed by
   of stack slots to skip to reach the prefix array, and @racket[pos] is
   the offset into the array.
 
-  If @racket[const?] is @racket[#t], then the variable definitely will
-  be defined, and its value stays constant. If @racket[ready?] is
-  @racket[#t], then the variable definitely will be defined (but its
-  value might change in the future). If @racket[const?] and
-  @racket[ready?] are both @racket[#f], then a check is needed to
-  determine whether the variable is defined.}
+  When the @racket[toplevel] is an expression, if both @racket[const?]
+  and @racket[ready?] are @racket[#t], then the variable definitely
+  will be defined, its value stays constant, and the constant is
+  effectively the same for every module instantiation. If only
+  @racket[const?] is @racket[#t], then the value is constant, but it
+  may vary across instantiations. If only @racket[ready?] is
+  @racket[#t], then the variable definitely will be defined, but its
+  value may change. If @racket[const?] and @racket[ready?] are both
+  @racket[#f], then a check is needed to determine whether the
+  variable is defined.
+
+  When the @racket[toplevel] is the right-hand side for
+  @racket[def-values], then @racket[const?]  is @racket[#f]. If
+  @racket[ready?] is @racket[#t], the variable is marked as immutable
+  after it is defined.}
 
 @defstruct+[(topsyntax expr)
             ([depth exact-nonnegative-integer?]
