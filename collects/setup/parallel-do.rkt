@@ -47,16 +47,17 @@
 ;  (begin a ...)
 )
 
-(define worker<%> (interface ()
-  spawn
-  send/msg
-  kill
-  break
-  wait
-  recv/msg
-  read-all
-  get-id
-  get-out))
+(define worker<%> 
+  (interface ()
+    spawn
+    send/msg
+    kill
+    break
+    wait
+    recv/msg
+    read-all
+    get-id
+    get-out))
 
 (define worker% 
   (class* object% (worker<%>)
@@ -135,8 +136,8 @@
     (define/public (wait) (place-wait pl))
     (super-new))) 
 
-
-  (define work-queue<%> (interface ()
+(define work-queue<%> 
+  (interface ()
     get-job
     work-done
     has-jobs?
@@ -174,93 +175,128 @@
                                  (find-system-path 'orig-dir))))))
 
 (define (parallel-do-event-loop module-path funcname initialmsg work-queue nprocs [stopat #f])
-  (define use-places (place-enabled?))
-;  (define use-places #f)
+  (define use-places? (place-enabled?)) ; set to #f to use processes instead of places
+  
   (define (spawn id)
-    (define wrkr (if use-places (new place-worker%) (new worker%)))
+    ;; spawns a new worker
+    (define wrkr (if use-places? (new place-worker%) (new worker%)))
     (wrkr/spawn wrkr id module-path funcname initialmsg)
     wrkr)
+
+  (define workers null)
+  (define (spawn! id)
+    ;; spawn a worker and add it to the list;
+    ;; disable breaks because we want to make sure
+    ;; that a new worker is added to the list of workers
+    ;; before a break exception is raised:
+    (parameterize-break 
+     #f
+     (let ([w (spawn id)])
+       (set! workers (cons w workers))
+       w)))
+  (define (unspawn! wkr)
+    (wrkr/kill wkr)
+    (set! workers (remq wkr workers)))
+
   (define (jobs?) (queue/has work-queue))
   (define (empty?) (not (queue/has work-queue)))
-  (define workers #f)
-  (define breaks #t)
+
+  ;; If any exception (including a break exception) happens before
+  ;; the work loop ends, then send a break to interrupt each worker;
+  ;; the `normal-finish?' flag is set to #t when the working loop ends
+  ;; normally.
+  (define normal-finish? #f)
+
+  (define log-exn (lambda (exn [msg #f])
+                    (log-error (let ([s (if (exn? exn)
+                                            (exn-message exn)
+                                            (format "exception: ~v" exn))])
+                                 (if msg
+                                     (format "~a; ~a" msg s)
+                                     s)))))
+
   (dynamic-wind
+    (lambda () (void))
     (lambda ()
-      (parameterize-break #f
-        (set! workers (for/list ([i (in-range nprocs)]) (spawn i)))))
-    (lambda ()
-      (define (error-threshold x) 
-        (if (x . >= . 4)
-          (begin 
-            (eprintf "Error count reached ~a, exiting\n" x)
-            (exit 1))
-          #f))
+      (define (check-error-threshold x) 
+        (when (x . >= . 4)
+          (error 'parallel-do "error count reached ~a, exiting" x)))
+      (for/list ([i (in-range nprocs)]) 
+        (spawn! i))
       (let loop ([idle workers]
                  [inflight null]
                  [count 0]
                  [error-count 0])
+        (check-error-threshold error-count)
         (cond 
-          [(error-threshold error-count)]
           ;; Reached stopat count STOP
-          [(and stopat (= count stopat)) (printf "DONE AT LIMIT\n")]
+          [(and stopat (= count stopat)) ; ???
+           (log-error "done at limit")]
           ;; Queue empty and all workers idle, we are all done
-          [(and (empty?) (null? inflight)) (parameterize-break #f (set! workers idle))] ; ALL DONE
+          [(and (empty?) (null? inflight)) 
+           ;; done
+           (void)]
           ;; Send work to idle worker
           [(and (jobs?) (pair? idle))
            (match-define (cons wrkr idle-rest) idle)
            (define-values (job cmd-list) (queue/get work-queue (wrkr/id wrkr)))
            (let retry-loop ([wrkr wrkr]
                             [error-count error-count]) 
-             (error-threshold error-count)
+             (check-error-threshold error-count)
              (with-handlers* ([exn:fail? (lambda (e) 
-                     (printf "Error writing to worker: ~v ~a\n" (wrkr/id wrkr) (exn-message e))    
-                     (wrkr/kill wrkr)
-                     (retry-loop (spawn (wrkr/id wrkr)) (add1 error-count)))])
-                (wrkr/send wrkr cmd-list))
+                                           (log-exn e (format "error writing to worker: ~v" 
+                                                              (wrkr/id wrkr)))
+                                           (unspawn! wrkr)
+                                           (retry-loop (spawn! (wrkr/id wrkr)) (add1 error-count)))])
+               (wrkr/send wrkr cmd-list))
              (loop idle-rest (cons (list job wrkr) inflight) count error-count))]
           [else
-            (define (kill/remove-dead-worker node-worker wrkr)
-              (DEBUG_COMM (printf "KILLING ~v\n" (wrkr/id wrkr)))
-              (wrkr/kill wrkr)
-              (loop (cons (spawn (wrkr/id wrkr)) idle)
-                    (remove node-worker inflight)
-                    count
-                    (add1 error-count))) 
-            (define (gen-node-handler node-worker)
-              (match node-worker
-                [(list node wrkr)
-                  (handle-evt (wrkr/out wrkr) (λ (e)
-                    (with-handlers* ([exn:fail? (lambda (e) 
-                                    (printf "Error reading from worker: ~v ~a\n" (wrkr/id wrkr) (exn-message e))
-                                    (kill/remove-dead-worker node-worker wrkr))])
-                      (let ([msg (if use-places e (wrkr/recv wrkr))])
-                        (if (pair? msg)
+           (define (kill/remove-dead-worker node-worker wrkr)
+             (DEBUG_COMM (printf "KILLING ~v\n" (wrkr/id wrkr)))
+             (unspawn! wrkr)
+             (loop (cons (spawn! (wrkr/id wrkr)) idle)
+                   (remove node-worker inflight)
+                   count
+                   (add1 error-count))) 
+           (define (gen-node-handler node-worker)
+             (match node-worker
+               [(list node wrkr)
+                (handle-evt
+                 (wrkr/out wrkr) 
+                 (λ (e)
+                    (let ([msg
+                           (with-handlers* ([exn:fail? (lambda (e) 
+                                                         (log-exn e (format "error reading from worker: ~v"
+                                                                            (wrkr/id wrkr)))
+                                                         (kill/remove-dead-worker node-worker wrkr))])
+                             (if use-places? e (wrkr/recv wrkr)))])
+                      (if (pair? msg)
                           (if (queue/work-done work-queue node wrkr msg)
-                            (loop (cons wrkr idle) (remove node-worker inflight) (add1 count) error-count)
-                            (loop idle inflight count error-count))
+                              (loop (cons wrkr idle) (remove node-worker inflight) (add1 count) error-count)
+                              (loop idle inflight count error-count))
                           (begin
-                            (kill/remove-dead-worker node-worker wrkr)
-                            (queue/work-done work-queue node wrkr (string-append msg (wrkr/read-all wrkr)))))))))]
-                [else 
-                  (eprintf "parallel-do-event-loop match node-worker failed.\n")
-                  (eprintf "trying to match:\n~a\n" node-worker)]))
-            (DEBUG_COMM (printf "WAITING ON WORKERS TO RESPOND\n"))
-            (begin0 
-              (apply sync (map gen-node-handler inflight))
-              (set! breaks #f))])))
+                            (queue/work-done work-queue node wrkr (string-append msg (wrkr/read-all wrkr)))
+                            (kill/remove-dead-worker node-worker wrkr))))))]
+               [else 
+                (log-error (format "parallel-do-event-loop match node-worker failed trying to match: ~e" 
+                                   node-worker))]))
+           (DEBUG_COMM (printf "WAITING ON WORKERS TO RESPOND\n"))
+           (apply sync (map gen-node-handler inflight))]))
+      ;; Ask workers to stop:
+      (for ([p workers]) 
+        (wrkr/send p (list 'DIE)))
+      ;; Finish normally:
+      (set! normal-finish? #t))
     (lambda () 
-      (cond 
-        [breaks
-          (for ([p workers]) (with-handlers ([exn:fail? void]) (wrkr/break p)))]
-        [else
-          ;(printf "Asking all workers to die\n")
-          (for ([p workers]) (with-handlers ([exn:fail? void]) (wrkr/send p (list 'DIE))))
-          ;(printf "Waiting for all workers to die")(flush-output)
-          (for ([p workers]
-                [i (in-naturals)]) 
-            (wrkr/wait p)
-            ;(printf " ~a" (add1 i)) (flush-output))(printf "\n")
-            )]))))
+      (unless normal-finish?
+        ;; There was an exception, so tell workers to stop:
+        (for ([p workers]) 
+          (with-handlers ([exn? log-exn])
+            (wrkr/break p))))
+      ;; Wait for workers to complete:
+      (for ([p workers]) 
+        (with-handlers ([exn? log-exn])
+          (wrkr/wait p))))))
 
 (define list-queue% 
   (class* object% (work-queue<%>)
@@ -277,7 +313,7 @@
       (match queue
         [(cons h t)
           (set! queue t)
-          (values h (create-job-thunk h))]))
+          (values h (create-job-thunk h workerid))]))
     (define/public (has-jobs?) (not (null? queue)))
     (define/public (get-results) (reverse results))
     (define/public (jobs-cnt) (length queue))
@@ -297,73 +333,89 @@
 (define-syntax-parameter-error recv/req)
 (define-syntax-parameter-error worker/die)
 
-
 (define-for-syntax (gen-worker-body globals-list globals-body work-body channel)
   (with-syntax ([globals-list globals-list]
                 [(globals-body ...) globals-body]
                 [([work work-body ...] ...) work-body]
                 [ch channel])
-    #'(begin
-        (define orig-err (current-error-port))
-        (define orig-out (current-output-port))
-        (define orig-in  (current-input-port))
-        (define (raw-send msg)
-          (cond 
-            [ch (place-channel-put ch msg)]
-            [else (write msg orig-out)
-                  (flush-output orig-out)]))
-        (define (raw-recv)
-          (cond 
-            [ch (place-channel-get ch)]
-            [else (read orig-in)]))
-        (define (pdo-send msg)
-          (with-handlers ([exn:fail?
-            (lambda (x)
-                (fprintf orig-err "WORKER SEND MESSAGE ERROR ~a\n" (exn-message x))
-                (exit 1))])
-            (DEBUG_COMM (fprintf orig-err "WSENDING ~v\n" msg))
-            (raw-send msg)))
-        (define (pdo-recv)
-          (with-handlers ([exn:fail?
-            (lambda (x)
-                (fprintf orig-err "WORKER RECEIVE MESSAGE ERROR ~a\n" (exn-message x))
-                (exit 1))])
-          (define r (raw-recv))
-          (DEBUG_COMM (fprintf orig-err "WRECVEIVED ~v\n" r))
-          r))
-        (match (deserialize (fasl->s-exp (pdo-recv)))
-          [globals-list
+    #'(do-worker
+       ch
+       (lambda (msg per-loop-body)
+         ;; single starting message:
+         (match msg
+           [globals-list
             globals-body ...
-            (let/ec die-k
-            (let loop ([i 0])
-              (DEBUG_COMM (fprintf orig-err "WAITING ON CONTROLLER  TO RESPOND  ~v ~v\n" orig-in i))
-              (match (pdo-recv)
-                 [(list 'DIE) void]
-                 [work
-                  (let ([out-str-port (open-output-string)]
-                        [err-str-port (open-output-string)])
-                    (define (recv/reqp) (pdo-recv))
-                    (define (send/msgp msg)
-                        (pdo-send msg))
-                    (define (send/resp type)
-                        (pdo-send (list type (get-output-string out-str-port) (get-output-string err-str-port))))
-                    (define (send/successp result)
-                        (send/resp (list 'DONE result)))
-                    (define (send/errorp message)
-                        (send/resp (list 'ERROR message)))
-                    (with-handlers ([exn:fail? (lambda (x) (send/errorp (exn-message x)) (loop (add1 i)))])
-                      (parameterize ([current-output-port out-str-port]
-                                     [current-error-port err-str-port])
-                      (syntax-parameterize ([send/msg (make-rename-transformer #'send/msgp)]
-                                            [send/success (make-rename-transformer #'send/successp)]
-                                            [send/error (make-rename-transformer #'send/errorp)]
-                                            [recv/req (make-rename-transformer #'recv/reqp)]
-                                            [worker/die (make-rename-transformer #'die-k)])
-                          work-body ...
-                          (loop (add1 i))))))] ...)))]))))
+            ;; bind per-worker-set procedures:
+            (per-loop-body
+             (lambda (send/msgp recv/reqp die-k)
+               (syntax-parameterize ([send/msg (make-rename-transformer #'send/msgp)]
+                                     [recv/req (make-rename-transformer #'recv/reqp)]
+                                     [worker/die (make-rename-transformer #'die-k)])
+                 ;; message handler:
+                 (lambda (msg send/successp send/errorp)
+                   (syntax-parameterize ([send/success (make-rename-transformer #'send/successp)]
+                                         [send/error (make-rename-transformer #'send/errorp)])
+                     (match msg
+                       [work work-body ...]
+                       ...))))))])))))
+
+(define (do-worker ch setup-proc)
+  (define orig-err (current-error-port))
+  (define orig-out (current-output-port))
+  (define orig-in  (current-input-port))
+  (define (raw-send msg)
+    (cond 
+     [ch (place-channel-put ch msg)]
+     [else (write msg orig-out)
+           (flush-output orig-out)]))
+  (define (raw-recv)
+    (cond 
+     [ch (place-channel-get ch)]
+     [else (read orig-in)]))
+  (define (pdo-send msg)
+    (with-handlers ([exn:fail?
+                     (lambda (x)
+                       (log-error (format "WORKER SEND MESSAGE ERROR: ~a" (exn-message x)))
+                       (exit 1))])
+      (DEBUG_COMM (fprintf orig-err "WSENDING ~v\n" msg))
+      (raw-send msg)))
+  (define (pdo-recv)
+    (with-handlers ([exn:fail?
+                     (lambda (x)
+                       (log-error (format "WORKER RECEIVE MESSAGE ERROR: ~a" (exn-message x)))
+                       (exit 1))])
+      (define r (raw-recv))
+      (DEBUG_COMM (fprintf orig-err "WRECVEIVED ~v\n" r))
+      r))
+  
+  (setup-proc (deserialize (fasl->s-exp (pdo-recv)))
+              (lambda (set-proc)
+                (let/ec die-k
+                  (define (recv/reqp) (pdo-recv))
+                  (define (send/msgp msg)
+                    (pdo-send msg))
+                  (let ([msg-proc (set-proc send/msgp recv/reqp die-k)])
+                    (let loop ([i 0])
+                      (DEBUG_COMM (fprintf orig-err "WAITING ON CONTROLLER TO RESPOND  ~v ~v\n" orig-in i))
+                      (let ([out-str-port (open-output-string)]
+                            [err-str-port (open-output-string)])
+                        (define (send/resp type)
+                          (pdo-send (list type (get-output-string out-str-port) (get-output-string err-str-port))))
+                        (define (send/successp result)
+                          (send/resp (list 'DONE result)))
+                        (define (send/errorp message)
+                          (send/resp (list 'ERROR message)))
+                        (with-handlers ([exn:fail? (lambda (x) (send/errorp (exn-message x)) (loop (add1 i)))])
+                          (parameterize ([current-output-port out-str-port]
+                                         [current-error-port err-str-port])
+                            (let ([msg (pdo-recv)])
+                              (match msg
+                                [(list 'DIE) (void)]
+                                [_ (msg-proc msg send/successp send/errorp)
+                                   (loop (add1 i))])))))))))))
 
 (define-syntax (lambda-worker stx)
-  (syntax-parse stx #:literals(match-message-loop)
+  (syntax-parse stx #:literals (match-message-loop)
     [(_ (globals-list:id ...)
       globals-body:expr ...
       (match-message-loop
@@ -371,13 +423,14 @@
 
       (with-syntax ([body (gen-worker-body #'(list globals-list ...) #'(globals-body ...) #'([work work-body ...] ...) #'ch)])
         #'(lambda (ch) body))]))
-        
+
 (define-syntax (parallel-do stx)
   (syntax-case stx (define-worker)
     [(_ worker-count initalmsg work-queue (define-worker (name args ...) body ...))
-      (with-syntax ([interal-def-name (syntax-local-lift-expression #'(lambda-worker (args ...) body ...))])
-        (syntax-local-lift-provide #'(rename interal-def-name name)))
-      #'(let ([wq work-queue])
-        (define module-path (path->string (resolved-module-path-name (variable-reference->resolved-module-path (#%variable-reference)))))
-        (parallel-do-event-loop module-path 'name initalmsg wq worker-count)
-        (queue/results wq))]))
+     (begin
+       (with-syntax ([interal-def-name (syntax-local-lift-expression #'(lambda-worker (args ...) body ...))])
+         (syntax-local-lift-provide #'(rename interal-def-name name)))
+       #'(let ([wq work-queue])
+           (define module-path (path->string (resolved-module-path-name (variable-reference->resolved-module-path (#%variable-reference)))))
+           (parallel-do-event-loop module-path 'name initalmsg wq worker-count)
+           (queue/results wq)))]))

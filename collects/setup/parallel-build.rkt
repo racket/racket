@@ -74,26 +74,29 @@
                   (append-error cc "making" null out err "output"))
                 ;(when last (printer (current-output-port) "made" "~a" (cc-name cc)))
                 #t]
-              [else (eprintf "Failed trying to match:\n~v\n" result-type)]))]
+              [else (eprintf "Failed trying to match:\n~e\n" result-type)]))]
         [else
           (match work 
             [(list-rest (list cc file last) message)
               (append-error cc "making" null "" "" "error")
               (eprintf "work-done match cc failed.\n")
-              (eprintf "trying to match:\n~a\n" (list work msg))
+              (eprintf "trying to match:\n~e\n" (list work msg))
               #t]
             [else
               (eprintf "work-done match cc failed.\n")
-              (eprintf "trying to match:\n~a\n" (list work msg))
+              (eprintf "trying to match:\n~e\n" (list work msg))
               (eprintf "FATAL\n")
               (exit 1)])]))
            
       ;; assigns a collection to each worker to be compiled
       ;; when it runs out of collections, steals work from other workers collections
       (define/public (get-job workerid)
-        (define (say-making x)
+        (define (say-making id x)
           (unless (null? x)
-            (printer (current-output-port) "making" "~a" (cc-name (car (car x))))))
+            (printer (current-output-port) 
+                     (format "~a making"  id)
+                     "~a" 
+                     (cc-name (car (car x))))))
         (define (find-job-in-cc cc id)
           (define (retry) (get-job workerid))
           (define (build-job cc file last)
@@ -108,16 +111,16 @@
             [(list (list cc (list) (list)))       ;empty collect
               (hash-remove! hash id) (retry)]
             [(cons (list cc (list) (list)) tail)  ;empty parent collect
-              (say-making tail)
+              (say-making id tail)
               (hash-set! hash id tail) (retry)]
             [(cons (list cc (list) subs) tail)    ;empty srcs list
               (define nl (append subs tail))
-              (say-making nl)
+              (say-making id nl)
               (hash-set! hash id nl) (retry)]
             [(cons (list cc (list file) subs) tail)
               (define nl (append subs tail))
               (hash-set! hash id nl)
-              (say-making nl)
+              (say-making id nl)
               (build-job cc file #t)]
             [(cons (list cc (cons file ft) subs) tail)
               (hash-set! hash id (cons (list cc ft subs) tail))
@@ -135,7 +138,7 @@
           ; get next cc from cclst
           [(pair? cclst)
             (define workercc (list (car cclst)))
-            (say-making workercc)
+            (say-making workerid workercc)
             (set! cclst (cdr cclst))
             (hash-set! hash workerid workercc)
             (find-job-in-cc workercc workerid)]
@@ -208,9 +211,10 @@
     (define-worker (parallel-compile-worker worker-id)
       (DEBUG_COMM (eprintf "WORKER ~a\n" worker-id))
       (define prev-uncaught-exception-handler (uncaught-exception-handler))
-      (uncaught-exception-handler (lambda (x)
-        (when (exn:break? x) (exit 1))
-        (prev-uncaught-exception-handler x)))
+      (uncaught-exception-handler 
+       (lambda (x)
+         (when (exn:break? x) (exit 1))
+         (prev-uncaught-exception-handler x)))
 
       (define cmc (make-caching-managed-compile-zo))
       (match-message-loop

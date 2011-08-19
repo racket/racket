@@ -136,36 +136,47 @@
     (and (ormap can-build*? docs)
          (filter values
                  (if (not (worker-count . > . 1))
-                    (map (get-doc-info only-dirs latex-dest auto-main? auto-user? with-record-error setup-printf) docs)
+                    (map (get-doc-info only-dirs latex-dest auto-main? auto-user? 
+                                       with-record-error setup-printf #f) 
+                         docs)
                     (parallel-do 
                       worker-count
-                      (lambda (workerid) (list workerid program-name (verbose) only-dirs latex-dest auto-main? auto-user?))
+                      (lambda (workerid)
+                        (list workerid program-name (verbose) only-dirs latex-dest auto-main? auto-user?))
                       (list-queue
                         docs
-                        (lambda (x) (s-exp->fasl (serialize x)))
-                        (lambda (work r outstr errstr) (printf "~a" outstr) (printf "~a" errstr) (deserialize (fasl->s-exp r)))
-                        (lambda (work errmsg outstr errstr) (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
-                      (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest auto-main? auto-user?) 
-                        (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user?) doc)
+                        (lambda (x workerid) (s-exp->fasl (serialize x)))
+                        (lambda (work r outstr errstr) 
+                          (printf "~a" outstr)
+                          (printf "~a" errstr)
+                          (deserialize (fasl->s-exp r)))
+                        (lambda (work errmsg outstr errstr) 
+                          (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
+                      (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
+                                                          auto-main? auto-user?) 
+                        (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user?) 
+                                 doc)
                           (define (setup-printf subpart formatstr . rest)
-                            (let ([task
-                              (if subpart
-                                  (format "~a: " subpart)
-                                  "")])
-                            (printf "~a: ~a~a\n" program-name task (apply format formatstr rest))))
+                            (let ([task (if subpart
+                                            (format "~a: " subpart)
+                                            "")])
+                              (printf "~a: ~a~a\n" program-name task (apply format formatstr rest))))
                           (define (with-record-error cc go fail-k)
                             (with-handlers ([exn:fail?
                                              (lambda (exn)
                                                    (eprintf "~a\n" (exn-message exn))
                                                    (raise exn))])
                               (go)))
-                          (s-exp->fasl (serialize ((get-doc-info only-dirs latex-dest auto-main? auto-user?  with-record-error setup-printf)
-                            (deserialize (fasl->s-exp doc))))))
-
-
+                          (s-exp->fasl (serialize 
+                                        ((get-doc-info only-dirs latex-dest auto-main? auto-user?  
+                                                       with-record-error setup-printf workerid)
+                                         (deserialize (fasl->s-exp doc))))))
+                        
                         (verbose verbosev)
                         (match-message-loop
-                          [doc (send/success ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user?) doc))])))))))
+                          [doc (send/success 
+                                ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user?) 
+                                 doc))])))))))
 
   (define (make-loop first? iter)
     (let ([ht (make-hash)]
@@ -299,9 +310,12 @@
                                                 (set-info-need-run?! i #f)
                                                 i)))
                                       infos)])
-          (define (say-rendering i)
-            (setup-printf (if (info-rendered? i) "re-rendering" "rendering") "~a"
-              (path->relative-string/setup (doc-src-file (info-doc i)))))
+          (define (say-rendering i workerid)
+            (setup-printf (string-append
+                           (if workerid (format "~a " workerid) "")
+                           (if (info-rendered? i) "re-rendering" "rendering") )
+                          "~a"
+                          (path->relative-string/setup (doc-src-file (info-doc i)))))
           (define (update-info info response)
             (match response 
               [#f (set-info-failed?! info #t)]
@@ -318,22 +332,23 @@
                 (set-info-time! info (/ (current-inexact-milliseconds) 1000))]))
             (if (not (worker-count . > . 1))
               (map (lambda (i) 
-                    (say-rendering i)
+                    (say-rendering i #f)
                     (update-info i (build-again! latex-dest i with-record-error))) need-rerun)
               (parallel-do 
                 worker-count
                 (lambda (workerid) (list workerid (verbose) latex-dest))
                 (list-queue
                   need-rerun
-                  (lambda (i) 
-                    (say-rendering i)
+                  (lambda (i workerid) 
+                    (say-rendering i workerid)
                     (s-exp->fasl (serialize (info-doc i))))
                   (lambda (i r outstr errstr) 
                     (printf "~a" outstr) 
                     (printf "~a" errstr)
                     (update-info i (deserialize (fasl->s-exp r))))
-                  (lambda (i errmsg outstr errstr) (parallel-do-error-handler setup-printf (info-doc i) errmsg outstr errstr)))
-                (define-worker (build-again!-worker2  workerid verbosev latex-dest)
+                  (lambda (i errmsg outstr errstr) 
+                    (parallel-do-error-handler setup-printf (info-doc i) errmsg outstr errstr)))
+                (define-worker (build-again!-worker2 workerid verbosev latex-dest)
                   (define (with-record-error cc go fail-k)
                     (with-handlers ([exn:fail?
                                      (lambda (x)
@@ -342,8 +357,9 @@
                       (go)))
                   (verbose verbosev)
                   (match-message-loop
-                    [info (send/success 
-                            (s-exp->fasl (serialize (build-again! latex-dest (deserialize (fasl->s-exp info)) with-record-error))))])))))
+                    [info 
+                     (send/success 
+                      (s-exp->fasl (serialize (build-again! latex-dest (deserialize (fasl->s-exp info)) with-record-error))))])))))
         ;; If we only build 1, then it reaches it own fixpoint
         ;; even if the info doesn't seem to converge immediately.
         ;; This is a useful shortcut when re-building a single
@@ -481,7 +497,7 @@
      [else t])))
 
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
-                       with-record-error setup-printf)
+                       with-record-error setup-printf workerid)
          doc)
   (let* ([info-out-file (sxref-path latex-dest doc "out.sxref")]
          [info-in-file  (sxref-path latex-dest doc "in.sxref")]
@@ -543,7 +559,9 @@
                                  (memq 'depends-all (doc-flags doc)))))])
     (when (or (not up-to-date?) (verbose))
       (setup-printf
-       (cond [up-to-date? "using"] [can-run? "running"] [else "skipping"])
+       (string-append
+        (if workerid (format "~a " workerid) "")
+        (cond [up-to-date? "using"] [can-run? "running"] [else "skipping"]))
        "~a"
        (path->relative-string/setup (doc-src-file doc))))
 
@@ -552,12 +570,13 @@
       (render-time
        "use"
        (with-handlers ([exn:fail? (lambda (exn)
-                                    (fprintf (current-error-port) "get-doc-info ERROR ~a\n" (exn-message exn))
+                                    (log-error (format "get-doc-info error: ~a"
+                                                       (exn-message exn)))
                                     (delete-file info-out-file)
                                     (delete-file info-in-file)
                                     ((get-doc-info only-dirs latex-dest auto-main?
                                                    auto-user? with-record-error
-                                                   setup-printf)
+                                                   setup-printf workerid)
                                      doc))])
          (let* ([v-in  (load-sxref info-in-file)]
                 [v-out (load-sxref info-out-file)])
