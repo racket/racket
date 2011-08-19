@@ -629,7 +629,7 @@ static void *mz_proc_thread_signal_worker(void *data) {
       } else {
         if (is_group) {
           prev_unused = unused_status;
-          unused_status = unused_status->next;
+          unused_status = unused_status->next_unused;
         }
       }
     } while ((pid > 0) || is_group);
