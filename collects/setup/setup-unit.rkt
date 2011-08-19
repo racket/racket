@@ -706,9 +706,8 @@
         (with-specified-mode
          (lambda ()
           (let ([cct (move-to-begining (list "compiler" "raco" "racket") 
-                                       (move-to-end "drscheme" 
-                                                    (sort-collections-tree 
-                                                     (collection-tree-map top-level-plt-collects))))])
+                                       (sort-collections-tree 
+                                        (collection-tree-map top-level-plt-collects)))])
             (iterate-cct (lambda (cc)
               (let ([dir (cc-path cc)]
                     [info (cc-info cc)])
