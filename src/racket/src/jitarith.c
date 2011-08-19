@@ -95,6 +95,16 @@ static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, in
 int scheme_generate_pop_unboxed(mz_jit_state *jitter)
 {
 #if defined(MZ_USE_JIT_I386)
+# if 1
+  if (jitter->unbox_depth) {
+    scheme_signal_error("internal error: scheme_generate_pop_unboxed() isn't right");
+  }
+  /* The code below doesn't work right because it's emitted *before*
+     the test for failure. Adding it after the failure test means
+     moving it to (something like) sjc.unbound_global_code. Meanwhile,
+     the JIT doesn't currently actually try to reference globals when it has
+     values on the FP stack. */
+# else
   /* If we have some arguments pushed on the FP stack, we need
      to pop them off before escaping. */
   int i;
@@ -102,6 +112,7 @@ int scheme_generate_pop_unboxed(mz_jit_state *jitter)
     FSTPr(0);
   }
   CHECK_LIMIT();
+# endif
 #endif
   return 1;
 }
