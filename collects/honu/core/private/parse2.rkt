@@ -177,18 +177,7 @@
                   (values (left #'parsed)
                           #'rest)
                   (do-parse #'rest precedence
-                            left
-                            ;; (lambda (x) x)
-                            #'parsed
-                            #;
-                            (left #'parsed)))
-                #;
-                #'(splicing-let-syntax ([more-parsing (lambda (stx)
-                                                        (do-parse (stx-cdr stx)
-                                                                  precedence left
-                                                                  current))])
-                                       parsed
-                                       (more-parsing . rest)))))]
+                            left #'parsed)))))]
          [(honu-operator? #'head)
           (define new-precedence (transformer:honu-operator-ref (syntax-local-value #'head) 0))
           (define association (transformer:honu-operator-ref (syntax-local-value #'head) 1))
