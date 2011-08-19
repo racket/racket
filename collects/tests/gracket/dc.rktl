@@ -211,6 +211,7 @@
         10 10 50 50
         0 0 100 100)
   (send dc3 scale 0.5 0.5)
+  (send dc3 set-smoothing 'aligned)
   (send dc3 draw-bitmap bm 20 20)
   (let ([s2 (make-bytes (* 4 70 70))]
         [s3 (make-bytes (* 4 70 70))])
