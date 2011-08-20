@@ -149,42 +149,42 @@
                (cons perm ps)))
            permission-order))
     (lambda ()
-      (let ([ps (sandbox-path-permissions)])
-        (or (hash-ref t ps #f)
-            (let ([c (compress-permissions ps)]) (hash-set! t ps c) c))))))
+      (define ps (sandbox-path-permissions))
+      (or (hash-ref t ps #f)
+          (let ([c (compress-permissions ps)]) (hash-set! t ps c) c)))))
 
 ;; similar to the security guard, only with a single mode for simplification;
 ;; assumes valid mode and simplified path
 (define (check-sandbox-path-permissions path needed)
-  (let ([bpath (path->bytes path)]
-        [perms (compressed-path-permissions)])
-    (ormap (lambda (rx) (regexp-match? rx bpath)) (cdr (assq needed perms)))))
+  (define bpath (path->bytes path))
+  (define perms (compressed-path-permissions))
+  (ormap (lambda (rx) (regexp-match? rx bpath)) (cdr (assq needed perms))))
 
 (define sandbox-network-guard
   (make-parameter (lambda (what . xs)
                     (error what "network access denied: ~e" xs))))
 
 (define (make-default-sandbox-guard)
-  (let ([orig-security (current-security-guard)])
-    (make-security-guard
-     orig-security
-     (lambda (what path modes)
-       (when path
-         (let ([spath (parameterize ([current-security-guard orig-security])
-                        (simplify-path* path))]
-               [maxperm
-                ;; assumes that the modes are valid (ie, in the above list)
-                (cond [(null? modes) (error 'default-sandbox-guard
-                                            "got empty mode list for ~e and ~e"
-                                            what path)]
-                      [(null? (cdr modes)) (car modes)] ; common case
-                      [else (foldl (lambda (x max) (if (perm<=? max x) x max))
-                                   (car modes) (cdr modes))])])
-           (unless (check-sandbox-path-permissions spath maxperm)
-             (error what "`~a' access denied for ~a"
-                    (string-append* (add-between (map symbol->string modes) "+"))
-                    path)))))
-     (lambda args (apply (sandbox-network-guard) args)))))
+  (define orig-security (current-security-guard))
+  (make-security-guard
+   orig-security
+   (lambda (what path modes)
+     (when path
+       (define spath (parameterize ([current-security-guard orig-security])
+                       (simplify-path* path)))
+       (define maxperm
+         ;; assumes that the modes are valid (ie, in the above list)
+         (cond [(null? modes) (error 'default-sandbox-guard
+                                     "got empty mode list for ~e and ~e"
+                                     what path)]
+               [(null? (cdr modes)) (car modes)] ; common case
+               [else (foldl (lambda (x max) (if (perm<=? max x) x max))
+                            (car modes) (cdr modes))]))
+       (unless (check-sandbox-path-permissions spath maxperm)
+         (error what "`~a' access denied for ~a"
+                (string-append* (add-between (map symbol->string modes) "+"))
+                path))))
+   (lambda args (apply (sandbox-network-guard) args))))
 
 (define sandbox-security-guard
   (make-parameter make-default-sandbox-guard
@@ -208,9 +208,9 @@
 (define sandbox-make-logger (make-parameter current-logger))
 
 (define (compute-permissions paths+require-perms)
-  (let-values ([(paths require-perms) (partition path? paths+require-perms)])
-    (append (map (lambda (p) `(read ,(path->bytes p))) paths)
-            (module-specs->path-permissions require-perms))))
+  (define-values [paths require-perms] (partition path? paths+require-perms))
+  (append (map (lambda (p) `(read ,(path->bytes p))) paths)
+          (module-specs->path-permissions require-perms)))
 
 ;; computes permissions that are needed for require specs (`read-bytecode' for
 ;; all files and "compiled" subdirs, `exists' for the base-dir)
@@ -220,10 +220,10 @@
     (let loop ([paths paths] [bases '()])
       (if (null? paths)
           (reverse bases)
-          (let-values ([(base name dir?) (split-path (car paths))])
-            (let ([base (simplify-path* base)])
-              (loop (cdr paths)
-                    (if (member base bases) bases (cons base bases))))))))
+          (let-values ([(base* name dir?) (split-path (car paths))])
+            (define base (simplify-path* base*))
+            (loop (cdr paths)
+                  (if (member base bases) bases (cons base bases)))))))
   (append (map (lambda (p) `(read-bytecode ,p)) paths)
           (map (lambda (b) `(read-bytecode ,(build-path b "compiled"))) bases)
           (map (lambda (b) `(exists ,b)) bases)))
@@ -256,25 +256,25 @@
       [(null? todo) r]
       [(member (car todo) r) (loop (cdr todo) r)]
       [else
-       (let ([path (car todo)])
-         (loop (append (cdr todo)
-                       (filter-map
-                        (lambda (i)
-                          (simplify-path* (resolve-module-path-index i path)))
-                        (filter (lambda (i)
-                                  (and (module-path-index? i) (not (lib? i))))
-                                (append-map cdr (let ([m (get-module-code 
-                                                          path 
-                                                          #:extension-handler 
-                                                          (lambda (path loader?) #f))])
-                                                  (if m 
-                                                      (module-compiled-imports m)
-                                                      null))))))
-               (let ([l (cons path r)])
-                 ;; If we need an .rkt path, also allow access to .ss path
-                 (if (regexp-match? #rx#"[.]rkt$" (path->bytes path))
-                     (cons (path-replace-suffix path #".ss") l)
-                     l))))])))
+       (define path (car todo))
+       (loop (append (cdr todo)
+                     (filter-map
+                      (lambda (i)
+                        (simplify-path* (resolve-module-path-index i path)))
+                      (filter (lambda (i)
+                                (and (module-path-index? i) (not (lib? i))))
+                              (append-map cdr (let ([m (get-module-code
+                                                        path
+                                                        #:extension-handler
+                                                        (lambda (path loader?) #f))])
+                                                (if m
+                                                  (module-compiled-imports m)
+                                                  null))))))
+             (let ([l (cons path r)])
+               ;; If we need an .rkt path, also allow access to .ss path
+               (if (regexp-match? #rx#"[.]rkt$" (path->bytes path))
+                 (cons (path-replace-suffix path #".ss") l)
+                 l)))])))
 
 ;; Resources ----------------------------------------------------------------
 
@@ -289,30 +289,30 @@
          thunk
          [kill     (lambda () (kill-thread (current-thread)))]
          [shutdown (lambda () (custodian-shutdown-all (current-custodian)))])
-  (let* ([p #f]
-         [c (make-custodian (current-custodian))]
-         [b (make-custodian-box c #t)]
-         [break? (break-enabled)])
-    (parameterize-break #f
-      (with-handlers ([(lambda (_) (not p))
-                       ;; if the after thunk was not called, then this error is
-                       ;; about the thread dying unnaturally, so propagate
-                       ;; whatever it did
-                       (lambda (_)
-                         ((if (custodian-box-value b) kill shutdown)))])
-        (dynamic-wind void
-          (lambda ()
-            (parameterize ([current-custodian c])
-              (call-in-nested-thread
-               (lambda ()
-                 (break-enabled break?)
-                 (dynamic-wind void thunk
-                   ;; this should always be called unless the thread is killed
-                   ;; or the custodian is shutdown, distinguish the two cases
-                   ;; through the above box
-                   (lambda ()
-                     (set! p (current-preserved-thread-cell-values))))))))
-          (lambda () (when p (current-preserved-thread-cell-values p))))))))
+  (define p #f)
+  (define c (make-custodian (current-custodian)))
+  (define b (make-custodian-box c #t))
+  (define break? (break-enabled))
+  (parameterize-break #f
+    (with-handlers ([(lambda (_) (not p))
+                     ;; if the after thunk was not called, then this error is
+                     ;; about the thread dying unnaturally, so propagate
+                     ;; whatever it did
+                     (lambda (_)
+                       ((if (custodian-box-value b) kill shutdown)))])
+      (dynamic-wind void
+        (lambda ()
+          (parameterize ([current-custodian c])
+            (call-in-nested-thread
+             (lambda ()
+               (break-enabled break?)
+               (dynamic-wind void thunk
+                 ;; this should always be called unless the thread is killed
+                 ;; or the custodian is shutdown, distinguish the two cases
+                 ;; through the above box
+                 (lambda ()
+                   (set! p (current-preserved-thread-cell-values))))))))
+        (lambda () (when p (current-preserved-thread-cell-values p)))))))
 
 ;; useful wrapper around the above: run thunk, return one of:
 ;; - (list values val ...)
@@ -344,10 +344,10 @@
          (lambda ()
            ;; time limit
            (when sec
-             (let ([t (current-thread)])
-               (thread (lambda ()
-                         (unless (sync/timeout sec t) (set! timeout? #t))
-                         (kill-thread t)))))
+             (define t (current-thread))
+             (thread (lambda ()
+                       (unless (sync/timeout sec t) (set! timeout? #t))
+                       (kill-thread t))))
            (thunk)))
         (nested thunk))))
   (cond [timeout? (set! r 'time)]
@@ -374,23 +374,24 @@
 ;; other resource utilities
 
 (define (call-with-custodian-shutdown thunk)
-  (let* ([cust (make-custodian (current-custodian))]
-         [r (parameterize ([current-custodian cust]) (nested thunk))])
-    (case r
-      [(kill) (kill-thread (current-thread))]
-      [(shut) (custodian-shutdown-all (current-custodian))]
-      [else (apply (car r) (cdr r))])))
+  (define cust (make-custodian (current-custodian)))
+  (define r (parameterize ([current-custodian cust]) (nested thunk)))
+  (case r
+    [(kill) (kill-thread (current-thread))]
+    [(shut) (custodian-shutdown-all (current-custodian))]
+    [else (apply (car r) (cdr r))]))
 
 (define (call-with-killing-threads thunk)
-  (let* ([cur (current-custodian)] [sub (make-custodian cur)])
-    (define r (parameterize ([current-custodian sub]) (nested thunk)))
-    (let kill-all ([x sub])
-      (cond [(custodian? x) (for-each kill-all (custodian-managed-list x cur))]
-            [(thread? x) (kill-thread x)]))
-    (case r
-      [(kill) (kill-thread (current-thread))]
-      [(shut) (custodian-shutdown-all (current-custodian))]
-      [else (apply (car r) (cdr r))])))
+  (define cur (current-custodian))
+  (define sub (make-custodian cur))
+  (define r (parameterize ([current-custodian sub]) (nested thunk)))
+  (let kill-all ([x sub])
+    (cond [(custodian? x) (for-each kill-all (custodian-managed-list x cur))]
+          [(thread? x) (kill-thread x)]))
+  (case r
+    [(kill) (kill-thread (current-thread))]
+    [(shut) (custodian-shutdown-all (current-custodian))]
+    [else (apply (car r) (cdr r))]))
 
 (define sandbox-eval-handlers
   (make-parameter (list #f call-with-custodian-shutdown)))
@@ -404,25 +405,23 @@
 (define-namespace-anchor anchor)
 
 (define (make-evaluation-namespace)
-  (let* ([specs   (sandbox-namespace-specs)]
-         [new-ns  ((car specs))]
-         [orig-ns (namespace-anchor->empty-namespace anchor)]
-         [mods    (cdr specs)])
-    (parameterize ([current-namespace orig-ns])
-      (for ([mod (in-list mods)]) (dynamic-require mod #f)))
-    (parameterize ([current-namespace new-ns])
-      (for ([mod (in-list mods)]) (namespace-attach-module orig-ns mod)))
-    new-ns))
+  (define specs   (sandbox-namespace-specs))
+  (define new-ns  ((car specs)))
+  (define orig-ns (namespace-anchor->empty-namespace anchor))
+  (define mods    (cdr specs))
+  (parameterize ([current-namespace orig-ns])
+    (for ([mod (in-list mods)]) (dynamic-require mod #f)))
+  (parameterize ([current-namespace new-ns])
+    (for ([mod (in-list mods)]) (namespace-attach-module orig-ns mod)))
+  new-ns)
 
 (define (extract-required language requires)
-  (let* ([requires (cond [(string? language) (cons language requires)]
-                         [(not (pair? language)) requires]
-                         [(memq (car language) '(lib file planet quote))
-                          (cons language requires)]
-                         [(eq? (car language) 'begin) requires]
-                         [else (error 'extract-required
-                                      "bad language spec: ~e" language)])])
-    requires))
+  (cond
+    [(string? language) (cons language requires)]
+    [(not (pair? language)) requires]
+    [(memq (car language) '(lib file planet quote)) (cons language requires)]
+    [(eq? (car language) 'begin) requires]
+    [else (error 'extract-required "bad language spec: ~e" language)]))
 
 (define (input->port inp)
   ;; returns #f when it can't create a port
@@ -442,18 +441,18 @@
     (let ([p (input->port (car inps))])
       (cond [(and p (null? (cdr inps)))
              (port-count-lines! p)
-             (let ([source (or (object-name p)
-                               ;; just in case someone uses a function as the
-                               ;; source...
-                               (if (procedure? source)
-                                 (lambda (x) (eq? x source))
-                                 source))])
-               (parameterize ([current-input-port p]
-                              ;; [read-accept-reader #t] is this needed?
-                              [read-accept-lang accept-lang?])
-                 (begin0 (values ((sandbox-reader) source) source)
-                   ;; close a port if we opened it
-                   (unless (eq? p (car inps)) (close-input-port p)))))]
+             (define source
+               (or (object-name p)
+                   ;; just in case someone uses a function as the source...
+                   (if (procedure? source)
+                     (lambda (x) (eq? x source))
+                     source)))
+             (parameterize ([current-input-port p]
+                            ;; [read-accept-reader #t] is this needed?
+                            [read-accept-lang accept-lang?])
+               (begin0 (values ((sandbox-reader) source) source)
+                 ;; close a port if we opened it
+                 (unless (eq? p (car inps)) (close-input-port p))))]
             [p (error 'input->code "ambiguous inputs: ~e" inps)]
             [(andmap syntax? inps)
              (values inps
@@ -499,10 +498,10 @@
          (read-case-sensitive #t)
          (read-decimal-as-inexact #f)
          ;; needed to make the test-engine work
-         (let ([orig-ns (namespace-anchor->empty-namespace anchor)])
-           (parameterize ([current-namespace orig-ns])
-             (dynamic-require 'racket/class #f))
-           (namespace-attach-module orig-ns 'racket/class))]))
+         (define orig-ns (namespace-anchor->empty-namespace anchor))
+         (parameterize ([current-namespace orig-ns])
+           (dynamic-require 'racket/class #f))
+         (namespace-attach-module orig-ns 'racket/class)]))
 
 ;; Returns a single (module ...) or (begin ...) expression (a `begin' list will
 ;; be evaluated one by one -- the language might not have a `begin'), and a
@@ -574,31 +573,32 @@
   (when uncovered!
     (parameterize ([current-code-inspector orig-code-inspector])
       (eval `(,#'#%require racket/private/sandbox-coverage))))
-  (let ([ns (syntax-case* program (module) literal-identifier=?
-              [(module mod . body)
-               (identifier? #'mod)
-               (let ([mod #'mod])
-                 (lambda ()
-                   (eval `(,#'require (quote ,mod)))
-                   (module->namespace `(quote ,(syntax-e mod)))))]
-              [_else #f])])
-    ;; the actual evaluation happens under the specified limits
-    (parameterize ([current-load-relative-directory
-                    (let* ([d (and (syntax? program) (syntax-source program))]
-                           [d (and (path-string? d) (path-only d))])
-                      (if (and d (directory-exists? d))
-                        d
-                        (current-load-relative-directory)))])
-      ((limit-thunk (lambda ()
-                      (if (and (pair? program) (eq? 'begin (car program)))
-                        (eval* (cdr program))
-                        (eval program))
-                      (when ns (set! ns (ns)))))))
-    (when uncovered!
-      (let ([get (let ([ns (current-namespace)])
-                   (lambda () (eval '(get-uncovered-expressions) ns)))])
-        (uncovered! (list (get) get))))
-    (when (namespace? ns) (current-namespace ns))))
+  (define ns
+    (syntax-case* program (module) literal-identifier=?
+      [(module mod . body)
+       (identifier? #'mod)
+       (let ([mod #'mod])
+         (lambda ()
+           (eval `(,#'require (quote ,mod)))
+           (module->namespace `(quote ,(syntax-e mod)))))]
+      [_else #f]))
+  ;; the actual evaluation happens under the specified limits
+  (parameterize ([current-load-relative-directory
+                  (let* ([d (and (syntax? program) (syntax-source program))]
+                         [d (and (path-string? d) (path-only d))])
+                    (if (and d (directory-exists? d))
+                      d
+                      (current-load-relative-directory)))])
+    ((limit-thunk (lambda ()
+                    (if (and (pair? program) (eq? 'begin (car program)))
+                      (eval* (cdr program))
+                      (eval program))
+                    (when ns (set! ns (ns)))))))
+  (when uncovered!
+    (define get (let ([ns (current-namespace)])
+                  (lambda () (eval '(get-uncovered-expressions) ns))))
+    (uncovered! (list (get) get)))
+  (when (namespace? ns) (current-namespace ns)))
 
 (define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
 (define make-eventspace    (mz/mr void make-eventspace))
@@ -673,9 +673,9 @@
   (define terminated?   #f) ; set to an exception value when the sandbox dies
   (define breaks-originally-enabled? (break-enabled))
   (define (limit-thunk thunk)
-    (let* ([sec (and limits (car limits))]
-           [mb  (and limits (cadr limits))]
-           [thunk (if (or sec mb)
+    (define sec (and limits (car limits)))
+    (define mb  (and limits (cadr limits)))
+    (let* ([thunk (if (or sec mb)
                     (lambda () (call-with-limits sec mb thunk))
                     thunk)]
            [thunk (if eval-handler (lambda () (eval-handler thunk)) thunk)])
@@ -697,11 +697,11 @@
                [else "internal error: cannot guess termination reason"])))))
   (define (user-kill)
     (when user-thread
-      (let ([t user-thread])
-        (set! user-thread #f)
-        (terminated! #f)
-        (custodian-shutdown-all user-cust)
-        (kill-thread t))) ; just in case
+      (define t user-thread)
+      (set! user-thread #f)
+      (terminated! #f)
+      (custodian-shutdown-all user-cust)
+      (kill-thread t)) ; just in case
     (void))
   (define (terminate+kill! reason raise?)
     (terminated! reason)
@@ -710,58 +710,56 @@
   (define (user-break)
     (when user-thread (break-thread user-thread)))
   (define (user-process)
-    (let ([break-paramz (current-break-parameterization)])
-      (parameterize-break
-       #f ;; disable breaks during administrative work
-       (with-handlers ([void (lambda (exn) (channel-put result-ch exn))])
-         (call-with-break-parameterization
-          break-paramz
-          (lambda ()
-            ;; enable breaks, maybe
-            (when breaks-originally-enabled? (break-enabled #t))
-            ;; first set up the environment
-            (init-hook)
-            ((sandbox-init-hook))
-            ;; now read and evaluate the input program (in the user context)
-            (evaluate-program
-             (let-values ([(prog src) (program-maker)])
-               (when coverage? (set! default-coverage-source-filter src))
-               prog)
-             limit-thunk
-             (and coverage? (lambda (es+get) (set! uncovered es+get))))))
-         (channel-put result-ch 'ok))
-       (set! eval-handler (cadr (sandbox-eval-handlers))) ; interactions handler
-       ;; finally wait for interaction expressions
-       (let ([n 0])
-         (let loop ()
-           (let ([expr (channel-get input-ch)])
-             (when (eof-object? expr)
-               (terminated! 'eof) (channel-put result-ch expr) (user-kill))
-             (with-handlers ([void (lambda (exn)
-                                     (channel-put result-ch (cons 'exn exn)))])
-               (define run
-                 (if (evaluator-message? expr)
-                     (case (evaluator-message-msg expr)
-                       [(thunk) (limit-thunk
-                                 (car (evaluator-message-args expr)))]
-                       [(thunk*) (car (evaluator-message-args expr))]
-                       [else (error 'sandbox "internal error (bad message)")])
-                     (limit-thunk
-                      (lambda ()
-                        (set! n (add1 n))
-                        (define exprs
-                          (let-values ([(code _)
-                                        (input->code (list expr) 'eval n #f)])
-                            code))
-                        (eval* (map (lambda (expr)
-                                      (cons '#%top-interaction expr))
-                                    exprs))))))
-               (channel-put result-ch
-                            (cons 'vals
-                                  (call-with-break-parameterization
-                                   break-paramz
-                                   (lambda () (call-with-values run list))))))
-             (loop)))))))
+    (define break-paramz (current-break-parameterization))
+    (parameterize-break
+     #f ;; disable breaks during administrative work
+     (with-handlers ([void (lambda (exn) (channel-put result-ch exn))])
+       (call-with-break-parameterization
+        break-paramz
+        (lambda ()
+          ;; enable breaks, maybe
+          (when breaks-originally-enabled? (break-enabled #t))
+          ;; first set up the environment
+          (init-hook)
+          ((sandbox-init-hook))
+          ;; now read and evaluate the input program (in the user context)
+          (evaluate-program
+           (let-values ([(prog src) (program-maker)])
+             (when coverage? (set! default-coverage-source-filter src))
+             prog)
+           limit-thunk
+           (and coverage? (lambda (es+get) (set! uncovered es+get))))))
+       (channel-put result-ch 'ok))
+     (set! eval-handler (cadr (sandbox-eval-handlers))) ; interactions handler
+     ;; finally wait for interaction expressions
+     (define n 0)
+     (let loop ()
+       (define expr (channel-get input-ch))
+       (when (eof-object? expr)
+         (terminated! 'eof) (channel-put result-ch expr) (user-kill))
+       (with-handlers ([void (lambda (exn)
+                               (channel-put result-ch (cons 'exn exn)))])
+         (define run
+           (if (evaluator-message? expr)
+             (case (evaluator-message-msg expr)
+               [(thunk) (limit-thunk (car (evaluator-message-args expr)))]
+               [(thunk*) (car (evaluator-message-args expr))]
+               [else (error 'sandbox "internal error (bad message)")])
+             (limit-thunk
+              (lambda ()
+                (set! n (add1 n))
+                (define exprs
+                  (let-values ([(code _)
+                                (input->code (list expr) 'eval n #f)])
+                    code))
+                (eval* (map (lambda (expr) (cons '#%top-interaction expr))
+                            exprs))))))
+         (channel-put result-ch
+                      (cons 'vals
+                            (call-with-break-parameterization
+                             break-paramz
+                             (lambda () (call-with-values run list))))))
+       (loop))))
   (define (get-user-result)
     (if (and (sandbox-propagate-breaks)
              ;; The following test is weird. We reliably catch breaks if breaks
@@ -798,23 +796,23 @@
           [(not (sync/timeout 0 busy-sema))
            (error 'evaluator "nested evaluator call with: ~e" expr)]
           [else (channel-put input-ch expr)
-                (let ([r (get-user-result)])
-                  (semaphore-post busy-sema)
-                  (cond [(eof-object? r) (terminate+kill! #t #t)]
-                        [(eq? (car r) 'exn) (raise (cdr r))]
-                        [else (apply values (cdr r))]))]))
+                (define r (get-user-result))
+                (semaphore-post busy-sema)
+                (cond [(eof-object? r) (terminate+kill! #t #t)]
+                      [(eq? (car r) 'exn) (raise (cdr r))]
+                      [else (apply values (cdr r))])]))
   (define (get-uncovered [prog? #t] [src default-coverage-source-filter])
     (unless uncovered
       (error 'get-uncovered-expressions "no coverage information"))
-    (let ([uncovered (if prog? (car uncovered) ((cadr uncovered)))])
-      (if src
-        ;; when given a list of syntaxes, the src is actually a function that
-        ;; checks the input source value (which does a union of the sources)
-        (filter (if (procedure? src)
-                  (lambda (x) (src (syntax-source x)))
-                  (lambda (x) (equal? src (syntax-source x))))
-                uncovered)
-        uncovered)))
+    (define uncovered (if prog? (car uncovered) ((cadr uncovered))))
+    (if src
+      ;; when given a list of syntaxes, the src is actually a function that
+      ;; checks the input source value (which does a union of the sources)
+      (filter (if (procedure? src)
+                (lambda (x) (src (syntax-source x)))
+                (lambda (x) (equal? src (syntax-source x))))
+              uncovered)
+      uncovered))
   (define (output-getter p)
     (if (procedure? p) (user-eval (make-evaluator-message 'thunk (list p))) p))
   (define (input-putter [arg input])
@@ -847,18 +845,19 @@
           [(output-port? out) out]
           [(eq? out 'pipe) (let-values ([(i o) (make-pipe)]) (set-out! i) o)]
           [(memq out '(bytes string))
-           (let* ([bytes? (eq? out 'bytes)]
-                  ;; create the port under the user's custodian
-                  [out (parameterize ([current-custodian user-cust])
-                         (call-in-nested-thread
-                          ;; this doesn't really matter: they're the same anyway
-                          (if bytes? open-output-bytes open-output-string)))])
-             (set-out!
-              (lambda ()
-                ;; this will run in the user context
-                (let ([buf (get-output-bytes out #t)])
-                  (if bytes? buf (bytes->string/utf-8 buf #\?)))))
-             out)]
+           (define bytes? (eq? out 'bytes))
+           ;; create the port under the user's custodian
+           (define out
+             (parameterize ([current-custodian user-cust])
+               (call-in-nested-thread
+                ;; this doesn't really matter: they're the same anyway
+                (if bytes? open-output-bytes open-output-string))))
+           (set-out!
+            (lambda ()
+              ;; this will run in the user context
+              (define buf (get-output-bytes out #t))
+              (if bytes? buf (bytes->string/utf-8 buf #\?))))
+           out]
           [else (error who "bad sandox-~a spec: ~e" what out)]))
   ;; set global memory limit
   (when (and memory-accounting? (sandbox-memory-limit))
@@ -935,37 +934,36 @@
     [current-eventspace (parameterize-break
                          #f
                          (make-eventspace))])
-   (let ([t (bg-run->thread (run-in-bg user-process))])
-     (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
-     (set! user-thread t)))
-  (let ([r (get-user-result)])
-    (if (eq? r 'ok)
-      ;; initial program executed ok, so return an evaluator
-      evaluator
-      ;; program didn't execute
-      (raise r))))
+   (define t (bg-run->thread (run-in-bg user-process)))
+   (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
+   (set! user-thread t))
+  (define r (get-user-result))
+  (if (eq? r 'ok)
+    ;; initial program executed ok, so return an evaluator
+    evaluator
+    ;; program didn't execute
+    (raise r)))
 
-(define (make-evaluator language
+(define (make-evaluator lang
                         #:requires [requires null] #:allow-read [allow null]
                         . input-program)
   ;; `input-program' is either a single argument specifying a file/string, or
   ;; multiple arguments for a sequence of expressions
-  (let (;; make it possible to provide #f for no language and no requires
-        [lang language]
-        ;; make it possible to use simple paths to files to require
-        [reqs (if (not (list? requires))
-                (error 'make-evaluator "bad requires: ~e" requires)
-                (map (lambda (r)
-                       (if (or (pair? r) (symbol? r))
-                         r
-                         `(file ,(path->string (simplify-path* r)))))
-                     requires))])
-    (make-evaluator* 'make-evaluator
-                     (init-hook-for-language lang)
-                     (append (extract-required (or (decode-language lang) lang)
-                                               reqs)
-                             allow)
-                     (lambda () (build-program lang reqs input-program)))))
+  ;; make it possible to use simple paths to files to require
+  (define reqs
+    (if (not (list? requires))
+      (error 'make-evaluator "bad requires: ~e" requires)
+      (map (lambda (r)
+             (if (or (pair? r) (symbol? r))
+               r
+               `(file ,(path->string (simplify-path* r)))))
+           requires)))
+  (make-evaluator* 'make-evaluator
+                   (init-hook-for-language lang)
+                   (append (extract-required (or (decode-language lang) lang)
+                                             reqs)
+                           allow)
+                   (lambda () (build-program lang reqs input-program))))
 
 (define (make-module-evaluator
          input-program #:allow-read [allow null] #:language [reqlang #f])
