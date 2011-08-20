@@ -334,45 +334,43 @@
 (define (call-with-limits sec mb thunk)
   ;; note that when the thread is killed after using too much memory or time,
   ;; then all thread-local changes (parameters and thread cells) are discarded
-  (let ([r #f])
-    ;; memory limit, set on a new custodian so if there's an out-of-memory
-    ;; error, the user's custodian is still alive
-    (define-values (cust cust-box)
-      (if (and mb memory-accounting?)
-        (let ([c (make-custodian (current-custodian))])
-          (custodian-limit-memory
-           c (inexact->exact (round (* mb 1024 1024))) c)
-          (values c (make-custodian-box c #t)))
-        (values (current-custodian) #f)))
-    (define timeout? #f)
-    (define r
-      (parameterize ([current-custodian cust])
-        (if sec
-          (nested
-           (lambda ()
-             ;; time limit
-             (when sec
-               (let ([t (current-thread)])
-                 (thread (lambda ()
-                           (unless (sync/timeout sec t) (set! timeout? #t))
-                           (kill-thread t)))))
-             (thunk)))
-          (nested thunk))))
-    (cond [timeout? (set! r 'time)]
-          [(and cust-box (not (custodian-box-value cust-box)))
-           (if (memq r '(kill shut)) ; should always be 'shut
-             (set! r 'memory)
-             (format "cust died with: ~a" r))]) ; throw internal error below
-    (case r
-      [(kill) (kill-thread (current-thread))]
-      [(shut) (custodian-shutdown-all (current-custodian))]
-      [(memory time)
-       (raise (make-exn:fail:resource (format "with-limit: out of ~a" r)
-                                      (current-continuation-marks)
-                                      r))]
-      [else (if (pair? r)
-              (apply (car r) (cdr r))
-              (error 'call-with-limits "internal error in nested: ~e" r))])))
+  (define-values (cust cust-box)
+    (if (and mb memory-accounting?)
+      ;; memory limit, set on a new custodian so if there's an out-of-memory
+      ;; error, the user's custodian is still alive
+      (let ([c (make-custodian (current-custodian))])
+        (custodian-limit-memory c (inexact->exact (round (* mb 1024 1024))) c)
+        (values c (make-custodian-box c #t)))
+      (values (current-custodian) #f)))
+  (define timeout? #f)
+  (define r
+    (parameterize ([current-custodian cust])
+      (if sec
+        (nested
+         (lambda ()
+           ;; time limit
+           (when sec
+             (let ([t (current-thread)])
+               (thread (lambda ()
+                         (unless (sync/timeout sec t) (set! timeout? #t))
+                         (kill-thread t)))))
+           (thunk)))
+        (nested thunk))))
+  (cond [timeout? (set! r 'time)]
+        [(and cust-box (not (custodian-box-value cust-box)))
+         (if (memq r '(kill shut)) ; should always be 'shut
+           (set! r 'memory)
+           (format "cust died with: ~a" r))]) ; throw internal error below
+  (case r
+    [(kill) (kill-thread (current-thread))]
+    [(shut) (custodian-shutdown-all (current-custodian))]
+    [(memory time)
+     (raise (make-exn:fail:resource (format "with-limit: out of ~a" r)
+                                    (current-continuation-marks)
+                                    r))]
+    [else (if (pair? r)
+            (apply (car r) (cdr r))
+            (error 'call-with-limits "internal error in nested: ~e" r))]))
 
 (define-syntax with-limits
   (syntax-rules ()
@@ -602,7 +600,7 @@
       (let ([get (let ([ns (current-namespace)])
                    (lambda () (eval '(get-uncovered-expressions) ns)))])
         (uncovered! (list (get) get))))
-    (when ns (current-namespace ns))))
+    (when (namespace? ns) (current-namespace ns))))
 
 (define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
 (define make-eventspace    (mz/mr void make-eventspace))
