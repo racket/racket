@@ -318,7 +318,11 @@ supplied.  The reader function receives a value to be used as input
 source (i.e., the first argument to @racket[read-syntax]), and it
 should return a list of @tech{syntax objects}.  The default reader
 calls @racket[read-syntax], accumulating results in a list until it
-receives @racket[eof].}
+receives @racket[eof].
+
+Note that the reader function is usually called as is, but when it is
+used to read the program input for @racket[make-module-evaluator],
+@racket[read-accept-lang] will be set to @racket[#t].}
 
 
 @defparam[sandbox-input in (or/c #f
