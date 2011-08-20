@@ -105,6 +105,7 @@ i386-linux-ubuntu-feisty    :=tag unix
 i386-linux-ubuntu-hardy     :=tag unix
 i386-linux-ubuntu-intrepid  :=tag unix
 i386-linux-ubuntu-jaunty    :=tag unix
+i386-linux-ubuntu-karmic    :=tag unix
 i386-freebsd      :=tag unix
 i386-win32        :=tag win
 x86_64-win32      :=tag win
@@ -721,6 +722,7 @@ platform
          i386-linux-ubuntu-hardy     => "Linux i386, built on Ubuntu Hardy"
          i386-linux-ubuntu-intrepid  => "Linux i386, built on Ubuntu Intrepid"
          i386-linux-ubuntu-jaunty    => "Linux i386, built on Ubuntu Jaunty"
+         i386-linux-ubuntu-karmic    => "Linux i386, built on Ubuntu Karmic"
          i386-freebsd      => "FreeBSD (i386)"
          sparc-solaris     => "Solaris"
          ppc-osx-mac       => "Mac OS X (PPC)"

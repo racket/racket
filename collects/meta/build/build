@@ -93,7 +93,7 @@ defbuild "macintel"    "i386-osx-mac" \
          "configure_args=--enable-sdk=/Developer/SDKs/MacOSX10.4u.sdk"
 # defbuild "galaga"      "i386-linux-ubuntu-hardy"
 defbuild "champlain"   "i386-linux-f12"
-defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
+defbuild "ccs-linux"   "i386-linux-ubuntu-karmic" "moveto=/proj/racket"
 # defbuild "punge"       "i386-linux-ubuntu-jaunty" "renice=20"
 # defbuild "bjorn"       "i386-linux-gcc2"
 # defbuild "chicago"     "i386-linux-debian"
@@ -299,6 +299,7 @@ platforms_of_dist_type() {
                    "i386-linux-ubuntu-hardy" \
                    "i386-linux-ubuntu-intrepid" \
                    "i386-linux-ubuntu-jaunty" \
+                   "i386-linux-ubuntu-karmic" \
                    "i386-freebsd" \
                    "sparc-solaris" ;;
     ( "src" ) echo "win mac unix" ;;
