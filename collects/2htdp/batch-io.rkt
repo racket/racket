@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (require (for-syntax syntax/parse)
          srfi/13 htdp/error
@@ -109,7 +109,9 @@
   (dynamic-wind 
    (lambda ()
      (with-output-to-file t 
-       (lambda () (for-each displayln los)) #:exists 'replace))
+       (lambda () (for-each displayln los))
+       #:mode 'text
+       #:exists 'replace))
    (lambda () 
      (reader (path->string t)))
    (lambda ()
@@ -142,6 +144,7 @@
 ;; read a file as a list of X where process-accu is applied to accu when eof
 (define (read-chunks f read-chunk process-accu)
   (with-input-from-file f 
+    #:mode 'text
     (lambda ()
       (let loop ([accu '()])
         (define nxt (read-chunk))

@@ -48,10 +48,10 @@ eos
                (string #\newline)
                (second test2-as-list))))
 
-;(write-file file test1)
+(write-file file test1)
 (check-true (string=? (simulate-file read-file test1) test1) "read-file 1")
 
-;(write-file file test2)
+(write-file file test2)
 (check-true (string=? (simulate-file read-file test2) test2) "read-file 2")
 
 (write-file file test1)
