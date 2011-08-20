@@ -89,12 +89,7 @@
                     #| no modules here by default |#)))
 
 (define (default-sandbox-reader source)
-  (parameterize ([read-accept-reader #t])
-    (let loop ([l '()])
-      (let ([expr (read-syntax source)])
-        (if (eof-object? expr)
-          (reverse l)
-          (loop (cons expr l)))))))
+  (for/list ([x (in-producer read-syntax eof source)]) x))
 
 (define sandbox-reader (make-parameter default-sandbox-reader))
 
@@ -110,10 +105,9 @@
 (define (simplify-path* path)
   (if (symbol? path)
       #f
-      (simple-form-path
-       (cond [(bytes? path) (bytes->path path)]
-             [(string? path) (string->path path)]
-             [else path]))))
+      (simple-form-path (cond [(bytes? path) (bytes->path path)]
+                              [(string? path) (string->path path)]
+                              [else path]))))
 
 ;; 'read-bytecode is special, it's higher than 'read, but not lower than
 ;; 'delete.
@@ -334,7 +328,7 @@
 (define (call-with-limits sec mb thunk)
   ;; note that when the thread is killed after using too much memory or time,
   ;; then all thread-local changes (parameters and thread cells) are discarded
-  (define-values (cust cust-box)
+  (define-values [cust cust-box]
     (if (and mb memory-accounting?)
       ;; memory limit, set on a new custodian so if there's an out-of-memory
       ;; error, the user's custodian is still alive
@@ -442,7 +436,7 @@
 ;; uncovered expressions with.  The input can be a list of sexprs/syntaxes, or
 ;; a list with a single input port spec (path/string/bytes) value.  Note that
 ;; the source can be a filtering function.
-(define (input->code inps source n)
+(define (input->code inps source n accept-lang?)
   (if (null? inps)
     (values '() source)
     (let ([p (input->port (car inps))])
@@ -454,7 +448,9 @@
                                (if (procedure? source)
                                  (lambda (x) (eq? x source))
                                  source))])
-               (parameterize ([current-input-port p])
+               (parameterize ([current-input-port p]
+                              ;; [read-accept-reader #t] is this needed?
+                              [read-accept-lang accept-lang?])
                  (begin0 (values ((sandbox-reader) source) source)
                    ;; close a port if we opened it
                    (unless (eq? p (car inps)) (close-input-port p)))))]
@@ -517,23 +513,25 @@
 ;; A more general solution would be to create a new module that exports
 ;; the given language plus all of the given extra requires.
 ;;
-;; We use `#%requre' because, unlike the `require' of racket/base,
+;; We use `#%require' because, unlike the `require' of racket/base,
 ;; it comes from `#%kernel', so it's always present through
 ;; transitive requires.
 (define (build-program language requires input-program)
-  (define-values (prog-stxs source) (input->code input-program 'program 1))
-  (let* ([body (append (if (and (pair? requires) (eq? 'begin (car requires)))
-                         (cdr requires)
-                         (map (lambda (r) (list #'#%require r)) requires))
-                       prog-stxs)]
-         [use-lang (lambda (lang) `(module program ,lang . ,body))])
-    (values (cond [(decode-language language) => use-lang]
-                  [(module-path? language) (use-lang language)]
-                  [(and (list? language) (eq? 'begin (car language)))
-                   (append language body)]
-                  [else (error 'make-evaluator "bad language spec: ~e"
-                               language)])
-            source)))
+  (define-values [prog-stxs source]
+    (input->code input-program 'program 1 #f))
+  (define body
+    (append (if (and (pair? requires) (eq? 'begin (car requires)))
+              (cdr requires)
+              (map (lambda (r) (list #'#%require r)) requires))
+            prog-stxs))
+  (define (use-lang lang) `(module program ,lang . ,body))
+  (values (cond [(decode-language language) => use-lang]
+                [(module-path? language) (use-lang language)]
+                [(and (list? language) (eq? 'begin (car language)))
+                 (append language body)]
+                [else (error 'make-evaluator "bad language spec: ~e"
+                             language)])
+          source))
 
 (define (decode-language language)
   (cond [(and (list? language)
@@ -751,12 +749,13 @@
                      (limit-thunk
                       (lambda ()
                         (set! n (add1 n))
+                        (define exprs
+                          (let-values ([(code _)
+                                        (input->code (list expr) 'eval n #f)])
+                            code))
                         (eval* (map (lambda (expr)
                                       (cons '#%top-interaction expr))
-                                    (let-values ([(code _)
-                                                  (input->code (list expr)
-                                                               'eval n)])
-                                      code)))))))
+                                    exprs))))))
                (channel-put result-ch
                             (cons 'vals
                                   (call-with-break-parameterization
@@ -972,23 +971,23 @@
          input-program #:allow-read [allow null] #:language [reqlang #f])
   ;; this is for a complete module input program
   (define (make-program)
-    (let-values ([(prog source)
-                  (input->code (list input-program) 'program #f)])
-      (unless (= 1 (length prog))
-        (error 'make-module-evaluator "expecting a single `module' program; ~a"
-               (if (zero? (length prog))
-                 "no program expressions given"
-                 "got more than a single expression")))
-      (syntax-case* (car prog) (module) literal-identifier=?
-        [(module modname lang body ...)
-         (if (or (not reqlang) (equal? reqlang (syntax->datum #'lang)))
-           (values (car prog) source)
-           (error 'make-module-evaluator
-                  "module code used `~.s' for a language, expecting `~.s'"
-                  (syntax->datum #'lang) reqlang))]
-        [_else (error 'make-module-evaluator
-                      "expecting a `module' program; got ~.s"
-                      (syntax->datum (car prog)))])))
+    (define-values [prog source]
+      (input->code (list input-program) 'program #f #t))
+    (unless (= 1 (length prog))
+      (error 'make-module-evaluator "expecting a single `module' program; ~a"
+             (if (zero? (length prog))
+               "no program expressions given"
+               "got more than a single expression")))
+    (syntax-case* (car prog) (module) literal-identifier=?
+      [(module modname lang body ...)
+       (if (or (not reqlang) (equal? reqlang (syntax->datum #'lang)))
+         (values (car prog) source)
+         (error 'make-module-evaluator
+                "module code used `~.s' for a language, expecting `~.s'"
+                (syntax->datum #'lang) reqlang))]
+      [_else (error 'make-module-evaluator
+                    "expecting a `module' program; got ~.s"
+                    (syntax->datum (car prog)))]))
   (make-evaluator* 'make-module-evaluator
                    void
                    (if (path? input-program) (cons input-program allow) allow)
