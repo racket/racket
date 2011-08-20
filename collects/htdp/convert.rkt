@@ -237,12 +237,12 @@
 ;; convert-file : str (num -> num) str -> void
 ;; to read a number from file in, to convert it with f, and to write it to out
 (define (convert-file in f out)
-  (check-arg 'convert-file (string? in) "string" "first" in)
+  (check-arg 'convert-file (path-string? in) "string" "first" in)
   (check-arg 'convert-file (file-exists? in) 
              (format "name of existing file in ~a" (current-directory))
              "first" in)
   (check-proc 'convert-file f 1 "convert-file" "one argument")
-  (check-arg 'convert-file (string? out) "string" "third" out)
+  (check-arg 'convert-file (path-string? out) "string" "third" out)
   ;; [ -> Void] -> Void 
   ;; perform the actual conversion on the file after optionally reading a prelude 
   (define (convert-file prefix)
