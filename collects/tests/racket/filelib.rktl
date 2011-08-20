@@ -166,7 +166,7 @@
       "stuff")
 (test (build-path "dir" (if (eq? (system-type) 'windows) "_LOCKstuff" ".LOCKstuff"))
       make-lock-file-name
-      "dir/stuff")
+      (build-path "dir" "stuff"))
 (test (build-path "dir" (if (eq? (system-type) 'windows) "_LOCKstuff" ".LOCKstuff"))
       make-lock-file-name
       "dir"

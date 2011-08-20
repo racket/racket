@@ -24,17 +24,18 @@
          [studio  "c:/Program Files/Microsoft Visual Studio 10.0"]
          [scommon (concat studio "/Common7")]
          [vc      (concat studio "/VC")])
-    (putenv "PATH"    (concat (getenv "PATH")
-                              ";" vc "/bin"
-                              ";" scommon "/IDE"
-                              ";" scommon "/Tools"
-                              ";" scommon "/Tools/bin"))
-    (putenv "INCLUDE" (concat ";" vc "/include"
-                              ";" vc "/atlmfc/include"
-                              ";" vc "/PlatformSDK/Include"))
-    (putenv "LIB"     (concat ";" vc "/lib"
-                              ";" vc "/atlmfc/lib"
-                              ";" vc "/PlatformSDK/lib"))))
+    (when (directory-exists? studio)
+      (putenv "PATH"    (concat (getenv "PATH")
+				";" vc "/bin"
+				";" scommon "/IDE"
+				";" scommon "/Tools"
+				";" scommon "/Tools/bin"))
+      (putenv "INCLUDE" (concat ";" vc "/include"
+				";" vc "/atlmfc/include"
+				";" vc "/PlatformSDK/Include"))
+      (putenv "LIB"     (concat ";" vc "/lib"
+				";" vc "/atlmfc/lib"
+				";" vc "/PlatformSDK/lib")))))
 
 (require dynext/compile dynext/link mzlib/etc)
 (define delete-test-files
@@ -332,10 +333,10 @@
   (test 107 ptr-ref v _intptr))
 
 ;; Test equality and hashing of c pointers:
-(let ([seventeen1 (cast 17 _long _pointer)]
-      [seventeen2 (cast 17 _long _pointer)]
-      [seventeen3 (ptr-add (cast 13 _long _pointer) 4)]
-      [sixteen (cast 16 _long _pointer)])
+(let ([seventeen1 (cast 17 _intptr _pointer)]
+      [seventeen2 (cast 17 _intptr _pointer)]
+      [seventeen3 (ptr-add (cast 13 _intptr _pointer) 4)]
+      [sixteen (cast 16 _intptr _pointer)])
   (test #t equal? seventeen1 seventeen2)
   (test #t equal? seventeen1 seventeen3)
   (test #f equal? sixteen seventeen1)
@@ -349,21 +350,21 @@
 ;; Check proper handling of offsets:
 (let ()
   (define scheme_make_sized_byte_string 
-    (get-ffi-obj 'scheme_make_sized_byte_string #f (_fun _pointer _long _int -> _scheme)))
+    (get-ffi-obj 'scheme_make_sized_byte_string #f (_fun _pointer _intptr _int -> _scheme)))
   ;; Non-gcable:
   (let ()
     (define p (cast (ptr-add #f 20) _pointer _pointer))
     (define d (scheme_make_sized_byte_string (ptr-add p 24)
                                              4
                                              0))
-    (test 44 values (cast d _pointer _long)))
+    (test 44 values (cast d _pointer _intptr)))
   ;; GCable:
   (let ()
     (define p (cast (ptr-add #f 20) _pointer _gcpointer))
     (define d (scheme_make_sized_byte_string (ptr-add p 24)
                                              4
                                              0))
-    (test 44 values (cast d _gcpointer _long))))
+    (test 44 values (cast d _gcpointer _intptr))))
 
 (delete-test-files)
 
