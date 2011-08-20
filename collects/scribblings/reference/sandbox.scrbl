@@ -322,7 +322,8 @@ receives @racket[eof].
 
 Note that the reader function is usually called as is, but when it is
 used to read the program input for @racket[make-module-evaluator],
-@racket[read-accept-lang] will be set to @racket[#t].}
+@racket[read-accept-lang] and @racket[read-accept-reader] are set to
+@racket[#t].}
 
 
 @defparam[sandbox-input in (or/c #f

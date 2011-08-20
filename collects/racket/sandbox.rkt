@@ -399,8 +399,7 @@
 ;; Execution ----------------------------------------------------------------
 
 (define (literal-identifier=? x y)
-  (or (free-identifier=? x y)
-      (eq? (syntax-e x) (syntax-e y))))
+  (or (free-identifier=? x y) (eq? (syntax-e x) (syntax-e y))))
 
 (define-namespace-anchor anchor)
 
@@ -447,12 +446,16 @@
                    (if (procedure? source)
                      (lambda (x) (eq? x source))
                      source)))
-             (parameterize ([current-input-port p]
-                            ;; [read-accept-reader #t] is this needed?
-                            [read-accept-lang accept-lang?])
-               (begin0 (values ((sandbox-reader) source) source)
-                 ;; close a port if we opened it
-                 (unless (eq? p (car inps)) (close-input-port p))))]
+             (define code
+               (parameterize ([current-input-port p])
+                 (if accept-lang?
+                   (parameterize ([read-accept-reader #t] ; needed for #lang too
+                                  [read-accept-lang #t])
+                     ((sandbox-reader) source))
+                   ((sandbox-reader) source))))
+             ;; close a port if we opened it
+             (unless (eq? p (car inps)) (close-input-port p))
+             (values code source)]
             [p (error 'input->code "ambiguous inputs: ~e" inps)]
             [(andmap syntax? inps)
              (values inps
@@ -475,19 +478,17 @@
 (define (make-orig x loc) (datum->syntax #f x loc orig-stx))
 
 (define (add-location x loc)
-  (cond
-   [(null? x) null]
-   [(pair? x) (make-orig (cons (add-location (car x) loc) 
-                               (add-location (cdr x) loc))
-                         loc)]
-   [(vector? x) (make-orig (for/vector ([i (in-vector x)])
-                             (add-location i loc))
-                           loc)]
-   [else (make-orig x loc)]))
+  (cond [(null? x) null]
+        [(pair? x) (make-orig (cons (add-location (car x) loc) 
+                                    (add-location (cdr x) loc))
+                              loc)]
+        [(vector? x) (make-orig (for/vector ([i (in-vector x)])
+                                  (add-location i loc))
+                                loc)]
+        [else (make-orig x loc)]))
 
 (define ((init-hook-for-language language))
-  (cond [(or (not (pair? language))
-             (not (eq? 'special (car language))))
+  (cond [(not (and (pair? language) (eq? 'special (car language))))
          (void)]
         [(eq? (cadr language) 'r5rs)
          (read-case-sensitive #f)
@@ -516,20 +517,17 @@
 ;; it comes from `#%kernel', so it's always present through
 ;; transitive requires.
 (define (build-program language requires input-program)
-  (define-values [prog-stxs source]
-    (input->code input-program 'program 1 #f))
-  (define body
-    (append (if (and (pair? requires) (eq? 'begin (car requires)))
-              (cdr requires)
-              (map (lambda (r) (list #'#%require r)) requires))
-            prog-stxs))
+  (define-values [prog-stxs source] (input->code input-program 'program 1 #f))
+  (define body (append (if (and (pair? requires) (eq? 'begin (car requires)))
+                         (cdr requires)
+                         (map (lambda (r) (list #'#%require r)) requires))
+                       prog-stxs))
   (define (use-lang lang) `(module program ,lang . ,body))
   (values (cond [(decode-language language) => use-lang]
                 [(module-path? language) (use-lang language)]
                 [(and (list? language) (eq? 'begin (car language)))
                  (append language body)]
-                [else (error 'make-evaluator "bad language spec: ~e"
-                             language)])
+                [else (error 'make-evaluator "bad language spec: ~e" language)])
           source))
 
 (define (decode-language language)
@@ -804,15 +802,15 @@
   (define (get-uncovered [prog? #t] [src default-coverage-source-filter])
     (unless uncovered
       (error 'get-uncovered-expressions "no coverage information"))
-    (define uncovered (if prog? (car uncovered) ((cadr uncovered))))
+    (define uncovered-exprs (if prog? (car uncovered) ((cadr uncovered))))
     (if src
       ;; when given a list of syntaxes, the src is actually a function that
       ;; checks the input source value (which does a union of the sources)
       (filter (if (procedure? src)
                 (lambda (x) (src (syntax-source x)))
                 (lambda (x) (equal? src (syntax-source x))))
-              uncovered)
-      uncovered))
+              uncovered-exprs)
+      uncovered-exprs))
   (define (output-getter p)
     (if (procedure? p) (user-eval (make-evaluator-message 'thunk (list p))) p))
   (define (input-putter [arg input])
@@ -847,17 +845,16 @@
           [(memq out '(bytes string))
            (define bytes? (eq? out 'bytes))
            ;; create the port under the user's custodian
-           (define out
+           (define outp
              (parameterize ([current-custodian user-cust])
                (call-in-nested-thread
                 ;; this doesn't really matter: they're the same anyway
                 (if bytes? open-output-bytes open-output-string))))
-           (set-out!
-            (lambda ()
-              ;; this will run in the user context
-              (define buf (get-output-bytes out #t))
-              (if bytes? buf (bytes->string/utf-8 buf #\?))))
-           out]
+           (set-out! (lambda ()
+                       ;; this will run in the user context
+                       (define buf (get-output-bytes outp #t))
+                       (if bytes? buf (bytes->string/utf-8 buf #\?))))
+           outp]
           [else (error who "bad sandox-~a spec: ~e" what out)]))
   ;; set global memory limit
   (when (and memory-accounting? (sandbox-memory-limit))
@@ -950,14 +947,13 @@
   ;; `input-program' is either a single argument specifying a file/string, or
   ;; multiple arguments for a sequence of expressions
   ;; make it possible to use simple paths to files to require
-  (define reqs
-    (if (not (list? requires))
-      (error 'make-evaluator "bad requires: ~e" requires)
-      (map (lambda (r)
-             (if (or (pair? r) (symbol? r))
-               r
-               `(file ,(path->string (simplify-path* r)))))
-           requires)))
+  (define reqs (if (not (list? requires))
+                 (error 'make-evaluator "bad requires: ~e" requires)
+                 (map (lambda (r)
+                        (if (or (pair? r) (symbol? r))
+                          r
+                          `(file ,(path->string (simplify-path* r)))))
+                      requires)))
   (make-evaluator* 'make-evaluator
                    (init-hook-for-language lang)
                    (append (extract-required (or (decode-language lang) lang)
