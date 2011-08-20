@@ -1,3 +1,6 @@
+Version 5.1.3.3
+unsafe/ffi: added support for C arrays and unions
+
 Version 5.1.2.3
 Added set-port-next-location! and changed the default prompt 
  read handler to use it when input and output ar terminals
@@ -7,6 +10,9 @@ Version 5.1.2.2
 Changed the location-creation semantics of internal definitions
  and `letrec-syntaxes+values'
 Added unsafe-list-ref and unsafe-list-tail
+
+Version 5.1.3, August 2011
+No changes
 
 Version 5.1.2, August 2011
 Replaced syntax certificates with syntax taints:
