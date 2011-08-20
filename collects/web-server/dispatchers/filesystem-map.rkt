@@ -4,7 +4,7 @@
          racket/contract)
 (require web-server/private/util)
 (define url->path/c
-  ((url?) () . ->* . (values path? (listof path-element?))))
+  ((url?) () . ->* . (values path? (listof path-piece?))))
 
 (provide/contract
  [url->path/c contract?]

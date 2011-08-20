@@ -1,10 +1,8 @@
 #lang racket/base
 (require racket/contract racket/dict racket/match)
 
-(define path-element?
+(define path-piece?
   (or/c path-string? (symbols 'up 'same)))
-;; Eli: We already have a notion of "path element" which is different
-;;   from this (see `string->path-element') .
 
 (define port-number? (between/c 1 65535))
 (define tcp-listen-port? (between/c 0 65535))
@@ -406,7 +404,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide/contract
- [path-element? contract?]
+ [path-piece? contract?]
  [port-number? contract?]
  [tcp-listen-port? contract?]
 

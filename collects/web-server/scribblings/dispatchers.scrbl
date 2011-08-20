@@ -7,7 +7,8 @@
                      web-server/private/servlet
                      racket/date
                      web-server/private/util
-                     web-server/private/connection-manager)
+                     web-server/private/connection-manager
+                     unstable/contract)
           (for-syntax racket/base))
 
 @title[#:tag "dispatchers"
@@ -78,7 +79,7 @@ This module provides a means of mapping
 URLs to paths on the filesystem.
 
 @defthing[url->path/c contract?]{
- This contract is equivalent to @racket[((url?) . ->* . (path? (listof path-element?)))].
+ This contract is equivalent to @racket[((url?) . ->* . (path? (listof path-piece?)))].
  The returned @racket[path?] is the path on disk. The list is the list of
  path elements that correspond to the path of the URL.}
 

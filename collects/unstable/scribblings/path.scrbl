@@ -14,13 +14,13 @@
 @unstable-header[]
 
 @defproc[(explode-path* [p path-string?])
-         (listof path-element?)]{
+         (listof path-piece?)]{
  Like @racket[normalize-path], but does not resolve symlinks.
 }
 
 @defproc[(path-without-base [base path-string?]
                             [p path-string?])
-         (listof path-element?)]{
+         (listof path-piece?)]{
  Returns, as a list, the portion of @racket[p] after @racket[base],
  assuming @racket[base] is a prefix of @racket[p].
 }
@@ -37,7 +37,7 @@
  Prepends @racket[base] to @racket[p], unless @racket[p] is absolute.
 }
 
-@defproc[(strip-prefix-ups [p (listof path-element?)])
-         (listof path-element?)]{
+@defproc[(strip-prefix-ups [p (listof path-piece?)])
+         (listof path-piece?)]{
  Removes all the prefix @racket[".."]s from @racket[p].
 }

@@ -35,7 +35,7 @@ Equivalent to @racket[(between/c 1 65535)].
 Equivalent to @racket[(between/c 0 65535)].
 }
 
-@defthing[path-element? contract?]{
+@defthing[path-piece? contract?]{
 Equivalent to @racket[(or/c path-string? (symbols 'up 'same))].
 }
 

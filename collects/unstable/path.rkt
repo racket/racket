@@ -15,7 +15,7 @@
 ;; Eli: We already have `explode-path', this looks like it's doing the
 ;;   same thing, except a little less useful.
 
-; strip-prefix-ups : (listof path-element?) -> (listof path-element?)
+; strip-prefix-ups : (listof path-piece?) -> (listof path-piece?)
 (define (strip-prefix-ups l)
   (define prefix? (box #t))
   (filter (lambda (p)
@@ -39,7 +39,7 @@
 ;;   and if this wasn't enough, there's exactly one place in the web
 ;;   server that uses it.
 
-; path-without-base : path? path? -> (listof path-element?)
+; path-without-base : path? path? -> (listof path-piece?)
 (define (path-without-base base path)
   (define b (explode-path* base))
   (define p (explode-path* path))
@@ -72,8 +72,8 @@
 ;;   directory in the first case.
 
 (provide/contract
- [explode-path* (path-string? . -> . (listof path-element?))]
- [path-without-base (path-string? path-string? . -> . (listof path-element?))]
- [strip-prefix-ups ((listof path-element?) . -> . (listof path-element?))] 
+ [explode-path* (path-string? . -> . (listof path-piece?))]
+ [path-without-base (path-string? path-string? . -> . (listof path-piece?))]
+ [strip-prefix-ups ((listof path-piece?) . -> . (listof path-piece?))] 
  [directory-part (path-string? . -> . path?)]
  [build-path-unless-absolute (path-string? path-string? . -> . path?)])
