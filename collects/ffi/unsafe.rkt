@@ -10,7 +10,8 @@
          cpointer? ptr-equal? ptr-add ptr-ref ptr-set! (protect-out cast)
          ptr-offset ptr-add! offset-ptr? set-ptr-offset!
          vector->cpointer flvector->cpointer saved-errno lookup-errno
-         ctype? make-ctype make-cstruct-type make-sized-byte-string ctype->layout
+         ctype? make-ctype make-cstruct-type make-array-type make-union-type
+         make-sized-byte-string ctype->layout
          _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
          _fixint _ufixint _fixnum _ufixnum
          _float _double _double*
@@ -973,6 +974,90 @@
     [(_ . xs) (_bytes . xs)]
     [_ _bytes]))
 
+;; (_array <type> <len> ...+)
+(provide _array
+         array? array-ptr
+         (protect-out array-ref array-set!))
+
+(define _array
+  (case-lambda
+   [(t n)
+    (make-ctype (make-array-type t n)
+                (lambda (v) (array-ptr v))
+                (lambda (v) (make-array v t n)))]
+   [(t n . ns)
+    (_array (apply _array t ns) n)]))
+
+(define-struct array (ptr type len))
+(define array-ref
+  (case-lambda
+   [(a i) 
+    (let ([len (array-len a)])
+      (if (< -1 i len)
+          (ptr-ref (array-ptr a) (array-type a) i)
+          (raise-mismatch-error 'array-ref "index out of bounds: " i)))]
+   [(a . is)
+    (let loop ([a a] [is is])
+      (if (null? is)
+          a
+          (loop (array-ref a (car is)) (cdr is))))]))
+(define array-set!
+  (case-lambda
+   [(a i v)
+    (let ([len (array-len a)])
+      (if (< -1 i len)
+          (ptr-set! (array-ptr a) (array-type a) i v)
+          (raise-mismatch-error 'array-ref "index out of bounds: " i)))]
+   [(a i i1 . is+v)
+    (let ([is+v (reverse (list* i i1 is+v))])
+      (define v (car is+v))
+      (define i (cadr is+v))
+      (let loop ([a a] [is (cddr is+v)])
+        (if (null? is)
+            (array-set! a i v)
+            (loop (array-ref a (car is)) (cdr is)))))]))
+
+;; (_array/list <type> <len> ...+)
+;; Like _list, but for arrays instead of pointers at the C level.
+(provide _array/list)
+(define _array/list 
+  (case-lambda
+   [(t n)
+    (make-ctype (make-array-type t n)
+                (lambda (v) (list->cblock v t n))
+                (lambda (v) (cblock->list v t n)))]
+   [(t n . ns)
+    (_array/list (apply _array/list t ns) n)]))
+
+;; (_array/vector <type> <len> ...+)
+;; Like _vector, but for arrays instead of pointers at the C level.
+(provide _array/vector)
+(define _array/vector
+  (case-lambda
+   [(t n)
+    (make-ctype (make-array-type t n)
+                (lambda (v) (vector->cblock v t n))
+                (lambda (v) (cblock->vector v t n)))]
+   [(t n . ns)
+    (_array/vector (apply _array/vector t ns) n)]))
+
+;; (_union <type> ...+)
+(provide _union
+         union? union-ptr
+         (protect-out union-ref union-set!))
+
+(define (_union t . ts)
+  (let ([ts (cons t ts)])
+    (make-ctype (apply make-union-type ts)
+                (lambda (v) (union-ptr v))
+                (lambda (v) (make-union v ts)))))
+
+(define-struct union (ptr types))
+(define (union-ref u i)
+  (ptr-ref (union-ptr u) (list-ref (union-types u) i)))
+(define (union-set! u i v)
+  (ptr-set! (union-ptr u) (list-ref (union-types u) i) v))
+
 ;; ----------------------------------------------------------------------------
 ;; Tagged pointers
 
@@ -1418,6 +1503,7 @@
     (cond
      [(ctype? b) (ctype->layout b)]
      [(list? b) (map ctype->layout b)]
+     [(vector? b) (vector (ctype->layout (vector-ref b 0)) (vector-ref b 1))]
      [else (hash-ref prim-synonyms b b)])))
 
 ;; ----------------------------------------------------------------------------
@@ -1432,10 +1518,14 @@
       (values x type))))
 
 ;; Converting Scheme lists to/from C vectors (going back requires a length)
-(define* (list->cblock l type)
+(define* (list->cblock l type [need-len #f])
+  (define len (length l))
+  (when need-len
+    (unless (= len need-len)
+      (error 'list->cblock "list does not have the expected length: ~e" l)))
   (if (null? l)
     #f ; null => NULL
-    (let ([cblock (malloc (length l) type)])
+    (let ([cblock (malloc len type)])
       (let loop ([l l] [i 0])
         (unless (null? l)
           (ptr-set! cblock type i (car l))
@@ -1453,8 +1543,11 @@
                      "expecting a non-void pointer, got ~s" cblock)]))
 
 ;; Converting Scheme vectors to/from C vectors
-(define* (vector->cblock v type)
+(define* (vector->cblock v type [need-len #f])
   (let ([len (vector-length v)])
+    (when need-len
+      (unless (= need-len len)
+        (error 'vector->cblock "vector does not have the expected length: ~e" v)))
     (if (zero? len)
       #f ; #() => NULL
       (let ([cblock (malloc len type)])

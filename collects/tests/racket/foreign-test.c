@@ -78,3 +78,125 @@ X char_int charint_swap(char_int x) {
 int(*grabbed_callback)(int) = NULL;
 X void grab_callback(int(*f)(int)) { grabbed_callback = f; }
 X int use_grabbed_callback(int n) { return grabbed_callback(n); }
+
+typedef char c7_array[7];
+
+X char* increment_c_array(c7_array c) {
+  int i;
+  for (i = 0; i < 7; i++)
+    c[i]++;
+  return c;
+}
+
+struct char7 {
+  char c[7];
+};
+struct int_char7_int {
+  int i1;
+  struct char7 c7;
+  int i2;
+};
+
+X struct int_char7_int increment_ic7i(struct int_char7_int v)
+{
+  int i;
+
+  v.i1++;
+  for (i = 0; i < 7; i++)
+    v.c7.c[i]++;
+  v.i2++;
+
+  return v;
+}
+
+X struct int_char7_int ic7i_cb(struct int_char7_int v,
+                               struct int_char7_int (*cb)(struct int_char7_int))
+{
+  int i;
+
+  --v.i1;
+  for (i = 0; i < 7; i++)
+    --v.c7.c[i];
+  --v.i2;
+
+  v = cb(v);
+
+  v.i1++;
+  for (i = 0; i < 7; i++)
+    v.c7.c[i]++;
+  v.i2++;
+
+  return v;
+}
+
+X char* increment_2d_array(char c[3][7]) {
+  int i, j;
+  for (i = 0; i < 7; i++) {
+    for (j = 0; j < 3; j++) {
+      c[j][i] += (i + j);
+    }
+  }
+  return (char *)c;
+}
+
+X int with_2d_array_cb(void (*cb)(char c[3][7]))
+{
+  char c[3][7];
+  int i, j, r;
+
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 7; j++) {
+      c[i][j] = (i + (2 * j));
+    }
+  }
+  
+  cb(c);
+
+  r = 0;
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 7; j++) {
+      r += (c[i][j] - ((2 * i) + (2 * j)));
+    }
+  }
+
+  return r;
+}
+
+union borl {
+  char b;
+  long l;
+};
+
+X union borl increment_borl(int which, union borl v)
+{
+  int i;
+
+  if (which) {
+    v.l++;
+  } else {
+    v.b++;
+  }
+
+  return v;
+}
+
+union ic7iorl {
+  struct int_char7_int ic7i;
+  long l;
+};
+
+X union ic7iorl increment_ic7iorl(int which, union ic7iorl v)
+{
+  int i;
+
+  if (which) {
+    v.l++;
+  } else {
+    v.ic7i.i1++;
+    for (i = 0; i < 7; i++)
+      v.ic7i.c7.c[i]++;
+    v.ic7i.i2++;
+  }
+
+  return v;
+}

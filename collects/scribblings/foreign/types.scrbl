@@ -62,7 +62,9 @@ type. It can be any of the following symbols:
 ]
 
 The result can also be a list, which describes a C struct whose
-element representations are provided in order within the list.}
+element representations are provided in order within the
+list. Finally, the result can be a vector of size 2 containing an
+element representation followed by an exact-integer count.}
 
 
 @defproc[(compiler-sizeof [sym symbol?]) exact-nonnegative-integer?]{
@@ -70,7 +72,7 @@ element representations are provided in order within the list.}
 Possible values for @racket[symbol] are @racket['int], @racket['char],
 @racket['short], @racket['long], @racket['*], @racket['void],
 @racket['float], @racket['double]. The result is the size of the
-correspond type according to the C @cpp{sizeof} operator for the
+corresponding type according to the C @cpp{sizeof} operator for the
 current platform. The @racket[compiler-sizeof] operation should be
 used to gather information about the current platform, such as
 defining alias type like @racket[_int] to a known type like
@@ -1027,6 +1029,136 @@ expects arguments for both the super fields and the new ones:
  (define-cstruct (#,(racketidfont "_B") #,(racketidfont "_A")) ([z _int]))
  (define b (make-B 1 2 3))
 ]}
+
+
+@; ------------------------------------------------------------
+
+@section{C Array Types}
+
+@defproc[(make-array-type [type ctype?]
+                          [count exact-nonnegative-integer?])
+         ctype?]{
+
+The primitive type constructor for creating new C array types. Like C
+struct types, array types are new primitive types with no conversion
+functions associated. When used as a function argument or return type,
+array types behave like pointer types; otherwise, array types behave
+like struct types (i.e., a struct with as many fields as the array has
+elements), particularly when used for a field within a struct type.
+
+Since an array is treated like a struct, @racket[cast]ing a
+pointer type to an array type does not work. Instead, use
+@racket[ptr-ref] with a pointer, an array type constructed with
+@racket[_array], and index @racket[0] to convert a pointer to a Racket
+representation that works with @racket[array-ref] and
+@racket[array-set!].}
+
+
+@defproc[(_array [type ctype?] [count exact-nonnegative-integer?] ...+)
+         ctype?]{
+
+Creates an array type whose Racket representation is an array that
+works with @racket[array-ref] and @racket[array-set!]. The array is
+not copied; the Racket representation is backed by the underlying C
+representation.
+
+Supply multiple @racket[count]s for a multidimensional array. Since C
+uses row-major order for arrays, @racket[(_array _t _n _m)] is
+equivalent to @racket[(_array (_array _t _m) _n)], which is different
+from an array of pointers to arrays.}
+
+
+@defproc[(array? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a Racket representation of a C
+value via @racket[_array], @racket[#f] otherwise.}
+
+
+@defproc[(array-ref [a array?] [i exact-nonnegative-integer?] ...+)
+         any/c]{
+
+Extracts an element from an array. Use multiple @racket[i] indices for
+a multidimensional array access; using fewer indices than the array
+dimension produces a sub-array.}
+
+
+@defproc[(array-set! [a array?] 
+                     [i exact-nonnegative-integer?] ...+
+                     [v any/c])
+         void?]{
+
+Sets an element in an array. Use multiple @racket[i] indices for a
+multidimensional array update; using fewer indices than the array
+dimension sets a sub-array (i.e., @racket[v] must be an array of the
+same size as the sub-array and @racket[v] is copied into the
+sub-array).}
+
+
+@defproc[(array-ptr [a array?]) cpointer?]{
+
+Extracts the pointer for an array's storage.}
+
+
+@defproc[(_array/list [type ctype?] [count exact-nonnegative-integer?] ...+)
+         ctype?]{
+
+Like @racket[_array], but the Racket representation is a list (or list
+of lists for a multidimensional array) of elements copied to and from
+an underlying C array.}
+
+
+@defproc[(_array/vector [type ctype?] [count exact-nonnegative-integer?] ...+)
+         ctype?]{
+
+Like @racket[_array], but the Racket representation is a vector (or
+vector of vectors for a multidimensional array) of elements copied to
+and from an underlying C array.}
+
+
+@; ------------------------------------------------------------
+
+@section{C Union Types}
+
+@defproc[(make-union-type [type ctype?] ...+)
+         ctype?]{
+
+The primitive type constructor for creating new C union types. Like C
+struct types, union types are new primitive types with no conversion
+functions associated. Unions are always treated like structs.}
+
+
+@defproc[(_union [type ctype?] ...+)
+         ctype?]{
+
+Creates a union type whose Racket representation is a union that
+works with @racket[union-ref] and @racket[union-set!]. The union is
+not copied; the Racket representation is backed by the underlying C
+representation.}
+
+
+@defproc[(union? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a Racket representation of a C
+value via @racket[_union], @racket[#f] otherwise.}
+
+
+@defproc[(union-ref [u union?] [i exact-nonnegative-integer?])
+         any/c]{
+
+Extracts a variant from a union.}
+
+
+@defproc[(union-set! [u union?] 
+                     [i exact-nonnegative-integer?]
+                     [v any/c])
+         void?]{
+
+Sets a variant in a union..}
+
+
+@defproc[(union-ptr [u array?]) cpointer?]{
+
+Extracts the pointer for a union's storage.}
 
 
 @; ------------------------------------------------------------

@@ -847,6 +847,8 @@ typedef union _ForeignAny {
 
 /* This is a tag that is used to identify user-made struct types. */
 #define FOREIGN_struct (27)
+#define FOREIGN_array (28)
+#define FOREIGN_union (29)
 
 static int is_gcable_pointer(Scheme_Object *o) {
  return !SCHEME_CPTRP(o)
@@ -914,6 +916,8 @@ static ffi_type ffi_type_gcpointer;
 #define CTYPE_PRIMLABEL(x) ((intptr_t)(((ctype_struct*)(x))->c_to_scheme))
 #define CTYPE_USER_S2C(x)  (((ctype_struct*)(x))->scheme_to_c)
 #define CTYPE_USER_C2S(x)  (((ctype_struct*)(x))->c_to_scheme)
+
+#define CTYPE_ARG_PRIMTYPE(x) ((CTYPE_PRIMLABEL(x) == FOREIGN_array) ? &ffi_type_pointer : CTYPE_PRIMTYPE(x))
 
 /* Returns #f for primitive types. */
 #define MYNAME "ctype-basetype"
@@ -985,7 +989,7 @@ static int ctype_sizeof(Scheme_Object *type)
   case FOREIGN_gcpointer: return sizeof(void*);
   case FOREIGN_scheme: return sizeof(Scheme_Object*);
   case FOREIGN_fpointer: return sizeof(void*);
-  /* for structs */
+  /* for structs and arrays */
   default: return CTYPE_PRIMTYPE(type)->size;
   }
 }
@@ -1140,6 +1144,138 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
     scheme_register_finalizer(type, free_libffi_type_with_alignment, libffi_type, NULL, NULL);
   else
     scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
+  return (Scheme_Object*)type;
+}
+#undef MYNAME
+
+/*****************************************************************************/
+/* array types */
+
+/* (make-array-type type len) -> ctype */
+/* This creates a new primitive type that is an array. An array is the
+ * same as a cpointer as an argument, but it behave differently within
+ * a struct or for allocation. Marshaling to lists or whatever should
+ * be done in Scheme. */
+#define MYNAME "make-array-type"
+static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *base, *basetype;
+  GC_CAN_IGNORE ffi_type *libffi_type, **elements;
+  ctype_struct *type;
+  intptr_t len;
+
+  if (NULL == (base = get_ctype_base(argv[0])))
+    scheme_wrong_type(MYNAME, "C-type", 0, argc, argv);
+  if (!scheme_get_int_val(argv[1], &len) || (len < 0))
+    scheme_wrong_type(MYNAME, "pointer-sized nonnegative exact integer", 1, argc, argv);
+
+  /* libffi doesn't seem to support array types, but we try to make
+     libffi work anyway by making a structure type that is used when
+     an array appears as a struct field. If the array size is 4 or
+     less, or if the total size is 32 bytes or less, then we make a
+     full `elements' array, because the x86_64 ABI always shifts
+     to memory mode after 32 bytes. */
+
+  /* Allocate the new libffi type object, which is only provided to
+     libffi as a type for a structure field.  When a FOREIGN_array
+     type is used for a function argument or result, it is replaced
+     with FOREIGN_pointer.  We put FFI_TYPE_STRUCT in
+     libffi_type->type and make an elements array that contains
+     a single instance of the element type... which seems to work
+     ok so far.  */
+  libffi_type = malloc(sizeof(ffi_type));
+  libffi_type->size      = CTYPE_PRIMTYPE(base)->size * len;
+  libffi_type->alignment = CTYPE_PRIMTYPE(base)->alignment;
+  libffi_type->type      = FFI_TYPE_STRUCT;
+
+  if ((libffi_type->size <= 32) || (len <= 4)) {
+    int i;
+    elements = malloc((len + 1) * sizeof(ffi_type*));
+    for (i = 0; i < len; i++) {
+      elements[i] = CTYPE_PRIMTYPE(base);
+    }
+    elements[len] = NULL;
+  } else {
+    elements = malloc(2 * sizeof(ffi_type*));
+    elements[0] = CTYPE_PRIMTYPE(base);
+    elements[1] = NULL;
+  }
+  libffi_type->elements  = elements;
+
+  basetype = scheme_make_vector(2, argv[0]);
+  SCHEME_VEC_ELS(basetype)[1] = argv[1];
+
+  type = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
+  type->so.type = ctype_tag;
+  type->basetype = (basetype);
+  type->scheme_to_c = ((Scheme_Object*)libffi_type);
+  type->c_to_scheme = ((Scheme_Object*)FOREIGN_array);
+
+  scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
+
+  return (Scheme_Object*)type;
+}
+#undef MYNAME
+
+/*****************************************************************************/
+/* union types */
+
+/* (make-union-type type ...+) -> ctype */
+/* This creates a new primitive type that is a union. All unions
+ * behave like structs. Marshaling to lists or whatever should
+ * be done in Scheme. */
+#define MYNAME "make-union-type"
+static Scheme_Object *foreign_make_union_type(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *base, *basetype;
+  GC_CAN_IGNORE ffi_type *libffi_type, **elements;
+  ctype_struct *type;
+  int i, align = 1, a, sz = 0;
+
+  elements = malloc((argc + 1) * sizeof(ffi_type*));
+
+  /* find max required alignment and size: */
+  for (i = 0; i < argc; i++) {
+    if (NULL == (base = get_ctype_base(argv[i]))) {
+      free(elements);
+      scheme_wrong_type(MYNAME, "C-type", i, argc, argv);
+    }
+    a = CTYPE_PRIMTYPE(base)->alignment;
+    if (a > align) align = a;
+    a = CTYPE_PRIMTYPE(base)->size;
+    if (sz < a) sz = a;
+    elements[i] = CTYPE_PRIMTYPE(base);
+  }
+
+  elements[argc] = NULL;
+
+  /* round size up to alignment: */
+  if ((sz % align) != 0) {
+    sz += (align - (sz % align));
+  }
+
+  /* libffi doesn't seem to support union types, but we try to make
+     libffi work anyway by making a structure type. We put all the
+     element types in the `elements' array, because their shapes may
+     affect argument passing. */
+
+  /* Allocate the new libffi type object. */
+  libffi_type = malloc(sizeof(ffi_type));
+  libffi_type->size      = sz;
+  libffi_type->alignment = align;
+  libffi_type->type      = FFI_TYPE_STRUCT;
+  libffi_type->elements  = elements;
+
+  basetype = scheme_box(scheme_build_list(argc, argv));
+
+  type = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
+  type->so.type = ctype_tag;
+  type->basetype = (basetype);
+  type->scheme_to_c = ((Scheme_Object*)libffi_type);
+  type->c_to_scheme = ((Scheme_Object*)FOREIGN_union);
+
+  scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
+
   return (Scheme_Object*)type;
 }
 #undef MYNAME
@@ -1320,6 +1456,8 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     case FOREIGN_scheme: return REF_CTYPE(Scheme_Object*);
     case FOREIGN_fpointer: return (REF_CTYPE(void*));
     case FOREIGN_struct:
+    case FOREIGN_array:
+    case FOREIGN_union:
       if (gcsrc)
         return scheme_make_foreign_offset_cpointer(src, delta);
       else
@@ -1338,9 +1476,9 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
  * ptr */
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
- * NULL, then any pointer value (any pointer or a struct) is returned, and the
+ * NULL, then any pointer value (any pointer or a struct or array) is returned, and the
  * basetype_p is set to the corrsponding number tag.  If basetype_p is NULL,
- * then a struct value will be *copied* into dst. */
+ * then a struct or array value will be *copied* into dst. */
 static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
                       Scheme_Object *val, intptr_t *basetype_p, intptr_t *_offset,
                       int ret_loc)
@@ -1740,6 +1878,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
       if (!(ret_loc)) scheme_wrong_type("Scheme->C","fpointer",0,1,&(val));
       break;
     case FOREIGN_struct:
+    case FOREIGN_array:
+    case FOREIGN_union:
       if (!SCHEME_FFIANYPTRP(val))
         scheme_wrong_type("Scheme->C", "pointer", 0, 1, &val);
       {
@@ -1752,7 +1892,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
                  CTYPE_PRIMTYPE(type)->size);
           return NULL;
         } else {
-          *basetype_p = FOREIGN_struct;
+          *basetype_p = CTYPE_PRIMLABEL(type);
           if (_offset && is_gcable_pointer(val)) {
             *_offset = poff;
             return p;
@@ -2559,7 +2699,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
    * be ignored by the GC is avalues.)
    */
   GC_CAN_IGNORE ForeignAny *ivals, oval;
-  void **avalues, *p, *newp, *tmp;
+  void **avalues, *p, *newp;
   GC_CAN_IGNORE ForeignAny stack_ivals[MAX_QUICK_ARGS];
   void *stack_avalues[MAX_QUICK_ARGS];
   intptr_t stack_offsets[MAX_QUICK_ARGS];
@@ -2592,7 +2732,8 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   /* If this is a struct return value, then need to malloc in any case, even if
    * the size is smaller than ForeignAny, because this value will be
    * returned. */
-  if (CTYPE_PRIMLABEL(base) == FOREIGN_struct) {
+  if ((CTYPE_PRIMLABEL(base) == FOREIGN_struct)
+      || (CTYPE_PRIMLABEL(base) == FOREIGN_union)) {
     /* need to have p be a pointer that is invisible to the GC */
     p = malloc(CTYPE_PRIMTYPE(base)->size);
     newp = scheme_malloc_atomic(CTYPE_PRIMTYPE(base)->size);
@@ -2605,7 +2746,8 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   for (i=0; i<nargs; i++) {
     if ((avalues[i] == NULL) && !offsets[i]) /* if this was a non-pointer... */
       avalues[i] = &(ivals[i]); /* ... set the avalues pointer */
-    else if (ivals[i].x_fixnum != FOREIGN_struct) { /* if *not* a struct... */
+    else if ((ivals[i].x_fixnum != FOREIGN_struct)
+             && (ivals[i].x_fixnum != FOREIGN_union)) { /* if *not* a struct... */
       /* ... set the ivals pointer (pointer type doesn't matter) and avalues */
       ivals[i].x_pointer = avalues[i];
       avalues[i] = &(ivals[i]);
@@ -2633,16 +2775,15 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   avalues = NULL;
   switch (CTYPE_PRIMLABEL(base)) {
   case FOREIGN_struct:
+  case FOREIGN_union:
     memcpy(newp, p, CTYPE_PRIMTYPE(base)->size);
     free(p);
     p = newp;
     break;
-  default:
-    /* not sure why this code is here, looks fine to remove this case */
-    if (CTYPE_PRIMTYPE(base) == &ffi_type_pointer) {
-      tmp = ((void**)p)[0];
-      p = &tmp;
-    }
+  case FOREIGN_array:
+    /* array as result is treated as a pointer, so
+       adjust `p' to make C2SCHEME work right */
+    p = *(void **)p;
     break;
   }
   return C2SCHEME(otype, p, 0, 1, 1);
@@ -2689,7 +2830,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "proper list", 1, argc, argv);
     if (NULL == (base = get_ctype_base(otype)))
       scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
-    rtype = CTYPE_PRIMTYPE(base);
+    rtype = CTYPE_ARG_PRIMTYPE(base);
     abi = GET_ABI(MYNAME,3);
     if (argc > 4) {
       save_errno = -1;
@@ -2719,7 +2860,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
         scheme_wrong_type(MYNAME, "list-of-C-types", 1, argc, argv);
       if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
         scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 1, argc, argv);
-      atypes[i] = CTYPE_PRIMTYPE(base);
+      atypes[i] = CTYPE_ARG_PRIMTYPE(base);
     }
     cif = malloc(sizeof(ffi_cif));
     if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
@@ -2776,7 +2917,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   ffi_callback_struct *data;
   Scheme_Object *argv_stack[MAX_QUICK_ARGS];
   int argc = cif->nargs, i;
-  Scheme_Object **argv, *p, *v;
+  Scheme_Object **argv, *p, *v, *t;
 
   data = extract_ffi_callback(userdata);
 
@@ -2787,7 +2928,12 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   if (data->sync && !SCHEME_PROCP(data->sync))
     scheme_start_in_scheduler();
   for (i=0, p=data->itypes; i<argc; i++, p=SCHEME_CDR(p)) {
-    v = C2SCHEME(SCHEME_CAR(p), args[i], 0, 0, 0);
+    t = SCHEME_CAR(p);
+    if (CTYPE_PRIMLABEL(get_ctype_base(t)) == FOREIGN_array) {
+      /* array as argument is treated as a pointer */
+      v = C2SCHEME(t, *(void **)(args[i]), 0, 0, 0);
+    } else
+      v = C2SCHEME(t, args[i], 0, 0, 0);
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);
@@ -3035,7 +3181,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "proper list", 1, argc, argv);
     if (NULL == (base = get_ctype_base(otype)))
       scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
-    rtype = CTYPE_PRIMTYPE(base);
+    rtype = CTYPE_ARG_PRIMTYPE(base);
     abi = GET_ABI(MYNAME,3);
     is_atomic = ((argc > 4) && SCHEME_TRUEP(argv[4]));
     sync = (is_atomic ? scheme_true : NULL);
@@ -3072,7 +3218,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
         scheme_wrong_type(MYNAME, "list-of-C-types", 1, argc, argv);
       if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
         scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 1, argc, argv);
-      atypes[i] = CTYPE_PRIMTYPE(base);
+      atypes[i] = CTYPE_ARG_PRIMTYPE(base);
     }
     if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
       scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
@@ -3303,6 +3449,10 @@ void scheme_init_foreign(Scheme_Env *env)
     scheme_make_prim_w_arity(foreign_make_ctype, "make-ctype", 3, 3), menv);
   scheme_add_global("make-cstruct-type",
     scheme_make_prim_w_arity(foreign_make_cstruct_type, "make-cstruct-type", 1, 3), menv);
+  scheme_add_global("make-array-type",
+    scheme_make_prim_w_arity(foreign_make_array_type, "make-array-type", 2, 2), menv);
+  scheme_add_global("make-union-type",
+    scheme_make_prim_w_arity(foreign_make_union_type, "make-union-type", 1, -1), menv);
   scheme_add_global("ffi-callback?",
     scheme_make_prim_w_arity(foreign_ffi_callback_p, "ffi-callback?", 1, 1), menv);
   scheme_add_global("cpointer?",
@@ -3612,6 +3762,10 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_prim_w_arity((Scheme_Prim *)foreign_make_ctype, "make-ctype", 3, 3), menv);
   scheme_add_global("make-cstruct-type",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 3), menv);
+  scheme_add_global("make-array-type",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-array-type", 2, 2), menv);
+  scheme_add_global("make-union-type",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-union-type", 1, -1), menv);
   scheme_add_global("ffi-callback?",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-callback?", 1, 1), menv);
   scheme_add_global("cpointer?",

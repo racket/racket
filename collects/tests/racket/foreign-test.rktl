@@ -52,6 +52,20 @@
       (when (file-exists? o) (delete-file o))
       (when (file-exists? so) (delete-file so)))))
 
+;; Test arrays
+(define _c7_list (_array/list _byte 7))
+(test 7 ctype-sizeof _c7_list)
+(test 1 ctype-alignof _c7_list)
+
+(test 21 ctype-sizeof (_array _byte 3 7))
+
+(define-cstruct _ic7i ([i1 _int]
+                       [c7 _c7_list]
+                       [i2 _int]))
+
+(define _borl (_union _byte _long))
+(define _ic7iorl (_union _ic7i _long))
+
 (define test-lib (ffi-lib "./foreign-test"))
 
 (for ([n (in-range 5)])
@@ -173,6 +187,82 @@
   (test '(1 2)
         (get-ffi-obj 'scheme_make_pair #f (_fun _scheme _scheme -> _scheme))
         1 '(2))
+  ;; ---
+  ;; test arrays
+  (let ([p (malloc _c7_list)]) ;; should allocate the right size
+    (for ([i 7]) (ptr-set! p _byte i (+ i 10)))
+    (test (for/list ([i 7]) (+ i 10)) cast p _pointer (_list o _byte 7))
+    (t (for/list ([i 7]) (+ i 11)) 'increment_c_array (_fun _pointer -> (_list o _byte 7)) p)
+    (let ([a (ptr-ref p (_array _byte 7))])
+      (test 12 array-ref a 1)
+      (ptr-set! p _byte 1 17)
+      (test 17 array-ref a 1)))
+  (let ([v (for/list ([i 7]) i)])
+    ;; pass array as pointer:
+    ;; FIXME: these tests wrap the result pointer as non-GCable,
+    ;; but _c7_list allocates the argument array as GCable.
+    (t (for/list ([i 7]) (add1 i)) 'increment_c_array (_fun _c7_list -> (_list o _byte 7)) v)
+    (t (for/list ([i 7]) (add1 i)) 'increment_c_array (_fun _c7_list -> _c7_list) v)
+    (let ([r ((ffi 'increment_c_array (_fun _c7_list -> (_array _byte 7))) v)])
+      (test 2 array-ref r 1))
+    ;; Array within struct argument and result:
+    (let* ([ic7i (make-ic7i 13 v 14)]
+           [ic7i-2 ((ffi 'increment_ic7i (_fun _ic7i -> _ic7i)) ic7i)])
+      (test v ptr-ref (cast ic7i _ic7i-pointer _pointer) _c7_list 'abs (ctype-sizeof _int))
+      (test 13 ic7i-i1 ic7i)
+      (test v ic7i-c7 ic7i)
+      (test 14 ic7i-i2 ic7i)
+      (test 14 ic7i-i1 ic7i-2)
+      (test (map add1 v) ic7i-c7 ic7i-2)
+      (test 15 ic7i-i2 ic7i-2)
+      (let ([ic7i-3 ((ffi 'ic7i_cb (_fun _ic7i (_fun _ic7i -> _ic7i) -> _ic7i))
+                     ic7i
+                     (lambda (ic7i-4)
+                       (test 12 ic7i-i1 ic7i-4)
+                       (test (cons 255 (map sub1 (cdr v))) ic7i-c7 ic7i-4)
+                       (test 13 ic7i-i2 ic7i-4)
+                       (make-ic7i 2 (map (lambda (x) (- 252 x)) v) 9)))])
+        (test 3 ic7i-i1 ic7i-3)
+        (test (map add1 (map (lambda (x) (- 252 x)) v)) ic7i-c7 ic7i-3)
+        (test 10 ic7i-i2 ic7i-3))))
+  ;; Two-dimensional array:
+  ;; FIXME: same allocation bug for result as above
+  (let ([v (for/list ([j 3]) (for/list ([i 7]) (+ i j)))]
+        [v2 (for*/vector ([j 3] [i 7]) (+ i i j j))]
+        [v3 (for/vector ([j 3]) (for/vector ([i 7]) (+ i i j j)))])
+    (t v2 'increment_2d_array (_fun (_array/list _byte 3 7) -> (_vector o _byte 21)) v)
+    (t v2 'increment_2d_array (_fun (_array/list (_array/list _byte 7) 3) -> (_vector o _byte 21)) v)
+    (t v3 'increment_2d_array (_fun (_array/list (_array/list _byte 7) 3) -> (_array/vector _byte 3 7)) v))
+  (t 0 'with_2d_array_cb (_fun (_fun (_array _byte 3 7) -> _void) -> _int)
+     (lambda (a) (for ([i 3]) 
+                   (for ([j 7]) 
+                     (test (+ i (* 2 j)) array-ref a i j)
+                     (array-set! a i j (+ (* 2 i) (* 2 j)))))))
+  ;; ---
+  ;; test union
+  (let ([u (ptr-ref (malloc _borl) _borl)])
+    (union-set! u 0 190)
+    (test 190 union-ref u 0)
+    (let ([u2 ((ffi 'increment_borl (_fun _int _borl -> _borl)) 0 u)])
+      (test 191 union-ref u2 0))
+    (union-set! u 1 (expt 2 19))
+    (test (expt 2 19) union-ref u 1)
+    (let ([u2 ((ffi 'increment_borl (_fun _int _borl -> _borl)) 1 u)])
+      (test (add1 (expt 2 19)) union-ref u2 1)))
+  (let ([u (ptr-ref (malloc _ic7iorl) _ic7iorl)])
+    (union-set! u 1 190)
+    (test 190 union-ref u 1)
+    (let ([u2 ((ffi 'increment_ic7iorl (_fun _int _ic7iorl -> _ic7iorl)) 1 u)])
+      (test 191 union-ref u2 1))
+    (let ([v (for/list ([i 7]) i)])
+      (union-set! u 0 (make-ic7i 3 v 88))
+      (test 3 ic7i-i1 (union-ref u 0))
+      (set-ic7i-i1! (union-ref u 0) 9)
+      (test 9 ic7i-i1 (union-ref u 0))
+      (let ([u2 ((ffi 'increment_ic7iorl (_fun _int _ic7iorl -> _ic7iorl)) 0 u)])
+        (test 10 ic7i-i1 (union-ref u2 0))
+        (test 89 ic7i-i2 (union-ref u2 0))
+        (test (map add1 v) ic7i-c7 (union-ref u2 0)))))
   )
 
 ;; test setting vector elements
