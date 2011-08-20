@@ -9,6 +9,7 @@
 	 racket/syntax unstable/match unstable/struct
          mzlib/etc
          scheme/contract
+         racket/stxparam
          (for-syntax
           scheme/list
           (only-in racket/syntax generate-temporary)
@@ -39,7 +40,7 @@
 ;; parent is for struct inheritance.
 ;; ht-stx is the identifier of the intern-table
 ;; key? is #f iff the kind generated should not be interned.
-(define-for-syntax (mk parent ht-stx key?)
+(define-for-syntax (mk parent ht-stx key? the-rec-id)
   (define-syntax-class opt-contract-id
     #:attributes (i contract)
     (pattern i:id
@@ -141,9 +142,9 @@
                             ;; in mk-fold.
                             ;; Thus only def-type'd entities will be properly
                             ;; folded down.
-                            #'(procedure-rename
+                            #`(procedure-rename
                                (lambda ()
-                                 #`(name.*maker (#,type-rec-id flds.i) ...))
+                                 #'(name.*maker (#,the-rec-id flds.i) ...))
                                ;; rename to fold name for better error messages
                                'name.fold)]))
                ;; how do we contract a value of this type?
@@ -200,7 +201,7 @@
 
 ;; rec-ids are identifiers that are of the folded type, so we recur on them.
 ;; kws is e.g. '(#:Type #:Filter #:Object #:PathElem)
-(define-for-syntax (mk-fold hashtable type-rec-id rec-ids kws)
+(define-for-syntax (mk-fold hashtable rec-ids kws)
   (lambda (stx)
     (define new-hashtable (hash-copy hashtable))
     (define-syntax-class clause
@@ -258,7 +259,9 @@
                #:when (no-duplicates? (attribute k.datum))
                #:attr mapping (for/hash ([k* (attribute k.datum)]
                                          [e* (attribute e)])
-                                (values k* e*))))
+                                (values k* (if (identifier? e*)
+                                               (make-rename-transformer e*)
+                                               e*)))))
     (syntax-parse stx
       [(tc (~var recs (sized-list kws)) ty clauses:clause ...)
        ;; map defined types' keywords to their given fold-rhs's.
@@ -267,7 +270,7 @@
        (for ([k (attribute clauses.kw)]
              [v (attribute clauses.val)])
          (hash-set! new-hashtable k v))
-       (with-syntax ([(let-clauses ...)
+       (with-syntax ([(parameterize-clauses ...)
                       (for/list ([rec-id rec-ids]
                                  [k kws])
                         ;; Each rec-id binds to their corresponding given exprs
@@ -278,15 +281,15 @@
                       ;; create all clauses we fold on, with keyword/body
                       (hash-map new-hashtable gen-clause)]
                      [error-msg (quasisyntax/loc stx (error 'tc "no pattern for ~a" #,fold-target))])
-         #`(let (let-clauses ...
-                 ;; binds #'fold-target to the given element to fold down.
-                 ;; e.g. In a type-case, this is commonly "ty." Others perhaps "e".
-                 [#,fold-target ty])
+         #`(syntax-parameterize (parameterize-clauses ...)
+            (let (;; binds #'fold-target to the given element to fold down.
+                  ;; e.g. In a type-case, this is commonly "ty." Others perhaps "e".
+                  [#,fold-target ty])
              ;; then generate the fold
              #,(quasisyntax/loc stx
                  (match #,fold-target
                    match-clauses ...
-                   [_ error-msg]))))])))
+                   [_ error-msg])))))])))
 
 
 (define-syntax (make-prim-type stx)
@@ -314,35 +317,32 @@
                   i.printer ...
                   i.name ...
                   i.pred? ...
+                  i.rec-id ...
                   i.accessors ... ... ;; several accessors per type.
-                  (for-syntax i.hashtable ... i.rec-id ...))
+                  (for-syntax i.hashtable ...))
          ;; make type name and populate hashtable with
          ;; keyword to (list match-expander-stx fields fold-rhs.proc #f)
          ;; e.g. def-type type-name-ht #t
-         (define-syntax i.define-id (mk #'i.name #'i.hashtable i.key?)) ...
+         (define-syntax i.define-id (mk #'i.name #'i.hashtable i.key? #'i.rec-id)) ...
          (define-for-syntax i.hashtable (make-hasheq)) ...
          (define-struct/printer (i.name Rep) (i.field-names ...)
            (lambda (a b c) ((unbox i.printer) a b c))) ...
-         (define-for-syntax i.rec-id #'i.rec-id) ...
+         (define-syntax-parameter i.rec-id
+             (λ (stx)
+                (raise-syntax-error #f
+                                    (format "used outside ~a" 'i.define-id)
+                                    stx))) ...
          (provide i.case ...)
          (define-syntaxes (i.case ...) ;; each fold case gets its own macro.
-           (apply values
+           (let ([rec-ids (list #'i.rec-id ...)])
+             (apply values
                     (map (lambda (ht) ;; each type has a hashtable. For each type...
-                           (define rec-ids (list i.rec-id ...))
                            ;; make its fold function using populated hashtable.
                            ;; [unsyntax (*1)]
                            (mk-fold ht
-                                    ;; binds #'type-rec-id to mk-fold's type-rec-id
-                                    (car rec-ids)
-                                    ;; binds (list #'type-rec-id
-                                    ;;             #'filter-rec-id
-                                    ;;             #'object-rec-id
-                                    ;;             #'pathelem-rec-id
-                                    ;;       ) to rec-ids.
                                     rec-ids
-                                    ;; '(#:Type #:Filter #:Object #:PathElem)
                                     '(i.kw ...)))
-                         (list i.hashtable ...)))))]))
+                         (list i.hashtable ...))))))]))
 
 (make-prim-type [Type def-type #:Type type-case print-type* type-name-ht type-rec-id #:key]
                 [Filter def-filter #:Filter filter-case print-filter* filter-name-ht filter-rec-id]
