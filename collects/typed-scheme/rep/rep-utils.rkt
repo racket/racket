@@ -8,8 +8,8 @@
          "interning.rkt"
 	 racket/syntax unstable/match unstable/struct
          mzlib/etc
-         scheme/contract
          racket/stxparam
+         scheme/contract
          (for-syntax
           scheme/list
           (only-in racket/syntax generate-temporary)
@@ -259,9 +259,7 @@
                #:when (no-duplicates? (attribute k.datum))
                #:attr mapping (for/hash ([k* (attribute k.datum)]
                                          [e* (attribute e)])
-                                (values k* (if (identifier? e*)
-                                               (make-rename-transformer e*)
-                                               e*)))))
+                                (values k* e*))))
     (syntax-parse stx
       [(tc (~var recs (sized-list kws)) ty clauses:clause ...)
        ;; map defined types' keywords to their given fold-rhs's.
@@ -270,26 +268,33 @@
        (for ([k (attribute clauses.kw)]
              [v (attribute clauses.val)])
          (hash-set! new-hashtable k v))
-       (with-syntax ([(parameterize-clauses ...)
-                      (for/list ([rec-id rec-ids]
+       ;; bind given expressions for #:Type etc to local ids
+       (define rec-ids* (generate-temporaries rec-ids))
+       (with-syntax ([(let-clauses ...)
+                      (for/list ([rec-id* rec-ids*]
                                  [k kws])
                         ;; Each rec-id binds to their corresponding given exprs
                         ;; rec-ids and kws correspond pointwise.
-                        #`[#,rec-id #,(hash-ref (attribute recs.mapping) k
-                                                #'values)])]
+                        #`[#,rec-id* #,(hash-ref (attribute recs.mapping) k
+                                                 #'values)])]
+                     [(parameterize-clauses ...)
+                      (for/list ([rec-id rec-ids]
+                                 [rec-id* rec-ids*])
+                        #`[#,rec-id (make-rename-transformer #'#,rec-id*)])]
                      [(match-clauses ...)
                       ;; create all clauses we fold on, with keyword/body
                       (hash-map new-hashtable gen-clause)]
                      [error-msg (quasisyntax/loc stx (error 'tc "no pattern for ~a" #,fold-target))])
-         #`(syntax-parameterize (parameterize-clauses ...)
-            (let (;; binds #'fold-target to the given element to fold down.
-                  ;; e.g. In a type-case, this is commonly "ty." Others perhaps "e".
-                  [#,fold-target ty])
-             ;; then generate the fold
-             #,(quasisyntax/loc stx
-                 (match #,fold-target
-                   match-clauses ...
-                   [_ error-msg])))))])))
+         #`(let (let-clauses ...
+                 ;; binds #'fold-target to the given element to fold down.
+                 ;; e.g. In a type-case, this is commonly "ty." Others perhaps "e".
+                 [#,fold-target ty])
+             (syntax-parameterize (parameterize-clauses ...)
+               ;; then generate the fold
+               #,(quasisyntax/loc stx
+                   (match #,fold-target
+                     match-clauses ...
+                     [_ error-msg])))))])))
 
 
 (define-syntax (make-prim-type stx)
@@ -319,19 +324,20 @@
                   i.pred? ...
                   i.rec-id ...
                   i.accessors ... ... ;; several accessors per type.
-                  (for-syntax i.hashtable ...))
+                  (for-syntax i.hashtable ... ))
          ;; make type name and populate hashtable with
          ;; keyword to (list match-expander-stx fields fold-rhs.proc #f)
          ;; e.g. def-type type-name-ht #t
-         (define-syntax i.define-id (mk #'i.name #'i.hashtable i.key? #'i.rec-id)) ...
+         (define-syntax i.define-id
+           (mk #'i.name #'i.hashtable i.key? #'i.rec-id)) ...
          (define-for-syntax i.hashtable (make-hasheq)) ...
          (define-struct/printer (i.name Rep) (i.field-names ...)
            (lambda (a b c) ((unbox i.printer) a b c))) ...
          (define-syntax-parameter i.rec-id
-             (λ (stx)
-                (raise-syntax-error #f
-                                    (format "used outside ~a" 'i.define-id)
-                                    stx))) ...
+           (λ (stx)
+              (raise-syntax-error #f
+                                  (format "used outside ~a" 'i.define-id)
+                                  stx))) ...
          (provide i.case ...)
          (define-syntaxes (i.case ...) ;; each fold case gets its own macro.
            (let ([rec-ids (list #'i.rec-id ...)])
@@ -341,6 +347,7 @@
                            ;; [unsyntax (*1)]
                            (mk-fold ht
                                     rec-ids
+                                    ;; '(#:Type #:Filter #:Object #:PathElem)
                                     '(i.kw ...)))
                          (list i.hashtable ...))))))]))
 
