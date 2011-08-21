@@ -190,14 +190,12 @@
                     dir))
           (for/fold ([init init]) ([p (directory-list dir)])
             (let ([p* (build-path dir p)])
-              (worker 
-                (if (and (directory-exists? p*) (not (member p omit-paths)))
+              (if (and (directory-exists? p*) (not (member p omit-paths)))
                   (compile-directory-visitor p* (c-get-info/full p*) worker
-                                   #:verbose verbose?
+                                             #:verbose verbose?
                                    #:skip-path skip-path
                                    #:skip-doc-sources? skip-docs?)
-                  null)
-                 init))))
+                  init))))
         init))))
   (define (compile-directory dir info 
                              #:verbose [verbose? #t] 
