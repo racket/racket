@@ -339,6 +339,7 @@ See the scribble documentation on the planet/resolver module.
   ;; install various parameters that can affect the compilation of a planet package back to their original state
   (parameterize ([current-compile (call-with-parameterization orig-paramz current-compile)]
                  [current-eval (call-with-parameterization orig-paramz current-eval)]
+                 [current-module-declare-name #f]
                  [use-compiled-file-paths (call-with-parameterization orig-paramz use-compiled-file-paths)]
                  [current-library-collection-paths (call-with-parameterization orig-paramz current-library-collection-paths)])
     (let-values ([(path pkg) (get-planet-module-path/pkg/internal spec rmp stx load?)])
@@ -628,8 +629,7 @@ See the scribble documentation on the planet/resolver module.
                       (current-time))
               (parameterize ([msfh (manager-skip-file-handler)]
                              [use-compiled-file-paths (list (string->path "compiled"))])
-                (ipp #f the-dir (list owner pkg-name
-                                        extra-path maj min))
+                (ipp #f the-dir (list owner pkg-name extra-path maj min))
                 (unless was-nested?
                   (planet-terse-log 'docs-build pkg-string)
                   (printf "\n============= Rebuilding documentation index =============\n")
