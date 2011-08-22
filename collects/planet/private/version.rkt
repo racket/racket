@@ -2,6 +2,7 @@
 (require (for-syntax syntax/parse)
          unstable/syntax
          racket/syntax
+         mzlib/etc
          "../planet-archives.rkt")
 
 (provide this-package-version
