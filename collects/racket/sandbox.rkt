@@ -890,6 +890,7 @@
               (current-library-collection-paths))
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
+       (read ,(find-system-path 'links-file))
        ,@(compute-permissions allow)
        ,@(sandbox-path-permissions))]
     ;; general info

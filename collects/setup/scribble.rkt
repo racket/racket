@@ -95,7 +95,7 @@
                                   (apply validate i)))
                            infos)])
            (and (not (memq #f infos)) infos))))
-  (define (get-docs i rec)
+  (define ((get-docs main-dirs) i rec)
     (let ([s (validate-scribblings-infos (i 'scribblings))]
           [dir (directory-record-path rec)])
       (if s
@@ -106,6 +106,7 @@
                             (not (memq 'user-doc-root flags))
                             (not (memq 'user-doc flags))
                             (or (memq 'main-doc flags)
+                                (hash-ref main-dirs dir #f)
                                 (pair? (path->main-collects-relative dir))))])
                  (make-doc dir
                            (let ([spec (directory-record-spec rec)])
@@ -117,7 +118,7 @@
                                                             (list '= (directory-record-min rec)))))
                                         (cdr spec))))
                            (build-path dir (car d))
-                           (doc-path dir (cadddr d) flags)
+                           (doc-path dir (cadddr d) flags under-main?)
                            flags under-main? (caddr d))))
              s)
         (begin (setup-printf
@@ -126,8 +127,12 @@
                null))))
   (define docs
     (let* ([recs (find-relevant-directory-records '(scribblings) 'all-available)]
+           [main-dirs (parameterize ([current-library-collection-paths
+                                      (list (find-collects-dir))])
+                        (for/hash ([k (in-list (find-relevant-directories '(scribblings) 'no-planet))])
+                          (values k #t)))]
            [infos (map get-info/full (map directory-record-path recs))])
-      (filter-user-docs (append-map get-docs infos recs) make-user?)))
+      (filter-user-docs (append-map (get-docs main-dirs) infos recs) make-user?)))
   (define-values (main-docs user-docs) (partition doc-under-main? docs))
   (define (can-build*? docs) (can-build? only-dirs docs))
   (define auto-main? (and auto-start-doc? (ormap can-build*? main-docs)))

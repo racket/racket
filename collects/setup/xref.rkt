@@ -3,6 +3,7 @@
 (require scribble/xref
          scheme/fasl
          scheme/path
+         setup/dirs
          "getinfo.rkt"
          "private/path-utils.rkt")
 
@@ -11,6 +12,12 @@
 (define cached-xref #f)
 
 (define (get-dests)
+  (define main-dirs
+    (parameterize ([current-library-collection-paths
+                    (let ([d (find-collects-dir)]) 
+                      (if d (list d) null))])
+      (for/hash ([k (in-list (find-relevant-directories '(scribblings) 'no-planet))])
+        (values k #t))))
   (for*/list ([dir (find-relevant-directories '(scribblings) 'all-available)]
               [d ((get-info/full dir) 'scribblings)])
     (unless (and (list? d) (pair? d))
@@ -23,7 +30,7 @@
                      (path-replace-suffix (file-name-from-path (car d))
                                           #"")))])
       (and (not (and (len . >= . 3) (memq 'omit (caddr d))))
-           (let* ([d (doc-path dir name flags 'false-if-missing)]
+           (let* ([d (doc-path dir name flags (hash-ref main-dirs dir #f) 'false-if-missing)]
                   [p (and d (build-path d "out.sxref"))])
              (and p (file-exists? p) p))))))
 

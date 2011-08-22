@@ -1,3 +1,4 @@
+
 ;; Expects parameters to be set before invocation.
 ;; Calls `exit' when done.
 
@@ -27,7 +28,8 @@
          "path-to-relative.rkt"
          "private/omitted-paths.rkt"
          "parallel-build.rkt"
-         "collects.rkt")
+         "collects.rkt"
+         "link.rkt")
 (define-namespace-anchor anchor)
 
 ;; read info files using whatever namespace, .zo-use, and compilation
@@ -168,7 +170,7 @@
   ;;              Find Collections                 ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define (make-cc* collection path root-dir info-path shadowing-policy)
+  (define (make-cc* collection path omit-root info-root info-path info-path-mode shadowing-policy)
     (define info
       (or (with-handlers ([exn:fail? (warning-handler #f)]) (getinfo path))
           (lambda (flag mk-default) (mk-default))))
@@ -186,12 +188,15 @@
                     "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
     ;; this check is also done in compiler/compiler-unit, in compile-directory
-    (and (not (eq? 'all (omitted-paths path getinfo)))
+    (and (not (eq? 'all (omitted-paths path getinfo omit-root)))
          (make-cc collection path
                   (if name
                       (format "~a (~a)" path-name name)
                       path-name)
-                  info root-dir info-path shadowing-policy)))
+                  info 
+                  omit-root 
+                  info-root info-path info-path-mode 
+                  shadowing-policy)))
 
   (define ((warning-handler v) exn)
     (setup-printf "WARNING" "~a" (exn->string exn))
@@ -199,23 +204,39 @@
 
   ;; collection->cc : listof path -> cc/#f
   (define collection->cc-table (make-hash))
-  (define (collection->cc collection-p)
+  (define (collection->cc collection-p 
+                          #:omit-root [omit-root #f]
+                          #:info-root [given-info-root #f]
+                          #:info-path [info-path #f]
+                          #:info-path-mode [info-path-mode 'relative])
     (hash-ref! collection->cc-table collection-p
       (lambda ()
-        (define root-dir
-          (ormap (lambda (p)
-                   (parameterize ([current-library-collection-paths (list p)])
-                     (and (with-handlers ([exn:fail? (lambda (x) #f)])
-                            (apply collection-path collection-p))
-                          p)))
-                 (current-library-collection-paths)))
-        (make-cc* collection-p
-                  (apply collection-path collection-p)
-                  root-dir
-                  (build-path root-dir "info-domain" "compiled" "cache.rktd")
-                  ;; by convention, all collections have "version" 1 0. This
-                  ;; forces them to conflict with each other.
-                  (list (cons 'lib (map path->string collection-p)) 1 0)))))
+        (define info-root
+          (or given-info-root
+              (ormap (lambda (p)
+                       (parameterize ([current-library-collection-paths (list p)]
+                                      ;; to disable collection links file:
+                                      [use-user-specific-search-paths #f])
+                         (and (with-handlers ([exn:fail? (lambda (x) #f)])
+                                (apply collection-path collection-p))
+                              p)))
+                     (current-library-collection-paths))))
+        (let ([dir (apply collection-path collection-p)])
+          (unless (directory-exists? dir)
+            (error name-sym "directory does not exist for collection: ~s"
+                   (string-join (map path->string collection-p) "/")))
+          (make-cc* collection-p
+                    dir
+                    (if (eq? omit-root 'dir)
+                        dir
+                        omit-root) ; #f => `omitted-paths' can reconstruct it
+                    info-root
+                    (or info-path
+                        (build-path info-root "info-domain" "compiled" "cache.rktd"))
+                    info-path-mode
+                    ;; by convention, all collections have "version" 1 0. This
+                    ;; forces them to conflict with each other.
+                    (list (cons 'lib (map path->string collection-p)) 1 0))))))
 
   ;; planet-spec->planet-list : (list string string nat nat) -> (list path string string (listof string) nat nat) | #f
   ;; converts a planet package spec into the information needed to create a cc structure
@@ -241,8 +262,10 @@
     (and (directory-exists? path)
          (make-cc* #f
                    path
-                   #f ; don't need root-dir; absolute paths in cache.rktd will be ok
+                   path
+                   #f ; don't need info-root; absolute paths in cache.rktd will be ok
                    (get-planet-cache-path)
+                   'abs
                    (list `(planet ,owner ,pkg-file ,@extra-path) maj min))))
 
   ;; planet-cc->sub-cc : cc (listof bytes [encoded path]) -> cc
@@ -268,6 +291,23 @@
           (lambda ()
             (let ([cc (collection->cc (list collection))])
               (when cc (hash-set! ht collection cc))))))
+      (let ([main-collects (find-collects-dir)])
+        (for ([c (in-list (links #:user? #f))])
+          (let* ([c (string->path c)]
+                 [cc (collection->cc (list c) 
+                                     #:info-root main-collects
+                                     #:info-path-mode 'abs-in-relative
+                                     #:omit-root 'dir)])
+            (when cc (hash-set! ht c cc)))))
+      (when (make-user)
+        (let ([user-collects (find-user-collects-dir)])
+          (for ([c (in-list (links))])
+            (let* ([c (string->path c)]
+                   [cc (collection->cc (list c)
+                                       #:info-root user-collects
+                                       #:info-path-mode 'abs-in-relative
+                                       #:omit-root 'dir)])
+              (when cc (hash-set! ht c cc))))))
       (hash-map ht (lambda (k v) v))))
 
   ;; Close over sub-collections
@@ -279,7 +319,7 @@
              ;; collection should not have been included, but we might
              ;; jump in if a command-line argument specified a
              ;; coll/subcoll
-             [omit (omitted-paths ccp getinfo)]
+             [omit (omitted-paths ccp getinfo (cc-omit-root cc))]
              [subs (if (eq? 'all omit)
                      '()
                      (filter (lambda (p)
@@ -292,7 +332,8 @@
               (append-map (lambda (cc) (cons cc (loop (get-subs cc)))) l))))
 
   (define (collection-tree-map collections-to-compile 
-              #:skip-path [orig-skip-path (and (avoid-main-installation) (find-collects-dir))])
+                               #:skip-path [orig-skip-path (and (avoid-main-installation) 
+                                                                (find-collects-dir))])
     (define skip-path (and orig-skip-path (path->bytes 
                                            (simplify-path (if (string? orig-skip-path)
                                                               (string->path orig-skip-path)
@@ -308,14 +349,18 @@
       
     (define (build-collection-tree cc)
       (define (make-child-cc parent-cc name) 
-        (collection->cc (append (cc-collection parent-cc) (list name))))
+        (collection->cc (append (cc-collection parent-cc) (list name))
+                        #:info-root (cc-info-root cc)
+                        #:info-path (cc-info-path cc)
+                        #:info-path-mode (cc-info-path-mode cc)
+                        #:omit-root (cc-omit-root cc)))
       (let* ([info (cc-info cc)]
              [ccp (cc-path cc)]
              ;; note: omit can be 'all, if this happens then this
              ;; collection should not have been included, but we might
              ;; jump in if a command-line argument specified a
              ;; coll/subcoll
-             [omit (omitted-paths ccp getinfo)])
+             [omit (omitted-paths ccp getinfo (cc-omit-root cc))])
           (let-values ([(dirs files)
                         (if (eq? 'all omit)
                             (values null null)
@@ -325,7 +370,6 @@
                                                           (skip-path? p))))
                                                (directory-list ccp))))])
             (let ([children-ccs (map build-collection-tree (filter-map (lambda (x) (make-child-cc cc x)) dirs))]
-                      
                   [srcs (append
                            (filter extract-base-filename/ss files)
                            (if (make-docs)
@@ -342,7 +386,11 @@
   (define (plt-collection-closure collections-to-compile)
     (define (make-children-ccs cc children)
       (map (lambda (child)
-           (collection->cc (append (cc-collection cc) (list child))))
+           (collection->cc (append (cc-collection cc) (list child))
+                           #:info-root (cc-info-root cc)
+                           #:info-path (cc-info-path cc)
+                           #:info-path-mode (cc-info-path-mode cc)
+                           #:omit-root (cc-omit-root cc)))
            children))
     (collection-closure collections-to-compile make-children-ccs))
 
@@ -668,6 +716,7 @@
                 [info (cc-info cc)])
             (clean-cc dir info)
             (compile-directory-zos dir info 
+                                   #:omit-root (cc-omit-root cc)
                                    #:managed-compile-zo caching-managed-compile-zo
                                    #:skip-path (and (avoid-main-installation) (find-collects-dir))
                                    #:skip-doc-sources? (not (make-docs))))))))
@@ -748,7 +797,7 @@
                                                     (warning-handler null)])
                                      (with-input-from-file p read))
                                    null))])
-                        ;; Convert list to hash table. Incluse only well-formed
+                        ;; Convert list to hash table. Include only well-formed
                         ;; list elements, and only elements whose corresponding
                         ;; collection exists.
                         (let ([t (make-hash)]
@@ -757,28 +806,32 @@
                             (set! all-ok? #t)
                             (for ([i l])
                               (match i
-                                [(list
-                                  (? (lambda (a)
-                                       (and (bytes? a)
-                                            (let ([p (bytes->path a)])
-                                              ;; If we have a root directory,
-                                              ;; then the path must be relative
-                                              ;; to it, otherwise it must be
-                                              ;; absolute:
-                                              (and (if (cc-root-dir cc)
-                                                     (relative-path? p)
-                                                     (complete-path? p))
-                                                   (let ([dir (if (cc-root-dir cc)
-                                                                  (build-path (cc-root-dir cc) p)
-                                                                  p)])
-                                                     (or (file-exists? (build-path dir "info.rkt"))
-                                                         (file-exists? (build-path dir "info.ss"))))))))
-                                     a)
-                                  (list (? symbol? b) ...)
-                                  c
-                                  (? integer? d)
-                                  (? integer? e))
-                                 (hash-set! t a (list b c d e))]
+                                [(list (? bytes? a) (list (? symbol? b) ...) c (? integer? d) (? integer? e))
+                                 (let ([p (bytes->path a)])
+                                   ;; Check that the path is suitably absolute or relative:
+                                   (let ([dir (case (cc-info-path-mode cc)
+                                                [(relative abs-in-relative)
+                                                 (or (and (relative-path? p)
+                                                          (build-path (cc-info-root cc) p))
+                                                     (and (complete-path? p)
+                                                          ;; `c' must be `(lib ...)'
+                                                          (list? c) 
+                                                          (pair? c)
+                                                          (eq? 'lib (car c))
+                                                          (pair? (cdr c))
+                                                          (andmap string? (cdr c))
+                                                          ;; Path must match collection resolution:
+                                                          (with-handlers ([exn:fail? (lambda (exn) #f)])
+                                                            (equal? p (apply collection-path (cdr c))))
+                                                          p))]
+                                                [(abs)
+                                                 (and (complete-path? p)
+                                                      p)])])
+                                     (if (and dir
+                                              (or (file-exists? (build-path dir "info.rkt"))
+                                                  (file-exists? (build-path dir "info.ss"))))
+                                         (hash-set! t a (list b c d e))
+                                         (set! all-ok? #f))))]
                                 [_ (set! all-ok? #f)])))
                           ;; Record the table loaded for this collection root
                           ;; in the all-roots table:
@@ -792,7 +845,7 @@
           ;; Add this collection's info to the table, replacing any information
           ;; already there.
           (hash-set! t
-                     (path->bytes (if (cc-root-dir cc)
+                     (path->bytes (if (eq? (cc-info-path-mode cc) 'relative)
                                       ;; Use relative path:
                                       (apply build-path (cc-collection cc))
                                       ;; Use absolute path:
@@ -802,20 +855,16 @@
       (hash-for-each ht
         (lambda (info-path ht)
           (unless (equal? ht (hash-ref ht-orig info-path))
-            (let-values ([(base name must-be-dir?) (split-path info-path)])
-              (unless (path? base)
-                (error 'make-info-domain
-                       "Internal error: cc had invalid info-path: ~e"
-                       info-path))
-              (make-directory* base)
-              (let ([p info-path])
-                (setup-printf "updating" "~a" (path->relative-string/setup p))
-                (with-handlers ([exn:fail? (warning-handler (void))])
-                  (with-output-to-file p
-                    #:exists 'truncate/replace
-                    (lambda ()
-                      (write (hash-map ht cons))
-                      (newline)))))))))))
+            (define-values (base name dir?) (split-path info-path))
+            (make-directory* base)
+            (let ([p info-path])
+              (setup-printf "updating" "~a" (path->relative-string/setup p))
+              (with-handlers ([exn:fail? (warning-handler (void))])
+                (with-output-to-file p
+                  #:exists 'truncate/replace
+                  (lambda ()
+                    (write (hash-map ht cons))
+                    (newline))))))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                       Docs                    ;;

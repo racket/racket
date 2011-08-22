@@ -227,12 +227,15 @@ READ_ONLY static Scheme_Object *doc_dir_symbol, *desk_dir_symbol;
 READ_ONLY static Scheme_Object *init_dir_symbol, *init_file_symbol, *sys_dir_symbol;
 READ_ONLY static Scheme_Object *exec_file_symbol, *run_file_symbol, *collects_dir_symbol;
 READ_ONLY static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
+READ_ONLY static Scheme_Object *links_file_symbol;
 
 SHARED_OK static Scheme_Object *exec_cmd;
 SHARED_OK static Scheme_Object *run_cmd;
 SHARED_OK static Scheme_Object *collects_path;
 THREAD_LOCAL_DECL(static Scheme_Object *original_pwd);
 SHARED_OK static Scheme_Object *addon_dir;
+SHARED_OK static Scheme_Object *links_file;
+THREAD_LOCAL_DECL(static Scheme_Object *inst_links_path);
 
 #endif
 READ_ONLY static Scheme_Object *windows_symbol, *unix_symbol;
@@ -275,6 +278,7 @@ void scheme_init_file(Scheme_Env *env)
   REGISTER_SO(collects_dir_symbol);
   REGISTER_SO(orig_dir_symbol);
   REGISTER_SO(addon_dir_symbol);
+  REGISTER_SO(links_file_symbol);
 #endif
   REGISTER_SO(windows_symbol);
   REGISTER_SO(unix_symbol);
@@ -302,6 +306,7 @@ void scheme_init_file(Scheme_Env *env)
   collects_dir_symbol = scheme_intern_symbol("collects-dir");
   orig_dir_symbol = scheme_intern_symbol("orig-dir");
   addon_dir_symbol = scheme_intern_symbol("addon-dir");
+  links_file_symbol = scheme_intern_symbol("links-file");
 #endif
 
   windows_symbol = scheme_intern_symbol("windows");
@@ -5826,7 +5831,8 @@ enum {
   id_init_dir,
   id_init_file,
   id_sys_dir,
-  id_addon_dir
+  id_addon_dir,
+  id_links_file
 };
 
 Scheme_Object *scheme_get_run_cmd(void)
@@ -5877,6 +5883,15 @@ find_system_path(int argc, Scheme_Object **argv)
   } else if (argv[0] == addon_dir_symbol) {
     if (addon_dir) return addon_dir;
     which = id_addon_dir;
+  } else if (argv[0] == links_file_symbol) {
+    if (links_file) return links_file;
+    if (addon_dir) {
+      Scheme_Object *pa[2];
+      pa[0] = addon_dir;
+      pa[1] = scheme_make_path("links.rktd");
+      return scheme_build_path(2, pa);
+    }
+    which = id_links_file;
   } else {
     scheme_wrong_type("find-system-path", "system-path-symbol",
 		      0, argc, argv);
@@ -5919,9 +5934,11 @@ find_system_path(int argc, Scheme_Object **argv)
 
     if ((which == id_pref_dir) 
 	|| (which == id_pref_file)
-	|| (which == id_addon_dir)) {
+	|| (which == id_addon_dir)
+	|| (which == id_links_file)) {
 #if defined(OS_X) && !defined(XONX)
-      if (which == id_addon_dir)
+      if ((which == id_addon_dir)
+          || (which == id_links_file))
 	home_str = "~/Library/Racket/";
       else
 	home_str = "~/Library/Preferences/";
@@ -5968,6 +5985,8 @@ find_system_path(int argc, Scheme_Object **argv)
       return append_path(home, scheme_make_path("/racket-prefs.rktd" + ends_in_slash));
 #endif
     }
+    if (which == id_links_file)
+      return append_path(home, scheme_make_path("/links.rktd" + ends_in_slash));
   }
 #endif
 
@@ -6005,7 +6024,8 @@ find_system_path(int argc, Scheme_Object **argv)
 
       if ((which == id_addon_dir)
 	  || (which == id_pref_dir)
-	  || (which == id_pref_file)) 
+	  || (which == id_pref_file)
+	  || (which == id_links_file)) 
 	which_folder = CSIDL_APPDATA;
       else if (which == id_doc_dir) {
 #       ifndef CSIDL_PERSONAL
@@ -6109,6 +6129,8 @@ find_system_path(int argc, Scheme_Object **argv)
       return append_path(home, scheme_make_path("\\racketrc.rktl" + ends_in_slash));
     if (which == id_pref_file)
       return append_path(home, scheme_make_path("\\racket-prefs.rktd" + ends_in_slash));
+    if (which == id_links_file)
+      return append_path(home, scheme_make_path("\\links.rktd" + ends_in_slash));
     return home;
   }
 #endif
@@ -6175,6 +6197,26 @@ void scheme_set_addon_dir(Scheme_Object *p)
     REGISTER_SO(addon_dir);
   }
   addon_dir = p;
+}
+
+/* should only called from main */
+void scheme_set_links_file(Scheme_Object *p)
+{
+  if (!links_file) {
+    REGISTER_SO(links_file);
+  }
+  links_file = p;
+}
+
+Scheme_Object *scheme_find_links_path(int argc, Scheme_Object *argv[])
+{
+  if (inst_links_path)
+    return inst_links_path;
+
+  REGISTER_SO(inst_links_path);
+  inst_links_path = scheme_apply(argv[0], 0, NULL);
+
+  return inst_links_path;
 }
 
 /********************************************************************************/

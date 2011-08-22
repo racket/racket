@@ -85,8 +85,17 @@ by @racket[kind], which must be one of the following:
 
   ]}
 
+ @item{@indexed-racket['links-file] --- the user-specific
+ @tech{collection links file} for specifying the location of library
+ @tech{collections}. This file is specified by the
+ @indexed-envvar{PLTLINKSFILE} environment variable, and it can be
+ overridden by the @DFlag{links} or @Flag{C} command-line flag.  If no
+ environment variable or flag is specified, or if the value is not a
+ legal path name, then this file defaults to @filepath{links.rktd} in
+ the directory reported by @racket[(find-system-path 'addon-dir)].}
+
  @item{@indexed-racket['addon-dir] --- a directory for installing
- Racket extensions. This directory is specified by the
+ user-specific Racket extensions. This directory is specified by the
  @indexed-envvar{PLTADDONDIR} environment variable, and it can be
  overridden by the @DFlag{addon} or @Flag{A} command-line flag.  If no
  environment variable or flag is specified, or if the value is not a

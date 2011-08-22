@@ -203,32 +203,50 @@ access languages like @filepath{literal.rkt} and
 @filepath{literal.rkt} into a Racket @tech{collection} named
 @filepath{literal}.
 
-To install a collection, you can create a directory either in the main
-Racket installation or in a user-specific directory. Use
-@racket[find-collects-dir] or @racket[find-user-collects-dir] from
-@racketmodname[setup/dirs] to find the directory:
+There are two ways to create the @filepath{literal} collection (see
+also @secref["link-collection"]):
 
-@interaction[
-(require setup/dirs)
-(eval:alts (find-user-collects-dir)
-           (build-path "/home/racketeer/.racket/"
-                       (version)
-                       "collects"))
-]
+@itemlist[
 
-Move @filepath{literal.rkt} to @filepath{literal/lang/reader.rkt}
-within the directory reported by @racket[find-collects-dir] or
-@racket[find-user-collects-dir]. That is, the file
-@filepath{literal.rkt} must be renamed to @filepath{reader.rkt} and
-placed in a @filepath{lang} sub-directory of the @filepath{literal}
-collection.
+ @item{You can create a directory either in the main Racket
+       installation or in a user-specific directory. Use
+       @racket[find-collects-dir] or @racket[find-user-collects-dir]
+       from @racketmodname[setup/dirs] to find the directory:
 
-@racketblock[
-.... @#,elem{(the main installation or the user's space)}
- !- @#,filepath{collects}  
-      !- @#,filepath{literal}
-           !- @#,filepath{lang}
-                !- @#,filepath{reader.rkt}
+       @interaction[
+       (require setup/dirs)
+       (eval:alts (find-user-collects-dir)
+                  (build-path "/home/racketeer/.racket/"
+                              (version)
+                              "collects"))
+       ]
+
+       Move @filepath{literal.rkt} to
+       @filepath{literal/lang/reader.rkt} within the directory reported
+       by @racket[find-collects-dir] or
+       @racket[find-user-collects-dir]. That is, the file
+       @filepath{literal.rkt} must be renamed to @filepath{reader.rkt}
+       and placed in a @filepath{lang} sub-directory of the
+       @filepath{literal} collection.
+
+       @racketblock[
+       .... @#,elem{(the main installation or the user's space)}
+        !- @#,filepath{collects}  
+             !- @#,filepath{literal}
+                  !- @#,filepath{lang}
+                       !- @#,filepath{reader.rkt}
+       ]}
+
+ @item{Alternatively, move @filepath{literal.rkt} to
+      @filepath{literal/lang/reader.rkt} for any directory name
+      @filepath{literal}. Then, in the directory that contains
+      @filepath{literal}, use the command line
+
+      @commandline{raco link literal} 
+
+      to register the @filepath{literal} directory as the
+      @filepath{literal} collection.}
+
 ]
 
 After moving the file, you can use @racket[literal] directly after
@@ -247,17 +265,17 @@ for more information on using @exec{raco}.}
 You can also package a collection for others to install by using the
 @exec{raco pack} command-line tool:
 
-@commandline{raco pack --collection literal.plt literal}
+@commandline{raco pack --collect literal.plt literal}
 
 Then, others can install the @filepath{literal} collection using
 @exec{raco setup}:
 
-@commandline{raco setup literal.plt}
+@commandline{raco setup -A literal.plt}
 
 @margin-note{See @other-manual['(lib "planet/planet.scrbl")] for more
 information about @|PLaneT| packages.}
 
-A better approach may be to distribute your language as a @|PLaneT|
+Another approach is to distribute your language as a @|PLaneT|
 package. A drawback of using a @|PLaneT| package is that users must
 type @racket[@#,hash-lang[] @#,racketmodname[planet]] followed by a
 @|PLaneT| path to access the language. The great advantages are that the

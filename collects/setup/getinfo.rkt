@@ -88,6 +88,7 @@
 
 (define preferred-table #f)
 (define all-available-table #f)
+(define no-planet-table #f)
 
 ;; reset-relevant-directories-state! : -> void
 (define (reset-relevant-directories-state!)
@@ -104,7 +105,8 @@
                 (list i)
                 l))))
          #f #f))
-  (set! all-available-table (make-table cons #f #f)))
+  (set! all-available-table (make-table cons #f #f))
+  (set! no-planet-table (make-table cons #f #f)))
 
 (reset-relevant-directories-state!)
 
@@ -160,20 +162,23 @@
   (define t
     (cond [(eq? key 'preferred) preferred-table]
           [(eq? key 'all-available) all-available-table]
+          [(eq? key 'no-planet) no-planet-table]
           [else (error 'find-relevant-directories "Invalid key: ~s" key)]))
   ;; A list of (cons cache.rktd-path root-dir-path)
   ;;  If root-dir-path is not #f, then paths in the cache.rktd
   ;;  file are relative to it. #f is used for the planet cache.rktd file.
   (define search-path
-    (cons (cons user-infotable #f)
-          (map (lambda (coll)
-                 (cons (build-path coll "info-domain" "compiled" "cache.rktd")
-                       coll))
-               (current-library-collection-paths))))
-  (unless (equal? (table-paths t) search-path)
-    (set-table-ht! t (make-hasheq))
-    (set-table-paths! t search-path)
-    (populate-table! t))
+    ((if (eq? key 'no-planet) (lambda (a l) l) cons)
+     (cons user-infotable #f)
+     (map (lambda (coll)
+            (cons (build-path coll "info-domain" "compiled" "cache.rktd")
+                  coll))
+          (current-library-collection-paths))))
+  (when t
+    (unless (equal? (table-paths t) search-path)
+      (set-table-ht! t (make-hasheq))
+      (set-table-paths! t search-path)
+      (populate-table! t)))
   (let ([unsorted
          (if (= (length syms) 1)
            ;; Simple case: look up in table
@@ -205,7 +210,7 @@
  (get-info/full ((path?) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
  (find-relevant-directories
   (->* [(listof symbol?)]
-       [(lambda (x) (memq x '(preferred all-available)))]
+       [(lambda (x) (memq x '(preferred all-available no-planet)))]
        (listof path?)))
  (struct directory-record
          ([maj integer?]
@@ -215,5 +220,5 @@
           [syms (listof symbol?)]))
  (find-relevant-directory-records
   (->* [(listof symbol?)]
-       [(or/c 'preferred 'all-available)]
+       [(or/c 'preferred 'all-available 'no-planet)]
        (listof directory-record?))))

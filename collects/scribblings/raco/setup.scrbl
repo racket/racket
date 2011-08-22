@@ -2,6 +2,7 @@
 
 @(require scribble/manual
           scribble/bnf
+          "common.rkt"
          (for-label racket
                     racket/future
                     setup/setup-unit
@@ -1086,16 +1087,13 @@ An @deftech{unpackable} is one of the following:
 
 @defproc[(find-relevant-directories
           (syms (listof symbol?))
-          (mode (symbols 'preferred 'all-available) 'preferred)) (listof path?)]{
+          (mode (or/c 'preferred 'all-available 'no-planet) 'preferred)) (listof path?)]{
 
    Returns a list of paths identifying installed directories (i.e.,
    collections and installed @|PLaneT| packages) whose
    @filepath{info.rkt} file defines one or more of the given
    symbols. The result is based on a cache that is computed by
-   @exec{raco setup} and stored in the @indexed-file{info-domain}
-   sub-directory of each collection directory (as determined by the
-   @envvar{PLT_COLLECTION_PATHS} environment variable, etc.) and the
-   file @filepath{cache.rkt} in the user add-on directory.
+   @exec{raco setup}.
    Note that the cache may be out of date by the time you call
    @racket[get-info/full], so do not assume that it won't return
    @racket[#f].
@@ -1105,20 +1103,27 @@ An @deftech{unpackable} is one of the following:
    providing to @racket[get-info/full].
 
    If @racket[mode] is specified, it must be either
-   @racket['preferred] (the default) or @racket['all-available]. If
-   mode is @racket['all-available], @racket[find-relevant-collections]
+   @racket['preferred] (the default), @racket['all-available], or @racket[no-planet]. If
+   @racket[mode] is @racket['all-available], @racket[find-relevant-collections]
    returns all installed directories whose info files contain the
    specified symbols---for instance, all installed PLaneT packages
-   will be searched if @racket['all-available] is specified. If mode
+   will be searched if @racket['all-available] is specified. If @racket[mode]
    is @racket['preferred], then only a subset of ``preferred''
-   packages will be searched, and in particular only the directory
+   packages will be searched: only the directory
    containing the most recent version of any PLaneT package will be
-   returned.
+   returned. If @racket[mode] is @racket['no-planet], then only  PLaneT
+   packages are not included in the search.
 
    No matter what @racket[mode] is specified, if more than one
    collection has the same name, @racket[find-relevant-directories]
-   will only search the one that occurs first in the
-   @envvar{PLT_COLLECTION_PATHS} environment variable.}
+   will only search the one that occurs first in a search that through
+   the directories of @racket[current-library-collection-paths].
+   Collection links from the installation-wide @tech[#:doc
+   reference-doc]{collection links file} are cached with the
+   installation's main @filepath{collects} directory, and links from
+   the user-specific @tech[#:doc reference-doc]{collection links file}
+   are cached with the user-specific directory @racket[(build-path
+   (find-system-path 'addon-dir) (version) "collects")].}
 
 @defproc[(find-relevant-directory-records
           [syms (listof symbol?)]

@@ -82,7 +82,7 @@
                              implicit?
                              get-info/full)))))))
 
-(define (omitted-paths* dir get-info/full)
+(define (omitted-paths* dir get-info/full root-dir)
   (unless (and (path-string? dir) (complete-path? dir) (directory-exists? dir))
     (raise-type-error 'omitted-paths
                       "complete path to an existing directory" dir))
@@ -90,8 +90,13 @@
          [r (ormap (lambda (root+table)
                      (let ([r (relative-from dir* (car root+table))])
                        (and r (cons (reverse r) root+table))))
-                   (force roots))]
+                   (if root-dir
+                       (list (list (explode-path root-dir)
+                                   (make-hash)
+                                   #t))
+                       (force roots)))]
          [r (and r (apply accumulate-omitted get-info/full r))])
+                
     (unless r
       (error 'omitted-paths
              "given directory path is not in any collection root: ~e" dir))
@@ -101,5 +106,5 @@
 
 (define omitted-paths-memo (make-hash))
 
-(define (omitted-paths dir get-info/full)
-  (with-memo omitted-paths-memo dir (omitted-paths* dir get-info/full)))
+(define (omitted-paths dir get-info/full [root-dir #f])
+  (with-memo omitted-paths-memo dir (omitted-paths* dir get-info/full root-dir)))

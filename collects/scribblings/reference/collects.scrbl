@@ -5,10 +5,10 @@
 
 A @deftech{library} is @racket[module] declaration for use by multiple
 programs. Racket further groups libraries into @deftech{collections}
-that can be easily distributed and easily added to a local Racket
+that can be easily distributed and added to a local Racket
 installation. 
 
-Some collections are distributed via @|PLaneT|. Such collections are
+Some libraries are distributed via @|PLaneT| packages. Such libraries are
 referenced through a @racket[planet] module path (see
 @racket[require]) and are downloaded by Racket on demand.
 
@@ -17,9 +17,11 @@ collection is a directory that is located in a @filepath{collects}
 directory relative to the Racket executable. A collection can also be
 installed in a user-specific directory.  More generally, the search
 path for installed collections can be configured through the
-@racket[current-library-collection-paths] parameter. In all of these
-cases, the collections are referenced through @racket[lib] paths (see
-@racket[require]).
+@racket[current-library-collection-paths] parameter. Finally, the
+location of collections can be specified through the @tech{collection
+links files}; see @secref["links-file"] for more information.  In all
+of these cases, the collections are referenced through @racket[lib]
+paths (see @racket[require]) or symbolic shorthands.
 
 For example, the following module uses the @filepath{getinfo.rkt}
 library module from the @filepath{setup} collection, and the
@@ -33,7 +35,8 @@ racket
 ....
 ]
 
-This example is more compactly and more commonly written as
+This example is more compactly and more commonly written using
+symbolic shorthands:
 
 @racketmod[
 racket
@@ -60,14 +63,16 @@ resolver}, as specified by the @racket[current-module-name-resolver]
 parameter.
 
 For the default @tech{module name resolver}, the search path for
-collections is determined by the
-@racket[current-library-collection-paths] parameter. The list of paths
-in @racket[current-library-collection-paths] is searched from first to
+collections is determined by the content of @racket[(find-system-path
+'links-file)] (if it exists) and the
+@racket[current-library-collection-paths] parameter. The collection
+links and then list of paths in
+@racket[current-library-collection-paths] is searched from first to
 last to locate the first that contains @racket[_rel-string]. In other
-words, the filesystem tree for each element in the search path is
-spliced together with the filesystem trees of other path
-elements. Some Racket tools rely on unique resolution of module path
-names, so an installation and
+words, the filesystem tree for each element in the link table and
+search path is spliced together with the filesystem trees of other
+path elements. Some Racket tools rely on unique resolution of module
+path names, so an installation and
 @racket[current-library-collection-paths] configuration should not
 allow multiple files to match the same collection and file name.
 
@@ -156,3 +161,46 @@ the directory produced by @racket[(find-system-path 'addon-dir)], are
 included in search paths for collections and other files. For example,
 @racket[find-library-collection-paths] omits the user-specific
 collection directory when this parameter's value is @racket[#f].}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "links-file"]{Collection Links}
+
+The @deftech{collection links files} are used by
+@racket[collection-file-path], @racket[collection-path], and the
+default @tech{module name resolver} to locate collections before
+trying the @racket[(current-library-collection-paths)] search
+path. Furthermore, a user-specific @tech{collection links file} takes
+precedence over an installation-wide @tech{collection links file}, but
+the user-specific @tech{collection links file} is used only the
+@racket[use-user-specific-search-paths] parameter is set to
+@racket[#t].
+
+The path of the user-specific @tech{collection links file} is by
+@racket[(find-system-path 'links-file)], while an installation-wide
+@tech{collection links file} is @filepath{links.rktd} in the
+@filepath{config} collection within the installation's main collection
+directory. Each @tech{collection links file} is cached by Racket, but
+the file is re-read if its timestamp changes.
+
+Each @tech{collection links file} is @racket[read] with default reader
+parameter settings to obtain a list. Every element of the list must be
+a link specification with either the form @racket[(_string _path)] or
+the form @racket[(_string _path _regexp)]. In both cases, the
+@racket[_string] names a top-level @tech{collection}, and
+@racket[_path] is a path that can be used as the collection's path
+(directly, as opposed to a subdirectory of @racket[_path] named by
+@racket[_string]). If @racket[_path] is a relative path, it is
+relative to the directory containing the @tech{collection links
+file}. If @racket[_regexp] is specified in a link, then the link is
+used only if @racket[(regexp-match?  _regexp (version))] produces a
+true result.
+
+A single top-level collection can have multiple links in a
+@tech{collection links file}. The corresponding paths are effectively
+spliced together, since the paths are tried in order to locate a file
+or sub-collection.
+
+The @exec{raco link} command-link tool can display, install, and
+remove links in the @tech{collection links file}. See @secref[#:doc
+raco-doc "link"] in @other-manual[raco-doc] for more information.

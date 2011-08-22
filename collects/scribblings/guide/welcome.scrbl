@@ -162,9 +162,14 @@ racket
 (extract "the cat out of the bag")
 ]
 
-then it is a complete program that prints ``cat'' when run. To
-package this program as an executable, choose one of the following
-options:
+then it is a complete program that prints ``cat'' when run. You can
+run the program within DrRacket or using @racket[enter!] in
+@exec{racket}, but if the program is saved in @nonterm{src-filename},
+you can also run it from a command line with
+
+@commandline{racket @nonterm{src-filename}}
+
+To package the program as an executable, you have a few options:
 
 @itemize[
 
