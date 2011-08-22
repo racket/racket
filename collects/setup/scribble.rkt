@@ -265,6 +265,8 @@
                                   (doc-src-file (info-doc i))))
                         (hash-set! deps i #t)))
                     (when first? 
+                      ;; FIXME: instead of special-casing 'dep, we should
+                      ;; skip any key that is covered by `(info-searches info)'.
                       (unless (eq? (car k) 'dep) 
                         (not-found k))))))
             (when first?
@@ -627,7 +629,7 @@
                                     v)))]
                     [sci (send renderer serialize-info ri)]
                     [defs (send renderer get-defined ci)]
-                    [undef (send renderer get-undefined ri)]
+                    [undef (send renderer get-external ri)]
                     [searches (resolve-info-searches ri)]
                     [need-out-write?
                      (or (not out-v)
@@ -753,7 +755,7 @@
                     (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci)))]
               [sci (render-time "serialize" (send renderer serialize-info ri))]
               [defs (render-time "defined" (send renderer get-defined ci))]
-              [undef (render-time "undefined" (send renderer get-undefined ri))]
+              [undef (render-time "undefined" (send renderer get-external ri))]
               [in-delta? (not (equal? (any-order undef) (any-order ff-undef)))]
               [out-delta? (or (not (serialized=? sci ff-sci))
                               (not (equal? (any-order defs) (any-order ff-provides))))])

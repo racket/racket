@@ -187,6 +187,7 @@ object.}
 
 Serializes the collected info in @racket[ri].}
 
+
 @defmethod[(deserialize-info [v any/c]
                              [ci collect-info?]
                              [#:root root-path (or/c path-string? false/c) #f])
@@ -198,6 +199,32 @@ If @racket[root-path] is not @racket[#f], then file paths that are
 recorded in @racket[ci] as relative to an instantiation-supplied
 @racket[root-path] are deserialized as relative instead to the given
 @racket[root-path].}
+
+
+@defmethod[(get-defined [ci collect-info?]) (listof tag?)]{
+
+Returns a list of tags that were defined within the documents
+represented by @racket[ci].}
+
+
+@defmethod[(get-external [ri resolve-info?]) (listof tag?)]{
+
+Returns a list of tags that were referenced but not defined within the
+documents represented by @racket[ri] (though possibly found in
+cross-reference information transferred to @racket[ri] via
+@racket[xref-transfer-info]).}
+
+
+@defmethod[(get-undefined [ri resolve-info?]) (listof tag?)]{
+
+Returns a list of tags that were referenced by the resolved documents
+with no target found either in the resolved documents represented by
+@racket[ri] or cross-reference information transferred to @racket[ri]
+via @racket[xref-transfer-info].
+
+If multiple tags were referenced via @racket[resolve-search] and a
+target was found for any of the tags using the same dependency key,
+then no tag in the set is included in the list of undefined tags.}
 
 }
 

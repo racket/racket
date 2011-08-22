@@ -39,13 +39,20 @@
                  #t)]))))
 
 (define (resolve-get/ext? part ri key)
+  (resolve-get/ext?* part ri key #f))
+
+(define (resolve-get/ext?* part ri key search-key)
   (let-values ([(v ext?) (resolve-get/where part ri key)])
     (when ext?
-      (hash-set! (resolve-info-undef ri) (tag-key key ri) #t))
+      (hash-set! (resolve-info-undef ri) (tag-key key ri) 
+                 (if v 'found search-key)))
     (values v ext?)))
 
 (define (resolve-get part ri key)
-  (let-values ([(v ext?) (resolve-get/ext? part ri key)])
+  (resolve-get* part ri key #f))
+
+(define (resolve-get* part ri key search-key)
+  (let-values ([(v ext?) (resolve-get/ext?* part ri key search-key)])
     v))
 
 (define (resolve-get/tentative part ri key)
@@ -61,14 +68,12 @@
                                        search-key s-ht)
                             s-ht)))])
     (hash-set! s-ht key #t))
-  (resolve-get part ri key))
+  (resolve-get* part ri key search-key))
 
 (define (resolve-get-keys part ri key-pred)
-  (let ([l null])
-    (hash-for-each
-     (collected-info-info (part-collected-info part ri))
-     (lambda (k v) (when (key-pred k) (set! l (cons k l)))))
-    l))
+  (for/list ([k (in-hash-keys (collected-info-info (part-collected-info part ri)))]
+             #:when (key-pred k))
+    k))
 
 (provide (struct-out collect-info)
          (struct-out resolve-info))
