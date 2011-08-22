@@ -62,16 +62,19 @@ Gets a rectangle of pixels in the bitmap, subject to the same rules
  same method directly, so it is not necessary to select a bitmap into
  a DC to extracts its pixel values.
 
-The pixel RGB values are copied into @racket[pixels]. The first byte
+The pixel RGB values and alphas are copied into @racket[pixels] 
+ (or just alpha values if @racket[just-alpha?] is true). The first byte
  represents an alpha value of the pixel at (@racket[x], @racket[y]),
  the second byte represents a red value of the pixel at (@racket[x],
- @racket[y]), the third byte is the blue value, etc. In this way, the
+ @racket[y]), the third byte is the green value, etc. In this way, the
  first @math{@racket[width] * @racket[height] * 4} bytes of
  @racket[pixels] are set to reflect the current pixel values in the
  DC. The pixels are in row-major order, left to right then top to
  bottom.
 
-If @racket[just-alpha?] is false, if the bitmap does not have an alpha
+If the bitmap has an alpha channel, then the alpha value for each pixel
+ is always set in @racket[pixels]. 
+ If @racket[just-alpha?] is false and the bitmap does not have an alpha
  channel, then the alpha value for each pixel is set to 255. If
  @racket[just-alpha?] is true, then @italic{only} the alpha value is set
  for each pixel; if the bitmap has no alpha channel, then the alpha

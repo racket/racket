@@ -6,6 +6,8 @@
 Similar to @racket[post-script-dc%], but generates a SVG (scalable
  vector graphics) file instead of a PostScript file.
 
+@|PrintNote|
+
 @defconstructor[([width (and/c real? (not/c negative?))]
                  [height (and/c real? (not/c negative?))]
                  [output (or/c path-string? output-port?)]
