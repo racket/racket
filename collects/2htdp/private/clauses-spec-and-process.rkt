@@ -86,7 +86,8 @@
                [(null? spec) #false]
                [(or (free-identifier=? (caar spec) kw)
                     (free-identifier=? (caar spec) kw-alt))
-                (syntax->list (cdar spec))]
+                (for/list ([i (syntax->list (cdar spec))])
+                  (syntax-property i 'inferred-name (syntax-e (caar spec))))]
                [else (loop (cdr spec))])))
          (if r ((third s) r) (fourth s)))
        Spec))
