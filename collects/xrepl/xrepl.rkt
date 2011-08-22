@@ -321,7 +321,7 @@
          [arg (if (equal? arg (string->path "-")) (cdr (last-2dirs)) arg)])
     (if (directory-exists? arg)
       (begin (current-directory arg) (report-directory-change 'cd))
-      (eprintf "cd: no such directory: ~a\n" arg))))
+      (eprintf "; cd: no such directory: ~a\n" arg))))
 
 (defcommand pwd #f
   "display the current directory"
@@ -349,7 +349,7 @@
                             [(not cmd) arg]
                             [(not arg) cmd]
                             [else (string-append cmd " " arg)]))
-        (eprintf "(exit with an error status)\n"))
+        (eprintf "; (exit with an error status)\n"))
       (when here (putenv "F" "")))))
 
 (defcommand (edit e) "<file> ..."
@@ -366,7 +366,7 @@
                    "no $EDITOR variable"))
          (run-command 'drracket)]
         [(not (apply system* exe (getarg 'path 'list #:default here-path)))
-         (eprintf "(exit with an error status)\n")]
+         (eprintf "; (exit with an error status)\n")]
         [else (void)]))
 
 (define ->running-dr #f)
@@ -378,7 +378,7 @@
   (parameterize ([current-custodian c]
                  [current-namespace ns]
                  [exit-handler (λ (x)
-                                 (eprintf "DrRacket shutdown.\n")
+                                 (eprintf "; DrRacket shutdown.\n")
                                  (set! ->running-dr #f)
                                  (custodian-shutdown-all c))])
     ;; construct a kind of a fake sandbox to run drracket in
@@ -1293,7 +1293,7 @@
         (set! prefix
               (with-handlers
                   ([exn? (λ (e)
-                           (eprintf "error during prompt calculation: ~a\n"
+                           (eprintf "; error during prompt calculation: ~a\n"
                                     (exn-message e))
                            "[internal-error]")])
                 (get-prefix)))
@@ -1331,7 +1331,7 @@
          plain-reader
          (with-handlers ([exn?
                           (λ (e)
-                            (eprintf "Warning: no readline support (~a)\n"
+                            (eprintf "; Warning: no readline support (~a)\n"
                                      (exn-message e))
                             plain-reader)])
            (dynamic-require 'readline/rep-start #f)
@@ -1339,11 +1339,11 @@
            (if (eq? (current-prompt-read)
                     (dynamic-require RL 'read-cmdline-syntax))
              (make-readline-reader)
-             (begin (eprintf "Warning: could not initialize readline\n")
+             (begin (eprintf "; Warning: could not initialize readline\n")
                     plain-reader))))]
       [(readline-input)
-       (eprintf "Note: readline already loaded\n~a\n"
-                "  (better to let xrepl load it for you)")
+       (eprintf "; Note: readline already loaded\n~a\n"
+                ";   (better to let xrepl load it for you)")
        (make-readline-reader)]
       [else plain-reader]))
   ;; IO management
@@ -1364,7 +1364,7 @@
                  [(more-inputs? r)
                   (set! more-inputs (append (more-inputs-list r) more-inputs))
                   (reader-loop)]
-                 [else (eprintf "Warning: internal weirdness: ~s\n" r) r]))]
+                 [else (eprintf "; Warning: internal weirdness: ~s\n" r) r]))]
         [_ (begin (unless from-queue? (last-input-syntax input)) input)])))
   reader-loop)
 
