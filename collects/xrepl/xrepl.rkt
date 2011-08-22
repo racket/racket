@@ -554,7 +554,13 @@
               [else (cmderror "not an identifier or a known module: ~s" dtm)]))
       (define bind? (or bind (not mod)))
       (when bind? (describe-binding dtm bind level))
-      (when mod   (describe-module dtm mod bind?)))))
+      (when mod
+        (parameterize (;; without this the reported paths are wrong
+                       [current-load-relative-directory
+                        (and (path? mod)
+                             (let-values ([(base name dir?) (split-path mod)])
+                               (and (path? base) base)))])
+          (describe-module dtm mod bind?))))))
 (define (describe-binding sym b level)
   (define at-phase (phase->name level " (~a)"))
   (cond

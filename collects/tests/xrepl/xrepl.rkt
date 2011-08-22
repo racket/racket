@@ -70,8 +70,10 @@
        (repl-> (car strs))
        (loop (cdr strs) #f)])))
 
+(define tmp (path->string (find-system-path 'temp-dir)))
+
 (provide test-xrepl)
-(define test-xrepl @make-xrepl-test|={
+(define test-xrepl @make-xrepl-test{
   -> «(- 2 1)»
   1
   -> «(values 2 3)»
@@ -121,5 +123,14 @@
   ;   imports: mzlib/runtime-path.rkt, racket/base.rkt.
   ;   imports-for-syntax: racket/base.rkt.
   ;   direct syntax exports: define-runtime-module-path.
+  -> «(current-directory "/( none )")»  ⇒ racket allows this
+  ; now in /( none )                    ⇒ reports without ,cd
+  -> «,cd @|tmp|»
+  ; now in @tmp
+  -> «,desc scribble/html»
+  ; `scribble/html' is a module,
+  ;   located at scribble/html.rkt
+  ;   imports: racket/base.rkt, scribble/html/main.rkt.
+  ;   no direct exports.
   -> «,ex»
-  |=@||}=|)
+  @||})
