@@ -1284,6 +1284,35 @@
               exp]
              [(begin .  bodies)
               #`(begin #,@(map annotate/module-top-level (syntax->list #`bodies)))]
+             ; STC: for lazy racket, need this case to catch and hide toplevel-forcer
+             ; stepper tests will expand to this case, with call-with-values
+             [(#%plain-app 
+               call-with-values 
+               (#%plain-lambda 
+                ()
+                (#%plain-app (#%plain-app toplevel-forcer) operand)) 
+               print-values)
+              (stepper-recertify
+               #`(#%plain-app
+                  call-with-values
+                  (#%plain-lambda 
+                   () 
+                   (#%plain-app 
+                    (#%plain-app toplevel-forcer)
+                    #,(top-level-annotate/inner (top-level-rewrite #'operand) exp #f)))
+                  (#%plain-lambda 
+                   vals
+                   (begin
+                     (#,exp-finished-break
+                      (#%plain-app 
+                       list 
+                       (#%plain-app 
+                        list 
+                        #,(lambda () exp) #f (#%plain-lambda () vals))))
+                     (#%plain-app 
+                      call-with-values 
+                      (#%plain-lambda () vals) values))))
+               exp)]
              [(#%plain-app call-with-values (#%plain-lambda () body) print-values)
               ;; re-extract the plain-lambda term, to use in recertification:
               (let ([lam-for-cert (syntax-case exp (#%plain-app call-with-values)
@@ -1304,8 +1333,9 @@
                                        call-with-values (#%plain-lambda () vals)
                                        print-values))))
                  exp))]
-             ; STC: for lazy racket
+             ; STC: for lazy racket, need this case to catch and hide toplevel-forcer
              ; This is similar to app case above, but with toplevel-forcer
+             ; normal lazy stepper operation expands to this case
              [(#%plain-app (#%plain-app toplevel-forcer) operand)
               (stepper-recertify
                #`(#%plain-app
