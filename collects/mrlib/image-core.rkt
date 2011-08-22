@@ -281,7 +281,7 @@ has been moved out).
       (send bdc set-bitmap bm)
       (send bdc erase)
       (render-image obj bdc 0 0)
-      (send bdc get-argb-pixels 0 0 (send bm get-width) (send bm get-height) bytes))
+      (send bdc get-argb-pixels 0 0 (send bm get-width) (send bm get-height) bytes #f #t))
     
     ;; this could render the image into a bitmap and then get the hash code of the bytes
     ;; cannot render the tree into a string and then get the hash code of that string
