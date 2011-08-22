@@ -67,7 +67,8 @@ has been moved out).
 ;;  (make-image shape bb boolean (or/c point #f))
 ;; NOTE: the shape field is mutated when normalized, as
 ;;       is the normalized? field.
-(define (make-image shape bb normalized? [pinhole #f]) (new image% [shape shape] [bb bb] [normalized? normalized?] [pinhole pinhole]))
+(define (make-image shape bb normalized? [pinhole #f])
+  (new image% [shape shape] [bb bb] [normalized? normalized?] [pinhole pinhole]))
 (define (image-shape p) (send p get-shape))
 (define (image-bb p) (send p get-bb))
 (define (image-normalized? p) (send p get-normalized?))
@@ -132,10 +133,11 @@ has been moved out).
 ;;  - flip
 
 ;; a bitmap is:
-;;  - (make-ibitmap (is-a?/c bitmap%) angle positive-real 
-;;                  hash[(list boolean[flip] number[x-scale] number[y-scale] number[angle]) -o> (cons (is-a?/c bitmap%) (is-a?/c bitmap%)])
+;;  - (make-ibitmap (and/c (is-a?/c bitmap%) (lambda (x) (send x has-alpha-channel?)))
+;;                  angle positive-real 
+;;                  hash[(list boolean[flip] number[x-scale] number[y-scale] number[angle]) -o> (is-a?/c bitmap%)])
 ;;    NOTE: bitmap copying needs to happen in 'write' and 'read' methods
-(define-struct/reg-mk ibitmap #:reflect-id bitmap (raw-bitmap raw-mask angle x-scale y-scale cache)
+(define-struct/reg-mk ibitmap #:reflect-id bitmap (raw-bitmap angle x-scale y-scale cache)
   #:omit-define-syntaxes #:transparent
   #:property prop:custom-write (λ (x y z) (bitmap-write x y z)))
 
@@ -264,8 +266,11 @@ has been moved out).
                  (equal? pinhole (send that get-pinhole))
                  (or (and (not (skip-image-equality-fast-path))  ;; this is here to make testing more effective
                           (equal? (get-normalized-shape) (send that get-normalized-shape)))
-                     (let ([w (+ 1 (round (inexact->exact (bb-right bb))))]    ;; some shapes (ie, rectangles) draw 1 outside the bounding box
-                           [h (+ 1 (round (inexact->exact (bb-bottom bb))))])  ;; so we make the bitmap slightly bigger to accommodate that.
+                     
+                     ;; some shapes (ie, rectangles) draw 1 outside the bounding box
+                     ;; so we make the bitmap slightly bigger to accommodate that.
+                     (let ([w (+ 1 (round (inexact->exact (bb-right bb))))]
+                           [h (+ 1 (round (inexact->exact (bb-bottom bb))))])
                        (or ;(zero? w)
                            ;(zero? h)
                            (let ([bm1 (make-bitmap w h #t)]
@@ -453,6 +458,19 @@ has been moved out).
                                   (list-ref parsed-args 3)
                                   (list-ref parsed-args 4)
                                   (make-hash))]
+                    [(and (eq? tag 'struct:bitmap)
+                          (= arg-count 6))
+                     ;; we changed the arity of the bitmap constructor from old versions,
+                     ;; so fix it up here.
+                     ;; it used to have these fields: (raw-bitmap raw-mask angle x-scale y-scale cache)
+                     ;; and the mask field was dropped in favor of always having an alpha bitmap in the 
+                     ;; raw-bitmap field. The bytes that were written out always had the mask
+                     ;; factored in, tho (which led to a bug) so we can just ignore the mask here
+                     (make-bitmap (list-ref parsed-args 0)
+                                  (list-ref parsed-args 2)
+                                  (list-ref parsed-args 3)
+                                  (list-ref parsed-args 4)
+                                  (make-hash))]
                     [(and (eq? tag 'struct:color)
                           (= arg-count 3))
                      ;; we changed the arity of the color constructor from old versions,
@@ -620,7 +638,6 @@ has been moved out).
         (let ([bitmap (flip-shape shape)])
           (make-flip (flip-flipped? shape)
                      (make-ibitmap (ibitmap-raw-bitmap bitmap)
-                                   (ibitmap-raw-mask bitmap)
                                    (ibitmap-angle bitmap)
                                    (* x-scale (ibitmap-x-scale bitmap))
                                    (* y-scale (ibitmap-y-scale bitmap))
@@ -720,7 +737,10 @@ has been moved out).
 (define (render-cn-or-simple-shape shape dc dx dy)
   (cond
     [(crop? shape)
-     (render-cropped-shape (crop-points shape) (crop-shape shape) (λ (s) (render-normalized-shape s dc dx dy)) dc dx dy)]
+     (render-cropped-shape (crop-points shape)
+                           (crop-shape shape)
+                           (λ (s) (render-normalized-shape s dc dx dy))
+                           dc dx dy)]
     [else
      (render-simple-shape shape dc dx dy)]))
 
@@ -889,10 +909,7 @@ has been moved out).
        (send dc draw-bitmap 
              bm
              (- dx (/ (send bm get-width) 2))
-             (- dy (/ (send bm get-height) 2))
-             'solid
-             (send the-color-database find-color "black")
-             (get-rendered-mask np-atomic-shape)))]
+             (- dy (/ (send bm get-height) 2))))]
     [(text? np-atomic-shape)
      (let ([θ (degrees->radians (text-angle np-atomic-shape))]
            [font (send dc get-font)])
@@ -963,15 +980,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
 (define (get-rendered-bitmap flip-bitmap)
   (let ([key (get-bitmap-cache-key flip-bitmap)])
-    (calc-rendered-bitmap flip-bitmap key)
-    (car (hash-ref (ibitmap-cache (flip-shape flip-bitmap))
-                   key))))
-
-(define (get-rendered-mask flip-bitmap)
-  (let ([key (get-bitmap-cache-key flip-bitmap)])
-    (calc-rendered-bitmap flip-bitmap key)
-    (cdr (hash-ref (ibitmap-cache (flip-shape flip-bitmap))
-                   key))))
+    (lookup/calc-rendered-bitmap flip-bitmap key)))
 
 (define (get-bitmap-cache-key flip-bitmap)
   (let ([bm (flip-shape flip-bitmap)])
@@ -980,70 +989,65 @@ the mask bitmap and the original bitmap are all together in a single bytes!
           (ibitmap-y-scale bm)
           (ibitmap-angle bm))))
 
-(define (calc-rendered-bitmap flip-bitmap key)
+(define (lookup/calc-rendered-bitmap flip-bitmap key)
   (let ([bitmap (flip-shape flip-bitmap)])
     (cond
-      [(hash-ref (ibitmap-cache bitmap) key #f) => (λ (x) x)]
+      [(hash-ref (ibitmap-cache bitmap) key #f) => values]
       [else
        (let ([flipped? (flip-flipped? flip-bitmap)])
-         (define-values (orig-bitmap-obj orig-mask-obj) (values (ibitmap-raw-bitmap bitmap)
-                                                                (ibitmap-raw-mask bitmap)))
-         (define-values (bitmap-obj mask-obj)
+         (define orig-bitmap-obj (ibitmap-raw-bitmap bitmap))
+         (define bitmap-obj
            (cond
              [(<= (* (ibitmap-x-scale bitmap) 
                      (ibitmap-y-scale bitmap))
                   1)
               ;; since we prefer to rotate big things, we rotate first
-              (let-values ([(bitmap-obj mask-obj) (do-rotate bitmap orig-bitmap-obj orig-mask-obj flipped?)])
-                (do-scale bitmap bitmap-obj mask-obj))]
+              (do-scale bitmap (do-rotate bitmap orig-bitmap-obj flipped?))]
              [else
               ;; since we prefer to rotate big things, we scale first
-              (let-values ([(bitmap-obj mask-obj) (do-scale bitmap orig-bitmap-obj orig-mask-obj)])
-                (do-rotate bitmap bitmap-obj mask-obj flipped?))]))
-         (define pair (cons bitmap-obj mask-obj))
-         (hash-set! (ibitmap-cache bitmap) key pair)
-         pair)])))
+              (do-rotate bitmap (do-scale bitmap orig-bitmap-obj) flipped?)]))
+         (hash-set! (ibitmap-cache bitmap) key bitmap-obj)
+         bitmap-obj)])))
 
-(define (do-rotate bitmap bitmap-obj mask-obj flip?)
+(define (do-rotate bitmap bitmap-obj flip?)
   (cond
     [(and (not flip?) (zero? (ibitmap-angle bitmap)))
      ;; don't rotate anything in this case.
-     (values bitmap-obj mask-obj)]
+     bitmap-obj]
     [else
      (let ([θ (degrees->radians (ibitmap-angle bitmap))])
-       (let-values ([(bytes w h) (bitmap->bytes bitmap-obj mask-obj)])
+       (let-values ([(bytes w h) (bitmap->bytes bitmap-obj #f)])
          (let-values ([(rotated-bytes rotated-w rotated-h)
                        (rotate-bytes bytes w h θ)])
            (let* ([flipped-bytes (if flip?
                                      (flip-bytes rotated-bytes rotated-w rotated-h)
                                      rotated-bytes)]
-                  [bm (bytes->bitmap flipped-bytes rotated-w rotated-h)]
-                  [mask (send bm get-loaded-mask)])
-             (values bm mask)))))]))
+                  [bm (bytes->bitmap flipped-bytes rotated-w rotated-h)])
+             bm))))]))
 
-(define (do-scale bitmap orig-bm orig-mask)
-  (let ([x-scale (ibitmap-x-scale bitmap)]
-        [y-scale (ibitmap-y-scale bitmap)])
-    (cond
-      [(and (= 1 x-scale) (= 1 y-scale))
-       ;; no need to scale in this case
-       (values orig-bm orig-mask)]
-      [else
-       (let* ([bdc (make-object bitmap-dc%)]
-              [orig-w (send orig-bm get-width)]
-              [orig-h (send orig-bm get-height)]
-              [scale-w (ceiling (inexact->exact (* x-scale (send orig-bm get-width))))]
-              [scale-h (ceiling (inexact->exact (* y-scale (send orig-bm get-height))))]
-              [new-bm (make-bitmap scale-w scale-h)])
-         
-         (send bdc set-bitmap new-bm)
-         (send bdc set-scale x-scale y-scale)
-         (send bdc erase)
-         (send bdc draw-bitmap orig-bm 0 0 'solid (send the-color-database find-color "black") orig-mask)
-         
-         (send bdc set-bitmap #f)
-         
-         (values new-bm #f))])))
+(define (do-scale bitmap orig-bm)
+  (define x-scale (ibitmap-x-scale bitmap))
+  (define y-scale (ibitmap-y-scale bitmap))
+  (cond
+    [(and (= 1 x-scale) (= 1 y-scale))
+     ;; no need to scale in this case
+     orig-bm]
+    [else
+     (define bdc (make-object bitmap-dc%))
+     (define orig-w (send orig-bm get-width))
+     (define orig-h (send orig-bm get-height))
+     (define scale-w (ceiling (inexact->exact (* x-scale (send orig-bm get-width)))))
+     (define scale-h (ceiling (inexact->exact (* y-scale (send orig-bm get-height)))))
+     (define new-bm (make-bitmap scale-w scale-h))
+     
+     (send bdc set-bitmap new-bm)
+     (send bdc set-scale x-scale y-scale)
+     (send bdc erase)
+     (send bdc draw-bitmap orig-bm 0 0)
+     
+     (send bdc set-bitmap #f)
+     
+     new-bm]))
 
 (define (text->font text)
   (define adjusted-size (min (max (inexact->exact (round (text-size text))) 1) 255))
@@ -1171,13 +1175,26 @@ the mask bitmap and the original bitmap are all together in a single bytes!
                           (send bm get-loaded-mask)))])))
 
 (define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
-  (let ([w (send bm get-width)]
-        [h (send bm get-height)])
-    (make-image (make-translate (/ w 2)
-                                (/ h 2)
-                                (make-ibitmap bm mask-bm 0 1 1 (make-hash)))
-                (make-bb w h h)
-                #f)))
+  (define w (send bm get-width))
+  (define h (send bm get-height))
+  (define alpha-bm
+    (cond
+      [(and (is-a? bm bitmap%)
+            (send bm has-alpha-channel?))
+       bm]
+      [else
+       (define bm (make-bitmap w h))
+       (define bdc (make-object bitmap-dc% bm))
+       (send bdc draw-bitmap bm 0 0 'solid
+             (send the-color-database find-color "black")
+             mask-bm)
+       (send bdc set-bitmap #f)
+       bm]))
+  (make-image (make-translate (/ w 2)
+                              (/ h 2)
+                              (make-ibitmap alpha-bm 0 1 1 (make-hash)))
+              (make-bb w h h)
+              #f))
 
 (define (bitmap-write bitmap port mode)
   (let* ([v (struct->vector bitmap)]
@@ -1189,12 +1206,11 @@ the mask bitmap and the original bitmap are all together in a single bytes!
           (λ (i)
             (let ([o (vector-ref v i)])
               (let ([nv (and o 
-                             (call-with-values (λ () (bitmap->bytes o)) vector))])
+                             (call-with-values (λ () (bitmap->bytes o #f)) vector))])
                 (vector-set! v i nv))))])
     (update 1)
-    (update 2)
     ;; don't save the cache
-    (vector-set! v 6 (make-hash))
+    (vector-set! v 5 (make-hash))
     (recur v port)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1221,7 +1237,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          curve-segment-color
          make-pen pen? pen-color pen-width pen-style pen-cap pen-join pen
          
-         make-ibitmap ibitmap? ibitmap-raw-bitmap ibitmap-raw-mask ibitmap-angle ibitmap-x-scale ibitmap-y-scale 
+         make-ibitmap ibitmap? ibitmap-raw-bitmap ibitmap-angle ibitmap-x-scale ibitmap-y-scale 
          ibitmap-cache
 
          make-flip flip? flip-flipped? flip-shape

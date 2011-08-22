@@ -45,6 +45,7 @@
          mrlib/private/image-core-bitmap
          lang/posn
          racket/math
+         racket/runtime-path
          racket/class
          racket/file
          racket/gui/base
@@ -1390,6 +1391,22 @@
       [i2 (make-object image-snip% (collection-file-path "bug09.png" "icons"))])
   (test (equal? (rotate 0 i1) i2) => #t)
   (test (equal? i1 (rotate 0 i2)) => #t))
+
+(define-runtime-path u.png "u.png")
+(let ()
+  (define i (rotate 0 (make-object bitmap% u.png 'unknown/mask)))
+  (define t (new text%))
+  (send t insert i)
+  (define bop (open-output-bytes))
+  (void (send t save-port bop))
+  (define bip (open-input-bytes (get-output-bytes bop)))
+  (define t2 (new text%))
+  (void (send t2 insert-port bip))
+  (test (equal? (send t find-first-snip)
+                (send t2 find-first-snip))
+        =>
+        #t))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

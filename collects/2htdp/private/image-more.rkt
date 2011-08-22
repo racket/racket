@@ -734,7 +734,6 @@
            [flipped? (flip-flipped? atomic-shape)])
        (make-flip flipped?
                   (make-ibitmap (ibitmap-raw-bitmap bitmap)
-                                (ibitmap-raw-mask bitmap)
                                 (bring-between (if flipped? 
                                                    (+ (ibitmap-angle bitmap) θ)
                                                    (- (ibitmap-angle bitmap) θ))
@@ -1297,7 +1296,7 @@
              (not (file-exists? arg)))
     (error 'bitmap "could not find the file ~a" (path->string arg)))
   ;; the rotate does a coercion to a 2htdp/image image
-  (rotate 0 (make-object image-snip% (make-object bitmap% arg 'unknown/mask))))
+  (rotate 0 (make-object image-snip% (make-object bitmap% arg 'unknown/alpha))))
 
 (define/chk (bitmap/url string)
   ;; the rotate does a coercion to a 2htdp/image image
