@@ -19,7 +19,7 @@ range.
 
 Functions in a programming language have domains and ranges, too, and
 a contract can ensure that a function receives only values in its
-range and produces only values in its domain. A @racket[->] creates
+domain and produces only values in its range. A @racket[->] creates
 such a contract for a function. The forms after a @racket[->] specify
 contracts for the domains and finally a contract for the range.
 
