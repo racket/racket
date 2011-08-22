@@ -31,10 +31,6 @@ the tag is a pair, its first value is used for printing, so the most
 recently pushed tag which corresponds to the inheriting type will be
 displayed.
 
-Note that tags are compared with @racket[eq?] (or @racket[memq]), which means
-an interface can hide its value from users (e.g., not provide the
-@racket[cpointer-tag] accessor), which makes such pointers un-fake-able.
-
 @racket[_cpointer/null] is similar to @racket[_cpointer] except that
 it tolerates @cpp{NULL} pointers both going to C and back.  Note that
 @cpp{NULL} pointers are represented as @racket[#f] in Racket, so they

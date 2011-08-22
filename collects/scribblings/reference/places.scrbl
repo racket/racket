@@ -223,7 +223,10 @@ messages:
        immutable vector;}
 
  @item{@tech{place channels}, where a @tech{place descriptor} is
-       automatically replaced by a plain place channel; and}
+       automatically replaced by a plain place channel;}
+
+ @item{foreign pointers such as @racket[_cpointers] and 
+       cstructs; and}
 
  @item{values produced by @racket[shared-flvector],
        @racket[make-shared-flvector], @racket[shared-fxvector],
