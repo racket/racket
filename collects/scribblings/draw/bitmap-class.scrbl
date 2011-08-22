@@ -132,6 +132,14 @@ Gets the width of the bitmap in pixels.
 
 }
 
+@defmethod[(has-alpha-channel?)
+           boolean?]{
+
+Returns @racket[#t] if the bitmap has an alpha channel,
+@racket[#f] otherwise.
+
+}
+
 @defmethod[(is-color?)
            boolean?]{
 
