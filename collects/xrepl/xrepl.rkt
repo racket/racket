@@ -23,7 +23,7 @@
 (define (autoloaded? sym) (hash-ref autoloaded-specs sym #f))
 (define-syntax-rule (defautoload libspec id ...)
   (begin (define (id . args)
-           (set! id (parameterize ([current-namespace hidden-namespace])
+           (set! id (parameterize ([current-namespace (here-namespace)])
                       (dynamic-require 'libspec 'id)))
            (hash-set! autoloaded-specs 'libspec #t)
            (hash-set! autoloaded-specs 'id #t)
