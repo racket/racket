@@ -1132,7 +1132,7 @@ the parts that fit onto @racket[scene].
 @defproc[(flip-vertical [image image?]) image?]{
    Flips @racket[image] top to bottom.
          
-         Flipping images with text is not supported (so passing @racket[flip-horizontal] an image
+         Flipping images with text is not supported (so passing @racket[flip-vertical] an image
          that contains a @racket[text] or @racket[text/font] image inside somewhere signals an error).
 
          @image-examples[(above 
