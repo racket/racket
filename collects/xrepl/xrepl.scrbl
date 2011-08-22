@@ -139,7 +139,7 @@ available.
 @defcmd[describe]{
   For each of the specified names, describe where where it is coming
   from and how it was defined if it names a known binding.  In addition,
-  desribe the module (list its imports and exports) that is named by
+  describe the module (list its imports and exports) that is named by
   arguments that are known module names.
 
   By default, bindings are searched for at the runtime level (phase 0).
@@ -176,9 +176,9 @@ available.
   arguments are given, use arguments from the last use of this command
   (if any).
 
-  Module reloading is enabled by turnning off the
+  Module reloading is enabled by turning off the
   @racket[compile-enforce-module-constants] parameter --- note that this
-  prohibits some opimizations, since the compiler assumes that all
+  prohibits some optimizations, since the compiler assumes that all
   bindings may change.
 }
 
@@ -401,7 +401,7 @@ available.
   @item{@litchar{**} uses the macro debugger similarly to @litchar{*},
     but expands @racketmodname[racket/base] macros too, showing the
     resulting full expansion process.}]
-  Several input flags and/or syntaxes can be spacified in succession as
+  Several input flags and/or syntaxes can be specified in succession as
   arguments to @cmd{syntax}.  For example, @cmd[stx]{(when 1 2) ** !}.
 }
 
