@@ -452,12 +452,11 @@ has been moved out).
                           (= arg-count 7))
                      ;; we changed the arity of the bitmap constructor from old versions,
                      ;; so fix it up here.
-                     (make-bitmap (list-ref parsed-args 0)
-                                  (list-ref parsed-args 1)
-                                  (list-ref parsed-args 2)
-                                  (list-ref parsed-args 3)
-                                  (list-ref parsed-args 4)
-                                  (make-hash))]
+                     (make-ibitmap (list-ref parsed-args 0)
+                                   (list-ref parsed-args 2)
+                                   (list-ref parsed-args 3)
+                                   (list-ref parsed-args 4)
+                                   (make-hash))]
                     [(and (eq? tag 'struct:bitmap)
                           (= arg-count 6))
                      ;; we changed the arity of the bitmap constructor from old versions,
@@ -466,11 +465,11 @@ has been moved out).
                      ;; and the mask field was dropped in favor of always having an alpha bitmap in the 
                      ;; raw-bitmap field. The bytes that were written out always had the mask
                      ;; factored in, tho (which led to a bug) so we can just ignore the mask here
-                     (make-bitmap (list-ref parsed-args 0)
-                                  (list-ref parsed-args 2)
-                                  (list-ref parsed-args 3)
-                                  (list-ref parsed-args 4)
-                                  (make-hash))]
+                     (make-ibitmap (list-ref parsed-args 0)
+                                   (list-ref parsed-args 2)
+                                   (list-ref parsed-args 3)
+                                   (list-ref parsed-args 4)
+                                   (make-hash))]
                     [(and (eq? tag 'struct:color)
                           (= arg-count 3))
                      ;; we changed the arity of the color constructor from old versions,

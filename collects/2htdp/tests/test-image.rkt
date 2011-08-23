@@ -1407,6 +1407,27 @@
         =>
         #t))
 
+(define (get-from-file f)
+  (define t (new text%))
+  (send t load-file f)
+  (send t find-first-snip))
+
+(define-runtime-path bmp-5.1.3.rktd "bmp-5.1.3.rktd")
+(let ()
+  (define b1 (get-from-file bmp-5.1.3.rktd))
+  (define b2 (get-from-file bmp-5.1.3.rktd))
+  (test (image? b1) => #t)
+  ;; test that the drawing code doesn't crash (since the images are not
+  ;; eq?, they'll be drawn to be compared)
+  (test (equal? b1 b2) => #t))
+
+(define-runtime-path bmp-5.0.1.rktd "bmp-5.0.1.rktd")
+(let ()
+  (define b1 (get-from-file bmp-5.0.1.rktd))
+  (define b2 (get-from-file bmp-5.0.1.rktd))
+  (test (image? b1) => #t)
+  (test (equal? b1 b2) => #t))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
