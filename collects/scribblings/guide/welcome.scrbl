@@ -38,11 +38,11 @@ Racket's main tools are
 
 ]
 
-Most likely, you'll want to explore the Racket language using DrRacket,
-especially at the beginning. If you prefer, you can also work with the
-command-line @exec{racket} interpreter and your favorite text
-editor. The rest of this guide presents the language mostly
-independent of your choice of editor.
+Most likely, you'll want to explore the Racket language using
+DrRacket, especially at the beginning. If you prefer, you can also
+work with the command-line @exec{racket} interpreter and your favorite
+text editor; see also @secref["other-editors"]. The rest of this guide
+presents the language mostly independent of your choice of editor.
 
 If you're using DrRacket, you'll need to choose the proper language,
 because DrRacket accommodates many different variants of Racket, as
@@ -227,14 +227,6 @@ which Scheme and Lisp implementations have historically fought with ad
 hoc command-line flags, compiler directives, and build tools. The
 module system is designed to avoid these problems, so start with
 @hash-lang[], and you'll be happier with Racket in the long run.
-
-@; ----------------------------------------------------------------------
-@section{A Note about Editors}
-
-Racket ships with the DrRacket programming environment. If you are already
-familiar with another editor, it is certainly possible to use it for Racket
-development. To improve your racketeering experience with your editor of
-choice, see @secref["other-editors"].
 
 @; ----------------------------------------------------------------------
 

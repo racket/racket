@@ -4,6 +4,7 @@
           scribble/eval
           (only-in scribble/core link-element)
           "../quick/keep.rkt"
+          (only-in xrepl/doc-utils [cmd xreplcmd])
           (for-label scheme
                      racket/enter
                      xrepl
@@ -45,12 +46,6 @@
                  (link file "step " which) ".")))
 
 (define-syntax-rule (REQ m) @racket[(require @#,racketmodname[m])])
-
-(define (xreplcmd name . args)
-  (define namestr (format ",~a" name))
-  (define content
-    (litchar (if (null? args) namestr (apply string-append namestr " " args))))
-  (link-element "plainlink" content `(xrepl ,(format "~a" name))))
 
 )
 
@@ -94,22 +89,21 @@ start @exec{racket} with no command-line arguments:
   > 
 }
 
-To get a richer read-eval-print-loop, evaluate @REQ[xrepl].  You will
-get Readline-based input if you have GNU Readline installed on your
-system, and a useful set of meta-commands to support exploration and
-development.
+For extra read-eval-print loop support, evaluate @REQ[xrepl]
+to enable Readline-based input---assuming that you have GNU Readline
+installed on your system---and comma-prefixed meta-commands that
+support exploration and development. To have @racketmodname[xrepl]
+loaded by default, use the @xreplcmd{install!} command, which updates
+your @filepath{~/.racketrc} to load @racketmodname[xrepl] whenever you
+start @exec{racket} for interactive evaluation.
+
+@margin-note{Unfortunately, for legal reasons related to GPL vs. LGPL,
+  @exec{racket} cannot provide Readline automatically.}
 
 @interaction[
 (eval:alts @#,REQ[xrepl] (void))
+(eval:alts @#,xreplcmd{install!} (void))
 ]
-
-To get this as a default, use the @xreplcmd{install!}  command---your
-@filepath{~/.racketrc} will be updated to load @racketmodname[xrepl]
-whenever you start @exec{racket} for interactive evaluation.
-
-@margin-note{Unfortunately, for legal reasons related to GPL vs. LGPL,
-  @exec{racket} cannot provide @racketmodname[xrepl] or Readline
-  automatically.}
 
 @; FIXME: probably needs revisions, and questionable whether readline
 @; should be mentioned by itself.  One thing to consider is that with
@@ -117,10 +111,11 @@ whenever you start @exec{racket} for interactive evaluation.
 @; session, whereas xrepl changes the prompt.
 
 If you want @emph{just} readline support in @exec{racket}, evaluate
-@REQ[readline].  To install this in your @filepath{~/.racketrc},
-evaluate @racket[(install-readline!)].  Readline is not needed if you're
-using @racketmodname[xrepl], if you're running a shell inside Emacs, or
-if you're on Windows and use a @exec{cmd} window.
+@REQ[readline], instead, and then use @racket[(install-readline!)]  to
+adjust @filepath{~/.racketrc} to load @racketmodname[readline].
+Readline is not needed if you're using @racketmodname[xrepl], if
+you're running a shell inside Emacs, or if you're on Windows and use a
+@exec{cmd} window.
 
 @interaction[
 (eval:alts @#,REQ[readline] (void))

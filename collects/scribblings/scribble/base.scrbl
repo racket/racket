@@ -131,14 +131,18 @@ show the author(s) of a document, where each author is represented by
 @racket[title] for the beginning of a document. See also
 @racket[author+email].}
 
-@defproc[(author+email [author elem] 
+@defproc[(author+email [author-name elem] 
                        [email string?] 
                        [#:obfuscate? obfuscate? any/c #f])
          element?]{
 
 Combines an author name with an e-mail address. If @racket[obfuscate?]
 is true, then the result obscures the e-mail address slightly to avoid
-address-harvesting robots.}
+address-harvesting robots.
+
+Note that @racket[author+email] is not a replacement for
+@racket[author].  The @racket[author+email] function is often used in
+combination with @racket[author].}
 
 @; ------------------------------------------------------------------------
 

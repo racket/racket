@@ -1,17 +1,18 @@
-#lang scribble/doc
-@(require scribble/manual "doc-utils.rkt"
+#lang scribble/manual
+@(require "doc-utils.rkt"
           scribble/decode (only-in scribble/core)
           (for-label racket readline racket/help racket/enter
                      racket/trace profile))
 
 @title{XREPL: eXtended REPL}
-@author+email["Eli Barzilay" "eli@barzilay.org"]
+@author[@author+email["Eli Barzilay" "eli@barzilay.org"]]
 
 @defmodule[xrepl]{
-  The @filepath{xrepl} collection extends the @exec{racket} @tech[#:doc
+  Loading the @racketmodname[xrepl] library enables XREPL, 
+  which extends the @exec{racket} @tech[#:doc
   GUIDE]{REPL} significantly, turning it into a more useful tool for
-  interactive exploration and development.  This includes ``meta
-  commands'', using readline, keeping past evaluation results, and
+  interactive exploration and development.  Additions include ``meta
+  commands,'' using readline, keeping past evaluation results, and
   more.}
 
 @; ---------------------------------------------------------------------

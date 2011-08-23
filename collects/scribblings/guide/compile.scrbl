@@ -1,14 +1,11 @@
 #lang scribble/doc
 @(require scribble/manual "guide-utils.rkt")
 
-@title[#:tag "compile"]{Compilation and Configuration}
+@title[#:tag "compile"]{Compilation and Configuration: @exec{raco}}
 
-So far in this guide, we have mainly discussed DrRacket and
-@exec{racket} (and @exec{gracket}). The main additional executable is
-@exec{raco}, which is short for ``@bold{Ra}cket @bold{co}mmand.'' The
-@exec{raco} program provides a command-line interface to many
-additional tools for compiling Racket programs and maintaining a
-Racket installation.
+The @exec{raco} (short for ``@bold{Ra}cket @bold{co}mmand'') program
+provides a command-line interface to many additional tools for
+compiling Racket programs and maintaining a Racket installation.
 
 @itemize[
 
@@ -32,7 +29,7 @@ Racket installation.
  called @filepath{take-over}, and you'd like to build all bytecode and
  documentation for the collection, then run
 
-   @commandline{raco setup -l take-over}}
+   @commandline{raco setup take-over}}
 
 
  @item{@exec{raco planet} manages packages that are normally

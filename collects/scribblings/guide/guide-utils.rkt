@@ -1,65 +1,71 @@
-(module guide-utils racket/base
-  (require scribble/manual
-           scribble/struct
-           scribble/decode
-           scribble/eval
-           "../icons.rkt")
+#lang at-exp racket/base
 
-  (require (for-label racket/base))
-  (provide (for-label (all-from-out racket/base)))
+(require scribble/manual
+         scribble/struct
+         scribble/decode
+         scribble/eval
+         "../icons.rkt")
 
-  (provide Quick Racket HtDP
-           tool
-           moreguide
-           guideother
-           refalso
-           refdetails
-           refdetails/gory
-           refsecref
-           ext-refsecref)
+(require (for-label racket/base))
+(provide (for-label (all-from-out racket/base)))
 
-  (define Quick
-    (other-manual '(lib "scribblings/quick/quick.scrbl")))
+(provide Quick Racket HtDP
+         tool
+         moreguide
+         guideother
+         refalso
+         refdetails
+         refdetails/gory
+         refsecref
+         ext-refsecref
+         r5rs r6rs)
 
-  (define HtDP
-    (italic (link "http://www.htdp.org" "How to Design Programs")))
+(define Quick
+  (other-manual '(lib "scribblings/quick/quick.scrbl")))
 
-  (define (tool name . desc)
-    (apply item (bold name) ", " desc))
+(define HtDP
+  (italic (link "http://www.htdp.org" "How to Design Programs")))
 
-  (define (moreguide tag . s)
-    (apply margin-note
-           (decode-content (append
-                            (list
-                             finger (secref tag) " (later in this guide)"
-                             " explains more about ")
-                            s
-                            (list ".")))))
+(define (tool name . desc)
+  (apply item (bold name) ", " desc))
 
-  (define (guideother . s)
-    (apply margin-note
-           (cons finger (decode-content s))))
+(define (moreguide tag . s)
+  (apply margin-note
+         (decode-content (append
+                          (list
+                           finger (secref tag) " (later in this guide)"
+                           " explains more about ")
+                          s
+                          (list ".")))))
 
-  (define (refdetails* tag what . s)
-    (apply margin-note
-           (decode-content (append (list magnify (ext-refsecref tag))
-                                   (list what)
-                                   s
-                                   (list ".")))))
+(define (guideother . s)
+  (apply margin-note
+         (cons finger (decode-content s))))
 
-  (define (refdetails tag . s)
-    (apply refdetails* tag " provides more on " s))
+(define (refdetails* tag what . s)
+  (apply margin-note
+         (decode-content (append (list magnify (ext-refsecref tag))
+                                 (list what)
+                                 s
+                                 (list ".")))))
 
-  (define (refalso tag . s)
-    (apply refdetails* tag " also documents " s))
+(define (refdetails tag . s)
+  (apply refdetails* tag " provides more on " s))
 
-  (define (refdetails/gory tag . s)
-    (apply refdetails* tag " documents the fine points of " s))
+(define (refalso tag . s)
+  (apply refdetails* tag " also documents " s))
 
-  (define (refsecref s)
-    (secref #:doc '(lib "scribblings/reference/reference.scrbl") s))
+(define (refdetails/gory tag . s)
+  (apply refdetails* tag " documents the fine points of " s))
 
-  (define (ext-refsecref s)
-    (make-element #f (list (refsecref s) " in " Racket)))
+(define (refsecref s)
+  (secref #:doc '(lib "scribblings/reference/reference.scrbl") s))
 
-  (define Racket (other-manual '(lib "scribblings/reference/reference.scrbl"))))
+(define (ext-refsecref s)
+  (make-element #f (list (refsecref s) " in " Racket)))
+
+(define Racket (other-manual '(lib "scribblings/reference/reference.scrbl")))
+
+(define r6rs @elem{R@superscript{6}RS})
+(define r5rs @elem{R@superscript{5}RS})
+
