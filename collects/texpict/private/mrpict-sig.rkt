@@ -9,6 +9,7 @@
      text caps-text current-expected-text-scale
      dc
      linewidth
+     linestyle
      
      draw-pict
      make-pict-drawer)))

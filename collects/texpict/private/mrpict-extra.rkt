@@ -301,6 +301,13 @@
 	      (apply hbl-append 0 picts)))]))
 
       (define (linewidth n p) (line-thickness n p))
+      (define (linestyle n p) 
+        (unless (memq n '(transparent solid xor hilite 
+                                      dot long-dash short-dash dot-dash 
+                                      xor-dot xor-long-dash xor-short-dash 
+                                      xor-dot-dash))
+          (raise-type-error 'linestyle "style symbol" n))
+        (line-style n p))
 
       (define connect
 	(case-lambda
@@ -421,12 +428,16 @@
 			 (set-pen (find-or-create-pen (send p get-color) 
 						      (if (number? (cadr x))
 							  (cadr x)
-							  (if (eq? (cadr x) 'thicklines)
-							      1
-							      0))
-                                                      (if (eq? (cadr x) #f)
-                                                          'transparent
-                                                          'solid)))
+                                                          (case (cadr x)
+                                                            [(thicklines) 1]
+                                                            [(thinlines) 0]
+                                                            [else (send p get-width)]))
+                                                      (if (number? (cadr x))
+                                                          (send p get-style)
+                                                          (case (cadr x)
+                                                            [(#f) 'transparent]
+                                                            [(thicklines thinlines) (send p get-style)]
+                                                            [else (cadr x)]))))
 			 (loop dx dy (caddr x))
 			 (set-pen p))]
 		      [(prog)

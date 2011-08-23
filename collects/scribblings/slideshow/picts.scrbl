@@ -294,6 +294,10 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
+                      [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
+                                               'dot 'long-dash 'short-dash 'dot-dash 
+                                               'xor-dot 'xor-long-dash 'xor-short-dash 
+                                               'xor-dot-dash)]
                       [#:under? under? any/c #f])
             pict?]
            [(pin-arrow-line [arrow-size real?] [pict pict?]
@@ -307,6 +311,10 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
+                      [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
+                                               'dot 'long-dash 'short-dash 'dot-dash 
+                                               'xor-dot 'xor-long-dash 'xor-short-dash 
+                                               'xor-dot-dash)]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
 		      [#:hide-arrowhead? any/c #f])
@@ -322,6 +330,10 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
+                      [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
+                                               'dot 'long-dash 'short-dash 'dot-dash 
+                                               'xor-dot 'xor-long-dash 'xor-short-dash 
+                                               'xor-dot-dash)]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
 		      [#:hide-arrowhead? any/c #f])
@@ -337,7 +349,8 @@ the existing @racket[pict] drawing, instead of on top. If
 filled.
 
 The @racket[start-angle], @racket[end-angle], @racket[start-pull], and
-@racket[end-pull] arguments control the curve of the line:
+@racket[end-pull] arguments control the curve of the line (and the
+defaults produce a straight line):
 
 @itemize[
 
@@ -352,11 +365,13 @@ The @racket[start-angle], @racket[end-angle], @racket[start-pull], and
 
 ]
 
-When the @racket[hide-arrowhead?] argument is a true value, then 
-space for the arrowhead is left behind, but the arrowhead itself 
-is not drawn.
+The @racket[line-width], @racket[color], and @racket[style] arguments
+apply to the added line.
 
-The defaults produce a straight line.}
+When the @racket[hide-arrowhead?] argument is a true value, then space
+for an arrowhead is kept around the line, but the arrowhead itself is
+not drawn.}
+
 
 @defthing[text-style/c contract?]{
 
@@ -519,6 +534,18 @@ Selects a specific pen width for drawing, which applies to pen drawing
 for @racket[pict] that does not already use a specific pen width.
 A @racket[#f] value for @racket[w] makes the pen transparent (in contrast
 to a zero value, which means ``as thin as possible for the target device'').}
+
+
+@defproc[(linestyle [style (one-of/c 'transparent 'solid 'xor 'hilite 
+                                     'dot 'long-dash 'short-dash 'dot-dash 
+                                     'xor-dot 'xor-long-dash 'xor-short-dash 
+                                     'xor-dot-dash)]
+                    [pict pict?])
+         pict?]{
+
+Selects a specific pen style for drawing, which applies to pen drawing
+for @racket[pict] that does not already use a specific pen style.}
+
 
 @defproc[(colorize [pict pict?] [color (or/c string? 
                                              (is-a?/c color%)

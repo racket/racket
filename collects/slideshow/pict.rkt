@@ -50,14 +50,17 @@
                     #:color [col #f]
                     #:line-width [lw #f]
                     #:under? [under? #f]
-                    #:solid? [solid? #t])
+                    #:solid? [solid? #t]
+                    #:style [style #f])
     (if (not (or sa ea))
         (finish-pin (launder (t:pin-line (ghost p)
                                          src src-find 
-                                         dest dest-find))
+                                         dest dest-find
+                                         #:style style))
                     p lw col under?)
         (pin-curve* #f #f p src src-find dest dest-find
-                    sa ea sp ep 0 col lw under? #t)))
+                    sa ea sp ep 0 col lw under? #t
+                    style)))
 
   (define (pin-arrow-line sz p 
                           src src-find
@@ -68,16 +71,19 @@
                           #:line-width [lw #f]
                           #:under? [under? #f]
                           #:solid? [solid? #t]
+                          #:style [style #f]
                           #:hide-arrowhead? [hide-arrowhead? #f])
     (if (not (or sa ea))
         (finish-pin (launder (t:pin-arrow-line sz (ghost p)
                                                src src-find 
                                                dest dest-find
                                                #f #f #f solid?
-                                               #:hide-arrowhead? hide-arrowhead?))
+                                               #:hide-arrowhead? hide-arrowhead?
+                                               #:style style))
                     p lw col under?)
         (pin-curve* #f (not hide-arrowhead?) p src src-find dest dest-find
-                    sa ea sp ep sz col lw under? solid?)))
+                    sa ea sp ep sz col lw under? solid?
+                    style)))
   
     (define (pin-arrows-line sz p 
                              src src-find
@@ -88,24 +94,28 @@
                              #:line-width [lw #f]
                              #:under? [under? #f]
                              #:solid? [solid? #t]
+                             #:style [style #f]
                              #:hide-arrowhead? [hide-arrowhead? #f])
       (if (not (or sa ea))
           (finish-pin (launder (t:pin-arrows-line sz (ghost p)
                                                   src src-find 
                                                   dest dest-find
                                                   #f #f #f solid?
-                                                  #:hide-arrowhead? hide-arrowhead?))
+                                                  #:hide-arrowhead? hide-arrowhead?
+                                                  #:style style))
                       p lw col under?)
           (pin-curve* (not hide-arrowhead?) (not hide-arrowhead?)
                       p src src-find dest dest-find
-                      sa ea sp ep sz col lw under? solid?)))
+                      sa ea sp ep sz col lw under? solid? 
+                      style)))
     
   (define (pin-curve* start-arrow? end-arrow? p 
                       src src-find
                       dest dest-find
                       sa ea sp ep
                       sz col lw
-                      under? solid?)
+                      under? solid?
+                      style)
     (let-values ([(sx0 sy0) (src-find p src)]
                  [(dx0 dy0) (dest-find p dest)])
       (let* ([sa (or sa
@@ -131,7 +141,8 @@
                       #:line-width lw
                       #:color col
                       #:under? under?
-                      #:solid? solid?)
+                      #:solid? solid?
+                      #:style style)
                      p))])
           (send path move-to sx sy)
           (send path curve-to
@@ -159,6 +170,9 @@
                            p)]
                     [p (if lw
                            (linewidth lw p)
+                           p)]
+                    [p (if style
+                           (linestyle style p)
                            p)])
                p))
             dx dy dx0 dy0)

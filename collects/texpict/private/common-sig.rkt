@@ -130,4 +130,5 @@
   (define-signature texpict-internal^
     (prepare-for-output
      pict->command-list
-     line-thickness)))
+     line-thickness
+     line-style)))
