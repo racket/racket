@@ -1407,6 +1407,11 @@
         =>
         #t))
 
+(let ()
+  (define i1 (rotate 0 (make-object bitmap% u.png 'unknown/mask)))
+  (define i2 (rotate 0 (make-object bitmap% u.png 'unknown/alpha)))
+  (test (equal? i1 i2) => #t))
+
 (define (get-from-file f)
   (define t (new text%))
   (send t load-file f)

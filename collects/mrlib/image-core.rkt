@@ -1014,15 +1014,14 @@ the mask bitmap and the original bitmap are all together in a single bytes!
      ;; don't rotate anything in this case.
      bitmap-obj]
     [else
-     (let ([θ (degrees->radians (ibitmap-angle bitmap))])
-       (let-values ([(bytes w h) (bitmap->bytes bitmap-obj #f)])
-         (let-values ([(rotated-bytes rotated-w rotated-h)
-                       (rotate-bytes bytes w h θ)])
-           (let* ([flipped-bytes (if flip?
-                                     (flip-bytes rotated-bytes rotated-w rotated-h)
-                                     rotated-bytes)]
-                  [bm (bytes->bitmap flipped-bytes rotated-w rotated-h)])
-             bm))))]))
+     (define θ (degrees->radians (ibitmap-angle bitmap)))
+     (define-values (bytes w h) (bitmap->bytes bitmap-obj #f))
+     (define-values (rotated-bytes rotated-w rotated-h) (rotate-bytes bytes w h θ))
+     (define flipped-bytes (if flip?
+                               (flip-bytes rotated-bytes rotated-w rotated-h)
+                               rotated-bytes))
+     (define bm (bytes->bitmap flipped-bytes rotated-w rotated-h))
+     bm]))
 
 (define (do-scale bitmap orig-bm)
   (define x-scale (ibitmap-x-scale bitmap))
@@ -1178,17 +1177,16 @@ the mask bitmap and the original bitmap are all together in a single bytes!
   (define h (send bm get-height))
   (define alpha-bm
     (cond
-      [(and (is-a? bm bitmap%)
-            (send bm has-alpha-channel?))
+      [(send bm has-alpha-channel?)
        bm]
       [else
-       (define bm (make-bitmap w h))
-       (define bdc (make-object bitmap-dc% bm))
+       (define new-bm (make-bitmap w h))
+       (define bdc (make-object bitmap-dc% new-bm))
        (send bdc draw-bitmap bm 0 0 'solid
              (send the-color-database find-color "black")
              mask-bm)
        (send bdc set-bitmap #f)
-       bm]))
+       new-bm]))
   (make-image (make-translate (/ w 2)
                               (/ h 2)
                               (make-ibitmap alpha-bm 0 1 1 (make-hash)))
