@@ -193,34 +193,52 @@
          (cons (stx-car s) (loop (cdr (syntax-e s))))]
         [(null? (syntax-e s)) null]
         [else (list s)])))
-  (define (go formals bodies formals* bodies* nums-seen)
+  (define (find-expected tc-r fml)
+    (match tc-r
+      [(tc-result1: (Function: (and fs (list (arr: argss rets rests drests '()) ...))))       
+       (cond [(syntax->list fml)
+              (for/list ([a argss] [f fs]  [r rests] [dr drests] 
+                                   #:when (and (not r) (not dr) (= (length a) (length (syntax->list fml)))))
+                f)]
+             [else
+              (for/list ([a argss] [f fs]  [r rests] [dr drests]
+                                   #:when (and (or r dr) (= (length a) (sub1 (syntax-len fml)))))
+                f)])]
+       [_ null]))
+  (define (go expected formals bodies formals* bodies* nums-seen)
     (cond
       [(null? formals)
-       (map tc/lambda-clause (reverse formals*) (reverse bodies*))]
+       (apply append
+              (for/list ([f* formals*] [b* bodies*])                
+                (match (find-expected expected f*)
+                  ;; very conservative -- only do anything interesting if we get exactly one thing that matches
+                  [(list) 
+                   (if (and (= 1 (length formals*)) expected)
+                       (tc-error/expr #:return (list (lam-result null null (list #'here Univ) #f (ret (Un))))
+                                      "Expected a function of type ~a, but got a function with the wrong arity"
+                                      (match expected [(tc-result1: t) t]))
+                       (list (tc/lambda-clause f* b*)))]
+                  [(list (arr: argss rets rests drests '()) ...) 
+                   (for/list ([args argss] [ret rets] [rest rests] [drest drests])
+                     (tc/lambda-clause/check 
+                      f* b* args (values->tc-results ret (formals->list f*)) rest drest))])))]
       [(memv (syntax-len (car formals)) nums-seen)
        ;; we check this clause, but it doesn't contribute to the overall type
        (tc/lambda-clause (car formals) (car bodies))
-       (go (cdr formals) (cdr bodies) formals* bodies* nums-seen)]
+       ;; FIXME - warn about dead clause here       
+       (go expected (cdr formals) (cdr bodies) formals* bodies* nums-seen)]
       [else
-       (go (cdr formals) (cdr bodies)
+       (go expected
+           (cdr formals) (cdr bodies)
            (cons (car formals) formals*)
            (cons (car bodies) bodies*)
-           (cons (syntax-len (car formals)) nums-seen))]))
-  (cond
-    ;; special case for not-case-lambda
-    [(and expected
-          (= 1 (length (syntax->list formals))))
-     (let loop ([expected expected])
-       (match expected
-         [(tc-result1: (and t (Mu: _ _))) (loop (ret (unfold t)))]
-         [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
-          (let ([fmls (car (syntax->list formals))])
-            (for/list ([args argss] [ret rets] [rest rests] [drest drests])
-              (tc/lambda-clause/check fmls (car (syntax->list bodies))
-                                      args (values->tc-results ret (formals->list fmls)) rest drest)))]
-         [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))]
-    ;; otherwise
-    [else (go (syntax->list formals) (syntax->list bodies) null null null)]))
+           (cons (syntax-len (car formals)) nums-seen))]))  
+  (let loop ([expected expected])
+    (match expected
+      [(tc-result1: (and t (Mu: _ _))) (loop (ret (unfold t)))]
+      [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
+       (go expected (syntax->list formals) (syntax->list bodies) null null null)]
+      [_ (go #f (syntax->list formals) (syntax->list bodies) null null null)])))
 
 (define (tc/mono-lambda/type formals bodies expected)
   (define t (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))

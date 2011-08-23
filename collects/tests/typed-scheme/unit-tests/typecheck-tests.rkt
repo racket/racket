@@ -1329,6 +1329,15 @@
         [tc-e (#%variable-reference +) -Variable-Reference]
         [tc-e (apply (λ: ([x : String] [y : String]) (string-append x y)) (list "foo" "bar")) -String]
         [tc-e (apply (plambda: (a) ([x : a] [y : a]) x) (list "foo" "bar")) -String]
+        
+        [tc-e (ann 
+               (case-lambda [(x) (add1 x)]
+                            [(x y) (add1 x)])
+               (case-> (Integer -> Integer)
+                       (Integer Integer -> Integer)))
+              #:ret (ret (cl->* (t:-> -Integer -Integer)
+                                (t:-> -Integer -Integer -Integer))
+                         (-FS -top -bot))]
         )
   (test-suite
    "check-type tests"

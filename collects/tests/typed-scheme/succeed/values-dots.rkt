@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed/scheme/base
 
 (require typed-scheme/base-env/extra-procs)
 

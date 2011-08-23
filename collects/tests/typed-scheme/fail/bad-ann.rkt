@@ -3,7 +3,7 @@
 #lang typed/scheme
 
 
-(: f : Number  -> Number)
+(: f : Number -> Number)
 (define (f a b)
   (+ a b))
 
