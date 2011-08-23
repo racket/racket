@@ -1,3 +1,5 @@
+#lang algol60
+
 begin
   integer procedure SIGMA(x, i, n);
     value n;

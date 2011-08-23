@@ -1,3 +1,5 @@
+#lang algol60
+
 begin
         comment
           -- From the NASE A60 distribution --
@@ -57,11 +59,11 @@ begin
                 for i := 2 step 1 until NN div 2 do
                         for j := 2 * i step i until NN do
                                 arr [j] := false;
-                
+
                 for i := 2 step 1 until NN do
                         if arr [i] then
                                 printnln (i);
                 printsln (`done.')
 
         end
-end             
+end

@@ -1,3 +1,5 @@
+#lang algol60
+
 begin
         comment
           -- From the NASE A60 distribution --
@@ -57,7 +59,7 @@ tryNextN:
         integer x;
         begin
                 integer y;
-        
+
                 for y := 1 step 1 until N do
                 begin
                         if empcol [ y ] & empup [ x-y ] 
@@ -120,5 +122,3 @@ contN:
 
         end
 end
-
-
