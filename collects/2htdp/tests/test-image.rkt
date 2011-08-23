@@ -1360,13 +1360,37 @@
       => 
       20)
 
-(test (rotate 90 (make-object image-snip% blue-10x20-bitmap))
-      =>
-      (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
+(define (close-enough i1 i2)
+  (define w (image-width i1))
+  (define h (image-height i1))
+  (cond
+    [(and (= w (image-width i2))
+          (= h (image-height i2)))
+     (define b1 (make-bytes (* w h 4)))
+     (define b2 (make-bytes (* w h 4)))
+     (define bm (make-bitmap w h))
+     (define bdc (make-object bitmap-dc% bm))
+     (render-image i1 bdc 0 0)
+     (send bdc get-argb-pixels 0 0 w h b1)
+     (send bdc erase)
+     (render-image i2 bdc 0 0)
+     (send bdc get-argb-pixels 0 0 w h b2)
+     (define diff 0)
+     (for ([x (in-range 0 (bytes-length b1))])
+       (set! diff (+ diff (abs (- (bytes-ref b1 x)
+                                  (bytes-ref b2 x))))))
+     (define avg-diff (/ diff (bytes-length b1)))
+     (<= avg-diff 10)]
+    [else #f]))
+       
 
-(test (rotate 90 (make-object image-snip% green-blue-20x10-bitmap))
-      =>
-      (image-snip->image (make-object image-snip% green-blue-10x20-bitmap)))
+(test (close-enough (rotate 90 (make-object image-snip% blue-10x20-bitmap))
+                    (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
+      => #t)
+      
+(test (close-enough (rotate 90 (make-object image-snip% green-blue-20x10-bitmap))
+                    (image-snip->image (make-object image-snip% green-blue-10x20-bitmap)))
+      => #t)
 
 (test (rotate 90 (rotate 90 (make-object image-snip% green-blue-20x10-bitmap)))
       =>

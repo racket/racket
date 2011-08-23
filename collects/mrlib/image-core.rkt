@@ -1013,6 +1013,44 @@ the mask bitmap and the original bitmap are all together in a single bytes!
     [(and (not flip?) (zero? (ibitmap-angle bitmap)))
      ;; don't rotate anything in this case.
      bitmap-obj]
+    ;; speed up rotated (but not flipped) bitmaps
+    [(not flip?)
+     (define θ (degrees->radians (ibitmap-angle bitmap)))
+     (define ow (send bitmap-obj get-width))
+     (define oh (send bitmap-obj get-height))
+     (define unrotated-pts
+       (list (make-rectangular 0 0)
+             (make-rectangular ow 0)
+             (make-rectangular ow oh)
+             (make-rectangular 0 oh)))
+     (define pts (map (λ (p) (* p (make-polar 1 θ))) unrotated-pts))
+     (define longitudes (map real-part pts))
+     (define latitudes (map imag-part pts))
+     (define east (apply max longitudes))
+     (define west (apply min longitudes))
+     (define nrth (apply min latitudes))
+     (define sth  (apply max latitudes))
+     (define new-w (ceiling (inexact->exact (- east west))))
+     (define new-h (ceiling (inexact->exact (- sth nrth))))
+                            
+     (define new-bm (make-bitmap new-w new-h))
+     (define bdc (make-object bitmap-dc% new-bm))
+     (send bdc set-smoothing 'smoothed)
+     (send bdc rotate (- θ))
+     
+     ;; would like to just translate by 'tp', but
+     ;; the dc applies the translations before applying
+     ;; the rotation, so we have to unrotate the translation
+     ;; before telling the dc about it
+     (define tp (make-rectangular (- west) (- nrth)))
+     (define tp-translated (* tp (make-polar 1 (- θ))))
+     
+     (send bdc translate (real-part tp-translated) (imag-part tp-translated))
+     
+     (send bdc draw-bitmap bitmap-obj 0 0)
+     (send bdc set-bitmap #f)
+     new-bm]
+    
     [else
      (define θ (degrees->radians (ibitmap-angle bitmap)))
      (define-values (bytes w h) (bitmap->bytes bitmap-obj #f))

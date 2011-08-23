@@ -422,7 +422,12 @@
                                    255)]
                            [premult (lambda (al v)
                                       (if pre?
-                                          (unsafe-fxquotient (fx* al v) 255)
+                                          (unsafe-fl->fx
+                                           (unsafe-flround
+                                            (unsafe-fl/
+                                             (unsafe-fx->fl (fx* al v))
+                                             255.0)))
+                                          #;(unsafe-fxquotient (fx* al v) 255)
                                           v))])
                       (unsafe-bytes-set! dest (fx+ pos A) al)
                       (unsafe-bytes-set! dest (fx+ pos R) (premult al (unsafe-bytes-ref r spos)))
