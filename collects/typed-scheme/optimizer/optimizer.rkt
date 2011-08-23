@@ -49,7 +49,7 @@
                            (cons (car l)
                                  (map (optimize) (cdr l)))))
                        #'([formals e ...] ...))
-           #:with opt (syntax/loc/origin this-syntax #'op (case-lambda opt-parts ...)))
+           #:with opt (syntax/loc/origin this-syntax #'op (op opt-parts ...)))
   (pattern ((~and op (~or (~literal let-values) (~literal letrec-values)))
             ([ids e-rhs:expr] ...) e-body:expr ...)
            #:with (opt-rhs ...) (syntax-map (optimize) #'(e-rhs ...))
