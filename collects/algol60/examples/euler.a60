@@ -1,3 +1,4 @@
+#lang algol60
 begin
 
 procedure euler (fct,sum,eps,tim); value eps,tim; integer tim;

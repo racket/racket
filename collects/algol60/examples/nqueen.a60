@@ -1,3 +1,4 @@
+#lang algol60
 begin
         comment
           -- From the NASE A60 distribution --
