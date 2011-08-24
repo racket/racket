@@ -136,6 +136,13 @@
                   [right right])
       #'(right left))))
 
+(provide honu-assignment)
+(define-honu-operator/syntax honu-assignment 0.0001 'left
+  (lambda (left right)
+    (with-syntax ([left left]
+                  [right right])
+      #'(set! left right))))
+
 (define-binary-operator honu-+ 1 'left +)
 (define-binary-operator honu-- 1 'left -)
 (define-binary-operator honu-* 2 'left *)
