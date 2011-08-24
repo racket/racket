@@ -82,13 +82,18 @@
 
   (define new-table
     (reverse
-     (for/fold ([table (reverse table)]) ([d (in-list dirs)])
-       (let* ([dp (path->complete-path d)]
-              [a-name (or name
-                          (let-values ([(base name dir?) (split-path dp)])
-                            (path-element->string name)))]
+     (for/fold ([table (reverse table)]) ([d (in-list 
+                                              (if (and (null? dirs)
+                                                       name)
+                                                  '(#f)
+                                                  dirs))])
+       (let* ([dp (and d (path->complete-path d))]
+              [a-name (and d
+                           (or name
+                               (let-values ([(base name dir?) (split-path dp)])
+                                 (path-element->string name))))]
               [rx version-regexp]
-              [d (path->string dp)])
+              [d (and dp (path->string dp))])
          (unless remove?
            (unless (directory-exists? dp)
              (error 'links
@@ -96,7 +101,8 @@
                     dp)))
          (if remove?
              (filter (lambda (e) 
-                       (or (not (equal? (cadr e) d))
+                       (or (and d
+                                (not (equal? (cadr e) d)))
                            (and name
                                 (not (equal? (car e) name)))
                            (and version-regexp
@@ -148,10 +154,13 @@
                   (format "  version: ~s"
                           (caddr e))))))
 
-  ;; Return list of collections mapped for this version:
-  (let ([ht (make-hash)])
-    (for ([e (in-list new-table)])
-      (when (or (null? (cddr e))
-                (regexp-match? (caddr e) (version)))
-        (hash-set! ht (car e) #t)))
-    (hash-map ht (lambda (k e) k))))
+  (if remove?
+      ;; return list of removed entries:
+      (filter (lambda (e) (not (member e new-table))) table)
+      ;; Return list of collections mapped for this version:
+      (let ([ht (make-hash)])
+        (for ([e (in-list new-table)])
+          (when (or (null? (cddr e))
+                    (regexp-match? (caddr e) (version)))
+            (hash-set! ht (car e) #t)))
+        (hash-map ht (lambda (k e) k)))))

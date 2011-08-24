@@ -45,17 +45,19 @@ Full command-line options:
  @item{@Flag{l} or @DFlag{list} --- Shows the current link table. If
        any other command-line arguments are provided that modify the
        link table, the table is shown after modifications. If no
-       directory arguments are provided, and if none of @Flag{r},
-       @DFlag{remove}, @Flag{i}, @DFlag{installation}, @Flag{f}, or
+       directory arguments are provided, and if none of @Flag{u},
+       @DFlag{user}, @Flag{i}, @DFlag{installation}, @Flag{f}, or
        @DFlag{file} are specified, then the link table is shown for
        both the user-specific and installation-wide @tech[#:doc
        reference-doc]{collection links files}.}
 
  @item{@Flag{n} @nonterm{name} or @DFlag{name} @nonterm{name} --- Sets
-       the collection name for adding or removing a single link.  By
-       default, the collection name for an added link is derived from
-       the directory name. When the @Flag{r} or @DFlag{remove} flag is
-       also used, only links with a collection name matching
+       the collection name for adding a single link or removing
+       matching links.  By default, the collection name for an added
+       link is derived from the directory name. When the @Flag{r} or
+       @DFlag{remove} flag is also used, only links with a collection
+       name matching @nonterm{name} are removed, and if no directory
+       arguments are provided, all links with a match to
        @nonterm{name} are removed.}
 
  @item{@Flag{x} @nonterm{regexp} or @DFlag{version-regexp}
@@ -65,17 +67,28 @@ Full command-line options:
        or @DFlag{remove} flag is also used, only links with a
        version regexp matching @nonterm{regexp} are removed.}
 
+ @item{@Flag{r} or @DFlag{remove} --- Selects remove mode instead
+       of add mode.}
+
+ @item{@Flag{u} or @DFlag{user} --- Limits listing and removal
+       of links to the user-specific @tech[#:doc
+       reference-doc]{collection links file} and not the
+       collection-wide @tech[#:doc reference-doc]{collection links
+       file}. This flag is mutually exclusive with @Flag{i},
+       @DFlag{installation}, @Flag{f}, and @DFlag{file}.}
+
  @item{@Flag{i} or @DFlag{installation} --- Reads and writes links in
        installation-wide @tech[#:doc reference-doc]{collection links
-       file} instead of the user-specific @tech[#:doc
-       reference-doc]{collection links file}. This flag is mutally
-       exclusive with @Flag{f} and @DFlag{file}.}
+       file} and not the user-specific @tech[#:doc
+       reference-doc]{collection links file}. This flag is mutually
+       exclusive with @Flag{u}, @DFlag{user}, @Flag{f}, and
+       @DFlag{file}.}
 
  @item{@Flag{f} @nonterm{file} or @DFlag{file} @nonterm{file} ---
        Reads and writes links in @nonterm{file} instead of the
        user-specific @tech[#:doc reference-doc]{collection links
-       file}.  This flag is mutally exclusive with @Flag{i} and
-       @DFlag{installation}.}
+       file}.  This flag is mutually exclusive with @Flag{u},
+       @DFlag{user}, @Flag{i}, and @DFlag{installation}.}
 
  @item{@DFlag{repair} --- Enables repairs to the existing file content
        when the content is erroneous. The file is repaired by deleting
@@ -89,19 +102,28 @@ Full command-line options:
 
 @defmodule[setup/link]
 
-@defproc[(links [dirs (listof path?)]
-                [#:file file path-string? (find-system-path 'links-file)]
+@defproc[(links [dir path?] ...
+                [#:user? user? #t]
+                [#:file file (or/c path-string? #f) #f]
                 [#:name name (or/c string? #f) #f]
                 [#:version-regexp version-regexp (or/c regexp? #f) #f]
                 [#:error error-proc (symbol? string? any/c ... . -> . any) error]
                 [#:remove? remove? any/c #f]
                 [#:show? show? any/c #f]
                 [#:repair? repair? any/c #f])
-          (listof string?)]{
+          list?]{
 
-A function version of the @exec{raco link} command. The
-@racket[error-proc] argument is called to raise exceptions that would
-be fatal to the @exec{raco link} command.
+A function version of the @exec{raco link} command that always works
+on a single file---either @racket[file] if it is a path string, the
+user-specific @tech[#:doc reference-doc]{collection links file} if
+@racket[user?] is true, of the installation-wide @tech[#:doc
+reference-doc]{collection links file} if @racket[user?] is false.
 
-The result is a list of top-level collections that are mapped by
-@racket[file] and that apply to the running version of Racket.}
+The @racket[error-proc] argument is called to raise exceptions that
+would be fatal to the @exec{raco link} command.
+
+If @racket[remove?] is false, the result is a list of top-level
+collection names (as strings) that are mapped by @racket[file] and
+that apply to the running version of Racket. If @racket[remove?] is
+true, the result is a list of entries that were removed from the file.}
+
