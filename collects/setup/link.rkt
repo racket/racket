@@ -15,6 +15,15 @@
                #:show? [show? #f]
                #:repair? [repair? #f]
                . dirs)
+  (define (check-name name)
+    (unless (and (regexp-match #rx"^[a-zA-z+_%-]+$" name)
+                 (module-path? name))
+      (error 'links "name is not valid as a top-level collection name: ~e"
+             name)))
+
+  (when name
+    (check-name name))
+
   (define file (or in-file
                    (if user?
                        (find-system-path 'links-file)
@@ -136,6 +145,8 @@
                (if (member (cdr e) l)
                    table
                    (let ()
+                     (when (string? a-name)
+                       (check-name a-name))
                      (add-entry! e)
                      (cons e table)))))))))
 
