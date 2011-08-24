@@ -5,7 +5,7 @@
 
 This test checks to see if the code that htdp-lang.rkt injects
 into the teaching languages relies only on modules that are
-shared between drracket's and the teaching langauges's namespace.
+shared between drracket's and the teaching languages's namespace.
 
 In practice when this test fails it means that some code in
 langs/htdp-lang.rkt has something like #'(f) for some function

@@ -89,7 +89,7 @@ please adhere to these guidelines:
 |#
 
 (module ukrainian-string-constants "string-constant-lang.rkt"
- ;;; when translating this constant, substitute name of actual langauge for `English'
+ ;;; when translating this constant, substitute name of actual language for `English'
  (is-this-your-native-language "Українська - це Ваша рідна мова?")
 
  (are-you-sure-you-want-to-switch-languages

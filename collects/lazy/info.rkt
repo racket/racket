@@ -4,7 +4,7 @@
 
 ;; STC 2010-06-01
 ;; Changing lazy to be a tools-based language so I can use 
-;; stepper-lanugage-interface to add a stepper button. This change is temporary
+;; stepper-language-interface to add a stepper button. This change is temporary
 ;; until the stepper works with #lang languages.
 
 ;(require string-constants)

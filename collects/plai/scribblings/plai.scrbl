@@ -61,7 +61,7 @@ This package contains the following languages:
 
 @(define scheme-guide '(lib "scribblings/reference/reference.scrbl"))
 
-@PLAI-LANG is derived from the @racketmodname[scheme] langauge.  In addition,
+@PLAI-LANG is derived from the @racketmodname[scheme] language.  In addition,
 it includes the @racket[define-type] and @racket[type-case] forms and testing
 support.
 

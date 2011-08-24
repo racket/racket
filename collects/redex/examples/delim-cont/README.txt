@@ -3,8 +3,8 @@ To run the tests using the model:
 
  1. Open "test.rkt" in DrRacket
 
- 2. Change DrRacket's current language to "Use the langauge declared
- in the source"
+ 2. Change DrRacket's current language to "Use the language declared
+    in the source"
 
  3. Click "Run"
 

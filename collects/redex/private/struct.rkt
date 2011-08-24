@@ -18,7 +18,7 @@
 (define-struct rule-pict (arrow lhs rhs label computed-label side-conditions/pattern-binds fresh-vars))
 
 ;; type proc = (exp exp (any -> any) (listof any) -> (listof any)))
-;;   a proc is a `cached' version of a make-proc, specialized to a particular langugage
+;;   a proc is a `cached' version of a make-proc, specialized to a particular language
 ;;   since that first application does all the work of compiling a pattern (wrt to a language),
 ;;   we want to avoid doing it multiple times, so it is cached in a reduction-relation struct
 
