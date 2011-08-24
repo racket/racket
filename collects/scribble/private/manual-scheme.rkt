@@ -109,7 +109,7 @@
               #,(syntax/loc stx (racketblock0 #:escape unsyntax-id modtag rest ...))))
            (syntax/loc stx (racketblock0 #:escape unsyntax-id modtag rest ...))))]
     [(_ #:file filename lang rest ...)
-     (syntax/loc stx (racketmod0 #:file #f #:escape unsyntax lang rest ...))]
+     (syntax/loc stx (racketmod0 #:file filename #:escape unsyntax lang rest ...))]
     [(_ lang rest ...)
      (syntax/loc stx (racketmod0 #:file #f lang rest ...))]))
 
