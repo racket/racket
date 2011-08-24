@@ -155,6 +155,7 @@ please adhere to these guidelines:
  (bug-report-field-environment "Environment")
  (bug-report-field-docs-installed "Docs Installed")
  (bug-report-field-collections "Collections")
+ (bug-report-field-links "Links")  ;; from 'raco link'
  (bug-report-field-human-language "Human Language")
  (bug-report-field-memory-use "Memory Use")
  (bug-report-field-version "Version")
