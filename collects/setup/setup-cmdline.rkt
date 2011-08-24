@@ -52,7 +52,7 @@
       (add-flags '((call-post-install #f)))]
      [("-d" "--no-info-domain") "Do not produce info-domain caches"
       (add-flags '((make-info-domain #f)))]
-     [("-D" "--no-docs") "Do not produce documentation"
+     [("-D" "--no-docs") "Do not compile .scrbl files and do not build documentation"
       (add-flags '((make-docs #f)))]
      [("-U" "--no-user") "Do not setup user-specific collections (implies --no-planet)"
       (add-flags '((make-user #f) (make-planet #f)))]
