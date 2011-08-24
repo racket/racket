@@ -259,7 +259,7 @@ text ``egg''. If so, it adds ``easter '' just before.
 @section[#:tag "adding-languages"]{Adding Languages to DrRacket}
 @index{adding languages to DrRacket}
 
-@subsection{@tt{#lang}-based Langauges in DrRacket}
+@subsection{@tt{#lang}-based Languages in DrRacket}
 
 If a language can be implemented as a module
 (see @racket[module] for details), then the simplest and
