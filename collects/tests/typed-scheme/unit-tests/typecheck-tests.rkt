@@ -185,9 +185,9 @@
         [tc-e/t #(3 4 5) (make-HeterogenousVector (list -Integer -Integer -Integer))]
         [tc-e/t '(2 3 4) (-lst* -PosByte -PosByte -PosByte)]
         [tc-e/t '(2 3 #t) (-lst* -PosByte -PosByte (-val #t))]
-        [tc-e/t #(2 3 #t) (make-HeterogenousVector (list -Integer -Integer (-val #t)))]
-        [tc-e (vector 2 "3" #t) (make-HeterogenousVector (list -Integer -String (-val #t)))]
-        [tc-e (vector-immutable 2 "3" #t) (make-HeterogenousVector (list -Integer -String (-val #t)))]
+        [tc-e/t #(2 3 #t) (make-HeterogenousVector (list -Integer -Integer -Boolean))]
+        [tc-e (vector 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
+        [tc-e (vector-immutable 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
         [tc-e/t '(#t #f) (-lst* (-val #t) (-val #f))]
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
@@ -1329,7 +1329,6 @@
         [tc-e (#%variable-reference +) -Variable-Reference]
         [tc-e (apply (λ: ([x : String] [y : String]) (string-append x y)) (list "foo" "bar")) -String]
         [tc-e (apply (plambda: (a) ([x : a] [y : a]) x) (list "foo" "bar")) -String]
-        
         [tc-e (ann 
                (case-lambda [(x) (add1 x)]
                             [(x y) (add1 x)])
@@ -1338,6 +1337,10 @@
               #:ret (ret (cl->* (t:-> -Integer -Integer)
                                 (t:-> -Integer -Integer -Integer))
                          (-FS -top -bot))]
+        [tc-e (let ([my-pred (λ () #f)])
+                (for/and: : Any ([i (in-range 4)])
+                          (my-pred)))
+              #:ret (ret Univ (-FS -top -top) (make-NoObject))]
         )
   (test-suite
    "check-type tests"

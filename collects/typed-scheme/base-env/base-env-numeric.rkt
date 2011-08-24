@@ -2,7 +2,7 @@
 
 (begin
   (require
-   racket/list
+   racket/list racket/unsafe/ops
    (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base
                  (only-in "../types/numeric-predicates.rkt" index?))
    (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-PosInt -Pos]))
