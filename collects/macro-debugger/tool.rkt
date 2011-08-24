@@ -158,11 +158,13 @@
                  (callback (lambda _ (run-macro-stepper))))))
 
         (define/public-final (run-macro-stepper)
-          (send (get-interactions-text) enable-macro-debugging #t)
-          (send this execute-callback))
+          (execute #t))
 
         (define/override (execute-callback)
-          (send (get-interactions-text) enable-macro-debugging #f)
+          (execute #f))
+
+        (define/private (execute debugging?)
+          (send (get-interactions-text) enable-macro-debugging debugging?)
           (super execute-callback))
 
         ;; Hide button for inappropriate languages
