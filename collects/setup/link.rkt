@@ -1,5 +1,6 @@
 #lang scheme/base
 (require racket/file
+         racket/path
          setup/dirs)
 
 (provide links)
@@ -80,6 +81,14 @@
 
   (for ([e (in-list table)]) (add-entry! e))
 
+  (define file-dir (let-values ([(base name dir?) 
+                                 (split-path (simplify-path 
+                                              (path->complete-path file)))])
+                     base))
+
+  (define (simplify p)
+    (simplify-path (path->complete-path p file-dir)))
+
   (define new-table
     (reverse
      (for/fold ([table (reverse table)]) ([d (in-list 
@@ -87,7 +96,10 @@
                                                        name)
                                                   '(#f)
                                                   dirs))])
-       (let* ([dp (and d (path->complete-path d))]
+       (let* ([dp (and d 
+                       (find-relative-path file-dir
+                                           (simplify-path 
+                                            (path->complete-path d))))]
               [a-name (and d
                            (or name
                                (let-values ([(base name dir?) (split-path dp)])
@@ -102,7 +114,8 @@
          (if remove?
              (filter (lambda (e) 
                        (or (and d
-                                (not (equal? (cadr e) d)))
+                                (not (equal? (simplify (cadr e)) 
+                                             (simplify d))))
                            (and name
                                 (not (equal? (car e) name)))
                            (and version-regexp
@@ -148,7 +161,7 @@
     (for ([e (in-list new-table)])
       (printf " collection: ~s  path: ~s~a\n"
               (car e)
-              (cadr e)
+              (path->string (simplify (cadr e)))
               (if (null? (cddr e))
                   ""
                   (format "  version: ~s"
