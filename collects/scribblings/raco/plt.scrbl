@@ -1,7 +1,10 @@
 #lang scribble/doc
-@(require scribble/manual "common.rkt" (for-label racket/base))
+@(require scribble/manual 
+          "common.rkt" 
+          (for-label racket/base
+                     setup/pack))
 
-@title[#:tag "plt"]{@exec{raco pack}: Packaging Library Collections}
+@title[#:tag "plt"]{@exec{raco pack}: Packing Library Collections}
 
 @margin-note{Before creating a @filepath{.plt} archive to distribute,
 consider instead posting your package on
@@ -11,7 +14,10 @@ The @exec{raco pack} command creates an archive for distributing
 library files to Racket users. A distribution archive usually has the
 suffix @as-index{@filepath{.plt}}, which DrRacket recognizes as an
 archive to provide automatic unpacking facilities. The @exec{raco
-setup} command also supports @filepath{.plt} unpacking.
+setup} command (see @secref["setup"]) also supports @filepath{.plt}
+unpacking with installation, while the @exec{raco unpack} command (see
+@secref["unpack"]) unpacks an archive locally without attempting to
+install it.
 
 An archive contains the following elements:
 
@@ -131,9 +137,160 @@ unpacked, the unpacker will check that the @filepath{mred} collection
 is installed, and that @filepath{mred} has the same version as when
 @filepath{sirmail.plt} was created.
 
+@; ------------------------------------------------------------------------
+
+@section[#:tag "format-of-.plt-archives"]{Format of @filepath{.plt} Archives}
+
+The extension @filepath{.plt} is not required for a distribution
+archive, but the @filepath{.plt}-extension convention helps users
+identify the purpose of a distribution file.
+
+The raw format of a distribution file is described below. This format
+is uncompressed and sensitive to communication modes (text
+vs. binary), so the distribution format is derived from the raw format
+by first compressing the file using @exec{gzip}, then encoding the gzipped
+file with the MIME base64 standard (which relies only the characters
+@litchar{A}-@litchar{Z}, @litchar{a}-@litchar{z}, @litchar{0}-@litchar{9}, 
+@litchar{+}, @litchar{/}, and @litchar{=}; all other characters are ignored
+when a base64-encoded file is decoded).
+
+The raw format is
+
+@itemize[
+  @item{
+    @litchar{PLT} are the first three characters.}
+
+  @item{
+    A procedure that takes a symbol and a failure thunk and returns
+    information about archive for recognized symbols and calls the
+    failure thunk for unrecognized symbols. The information symbols
+    are:
+    
+    @itemize[
+      @item{
+        @racket['name] --- a human-readable string describing the archive's
+        contents. This name is used only for printing messages to the
+        user during unpacking.}
+
+      @item{
+        @racket['unpacker] --- a symbol indicating the expected unpacking
+        environment. Currently, the only allowed value is @racket['mzscheme].}
+
+      @item{
+        @racket['requires] --- collections required to be installed before
+        unpacking the archive, which associated versions; see the
+        documentation of @racket[pack] for details.}
+
+     @item{
+        @racket['conflicts] --- collections required @emph{not} to be installed
+        before unpacking the archive.}
+
+     @item{
+        @racket['plt-relative?] --- a boolean; if true, then the archive's
+        content should be unpacked relative to the plt add-ons directory.}
+
+     @item{
+        @racket['plt-home-relative?] --- a boolean; if true and if
+        @racket['plt-relative?] is true, then the archive's content should be
+        unpacked relative to the Racket installation.}
+
+     @item{
+        @racket['test-plt-dirs] --- @racket[#f] or a list of path strings;
+        in the latter case, a true value of @racket['plt-home-relative?] is
+        cancelled if any of the directories in the list (relative to the
+        Racket installation) is unwritable by the user.}
+   ]
+
+   The procedure is extracted from the archive using the @racket[read]
+   and @racket[eval] procedures in a fresh namespace.  }
+
+ @item{
+   An old-style, unsigned unit using @racket[(lib mzlib/unit200)] that
+   drives the unpacking process. The unit accepts two imports: a path
+   string for the parent of the main @filepath{collects} directory and
+   an @racket[unmztar] procedure. The remainder of the unpacking
+   process consists of invoking this unit. It is expected that the
+   unit will call @racket[unmztar] procedure to unpack directories and
+   files that are defined in the input archive after this unit. The
+   result of invoking the unit must be a list of collection paths
+   (where each collection path is a list of strings); once the archive
+   is unpacked, @exec{raco setup} will compile and setup the specified
+   collections.
+
+   The @racket[unmztar] procedure takes one argument: a filter
+   procedure. The filter procedure is called for each directory and
+   file to be unpacked. It is called with three arguments:
+
+   @itemize[
+      @item{
+        @racket['dir], @racket['file], @racket['file-replace] 
+        --- indicates whether the item to be
+        unpacked is a directory, a file, or a file to be replaced, }
+
+      @item{
+        a relative path string --- the pathname of the directory or file
+        to be unpacked, relative to the unpack directory, and}
+
+      @item{
+        a path string for the unpack directory (which can vary for a
+        Racket-relative install when elements of the archive start with
+        @racket["collects"], @racket["lib"], etc.).}
+   ]
+   
+   If the filter procedure returns @racket[#f] for a directory or file, the
+   directory or file is not unpacked. If the filter procedure returns
+   @racket[#t] and the directory or file for @racket['dir] or @racket['file]
+   already exists, it is not created. (The file for @racket[file-replace]
+   need not exist already.)
+
+   When a directory is unpacked, intermediate directories are created
+   as necessary to create the specified directory. When a file is
+   unpacked, the directory must already exist.
+
+   The unit is extracted from the archive using @racket[read] and
+   @racket[eval].}  ]
+
+Assuming that the unpacking unit calls the @racket[unmztar] procedure, the
+archive should continue with @tech{unpackables}. @tech{Unpackables} are
+extracted until the end-of-file is found (as indicated by an @litchar{=}
+in the base64-encoded input archive).
+
+An @deftech{unpackable} is one of the following:
+
+@itemize[
+   @item{
+     The symbol @racket['dir] followed by a list. The @racket[build-path]
+     procedure will be applied to the list to obtain a relative path for
+     the directory (and the relative path is combined with the target
+     directory path to get a complete path).
+
+     The @racket['dir] symbol and list are extracted from the archive
+     using @racket[read] (and the result is @emph{not}
+     @racket[eval]uated).}
+
+   @item{
+     The symbol @racket['file], a list, a number, an asterisk, and the file
+     data. The list specifies the file's relative path, just as for
+     directories. The number indicates the size of the file to be
+     unpacked in bytes. The asterisk indicates the start of the file
+     data; the next n bytes are written to the file, where n is the
+     specified size of the file.
+
+     The symbol, list, and number are all extracted from the archive
+     using @racket[read] (and the result is @emph{not}
+     @racket[eval]uated). After the number is read, input characters
+     are discarded until an asterisk is found. The file data must
+     follow this asterisk immediately.}
+   
+   @item{
+     The symbol @racket['file-replace] is treated like @racket['file], 
+     but if the file exists on disk already, the file in the archive replaces
+     the file on disk.}
+]
+
 @; ----------------------------------------
 
-@section{API for Packaging}
+@section{API for Packing}
 
 @defmodule[setup/pack]{Although the @exec{raco pack} command can be
 used to create most @filepath{.plt} files, the
@@ -192,6 +349,7 @@ making @filepath{.plt} archives.}
             (dest path-string?)
             (name string?)
             (paths (listof path-string?))
+            [#:as-paths as-paths (listof path-string?) paths]
             [#:file-filter filter-proc
                            (path-string? . -> . boolean?) std-filter]
             [#:encode? encode? boolean? #t]
@@ -213,7 +371,10 @@ making @filepath{.plt} archives.}
   using the string @racket[name] as the name reported to @exec{raco setup} as
   the archive's description. The @racket[paths] argument must be a list of
   relative paths for directories and files; the contents of these files and
-  directories will be packed into the archive.
+  directories will be packed into the archive. The optional @racket[as-paths]
+  list provides the path to be recorded in the archive for each element of 
+  @racket[paths] (so that the unpacked paths can be different from the packed
+  paths).
 
   The @racket[#:file-filter] procedure is called with the relative path of each
   candidate for packing. If it returns @racket[#f] for some path, then that
@@ -306,12 +467,15 @@ making @filepath{.plt} archives.}
   @litchar{[.]plt$}.}
 
 @defproc[(mztar (path path-string?)
+                [#:as-path path path-string? path]
                 (output output-port?)
                 (filter (path-string? . -> . boolean?))
                 (file-mode (symbols 'file 'file-replace))) void?]{
    Called by @racket[pack] to write one directory/file @racket[path] to the
    output port @racket[output] using the filter procedure @racket[filter]
-   (see @racket[pack] for a description of @racket[filter]). The
+   (see @racket[pack] for a description of @racket[filter]). The @racket[path]
+   is recorded in the output as @racket[as-path], in case the unpacked
+   path should be different from the original path. The
    @racket[file-mode] argument specifies the default mode for packing a file,
    either @racket['file] or @racket['file-replace].}
 

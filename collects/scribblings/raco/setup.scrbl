@@ -584,14 +584,12 @@ form.}
 
 @section[#:tag ".plt-archives"]{API for Installing @filepath{.plt} Archives}
 
-@subsection{Installing a Single @filepath{.plt} File}
-
 The @racketmodname[setup/plt-single-installer] module provides a
 function for installing a single @filepath{.plt} file, and
 @racketmodname[setup/plt-installer] wraps it with a GUI
 interface.
 
-@subsubsection{Non-GUI Installer}
+@subsection{Non-GUI Installer}
 
 @local-module[setup/plt-single-installer]{
 
@@ -643,7 +641,7 @@ v
  should be run after a set of @|PLaneT| packages are removed.}}
 
 
-@subsubsection[#:tag "gui-unpacking"]{GUI Installer}
+@subsection[#:tag "gui-unpacking"]{GUI Installer}
 
 @defmodule[setup/plt-installer]{ The
   @racketmodname[setup/plt-installer] library in the setup collection
@@ -683,7 +681,7 @@ v
 
 @; ----------------------------------------
 
-@subsubsection{GUI Unpacking Signature}
+@subsection{GUI Unpacking Signature}
       
 @defmodule[setup/plt-installer-sig]{
   @defsignature[setup:plt-installer^ ()]{
@@ -692,255 +690,11 @@ v
 
 @; ----------------------------------------
 
-@subsubsection{GUI Unpacking Unit}
+@subsection{GUI Unpacking Unit}
 
 @defmodule[setup/plt-installer-unit]{
 
 Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
-
-@; ------------------------------------------------------------------------
-
-@subsection[#:tag "unpacking-.plt-archives"]{Unpacking @filepath{.plt} Archives}
-
-@defmodule[setup/unpack]{The @racketmodname[setup/unpack]
-library provides raw support for unpacking a @filepath{.plt} file.}
-
-@defproc[(unpack [archive path-string?]
-                 [main-collects-parent-dir path-string? (current-directory)]
-                 [print-status (string? . -> . any) (lambda (x) (printf "~a\n" x))]
-                 [get-target-directory (-> path-string?) (lambda () (current-directory))]
-                 [force? any/c #f]
-                 [get-target-plt-directory
-                  (path-string? 
-                   path-string? 
-                   (listof path-string?) 
-                   . -> . path-string?)
-                  (lambda (_preferred-dir _main-dir _options)
-                    _preferred-dir)])
-          void?]{
-
-Unpacks @racket[archive]. 
-
-The @racket[main-collects-parent-dir] argument is passed along to
-@racket[get-target-plt-directory].
-
-The @racket[print-status] argument is used to report unpacking
-progress.
-
-The @racket[get-target-directory] argument is used to get the
-destination directory for unpacking an archive whose content is
-relative to an arbitrary directory.
-
-If @racket[force?] is true, then version and required-collection
-mismatches (comparing information in the archive to the current
-installation) are ignored.
-
-The @racket[get-target-plt-directory] function is called to select a
-target for installation for an archive whose is relative to the
-installation. The function should normally return one if its first two
-arguments; the third argument merely contains the first two, but has
-only one element if the first two are the same. If the archive does
-not request installation for all uses, then the first two arguments
-will be different, and the former will be a user-specific location,
-while the second will refer to the main installation.}
-
-@defproc[(fold-plt-archive [archive path-string?]
-                           [on-config-fn (any/c any/c . -> . any/c)]
-                           [on-setup-unit (any/c input-port? any/c . -> . any/c)]
-                           [on-directory (path-string? any/c . -> . any/c)]
-                           [on-file (path-string? input-port? any/c . -> . any/c)]
-                           [initial-value any/c])
-          any/c]{
-
-Traverses the content of @racket[archive], which must be a
-@filepath{.plt} archive that is created with the default unpacking
-unit and configuration expression. The configuration expression is not
-evaluated, the unpacking unit is not invoked, and not files are
-unpacked to the filesystem. Instead, the information in the archive is
-reported back through @racket[on-config], @racket[on-setup-unit],
-@racket[on-directory], and @racket[on-file], each of which can build on
-an accumulated value that starts with @racket[initial-value] and whose
-final value is returned.
-
-The @racket[on-config-fn] function is called once with an S-expression
-that represents a function to implement configuration information.
-The second argument to @racket[on-config] is @racket[initial-value],
-and the function's result is passes on as the last argument to @racket[on-setup-unit].
-
-The @racket[on-setup-unit] function is called with the S-expression
-representation of the installation unit, an input port that points to
-the rest of the file, and the accumulated value. This input port is
-the same port that will be used in the rest of processing, so if
-@racket[on-setup-unit] consumes any data from the port, then that data
-will not be consumed by the remaining functions. (This means that
-on-setup-unit can leave processing in an inconsistent state, which is
-not checked by anything, and therefore could cause an error.)
-The result of @racket[on-setup-unit] becomes the new accumulated value.
-
-For each directory that would be created by the archive when unpacking
-normally, @racket[on-directory] is called with the directory path and the
-accumulated value up to that point, and its result is the new
-accumulated value.
-
-For each file that would be created by the archive when unpacking
-normally, @racket[on-file] is called with the file path, an input port
-containing the contents of the file, and the accumulated value up to
-that point; its result is the new accumulated value. The input port
-can be used or ignored, and parsing of the rest of the file continues
-the same either way. After @racket[on-file] returns control, however,
-the input port is drained of its content.}
-
-@; ------------------------------------------------------------------------
-
-@subsection[#:tag "format-of-.plt-archives"]{
-  Format of @filepath{.plt} Archives}
-
-The extension @filepath{.plt} is not required for a distribution
-archive, but the @filepath{.plt}-extension convention helps users
-identify the purpose of a distribution file.
-
-The raw format of a distribution file is described below. This format
-is uncompressed and sensitive to communication modes (text
-vs. binary), so the distribution format is derived from the raw format
-by first compressing the file using @exec{gzip}, then encoding the gzipped
-file with the MIME base64 standard (which relies only the characters
-@litchar{A}-@litchar{Z}, @litchar{a}-@litchar{z}, @litchar{0}-@litchar{9}, 
-@litchar{+}, @litchar{/}, and @litchar{=}; all other characters are ignored
-when a base64-encoded file is decoded).
-
-The raw format is
-
-@itemize[
-  @item{
-    @litchar{PLT} are the first three characters.}
-
-  @item{
-    A procedure that takes a symbol and a failure thunk and returns
-    information about archive for recognized symbols and calls the
-    failure thunk for unrecognized symbols. The information symbols
-    are:
-    
-    @itemize[
-      @item{
-        @racket['name] --- a human-readable string describing the archive's
-        contents. This name is used only for printing messages to the
-        user during unpacking.}
-
-      @item{
-        @racket['unpacker] --- a symbol indicating the expected unpacking
-        environment. Currently, the only allowed value is @racket['mzscheme].}
-
-      @item{
-        @racket['requires] --- collections required to be installed before
-        unpacking the archive, which associated versions; see the
-        documentation of @racket[pack] for details.}
-
-     @item{
-        @racket['conflicts] --- collections required @emph{not} to be installed
-        before unpacking the archive.}
-
-     @item{
-        @racket['plt-relative?] --- a boolean; if true, then the archive's
-        content should be unpacked relative to the plt add-ons directory.}
-
-     @item{
-        @racket['plt-home-relative?] --- a boolean; if true and if
-        @racket['plt-relative?] is true, then the archive's content should be
-        unpacked relative to the Racket installation.}
-
-     @item{
-        @racket['test-plt-dirs] --- @racket[#f] or a list of path strings;
-        in the latter case, a true value of @racket['plt-home-relative?] is
-        cancelled if any of the directories in the list (relative to the
-        Racket installation) is unwritable by the user.}
-   ]
-
-   The procedure is extracted from the archive using the @racket[read]
-   and @racket[eval] procedures in a fresh namespace.  }
-
- @item{
-   An old-style, unsigned unit using @racket[(lib mzlib/unit200)] that
-   drives the unpacking process. The unit accepts two imports: a path
-   string for the parent of the main @filepath{collects} directory and
-   an @racket[unmztar] procedure. The remainder of the unpacking
-   process consists of invoking this unit. It is expected that the
-   unit will call @racket[unmztar] procedure to unpack directories and
-   files that are defined in the input archive after this unit. The
-   result of invoking the unit must be a list of collection paths
-   (where each collection path is a list of strings); once the archive
-   is unpacked, @exec{raco setup} will compile and setup the specified
-   collections.
-
-   The @racket[unmztar] procedure takes one argument: a filter
-   procedure. The filter procedure is called for each directory and
-   file to be unpacked. It is called with three arguments:
-
-   @itemize[
-      @item{
-        @racket['dir], @racket['file], @racket['file-replace] 
-        --- indicates whether the item to be
-        unpacked is a directory, a file, or a file to be replaced, }
-
-      @item{
-        a relative path string --- the pathname of the directory or file
-        to be unpacked, relative to the unpack directory, and}
-
-      @item{
-        a path string for the unpack directory (which can vary for a
-        Racket-relative install when elements of the archive start with
-        @racket["collects"], @racket["lib"], etc.).}
-   ]
-   
-   If the filter procedure returns @racket[#f] for a directory or file, the
-   directory or file is not unpacked. If the filter procedure returns
-   @racket[#t] and the directory or file for @racket['dir] or @racket['file]
-   already exists, it is not created. (The file for @racket[file-replace]
-   need not exist already.)
-
-   When a directory is unpacked, intermediate directories are created
-   as necessary to create the specified directory. When a file is
-   unpacked, the directory must already exist.
-
-   The unit is extracted from the archive using @racket[read] and
-   @racket[eval].}  ]
-
-Assuming that the unpacking unit calls the @racket[unmztar] procedure, the
-archive should continue with @tech{unpackables}. @tech{Unpackables} are
-extracted until the end-of-file is found (as indicated by an @litchar{=}
-in the base64-encoded input archive).
-
-An @deftech{unpackable} is one of the following:
-
-@itemize[
-   @item{
-     The symbol @racket['dir] followed by a list. The @racket[build-path]
-     procedure will be applied to the list to obtain a relative path for
-     the directory (and the relative path is combined with the target
-     directory path to get a complete path).
-
-     The @racket['dir] symbol and list are extracted from the archive
-     using @racket[read] (and the result is @emph{not}
-     @racket[eval]uated).}
-
-   @item{
-     The symbol @racket['file], a list, a number, an asterisk, and the file
-     data. The list specifies the file's relative path, just as for
-     directories. The number indicates the size of the file to be
-     unpacked in bytes. The asterisk indicates the start of the file
-     data; the next n bytes are written to the file, where n is the
-     specified size of the file.
-
-     The symbol, list, and number are all extracted from the archive
-     using @racket[read] (and the result is @emph{not}
-     @racket[eval]uated). After the number is read, input characters
-     are discarded until an asterisk is found. The file data must
-     follow this asterisk immediately.}
-   
-   @item{
-     The symbol @racket['file-replace] is treated like @racket['file], 
-     but if the file exists on disk already, the file in the archive replaces
-     the file on disk.}
-]
 
 @; ----------------------------------------------------------
 

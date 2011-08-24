@@ -40,6 +40,7 @@
               #:at-plt-home?  at-plt-home?))
   
   (define (pack-plt dest name paths
+                    #:as-paths      [as-paths paths]
                     #:collections   [collections   null]
                     #:file-filter   [file-filter   std-filter]
                     #:encode?       [encode?       #t]
@@ -125,56 +126,84 @@
                     (quote ,collections)))
              fileout)
       (newline fileout)
-      (for-each (lambda (path)
-                  (mztar (simplify-path path #f) fileout file-filter file-mode))
-                paths)
+      (for-each (lambda (path as-path)
+                  (mztar (simplify-path path #f) #:as-path (simplify-path as-path #f)
+                         fileout file-filter file-mode))
+                paths as-paths)
       (close-output-port fileout)
       (thread-wait thd)))
 
   (define (element->string x)
     (if (path? x) (path->string x) x))
 
-  (define (mztar path output file-filter file-mode)
+  (define (mztar path #:as-path [as-path path] output file-filter file-mode)
     (define (path->list p)
       (if (eq? p 'same)
-        null
-        (let-values ([(base name dir?) (split-path p)])
-          (if (path? base)
-            (append (path->list base) (list name))
-            (list name)))))
-    (define-values (init-dir init-files)
+          null
+          (let-values ([(base name dir?) (split-path p)])
+            (if (path? base)
+                (append (path->list base) (list name))
+                (list name)))))
+    (define-values (init-dir init-as-dir init-files init-as-files)
       (if (file-exists? path)
-        (let-values ([(base name dir?) (split-path path)])
-          (values (if (eq? base 'relative) 'same base) (list name)))
-        (values (if (string? path) (string->path path) path) #f)))
+          (let*-values ([(base name dir?) (split-path path)]
+                        [(as-base as-name as-dir?) (if as-path
+                                                       (split-path as-path)
+                                                       (values base name dir?))])
+            (values (if (eq? base 'relative) 'same base)
+                    (if (eq? as-base 'relative) 'same as-base)
+                    (list name)
+                    (list as-name)))
+          (let* ([init-dir (if (string? path) (string->path path) path)]
+                 [init-as-dir (if (string? as-path) (string->path as-path) as-path)])
+            (values init-dir
+                    init-as-dir
+                    #f
+                    #f))))
 
-    (let loop ([dir init-dir] [dpath (path->list init-dir)] [files init-files])
-      (printf "MzTarring ~a...\n"
+    (let loop ([dir init-dir] [dpath (path->list init-dir)] 
+               [as-dir init-as-dir] [as-dpath (path->list init-as-dir)] 
+               [files init-files]
+               [as-files init-as-files])
+      (printf "MzTarring ~a~a...\n"
 	      (path->string
 	       (if files
 		   (build-path dir (car files))
-		   dir)))
-      (fprintf output "~s\n~s\n" 'dir (map element->string dpath))
-      (for-each
-       (lambda (f)
-         (let* ([p (build-path dir f)]
-                [filter-val (file-filter p)])
-           (when filter-val
-             (if (directory-exists? p)
-               (loop p (append dpath (list f)) #f)
-               (let ([len (file-size p)])
-                 ;; (printf "MzTarring ~a\n" p)
-                 (fprintf output "~s\n~s\n~s\n*"
-                          (case filter-val
-                            [(file) 'file]
-                            [(file-replace) 'file-replace]
-                            [else file-mode])
-                          (map element->string (append dpath (list f)))
-                          len)
-                 (call-with-input-file* p
-                   (lambda (p) (copy-port p output))))))))
-       (or files (sort (map element->string (directory-list dir)) string<?)))))
-
+		   dir))
+              (if (not (equal? path as-path))
+                  (format " as ~a"
+                          (if as-files
+                              (build-path as-dir (car as-files))
+                              as-dir))
+                  ""))
+      (fprintf output "~s\n~s\n" 'dir (map element->string as-dpath))
+      (let* ([files (or files (sort (map element->string (directory-list dir)) string<?))]
+             [as-files (or as-files files)])
+        (for ([f (in-list files)]
+              [as-f (in-list as-files)])
+          (let* ([p (build-path dir f)]
+                 [filter-val (file-filter p)])
+            (when filter-val
+              (if (directory-exists? p)
+                  (loop p 
+                        (append dpath (list f)) 
+                        (build-path as-dir f)
+                        (append as-dpath (list f))
+                        #f
+                        #f)
+                  (let ([len (file-size p)])
+                    ;; (printf "MzTarring ~a\n" p)
+                    (fprintf output "~s\n~s\n~s\n*"
+                             (case filter-val
+                               [(file) 'file]
+                               [(file-replace) 'file-replace]
+                               [else file-mode])
+                             (map element->string (append as-dpath (list as-f)))
+                             len)
+                    (call-with-input-file* 
+                     p
+                     (lambda (p) (copy-port p output)))))))))))
+  
   (define (std-filter path)
     (let-values ([(base name dir?) (split-path path)])
       (let ([name (path->bytes name)])
@@ -198,31 +227,16 @@
                                 #:at-plt-home? [at-plt-home? #f]
                                 #:test-plt-collects? [test-plt-collects? #t])
     (let-values
-        ([(dir source-files requires conflicts name)
+        ([(source-files as-source-files requires conflicts name)
           (let ([dirs (map (lambda (cp) (apply collection-path cp)) collections)])
             ;; Figure out the base path:
             (let* ([base-path #f]
                    [base-path-setter #f]
+                   [paths dirs]
                    [rel-paths
-                    (map (lambda (dir coll)
-                           (let*-values ([(base c-name dir?) (split-path dir)]
-                                         [(base subdir)
-                                          (let loop ([l (cdr coll)][base base])
-                                            (let-values ([(base x-name dir?) (split-path base)])
-                                              (if (null? l)
-                                                (values base x-name)
-                                                (let-values ([(base subdir) (loop (cdr l) base)])
-                                                  (values base (build-path subdir x-name))))))])
-                             (if base-path
-                               (unless (equal? base base-path)
-                                 (error 'mzc
-                                        "cannot combine collections that live in different directories: \"~a\" and: \"~a\""
-                                        base-path-setter
-                                        dir))
-                               (begin (set! base-path-setter dir)
-                                      (set! base-path base)))
-                             (build-path 'same subdir c-name)))
-                         dirs collections)]
+                    (map (lambda (coll)
+                           (build-path "collects" (apply build-path coll)))
+                         collections)]
                    [infos (map (lambda (cp) (get-info cp)) collections)]
                    [coll-list?
                     (lambda (cl)
@@ -244,7 +258,7 @@
                                                which src-cp))
                                       rl))
                                   infos collections)))])
-              (values base-path
+              (values paths
                       rel-paths
                       (get-dep-coll 'requires)
                       (append (if replace? null collections)
@@ -254,21 +268,21 @@
                            'name
                            (lambda () (caar collections)))))))])
       (let ([output (path->complete-path output)])
-        (parameterize ([current-directory dir])
-          (pack-plt
-           output name
-           source-files
-           #:collections (append extra-setup-collections
-                                 (filter get-info collections))
-           #:file-filter file-filter
-           #:file-mode (if replace? 'file-replace 'file)
-           #:plt-relative? #t
-           #:requires
-           ;; For each require, get current version
-           (map (lambda (r)
-                  (let ([i (get-info r)])
-                    (let ([v (and i (i 'version (lambda () #f)))])
-                      (if v
+        (pack-plt
+         output name
+         source-files
+         #:as-paths as-source-files
+         #:collections (append extra-setup-collections
+                               (filter get-info collections))
+         #:file-filter file-filter
+         #:file-mode (if replace? 'file-replace 'file)
+         #:plt-relative? #t
+         #:requires
+         ;; For each require, get current version
+         (map (lambda (r)
+                (let ([i (get-info r)])
+                  (let ([v (and i (i 'version (lambda () #f)))])
+                    (if v
                         (begin
                           (unless (and (list? v)
                                        (andmap number? v)
@@ -280,13 +294,13 @@
                              r))
                           (list r v))
                         (list r null)))))
-                requires
-                ;; Packer used to automatically include "mzscheme"
-                ;; dependency, but we've conlcuded that dependencies
-                ;; aren't typically useful.
-                #;
-                (cons '("mzscheme") requires))
-           #:conflicts conflicts
-           #:at-plt-home? at-plt-home?
-           #:test-plt-dirs (and at-plt-home? test-plt-collects?
-                                '("collects"))))))))
+              requires
+              ;; Packer used to automatically include "mzscheme"
+              ;; dependency, but we've conlcuded that dependencies
+              ;; aren't typically useful.
+              #;
+              (cons '("mzscheme") requires))
+         #:conflicts conflicts
+         #:at-plt-home? at-plt-home?
+         #:test-plt-dirs (and at-plt-home? test-plt-collects?
+                              '("collects")))))))
