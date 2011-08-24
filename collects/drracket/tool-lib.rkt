@@ -63,13 +63,17 @@ all of the names in the tools library, for use defining keybindings
               (map
                (λ (case)
                  (with-syntax ([(id ctc)
-                                (syntax-case case (proc-doc/names proc-doc)
+                                (syntax-case case (proc-doc/names proc-doc parameter-doc parameter/c)
                                   [(proc-doc/names id ctc . stuff)
                                    (identifier? #'id)
                                    #'(id ctc)]
                                   [(proc-doc id ctc . stuff)
                                    (identifier? #'id)
                                    #'(id ctc)]
+                                  [(parameter-doc id (parameter/c ctc) arg-id . stuff)
+                                   (and (identifier? #'id)
+                                        (identifier? #'arg-id))
+                                   #'(id (parameter/c ctc))]
                                   [_
                                    (raise-syntax-error 'provide/dr/doc "unknown thing" case)])])
                    (with-syntax ([mid (munge-id #'id)])
@@ -860,6 +864,16 @@ all of the names in the tools library, for use defining keybindings
     the values of toplevel expressions in the REPL.
     
     It is only initialized on the user's thread.})
+ 
+ (parameter-doc
+  drracket:rep:after-expression
+  (parameter/c (or/c #f any/c))
+  top-level-expression
+  @{This parameter is used by @method[drracket:rep:text% evaluate-from-port].
+    When it is something other than @racket[#f], then DrRacket passes it to
+    @racket[eval] as the last thing that it does on the user's thread (before
+    cleaning up).})
+  
  
  
  ;                                                                        

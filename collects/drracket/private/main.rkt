@@ -745,32 +745,44 @@
                 (loop (cdr files))
                 (cons (car files) (loop (cdr files))))])))
 
-;; NOTE: drscheme-normal.rkt sets current-command-line-arguments to
-;; the list of files to open, after parsing out flags like -h
-(let* ([files-to-open 
-        (if (preferences:get 'drracket:open-in-tabs)
-            (vector->list (current-command-line-arguments))
-            (reverse (vector->list (current-command-line-arguments))))]
-       [normalized/filtered
-        (let loop ([files files-to-open])
-          (cond
-            [(null? files) null]
-            [else (let ([file (car files)])
-                    (if (file-exists? file)
-                        (cons (normalize-path file) (loop (cdr files)))
-                        (begin
-                          (message-box
-                           (string-constant drscheme)
-                           (format (string-constant cannot-open-because-dne) file))
-                          (loop (cdr files)))))]))]
-       [no-dups (remove-duplicates normalized/filtered)]
-       [frames
-        (map (λ (f) (handler:edit-file
-                     f
-                     (λ () (drracket:unit:open-drscheme-window f))))
-             no-dups)])
-  (when (null? (filter (λ (x) x) frames))
-    (make-basic))
-  (when (and (preferences:get 'drracket:open-in-tabs)
-             (not (null? no-dups)))
-    (handler:edit-file (car no-dups))))
+;; we queue a callback here to open the first frame
+;; so that the modules that are being loaded by drracket
+;; are all finished before we trigger the dynamic 
+;; requires that can happen when the module language looks
+;; at the #lang line (which can end up loading drracket itself
+;; in a bad way leading to errors like this:
+;;   link: reference (phase 0) to a variable in module: ...
+;;   that is uninitialized (phase level 0); 
+;;   reference appears in module: ...)
+
+(queue-callback
+ (λ ()
+   ;; NOTE: drscheme-normal.rkt sets current-command-line-arguments to
+   ;; the list of files to open, after parsing out flags like -h
+   (let* ([files-to-open 
+           (if (preferences:get 'drracket:open-in-tabs)
+               (vector->list (current-command-line-arguments))
+               (reverse (vector->list (current-command-line-arguments))))]
+          [normalized/filtered
+           (let loop ([files files-to-open])
+             (cond
+               [(null? files) null]
+               [else (let ([file (car files)])
+                       (if (file-exists? file)
+                           (cons (normalize-path file) (loop (cdr files)))
+                           (begin
+                             (message-box
+                              (string-constant drscheme)
+                              (format (string-constant cannot-open-because-dne) file))
+                             (loop (cdr files)))))]))]
+          [no-dups (remove-duplicates normalized/filtered)]
+          [frames
+           (map (λ (f) (handler:edit-file
+                        f
+                        (λ () (drracket:unit:open-drscheme-window f))))
+                no-dups)])
+     (when (null? (filter (λ (x) x) frames))
+       (make-basic))
+     (when (and (preferences:get 'drracket:open-in-tabs)
+                (not (null? no-dups)))
+       (handler:edit-file (car no-dups))))))

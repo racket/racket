@@ -102,8 +102,13 @@ The @racket[complete-program?] argument determines if the
   @method[drracket:language:language<%> front-end/interaction] method.
   When evaluation finishes, it calls @racket[cleanup] on the user's main thread.
 
+  Just before calling @racket[cleanup], this invokes the thunk in 
+  @racket[drracket:rep:after-expression] (if any). It takes the value of
+  the @racket[drracket:rep:after-expression] parameter on the DrRacket main thread,
+  but invokes the thunk on the user's thread.
+  
   This method must be called from the DrRacket main thread.
-}
+  }
                  
 @defmethod[#:mode augment (after-many-evals) any]{
   Called from the DrRacket main thread after

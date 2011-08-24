@@ -5,9 +5,8 @@
          racket/class
          mrlib/bitmap-label
          racket/system
-         setup/xref
          net/sendurl
-         racket/sandbox)
+         drracket/tool-lib)
 
 (provide drracket-buttons)
 
@@ -20,69 +19,39 @@
 
 (define original-error-display-handler (error-display-handler))
 
-(define (make-render-button label bmp mode suffix extra-cmdline)
+(define (make-render-button label bmp mode suffix)
   (list 
    label
    bmp
    (λ (drs-frame)
-     (let* ([t (send drs-frame get-definitions-text)]
-            [fn (send t get-filename)])
-       (if fn
-           (let ()
-             (send t save-file fn)
-             (define p (open-output-string))
-             (define-values (base name dir?) (split-path fn))
-             (define sb 
-               (parameterize ([sandbox-security-guard (current-security-guard)])
-                 (make-evaluator 'racket/base)))
-             (define result
-               (call-in-sandbox-context
-                sb
-                (λ ()
-                  (with-handlers (((λ (x) #t) (λ (e) (list 'exn e))))
-                    (parameterize ([current-output-port p]
-                                   [current-error-port p]
-                                   [current-directory base]
-                                   [error-display-handler original-error-display-handler]
-                                   [current-command-line-arguments
-                                    (list->vector 
-                                     (append
-                                      extra-cmdline
-                                      (list "--quiet")
-                                      (list mode (if (path? fn) (path->string fn) fn))))])
-                      (namespace-attach-module (namespace-anchor->empty-namespace anchor) 'setup/xref)
-                      (dynamic-require 'scribble/run #f)
-                      (list 'normal))))))
-             (cond
-               [(eq? (list-ref result 0) 'exn)
-                (define exn (list-ref result 1))
-                (define sp (open-output-string))
-                (cond
-                  [(exn? exn)
-                   (fprintf sp "~a\n" (exn-message exn))
-                   (for ([x (in-list (continuation-mark-set->context (exn-continuation-marks exn)))])
-                     (fprintf sp "  ~s\n" x))]
-                  [else
-                   (fprintf sp "uncaught exn: ~s\n" exn)])
-                (message-box "Scribble HTML - DrRacket"
-                             (get-output-string sp))]
-               [(equal? suffix #".html")
-                (send-url/file (path-replace-suffix fn suffix))]
-               [else
-                (system (format "open ~s" (path->string (path-replace-suffix fn suffix))))])
-             (let ([s (get-output-string p)])
-               (unless (equal? s "")
-                 (message-box "Scribble" s drs-frame))))
-           (message-box "Scribble" "Cannot render buffer without filename"))))))
+     (define fn (send (send drs-frame get-definitions-text) get-filename))
+     (cond
+       [fn
+        (parameterize ([drracket:rep:after-expression
+                        (λ ()
+                          (printf "scribble: loading xref\n")
+                          (define xref ((dynamic-require 'setup/xref 'load-collections-xref)))
+                          (printf "scribble: rendering\n")
+                          ((dynamic-require 'scribble/render 'render) 
+                           (list (eval 'doc))
+                           (list fn)
+                           #:xrefs (list xref))
+                          (cond
+                            [(equal? suffix #".html")
+                             (send-url/file (path-replace-suffix fn suffix))]
+                            [else
+                             (system (format "open ~s" (path->string (path-replace-suffix fn suffix))))]))]) 
+          (send drs-frame execute-callback))]
+       [else
+        (message-box "Scribble" "Cannot render buffer without filename")]))))
 
 (define drracket-buttons
   (let ([html-button
-         (make-render-button "Scribble HTML" html.png "--html" #".html" 
-                             '("++xref-in" "setup/xref" "load-collections-xref"))]
+         (make-render-button "Scribble HTML" html.png "--html" #".html")]
         [pdf-button
          ;; only available on OSX currently
          ;; when we have a general way of opening pdfs, can use that
-         (make-render-button "Scribble PDF" pdf.png "--pdf" #".pdf" null)])
+         (make-render-button "Scribble PDF" pdf.png "--pdf" #".pdf")])
     (case (system-type)
       [(macosx) (list html-button pdf-button)]
       [else (list html-button)])))

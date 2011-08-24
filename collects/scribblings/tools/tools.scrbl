@@ -839,7 +839,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
            (-> (is-a?/c
                 top-level-window<%>)
                any))]{
-   This is meant to be used with the @racket['drscheme:toolbar-buttons] 
+   This is meant to be used with the @racket['drracket:toolbar-buttons] 
    argument to the info proc returned
    from @racket[read-language].
 }

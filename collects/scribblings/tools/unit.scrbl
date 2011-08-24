@@ -293,7 +293,7 @@ button or chooses the Run menu item.
 
 It calls 
 @method[drracket:rep:context<%> ensure-rep-shown] and then it calls
-@method[drracket:rep:text% do-many-text-evals] passing in the result of
+@method[drracket:rep:text% evaluate-from-port] passing in the result of
 @method[drracket:unit:frame<%> get-interactions-text] and its entire range, unless the first two characters are 
 @litchar{#!} in which case, it skips the first line.
 

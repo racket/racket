@@ -429,6 +429,8 @@ TODO
   (define log-max-size 1000)
   (define log-entry-max-size 1000)
   
+  (define after-expression (make-parameter #f))
+  
   (define text-mixin
     (mixin ((class->interface text%)
             text:ports<%>
@@ -1057,6 +1059,7 @@ TODO
         (set! in-evaluation? #t)
         (update-running #t)
         (set! need-interaction-cleanup? #t)
+        (define the-after-expression (after-expression))
         
         (run-in-evaluation-thread
          (λ () ; =User=, =Handler=, =No-Breaks=
@@ -1104,6 +1107,11 @@ TODO
                      (send lang front-end/finished-complete-program settings))))
                 (default-continuation-prompt-tag)
                 (λ args (void))))
+             
+             (when the-after-expression 
+               (call-with-continuation-prompt
+                (λ () 
+                  (the-after-expression))))
              
              (set! in-evaluation? #f)
              (update-running #f)

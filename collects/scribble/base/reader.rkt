@@ -32,7 +32,7 @@
 (define (scribble-base-info)
   (lambda (key defval default)
     (case key
-      [(drscheme:toolbar-buttons)
+      [(drracket:toolbar-buttons)
        (dynamic-require 'scribble/tools/drracket-buttons 'drracket-buttons)]
       [else ((scribble-base-reader-info) key defval default)])))
 

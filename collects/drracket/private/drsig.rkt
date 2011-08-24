@@ -243,6 +243,7 @@
   (current-rep
    current-language-settings
    current-value-port
+   after-expression
    get-drs-bindings-keymap
    error-delta
    get-welcome-delta 

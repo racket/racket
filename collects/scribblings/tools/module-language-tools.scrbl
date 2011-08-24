@@ -21,6 +21,10 @@ first. The string is the label on the button; the bitmap is the icon
 (it should be 16x16), and the function is called when the button is clicked.
 If the result is @racket[#f], then no toolbar buttons are created.
 
+To implement functionality similar to the Run button, call the
+@method[drracket:unit:frame% execute-callback] method. You may also
+want to use the @racket[drracket:rep:after-expression] parameter.
+
 If @racket['drracket:toolbar-buttons] is not recognized, DrRacket will also
 pass @indexed-racket['drscheme:toolbar-buttons]; this is for backwards
 compatibility and new code should not use it.
