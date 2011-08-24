@@ -1,0 +1,75 @@
+----
+
+Testing
+
+- run ODBC tests on Mac
+- run ODBC DB2, Oracle tests on win32; also test SQL Server ?
+- test util/connect features
+- test transaction functions
+
+----
+
+Types
+
+- type annotations
+  - two modes: mandatory and opportunistic
+  - on result fields (eg sqlite, convert to date)
+  - on parameters ???
+  - per query or per connection? (or both?)
+  - either only well-known conversions, or must apply outside of lock
+
+- postgresql record type: docs, send
+- postgresql domain types, table record types, etc
+
+- util/postgresql: add inet types
+- util/geometry: add WKT functions
+
+- add support for ODBC intervals (no point w/o driver to test with)
+
+----
+
+Misc
+
+- use ffi/unsafe/alloc to simplify odbc handle allocation
+
+- add ODBC-like functions for inspecting schemas (list-tables, etc)
+  - util/schema (?), util/info (for information_schema) (?)
+  - at least, table-exists? : string [...] -> boolean?
+
+- for wrapped/managed connections, detect if underlying connection gets
+  disconnected by server (eg, times out after 10 minutes of inactivity)
+  - at least, pool should make sure connection is alive when gotten from idle list
+  - add {keepalive : -> boolean} method to connection<%> (?)
+
+- document/enumerate errors
+- document exn:fail:sql, when used, when not used, links to SQLSTATE docs?
+
+- disconnect on custudian shutdown (?)
+
+- disconnect should always work, even on thread-damaged connections
+  - but might need version with timeout and/or rudely? flag, because
+    I can't think of a way to solve the lock problem that doesn't involve aux thread.
+
+- finish transaction api: tests, custom sqlite options (?), custom mysql options (?)
+  - add connect option #:rollback-invalid-transactions? (?)
+
+- identify common ODBC errors that can't possibly rollback transaction
+  - test with PostgreSQL ODBC driver using "rollback on all errors" mode
+
+- more ODBC information (?)
+  SQLGetInfo:
+  - SQL_CONVERT_<datatype> - use to refine supported types (?)
+  - SQL_CURSOR_{COMMIT,ROLLBACK}_BEHAVIOR - check that commit/rollback doesn't delete pstmts!
+  - SQL_MAX_{CATALOG,COLUMN,IDENTIFIER,SCHEMA_NAME,TABLE_NAME}_NAME (min 128)
+
+- cursors? (Olin thinks cursors are important. I'm not sure.)
+  - how do people want to use cursors?
+  - how about implicit support only in 'in-query'?
+
+- ODBC: use async execution to avoid blocking all Racket threads
+
+- add evt versions of functions
+  - for query functions (?)
+  - connection-pool-lease-evt
+  - when is it useful in practice?
+    - would make it easier to handle timeouts...
