@@ -58,7 +58,15 @@ Full command-line options:
        @DFlag{remove} flag is also used, only links with a collection
        name matching @nonterm{name} are removed, and if no directory
        arguments are provided, all links with a match to
-       @nonterm{name} are removed.}
+       @nonterm{name} are removed. This flag is mutually exclusive with
+       @Flag{d} and @DFlag{root}.}
+
+ @item{@Flag{d} or @DFlag{root} --- Treats each directory as a
+       collection root that contains collection directories, instead of
+       a directory for a specific collection. When the @Flag{r} or
+       @DFlag{remove} flag is also used, only collection-root links
+       that match a directory are removed. This flag is mutually
+       exclusive with @Flag{n} and @DFlag{name}.}
 
  @item{@Flag{x} @nonterm{regexp} or @DFlag{version-regexp}
        @nonterm{regexp} --- Sets a version regexp that limits the link
@@ -106,6 +114,7 @@ Full command-line options:
                 [#:user? user? #t]
                 [#:file file (or/c path-string? #f) #f]
                 [#:name name (or/c string? #f) #f]
+                [#:root? root? any/c #f]
                 [#:version-regexp version-regexp (or/c regexp? #f) #f]
                 [#:error error-proc (symbol? string? any/c ... . -> . any) error]
                 [#:remove? remove? any/c #f]
@@ -122,8 +131,10 @@ reference-doc]{collection links file} if @racket[user?] is false.
 The @racket[error-proc] argument is called to raise exceptions that
 would be fatal to the @exec{raco link} command.
 
-If @racket[remove?] is false, the result is a list of top-level
-collection names (as strings) that are mapped by @racket[file] and
-that apply to the running version of Racket. If @racket[remove?] is
-true, the result is a list of entries that were removed from the file.}
-
+If @racket[remove?] is true, the result is a list of entries that were
+removed from the file.  If @racket[remove?] is false but
+@racket[root?] is true, the result is a list of paths for collection
+roots. If @racket[remove?] and @racket[root?] are both false, the
+result is a list of top-level collection names (as strings) that are
+mapped by @racket[file] and that apply to the running version of
+Racket.}

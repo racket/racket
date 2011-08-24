@@ -185,21 +185,23 @@ the file is re-read if its timestamp changes.
 
 Each @tech{collection links file} is @racket[read] with default reader
 parameter settings to obtain a list. Every element of the list must be
-a link specification with either the form @racket[(_string _path)] or
-the form @racket[(_string _path _regexp)]. In both cases, the
-@racket[_string] names a top-level @tech{collection}, and
-@racket[_path] is a path that can be used as the collection's path
-(directly, as opposed to a subdirectory of @racket[_path] named by
-@racket[_string]). If @racket[_path] is a relative path, it is
-relative to the directory containing the @tech{collection links
-file}. If @racket[_regexp] is specified in a link, then the link is
-used only if @racket[(regexp-match?  _regexp (version))] produces a
-true result.
+a link specification with one of the forms @racket[(list _string
+_path)], @racket[(list _string _path _regexp)], @racket[(list 'root
+_path)], or @racket[(list 'root _regexp)]. A @racket[_string] names a
+top-level @tech{collection}, in which case @racket[_path] is a path
+that can be used as the collection's path (directly, as opposed to a
+subdirectory of @racket[_path] named by @racket[_string]). A
+@racket['root] entry, in contrast, acts like an path in
+@racket[(current-library-collection-paths)]. If @racket[_path] is a
+relative path, it is relative to the directory containing the
+@tech{collection links file}. If @racket[_regexp] is specified in a
+link, then the link is used only if @racket[(regexp-match?  _regexp
+(version))] produces a true result.
 
 A single top-level collection can have multiple links in a
-@tech{collection links file}. The corresponding paths are effectively
-spliced together, since the paths are tried in order to locate a file
-or sub-collection.
+@tech{collection links file}, and any number of @racket['root] entries
+can appear. The corresponding paths are effectively spliced together,
+since the paths are tried in order to locate a file or sub-collection.
 
 The @exec{raco link} command-link tool can display, install, and
 remove links in the @tech{collection links file}. See @secref[#:doc

@@ -10,6 +10,7 @@
                #:file [in-file #f]
                #:name [name #f]
                #:version-regexp [version-regexp #f]
+               #:root? [root? #f]
                #:remove? [remove? #f]
                #:show? [show? #f]
                #:repair? [repair? #f]
@@ -56,8 +57,9 @@
                                         (= 3 (length e))))
                                (content-error "entry is a not a 2- or 3-element list: " e))
                            #:when 
-                           (or (string? (car e))
-                               (content-error "entry's first element is not a string: " e))
+                           (or (or (string? (car e))
+                                   (eq? 'root (car e)))
+                               (content-error "entry's first element is not a string or 'root: " e))
                            #:when 
                            (or (path-string? (cadr e))
                                (content-error "entry's second element is not a path string: " e))
@@ -100,24 +102,29 @@
                        (find-relative-path file-dir
                                            (simplify-path 
                                             (path->complete-path d))))]
-              [a-name (and d
-                           (or name
-                               (let-values ([(base name dir?) (split-path dp)])
-                                 (path-element->string name))))]
+              [a-name (if root?
+                          'root
+                          (and d
+                               (or name
+                                   (let-values ([(base name dir?) (split-path dp)])
+                                     (path-element->string name)))))]
               [rx version-regexp]
-              [d (and dp (path->string dp))])
+              [d (and dp (path->string dp))]
+              [sd (and d (simplify d))])
          (unless remove?
-           (unless (directory-exists? dp)
+           (unless (directory-exists? sd)
              (error 'links
                     "no such directory for link: ~a"
-                    dp)))
+                    sd)))
          (if remove?
              (filter (lambda (e) 
                        (or (and d
                                 (not (equal? (simplify (cadr e)) 
-                                             (simplify d))))
+                                             sd)))
                            (and name
                                 (not (equal? (car e) name)))
+                           (and root?
+                                (not (eq? (car e) 'root)))
                            (and version-regexp
                                 (pair? (cddr e))
                                 (not (equal? (caddr e) version-regexp)))))
@@ -159,7 +166,10 @@
 
   (when show?
     (for ([e (in-list new-table)])
-      (printf " collection: ~s  path: ~s~a\n"
+      (printf " ~a~s  path: ~s~a\n"
+              (if (eq? (car e) 'root)
+                  ""
+                  "collection: ")
               (car e)
               (path->string (simplify (cadr e)))
               (if (null? (cddr e))
@@ -170,10 +180,17 @@
   (if remove?
       ;; return list of removed entries:
       (filter (lambda (e) (not (member e new-table))) table)
-      ;; Return list of collections mapped for this version:
-      (let ([ht (make-hash)])
-        (for ([e (in-list new-table)])
-          (when (or (null? (cddr e))
-                    (regexp-match? (caddr e) (version)))
-            (hash-set! ht (car e) #t)))
-        (hash-map ht (lambda (k e) k)))))
+      (if root?
+          ;; Return root paths:
+          (for/list ([e (in-list new-table)]
+                     #:when (eq? 'root (car e)))
+            (simplify (cadr e)))
+          ;; Return list of collections mapped for this version:
+          (let ([ht (make-hash)])
+            (for ([e (in-list new-table)])
+              (when (and (string? (car e))
+                         (or (null? (cddr e))
+                             (regexp-match? (caddr e) (version))))
+                (hash-set! ht (car e) #t)))
+            (hash-map ht (lambda (k e) k))))))
+

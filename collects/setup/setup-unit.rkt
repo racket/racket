@@ -283,31 +283,41 @@
 
   (define all-collections
     (let ([ht (make-hash)])
+      (define (maybe collection ->cc)
+        (hash-ref ht collection
+                  (lambda ()
+                    (let ([cc (->cc collection)])
+                      (when cc (hash-set! ht collection cc))))))
       (for ([cp (current-library-collection-paths)]
             #:when (directory-exists? cp)
             [collection (directory-list cp)]
             #:when (directory-exists? (build-path cp collection)))
-        (hash-ref ht collection
-          (lambda ()
-            (let ([cc (collection->cc (list collection))])
-              (when cc (hash-set! ht collection cc))))))
+        (maybe (list collection) collection->cc))
       (let ([main-collects (find-collects-dir)])
+        (define (->cc col)
+          (collection->cc col
+                          #:info-root main-collects
+                          #:info-path-mode 'abs-in-relative
+                          #:omit-root 'dir))
         (for ([c (in-list (links #:user? #f))])
-          (let* ([c (string->path c)]
-                 [cc (collection->cc (list c) 
-                                     #:info-root main-collects
-                                     #:info-path-mode 'abs-in-relative
-                                     #:omit-root 'dir)])
-            (when cc (hash-set! ht c cc)))))
+          (maybe (list (string->path c)) ->cc))
+        (for ([cp (in-list (links #:root? #t #:user? #f))]
+              #:when (directory-exists? cp)
+              [collection (directory-list cp)])
+          (maybe (list collection) ->cc)))
       (when (make-user)
         (let ([user-collects (find-user-collects-dir)])
+          (define (->cc col)
+            (collection->cc col
+                            #:info-root user-collects
+                            #:info-path-mode 'abs-in-relative
+                            #:omit-root 'dir))
           (for ([c (in-list (links))])
-            (let* ([c (string->path c)]
-                   [cc (collection->cc (list c)
-                                       #:info-root user-collects
-                                       #:info-path-mode 'abs-in-relative
-                                       #:omit-root 'dir)])
-              (when cc (hash-set! ht c cc))))))
+            (maybe (list (string->path c)) ->cc))
+          (for ([cp (in-list (links #:root? #t))]
+                #:when (directory-exists? cp)
+                [collection (directory-list cp)])
+            (maybe (list collection) ->cc))))
       (hash-map ht (lambda (k v) v))))
 
   ;; Close over sub-collections

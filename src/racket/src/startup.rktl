@@ -379,7 +379,8 @@
                          (when (log-level? l 'error)
                            (log-message l 'error 
                                         (format
-                                         "error reading linked collections: ~a"
+                                         "error reading collection links file ~s: ~a"
+                                         (if user? user-links-path links-path)
                                          (exn-message exn))
                                         (current-continuation-marks))))
                        (when ts
@@ -432,7 +433,8 @@
                                                       (and (list? p)
                                                            (or (= 2 (length p))
                                                                (= 3 (length p)))
-                                                           (string? (car p))
+                                                           (or (string? (car p))
+                                                               (eq? 'root (car p)))
                                                            (path-string? (cadr p))
                                                            (or (null? (cddr p))
                                                                (regexp? (caddr p)))))
@@ -447,10 +449,29 @@
                                   (lambda (p)
                                     (when (or (null? (cddr p))
                                               (regexp-match? (caddr p) (version)))
-                                      (let ([s (string->symbol (car p))])
-                                        (hash-set! ht s (cons (box (path->complete-path (cadr p) dir))
-                                                              (hash-ref ht s null))))))
+                                      (let ([dir (simplify-path
+                                                  (path->complete-path (cadr p) dir))])
+                                        (if (symbol? (car p))
+                                            ;; add to every table element (to keep
+                                            ;; the choices in order); need a better
+                                            ;; data structure
+                                            (begin
+                                              (unless (hash-ref ht #f #f)
+                                                (hash-set! ht #f null))
+                                              (hash-for-each
+                                               ht
+                                               (lambda (k v)
+                                                 (hash-set! ht k (cons dir v)))))
+                                            ;; single collection:
+                                            (let ([s (string->symbol (car p))])
+                                              (hash-set! ht s (cons (box dir)
+                                                                    (hash-ref ht s null))))))))
                                   v)
+                                 ;; reverse all lists:
+                                 (hash-for-each
+                                  ht
+                                  (lambda (k v) (hash-set! ht k (reverse v))))
+                                 ;; save table & timestamp:
                                  (if user?
                                      (begin
                                        (set! user-links-cache ht)
@@ -492,13 +513,17 @@
                                                         (path->string collection)
                                                         collection))])
                            (append
-                            ;; list of (box path)s:
+                            ;; list of paths and (box path)s:
                             (if (use-user-specific-search-paths)
-                                (hash-ref (get-linked-collections #t) sym null)
+                                (let ([ht (get-linked-collections #t)])
+                                  (or (hash-ref ht sym #f)
+                                      (hash-ref ht #f null)))
                                 null)
-                            ;; list of (box path)s:
+                            ;; list of paths and (box path)s:
                             (if links-path
-                                (hash-ref (get-linked-collections #f) sym null)
+                                (let ([ht (get-linked-collections #f)])
+                                  (or (hash-ref ht sym #f)
+                                      (hash-ref ht #f null)))
                                 null)
                             ;; list of paths:
                             (current-library-collection-paths)))])

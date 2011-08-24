@@ -5,6 +5,7 @@
 
 (define link-file (make-parameter #f))
 (define link-name (make-parameter #f))
+(define root-mode (make-parameter #f))
 (define link-version (make-parameter #f))
 (define remove-mode (make-parameter #f))
 (define repair-mode (make-parameter #f))
@@ -20,8 +21,12 @@
    #:once-each
    [("-l" "--list") "Show the link table (after changes)"
     (show-mode #t)]
+   #:once-any
    [("-n" "--name") name "Collection name to add (single <dir>) or remove"
     (link-name name)]
+   [("-d" "--root") "Treat <dir> as a collection root"
+    (root-mode #t)]
+   #:once-each
    [("-x" "--version-regexp") regexp "Set the version pregexp"
     (with-handlers ([exn:fail:contract? (lambda (exn)
                                           (raise-user-error link-symbol
@@ -62,6 +67,7 @@
 (define (go user?)
   (apply links
          dirs
+         #:root? (root-mode)
          #:user? user?
          #:file (link-file)
          #:name (link-name)
