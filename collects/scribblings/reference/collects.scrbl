@@ -159,8 +159,14 @@ library collections used by @racket[require]. See
 Parameter that determines whether user-specific paths, which are in
 the directory produced by @racket[(find-system-path 'addon-dir)], are
 included in search paths for collections and other files. For example,
-@racket[find-library-collection-paths] omits the user-specific
-collection directory when this parameter's value is @racket[#f].}
+the initial value of @racket[find-library-collection-paths] omits the
+user-specific collection directory when this parameter's value is
+@racket[#f].}
+
+@defboolparam[use-collection-link-paths on?]{
+
+Parameter that determines whether @tech{collection links files} are
+used to locate collections.}
 
 @; ----------------------------------------------------------------------
 
@@ -170,7 +176,8 @@ The @deftech{collection links files} are used by
 @racket[collection-file-path], @racket[collection-path], and the
 default @tech{module name resolver} to locate collections before
 trying the @racket[(current-library-collection-paths)] search
-path. Furthermore, a user-specific @tech{collection links file} takes
+path, but only if the @racket[use-collection-link-paths] parameter is set to
+@racket[#t]. Furthermore, a user-specific @tech{collection links file} takes
 precedence over an installation-wide @tech{collection links file}, but
 the user-specific @tech{collection links file} is used only the
 @racket[use-user-specific-search-paths] parameter is set to

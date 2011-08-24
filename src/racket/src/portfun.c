@@ -342,6 +342,7 @@ void scheme_init_port_fun_config(void)
   else
     scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, scheme_make_pair(scheme_make_path("compiled"), scheme_null));
   scheme_set_root_param(MZCONFIG_USE_USER_PATHS, (scheme_ignore_user_paths ? scheme_false : scheme_true));
+  scheme_set_root_param(MZCONFIG_USE_LINK_PATHS, (scheme_ignore_link_paths ? scheme_false : scheme_true));
 
   {
     Scheme_Object *dlh;

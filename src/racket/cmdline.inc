@@ -1327,7 +1327,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -X <dir>, --collects <dir> : Main collects at <dir>\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> (after main collects)\n"
 	 "  -A <dir>, --addon <dir> : Addon directory at <dir>\n"
-	 "  -K <file>, --links <file> : Collection links at <file>\n"
+	 "  -K <file>, --links <file> : User-specific collection links at <file>\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
 # ifdef MZ_USE_JIT
