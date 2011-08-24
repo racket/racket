@@ -42,7 +42,7 @@ Full command-line options:
 
 @itemlist[
 
- @item{@Flag{s} or @DFlag{show} --- Shows the current link table. If
+ @item{@Flag{l} or @DFlag{list} --- Shows the current link table. If
        any other command-line arguments are provided that modify the
        link table, the table is shown after modifications. If no
        directory arguments are provided, and if none of @Flag{r},

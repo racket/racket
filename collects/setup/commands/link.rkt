@@ -17,7 +17,7 @@
   (command-line
    #:program (short-program+command-name)
    #:once-each
-   [("-s" "--show") "Show the link table (after changes)"
+   [("-l" "--list") "Show the link table (after changes)"
     (show-mode #t)]
    [("-n" "--name") name "Set the collection name (for a single directory)"
     (link-name name)]
