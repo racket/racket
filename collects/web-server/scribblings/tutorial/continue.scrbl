@@ -2,6 +2,7 @@
 @(require scribble/manual
           (for-label racket)
           (for-label web-server/servlet)
+          (for-label db)
           "tutorial-util.rkt")
 
 @title{Continue: Web Applications in Racket}
@@ -964,110 +965,121 @@ So, in the next section, we'll talk about how to use an SQL database to store ou
                                   web-server/scribblings/tutorial/dummy-sqlite)]
 @(require (for-label web-server/scribblings/tutorial/dummy-sqlite))
 
-Our next task is to employ an SQL database for the blog model. We'll be using SQLite with the @racketmodname[(planet jaymccarthy/sqlite:4)] PLaneT package. We add the following to the top of our model:
+Our next task is to employ an SQL database for the blog model. We'll
+be using SQLite with the @racketmodname[db] library. We add the
+following to the top of our model:
 
 @racketblock[
-(require (prefix-in sqlite: (planet jaymccarthy/sqlite:4)))
+(require db)
 ]
 
-We now have the following bindings:
+We will use the following bindings from the @racketmodname[db]
+library: @racket[connection?], @racket[sqlite3-connect],
+@racket[query-exec], @racket[query-list], and @racket[query-value].
 
-@defthing[sqlite:db? (any/c . -> . boolean?)]
-@defthing[sqlite:open (path? . -> . sqlite:db?)]
-@defthing[sqlite:exec/ignore (sqlite:db? string? . -> . void)]
-@defthing[sqlite:select (sqlite:db? string? . -> . (listof (vectorof (or/c integer? number? string? bytes? false/c))))]
-@defthing[sqlite:insert (sqlite:db? string? . -> . integer?)]
-
-
-The first thing we should do is decide on the relational structure of our model. We will use the following tables:
+The first thing we should do is decide on the relational structure of
+our model. We will use the following tables:
 
 @verbatim{
  CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT, body TEXT)
  CREATE TABLE comments (pid INTEGER, content TEXT)
 }
 
-Each post will have an identifier, a title, and a body. This is the same as our old Racket structure,
-except we've added the identifier. (Actually, there was always an identifier---the memory pointer---but now
-we have to make it explicit in the database.)
+Each post will have an identifier, a title, and a body. This is the
+same as our old Racket structure, except we've added the
+identifier. (Actually, there was always an identifier---the memory
+pointer---but now we have to make it explicit in the database.)
 
-Each comment is tied to a post by the post's identifier and has textual content. We could have chosen to
-serialize comments with @racket[write] and add a new TEXT column to the posts table to store the value.
-By adding a new comments table, we are more in accord with the relational style.
+Each comment is tied to a post by the post's identifier and has
+textual content. We could have chosen to serialize comments with
+@racket[write] and add a new TEXT column to the posts table to store
+the value.  By adding a new comments table, we are more in accord with
+the relational style.
 
-A @racket[blog] structure will simply be a container for the database handle:
+A @racket[blog] structure will simply be a container for the database
+handle:
 
-@defstruct*[blog ([db sqlite:db?])]
+@defstruct*[blog ([db connection?])]
 
-@bold{Exercise.} Write the @racket[blog] structure definition. (It does not need to be mutable or serializable.)
+@bold{Exercise.} Write the @racket[blog] structure definition. (It
+does not need to be mutable or serializable.)
 
 We can now write the code to initialize a @racket[blog] structure:
 @racketblock[
 @code:comment{initialize-blog! : path? -> blog?}
 @code:comment{Sets up a blog database (if it doesn't exist)}
 (define (initialize-blog! home)
-  (define db (sqlite:open home))
+  (define db (sqlite3-connect #:database home #:mode 'create))
   (define the-blog (blog db))
   (with-handlers ([exn? void])
-    (sqlite:exec/ignore db
-                        (string-append
-                         "CREATE TABLE posts "
-                         "(id INTEGER PRIMARY KEY,"
-                         "title TEXT, body TEXT)"))
+    (query-exec db
+     (string-append
+      "CREATE TABLE posts "
+      "(id INTEGER PRIMARY KEY, title TEXT, body TEXT)"))
     (blog-insert-post!
      the-blog "First Post" "This is my first post")
     (blog-insert-post!
      the-blog "Second Post" "This is another post")
-    (sqlite:exec/ignore
-     db "CREATE TABLE comments (pid INTEGER, content TEXT)")
+    (query-exec db
+     "CREATE TABLE comments (pid INTEGER, content TEXT)")
     (post-insert-comment!
      the-blog (first (blog-posts the-blog))
      "First comment!"))
   the-blog)
 ]
 
-@racket[sqlite:open] will create a database if one does not already exist at the @racket[home] path. But, we still need
-to initialize the database with the table definitions and initial data. 
+With the @racket['create] mode, @racket[db:sqlite3-connect] will
+create a database if one does not already exist at the @racket[home]
+path. But, we still need to initialize the database with the table
+definitions and initial data.
 
-We used @racket[blog-insert-post!] and @racket[post-insert-comment!] to initialize the database. Let's see their implementation:
+We used @racket[blog-insert-post!] and @racket[post-insert-comment!]
+to initialize the database. Let's see their implementation:
 
 @racketblock[
 @code:comment{blog-insert-post!: blog? string? string? -> void}
 @code:comment{Consumes a blog and a post, adds the post at the top of the blog.}
 (define (blog-insert-post! a-blog title body)
-  (sqlite:insert
+  (query-exec
    (blog-db a-blog)
-   (format "INSERT INTO posts (title, body) VALUES ('~a', '~a')"
-           title body)))
+   "INSERT INTO posts (title, body) VALUES (?, ?)"
+   title body))
 
 @code:comment{post-insert-comment!: blog? post string -> void}
 @code:comment{Consumes a blog, a post and a comment string.  As a side-effect,}
 @code:comment{adds the comment to the bottom of the post's list of comments.}
 (define (post-insert-comment! a-blog p a-comment)
-  (sqlite:insert 
+  (query-exec
    (blog-db a-blog)
-   (format 
-    "INSERT INTO comments (pid, content) VALUES ('~a', '~a')"
-    (post-id p) a-comment)))
+   "INSERT INTO comments (pid, content) VALUES (?, ?)"
+   (post-id p) a-comment))
 ]
 
-@bold{Exercise.} Find the security hole common to these two functions.
+@centerline{------------}
+
+Note that the SQL queries above use SQL placeholders, written
+@litchar{?}, instead of @racket[format] placeholders, written
+@litchar{~a}. This way, the query is submitted as-is to SQLite, which
+parses it and then applies the arguments. This approach ensures that
+the arguments are treated as data.
+
+If we had used @racket[format] to do simple string substitution
+instead, a malicious user could submit a post with a title like,
+@racket["null', 'null') and INSERT INTO accounts (username, password)
+VALUES ('ur','hacked"] and get @racket[query-exec] to make two INSERTs
+instead of one. This is called an SQL injection attack.
 
 @centerline{------------}
 
-A user could submit a post with a title like, @racket["null', 'null') and INSERT INTO accounts (username, password) VALUES ('ur','hacked"] and get our simple @racket[sqlite:insert] to make two INSERTs instead of one. 
+In @racket[post-insert-comment!], we used @racket[post-id], but we
+have not yet defined the new @racket[post] structure.  It @emph{seems}
+like a @racket[post] should be represented by an integer id, because
+the post table contains an integer as the identifying value.
 
- This is called an SQL injection attack. It can be resolved by using
- prepared statements that let SQLite do the proper quoting for us. Refer
- to the SQLite package documentation for usage.
-
-@centerline{------------}
-
-In @racket[post-insert-comment!], we used @racket[post-id], but we have not yet defined the new @racket[post] structure.
-It @emph{seems} like a @racket[post] should be represented by an integer id, because the post table contains an integer as the identifying value.
-
-However, we cannot tell from this structure
-what blog this posts belongs to, and therefore, what database; so, we could not extract the title or body values,
-since we do not know what to query. Therefore, we should associate the blog with each post:
+However, we cannot tell from this structure what blog this posts
+belongs to, and therefore, what database; so, we could not extract the
+title or body values, since we do not know what to query. Therefore,
+we should associate the blog with each post:
 
 @defstruct*[post ([blog blog?] [id integer?])]
 
@@ -1079,36 +1091,31 @@ The only function that creates posts is @racket[blog-posts]:
 @code:comment{blog-posts : blog -> (listof post?)}
 @code:comment{Queries for the post ids}
 (define (blog-posts a-blog)
-  (local [(define (row->post a-row)
-            (post 
-             a-blog
-             (vector-ref a-row 0)))
-          (define rows (sqlite:select
-                        (blog-db a-blog)
-                        "SELECT id FROM posts"))]
-    (cond [(empty? rows)
-           empty]
-          [else
-           (map row->post (rest rows))])))
+  (local [(define (id->post an-id)
+            (post a-blog an-id))]
+    (map id->post
+         (query-list
+          (blog-db a-blog)
+          "SELECT id FROM posts"))))
 ]
 
-@racket[sqlite:select] returns a list of vectors. The first element of the list is the name of the columns.
-Each vector has one element for each column. Each element is a string representation of the value.
+@racket[query-list] is used with queries that return a single
+column (e.g., @racket["SELECT id FROM posts"]). It returns a list of
+that column's values.
 
 At this point we can write the functions that operate on posts:
 @racketblock[
 @code:comment{post-title : post -> string?}
 @code:comment{Queries for the title}
 (define (post-title a-post)
-  (vector-ref 
-   (second 
-    (sqlite:select 
-     (blog-db (post-blog a-post))
-     (format 
-      "SELECT title FROM posts WHERE id = '~a'"
-      (post-id a-post))))
-   0))
+  (query-value
+   (blog-db (post-blog a-post))
+   "SELECT title FROM posts WHERE id = ?"
+   (post-id a-post)))
 ]
+
+@racket[query-value] is used with queries that return a single
+value (that is, one row and one column).
 
 @bold{Exercise.} Write the definition of @racket[post-body].
              
@@ -1117,7 +1124,8 @@ At this point we can write the functions that operate on posts:
 
 @centerline{------------}
 
-The only change that we need to make to the application is to require the new model. The interface is exactly the same!
+The only change that we need to make to the application is to require
+the new model. The interface is exactly the same!
 
 @centerline{------------}
 
