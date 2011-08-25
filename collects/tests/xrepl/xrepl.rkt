@@ -74,8 +74,12 @@
 
 (provide test-xrepl)
 (define test-xrepl @make-xrepl-test{
+  -> «^»
+  ; ^: no saved values, yet [,bt for context]
   -> «(- 2 1)»
   1
+  -> «^^»
+  ; ^^: no 2 saved values, yet [,bt for context]
   -> «(values 2 3)»
   2
   3
@@ -100,7 +104,13 @@
   -> «,switch foo»
   ; *** Initializing a new `foo' namespace with "racket/init.rkt" ***
   ; *** Switching to the `foo' namespace ***
-  foo::-> «,switch *»
+  foo::-> «,switch typed/racket»
+  ; *** Initializing a new `typed/racket' namespace with typed/racket ***
+  ; *** Switching to the `typed/racket' namespace ***
+  typed/racket::-> «^»                  ⇒ works in TR too
+  - : Positive-Byte
+  123
+  typed/racket::-> «,switch *»
   ; *** Switching to the `*' namespace ***
   -> «bleh»
   ; reference to undefined identifier: bleh [,bt for context]

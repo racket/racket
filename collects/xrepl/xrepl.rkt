@@ -18,6 +18,8 @@
 
 (define home-dir (find-system-path 'home-dir))
 
+(define (here-namespace) (namespace-anchor->namespace anchor))
+
 ;; autoloads: avoid loading a ton of stuff to minimize startup penalty
 (define autoloaded-specs (make-hasheq))
 (define (autoloaded? sym) (hash-ref autoloaded-specs sym #f))
@@ -38,7 +40,6 @@
 
 ;; similar, but just for identifiers
 (define-namespace-anchor anchor)
-(define (here-namespace) (namespace-anchor->namespace anchor))
 (define hidden-namespace (make-base-namespace))
 (define initial-namespace (current-namespace))
 ;; when `racket/enter' initializes, it grabs the `current-namespace' to get
@@ -1194,7 +1195,7 @@
 ;; ----------------------------------------------------------------------------
 ;; eval hook that keep track of recent evaluation results
 
-;; saved interaction values
+;; saved interaction values (can be #f to disable saving)
 (define saved-values (make-parameter '()))
 (define (save-values! xs)
   (let ([xs (filter (λ (x) (not (void? x))) xs)]) ; don't save void values
@@ -1219,39 +1220,34 @@
       (last-saved-names+state (list new cur-num cur-char))
       new)))
 
-;; make saved values available through bindings, but do this in a way that
-;; doesn't interfere with users using these binders in some way -- set only ids
-;; that were void, and restore them to void afterwards
-(define (with-saved-values thunk)
-  (define saved-names (get-saved-names))
-  (define vals (for/list ([id (in-list saved-names)])
-                 (box (namespace-variable-value id #f void))))
-  (define res #f)
-  (dynamic-wind
-    (λ ()
-      (for ([id    (in-list saved-names)]
-            [saved (in-list (saved-values))]
-            [v     (in-list vals)])
-        ;; set only ids that are void, and remember these values
-        (if (void? (unbox v))
-          (begin (namespace-set-variable-value! id saved)
-                 (set-box! v saved))
-          (set-box! v (void)))))
-    (λ () (call-with-values thunk (λ vs (set! res vs) (apply values vs))))
-    (λ ()
-      (for ([id (in-list saved-names)] [v (in-list vals)])
-        ;; restore the names to void so we can set them next time
-        (when (and (not (void? (unbox v))) ; restore if we set this id above
-                   (eq? (unbox v) ; and if it didn't change
-                        (namespace-variable-value id #f void)))
-          (namespace-set-variable-value! id (void))))
-      (when res (save-values! res)))))
+;; see comment at the top of this module for the below hair
+(require xrepl/saved-values)
 
+;; make saved values available through bindings, but avoid names that
+;; already exist in the namespace (possibly from a previous initialization)
+(define (initialize-namespace)
+  ;; We might run into circularity problems, give up silently in that case
+  (when (with-handlers ([exn? (λ (_) #f)])
+          (namespace-attach-module (here-namespace) 'xrepl/saved-values)
+          (dynamic-require 'xrepl/saved-values (void))
+          #t)
+    ;; Hack: wire in our parameter for expansions (see comment in saved-values)
+    (eval-sexpr-for-user `(,#'set-saved-values-param! ,saved-values))
+    (for ([sym (in-list (get-saved-names))])
+      (define id (namespace-symbol->identifier sym))
+      (unless (identifier-binding id)
+        (eval-sexpr-for-user
+         `(,#'require (,#'only-in ,#'xrepl/saved-values
+                                  [,#'saved-value-ref ,id])))))))
+
+(require (for-syntax racket/base))
 (define ((make-xrepl-evaluator orig) expr)
   ;; not useful: catches only escape continuations
   ;;   (with-handlers ([exn:break? (λ (e) (last-break-exn e) (raise e))]) ...)
   (if (saved-values)
-    (with-saved-values (λ () (orig expr)))
+    (let ([results (call-with-values (λ () (orig expr)) list)])
+      (save-values! results)
+      (apply values results))
     (orig expr)))
 
 ;; ----------------------------------------------------------------------------
@@ -1290,6 +1286,7 @@
       (unless (and (equal? (current-namespace) last-namespace)
                    (equal? curdir last-directory))
         (report-directory-change)
+        (initialize-namespace)
         (set! prefix
               (with-handlers
                   ([exn? (λ (e)
