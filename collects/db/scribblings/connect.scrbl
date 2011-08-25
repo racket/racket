@@ -9,12 +9,12 @@
 
 @title[#:tag "connect"]{Connections}
 
-@(declare-exporting db)
-
 This section describes functions for creating connections as well as
 administrative functions for managing connections.
 
 @section[#:tag "creating-connections"]{Base Connections}
+
+@declare-exporting[db]
 
 Base connections are made using the following functions.
 
@@ -304,6 +304,8 @@ Base connections are made using the following functions.
 
 @section{Connection Pooling}
 
+@declare-exporting[db db/base]
+
 Creating a database connection can be a costly operation; it may
 involve steps such as process creation and SSL negotiation. A
 @deftech{connection pool} helps reduce connection costs by reusing
@@ -378,6 +380,8 @@ a transaction, the transaction is rolled back.
 @;{========================================}
 
 @section{Virtual Connections}
+
+@declare-exporting[db db/base]
 
 A @deftech{virtual connection} creates actual connections on demand and
 automatically releases them when they are no longer needed.
@@ -468,6 +472,8 @@ execute parameterized queries expressed as strings or encapsulated via
 
 @section[#:tag "kill-safe"]{Kill-safe Connections}
 
+@declare-exporting[db db/base]
+
 @defproc[(kill-safe-connection [c connection?]) 
          connection?]{
 
@@ -485,6 +491,8 @@ shutting down its ports.
 @;{========================================}
 
 @section{Data Source Names}
+
+@declare-exporting[db db/base]
 
 A DSN (data source name) is a symbol associated with a connection
 specification in a DSN file. They are inspired by, but distinct from,
@@ -622,6 +630,8 @@ ODBC's DSNs.
 @;{============================================================}
 
 @section[#:tag "managing-connections"]{Mangaging Connections}
+
+@declare-exporting[db db/base]
 
 @defproc[(connection? [x any/c])
          boolean?]{

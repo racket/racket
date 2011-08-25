@@ -9,7 +9,7 @@
 @title[#:tag "util"]{Utilities}
 
 The bindings described in this section are provided by the specific
-modules below, not by @racketmodname[db].
+modules below, not by @racketmodname[db] or @racketmodname[db/base].
 
 @;{========================================}
 
