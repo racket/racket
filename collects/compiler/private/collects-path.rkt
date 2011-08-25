@@ -28,9 +28,8 @@
     (when collects-path
       (unless (or (path-string? collects-path)
 		  (and (list? collects-path)
-		       (pair? collects-path)
 		       (andmap path-string? collects-path)))
-	(raise-type-error who "path, string, non-empty list of paths and strings, or #f" 
+	(raise-type-error who "path, string, list of paths and strings, or #f" 
 			  collects-path))
       (unless ((bytes-length collects-path-bytes) . <= . 1024)
 	(error who "collects path list is too long"))))

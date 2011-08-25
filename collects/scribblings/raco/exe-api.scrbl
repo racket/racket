@@ -2,6 +2,7 @@
 
 @(require scribble/manual
           scribble/bnf
+          "common.rkt"
           (for-label racket/gui
                      compiler/compiler
                      compiler/sig
@@ -271,12 +272,17 @@ collections---which are used to initialize the
 @racket[current-library-collection-paths] list in combination with
 @envvar{PLTCOLLECTS} environment variable.  Otherwise, the argument
 specifies a replacement; it must be either a path, string, or
-non-empty list of paths and strings. In the last case, the first path
+list of paths and strings. In the last case, the first path
 or string specifies the main collection directory, and the rest are
 additional directories for the collection search path (placed, in
 order, after the user-specific @filepath{collects} directory, but
 before the main @filepath{collects} directory; then the search list is
-combined with @envvar{PLTCOLLECTS}, if it is defined).
+combined with @envvar{PLTCOLLECTS}, if it is defined). If the list
+is empty, then @racket[(find-system-path 'collects-dir)] will return
+the directory of the executable, but @racket[current-library-collection-paths] 
+is initialized to an empty list and
+@racket[use-collection-link-paths] is set to false to disable the
+use of @tech[#:doc reference-doc]{collection links files}.
 
 If the @racket[#:launcher?] argument is @racket[#t], then no
 @racket[module]s should be null, @racket[literal-files] should be

@@ -14,7 +14,7 @@
 (define exe-embedded-flags (make-parameter '("-U" "--")))
 (define exe-embedded-libraries (make-parameter null))
 (define exe-aux (make-parameter null))
-(define exe-embedded-collects-path (make-parameter #f))
+(define exe-embedded-collects-path (make-parameter null))
 (define exe-embedded-collects-dest (make-parameter #f))
 
 (define source-file

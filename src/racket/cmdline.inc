@@ -122,6 +122,16 @@ static char *make_embedded_load(const char *start, const char *end)
 
   return s;
 }
+
+static Scheme_Object *check_make_path(const char *prog, const char *real_switch, char *arg)
+{
+  if (!*arg) {
+    PRINTF("%s: empty path after %s switch\n",
+           prog, real_switch);
+    exit(1);
+  }
+  return scheme_make_path(arg);
+}
 #endif
 
 enum {
@@ -555,6 +565,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   Scheme_Env *global_env;
   char *prog, *sprog = NULL;
   Scheme_Object *sch_argv;
+  int skip_coll_dirs = 0;
   Scheme_Object *collects_path = NULL, *collects_extra = NULL, *addon_dir = NULL;
   Scheme_Object *links_file = NULL;
 #ifndef NO_FILE_SYSTEM_UTILS
@@ -849,7 +860,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  }
 	  argv++;
 	  --argc;
-	  collects_path = scheme_make_path(argv[0]);
+	  collects_path = check_make_path(prog, real_switch, argv[0]);
           was_config_flag = 1;
 	  break;
 	case 'A':
@@ -860,7 +871,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  }
 	  argv++;
 	  --argc;
-	  addon_dir = scheme_make_path(argv[0]);
+	  addon_dir = check_make_path(prog, real_switch, argv[0]);
           was_config_flag = 1;
 	  break;
 	case 'C':
@@ -871,7 +882,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  }
 	  argv++;
 	  --argc;
-	  links_file = scheme_make_path(argv[0]);
+	  links_file = check_make_path(prog, real_switch, argv[0]);
           was_config_flag = 1;
 	  break;
 	case 'U':
@@ -899,7 +910,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  --argc;
 	  if (!collects_extra)
 	    collects_extra = scheme_make_null();
-          collects_extra = scheme_make_pair(scheme_make_path(argv[0]), collects_extra);
+          collects_extra = scheme_make_pair(check_make_path(prog, real_switch, argv[0]), collects_extra);
           was_config_flag = 1;
 	  break;
         case 'c':
@@ -1163,9 +1174,16 @@ static int run_from_cmd_line(int argc, char *_argv[],
   
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
-  if (!collects_path)
-    collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
-  else
+  if (!collects_path) {
+    if (!_coldir[_coldir_offset]) {
+      /* empty list of directories => don't set collection dirs
+         and don't use collection links files */
+      skip_coll_dirs = 1;
+      scheme_set_ignore_link_paths(1);
+      collects_path = scheme_make_path(".");
+    } else
+      collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
+  } else
     collects_path = scheme_path_to_complete_path(collects_path, NULL);
   scheme_set_collects_path(collects_path);
 
@@ -1246,7 +1264,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
   global_env = mk_basic_env();
 
 #ifndef NO_FILE_SYSTEM_UTILS
-  scheme_init_collection_paths_post(global_env, collects_paths_l, collects_paths_r);
+  if (!skip_coll_dirs)
+    scheme_init_collection_paths_post(global_env, collects_paths_l, collects_paths_r);
 #endif
 
   scheme_seal_parameters();
