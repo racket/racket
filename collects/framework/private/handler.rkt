@@ -231,6 +231,9 @@
              (when (equal? (send ed get-filename) filename)
                (send ed set-position start end)))))]
       [else
+       (preferences:set 'framework:recently-opened-files/pos
+                        (remove recent-list-item
+                                (preferences:get 'framework:recently-opened-files/pos)))
        (message-box (string-constant error)
                     (format (string-constant cannot-open-because-dne)
                             filename))])))
