@@ -47,6 +47,8 @@
     end-transaction    ;; symbol (U 'commit 'rollback) -> void
     transaction-status ;; symbol -> (U boolean 'invalid)
 
+    list-tables ;; symbol symbol -> (listof string)
+
     free-statement)) ;; prepared-statement<%> -> void
 
 ;; no-cache-prepare<%>

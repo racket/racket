@@ -554,6 +554,44 @@ rollback invalid transactions.
   is rolled back.
 }
 
+
+@section{Database Information}
+
+@defproc[(list-tables [c connection?]
+                      [#:schema schema
+                       (or/c 'search-or-current 'search 'current)
+                       'search-or-current])
+         (listof string?)]{
+
+Returns a list of unqualified names of tables (and views) defined in
+the current database.
+
+If @racket[schema] is @racket['search], the list contains all tables
+in the current schema search path (with the possible exception of
+system tables); if the search path cannot be determined, an exception
+is raised. If @racket[schema] is @racket['current], the list contains
+all tables in the current schema. If @racket[schema] is
+@racket['search-or-current] (the default), the search path is used if
+it can be determined; otherwise the current schema is used.
+The schema search path cannot be determined for ODBC-based
+connections.
+}
+
+@defproc[(table-exists? [c connection?]
+                        [table-name string?]
+                        [#:schema schema
+                         (or/c 'search-or-current 'search 'current)
+                         'search-or-current]
+                        [#:case-sensitive? case-sensitive? any/c #f])
+         boolean?]{
+
+Indicates whether a table (or view) named @racket[table-name]
+exists. The meaning of the @racket[schema] argument is the same as for
+@racket[list-tables], and the @racket[case-sensitive?] argument
+controls how table names are compared.
+}
+
+
 @section{Creating New Kinds of Statements}
 
 @defthing[prop:statement (struct-type-property/c

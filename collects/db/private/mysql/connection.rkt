@@ -422,7 +422,25 @@
                         ((commit) "COMMIT")
                         ((rollback) "ROLLBACK"))])
             (query1 fsym stmt #t)
-            (void)))))))
+            (void)))))
+
+    ;; Reflection
+
+    (define/public (list-tables fsym schema)
+      (let* ([stmt
+              ;; schema is ignored; search = current
+              (string-append "SELECT table_name FROM information_schema.tables "
+                             "WHERE table_schema = schema()")]
+             [rows
+              (vector-ref
+               (call-with-lock fsym
+                 (lambda ()
+                   (query1 fsym stmt #t)))
+               2)])
+        (for/list ([row (in-list rows)])
+          (vector-ref row 0))))
+
+    ))
 
 ;; ========================================
 

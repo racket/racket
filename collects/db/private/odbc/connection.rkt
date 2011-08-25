@@ -515,6 +515,10 @@
 
     ;; GetTables
 
+    (define/public (list-tables fsym schema)
+      (uerror fsym "unsupported"))
+
+    #|
     (define/public (get-tables fsym catalog schema table)
       (define-values (dvecs rows)
         (call-with-lock fsym
@@ -532,6 +536,7 @@
       ;; Layout is: #(catalog schema table table-type remark)
       (recordset (map field-dvec->field-info dvecs)
                  rows))
+    |#
 
     ;; Handler
 

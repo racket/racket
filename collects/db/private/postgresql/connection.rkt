@@ -418,37 +418,53 @@
       (call-with-lock fsym (lambda () tx-status)))
 
     (define/public (start-transaction fsym isolation)
-      (let ([stmt
-             (call-with-lock fsym
-               (lambda ()
-                 (when tx-status
-                   (error/already-in-tx fsym))
-                 (let* ([isolation-level (isolation-symbol->string isolation)]
+      (internal-query fsym
+                      (lambda ()
+                        (when tx-status
+                          (error/already-in-tx fsym)))
+                      (let ([isolation-level (isolation-symbol->string isolation)])
                         ;; 'read-only  => "READ ONLY"
                         ;; 'read-write => "READ WRITE"
-                        [stmt
-                         (if isolation-level
-                             (string-append "BEGIN WORK ISOLATION LEVE " isolation-level)
-                             "BEGIN WORK")])
-                   (let-values ([(stmt result) (query1 fsym stmt)])
-                     stmt))))])
-        (statement:after-exec stmt)
-        (void)))
+                        (if isolation-level
+                            (string-append "BEGIN WORK ISOLATION LEVEL " isolation-level)
+                            "BEGIN WORK"))))
 
     (define/public (end-transaction fsym mode)
-      (let ([stmt
-             (call-with-lock fsym
-               (lambda ()
-                 (unless (eq? mode 'rollback)
-                   ;; otherwise, COMMIT statement would cause silent ROLLBACK !!!
-                   (check-valid-tx-status fsym))
-                 (let ([stmt (case mode
-                               ((commit) "COMMIT WORK")
-                               ((rollback) "ROLLBACK WORK"))])
-                   (let-values ([(stmt result) (query1 fsym stmt)])
-                     stmt))))])
+      (internal-query fsym
+                      (lambda ()
+                        (unless (eq? mode 'rollback)
+                          ;; otherwise, COMMIT statement would cause silent ROLLBACK !!!
+                          (check-valid-tx-status fsym)))
+                      (case mode
+                        ((commit) "COMMIT WORK")
+                        ((rollback) "ROLLBACK WORK")))
+      (void))
+
+    ;; == Reflection
+
+    (define/public (list-tables fsym schema)
+      (let* ([where-cond
+              (case schema
+                ((search search-or-current)
+                 "table_schema = SOME (current_schemas(false))")
+                ((current)
+                 "table_schema = current_schema"))]
+             [stmt
+              (string-append "SELECT table_name FROM information_schema.tables WHERE "
+                             where-cond)]
+             [rows (vector-ref (internal-query fsym void stmt) 2)])
+        (for/list ([row (in-list rows)])
+          (bytes->string/utf-8 (vector-ref row 0)))))
+
+    (define/private (internal-query fsym pre-thunk stmt)
+      (let-values ([(stmt result)
+                    (call-with-lock fsym
+                      (lambda ()
+                        (pre-thunk)
+                        (query1 fsym stmt)))])
         (statement:after-exec stmt)
-        (void)))))
+        result))
+    ))
 
 ;; ========================================
 

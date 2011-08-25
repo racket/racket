@@ -223,6 +223,23 @@
         (statement:after-exec stmt)
         (void)))
 
+    ;; Reflection
+
+    (define/public (list-tables fsym schema)
+      (let ([stmt
+             ;; schema ignored, because sqlite doesn't support
+             (string-append "SELECT tbl_name from sqlite_master "
+                            "WHERE type = 'table' or type = 'view'")])
+        (let-values ([(stmt rows)
+                      (call-with-lock fsym
+                        (lambda ()
+                          (let-values ([(stmt _info rows)
+                                        (query1 fsym stmt)])
+                            (values stmt rows))))])
+          (statement:after-exec stmt)
+          (for/list ([row (in-list rows)])
+            (vector-ref row 0)))))
+
     ;; ----
 
     (define-syntax-rule (HANDLE who expr)

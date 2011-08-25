@@ -64,7 +64,8 @@
       (free-statement stmt)
       (transaction-status fsym)
       (start-transaction fsym isolation)
-      (end-transaction fsym mode))
+      (end-transaction fsym mode)
+      (list-tables fsym schema))
 
     (super-new)))
 
@@ -174,7 +175,8 @@
       (#t '_     (query fsym stmt))
       (#t '_     (start-transaction fsym isolation))
       (#f (void) (end-transaction fsym mode))
-      (#f #f     (transaction-status fsym)))
+      (#f #f     (transaction-status fsym))
+      (#t '_     (list-tables fsym schema)))
 
     (define/public (disconnect)
       (let ([c (get-connection #f)]
@@ -330,7 +332,8 @@
       (free-statement stmt)
       (transaction-status fsym)
       (start-transaction fsym isolation)
-      (end-transaction fsym mode))
+      (end-transaction fsym mode)
+      (list-tables fsym schema))
 
     ;; (define-forward define/override (connected?))
     (define/override (connected?) (and connection #t))

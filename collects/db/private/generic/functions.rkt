@@ -268,15 +268,27 @@
 
 ;; ========================================
 
-(define (get-schemas c)
-  (recordset-rows
-   (send c query 'get-schemas
-         "select catalog_name, schema_name from information_schema.schemata")))
+;; list-tables : ... -> (listof string)
+;;  - lists unqualified table/view/etc names in search path (omit system tables, if possible).
+;;    Maybe it would be better to just search the current schema only?
+;;    or maybe mode = 'current | 'search | 'current-or-search (default)
+;;  - lists unqualified table/view/etc names for given schema (and/or catalog?)
+;;  - Add option to include system tables?
+(define (list-tables c
+                     #:schema [schema 'search-or-current])
+  (send c list-tables 'list-tables schema))
 
-(define (get-tables c)
-  (recordset-rows
-   (send c query 'get-tables
-         "select table_catalog, table_schema, table_name from information_schema.tables")))
+(define (table-exists? c table-name
+                       #:schema [schema 'search-or-current]
+                       #:case-sensitive? [cs? #f])
+  (let ([tables (send c list-tables 'table-exists? schema)])
+    (for/or ([table (in-list tables)])
+      (if cs?
+          (string=? table-name table)
+          (string-ci=? table-name table)))))
+
+;; list-tables* : ... -> (listof vector)
+;; Return full catalog/schema/table/type list.
 
 ;; ========================================
 
@@ -363,6 +375,16 @@
   (struct-type-property/c
    (-> any/c connection?
        statement?))]
+
+ [list-tables
+  (->* (connection?)
+       (#:schema (or/c 'search-or-current 'search 'current))
+       (listof string?))]
+ [table-exists?
+  (->* (connection? string?)
+       (#:schema (or/c 'search-or-current 'search 'current)
+        #:case-sensitive? any/c)
+       boolean?)]
 
 #|
  [get-schemas
