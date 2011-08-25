@@ -45,6 +45,15 @@
 (test (build-path 'up 'up "b" "a") find-relative-path (path->complete-path "c/b") (path->complete-path "b/a"))
 (test (bytes->path #"a" 'unix) find-relative-path (bytes->path #"/r/b" 'unix) (bytes->path #"/r/b/a" 'unix))
 (test (bytes->path #"a" 'windows) find-relative-path (bytes->path #"c:/r/b" 'windows) (bytes->path #"c:/r/b/a" 'windows))
+(test (bytes->path #"d:/r/b/a" 'windows) find-relative-path (bytes->path #"c:/r/b" 'windows) (bytes->path #"d:/r/b/a" 'windows))
+(test (bytes->path #"../b/a" 'unix) find-relative-path (bytes->path #"/r/c" 'unix) (bytes->path #"/r/b/a" 'unix))
+(test (bytes->path #"../../q/b/a" 'unix) find-relative-path (bytes->path #"/r/c" 'unix) (bytes->path #"/q/b/a" 'unix))
+(test (bytes->path #"/q/b/a" 'unix) 'find-relative-path (find-relative-path (bytes->path #"/r/c" 'unix) (bytes->path #"/q/b/a" 'unix) 
+                                                                            #:more-than-root? #t))
+(test (bytes->path #"q/b/a" 'unix) 'find-relative-path (find-relative-path (bytes->path #"/" 'unix) (bytes->path #"/q/b/a" 'unix) 
+                                                                           #:more-than-root? #t))
+(test (bytes->path #"../.." 'unix) 'find-relative-path (find-relative-path (bytes->path #"/r/c" 'unix) (bytes->path #"/" 'unix) 
+                                                                           #:more-than-root? #t))
 
 ;; ----------------------------------------
 

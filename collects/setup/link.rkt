@@ -110,7 +110,8 @@
        (let* ([dp (and d 
                        (find-relative-path file-dir
                                            (simplify-path 
-                                            (path->complete-path d))))]
+                                            (path->complete-path d))
+                                           #:more-than-root? #t))]
               [a-name (if root?
                           'root
                           (and d
