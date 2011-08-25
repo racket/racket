@@ -371,7 +371,7 @@ In all cases, the identifiers are protected with @rtech{contracts} which
 enforce the specified types.  If this contract fails, the module
 @racket[m] is blamed.
 
-Some types, notably polymorphic types constructed with @racket[All],
+Some types, notably the types of predicates such as @racket[number?],
 cannot be converted to contracts and raise a static error when used in
 a @racket[require/typed] form. Here is an example of using
 @racket[case->] in @racket[require/typed].
