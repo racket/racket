@@ -1539,7 +1539,6 @@
 ;; scheme/path
 
 [explode-path (-SomeSystemPathlike . -> . (-lst (Un -SomeSystemPath (one-of/c 'up 'same))))]
-[find-relative-path (-SomeSystemPathlike -SomeSystemPathlike . -> . -SomeSystemPath)]
 [simple-form-path (-Pathlike . -> . -Path)]
 [normalize-path (cl->* (-Pathlike [-Pathlike] . ->opt . -Path))]
 [filename-extension (-SomeSystemPathlike . -> . (-opt -Bytes))]

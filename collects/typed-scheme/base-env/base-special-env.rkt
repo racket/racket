@@ -5,9 +5,9 @@
  "../utils/utils.rkt"
  racket/promise
  string-constants/string-constant
- racket/private/kw racket/file racket/port syntax/parse
+ racket/private/kw racket/file racket/port syntax/parse racket/path
  (for-template (only-in racket/private/kw kw-expander-proc kw-expander-impl)
-               racket/base racket/promise racket/file racket/port string-constants/string-constant)
+               racket/base racket/promise racket/file racket/port racket/path string-constants/string-constant)
  (utils tc-utils)
  (env init-envs)
  (except-in (rep filter-rep object-rep type-rep) make-arr)
@@ -489,4 +489,9 @@
     (-lst Univ)
     (-opt -Output-Port) -Boolean
     . -> . -Void)]
+  ; [find-relative-path (-SomeSystemPathlike -SomeSystemPathlike . -> . -SomeSystemPath)]
+  [((kw-expander-proc (syntax-local-value #'find-relative-path)))
+   (-SomeSystemPathlike -SomeSystemPathlike  #:more-than-root? Univ #f . ->key . -SomeSystemPath)]
+  [((kw-expander-impl (syntax-local-value #'find-relative-path)))
+   (Univ -Boolean -SomeSystemPathlike -SomeSystemPathlike  . -> . -SomeSystemPath)]
   )
