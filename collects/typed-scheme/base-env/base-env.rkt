@@ -1210,7 +1210,13 @@
                           (-opt -Integer)
                           (-opt -Integer)
                           (-opt -Integer)))]
-        [srcloc (Un S (-val #f) srclist)]
+        [srcvec (make-HeterogenousVector (list
+                                          Univ
+                                          (-opt -Integer)
+                                          (-opt -Integer)
+                                          (-opt -Integer)
+                                          (-opt -Integer)))]
+        [srcloc (Un S (-val #f) srclist srcvec)]
         [prop (-opt S)]
         [cert (-opt S)])
    (cl->*
