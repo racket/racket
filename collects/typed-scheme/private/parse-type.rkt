@@ -421,8 +421,8 @@
 
 (define (parse-values-type stx)
   (parameterize ([current-orig-stx stx])
-    (syntax-parse stx #:literals (values t:All)
-      [((~and kw values) tys ... dty :ddd/bound)
+    (syntax-parse stx #:literals (values t:Values t:All)
+      [((~and kw (~or t:Values values)) tys ... dty :ddd/bound)
        (add-disappeared-use #'kw)
        (let ([var (syntax-e #'bound)])
          (unless (bound-index? var)
@@ -433,14 +433,14 @@
                           (extend-tvars (list var)
                             (parse-type #'dty))
                           var))]
-      [((~and kw values) tys ... dty _:ddd)
+      [((~and kw (~or t:Values values)) tys ... dty _:ddd)
        (add-disappeared-use #'kw)
        (let ([var (infer-index stx)])
          (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
                           (extend-tvars (list var)
                               (parse-type #'dty))
                             var))]
-      [((~and kw values) tys ...)
+      [((~and kw (~or t:Values values)) tys ...)
        (add-disappeared-use #'kw)
        (-values (map parse-type (syntax->list #'(tys ...))))]
       [t
