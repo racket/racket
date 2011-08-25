@@ -104,6 +104,7 @@
       ([current-orig-stx stx])
     (cond
       [(type-annotation stx #:infer infer)]
+      [(procedure? default) (default)]
       [default default]
       [(not (syntax-original? stx))
        (tc-error "insufficient type information to typecheck. please add more type annotations")]
