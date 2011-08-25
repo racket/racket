@@ -1548,7 +1548,7 @@ profile todo:
       (define/override (make-root-area-container % parent)
         (set! profile-info-outer-panel
               (super make-root-area-container
-                     vertical-panel%
+                     panel:vertical-dragable%
                      parent))
         (make-object % profile-info-outer-panel))
       
@@ -1582,6 +1582,8 @@ profile todo:
           (set! profile-info-visible? #t)
           (send profile-info-editor-canvas set-editor (send (get-current-tab) get-profile-info-text))
           (send (get-current-tab) refresh-profile)
+          ;; set to a small percentage so it gets the minimum height
+          (send profile-info-outer-panel set-percentages '(9/10 1/10))
           (update-shown)))
       
       (field (profile-info-visible? #f))
