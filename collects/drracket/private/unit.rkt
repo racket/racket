@@ -2997,7 +2997,9 @@ module browser threading seems wrong.
           (send item set-label (if just-one? 
                                    (string-constant close-menu-item)
                                    (string-constant close)))
-          (send item set-shortcut (if just-one? #\w #f))))
+          (send item set-shortcut-prefix (if just-one? 
+                                             (get-default-shortcut-prefix) 
+                                             (cons 'shift (get-default-shortcut-prefix))))))
       
       ;; offer-to-save-file : path -> void
       ;; bring the tab that edits the file named by `path' to the front
