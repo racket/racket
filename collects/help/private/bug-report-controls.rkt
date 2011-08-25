@@ -7,6 +7,8 @@
          setup/dirs
          setup/link
          framework
+         (for-syntax racket/base
+                     racket/list)
          "buginfo.rkt"
          "save-bug-report.rkt")
 
@@ -412,11 +414,23 @@
                        (map path->string (directory-list d))
                        '(non-existent-path))))))
   
+  (define-syntax (links-calls stx)
+    (syntax-case stx ()
+      [(_ calls ...)
+       (let ([str 
+              (apply 
+               string-append
+               (add-between (map (λ (x) "~s = ~s")
+                                 (syntax->list #'(calls ...)))
+                            "; "))])
+         #`(format #,str #,@(apply append (map (λ (x) (list #`'#,x x))
+                                               (syntax->list #'(calls ...))))))]))
   (send (send links-ctrl get-editor)
         insert
-        (format "~s = ~s; ~s = ~s"
-                '(links) (links)
-                '(links #:user? #f) (links #:user? #f)))
+        (links-calls (links)
+                     (links #:user? #f)
+                     (links #:root? #t)
+                     (links #:user? #f #:root? #t)))
   
   (send human-language set-value (format "~a" (this-language)))
   (send memory-use set-value (format "~a" (current-memory-use)))
