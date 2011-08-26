@@ -2447,7 +2447,7 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
     ch->msgs[ch->in] = o;
     ch->msg_memory[ch->in] = msg_memory;
     ++ch->count;
-    ch->in = (++ch->in % ch->size);
+    ch->in = ((ch->in + 1) % ch->size);
   }
 
   if (!cnt && ch->wakeup_signal) {
@@ -2586,7 +2586,7 @@ static Scheme_Object *scheme_place_async_try_receive(Scheme_Place_Async_Channel 
       ch->msg_memory[ch->out] = NULL;
 
       --ch->count;
-      ch->out = (++ch->out % ch->size);
+      ch->out = ((ch->out + 1) % ch->size);
     }
   }
   mzrt_mutex_unlock(ch->lock);
