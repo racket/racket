@@ -64,6 +64,13 @@
 (define fx+ unsafe-fx+)
 (define fx* unsafe-fx*)
 
+(define (alpha-mult al v)
+  (unsafe-fl->fx
+   (unsafe-flround
+    (unsafe-fl/
+     (unsafe-fx->fl (fx* al v))
+     255.0))))
+
 (define png-convertible<%>
   (interface* ()
               ([prop:convertible
@@ -422,12 +429,7 @@
                                    255)]
                            [premult (lambda (al v)
                                       (if pre?
-                                          (unsafe-fl->fx
-                                           (unsafe-flround
-                                            (unsafe-fl/
-                                             (unsafe-fx->fl (fx* al v))
-                                             255.0)))
-                                          #;(unsafe-fxquotient (fx* al v) 255)
+                                          (alpha-mult al v)
                                           v))])
                       (unsafe-bytes-set! dest (fx+ pos A) al)
                       (unsafe-bytes-set! dest (fx+ pos R) (premult al (unsafe-bytes-ref r spos)))
@@ -633,15 +635,18 @@
                                                255
                                                ;; `min' shouldn't be necessary, but it's
                                                ;; just in case the data is ill-formed
-                                               (unsafe-fxmin 255 (unsafe-fxquotient 
-                                                                  (unsafe-fx* v 255) 
-                                                                  a)))
+                                               (unsafe-fxmin 255 
+                                                             (unsafe-fl->fx
+                                                              (unsafe-flround
+                                                               (unsafe-fl/
+                                                                (unsafe-fx->fl (fx* 255 v))
+                                                                (unsafe-fx->fl a))))))
                                            v)])])
-                      (when set-alpha?
-                        (unsafe-bytes-set! bstr pi a))
-                      (unsafe-bytes-set! bstr (+ pi 1) (unmult (unsafe-bytes-ref data (+ ri R))))
-                      (unsafe-bytes-set! bstr (+ pi 2) (unmult (unsafe-bytes-ref data (+ ri G))))
-                      (unsafe-bytes-set! bstr (+ pi 3) (unmult (unsafe-bytes-ref data (+ ri B)))))))))))))
+                        (when set-alpha?
+                          (unsafe-bytes-set! bstr pi a))
+                        (unsafe-bytes-set! bstr (+ pi 1) (unmult (unsafe-bytes-ref data (+ ri R))))
+                        (unsafe-bytes-set! bstr (+ pi 2) (unmult (unsafe-bytes-ref data (+ ri G))))
+                        (unsafe-bytes-set! bstr (+ pi 3) (unmult (unsafe-bytes-ref data (+ ri B)))))))))))))
       (cond
        [get-alpha?
         (get-alphas-as-mask x y w h bstr)]
@@ -696,7 +701,7 @@
                                       [pm (lambda (a v)
                                             (if pre-mult?
                                                 (min a v)
-                                                (quotient (* a v) 255)))])
+                                                (alpha-mult a v)))])
                                   (bytes-set! data (+ ri A) a)
                                   (bytes-set! data (+ ri R) (pm a (bytes-ref bstr (+ pi 1))))
                                   (bytes-set! data (+ ri G) (pm a (bytes-ref bstr (+ pi 2))))
