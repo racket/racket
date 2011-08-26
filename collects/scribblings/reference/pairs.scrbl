@@ -289,7 +289,15 @@ Applies @racket[proc] to the elements of the @racket[lst]s from the
 @defproc[(andmap [proc procedure?] [lst list?] ...+)
           any]{
 
-Similar to @racket[map], except that
+Similar to @racket[map] in the sense that @racket[proc] is applied to
+each element of racket[lst], but
+
+@margin-note{The @racket[andmap] function is actually closer to
+@racket[foldl] than @racket[map], since @racket[andmap] doesn't
+produce a list.  Still, @racket[(andmap f (list x y z))] is equivalent
+to @racket[(and (f x) (f y) (f z))] in the same way that
+@racket[(map f (list x y z))] is equivalent to @racket[(list (f
+x) (f y) (f z))].}
 
 @itemize[
 
@@ -304,20 +312,25 @@ Similar to @racket[map], except that
 
 ]
 
-If the @racket[lst]s are empty, then @racket[#t] is returned.}
+If the @racket[lst]s are empty, then @racket[#t] is returned.
 
 @mz-examples[
 (andmap positive? '(1 2 3))
 (andmap positive? '(1 2 a))
 (andmap positive? '(1 -2 a))
 (andmap + '(1 2 3) '(4 5 6))
-]
+]}
 
 
 @defproc[(ormap [proc procedure?] [lst list?] ...+)
          any]{
 
-Similar to @racket[map], except that
+Similar to @racket[map] in the sense that @racket[proc] is applied to
+each element of racket[lst], but
+
+@margin-note{To continue the @racket[andmap] note above,
+@racket[(ormap f (list x y z))] is equivalent to @racket[(or (f x) (f
+y) (f z))].}
 
 @itemize[
 
@@ -333,13 +346,13 @@ Similar to @racket[map], except that
 
 ]
 
-If the @racket[lst]s are empty, then @racket[#f] is returned.}
+If the @racket[lst]s are empty, then @racket[#f] is returned.
 
 @mz-examples[
 (ormap eq? '(a b c) '(a b c))
 (ormap positive? '(1 2 a))
 (ormap + '(1 2 3) '(4 5 6))
-]
+]}
 
 
 @defproc[(for-each [proc procedure?] [lst list?] ...+)
