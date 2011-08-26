@@ -56,7 +56,7 @@
                (exit t)))]
         [(ListDots: t bound) (-lst (substitute Univ bound t))]
         [(? (lambda (t) (subtype t -Symbol))) -Symbol]
-        [(or (Value: #f) (Value: #t)) -Boolean]
+        [(Value: #t) -Boolean]
         [_ (exit t)]))))
 
 
