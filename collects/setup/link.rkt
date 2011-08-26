@@ -16,7 +16,7 @@
                #:repair? [repair? #f]
                . dirs)
   (define (check-name name)
-    (unless (and (regexp-match #rx"^[a-zA-z+_%-]+$" name)
+    (unless (and (regexp-match #rx"^[a-zA-z0-9+_%-]+$" name)
                  (module-path? name))
       (error 'links "name is not valid as a top-level collection name: ~e"
              name)))
