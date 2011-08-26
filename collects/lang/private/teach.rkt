@@ -2145,9 +2145,7 @@
 	       (with-syntax ([x (loop (syntax x) (sub1 depth))]
 			     [rest (loop (syntax rest) depth)]
 			     [uq-splicing (stx-car (stx-car stx))])
-		 (stepper-syntax-property (syntax/loc stx (the-cons/matchable (list (quote uq-splicing) x) rest))
-                                  'stepper-hint
-                                  'quasiquote-the-cons-application)))]
+                 (syntax/loc stx (the-cons/matchable (list (quote uq-splicing) x) rest))))]
 	  [intermediate-unquote-splicing
 	   (teach-syntax-error
 	    'quasiquote
@@ -2161,9 +2159,7 @@
 	  [(a . b)
 	   (with-syntax ([a (loop (syntax a) depth)]
 			 [b (loop (syntax b) depth)])
-	     (stepper-syntax-property (syntax/loc stx (the-cons/matchable a b))
-                              'stepper-hint
-                              'quasiquote-the-cons-application))]
+             (syntax/loc stx (the-cons/matchable a b)))]
 	  [any
 	   (syntax/loc stx (quote any))])))
 
