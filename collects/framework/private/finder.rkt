@@ -46,7 +46,7 @@
              [f (put-file prompt parent-win directory name
                           (default-extension) style (default-filters))])
         (and f (or (not filter) (filter-match? filter f filter-msg))
-             (let* ([f (normal-case-path (normalize-path f))]
+             (let* ([f (normal-case-path (simple-form-path f))]
                     [dir (path-only f)]
                     [name (file-name-from-path f)])
                (cond
@@ -77,7 +77,7 @@
                     (message-box (string-constant error) 
                                  (string-constant file-dne))
                     #f]
-                   [else (normalize-path f)])))))
+                   [else (simple-form-path f)])))))
   
   (define-syntax-rule
     (define/rename id exp)
