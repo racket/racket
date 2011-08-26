@@ -1028,7 +1028,7 @@ We can now write the code to initialize a @racket[blog] structure:
   the-blog)
 ]
 
-With the @racket['create] mode, @racket[db:sqlite3-connect] will
+With the @racket['create] mode, @racket[sqlite3-connect] will
 create a database if one does not already exist at the @racket[home]
 path. But, we still need to initialize the database with the table
 definitions and initial data.
