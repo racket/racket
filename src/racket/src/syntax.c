@@ -8096,7 +8096,7 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
   if (scheme_stx_is_clean(argv[0]))
     a[1] = scheme_false;
   else
-    a[2] = scheme_true;
+    a[1] = scheme_true;
 
   return scheme_make_prim_closure_w_arity(delta_introducer, 2, a, "delta-introducer", 1, 1);
 }

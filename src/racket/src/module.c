@@ -3921,7 +3921,7 @@ void scheme_module_force_lazy(Scheme_Env *env, int previous)
 
 static int wait_registry(Scheme_Env *env)
 {
-  Scheme_Object *lock, *a[1];
+  Scheme_Object *lock, *a[2];
 
   while (1) {
     lock = scheme_hash_get(env->module_registry->loaded, scheme_false);
@@ -3933,7 +3933,7 @@ static int wait_registry(Scheme_Env *env)
 
     a[0] = SCHEME_CAR(lock);
     a[1] = SCHEME_CDR(lock);
-    (void)scheme_sync(1, a);
+    (void)scheme_sync(2, a);
   }
 }
 
