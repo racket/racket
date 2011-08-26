@@ -156,7 +156,7 @@
       (for-each disown deletions)
       (send editor do-insert-snips deletions start)
       (for-each (lambda (cb)
-                  (send editor set-clickback cb))
+                  (send editor add-back-clickback cb))
                 clickbacks)
 
       (send editor set-position startsel endsel)
