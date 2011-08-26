@@ -694,6 +694,9 @@ plt-extras :+= (package: "racklog/")
 ;; -------------------- datalog
 plt-extras :+= (package: "datalog/")
 
+;; -------------------- db
+plt-extras :+= (package: "db/")
+
 ;; ============================================================================
 ;; Readme header
 
