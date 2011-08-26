@@ -47,12 +47,10 @@ y)]. The environment of @racket[(+ x y)] includes bindings for
 @racketmodname[racket].
 
 A module-level @racket[define] can bind only identifiers that are not
-already bound within the module. For example, @racket[(define cons 1)]
-is a syntax error in a @racketmodname[racket] module, since @racket[cons]
-is provided by @racketmodname[racket]. A local @racket[define] or other
-binding forms, however, can give a new local binding for an identifier
-that already has a binding; such a binding @defterm{shadows} the
-existing binding.
+already defined or @racket[require]s into the module. A local
+@racket[define] or other binding forms, however, can give a new local
+binding for an identifier that already has a binding; such a binding
+@deftech{shadows} the existing binding.
 
 @defexamples[
 (define f
@@ -62,6 +60,14 @@ existing binding.
       (list append cons))))
 (f list)
 ]
+
+Similarly, a module-level @racket[define] can @tech{shadow} a binding
+from the module's language. For example, @racket[(define cons 1)] in a
+@racketmodname[racket] module shadows the @racket[cons] that is
+provided by @racketmodname[racket]. Intentionally shadowing a language
+binding is rarely a good idea---especially for widely used bindings
+like @racket[cons]---but shadowing relieves a programmer from having
+to avoid every obscure binding that is provided by a language.
 
 Even identifiers like @racket[define] and @racket[lambda] get their
 meanings from bindings, though they have @defterm{transformer}
@@ -76,5 +82,5 @@ define
 (eval:alts (let ([@#,racketidfont{define} 5]) @#,racketidfont{define}) (let ([define 5]) define))
 ]
 
-Shadowing standard bindings in this way is rarely a good idea, but the
+Again, shadowing standard bindings in this way is rarely a good idea, but the
 possibility is an inherent part of Racket's flexibility.

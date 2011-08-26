@@ -49,10 +49,14 @@ For example, the @filepath{cake.rkt} example of the
   (provide print-cake)
 
   (define (print-cake n)
-    (printf "   ~a  \n" (make-string n #\.))
-    (printf " .-~a-.\n" (make-string n #\|))
-    (printf " | ~a |\n" (make-string n #\space))
-    (printf "---~a---\n" (make-string n #\-))))
+    (show "   ~a   " n #\.)
+    (show " .-~a-. " n #\|)
+    (show " | ~a | " n #\space)
+    (show "---~a---" n #\-))
+
+  (define (show fmt n ch)
+    (printf fmt (make-string n ch))
+    (newline)))
 ]
 
 Furthermore, this @racket[module] form can be evaluated in a

@@ -41,7 +41,7 @@
 (namespace-require '(for-syntax racket/base))
 
 (define (literal-string style s)
-  (let ([m (regexp-match #rx"^(.*)(  +)(.*)$" s)])
+  (let ([m (regexp-match #rx"^(.*)(  +|^ )(.*)$" s)])
     (if m
       (make-element #f (list (literal-string style (cadr m))
                              (hspace (string-length (caddr m)))
