@@ -407,7 +407,7 @@
     bs)
 
   (define (unmul b)
-    (define (um v) (quotient (* v 255) (bytes-ref b 0)))
+    (define (um v) (inexact->exact (round (/ (* v 255.) (bytes-ref b 0)))))
     (bytes (bytes-ref b 0)
            (um (bytes-ref b 1))
            (um (bytes-ref b 2))
@@ -419,6 +419,77 @@
   (test (apply bytes-append (map unmul '(#"3012" #"7456" #"b89a" #"fcde")))
         'alpha-normal (get-pixels abm #f))
   (test #"30127456b89afcde" 'alpha-premult (get-pixels abm #t)))
+
+;; ----------------------------------------
+;; check consistency of pre-multiplication, drawing, etc.
+
+(let ()
+  (define gray-cols (make-bitmap 256 256 #f)) ; no alpha channel
+  (let ([s (make-bytes (* 256 256 4))])
+    (for* ([i 256] [j 256])
+      (bytes-set! s (+ (* 4 i) (* j 256 4)) 255)
+      (bytes-set! s (+ (* 4 i) 1 (* j 256 4)) (- 255 i))
+      (bytes-set! s (+ (* 4 i) 2 (* j 256 4)) (- 255 i))
+      (bytes-set! s (+ (* 4 i) 3 (* j 256 4)) (- 255 i)))
+    (send gray-cols set-argb-pixels 0 0 256 256 s))
+
+  (define rainbow-rows (make-bitmap 256 256))
+  (let ([s (make-bytes (* 256 256 4))])
+    (for* ([i 256] [j 256])
+      (bytes-set! s (+ (* 4 i) (* j 256 4)) 255)
+      (bytes-set! s (+ (* 4 i) 1 (* j 256 4)) j)
+      (bytes-set! s (+ (* 4 i) 2 (* j 256 4)) (modulo (+ j 10) 256))
+      (bytes-set! s (+ (* 4 i) 3 (* j 256 4)) (modulo (+ j 20) 256)))
+    (send rainbow-rows set-argb-pixels 0 0 256 256 s))
+
+  (define rainbow-rows-alpha-cols (make-bitmap 256 256))
+  (let ([s (make-bytes (* 256 256 4))])
+    (for* ([i 256] [j 256])
+      (bytes-set! s (+ (* 4 i) (* j 256 4)) i)
+      (bytes-set! s (+ (* 4 i) 1 (* j 256 4)) j)
+      (bytes-set! s (+ (* 4 i) 2 (* j 256 4)) (modulo (+ j 10) 256))
+      (bytes-set! s (+ (* 4 i) 3 (* j 256 4)) (modulo (+ j 20) 256)))
+    (send rainbow-rows-alpha-cols set-argb-pixels 0 0 256 256 s))
+
+  (define rainbow-rows-alpha-cols-premult (make-bitmap 256 256))
+  (let ([s (make-bytes (* 256 256 4))])
+    (for* ([i 256] [j 256])
+      (bytes-set! s (+ (* 4 i) (* j 256 4)) i)
+      (bytes-set! s (+ (* 4 i) 1 (* j 256 4)) (min i j))
+      (bytes-set! s (+ (* 4 i) 2 (* j 256 4)) (min i (modulo (+ j 10) 256)))
+      (bytes-set! s (+ (* 4 i) 3 (* j 256 4)) (min i (modulo (+ j 20) 256))))
+    (send rainbow-rows-alpha-cols-premult set-argb-pixels 0 0 256 256 s #f #t))
+
+  ;; Check that drawing with a mask is consistent with `set-argb-pixels'
+  ;; in non-premultiplied mode:
+  (let ([target (make-bitmap 256 256)])
+    (define dc (make-object bitmap-dc% target))
+    (send dc draw-bitmap rainbow-rows 0 0
+          'solid
+          (send the-color-database find-color "black")
+          gray-cols)
+    (let ([s1 (make-bytes (* 256 256 4))]
+          [s2 (make-bytes (* 256 256 4))])
+      (send target get-argb-pixels 0 0 256 256 s1 #f #t)
+      (send rainbow-rows-alpha-cols get-argb-pixels 0 0 256 256 s2 #f #t)
+      (for ([i (in-range (* 256 256))])
+        (unless (= (bytes-ref s1 i) (bytes-ref s2 i))
+          (printf "~a ~a ~a\n" i (bytes-ref s1 i) (bytes-ref s2 i))))
+      (test #t 'consistent-mult (equal? s1 s2))))
+
+  ;; Check that getting non-premult values out and putting them back in
+  ;; gives consistent premult results:
+  (let ([target (make-bitmap 256 256)])
+    (let ([s1 (make-bytes (* 256 256 4))]
+          [s2 (make-bytes (* 256 256 4))])
+      (send rainbow-rows-alpha-cols-premult get-argb-pixels 0 0 256 256 s1 #f #f)
+      (send target set-argb-pixels 0 0 256 256 s1 #f #f)
+      
+      (send target get-argb-pixels 0 0 256 256 s1 #f #t)
+      (send rainbow-rows-alpha-cols-premult get-argb-pixels 0 0 256 256 s2 #f #t)
+      (test #t 'consistent-premult (equal? s1 s2))))
+
+  (void))
 
 
 ;; ----------------------------------------
