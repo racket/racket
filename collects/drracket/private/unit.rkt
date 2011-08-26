@@ -2980,26 +2980,27 @@ module browser threading seems wrong.
           (super-new)))
       
       (define/private (update-menu-bindings)
-        (when (preferences:get 'framework:menu-bindings)
-          (when close-tab-menu-item
-            (update-close-tab-menu-item-shortcut close-tab-menu-item))
-          (update-close-menu-item-shortcut (file-menu:get-close-item))))
+        (when close-tab-menu-item
+          (update-close-tab-menu-item-shortcut close-tab-menu-item))
+        (update-close-menu-item-shortcut (file-menu:get-close-item)))
       
       (define/private (update-close-tab-menu-item-shortcut item)
         (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
           (send item set-label (if just-one? 
                                    (string-constant close-tab)
                                    (string-constant close-tab-amp)))
-          (send item set-shortcut (if just-one? #f #\w))))
+          (when (preferences:get 'framework:menu-bindings)
+            (send item set-shortcut (if just-one? #f #\w)))))
       
       (define/private (update-close-menu-item-shortcut item)
         (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
           (send item set-label (if just-one? 
                                    (string-constant close-menu-item)
                                    (string-constant close)))
-          (send item set-shortcut-prefix (if just-one? 
-                                             (get-default-shortcut-prefix) 
-                                             (cons 'shift (get-default-shortcut-prefix))))))
+          (when (preferences:get 'framework:menu-bindings)
+            (send item set-shortcut-prefix (if just-one? 
+                                               (get-default-shortcut-prefix) 
+                                               (cons 'shift (get-default-shortcut-prefix)))))))
       
       ;; offer-to-save-file : path -> void
       ;; bring the tab that edits the file named by `path' to the front
