@@ -14,7 +14,7 @@
 (def-object Empty () [#:fold-rhs #:base])
 
 (def-object Path ([p (listof PathElem?)] [v name-ref/c])
-  [#:intern (list p (hash-name v))]
+  [#:intern (list (map Rep-seq p) (hash-name v))]
   [#:frees (combine-frees (map free-vars* p)) (combine-frees (map free-idxs* p))]
   [#:fold-rhs (*Path (map pathelem-rec-id p) v)])
 

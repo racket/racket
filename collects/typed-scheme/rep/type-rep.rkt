@@ -57,7 +57,7 @@
 ;; rands is a list of types
 ;; stx is the syntax of the pair of parens
 (def-type App ([rator Type/c] [rands (listof Type/c)] [stx (or/c #f syntax?)])
-  [#:intern (list rator rands)]
+  [#:intern (cons (Rep-seq rator) (map Rep-seq rands))]
   [#:frees (λ (f) (combine-frees (map f (cons rator rands))))]
   [#:fold-rhs (*App (type-rec-id rator)
                     (map type-rec-id rands)
@@ -237,7 +237,9 @@
                [rest (or/c #f Type/c)]
                [drest (or/c #f (cons/c Type/c (or/c natural-number/c symbol?)))]
                [kws (listof Keyword?)])
-  [#:intern (list dom rng rest drest kws)]
+  [#:intern (list (map Rep-seq dom) (Rep-seq rng) (and rest (Rep-seq rest))
+                  (and drest (cons (Rep-seq (car drest)) (cdr drest)))
+                  (map Rep-seq kws))]
   [#:frees (combine-frees
             (append (map (compose flip-variances free-vars*)
                          (append (if rest (list rest) null)
@@ -303,7 +305,7 @@
                   [pred-id identifier?]
                   [cert procedure?]
                   [maker-id identifier?])
-  [#:intern (list name parent flds proc)]
+  [#:intern (list name (and parent (Rep-seq parent)) (map Rep-seq flds) (and proc (Rep-seq proc)))]
   [#:frees (λ (f) (combine-frees (map f (append (if proc (list proc) null)
                                                 (if parent (list parent) null)
                                                 flds))))]
@@ -370,12 +372,9 @@
 (def-type Hashtable ([key Type/c] [value Type/c]) [#:key 'hash]
   [#:frees (λ (f) (combine-frees (list (make-invariant (f key)) (make-invariant (f value)))))])
 
-;; parent : Type
-;; pred : Identifier
-;; cert : Certifier
-(def-type Refinement (parent pred cert)
+(def-type Refinement ([parent Type/c] [pred identifier?] [cert certifier?])
   [#:key (Type-key parent)]
-  [#:intern (list parent (hash-id pred))]
+  [#:intern (list (Rep-seq parent) (hash-id pred))]
   [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]
   [#:frees (λ (f) (f parent))])
 

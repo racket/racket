@@ -21,13 +21,13 @@
 (def-filter Top () [#:fold-rhs #:base])
 
 (def-filter TypeFilter ([t Type?] [p (listof PathElem?)] [v name-ref/c])
-  [#:intern (list t p (hash-name v))]
+  [#:intern (list (Rep-seq t) (map Rep-seq p) (hash-name v))]
   [#:frees (combine-frees (map free-vars* (cons t p)))
            (combine-frees (map free-idxs* (cons t p)))]
   [#:fold-rhs (*TypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
 (def-filter NotTypeFilter ([t Type?] [p (listof PathElem?)] [v name-ref/c])
-  [#:intern (list t p (hash-name v))]
+  [#:intern (list (Rep-seq t) (map Rep-seq p) (hash-name v))]
   [#:frees (combine-frees (map free-vars* (cons t p)))
            (combine-frees (map free-idxs* (cons t p)))]
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])

@@ -123,8 +123,8 @@
                           #:defaults
                           ([intern? (syntax-parse #'flds.fields
                                       [() #'#f]
-                                      [(f) #'f]
-                                      [(fields ...) #'(list fields ...)])]))
+                                      [(f) #'(if (Rep? f) (Rep-seq f) f)]
+                                      [(fields ...) #'(list (if (Rep? fields) (Rep-seq fields) fields) ...)])]))
                ;; expression that when given a "get free-variables"
                ;; function, combines the results in the expected pashion.
                (~optional [#:frees frees:frees-pat]
