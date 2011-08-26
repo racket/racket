@@ -1027,11 +1027,13 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           o2 = shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, copy, can_raise_exn);
           SCHEME_CPTR_TYPE(o) = o2;
 
-          return o;
+          new_so = o;
         }
       }
       else if (can_raise_exn)
         bad_place_message(so);
+      else
+        return NULL;
       break;
     case scheme_input_port_type:
     case scheme_output_port_type:
@@ -1061,9 +1063,13 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           }
           else if (can_raise_exn)
             bad_place_message(so);
+          else
+            return NULL;
         }
         else if (can_raise_exn)
           bad_place_message(so);
+        else
+          return NULL;
       }
       break;
     case scheme_serialized_tcp_fd_type:
@@ -1834,18 +1840,19 @@ Scheme_Object *places_deep_copy_to_master(Scheme_Object *so) {
 }
 
 #ifdef DO_STACK_CHECK
-static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **ht);
+static void places_deserialize_clean_worker(Scheme_Object **pso, Scheme_Hash_Table **ht, int clean);
 
 static Scheme_Object *places_deserialize_worker_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *pso = (Scheme_Object *)p->ku.k.p1;
   Scheme_Hash_Table*ht = (Scheme_Hash_Table *)p->ku.k.p2;
+  int clean = p->ku.k.i1;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
 
-  places_deserialize_worker(&pso, &ht);
+  places_deserialize_clean_worker(&pso, &ht, clean);
   p = scheme_current_thread;
   p->ku.k.p1 = ht;
 
@@ -1854,7 +1861,7 @@ static Scheme_Object *places_deserialize_worker_k(void)
 #endif
 
 
-static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **ht)
+static void places_deserialize_clean_worker(Scheme_Object **pso, Scheme_Hash_Table **ht, int clean)
 {
   Scheme_Object *so;
   Scheme_Object *tmp;
@@ -1872,6 +1879,7 @@ static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **h
       p = scheme_current_thread;
       p->ku.k.p1 = *pso;
       p->ku.k.p2 = *ht;
+      p->ku.k.i1 = clean;
       tmp = scheme_handle_stack_overflow(places_deserialize_worker_k);
       *pso = tmp;
       p = scheme_current_thread;
@@ -1907,17 +1915,54 @@ static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **h
     case scheme_flvector_type:
     case scheme_fxvector_type:
     case scheme_cpointer_type:
-      break;
     case scheme_symbol_type:
       break;
     case scheme_serialized_symbol_type:
-      tmp = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
-      *pso = tmp;
+      if (!clean) {
+        tmp = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
+        *pso = tmp;
+      }
       break;
     case scheme_serialized_tcp_fd_type:
+      if (clean) {
+        Scheme_Object *in;
+        Scheme_Object *out;
+        int fd   = ((Scheme_Simple_Object *) so)->u.two_int_val.int2;
+# ifdef USE_WINSOCK_TCP
+        close(fd);
+# else
+        {
+          intptr_t rc;
+          do {
+            rc = close(fd);
+          } while (rc == -1 && errno == EINTR);
+        }
+# endif
+      }
+      else {
+        tmp = shallow_types_copy(so, NULL, 1, 1);
+        *pso = tmp;
+      }
+      break;
     case scheme_serialized_file_fd_type:
-      tmp = shallow_types_copy(so, NULL, 1, 1);
-      *pso = tmp;
+      if (clean) {
+        Scheme_Serialized_File_FD *sffd;
+        sffd = (Scheme_Serialized_File_FD *) so;
+#ifdef WINDOWS_FILE_HANDLES
+        CloseHandle((HANDLE)sffd->fd);
+#else
+        {
+          intptr_t rc;
+          do {
+            rc = close(sffd->fd);
+          } while (rc == -1 && errno == EINTR);
+        }
+#endif
+      }
+      else {
+        tmp = shallow_types_copy(so, NULL, 1, 1);
+        *pso = tmp;
+      }
       break;
     case scheme_pair_type:
       if (*ht) {
@@ -1932,10 +1977,10 @@ static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **h
         scheme_hash_set(*ht, so, so);
       }
       tmp = SCHEME_CAR(so);
-      places_deserialize_worker(&tmp, ht);
+      places_deserialize_clean_worker(&tmp, ht, clean);
       SCHEME_CAR(so) = tmp;
       tmp = SCHEME_CDR(so);
-      places_deserialize_worker(&tmp, ht);
+      places_deserialize_clean_worker(&tmp, ht, clean);
       SCHEME_CDR(so) = tmp;
       break;
     case scheme_vector_type:
@@ -1953,7 +1998,7 @@ static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **h
       size = SCHEME_VEC_SIZE(so);
       for (i = 0; i <size ; i++) {
         tmp = SCHEME_VEC_ELS(so)[i];
-        places_deserialize_worker(&tmp, ht);
+        places_deserialize_clean_worker(&tmp, ht, clean);
         SCHEME_VEC_ELS(so)[i] = tmp;
       }
       break;
@@ -1974,7 +2019,7 @@ static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **h
       sst = (Scheme_Serialized_Structure*)so;
       size = sst->num_slots;
       tmp = sst->prefab_key;
-      places_deserialize_worker(&tmp, ht);
+      places_deserialize_clean_worker(&tmp, ht, clean);
       sst->prefab_key = tmp;
       stype = scheme_lookup_prefab_type(sst->prefab_key, size);
       st = (Scheme_Structure *) scheme_make_blank_prefab_struct_instance(stype);
@@ -1982,7 +2027,7 @@ static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **h
 
       for (i = 0; i <size ; i++) {
         tmp = sst->slots[i];
-        places_deserialize_worker(&tmp, ht);
+        places_deserialize_clean_worker(&tmp, ht, clean);
         st->slots[i] = tmp;
       }
       *pso = (Scheme_Object *) st;
@@ -1994,190 +2039,6 @@ static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **h
       break;
   }
 }
-
-#ifdef DO_STACK_CHECK
-static void places_message_cleanup_worker(Scheme_Object **pso, Scheme_Hash_Table **ht);
-
-static Scheme_Object *places_message_cleanup_worker_k(void)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *pso = (Scheme_Object *)p->ku.k.p1;
-  Scheme_Hash_Table*ht = (Scheme_Hash_Table *)p->ku.k.p2;
-
-  p->ku.k.p1 = NULL;
-  p->ku.k.p2 = NULL;
-
-  places_message_cleanup_worker(&pso, &ht);
-  p = scheme_current_thread;
-  p->ku.k.p1 = ht;
-
-  return pso;
-}
-#endif
-
-
-static void places_message_cleanup_worker(Scheme_Object **pso, Scheme_Hash_Table **ht)
-{
-  Scheme_Object *so;
-  Scheme_Object *tmp;
-  Scheme_Serialized_Structure *sst;
-  Scheme_Structure *st;
-  Scheme_Struct_Type *stype;
-  intptr_t i;
-  intptr_t size;
-
-#ifdef DO_STACK_CHECK
-  {
-# include "mzstkchk.h"
-    {
-      Scheme_Thread *p;
-      p = scheme_current_thread;
-      p->ku.k.p1 = *pso;
-      p->ku.k.p2 = *ht;
-      tmp = scheme_handle_stack_overflow(places_message_cleanup_worker_k);
-      *pso = tmp;
-      p = scheme_current_thread;
-      *ht = p->ku.k.p1;
-      p->ku.k.p1 = NULL;
-      return;
-    }
-  }
-#endif
-  SCHEME_USE_FUEL(1);
-
-  if (*pso) 
-    so = *pso;
-  else
-    return;
-
-  switch (SCHEME_TYPE(so)) {
-    case scheme_true_type:
-    case scheme_false_type:
-    case scheme_null_type:
-    case scheme_void_type:
-    case scheme_integer_type:
-    case scheme_place_bi_channel_type: /* allocated in the master and can be passed along as is */
-    case scheme_char_type:
-    case scheme_rational_type:
-    case scheme_float_type:
-    case scheme_double_type:
-    case scheme_complex_type:
-    case scheme_char_string_type:
-    case scheme_byte_string_type:
-    case scheme_unix_path_type:
-    case scheme_windows_path_type:
-    case scheme_flvector_type:
-    case scheme_fxvector_type:
-      break;
-    case scheme_symbol_type:
-      break;
-    case scheme_serialized_symbol_type:
-      break;
-    case scheme_serialized_tcp_fd_type:
-      {
-        Scheme_Object *in;
-        Scheme_Object *out;
-        int fd   = ((Scheme_Simple_Object *) so)->u.two_int_val.int2;
-# ifdef USE_WINSOCK_TCP
-        close(fd);
-# else
-        {
-          intptr_t rc;
-          do {
-            rc = close(fd);
-          } while (rc == -1 && errno == EINTR);
-        }
-# endif
-      }
-      break;
-    case scheme_serialized_file_fd_type:
-      {
-        Scheme_Serialized_File_FD *sffd;
-        sffd = (Scheme_Serialized_File_FD *) so;
-#ifdef WINDOWS_FILE_HANDLES
-        CloseHandle((HANDLE)sffd->fd);
-#else
-        {
-          intptr_t rc;
-          do {
-            rc = close(sffd->fd);
-          } while (rc == -1 && errno == EINTR);
-        }
-#endif
-      }
-      break;
-    case scheme_pair_type:
-      if (*ht) {
-        if ((st = (Scheme_Structure *) scheme_hash_get(*ht, so)))
-          break;
-        else 
-          scheme_hash_set(*ht, so, so);
-      }
-      else {
-        tmp = (Scheme_Object *) scheme_make_hash_table(SCHEME_hash_ptr);
-        *ht = (Scheme_Hash_Table *) tmp; 
-        scheme_hash_set(*ht, so, so);
-      }
-      tmp = SCHEME_CAR(so);
-      places_message_cleanup_worker(&tmp, ht);
-      tmp = SCHEME_CDR(so);
-      places_message_cleanup_worker(&tmp, ht);
-      break;
-    case scheme_vector_type:
-      if (*ht) {
-        if ((st = (Scheme_Structure *) scheme_hash_get(*ht, so)))
-          break;
-        else 
-          scheme_hash_set(*ht, so, so);
-      }
-      else {
-        tmp = (Scheme_Object *) scheme_make_hash_table(SCHEME_hash_ptr);
-        *ht = (Scheme_Hash_Table *) tmp; 
-        scheme_hash_set(*ht, so, so);
-      }
-      size = SCHEME_VEC_SIZE(so);
-      for (i = 0; i <size ; i++) {
-        tmp = SCHEME_VEC_ELS(so)[i];
-        places_message_cleanup_worker(&tmp, ht);
-      }
-      break;
-    case scheme_structure_type:
-      break;
-    case scheme_serialized_structure_type:
-      if (*ht) {
-        if ((st = (Scheme_Structure *) scheme_hash_get(*ht, so))) {
-          *pso = (Scheme_Object *) st;
-          break;
-        }
-      }
-      else {
-        tmp = (Scheme_Object *) scheme_make_hash_table(SCHEME_hash_ptr);
-        *ht = (Scheme_Hash_Table *) tmp; 
-      }
-        
-      sst = (Scheme_Serialized_Structure*)so;
-      size = sst->num_slots;
-      tmp = sst->prefab_key;
-      places_message_cleanup_worker(&tmp, ht);
-      sst->prefab_key = tmp;
-      stype = scheme_lookup_prefab_type(sst->prefab_key, size);
-      st = (Scheme_Structure *) scheme_make_blank_prefab_struct_instance(stype);
-      scheme_hash_set(*ht, so, (Scheme_Object *) st);
-
-      for (i = 0; i <size ; i++) {
-        tmp = sst->slots[i];
-        places_message_cleanup_worker(&tmp, ht);
-      }
-      *pso = (Scheme_Object *) st;
-      break;
-
-    default:
-      scheme_log_abort("cannot cleanup message object");
-      abort();
-      break;
-  }
-}
-
 
 Scheme_Object *scheme_places_serialize(Scheme_Object *so, void **msg_memory) {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
@@ -2214,7 +2075,7 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
     GC_adopt_message_allocator(msg_memory);
 #if !defined(SHARED_TABLES)
     new_so = so;
-    places_deserialize_worker(&new_so, (Scheme_Hash_Table **) &ht);
+    places_deserialize_clean_worker(&new_so, (Scheme_Hash_Table **) &ht, 0);
 #endif
   }
   return new_so;
@@ -2312,7 +2173,7 @@ static void async_channel_finalize(void *p, void* data) {
   ch = (Scheme_Place_Async_Channel*)p;
   mzrt_mutex_destroy(ch->lock);
   for (i = 0; i < ch->size ; i++) {
-    places_message_cleanup_worker(&(ch->msgs[i]), NULL);
+    places_deserialize_clean_worker(&(ch->msgs[i]), NULL, 1);
     ch->msgs[i] = NULL;
 #ifdef MZ_PRECISE_GC
     if (ch->msg_memory[i]) {
