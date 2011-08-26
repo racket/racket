@@ -64,9 +64,9 @@
            (send this remove-clickback start end)]))
       (set! highlights '()))
 
-    (define/augment (after-insert start len)
+    (define/augment (on-insert start len)
       (clear-highlights))
-    (define/augment (after-delete start len)
+    (define/augment (on-delete start len)
       (clear-highlights))
 
     (super-new)))
