@@ -42,7 +42,7 @@
         [(and (or (not (pair? s)) (not (list? s))) (not (path? s)))
          #f]
         [(or (path? s) (eq? (car s) 'file))
-         (let ([p (if (path? s) s (cadr s))])
+         (let ([p (if (path? s) s (expand-user-path (cadr s)))])
            (path-ss->rkt
             (path->complete-path
              p (let ([d (get-dir)])
