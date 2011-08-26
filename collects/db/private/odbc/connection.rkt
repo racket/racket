@@ -33,6 +33,11 @@
              (handle-status 'odbc-connect status db)
              supported?)))
 
+    (define dbms
+      (let-values ([(status result) (SQLGetInfo-string db SQL_DBMS_NAME)])
+        (handle-status 'odbc-connect status db)
+        result))
+
     (inherit call-with-lock
              call-with-lock*
              add-delayed-call!
@@ -472,10 +477,12 @@
             (when tx-status
               (error/already-in-tx fsym))
             (let* ([ok-levels
-                    (let-values ([(status value) (SQLGetInfo db SQL_TXN_ISOLATION_OPTION)])
+                    (let-values ([(status value)
+                                  (SQLGetInfo db SQL_TXN_ISOLATION_OPTION)])
                       (begin0 value (handle-status fsym status db)))]
                    [default-level
-                     (let-values ([(status value) (SQLGetInfo db SQL_DEFAULT_TXN_ISOLATION)])
+                     (let-values ([(status value)
+                                   (SQLGetInfo db SQL_DEFAULT_TXN_ISOLATION)])
                        (begin0 value (handle-status fsym status db)))]
                    [requested-level
                     (case isolation
@@ -516,7 +523,40 @@
     ;; GetTables
 
     (define/public (list-tables fsym schema)
-      (uerror fsym "unsupported"))
+      (define (no-search)
+        (uerror fsym "schema search path cannot be determined for this DBMS"))
+      (let ([stmt
+             (cond
+              [(regexp-match? #rx"^DB2" dbms)
+               (let* ([schema-cond
+                       (case schema
+                         ((search-or-current current)
+                          "tabschema = CURRENT_SCHEMA")
+                         ((search)
+                          (no-search)))]
+                      [type-cond
+                       ;; FIXME: what table types to include? see docs for SYSCAT.TABLES
+                       "(type = 'T' OR type = 'V')"])
+                 (string-append "SELECT tabname FROM syscat.tables "
+                                "WHERE " type-cond " AND " schema-cond))]
+              [(equal? dbms "Oracle")
+               (let* ([schema-cond
+                       (case schema
+                         ((search-or-current current)
+                          "owner = sys_context('userenv', 'current_schema')")
+                         ((search)
+                          (no-search)))])
+                 (string-append "SELECT table_name AS name FROM sys.all_tables "
+                                "WHERE " schema-cond
+                                "UNION "
+                                "SELECT view_name AS name FROM sys.all_views "
+                                "WHERE " schema-cond))]
+              [else
+               (uerror fsym "not supported for this DBMS")])])
+        (let* ([result (query fsym stmt)]
+               [rows (rows-result-rows result)])
+          (for/list ([row (in-list rows)])
+            (vector-ref row 0)))))
 
     #|
     (define/public (get-tables fsym catalog schema table)

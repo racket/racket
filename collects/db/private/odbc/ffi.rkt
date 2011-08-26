@@ -116,10 +116,12 @@
 Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
 |#
 
-(define-ffi-definer define-odbc
+(define odbc-lib
   (case (system-type)
     ((windows) (ffi-lib "odbc32.dll"))
     (else (ffi-lib "libodbc" '("1" #f)))))
+
+(define-ffi-definer define-odbc odbc-lib)
 
 (define-odbc SQLAllocHandle
   (_fun (type : _sqlsmallint)
@@ -155,6 +157,18 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (#f : _pointer)
         -> (status : _sqlreturn)
         -> (values status value)))
+
+(define SQLGetInfo-string
+  (get-ffi-obj "SQLGetInfo" odbc-lib
+               (_fun (handle info) ::
+                     (handle : _sqlhdbc)
+                     (info : _sqlusmallint)
+                     (value : _bytes = (make-bytes 250))
+                     (250 : _sqlsmallint)
+                     (len : (_ptr o _sqlsmallint))
+                     -> (status : _sqlreturn)
+                     -> (values status
+                                (bytes->string/utf-8 value #f 0 len)))))
 
 (define-odbc SQLGetFunctions
   (_fun (handle : _sqlhdbc)
