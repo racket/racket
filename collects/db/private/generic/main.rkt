@@ -3,7 +3,7 @@
          "sql-data.rkt"
          "functions.rkt")
 (provide (struct-out simple-result)
-         (struct-out recordset)
+         (struct-out rows-result)
          statement-binding?
          (except-out (all-from-out "sql-data.rkt")
                      make-sql-bits/bytes

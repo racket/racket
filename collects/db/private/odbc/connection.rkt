@@ -54,7 +54,7 @@
                         (check-valid-tx-status fsym)
                         (query1 fsym stmt)))])
         (statement:after-exec stmt*)
-        (cond [(pair? dvecs) (recordset (map field-dvec->field-info dvecs) rows)]
+        (cond [(pair? dvecs) (rows-result (map field-dvec->field-info dvecs) rows)]
               [else (simple-result '())])))
 
     (define/private (query1 fsym stmt)
@@ -534,8 +534,8 @@
               (handle-status fsym (SQLFreeHandle SQL_HANDLE_STMT stmt) stmt)
               (values result-dvecs rows)))))
       ;; Layout is: #(catalog schema table table-type remark)
-      (recordset (map field-dvec->field-info dvecs)
-                 rows))
+      (rows-result (map field-dvec->field-info dvecs)
+                   rows))
     |#
 
     ;; Handler

@@ -39,17 +39,17 @@
     (define/public (get-result-types)
       (send dbsystem describe-typeids result-typeids))
 
-    ;; checktype is either #f, 'recordset, or exact-positive-integer
+    ;; checktype is either #f, 'rows, or exact-positive-integer
     (define/public (check-results fsym checktype obj)
-      (cond [(eq? checktype 'recordset)
+      (cond [(eq? checktype 'rows)
              (unless (positive? (get-result-count))
                (when close-on-exec? (finalize))
-               (error fsym "expected statement producing recordset, got ~e" obj))]
+               (error fsym "expected statement producing rows, got ~e" obj))]
             [(exact-positive-integer? checktype)
              (unless (= (get-result-count) checktype)
                (when close-on-exec? (finalize))
                (error fsym
-                      "expected statement producing recordset with ~a ~a, got ~e"
+                      "expected statement producing rows with ~a ~a, got ~e"
                       checktype
                       (if (= checktype 1) "column" "columns")
                       obj))]

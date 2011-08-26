@@ -283,7 +283,7 @@
         [(struct RowDescription (field-dvecs))
          (let* ([rows (query1:data-loop fsym)])
            (query1:expect-close-complete fsym)
-           (vector 'recordset field-dvecs rows))]
+           (vector 'rows field-dvecs rows))]
         [(struct NoData ())
          (let* ([command (query1:expect-completion fsym)])
            (query1:expect-close-complete fsym)
@@ -318,7 +318,7 @@
 
     (define/private (query1:process-result fsym result)
       (match result
-        [(vector 'recordset field-dvecs rows)
+        [(vector 'rows field-dvecs rows)
          (let* ([type-reader-v
                  (list->vector (query1:get-type-readers fsym field-dvecs))]
                 [convert-row!
@@ -329,7 +329,7 @@
                                 row
                                 type-reader-v))])
            (for-each convert-row! rows)
-           (recordset (map field-dvec->field-info field-dvecs) rows))]
+           (rows-result (map field-dvec->field-info field-dvecs) rows))]
         [(vector 'command command)
          (simple-result command)]))
 

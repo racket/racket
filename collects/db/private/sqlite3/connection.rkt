@@ -42,7 +42,7 @@
                         (check-valid-tx-status fsym)
                         (query1 fsym stmt)))])
         (statement:after-exec stmt)
-        (cond [(pair? info) (recordset info rows)]
+        (cond [(pair? info) (rows-result info rows)]
               [else (simple-result '())])))
 
     (define/private (query1 fsym stmt)
