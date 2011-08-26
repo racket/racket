@@ -21,7 +21,7 @@
                  ((i : Integer '(1 2 3))
                   (j : Char "abc")
                   #:when (odd? i)
-                  (k : True #(#t #t))
+                  (k : Boolean #(#t #t))
                   #:when k)
                  (display (list i j k)))))
        "(1 a #t)(1 a #t)(3 c #t)(3 c #t)")
