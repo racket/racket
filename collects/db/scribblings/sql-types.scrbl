@@ -330,6 +330,9 @@ The @tt{DATE}, @tt{TIME} (@tt{WITH TIME ZONE} and without),
 @tt{TIMESTAMP} (@tt{WITH TIME ZONE} and without), and @tt{INTERVAL}
 SQL types are represented by the following structures.
 
+See also @secref["datetime-util"] for more functions on datetime
+values.
+
 @defstruct*[sql-date
             ([year exact-integer?]
              [month (integer-in 0 12)]
@@ -390,39 +393,6 @@ SQL types are represented by the following structures.
  (make-sql-timestamp 1969 12 31 19 0 0 0 #f)]
 ]
 
-@deftogether[[
-@defproc[(sql-datetime->srfi-date [t (or/c sql-date? sql-time? sql-timestamp?)])
-         srfi:date?]
-@defproc[(srfi-date->sql-date [d srfi:date?])
-         sql-date?]
-@defproc[(srfi-date->sql-time [d srfi:date?])
-         sql-time?]
-@defproc[(srfi-date->sql-time-tz [d srfi:date?])
-         sql-time?]
-@defproc[(srfi-date->sql-timestamp [d srfi:date?])
-         sql-timestamp?]
-@defproc[(srfi-date->sql-timestamp-tz [d srfi:date?])
-         sql-timestamp?]]]{
-
-  Converts between this library's date and time values and SRFI 19's
-  date values (see @racketmodname[srfi/19]). SRFI dates store more
-  information than SQL dates and times, so converting a SQL time to a
-  SRFI date, for example, puts zeroes in the year, month, and day
-  fields.
-
-@(examples/results
-  [(sql-datetime->srfi-date
-    (query-value pgc "select time '7:30'"))
-   (sql-datetime->srfi-date (make-sql-time 7 30 0 0 #f))]
-  [(sql-datetime->srfi-date
-    (query-value pgc "select date '25-dec-1980'"))
-   (sql-datetime->srfi-date
-    (make-sql-date 1980 12 25))]
-  [(sql-datetime->srfi-date
-    (query-value pgc "select timestamp 'epoch'"))
-   (sql-datetime->srfi-date (make-sql-timestamp 1970 1 1 0 0 0 0 #f))])
-}
-
 @defstruct*[sql-interval
             ([years exact-integer?]
              [months exact-integer?]
@@ -467,12 +437,6 @@ SQL types are represented by the following structures.
 
   Returns @racket[#t] if @racket[x] is a @racket[sql-interval] value
   where the @racket[years] and @racket[months] fields are zero.
-}
-
-@defproc[(sql-day-time-interval->seconds [interval sql-day-time-interval?])
-         rational?]{
-
-  Returns the length of @racket[interval] in seconds.
 }
 
 @defproc[(sql-interval->sql-time [interval sql-interval?]
