@@ -69,23 +69,26 @@
       (let ([f (get-file prompt parent-win directory #f
                          (default-extension) style (default-filters))])
         (and f (or (not filter) (filter-match? filter f filter-msg))
-             (let ([f (normalize-path f)])
-               (cond [(directory-exists? f)
-                      (message-box (string-constant error)
-                                   (string-constant that-is-dir-name))
-                      #f]
-                     [(not (file-exists? f))
-                      (message-box (string-constant error) 
-                                   (string-constant file-dne))
-                      #f]
-                     [else f]))))))
+             (cond [(directory-exists? f)
+                    (message-box (string-constant error)
+                                 (string-constant that-is-dir-name))
+                    #f]
+                   [(not (file-exists? f))
+                    (message-box (string-constant error) 
+                                 (string-constant file-dne))
+                    #f]
+                   [else (normalize-path f)])))))
+  
+  (define-syntax-rule
+    (define/rename id exp)
+    (define id (procedure-rename exp 'id)))
   
   ;; external interfaces to file functions
   
-  (define std-put-file    (*put-file '()))
-  (define std-get-file    (*get-file '()))
-  (define common-put-file (*put-file '(common)))
-  (define common-get-file (*get-file '(common)))
+  (define/rename std-put-file    (*put-file '()))
+  (define/rename std-get-file    (*get-file '()))
+  (define/rename common-put-file (*put-file '(common)))
+  (define/rename common-get-file (*get-file '(common)))
   (define common-get-file-list void)
   
   (define -put-file
