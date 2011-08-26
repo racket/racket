@@ -67,7 +67,15 @@
        #:env (current-env)
        (build-path log-dir "src" "build" "make-install")
        (make-path) 
-       (list "-j" (number->string (number-of-cpus)) "install")))))
+       (list "-j" (number->string (number-of-cpus)) "install"))))
+  (run/collect/wait/log
+   #:timeout (current-make-install-timeout-seconds)
+   #:env (current-env)
+   (build-path log-dir "src" "build" "archive")
+   (tar-path) 
+   (list "-czvf" 
+         (path->string (revision-trunk.tgz rev))
+         (path->string trunk-dir))))
 
 (define (call-with-temporary-directory thunk)
   (define tempdir (symbol->string (gensym 'tmpdir)))

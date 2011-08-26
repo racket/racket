@@ -137,6 +137,15 @@
        (tr ([class "author"]) (td "Author:") (td ,author))
        (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
        (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
+       ,@(if (file-exists? (revision-trunk.tgz (current-rev)))
+             `((tr ([class "date"])
+                   (td "Archive") 
+                   (td (a 
+                        ([href
+                          ,(format "/builds/~a/trunk.tgz" 
+                                   (current-rev))])
+                        "trunk.tgz"))))
+             `())
        (tr ([class "hash"]) 
            (td "Diff:") 
            (td (a ([href ,(log->url gp)]) 
@@ -200,46 +209,57 @@
      (define url (format "http://svn.racket-lang.org/view?view=rev&revision=~a" num))
      (define cg-id (symbol->string (gensym 'changes)))
      (define ccss-id (symbol->string (gensym 'changes)))
-     `(table ([class "data"])
-             (tr ([class "author"]) (td "Author:") (td ,author))
-             (tr ([class "date"]) 
-                 (td "Build Start:")
-                 (td ,bdate/s))
-             (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
-             (tr ([class "rev"])
-                 (td "Commit:")
-                 (td (a ([href ,url]) ,(number->string num))))
-             (tr ([class "date"])
-                 (td "Date:")
-                 (td ,(svn-date->nice-date date)))
-             (tr ([class "msg"]) (td "Log:") (td (pre ,msg)))
-             (tr ([class "changes"]) 
-                 (td 
-                  (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" cg-id ccss-id)])
-                     (span ([id ,cg-id]) 9658) "Changes:"))
-                 (td
-                  (div ([id ,ccss-id]
-                        [style "display: none;"])
-                       ,@(map (match-lambda
-                                [(struct svn-change (action path))
-                                 `(p ([class "output"])
-                                     ,(symbol->string action) " " 
-                                     ,(if (regexp-match #rx"^/trunk/collects" path)
-                                          (local [(define path-w/o-trunk
-                                                    (apply build-path (list-tail (explode-path path) 2)))
-                                                  (define html-path
-                                                    (if (looks-like-directory? path)
-                                                        (format "~a/" path-w/o-trunk)
-                                                        path-w/o-trunk))
-                                                  (define path-url
-                                                    (path->string* html-path))
-                                                  (define path-tested?
-                                                    #t)]
-                                            (if path-tested?
-                                                `(a ([href ,path-url]) ,path)
-                                                path))
-                                          path))])
-                              changes)))))]
+     `(table
+       ([class "data"])
+       (tr ([class "author"]) (td "Author:") (td ,author))
+       (tr ([class "date"]) 
+           (td "Build Start:")
+           (td ,bdate/s))
+       (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
+       (tr ([class "rev"])
+           (td "Commit:")
+           (td (a ([href ,url]) ,(number->string num))))
+       (tr ([class "date"])
+           (td "Date:")
+           (td ,(svn-date->nice-date date)))
+       (tr ([class "msg"]) (td "Log:") (td (pre ,msg)))
+       (tr ([class "changes"]) 
+           (td 
+            (a ([href 
+                 ,(format
+                   "javascript:TocviewToggle(\"~a\",\"~a\");"
+                   cg-id ccss-id)])
+               (span ([id ,cg-id]) 9658) "Changes:"))
+           (td
+            (div 
+             ([id ,ccss-id]
+              [style "display: none;"])
+             ,@(map 
+                (match-lambda
+                  [(struct svn-change (action path))
+                   `(p ([class "output"])
+                       ,(symbol->string action) " " 
+                       ,(if (regexp-match
+                             #rx"^/trunk/collects"
+                             path)
+                            (local 
+                              [(define path-w/o-trunk
+                                 (apply build-path
+                                        (list-tail
+                                         (explode-path path) 2)))
+                               (define html-path
+                                 (if (looks-like-directory? path)
+                                     (format "~a/" path-w/o-trunk)
+                                     path-w/o-trunk))
+                               (define path-url
+                                 (path->string* html-path))
+                               (define path-tested?
+                                 #t)]
+                              (if path-tested?
+                                  `(a ([href ,path-url]) ,path)
+                                  path))
+                            path))])
+                changes)))))]
     [else
      '" "]))
 

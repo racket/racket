@@ -23,7 +23,8 @@
         (create-archive tmp-path (revision-dir rev))
         (rename-file-or-directory tmp-path archive-path)
         (archive-directory (revision-log-dir rev))
-        (archive-directory (revision-analyze-dir rev)))))
+        (archive-directory (revision-analyze-dir rev))
+        (safely-delete-directory (revision-trunk.tgz rev)))))
 
 (define mode (make-parameter 'single))
 

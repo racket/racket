@@ -234,7 +234,8 @@
 
 (define (trunk-path pth)
   (define rev (current-rev))
-  ((rebase-path (revision-log-dir rev) (revision-trunk-dir rev)) pth))
+  ((rebase-path (revision-log-dir rev) (revision-trunk-dir rev))
+   pth))
 
 (define (analyze-path pth dir?)
   (define rev (current-rev))

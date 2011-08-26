@@ -24,6 +24,8 @@
 
 (define make-path
   (make-parameter "/usr/bin/make"))
+(define tar-path
+  (make-parameter "/bin/tar"))
 
 (define Xvfb-path
   (make-parameter "/usr/bin/Xvfb"))
@@ -60,6 +62,8 @@
 
 (define (revision-trunk-dir rev)
   (build-path (revision-dir rev) "trunk"))
+(define (revision-trunk.tgz rev)
+  (build-path (revision-dir rev) "trunk.tgz"))
 
 (define (revision-commit-msg rev)
   (build-path (revision-dir rev) "commit-msg"))
@@ -101,6 +105,7 @@
  [plt-data-directory (-> path?)]
  [plt-future-build-directory (-> path?)]
  [drdr-directory (parameter/c path-string?)]
+ [tar-path (parameter/c (or/c false/c string?))]
  [make-path (parameter/c (or/c false/c string?))]
  [Xvfb-path (parameter/c (or/c false/c string?))]
  [vncviewer-path (parameter/c (or/c false/c string?))] 
@@ -120,5 +125,6 @@
  [revision-log-dir (exact-nonnegative-integer? . -> . path?)]
  [revision-analyze-dir (exact-nonnegative-integer? . -> . path-string?)]
  [revision-trunk-dir (exact-nonnegative-integer? . -> . path?)]
+ [revision-trunk.tgz (exact-nonnegative-integer? . -> . path?)]
  [revision-archive (exact-nonnegative-integer? . -> . path?)]
  [path->revision (path-string? . -> . exact-nonnegative-integer?)])
