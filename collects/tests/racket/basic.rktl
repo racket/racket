@@ -180,7 +180,7 @@
 (err/rt-test (set-mcar! (cons 1 4) 4))
 (err/rt-test (set-mcdr! (cons 1 4) 4))
 
-(define (box-tests box unbox box? set-box! set-box!-name unbox-name)
+(define (box-tests box unbox box? set-box! set-box!-name unbox-name 2nd-arg?)
   (define b (box 5))
   (test 5 unbox b)
   (when set-box!
@@ -189,15 +189,25 @@
   (test #t box? b)
   (test #f box? 5)
   (arity-test box 1 1)
-  (arity-test unbox 1 1)
+  (arity-test unbox 1 (if 2nd-arg? 2 1))
   (arity-test box? 1 1)
   (when set-box!
     (arity-test set-box! 2 2))
   (err/rt-test (unbox 8))
   (when set-box!
     (err/rt-test (set-box! 8 8))))
-(box-tests box unbox box? set-box! 'set-box! 'unbox)
-(box-tests make-weak-box weak-box-value weak-box? #f #f 'weak-box-value)
+(box-tests box unbox box? set-box! 'set-box! 'unbox #f)
+(box-tests make-weak-box weak-box-value weak-box? #f #f 'weak-box-value #t)
+
+;; test clearing weak boxes
+(let* ([s (gensym)]
+       [b (make-weak-box s)])
+  (test s weak-box-value b)
+  (test s weak-box-value b 123)
+  (set! s 'something-else)
+  (collect-garbage)
+  (test #f weak-box-value b)
+  (test 123 weak-box-value b 123))
 
 (test '(x y) append '(x) '(y))
 (test '(a b c d) append '(a) '(b c d))
