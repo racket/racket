@@ -46,7 +46,7 @@
                      ;; do we report multiple errors
                      [delay-errors? #t]
                      ;; do we print the fully-expanded syntax?
-                     [print-syntax? #t]
+                     [print-syntax? #f]
                      ;; this parameter is just for printing types
                      ;; this is a parameter to avoid dependency issues
                      [current-type-names
