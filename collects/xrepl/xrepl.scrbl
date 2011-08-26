@@ -451,9 +451,19 @@ The rationale for this is that @racketidfont{^} always refers to the
 last @emph{printed} result, @racketidfont{^^} to the one before that,
 etc.
 
-These bindings are made available only if they are not already defined,
-and if they are not modified.  This means that if you have code that
-uses these names, it will continue to work as usual.
+The bindings are made available only if they are not already defined.
+This means that if you have code that uses these names, it will continue
+to work as usual.
+
+The bindings are identifier macros that expand to the literal saved
+values; so referring to a saved value that is missing (because not
+enough values were shown) raises a syntax error.  In addition, the
+values are held in a @tech{weak reference}, so they can disappear after
+a garbage-collection.
+
+Note that this facility can be used to ``transfer'' values from one
+namespace to another---but beware of struct values that might come from
+a different instantiation of a module.
 
 @; ---------------------------------------------------------------------
 @section{Hacking XREPL}

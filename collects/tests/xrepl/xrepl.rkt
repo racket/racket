@@ -87,6 +87,9 @@
   4
   -> «(list ^ ^^ ^^^ ^^^^)»
   '(4 3 2 1)
+  -> «(collect-garbage)»
+  -> «^»
+  ; ^: saved value #1 was garbage-collected [,bt for context]
   -> «(module foo racket (define x 123))»
   -> «,en foo»
   'foo> «x»

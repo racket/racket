@@ -49,7 +49,12 @@
             [else (err "unknown name pattern for a saved-value reference")]))
     (unless (pair? saved)          (err "no saved values, yet"))
     (when (n . > . (length saved)) (err "no ~a saved values, yet" n))
-    #`'#,(list-ref saved (sub1 n)))
+    ;; the values are either `#f', or a weak box holding the value
+    (define r
+      (let ([b (list-ref saved (sub1 n))])
+        (and b (or (weak-box-value b)
+                   (err "saved value #~a was garbage-collected" n)))))
+    #`'#,r)
   (syntax-case stx (set!)
     [(set! id . xs) (raise-syntax-error 'set! "cannot set history reference")]
     [(id . xs) (datum->syntax stx (cons (ref #'id) #'xs) stx)]

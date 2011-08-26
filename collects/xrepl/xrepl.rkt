@@ -1198,7 +1198,8 @@
 ;; saved interaction values (can be #f to disable saving)
 (define saved-values (make-parameter '()))
 (define (save-values! xs)
-  (let ([xs (filter (λ (x) (not (void? x))) xs)]) ; don't save void values
+  (let* ([xs (filter (λ (x) (not (void? x))) xs)] ; don't save void values
+         [xs (map (λ (x) (and x (make-weak-box x))) xs)]) ; save weakly
     (unless (null? xs)
       ;; the order is last, 2nd-to-last, ..., same from prev interactions
       ;; the idea is that `^', `^^', etc refer to the values as displayed
