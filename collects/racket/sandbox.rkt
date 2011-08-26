@@ -6,7 +6,8 @@
          racket/string
          syntax/moddep
          racket/gui/dynamic
-         planet/config)
+         planet/config
+         setup/dirs)
 
 (provide gui?
          sandbox-init-hook
@@ -891,6 +892,7 @@
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
        (read ,(find-system-path 'links-file))
+       (read ,(find-lib-dir))
        ,@(compute-permissions allow)
        ,@(sandbox-path-permissions))]
     ;; general info
