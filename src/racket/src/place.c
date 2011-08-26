@@ -1030,7 +1030,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           return o;
         }
       }
-      else
+      else if (can_raise_exn)
         bad_place_message(so);
       break;
     case scheme_input_port_type:
@@ -1040,9 +1040,6 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         if(scheme_get_port_socket(so, &fd)) {
           if (copy) {
             new_so = make_serialized_tcp_fd(fd, so->type);
-          }
-          else {
-            bad_place_message(so);
           }
         }
         else if (SCHEME_TRUEP(scheme_file_stream_port_p(1, &so))) {
@@ -1062,13 +1059,11 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             sffd->type = so->type;
             new_so = (Scheme_Object *) sffd;
           }
-          else {
+          else if (can_raise_exn)
             bad_place_message(so);
-          }
         }
-        else {
+        else if (can_raise_exn)
           bad_place_message(so);
-        }
       }
       break;
     case scheme_serialized_tcp_fd_type:
@@ -2084,9 +2079,14 @@ static void places_message_cleanup_worker(Scheme_Object **pso, Scheme_Hash_Table
         Scheme_Object *out;
         int fd   = ((Scheme_Simple_Object *) so)->u.two_int_val.int2;
 # ifdef USE_WINSOCK_TCP
-        CloseHandle(fd);
-# else
         close(fd);
+# else
+        {
+          intptr_t rc;
+          do {
+            rc = close(fd);
+          } while (rc == -1 && errno == EINTR);
+        }
 # endif
       }
       break;
@@ -2097,7 +2097,12 @@ static void places_message_cleanup_worker(Scheme_Object **pso, Scheme_Hash_Table
 #ifdef WINDOWS_FILE_HANDLES
         CloseHandle((HANDLE)sffd->fd);
 #else
-        close(sffd->fd);
+        {
+          intptr_t rc;
+          do {
+            rc = close(sffd->fd);
+          } while (rc == -1 && errno == EINTR);
+        }
 #endif
       }
       break;

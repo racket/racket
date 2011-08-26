@@ -1185,22 +1185,6 @@ void scheme_collapse_win_fd(void *fds)
 #endif
 }
 
-intptr_t scheme_dup_socket(intptr_t fd) {
-#ifdef USE_WINSOCK_TCP
-  intptr_t nsocket;
-  WSAPROTOCOL_INFO protocolInfo;
-  WSADuplicateSocket(fd, GetCurrentProcessId(), &protocolInfo);
-  nsocket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
-  return nsocket;
-#else
-  intptr_t nfd;
-  do {
-    nfd = dup(fd);
-  } while (nfd == -1 && errno == EINTR);
-  return nfd;
-#endif
-}
-
 intptr_t scheme_dup_file(intptr_t fd) {
 #ifdef WINDOWS_FILE_HANDLES
   HANDLE  newhandle;

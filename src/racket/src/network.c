@@ -2509,6 +2509,22 @@ void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
   }
 }
 
+intptr_t scheme_dup_socket(intptr_t fd) {
+#ifdef USE_WINSOCK_TCP
+  intptr_t nsocket;
+  WSAPROTOCOL_INFO protocolInfo;
+  WSADuplicateSocket(fd, GetCurrentProcessId(), &protocolInfo);
+  nsocket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
+  return nsocket;
+#else
+  intptr_t nfd;
+  do {
+    nfd = dup(fd);
+  } while (nfd == -1 && errno == EINTR);
+  return nfd;
+#endif
+}
+
 /*========================================================================*/
 /*                                 UDP                                    */
 /*========================================================================*/
