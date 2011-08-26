@@ -539,6 +539,16 @@
   (send t end-edit-sequence)
   (send t undo)
   (st "" t get-text))
+
+;; ----------------------------------------
+;; undo and clickbacks
+
+(let ([t (new text%)])
+  (send t set-max-undo-history 100)
+  (send t insert "abcdef")
+  (send t set-clickback 1 3 void)
+  (send t delete 0 5)
+  (send t undo))
   
 ;; ----------------------------------------
 
