@@ -1076,6 +1076,24 @@
          (begin (printf "; Syntax set\n") (current-syntax stx))
          (cmderror "internal error: ~s ~s" stx (syntax? stx)))])))
 
+(defautoload macro-debugger/analysis/check-requires show-requires)
+(defcommand (check-requires ckreq) "[<simple-module-spec>]"
+  "check the `require's of a module"
+  ["Uses `macro-debugger/analysis/check-requires', see the docs for more"
+   "information."]
+  (define mod (syntax->datum (getarg 'modspec #:default here-mod-or-eof)))
+  (define rs (show-requires mod))
+  (wrapped-output
+   (for ([decision (in-list '(keep bypass drop))])
+     (define all (filter (λ (x) (eq? decision (car x))) rs))
+     (unless (null? all)
+       (define names (map cadr all))
+       ;; doesn't print the phase number (third element of all members)
+       (printf "; ~a: ~a"
+               (string-titlecase (symbol->string decision)) (car names))
+       (for ([n (in-list (cdr names))]) (printf ", ~a" n))
+       (printf ".\n")))))
+
 ;; ----------------------------------------------------------------------------
 ;; dynamic log output control
 
