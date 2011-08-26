@@ -451,9 +451,12 @@ The rationale for this is that @racketidfont{^} always refers to the
 last @emph{printed} result, @racketidfont{^^} to the one before that,
 etc.
 
-The bindings are made available only if they are not already defined.
-This means that if you have code that uses these names, it will continue
-to work as usual.
+In addition to these names, XREPL also binds @racketidfont{$1},
+@racketidfont{$2}, ..., @racketidfont{$5} to the same references, so you
+can choose the style that you like.  All of these bindings are made
+available only if they are not already defined.  This means that if you
+have code that uses these names, it will continue to work as usual (and
+it will shadow the saved value binding).
 
 The bindings are identifier macros that expand to the literal saved
 values; so referring to a saved value that is missing (because not

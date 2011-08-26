@@ -3,10 +3,10 @@
 ;; ----------------------------------------------------------------------------
 ;; customization
 
-(define toplevel-prefix     (make-parameter "-")) ; when not in a module
-(define saved-values-number (make-parameter 5))
-(define saved-values-char   (make-parameter #\^))
-(define wrap-column         (make-parameter 79))
+(define toplevel-prefix       (make-parameter "-")) ; when not in a module
+(define saved-values-number   (make-parameter 5))
+(define saved-values-patterns (make-parameter '("^" "$~a")))
+(define wrap-column           (make-parameter 79))
 ;; TODO: when there's a few more of these, make them come from the prefs
 
 ;; ----------------------------------------------------------------------------
@@ -1209,16 +1209,22 @@
 
 (define last-saved-names+state (make-parameter '(#f #f #f)))
 (define (get-saved-names)
-  (define last      (last-saved-names+state))
-  (define last-num  (cadr last))
-  (define last-char (caddr last))
-  (define cur-num   (saved-values-number))
-  (define cur-char  (saved-values-char))
-  (if (and (equal? last-num cur-num) (equal? last-char cur-char))
+  (define last       (last-saved-names+state))
+  (define last-num   (cadr last))
+  (define last-ptrns (caddr last))
+  (define cur-num    (saved-values-number))
+  (define cur-ptrns  (saved-values-patterns))
+  (if (and (equal? last-num cur-num) (equal? last-ptrns cur-ptrns))
     (car last)
-    (let ([new (for/list ([i (in-range (saved-values-number))])
-                 (string->symbol (make-string (add1 i) (saved-values-char))))])
-      (last-saved-names+state (list new cur-num cur-char))
+    (let ([new
+           (for*/list ([i (in-range 1 (add1 (saved-values-number)))]
+                       [p (in-list cur-ptrns)])
+             (string->symbol
+              (cond
+                [(= 1 (string-length p)) (make-string i (string-ref p 0))]
+                [(regexp-match? #rx"^[^~]*~a[^~]*$" p) (format p i)]
+                [else (error 'saved-names "bad name pattern: ~e" p)])))])
+      (last-saved-names+state (list new cur-num cur-ptrns))
       new)))
 
 ;; see comment at the top of this module for the below hair

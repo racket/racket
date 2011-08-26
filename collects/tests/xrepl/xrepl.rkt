@@ -87,6 +87,8 @@
   4
   -> «(list ^ ^^ ^^^ ^^^^)»
   '(4 3 2 1)
+  -> «(list $1 $2 $3 $4 $5)»
+  '((4 3 2 1) 4 3 2 1)
   -> «(collect-garbage)»
   -> «^»
   ; ^: saved value #1 was garbage-collected [,bt for context]
