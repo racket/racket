@@ -166,5 +166,20 @@
   (test #t symbol? (list-ref (list something) (random 1))))
      
 ;; ----------------------------------------
+;; `weak-box-value' and `ephemeron-value' optional result:
+
+(let ()
+  (define stuff
+    (for/list ([n 100])
+      (cons (make-weak-box (gensym))
+            (make-ephemeron (gensym) 10))))
+  (collect-garbage)
+  (define n (for/fold ([n 0]) ([p stuff])
+              (+ n
+                   (or (weak-box-value (car p) 0) 1)
+                   (or (ephemeron-value (cdr p) 0) 1))))
+  (test #t < n 50))
+     
+;; ----------------------------------------
 
 (report-errs)

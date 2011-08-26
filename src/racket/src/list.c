@@ -641,7 +641,7 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant("weak-box-value",
 			     scheme_make_immed_prim(weak_box_value,
 						    "weak-box-value",
-						    1, 1),
+						    1, 2),
 			     env);
   scheme_add_global_constant("weak-box?",
 			     scheme_make_folding_prim(weak_boxp,
@@ -657,7 +657,7 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant("ephemeron-value",
 			     scheme_make_immed_prim(ephemeron_value,
 						    "ephemeron-value",
-						    1, 1),
+						    1, 2),
 			     env);
   scheme_add_global_constant("ephemeron?",
 			     scheme_make_folding_prim(ephemeronp,
@@ -3160,7 +3160,7 @@ static Scheme_Object *weak_box_value(int argc, Scheme_Object *argv[])
 
   o = SCHEME_BOX_VAL(argv[0]);
   if (!o)
-    return scheme_false;
+    return ((argc > 1) ? argv[1] : scheme_false);
   else
     return o;
 }
@@ -3414,7 +3414,7 @@ static Scheme_Object *ephemeron_value(int argc, Scheme_Object **argv)
   v = scheme_ephemeron_value(argv[0]);
 
   if (!v)
-    return scheme_false;
+    return ((argc > 1) ? argv[1] : scheme_false);
   else
     return v;
 }

@@ -184,15 +184,15 @@
   (define b (box 5))
   (test 5 unbox b)
   (when set-box!
-	(set-box! b 6)
-	(test 6 unbox b))
+    (set-box! b 6)
+    (test 6 unbox b))
   (test #t box? b)
   (test #f box? 5)
   (arity-test box 1 1)
   (arity-test unbox 1 1)
   (arity-test box? 1 1)
   (when set-box!
-	(arity-test set-box! 2 2))
+    (arity-test set-box! 2 2))
   (err/rt-test (unbox 8))
   (when set-box!
     (err/rt-test (set-box! 8 8))))
