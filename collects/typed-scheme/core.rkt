@@ -31,11 +31,11 @@
            (;; pmb = #%plain-module-begin
             [(pmb . body2) new-mod]
             ;; perform the provide transformation from [Culpepper 07]
-            [transformed-body (remove-provides #'body2)]
+            [transformed-body (begin0 (remove-provides #'body2) (do-time "Removed provides"))]
             ;; add the real definitions of contracts on requires
-            [transformed-body (change-contract-fixups #'transformed-body)]
+            [transformed-body (begin0 (change-contract-fixups #'transformed-body) (do-time "Fixed contract ids"))]
             ;; potentially optimize the code based on the type information
-            [(optimized-body ...) (maybe-optimize #'transformed-body)]
+            [(optimized-body ...) (maybe-optimize #'transformed-body)] ;; has own call to do-time
             ;; add in syntax property on useless expression to draw check-syntax arrows
             [check-syntax-help (syntax-property
                                 (syntax-property
