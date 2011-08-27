@@ -2,6 +2,22 @@
 (require "private/drracket-test-util.rkt"
          framework)
 
+(parameterize ([current-security-guard
+                (make-security-guard
+                 (current-security-guard)
+                 (λ (who pth what)
+                   (when (member 'write what)
+                     (error who "Writing to the file system is not allowed"))
+                   (when (member 'delete what)
+                     (error who "Deleting files is not allowed")))
+                 void
+                 void)])
+  (fire-up-drscheme-and-run-tests 
+   (λ ()
+     (define drs-frame (wait-for-drscheme-frame))
+     (test:menu-select "File" "Close"))))
+
+#;
 (parameterize ([current-command-line-arguments '#()])
   (fire-up-drscheme-and-run-tests 
    (λ ()
