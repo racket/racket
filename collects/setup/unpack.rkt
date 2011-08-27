@@ -218,7 +218,7 @@
                                  (if (file-exists? path)
                                      (if (eq? kind 'file)
                                          #f
-                                         (open-output-file path 'truncate))
+                                         (open-output-file path #:exists 'truncate))
                                      (open-output-file path)))])
                    (when (and write? (not out))
                      (print-status (format "  skipping ~a; already exists" (pretty-name path))))
