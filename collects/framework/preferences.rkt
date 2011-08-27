@@ -89,7 +89,7 @@ the state transitions / contracts are:
     ;; first time reading this, check the file & unmarshall value, if
     ;; it's not there, use the default
     [(pref-default-set? p)
-     (let* (;; try to read the preferece from the preferences file
+     (let* (;; try to read the preference from the preferences file
             [v (read-pref-from-file p)]
             [v (if (eq? v none)
                  ;; no value read, take the default value
@@ -152,7 +152,7 @@ the state transitions / contracts are:
             value)]))
       ps values)
      ((preferences:low-level-put-preferences)
-      (map add-pref-prefix ps) 
+      (map add-pref-prefix ps)
       (map (λ (p value) (marshall-pref p value))
            ps
            values))
@@ -196,15 +196,15 @@ the state transitions / contracts are:
       (hash-set! callbacks
                  p 
                  (append 
-                  (hash-ref callbacks p (λ () null))
+                  (hash-ref callbacks p '())
                   (list new-cb)))
       (λ ()
         (hash-set!
          callbacks
          p
-         (let loop ([callbacks (hash-ref callbacks p (λ () null))])
+         (let loop ([callbacks (hash-ref callbacks p '())])
            (cond
-             [(null? callbacks) null]
+             [(null? callbacks) '()]
              [else 
               (let ([callback (car callbacks)])
                 (cond
@@ -216,7 +216,7 @@ the state transitions / contracts are:
 ;; check-callbacks : sym val -> void
 (define (check-callbacks p value)
   (let ([new-callbacks
-         (let loop ([callbacks (hash-ref callbacks p (λ () null))])
+         (let loop ([callbacks (hash-ref callbacks p '())])
            (cond
              [(null? callbacks) null]
              [else 
@@ -506,15 +506,22 @@ the state transitions / contracts are:
   (parameter/c ((listof symbol?) (listof any/c) . -> . any))
   put-preferences
   @{This parameter's value is called to save preference the preferences file.
-    Its interface should be just like mzlib's @racket[put-preferences].})
+    Its interface should be just like mzlib's @racket[put-preferences].
+    
+    The default value calls @racket[put-preferences] and, if there is an error,
+    then starts using a hash-table to save the preferences instead.
+    See also @racket[]})
  
  (parameter-doc
   preferences:low-level-get-preference
   (parameter/c (->* (symbol?) [(-> any)] any))
   get-preference
   @{This parameter's value is called to get a preference from the preferences
-    file. Its interface should be just like @racket[get-preference].})
- 
+    file. Its interface should be just like @racket[get-preference].
+    
+    The default value calls @racket[get-preferences] and, if there is an error,
+    then starts using a hash-table to save the preferences instead.})
+  
  (proc-doc/names
   preferences:snapshot? 
   (-> any/c boolean?)

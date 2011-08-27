@@ -521,8 +521,6 @@
                   lang
                   (or settings (send lang default-settings)))))))))
 
-  ;; preferences initialization
-
   (preferences:set-default 'drracket:online-compilation #t boolean?)
 
   (drr:set-default 'drracket:multi-file-search:recur? #t boolean?)

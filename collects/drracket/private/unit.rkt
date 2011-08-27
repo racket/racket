@@ -1689,9 +1689,7 @@ module browser threading seems wrong.
                      #t)])))))
       
       (define/override (make-root-area-container cls parent)
-        (let* ([saved-p (preferences:get 'drracket:module-browser-size-percentage)]
-               [saved-p2 (preferences:get 'drracket:logging-size-percentage)]
-               [_module-browser-parent-panel
+        (let* ([_module-browser-parent-panel
                 (super make-root-area-container 
                        (make-two-way-prefs-dragable-panel% panel:horizontal-dragable%
                                                            'drracket:module-browser-size-percentage)
@@ -1732,8 +1730,8 @@ module browser threading seems wrong.
           (send planet-status-parent-panel change-children (λ (l) (remq planet-status-panel l)))
           (unless (toolbar-shown?)
             (send transcript-parent-panel change-children (λ (l) '())))
-          (preferences:set 'drracket:module-browser-size-percentage saved-p)
-          (preferences:set 'drracket:logging-size-percentage saved-p2)
+          (send logger-outer-panel enable-two-way-prefs)
+          (send _module-browser-parent-panel enable-two-way-prefs)
           
           root))
       
@@ -4651,15 +4649,21 @@ module browser threading seems wrong.
                     (frame:basic-mixin
                      frame%))))))))))))))))))
   
+  (define-local-member-name enable-two-way-prefs)
   (define (make-two-way-prefs-dragable-panel% % pref-key)
     (class %
       (inherit get-percentages)
+
+      (define save-prefs? #f)
+      (define/public (enable-two-way-prefs) (set! save-prefs? #t))
+      
       (define/augment (after-percentage-change)
-        (let ([percentages (get-percentages)])
-          (when (and (pair? percentages)
-                     (pair? (cdr percentages))
-                     (null? (cddr percentages)))
-            (preferences:set pref-key (car percentages))))
+        (when save-prefs?
+          (let ([percentages (get-percentages)])
+            (when (and (pair? percentages)
+                       (pair? (cdr percentages))
+                       (null? (cddr percentages)))
+              (preferences:set pref-key (car percentages)))))
         (inner (void) after-percentage-change))
       (super-new)))
   
