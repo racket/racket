@@ -978,7 +978,7 @@ paths are checked for compatibility with old versions of Racket:
 
 @defproc[(put-preferences [names (listof symbol?)]
                           [vals list?]
-                          [locked-proc (path? . -> . any) (lambda (p) (error ....))]
+                          [locked-proc (or/c #f (path? . -> . any)) #f]
                           [filename (or/c #f path-string?) #f])
          void?]{
 
@@ -1004,7 +1004,8 @@ not already exist, it is created.
 
 If the write lock is already held, then
 @racket[locked-proc] is called with a single argument: the path of the lock
-file. The default @racket[locked-proc] reports an error; an alternative
+file. The default @racket[locked-proc] (used when the @racket[locked-proc] 
+argument is @racket[#f]) reports an error; an alternative
 thunk might wait a while and try again, or give the user the choice to
 delete the lock file (in case a previous update attempt encountered
 disaster and locks are implemented by the presence of the lock file).
