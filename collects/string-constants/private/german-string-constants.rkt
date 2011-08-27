@@ -56,7 +56,8 @@
  (bug-report-field-reproduce2 "reproduzieren")
  (bug-report-field-environment "Umgebung")
  (bug-report-field-docs-installed "Installierte Dokumentation")
- (bug-report-field-collections "Kollektionen")
+ (bug-report-field-collections "Collections")
+ (bug-report-field-links "Links")  ;; from 'raco link'
  (bug-report-field-human-language "Interaktionssprache")	;
  (bug-report-field-memory-use "Speicherverbrauch")
  (bug-report-field-version "Version")
