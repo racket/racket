@@ -975,7 +975,8 @@ following to the top of our model:
 
 We will use the following bindings from the @racketmodname[db]
 library: @racket[connection?], @racket[sqlite3-connect],
-@racket[query-exec], @racket[query-list], and @racket[query-value].
+@racket[table-exists?], @racket[query-exec], @racket[query-list], and
+@racket[query-value].
 
 The first thing we should do is decide on the relational structure of
 our model. We will use the following tables:
@@ -1011,7 +1012,7 @@ We can now write the code to initialize a @racket[blog] structure:
 (define (initialize-blog! home)
   (define db (sqlite3-connect #:database home #:mode 'create))
   (define the-blog (blog db))
-  (with-handlers ([exn? void])
+  (unless (table-exists? db "posts")
     (query-exec db
      (string-append
       "CREATE TABLE posts "
@@ -1019,7 +1020,8 @@ We can now write the code to initialize a @racket[blog] structure:
     (blog-insert-post!
      the-blog "First Post" "This is my first post")
     (blog-insert-post!
-     the-blog "Second Post" "This is another post")
+     the-blog "Second Post" "This is another post"))
+  (unless (table-exists? db "comments")
     (query-exec db
      "CREATE TABLE comments (pid INTEGER, content TEXT)")
     (post-insert-comment!
