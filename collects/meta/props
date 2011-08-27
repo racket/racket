@@ -608,6 +608,11 @@ path/s is either such a string or a list of them.
 "collects/data" responsible (ryanc samth)
 "collects/datalog" responsible (jay)
 "collects/db" responsible (ryanc)
+"collects/db/odbc.rkt" drdr:command-line #f
+"collects/db/private/odbc/connection.rkt" drdr:command-line #f
+"collects/db/private/odbc/dbsystem.rkt" drdr:command-line #f
+"collects/db/private/odbc/ffi.rkt" drdr:command-line #f
+"collects/db/private/odbc/main.rkt" drdr:command-line #f
 "collects/defaults" responsible (robby)
 "collects/deinprogramm" responsible (sperber)
 "collects/deinprogramm/contract/contract-test-display.rkt" drdr:command-line (gracket-text "-t" *)
