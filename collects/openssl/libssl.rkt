@@ -22,4 +22,4 @@
                         (lambda (x)
                           (set! libssl-load-fail-reason (exn-message x))
                           #f)])
-         (ffi-lib libssl-so '("" "1.0" "1.0.0a" "0.9.8b" "0.9.8" "0.9.7")))))
+         (ffi-lib libssl-so '("" "1.0" "1.0.0a" "0.9.8e" "0.9.8b" "0.9.8" "0.9.7")))))
