@@ -17,7 +17,6 @@
      (define drs-frame (wait-for-drscheme-frame))
      (test:menu-select "File" "Close"))))
 
-#;
 (parameterize ([current-command-line-arguments '#()])
   (fire-up-drscheme-and-run-tests 
    (λ ()
