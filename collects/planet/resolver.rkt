@@ -4,4 +4,5 @@
          resolve-planet-path
          install? 
          download?
-         get-planet-module-path/pkg)
+         get-planet-module-path/pkg
+         show-planet-resolver-invocations)

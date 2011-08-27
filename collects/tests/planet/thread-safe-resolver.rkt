@@ -1,9 +1,13 @@
 #lang racket/base
 (require planet/util
          rackunit
-         racket/port)
+         racket/port
+         planet/resolver)
 
 (define debug? #t)
+
+(when debug?
+  (show-planet-resolver-invocations #t))
 
 (define (install-one package-spec key)
   (define op (open-output-string))
