@@ -175,12 +175,6 @@ See the scribble documentation on the planet/resolver module.
   (case-lambda
     [(name) (void)]
     [(spec module-path stx load? orig-paramz)
-     (when (show-planet-resolver-invocations)
-       (eprintf "resolver invoked: ~s ~s\n" spec module-path)
-       (for ([x (in-list (continuation-mark-set->context (current-continuation-marks)))])
-         (eprintf "  ~s\n" x))
-       (eprintf "\n"))
-     
      ;; ensure these directories exist
      (try-make-directory* (PLANET-DIR))
      (try-make-directory* (CACHE-DIR))
@@ -190,8 +184,6 @@ See the scribble documentation on the planet/resolver module.
                      stx
                      load?
                      orig-paramz)]))
-
-(define show-planet-resolver-invocations (make-parameter #f))
 
 (require racket/tcp
          racket/port
@@ -223,8 +215,7 @@ See the scribble documentation on the planet/resolver module.
          get-planet-module-path/pkg
          download?
          install?
-         (struct-out exn:fail:planet)
-         show-planet-resolver-invocations)
+         (struct-out exn:fail:planet))
 
 ;; if #f, will not install packages and instead raise a exn:fail:install? error
 (define install? (make-parameter #t))
