@@ -637,6 +637,25 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
   return o;
 }
 
+void scheme_register_unbound_toplevel(Scheme_Comp_Env *env, Scheme_Object *id)
+{
+  Comp_Prefix *cp = env->prefix;
+
+  if (!cp->unbound) cp->unbound = scheme_null;
+
+  id = scheme_make_pair(id, cp->unbound);
+  cp->unbound = id;
+}
+
+void scheme_merge_undefineds(Scheme_Comp_Env *exp_env, Scheme_Comp_Env *env)
+{
+  if (exp_env->prefix->unbound) {
+    /* adding a list to env->prefix->unbound indicates a
+       phase-1 shift for the identifiers in the list: */
+    scheme_register_unbound_toplevel(env, exp_env->prefix->unbound);
+  }
+}
+
 Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *_tl, int flags)
 {
   Scheme_Toplevel *tl = (Scheme_Toplevel *)_tl;
@@ -1840,7 +1859,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     genv = env->genv;
     modname = NULL;
 
-    if (genv->module && genv->disallow_unbound) {
+    if (genv->module && (genv->disallow_unbound > 0)) {
       /* Free identifier. Maybe don't continue. */
       if (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) {
         scheme_wrong_syntax(((flags & SCHEME_SETTING) 
@@ -1906,7 +1925,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
 
   if (!modname && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) 
-      && (genv->module && genv->disallow_unbound)) {
+      && (genv->module && (genv->disallow_unbound > 0))) {
     /* Check for set! of unbound identifier: */    
     if (!scheme_lookup_in_table(genv->toplevel, (const char *)find_global_id)) {
       scheme_wrong_syntax(((flags & SCHEME_SETTING) 

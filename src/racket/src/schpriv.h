@@ -2143,6 +2143,7 @@ typedef struct Comp_Prefix
   MZTAG_IF_REQUIRED
   int num_toplevels, num_stxes;
   Scheme_Hash_Table *toplevels; /* buckets for toplevel/module variables */
+  Scheme_Object *unbound; /* identifiers (and lists of phase-1 shifted unbounds) that were unbound at compile */
   Scheme_Hash_Table *stxes;     /* syntax objects */
   Scheme_Object *uses_unsafe;   /* NULL, inspector, or hashtree of inspectors */
 } Comp_Prefix;
@@ -2506,14 +2507,18 @@ void scheme_delay_load_closure(Scheme_Closure_Data *data);
 
 Scheme_Object *scheme_compiled_void(void);
 
+int scheme_check_top_identifier_bound(Scheme_Object *symbol, Scheme_Env *genv, int disallow_unbound);
+
 Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 						  Scheme_Compile_Info *rec, int drec,
                                                   int imported);
+void scheme_register_unbound_toplevel(Scheme_Comp_Env *env, Scheme_Object *id);
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 					     Scheme_Compile_Info *rec, int drec);
 void scheme_register_unsafe_in_prefix(Scheme_Comp_Env *env,
                                       Scheme_Compile_Info *rec, int drec,
                                       Scheme_Env *menv);
+void scheme_merge_undefineds(Scheme_Comp_Env *exp_env, Scheme_Comp_Env *env);
 
 void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
                           Scheme_Env *exp_env, Scheme_Object *insp, 

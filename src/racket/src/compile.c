@@ -3280,6 +3280,8 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
 
   vec->type = (for_stx ? scheme_define_for_syntax_type : scheme_define_syntaxes_type);
 
+  scheme_merge_undefineds(exp_env, env);
+
   return vec;
 }
 
@@ -3544,6 +3546,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
     }
   }
   *_pos = i;
+
+  scheme_merge_undefineds(eenv, rhs_env);
 
   SCHEME_EXPAND_OBSERVE_EXIT_BIND(rec[drec].observer);
 }
@@ -5049,7 +5053,58 @@ datum_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info 
                                 0, 2);
 }
 
-static Scheme_Object *check_top(const char *when, Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int disallow_unbound)
+{
+  Scheme_Object *symbol = c;
+  Scheme_Object *modidx, *tl_id;
+  int bad;
+  
+  tl_id = scheme_tl_id_sym(genv, symbol, NULL, 0, NULL, NULL);
+  if (NOT_SAME_OBJ(tl_id, SCHEME_STX_SYM(symbol))) {
+    /* Since the module has a rename for this id, it's certainly defined. */
+    bad = 0;
+  } else {
+    modidx = scheme_stx_module_name(NULL, &symbol, scheme_make_integer(genv->phase), NULL, NULL, NULL, 
+                                    NULL, NULL, NULL, NULL, NULL);
+    if (modidx) {
+      /* If it's an access path, resolve it: */
+      if (genv->module
+          && SAME_OBJ(scheme_module_resolve(modidx, 1), genv->module->modname))
+        bad = 0;
+      else
+        bad = 1;
+    } else
+      bad = 1;
+
+    if (disallow_unbound) {
+      if (bad || !scheme_lookup_in_table(genv->toplevel, (const char *)SCHEME_STX_SYM(c))) {
+        GC_CAN_IGNORE const char *reason;
+        if (genv->phase == 1) {
+          reason = "unbound identifier in module (in phase 1, transformer environment)";
+          /* Check in the run-time environment */
+          if (scheme_lookup_in_table(genv->template_env->toplevel, (const char *)SCHEME_STX_SYM(c))) {
+            reason = ("unbound identifier in module (in the transformer environment, which does"
+                      " not include the run-time definition)");
+          } else if (genv->template_env->syntax
+                     && scheme_lookup_in_table(genv->template_env->syntax, (const char *)SCHEME_STX_SYM(c))) {
+            reason = ("unbound identifier in module (in the transformer environment, which does"
+                      " not include the macro definition that is visible to run-time expressions)");
+          }
+        } else if (genv->phase == 0)
+          reason = "unbound identifier in module";
+        else
+          reason = "unbound identifier in module (in phase %d)";
+        scheme_wrong_syntax(scheme_expand_stx_string, NULL, c, reason, genv->phase);
+      }
+    }
+  }
+
+  return !bad;
+}
+
+static Scheme_Object *check_top(Scheme_Object *orig_form, 
+                                Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec,
+                                int *_need_bound_check)
 {
   Scheme_Object *c, *form;
 
@@ -5065,47 +5120,10 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *orig_form, Sche
     scheme_wrong_syntax(NULL, NULL, form, NULL);
 
   if (env->genv->module) {
-    Scheme_Object *modidx, *symbol = c, *tl_id;
     int bad;
-
-    tl_id = scheme_tl_id_sym(env->genv, symbol, NULL, 0, NULL, NULL);
-    if (NOT_SAME_OBJ(tl_id, SCHEME_STX_SYM(symbol))) {
-      /* Since the module has a rename for this id, it's certainly defined. */
-    } else {
-      modidx = scheme_stx_module_name(NULL, &symbol, scheme_make_integer(env->genv->phase), NULL, NULL, NULL, 
-                                      NULL, NULL, NULL, NULL, NULL);
-      if (modidx) {
-	/* If it's an access path, resolve it: */
-	if (env->genv->module
-	    && SAME_OBJ(scheme_module_resolve(modidx, 1), env->genv->module->modname))
-	  bad = 0;
-	else
-	  bad = 1;
-      } else
-	bad = 1;
-
-      if (env->genv->disallow_unbound) {
-	if (bad || !scheme_lookup_in_table(env->genv->toplevel, (const char *)SCHEME_STX_SYM(c))) {
-          GC_CAN_IGNORE const char *reason;
-          if (env->genv->phase == 1) {
-            reason = "unbound identifier in module (in phase 1, transformer environment)";
-            /* Check in the run-time environment */
-            if (scheme_lookup_in_table(env->genv->template_env->toplevel, (const char *)SCHEME_STX_SYM(c))) {
-              reason = ("unbound identifier in module (in the transformer environment, which does"
-                        " not include the run-time definition)");
-            } else if (env->genv->template_env->syntax
-                       && scheme_lookup_in_table(env->genv->template_env->syntax, (const char *)SCHEME_STX_SYM(c))) {
-              reason = ("unbound identifier in module (in the transformer environment, which does"
-                        " not include the macro definition that is visible to run-time expressions)");
-            }
-          } else if (env->genv->phase == 0)
-            reason = "unbound identifier in module";
-          else
-            reason = "unbound identifier in module (in phase %d)";
-	  scheme_wrong_syntax(when, NULL, c, reason, env->genv->phase);
-	}
-      }
-    }
+    bad = !scheme_check_top_identifier_bound(c, env->genv, env->genv->disallow_unbound > 0);
+    if (_need_bound_check)
+      *_need_bound_check = bad;
   }
 
   return c;
@@ -5115,8 +5133,12 @@ static Scheme_Object *
 top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   Scheme_Object *c;
+  int need_bound_check = 0;
 
-  c = check_top(scheme_compile_stx_string, form, env, rec, drec);
+  c = check_top(form, env, rec, drec, &need_bound_check);
+
+  if (need_bound_check)
+    scheme_register_unbound_toplevel(env, c);
 
   c = scheme_tl_id_sym(env->genv, c, NULL, 0, NULL, NULL);
 
@@ -5137,8 +5159,15 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
 static Scheme_Object *
 top_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  Scheme_Object *c;
+  int need_bound_check = 0;
+
   SCHEME_EXPAND_OBSERVE_PRIM_TOP(erec[drec].observer);
-  check_top(scheme_expand_stx_string, form, env, erec, drec);
+  c = check_top(form, env, erec, drec, &need_bound_check);
+
+  if (need_bound_check)
+    return c; /* strip `#%top' prefix */
+
   return form;
 }
 

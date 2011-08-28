@@ -1973,16 +1973,23 @@ void scheme_unbound_global(Scheme_Bucket *b)
 
   if (home && home->module) {
     const char *errmsg;
-    char *phase, phase_buf[20];
+    char *phase, phase_buf[20], *phase_note = "";
     
     if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
-      errmsg = "reference to an identifier before its definition: %S in module: %D%s";
+      errmsg = "reference to an identifier before its definition: %S in module: %D%s%s";
     else
-      errmsg = "reference to an identifier before its definition: %S%_%s";
+      errmsg = "reference to an identifier before its definition: %S%_%s%s";
 
     if (home->phase) {
       sprintf(phase_buf, " phase: %" PRIdPTR "", home->phase);
       phase = phase_buf;
+      if ((home->phase == 1) && (home->template_env)) {
+        if (scheme_lookup_in_table(home->template_env->toplevel, (const char *)name))
+          phase_note = " (which cannot access the run-time definition)";
+        else if (home->template_env->syntax
+                 && scheme_lookup_in_table(home->template_env->syntax, (const char *)name))
+          phase_note = " (which cannot access the syntax binding for run-time expressions)";
+      }
     } else
       phase = "";
 
@@ -1991,7 +1998,8 @@ void scheme_unbound_global(Scheme_Bucket *b)
 		     errmsg,
 		     name,
 		     home->module->modsrc,
-                     phase);
+                     phase,
+                     phase_note);
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
 		     name,
