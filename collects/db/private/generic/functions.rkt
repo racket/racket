@@ -1,9 +1,11 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/contract
+         racket/vector
          unstable/prop-contract
          racket/class
-         "interfaces.rkt")
+         "interfaces.rkt"
+         (only-in "sql-data.rkt" sql-null sql-null?))
 
 ;; == Administrative procedures
 
@@ -84,7 +86,7 @@
 (define (query1 c fsym stmt)
   (send c query fsym stmt))
 
-;; query/rows : connection symbol Statement nat/#f -> void
+;; query/rows : connection symbol Statement nat/#f -> rows-result
 (define (query/rows c fsym sql want-columns)
   (let [(result (query1 c fsym sql))]
     (unless (rows-result? result)
@@ -135,9 +137,19 @@
 ;; Query API procedures
 
 ;; query-rows : connection Statement arg ... -> (listof (vectorof 'a))
-(define (query-rows c sql . args)
-  (let ([sql (compose-statement 'query-rows c sql args 'rows)])
-    (rows-result-rows (query/rows c 'query-rows sql #f))))
+(define (query-rows c sql
+                    #:group [group-fields-list null]
+                    #:group-mode [group-mode null]
+                    . args)
+  (let* ([sql (compose-statement 'query-rows c sql args 'rows)]
+         [result (query/rows c 'query-rows sql #f)]
+         [result
+          (cond [(pair? group-fields-list)
+                 (group-rows-result* 'query-rows result group-fields-list
+                                     (not (memq 'preserve-null-rows group-mode))
+                                     (memq 'list group-mode))]
+                [else result])])
+    (rows-result-rows result)))
 
 ;; query-list : connection Statement arg ... -> (listof 'a)
 ;; Expects to get back a rows-result with one field per row.
@@ -392,3 +404,157 @@
  [get-tables
   (-> connection? (listof vector?))]
 |#)
+
+
+;; ========================================
+
+(define (group-rows result
+                    #:group key-fields-list
+                    #:group-mode [group-mode null])
+  (when (null? key-fields-list)
+    (error 'group-rows "expected at least one grouping field set"))
+  (group-rows-result* 'group-rows
+                      result
+                      key-fields-list
+                      (not (memq 'preserve-null-rows group-mode))
+                      (memq 'list group-mode)))
+
+(define (group-rows-result* fsym result key-fields-list invert-outer? as-list?)
+  (let* ([key-fields-list
+          (if (list? key-fields-list) key-fields-list (list key-fields-list))]
+         [total-fields (length (rows-result-headers result))]
+         [name-map
+          (for/hash ([header (in-list (rows-result-headers result))]
+                     [i (in-naturals)]
+                     #:when (assq 'name header))
+            (values (cdr (assq 'name header)) i))]
+         [fields-used (make-vector total-fields #f)]
+         [key-indexes-list
+          (for/list ([key-fields (in-list key-fields-list)])
+            (for/vector ([key-field (in-vector key-fields)])
+              (let ([key-index
+                     (cond [(string? key-field)
+                            (hash-ref name-map key-field #f)]
+                           [else key-field])])
+                (when (string? key-field)
+                  (unless key-index
+                    (error fsym "grouping field ~s not found" key-field)))
+                (when (exact-integer? key-field)
+                  (unless (< key-index total-fields)
+                    (error fsym "grouping index ~s out of range [0, ~a]"
+                           key-index (sub1 total-fields))))
+                (when (vector-ref fields-used key-index)
+                  (error fsym "grouping field ~s~a used multiple times"
+                         key-field
+                         (if (string? key-field)
+                             (format " (index ~a)" key-index)
+                             "")))
+                (vector-set! fields-used key-index #t)
+                key-index)))]
+         [residual-length
+          (for/sum ([x (in-vector fields-used)])
+            (if x 0 1))])
+    (when (= residual-length 0)
+      (error fsym "cannot group by all fields"))
+    (when (and (> residual-length 1) as-list?)
+      (error fsym
+             "exactly one residual field expected for #:group-mode 'list, got ~a"
+             residual-length))
+    (let* ([initial-projection
+            (for/vector #:length total-fields ([i (in-range total-fields)]) i)]
+           [headers
+            (group-headers (list->vector (rows-result-headers result))
+                           initial-projection
+                           key-indexes-list)]
+           [rows
+            (group-rows* fsym
+                         (rows-result-rows result)
+                         initial-projection
+                         key-indexes-list
+                         invert-outer?
+                         as-list?)])
+      (rows-result headers rows))))
+
+(define (group-headers headers projection key-indexes-list)
+  (define (get-headers vec)
+    (for/list ([index (in-vector vec)])
+      (vector-ref headers index)))
+  (cond [(null? key-indexes-list)
+         (get-headers projection)]
+        [else
+         (let* ([key-indexes (car key-indexes-list)]
+                [residual-projection
+                 (vector-filter-not (lambda (index) (vector-member index key-indexes))
+                                    projection)]
+                [residual-headers
+                 (group-headers headers residual-projection (cdr key-indexes-list))])
+           (append (get-headers key-indexes)
+                   (list `((grouped . ,residual-headers)))))]))
+
+(define (group-rows* fsym rows projection key-indexes-list invert-outer? as-list?)
+  ;; projection is vector of indexes (actually projection and permutation)
+  ;; invert-outer? => residual rows with all NULL fields are dropped.
+  (cond [(null? key-indexes-list)
+         ;; Apply projection to each row
+         (cond [as-list?
+                (unless (= (vector-length projection) 1)
+                  (error/internal
+                   fsym 
+                   "list mode requires a single residual column, got ~s"
+                   (vector-length projection)))
+                (let ([index (vector-ref projection 0)])
+                  (for/list ([row (in-list rows)])
+                    (vector-ref row index)))]
+               [else
+                (let ([plen (vector-length projection)])
+                  (for/list ([row (in-list rows)])
+                    (let ([v (make-vector plen)])
+                      (for ([i (in-range plen)])
+                        (vector-set! v i (vector-ref row (vector-ref projection i))))
+                      v)))])]
+        [else
+         (let ()
+           (define key-indexes (car key-indexes-list))
+           (define residual-projection
+             (vector-filter-not (lambda (index) (vector-member index key-indexes))
+                                projection))
+
+           (define key-row-length (vector-length key-indexes))
+           (define (row->key-row row)
+             (for/vector #:length key-row-length
+                         ([i (in-vector key-indexes)])
+                         (vector-ref row i)))
+
+           (define (residual-all-null? row)
+             (for/and ([i (in-vector residual-projection)])
+                      (sql-null? (vector-ref row i))))
+
+           (let* ([key-table (make-hash)]
+                  [r-keys
+                   (for/fold ([r-keys null])
+                       ([row (in-list rows)])
+                     (let* ([key-row (row->key-row row)]
+                            [already-seen? (and (hash-ref key-table key-row #f) #t)])
+                       (unless already-seen?
+                         (hash-set! key-table key-row null))
+                       (unless (and invert-outer? (residual-all-null? row))
+                         (hash-set! key-table key-row (cons row (hash-ref key-table key-row))))
+                       (if already-seen?
+                           r-keys
+                           (cons key-row r-keys))))])
+             (for/list ([key (in-list (reverse r-keys))])
+               (let ([residuals
+                      (group-rows* fsym
+                                   (reverse (hash-ref key-table key))
+                                   residual-projection
+                                   (cdr key-indexes-list)
+                                   invert-outer?
+                                   as-list?)])
+                 (vector-append key (vector residuals))))))]))
+
+(provide/contract
+ [group-rows
+  (->* (rows-result?
+        #:group (or/c (vectorof string?) (listof (vectorof string?))))
+       (#:group-mode (listof (or/c 'preserve-null-rows 'list)))
+       rows-result?)])

@@ -118,7 +118,13 @@ The types of parameters and returned fields are described in
 
 @defproc[(query-rows [connection connection?]
                      [stmt statement?]
-                     [arg any/c] ...)
+                     [arg any/c] ...
+                     [#:group grouping-fields
+                      (or/c (vectorof string?) (listof (vectorof string?)))
+                      null]
+                     [#:group-mode group-mode
+                      (listof (or/c 'preserve-null-rows 'list))
+                      null])
          (listof vector?)]{
 
   Executes a SQL query, which must produce rows, and returns the list
@@ -130,6 +136,9 @@ The types of parameters and returned fields are described in
 [(query-rows c "select 17")
  (list (vector 17))]
 ]
+
+  If @racket[grouping-fields] is not empty, the result is the same as if
+  @racket[group-rows] had been called on the result rows.
 }
 
 @defproc[(query-list [connection connection?]
@@ -284,6 +293,50 @@ future version of this library (even new minor versions).
   Executes a query, returning a structure that describes the
   results. Unlike the more specialized query functions, @racket[query]
   supports both rows-returning and effect-only queries.
+}
+
+@defproc[(group-rows [result rows-result?]
+                     [#:group grouping-fields
+                      (or/c (vectorof string?) (listof (vectorof string?)))]
+                     [#:group-mode group-mode
+                      (listof (or/c 'preserve-null-rows 'list))
+                      null])
+         rows-result?]{
+
+If @racket[grouping-fields] is a vector, the elements must be names of
+fields in @racket[result], and @racket[result]'s rows are regrouped
+using the given fields. Each grouped row contains N+1 fields; the
+first N fields are the @racket[grouping-fields], and the final field
+is a list of ``residual rows'' over the rest of the fields. A residual
+row of all NULLs is dropped (for convenient processing of @tt{OUTER
+JOIN} results) unless @racket[group-mode] includes
+@racket['preserve-null-rows]. If @racket[group-mode] contains
+@racket['list], there must be exactly one residual field, and its
+values are included without a vector wrapper (similar to
+@racket[query-list]).
+
+@examples[#:eval the-eval
+(define vehicles-result
+  (rows-result
+   '(((name . "type")) ((name . "maker")) ((name . "model")))
+   `(#("car"  "honda"   "civic")
+     #("car"  "ford"    "focus")
+     #("car"  "ford"    "pinto")
+     #("bike" "giant"   "boulder")
+     #("bike" "schwinn" ,sql-null))))
+(group-rows vehicles-result
+            #:group '(#("type")))
+]
+
+The @racket[grouping-fields] argument may also be a list of vectors;
+in that case, the grouping process is repeated for each set of
+grouping fields. The grouping fields must be distinct.
+
+@examples[#:eval the-eval
+(group-rows vehicles-result
+            #:group '(#("type") #("maker"))
+            #:group-mode '(list))
+]
 }
 
 
