@@ -527,7 +527,7 @@ used at most once in a section, though it can be shadowed with
 @racket[defmodule]s in sub-sections.
 
 If a @racket[#:require-form] clause is provided, the given expression
-produces an element to use instead of @racket[(racket require)] for
+produces an element to use instead of @racket[require] for
 the declaration of the module. This is useful to suggest a different
 way of accessing the module instead of through @racket[require].
 
