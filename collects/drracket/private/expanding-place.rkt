@@ -151,9 +151,9 @@
             [(and (exn:fail:read? exn)
                   (andmap (λ (srcloc) (equal? (srcloc-source srcloc) the-source))
                           (exn:fail:read-srclocs exn)))
-             ;; figure the syntax colorer can deal 
-             ;; with these better than we can
-             (vector 'no-errors)]
+             ;; figure the syntax colorer can help with these
+             ;; and show just show a subtle thing instead of the full error
+             (vector 'reader-in-defs-error (exn-message exn))]
             [else
              (vector 
               'exn
