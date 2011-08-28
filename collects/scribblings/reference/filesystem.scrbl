@@ -1070,16 +1070,18 @@ with the given @racket[lock-there], instead.}
           [#:max-delay max-delay (and/c real? (not/c negative?)) 0.2])
          any]{
 
-Obtains a lock for the filename @racket[lock-file] and then
-calls @racket[thunk].  The @racket[filename] argument specifies 
-a file path prefix that is only used
-to generate the lock filename when @racket[lock-file] is @racket[#f].
-Specifically, when @racket[lock-file] is @racket[#f], then
-@racket[call-with-file-lock/timeout] uses @racket[make-lock-file-name] to build the
-lock filename.
+Obtains a lock for the filename @racket[lock-file] and then calls
+@racket[thunk].  The @racket[filename] argument specifies a file path
+prefix that is used only to generate the lock filename when
+@racket[lock-file] is @racket[#f].  Specifically, when
+@racket[lock-file] is @racket[#f], then
+@racket[call-with-file-lock/timeout] uses @racket[make-lock-file-name]
+to build the lock filename. If the lock file does not yet exist, it is
+created; beware that the lock file is @emph{not} deleted by 
+@racket[call-with-file-lock/timeout].
 
 When @racket[thunk] returns, 
-@racket[call-with-file-lock] releases the lock, returning the result of
+@racket[call-with-file-lock/timeout] releases the lock, returning the result of
 @racket[thunk]. The @racket[call-with-file-lock/timeout] function will retry
 after @racket[delay] seconds and continue retrying with exponential backoff
 until delay reaches @racket[max-delay]. If
@@ -1101,7 +1103,7 @@ in the sense of @racket[port-try-file-lock?].
       (call-with-file-lock/timeout filename 'shared
         (lambda () (printf "Shouldn't get here\n"))
         (lambda () (printf "Failed to obtain lock for file\n"))))
-    (lambda () (printf "Shouldn't ger here eithere\n"))
+    (lambda () (printf "Shouldn't get here either\n"))
     #:lock-file (make-lock-file-name filename))]
 
 
@@ -1135,5 +1137,7 @@ and bitwise operations such as @racket[bitwise-ior], and
 @racket[bitwise-and].}
 
 
-@(interaction-eval #:eval file-eval (delete-file filename))
+@(interaction-eval #:eval file-eval (begin
+                                     (delete-file filename)
+                                     (delete-file (make-lock-file-name filename))))
 @(close-eval file-eval)
