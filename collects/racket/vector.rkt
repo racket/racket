@@ -231,7 +231,7 @@
 (define-syntax-rule (vm-mk name cmp)
   (define (name val vec)
     (unless (vector? vec)
-      (raise-type-error 'name "vector" 1 vec))
+      (raise-type-error 'name "vector" 1 val vec))
     (let ([sz (unsafe-vector-length vec)])
       (let loop ([k 0])
         (cond [(= k sz) #f]
