@@ -3504,19 +3504,24 @@ static void setup_accessible_table(Scheme_Module *m)
                     if (SCHEME_SYMBOLP(tl)) {
                       Scheme_Object *v;
                       v = scheme_hash_get(ht, tl);
-                      if (!v) scheme_signal_error("internal error: defined name inaccessible");
-                      if ((SCHEME_VEC_SIZE(form) == 2)
-                          && scheme_compiled_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
-                        /* record simple constant from cross-module propagation: */
-                        v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
-                      } else if (is_procedure_expression(SCHEME_VEC_ELS(form)[0])) {
-                        /* record that it's constant across all instantiations: */
-                        v = scheme_make_pair(v, scheme_constant_key);
+                      if (!v) { 
+                        /* The defined name is inaccessible. The bytecode compiler
+                           won't generate such modules, but synthesized module bytecode
+                           might leave bindings out of the `toplevels' table. */
                       } else {
-                        /* record that it's fixed for any given instantiations: */
-                        v = scheme_make_pair(v, scheme_fixed_key);
+                        if ((SCHEME_VEC_SIZE(form) == 2)
+                            && scheme_compiled_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
+                          /* record simple constant from cross-module propagation: */
+                          v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
+                        } else if (is_procedure_expression(SCHEME_VEC_ELS(form)[0])) {
+                          /* record that it's constant across all instantiations: */
+                          v = scheme_make_pair(v, scheme_constant_key);
+                        } else {
+                          /* record that it's fixed for any given instantiation: */
+                          v = scheme_make_pair(v, scheme_fixed_key);
+                        }
+                        scheme_hash_set(ht, tl, v);
                       }
-                      scheme_hash_set(ht, tl, v);
                     } else
                       scheme_signal_error("internal error: strange defn target %d", SCHEME_TYPE(tl));
                   }
