@@ -1274,6 +1274,7 @@ path/s is either such a string or a list of them.
 "collects/scribble/run.rkt" drdr:command-line (mzc *)
 "collects/scribble/text" responsible (eli)
 "collects/scribble/text.rkt" responsible (eli)
+"collects/scribble/tools" responsible (robby)
 "collects/scribble/tools/drracket-buttons.rkt" drdr:command-line (gracket-text *)
 "collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line (gracket-text * "skip")
 "collects/scribblings" responsible (mflatt eli robby matthias)
