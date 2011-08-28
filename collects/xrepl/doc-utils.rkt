@@ -4,10 +4,11 @@
          racket/list racket/sandbox)
 
 (provide (all-from-out scribble/manual)
-         RL GUIDE cmd defcmd check-all-documented)
+         RL GUIDE REFERENCE cmd defcmd check-all-documented)
 
 (define RL '(lib "readline/readline.scrbl"))
 (define GUIDE '(lib "scribblings/guide/guide.scrbl"))
+(define REFERENCE '(lib "scribblings/reference/reference.scrbl"))
 
 (define commands
   (let ([c #f])
