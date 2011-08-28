@@ -5334,7 +5334,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv, i
 
 Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv)
 {
-  return do_module_execute(data, genv, 0);
+  return do_module_execute(data, genv, 1);
 }
 
 static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec, Resolve_Prefix *rp)
