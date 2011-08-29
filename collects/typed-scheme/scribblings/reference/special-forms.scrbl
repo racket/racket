@@ -291,13 +291,14 @@ can be used anywhere a definition form may be used.
 @defform[(provide: [v t] ...)]{This declares that the @racket[v]s have
 the types @racket[t], and also provides all of the @racket[v]s.}
 
-@defform/none[@litchar|{ #{v : t} }|]{ This declares that the variable @racket[v] has type
+@defform/none[#{v : t}]{ This declares that the variable @racket[v] has type
 @racket[t].  This is legal only for binding occurrences of @racket[_v].}
 
 @defform[(ann e t)]{Ensure that @racket[e] has type @racket[t], or
 some subtype.  The entire expression has type @racket[t].
-This is legal only in expression contexts.  The syntax @litchar{#{e :: t}} may
-also be used.}
+This is legal only in expression contexts.}
+
+@defform/none[#{e :: t}]{A reader abbreviation for @racket[(ann e t)].}
 
 @defform[(inst e t ...)]{Instantiate the type of @racket[e] with types
 @racket[t ...].  @racket[e] must have a polymorphic type with the
@@ -309,10 +310,9 @@ contexts.
     (define (fold-list lst)
       (foldl (inst cons A A) null lst))
 
-    (fold-list (list "1" "2" "3" "4"))]
+    (fold-list (list "1" "2" "3" "4"))]}
 
-The syntax @litchar|{#{e @ t ...}}| may also be used.
-}
+@defform/none[#{e |@| t ...}]{A reader abbreviation for @racket[(inst e t ...)].}
 
 @section{Require}
 
