@@ -134,10 +134,6 @@ TODO
       
       initialize-console
       
-      reset-pretty-print-width
-      
-      
-      
       get-prompt
       insert-prompt
       get-context))
@@ -1093,7 +1089,8 @@ TODO
                                   (λ args
                                     (abort-current-continuation 
                                      (default-continuation-prompt-tag))))))
-                          (λ x (for-each (λ (x) ((current-print) x)) x)))
+                          (λ x (parameterize ([pretty-print-columns pretty-print-width])
+                                 (for-each (λ (x) ((current-print) x)) x))))
                          (loop)))))))
               (default-continuation-prompt-tag)
               (λ args (void)))
@@ -1790,7 +1787,8 @@ TODO
           (set! previous-expr-pos -1)
           (add-to-previous-exprs snips)))
       
-      (define/public (reset-pretty-print-width)
+      (define pretty-print-width (pretty-print-columns))
+      (define/private (reset-pretty-print-width)
         (let* ([standard (send (get-style-list) find-named-style "Standard")])
           (when standard
             (let* ([admin (get-admin)]
@@ -1808,8 +1806,7 @@ TODO
                      [new-columns (max min-columns 
                                        (floor (/ width char-width)))])
                 (send dc set-font old-font)
-                (pretty-print-columns new-columns))))))
-
+                (set! pretty-print-width new-columns))))))
       
       ;; get-frame : -> (or/c #f (is-a?/c frame))
       (define/private (get-frame)
