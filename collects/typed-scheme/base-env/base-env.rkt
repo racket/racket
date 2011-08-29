@@ -685,7 +685,8 @@
 
 
 
-[seconds->date (-Integer . -> . (make-Name #'date))]
+[seconds->date (cl->* (-Integer . -> . (make-Name #'date))
+                      (-Integer Univ . -> . (make-Name #'date)))]
 [current-seconds (-> -Integer)]
 
 ;Section 14.2

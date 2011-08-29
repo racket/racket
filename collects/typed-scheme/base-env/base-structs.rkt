@@ -50,16 +50,16 @@
      [span : (*Un -Integer (-val #f))]))
 
   (define-hierarchy date (#:kernel-maker k:date)
-    ([second : -Number]
-     [minute : -Number]
-     [hour : -Number]
-     [day : -Number]
-     [month : -Number]
-     [year : -Number]
-     [weekday : -Number]
-     [year-day : -Number]
+    ([second : -Nat]
+     [minute : -Nat]
+     [hour : -Nat]
+     [day : -Nat]
+     [month : -Nat]
+     [year : -Nat]
+     [week-day : -Nat]
+     [year-day : -Nat]
      [dst? : -Boolean]
-     [time-zone-offset : -Number]))
+     [time-zone-offset : -Integer]))
 
   (define-hierarchy arity-at-least (#:kernel-maker k:arity-at-least)
     ([value : -Nat]))
