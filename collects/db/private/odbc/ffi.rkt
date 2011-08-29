@@ -123,6 +123,10 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
 
 (define-ffi-definer define-odbc odbc-lib)
 
+(define (ok-status? n)
+  (or (= n SQL_SUCCESS)
+      (= n SQL_SUCCESS_WITH_INFO)))
+
 (define-odbc SQLAllocHandle
   (_fun (type : _sqlsmallint)
         (parent : _sqlhandle/null)
@@ -168,7 +172,8 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
                      (len : (_ptr o _sqlsmallint))
                      -> (status : _sqlreturn)
                      -> (values status
-                                (bytes->string/utf-8 value #f 0 len)))))
+                                (and (ok-status? status)
+                                     (bytes->string/utf-8 value #f 0 len))))))
 
 (define-odbc SQLGetFunctions
   (_fun (handle : _sqlhdbc)
@@ -211,7 +216,7 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (out-len : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
         -> (values status
-                   (and (or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+                   (and (ok-status? status)
                         (bytes->string/utf-8 out-buf #f 0 out-len)))))
 
 (define-odbc SQLDataSources
@@ -226,9 +231,9 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (descr-length : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
         -> (values status
-                   (and (or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+                   (and (ok-status? status)
                         (bytes->string/utf-8 server-buf #f 0 server-length))
-                   (and (or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+                   (and (ok-status? status)
                         (bytes->string/utf-8 descr-buf #f 0 descr-length)))))
 
 (define-odbc SQLDrivers
@@ -242,7 +247,7 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         ((if attrs-buf (bytes-length attrs-buf) 0) : _sqlsmallint)
         (attrs-length : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
-        -> (if (or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+        -> (if (ok-status? status)
                (values status
                        (bytes->string/utf-8 driver-buf #f 0 driver-length)
                        attrs-length)
@@ -308,7 +313,8 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (nullable : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
         -> (values status
-                   (bytes->string/utf-8 column-buf #f 0 column-len)
+                   (and (ok-status? status)
+                        (bytes->string/utf-8 column-buf #f 0 column-len))
                    data-type size digits nullable)))
 
 (define-odbc SQLFetch
@@ -356,9 +362,11 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (message-len : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
         -> (values status
-                   (bytes->string/utf-8 sql-state-buf #\? 0 5)
+                   (and (ok-status? status)
+                        (bytes->string/utf-8 sql-state-buf #\? 0 5))
                    native-errcode
-                   (bytes->string/utf-8 message-buf #\? 0 message-len))))
+                   (and (ok-status? status)
+                        (bytes->string/utf-8 message-buf #\? 0 message-len)))))
 
 (define-odbc SQLEndTran
   (_fun (handle completion-type) ::
