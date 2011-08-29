@@ -202,15 +202,18 @@ web-server
 ]
 
 The main problem with using one connection for all requests is that
-while all connection functions are thread-safe, two threads accessing
-a connection concurrently may still interfere. For example, if two
-threads both attempt to start a new transaction, the second one will
-fail, because the first thread has already put the connection into an
-``in transaction'' state. And if one thread is accessing the
-connection within a transaction and another thread issues a query, the
-second thread may see invalid data or even disrupt the work of the
-first thread (see
-@hyperlink["http://en.wikipedia.org/wiki/Isolation_%28database_systems%29"]{isolation}).
+multiple threads accessing the same connection are not properly
+@hyperlink["http://en.wikipedia.org/wiki/Isolation_%28database_systems%29"]{isolated}. For
+example, if two threads both attempt to start a new transaction, the
+second one will fail, because the first thread has already put the
+connection into an ``in transaction'' state. And if one thread is
+accessing the connection within a transaction and another thread
+issues a query, the second thread may see invalid data or even disrupt
+the work of the first thread.
+
+A secondary problem is performance. A connection can only perform a
+single query at a time, whereas most database systems are capable of
+concurrent query processing.
 
 The proper way to use database connections in a servlet is to create a
 connection for each request and disconnect it when the request
