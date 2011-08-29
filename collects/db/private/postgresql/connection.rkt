@@ -14,6 +14,13 @@
 
 ;; ========================================
 
+;; connector<%>
+;; Manages making connections
+(define connector<%>
+  (interface ()
+    attach-to-ports              ;; input-port output-port -> void
+    start-connection-protocol))  ;; string string string/#f -> void
+
 (define connection-base%
   (class* transactions% (connection<%> connector<%>)
     (init-private notice-handler

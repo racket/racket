@@ -14,7 +14,6 @@
          define-type-table
 
          no-cache-prepare<%>
-         connector<%>
 
          locking%
          transactions%
@@ -175,16 +174,6 @@
             [ok? (case x ((typeid) supported?) ... (else #f))])
         (list ok? t x)))))
 
-
-;; == Internal staging interfaces
-
-;; connector<%>
-;; Manages making connections
-(define connector<%>
-  (interface ()
-    attach-to-ports            ;; input-port output-port -> void
-    start-connection-protocol  ;; string string string/#f -> void
-    ))
 
 ;; == Notice/notification handler maker
 
