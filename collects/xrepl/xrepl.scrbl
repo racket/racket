@@ -2,18 +2,19 @@
 @(require "doc-utils.rkt"
           scribble/decode (only-in scribble/core)
           (for-label racket readline racket/help racket/enter
-                     racket/trace profile))
+                     racket/trace profile
+                     macro-debugger/stepper-text
+                     macro-debugger/analysis/check-requires))
 
 @title{XREPL: eXtended REPL}
 @author[@author+email["Eli Barzilay" "eli@barzilay.org"]]
 
 @defmodule[xrepl]{
-  Loading the @racketmodname[xrepl] library enables XREPL, 
-  which extends the @exec{racket} @tech[#:doc
-  GUIDE]{REPL} significantly, turning it into a more useful tool for
-  interactive exploration and development.  Additions include ``meta
-  commands,'' using readline, keeping past evaluation results, and
-  more.}
+  Loading the @racketmodname[xrepl] library enables XREPL, which extends
+  the @exec{racket} @tech[#:doc GUIDE]{REPL} significantly, turning it
+  into a more useful tool for interactive exploration and development.
+  Additions include ``meta commands,'' using readline, keeping past
+  evaluation results, and more.}
 
 @; ---------------------------------------------------------------------
 @section{Installing XREPL}
@@ -396,14 +397,20 @@ available.
   @item{@litchar{*} uses the macro debugger's textual output to show
     expansion steps for the current syntax, leaving macros from
     @racketmodname[racket/base] intact.  Does not change the current
-    syntax.
-    See @other-doc['(lib "macro-debugger/macro-debugger.scrbl")] for
-    details.}
+    syntax.  Uses @racket[expand/step-text], see @other-doc['(lib
+    "macro-debugger/macro-debugger.scrbl")] for details.}
   @item{@litchar{**} uses the macro debugger similarly to @litchar{*},
     but expands @racketmodname[racket/base] macros too, showing the
     resulting full expansion process.}]
   Several input flags and/or syntaxes can be specified in succession as
   arguments to @cmd{syntax}.  For example, @cmd[stx]{(when 1 2) ** !}.
+}
+
+@defcmd[check-requires]{
+  Uses @racket[show-requires] to analyze the @racket[require]s of the
+  specified module, defaulting to the currently entered module if we're
+  in one.  See @other-doc['(lib "macro-debugger/macro-debugger.scrbl")]
+  for details.
 }
 
 @defcmd[log]{
