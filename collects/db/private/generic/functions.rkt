@@ -63,14 +63,16 @@
 (struct virtual-statement (table gen)
         #:property prop:statement
         (lambda (stmt c)
-          (let ([table (virtual-statement-table stmt)]
-                [gen (virtual-statement-gen stmt)]
-                [cache? (not (is-a? c no-cache-prepare<%>))])
-            (let ([table-pst (hash-ref table c #f)])
+          (let* ([table (virtual-statement-table stmt)]
+                 [gen (virtual-statement-gen stmt)]
+                 [base-c (send c get-base)])
+            (let ([table-pst (and base-c (hash-ref table base-c #f))])
               (or table-pst
                   (let* ([sql-string (gen (send c get-dbsystem))]
-                         [pst (prepare1 'virtual-statement c sql-string (not cache?))])
-                    (when cache? (hash-set! table c pst))
+                         ;; FIXME: virtual-connection:prepare1 handles
+                         ;; fsym = 'virtual-statement case specially
+                         [pst (prepare1 'virtual-statement c sql-string #f)])
+                    (hash-set! table base-c pst)
                     pst))))))
 
 (define virtual-statement*

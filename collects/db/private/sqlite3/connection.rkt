@@ -165,6 +165,8 @@
             (void))))
       (call-with-lock* 'disconnect go go #f))
 
+    (define/public (get-base) this)
+
     (define/public (free-statement pst)
       (define (go)
         (let ([stmt (send pst get-handle)])

@@ -61,6 +61,7 @@
       (get-dbsystem)
       (query fsym stmt)
       (prepare fsym stmt close-on-exec?)
+      (get-base)
       (free-statement stmt)
       (transaction-status fsym)
       (start-transaction fsym isolation)
@@ -80,7 +81,7 @@
 ;; Virtual connection
 
 (define virtual-connection%
-  (class* object% (connection<%> no-cache-prepare<%>)
+  (class* object% (connection<%>)
     (init-private connector     ;; called from client thread
                   get-key       ;; called from client thread
                   timeout)
@@ -178,6 +179,9 @@
       (#f #f     (transaction-status fsym))
       (#t '_     (list-tables fsym schema)))
 
+    (define/public (get-base)
+      (get-connection #t))
+
     (define/public (disconnect)
       (let ([c (get-connection #f)]
             [key (get-key)])
@@ -187,7 +191,8 @@
       (void))
 
     (define/public (prepare fsym stmt close-on-exec?)
-      (unless close-on-exec?
+      ;; FIXME: hacky way of supporting virtual-statement
+      (unless (or close-on-exec? (eq? fsym 'virtual-statement))
         (error fsym "cannot prepare statement with virtual connection"))
       (send (get-connection #t) prepare fsym stmt close-on-exec?))
 
@@ -329,6 +334,7 @@
       (get-dbsystem)
       (query fsym stmt)
       (prepare fsym stmt close-on-exec?)
+      (get-base)
       (free-statement stmt)
       (transaction-status fsym)
       (start-transaction fsym isolation)

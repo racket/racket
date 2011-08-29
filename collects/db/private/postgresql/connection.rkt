@@ -403,6 +403,8 @@
         (set! name-counter (add1 name-counter))
         (format "λmz_~a_~a" process-id n)))
 
+    (define/public (get-base) this)
+
     ;; free-statement : prepared-statement -> void
     (define/public (free-statement pst)
       (call-with-lock* 'free-statement

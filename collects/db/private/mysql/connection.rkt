@@ -356,6 +356,8 @@
           [(? field-packet?)
            (cons (parse-field-dvec r) (prepare1:get-field-descriptions fsym))])))
 
+    (define/public (get-base) this)
+
     (define/public (free-statement pst)
       (call-with-lock* 'free-statement
         (lambda ()

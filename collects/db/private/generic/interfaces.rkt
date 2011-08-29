@@ -13,8 +13,6 @@
 
          define-type-table
 
-         no-cache-prepare<%>
-
          locking%
          transactions%
 
@@ -41,21 +39,12 @@
     get-dbsystem  ;; -> dbsystem<%>
     query         ;; symbol statement -> QueryResult
     prepare       ;; symbol preparable boolean -> prepared-statement<%>
-
+    get-base      ;; -> connection<%> or #f (#f means base isn't fixed)
+    list-tables   ;; symbol symbol -> (listof string)
     start-transaction  ;; symbol (U 'serializable ...) -> void
     end-transaction    ;; symbol (U 'commit 'rollback) -> void
     transaction-status ;; symbol -> (U boolean 'invalid)
-
-    list-tables ;; symbol symbol -> (listof string)
-
-    free-statement)) ;; prepared-statement<%> -> void
-
-;; no-cache-prepare<%>
-;; Interface to identify connections such as connection-generators:
-;; prepare method must be called with close-on-exec? = #t and result must
-;; not be cached.
-(define no-cache-prepare<%>
-  (interface ()))
+    free-statement))   ;; prepared-statement<%> -> void
 
 ;; ==== DBSystem
 

@@ -276,6 +276,30 @@
         (check-equal? (query-value c (select-val "17"))
                       (if (TESTFLAGS 'odbc 'issl) "17" 17))))))
 
+(define virtual-statement-tests
+  (let ()
+    (define (check-prep-once mk-connection)
+      (let* ([counter 0]
+             [c (mk-connection)]
+             [vstmt (virtual-statement
+                     (lambda (dbsys)
+                       (set! counter (add1 counter))
+                       (select-val "17")))])
+        (query-value c vstmt)
+        (check-equal? counter 1 "first query")
+        (query-value c vstmt)
+        (check-equal? counter 1 "second query")
+        (disconnect c)))
+    (test-suite "virtual-statements"
+      (test-case "prep once"
+        (check-prep-once connect-and-setup))
+      (test-case "prep once for virtual-connection"
+        (check-prep-once
+         (lambda () (virtual-connection connect-and-setup))))
+      (test-case "prep once for virtual-connection/pool"
+        (check-prep-once
+         (lambda () (virtual-connection (connection-pool connect-and-setup))))))))
+
 (define test
   (test-suite "query API"
     (simple-tests 'string)
@@ -284,4 +308,5 @@
     (simple-tests 'gen)
     low-level-tests
     misc-tests
+    virtual-statement-tests
     error-tests))

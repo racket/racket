@@ -452,6 +452,8 @@
               (void)))))
       (call-with-lock* 'disconnect go go #f))
 
+    (define/public (get-base) this)
+
     (define/public (free-statement pst)
       (define (go) (free-statement* 'free-statement pst))
       (call-with-lock* 'free-statement go go #f))
