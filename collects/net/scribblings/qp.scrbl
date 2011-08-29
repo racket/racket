@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label net/qp net/qp-unit net/qp-sig))
+@(require "common.rkt" (for-label net/qp))
 
 @title[#:tag "qp"]{Quoted-Printable: Encoding and Decoding}
 
@@ -61,23 +61,3 @@ whatever form they exist (CR, LR, or CRLF) in the input stream.}
 
 None of these are used anymore, but the bindings are preserved for
 backward compatibility.}
-
-@; ----------------------------------------
-
-@section{Quoted-Printable Unit}
-
-@defmodule[net/qp-unit]
-
-@defthing[qp@ unit?]{
-
-Imports nothing, exports @racket[qp^].}
-
-@; ----------------------------------------
-
-@section{-Printable Signature}
-
-@defmodule[net/qp-sig]
-
-@defsignature[qp^ ()]{}
-
-Includes everything exported by the @racketmodname[net/qp] module.

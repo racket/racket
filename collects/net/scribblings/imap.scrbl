@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/eval scribble/struct
-          (for-label net/imap net/imap-unit net/imap-sig))
+          (for-label net/imap))
 
 @(define (just-report)
   @elem{This operation does not communicate with the server. It merely reports
@@ -492,23 +492,3 @@ mailbox path names.}
 
 Returns a list of IMAP flags for the given mailbox. See also
 @racket[imap-flag->symbol].}
-
-@; ----------------------------------------
-
-@section{IMAP Unit}
-
-@defmodule[net/imap-unit]
-
-@defthing[imap@ unit?]{
-
-Imports nothing, exports @racket[imap^].}
-
-@; ----------------------------------------
-
-@section{IMAP Signature}
-
-@defmodule[net/imap-sig]
-
-@defsignature[imap^ ()]{}
-
-Includes everything exported by the @racketmodname[net/imap] module.

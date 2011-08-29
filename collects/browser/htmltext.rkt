@@ -7,17 +7,15 @@
            "private/html.rkt"
            "private/bullet.rkt"
            net/url
-           net/url-sig
            mred
            mred/mred-unit
            mred/mred-sig
 	   browser/external)
            
-  (define-unit-from-context url@ url^)
   
   (define-values/invoke-unit 
      (compound-unit/infer (import) (export html^)
-       (link standard-mred@ url@ html@))
+       (link standard-mred@ html@))
      (import)
      (export html^))
   

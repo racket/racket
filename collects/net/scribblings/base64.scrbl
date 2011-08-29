@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label net/base64 net/base64-unit net/base64-sig))
+@(require "common.rkt" (for-label net/base64))
 
 @title[#:tag "base64"]{Base 64: Encoding and Decoding}
 
@@ -41,23 +41,3 @@ it encounters an end-of-file from @racket[in].}
 Reads a Base 64 encoding from @racket[in] and writes the decoded
 result to @racket[out]. The procedure returns when it encounters an
 end-of-file or Base 64 terminator @litchar{=} from @racket[in].}
-
-@; ----------------------------------------
-
-@section{Base64 Unit}
-
-@defmodule[net/base64-unit]
-
-@defthing[base64@ unit?]{
-
-Imports nothing, exports @racket[base64^].}
-
-@; ----------------------------------------
-
-@section{Base64 Signature}
-
-@defmodule[net/base64-sig]
-
-@defsignature[base64^ ()]{}
-
-Includes everything exported by the @racketmodname[net/base64] module.

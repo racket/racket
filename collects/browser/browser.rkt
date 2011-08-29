@@ -5,7 +5,6 @@
            setup/plt-installer-sig
            setup/plt-installer
            net/tcp-sig
-           net/url-sig
            net/url
            "browser-sig.rkt"
            "browser-unit.rkt")

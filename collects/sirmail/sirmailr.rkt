@@ -4,12 +4,12 @@
 
   (require "sirmails.rkt")
 
-  (require net/imap-sig
-           net/smtp-sig
-           net/head-sig
-           net/base64-sig
-           net/mime-sig
-           net/qp-sig)
+  (require net/imap
+           net/smtp
+           net/head
+           net/base64
+           net/mime
+           net/qp)
   
   (require mrlib/hierlist/hierlist-sig)
   
@@ -24,12 +24,6 @@
   (define-compound-unit/infer sirmail@
     (import (ENV : sirmail:environment^)
             mred^
-            imap^
-            smtp^
-            head^
-            base64^
-            mime^
-            qp^
             hierlist^)
     (export)
 

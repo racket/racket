@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt"
-          (for-label net/cgi net/uri-codec net/cgi-unit net/cgi-sig))
+          (for-label net/cgi net/uri-codec))
 
 @title[#:tag "cgi"]{CGI Scripts}
 
@@ -134,24 +134,3 @@ suffix.  The characters of the suffix---excluding the
 
 Raised when the character immediately following a @litchar{%} in a
 query is invalid.}
-
-
-@; ----------------------------------------
-
-@section{CGI Unit}
-
-@defmodule[net/cgi-unit]
-
-@defthing[cgi@ unit?]{
-
-Imports nothing, exports @racket[cgi^].}
-
-@; ----------------------------------------
-
-@section{CGI Signature}
-
-@defmodule[net/cgi-sig]
-
-@defsignature[cgi^ ()]{}
-
-Includes everything exported by the @racketmodname[net/cgi] module.

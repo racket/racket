@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label net/dns net/dns-unit net/dns-sig))
+@(require "common.rkt" (for-label net/dns))
 
 @title[#:tag "dns"]{DNS: Domain Name Service Queries}
 
@@ -51,23 +51,3 @@ Attempts to find the address of a nameserver on the present system.
 On Unix and Mac OS X, this procedure parses @filepath{/etc/resolv.conf} to
 extract the first nameserver address. On Windows, it runs
 @exec{nslookup.exe}.}
-
-@; ----------------------------------------
-
-@section{DNS Unit}
-
-@defmodule[net/dns-unit]
-
-@defthing[dns@ unit?]{
-
-Imports nothing, exports @racket[dns^].}
-
-@; ----------------------------------------
-
-@section{DNS Signature}
-
-@defmodule[net/dns-sig]
-
-@defsignature[dns^ ()]{}
-
-Includes everything exported by the @racketmodname[net/dns] module.

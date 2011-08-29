@@ -2,7 +2,7 @@
   (require mzlib/unit
            mzlib/string)
 
-  (require net/imap-sig
+  (require net/imap
            mred/mred-sig
            framework)
 
@@ -18,7 +18,6 @@
   (provide option@)
   (define-unit option@
      (import sirmail:environment^
-	      imap^
               mred^)
       (export sirmail:options^)
 

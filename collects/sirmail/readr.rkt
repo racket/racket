@@ -26,12 +26,12 @@
 
   (require "pref.rkt")
 
-  (require net/imap-sig
-	   net/smtp-sig
-	   net/head-sig
-	   net/base64-sig
-	   net/mime-sig
-	   net/qp-sig
+  (require net/imap
+	   net/smtp
+	   net/head
+	   net/base64
+	   (prefix mime: net/mime)
+	   net/qp
            browser/htmltext)
 
   (require mrlib/hierlist/hierlist-sig)
@@ -52,12 +52,6 @@
 	      sirmail:utils^
 	      sirmail:send^
 	      mred^
-	      imap^
-	      smtp^
-	      head^
-	      base64^
-	      (prefix mime: mime^)
-	      qp^
 	      hierlist^)
       (export sirmail:read^)
       

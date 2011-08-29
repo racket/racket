@@ -31,7 +31,7 @@ A test case:
          "sig.rkt"
          scheme/path
          scheme/file
-         net/url-sig
+         net/url
          net/url-structs
          net/head
          mred/mred-sig
@@ -42,8 +42,7 @@ A test case:
    
 (import html^
         mred^
-        setup:plt-installer^
-        url^)
+        setup:plt-installer^)
 (export hyper^)
 (init-depend mred^)
 

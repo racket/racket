@@ -13,13 +13,7 @@
            "pref.rkt"
            "sirmailr.rkt")
 
-  (require net/imap-sig
-           net/smtp-sig
-           net/head-sig
-           net/base64-sig
-           net/mime-sig
-           net/qp-sig
-           net/imap
+  (require net/imap
            net/smtp
            net/head
            net/base64
@@ -90,12 +84,6 @@
 	 (invoke-unit sirmail@
                       (import sirmail:environment^
                               mred^
-                              imap^
-                              smtp^
-                              head^
-                              base64^
-                              mime^
-                              qp^
                               hierlist^))))]))
 
   ;; There's only one Folders window ----------------------------------------
@@ -133,7 +121,6 @@
                           (import [env : sirmail:environment^]
                                   [s : sirmail:shutdown-folder^]
                                   [mred : mred^]
-                                  [imap : imap^]
                                   [hierlist : hierlist^])
                           (export)
                           (link option@ folder@))
@@ -142,7 +129,6 @@
                                       sirmail:environment^
                                       sirmail:shutdown-folder^
                                       mred^
-                                      imap^
                                       hierlist^)))))))))))
   
   (define (get-active-folder)

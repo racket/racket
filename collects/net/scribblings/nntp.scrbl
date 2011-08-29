@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label net/nntp net/nntp-unit net/nntp-sig))
+@(require "common.rkt" (for-label net/nntp))
 
 @title[#:tag "nntp"]{NNTP: Newsgroup Protocol}
 
@@ -130,23 +130,3 @@ Raised when the server is unable to locate the article.}
 @defstruct[(authentication-rejected nntp) ()]{
 
 Raised when the server reject an authentication attempt.}
-
-@; ----------------------------------------
-
-@section{NNTP Unit}
-
-@defmodule[net/nntp-unit]
-
-@defthing[nntp@ unit?]{
-
-Imports nothing, exports @racket[nntp^].}
-
-@; ----------------------------------------
-
-@section{NNTP Signature}
-
-@defmodule[net/nntp-sig]
-
-@defsignature[nntp^ ()]{}
-
-Includes everything exported by the @racketmodname[net/nntp] module.

@@ -4,7 +4,7 @@
          mred/mred-sig
          scheme/file
          mzlib/port
-         net/url-sig
+         net/url
          (only-in html read-html-as-xml read-html-comments use-html-spec)
          (except-in xml read-comments)
          mzlib/class
@@ -13,7 +13,7 @@
          "entity-names.rkt")
 
 
-(import mred^ url^)
+(import mred^)
 (export html^)
 (init-depend mred^)    
 
