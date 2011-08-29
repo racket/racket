@@ -1,5 +1,4 @@
 #lang setup/infotab
-  (define name "picturing-programs")
   (define categories '(media))
   (define can-be-loaded-with 'all)
   (define required-core-version "5.0.0.1")
