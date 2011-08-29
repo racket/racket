@@ -2525,6 +2525,19 @@ intptr_t scheme_dup_socket(intptr_t fd) {
 #endif
 }
 
+void scheme_close_socket_fd(intptr_t fd) {
+# ifdef USE_WINSOCK_TCP
+  close(fd);
+# else
+  {
+    intptr_t rc;
+    do {
+      rc = close(fd);
+    } while (rc == -1 && errno == EINTR);
+  }
+# endif
+}
+
 /*========================================================================*/
 /*                                 UDP                                    */
 /*========================================================================*/

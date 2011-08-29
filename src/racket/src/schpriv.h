@@ -3695,6 +3695,8 @@ typedef struct Scheme_Serialized_File_FD{
 int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *so);
 intptr_t scheme_dup_socket(intptr_t fd);
 intptr_t scheme_dup_file(intptr_t fd);
+void scheme_close_socket_fd(intptr_t fd);
+void scheme_close_file_fd(intptr_t fd);
 
 
 #define SCHEME_PLACE_OBJECTP(o) (SCHEME_TYPE(o) == scheme_place_object_type)

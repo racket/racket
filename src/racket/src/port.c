@@ -1209,6 +1209,19 @@ intptr_t scheme_dup_file(intptr_t fd) {
 #endif
 }
 
+void scheme_close_file_fd(intptr_t fd) {
+#ifdef WINDOWS_FILE_HANDLES
+  CloseHandle((HANDLE)fd);
+#else
+  {
+    intptr_t rc;
+    do {
+      rc = close(fd);
+    } while (rc == -1 && errno == EINTR);
+  }
+#endif
+}
+
 
 /*========================================================================*/
 /*                      Windows thread suspension                         */

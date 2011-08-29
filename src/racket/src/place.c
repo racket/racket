@@ -856,10 +856,50 @@ static void bad_place_message(Scheme_Object *so) {
                       so);
 }
 
-static Scheme_Object *make_serialized_tcp_fd(intptr_t fd, intptr_t type) {
+static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_raise_exn) {
+  Scheme_Object *l;
+  Scheme_Vector *v = (Scheme_Vector *) o;
+  if (v) {
+    if (SCHEME_VEC_ELS(v)[0]) {
+      l = SCHEME_VEC_ELS(v)[0];
+      while (SCHEME_PAIRP(l)) {
+        scheme_close_file_fd(SCHEME_INT_VAL(SCHEME_CAR(l)));
+        l = SCHEME_CDR(l);
+        SCHEME_USE_FUEL(1);
+      }
+    }
+    if (SCHEME_VEC_ELS(v)[1]) {
+      l = SCHEME_VEC_ELS(v)[0];
+      while (SCHEME_PAIRP(l)) {
+        scheme_close_socket_fd(SCHEME_INT_VAL(SCHEME_CAR(l)));
+        l = SCHEME_CDR(l);
+        SCHEME_USE_FUEL(1);
+      }
+    }
+  }
+  if (can_raise_exn)
+    bad_place_message(so);
+}
+static void push_duped_fd(Scheme_Object **fd_accumulators, intptr_t slot, intptr_t dupfd) {
+  Scheme_Object *tmp;
+  Scheme_Vector *v; 
+  if (fd_accumulators) {
+    if (!*fd_accumulators) {
+      tmp = scheme_make_vector(2, scheme_null);
+      *fd_accumulators = tmp;
+    }
+    v = (Scheme_Vector*) *fd_accumulators;
+    
+    tmp = scheme_make_pair(scheme_make_integer(dupfd), SCHEME_VEC_ELS(v)[slot]);
+    SCHEME_VEC_ELS(v)[slot] = tmp;
+  }
+}
+
+static Scheme_Object *make_serialized_tcp_fd(intptr_t fd, intptr_t type, Scheme_Object **fd_accumulators) {
   Scheme_Simple_Object *so;
   int dupfd;
   dupfd = scheme_dup_socket(fd);
+  push_duped_fd(fd_accumulators, 1, dupfd);
   so = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Simple_Object));
   so->iso.so.type = scheme_serialized_tcp_fd_type;
   so->u.two_int_val.int1 = type;
@@ -895,7 +935,7 @@ static Scheme_Object *trivial_copy(Scheme_Object *so)
   return NULL;
 }
 
-static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *ht, int copy, int can_raise_exn) {
+static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *ht, Scheme_Object **fd_accumulators,int copy, int can_raise_exn) {
   Scheme_Object *new_so;
 
   new_so = trivial_copy(so);
@@ -918,8 +958,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         Scheme_Object *d;
         n = scheme_rational_numerator(so);
         d = scheme_rational_denominator(so);
-        n = shallow_types_copy(n, NULL, copy, can_raise_exn);
-        d = shallow_types_copy(d, NULL, copy, can_raise_exn);
+        n = shallow_types_copy(n, NULL, fd_accumulators, copy, can_raise_exn);
+        d = shallow_types_copy(d, NULL, fd_accumulators, copy, can_raise_exn);
         if (copy)
           new_so = scheme_make_rational(n, d);
       }
@@ -938,8 +978,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         Scheme_Object *i;
         r = scheme_complex_real_part(so);
         i = scheme_complex_imaginary_part(so);
-        r = shallow_types_copy(r, NULL, copy, can_raise_exn);
-        i = shallow_types_copy(i, NULL, copy, can_raise_exn);
+        r = shallow_types_copy(r, NULL, fd_accumulators, copy, can_raise_exn);
+        i = shallow_types_copy(i, NULL, fd_accumulators, copy, can_raise_exn);
         if (copy)
           new_so = scheme_make_complex(r, i);
       }
@@ -965,10 +1005,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
       break;
     case scheme_symbol_type:
       if (SCHEME_SYM_UNINTERNEDP(so)) {
-        if (can_raise_exn)
-          bad_place_message(so);
-        else
-          return NULL;
+        bad_place_message2(so, *fd_accumulators, can_raise_exn);
+        return NULL;
       } else {
         if (copy) {
           new_so = scheme_make_sized_offset_byte_string((char *)so, SCHEME_SYMSTR_OFFSET(so), SCHEME_SYM_LEN(so), 1);
@@ -1024,16 +1062,16 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           o->type = scheme_cpointer_type;
           SCHEME_CPTR_FLAGS(o) |= 0x1;
           SCHEME_CPTR_VAL(o) = SCHEME_CPTR_VAL(so);
-          o2 = shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, copy, can_raise_exn);
+          o2 = shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, fd_accumulators, copy, can_raise_exn);
           SCHEME_CPTR_TYPE(o) = o2;
 
           new_so = o;
         }
       }
-      else if (can_raise_exn)
-        bad_place_message(so);
-      else
+      else {
+        bad_place_message2(so, *fd_accumulators, can_raise_exn);
         return NULL;
+      }
       break;
     case scheme_input_port_type:
     case scheme_output_port_type:
@@ -1041,7 +1079,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         intptr_t fd;
         if(scheme_get_port_socket(so, &fd)) {
           if (copy) {
-            new_so = make_serialized_tcp_fd(fd, so->type);
+            new_so = make_serialized_tcp_fd(fd, so->type, fd_accumulators);
           }
         }
         else if (SCHEME_TRUEP(scheme_file_stream_port_p(1, &so))) {
@@ -1053,23 +1091,24 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             sffd->so.type = scheme_serialized_file_fd_type;
             scheme_get_serialized_fd_flags(so, sffd);
             if (sffd->name) {
-              tmp = shallow_types_copy(sffd->name, ht, copy, can_raise_exn);
+              tmp = shallow_types_copy(sffd->name, ht, fd_accumulators, copy, can_raise_exn);
               sffd->name = tmp;
             }
             dupfd = scheme_dup_file(fd);
+            push_duped_fd(fd_accumulators, 0, dupfd);
             sffd->fd = dupfd;
             sffd->type = so->type;
             new_so = (Scheme_Object *) sffd;
           }
-          else if (can_raise_exn)
-            bad_place_message(so);
-          else
+          else {
+            bad_place_message2(so, *fd_accumulators, can_raise_exn);
             return NULL;
+          }
         }
-        else if (can_raise_exn)
-          bad_place_message(so);
-        else
+        else {
+          bad_place_message2(so, *fd_accumulators, can_raise_exn);
           return NULL;
+        }
       }
       break;
     case scheme_serialized_tcp_fd_type:
@@ -1256,6 +1295,8 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   Scheme_Object *inf_stack = NULL;
   Scheme_Object *reg0 = NULL;
   uintptr_t inf_stack_depth = 0;
+
+  Scheme_Object *fd_accumulators = NULL;
   
   /* lifted variables for xform*/
   Scheme_Object *pair;
@@ -1292,7 +1333,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   int ctr = 0;
 
   /* First, check for simple values that don't need to be hashed: */
-  new_so = shallow_types_copy(so, *ht, copy, can_raise_exn);
+  new_so = shallow_types_copy(so, *ht, &fd_accumulators, copy, can_raise_exn);
   if (new_so) return new_so;
 
   if (*ht) {
@@ -1328,7 +1369,7 @@ DEEP_DO:
     }
   }
 
-  new_so = shallow_types_copy(so, *ht, copy, can_raise_exn);
+  new_so = shallow_types_copy(so, *ht, &fd_accumulators, copy, can_raise_exn);
   if (new_so) RETURN;
   new_so = so;
 
@@ -1429,21 +1470,15 @@ DEEP_VEC2:
       local_slots = stype->num_slots - (ptype ? ptype->num_slots : 0);
 
       if (!stype->prefab_key) {
-        if (can_raise_exn)
-          bad_place_message(so);
-        else {
-          new_so = NULL;
-          ABORT;
-        }
+        bad_place_message2(so, fd_accumulators, can_raise_exn);
+        new_so = NULL;
+        ABORT;
       }
       for (i = 0; i < local_slots; i++) {
         if (!stype->immutables || stype->immutables[i] != 1) {
-          if (can_raise_exn)
-            bad_place_message(so);
-          else {
-            new_so = NULL;
-            ABORT;
-          }
+          bad_place_message2(so, fd_accumulators, can_raise_exn);
+          new_so = NULL;
+          ABORT;
         }
       }
 
@@ -1561,12 +1596,9 @@ DEEP_SST2_L:
       }
       break;
     default:
-      if (can_raise_exn)
-        bad_place_message(so);
-      else {
-        new_so = NULL;
-        ABORT;
-      }
+      bad_place_message2(so, fd_accumulators, can_raise_exn);
+      new_so = NULL;
+      ABORT;
       break;
   }
 
@@ -1928,19 +1960,10 @@ static void places_deserialize_clean_worker(Scheme_Object **pso, Scheme_Hash_Tab
         Scheme_Object *in;
         Scheme_Object *out;
         int fd   = ((Scheme_Simple_Object *) so)->u.two_int_val.int2;
-# ifdef USE_WINSOCK_TCP
-        close(fd);
-# else
-        {
-          intptr_t rc;
-          do {
-            rc = close(fd);
-          } while (rc == -1 && errno == EINTR);
-        }
-# endif
+        scheme_close_socket_fd(fd);
       }
       else {
-        tmp = shallow_types_copy(so, NULL, 1, 1);
+        tmp = shallow_types_copy(so, NULL, NULL, 1, 1);
         *pso = tmp;
       }
       break;
@@ -1948,19 +1971,10 @@ static void places_deserialize_clean_worker(Scheme_Object **pso, Scheme_Hash_Tab
       if (clean) {
         Scheme_Serialized_File_FD *sffd;
         sffd = (Scheme_Serialized_File_FD *) so;
-#ifdef WINDOWS_FILE_HANDLES
-        CloseHandle((HANDLE)sffd->fd);
-#else
-        {
-          intptr_t rc;
-          do {
-            rc = close(sffd->fd);
-          } while (rc == -1 && errno == EINTR);
-        }
-#endif
+        scheme_close_file_fd(sffd->fd);
       }
       else {
-        tmp = shallow_types_copy(so, NULL, 1, 1);
+        tmp = shallow_types_copy(so, NULL, NULL, 1, 1);
         *pso = tmp;
       }
       break;
