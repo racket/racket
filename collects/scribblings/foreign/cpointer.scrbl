@@ -22,6 +22,9 @@ to Racket, and accept only such tagged pointers when going to C.  An
 optional @racket[ptr-type] can be given to be used as the base pointer
 type, instead of @racket[_pointer].
 
+By convention, tags should be symbols named after the
+type they point to.  For example, the cpointer @racket[_car] should
+be created using @racket['car] as the key.
 Pointer tags are checked with @racket[cpointer-has-tag?] and changed
 with @racket[cpointer-push-tag!] which means that other tags are
 preserved.  Specifically, if a base @racket[ptr-type] is given and is

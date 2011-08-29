@@ -1198,11 +1198,12 @@
        (define (id . strings)
          (datum->syntax
           #'_TYPE (string->symbol (apply string-append strings)) #'_TYPE))
-       (with-syntax ([TYPE?      (id name "?")]
+       (with-syntax ([TYPE       (id name)]
+                     [TYPE?      (id name "?")]
                      [TYPE-tag   (id name "-tag")]
                      [_TYPE/null (id "_" name "/null")])
          #'(define-values (_TYPE _TYPE/null TYPE? TYPE-tag)
-             (let ([TYPE-tag '_TYPE])
+             (let ([TYPE-tag 'TYPE])
                (values (_cpointer      TYPE-tag ptr-type scheme->c c->scheme)
                        (_cpointer/null TYPE-tag ptr-type scheme->c c->scheme)
                        (lambda (x)
