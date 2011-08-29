@@ -840,11 +840,13 @@
                    [parent expand-error-button-parent-panel]
                    [stretchable-width #t]
                    [label sc-jump-to-error]
+                   [font small-control-font]
                    [callback (λ (b evt) (send (send (get-current-tab) get-defs) expand-error-next))]))
         (set! expand-error-multiple-child
               (new horizontal-panel% [parent expand-error-button-parent-panel]))
         (new button% 
              [label "<"]
+             [font small-control-font]
              [callback (λ (b evt) (send (send (get-current-tab) get-defs) expand-error-prev))]
              [parent expand-error-multiple-child])
         (new message% 
@@ -852,6 +854,7 @@
              [label sc-jump-to-error])
         (new button% 
              [label ">"]
+             [font small-control-font]
              [callback (λ (b evt) (send (send (get-current-tab) get-defs) expand-error-next))]
              [parent expand-error-multiple-child])
         (send expand-error-button-parent-panel change-children (λ (l) (list expand-error-single-child)))
@@ -1045,7 +1048,10 @@
             (send normal-control-font get-point-size)
             (send normal-control-font get-family)
             'italic
-            (send normal-control-font get-weight))))
+            (send normal-control-font get-weight)
+            (send normal-control-font get-underlined)
+            (send normal-control-font get-smoothing)
+            (send normal-control-font get-size-in-pixels))))
         
   (define yellow-message%
     (class canvas%
