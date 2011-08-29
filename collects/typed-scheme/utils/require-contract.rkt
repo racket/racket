@@ -4,7 +4,6 @@
          syntax/location
          (for-syntax scheme/base
                      syntax/parse
-                     racket/syntax
                      (prefix-in tr: "../private/typed-renaming.rkt")))
 
 (provide require/contract define-ignored)

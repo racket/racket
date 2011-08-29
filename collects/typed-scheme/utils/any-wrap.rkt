@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require racket/match scheme/vector scheme/contract)
+(require racket/match racket/vector racket/contract/base racket/contract/combinator)
 
 (define-struct any-wrap (val)
   #:property prop:custom-write

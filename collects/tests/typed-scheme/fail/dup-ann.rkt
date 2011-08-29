@@ -1,5 +1,5 @@
 #;
-(exn-pred 4)
+(exn-pred 2)
 #lang typed/racket
 (: bar : (String -> String))
 (: bar : (Number -> Number))

@@ -1,12 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
 (require (except-in "../utils/utils.rkt" infer))
 (require "infer-unit.rkt" "constraints.rkt" "dmap.rkt" "signatures.rkt"
          "restrict.rkt" "promote-demote.rkt"
-         mzlib/trace
-         (only-in scheme/unit provide-signature-elements
-                  define-values/invoke-unit/infer link)
-         (utils unit-utils))
+         racket/trace
+         (only-in racket/unit provide-signature-elements
+                  define-values/invoke-unit/infer link))
 
 (provide-signature-elements restrict^ infer^)
 

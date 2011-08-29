@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (require (except-in syntax/parse id keyword)
          (for-syntax syntax/parse
-                     scheme/base
+                     racket/base
                      (only-in racket/syntax generate-temporary)))
 
 (provide (except-out (all-defined-out) id keyword)

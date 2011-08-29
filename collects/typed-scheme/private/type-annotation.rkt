@@ -1,12 +1,12 @@
-#lang scheme/base
+#lang racket/base
 
 (require "../utils/utils.rkt"
 	 (rep type-rep)
 	 (utils tc-utils)
 	 (env global-env)
-         (except-in (types subtype union convenience resolve utils) -> ->*)
+         (except-in (types subtype union convenience resolve utils comparison) -> ->*)
          (private parse-type)
-         (only-in scheme/contract listof ->)
+         (contract-req)
          racket/match mzlib/trace)
 (provide type-annotation
          get-type
@@ -38,10 +38,12 @@
 (define (type-annotation stx #:infer [let-binding #f])
   (define (pt prop)
     (when (and (identifier? stx)
-               let-binding
-               (lookup-type stx (lambda () #f)))
-      (maybe-finish-register-type stx)
-      (tc-error/expr #:stx stx "Duplicate type annotation for ~a" (syntax-e stx)))
+               let-binding)
+      (define t1 (parse-type/id stx prop))
+      (define t2 (lookup-type stx (lambda () #f)))      
+      (when (and t2 (not (type-equal? t1 t2)))
+        (maybe-finish-register-type stx)
+        (tc-error/expr #:stx stx "Duplicate type annotation of ~a for ~a, previous was ~a" t1 (syntax-e stx) t2)))
     (if (syntax? prop)
         (parse-type prop)
         (parse-type/id stx prop)))

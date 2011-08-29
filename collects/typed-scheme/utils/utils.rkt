@@ -6,7 +6,7 @@ at least theoretically.
 |#
 
 (require (for-syntax racket/base syntax/parse racket/string)
-         racket/contract racket/require-syntax
+         racket/contract/base racket/require-syntax
 	 racket/provide-syntax racket/unit (prefix-in d: unstable/debug)
 	 racket/struct-info racket/pretty mzlib/pconvert syntax/parse)
 
@@ -104,7 +104,7 @@ at least theoretically.
       #'(void)))
 
 ;; some macros to do some timing, only when `timing?' is #t
-(define-for-syntax timing? #f)
+(define-for-syntax timing? #t)
 
 (define last-time #f) (define initial-time #f)
 (define (set!-initial-time t) (set! initial-time t))
@@ -178,7 +178,15 @@ at least theoretically.
          cond-contracted
          define-struct/cond-contract
          define/cond-contract
+         contract-req
          define/cond-contract/provide)
+
+(define-require-syntax contract-req
+  (if enable-contracts?
+      (syntax-rules ()
+        [(_) racket/contract])
+      (syntax-rules ()
+        [(_) (combine-in)])))
 
 (define-syntax-rule (define/cond-contract/provide (name . args) c . body)
   (begin (define/cond-contract name c

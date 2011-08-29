@@ -18,10 +18,12 @@
 
 (define-syntax (define-initial-env stx)
   (syntax-parse stx
-    [(_ initialize-env [id-expr ty] ...)
+    [(_ initialize-env [id-expr ty] ... #:middle [id-expr* ty*] ...)
      #`(begin
-         (define initial-env (make-env [id-expr ty] ...))
-         (define (initialize-env) (initialize-type-env initial-env))
+         (define initial-env (make-env [id-expr (λ () ty)] ... ))
+         (do-time "finished local-expand types")
+         (define initial-env* (make-env [id-expr* (λ () ty*)] ...))
+         (define (initialize-env) (initialize-type-env initial-env) (initialize-type-env initial-env*))
          (provide initialize-env))]))
 
 (define-initial-env initialize-special
@@ -185,6 +187,7 @@
 
   ;; below here: keyword-argument functions from the base environment
   ;; FIXME: abstraction to remove duplication here
+  #:middle
 
   [((kw-expander-proc (syntax-local-value #'file->string)))
    (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -String)]

@@ -1,8 +1,5 @@
-#lang scheme/base
-(require "../utils/utils.rkt"
-	 (for-syntax scheme/base)
-         (utils tc-utils) scheme/list
-         mzlib/etc scheme/contract)
+#lang racket/base
+(require "../utils/utils.rkt" (for-syntax racket/base) (contract-req)) 
 
 (provide Covariant Contravariant Invariant Constant Dotted
          combine-frees flip-variances without-below unless-in-table
@@ -52,10 +49,10 @@
 ;; frees -> frees
 (define (flip-variances vs)
   (for/hasheq ([(k v) (in-hash vs)])
-    (values k (evcase v
-                [Covariant Contravariant]
-                [Contravariant Covariant]
-                [v v]))))
+    (values k 
+            (cond [(eq? v Covariant) Contravariant]
+                  [(eq? v Contravariant) Covariant]
+                  [else v]))))
 
 (define (make-invariant vs)
   (for/hasheq ([(k v) (in-hash vs)])

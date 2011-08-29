@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 #|
 This file is for utilities that are only useful for Typed Racket, but
@@ -7,7 +7,7 @@ don't depend on any other portion of the system
 
 (provide (all-defined-out))
 (require "syntax-traversal.rkt" racket/dict
-	 syntax/parse (for-syntax scheme/base syntax/parse) racket/match)
+	 syntax/parse (for-syntax racket/base syntax/parse) racket/match)
 
 ;; a parameter representing the original location of the syntax being
 ;; currently checked

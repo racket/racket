@@ -1,13 +1,11 @@
 #lang scheme/base
 (require "../utils/utils.rkt")
 
-(require mzlib/struct mzlib/pconvert
+(require mzlib/pconvert
          racket/match
-         syntax/boundmap
          "free-variance.rkt"
          "interning.rkt"
-	 racket/syntax unstable/match unstable/struct
-         mzlib/etc
+         unstable/match unstable/struct         
          racket/stxparam
          scheme/contract
          (for-syntax
@@ -17,7 +15,6 @@
           (except-in syntax/parse id identifier keyword)
           scheme/base
           syntax/struct
-          syntax/stx
           scheme/contract
 	  racket/syntax
           (rename-in (except-in (utils utils stxclass-util) bytes byte-regexp regexp byte-pregexp pregexp)

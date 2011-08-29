@@ -25,7 +25,7 @@
 (require (for-template scheme/base
                        "internal-forms.rkt"))
 
-(provide tc/struct tc/poly-struct names-of-struct tc/builtin-struct d-s)
+(provide tc/struct tc/poly-struct names-of-struct d-s)
 
 (define (names-of-struct stx)
   (define (parent? stx)
@@ -284,20 +284,17 @@
 ;; register a struct type
 ;; convenience function for built-in structs
 ;; tc/builtin-struct : identifier Maybe[identifier] Listof[identifier] Listof[Type] Maybe[identifier] Listof[Type] -> void
-(define/cond-contract (tc/builtin-struct nm parent flds tys kernel-maker #;parent-tys)
+;; FIXME - figure out how to make this lots lazier
+(define/cond-contract (tc/builtin-struct nm parent flds tys kernel-maker)
      (c-> identifier? (or/c #f identifier?) (listof identifier?)
-          (listof Type/c) (or/c #f identifier?) #;(listof fld?)
+          (listof Type/c) (or/c #f identifier?)
           any/c)
   (define parent-name (if parent (make-Name parent) #f))
   (define parent-flds (if parent (get-parent-flds parent-name) null))
   (define parent-tys (map fld-t parent-flds))
   (define defs (mk/register-sty nm flds parent-name parent-flds tys #:mutable #t))
-  (if kernel-maker
-      (let* ([result-type (lookup-type-name nm)]
-             [ty (->* (append parent-tys tys) result-type)])
-        (register-type kernel-maker ty)
-        (cons (make-def-binding kernel-maker ty) defs))
-      defs))
+  (when kernel-maker    
+    (register-type kernel-maker (λ () (->* (append parent-tys tys) (lookup-type-name nm))))))
 
 
 ;; syntax for tc/builtin-struct

@@ -5,8 +5,9 @@
 
 (require "../utils/utils.rkt"
 	 syntax/id-table
+         (rep type-rep)
          (utils tc-utils)
-         (types utils))
+         (types utils comparison))
 
 (provide register-type register-type-if-undefined
          finish-register-type
@@ -31,18 +32,24 @@
 (define (register-type-if-undefined id type)
   (cond [(free-id-table-ref the-mapping id (lambda _ #f))
          => (lambda (e)
-              (tc-error/expr #:stx id "Duplicate type annotation for ~a" (syntax-e id))
+              (define t (if (box? e) (unbox e) e))
+              (unless (and (Type? t) (type-equal? t type))
+                (tc-error/expr #:stx id "Duplicate type annotation of ~a for ~a, previous was ~a" type (syntax-e id) t))
               (when (box? e)
-                (free-id-table-set! the-mapping id (unbox e))))]
+                (free-id-table-set! the-mapping id t)))]
         [else (register-type id type)]))
 
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type/undefined id type)
   ;(printf "register-type/undef ~a\n" (syntax-e id))
-  (if (free-id-table-ref the-mapping id (lambda _ #f))
-      (void (tc-error/expr #:stx id "Duplicate type annotation for ~a" (syntax-e id)))
-      (free-id-table-set! the-mapping id (box type))))
+  (cond [(free-id-table-ref the-mapping id (lambda _ #f))
+         =>
+         (λ (t) ;; it's ok to annotate with the same type
+           (define t* (if (box? t) (unbox t) t))
+           (unless (and (Type? t*) (type-equal? type t*))
+             (void (tc-error/expr #:stx id "Duplicate type annotation of ~a for ~a, previous was ~a" type (syntax-e id) t*))))]
+        [else (free-id-table-set! the-mapping id (box type))]))
 
 ;; add a bunch of types to the mapping
 ;; listof[id] listof[type] -> void
@@ -52,9 +59,11 @@
 ;; given an identifier, return the type associated with it
 ;; if none found, calls lookup-fail
 ;; identifier -> type
-(define (lookup-type id [fail-handler (lambda () (lookup-type-fail id))])
-  (let ([v (free-id-table-ref the-mapping id fail-handler)])
-    (if (box? v) (unbox v) v)))
+(define (lookup-type id [fail-handler (λ () (lookup-type-fail id))])
+  (define v (free-id-table-ref the-mapping id fail-handler))
+  (cond [(box? v) (unbox v)] 
+        [(procedure? v) (define t (v)) (register-type id t) t]
+        [else v]))
 
 (define (maybe-finish-register-type id)
   (let ([v (free-id-table-ref the-mapping id)])

@@ -1,24 +1,17 @@
-#lang racket
+#lang racket/base
 
 (require
  "../utils/utils.rkt"
- (for-template '#%paramz racket/base racket/list
-               racket/tcp
-               (only-in rnrs/lists-6 fold-left)
-               '#%paramz
-               (only-in '#%kernel [apply kernel:apply])
-               racket/promise racket/system
-               (only-in string-constants/private/only-once maybe-print-message)
-               (only-in racket/match/runtime match:error matchable? match-equality-test)
-               racket/unsafe/ops racket/flonum)
- (utils tc-utils)
- (types union convenience)
- (rename-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
+ (for-template racket/base racket/list racket/unsafe/ops racket/flonum)
+ (utils tc-utils) 
+ (rename-in (types union convenience abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
 
 (provide indexing)
 
+(define-syntax-rule (make-env* [i t] ...) (make-env [i (λ () t)] ...))
+
 (define-syntax-rule (indexing index-type)
-  (make-env
+  (make-env*
 
    [build-list (-poly (a) (index-type (-Index . -> . a) . -> . (-lst a)))]
    [make-list (-poly (a) (index-type a . -> . (-lst a)))]
@@ -129,7 +122,7 @@
           [N       index-type]
           [?N      (-opt index-type)]
           [-Input (Un -String -Input-Port -Bytes -Path)])
-       (-Pattern -Input [N ?N ?outp -Bytes] . ->opt . -Boolean))]
+       (-Pattern -Input [N ?N ?outp -Bytes] . ->opt . B))]
 
 
 

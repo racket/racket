@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require racket/match scheme/contract "rep-utils.rkt" "free-variance.rkt" "filter-rep.rkt")
+(require "rep-utils.rkt" "free-variance.rkt" "filter-rep.rkt" "../utils/utils.rkt" (contract-req))
 (provide object-equal?)
 
 (def-pathelem CarPE () [#:fold-rhs #:base])

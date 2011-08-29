@@ -23,7 +23,7 @@
 	  extra
 	  (define e
 	    (parameterize ([infer-param infer])
-	      (make-env [id ty] ...)))
+	      (make-env [id (λ () ty)] ...)))
 	  (define (init)
 	   (initialize-type-env e))
           (provide init)))]
