@@ -8,6 +8,7 @@
                      "rep.rkt"
                      "kws.rkt"
                      "txlift.rkt")
+         racket/syntax
          racket/stxparam
          syntax/stx
          unstable/struct
@@ -242,9 +243,10 @@ Conventions:
                    [es null]
                    [cx x]
                    [fh0 (syntax-patterns-fail ctx0)])
-              (with ([fail-handler fh0]
-                     [cut-prompt fh0])
-                (try alternative ...)))))))]))
+              (parameterize ((current-syntax-context ctx0))
+                (with ([fail-handler fh0]
+                       [cut-prompt fh0])
+                  (try alternative ...))))))))]))
 
 ;; ----
 
