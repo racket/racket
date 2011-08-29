@@ -35,6 +35,7 @@ library's ODBC support (see @secref["odbc-status"] for details):
 @itemlist[
 @item{@bold{@as-index{@hyperlink["http://www.oracle.com"]{Oracle}}}}
 @item{@bold{@as-index{@hyperlink["http://www.ibm.com/software/data/db2/"]{DB2}}}}
+@item{@bold{@as-index{@hyperlink["http://www.microsoft.com/sqlserver/"]{SQL Server}}}}
 ]}
 ]
 

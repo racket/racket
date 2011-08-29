@@ -85,7 +85,6 @@ the state transitions / contracts are:
   (define put-pref-retry-result #f)
   
   (define (put-preferences/gui new-ps new-vs)
-    
     ;; NOTE: old ones must come first in the list, 
     ;; or else multiple sets to the same preference
     ;; will save old values, instead of new ones.
@@ -96,6 +95,7 @@ the state transitions / contracts are:
     
     (define failed #f)
     (define (record-actual-failure)
+      (printf "recording a failure\n")
       (set! number-of-consecutive-failures (+ number-of-consecutive-failures 1))
       (set! past-failure-ps ps)
       (set! past-failure-vs vs)
@@ -155,12 +155,11 @@ the state transitions / contracts are:
        #f
        '(stop ok)))
     
-    (with-handlers ((exn? 
-                     (λ (x)
-                       (message-box
-                        (string-constant drscheme)
-                        (format (string-constant error-saving-preferences)
-                                (exn-message x))))))
+    (with-handlers ((exn:fail? 
+                     (λ (exn)
+                       (log-warning (format "preferences: failed to save ~a prefs:\n   ~a" 
+                                            ps
+                                            (exn-message exn))))))
       (begin0
         (put-preferences ps vs fail-func)
         (unless failed

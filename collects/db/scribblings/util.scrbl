@@ -4,12 +4,58 @@
           scribble/struct
           scheme/sandbox
           "config.rkt"
-          (for-label db db/util/geometry db/util/postgresql))
+          (for-label db db/util/datetime db/util/geometry db/util/postgresql))
 
 @title[#:tag "util"]{Utilities}
 
 The bindings described in this section are provided by the specific
 modules below, not by @racketmodname[db] or @racketmodname[db/base].
+
+@;{========================================}
+
+@section[#:tag "datetime-util"]{Datetime Type Utilities}
+
+@defmodule[db/util/datetime]
+
+@deftogether[[
+@defproc[(sql-datetime->srfi-date [t (or/c sql-date? sql-time? sql-timestamp?)])
+         srfi:date?]
+@defproc[(srfi-date->sql-date [d srfi:date?])
+         sql-date?]
+@defproc[(srfi-date->sql-time [d srfi:date?])
+         sql-time?]
+@defproc[(srfi-date->sql-time-tz [d srfi:date?])
+         sql-time?]
+@defproc[(srfi-date->sql-timestamp [d srfi:date?])
+         sql-timestamp?]
+@defproc[(srfi-date->sql-timestamp-tz [d srfi:date?])
+         sql-timestamp?]]]{
+
+  Converts between this library's date and time values and SRFI 19's
+  date values (see @racketmodname[srfi/19]). SRFI dates store more
+  information than SQL dates and times, so converting a SQL time to a
+  SRFI date, for example, puts zeroes in the year, month, and day
+  fields.
+
+@(examples/results
+  [(sql-datetime->srfi-date
+    (query-value pgc "select time '7:30'"))
+   (sql-datetime->srfi-date (make-sql-time 7 30 0 0 #f))]
+  [(sql-datetime->srfi-date
+    (query-value pgc "select date '25-dec-1980'"))
+   (sql-datetime->srfi-date
+    (make-sql-date 1980 12 25))]
+  [(sql-datetime->srfi-date
+    (query-value pgc "select timestamp 'epoch'"))
+   (sql-datetime->srfi-date (make-sql-timestamp 1970 1 1 0 0 0 0 #f))])
+}
+
+@defproc[(sql-day-time-interval->seconds [interval sql-day-time-interval?])
+         rational?]{
+
+  Returns the length of @racket[interval] in seconds.
+}
+
 
 @;{========================================}
 

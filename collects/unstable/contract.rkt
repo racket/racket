@@ -225,8 +225,8 @@
                  (lambda (idx) idx)
                  #f
                  (lambda (idx) (more?))
-                 (lambda (elem) #t)
-                 (lambda (idx elem) #t)))))))
+                 (lambda elems #t)
+                 (lambda (idx . elems) #t)))))))
      sequence?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

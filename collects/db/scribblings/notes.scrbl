@@ -182,3 +182,8 @@ Maybe Oracle bug? See:
   http://stackoverflow.com/questions/38435/
   http://forums.oracle.com/forums/thread.jspa?threadID=856713
 }
+
+@subsection{SQL Server ODBC Driver}
+
+Basic SQL Server support has been verified on @bold{win32}, but the
+automated test suite has not yet been adapted and run.

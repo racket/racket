@@ -293,7 +293,7 @@
           [(struct result-set-header-packet (fields extra))
            (let* ([field-dvecs (query1:get-fields fsym binary?)]
                   [rows (query1:get-rows fsym field-dvecs binary? wbox)])
-             (vector 'recordset field-dvecs rows))])))
+             (vector 'rows field-dvecs rows))])))
 
     (define/private (query1:get-fields fsym binary?)
       (let ([r (recv fsym 'field)])
@@ -317,8 +317,8 @@
 
     (define/private (query1:process-result fsym result)
       (match result
-        [(vector 'recordset field-dvecs rows)
-         (recordset (map field-dvec->field-info field-dvecs) rows)]
+        [(vector 'rows field-dvecs rows)
+         (rows-result (map field-dvec->field-info field-dvecs) rows)]
         [(vector 'command command-info)
          (simple-result command-info)]))
 
@@ -377,7 +377,7 @@
                      [i (in-naturals)])
               (and (equal? (field-dvec->name dvec) name) i)))
           (match result
-            [(vector 'recordset field-dvecs rows)
+            [(vector 'rows field-dvecs rows)
              (let ([code-index (find-index "Code" field-dvecs)]
                    [message-index (find-index "Message" field-dvecs)])
                (for ([row (in-list rows)])
@@ -506,7 +506,7 @@ According to that page, the following statements may be prepared:
   CALL, CREATE TABLE, DELETE, DO, INSERT, REPLACE, SELECT, SET, UPDATE,
   and most SHOW statements
 
-On the other hand, we want to force all recordset-returning statements
+On the other hand, we want to force all rows-returning statements
 through the prepared-statement path to use the binary data
 protocol. That would seem to be the following:
 

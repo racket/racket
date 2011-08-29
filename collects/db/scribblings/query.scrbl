@@ -89,8 +89,8 @@ All query functions require both a connection and a
 
 The simple query API consists of a set of functions specialized to
 various types of queries. For example, @racket[query-value] is
-specialized to queries that return a recordset of exactly one column
-and exactly one row.
+specialized to queries that return exactly one row of exactly one
+column.
 
 If a statement takes parameters, the parameter values are given as
 additional arguments immediately after the SQL statement. Only a
@@ -121,8 +121,8 @@ The types of parameters and returned fields are described in
                      [arg any/c] ...)
          (listof vector?)]{
 
-  Executes a SQL query, which must produce a recordset, and returns the
-  list of rows (as vectors) from the query.
+  Executes a SQL query, which must produce rows, and returns the list
+  of rows (as vectors) from the query.
 
 @examples/results[
 [(query-rows pgc "select * from the_numbers where n = $1" 2)
@@ -137,7 +137,7 @@ The types of parameters and returned fields are described in
                      [arg any/c] ...)
          list?]{
 
-  Executes a SQL query, which must produce a recordset of exactly one
+  Executes a SQL query, which must produce rows of exactly one
   column, and returns the list of values from the query.
 
 @examples/results[
@@ -153,8 +153,8 @@ The types of parameters and returned fields are described in
                     [arg any/c] ...)
          vector?]{
 
-  Executes a SQL query, which must produce a recordset of exactly one
-  row, and returns its (single) row result as a vector.
+  Executes a SQL query, which must produce exactly one row, and
+  returns its (single) row result as a vector.
 
 @examples/results[
 [(query-row myc "select * from the_numbers where n = ?" 2)
@@ -185,8 +185,8 @@ The types of parameters and returned fields are described in
                       [arg any/c] ...)
          any/c]{
 
-  Executes a SQL query, which must produce a recordset of exactly one
-  column and exactly one row, and returns its single value result.
+  Executes a SQL query, which must produce exactly one row of exactly
+  one column, and returns its single value result.
 
 @examples/results[
 [(query-value pgc "select timestamp 'epoch'")
@@ -217,9 +217,9 @@ The types of parameters and returned fields are described in
                    [arg any/c] ...)
          sequence?]{
 
-  Executes a SQL query, which must produce a recordset, and returns a
+  Executes a SQL query, which must produce rows, and returns a
   sequence. Each step in the sequence produces as many values as the
-  recordset has columns.
+  rows have columns.
 
 @examples/results[
 [(for/list ([n (in-query pgc "select n from the_numbers where n < 2")])
@@ -249,7 +249,7 @@ based on the number of variables in the clause's left-hand side:
 @section{General Query Support}
 
 A general query result is either a @racket[simple-result] or a
-@racket[recordset].
+@racket[rows-result].
 
 @defstruct*[simple-result
             ([info any/c])]{
@@ -262,7 +262,7 @@ rely on its contents; it varies based on database system and may
 change in future versions of this library (even new minor versions).
 }
 
-@defstruct*[recordset
+@defstruct*[rows-result
             ([headers (listof any/c)]
              [rows (listof vector?)])]{
 
@@ -279,11 +279,11 @@ future version of this library (even new minor versions).
 @defproc[(query [connection connection?]
                 [stmt statement?]
                 [arg any/c] ...)
-         (or/c simple-result? recordset?)]{
+         (or/c simple-result? rows-result?)]{
 
   Executes a query, returning a structure that describes the
   results. Unlike the more specialized query functions, @racket[query]
-  supports both recordset-returning and effect-only queries.
+  supports both rows-returning and effect-only queries.
 }
 
 
@@ -347,11 +347,11 @@ closed.
 @defproc[(prepared-statement-result-types [pst prepared-statement?])
          (listof (list/c boolean? (or/c symbol? #f) any/c))]{
 
-  If @racket[pst] is a recordset-producing statement (eg,
-  @tt{SELECT}), returns a list of type descriptions as described
-  above, identifying the SQL types (or pseudotypes) of the result
-  columns. If @racket[pst] does not produce a recordset, the function
-  returns the empty list.
+  If @racket[pst] is a rows-returning statement (eg, @tt{SELECT}),
+  returns a list of type descriptions as described above, identifying
+  the SQL types (or pseudotypes) of the result columns. If
+  @racket[pst] is not a rows-returning statement, the function returns
+  the empty list.
 }
 
 @defproc[(bind-prepared-statement

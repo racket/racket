@@ -14,7 +14,8 @@
 (void
  (interaction-eval #:eval the-eval
                    (require racket/class
-                            "main.rkt"))
+                            db
+                            db/util/datetime))
  (interaction-eval #:eval the-eval
                    (define connection% (class object% (super-new))))
  (interaction-eval #:eval the-eval

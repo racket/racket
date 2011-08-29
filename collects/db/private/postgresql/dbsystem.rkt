@@ -1,9 +1,12 @@
 #lang racket/base
 (require racket/class
          racket/list
+         racket/match
+         (prefix-in srfi: srfi/19)
          "../generic/interfaces.rkt"
          "../generic/sql-data.rkt"
          "../generic/sql-convert.rkt"
+         "../../util/datetime.rkt"
          "../../util/geometry.rkt"
          "../../util/postgresql.rkt"
          (only-in "message.rkt" field-dvec->typeid))
@@ -130,6 +133,114 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
 
 |#
 
+;; Text readers
+
+(define (parse-date d)
+  (srfi-date->sql-date
+   (srfi:string->date d "~Y-~m-~d")))
+
+(define time/ns-rx #rx"^[0-9]*:[0-9]*:[0-9]*\\.([0-9]*)")
+(define timestamp/ns-rx #rx"^.* [0-9]*:[0-9]*:[0-9]*\\.([0-9]*)")
+
+(define (ns-of t rx)
+  (let ([m (regexp-match rx t)])
+    (if m
+        (* #e1e9 (parse-exact-fraction (cadr m)))
+        0)))
+
+(define (parse-time t)
+  (srfi-date->sql-time
+   (srfi:string->date t "~k:~M:~S")
+   (ns-of t time/ns-rx)))
+
+(define (parse-time-tz t)
+  (srfi-date->sql-time-tz
+   (srfi:string->date t "~k:~M:~S~z")
+   (ns-of t time/ns-rx)))
+
+(define (parse-timestamp t)
+  (srfi-date->sql-timestamp
+   (srfi:string->date t "~Y-~m-~d ~k:~M:~S")
+   (ns-of t timestamp/ns-rx)))
+
+(define (parse-timestamp-tz t)
+  (srfi-date->sql-timestamp-tz
+   (srfi:string->date t "~Y-~m-~d ~k:~M:~S~z")
+   (ns-of t timestamp/ns-rx)))
+
+(define interval-rx
+  (regexp
+   (string-append "^"
+                  "(?:(-?[0-9]*) years? *)?"
+                  "(?:(-?[0-9]*) mons? *)?"
+                  "(?:(-?[0-9]*) days? *)?"
+                  "(?:(-?)([0-9]*):([0-9]*):([0-9]*)(?:\\.([0-9]*))?)?"
+                  "$")))
+
+(define (parse-interval s)
+  (define (to-num m)
+    (if m (string->number m) 0))
+  (define match-result (regexp-match interval-rx s))
+  (match match-result
+    [(list _whole years months days tsign hours mins secs fsec)
+     (let* ([years (to-num years)]
+            [months (to-num months)]
+            [days (to-num days)]
+            [sg (if (equal? tsign "-") - +)]
+            [hours (sg (to-num hours))]
+            [mins (sg (to-num mins))]
+            [secs (sg (to-num secs))]
+            [nsecs (if fsec
+                       (let ([flen (string-length fsec)])
+                         (* (string->number (substring fsec 0 (min flen 9)))
+                            (expt 10 (- 9 (min flen 9)))))
+                       0)])
+       (sql-interval years months days hours mins secs nsecs))]))
+
+;; Text writers
+
+(define (marshal-date f i d)
+  (unless (sql-date? d)
+    (marshal-error f i "date" d))
+  (srfi:date->string (sql-datetime->srfi-date d) "~Y-~m-~d"))
+
+(define (marshal-time f i t)
+  (unless (sql-time? t)
+    (marshal-error f i "time" t))
+  (srfi:date->string (sql-datetime->srfi-date t) "~k:~M:~S.~N"))
+
+(define (marshal-time-tz f i t)
+  (unless (sql-time? t)
+    (marshal-error f i "time" t))
+  (srfi:date->string (sql-datetime->srfi-date t) "~k:~M:~S.~N~z"))
+
+(define (marshal-timestamp f i t)
+  (unless (sql-timestamp? t)
+    (marshal-error f i "timestamp" t))
+  (srfi:date->string (sql-datetime->srfi-date t) "~Y-~m-~d ~k:~M:~S.~N"))
+
+(define (marshal-timestamp-tz f i t)
+  (unless (sql-timestamp? t)
+    (marshal-error f i "timestamp" t))
+  (srfi:date->string (sql-datetime->srfi-date t) "~Y-~m-~d ~k:~M:~S.~N~z"))
+
+(define (marshal-interval f i t)
+  (define (tag num unit)
+    (if (zero? num) "" (format "~a ~a " num unit)))
+  (match t
+    [(sql-interval years months days hours minutes seconds nanoseconds)
+     ;; Note: we take advantage of PostgreSQL's liberal interval parser
+     ;; and we acknowledge its micro-second precision.
+     (string-append (tag years "years")
+                    (tag months "months")
+                    (tag days "days")
+                    (tag hours "hours")
+                    (tag minutes "minutes")
+                    (tag seconds "seconds")
+                    (tag (quotient nanoseconds 1000) "microseconds"))]
+    [else
+     (marshal-error f i "interval" t)]))
+
 ;; Binary readers
 
 (define (recv-bits x)
@@ -227,8 +338,7 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
            +nan.0])))
 |#
 
-(define-values (c-parse-char1
-                c-parse-date
+(define-values (c-parse-date
                 c-parse-time
                 c-parse-time-tz
                 c-parse-timestamp
@@ -236,8 +346,7 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
                 c-parse-interval
                 c-parse-decimal)
   (let ([c (lambda (f) (lambda (x) (f (bytes->string/utf-8 x))))])
-    (values (c parse-char1)
-            (c parse-date)
+    (values (c parse-date)
             (c parse-time)
             (c parse-time-tz)
             (c parse-timestamp)

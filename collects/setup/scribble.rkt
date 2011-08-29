@@ -117,7 +117,7 @@
                                                       (list (directory-record-maj rec)
                                                             (list '= (directory-record-min rec)))))
                                         (cdr spec))))
-                           (build-path dir (car d))
+                           (simplify-path (build-path dir (car d)) #f)
                            (doc-path dir (cadddr d) flags under-main?)
                            flags under-main? (caddr d))))
              s)

@@ -200,14 +200,19 @@
       any)
   (name-list val-list)
   @{Like @racket[put-preferences], but has more sophisticated error handling.
-    In particular, it
+    In particular, when it fails to grab a lock, it
     @itemize[
       @item{waits for three consecutive failures before informing the user}
       @item{gives the user the opportunity to ``steal'' the lockfile after the
             third failure, and}
-      @item{when failures occur, it remembers what its arguments were and if
+      @item{when lock failures occur, it remembers what its arguments were and if
             any preference save eventually succeeds, all of the past failures
-            are also written at that point.}]})
+            are also written at that point.}]
+    
+    In addition when an error is raised trying to save a preference to the preference
+    file, @racket[preferences:put-preferences/gui] logs the error using @racket[log-warning],
+    instead of raising an exception.
+    })
 
  (proc-doc/names
   preferences:get-preference/gui

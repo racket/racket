@@ -5,6 +5,14 @@
          db/base
          db/private/generic/sql-convert
          "../config.rkt")
+(require/expose
+ db/private/postgresql/dbsystem
+ (parse-date
+  parse-time
+  parse-time-tz
+  parse-timestamp
+  parse-timestamp-tz))
+
 (provide sql-types:test)
 
 (define sql-types:test

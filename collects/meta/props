@@ -608,6 +608,11 @@ path/s is either such a string or a list of them.
 "collects/data" responsible (ryanc samth)
 "collects/datalog" responsible (jay)
 "collects/db" responsible (ryanc)
+"collects/db/odbc.rkt" drdr:command-line #f
+"collects/db/private/odbc/connection.rkt" drdr:command-line #f
+"collects/db/private/odbc/dbsystem.rkt" drdr:command-line #f
+"collects/db/private/odbc/ffi.rkt" drdr:command-line #f
+"collects/db/private/odbc/main.rkt" drdr:command-line #f
 "collects/defaults" responsible (robby)
 "collects/deinprogramm" responsible (sperber)
 "collects/deinprogramm/contract/contract-test-display.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1557,10 +1562,15 @@ path/s is either such a string or a list of them.
 "collects/tests/plai/test-random-mutator.rkt" responsible (jay robby)
 "collects/tests/plai/web.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/planet" responsible (robby jay)
-"collects/tests/planet/cmdline-tool.rkt" drdr:command-line #f
+"collects/tests/planet/cmdline-tool.rkt" drdr:command-line (raco "make" *)
+"collects/tests/planet/docs-build.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/examples/dummy-module.rkt" drdr:command-line #f
 "collects/tests/planet/examples/scribblings-package" drdr:command-line #f
-"collects/tests/planet/thread-safe-resolver.rkt" drdr:timeout 1000
+"collects/tests/planet/lang.rkt" drdr:command-line (raco "make" *)
+"collects/tests/planet/run-all.rkt" drdr:command-line (racket *)
+"collects/tests/planet/test-docs-complete.rkt" drdr:command-line (raco "make" *)
+"collects/tests/planet/thread-safe-resolver.rkt" drdr:command-line (raco "make" *) drdr:timeout 1000
+"collects/tests/planet/version.rkt" drdr:command-line (raco "make" *)
 "collects/tests/plot/run-tests.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
@@ -1831,8 +1841,8 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/pconvert.rktl" drdr:command-line #f
 "collects/tests/racket/place-chan-rand-help.rkt" responsible (tewk)
 "collects/tests/racket/place-chan-rand.rkt" responsible (tewk) drdr:random #t
-"collects/tests/racket/place-channel.rkt" responsible (tewk) drdr:command-line (racket "-tm" *) drdr:timeout 300
 "collects/tests/racket/place-channel-ffi.rkt" responsible (tewk) drdr:command-line (racket "-tm" *)
+"collects/tests/racket/place-channel.rkt" responsible (tewk) drdr:command-line (racket "-tm" *) drdr:timeout 300
 "collects/tests/racket/place.rktl" responsible (tewk) drdr:command-line (racket "-f" *)
 "collects/tests/racket/port.rktl" drdr:command-line #f
 "collects/tests/racket/portlib.rktl" drdr:command-line #f

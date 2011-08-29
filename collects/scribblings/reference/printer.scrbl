@@ -50,7 +50,7 @@ print sharing through graph definitions and references (see
 then @racket[print-graph] is effectively set to @racket[#t]
 automatically.
 
-With the exception of displaying byte strings, printing is defined in
+With the exception of displaying @tech{byte strings}, printing is defined in
 terms of Unicode characters; see @secref["ports"] for information
 on how a character stream is written to a port's underlying byte
 stream.
@@ -58,7 +58,7 @@ stream.
 
 @section[#:tag "print-symbol"]{Printing Symbols}
 
-Symbols containing spaces or special characters @racket[write] using
+@tech{Symbols} containing spaces or special characters @racket[write] using
 escaping @litchar{\} and quoting @litchar{|}s. When the
 @racket[read-case-sensitive] parameter is set to @racket[#f], then
 symbols containing uppercase characters also use escaping
@@ -99,7 +99,7 @@ of printing enclosing datatypes, a symbol is @tech{quotable}.
 
 @section{Printing Numbers}
 
-A number prints the same way in @racket[write], @racket[display], and
+A @tech{number} prints the same way in @racket[write], @racket[display], and
 @racket[print] modes. For the purposes of printing enclosing
 datatypes, a symbol is @tech{quotable}.
 
@@ -128,7 +128,7 @@ printed form of the number's exact negation.
 
 @section{Printing Booleans}
 
-The constant @racket[#t] prints as @litchar{#true} or @litchar{#t} in
+The @tech{boolean} constant @racket[#t] prints as @litchar{#true} or @litchar{#t} in
 all modes (@racket[display], @racket[write], and @racket[print]),
 depending on the value of @racket[print-boolean-long-form], and the
 constant @racket[#f] prints as @litchar{#false} or @litchar{#f}. For
@@ -137,8 +137,8 @@ the purposes of printing enclosing datatypes, a symbol is
 
 @section[#:tag "print-pairs"]{Printing Pairs and Lists}
 
-In @racket[write] and @racket[display] modes, an empty list prints as
-@litchar{()}. A pair normally prints starting with @litchar{(}
+In @racket[write] and @racket[display] modes, an empty @tech{list} prints as
+@litchar{()}. A @tech{pair} normally prints starting with @litchar{(}
 followed by the printed form of its @racket[car]. The rest of the
 printed form depends on the @racket[cdr]:
 
@@ -221,7 +221,7 @@ is never @tech{quotable}.
 
 @section{Printing Strings}
 
-All strings @racket[display] as their literal character sequences.
+All @tech{strings} @racket[display] as their literal character sequences.
 
 The @racket[write] or @racket[print] form of a string starts with @litchar{"} and ends
 with another @litchar{"}. Between the @litchar{"}s, each character is
@@ -257,7 +257,7 @@ string is @tech{quotable}.
 
 @section[#:tag "print-vectors"]{Printing Vectors}
 
-In @racket[display] mode, the printed form of a vector is @litchar{#}
+In @racket[display] mode, the printed form of a @tech{vector} is @litchar{#}
 followed by the printed form of @racket[vector->list] applied to the
 vector. In @racket[write] mode, the printed form is the same, except
 that when the @racket[print-vector-length] parameter is @racket[#t], a
@@ -279,7 +279,7 @@ its elements are @tech{quotable}.
 @section[#:tag "print-structure"]{Printing Structures}
 
 When the @racket[print-struct] parameter is set to @racket[#t], then
-the way that structures print depends on details of the structure type
+the way that @tech{structures} print depends on details of the structure type
 for which the structure is an instance:
 
 @itemize[
@@ -372,7 +372,7 @@ unreadable values (see @secref["print-unreadable"]) and count as
 @section[#:tag "print-hashtable"]{Printing Hash Tables}
 
 When the @racket[print-hash-table] parameter is set to @racket[#t], in
-@racket[write] and @racket[display] modes, a hash table prints
+@racket[write] and @racket[display] modes, a @tech{hash table} prints
 starting with @litchar{#hash(}, @litchar{#hasheqv(}, or
 @litchar{#hasheq(} for a table using @racket[equal?], @racket[eqv?],
 or @racket[eq?] key comparisons, respectively. After the prefix, each
@@ -401,7 +401,7 @@ hash table prints as @litchar{#<hash>} and counts as @tech{quotable}.
 
 @section[#:tag "print-box"]{Printing Boxes}
 
-When the @racket[print-box] parameter is set to @racket[#t], a box
+When the @racket[print-box] parameter is set to @racket[#t], a @tech{box}
 prints as @litchar{#&} followed by the printed form of its content in
 @racket[write], @racket[display], or @racket[print] mode when
 @racket[print-as-expression] is @racket[#f] or the @tech{quoting
@@ -421,7 +421,7 @@ prints as @litchar{#<box>} and counts as @tech{quotable}.
 
 @section{Printing Characters}
 
-Characters with the special names described in
+@tech{Characters} with the special names described in
 @secref["parse-character"] @racket[write] and @racket[print] using the
 same name.  (Some characters have multiple names; the
 @racket[#\newline] and @racket[#\nul] names are used instead of
@@ -441,7 +441,7 @@ For the purposes of printing enclosing datatypes, a character is
 
 @section{Printing Keywords}
 
-Keywords @racket[write], @racket[print], and @racket[display] the same
+@tech{Keywords} @racket[write], @racket[print], and @racket[display] the same
 as symbols (see @secref["print-symbol"]) except with a leading
 @litchar{#:} (after any @litchar{'} prefix added in @racket[print]
 mode), and without special handling for an initial @litchar{#} or when
@@ -454,7 +454,7 @@ For the purposes of printing enclosing datatypes, a keyword is
 
 @section{Printing Regular Expressions}
 
-Regexp values @racket[write], @racket[display], and @racket[print]
+@tech{Regexp values} @racket[write], @racket[display], and @racket[print]
 starting with @litchar{#px} (for @racket[pregexp]-based regexps) or
 @litchar{#rx} (for @racket[regexp]-based regexps) followed by the
 @racket[write] form of the regexp's source string or byte string.
@@ -465,7 +465,7 @@ For the purposes of printing enclosing datatypes, a regexp value is
 
 @section[#:tag "print-path"]{Printing Paths}
 
-Paths @racket[write] and @racket[print] as @litchar{#<path:....>}. A
+@tech{Paths} @racket[write] and @racket[print] as @litchar{#<path:....>}. A
 path @racket[display]s the same as the string produced by
 @racket[path->string]. For the purposes of printing enclosing
 datatypes, a path counts as @tech{quotable}.

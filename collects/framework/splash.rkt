@@ -308,7 +308,10 @@
    (λ () default)
    #:timeout-lock-there (λ (path) default)))
 (define (splash-set-preference name value)
-  (put-preferences (list name) (list value) void))
+  (with-handlers ((exn:fail?
+                   (λ (exn)
+                     (log-warning (format "splash pref save: ~a" (exn-message exn))))))
+    (put-preferences (list name) (list value) void)))
 
 ;; only modified (or read) on the splash eventspace handler thread
 (define quit-on-close? #t)

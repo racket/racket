@@ -85,7 +85,19 @@
           (void)))
        (test-bad
         (for ([x (with/c (sequence/c integer? symbol?) (list 1 2 3 4))])
-          (void))))
+          (void)))
+       (test-ok
+         (for ([(x y) (with/c (sequence/c integer? symbol?)
+                              (in-dict (list (cons 1 'one) (cons 2 'two))))])
+           (void)))
+       (test-bad
+         (for ([(x y) (with/c (sequence/c integer? symbol?)
+                              (in-dict (list (cons 1 'one) (cons 2 "two"))))])
+           (void)))
+       (test-bad
+         (for ([(x y) (with/c (sequence/c integer?)
+                              (in-dict (list (cons 1 'one) (cons 2 'two))))])
+           (void))))
      (test-suite "dict/c"
        (test-ok
         (for ([(x y)

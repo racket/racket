@@ -7,3 +7,5 @@
 
 @include-section["eval-model.scrbl"]
 @include-section["syntax-model.scrbl"]
+@include-section["reader.scrbl"]
+@include-section["printer.scrbl"]

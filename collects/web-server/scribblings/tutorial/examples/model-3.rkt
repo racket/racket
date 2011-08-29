@@ -14,7 +14,7 @@
 (define (initialize-blog! home)
   (define db (sqlite3-connect #:database home #:mode 'create))
   (define the-blog (blog db))
-  (with-handlers ([exn? void])
+  (unless (table-exists? db "posts")
     (query-exec db
      (string-append
       "CREATE TABLE posts "
@@ -22,7 +22,8 @@
     (blog-insert-post!
      the-blog "First Post" "This is my first post")
     (blog-insert-post!
-     the-blog "Second Post" "This is another post")
+     the-blog "Second Post" "This is another post"))
+  (unless (table-exists? db "comments")
     (query-exec db
      "CREATE TABLE comments (pid INTEGER, content TEXT)")
     (post-insert-comment!

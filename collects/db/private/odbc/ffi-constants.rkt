@@ -194,3 +194,5 @@
 (define SQL_TXN_READ_COMMITTED   #x2)
 (define SQL_TXN_REPEATABLE_READ  #x4)
 (define SQL_TXN_SERIALIZABLE     #x8)
+
+(define SQL_DBMS_NAME 17)

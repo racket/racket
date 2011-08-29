@@ -1559,5 +1559,28 @@
 (syntax-test #'(evil-via-delta-introducer (m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that a for-syntax reference can precede a
+;;  for-syntax definition
+
+(module pre-definition-reference racket/base
+  (require (for-syntax racket/base))
+  (provide (for-syntax f g))
+  (define-for-syntax (f x) (g (+ x 1)))
+  (define-for-syntax (g y) (+ y 2)))
+
+(require 'pre-definition-reference)
+(test 3 'use (let-syntax ([m (lambda (stx) (datum->syntax stx (f 0)))])
+               m))
+
+(syntax-test #'(module unbound-reference racket/base
+                 (require (for-syntax racket/base))
+                 (define-for-syntax (f x) nonesuch)))
+(syntax-test #'(module unbound-reference racket/base
+                 (require (for-syntax racket/base))
+                 (#%expression
+                  (let-syntax ([g (lambda (stx) nonesuch)])
+                    10))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

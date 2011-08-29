@@ -203,5 +203,30 @@
   (test #t namespace? (make-base-empty-namespace)))
 
 ;; ----------------------------------------
+;; Check module caching by monitoring `current-eval'.
+;; If the module cache works, then it turns out that
+;; the `module-compiled-imports' of modules to evaluate
+;; will be `eq?' the second time around to the first time
+;; around. This is a fragile and imprecise check, but it's
+;; the best idea we have to checking that the module cache
+;; works.
+
+(let ([codes (make-hash)])
+  (define (go-once)
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [current-eval
+                    (let ([orig (current-eval)])
+                      (lambda (x)
+                        (when (syntax? x)
+                          (when (compiled-module-expression? (syntax-e x))
+                            (hash-set! codes (module-compiled-imports (syntax-e x)) #t)))
+                        (orig x)))])
+      (dynamic-require 'racket/string #f)))
+  (go-once)
+  (let ([pre (hash-count codes)])
+    (go-once)
+    (test pre hash-count codes)))
+
+;; ----------------------------------------
 
 (report-errs)

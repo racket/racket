@@ -84,19 +84,19 @@
 (define (query1 c fsym stmt)
   (send c query fsym stmt))
 
-;; query/recordset : connection symbol Statement nat/#f -> void
-(define (query/recordset c fsym sql want-columns)
+;; query/rows : connection symbol Statement nat/#f -> void
+(define (query/rows c fsym sql want-columns)
   (let [(result (query1 c fsym sql))]
-    (unless (recordset? result)
-      (uerror fsym "query did not return recordset: ~e" sql))
-    (let ([got-columns (length (recordset-headers result))])
+    (unless (rows-result? result)
+      (uerror fsym "query did not return rows: ~e" sql))
+    (let ([got-columns (length (rows-result-headers result))])
       (when (and want-columns (not (= got-columns want-columns)))
         (uerror fsym "query returned ~a ~a (expected ~a): ~e"
                 got-columns (if (= got-columns 1) "column" "columns") want-columns sql)))
     result))
 
-(define (recordset->row fsym rs sql maybe-row? one-column?)
-  (define rows (recordset-rows rs))
+(define (rows-result->row fsym rs sql maybe-row? one-column?)
+  (define rows (rows-result-rows rs))
   (cond [(null? rows)
          (cond [maybe-row? #f]
                [else (uerror fsym "query returned zero rows (expected 1): ~e" sql)])]
@@ -136,46 +136,46 @@
 
 ;; query-rows : connection Statement arg ... -> (listof (vectorof 'a))
 (define (query-rows c sql . args)
-  (let ([sql (compose-statement 'query-rows c sql args 'recordset)])
-    (recordset-rows (query/recordset c 'query-rows sql #f))))
+  (let ([sql (compose-statement 'query-rows c sql args 'rows)])
+    (rows-result-rows (query/rows c 'query-rows sql #f))))
 
 ;; query-list : connection Statement arg ... -> (listof 'a)
-;; Expects to get back a recordset with one field per row.
+;; Expects to get back a rows-result with one field per row.
 (define (query-list c sql . args)
   (let ([sql (compose-statement 'query-list c sql args 1)])
     (map (lambda (v) (vector-ref v 0))
-         (recordset-rows (query/recordset c 'query-list sql 1)))))
+         (rows-result-rows (query/rows c 'query-list sql 1)))))
 
 ;; query-row : connection Statement arg ... -> (vector-of 'a)
-;; Expects to get back a recordset of zero or one rows.
+;; Expects to get back a rows-result of zero or one rows.
 (define (query-row c sql . args)
-  (let ([sql (compose-statement 'query-row c sql args 'recordset)])
-    (recordset->row 'query-row
-                    (query/recordset c 'query-row sql #f)
+  (let ([sql (compose-statement 'query-row c sql args 'rows)])
+    (rows-result->row 'query-row
+                    (query/rows c 'query-row sql #f)
                     sql #f #f)))
 
 ;; query-maybe-row : connection Statement arg ... -> (vector-of 'a) or #f
-;; Expects to get back a recordset of zero or one rows.
+;; Expects to get back a rows-result of zero or one rows.
 (define (query-maybe-row c sql . args)
-  (let ([sql (compose-statement 'query-maybe-row c sql args 'recordset)])
-    (recordset->row 'query-maybe-row
-                    (query/recordset c 'query-maybe-row sql #f)
+  (let ([sql (compose-statement 'query-maybe-row c sql args 'rows)])
+    (rows-result->row 'query-maybe-row
+                    (query/rows c 'query-maybe-row sql #f)
                     sql #t #f)))
 
 ;; query-value : connection string arg ... -> value | raises error
-;; Expects to get back a recordset of exactly one row, exactly one column.
+;; Expects to get back a rows-result of exactly one row, exactly one column.
 (define (query-value c sql . args)
   (let ([sql (compose-statement 'query-value c sql args 1)])
-    (recordset->row 'query-value
-                    (query/recordset c 'query-value sql 1)
+    (rows-result->row 'query-value
+                    (query/rows c 'query-value sql 1)
                     sql #f #t)))
 
 ;; query-maybe-value : connection Statement arg ... -> value/#f
-;; Expects to get back a recordset of zero or one rows, exactly one column.
+;; Expects to get back a rows-result of zero or one rows, exactly one column.
 (define (query-maybe-value c sql . args)
   (let ([sql (compose-statement 'query-maybe-value c sql args 1)])
-    (recordset->row 'query-maybe-value
-                    (query/recordset c 'query-maybe-value sql 1)
+    (rows-result->row 'query-maybe-value
+                    (query/rows c 'query-maybe-value sql 1)
                     sql #t #t)))
 
 ;; query-exec : connection Statement arg ... -> void
@@ -224,9 +224,9 @@
     (apply raise-type-error 'in-query "connection" 0 c stmt args))
   (unless (statement? stmt)
     (apply raise-type-error 'in-query "statement" 1 c stmt args))
-  (let* ([check (or vars 'recordset)]
+  (let* ([check (or vars 'rows)]
          [stmt (compose-statement 'in-query c stmt args check)])
-    (recordset-rows (query/recordset c 'in-query stmt vars))))
+    (rows-result-rows (query/rows c 'in-query stmt vars))))
 
 ;; ========================================
 

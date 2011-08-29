@@ -5,6 +5,7 @@
          racket/string
          (prefix-in srfi: srfi/19)
          db/base
+         db/util/datetime
          db/util/geometry
          db/util/postgresql
          "../config.rkt")

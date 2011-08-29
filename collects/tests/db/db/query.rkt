@@ -139,10 +139,10 @@
     (test-case "query - select"
       (with-connection c
         (let [(q (query c "select N from the_numbers"))]
-          (check-pred recordset? q)
+          (check-pred rows-result? q)
           (check set-equal?
                  (map vector (map car test-data))
-                 (recordset-rows q)))))
+                 (rows-result-rows q)))))
     (test-case "query - update"
       (unless (ANYFLAGS 'isora 'isdb2)
         (with-connection c

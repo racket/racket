@@ -64,14 +64,14 @@ system to system and is subject to change.)
 [(query pgc "insert into the_numbers values (3, 'a crowd')")
  (simple-result '((command insert 0 1)))]
 [(query pgc "select n, d from the_numbers where n % 2 = 0")
- (recordset
+ (rows-result
   (list
    '((name . "n") (typeid . 23))
    '((name . "d") (typeid . 1043)))
   '(#(0 "nothing") #(2 "company")))]
 ]
 
-When the query is known to return a recordset and when the field
+When the query is known to return rows and when the field
 descriptions are not needed, it is more convenient to use the
 @racket[query-rows] function.
 
@@ -80,16 +80,16 @@ descriptions are not needed, it is more convenient to use the
  '(#(0 "nothing") #(2 "company"))]
 ]
 
-Use @racket[query-row] for queries that are known to return a
-recordset of exactly one row.
+Use @racket[query-row] for queries that are known to return exactly
+one row.
 
 @my-interaction[
 [(query-row pgc "select * from the_numbers where n = 0")
  (vector 0 "nothing")]
 ]
 
-Similarly, use @racket[query-list] for queries that produce a
-recordset of exactly one column.
+Similarly, use @racket[query-list] for queries that produce rows of
+exactly one column.
 
 @my-interaction[
 [(query-list pgc "select d from the_numbers order by n")

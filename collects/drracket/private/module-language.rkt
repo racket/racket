@@ -786,6 +786,7 @@
       
       (define/private (get-colors)
         (case bkg-state
+          [(reader-in-defs-error) 'parens]
           [(running) (list "blue")]
           [(nothing) (if (null? bkg-colors)
                          #f
@@ -813,6 +814,7 @@
       (define expand-error-single-child #f)
       (define expand-error-multiple-child #f)
 
+      ;; colors : (or/c #f (listof string?) 'parens)
       (define colors #f)
       (define tooltip-labels #f)
       
@@ -937,22 +939,48 @@
       (define/private (hide-tooltip)
         (when tooltip-frame
           (send tooltip-frame show #f)))
-      
+
+      (define parens-mismatch-str "())")
+      (define ball-size 10)
+      (define parens-mismatch-font
+        (send the-font-list find-or-create-font
+              (send small-control-font get-point-size)
+              (send small-control-font get-face)
+              (send small-control-font get-family)
+              (send small-control-font get-style)
+              'bold
+              (send small-control-font get-underlined)
+              (send small-control-font get-smoothing)
+              (send small-control-font get-size-in-pixels)))
+              
       (define running-canvas
         (new (class canvas%
-               (inherit get-dc popup-menu refresh)
+               (inherit get-dc popup-menu refresh get-client-size)
                (define/override (on-paint)
                  (let ([dc (get-dc)])
                    (when colors
                      (send dc set-smoothing 'aligned)
                      (send dc set-pen "black" 1 'transparent)
-                     (define len (length colors))
-                     (for ([color (in-list colors)]
-                           [i (in-naturals)])
-                       (send dc set-brush color 'solid)
-                       (send dc draw-arc 0 0 10 10
-                             (* 2 pi (/ i len))
-                             (* 2 pi (/ (+ i 1) len)))))))
+                     (send dc set-text-foreground "darkred")
+                     (send dc set-font parens-mismatch-font)
+                     (define-values (tw th td ta) (send dc get-text-extent parens-mismatch-str))
+                     (define-values (cw ch) (get-client-size))
+                     (cond
+                       [(list? colors)
+                        (define len (length colors))
+                        (for ([color (in-list colors)]
+                              [i (in-naturals)])
+                          (send dc set-brush color 'solid)
+                          (send dc draw-arc 
+                                (- (/ cw 2) (/ ball-size 2))
+                                (- (/ ch 2) (/ ball-size 2))
+                                ball-size ball-size
+                                (* 2 pi (/ i len))
+                                (* 2 pi (/ (+ i 1) len))))]
+                       [(eq? colors 'parens)
+                        (send dc draw-text parens-mismatch-str 
+                              (- (/ cw 2) (/ tw 2))
+                              (- (/ ch 2) (/ th 2)))]))))
                (define cb-proc (λ (sym new-val)
                                  (set! colors #f)
                                  (refresh)))
@@ -980,7 +1008,14 @@
                           [stretchable-width #f]
                           [stretchable-height #f]
                           [min-width 10]
-                          [min-height 10]))))))
+                          [min-height 10])
+               
+               (inherit min-width min-height)
+               (let ([dc (get-dc)])
+                 (send dc set-font parens-mismatch-font)
+                 (define-values (w h d a) (send dc get-text-extent parens-mismatch-str))
+                 (min-width (ceiling (inexact->exact (max w ball-size))))
+                 (min-height (ceiling (inexact->exact (max h ball-size))))))))))
   
   (define error-message%
     (class canvas%
@@ -1227,6 +1262,11 @@
            (update-frame-expand-error)]
           [(access-violation)
            (send (get-tab) show-bkg-running 'failed (gui-utils:format-literal-label "~a" (vector-ref res 1)))
+           (clear-old-error)
+           (set! clear-old-error void)
+           (reset-frame-expand-error)]
+          [(reader-in-defs-error)
+           (send (get-tab) show-bkg-running 'reader-in-defs-error (gui-utils:format-literal-label "~a" (vector-ref res 1)))
            (clear-old-error)
            (set! clear-old-error void)
            (reset-frame-expand-error)]

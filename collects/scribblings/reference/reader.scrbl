@@ -28,7 +28,7 @@ or @racket[read-syntax] mode. In @racket[read-syntax] mode, the result
 is always a @techlink{syntax object} that includes
 source-location and (initially empty) lexical information wrapped
 around the sort of datum that @racket[read] mode would produce. In the
-case of pairs, vectors, and boxes, the content is also
+case of @tech{pairs}, @tech{vectors}, and @tech{box}es, the content is also
 wrapped recursively as a syntax object. Unless specified otherwise,
 this section describes the reader's behavior in @racket[read] mode,
 and @racket[read-syntax] mode does the same modulo wrapping of the final
@@ -79,15 +79,15 @@ on the next character or characters in the input stream as follows:
 
 @dispatch-table[
 
-  @dispatch[@litchar{(}]{starts a pair or list; see @secref["parse-pair"]}
-  @dispatch[@litchar{[}]{starts a pair or list; see @secref["parse-pair"]}
-  @dispatch[@litchar["{"]]{starts a pair or list; see @secref["parse-pair"]}
+  @dispatch[@litchar{(}]{starts a @tech{pair} or @tech{list}; see @secref["parse-pair"]}
+  @dispatch[@litchar{[}]{starts a @tech{pair} or @tech{list}; see @secref["parse-pair"]}
+  @dispatch[@litchar["{"]]{starts a @tech{pair} or @tech{list}; see @secref["parse-pair"]}
 
   @dispatch[@litchar{)}]{matches @litchar{(} or raises @Exn[exn:fail:read]}
   @dispatch[@litchar{]}]{matches @litchar{[} or raises @Exn[exn:fail:read]}
   @dispatch[@litchar["}"]]{matches @litchar["{"] or raises @Exn[exn:fail:read]}
 
-  @dispatch[@litchar{"}]{starts a string; see @secref["parse-string"]}
+  @dispatch[@litchar{"}]{starts a @tech{string}; see @secref["parse-string"]}
   @dispatch[@litchar{'}]{starts a quote; see @secref["parse-quote"]}
   @dispatch[@litchar{`}]{starts a quasiquote; see @secref["parse-quote"]}
   @dispatch[@litchar{,}]{starts a [splicing] unquote; see @secref["parse-quote"]}
@@ -97,20 +97,20 @@ on the next character or characters in the input stream as follows:
   @dispatch[@cilitchar{#t}]{true; see @secref["parse-boolean"]}
   @dispatch[@cilitchar{#f}]{false; see @secref["parse-boolean"]}
 
-  @dispatch[@litchar{#(}]{starts a vector; see @secref["parse-vector"]}
-  @dispatch[@litchar{#[}]{starts a vector; see @secref["parse-vector"]}
-  @dispatch[@litchar["#{"]]{starts a vector; see @secref["parse-vector"]}
+  @dispatch[@litchar{#(}]{starts a @tech{vector}; see @secref["parse-vector"]}
+  @dispatch[@litchar{#[}]{starts a @tech{vector}; see @secref["parse-vector"]}
+  @dispatch[@litchar["#{"]]{starts a @tech{vector}; see @secref["parse-vector"]}
 
-  @dispatch[@litchar{#s(}]{starts a structure literal; see @secref["parse-structure"]}
-  @dispatch[@litchar{#s[}]{starts a structure literal; see @secref["parse-structure"]}
-  @dispatch[@litchar["#s{"]]{starts a structure literal; see @secref["parse-structure"]}
+  @dispatch[@litchar{#s(}]{starts a @tech{structure} literal; see @secref["parse-structure"]}
+  @dispatch[@litchar{#s[}]{starts a @tech{structure} literal; see @secref["parse-structure"]}
+  @dispatch[@litchar["#s{"]]{starts a @tech{structure} literal; see @secref["parse-structure"]}
 
-  @dispatch[@litchar{#\}]{starts a character; see @secref["parse-character"]}
+  @dispatch[@litchar{#\}]{starts a @tech{character}; see @secref["parse-character"]}
 
-  @dispatch[@litchar{#"}]{starts a byte string; see @secref["parse-string"]}
-  @dispatch[@litchar{#%}]{starts a symbol; see @secref["parse-symbol"]}
-  @dispatch[@litchar{#:}]{starts a keyword; see @secref["parse-keyword"]}
-  @dispatch[@litchar{#&}]{starts a box; see @secref["parse-box"]}
+  @dispatch[@litchar{#"}]{starts a @tech{byte string}; see @secref["parse-string"]}
+  @dispatch[@litchar{#%}]{starts a @tech{symbol}; see @secref["parse-symbol"]}
+  @dispatch[@litchar{#:}]{starts a @tech{keyword}; see @secref["parse-keyword"]}
+  @dispatch[@litchar{#&}]{starts a @tech{box}; see @secref["parse-box"]}
 
   @dispatch[@litchar{#|}]{starts a block comment; see @secref["parse-comment"]}
   @dispatch[@litchar{#;}]{starts an S-expression comment; see @secref["parse-comment"]}
@@ -122,17 +122,17 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#,}]{starts a syntax [splicing] unquote; see @secref["parse-quote"]}
   @dispatch[@litchar{#~}]{starts compiled code; see @secref["print-compiled"]}
 
-  @dispatch[@cilitchar{#i}]{starts a number; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#e}]{starts a number; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#x}]{starts a number; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#o}]{starts a number; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#d}]{starts a number; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#b}]{starts a number; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#i}]{starts a @tech{number}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#e}]{starts a @tech{number}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#x}]{starts a @tech{number}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#o}]{starts a @tech{number}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#d}]{starts a @tech{number}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#b}]{starts a @tech{number}; see @secref["parse-number"]}
 
-  @dispatch[@cilitchar["#<<"]]{starts a string; see @secref["parse-string"]}
+  @dispatch[@cilitchar["#<<"]]{starts a @tech{string}; see @secref["parse-string"]}
 
-  @dispatch[@litchar{#rx}]{starts a regular expression; see @secref["parse-regexp"]}
-  @dispatch[@litchar{#px}]{starts a regular expression; see @secref["parse-regexp"]}
+  @dispatch[@litchar{#rx}]{starts a @tech{regular expression}; see @secref["parse-regexp"]}
+  @dispatch[@litchar{#px}]{starts a @tech{regular expression}; see @secref["parse-regexp"]}
 
   @dispatch[@cilitchar{#ci}]{switches case sensitivity; see @secref["parse-symbol"]}
   @dispatch[@cilitchar{#cs}]{switches case sensitivity; see @secref["parse-symbol"]}
@@ -141,7 +141,7 @@ on the next character or characters in the input stream as follows:
 
   @dispatch[@litchar{#hx}]{starts a Honu expression; see @secref["parse-honu"]}
 
-  @dispatch[@litchar{#hash}]{starts a hash table; see @secref["parse-hashtable"]}
+  @dispatch[@litchar{#hash}]{starts a @tech{hash table}; see @secref["parse-hashtable"]}
 
   @dispatch[@litchar{#reader}]{starts a reader extension use; see @secref["parse-reader"]}
   @dispatch[@litchar{#lang}]{starts a reader extension use; see @secref["parse-reader"]}
@@ -152,7 +152,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@graph-defn[]]{binds a graph tag; see @secref["parse-graph"]}
   @dispatch[@graph-ref[]]{uses a graph tag; see @secref["parse-graph"]}
 
-  @dispatch[@italic{otherwise}]{starts a symbol; see @secref["parse-symbol"]}
+  @dispatch[@italic{otherwise}]{starts a @tech{symbol}; see @secref["parse-symbol"]}
 
 ]
 
@@ -162,7 +162,7 @@ on the next character or characters in the input stream as follows:
 @guideintro["symbols"]{the syntax of symbols}
 
 A sequence that does not start with a delimiter or @litchar{#} is
-parsed as either a symbol or a number (see
+parsed as either a @tech{symbol} or a @tech{number} (see
 @secref["parse-number"]), except that @litchar{.} by itself is
 never parsed as a symbol or character (unless the
 @racket[read-accept-dot] parameter is set to @racket[#f]). A
@@ -199,7 +199,7 @@ case-sensitive mode.
 
 @section-index["numbers" "parsing"]
 
-A sequence that does not start with a delimiter is parsed as a number
+A sequence that does not start with a delimiter is parsed as a @tech{number}
 when it matches the following grammar case-insenstively for
 @nonterm{number@sub{10}} (decimal), where @metavar{n} is a
 meta-meta-variable in the grammar.
@@ -293,9 +293,9 @@ single-precision.
 
 A @as-index{@litchar{#true}}, @as-index{@litchar{#t}},
 @as-index{@litchar{#T}} followed by a delimiter is the input syntax
-for the boolean constant ``true,'' and @as-index{@litchar{#false}},
+for the @tech{boolean} constant ``true,'' and @as-index{@litchar{#false}},
 @as-index{@litchar{#f}}, or @as-index{@litchar{#F}} followed by a
-delimiter is the complete input syntax for the boolean constant
+delimiter is the complete input syntax for the @tech{boolean} constant
 ``false.''
 
 
@@ -303,7 +303,7 @@ delimiter is the complete input syntax for the boolean constant
 
 When the reader encounters a @as-index{@litchar{(}},
 @as-index{@litchar{[}}, or @as-index{@litchar["{"]}, it starts
-parsing a pair or list; see @secref["pairs"] for information on pairs
+parsing a @tech{pair} or @tech{list}; see @secref["pairs"] for information on pairs
 and lists.
 
 To parse the pair or list, the reader recursively reads data
@@ -381,7 +381,7 @@ exception, instead of the infix conversion.
 @section-index["strings" "parsing"]
 
 When the reader encounters @as-index{@litchar{"}}, it begins parsing
-characters to form a string. The string continues until it is
+characters to form a @tech{string}. The string continues until it is
 terminated by another @litchar{"} (that is not escaped by
 @litchar{\}).
 
@@ -450,9 +450,10 @@ constant, the @exnraise[exn:fail:read].
 @guideintro["bytestrings"]{the syntax of byte strings}
 
 @section-index["byte strings" "parsing"]
+@section-index["heredoc"]
 
 A string constant preceded by @litchar{#} is parsed as a
-byte string. (That is, @as-index{@litchar{#"}} starts a byte-string
+@tech{byte string}. (That is, @as-index{@litchar{#"}} starts a byte-string
 literal.) See @secref["bytestrings"] for information on byte
 strings. Byte-string constants support the same escape sequences as
 character strings, except @litchar{\u} and @litchar{\U}.
@@ -483,7 +484,7 @@ encountered before a terminating line, the @exnraise[exn:fail:read].
 @section[#:tag "parse-quote"]{Reading Quotes}
 
 When the reader enounters @as-index{@litchar{'}}, it recursively
-reads one datum and forms a new list containing the symbol
+reads one datum and forms a new list containing the @tech{symbol}
 @racket['quote] and the following datum. This convention is mainly
 useful for reading Racket code, where @racket['s] can be used as a
 shorthand for @racket[(code:quote s)].
@@ -545,7 +546,7 @@ file.
 @section[#:tag "parse-vector"]{Reading Vectors}
 
 When the reader encounters a @litchar{#(}, @litchar{#[}, or
-@litchar["#{"], it starts parsing a vector; see @secref["vectors"] for
+@litchar["#{"], it starts parsing a @tech{vector}; see @secref["vectors"] for
 information on vectors. The @litchar{#[} and @litchar["#{"] forms can
 be disabled through the @racket[read-square-bracket-as-paren] and
 @racket[read-curly-brace-as-paren] @tech{parameters}.
@@ -608,7 +609,7 @@ indicated @tech{prefab} structure type, the @exnraise[exn:fail:read].
 
 @section[#:tag "parse-hashtable"]{Reading Hash Tables}
 
-A @as-index{@litchar{#hash}} starts an immutable hash-table constant
+A @as-index{@litchar{#hash}} starts an immutable @tech{hash-table} constant
 with key matching based on @racket[equal?]. The characters after
 @litchar{hash} must parse as a list of pairs (see
 @secref["parse-pair"]) with a specific use of delimited @litchar{.}:
@@ -641,7 +642,7 @@ In all cases, the table is constructed by adding each mapping to the
 @section[#:tag "parse-box"]{Reading Boxes}
 
 When the reader encounters a @as-index{@litchar{#&}}, it starts
-parsing a box; see @secref["boxes"] for information on boxes. The
+parsing a @tech{box}; see @secref["boxes"] for information on boxes. The
 content of the box is determined by recursively reading the next
 datum.
 
@@ -657,7 +658,7 @@ content is also wrapped as a syntax object, and the box is immutable.
 
 @guideintro["characters"]{the syntax of characters}
 
-A @as-index{@litchar{#\}} starts a character constant, which has
+A @as-index{@litchar{#\}} starts a @tech{character} constant, which has
 one of the following forms:
 
 @itemize[
@@ -705,7 +706,7 @@ one of the following forms:
 
 @section[#:tag "parse-keyword"]{Reading Keywords}
 
-A @as-index{@litchar{#:}} starts a keyword. The parsing of a keyword
+A @as-index{@litchar{#:}} starts a @tech{keyword}. The parsing of a keyword
 after the @litchar{#:} is the same as for a symbol, including
 case-folding in case-insensitive mode, except that the part after
 @litchar{#:} is never parsed as a number.
@@ -718,7 +719,7 @@ case-folding in case-insensitive mode, except that the part after
 @section[#:tag "parse-regexp"]{Reading Regular Expressions}
 
 A @as-index{@litchar{#rx}} or @as-index{@litchar{#px}} starts a
-regular expression. The characters immediately after @litchar{#rx} or
+@tech{regular expression}. The characters immediately after @litchar{#rx} or
 @litchar{#px} must parse as a string or byte string (see
 @secref["parse-string"]). A @litchar{#rx} prefix starts a regular
 expression as would be constructed by @racket[regexp], @litchar{#px}

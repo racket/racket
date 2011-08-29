@@ -5,7 +5,7 @@
          prepared-statement<%>
 
          (struct-out simple-result)
-         (struct-out recordset)
+         (struct-out rows-result)
 
          (struct-out statement-binding)
 
@@ -122,10 +122,10 @@
 
 ;; An query-result is one of:
 ;;  - (simple-result alist)
-;;  - (recordset Header data)
-;;    for user-visible recordsets: headers present, data is (listof vector)
+;;  - (rows-result Header data)
+;;    for user-visible rows-results: headers present, data is (listof vector)
 (struct simple-result (info) #:transparent)
-(struct recordset (headers rows) #:transparent)
+(struct rows-result (headers rows) #:transparent)
 
 ;; A Header is (listof FieldInfo)
 ;; A FieldInfo is an alist, contents dbsys-dependent

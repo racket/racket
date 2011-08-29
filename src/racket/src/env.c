@@ -892,7 +892,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     eenv->rename_set = env->rename_set;
 
     if (env->disallow_unbound)
-      eenv->disallow_unbound = 1;
+      eenv->disallow_unbound = env->disallow_unbound;
   }
 }
 
@@ -932,7 +932,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
     eenv->label_env = env->label_env;
 
     if (env->disallow_unbound)
-      eenv->disallow_unbound = 1;
+      eenv->disallow_unbound = env->disallow_unbound;
   }
 }
 

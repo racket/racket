@@ -461,7 +461,7 @@ it will shadow the saved value binding).
 The bindings are identifier macros that expand to the literal saved
 values; so referring to a saved value that is missing (because not
 enough values were shown) raises a syntax error.  In addition, the
-values are held in a @tech{weak reference}, so they can disappear after
+values are held in a @tech[#:doc REFERENCE]{weak reference}, so they can disappear after
 a garbage-collection.
 
 Note that this facility can be used to ``transfer'' values from one

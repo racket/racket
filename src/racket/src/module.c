@@ -3504,19 +3504,24 @@ static void setup_accessible_table(Scheme_Module *m)
                     if (SCHEME_SYMBOLP(tl)) {
                       Scheme_Object *v;
                       v = scheme_hash_get(ht, tl);
-                      if (!v) scheme_signal_error("internal error: defined name inaccessible");
-                      if ((SCHEME_VEC_SIZE(form) == 2)
-                          && scheme_compiled_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
-                        /* record simple constant from cross-module propagation: */
-                        v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
-                      } else if (is_procedure_expression(SCHEME_VEC_ELS(form)[0])) {
-                        /* record that it's constant across all instantiations: */
-                        v = scheme_make_pair(v, scheme_constant_key);
+                      if (!v) { 
+                        /* The defined name is inaccessible. The bytecode compiler
+                           won't generate such modules, but synthesized module bytecode
+                           might leave bindings out of the `toplevels' table. */
                       } else {
-                        /* record that it's fixed for any given instantiations: */
-                        v = scheme_make_pair(v, scheme_fixed_key);
+                        if ((SCHEME_VEC_SIZE(form) == 2)
+                            && scheme_compiled_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
+                          /* record simple constant from cross-module propagation: */
+                          v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
+                        } else if (is_procedure_expression(SCHEME_VEC_ELS(form)[0])) {
+                          /* record that it's constant across all instantiations: */
+                          v = scheme_make_pair(v, scheme_constant_key);
+                        } else {
+                          /* record that it's fixed for any given instantiation: */
+                          v = scheme_make_pair(v, scheme_fixed_key);
+                        }
+                        scheme_hash_set(ht, tl, v);
                       }
-                      scheme_hash_set(ht, tl, v);
                     } else
                       scheme_signal_error("internal error: strange defn target %d", SCHEME_TYPE(tl));
                   }
@@ -5329,7 +5334,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv, i
 
 Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv)
 {
-  return do_module_execute(data, genv, 0);
+  return do_module_execute(data, genv, 1);
 }
 
 static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec, Resolve_Prefix *rp)
@@ -5590,6 +5595,12 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   scheme_prepare_exp_env(menv);
+
+  /* Allow phase-1 references to unbound identifiers; we check
+     at the end of body expansion to make sure that all referenced
+     identifiers were eventually bound. Meanwhile, 
+     reference-before-definition errors are possible. */
+  menv->exp_env->disallow_unbound = -1;
   
   /* For each provide in iim, add a module rename to fm */
   saw_mb = add_simple_require_renames(NULL, rn_set, NULL, iim, iidx, scheme_make_integer(0), NULL, 1);
@@ -6080,7 +6091,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   Scheme_Object *lift_data;
   Scheme_Object **exis, **et_exis, **exsis;
   Scheme_Object *lift_ctx;
-  Scheme_Object *lifted_reqs = scheme_null, *req_data;
+  Scheme_Object *lifted_reqs = scheme_null, *req_data, *unbounds = scheme_null;
   int exicount, et_exicount, exsicount;
   char *exps, *et_exps;
   int *all_simple_renames;
@@ -6531,11 +6542,14 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 	  SCHEME_VEC_ELS(vec)[4] = (for_stx ? scheme_true : scheme_false);
 	  exp_body = scheme_make_pair(vec, exp_body);
 
+          if (eenv->prefix->unbound)
+            unbounds = scheme_make_pair(eenv->prefix->unbound, unbounds);
+	
           m = scheme_sfs(m, NULL, max_let_depth);
 	  if (scheme_resolve_info_use_jit(ri))
 	    m = scheme_jit_expr(m);
           rp = scheme_prefix_eval_clone(rp);
-	
+          
 	  eval_exptime(names, count, m, eenv->genv, rhs_env, rp, max_let_depth, 0, 
                        (for_stx ? env->genv->exp_env->toplevel : env->genv->syntax), for_stx,
                        for_stx ? scheme_false : (use_post_ex ? post_ex_rn : rn),
@@ -6614,6 +6628,50 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
     scheme_seal_module_rename_set(rn_set, STX_SEAL_BOUND);
   }
   scheme_seal_module_rename_set(post_ex_rn_set, STX_SEAL_BOUND);
+
+  /* Check that all bindings used in phase-N expressions (for N >= 1) 
+     were defined by now: */
+  while (!SCHEME_NULLP(unbounds)) {
+    Scheme_Object *stack = scheme_null, *lst;
+    Scheme_Env *uenv = env->genv->exp_env;
+
+    lst = SCHEME_CAR(unbounds);
+    while(1) {
+      while (!SCHEME_NULLP(lst)) {
+        p = SCHEME_CAR(lst);
+        if (SCHEME_PAIRP(p)) {
+          if (!uenv->exp_env)
+            scheme_signal_error("internal error: no such environment to check unbounds");
+          else {
+            /* switch to nested list, push current list onto stack: */
+            stack = scheme_make_pair(scheme_make_pair(SCHEME_CDR(lst), (Scheme_Object *)uenv),
+                                     stack);
+            uenv = uenv->exp_env;
+            lst = SCHEME_CAR(lst);
+          }
+        } else {
+          (void)scheme_check_top_identifier_bound(p, uenv, 1);
+          lst = SCHEME_CDR(lst);
+        }
+      }
+      if (!SCHEME_NULLP(stack)) {
+        lst = SCHEME_CAR(stack);
+        stack = SCHEME_CDR(stack);
+        uenv = (Scheme_Env *)SCHEME_CDR(lst);
+        lst = SCHEME_CAR(lst);
+      } else
+        break;
+    }
+    unbounds = SCHEME_CDR(unbounds);
+  }
+  /* Disallow unbound variables from now on: */
+  {
+    Scheme_Env *uenv = env->genv->exp_env;
+    while (uenv) {
+      uenv->disallow_unbound = 1;
+      uenv = uenv->exp_env;
+    }
+  }
 
   /* Pass 2 */
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);
