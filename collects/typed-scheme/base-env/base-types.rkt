@@ -53,7 +53,8 @@
 [Integer -Int]
 [Nonpositive-Integer -NonPosInt]
 [Negative-Integer -NegInt]
-[Exact-Nonnegative-Integer -Nat] ; both of these are valid
+[Exact-Nonnegative-Integer -Nat] ; all three of these are valid
+[Nonnegative-Integer -Nat]
 [Natural -Nat]
 [Exact-Positive-Integer -PosInt] ; both of these are valid
 [Positive-Integer -PosInt]
