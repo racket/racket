@@ -356,11 +356,12 @@ of type @racket[Syntax-E].}
   type variables @racket[v ...].  If @racket[t] is a function type
       constructed with @racket[->], the outer pair of parentheses
       around the function type may be omitted.
-      @ex[(: list-lenght : (All (A) (Listof A) -> Natural))
-          (define (list-lenght lst)
+      @ex[(: list-length : (All (A) (Listof A) -> Natural))
+          (define (list-length lst)
             (if (null? lst)
                 0
-                (add1 (list-lenght (cdr lst)))))]}
+                (add1 (list-length (cdr lst)))))
+          (list-length (list 1 2 3))]}
 
 @defform[(Values t ...)]{is the type of a sequence of multiple values, with
 types @racket[t ...].  This can only appear as the return type of a
