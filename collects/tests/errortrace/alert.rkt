@@ -18,5 +18,8 @@
     (lambda (stx)
       (with-syntax ([b b])
         #'(lambda () (set-mcar! b (add1 (mcar b))) (mcar b))))))
-(let ([f m])
+
+(provide alert-tests)
+(define (alert-tests)
+  (define f m)
   (test (list (f) (f) (f)) => '(1 2 3)))
