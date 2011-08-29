@@ -247,30 +247,15 @@
 
   ;; The `_fun' macro tears its input apart and reassemble it using pieces from
   ;; custom function types (macros).  This whole deal needs some work to make
-  ;; it play nicely with taints and code inspectors, so Matthew wrote the following
-  ;; code.  The idea is to create a define-fun-syntax which makes the new
-  ;; syntax transformer be an object that carries extra information, later used
-  ;; by `expand-fun-syntax/fun'.
+  ;; it play nicely with taints and code inspectors, so Matthew wrote the
+  ;; following code.  The idea is to create a define-fun-syntax which makes the
+  ;; new syntax transformer be an object that carries extra information, later
+  ;; used by `expand-fun-syntax/fun'.
 
   (define orig-inspector (current-code-inspector))
 
   (define (disarm stx)
     (syntax-disarm stx orig-inspector))
-
-  ;; bug in begin-for-syntax (PR7104), see below
-  (define foo!!! (make-parameter #f))
-  (define (expand-fun-syntax/normal fun-stx stx)
-    ((foo!!!) fun-stx stx))
-
-  (define-values (make-fun-syntax fun-syntax?
-                  fun-syntax-proc fun-syntax-name)
-    (let-values ([(desc make pred? get set!)
-                  (make-struct-type
-                   'fun-syntax #f 2 0 #f '() (current-inspector)
-                   expand-fun-syntax/normal)])
-      (values make pred?
-              (make-struct-field-accessor get 0 'proc)
-              (make-struct-field-accessor get 1 'name))))
 
   ;; This is used to expand a fun-syntax in a _fun type context.
   (define (expand-fun-syntax/fun stx)
@@ -370,9 +355,7 @@
 
   ;; This is used for a normal expansion of fun-syntax, when not in a _fun type
   ;; context.
-  ;; bug in begin-for-syntax (PR7104), see above
-  ;;   should be (define (expand-fun-syntax/normal fun-stx stx) ...)
-  (foo!!! (lambda (fun-stx stx)
+  (define (expand-fun-syntax/normal fun-stx stx)
     (define (err msg . sub)
       (apply raise-syntax-error (fun-syntax-name fun-stx) msg stx sub))
     (let ([keys (custom-type->keys stx err)])
@@ -404,7 +387,17 @@
             ;; simple type
             type))
         ;; no keys => normal expansion
-        ((fun-syntax-proc fun-stx) stx))))))
+        ((fun-syntax-proc fun-stx) stx))))
+
+  (define-values (make-fun-syntax fun-syntax?
+                  fun-syntax-proc fun-syntax-name)
+    (let-values ([(desc make pred? get set!)
+                  (make-struct-type
+                   'fun-syntax #f 2 0 #f '() (current-inspector)
+                   expand-fun-syntax/normal)])
+      (values make pred?
+              (make-struct-field-accessor get 0 'proc)
+              (make-struct-field-accessor get 1 'name)))))
 
 ;; Use define-fun-syntax instead of define-syntax for forms that
 ;;  are to be expanded by `_fun':
