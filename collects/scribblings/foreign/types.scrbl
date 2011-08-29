@@ -857,8 +857,10 @@ The resulting bindings are as follows:
 
  @item{@racketvarfont{id}@racketidfont{?}: a predicate for the new type.}
 
- @item{@racketvarfont{id}@racketidfont{-tag}: the tag string object that is
-  used with instances.}
+ @item{@racketvarfont{id}@racketidfont{-tag}: the tag object that is
+  used with instances.  The tag object may be the symbol form of 
+  @racketvarfont{id} or a list of symbols containing the @racketvarfont{id}
+  symbol and other symbols, such as the @racketvarfont[super-id] symbol.}
 
  @item{@racketidfont{make-}@racketvarfont{id} : a constructor, which expects
   an argument for each type.}
@@ -879,7 +881,8 @@ The resulting bindings are as follows:
 ]
 
 Objects of the new type are actually C pointers, with a type tag that
-is a list that contains the string form of @racketvarfont{id}.  Since
+is the symbol form of @racketvarfont{id} or a list that contains the 
+symbol form of @racketvarfont{id}.  Since
 structs are implemented as pointers, they can be used for a
 @racket[_pointer] input to a foreign function: their address will be
 used.  To make this a little safer, the corresponding cpointer type is
