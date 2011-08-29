@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define tools '(("time-keystrokes.rkt" "drracket")))
+(define tools '(("time-keystrokes.rkt")))
 (define tool-names '("Time Keystrokes"))
 
 (define compile-omit-paths
