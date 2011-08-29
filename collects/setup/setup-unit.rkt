@@ -256,13 +256,13 @@
                     owner pkg-name maj min))))]
       [_ spec]))
 
-  (define (planet->cc path owner pkg-file extra-path maj min)
+  (define (planet->cc path #:omit-root [omit-root path] owner pkg-file extra-path maj min)
     (unless (path? path)
       (error 'planet->cc "non-path when building package ~e" pkg-file))
     (and (directory-exists? path)
          (make-cc* #f
                    path
-                   path
+                   omit-root
                    #f ; don't need info-root; absolute paths in cache.rktd will be ok
                    (get-planet-cache-path)
                    'abs
@@ -275,6 +275,7 @@
     (match-let ([(list (list 'planet owner pkg-file extra-path ...) maj min)
                  (cc-shadowing-policy cc)])
       (planet->cc (apply build-path (cc-path cc) (map bytes->path subdir))
+                  #:omit-root (cc-omit-root cc)
                   owner
                   pkg-file
                   (append extra-path subdir)
