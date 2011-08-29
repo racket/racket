@@ -68,8 +68,7 @@ way to make kill-safe connections.
 All query functions require both a connection and a
 @deftech{statement}, which is one of the following:
 @itemlist[
-@item{a string containing a single SQL statement, possibly with
-  parameters}
+@item{a string containing a single SQL statement}
 @item{a @tech{prepared statement} produced by @racket[prepare]}
 @item{a @tech{virtual statement} produced by
   @racket[virtual-statement]}
@@ -77,6 +76,29 @@ All query functions require both a connection and a
   @racket[bind-prepared-statement]}
 @item{an instance of a struct type that implements @racket[prop:statement]}
 ]
+
+A SQL statement may contain parameter placeholders that stand for SQL
+scalar values. The parameter values must be supplied when the
+statement is executed; the parameterized statement and parameter
+values are sent to the database back end, which combines them
+correctly and safely.
+
+Use parameters instead of Racket string interpolation (eg,
+@racket[format] or @racket[string-append]) to avoid
+@hyperlink["http://xkcd.com/327/"]{SQL injection}, where a string
+intended to represent a SQL scalar value is interpreted as---possibly
+malicious---SQL code instead.
+
+The syntax of placeholders varies depending on the database
+system. For example:
+
+@centered{
+@tabbing{
+PostgreSQL:   @&  @tt{select * from the_numbers where n > $1;} @//
+MySQL, ODBC:  @&  @tt{select * from the_numbers where n > ?;} @//
+SQLite:       @&  supports both syntaxes (plus others)
+}
+}
 
 @defproc[(statement? [x any/c]) boolean?]{
 
@@ -344,17 +366,6 @@ grouping fields. The grouping fields must be distinct.
 
 A @deftech{prepared statement} is the result of a call to
 @racket[prepare].
-
-The syntax of parameterized queries varies depending on the database
-system. For example:
-
-@centered{
-@tabbing{
-PostgreSQL:   @&  @tt{select * from the_numbers where n > $1;} @//
-MySQL, ODBC:  @&  @tt{select * from the_numbers where n > ?;} @//
-SQLite:       @&  supports both syntaxes (plus others)
-}
-}
 
 Any server-side or native-library resources associated with a prepared
 statement are released when the prepared statement is
