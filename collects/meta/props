@@ -2051,7 +2051,6 @@ path/s is either such a string or a list of them.
 "collects/unstable/temp-c" responsible (jay)
 "collects/version" responsible (eli)
 "collects/version/tool.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/waterworld/waterworld.rkt" drdr:command-line (mzc *)
 "collects/web-server" responsible (jay)
 "collects/web-server/default-web-root/configuration-table.rkt" drdr:command-line #f
 "collects/web-server/default-web-root/htdocs/servlets/examples/add-dispatch.rkt" drdr:command-line (mzc *)
