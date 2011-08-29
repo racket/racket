@@ -90,7 +90,6 @@
 
     ;; extension hooks: usually shouldn't need to override
     finalize           ;; -> void
-    register-finalizer ;; -> void
 
     ;; inspection only
     get-param-types    ;; -> (listof TypeDesc)

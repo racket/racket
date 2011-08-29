@@ -3,6 +3,7 @@
          racket/list
          racket/math
          ffi/unsafe
+         ffi/unsafe/atomic
          "../generic/interfaces.rkt"
          "../generic/prepared.rkt"
          "../generic/sql-data.rkt"
@@ -24,7 +25,7 @@
                   char-mode)
     (init strict-parameter-types?)
 
-    (define statement-table (make-weak-hasheq))
+    (define statement-table (make-hasheq))
     (define lock (make-semaphore 1))
 
     (define use-describe-param?
@@ -437,13 +438,14 @@
 
     (define/public (disconnect)
       (define (go)
+        (start-atomic)
         (let ([db* db]
               [env* env])
+          (set! db #f)
+          (set! env #f)
+          (end-atomic)
           (when db*
             (let ([statements (hash-map statement-table (lambda (k v) k))])
-              (set! db #f)
-              (set! env #f)
-              (set! statement-table #f)
               (for ([pst (in-list statements)])
                 (free-statement* 'disconnect pst))
               (handle-status 'disconnect (SQLDisconnect db*) db*)
@@ -459,11 +461,14 @@
       (call-with-lock* 'free-statement go go #f))
 
     (define/private (free-statement* fsym pst)
+      (start-atomic)
       (let ([stmt (send pst get-handle)])
+        (send pst set-handle #f)
+        (end-atomic)
         (when stmt
-          (send pst set-handle #f)
           (handle-status 'free-statement (SQLFreeStmt stmt SQL_CLOSE) stmt)
           (handle-status 'free-statement (SQLFreeHandle SQL_HANDLE_STMT stmt) stmt)
+          (hash-remove! statement-table pst)
           (void))))
 
     ;; Transactions

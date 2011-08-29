@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          ffi/unsafe
+         ffi/unsafe/atomic
          "../generic/interfaces.rkt"
          "../generic/prepared.rkt"
          "../generic/sql-data.rkt"
@@ -18,7 +19,7 @@
                   busy-retry-delay)
 
     (define -db db)
-    (define statement-table (make-weak-hasheq))
+    (define statement-table (make-hasheq))
     (define saved-tx-status #f) ;; set by with-lock, only valid while locked
 
     (inherit call-with-lock*
@@ -149,32 +150,34 @@
           pst)))
 
     (define/public (disconnect)
-      ;; FIXME: Reorder effects to be more robust if thread killed within disconnect (?)
       (define (go)
-        (when -db
-          (let ([db -db]
-                [statements (hash-map statement-table (lambda (k v) k))])
-            (set! -db #f)
-            (set! statement-table #f)
-            (for ([pst (in-list statements)])
-              (let ([stmt (send pst get-handle)])
-                (when stmt
-                  (send pst set-handle #f)
-                  (HANDLE 'disconnect (sqlite3_finalize stmt)))))
-            (HANDLE 'disconnect (sqlite3_close db))
-            (void))))
+        (start-atomic)
+        (let ([db -db])
+          (set! -db #f)
+          (end-atomic)
+          (when db
+            (let ([statements (hash-map statement-table (lambda (k v) k))])
+              (for ([pst (in-list statements)])
+                (do-free-statement 'disconnect pst))
+              (HANDLE 'disconnect2 (sqlite3_close db))
+              (void)))))
       (call-with-lock* 'disconnect go go #f))
 
     (define/public (get-base) this)
 
     (define/public (free-statement pst)
-      (define (go)
-        (let ([stmt (send pst get-handle)])
-          (when stmt
-            (send pst set-handle #f)
-            (HANDLE 'free-statement (sqlite3_finalize stmt))
-            (void))))
+      (define (go) (do-free-statement 'free-statement pst))
       (call-with-lock* 'free-statement go go #f))
+
+    (define/private (do-free-statement fsym pst)
+      (start-atomic)
+      (let ([stmt (send pst get-handle)])
+        (send pst set-handle #f)
+        (end-atomic)
+        (hash-remove! statement-table pst)
+        (when stmt
+          (HANDLE fsym (sqlite3_finalize stmt))
+          (void))))
 
 
     ;; == Transactions
@@ -262,7 +265,7 @@
     ;; Can't figure out how to test...
     (define/private (handle-status who s)
       (when (memv s maybe-rollback-status-list)
-        (when (and saved-tx-status (not (get-tx-status -db))) ;; was in trans, now not
+        (when (and saved-tx-status -db (not (get-tx-status -db))) ;; was in trans, now not
           (set! tx-status 'invalid)))
       (handle-status* who s -db))
 
