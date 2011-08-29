@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt"
-          (for-label net/sendmail net/sendmail-unit net/sendmail-sig))
+          (for-label net/sendmail))
 
 @title[#:tag "sendmail"]{@exec{sendmail}: Sending E-Mail}
 
@@ -56,25 +56,3 @@ Lines that contain a single period do not need to be quoted.}
 
 Raised when no mail recipients were specified for
 @racket[send-mail-message/port].}
-
-
-
-@; ----------------------------------------
-
-@section{Sendmail Unit}
-
-@defmodule[net/sendmail-unit]
-
-@defthing[sendmail@ unit?]{
-
-Imports nothing, exports @racket[sendmail^].}
-
-@; ----------------------------------------
-
-@section{Sendmail Signature}
-
-@defmodule[net/sendmail-sig]
-
-@defsignature[sendmail^ ()]{}
-
-Includes everything exported by the @racketmodname[net/sendmail] module.

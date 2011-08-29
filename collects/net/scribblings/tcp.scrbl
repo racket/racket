@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt"
-          (for-label net/tcp-sig net/tcp-unit net/url-unit net/tcp-redirect
+          (for-label net/tcp-sig net/tcp-unit net/tcp-redirect
                      net/ssl-tcp-unit racket/tcp))
 
 @title[#:tag "tcp"]{TCP: Unit and Signature}
@@ -9,10 +9,6 @@ The @racketmodname[net/tcp-sig] and @racketmodname[net/tcp-unit]
 libraries define a @racket[tcp^] signature and @racket[tcp@]
 implementation, where the implementation uses
 @racketmodname[racket/tcp].
-
-Some units in the @filepath{net} collection import @racket[tcp^], so
-that they can be used with transports other than plain TCP. For
-example, @racket[url@] imports @racket[tcp^].
 
 See also @racket[tcp-redirect] and @racket[make-ssl-tcp@].
 

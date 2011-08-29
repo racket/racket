@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt"
-          (for-label net/smtp net/smtp-unit net/smtp-sig racket/tcp openssl))
+          (for-label net/smtp racket/tcp openssl))
 
 @title[#:tag "smtp"]{SMTP: Sending E-Mail}
 
@@ -97,23 +97,3 @@ send-done procedure is called, breaking the thread that is executing
 @racket[smtp-send-message] cancels the send. After the send-done
 procedure is called, breaking may or may not cancel the send (and
 probably will not).}
-
-@; ----------------------------------------
-
-@section{SMTP Unit}
-
-@defmodule[net/smtp-unit]
-
-@defthing[smtp@ unit?]{
-
-Imports nothing, exports @racket[smtp^].}
-
-@; ----------------------------------------
-
-@section{SMTP Signature}
-
-@defmodule[net/smtp-sig]
-
-@defsignature[smtp^ ()]{}
-
-Includes everything exported by the @racketmodname[net/smtp] module.

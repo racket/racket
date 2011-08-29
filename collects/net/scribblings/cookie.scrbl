@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/eval
-          (for-label net/cookie net/cookie-unit net/cookie-sig))
+          (for-label net/cookie))
 
 @(define cookie-eval (make-base-eval))
 @interaction-eval[#:eval cookie-eval (require net/cookie)]
@@ -166,24 +166,3 @@ If you try to get a cookie that simply is not there:
 
 Note that not having a cookie is normally not an error.  Most clients
 won't have a cookie set then first arrive at your site.
-
-
-@; ----------------------------------------
-
-@section{Cookie Unit}
-
-@defmodule[net/cookie-unit]
-
-@defthing[cookie@ unit?]{
-
-Imports nothing, exports @racket[cookie^].}
-
-@; ----------------------------------------
-
-@section{Cookie Signature}
-
-@defmodule[net/cookie-sig]
-
-@defsignature[cookie^ ()]{}
-
-Includes everything exported by the @racketmodname[net/cookie] module.

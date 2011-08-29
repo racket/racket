@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/eval scribble/struct
-          (for-label net/head net/head-unit net/head-sig))
+          (for-label net/head))
 
 @(define head-eval (make-base-eval))
 @interaction-eval[#:eval head-eval (require net/head)]
@@ -216,24 +216,3 @@ are comma-separated, and possibly broken into multiple lines.
 (assemble-address-field '("doe@localhost" 
                           "Jane <jane@elsewhere>"))
 ]}
-
-
-@; ----------------------------------------
-
-@section{Header Unit}
-
-@defmodule[net/head-unit]
-
-@defthing[head@ unit?]{
-
-Imports nothing, exports @racket[head^].}
-
-@; ----------------------------------------
-
-@section{Header Signature}
-
-@defmodule[net/head-sig]
-
-@defsignature[head^ ()]{}
-
-Includes everything exported by the @racketmodname[net/head] module.

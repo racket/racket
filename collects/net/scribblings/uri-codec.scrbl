@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/bnf scribble/eval
           (for-label net/url
-                     net/uri-codec net/uri-codec-unit net/uri-codec-sig))
+                     net/uri-codec))
 
 @(define uri-codec-eval (make-base-eval))
 @interaction-eval[#:eval uri-codec-eval (require net/uri-codec)]

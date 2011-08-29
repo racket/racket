@@ -17,11 +17,11 @@
            "pref.rkt"
            "spell.rkt")
 
-  (require net/imap-sig
-           net/smtp-sig
-           net/head-sig
-           net/base64-sig
-           net/qp-sig)
+  (require net/imap
+           net/smtp
+           net/head
+           net/base64
+           net/qp)
 
   (require mrlib/hierlist/hierlist-sig)
 
@@ -35,11 +35,6 @@
 	      sirmail:read^
 	      (prefix env: sirmail:environment^)
 	      mred^
-	      imap^
-	      smtp^
-	      head^
-	      base64^
-	      qp^
 	      hierlist^)
       (export sirmail:send^)
 

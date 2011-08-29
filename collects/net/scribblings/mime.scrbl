@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/struct
-          (for-label net/mime net/mime-unit net/mime-sig))
+          (for-label net/mime))
 
 @(define-syntax-rule (mime-table (type (sub-type0 ref0) (sub-type ref) ...) ...)
   (let ([spacer (hspace 1)]
@@ -231,23 +231,3 @@ when the specification is incorrectly formatted.}
 
 Raised when type specified for the @racket["Content-Disposition"]
 field, or when the specification is incorrectly formatted.}
-
-@; ----------------------------------------
-
-@section{MIME Unit}
-
-@defmodule[net/mime-unit]
-
-@defthing[mime@ unit?]{
-
-Imports nothing, exports @racket[mime^].}
-
-@; ----------------------------------------
-
-@section{MIME Signature}
-
-@defmodule[net/mime-sig]
-
-@defsignature[mime^ ()]{}
-
-Includes everything exported by the @racketmodname[net/mime] module.

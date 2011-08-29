@@ -2,8 +2,8 @@
   (require mzlib/unit
            mzlib/class
            mred/mred-sig
-           net/qp-sig
-           net/base64-sig
+           net/qp
+           net/base64
            (prefix unihead: net/unihead)
            mzlib/etc
            mzlib/string)
@@ -12,9 +12,7 @@
 
   (provide util@)
   (define-unit util@
-      (import mred^
-	      base64^
-	      qp^)
+      (import mred^)
       (export sirmail:utils^)
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

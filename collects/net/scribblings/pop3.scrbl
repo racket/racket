@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label net/pop3 net/pop3-unit net/pop3-sig))
+@(require "common.rkt" (for-label net/pop3))
 
 @(define pt (tt ">"))
 
@@ -179,23 +179,3 @@ Raised when the server produces a malformed response.}
  "3ad2767070050000"
  #,pt (disconnect-from-server c)
 ]
-
-@; ----------------------------------------
-
-@section{POP3 Unit}
-
-@defmodule[net/pop3-unit]
-
-@defthing[pop3@ unit?]{
-
-Imports nothing, exports @racket[pop3^].}
-
-@; ----------------------------------------
-
-@section{POP3 Signature}
-
-@defmodule[net/pop3-sig]
-
-@defsignature[pop3^ ()]{}
-
-Includes everything exported by the @racketmodname[net/pop3] module.

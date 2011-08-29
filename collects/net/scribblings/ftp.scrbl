@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label net/ftp net/ftp-unit net/ftp-sig))
+@(require "common.rkt" (for-label net/ftp))
 
 @title[#:tag "ftp"]{FTP: Client Downloading}
 
@@ -83,23 +83,3 @@ it in @racket[local-dir] using the same name. If the file already
 exists in the local directory, it is replaced, but only after the
 transfer succeeds (i.e., the file is first downloaded to a temporary
 file, then moved into place on success).}
-
-@; ----------------------------------------
-
-@section{FTP Unit}
-
-@defmodule[net/ftp-unit]
-
-@defthing[ftp@ unit?]{
-
-Imports nothing, exports @racket[ftp^].}
-
-@; ----------------------------------------
-
-@section{FTP Signature}
-
-@defmodule[net/ftp-sig]
-
-@defsignature[ftp^ ()]{}
-
-Includes everything exported by the @racketmodname[net/ftp] module.

@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/bnf
-          (for-label net/url net/url-unit net/url-sig 
+          (for-label net/url
                      net/head net/uri-codec net/tcp-sig
                      openssl))
 
@@ -357,41 +357,10 @@ connections; the parameter value is passed as the third argument to
 Set this parameter to validate a server's certificates, for example,
 as described with @racket[get-pure-port].}
 
-@; ----------------------------------------
-
-@section{URL Unit}
-
-@defmodule[net/url-unit]
-
-@defthing[url@ unit?]{
-
-Imports @racket[tcp^], exports @racket[url+scheme^].
-
-The @racket[url+scheme^] signature contains
-@racket[current-connect-scheme], which @racket[url@] binds to a
-parameter.  The parameter is set to the scheme of a URL when
-@racket[tcp-connect] is called to create a connection.  A
-@racket[tcp-connect] variant linked to @racket[url@] can check this
-parameter to choose the connection mode; in particular, @racket[net/url]
+@defparam[current-connect-scheme url-scheme string?]{
+                                                     
+A parameter that is set to the scheme of a URL when @racket[tcp-connect] 
+is called to create a connection.  A @racket[tcp-connect] variant can
+check this parameter to choose the connection mode; in particular, @racket[net/url]
 supplies a @racket[tcp-connect] that actually uses @racket[ssl-connect]
-when @racket[(current-connect-scheme)] produces @racket["https"].
-
-Note that @racket[net/url] does not provide the
-@racket[current-connect-scheme] parameter.}
-
-@; ----------------------------------------
-
-@section{URL Signature}
-
-@defmodule[net/url-sig]
-
-@defsignature[url^ ()]{
-
-Includes everything exported by the @racketmodname[net/url] module
-except @racket[current-https-protocol].  Note that the exports of
-@racketmodname[net/url] and the @racket[url^] signature do not include
-@racket[current-connect-scheme].}
-
-@defsignature[url+scheme^ (url^)]{
-
-Adds @racket[current-connect-scheme] to @racket[url^].}
+when @racket[(current-connect-scheme)] produces @racket["https"].}

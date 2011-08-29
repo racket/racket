@@ -3,8 +3,6 @@
            mred/mred-sig
            setup/plt-installer-sig
            net/tcp-sig
-           net/url-sig
-           net/url-unit
            "browser-sig.rkt"
            "private/sig.rkt"
            "private/bullet.rkt"
@@ -17,21 +15,18 @@
   
   (define-compound-unit/infer pre-browser@
     (import setup:plt-installer^
-            mred^
-            url^)
+            mred^)
     (export hyper^ html-export^ bullet-export^)
     (link html@ hyper@ bullet@))
 
   (define-unit/new-import-export browser@
     (import setup:plt-installer^
-            mred^
-            url^)
+            mred^)
     (export browser^)
     ((hyper^ html-export^ bullet-export^) 
      pre-browser@ 
      setup:plt-installer^
-     mred^
-     url^)))
+     mred^)))
 
 
   

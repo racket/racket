@@ -10,7 +10,7 @@
   (require "sirmails.rkt"
            "pref.rkt")
   
-  (require net/imap-sig)
+  (require net/imap)
   
   (require mrlib/hierlist/hierlist-sig)
 
@@ -22,7 +22,6 @@
               sirmail:shutdown-folder^
               sirmail:options^
               mred^
-              imap^
               hierlist^)
       (export)
   
