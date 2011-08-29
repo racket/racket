@@ -1344,8 +1344,6 @@ path/s is either such a string or a list of them.
 "collects/srfi/74/blob.scm" drdr:command-line #f
 "collects/srfi/78/check-reference.scm" drdr:command-line #f
 "collects/srfi/78/examples-78.scm" drdr:command-line #f
-"collects/srpersist/main.rkt" drdr:command-line #f
-"collects/srpersist/srpersist.rkt" drdr:command-line #f
 "collects/stepper" responsible (clements)
 "collects/stepper/drracket-button.rkt" drdr:command-line (gracket-text *)
 "collects/stepper/private/display-break-stuff.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1917,7 +1915,6 @@ path/s is either such a string or a list of them.
 "collects/tests/srfi/40/run-tests.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/srfi/43/run-tests.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/srfi/load-srfis.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/srpersist/srptests.rktl" drdr:command-line #f
 "collects/tests/stepper" responsible (clements)
 "collects/tests/stepper/already-defined.rktl" drdr:command-line #f
 "collects/tests/stepper/automatic-tests.rkt" drdr:timeout 600

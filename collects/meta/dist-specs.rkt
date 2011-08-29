@@ -657,10 +657,6 @@ plt-extras :+= (- (+ (package: "mysterx" #:src? #t)
                      (dll: "myspage" "myssink"))
                   (cond (not win) => (src: "")))
 
-;; -------------------- srpersist
-;; not included
-;; plt-extras :+= (package: "srpersist" #:src? #t)
-
 ;; -------------------- temporary tool for converting old files
 plt-extras :+= (package: "test-box-recovery")
 

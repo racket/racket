@@ -1436,8 +1436,6 @@ DO_WINDOWS_BUILD() {
 
   win_build_step VSNET3M "mzcom"
   win_build_step VSNET3M "libmysterx"
-  # _cd "$PLTHOME/src/srpersist"
-  # win_build_step NMAKE "srpersist" /f srpersist.mak "install"
 
   _cd "$PLTHOME"; win_build_step RKT "raco setup" $SETUP_ARGS
 
