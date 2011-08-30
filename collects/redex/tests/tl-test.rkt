@@ -2127,10 +2127,6 @@
       (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd")
       (exec-runtime-error-tests "run-err-tests/judgment-form-ellipses.rktd"))
     
-    (parameterize ([current-namespace (make-base-namespace)])
-      (eval '(require redex/reduction-semantics))
-      (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
-    
   
 ;                                                                               
 ;                                                                               
