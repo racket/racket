@@ -184,6 +184,10 @@ Raised when the server produces a malformed response.}
 
 @section{POP3 Unit}
 
+@margin-note{@racket[pop3@] and @racket[pop3^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/pop3] module.}
+
 @defmodule[net/pop3-unit]
 
 @defthing[pop3@ unit?]{
