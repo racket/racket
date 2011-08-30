@@ -977,6 +977,10 @@
                  x)
           '(2 1)))
   
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(require redex/reduction-semantics))
+    (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
+  
   ;; errors for not-yet-defined metafunctions
   (test (parameterize ([current-namespace (make-empty-namespace)])
           (namespace-attach-module (namespace-anchor->namespace this-namespace) 'redex/reduction-semantics)
