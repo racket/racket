@@ -32,7 +32,7 @@
      #:context #'make-promise
      [(_ mp . _) #'mp])
    (-poly (a) (-> (-> a) (-Promise a)))]
-  
+
   ;; language
   [(syntax-parse (local-expand #'(this-language) 'expression null)
      #:context #'language
@@ -184,6 +184,10 @@
                                              (if _ (let-values _ (letrec-syntaxes+values _ _ (#%plain-app with-syntax-fail _))) _))))))
       #'with-syntax-fail])
    (-> (-Syntax Univ) (Un))]
+
+
+  [(local-expand #'make-temporary-file 'expression #f)
+   (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)] -Path)]
 
   ;; below here: keyword-argument functions from the base environment
   ;; FIXME: abstraction to remove duplication here

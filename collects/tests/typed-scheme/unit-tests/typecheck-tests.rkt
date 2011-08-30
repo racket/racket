@@ -1096,11 +1096,6 @@
 
         (tc-e (make-directory* "tmp/a/b/c") -Void)
 
-        (tc-e (make-temporary-file) -Path)
-        (tc-e (make-temporary-file "ee~a") -Path)
-        (tc-e (make-temporary-file "ee~a" 'directory) -Path)
-        (tc-e (make-temporary-file "ee~a" "temp" "here") -Path)
-
         
         (tc-e (put-preferences (list 'sym 'sym2) (list 'v1 'v2)) -Void)
 

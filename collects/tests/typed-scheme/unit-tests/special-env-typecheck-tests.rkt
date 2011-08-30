@@ -113,6 +113,12 @@
    [tc-e (with-handlers ([void (λ (x) (values 0 0))]) (values  "" ""))
          #:ret (ret (list (t:Un -Zero -String) (t:Un -Zero -String)))]
    
+   (tc-e (make-temporary-file) -Path)
+   (tc-e (make-temporary-file "ee~a") -Path)
+   (tc-e (make-temporary-file "ee~a" 'directory) -Path)
+   (tc-e (make-temporary-file "ee~a" "temp" "here") -Path)
+
+   
    ))
 
 

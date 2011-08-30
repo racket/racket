@@ -738,43 +738,6 @@
 
 ;Section 14.2.5
 ;racket/file
-#|
-[file->string (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -String)]
-[file->bytes (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Bytes)]
-[file->value (->key -Pathlike #:mode (one-of/c 'binary 'text) #f Univ)]
-[file->list
- (-poly (a)
-  (cl->* (->key -Pathlike #:mode (one-of/c 'binary 'text) #f (-lst Univ))
-         (->key -Pathlike (-> -Input-Port a) #:mode (one-of/c 'binary 'text) #f (-lst a))))]
-
-[file->lines
- (->key -Pathlike #:mode (one-of/c 'binary 'text) #f
-        #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f
-        (-lst -String))]
-[file->bytes-lines
- (->key -Pathlike #:mode (one-of/c 'binary 'text) #f
-        #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f
-        (-lst -Bytes))]
-
-[display-to-file
- (->key Univ -Pathlike
-        #:mode (one-of/c 'binary 'text) #f
-        #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
-        -Void)]
-[write-to-file
- (->key Univ -Pathlike
-        #:mode (one-of/c 'binary 'text) #f
-        #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
-        -Void)]
-
-[display-lines-to-file
- (->key (-lst Univ) -Pathlike
-        #:separator Univ #f
-        #:mode (one-of/c 'binary 'text) #f
-        #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
-        -Void)]
-|#
-
 [copy-directory/files (-> -Pathlike -Pathlike -Void)]
 [delete-directory/files (-> -Pathlike -Void)]
 
@@ -789,59 +752,12 @@
      ((Un funarg funarg*) a [(-opt -Pathlike) Univ]. ->opt . a)))]
 
 [make-directory* (-> -Pathlike -Void)]
-[make-temporary-file (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)] -Path)]
+#;[make-temporary-file (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)] -Path)]
 
-#|
-[get-preference
- (let ((use-lock-type Univ)
-       (timeout-lock-there-type (-opt (-> -Path Univ)))
-       (lock-there-type (-opt (-> -Path Univ))))
-  (cl->*
-   (->key Sym
-          #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
-          Univ)
-   (->key Sym (-> Univ)
-          #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
-          Univ)
-   (->key Sym (-> Univ) Univ
-          #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
-          Univ)
-   (->key Sym (-> Univ) Univ (-opt -Pathlike)
-          #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
-          Univ)))]
-|#
 
 [put-preferences (->opt (-lst -Symbol) (-lst Univ) [(-> -Path Univ) (-opt -Pathlike)] -Void)]
 [preferences-lock-file-mode (-> (one-of/c 'exists 'file-lock))]
 
-#|
-[make-handle-get-preference-locked
- (let ((lock-there-type (-opt (-> -Path Univ))) (max-delay-type -Real))
-  (cl->*
-   (->key -Real Sym
-          #:lock-there lock-there-type #f #:max-delay max-delay-type #f
-          (-> -Pathlike Univ))
-   (->key -Real Sym (-> Univ)
-          #:lock-there lock-there-type #f #:max-delay max-delay-type #f
-          (-> -Pathlike Univ))
-   (->key -Real Sym (-> Univ) Univ
-          #:lock-there lock-there-type #f #:max-delay max-delay-type #f
-          (-> -Pathlike Univ))
-   (->key -Real Sym (-> Univ) Univ (-opt -Pathlike)
-          #:lock-there lock-there-type #f #:max-delay max-delay-type #f
-          (-> -Pathlike Univ))))]
-
-[call-with-file-lock/timeout
- (-poly (a)
-  (->key (-opt -Pathlike)
-         (one-of/c 'shared 'exclusive)
-         (-> a)
-         (-> a)
-         #:lock-file (-opt -Pathlike) #f
-         #:delay -Real #f
-         #:max-delay -Real #f
-          a))]
-|#
 
 [make-lock-file-name (->opt -Pathlike [-Pathlike] -Pathlike)]
 
