@@ -42,27 +42,17 @@
 (define leftfiguremultiwide-style (make-style "LeftfigureMultiWide" figure-style-extras))
 
 (define (figure tag caption #:style [style centerfigure-style] . content)
-  (apply figure-helper style tag caption content))
+  (apply figure-helper figure-style style tag caption content))
+
 (define (figure-here tag caption . content)
-  (apply figure-helper herefigure-style tag caption content))
-(define (figure-helper style tag caption . content)
+  (apply figure-helper herefigure-style centerfigure-style tag caption content))
+
+(define (figure-helper figure-style content-style tag caption . content)
   (make-nested-flow 
    figure-style 
    (list
-    (make-nested-flow
-     style
-     (list
-      (make-nested-flow
-       figureinside-style
-       (append
-        (decode-flow content)
-        (list)))))
-    (make-paragraph 
-     centertext-style 
-     (list
-      (make-element legend-style
-                    (list (Figure-target tag) ": " 
-                          caption)))))))
+     (make-nested-flow content-style (list (make-nested-flow figureinside-style (decode-flow content))))
+     (make-paragraph centertext-style (list (make-element legend-style (list (Figure-target tag) ": " caption)))))))
 
 (define (*figure style tag caption content)
   (make-nested-flow
@@ -75,15 +65,12 @@
       (list
        (make-paragraph
         plain
-        (list
-         (make-element legend-style
-                       (list (Figure-target tag) ": " 
-                             caption))))))))))
+        (list (make-element legend-style (list (Figure-target tag) ": " caption))))))))))
 
-(define (figure* tag caption #:style [style centerfiguremulti-style] . content)
-  (*figure style tag caption content))
-(define (figure** tag caption #:style [style centerfiguremultiwide-style] . content)
-  (*figure style tag caption content))
+(define (figure* tag caption . content)
+  (*figure centerfiguremulti-style tag caption content))
+(define (figure** tag caption . content)
+  (*figure centerfiguremultiwide-style tag caption content))
 
 (define figures (new-counter "figure"))
 (define (Figure-target tag)

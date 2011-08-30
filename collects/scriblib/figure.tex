@@ -11,14 +11,14 @@
 
 \newenvironment{Figure}{\begin{figure}}{\end{figure}}
 
-\newenvironment{CenterfigureMulti}{\begin{center}}{\end{center}}
-\newenvironment{CenterfigureMultiWide}{\begin{CenterfigureMulti}}{\end{CenterfigureMulti}}
 \newenvironment{Centerfigure}{\begin{center}}{\end{center}}
-\newenvironment{Herefigure}{\begin{center}}{\end{center}}
-\newenvironment{FigureInside}{\begin{list}{}{\leftmargin=0pt\topsep=0pt\parsep=\FigOrigskip\partopsep=0pt}\item}{\end{list}}
+\def\Centertext#1{\begin{center}#1\end{center}}
 
-\newenvironment{LeftfigureMulti}{\begin{center}[t!p]}{\end{center}}
-\newenvironment{LeftfigureMultiWide}{\begin{leftfigureMulti}}{\end{leftfigureMulti}}
 \newenvironment{Leftfigure}{\begin{flushleft}}{\end{flushleft}}
 
-\def\Centertext#1{\def\Centertext#1{\begin{center}#1\end{center}}}
+\newenvironment{CenterfigureMulti}{\begin{figure*}[t!p]\centering}{\end{figure*}}
+\newenvironment{CenterfigureMultiWide}{\begin{CenterfigureMulti}}{\end{CenterfigureMulti}}
+
+\newenvironment{Herefigure}{\begin{figure}[ht!p]\centering}{\end{figure}}
+
+\newenvironment{FigureInside}{\begin{list}{}{\leftmargin=0pt\topsep=0pt\parsep=\FigOrigskip\partopsep=0pt}\item}{\end{list}}
