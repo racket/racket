@@ -3,11 +3,14 @@
 (require (for-syntax scheme/base 
                      "term-fn.rkt"
                      syntax/boundmap
+                     syntax/parse
                      racket/syntax)
          "error.rkt"
          "matcher.rkt")
 
-(provide term term-let term-let/error-name term-let-fn term-define-fn hole in-hole)
+(provide term term-let define-term
+         hole in-hole
+         term-let/error-name term-let-fn term-define-fn)
 
 (define-syntax (hole stx) (raise-syntax-error 'hole "used outside of term"))
 (define-syntax (in-hole stx) (raise-syntax-error 'in-hole "used outside of term"))
@@ -69,6 +72,15 @@
        (let ([id (syntax-local-value/record (syntax x) (λ (x) #t))])
          (values (datum->syntax (term-id-id id) (syntax-e (term-id-id id)) (syntax x))
                  (term-id-depth id)))]
+      [x
+       (defined-term-id? #'x)
+       (let ([ref (syntax-property
+                   (defined-term-value (syntax-local-value #'x))
+                   'disappeared-use #'x)])
+         (with-syntax ([v #`(begin
+                              #,(defined-check ref "term" #:external #'x)
+                              #,ref)])
+           (values #'#,v 0)))]
       [(unquote x)
        (values (syntax (unsyntax x)) 0)]
       [(unquote . x)
@@ -208,3 +220,11 @@
       (term-let/error-name term-let ((x rhs) ...) body1 body2 ...))]
     [(_ x)
      (raise-syntax-error 'term-let "expected at least one body" stx)]))
+
+(define-syntax (define-term stx)
+  (syntax-parse stx
+    [(_ x:id t:expr)
+     (not-expression-context stx)
+     #'(begin
+         (define term-val (term t))
+         (define-syntax x (defined-term #'term-val)))]))

@@ -989,14 +989,14 @@
           (with-handlers ([exn:fail:redex? exn-message])
             (eval '(require 'm))
             #f))
-        "metafunction q applied before its definition")
+        "reference to metafunction q before its definition")
   (test (with-handlers ([exn:fail:redex? exn-message])
           (let ()
             (term (q))
             (define-language L)
             (define-metafunction L [(q) ()])
             #f))
-        "metafunction q applied before its definition")
+        "reference to metafunction q before its definition")
   
   (exec-syntax-error-tests "syn-err-tests/metafunction-definition.rktd")
 ;                                                                                                 
@@ -2130,6 +2130,33 @@
     (parameterize ([current-namespace (make-base-namespace)])
       (eval '(require redex/reduction-semantics))
       (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
+    
+  
+;                                                                               
+;                                                                               
+;                                                                               
+;       ;            ;;    ;                                                    
+;       ;           ;      ;                          ;                         
+;       ;           ;                                 ;                         
+;    ;;;;   ;;;    ;;;     ;    ;;;;    ;;;          ;;;     ;;;   ; ;;   ;;;;; 
+;   ;   ;  ;   ;    ;      ;    ;   ;  ;   ;  ;;;;;   ;     ;   ;  ;;  ;  ; ; ; 
+;   ;   ;  ;;;;;    ;      ;    ;   ;  ;;;;;          ;     ;;;;;  ;   ;  ; ; ; 
+;   ;   ;  ;        ;      ;    ;   ;  ;              ;     ;      ;      ; ; ; 
+;   ;   ;  ;   ;    ;      ;    ;   ;  ;   ;          ;     ;   ;  ;      ; ; ; 
+;    ;;;;   ;;;     ;      ;    ;   ;   ;;;            ;;    ;;;   ;      ; ; ; 
+;                                                                               
+;                                                                               
+;                                                                               
+  
+  (test (let ()
+          (define-term x 1)
+          (term (x x)))
+        (term (1 1)))
+  (test (let ()
+          (define-term x 1)
+          (let ([x 'whatever])
+            (term (x x))))
+        (term (x x)))
     
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;

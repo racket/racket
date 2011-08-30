@@ -40,6 +40,7 @@
          term-match/single
          redex-let
          redex-let*
+         define-term
          match? match-bindings
          make-bind bind? bind-name bind-exp
          

@@ -1331,10 +1331,6 @@
     (map (λ (x) (to-lw/proc (datum->syntax #f (cdr (syntax-e x)) x)))
          (syntax->list #'(lhs-for-lw ...)))))
 
-(define-for-syntax (not-expression-context stx)
-  (when (eq? (syntax-local-context) 'expression)
-    (raise-syntax-error #f "not allowed in an expression context" stx)))
-
 ;                                                                                                          
 ;                                                                                                          
 ;                                                                                                          

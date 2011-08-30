@@ -14,4 +14,4 @@
     (thunk)))
 
 (define (report-undefined name desc)
-  (redex-error #f "~a ~s applied before its definition" desc name))
+  (redex-error #f "reference to ~a ~s before its definition" desc name))

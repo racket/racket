@@ -421,8 +421,8 @@ stands for repetition unless otherwise indicated):
 
 @item{A term written @racket[_identifier] is equivalent to the
 corresponding symbol, unless the identifier is bound by
-@racket[term-let] (or in a @|pattern| elsewhere) or is
-@tt{hole} (as below).  }
+@racket[term-let], @racket[define-term], or a @|pattern| variable or
+the identifier is @tt{hole} (as below).}
 
 @item{A term written @racket[(_term-sequence ...)] constructs a list of
 the terms constructed by the sequence elements.}
@@ -531,6 +531,9 @@ In some contexts, it may be more efficient to use @racket[term-match/single]
 @defform[(redex-let* language ([@#,ttpattern expression] ...) body ...+)]{
 The @racket[let*] analog of @racket[redex-let].
 }
+
+@defform[(define-term identifier @#,tttterm)]{
+Defines @racket[identifier] for use in @|tterm| templates.}
 
 @defform[(term-match language [@#,ttpattern expression] ...)]{
 

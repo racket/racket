@@ -153,4 +153,25 @@
   (test (send annotations collected-rename-class contract-name)
         (expected-rename-class metafunction-binding)))
 
+;; define-term
+(let ([annotations (new collector%)])
+  (define-values (add-syntax done)
+    (make-traversal module-namespace #f))
+  
+  (define def-name (identifier x))
+  (define use-name (identifier x))
+  
+  (parameterize ([current-annotations annotations]
+                 [current-namespace module-namespace])
+    (add-syntax
+     (expand #`(let ()
+                 (define-term #,def-name a)
+                 (term (#,use-name b)))))
+    (done))
+  
+  (test (send annotations collected-rename-class def-name)
+        (expected-rename-class (list def-name use-name)))
+  (test (send annotations collected-rename-class def-name)
+        (expected-rename-class (list def-name use-name))))
+
 (print-tests-passed 'check-syntax-test.rkt)
