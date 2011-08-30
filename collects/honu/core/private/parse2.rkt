@@ -290,6 +290,10 @@
     [() #t]
     [else #f]))
 
+(provide parse-one)
+(define (parse-one code)
+  (parse (strip-stops code)))
+
 (define (parse-all code)
   (let loop ([all '()]
              [code code])
