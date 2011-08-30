@@ -107,7 +107,7 @@
          (define combined-str
            (cond
              [str-src (string-append str-src str-loc)]
-             [else (string-append "mztmp" str-loc)]))
+             [else (string-append "rkttmp" str-loc)]))
          (define sanitized-str 
            (regexp-replace*
             #rx"[<>]"
@@ -128,7 +128,7 @@
 
 (define make-temporary-file/proc
   (let ()
-    (define (make-temporary-file [template "mztmp~a"] [copy-from #f] [base-dir #f])
+    (define (make-temporary-file [template "rkttmp~a"] [copy-from #f] [base-dir #f])
       (with-handlers ([exn:fail:contract?
                        (lambda (x)
                          (raise-type-error 'make-temporary-file

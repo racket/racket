@@ -868,7 +868,7 @@ Creates directory specified by @racket[path], creating intermediate
 directories as necessary.}
 
 
-@defproc[(make-temporary-file [template string? "mztmp~a"]
+@defproc[(make-temporary-file [template string? "rkttmp~a"]
                               [copy-from-filename (or/c path-string? #f 'directory) #f]
                               [directory (or/c path-string? #f) #f])
          path?]{
@@ -887,11 +887,11 @@ provided and non-@racket[#f], in which case the
 file name generated from @racket[template] is combined with
 @racket[directory] to obtain a full path.
 
-The @racket[template] argument's default is only the string @racket["mztmp~a"]
+The @racket[template] argument's default is only the string @racket["rkttmp~a"]
 when there is no source location information for the callsite of
 @racket[make-temporary-file] (or if @racket[make-temporary-file] is
 used in a higher-order position). If there is such information, then the template
-string is built based on the source location.
+string is based on the source location.
 
 If @racket[copy-from-filename] is provided as path, the temporary file
 is created as a copy of the named file (using @racket[copy-file]). If
