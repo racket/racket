@@ -46,6 +46,10 @@ end-of-file or Base 64 terminator @litchar{=} from @racket[in].}
 
 @section{Base64 Unit}
 
+@margin-note{@racket[base64@] and @racket[base64^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/base64] module.}
+
 @defmodule[net/base64-unit]
 
 @defthing[base64@ unit?]{
