@@ -78,461 +78,503 @@
 
 
   (define round-type ; also used for truncate
-    (from-cases
-     (map unop all-int-types)
-     (-> -NonNegRat -Nat)
-     (-> -NonPosRat -NonPosInt)
-     (-> -Rat -Int)
-     (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
-                     -NonNegFlonum -NonPosFlonum -Flonum
-                     -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero
-                     -NonNegSingleFlonum -NonPosSingleFlonum -SingleFlonum
-                     -InexactRealPosZero -InexactRealNegZero -InexactRealZero
-                     -NonNegInexactReal -NonPosInexactReal -InexactReal
-                     -RealZero -NonNegReal -NonPosReal -Real))))
+    (lambda ()
+      (from-cases
+       (map unop all-int-types)
+       (-> -NonNegRat -Nat)
+       (-> -NonPosRat -NonPosInt)
+       (-> -Rat -Int)
+       (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
+                       -NonNegFlonum -NonPosFlonum -Flonum
+                       -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero
+                       -NonNegSingleFlonum -NonPosSingleFlonum -SingleFlonum
+                       -InexactRealPosZero -InexactRealNegZero -InexactRealZero
+                       -NonNegInexactReal -NonPosInexactReal -InexactReal
+                       -RealZero -NonNegReal -NonPosReal -Real)))))
 
-  (define fl-unop (unop -Flonum))
+  (define fl-unop (lambda () (unop -Flonum)))
 
   ;; types for specific operations, to avoid repetition between safe and unsafe versions
   (define fx+-type
-    (fx-from-cases
-     (binop -Zero)
-     (map (lambda (t) (commutative-binop t -Zero t))
-          (list -One -PosByte -Byte -PosIndex -Index))
-     (commutative-binop -PosByte -Byte -PosIndex)
-     (-Byte -Byte . -> . -PosIndex)
-     ;; in other cases, either we stay within fixnum range, or we error
-     (commutative-binop -Pos -Nat -PosFixnum)
-     (-Nat -Nat . -> . -NonNegFixnum)
-     (commutative-binop -NegInt -One -NonPosFixnum)
-     (commutative-binop -NegInt -NonPosInt -NegFixnum)
-     (-NonPosInt -NonPosInt . -> . -NonPosFixnum)
-     (-Int -Int . -> . -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (binop -Zero)
+       (map (lambda (t) (commutative-binop t -Zero t))
+            (list -One -PosByte -Byte -PosIndex -Index))
+       (commutative-binop -PosByte -Byte -PosIndex)
+       (-Byte -Byte . -> . -PosIndex)
+       ;; in other cases, either we stay within fixnum range, or we error
+       (commutative-binop -Pos -Nat -PosFixnum)
+       (-Nat -Nat . -> . -NonNegFixnum)
+       (commutative-binop -NegInt -One -NonPosFixnum)
+       (commutative-binop -NegInt -NonPosInt -NegFixnum)
+       (-NonPosInt -NonPosInt . -> . -NonPosFixnum)
+       (-Int -Int . -> . -Fixnum))))
   (define fx--type
-    (fx-from-cases
-     (binop -Zero)
-     (map (lambda (t) (commutative-binop t -Zero t))
-          (list -One -PosByte -Byte -PosIndex -Index))
-     (-One -One . -> . -Zero)
-     (-PosByte -One . -> . -Byte)
-     (-PosIndex -One . -> . -Index)
-     (-PosFixnum -One . -> . -NonNegFixnum)
-     (-NegInt -Nat . -> . -NegFixnum)
-     (-NonPosInt -PosInt . -> . -NegFixnum)
-     (-NonPosInt -Nat . -> . -NonPosFixnum)
-     (-PosInt -NonPosInt . -> . -PosInt)
-     (-Nat -NegInt . -> . -PosInt)
-     (-Nat -NonPosInt . -> . -Nat)
-     (-Int -Int . -> . -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (binop -Zero)
+       (map (lambda (t) (commutative-binop t -Zero t))
+            (list -One -PosByte -Byte -PosIndex -Index))
+       (-One -One . -> . -Zero)
+       (-PosByte -One . -> . -Byte)
+       (-PosIndex -One . -> . -Index)
+       (-PosFixnum -One . -> . -NonNegFixnum)
+       (-NegInt -Nat . -> . -NegFixnum)
+       (-NonPosInt -PosInt . -> . -NegFixnum)
+       (-NonPosInt -Nat . -> . -NonPosFixnum)
+       (-PosInt -NonPosInt . -> . -PosInt)
+       (-Nat -NegInt . -> . -PosInt)
+       (-Nat -NonPosInt . -> . -Nat)
+       (-Int -Int . -> . -Fixnum))))
   (define fx*-type
-    (fx-from-cases
-     (map binop (list -Zero -One))
-     (commutative-binop -Zero -Int)
-     (-PosByte -PosByte . -> . -PosIndex)
-     (-Byte -Byte . -> . -Index)
-     (-PosInt -PosInt . -> . -PosFixnum)
-     (commutative-binop -PosInt -NegInt -NegFixnum)
-     (-NegInt -NegInt . -> . -PosFixnum)
-     (-Nat -Nat . -> . -NonNegFixnum)
-     (commutative-binop -Nat -NonPosInt -NonPosFixnum)
-     (-NonPosFixnum -NonPosFixnum . -> . -NonNegFixnum)
-     (-Int -Int . -> . -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (map binop (list -Zero -One))
+       (commutative-binop -Zero -Int)
+       (-PosByte -PosByte . -> . -PosIndex)
+       (-Byte -Byte . -> . -Index)
+       (-PosInt -PosInt . -> . -PosFixnum)
+       (commutative-binop -PosInt -NegInt -NegFixnum)
+       (-NegInt -NegInt . -> . -PosFixnum)
+       (-Nat -Nat . -> . -NonNegFixnum)
+       (commutative-binop -Nat -NonPosInt -NonPosFixnum)
+       (-NonPosFixnum -NonPosFixnum . -> . -NonNegFixnum)
+       (-Int -Int . -> . -Fixnum))))
   (define fxquotient-type
-    (fx-from-cases
-     (-Zero -Int . -> . -Zero)
-     (map (lambda (t) (-> t -One t)) ; division by one is identity
-          (list -PosByte -Byte -PosIndex -Index
-                -PosFixnum -NonNegFixnum -NegFixnum -NonPosFixnum -Fixnum))
-     (-Byte -Nat . -> . -Byte)
-     (-Index -Nat . -> . -Index)
-     (-Nat -Nat . -> . -NonNegFixnum)
-     (commutative-binop -Nat -NonPosInt -NonPosFixnum)
-     (-NonPosInt -NonPosInt . -> . -NonNegFixnum)
-     (-Int -Int . -> . -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (-Zero -Int . -> . -Zero)
+       (map (lambda (t) (-> t -One t)) ; division by one is identity
+            (list -PosByte -Byte -PosIndex -Index
+                  -PosFixnum -NonNegFixnum -NegFixnum -NonPosFixnum -Fixnum))
+       (-Byte -Nat . -> . -Byte)
+       (-Index -Nat . -> . -Index)
+       (-Nat -Nat . -> . -NonNegFixnum)
+       (commutative-binop -Nat -NonPosInt -NonPosFixnum)
+       (-NonPosInt -NonPosInt . -> . -NonNegFixnum)
+       (-Int -Int . -> . -Fixnum))))
   (define fxremainder-type ; result has same sign as first arg
-    (fx-from-cases
-     (-One -One . -> . -Zero)
-     (map (lambda (t) (list (-> -Nat t t)
-                            (-> t -Int t)))
-          (list -Byte -Index))
-     (-Nat -Int . -> . -NonNegFixnum)
-     (-NonPosInt -Int . -> . -NonPosFixnum)
-     (-Int -Int . -> . -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (-One -One . -> . -Zero)
+       (map (lambda (t) (list (-> -Nat t t)
+                              (-> t -Int t)))
+            (list -Byte -Index))
+       (-Nat -Int . -> . -NonNegFixnum)
+       (-NonPosInt -Int . -> . -NonPosFixnum)
+       (-Int -Int . -> . -Fixnum))))
   (define fxmodulo-type ; result has same sign as second arg
-    (fx-from-cases
-     (-One -One . -> . -Zero)
-     (map (lambda (t) (list (-> -Int t t)
-                            (-> t -Nat t)))
-          (list -Byte -Index))
-     (-Int -Nat . -> . -NonNegFixnum)
-     (-Int -NonPosInt . -> . -NonPosFixnum)
-     (-Int -Int . -> . -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (-One -One . -> . -Zero)
+       (map (lambda (t) (list (-> -Int t t)
+                              (-> t -Nat t)))
+            (list -Byte -Index))
+       (-Int -Nat . -> . -NonNegFixnum)
+       (-Int -NonPosInt . -> . -NonPosFixnum)
+       (-Int -Int . -> . -Fixnum))))
   (define fxabs-type
-    (fx-from-cases
-     (map unop (list -Zero -One -PosByte -Byte -PosIndex -Index))
-     ((Un -PosInt -NegInt) . -> . -PosFixnum)
-     (-Int . -> . -NonNegFixnum)))
+    (lambda ()
+      (fx-from-cases
+       (map unop (list -Zero -One -PosByte -Byte -PosIndex -Index))
+       ((Un -PosInt -NegInt) . -> . -PosFixnum)
+       (-Int . -> . -NonNegFixnum))))
   (define fx=-type
-    (fx-from-cases
-     ;; we could rule out cases like (= Pos Neg), but we currently don't
-     (map (lambda (l) (apply exclude-zero l))
-          (list (list -Byte -PosByte)
-                (list -Index -PosIndex)
-                (list -Nat -PosFixnum)
-                (list -NonPosInt -NegFixnum)
-                (list -Int (Un -PosFixnum -NegFixnum))))
-     (map (lambda (t) (commutative-equality/filter -Int t))
-          (list -One -PosByte -Byte -PosIndex -Index -PosFixnum -NonNegFixnum -NegFixnum -NonPosFixnum))
-     (comp -Int)))
+    (lambda ()
+      (fx-from-cases
+       ;; we could rule out cases like (= Pos Neg), but we currently don't
+       (map (lambda (l) (apply exclude-zero l))
+            (list (list -Byte -PosByte)
+                  (list -Index -PosIndex)
+                  (list -Nat -PosFixnum)
+                  (list -NonPosInt -NegFixnum)
+                  (list -Int (Un -PosFixnum -NegFixnum))))
+       (map (lambda (t) (commutative-equality/filter -Int t))
+            (list -One -PosByte -Byte -PosIndex -Index -PosFixnum -NonNegFixnum -NegFixnum -NonPosFixnum))
+       (comp -Int))))
   (define fx<-type
-    (fx-from-cases
-     (-> -Pos -One B : (-FS (-filter (Un) 0) -top)) ; can't happen
-     (-> -Nat -One B : (-FS (-filter -Zero 0) -top))
-     (-> -Int -One B : (-FS (-filter -NonPosFixnum 0) (-filter -PosFixnum 0)))
-     ;; bleh, this repeats cases below, but since we can only match a single
-     ;; case, we need to put it here as well, or we would not gain that info,
-     ;; as another unrelated case would match
-     (-> -Byte -Zero B : (-FS (-filter (Un) 0) -top))
-     (-> -Byte -One B : (-FS (-filter -Zero 0) -top))
-     (-> -Zero -Byte B : (-FS (-filter -PosByte 1) (-filter -Zero 1)))
-     (-> -Byte -PosByte B : (-FS -top (-filter -PosByte 0)))
-     (-> -Byte -Byte B : (-FS (-filter -PosByte 1) -top))
-     (-> -Pos -Byte B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
-     (-> -Byte -Pos B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
-     (-> -Nat -Byte B : (-FS (-and (-filter -Byte 0) (-filter -PosByte 1)) -top))
-     (-> -Byte -Nat B : (-FS -top (-filter -Byte 1)))
-     (-> -Index -Zero B : (-FS (-filter (Un) 0) -top))
-     (-> -Index -One B : (-FS (-filter -Zero 0) -top))
-     (-> -Zero -Index B : (-FS (-filter -PosIndex 1) (-filter -Zero 1)))
-     (-> -Index -PosIndex B : (-FS -top (-filter -PosIndex 0)))
-     (-> -Index -Index B : (-FS (-filter -PosIndex 1) -top))
-     (-> -Pos -Index B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
-     (-> -Index -Pos B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
-     (-> -Nat -Index B : (-FS (-and (-filter -Index 0) (-filter -PosIndex 1)) -top))
-     (-> -Index -Nat B : (-FS -top (-filter -Index 1)))
-     ;; general integer cases
-     (-> -Int -Zero B : (-FS (-filter -NegFixnum 0) (-filter -NonNegFixnum 0)))
-     (-> -Zero -Int B : (-FS (-filter -PosFixnum 1) (-filter -NonPosFixnum 1)))
-     (-> -Int -PosInt B : (-FS -top (-filter -PosFixnum 0)))
-     (-> -Int -Nat B : (-FS -top (-filter -NonNegFixnum 0)))
-     (-> -Nat -Int B : (-FS (-filter -PosFixnum 1) -top))
-     (-> -Int -NonPosInt B : (-FS (-filter -NegFixnum 0) -top))
-     (-> -NegInt -Int B : (-FS -top (-filter -NegFixnum 1)))
-     (-> -NonPosInt -Int B : (-FS -top (-filter -NonPosFixnum 1)))
-     (comp -Int)))
+    (lambda ()
+      (fx-from-cases
+       (-> -Pos -One B : (-FS (-filter (Un) 0) -top)) ; can't happen
+       (-> -Nat -One B : (-FS (-filter -Zero 0) -top))
+       (-> -Int -One B : (-FS (-filter -NonPosFixnum 0) (-filter -PosFixnum 0)))
+       ;; bleh, this repeats cases below, but since we can only match a single
+       ;; case, we need to put it here as well, or we would not gain that info,
+       ;; as another unrelated case would match
+       (-> -Byte -Zero B : (-FS (-filter (Un) 0) -top))
+       (-> -Byte -One B : (-FS (-filter -Zero 0) -top))
+       (-> -Zero -Byte B : (-FS (-filter -PosByte 1) (-filter -Zero 1)))
+       (-> -Byte -PosByte B : (-FS -top (-filter -PosByte 0)))
+       (-> -Byte -Byte B : (-FS (-filter -PosByte 1) -top))
+       (-> -Pos -Byte B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
+       (-> -Byte -Pos B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
+       (-> -Nat -Byte B : (-FS (-and (-filter -Byte 0) (-filter -PosByte 1)) -top))
+       (-> -Byte -Nat B : (-FS -top (-filter -Byte 1)))
+       (-> -Index -Zero B : (-FS (-filter (Un) 0) -top))
+       (-> -Index -One B : (-FS (-filter -Zero 0) -top))
+       (-> -Zero -Index B : (-FS (-filter -PosIndex 1) (-filter -Zero 1)))
+       (-> -Index -PosIndex B : (-FS -top (-filter -PosIndex 0)))
+       (-> -Index -Index B : (-FS (-filter -PosIndex 1) -top))
+       (-> -Pos -Index B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
+       (-> -Index -Pos B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
+       (-> -Nat -Index B : (-FS (-and (-filter -Index 0) (-filter -PosIndex 1)) -top))
+       (-> -Index -Nat B : (-FS -top (-filter -Index 1)))
+       ;; general integer cases
+       (-> -Int -Zero B : (-FS (-filter -NegFixnum 0) (-filter -NonNegFixnum 0)))
+       (-> -Zero -Int B : (-FS (-filter -PosFixnum 1) (-filter -NonPosFixnum 1)))
+       (-> -Int -PosInt B : (-FS -top (-filter -PosFixnum 0)))
+       (-> -Int -Nat B : (-FS -top (-filter -NonNegFixnum 0)))
+       (-> -Nat -Int B : (-FS (-filter -PosFixnum 1) -top))
+       (-> -Int -NonPosInt B : (-FS (-filter -NegFixnum 0) -top))
+       (-> -NegInt -Int B : (-FS -top (-filter -NegFixnum 1)))
+       (-> -NonPosInt -Int B : (-FS -top (-filter -NonPosFixnum 1)))
+       (comp -Int))))
   (define fx>-type
-    (fx-from-cases
-     (-> -One -Pos B : (-FS (-filter (Un) 1) -top)) ; can't happen
-     (-> -One -Nat B : (-FS (-filter -Zero 1) -top))
-     (-> -One -Int B : (-FS (-filter -NonPosFixnum 1) (-filter -PosFixnum 1)))
-     (-> -Byte -Zero B : (-FS (-filter -PosByte 0) (-filter -Zero 0)))
-     (-> -Zero -Byte B : (-FS (-filter (Un) 1) -top))
-     (-> -One -Byte B : (-FS (-filter -Zero 1) (-filter -PosByte 1)))
-     (-> -PosByte -Byte B : (-FS -top (-filter -PosByte 1)))
-     (-> -Byte -Byte B : (-FS (-filter -PosByte 0) -top))
-     (-> -Byte -Pos B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
-     (-> -Pos -Byte B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
-     (-> -Byte -Nat B : (-FS (-and (-filter -PosByte 0) (-filter -Byte 1)) -top))
-     (-> -Nat -Byte B : (-FS -top (-filter -Byte 0)))
-     (-> -Zero -Index B : (-FS (-filter (Un) 1) -top))
-     (-> -One -Index B : (-FS (-filter -Zero 1) -top))
-     (-> -Index -Zero B : (-FS (-filter -PosIndex 0) (-filter -Zero 0)))
-     (-> -PosIndex -Index B : (-FS -top (-filter -PosIndex 1)))
-     (-> -Index -Index B : (-FS (-filter -PosIndex 0) -top))
-     (-> -Index -Pos B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
-     (-> -Pos -Index B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
-     (-> -Index -Nat B : (-FS (-and (-filter -PosIndex 0) (-filter -Index 1)) -top))
-     (-> -Nat -Index B : (-FS -top (-filter -Index 0)))
-     ;; general integer cases
-     (-> -Zero -Int B : (-FS (-filter -NegFixnum 1) (-filter -NonNegFixnum 1)))
-     (-> -Int -Zero  B : (-FS (-filter -PosFixnum 0) (-filter -NonPosFixnum 0)))
-     (-> -PosInt -Int B : (-FS -top (-filter -PosFixnum 1)))
-     (-> -Nat -Int B : (-FS -top (-filter -NonNegFixnum 1)))
-     (-> -Int -Nat B : (-FS (-filter -PosFixnum 0) -top))
-     (-> -NonPosInt -Int B : (-FS (-filter -NegFixnum 1) -top))
-     (-> -Int -NegInt B : (-FS -top (-filter -NegFixnum 0)))
-     (-> -Int -NonPosInt B : (-FS -top (-filter -NonPosFixnum 0)))
-     (comp -Int)))
+    (lambda ()
+      (fx-from-cases
+       (-> -One -Pos B : (-FS (-filter (Un) 1) -top)) ; can't happen
+       (-> -One -Nat B : (-FS (-filter -Zero 1) -top))
+       (-> -One -Int B : (-FS (-filter -NonPosFixnum 1) (-filter -PosFixnum 1)))
+       (-> -Byte -Zero B : (-FS (-filter -PosByte 0) (-filter -Zero 0)))
+       (-> -Zero -Byte B : (-FS (-filter (Un) 1) -top))
+       (-> -One -Byte B : (-FS (-filter -Zero 1) (-filter -PosByte 1)))
+       (-> -PosByte -Byte B : (-FS -top (-filter -PosByte 1)))
+       (-> -Byte -Byte B : (-FS (-filter -PosByte 0) -top))
+       (-> -Byte -Pos B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
+       (-> -Pos -Byte B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
+       (-> -Byte -Nat B : (-FS (-and (-filter -PosByte 0) (-filter -Byte 1)) -top))
+       (-> -Nat -Byte B : (-FS -top (-filter -Byte 0)))
+       (-> -Zero -Index B : (-FS (-filter (Un) 1) -top))
+       (-> -One -Index B : (-FS (-filter -Zero 1) -top))
+       (-> -Index -Zero B : (-FS (-filter -PosIndex 0) (-filter -Zero 0)))
+       (-> -PosIndex -Index B : (-FS -top (-filter -PosIndex 1)))
+       (-> -Index -Index B : (-FS (-filter -PosIndex 0) -top))
+       (-> -Index -Pos B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
+       (-> -Pos -Index B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
+       (-> -Index -Nat B : (-FS (-and (-filter -PosIndex 0) (-filter -Index 1)) -top))
+       (-> -Nat -Index B : (-FS -top (-filter -Index 0)))
+       ;; general integer cases
+       (-> -Zero -Int B : (-FS (-filter -NegFixnum 1) (-filter -NonNegFixnum 1)))
+       (-> -Int -Zero  B : (-FS (-filter -PosFixnum 0) (-filter -NonPosFixnum 0)))
+       (-> -PosInt -Int B : (-FS -top (-filter -PosFixnum 1)))
+       (-> -Nat -Int B : (-FS -top (-filter -NonNegFixnum 1)))
+       (-> -Int -Nat B : (-FS (-filter -PosFixnum 0) -top))
+       (-> -NonPosInt -Int B : (-FS (-filter -NegFixnum 1) -top))
+       (-> -Int -NegInt B : (-FS -top (-filter -NegFixnum 0)))
+       (-> -Int -NonPosInt B : (-FS -top (-filter -NonPosFixnum 0)))
+       (comp -Int))))
   (define fx<=-type
-    (fx-from-cases
-     (-> -Pos -One B : (-FS (-filter -One 0) -top))
-     (-> -Byte -Zero B : (-FS (-filter -Zero 0) (-filter -PosByte 0)))
-     (-> -Zero -Byte B : (-FS -top (-filter (Un) 1)))
-     (-> -One -Byte B : (-FS (-filter -PosByte 1) (-filter -Zero 1)))
-     (-> -PosByte -Byte B : (-FS (-filter -PosByte 1) -top))
-     (-> -Byte -Byte B : (-FS -top (-filter -PosByte 0)))
-     (-> -Pos -Byte B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
-     (-> -Byte -Pos B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
-     (-> -Nat -Byte B : (-FS (-filter -Byte 0) -top))
-     (-> -Byte -Nat B : (-FS -top (-and (-filter -PosByte 0) (-filter -Byte 1))))
-     (-> -Index -Zero B : (-FS (-filter -Zero 0) (-filter -PosIndex 0)))
-     (-> -Zero -Index B : (-FS -top (-filter (Un) 1)))
-     (-> -One -Index B : (-FS (-filter -PosIndex 1) (-filter -Zero 1)))
-     (-> -PosIndex -Index B : (-FS (-filter -PosIndex 1) -top))
-     (-> -Index -Index B : (-FS -top (-filter -PosIndex 0)))
-     (-> -Pos -Index B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
-     (-> -Index -Pos B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
-     (-> -Nat -Index B : (-FS (-filter -Index 0) -top))
-     (-> -Index -Nat B : (-FS -top (-and (-filter -PosIndex 0) (-filter -Index 1))))
-     ;; general integer cases
-     (-> -Nat -Zero B : (-FS (-filter -Zero 0) -top))
-     (-> -One -Nat B : (-FS (-filter -PosFixnum 1) (-filter -Zero 1)))
-     (-> -Int -Zero B : (-FS (-filter -NonPosFixnum 0) (-filter -PosFixnum 0)))
-     (-> -Zero -Int B : (-FS (-filter -NonNegFixnum 1) (-filter -NegFixnum 1)))
-     (-> -PosInt -Int B : (-FS (-filter -PosFixnum 1) -top))
-     (-> -Int -Nat B : (-FS -top (-filter -PosFixnum 0)))
-     (-> -Nat -Int B : (-FS (-filter -NonNegFixnum 1) -top))
-     (-> -Int -NegInt B : (-FS (-filter -NegFixnum 0) -top))
-     (-> -Int -NonPosInt B : (-FS (-filter -NonPosFixnum 0) -top))
-     (-> -NonPosInt -Int B : (-FS -top (-filter -NegFixnum 1)))
-     (comp -Int)))
+    (lambda ()
+      (fx-from-cases
+       (-> -Pos -One B : (-FS (-filter -One 0) -top))
+       (-> -Byte -Zero B : (-FS (-filter -Zero 0) (-filter -PosByte 0)))
+       (-> -Zero -Byte B : (-FS -top (-filter (Un) 1)))
+       (-> -One -Byte B : (-FS (-filter -PosByte 1) (-filter -Zero 1)))
+       (-> -PosByte -Byte B : (-FS (-filter -PosByte 1) -top))
+       (-> -Byte -Byte B : (-FS -top (-filter -PosByte 0)))
+       (-> -Pos -Byte B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
+       (-> -Byte -Pos B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
+       (-> -Nat -Byte B : (-FS (-filter -Byte 0) -top))
+       (-> -Byte -Nat B : (-FS -top (-and (-filter -PosByte 0) (-filter -Byte 1))))
+       (-> -Index -Zero B : (-FS (-filter -Zero 0) (-filter -PosIndex 0)))
+       (-> -Zero -Index B : (-FS -top (-filter (Un) 1)))
+       (-> -One -Index B : (-FS (-filter -PosIndex 1) (-filter -Zero 1)))
+       (-> -PosIndex -Index B : (-FS (-filter -PosIndex 1) -top))
+       (-> -Index -Index B : (-FS -top (-filter -PosIndex 0)))
+       (-> -Pos -Index B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
+       (-> -Index -Pos B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
+       (-> -Nat -Index B : (-FS (-filter -Index 0) -top))
+       (-> -Index -Nat B : (-FS -top (-and (-filter -PosIndex 0) (-filter -Index 1))))
+       ;; general integer cases
+       (-> -Nat -Zero B : (-FS (-filter -Zero 0) -top))
+       (-> -One -Nat B : (-FS (-filter -PosFixnum 1) (-filter -Zero 1)))
+       (-> -Int -Zero B : (-FS (-filter -NonPosFixnum 0) (-filter -PosFixnum 0)))
+       (-> -Zero -Int B : (-FS (-filter -NonNegFixnum 1) (-filter -NegFixnum 1)))
+       (-> -PosInt -Int B : (-FS (-filter -PosFixnum 1) -top))
+       (-> -Int -Nat B : (-FS -top (-filter -PosFixnum 0)))
+       (-> -Nat -Int B : (-FS (-filter -NonNegFixnum 1) -top))
+       (-> -Int -NegInt B : (-FS (-filter -NegFixnum 0) -top))
+       (-> -Int -NonPosInt B : (-FS (-filter -NonPosFixnum 0) -top))
+       (-> -NonPosInt -Int B : (-FS -top (-filter -NegFixnum 1)))
+       (comp -Int))))
   (define fx>=-type
-    (fx-from-cases
-     (-> -One -Pos B : (-FS (-filter -One 1) -top))
-     (-> -Zero -Byte B : (-FS (-filter -Zero 1) (-filter -PosByte 1)))
-     (-> -Byte -Zero B : (-FS -top (-filter (Un) 0)))
-     (-> -Byte -One B : (-FS (-filter -PosByte 0) (-filter -Zero 0)))
-     (-> -Byte -PosByte B : (-FS (-filter -PosByte 0) -top))
-     (-> -Byte -Byte B : (-FS -top (-filter -PosByte 1)))
-     (-> -Byte -Pos B : (-FS (-and (-filter -PosByte 1) (-filter -PosByte 0)) -top))
-     (-> -Pos -Byte B : (-FS -top (-and (-filter -PosByte 1) (-filter -PosByte 0))))
-     (-> -Byte -Nat B : (-FS (-filter -Byte 1) -top))
-     (-> -Nat -Byte B : (-FS -top (-and (-filter -Byte 0) (-filter -PosByte 1))))
-     (-> -Zero -Index B : (-FS (-filter -Zero 1) (-filter -PosIndex 1)))
-     (-> -Index -Zero B : (-FS -top (-filter (Un) 0)))
-     (-> -Index -One B : (-FS (-filter -PosIndex 0) (-filter -Zero 0)))
-     (-> -Index -PosIndex B : (-FS (-filter -PosIndex 0) -top))
-     (-> -Index -Index B : (-FS -top (-filter -PosIndex 1)))
-     (-> -Index -Pos B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
-     (-> -Pos -Index B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
-     (-> -Index -Nat B : (-FS (-filter -Index 1) -top))
-     (-> -Nat -Index B : (-FS -top (-and (-filter -Index 0) (-filter -PosIndex 1))))
-     ;; general integer cases
-     (-> -Zero -Nat B : (-FS (-filter -Zero 1) -top))
-     (-> -Nat -One B : (-FS (-filter -PosFixnum 0) (-filter -Zero 0)))
-     (-> -Zero -Int B : (-FS (-filter -NonPosFixnum 1) (-filter -PosFixnum 1)))
-     (-> -Int -Zero B : (-FS (-filter -NonNegFixnum 0) (-filter -NegFixnum 0)))
-     (-> -Int -PosInt B : (-FS (-filter -PosFixnum 0) -top))
-     (-> -Nat -Int B : (-FS -top (-filter -PosFixnum 1)))
-     (-> -Int -Nat B : (-FS (-filter -NonNegFixnum 0) -top))
-     (-> -NegInt -Int B : (-FS (-filter -NegFixnum 1) -top))
-     (-> -NonPosInt -Int B : (-FS (-filter -NonPosFixnum 1) -top))
-     (-> -Int -NonPosInt B : (-FS -top (-filter -NegFixnum 0)))
-     (comp -Int)))
+    (lambda ()
+      (fx-from-cases
+       (-> -One -Pos B : (-FS (-filter -One 1) -top))
+       (-> -Zero -Byte B : (-FS (-filter -Zero 1) (-filter -PosByte 1)))
+       (-> -Byte -Zero B : (-FS -top (-filter (Un) 0)))
+       (-> -Byte -One B : (-FS (-filter -PosByte 0) (-filter -Zero 0)))
+       (-> -Byte -PosByte B : (-FS (-filter -PosByte 0) -top))
+       (-> -Byte -Byte B : (-FS -top (-filter -PosByte 1)))
+       (-> -Byte -Pos B : (-FS (-and (-filter -PosByte 1) (-filter -PosByte 0)) -top))
+       (-> -Pos -Byte B : (-FS -top (-and (-filter -PosByte 1) (-filter -PosByte 0))))
+       (-> -Byte -Nat B : (-FS (-filter -Byte 1) -top))
+       (-> -Nat -Byte B : (-FS -top (-and (-filter -Byte 0) (-filter -PosByte 1))))
+       (-> -Zero -Index B : (-FS (-filter -Zero 1) (-filter -PosIndex 1)))
+       (-> -Index -Zero B : (-FS -top (-filter (Un) 0)))
+       (-> -Index -One B : (-FS (-filter -PosIndex 0) (-filter -Zero 0)))
+       (-> -Index -PosIndex B : (-FS (-filter -PosIndex 0) -top))
+       (-> -Index -Index B : (-FS -top (-filter -PosIndex 1)))
+       (-> -Index -Pos B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
+       (-> -Pos -Index B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
+       (-> -Index -Nat B : (-FS (-filter -Index 1) -top))
+       (-> -Nat -Index B : (-FS -top (-and (-filter -Index 0) (-filter -PosIndex 1))))
+       ;; general integer cases
+       (-> -Zero -Nat B : (-FS (-filter -Zero 1) -top))
+       (-> -Nat -One B : (-FS (-filter -PosFixnum 0) (-filter -Zero 0)))
+       (-> -Zero -Int B : (-FS (-filter -NonPosFixnum 1) (-filter -PosFixnum 1)))
+       (-> -Int -Zero B : (-FS (-filter -NonNegFixnum 0) (-filter -NegFixnum 0)))
+       (-> -Int -PosInt B : (-FS (-filter -PosFixnum 0) -top))
+       (-> -Nat -Int B : (-FS -top (-filter -PosFixnum 1)))
+       (-> -Int -Nat B : (-FS (-filter -NonNegFixnum 0) -top))
+       (-> -NegInt -Int B : (-FS (-filter -NegFixnum 1) -top))
+       (-> -NonPosInt -Int B : (-FS (-filter -NonPosFixnum 1) -top))
+       (-> -Int -NonPosInt B : (-FS -top (-filter -NegFixnum 0)))
+       (comp -Int))))
   (define fxmin-type
-    (fx-from-cases
-     (binop -Zero)
-     (binop -One)
-     (commutative-binop -Zero (Un -Zero -One) -Zero)
-     (commutative-binop -PosByte -PosInt -PosByte)
-     (commutative-binop -Byte -Nat -Byte)
-     (commutative-binop -PosIndex -PosInt -PosIndex)
-     (commutative-binop -Index -Nat -Index)
-     (-> -Pos -Pos -PosFixnum)
-     (-> -Nat -Nat -NonNegFixnum)
-     (commutative-binop -NegInt -Int -NegFixnum)
-     (commutative-binop -NonPosInt -Int -NonPosInt)
-     (-> -Int -Int -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (binop -Zero)
+       (binop -One)
+       (commutative-binop -Zero (Un -Zero -One) -Zero)
+       (commutative-binop -PosByte -PosInt -PosByte)
+       (commutative-binop -Byte -Nat -Byte)
+       (commutative-binop -PosIndex -PosInt -PosIndex)
+       (commutative-binop -Index -Nat -Index)
+       (-> -Pos -Pos -PosFixnum)
+       (-> -Nat -Nat -NonNegFixnum)
+       (commutative-binop -NegInt -Int -NegFixnum)
+       (commutative-binop -NonPosInt -Int -NonPosInt)
+       (-> -Int -Int -Fixnum))))
   (define fxmax-type
-    (fx-from-cases
-     (binop -Zero)
-     (commutative-binop -One (Un -Zero -One) -One)
-     (commutative-binop -PosByte -Byte -PosByte)
-     (binop -Byte)
-     (commutative-binop -PosIndex -Index -PosIndex)
-     (map binop (list -Index -NegFixnum -NonPosFixnum))
-     (commutative-binop -PosInt -Int -PosFixnum)
-     (commutative-binop -Nat -Int -NonNegFixnum)
-     (-> -Int -Int -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (binop -Zero)
+       (commutative-binop -One (Un -Zero -One) -One)
+       (commutative-binop -PosByte -Byte -PosByte)
+       (binop -Byte)
+       (commutative-binop -PosIndex -Index -PosIndex)
+       (map binop (list -Index -NegFixnum -NonPosFixnum))
+       (commutative-binop -PosInt -Int -PosFixnum)
+       (commutative-binop -Nat -Int -NonNegFixnum)
+       (-> -Int -Int -Fixnum))))
   (define fxand-type
-    (fx-from-cases
-     (commutative-binop -Zero -Int -Zero)
-     (commutative-binop -Byte -Int -Byte)
-     (commutative-binop -Index -Int -Index)
-     (binop -Nat -NonNegFixnum)
-     (binop -NegInt -NegFixnum)
-     (binop -NonPosInt -NonPosFixnum)
-     (binop -Int -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (commutative-binop -Zero -Int -Zero)
+       (commutative-binop -Byte -Int -Byte)
+       (commutative-binop -Index -Int -Index)
+       (binop -Nat -NonNegFixnum)
+       (binop -NegInt -NegFixnum)
+       (binop -NonPosInt -NonPosFixnum)
+       (binop -Int -Fixnum))))
   (define fxior-type
-    (fx-from-cases
-     (binop -Zero)
-     (commutative-binop -One -Zero -One)
-     (commutative-binop -PosByte -Byte -PosByte)
-     (binop -Byte)
-     (commutative-binop -PosIndex -Index -PosIndex)
-     (binop -Index)
-     (commutative-binop -PosInt -Nat -PosFixnum)
-     (binop -Nat -NonNegFixnum)
-     (commutative-binop -NegInt -Int -NegFixnum) ; as long as there's one negative, the result is negative
-     (binop -Int -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (binop -Zero)
+       (commutative-binop -One -Zero -One)
+       (commutative-binop -PosByte -Byte -PosByte)
+       (binop -Byte)
+       (commutative-binop -PosIndex -Index -PosIndex)
+       (binop -Index)
+       (commutative-binop -PosInt -Nat -PosFixnum)
+       (binop -Nat -NonNegFixnum)
+       (commutative-binop -NegInt -Int -NegFixnum) ; as long as there's one negative, the result is negative
+       (binop -Int -Fixnum))))
   (define fxxor-type
-    (fx-from-cases
-     (binop -Zero)
-     (binop -One -Zero)
-     (binop -Byte)
-     (binop -Index)
-     (binop -Nat -NonNegFixnum)
-     (binop -NonPosInt -NonNegFixnum)
-     (commutative-binop -NegInt -Nat -NegFixnum)
-     (commutative-binop -NonPosInt -Nat -NonPosFixnum)
-     (binop -Int -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (binop -Zero)
+       (binop -One -Zero)
+       (binop -Byte)
+       (binop -Index)
+       (binop -Nat -NonNegFixnum)
+       (binop -NonPosInt -NonNegFixnum)
+       (commutative-binop -NegInt -Nat -NegFixnum)
+       (commutative-binop -NonPosInt -Nat -NonPosFixnum)
+       (binop -Int -Fixnum))))
   (define fxnot-type
-    (fx-from-cases
-     (-Nat . -> . -NegFixnum)
-     (-NegInt . -> . -NonNegFixnum)
-     (-Int . -> . -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (-Nat . -> . -NegFixnum)
+       (-NegInt . -> . -NonNegFixnum)
+       (-Int . -> . -Fixnum))))
   (define fxlshift-type
-    (fx-from-cases
-     (map (lambda (x) (-> x -Zero x))
-          (list -Zero -One -PosByte -Byte -PosIndex -Index))
-     (-> -PosInt -Int -PosFixnum) ; negative 2nd arg errors, so we can't reach 0
-     (-> -Nat -Int -NonNegFixnum)
-     (-> -NegInt -Int -NegFixnum)
-     (-> -NonPosInt -Int -NonPosFixnum)
-     (binop -Int -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (map (lambda (x) (-> x -Zero x))
+            (list -Zero -One -PosByte -Byte -PosIndex -Index))
+       (-> -PosInt -Int -PosFixnum) ; negative 2nd arg errors, so we can't reach 0
+       (-> -Nat -Int -NonNegFixnum)
+       (-> -NegInt -Int -NegFixnum)
+       (-> -NonPosInt -Int -NonPosFixnum)
+       (binop -Int -Fixnum))))
   (define fxrshift-type
-    (fx-from-cases
-     (map (lambda (x) (-> x -Zero x))
-          (list -Zero -One -PosByte -Byte -PosIndex -Index))
-     (-> -Nat -Int -NonNegFixnum) ; can reach 0
-     (-> -NegInt -Int -NegFixnum) ; can't reach 0
-     (-> -NonPosInt -Int -NonPosFixnum)
-     (binop -Int -Fixnum)))
+    (lambda ()
+      (fx-from-cases
+       (map (lambda (x) (-> x -Zero x))
+            (list -Zero -One -PosByte -Byte -PosIndex -Index))
+       (-> -Nat -Int -NonNegFixnum) ; can reach 0
+       (-> -NegInt -Int -NegFixnum) ; can't reach 0
+       (-> -NonPosInt -Int -NonPosFixnum)
+       (binop -Int -Fixnum))))
 
 
-  (define flabs-type (cl->* (-> (Un -PosFlonum -NegFlonum) -PosFlonum)
-                            (-> -Flonum -NonNegFlonum)))
+  (define flabs-type
+    (lambda ()
+      (cl->* (-> (Un -PosFlonum -NegFlonum) -PosFlonum)
+             (-> -Flonum -NonNegFlonum))))
   (define fl+-type
-    (from-cases (map (lambda (t) (commutative-binop t -FlonumZero t))
-                     all-flonum-types)
-                (commutative-binop -NonNegFlonum -PosFlonum -PosFlonum)
-                (map binop (list -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum))
-                (-Flonum -Flonum . -> . -Flonum)))
+    (lambda ()
+      (from-cases (map (lambda (t) (commutative-binop t -FlonumZero t))
+                       all-flonum-types)
+                  (commutative-binop -NonNegFlonum -PosFlonum -PosFlonum)
+                  (map binop (list -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum))
+                  (-Flonum -Flonum . -> . -Flonum))))
   (define fl--type
-    (from-cases (binop -FlonumZero)
-                (-NegFlonum (Un -NonNegFlonum -FlonumZero) . -> . -NegFlonum)
-                ((Un -NonPosFlonum -FlonumZero) -PosFlonum . -> . -NegFlonum)
-                (-NonPosFlonum -NonNegFlonum . -> . -NonPosFlonum)
-                (binop -Flonum)))
+    (lambda ()
+      (from-cases (binop -FlonumZero)
+                  (-NegFlonum (Un -NonNegFlonum -FlonumZero) . -> . -NegFlonum)
+                  ((Un -NonPosFlonum -FlonumZero) -PosFlonum . -> . -NegFlonum)
+                  (-NonPosFlonum -NonNegFlonum . -> . -NonPosFlonum)
+                  (binop -Flonum))))
   (define fl*-type
-    (from-cases (map binop (list -FlonumPosZero -FlonumNegZero))
-                (commutative-binop -FlonumNegZero -FlonumPosZero -FlonumNegZero)
-                (binop -FlonumNegZero -FlonumPosZero)
-                ;; we don't have Pos Pos -> Pos, possible underflow
-                (map binop (list -FlonumZero -NonNegFlonum))
-                (commutative-binop -NegFlonum -PosFlonum -NonPosFlonum)
-                (binop -NegFlonum -NonNegFlonum)
-                (commutative-binop -NonPosFlonum -NonNegFlonum -NonPosFlonum)
-                (binop -NonPosFlonum -NonNegFlonum)
-                (binop -Flonum)))
+    (lambda ()
+      (from-cases (map binop (list -FlonumPosZero -FlonumNegZero))
+                  (commutative-binop -FlonumNegZero -FlonumPosZero -FlonumNegZero)
+                  (binop -FlonumNegZero -FlonumPosZero)
+                  ;; we don't have Pos Pos -> Pos, possible underflow
+                  (map binop (list -FlonumZero -NonNegFlonum))
+                  (commutative-binop -NegFlonum -PosFlonum -NonPosFlonum)
+                  (binop -NegFlonum -NonNegFlonum)
+                  (commutative-binop -NonPosFlonum -NonNegFlonum -NonPosFlonum)
+                  (binop -NonPosFlonum -NonNegFlonum)
+                  (binop -Flonum))))
   (define fl/-type
-    (from-cases (-FlonumPosZero -PosFlonum . -> . -FlonumPosZero)
-                (-FlonumPosZero -NegFlonum . -> . -FlonumNegZero)
-                (-FlonumNegZero -PosFlonum . -> . -FlonumNegZero)
-                (-FlonumNegZero -NegFlonum . -> . -FlonumPosZero)
-                (-PosFlonum -PosFlonum . -> . -NonNegFlonum) ; possible underflow
-                (commutative-binop -PosFlonum -NegFlonum -NonPosFlonum)
-                (-NegFlonum -NegFlonum . -> . -NonNegFlonum)
-                (binop -Flonum)))
+    (lambda ()
+      (from-cases (-FlonumPosZero -PosFlonum . -> . -FlonumPosZero)
+                  (-FlonumPosZero -NegFlonum . -> . -FlonumNegZero)
+                  (-FlonumNegZero -PosFlonum . -> . -FlonumNegZero)
+                  (-FlonumNegZero -NegFlonum . -> . -FlonumPosZero)
+                  (-PosFlonum -PosFlonum . -> . -NonNegFlonum) ; possible underflow
+                  (commutative-binop -PosFlonum -NegFlonum -NonPosFlonum)
+                  (-NegFlonum -NegFlonum . -> . -NonNegFlonum)
+                  (binop -Flonum))))
   (define fl=-type
-    (from-cases (map (lambda (l) (exclude-zero (car l) (cadr l) -FlonumZero))
-                     (list (list -NonNegFlonum -PosFlonum)
-                           (list -NonPosFlonum -NegFlonum)))
-                (map (lambda (t) (commutative-equality/filter -Flonum t))
-                     (list -FlonumZero -PosFlonum -NonNegFlonum
-                           -NegFlonum -NonPosFlonum))
-                (comp -Flonum)))
+    (lambda ()
+      (from-cases (map (lambda (l) (exclude-zero (car l) (cadr l) -FlonumZero))
+                       (list (list -NonNegFlonum -PosFlonum)
+                             (list -NonPosFlonum -NegFlonum)))
+                  (map (lambda (t) (commutative-equality/filter -Flonum t))
+                       (list -FlonumZero -PosFlonum -NonNegFlonum
+                             -NegFlonum -NonPosFlonum))
+                  (comp -Flonum))))
   (define fl<-type
-    (from-cases
-     (-> -FlonumZero -Flonum B : (-FS (-filter -PosFlonum 1) (-filter (Un -NonPosFlonum -FlonumPosZero) 1)))
-     (-> -Flonum -FlonumZero B : (-FS (-filter -NegFlonum 0) (-filter (Un -NonNegFlonum -FlonumNegZero) 0)))
-     (-> -PosFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
-     (-> -Flonum -PosFlonum B : (-FS -top (-filter -PosFlonum 0)))
-     (-> -NonNegFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
-     (-> -Flonum -NonNegFlonum B : (-FS -top (-filter (Un -NonNegFlonum -FlonumNegZero) 0)))
-     (-> -NegFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
-     (-> -Flonum -NegFlonum B : (-FS (-filter -NegFlonum 0) -top))
-     (-> -NonPosFlonum -Flonum B : (-FS -top (-filter (Un -NonPosFlonum -FlonumPosZero) 1)))
-     (-> -Flonum -NonPosFlonum B : (-FS (-filter -NegFlonum 0) -top))
-     (comp -Flonum)))
+    (lambda ()
+      (from-cases
+       (-> -FlonumZero -Flonum B : (-FS (-filter -PosFlonum 1) (-filter (Un -NonPosFlonum -FlonumPosZero) 1)))
+       (-> -Flonum -FlonumZero B : (-FS (-filter -NegFlonum 0) (-filter (Un -NonNegFlonum -FlonumNegZero) 0)))
+       (-> -PosFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
+       (-> -Flonum -PosFlonum B : (-FS -top (-filter -PosFlonum 0)))
+       (-> -NonNegFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
+       (-> -Flonum -NonNegFlonum B : (-FS -top (-filter (Un -NonNegFlonum -FlonumNegZero) 0)))
+       (-> -NegFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
+       (-> -Flonum -NegFlonum B : (-FS (-filter -NegFlonum 0) -top))
+       (-> -NonPosFlonum -Flonum B : (-FS -top (-filter (Un -NonPosFlonum -FlonumPosZero) 1)))
+       (-> -Flonum -NonPosFlonum B : (-FS (-filter -NegFlonum 0) -top))
+       (comp -Flonum))))
   (define fl>-type
-    (from-cases
-     (-> -FlonumZero -Flonum B : (-FS (-filter -NegFlonum 1) (-filter (Un -NonNegFlonum -FlonumNegZero) 1)))
-     (-> -Flonum -FlonumZero B : (-FS (-filter -PosFlonum 0) (-filter (Un -NonPosFlonum -FlonumPosZero) 0)))
-     (-> -PosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
-     (-> -Flonum -PosFlonum B : (-FS (-filter -PosFlonum 0) -top))
-     (-> -NonNegFlonum -Flonum B : (-FS -top (-filter (Un -NonNegFlonum -FlonumNegZero) 1)))
-     (-> -Flonum -NonNegFlonum B : (-FS (-filter -PosFlonum 0) -top))
-     (-> -NegFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
-     (-> -Flonum -NegFlonum B : (-FS -top (-filter -NegFlonum 0)))
-     (-> -NonPosFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
-     (-> -Flonum -NonPosFlonum B : (-FS -top (-filter (Un -NonPosFlonum -FlonumPosZero) 0)))
-     (comp -Flonum)))
+    (lambda ()
+      (from-cases
+       (-> -FlonumZero -Flonum B : (-FS (-filter -NegFlonum 1) (-filter (Un -NonNegFlonum -FlonumNegZero) 1)))
+       (-> -Flonum -FlonumZero B : (-FS (-filter -PosFlonum 0) (-filter (Un -NonPosFlonum -FlonumPosZero) 0)))
+       (-> -PosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
+       (-> -Flonum -PosFlonum B : (-FS (-filter -PosFlonum 0) -top))
+       (-> -NonNegFlonum -Flonum B : (-FS -top (-filter (Un -NonNegFlonum -FlonumNegZero) 1)))
+       (-> -Flonum -NonNegFlonum B : (-FS (-filter -PosFlonum 0) -top))
+       (-> -NegFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
+       (-> -Flonum -NegFlonum B : (-FS -top (-filter -NegFlonum 0)))
+       (-> -NonPosFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
+       (-> -Flonum -NonPosFlonum B : (-FS -top (-filter (Un -NonPosFlonum -FlonumPosZero) 0)))
+       (comp -Flonum))))
   (define fl<=-type
-    (from-cases
-     (-> -FlonumZero -Flonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 1) (-filter -NegFlonum 1)))
-     (-> -Flonum -FlonumZero B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) (-filter -PosFlonum 0)))
-     (-> -PosFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
-     (-> -Flonum -PosFlonum B : (-FS -top (-filter -PosFlonum 0)))
-     (-> -NonNegFlonum -Flonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 1) -top))
-     (-> -Flonum -NonNegFlonum B : (-FS -top (-filter -PosFlonum 0)))
-     (-> -NegFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
-     (-> -Flonum -NegFlonum B : (-FS (-filter -NegFlonum 0) -top))
-     (-> -NonPosFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
-     (-> -Flonum -NonPosFlonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) -top))
-     (comp -Flonum)))
+    (lambda ()
+      (from-cases
+       (-> -FlonumZero -Flonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 1) (-filter -NegFlonum 1)))
+       (-> -Flonum -FlonumZero B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) (-filter -PosFlonum 0)))
+       (-> -PosFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
+       (-> -Flonum -PosFlonum B : (-FS -top (-filter -PosFlonum 0)))
+       (-> -NonNegFlonum -Flonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 1) -top))
+       (-> -Flonum -NonNegFlonum B : (-FS -top (-filter -PosFlonum 0)))
+       (-> -NegFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
+       (-> -Flonum -NegFlonum B : (-FS (-filter -NegFlonum 0) -top))
+       (-> -NonPosFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
+       (-> -Flonum -NonPosFlonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) -top))
+       (comp -Flonum))))
   (define fl>=-type
-    (from-cases
-     (-> -FlonumZero -Flonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 1) (-filter -PosFlonum 1)))
-     (-> -Flonum -FlonumZero B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 0) (-filter -NegFlonum 0)))
-     (-> -PosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
-     (-> -Flonum -PosFlonum B : (-FS (-filter -PosFlonum 0) -top))
-     (-> -NonNegFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
-     (-> -Flonum -NonNegFlonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 0) -top))
-     (-> -NegFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
-     (-> -Flonum -NegFlonum B : (-FS -top (-filter -NegFlonum 0)))
-     (-> -NonPosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
-     (-> -Flonum -NonPosFlonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) -top))
-     (comp -Flonum)))
+    (lambda ()
+      (from-cases
+       (-> -FlonumZero -Flonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 1) (-filter -PosFlonum 1)))
+       (-> -Flonum -FlonumZero B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 0) (-filter -NegFlonum 0)))
+       (-> -PosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
+       (-> -Flonum -PosFlonum B : (-FS (-filter -PosFlonum 0) -top))
+       (-> -NonNegFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
+       (-> -Flonum -NonNegFlonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 0) -top))
+       (-> -NegFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
+       (-> -Flonum -NegFlonum B : (-FS -top (-filter -NegFlonum 0)))
+       (-> -NonPosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
+       (-> -Flonum -NonPosFlonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) -top))
+       (comp -Flonum))))
   (define flmin-type
-    (from-cases (map binop
-                     (list -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum))))
+    (lambda ()
+      (from-cases (map binop
+                       (list -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum)))))
   (define flmax-type
-    (from-cases (commutative-case -PosFlonum -Flonum -PosFlonum)
-                (commutative-case -NonNegFlonum -Flonum -NonNegFlonum)
-                (binop -NegFlonum)
-                (commutative-case -NegFlonum -NonPosFlonum -NonPosFlonum)
-                (binop -Flonum)))
+    (lambda ()
+      (from-cases (commutative-case -PosFlonum -Flonum -PosFlonum)
+                  (commutative-case -NonNegFlonum -Flonum -NonNegFlonum)
+                  (binop -NegFlonum)
+                  (commutative-case -NegFlonum -NonPosFlonum -NonPosFlonum)
+                  (binop -Flonum))))
   (define flround-type ; truncate too
-    (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
-                                -NonNegFlonum -NonPosFlonum -Flonum))))
+    (lambda ()
+      (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
+                                  -NonNegFlonum -NonPosFlonum -Flonum)))))
   (define flfloor-type
-    (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
-                                -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum))))
+    (lambda ()
+      (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
+                                  -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum)))))
   (define flceiling-type
-    (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
-                                -PosFlonum -NonNegFlonum -NonPosFlonum -Flonum))))
+    (lambda ()
+      (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
+                                  -PosFlonum -NonNegFlonum -NonPosFlonum -Flonum)))))
   (define fllog-type
-    (from-cases (-> -FlonumZero -NegFlonum) ; -inf
-                (-> -PosFlonum -NonNegFlonum) ; possible underflow
-                (unop -Flonum)))
+    (lambda ()
+      (from-cases (-> -FlonumZero -NegFlonum) ; -inf
+                  (-> -PosFlonum -NonNegFlonum) ; possible underflow
+                  (unop -Flonum))))
   (define flexp-type
-    (from-cases ((Un -NonNegFlonum -FlonumNegZero) . -> . -PosFlonum)
-                (-NegFlonum . -> . -NonNegFlonum)
-                (-Flonum . -> . -Flonum))) ; nan is the only non nonnegative case (returns nan)
+    (lambda ()
+      (from-cases ((Un -NonNegFlonum -FlonumNegZero) . -> . -PosFlonum)
+                  (-NegFlonum . -> . -NonNegFlonum)
+                  (-Flonum . -> . -Flonum)))) ; nan is the only non nonnegative case (returns nan)
   (define flsqrt-type
-    (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
-                                -NonNegFlonum ; we don't have positive case, possible underflow
-                                -Flonum)))) ; anything negative returns nan
-  (define fx->fl-type (fx-from-cases
-                       (-PosInt . -> . -PosFlonum)
-                       (-Nat . -> . -NonNegFlonum)
-                       (-NegInt . -> . -NegFlonum)
-                       (-NonPosInt . -> . -NonPosFlonum)
-                       (-Int . -> . -Flonum)))
-  (define make-flrectangular-type (-Flonum -Flonum . -> . -FloatComplex))
-  (define flreal-part-type (-FloatComplex . -> . -Flonum))
-  (define flimag-part-type (-FloatComplex . -> . -Flonum))
+    (lambda ()
+      (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
+                                  -NonNegFlonum ; we don't have positive case, possible underflow
+                                  -Flonum))))) ; anything negative returns nan
+  (define fx->fl-type
+    (lambda ()
+      (fx-from-cases
+       (-PosInt . -> . -PosFlonum)
+       (-Nat . -> . -NonNegFlonum)
+       (-NegInt . -> . -NegFlonum)
+       (-NonPosInt . -> . -NonPosFlonum)
+       (-Int . -> . -Flonum))))
+  (define make-flrectangular-type (lambda () (-Flonum -Flonum . -> . -FloatComplex)))
+  (define flreal-part-type (lambda () (-FloatComplex . -> . -Flonum)))
+  (define flimag-part-type (lambda () (-FloatComplex . -> . -Flonum)))
 
   ;; There's a repetitive pattern in the types of each comparison operator.
   ;; As explained below, this is because filters don't do intersections.
@@ -1461,8 +1503,8 @@
                   -InexactRealPosZero -InexactRealNegZero -InexactRealZero
                   -PosInexactReal -NonNegInexactReal -NonPosInexactReal -InexactReal
                   -RealZero -PosReal -NonNegReal -NonPosReal -Real)))]
-[truncate round-type]
-[round round-type]
+[truncate (round-type)]
+[round (round-type)]
 
 [make-rectangular (cl->* (-Rat -Rat . -> . -ExactNumber)
                          (-Flonum -Real . -> . -FloatComplex)
@@ -1747,117 +1789,117 @@
 
 
 ;; scheme/fixnum
-[fx+ fx+-type]
-[fx- fx--type]
-[fx* fx*-type]
-[fxquotient fxquotient-type]
-[fxremainder fxremainder-type]
-[fxmodulo fxmodulo-type]
-[fxabs fxabs-type]
+[fx+ (fx+-type)]
+[fx- (fx--type)]
+[fx* (fx*-type)]
+[fxquotient (fxquotient-type)]
+[fxremainder (fxremainder-type)]
+[fxmodulo (fxmodulo-type)]
+[fxabs (fxabs-type)]
 
-[fxand fxand-type]
-[fxior fxior-type]
-[fxxor fxxor-type]
-[fxnot fxnot-type]
-[fxlshift fxlshift-type]
-[fxrshift fxrshift-type]
+[fxand (fxand-type)]
+[fxior (fxior-type)]
+[fxxor (fxxor-type)]
+[fxnot (fxnot-type)]
+[fxlshift (fxlshift-type)]
+[fxrshift (fxrshift-type)]
 
-[fx= fx=-type]
-[fx< fx<-type]
-[fx> fx>-type]
-[fx<= fx<=-type]
-[fx>= fx>=-type]
-[fxmin fxmin-type]
-[fxmax fxmax-type]
+[fx= (fx=-type)]
+[fx< (fx<-type)]
+[fx> (fx>-type)]
+[fx<= (fx<=-type)]
+[fx>= (fx>=-type)]
+[fxmin (fxmin-type)]
+[fxmax (fxmax-type)]
 
-[unsafe-fx+ fx+-type]
-[unsafe-fx- fx--type]
-[unsafe-fx* fx*-type]
-[unsafe-fxquotient fxquotient-type]
-[unsafe-fxremainder fxremainder-type]
-[unsafe-fxmodulo fxmodulo-type]
-[unsafe-fxabs fxabs-type]
+[unsafe-fx+ (fx+-type)]
+[unsafe-fx- (fx--type)]
+[unsafe-fx* (fx*-type)]
+[unsafe-fxquotient (fxquotient-type)]
+[unsafe-fxremainder (fxremainder-type)]
+[unsafe-fxmodulo (fxmodulo-type)]
+[unsafe-fxabs (fxabs-type)]
 
-[unsafe-fxand fxand-type]
-[unsafe-fxior fxior-type]
-[unsafe-fxxor fxxor-type]
-[unsafe-fxnot fxnot-type]
-[unsafe-fxlshift fxlshift-type]
-[unsafe-fxrshift fxrshift-type]
+[unsafe-fxand (fxand-type)]
+[unsafe-fxior (fxior-type)]
+[unsafe-fxxor (fxxor-type)]
+[unsafe-fxnot (fxnot-type)]
+[unsafe-fxlshift (fxlshift-type)]
+[unsafe-fxrshift (fxrshift-type)]
 
-[unsafe-fx= fx=-type]
-[unsafe-fx< fx<-type]
-[unsafe-fx> fx>-type]
-[unsafe-fx<= fx<=-type]
-[unsafe-fx>= fx>=-type]
-[unsafe-fxmin fxmin-type]
-[unsafe-fxmax fxmax-type]
+[unsafe-fx= (fx=-type)]
+[unsafe-fx< (fx<-type)]
+[unsafe-fx> (fx>-type)]
+[unsafe-fx<= (fx<=-type)]
+[unsafe-fx>= (fx>=-type)]
+[unsafe-fxmin (fxmin-type)]
+[unsafe-fxmax (fxmax-type)]
 
 
 ;; flonum ops
-[flabs flabs-type]
-[fl+ fl+-type]
-[fl- fl--type]
-[fl* fl*-type]
-[fl/ fl/-type]
-[fl= fl=-type]
-[fl<= fl<=-type]
-[fl>= fl>=-type]
-[fl> fl>-type]
-[fl< fl<-type]
-[flmin flmin-type]
-[flmax flmax-type]
-[flround flround-type]
-[flfloor flfloor-type]
-[flceiling flceiling-type]
-[fltruncate flround-type]
-[flsin fl-unop] ; special cases (0s) not worth special-casing
-[flcos fl-unop]
-[fltan fl-unop]
-[flatan fl-unop]
-[flasin fl-unop]
-[flacos fl-unop]
-[fllog fllog-type]
-[flexp flexp-type]
-[flsqrt flsqrt-type]
-[->fl fx->fl-type]
-[make-flrectangular make-flrectangular-type]
-[flreal-part flreal-part-type]
-[flimag-part flimag-part-type]
+[flabs (flabs-type)]
+[fl+ (fl+-type)]
+[fl- (fl--type)]
+[fl* (fl*-type)]
+[fl/ (fl/-type)]
+[fl= (fl=-type)]
+[fl<= (fl<=-type)]
+[fl>= (fl>=-type)]
+[fl> (fl>-type)]
+[fl< (fl<-type)]
+[flmin (flmin-type)]
+[flmax (flmax-type)]
+[flround (flround-type)]
+[flfloor (flfloor-type)]
+[flceiling (flceiling-type)]
+[fltruncate (flround-type)]
+[flsin (fl-unop)] ; special cases (0s) not worth special-casing
+[flcos (fl-unop)]
+[fltan (fl-unop)]
+[flatan (fl-unop)]
+[flasin (fl-unop)]
+[flacos (fl-unop)]
+[fllog (fllog-type)]
+[flexp (flexp-type)]
+[flsqrt (flsqrt-type)]
+[->fl (fx->fl-type)]
+[make-flrectangular (make-flrectangular-type)]
+[flreal-part (flreal-part-type)]
+[flimag-part (flimag-part-type)]
 
-[unsafe-flabs flabs-type]
-[unsafe-fl+ fl+-type]
-[unsafe-fl- fl--type]
-[unsafe-fl* fl*-type]
-[unsafe-fl/ fl/-type]
-[unsafe-fl= fl=-type]
-[unsafe-fl<= fl<=-type]
-[unsafe-fl>= fl>=-type]
-[unsafe-fl> fl>-type]
-[unsafe-fl< fl<-type]
-[unsafe-flmin flmin-type]
-[unsafe-flmax flmax-type]
+[unsafe-flabs (flabs-type)]
+[unsafe-fl+ (fl+-type)]
+[unsafe-fl- (fl--type)]
+[unsafe-fl* (fl*-type)]
+[unsafe-fl/ (fl/-type)]
+[unsafe-fl= (fl=-type)]
+[unsafe-fl<= (fl<=-type)]
+[unsafe-fl>= (fl>=-type)]
+[unsafe-fl> (fl>-type)]
+[unsafe-fl< (fl<-type)]
+[unsafe-flmin (flmin-type)]
+[unsafe-flmax (flmax-type)]
 
 ;These are currently the same binding as the safe versions
 ;and so are not needed. If this changes they should be
 ;uncommented. There is a check in the definitions part of
 ;the file that makes sure that they are the same binding.
 ;
-;[unsafe-flround flround-type]
-;[unsafe-flfloor flfloor-type]
-;[unsafe-flceiling flceiling-type]
-;[unsafe-fltruncate flround-type]
-;[unsafe-flsin fl-unop]
-;[unsafe-flcos fl-unop]
-;[unsafe-fltan fl-unop]
-;[unsafe-flatan fl-unop]
-;[unsafe-flasin fl-unop]
-;[unsafe-flacos fl-unop]
-;[unsafe-fllog fllog-type]
-;[unsafe-flexp flexp-type]
+;[unsafe-flround (flround-type)]
+;[unsafe-flfloor (flfloor-type)]
+;[unsafe-flceiling (flceiling-type)]
+;[unsafe-fltruncate (flround-type)]
+;[unsafe-flsin (fl-unop)]
+;[unsafe-flcos (fl-unop)]
+;[unsafe-fltan (fl-unop)]
+;[unsafe-flatan (fl-unop)]
+;[unsafe-flasin (fl-unop)]
+;[unsafe-flacos (fl-unop)]
+;[unsafe-fllog (fllog-type)]
+;[unsafe-flexp (flexp-type)]
 ;
-[unsafe-flsqrt flsqrt-type]
-[unsafe-fx->fl fx->fl-type]
-[unsafe-make-flrectangular make-flrectangular-type]
-[unsafe-flreal-part flreal-part-type]
-[unsafe-flimag-part flimag-part-type]
+[unsafe-flsqrt (flsqrt-type)]
+[unsafe-fx->fl (fx->fl-type)]
+[unsafe-make-flrectangular (make-flrectangular-type)]
+[unsafe-flreal-part (flreal-part-type)]
+[unsafe-flimag-part (flimag-part-type)]
