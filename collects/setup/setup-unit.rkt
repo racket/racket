@@ -656,7 +656,7 @@
              [dir-table (make-hash)]
              [doing-path (lambda (path)
                            (unless (verbose)
-                             (let ([path (normal-case-path (path-only path))])
+                             (let ([path (path-only path)])
                                (unless (hash-ref dir-table path #f)
                                  (hash-set! dir-table path #t)
                                  (print-verbose oop path)))))])
