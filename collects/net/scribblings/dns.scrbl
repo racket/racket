@@ -56,6 +56,10 @@ extract the first nameserver address. On Windows, it runs
 
 @section{DNS Unit}
 
+@margin-note{@racket[dns@] and @racket[dns^] are deprecated.
+They exist for backward-compatibility and will likely be removed in
+the future. New code should use the @racketmodname[net/dns] module.}
+
 @defmodule[net/dns-unit]
 
 @defthing[dns@ unit?]{
