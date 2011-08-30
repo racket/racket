@@ -222,6 +222,10 @@ are comma-separated, and possibly broken into multiple lines.
 
 @section{Header Unit}
 
+@margin-note{@racket[head@] and @racket[head^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/head] module.}
+
 @defmodule[net/head-unit]
 
 @defthing[head@ unit?]{
