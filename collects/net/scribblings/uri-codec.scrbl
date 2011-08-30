@@ -154,3 +154,27 @@ use/recognize only of the separators.
 (form-urlencoded->alist "x=foo;y=bar;z=baz")
 (alist->form-urlencoded ex)
 ]}
+
+@; ----------------------------------------
+
+@section{URI Codec Unit}
+
+@margin-note{@racket[uri-codec@] and @racket[uri-codec^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/uri-codec] module.}
+
+@defmodule[net/uri-codec-unit]
+
+@defthing[uri-codec@ unit?]{
+
+Imports nothing, exports @racket[uri-codec^].}
+
+@; ----------------------------------------
+
+@section{URI Codec Signature}
+
+@defmodule[net/uri-codec]
+
+@defsignature[uri-codec^ ()]{}
+
+Includes everything exported by the @racketmodname[net/uri-codec] module.
