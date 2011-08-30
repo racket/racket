@@ -302,7 +302,7 @@ known: @racket['pixel], @racket['dot], @racket['plus],
                [#:mode mode (one-of/c 'standard 'parametric) 'standard]
                [#:mapping mapping (or-of/c 'cartesian 'polar) 'cartesian]
                [#:t-min t-min real? -5]
-               [#:t-max t-min real? 5])
+               [#:t-max t-max real? 5])
          ((is-a?/c 2d-view%) . -> . void?)]{
 
 Creates 2-D plot data to draw a line.
