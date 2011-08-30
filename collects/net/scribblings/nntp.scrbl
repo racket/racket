@@ -135,6 +135,10 @@ Raised when the server reject an authentication attempt.}
 
 @section{NNTP Unit}
 
+@margin-note{@racket[nntp@] and @racket[nntp^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/nntp] module.}
+
 @defmodule[net/nntp-unit]
 
 @defthing[nntp@ unit?]{
