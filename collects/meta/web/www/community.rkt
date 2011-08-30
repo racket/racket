@@ -12,8 +12,10 @@
     @irc-quick
     @parlist[@strong{PLT Scheme Inc.}
       @text{@blog — announcements, helpful hints, and thoughtful rants.}
+      @text{@a[href: "http://twitter.com/#!/racketlang"]{Twitter}
+            — random racket bits.}
       @text{@people — the people behind Racket.}]
     @parlist[@strong{Development}
       @text{@git (also available on
             @a[href: "http://github.com/plt/racket/"]{GitHub})}
-      @text{@pre:installers and @|pre:index|.}]})
+      @text{@pre:installers and @pre:index{more}.}]})
