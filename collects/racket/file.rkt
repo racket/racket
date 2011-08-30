@@ -1,5 +1,7 @@
 #lang racket/base
-(require "path.rkt")
+(require "path.rkt"
+         (for-syntax racket/base
+                     setup/path-to-relative))
 
 (provide delete-directory/files
          copy-directory/files
@@ -36,7 +38,6 @@
          other-read-bit
          other-write-bit
          other-execute-bit)
-
 
 (require "private/portlines.rkt")
 
@@ -83,41 +84,86 @@
     (unless (directory-exists? dir)
       (make-directory dir))))
 
-(define (make-temporary-file [template "mztmp~a"] [copy-from #f] [base-dir #f])
-  (with-handlers ([exn:fail:contract?
-                   (lambda (x)
-                     (raise-type-error 'make-temporary-file
-                                       "format string for 1 argument"
-                                       template))])
-    (format template void))
-  (unless (or (not copy-from)
-              (path-string? copy-from)
-              (eq? copy-from 'directory))
-    (raise-type-error 'make-temporary-file
-                      "path, valid-path string, 'directory, or #f"
-                      copy-from))
-  (unless (or (not base-dir) (path-string? base-dir))
-    (raise-type-error 'make-temporary-file
-                      "path, valid-path, string, or #f"
-                      base-dir))
-  (let ([tmpdir (find-system-path 'temp-dir)])
-    (let loop ([s (current-seconds)]
-               [ms (inexact->exact (truncate (current-inexact-milliseconds)))])
-      (let ([name (let ([n (format template (format "~a~a" s ms))])
-                    (cond [base-dir (build-path base-dir n)]
-                          [(relative-path? n) (build-path tmpdir n)]
-                          [else n]))])
-        (with-handlers ([exn:fail:filesystem:exists?
-                         (lambda (x)
-                           ;; try again with a new name
-                           (loop (- s (random 10))
-                                 (+ ms (random 10))))])
-          (if copy-from
-              (if (eq? copy-from 'directory)
-                  (make-directory name)
-                  (copy-file copy-from name))
-              (close-output-port (open-output-file name)))
-          name)))))
+(define-syntax (make-temporary-file stx)
+  (with-syntax ([app (datum->syntax stx #'#%app stx)])
+    (syntax-case stx ()
+      [x (identifier? #'x) #'make-temporary-file/proc]
+      [(_)
+       (let ()
+         (define line (syntax-line stx))
+         (define col (syntax-column stx))
+         (define source (syntax-source stx))
+         (define pos (syntax-position stx))
+         (define str-src (cond
+                           [(path? source)
+                            (path->relative-string/library source)]
+                           [(string? source)
+                            source]
+                           [else #f]))
+         (define str-loc (cond
+                           [(and line col) (format "-~a-~a" line col)]
+                           [pos (format "--~a" pos)]
+                           [else ""]))
+         (define combined-str
+           (cond
+             [str-src (string-append str-src str-loc)]
+             [else (string-append "mztmp" str-loc)]))
+         (define sanitized-str 
+           (regexp-replace*
+            #rx"[<>]"
+            (regexp-replace* #rx"[\\/:]" combined-str "-")
+            ""))
+         (define max-len 40) ;; must be even
+         (define not-too-long-str
+           (cond
+             [(< max-len (string-length sanitized-str))
+              (string-append (substring sanitized-str 0 (- (/ max-len 2) 2))
+                             "..."
+                             (substring sanitized-str 0 (- (/ max-len 2) 1)))]
+             [else 
+              sanitized-str]))
+         #`(app make-temporary-file/proc #,(string-append not-too-long-str "_~a")))]
+      [(_ . whatever)
+       #'(app make-temporary-file/proc . whatever)])))
+
+(define make-temporary-file/proc
+  (let ()
+    (define (make-temporary-file [template "mztmp~a"] [copy-from #f] [base-dir #f])
+      (with-handlers ([exn:fail:contract?
+                       (lambda (x)
+                         (raise-type-error 'make-temporary-file
+                                           "format string for 1 argument"
+                                           template))])
+        (format template void))
+      (unless (or (not copy-from)
+                  (path-string? copy-from)
+                  (eq? copy-from 'directory))
+        (raise-type-error 'make-temporary-file
+                          "path, valid-path string, 'directory, or #f"
+                          copy-from))
+      (unless (or (not base-dir) (path-string? base-dir))
+        (raise-type-error 'make-temporary-file
+                          "path, valid-path, string, or #f"
+                          base-dir))
+      (let ([tmpdir (find-system-path 'temp-dir)])
+        (let loop ([s (current-seconds)]
+                   [ms (inexact->exact (truncate (current-inexact-milliseconds)))])
+          (let ([name (let ([n (format template (format "~a~a" s ms))])
+                        (cond [base-dir (build-path base-dir n)]
+                              [(relative-path? n) (build-path tmpdir n)]
+                              [else n]))])
+            (with-handlers ([exn:fail:filesystem:exists?
+                             (lambda (x)
+                               ;; try again with a new name
+                               (loop (- s (random 10))
+                                     (+ ms (random 10))))])
+              (if copy-from
+                  (if (eq? copy-from 'directory)
+                      (make-directory name)
+                      (copy-file copy-from name))
+                  (close-output-port (open-output-file name)))
+              name)))))
+    make-temporary-file))
 
 (define (with-pref-params thunk)
   (parameterize ([read-case-sensitive #f]

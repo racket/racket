@@ -887,6 +887,12 @@ provided and non-@racket[#f], in which case the
 file name generated from @racket[template] is combined with
 @racket[directory] to obtain a full path.
 
+The @racket[template] argument's default is only the string @racket["mztmp~a"]
+when there is no source location information for the callsite of
+@racket[make-temporary-file] (or if @racket[make-temporary-file] is
+used in a higher-order position). If there is such information, then the template
+string is built based on the source location.
+
 If @racket[copy-from-filename] is provided as path, the temporary file
 is created as a copy of the named file (using @racket[copy-file]). If
 @racket[copy-from-filename] is @racket[#f], the temporary file is

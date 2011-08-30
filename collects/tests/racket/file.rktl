@@ -295,6 +295,16 @@
 (err/rt-test (open-output-file (build-path (current-directory) "baddir" "x"))
 	    exn:fail:filesystem?)
 
+(let ([tf (make-temporary-file)])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-file-uses-srcloc (and (regexp-match #rx"file.rktl" (path->bytes name)) #t)))
+  (delete-file tf))
+
+(let ([tf ((λ (t) (t)) make-temporary-file)])
+  (test #t 'make-temporary-file-in-ho-position (file-exists? tf))
+  (delete-file tf))
+
+
 (define tempfilename (make-temporary-file))
 (when (file-exists? tempfilename)
   (delete-file tempfilename))
