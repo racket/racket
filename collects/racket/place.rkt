@@ -143,19 +143,27 @@
     (syntax-case stx ()
       [(_ a ...) b ...])))
 
-(define-for-syntax (gen-create-place stx)
- (syntax-case stx ()
-   [(_ ch body ...)
-     (unless (identifier? #'ch)
-          (raise-syntax-error #f "expected an indentifier" stx #'ch))
-     (with-syntax ([interal-def-name
-                    (syntax-local-lift-expression #'(lambda (ch) body ...))]
-                   [funcname (datum->syntax stx (generate-temporary #'place/anon))])
-      (syntax-local-lift-provide #'(rename interal-def-name funcname))
-      #'(let ([module-path (resolved-module-path-name
-              (variable-reference->resolved-module-path
-               (#%variable-reference)))])
-       (dynamic-place module-path (quote funcname))))]))
-
 (define-syntax (place stx)
-  (gen-create-place stx))
+  (syntax-case stx ()
+    [(_ ch body1 body ...)
+     (begin
+       (unless (eq? 'module (syntax-local-context))
+         (raise-syntax-error #f "can only be used in a module" stx))
+       (unless (identifier? #'ch)
+         (raise-syntax-error #f "expected an indentifier" stx #'ch))
+       (with-syntax ([internal-def-name
+                      (syntax-local-lift-expression #'(lambda (ch) body1 body ...))]
+                     [func-name (generate-temporary #'place/anon)])
+         (syntax-local-lift-provide #'(rename internal-def-name func-name))
+         #'(place/proc (#%variable-reference) 'func-name)))]
+    [(_ ch)
+     (raise-syntax-error #f "expected at least one body expression" stx)]))
+
+(define (place/proc vr func-name)
+  (define name
+    (resolved-module-path-name
+     (variable-reference->resolved-module-path
+      vr)))
+  (dynamic-place (if (symbol? name) `',name name)
+                 func-name))
+
