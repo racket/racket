@@ -368,6 +368,13 @@ same number of patterns as the number of @racket[val-expr]s.
 ]
 }
 
+@defform[(match/values expr clause clause ...)]{
+If @racket[expr] evaluates to @racket[n] values, then match all @racket[n]
+values against the patterns in @racket[clause ...]. Each clause must contain
+exactly @racket[n] patterns. At least one clause is required to determine how
+many values to expect from @racket[expr].
+}
+
 @defform[(match-lambda clause ...)]{
 
 Equivalent to @racket[(lambda (id) (match id clause ...))].
