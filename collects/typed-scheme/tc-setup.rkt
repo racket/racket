@@ -4,7 +4,6 @@
          (except-in syntax/parse id)
          unstable/mutated-vars
          racket/pretty
-         (optimizer optimizer)
          (private type-contract)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
@@ -27,8 +26,12 @@
 (define (maybe-optimize body)
   ;; do we optimize?
   (if (optimize?)
-      (begin0 (map optimize-top (syntax->list body))
-        (do-time "Optimized"))
+      (let ([optimize-top
+             (begin0 (dynamic-require 'typed-scheme/optimizer/optimizer
+                                      'optimize-top)
+               (do-time "Loading optimizer"))])
+        (begin0 (map optimize-top (syntax->list body))
+          (do-time "Optimized")))
       body))
 
 (define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx checker result . body)
