@@ -2514,32 +2514,32 @@ void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
 }
 
 intptr_t scheme_dup_socket(intptr_t fd) {
-#ifdef USE_WINSOCK_TCP
+#ifdef USE_SOCKETS_TCP
+# ifdef USE_WINSOCK_TCP
   intptr_t nsocket;
   WSAPROTOCOL_INFO protocolInfo;
   WSADuplicateSocket(fd, GetCurrentProcessId(), &protocolInfo);
   nsocket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
+  REGISTER_SOCKET(nsocket);
   return nsocket;
-#else
+# else
   intptr_t nfd;
   do {
     nfd = dup(fd);
   } while (nfd == -1 && errno == EINTR);
   return nfd;
+# endif
+#else
+  return -1;
 #endif
 }
 
-void scheme_close_socket_fd(intptr_t fd) {
-# ifdef USE_WINSOCK_TCP
-  close(fd);
-# else
-  {
-    intptr_t rc;
-    do {
-      rc = close(fd);
-    } while (rc == -1 && errno == EINTR);
-  }
-# endif
+void scheme_close_socket_fd(intptr_t fd) 
+{
+#ifdef USE_SOCKETS_TCP
+  UNREGISTER_SOCKET(fd);
+  closesocket(fd);
+#endif
 }
 
 /*========================================================================*/
