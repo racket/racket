@@ -22,6 +22,18 @@
 RUNNING THE TESTS
 -----------------
 
+1) Default test configuration.
+
+To run the default tests (ie, the generic tests and sqlite3 tests),
+simply execute this file with no arguments:
+
+  racket -l tests/db/all-tests
+
+This is how DrDr runs the file---we assume the machine running DrDr
+has sqlite installed.
+
+2) Custom test configuration.
+
 First, set up the testing environment as described in the following
 subsections.
 
@@ -115,6 +127,11 @@ Testing profiles are flattened, not hierarchical.
   (dbconf->unit
    (dbconf dbtestname (data-source 'odbc dbargs `((db:test ,dbflags))))))
 
+(define sqlite-unit
+  (dbconf->unit
+   (dbconf "sqlite3, memory"
+           (data-source 'sqlite3 '(#:database memory) '((db:test (issl)))))))
+
 ;; ----
 
 (define-unit db-test@
@@ -156,7 +173,10 @@ Testing profiles are flattened, not hierarchical.
 (define (odbc-test dsn [flags null])
   (specialize-test (odbc-unit dsn flags `(#:dsn ,dsn))))
 
-(define generic-tests
+(define sqlite-test
+  (specialize-test sqlite-unit))
+
+(define generic-test
   (make-test-suite "Generic tests (no db)"
     (list gen-sql-types:test
           gen-query:test)))
@@ -179,6 +199,7 @@ Testing profiles are flattened, not hierarchical.
 
 (define gui? #f)
 (define include-generic? #f)
+(define include-sqlite? #f)
 
 ;; If no labels given, run generic tests. If labels given, run generic
 ;; tests only if -g option given.
@@ -187,28 +208,29 @@ Testing profiles are flattened, not hierarchical.
  #:once-each
  [("--gui") "Run tests in RackUnit GUI" (set! gui? #t)]
  [("-g" "--generic") "Run generic tests" (set! include-generic? #t)]
+ [("-s" "--sqlite3") "Run sqlite3 in-memory db tests" (set! include-sqlite? #t)]
  [("-f" "--config-file") file  "Use configuration file" (pref-file file)]
  #:args labels
- (cond [gui?
-        (let* ([dbtests
-                (for/list ([label labels])
-                  (make-all-tests label (get-dbconf (string->symbol label))))]
-               [tests
-                (cond [(or include-generic? (null? dbtests))
-                       (cons generic-tests dbtests)]
-                      [else dbtests])]
-               [test/gui (dynamic-require 'rackunit/gui 'test/gui)])
-          (apply test/gui tests)
-          (eprintf "Press Cntl-C to end.\n") ;; HACK!
-          (with-handlers ([exn:break? (lambda _ (newline) (exit))])
-            (sync never-evt)))]
-       [else
-        (when (or include-generic? (null? labels))
-          (printf "Running generic tests\n")
-          (run-tests generic-tests)
-          (newline))
-        (for ([label labels])
-          (printf "Running ~s tests\n" label)
-          (run-tests
-           (make-all-tests label (get-dbconf (string->symbol label))))
-          (newline))]))
+ (let* ([tests
+         (for/list ([label labels])
+           (cons label
+                 (make-all-tests label (get-dbconf (string->symbol label)))))]
+        [tests
+         (cond [(or include-sqlite? (null? labels))
+                (cons (cons "sqlite3, memory" sqlite-test) tests)]
+               [else tests])]
+        [tests
+         (cond [(or include-generic? (null? labels))
+                (cons (cons "generic" generic-test) tests)]
+               [else tests])])
+   (cond [gui?
+          (let* ([test/gui (dynamic-require 'rackunit/gui 'test/gui)])
+            (apply test/gui (map cdr tests))
+            (eprintf "Press Cntl-C to end.\n") ;; HACK!
+            (with-handlers ([exn:break? (lambda _ (newline) (exit))])
+              (sync never-evt)))]
+         [else
+          (for ([test tests])
+            (printf "Running ~s tests\n" (car test))
+            (run-tests (cdr test))
+            (newline))])))
