@@ -236,6 +236,10 @@ field, or when the specification is incorrectly formatted.}
 
 @section{MIME Unit}
 
+@margin-note{@racket[mime@] and @racket[mime^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/mime] module.}
+
 @defmodule[net/mime-unit]
 
 @defthing[mime@ unit?]{
