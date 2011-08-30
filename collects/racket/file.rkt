@@ -90,39 +90,34 @@
       [x (identifier? #'x) #'make-temporary-file/proc]
       [(_)
        (let ()
-         (define line (syntax-line stx))
-         (define col (syntax-column stx))
+         (define line   (syntax-line stx))
+         (define col    (syntax-column stx))
          (define source (syntax-source stx))
-         (define pos (syntax-position stx))
-         (define str-src (cond
-                           [(path? source)
-                            (path->relative-string/library source)]
-                           [(string? source)
-                            source]
-                           [else #f]))
-         (define str-loc (cond
-                           [(and line col) (format "-~a-~a" line col)]
-                           [pos (format "--~a" pos)]
-                           [else ""]))
-         (define combined-str
-           (cond
-             [str-src (string-append str-src str-loc)]
-             [else (string-append "rkttmp" str-loc)]))
-         (define sanitized-str 
-           (regexp-replace*
-            #rx"[<>]"
-            (regexp-replace* #rx"[\\/:]" combined-str "-")
-            ""))
-         (define max-len 40) ;; must be even
+         (define pos    (syntax-position stx))
+         (define str-src
+           (cond [(path? source)
+                  (regexp-replace #rx"^<(.*?)>(?=/)"
+                                  (path->relative-string/library source)
+                                  (lambda (_ s) (string-upcase s)))]
+                 [(string? source) source]
+                 [else #f]))
+         (define str-loc
+           (cond [(and line col) (format "-~a-~a" line col)]
+                 [pos (format "--~a" pos)]
+                 [else ""]))
+         (define combined-str (string-append (or str-src "rkttmp") str-loc))
+         (define sanitized-str (regexp-replace* #rx"[<>:\"/\\|]" combined-str "-"))
+         (define max-len 50) ;; must be even
          (define not-too-long-str
-           (cond
-             [(< max-len (string-length sanitized-str))
-              (string-append (substring sanitized-str 0 (- (/ max-len 2) 2))
-                             "..."
-                             (substring sanitized-str 0 (- (/ max-len 2) 1)))]
-             [else 
-              sanitized-str]))
-         #`(app make-temporary-file/proc #,(string-append not-too-long-str "_~a")))]
+           (cond [(< max-len (string-length sanitized-str))
+                  (string-append (substring sanitized-str 0 (- (/ max-len 2) 2))
+                                 "----"
+                                 (substring sanitized-str
+                                            (- (string-length sanitized-str)
+                                               (- (/ max-len 2) 2))))]
+                 [else sanitized-str]))
+         #`(app make-temporary-file/proc
+                #,(string-append not-too-long-str "_~a")))]
       [(_ . whatever)
        #'(app make-temporary-file/proc . whatever)])))
 
