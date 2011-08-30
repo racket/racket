@@ -1396,7 +1396,8 @@
   
   (define module-language-parallel-lock-client
     (compile-lock->parallel-lock-client
-     module-language-compile-lock))
+     module-language-compile-lock
+     (current-custodian)))
 
   ;; in-module-language : top-level-window<%> -> module-language-settings or #f
   (define (in-module-language tlw)
