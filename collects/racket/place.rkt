@@ -147,7 +147,8 @@
   (syntax-case stx ()
     [(_ ch body1 body ...)
      (begin
-       (unless (eq? 'module (syntax-local-context))
+       ;breaks valid uses of place
+       #;(unless (eq? 'module (syntax-local-context))
          (raise-syntax-error #f "can only be used in a module" stx))
        (unless (identifier? #'ch)
          (raise-syntax-error #f "expected an indentifier" stx #'ch))
