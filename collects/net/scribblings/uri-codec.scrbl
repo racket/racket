@@ -173,7 +173,7 @@ Imports nothing, exports @racket[uri-codec^].}
 
 @section{URI Codec Signature}
 
-@defmodule[net/uri-codec]
+@defmodule[net/uri-codec-sig]
 
 @defsignature[uri-codec^ ()]{}
 

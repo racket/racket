@@ -361,6 +361,10 @@ as described with @racket[get-pure-port].}
 
 @section{URL Unit}
 
+@margin-note{@racket[url@], @racket[url^], and @racket[url+scheme^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/url] module.}
+
 @defmodule[net/url-unit]
 
 @defthing[url@ unit?]{
