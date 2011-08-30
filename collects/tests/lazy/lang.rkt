@@ -165,6 +165,42 @@
    )
   )
 
+(define (strictness-tests)
+  (test
+   (! (and (/ 1 0))) =error> "/: division by zero"
+   (! (and #f (/ 1 0))) => #f
+   (! (and #t (/ 1 0))) =error> "/: division by zero"
+   (! (cdr (append (list (/ 1 0)) '()))) => '()
+   (! (cdr (append '() (list (/ 1 0))))) => '()
+   (! (append (/ 1 0) '())) =error> "/: division by zero"
+   (! (append (/ 1 0) '(1))) =error> "/: division by zero"
+   (! (append '() (/ 1 0))) =error> "/: division by zero"
+   (! (car (append '(1) (/ 1 0)))) => 1
+   (! (cdr (append '(1) (/ 1 0)))) =error> "/: division by zero"
+   (! (foldr (/ 1 0) 0 '())) =error> "/: division by zero"
+   (! (foldr 1 (/ 1 0) '())) =error> "/: division by zero"
+   (! (foldr 1 2 (/ 1 0))) =error> "/: division by zero"
+   (! (foldr (/ 1 0) 1 '(1))) =error> "/: division by zero"
+   (! (foldr 1 (/ 1 0) '(1))) =error> "/: division by zero"
+   (! (foldl (/ 1 0) 0 '())) =error> "/: division by zero"
+   (! (foldl 1 (/ 1 0) '())) =error> "/: division by zero"
+   (! (foldl 1 2 (/ 1 0))) =error> "/: division by zero"
+   (! (foldl (/ 1 0) 1 '(1))) =error> "/: division by zero"
+   (! (foldl 1 (/ 1 0) '(1))) =error> "/: division by zero"
+   (! (filter (/ 1 0) '())) =error> "/: division by zero"
+   (! (filter 1 (/ 1 0))) =error> "/: division by zero"
+   (! (filter (/ 1 0) '(1))) =error> "/: division by zero"
+   (! (map (/ 1 0) '())) =error> "/: division by zero"
+   (! (map (/ 1 0) '(1))) =error> "/: division by zero"
+   (! (map 1 (/ 1 0))) =error> "/: division by zero"
+   (! (if (/ 1 0) 1 2)) =error> "/: division by zero"
+   (! (if #t 1 (/ 1 0))) => 1
+   (! (if #f (/ 1 0) 1)) => 1
+   (! (andmap (/ 1 0) '())) =error> "/: division by zero"
+   (! (andmap (/ 1 0) '(1))) =error> "/: division by zero"
+   (! (andmap 1 (/ 1 0))) =error> "/: division by zero"
+   ))
+  
 (provide lang-tests)
 (define (lang-tests)
   (! (begin (basic-tests)
