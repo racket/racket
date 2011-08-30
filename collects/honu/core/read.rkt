@@ -42,7 +42,7 @@
 (define-lex-abbrev line-comment (:: (:or "#" "//")
                                     (:* (:~ "\n"))
                                     ;; we might hit eof before a \n
-                                    (:? "\n")))
+                                    (:? "\n" "\r")))
 
 (define (replace-escapes string)
   (define replacements '([#px"\\\\n" "\n"]
@@ -60,7 +60,7 @@
     #;
     [line-comment (token-whitespace)]
     [(:or "#" "//") (token-end-of-line-comment)]
-    ["\n" (token-whitespace)]
+    [(:? "\n" "\r") (token-whitespace)]
     [number (token-number (string->number lexeme))]
     #;
     [block-comment (token-whitespace)]
