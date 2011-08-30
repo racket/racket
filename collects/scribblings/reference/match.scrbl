@@ -339,7 +339,7 @@ In more detail, patterns match as follows:
         @racket[quasiquote] expression form, @racketidfont{unquote}
         and @racketidfont{unquote-splicing} escape back to normal
         patterns.
-        
+
         @examples[
        #:eval match-eval
         (match '(1 2 3)
@@ -360,7 +360,7 @@ In more detail, patterns match as follows:
 			[(pat ...+) (=> id) body ...+]])]{
 Matches a sequence of values against each clause in order, matching
 only when all patterns in a clause match.  Each clause must have the
-same number of patterns as the number of @racket[val-expr]s. 
+same number of patterns as the number of @racket[val-expr]s.
 
 @examples[#:eval match-eval
 (match* (1 2 3)
@@ -413,6 +413,14 @@ bindings of each @racket[pat] are available in each subsequent
   x)
 ]}
 
+@defform[(match-let-values ([(pat ...) expr] ...) body ...+)]{
+
+Like @racket[match-let], but generalizes @racket[let-values].}
+
+@defform[(match-let*-values ([(pat ...) expr] ...) body ...+)]{
+
+Like @racket[match-let*], but generalizes @racket[let*-values].}
+
 @defform[(match-letrec ([pat expr] ...) body ...+)]{
 
 Like @racket[match-let], but generalizes @racket[letrec].}
@@ -426,6 +434,16 @@ matching against the result of @racket[expr].
 @examples[
 #:eval match-eval
 (match-define (list a b) '(1 2))
+b
+]}
+
+@defform[(match-define-values (pat ...) expr)]{
+
+Like @racket[match-define] but for when expr produces multiple values.
+
+@examples[
+#:eval match-eval
+(match-define-values (a b) (values 1 2))
 b
 ]}
 
@@ -465,7 +483,7 @@ whether multiple uses of an identifier match the ``same'' value. The
 default is @racket[equal?].}
 
 @deftogether[[@defform[(match/derived val-expr original-datum clause ...)]
-              @defform[(match*/derived (val-expr ...) original-datum clause* ...)]]]{ 
+              @defform[(match*/derived (val-expr ...) original-datum clause* ...)]]]{
 Like @racket[match] and @racket[match*] respectively, but includes a
 sub-expression to be used as the source for all syntax errors within the form.
 For example, @racket[match-lambda] expands to @racket[match/derived] so that
