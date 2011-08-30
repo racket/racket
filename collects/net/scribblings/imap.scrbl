@@ -497,6 +497,10 @@ Returns a list of IMAP flags for the given mailbox. See also
 
 @section{IMAP Unit}
 
+@margin-note{@racket[imap@] and @racket[imap^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/imap] module.}
+
 @defmodule[net/imap-unit]
 
 @defthing[imap@ unit?]{
