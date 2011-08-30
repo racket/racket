@@ -2383,6 +2383,10 @@ static Scheme_Object *tcp_abandon_port(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
+void scheme_tcp_abandon_port(Scheme_Object *port) {
+  tcp_abandon_port(1, &port);
+}
+
 static Scheme_Object *tcp_port_p(int argc, Scheme_Object *argv[])
 {
 #ifdef USE_TCP

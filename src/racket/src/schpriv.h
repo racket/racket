@@ -3697,6 +3697,7 @@ intptr_t scheme_dup_socket(intptr_t fd);
 intptr_t scheme_dup_file(intptr_t fd);
 void scheme_close_socket_fd(intptr_t fd);
 void scheme_close_file_fd(intptr_t fd);
+void scheme_tcp_abandon_port(Scheme_Object *port);
 
 
 #define SCHEME_PLACE_OBJECTP(o) (SCHEME_TYPE(o) == scheme_place_object_type)

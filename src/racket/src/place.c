@@ -1118,7 +1118,14 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         int type = ((Scheme_Simple_Object *) so)->u.two_int_val.int1;
         int fd   = ((Scheme_Simple_Object *) so)->u.two_int_val.int2;
         scheme_socket_to_ports(fd, "", 1, &in, &out);
-        new_so = (type == scheme_input_port_type) ? in : out;
+        if (type == scheme_input_port_type) {
+          scheme_tcp_abandon_port(out);
+          new_so = in;
+        }
+        else {
+          scheme_tcp_abandon_port(in);
+          new_so = out;
+        }
       }
       break;
     case scheme_serialized_file_fd_type:
