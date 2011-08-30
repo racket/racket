@@ -189,12 +189,12 @@ considered important.
 
 (define sqlite3-data-source
   (mk-specialized 'sqlite3-data-source 'sqlite3 0
-                  '(#:database #:mode #:busy-retry-limit #:busy-retry-delay)))
+                  '(#:database #:mode #:busy-retry-limit #:busy-retry-delay #:use-place)))
 
 (define odbc-data-source
   (mk-specialized 'odbc-data-source 'odbc 0
                   '(#:dsn #:user #:password #:notice-handler
-                    #:strict-parameter-types? #:character-mode)))
+                    #:strict-parameter-types? #:character-mode #:use-place)))
 
 (provide/contract
  [struct data-source
@@ -235,7 +235,8 @@ considered important.
        (#:database (or/c string? 'memory 'temporary)
         #:mode (or/c 'read-only 'read/write 'create)
         #:busy-retry-limit (or/c exact-nonnegative-integer? +inf.0)
-        #:busy-retry-delay (and/c rational? (not/c negative?)))
+        #:busy-retry-delay (and/c rational? (not/c negative?))
+        #:use-place boolean?)
        data-source?)]
  [odbc-data-source
   (->* ()
@@ -244,5 +245,6 @@ considered important.
         #:password string?
         #:notice-handler (or/c 'output 'error)
         #:strict-parameter-types? boolean?
-        #:character-mode (or/c 'wchar 'utf-8 'latin-1))
+        #:character-mode (or/c 'wchar 'utf-8 'latin-1)
+        #:use-place boolean?)
        data-source?)])

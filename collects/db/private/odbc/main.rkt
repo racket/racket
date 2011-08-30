@@ -2,52 +2,62 @@
 (require racket/class
          racket/contract
          "../generic/interfaces.rkt"
+         "../generic/place-client.rkt"
          "connection.rkt"
          "dbsystem.rkt"
          "ffi.rkt")
 (provide odbc-connect
          odbc-driver-connect
          odbc-data-sources
-         odbc-drivers
-         (rename-out [dbsystem odbc-dbsystem]))
+         odbc-drivers)
 
 (define (odbc-connect #:dsn dsn
                       #:user [user #f]
                       #:password [auth #f]
                       #:notice-handler [notice-handler void]
                       #:strict-parameter-types? [strict-parameter-types? #f]
-                      #:character-mode [char-mode 'wchar])
-  (let ([notice-handler (make-handler notice-handler "notice")])
-    (call-with-env 'odbc-connect
-      (lambda (env)
-        (call-with-db 'odbc-connect env
-          (lambda (db)
-            (let ([status (SQLConnect db dsn user auth)])
-              (handle-status* 'odbc-connect status db)
-              (new connection%
-                   (env env)
-                   (db db)
-                   (notice-handler notice-handler)
-                   (strict-parameter-types? strict-parameter-types?)
-                   (char-mode char-mode)))))))))
+                      #:character-mode [char-mode 'wchar]
+                      #:use-place [use-place #f])
+  (cond [use-place
+         (place-connect (list 'odbc dsn user auth strict-parameter-types? char-mode)
+                        odbc-proxy%)]
+        [else
+         (let ([notice-handler (make-handler notice-handler "notice")])
+           (call-with-env 'odbc-connect
+             (lambda (env)
+               (call-with-db 'odbc-connect env
+                 (lambda (db)
+                   (let ([status (SQLConnect db dsn user auth)])
+                     (handle-status* 'odbc-connect status db)
+                     (new connection%
+                          (env env)
+                          (db db)
+                          (notice-handler notice-handler)
+                          (strict-parameter-types? strict-parameter-types?)
+                          (char-mode char-mode))))))))]))
 
 (define (odbc-driver-connect connection-string
                              #:notice-handler [notice-handler void]
                              #:strict-parameter-types? [strict-parameter-types? #f]
-                             #:character-mode [char-mode 'wchar])
-  (let ([notice-handler (make-handler notice-handler "notice")])
-    (call-with-env 'odbc-driver-connect
-      (lambda (env)
-        (call-with-db 'odbc-driver-connect env
-          (lambda (db)
-            (let ([status (SQLDriverConnect db connection-string SQL_DRIVER_NOPROMPT)])
-              (handle-status* 'odbc-driver-connect status db)
-              (new connection%
-                   (env env)
-                   (db db)
-                   (notice-handler notice-handler)
-                   (strict-parameter-types? strict-parameter-types?)
-                   (char-mode char-mode)))))))))
+                             #:character-mode [char-mode 'wchar]
+                             #:use-place [use-place #f])
+  (cond [use-place
+         (place-connect (list 'odbc-driver connection-string strict-parameter-types? char-mode)
+                        odbc-proxy%)]
+        [else
+         (let ([notice-handler (make-handler notice-handler "notice")])
+           (call-with-env 'odbc-driver-connect
+             (lambda (env)
+               (call-with-db 'odbc-driver-connect env
+                 (lambda (db)
+                   (let ([status (SQLDriverConnect db connection-string SQL_DRIVER_NOPROMPT)])
+                     (handle-status* 'odbc-driver-connect status db)
+                     (new connection%
+                          (env env)
+                          (db db)
+                          (notice-handler notice-handler)
+                          (strict-parameter-types? strict-parameter-types?)
+                          (char-mode char-mode))))))))]))
 
 (define (odbc-data-sources)
   (define server-buf (make-bytes 1024))
@@ -96,6 +106,12 @@
         (unless m (error/internal 'odbc-drivers "bad attribute syntax: ~e" s))
         (let ([=-pos (caar m)])
           (cons (substring s 0 =-pos) (substring s (+ 1 =-pos))))))))
+
+
+(define odbc-proxy%
+  (class place-proxy-connection%
+    (super-new)
+    (define/override (get-dbsystem) dbsystem)))
 
 ;; ----
 

@@ -8,6 +8,9 @@
          (for-label (all-from-out racket/base)
                     (all-from-out racket/contract)))
 
+(define (tech/reference . pre-flows)
+  (apply tech #:doc '(lib "scribblings/reference/reference.scrbl") pre-flows))
+
 ;; ----
 
 (define the-eval (make-base-eval))

@@ -661,3 +661,19 @@
 
 (define (field-dvec->typeid dvec)
   (vector-ref dvec 1))
+
+#|
+Historical note: I tried using ODBC async execution to avoid blocking
+all Racket threads for a long time.
+
+1) The postgresql, mysql, and oracle drivers don't even support async
+execution. Only DB2 (and probably SQL Server, but I didn't try it).
+
+2) Tests using the DB2 driver gave bafflind HY010 (function sequence
+error). My best theory so far is that DB2 (or maybe unixodbc) requires
+poll call arguments to be identical to original call arguments, which
+means that I would have to replace all uses of (_ptr o X) with
+something stable across invocations.
+
+All in all, not worth it, especially given #:use-place solution.
+|#

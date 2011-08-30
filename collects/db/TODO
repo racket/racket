@@ -67,13 +67,6 @@ Misc
   - how do people want to use cursors?
   - how about implicit support only in 'in-query'?
 
-- ODBC: use async execution to avoid blocking all Racket threads
-  Status: Tried it. Oracle driver doesn't support async. PG, MY drivers don't support async.
-  DB2 driver does, but gives baffling HY010 function sequence errors, couldn't fix.
-  (Best theory so far: possible that DB2 requires polling args to be identical to original
-  call, which means (_ptr o X) args are the problem. Or maybe unixodbc's fault.)
-  Didn't try SQL Server. All in all, not worth it.
-
 - add evt versions of functions
   - for query functions (?)
   - connection-pool-lease-evt

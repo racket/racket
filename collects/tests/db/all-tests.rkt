@@ -130,7 +130,16 @@ Testing profiles are flattened, not hierarchical.
 (define sqlite-unit
   (dbconf->unit
    (dbconf "sqlite3, memory"
-           (data-source 'sqlite3 '(#:database memory) '((db:test (issl)))))))
+           (data-source 'sqlite3
+                        '(#:database memory)
+                        '((db:test (issl)))))))
+
+(define sqlite/p-unit
+  (dbconf->unit
+   (dbconf "sqlite3, memory, with #:use-place=#t"
+           (data-source 'sqlite3
+                        '(#:database memory #:use-place #t)
+                        '((db:test (issl async)))))))
 
 ;; ----
 
@@ -176,6 +185,9 @@ Testing profiles are flattened, not hierarchical.
 (define sqlite-test
   (specialize-test sqlite-unit))
 
+(define sqlite/p-test
+  (specialize-test sqlite/p-unit))
+
 (define generic-test
   (make-test-suite "Generic tests (no db)"
     (list gen-sql-types:test
@@ -217,7 +229,9 @@ Testing profiles are flattened, not hierarchical.
                  (make-all-tests label (get-dbconf (string->symbol label)))))]
         [tests
          (cond [(or include-sqlite? (null? labels))
-                (cons (cons "sqlite3, memory" sqlite-test) tests)]
+                (list* (cons "sqlite3, memory" sqlite-test)
+                       (cons "sqlite3, memory, #:use-place=#t" sqlite/p-test)
+                       tests)]
                [else tests])]
         [tests
          (cond [(or include-generic? (null? labels))

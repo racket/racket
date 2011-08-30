@@ -75,7 +75,8 @@
   (->* (#:database (or/c path-string? 'memory 'temporary))
        (#:mode (or/c 'read-only 'read/write 'create)
         #:busy-retry-limit (or/c exact-nonnegative-integer? +inf.0)
-        #:busy-retry-delay (and/c rational? (not/c negative?)))
+        #:busy-retry-delay (and/c rational? (not/c negative?))
+        #:use-place boolean?)
        any/c)]
 
  ;; Duplicates contracts at odbc.rkt
@@ -85,13 +86,15 @@
         #:password (or/c string? #f)
         #:notice-handler (or/c 'output 'error output-port? procedure?)
         #:strict-parameter-types? boolean?
-        #:character-mode (or/c 'wchar 'utf-8 'latin-1))
+        #:character-mode (or/c 'wchar 'utf-8 'latin-1)
+        #:use-place boolean?)
        connection?)]
  [odbc-driver-connect
   (->* (string?)
        (#:notice-handler (or/c 'output 'error output-port? procedure?)
         #:strict-parameter-types? boolean?
-        #:character-mode (or/c 'wchar 'utf-8 'latin-1))
+        #:character-mode (or/c 'wchar 'utf-8 'latin-1)
+        #:use-place boolean?)
        connection?)]
  [odbc-data-sources
   (-> (listof (list/c string? string?)))]

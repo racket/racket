@@ -8,10 +8,10 @@
 ;; prepared-statement%
 (define prepared-statement%
   (class* object% (prepared-statement<%>)
-    (init-private handle            ;; handle, determined by database system, #f means closed
-                  close-on-exec?    ;; boolean
-                  param-typeids     ;; (listof typeid)
-                  result-dvecs)     ;; (listof vector), layout depends on dbsys
+    (init-field handle            ;; handle, determined by database system, #f means closed
+                close-on-exec?    ;; boolean
+                param-typeids     ;; (listof typeid)
+                result-dvecs)     ;; (listof vector), layout depends on dbsys
     (init ([-owner owner]))
 
     (define owner (make-weak-box -owner))

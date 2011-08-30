@@ -300,6 +300,41 @@
         (check-prep-once
          (lambda () (virtual-connection (connection-pool connect-and-setup))))))))
 
+(define pool-tests
+  (test-suite "connection pools"
+    (test-case "lease, limit, release"
+      (let* ([counter 0]
+             [p (connection-pool (lambda () (set! counter (+ 1 counter)) (connect-for-test))
+                                 #:max-connections 2)]
+             [c1 (connection-pool-lease p)]
+             [c2 (connection-pool-lease p)])
+        ;; Two created
+        (check-equal? counter 2)
+        ;; Can't create new one yet
+        (check-exn exn:fail? (lambda () (connection-pool-lease p)))
+        ;; But if we free one...
+        (disconnect c2)
+        (check-equal? (connected? c2) #f)
+        (let ([c3 (connection-pool-lease p)])
+          (check-equal? counter 2 "not new") ;; used idle, not new connection
+          (check-equal? (connected? c3) #t))))
+    (test-case "release on evt"
+      (let* ([p (connection-pool connect-for-test #:max-connections 2)]
+             [sema (make-semaphore 0)]
+             [c1 (connection-pool-lease p sema)])
+        (check-equal? (connected? c1) #t)
+        ;; Closes when evt ready
+        (begin (semaphore-post sema) (sleep 0.1))
+        (check-equal? (connected? c1) #f)))
+    (test-case "release on custodian"
+      (let* ([p (connection-pool connect-for-test #:max-connections 2)]
+             [cust (make-custodian)]
+             [c1 (connection-pool-lease p cust)])
+        (check-equal? (connected? c1) #t)
+        ;; Closes when custodian shutdown
+        (begin (custodian-shutdown-all cust) (sleep 0.1))
+        (check-equal? (connected? c1) #f)))))
+
 (define test
   (test-suite "query API"
     (simple-tests 'string)
@@ -309,4 +344,5 @@
     low-level-tests
     misc-tests
     virtual-statement-tests
+    pool-tests
     error-tests))
