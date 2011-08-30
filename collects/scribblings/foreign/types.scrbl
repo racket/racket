@@ -860,7 +860,7 @@ The resulting bindings are as follows:
  @item{@racketvarfont{id}@racketidfont{-tag}: the tag object that is
   used with instances.  The tag object may be the symbol form of 
   @racketvarfont{id} or a list of symbols containing the @racketvarfont{id}
-  symbol and other symbols, such as the @racketvarfont[super-id] symbol.}
+  symbol and other symbols, such as the @racketvarfont{super-id} symbol.}
 
  @item{@racketidfont{make-}@racketvarfont{id} : a constructor, which expects
   an argument for each type.}
