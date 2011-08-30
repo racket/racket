@@ -200,14 +200,15 @@
 (box-tests make-weak-box weak-box-value weak-box? #f #f 'weak-box-value #t)
 
 ;; test clearing weak boxes
-(let* ([s (gensym)]
-       [b (make-weak-box s)])
-  (test s weak-box-value b)
-  (test s weak-box-value b 123)
-  (set! s 'something-else)
-  (collect-garbage)
-  (test #f weak-box-value b)
-  (test 123 weak-box-value b 123))
+(when (eq? '3m (system-type 'gc))
+  (let* ([s (gensym)]
+         [b (make-weak-box s)])
+    (test s weak-box-value b)
+    (test s weak-box-value b 123)
+    (set! s 'something-else)
+    (collect-garbage)
+    (test #f weak-box-value b)
+    (test 123 weak-box-value b 123)))
 
 (test '(x y) append '(x) '(y))
 (test '(a b c d) append '(a) '(b c d))
