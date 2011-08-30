@@ -88,6 +88,10 @@ file, then moved into place on success).}
 
 @section{FTP Unit}
 
+@margin-note{@racket[ftp@] and @racket[ftp^] are deprecated. 
+They exist for backward-compatibility and will likely be removed in 
+the future. New code should use the @racketmodname[net/ftp] module.}
+
 @defmodule[net/ftp-unit]
 
 @defthing[ftp@ unit?]{
