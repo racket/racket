@@ -104,7 +104,7 @@ at least theoretically.
       #'(void)))
 
 ;; some macros to do some timing, only when `timing?' is #t
-(define-for-syntax timing? #t)
+(define-for-syntax timing? #f)
 
 (define last-time #f) (define initial-time #f)
 (define (set!-initial-time t) (set! initial-time t))
