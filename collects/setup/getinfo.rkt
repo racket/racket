@@ -1,6 +1,10 @@
 #lang scheme/base
 
-(require scheme/match scheme/contract planet/cachepath syntax/modread)
+(require scheme/match 
+         scheme/contract 
+         planet/cachepath 
+         syntax/modread
+         "path-relativize.rkt")
 
 ;; in addition to infodomain/compiled/cache.rktd, getinfo will look in this 
 ;; file to find mappings. PLaneT uses this to put info about installed
@@ -118,6 +122,12 @@
     (for ([f+root-dir (reverse (table-paths t))])
       (let ([f (car f+root-dir)]
             [root-dir (cdr f+root-dir)])
+        (define-values (path->info-relative
+                        info-relative->path)
+          (make-relativize (lambda () root-dir)
+                           'info
+                           'path->info-relative
+                           'info-relative->path))
         (when (file-exists? f)
           (for ([i (let ([l (with-input-from-file f read)])
                      (cond [(list? l) l]
@@ -125,7 +135,7 @@
                            [else (error 'find-relevant-directories
                                         "bad info-domain cache file: ~a" f)]))])
             (match i
-              [(list (? bytes? pathbytes)
+              [(list (and pathbytes (or (? bytes?) (list 'info (? bytes?) ...)))
                      (list (? symbol? fields) ...)
                      key ;; anything is okay here
                      (? integer? maj)
@@ -134,10 +144,14 @@
                      [new-item
                       (make-directory-record
                        maj min key
-                       (let ([p (bytes->path pathbytes)])
-                         (if (and (relative-path? p) root-dir)
-                           (build-path root-dir p)
-                            p))
+                       (if (bytes? pathbytes)
+                           (let ([p (bytes->path pathbytes)])
+                             (if (and (relative-path? p) root-dir)
+                                 ;; `raco setup' doesn't generate relative paths anyway,
+                                 ;; but it's ok to support them:
+                                 (build-path root-dir p)
+                                 p))
+                           (info-relative->path pathbytes))
                        fields)])
                  (hash-set! colls key
                             ((table-insert t) new-item old-items)))]
