@@ -63,6 +63,10 @@ Raised when no mail recipients were specified for
 
 @section{Sendmail Unit}
 
+@margin-note{@racket[sendmail@] and @racket[sendmail^] are deprecated.
+They exist for backward-compatibility and will likely be removed in
+the future. New code should use the @racketmodname[net/sendmail] module.}
+
 @defmodule[net/sendmail-unit]
 
 @defthing[sendmail@ unit?]{
