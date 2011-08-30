@@ -172,6 +172,9 @@
       "dir"
       (string->path "stuff"))
 
+(delete-file tempfile)
+(delete-file (make-lock-file-name tempfile))
+
 ;; ----------------------------------------
 
 (report-errs)

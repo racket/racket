@@ -77,8 +77,8 @@
     (rtest #t write-resource "Temporary" "more" 10 tmp-ini)
     (rtest 10 get-resource "Temporary" "more" #f tmp-ini #:type 'integer)
     (when (eq? 'windows (system-type))
-      (rtest "[Temporary]\r\nStuff=howdy\r\nmore=10\r\n" file->string tmp-ini)
-      (delete-file tmp-ini)))
+      (rtest "[Temporary]\r\nStuff=howdy\r\nmore=10\r\n" file->string tmp-ini))
+    (delete-file tmp-ini))
 
   (void))
 
