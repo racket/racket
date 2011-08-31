@@ -2,7 +2,6 @@
 
 (provide (except-out (all-defined-out) test-delimiter))
 (require "debug.rkt"
-         tests/eli-tester
          racket/match
          (for-syntax racket/base)
          syntax/stx
