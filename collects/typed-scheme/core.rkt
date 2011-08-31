@@ -1,19 +1,16 @@
 #lang racket/base
 
-(require (rename-in "utils/utils.rkt" [infer r:infer])
+(require (rename-in "utils/utils.rkt")
          (for-syntax racket/base)
          (for-template racket/base)
          (private with-types type-contract parse-type)
          (except-in syntax/parse id)
          racket/match racket/syntax unstable/match racket/list
          (types utils convenience)
-         (typecheck typechecker provide-handling tc-toplevel tc-app-helper)
-         (env type-name-env type-alias-env)
-         (r:infer infer)
+         (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
          (for-template (only-in (base-env prims) :type :print-type :query-result-type))
-         (except-in (utils utils tc-utils arm) infer)
-         (only-in (r:infer infer-dummy) infer-param)
+         (utils utils tc-utils arm)
          "tc-setup.rkt")
 
 (provide mb-core ti-core wt-core)
