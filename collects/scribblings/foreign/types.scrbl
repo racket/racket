@@ -878,6 +878,9 @@ The resulting bindings are as follows:
   currently, this information is correct only when no @racket[super-id]
   is specified.}
 
+@item{@racketvarfont{id}->list : a function that converts a struct into
+ a list of values.}
+
 ]
 
 Objects of the new type are actually C pointers, with a type tag that
