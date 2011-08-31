@@ -81,7 +81,7 @@
           (send owner free-statement this))))
 
     (define/public (register-finalizer)
-      (thread-resume finalizer-thread)
+      (thread-resume finalizer-thread (current-thread))
       (will-register will-executor this (lambda (pst) (send pst finalize))))
 
     (super-new)

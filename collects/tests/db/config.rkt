@@ -11,7 +11,8 @@
   (dbtestname
    connect
    dbsys
-   dbflags))
+   dbflags
+   kill-safe?))
 
 (define-signature test^ (test))
 (define-signature config^
@@ -37,7 +38,8 @@
   (define NOISY? #f)
 
   (define (connect-for-test)
-    (connect))
+    (cond [kill-safe? (kill-safe-connection (connect))]
+          [else (connect)]))
 
   (define test-data
     '((0 "nothing")

@@ -114,6 +114,9 @@ Testing profiles are flattened, not hierarchical.
 
 ;; ----
 
+;; Set below by command-line parsing
+(define kill-safe? #f)
+
 (define (dbconf->unit x)
   (match x
     [(dbconf dbtestname (and r (data-source connector _args exts)))
@@ -219,6 +222,7 @@ Testing profiles are flattened, not hierarchical.
 (command-line
  #:once-each
  [("--gui") "Run tests in RackUnit GUI" (set! gui? #t)]
+ [("-k" "--killsafe") "Wrap with kill-safe-connection" (set! kill-safe? #t)]
  [("-g" "--generic") "Run generic tests" (set! include-generic? #t)]
  [("-s" "--sqlite3") "Run sqlite3 in-memory db tests" (set! include-sqlite? #t)]
  [("-f" "--config-file") file  "Use configuration file" (pref-file file)]

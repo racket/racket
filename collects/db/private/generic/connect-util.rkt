@@ -22,7 +22,7 @@
            (loop)))))
 
     (define/public (call proc)
-      (thread-resume mthread)
+      (thread-resume mthread (current-thread))
       (let ([result #f]
             [sema (make-semaphore 0)])
         (channel-put req-channel
