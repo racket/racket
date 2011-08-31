@@ -3,7 +3,7 @@
 (require (rename-in "utils/utils.rkt" [infer r:infer])
          (for-syntax racket/base)
          (for-template racket/base)
-         (private with-types type-contract)
+         (private with-types type-contract parse-type)
          (except-in syntax/parse id)
          racket/match racket/syntax unstable/match racket/list
          (types utils convenience)
@@ -11,6 +11,7 @@
          (env type-name-env type-alias-env)
          (r:infer infer)
          (rep type-rep)
+         (for-template (only-in (base-env prims) :type :print-type :query-result-type))
          (except-in (utils utils tc-utils arm) infer)
          (only-in (r:infer infer-dummy) infer-param)
          "tc-setup.rkt")
@@ -52,6 +53,29 @@
   (syntax-parse stx
     [(_ . ((~datum module) . rest))
      #'(module . rest)]
+    [(_ . ((~literal :type) ty:expr))
+     #`(display #,(format "~a\n" (parse-type #'ty)))]
+    ;; Prints the _entire_ type. May be quite large.
+    [(_ . ((~literal :print-type) e:expr))
+     #`(display #,(format "~a\n"
+                          (tc-setup #'stx #'e 'top-level expanded tc-toplevel-form type
+                                    (match type
+                                      [(tc-result1: t f o) t]
+                                      [(tc-results: t) (cons 'Values t)]))))]
+    ;; given a function and a desired return type, fill in the blanks
+    [(_ . ((~literal :query-result-type) op:expr desired-type:expr))
+     (let ([expected (parse-type #'desired-type)])
+       (tc-setup #'stx #'op 'top-level expanded tc-toplevel-form type
+                 (match type
+                   [(tc-result1: (and t (Function: _)) f o)
+                    (let ([cleaned (cleanup-type t expected)])
+                      #`(display
+                         #,(match cleaned
+                             [(Function: '())
+                              "Desired return type not in the given function's range."]
+                             [(Function: arrs)
+                              (format "~a\n" cleaned)])))]
+                   [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
     [(_ . form)
      (tc-setup
       stx #'form 'top-level body2 tc-toplevel-form type
