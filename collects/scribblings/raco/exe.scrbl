@@ -37,7 +37,7 @@ Library modules or other files that are referenced
 dynamically---through @racket[eval], @racket[load], or
 @racket[dynamic-require]---are not automatically embedded into the
 created executable. Such modules can be explicitly included using the
-@exec{++lib} flag to @exec{raco exe}. Alternately, use
+@DPFlag{lib} flag to @exec{raco exe}. Alternately, use
 @racket[define-runtime-path] to embed references to the run-time files
 in the executable; the files are then copied and packaged together
 with the executable when creating a distribution (as described in
