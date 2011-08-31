@@ -2,7 +2,7 @@
 
 (require (for-syntax scheme/base
                      racket/syntax
-                     (only-in racket/list append* append-map)
+                     (only-in racket/list append* remove-duplicates)
                      unstable/sequence
                      syntax/parse
                      "parse.rkt"
@@ -11,30 +11,6 @@
                      "gen-match.rkt"))
 
 (provide define-forms)
-
-;; each pat matches a value in a multi-valued expression
-(define-for-syntax (match-values-clause->let-clause pats rhs)
-  (with-syntax ([(pats ...) pats]
-                [(ids ...) (generate-temporaries pats)])
-    ;; rhs evaluates to number of ids values.
-    ;; patterns should match against each id.
-    (values #'(ids ...)
-            #`[(ids ...) #,rhs])))
-
-(define-for-syntax (match-values-clauses->let-clauses patses rhses)
-  (for/lists (idses let-clauses)
-      ([pats (syntax->list patses)]
-       [rhs (syntax->list rhses)])
-    (match-values-clause->let-clause pats rhs)))
-
-(define-for-syntax (all-same-length stx-listses)
-  (let loop ([listses (syntax->list stx-listses)]
-             [the-length #f])
-    (cond [(null? listses) #t]
-          [the-length
-           (and (= the-length (length (syntax->list (car listses))))
-                (loop (cdr listses) the-length))]
-          [else (loop (cdr listses) (length (syntax->list (car listses))))])))
 
 (define-syntax-rule (define-forms parse-id
                       match match* match-lambda match-lambda*
@@ -70,13 +46,10 @@
 
      (define-syntax (match/values stx)
        (syntax-parse stx
-         [(_ arg:expr [(pats ...) rhs:expr] [(patses ...) rhses:expr] ...)
-          #:fail-unless (all-same-length #'((pats ...) (patses ...) ...))
-          "All clauses must have the same number of patterns"
-          (define-values (ids let-clause)
-            (match-values-clause->let-clause #'(pats ...) #'rhs))
-          #`(let-values ([#,ids arg])
-              (match*/derived #,ids #,stx [(pats ...) rhs] [(patses ...) rhses] ...))]))
+         [(_ arg:expr [(pats ...) rhs:expr] [(patss ...) rhss:expr] ...)
+          (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))])
+            #`(let-values ([(ids ...) arg])
+                (match*/derived (ids ...) #,stx [(pats ...) rhs] [(patss ...) rhss] ...)))]))
 
      (define-syntax (match-lambda stx)
        (syntax-parse stx
@@ -102,25 +75,27 @@
 
      (define-syntax (match-let-values stx)
        (syntax-parse stx
-         [(_ (~and clauses ([(patses ...) rhses:expr] ...)) body1 body ...)
-          (define-values (idses let-clauses)
-            (match-values-clauses->let-clauses #'((patses ...) ...) #'(rhses ...)))
+         [(_ (~and clauses ([(patss ...) rhss:expr] ...)) body1 body ...)
+          (define-values (idss let-clauses)
+            (for/lists (idss let-clauses)
+                ([pats (syntax->list #'((patss ...) ...))]
+                 [rhs (syntax->list #'(rhss ...))])
+              (define ids (generate-temporaries pats))
+              (values ids #`[#,ids #,rhs])))
           #`(let-values #,let-clauses
-              (match*/derived #,(append-map syntax->list idses) #,stx
-                [(patses ... ...)
-                 (let () body1 body ...)]))]))
+              (match*/derived #,(append* idss) #,stx
+                [(patss ... ...) (let () body1 body ...)]))]))
 
      (define-syntax (match-let*-values stx)
        (syntax-parse stx
          [(_ () body1 body ...)
           #'(let () body1 body ...)]
          [(_ ([(pats ...) rhs] rest-pats ...) body1 body ...)
-          (define-values (ids let-clause)
-            (match-values-clause->let-clause #'(pats ...) #'rhs))
-          #`(let-values (#,let-clause)
-              (match*/derived #,ids #,stx
-               [(pats ...) #,(syntax/loc stx (match-let*-values (rest-pats ...)
-                               body1 body ...))]))]))
+          (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))])
+            #`(let-values ([(ids ...) rhs])
+                (match*/derived (ids ...) #,stx
+                  [(pats ...) #,(syntax/loc stx (match-let*-values (rest-pats ...)
+                                                  body1 body ...))])))]))
 
      ;; there's lots of duplication here to handle named let
      ;; some factoring out would do a lot of good
@@ -130,7 +105,7 @@
           (with-syntax*
            ([vars (generate-temporaries #'(pat ...))]
             [loop-body #`(match*/derived vars #,stx
-					 [(pat ...) (let () body1 body ...)])])
+                           [(pat ...) (let () body1 body ...)])])
            #'(letrec ([nm (lambda vars loop-body)])
                (nm init-exp ...)))]
          [(_ ([pat init-exp:expr] ...) body1 body ...)
@@ -162,15 +137,13 @@
      (define-syntax (match-define-values stx)
        (syntax-parse stx
          [(_ (pats ...) rhs:expr)
-          (define ppats (map parse-id (syntax->list #'(pats ...))))
-          (define bound-vars-list (map bound-vars ppats))
-          (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))]
-                        [(pat-vars ...) bound-vars-list]
-                        [vars (append* bound-vars-list)])
+          (define bound-vars-list (remove-duplicates
+                                   (foldr (λ (pat vars)
+                                             (append (bound-vars (parse-id pat)) vars))
+                                          '() (syntax->list #'(pats ...)))
+                                   bound-identifier=?))
+          (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))])
             (quasisyntax/loc stx
-              (define-values vars
-                (let-values ([(ids ...) rhs])
-                  (apply values
-                         (append
-                          (match*/derived (ids) #,stx
-                                          [(pats) (list . pat-vars)]) ...))))))])))))
+              (define-values #,bound-vars-list
+                (match/values rhs
+                  [(pats ...) (values . #,bound-vars-list)]))))])))))

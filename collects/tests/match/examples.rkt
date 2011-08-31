@@ -675,13 +675,13 @@
    (comp '(1 2 4)
          (call-with-values
            (λ () (match-let-values ([(x y) (values 1 2)] [(3 w) (values 3 4)])
-                   (list x y w)))
+                   (values x y w)))
            list))
 
    (comp '(1 3 4)
          (call-with-values
            (λ () (match-let*-values ([(x y) (values 1 2)] [(y w) (values 3 4)])
-                   (list x y w)))
+                   (values x y w)))
            list))
 
    (comp '(1 2 3)
