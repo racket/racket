@@ -147,8 +147,7 @@
   (syntax-case stx ()
     [(_ ch body1 body ...)
      (begin
-       ;breaks valid uses of place
-       #;(unless (eq? 'module (syntax-local-context))
+       #;(when (in-module-expansion?)
          (raise-syntax-error #f "can only be used in a module" stx))
        (unless (identifier? #'ch)
          (raise-syntax-error #f "expected an indentifier" stx #'ch))
@@ -165,6 +164,7 @@
     (resolved-module-path-name
      (variable-reference->resolved-module-path
       vr)))
-  (dynamic-place (if (symbol? name) `',name name)
-                 func-name))
+  (when (symbol? name)
+     (error 'place "the current module-path-name should be a path and not a symbol (if you are in DrRacket, save the file)"))
+  (dynamic-place name func-name))
 

@@ -227,6 +227,9 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0])) {
       scheme_wrong_type("dynamic-place", "module-path or path", 0, argc, args);
     }
+    if (SCHEME_SYMBOLP(args[0])) {
+      scheme_wrong_type("dynamic-place", "non-symbol module-path", 0, argc, args);
+    }
     if (!SCHEME_SYMBOLP(args[1])) {
       scheme_wrong_type("dynamic-place", "symbol", 1, argc, args);
     }
