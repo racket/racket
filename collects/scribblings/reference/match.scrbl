@@ -444,9 +444,11 @@ matching against the result of @racket[expr].
 b
 ]}
 
-@defform[(match-define-values (pat ...) expr)]{
+@defform[(match-define-values (pat pats ...) expr)]{
 
 Like @racket[match-define] but for when expr produces multiple values.
+Like match/values, it requires at least one pattern to determine the
+number of values to expect.
 
 @examples[
 #:eval match-eval
