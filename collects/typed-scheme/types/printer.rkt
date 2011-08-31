@@ -1,7 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require racket/require racket/match racket/list racket/string
-         unstable/sequence
+(require racket/require racket/match unstable/sequence
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
@@ -173,7 +172,7 @@
          [(list a b ...)
           (format "(case-lambda ~a~a)"
                   (format-arr a)
-                  (string-append* (map format-arr b)))]))]))
+                  (apply string-append (map format-arr b)))]))]))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void

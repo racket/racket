@@ -2,9 +2,7 @@
 
 (require (for-syntax scheme/base syntax/parse "internal.rkt")
          "../typecheck/internal-forms.rkt"
-         (prefix-in t: "base-types-extra.rkt")
-         (for-template (prefix-in t: "base-types-extra.rkt"))
-         (for-syntax (prefix-in t: "base-types-extra.rkt")))
+         (prefix-in t: "base-types-extra.rkt"))
 
 (provide :)
 

@@ -1,23 +1,19 @@
-#lang scheme/base
-(require "../utils/utils.rkt")
-
-(require mzlib/pconvert
+#lang racket/base
+(require "../utils/utils.rkt"
+         mzlib/pconvert
          racket/match
          "free-variance.rkt"
          "interning.rkt"
          unstable/match unstable/struct         
          racket/stxparam
-         scheme/contract
          (for-syntax
-          scheme/list
-          (only-in racket/syntax generate-temporary)
           racket/match
           (except-in syntax/parse id identifier keyword)
-          scheme/base
+          racket/base
           syntax/struct
-          scheme/contract
+          racket/contract
 	  racket/syntax
-          (rename-in (except-in (utils utils stxclass-util) bytes byte-regexp regexp byte-pregexp pregexp)
+          (rename-in (except-in (utils stxclass-util) bytes byte-regexp regexp byte-pregexp pregexp)
                      [id* id]
                      [keyword* keyword])))
 
@@ -155,7 +151,7 @@
        (with-syntax
          ;; makes as many underscores as default fields (+1 for key? if provided)
         ([(ign-pats ...) (let loop ([fs default-fields])
-                           (if (empty? fs)
+                           (if (null? fs)
                                (key->list key? #'_)
                                (cons #'_ (loop (cdr fs)))))]
          ;; has to be down here to refer to #'contract
@@ -239,7 +235,7 @@
                                         #,(body-f)))]))
 
     (define (no-duplicates? lst)
-      (cond [(empty? lst) #t]
+      (cond [(null? lst) #t]
             [(member (car lst) (cdr lst)) #f]
             [else (no-duplicates? (cdr lst))]))
 

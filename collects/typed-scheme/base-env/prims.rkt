@@ -31,7 +31,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (require "../utils/require-contract.rkt"
          "colon.rkt"
          "../typecheck/internal-forms.rkt"
-         (rename-in racket/contract [-> c->] [case-> c:case->])
+         (rename-in racket/contract/base [-> c->] [case-> c:case->])
          "base-types.rkt"
          "base-types-extra.rkt"
          racket/flonum ; for for/flvector and for*/flvector
@@ -42,19 +42,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
           racket/base
           racket/struct-info
           syntax/struct
-          "../rep/type-rep.rkt"
-          "../private/parse-type.rkt"
+          "../rep/type-rep.rkt"          
           "annotate-classes.rkt"
           "internal.rkt"
           "../utils/tc-utils.rkt"
-          "../env/type-name-env.rkt"
-          "../private/type-contract.rkt"
-          "for-clauses.rkt"
-          "../types/utils.rkt")
+          "../env/type-name-env.rkt"          
+          "for-clauses.rkt")
          "../types/numeric-predicates.rkt")
 (provide index?) ; useful for assert, and racket doesn't have it
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
+
+;; dynamically loaded b/c they're only used at the top-level, so we save a lot
+;; of loading by not having them when we're in a module
+(define-for-syntax (parse-type stx) ((dynamic-require 'typed-scheme/private/parse-type 'parse-type) stx))
+(define-for-syntax (type->contract stx) ((dynamic-require 'typed-scheme/private/type-contract 'type->contract) stx))
 
 
 (define-syntaxes (require/typed-legacy require/typed)

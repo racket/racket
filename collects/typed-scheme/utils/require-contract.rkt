@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/contract
+(require racket/contract/region racket/contract/base
          syntax/location
-         (for-syntax scheme/base
+         (for-syntax racket/base
                      syntax/parse
                      (prefix-in tr: "../private/typed-renaming.rkt")))
 

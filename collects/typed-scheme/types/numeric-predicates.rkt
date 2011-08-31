@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require unstable/function racket/unsafe/ops)
+(require racket/unsafe/ops)
 
 (provide index? exact-rational?)
 
@@ -11,4 +11,4 @@
 ;; we're safe from fixnum size issues on different platforms.
 (define (index? x) (and (fixnum? x) (unsafe-fx>= x 0) (fixnum? (* x 4))))
 
-(define exact-rational? (conjoin rational? exact?))
+(define (exact-rational? x) (and (rational? x) (exact? x)))

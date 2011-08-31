@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (provide assert defined?)
 
 (define-syntax assert

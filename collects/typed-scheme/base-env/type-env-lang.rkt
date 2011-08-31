@@ -1,9 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
-(require "../utils/utils.rkt")
-
-(require (for-syntax (env init-envs)
-                     scheme/base syntax/parse
+(require "../utils/utils.rkt"
+         (for-syntax (env init-envs)
+                     racket/base syntax/parse
                      (except-in (rep filter-rep type-rep) make-arr)
                      (rename-in (types union convenience) [make-arr* make-arr])))
 
@@ -24,8 +23,8 @@
 
 (provide #%module-begin
          require
-         (all-from-out scheme/base)
+         (all-from-out racket/base)
          (for-syntax
           (types-out convenience union)
           (rep-out type-rep)
-          (all-from-out scheme/base)))
+          (all-from-out racket/base)))

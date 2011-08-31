@@ -1,16 +1,15 @@
-#lang scheme/base
+#lang racket/base
 (provide (all-defined-out))
 (require "../utils/utils.rkt"
          "global-env.rkt"
 	 "type-name-env.rkt"
 	 "type-alias-env.rkt"
-         unstable/struct racket/dict
          (rep type-rep object-rep filter-rep rep-utils)
 	 (for-template (rep type-rep object-rep filter-rep)
 		       (types union)
-		       mzlib/pconvert mzlib/shared scheme/base)
+		       racket/shared racket/base)
 	 (types union convenience)
-	 mzlib/pconvert racket/match mzlib/shared)
+	 mzlib/pconvert racket/match)
 
 (define (initialize-type-name-env initial-type-names)
   (for-each (lambda (nm/ty) (register-resolved-type-alias (car nm/ty) (cadr nm/ty))) initial-type-names))

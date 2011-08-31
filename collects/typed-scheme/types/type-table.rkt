@@ -1,11 +1,13 @@
 #lang racket/base
 
-(require racket/contract syntax/id-table racket/dict racket/match mzlib/pconvert
+(require syntax/id-table racket/dict racket/match mzlib/pconvert
          "../utils/utils.rkt"
+         (contract-req)
          (rep type-rep object-rep)
          (only-in (types utils) tc-results?)
          (utils tc-utils)
          (env init-envs))
+
 
 (define table (make-hasheq))
 

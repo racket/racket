@@ -1,6 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
-(require syntax/parse "colon.rkt" (for-template "colon.rkt") "../private/parse-type.rkt")
+(require syntax/parse "../private/parse-classes.rkt"
+         (for-template "colon.rkt"))
 (provide (all-defined-out))
 
 (define-splicing-syntax-class annotated-name

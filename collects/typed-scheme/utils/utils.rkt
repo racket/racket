@@ -6,9 +6,9 @@ at least theoretically.
 |#
 
 (require (for-syntax racket/base syntax/parse racket/string)
-         racket/contract/base racket/require-syntax
-	 racket/provide-syntax racket/unit (prefix-in d: unstable/debug)
-	 racket/struct-info racket/pretty mzlib/pconvert syntax/parse)
+         racket/require-syntax racket/unit
+         racket/provide-syntax (prefix-in d: unstable/debug)
+         racket/struct-info)
 
 ;; to move to unstable
 (provide reverse-begin list-update list-set debugf debugging? dprintf)
@@ -27,6 +27,13 @@ at least theoretically.
 
 (define optimize? (make-parameter #t))
 (define-for-syntax enable-contracts? #f)
+
+(define-syntax do-contract-req
+  (if enable-contracts?
+      (syntax-rules () [(_) (require racket/contract/base)])
+      (syntax-rules () [(_) (begin)])))
+(do-contract-req)
+
 (define show-input? (make-parameter #f))
 
 ;; fancy require syntax
@@ -152,13 +159,6 @@ at least theoretically.
   print-type* print-filter* print-latentfilter* print-object* print-latentobject*
   print-pathelem*)
 
-(define (pseudo-printer s port mode)
-  (parameterize ([current-output-port port]
-                 [show-sharing #f]
-                 [booleans-as-true/false #f]
-                 [constructor-style-printing #t])
-    (pretty-print (print-convert s))))
-
 (define custom-printer (make-parameter #t))
 
 (define-syntax (define-struct/printer stx)
@@ -167,7 +167,13 @@ at least theoretically.
      #`(define-struct name (flds ...)
          #:property prop:custom-print-quotable 'never
          #:property prop:custom-write
-         (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))
+         (lambda (a b c) (if (custom-printer)
+                             (printer a b c)
+                             ;; ok to make this case slow, it never runs in real code
+                             ((if c
+                                  (dynamic-require 'racket/pretty 'pretty-write)
+                                  (dynamic-require 'racket/pretty 'pretty-print))
+                              a b)))
          #:transparent)]))
 
 

@@ -1,11 +1,13 @@
-#lang scheme/base
+#lang racket/base
 
 (require "../utils/utils.rkt"
          (rep type-rep rep-utils)
-	 (utils tc-utils)
-     (prefix-in c: racket/contract)
-	 (types utils subtype abbrev printer comparison)
+         (utils tc-utils)
+         (contract-req)
+         (types utils subtype abbrev printer comparison)
          racket/match)
+
+
 
 (provide/cond-contract
  [Un (() #:rest (c:listof Type/c) . c:->* . Type/c)])
