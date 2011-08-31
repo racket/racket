@@ -297,12 +297,13 @@ scheme_init_type ()
   set_name(_scheme_values_types_, "<resurrected>");
   set_name(_scheme_compiled_values_types_, "<internal>");
 
+  set_name(scheme_place_type, "<place>");
+  set_name(scheme_place_async_channel_type, "<place-half-channel>");
+  set_name(scheme_place_bi_channel_type, "<place-channel>");
+
 #ifdef MZ_GC_BACKTRACE
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
 #endif
-  set_name(scheme_place_type, "<place>");
-  set_name(scheme_place_async_channel_type, "<place_async_channel>");
-  set_name(scheme_place_bi_channel_type, "<place_bidirectional_channel>");
 }
 
 Scheme_Type scheme_make_type(const char *name)
