@@ -164,7 +164,7 @@
   (make-Base 'Compiled-Non-Module-Expression
              #'(and/c    compiled-expression? (not/c  compiled-module-expression?))
                (conjoin  compiled-expression? (negate compiled-module-expression?))
-             #'-CompiledExpression))
+             #'-Compiled-Non-Module-Expression))
 (define -Compiled-Expression (*Un -Compiled-Module-Expression -Compiled-Non-Module-Expression))
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag? continuation-prompt-tag? #'-Prompt-Tag))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set? continuation-mark-set? #'-Cont-Mark-Set))
