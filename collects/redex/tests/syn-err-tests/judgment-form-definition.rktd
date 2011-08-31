@@ -183,3 +183,27 @@
      [(name binder)
       premise ellipsis])
    (void)))
+
+(#rx"unbound pattern variable"
+ ([x f_7])
+ (let ()
+   (define-language L
+     (f any))
+   (define-judgment-form L
+     #:mode (J1 O)
+     [(J1 x)])
+   (void)))
+
+(#rx"unbound pattern variable"
+ ([use f_2]) ([outer-def f_2] [inner-def f_2])
+ (let ()
+   (define-language L
+     (f any))
+   (define-metafunction L
+     [(outer-def) ()])
+   (define-judgment-form L
+     #:mode (K I I O)
+     [(K a any_1 x)
+      (K b (use) (name inner-def any))]
+     [(K b any K-b-out)])
+   (void)))

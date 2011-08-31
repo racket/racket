@@ -161,8 +161,7 @@
                  (and (identifier? (syntax x))
                       ((case mode
                          [(rhs-only) binds-in-right-hand-side?]
-                         [(binds-anywhere) binds?]
-                         [(name-only) (λ (_1 _2 _3) #f)])
+                         [(binds-anywhere) binds?])
                        all-nts bind-names? (syntax x)))
                  (cons (make-id/depth (syntax x) depth) names)]
                 [else names]))]

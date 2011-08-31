@@ -1822,6 +1822,19 @@
                    (judgment-holds (R a any))))
              'a)
             '(a b)))
+    
+    ; a call to a metafunction that looks like a pattern variable
+    (let ()
+      (define result 'result)
+      (define-language L
+        (f any))
+      (define-judgment-form L
+        #:mode (J O)
+        [(J (f_2))])
+      (define-metafunction L
+        [(f_2) ,result])
+      (test (judgment-holds (J any) any)
+            (list result)))
   
     ;                                                                 
     ;                                                                 

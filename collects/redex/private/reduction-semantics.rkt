@@ -1895,15 +1895,18 @@
             (loop (cdr rest-modes) rest-terms rest-ctcs (+ 1 pos)))))))
 
 (define-for-syntax (mode-check mode clauses nts syn-err-name)
-  (define ((check-template named-vars) temp bound)
+  (define ((check-template bound-anywhere) temp bound)
     (let check ([t temp])
       (syntax-case t (unquote)
         [(unquote . _)
          (raise-syntax-error syn-err-name "unquote unsupported" t)]
         [x
          (identifier? #'x)
-         (when (and (or (id-binds? nts #t #'x) (free-id-table-ref named-vars #'x #f))
-                    (not (free-id-table-ref bound #'x #f)))
+         (unless (cond [(free-id-table-ref bound-anywhere #'x #f)
+                        (free-id-table-ref bound #'x #f)]
+                       [(id-binds? nts #t #'x)
+                        (term-fn? (syntax-local-value #'x (λ () #f)))]
+                       [else #t])
            (raise-syntax-error syn-err-name "unbound pattern variable" #'x))]
         [(u ...)
          (for-each check (syntax->list #'(u ...)))]
@@ -1956,7 +1959,7 @@
   (for ([clause clauses])
        (define do-tmpl
          (check-template
-          (fold-clause (bind 'name-only) void (make-immutable-free-id-table) clause)))
+          (fold-clause (bind 'rhs-only) void (make-immutable-free-id-table) clause)))
        (fold-clause (bind 'rhs-only) do-tmpl (make-immutable-free-id-table) clause)))
 
 ;; Defined as a macro instead of an ordinary phase 1 function so that the
