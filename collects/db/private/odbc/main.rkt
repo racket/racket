@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/class
-         racket/contract
          "../generic/interfaces.rkt"
          "../generic/place-client.rkt"
          "connection.rkt"

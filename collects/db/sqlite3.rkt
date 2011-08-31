@@ -11,4 +11,4 @@
         #:busy-retry-limit (or/c exact-nonnegative-integer? +inf.0)
         #:busy-retry-delay (and/c rational? (not/c negative?))
         #:use-place any/c)
-       any/c)])
+       connection?)])

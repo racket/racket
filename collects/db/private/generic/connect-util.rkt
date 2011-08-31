@@ -1,8 +1,11 @@
 #lang racket/base
-(require racket/contract
-         racket/class
-         "interfaces.rkt"
-         (only-in "functions.rkt" connection?))
+(require racket/class
+         "interfaces.rkt")
+(provide kill-safe-connection
+         virtual-connection
+         connection-pool
+         connection-pool?
+         connection-pool-lease)
 
 ;; manager% implements kill-safe manager thread w/ request channel
 (define manager%
@@ -376,24 +379,3 @@
       (uerror 'connection-pool-lease
               "cannot obtain connection; connection pool limit reached"))
     result))
-
-;; ========================================
-
-(provide/contract
- [kill-safe-connection
-  (-> connection? connection?)]
- [virtual-connection
-  (->* ((or/c (-> connection?) connection-pool?))
-       ()
-       connection?)]
- [connection-pool
-  (->* ((-> connection?))
-       (#:max-connections (or/c (integer-in 1 10000) +inf.0)
-        #:max-idle-connections (or/c (integer-in 1 10000) +inf.0))
-       connection-pool?)]
- [connection-pool?
-  (-> any/c boolean?)]
- [connection-pool-lease
-  (->* (connection-pool?)
-       ((or/c custodian? evt?))
-       connection?)])

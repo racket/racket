@@ -1,16 +1,13 @@
 #lang racket/base
-(require racket/contract
-         racket/class
+(require racket/class
          racket/tcp
          file/sha1
          "../generic/interfaces.rkt"
          "../generic/socket.rkt"
-         "connection.rkt"
-         "dbsystem.rkt")
+         "connection.rkt")
 (provide mysql-connect
          mysql-guess-socket-path
-         mysql-password-hash
-         (rename-out [dbsystem mysql-dbsystem]))
+         mysql-password-hash)
 
 (define (mysql-connect #:user user
                        #:database database

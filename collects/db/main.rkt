@@ -2,7 +2,6 @@
 (require (for-syntax racket/base)
          "private/generic/lazy-require.rkt"
          racket/runtime-path
-         racket/promise
          racket/contract
          "base.rkt")
 (provide (all-from-out "base.rkt"))
@@ -49,7 +48,7 @@
         #:ssl-context ssl-client-context?
         #:notice-handler (or/c 'output 'error output-port? procedure?)
         #:notification-handler (or/c 'output 'error output-port? procedure?))
-       any/c)]
+       connection?)]
  [postgresql-guess-socket-path
   (-> path-string?)]
  [postgresql-password-hash
@@ -64,7 +63,7 @@
         #:port (or/c exact-positive-integer? #f)
         #:socket (or/c path-string? 'guess #f)
         #:notice-handler (or/c 'output 'error output-port? procedure?))
-       any/c)]
+       connection?)]
  [mysql-guess-socket-path
   (-> path-string?)]
  [mysql-password-hash
@@ -77,7 +76,7 @@
         #:busy-retry-limit (or/c exact-nonnegative-integer? +inf.0)
         #:busy-retry-delay (and/c rational? (not/c negative?))
         #:use-place boolean?)
-       any/c)]
+       connection?)]
 
  ;; Duplicates contracts at odbc.rkt
  [odbc-connect

@@ -1,4 +1,3 @@
-internal docs
 ----
 
 Testing
@@ -31,11 +30,11 @@ Types
 
 Misc
 
+- internal docs
+
 - use ffi/unsafe/alloc to simplify odbc handle allocation
 
 - add ODBC-like functions for inspecting schemas (list-tables, etc)
-  - util/schema (?), util/info (for information_schema) (?)
-  - at least, table-exists? : string [...] -> boolean?
 
 - for wrapped/managed connections, detect if underlying connection gets
   disconnected by server (eg, times out after 10 minutes of inactivity)

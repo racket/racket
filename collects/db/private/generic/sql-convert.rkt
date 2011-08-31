@@ -1,5 +1,4 @@
 #lang racket/base
-(require "sql-data.rkt")
 
 ;; ========================================
 

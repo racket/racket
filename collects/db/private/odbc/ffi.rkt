@@ -1,6 +1,5 @@
 #lang racket/base
-(require (rename-in racket/contract [-> c->])
-         ffi/unsafe
+(require ffi/unsafe
          ffi/unsafe/define
          "ffi-constants.rkt")
 (provide (all-from-out "ffi-constants.rkt"))

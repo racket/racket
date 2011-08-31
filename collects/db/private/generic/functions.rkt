@@ -1,11 +1,10 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         racket/contract
          racket/vector
-         unstable/prop-contract
          racket/class
          "interfaces.rkt"
          (only-in "sql-data.rkt" sql-null sql-null?))
+(provide (all-defined-out))
 
 ;; == Administrative procedures
 
@@ -41,9 +40,6 @@
       (prepared-statement? x)
       (statement-binding? x)
       (prop:statement? x)))
-
-(define complete-statement?
-  (or/c string? statement-binding?))
 
 (define (bind-prepared-statement pst params)
   (send pst bind 'bind-prepared-statement params))
@@ -306,110 +302,6 @@
 
 ;; ========================================
 
-(define preparable/c (or/c string? virtual-statement?))
-
-(provide (rename-out [in-query* in-query]))
-
-(provide/contract
- [connection?
-  (-> any/c any)]
- [disconnect
-  (-> connection? any)]
- [connected?
-  (-> connection? any)]
- [connection-dbsystem
-  (-> connection? dbsystem?)]
- [dbsystem?
-  (-> any/c any)]
- [dbsystem-name
-  (-> dbsystem? symbol?)]
- [dbsystem-supported-types
-  (-> dbsystem? (listof symbol?))]
-
- [statement?
-  (-> any/c any)]
- [prepared-statement?
-  (-> any/c any)]
- [prepared-statement-parameter-types
-  (-> prepared-statement? (or/c list? #f))]
- [prepared-statement-result-types
-  (-> prepared-statement? (or/c list? #f))]
-
- [query-exec
-  (->* (connection? statement?) () #:rest list? any)]
- [query-rows
-  (->* (connection? statement?) () #:rest list? (listof vector?))]
- [query-list
-  (->* (connection? statement?) () #:rest list? list?)]
- [query-row
-  (->* (connection? statement?) () #:rest list? vector?)]
- [query-maybe-row
-  (->* (connection? statement?) () #:rest list? (or/c #f vector?))]
- [query-value
-  (->* (connection? statement?) () #:rest list? any)]
- [query-maybe-value
-  (->* (connection? statement?) () #:rest list? any)]
- [query
-  (->* (connection? statement?) () #:rest list? any)]
-
- #|
- [in-query
-  (->* (connection? statement?) () #:rest list? sequence?)]
- |#
-
- [prepare
-  (-> connection? preparable/c any)]
- [bind-prepared-statement
-  (-> prepared-statement? list? any)]
-
- [rename virtual-statement* virtual-statement
-  (-> (or/c string? (-> dbsystem? string?))
-      virtual-statement?)]
- [virtual-statement?
-  (-> any/c boolean?)]
-
- [start-transaction
-  (->* (connection?)
-       (#:isolation (or/c 'serializable 'repeatable-read 'read-committed 'read-uncommitted #f))
-       void?)]
- [commit-transaction
-  (-> connection? void?)]
- [rollback-transaction
-  (-> connection? void?)]
- [in-transaction?
-  (-> connection? boolean?)]
- [needs-rollback?
-  (-> connection? boolean?)]
- [call-with-transaction
-  (->* (connection? (-> any))
-       (#:isolation (or/c 'serializable 'repeatable-read 'read-committed 'read-uncommitted #f))
-       void?)]
-
- [prop:statement
-  (struct-type-property/c
-   (-> any/c connection?
-       statement?))]
-
- [list-tables
-  (->* (connection?)
-       (#:schema (or/c 'search-or-current 'search 'current))
-       (listof string?))]
- [table-exists?
-  (->* (connection? string?)
-       (#:schema (or/c 'search-or-current 'search 'current)
-        #:case-sensitive? any/c)
-       boolean?)]
-
-#|
- [get-schemas
-  (-> connection? (listof vector?))]
- [get-tables
-  (-> connection? (listof vector?))]
-|#)
-
-
-;; ========================================
-
 (define (group-rows result
                     #:group key-fields-list
                     #:group-mode [group-mode null])
@@ -553,10 +445,3 @@
                                    invert-outer?
                                    as-list?)])
                  (vector-append key (vector residuals))))))]))
-
-(provide/contract
- [group-rows
-  (->* (rows-result?
-        #:group (or/c (vectorof string?) (listof (vectorof string?))))
-       (#:group-mode (listof (or/c 'preserve-null-rows 'list)))
-       rows-result?)])
