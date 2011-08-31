@@ -640,22 +640,6 @@ resulting identifier is @tech{tainted}.
 @transform-time[]}
 
 
-@defproc[(syntax-local-armer)
-         ((syntax?) (any/c any/c) . ->* . syntax?)]{
-
-Returns a procedure that captures the declaration-time code inspector
-of the module in which a syntax transformer was bound (if a syntax
-transformer is being applied) or the module being visited. The result
-is a procedure like @racket[syntax-taint-arm], except that the
-optional third argument is automatically the captured inspector.
-
-The @racket[syntax-local-armer] function is needed by
-macro-generating macros, where a syntax object in the generated macro
-needs to be protected using the code inspector of the generating
-macro's module.
-
-@transform-time[]}
-
 @defproc[(syntax-local-certifier [active? boolean? #f])
          ((syntax?) (any/c (or/c procedure? #f)) 
           . ->* . syntax?)]{
