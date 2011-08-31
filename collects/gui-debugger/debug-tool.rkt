@@ -134,7 +134,7 @@
                                (truncate-value (vector-ref v i) size (sub1 depth)))))]
           [(bytes? v)
            (if (> (bytes-length v) size)
-               (subbytes v 0 size)
+               (bytes-append (subbytes v 0 size) #"...")
                v)]
           [else v]))
       
