@@ -250,5 +250,5 @@ Testing profiles are flattened, not hierarchical.
          [else
           (for ([test tests])
             (printf "Running ~s tests\n" (car test))
-            (run-tests (cdr test))
+            (time (run-tests (cdr test)))
             (newline))])))

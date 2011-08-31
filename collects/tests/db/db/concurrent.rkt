@@ -7,8 +7,8 @@
 (export test^)
 
 (define (test-concurrency workers)
-  (test-case (format "lots of threads (~s)" workers)
-    (unless (ANYFLAGS 'isora 'isdb2)
+  (unless (ANYFLAGS 'isora 'isdb2)
+    (test-case (format "lots of threads (~s)" workers)
       (call-with-connection
        (lambda (c)
          (query-exec c "create temporary table play_numbers (n integer)")
@@ -40,8 +40,8 @@
             (query-value c "select max(n) from play_numbers"))))
 
 (define (kill-safe-test proxy?)
-  (test-case (format "kill-safe test~a" (if proxy? " (proxy)" ""))
-    (unless (ANYFLAGS 'isora 'isdb2)
+  (unless (ANYFLAGS 'isora 'isdb2)
+    (test-case (format "kill-safe test~a" (if proxy? " (proxy)" ""))
     (call-with-connection
      (lambda (c0)
        (let ([c (if proxy?
@@ -63,8 +63,8 @@
            (sync t))))))))
 
 (define (async-test)
-  (test-case "asynchronous execution"
-    (unless (ANYFLAGS 'ismy 'isora 'isdb2)
+  (unless (ANYFLAGS 'ismy 'isora 'isdb2)
+    (test-case "asynchronous execution"
       (call-with-connection
        (lambda (c)
          (query-exec c "create temporary table nums (n integer)")

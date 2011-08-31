@@ -33,8 +33,8 @@
 
   (test-suite (format "simple (~a)" prep-mode)
 
-    (test-case "query-exec"
-      (unless (ANYFLAGS 'isora 'isdb2) ;; table isn't temp, so don't tamper with it
+    (unless (ANYFLAGS 'isora 'isdb2) ;; table isn't temp, so don't tamper with it
+      (test-case "query-exec"
         (with-connection c
           (check-pred void? (Q c query-exec "insert into the_numbers values(-1, 'mysterious')"))
           (check-equal? (Q c query-value "select descr from the_numbers where N = -1")
@@ -143,8 +143,8 @@
           (check set-equal?
                  (map vector (map car test-data))
                  (rows-result-rows q)))))
-    (test-case "query - update"
-      (unless (ANYFLAGS 'isora 'isdb2)
+    (unless (ANYFLAGS 'isora 'isdb2)
+      (test-case "query - update"
         (with-connection c
           (let [(q (query c "update the_numbers set N = -1 where N = 1"))]
             (check-pred simple-result? q)))))
@@ -226,8 +226,8 @@
 
     ;; Added 18 May 2003: Corrected a bug which incorrectly interleaved
     ;; nulls with returned fields.
-    (test-case "nulls arrive in correct order"
-      (unless (TESTFLAGS 'odbc 'issl)
+    (unless (TESTFLAGS 'odbc 'issl)
+      (test-case "nulls arrive in correct order"
         (with-connection c
           ;; raw NULL has PostgreSQL type "unknown", not allowed
           (define (clean . strs)
@@ -257,8 +257,8 @@
     (test-case "query - not a statement"
       (with-connection c
         (check-exn exn:fail? (lambda () (query c 5)))))
-    (test-case "query - multiple statements in string"
-      (unless (or (TESTFLAGS 'odbc 'ispg) (ANYFLAGS 'isdb2))
+    (unless (or (TESTFLAGS 'odbc 'ispg) (ANYFLAGS 'isdb2))
+      (test-case "query - multiple statements in string"
         (with-connection c
           (check-exn exn:fail?
                      (lambda ()
