@@ -3482,6 +3482,7 @@ int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info 
 
 int scheme_pipe_char_count(Scheme_Object *p);
 void scheme_alloc_global_fdset();
+Scheme_Object *scheme_port_name(Scheme_Object *p);
 
 #define CURRENT_INPUT_PORT(config) scheme_get_param(config, MZCONFIG_INPUT_PORT)
 #define CURRENT_OUTPUT_PORT(config) scheme_get_param(config, MZCONFIG_OUTPUT_PORT)
@@ -3692,13 +3693,23 @@ typedef struct Scheme_Serialized_File_FD{
   char flush_mode;
 } Scheme_Serialized_File_FD;
 
+typedef struct Scheme_Serialized_Socket_FD{
+  Scheme_Object so;
+  Scheme_Object *name;
+  intptr_t fd;
+  intptr_t type;
+} Scheme_Serialized_Socket_FD;
+
 int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *so);
 intptr_t scheme_dup_socket(intptr_t fd);
 intptr_t scheme_dup_file(intptr_t fd);
 void scheme_close_socket_fd(intptr_t fd);
 void scheme_close_file_fd(intptr_t fd);
 void scheme_tcp_abandon_port(Scheme_Object *port);
-
+intptr_t scheme_socket_errno();
+intptr_t scheme_errno();
+void scheme_socket_to_input_port(intptr_t s, Scheme_Object *name, int takeover, Scheme_Object **_inp);
+void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover, Scheme_Object **_outp);
 
 #define SCHEME_PLACE_OBJECTP(o) (SCHEME_TYPE(o) == scheme_place_object_type)
 

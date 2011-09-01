@@ -1478,6 +1478,15 @@ serialized_file_fd_val {
   gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_File_FD));
 }
 
+serialized_socket_fd_val {
+ mark:
+  Scheme_Serialized_Socket_FD *sfd = (Scheme_Serialized_Socket_FD *) p;
+  gcMARK2(sfd->name, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_Socket_FD));
+}
+
 END place;
 
 /**********************************************************************/

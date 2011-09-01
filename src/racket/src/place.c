@@ -898,18 +898,6 @@ static void push_duped_fd(Scheme_Object **fd_accumulators, intptr_t slot, intptr
   }
 }
 
-static Scheme_Object *make_serialized_tcp_fd(intptr_t fd, intptr_t type, Scheme_Object **fd_accumulators) {
-  Scheme_Simple_Object *so;
-  int dupfd;
-  dupfd = scheme_dup_socket(fd);
-  push_duped_fd(fd_accumulators, 1, dupfd);
-  so = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Simple_Object));
-  so->iso.so.type = scheme_serialized_tcp_fd_type;
-  so->u.two_int_val.int1 = type;
-  so->u.two_int_val.int2 = dupfd;
-  return (Scheme_Object *)so;
-}
-
 static Scheme_Object *trivial_copy(Scheme_Object *so)
 {
   switch (SCHEME_TYPE(so)) {
@@ -938,7 +926,8 @@ static Scheme_Object *trivial_copy(Scheme_Object *so)
   return NULL;
 }
 
-static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *ht, Scheme_Object **fd_accumulators,int copy, int can_raise_exn) {
+static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *ht, 
+    Scheme_Object **fd_accumulators, intptr_t *delayed_errno, int copy, int can_raise_exn) {
   Scheme_Object *new_so;
 
   new_so = trivial_copy(so);
@@ -961,8 +950,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         Scheme_Object *d;
         n = scheme_rational_numerator(so);
         d = scheme_rational_denominator(so);
-        n = shallow_types_copy(n, NULL, fd_accumulators, copy, can_raise_exn);
-        d = shallow_types_copy(d, NULL, fd_accumulators, copy, can_raise_exn);
+        n = shallow_types_copy(n, NULL, fd_accumulators, delayed_errno, copy, can_raise_exn);
+        d = shallow_types_copy(d, NULL, fd_accumulators, delayed_errno, copy, can_raise_exn);
         if (copy)
           new_so = scheme_make_rational(n, d);
       }
@@ -981,8 +970,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         Scheme_Object *i;
         r = scheme_complex_real_part(so);
         i = scheme_complex_imaginary_part(so);
-        r = shallow_types_copy(r, NULL, fd_accumulators, copy, can_raise_exn);
-        i = shallow_types_copy(i, NULL, fd_accumulators, copy, can_raise_exn);
+        r = shallow_types_copy(r, NULL, fd_accumulators, delayed_errno, copy, can_raise_exn);
+        i = shallow_types_copy(i, NULL, fd_accumulators, delayed_errno, copy, can_raise_exn);
         if (copy)
           new_so = scheme_make_complex(r, i);
       }
@@ -1065,7 +1054,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           o->type = scheme_cpointer_type;
           SCHEME_CPTR_FLAGS(o) |= 0x1;
           SCHEME_CPTR_VAL(o) = SCHEME_CPTR_VAL(so);
-          o2 = shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, fd_accumulators, copy, can_raise_exn);
+          o2 = shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, fd_accumulators, delayed_errno, copy, can_raise_exn);
           SCHEME_CPTR_TYPE(o) = o2;
 
           new_so = o;
@@ -1082,7 +1071,30 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         intptr_t fd;
         if(scheme_get_port_socket(so, &fd)) {
           if (copy) {
-            new_so = make_serialized_tcp_fd(fd, so->type, fd_accumulators);
+            Scheme_Object *tmp;
+            Scheme_Object *portname;
+            Scheme_Serialized_Socket_FD *ssfd;
+            int dupfd;
+            dupfd = scheme_dup_socket(fd);
+            if (dupfd == -1) {
+              if (can_raise_exn)
+                scheme_raise_exn(MZEXN_FAIL_NETWORK, "dup: error duplicating socket(%e)", scheme_socket_errno());
+              if (delayed_errno) {
+                intptr_t tmp;
+                tmp = scheme_socket_errno();
+                *delayed_errno = tmp;
+              }
+              return NULL;
+            }
+            push_duped_fd(fd_accumulators, 1, dupfd);
+            ssfd = scheme_malloc_tagged(sizeof(Scheme_Serialized_Socket_FD));
+            ssfd->so.type = scheme_serialized_tcp_fd_type;
+            ssfd->type = so->type;
+            ssfd->fd = dupfd;
+            portname = scheme_port_name(so);
+            tmp = shallow_types_copy(portname, ht, fd_accumulators, delayed_errno, copy, can_raise_exn);
+            ssfd->name = tmp;
+            return (Scheme_Object *)ssfd;
           }
         }
         else if (SCHEME_TRUEP(scheme_file_stream_port_p(1, &so))) {
@@ -1093,11 +1105,19 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             sffd = scheme_malloc_tagged(sizeof(Scheme_Serialized_File_FD));
             sffd->so.type = scheme_serialized_file_fd_type;
             scheme_get_serialized_fd_flags(so, sffd);
-            if (sffd->name) {
-              tmp = shallow_types_copy(sffd->name, ht, fd_accumulators, copy, can_raise_exn);
-              sffd->name = tmp;
-            }
+            tmp = shallow_types_copy(sffd->name, ht, fd_accumulators, delayed_errno, copy, can_raise_exn);
+            sffd->name = tmp;
             dupfd = scheme_dup_file(fd);
+            if (dupfd == -1) {
+              if (can_raise_exn)
+                scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "dup: error duplicating file descriptor(%e)", scheme_errno());
+              if (delayed_errno) {
+                intptr_t tmp;
+                tmp = scheme_errno();
+                *delayed_errno = tmp;
+              }
+              return NULL;
+            }
             push_duped_fd(fd_accumulators, 0, dupfd);
             sffd->fd = dupfd;
             sffd->type = so->type;
@@ -1118,15 +1138,20 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
       {
         Scheme_Object *in;
         Scheme_Object *out;
-        int type = ((Scheme_Simple_Object *) so)->u.two_int_val.int1;
-        int fd   = ((Scheme_Simple_Object *) so)->u.two_int_val.int2;
-        scheme_socket_to_ports(fd, "", 1, &in, &out);
+        Scheme_Object *name;
+        int type = ((Scheme_Serialized_Socket_FD *) so)->type;
+        int fd   = ((Scheme_Serialized_Socket_FD *) so)->fd;
+        name = ((Scheme_Serialized_Socket_FD *) so)->name;
+
+        //scheme_socket_to_ports(fd, "tcp-accepted", 1, &in, &out);
         if (type == scheme_input_port_type) {
-          scheme_tcp_abandon_port(out);
+          scheme_socket_to_input_port(fd, name, 1, &in);
+          //scheme_tcp_abandon_port(out);
           new_so = in;
         }
         else {
-          scheme_tcp_abandon_port(in);
+          scheme_socket_to_output_port(fd, name, 1, &out);
+          //scheme_tcp_abandon_port(in);
           new_so = out;
         }
       }
@@ -1307,6 +1332,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   uintptr_t inf_stack_depth = 0;
 
   Scheme_Object *fd_accumulators = NULL;
+  intptr_t delayed_errno = 0;
   
   /* lifted variables for xform*/
   Scheme_Object *pair;
@@ -1343,7 +1369,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   int ctr = 0;
 
   /* First, check for simple values that don't need to be hashed: */
-  new_so = shallow_types_copy(so, *ht, &fd_accumulators, copy, can_raise_exn);
+  new_so = shallow_types_copy(so, *ht, &fd_accumulators, &delayed_errno, copy, can_raise_exn);
   if (new_so) return new_so;
 
   if (*ht) {
@@ -1379,7 +1405,7 @@ DEEP_DO:
     }
   }
 
-  new_so = shallow_types_copy(so, *ht, &fd_accumulators, copy, can_raise_exn);
+  new_so = shallow_types_copy(so, *ht, &fd_accumulators, &delayed_errno, copy, can_raise_exn);
   if (new_so) RETURN;
   new_so = so;
 
@@ -1606,6 +1632,8 @@ DEEP_SST2_L:
       }
       break;
     default:
+      if (delayed_errno)
+        scheme_warning("Error serializing place message: %e", delayed_errno);
       bad_place_message2(so, fd_accumulators, can_raise_exn);
       new_so = NULL;
       ABORT;
@@ -1946,6 +1974,7 @@ static void places_deserialize_clean_worker(Scheme_Object **pso, Scheme_Hash_Tab
     case scheme_integer_type:
     case scheme_place_bi_channel_type: /* allocated in the master and can be passed along as is */
     case scheme_char_type:
+    case scheme_bignum_type:
     case scheme_rational_type:
     case scheme_float_type:
     case scheme_double_type:
@@ -1973,7 +2002,7 @@ static void places_deserialize_clean_worker(Scheme_Object **pso, Scheme_Hash_Tab
         scheme_close_socket_fd(fd);
       }
       else {
-        tmp = shallow_types_copy(so, NULL, NULL, 1, 1);
+        tmp = shallow_types_copy(so, NULL, NULL, NULL, 1, 1);
         *pso = tmp;
       }
       break;
@@ -1984,7 +2013,7 @@ static void places_deserialize_clean_worker(Scheme_Object **pso, Scheme_Hash_Tab
         scheme_close_file_fd(sffd->fd);
       }
       else {
-        tmp = shallow_types_copy(so, NULL, NULL, 1, 1);
+        tmp = shallow_types_copy(so, NULL, NULL, NULL, 1, 1);
         *pso = tmp;
       }
       break;
@@ -2552,6 +2581,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_place_async_channel_type, place_async_channel_val);
   GC_REG_TRAV(scheme_place_bi_channel_type, place_bi_channel_val);
   GC_REG_TRAV(scheme_serialized_file_fd_type, serialized_file_fd_val);
+  GC_REG_TRAV(scheme_serialized_tcp_fd_type, serialized_socket_fd_val);
 }
 
 END_XFORM_SKIP;

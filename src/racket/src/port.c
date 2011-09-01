@@ -286,6 +286,13 @@ typedef struct Scheme_FD {
 # endif
 } Scheme_FD;
 
+Scheme_Object *scheme_port_name(Scheme_Object *p) {
+  if (p->type == scheme_input_port_type)
+    return ((Scheme_Input_Port *)p)->name;
+  else
+    return ((Scheme_Output_Port *)p)->name;
+}
+
 int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *so) {
   Scheme_FD *fds;
   if (p->type == scheme_input_port_type) {
@@ -294,7 +301,7 @@ int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *
   }
   else {
     fds = (Scheme_FD *) ((Scheme_Output_Port *)p)->port_data;
-    so->name = ((Scheme_Input_Port *)p)->name;
+    so->name = ((Scheme_Output_Port *)p)->name;
   }
   so->regfile = fds->regfile;
   so->textmode = fds->textmode;
