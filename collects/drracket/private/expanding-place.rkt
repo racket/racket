@@ -44,6 +44,7 @@
 
 (define (abort-job job)
   (custodian-shutdown-all (job-cust job))
+  (log-info "expanding-place.rkt: kill")
   (place-channel-put (job-response-pc job) #f))
 
 (struct exn:access exn:fail ())
