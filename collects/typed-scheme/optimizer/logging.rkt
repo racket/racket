@@ -214,7 +214,7 @@
   (define logger (current-logger))
   (add-missed-opts-to-log)
   (for ([x (sort-log)])
-    (log-message logger 'warning
+    (log-message logger 'debug
                  (format-log-entry x)
                  (cons optimization-log-key x))))
 
@@ -232,7 +232,7 @@
 ;; only intercepts TR log messages
 (define (with-intercepted-tr-logging interceptor thunk)
   (with-intercepted-logging
-   #:level 'warning
+   #:level 'debug
    (lambda (l) ;; look only for optimizer messages
      (when (log-message-from-tr-opt? l)
        (interceptor l)))

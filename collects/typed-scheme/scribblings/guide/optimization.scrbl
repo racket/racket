@@ -181,8 +181,8 @@ can as a starting point for performance debugging.
 Similar information (albeit without in-depth explanations or advice) is
 available from the command line. When compiling a Typed Racket program, setting
 the racket @seclink[#:doc '(lib "scribblings/reference/reference.scrbl")
-"logging"]{logging} facilities to the @racket['warning] level causes Typed
+"logging"]{logging} facilities to the @racket['debug] level causes Typed
 Racket to display performance debugging information. Setting the Racket logging
 level can be done on the command line with the @racket[-W] flag:
 
-@commandline{racket -W warning my-typed-program.rkt}
+@commandline{racket -W debug my-typed-program.rkt}
