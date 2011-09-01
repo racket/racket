@@ -1,4 +1,4 @@
-#lang racket/base
+#lang typed-scheme/minimal
 
 (require typed/racket/base racket/require (subtract-in racket typed/racket/base racket/contract)
 	 (for-syntax racket/base))

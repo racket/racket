@@ -1,4 +1,4 @@
-#lang s-exp typed-scheme/minimal
+#lang typed-scheme/minimal
 
 (providing (libs (except racket/base #%module-begin #%top-interaction with-handlers lambda #%app define-struct for for*))
 	   (basics #%module-begin #%top-interaction lambda #%app))
