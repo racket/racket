@@ -2974,22 +2974,33 @@ module browser threading seems wrong.
         (update-close-menu-item-shortcut (file-menu:get-close-item)))
       
       (define/private (update-close-tab-menu-item-shortcut item)
-        (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
-          (send item set-label (if just-one? 
-                                   (string-constant close-tab)
-                                   (string-constant close-tab-amp)))
-          (when (preferences:get 'framework:menu-bindings)
-            (send item set-shortcut (if just-one? #f #\w)))))
+        (define just-one? (and (pair? tabs) (null? (cdr tabs))))
+        (send item set-label (if just-one? 
+                                 (string-constant close-tab)
+                                 (string-constant close-tab-amp)))
+        (when (preferences:get 'framework:menu-bindings)
+          (send item set-shortcut (if just-one? #f #\w))))
       
       (define/private (update-close-menu-item-shortcut item)
-        (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
-          (send item set-label (if just-one? 
-                                   (string-constant close-menu-item)
-                                   (string-constant close)))
-          (when (preferences:get 'framework:menu-bindings)
-            (send item set-shortcut-prefix (if just-one? 
-                                               (get-default-shortcut-prefix) 
-                                               (cons 'shift (get-default-shortcut-prefix)))))))
+        (cond
+          [(eq? (system-type) 'linux)
+           (send item set-label (string-constant close-menu-item))]
+          [else
+           (define just-one? (and (pair? tabs) (null? (cdr tabs))))
+           (send item set-label (if just-one?
+                                    (string-constant close-window-menu-item)
+                                    (string-constant close-window)))
+           (when (preferences:get 'framework:menu-bindings)
+             (send item set-shortcut-prefix (if just-one? 
+                                                (get-default-shortcut-prefix) 
+                                                (cons 'shift (get-default-shortcut-prefix)))))]))
+      
+      (define/override (file-menu:close-callback item control)
+        (define just-one? (and (pair? tabs) (null? (cdr tabs))))
+        (if (and (eq? (system-type) 'linux)
+                   (not just-one?))
+            (close-current-tab)
+            (super file-menu:close-callback item control)))
       
       ;; offer-to-save-file : path -> void
       ;; bring the tab that edits the file named by `path' to the front
@@ -3330,16 +3341,17 @@ module browser threading seems wrong.
           (make-object separator-menu-item% file-menu))]
       (define close-tab-menu-item #f)
       (define/override (file-menu:between-close-and-quit file-menu)
-        (set! close-tab-menu-item
-              (new (get-menu-item%)
-                   (label (string-constant close-tab))
-                   (demand-callback
-                    (λ (item)
-                      (send item enable (1 . < . (send tabs-panel get-number)))))
-                   (parent file-menu)
-                   (callback
-                    (λ (x y)
-                      (close-current-tab)))))
+        (unless (eq? (system-type) 'linux)
+          (set! close-tab-menu-item
+                (new (get-menu-item%)
+                     (label (string-constant close-tab))
+                     (demand-callback
+                      (λ (item)
+                        (send item enable (1 . < . (send tabs-panel get-number)))))
+                     (parent file-menu)
+                     (callback
+                      (λ (x y)
+                        (close-current-tab))))))
         (super file-menu:between-close-and-quit file-menu))
       
       (define/override (file-menu:save-string) (string-constant save-definitions))

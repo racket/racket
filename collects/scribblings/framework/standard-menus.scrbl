@@ -118,7 +118,7 @@
 
 @(defmethod (file-menu:close-on-demand (menu-item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (racketblock (void)))
 
-@(defmethod (file-menu:close-string) string? "The result of this method is used as the name of the " (racket menu-item%) "." "\n" "\n" "Defaults to " (racket (string-constant close-menu-item)) ".")
+@(defmethod (file-menu:close-string) string? "The result of this method is used as the name of the " (racket menu-item%) "." "\n" "\n" "Defaults to " (racket (if (eq? (system-type) (quote linux)) (string-constant close-menu-item) (string-constant close-window-menu-item))) ".")
 
 @(defmethod (file-menu:close-help-string) string? "The result of this method is used as the help string" "\n" "when the " (racket menu-item%) " object is created." "\n" "\n" "Defaults to " (racket (string-constant close-info)) ".")
 

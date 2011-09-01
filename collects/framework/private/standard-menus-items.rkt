@@ -265,7 +265,9 @@
                       '(λ (item control) (when (can-close?) (on-close) (show #f)) #t)
                       #\w
                       '(get-default-shortcut-prefix)
-                      '(string-constant close-menu-item)
+                      '(if (eq? (system-type) 'linux)
+                           (string-constant close-menu-item)
+                           (string-constant close-window-menu-item))
                       on-demand-do-nothing
                       #t)
         (make-between 'file-menu 'close 'quit 'nothing)
