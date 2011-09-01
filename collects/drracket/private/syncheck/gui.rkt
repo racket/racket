@@ -538,14 +538,13 @@ If the namespace does not, they are colored the unbound color.
                 [else #f]))
             
             (define/public (syncheck:add-require-open-menu text start-pos end-pos file)
-              (define (make-require-open-menu file)
-                (λ (menu)
-                  (let-values ([(base name dir?) (split-path file)])
-                    (instantiate menu-item% ()
-                      (label (fw:gui-utils:format-literal-label (string-constant cs-open-file) (path->string name)))
-                      (parent menu)
-                      (callback (λ (x y) (fw:handler:edit-file file))))
-                    (void))))
+              (define ((make-require-open-menu file) menu)
+                (define-values (base name dir?) (split-path file))
+                (new menu-item%
+                     (label (fw:gui-utils:format-literal-label (string-constant cs-open-file) (path->string name)))
+                     (parent menu)
+                     (callback (λ (x y) (fw:handler:edit-file file))))
+                (void))
               (syncheck:add-menu text start-pos end-pos #f (make-require-open-menu file)))
             
             (define/public (syncheck:add-docs-menu text start-pos end-pos id the-label path tag)
@@ -666,7 +665,7 @@ If the namespace does not, they are colored the unbound color.
               
             (define/private (syncheck:add-menu text start-pos end-pos key make-menu)
               (when arrow-records
-                (when (and (<= 0 start-pos end-pos (last-position)))
+                (when (<= 0 start-pos end-pos (last-position))
                   (add-to-range/key text start-pos end-pos make-menu key (and key #t)))))
             
             (define/public (syncheck:add-background-color text start fin color)
@@ -880,7 +879,6 @@ If the namespace does not, they are colored the unbound color.
             (define last-known-mouse-x #f)
             (define last-known-mouse-y #f)
             (define/override (on-event event)
-              
               (cond
                 [(send event leaving?)
                  (set! last-known-mouse-x #f)
@@ -970,7 +968,8 @@ If the namespace does not, they are colored the unbound color.
                                       [arrows (filter arrow? vec-ents)]
                                       [def-links (filter def-link? vec-ents)]
                                       [var-arrows (filter var-arrow? arrows)]
-                                      [add-menus (map cdr (filter pair? vec-ents))])
+                                      [add-menus (append (map cdr (filter pair? vec-ents))
+                                                         (filter procedure? vec-ents))])
                                  (unless (null? arrows)
                                    (make-object menu-item%
                                      (string-constant cs-tack/untack-arrow)
