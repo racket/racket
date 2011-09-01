@@ -5,7 +5,6 @@
 (place-wait (place/base (p1 ch)
   (printf "Hello from place\n")))
 
-(err/rt-test (dynamic-place 'tmodule 'tfunc))
 
 (let ([p (place/base (p1 ch)
           (printf "Hello form place 2\n")
@@ -32,6 +31,8 @@
 (err/rt-test (dynamic-place "foo.rkt"))
 (err/rt-test (dynamic-place null 10))
 (err/rt-test (dynamic-place "foo.rkt" 10))
+(err/rt-test (dynamic-place '(quote some-module) 'tfunc))
+
         
 (let ([p (place/base (p1 ch)
           (printf "Hello form place 2\n")

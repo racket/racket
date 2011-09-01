@@ -24,6 +24,7 @@ static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]);
 static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]);
 
 THREAD_LOCAL_DECL(int scheme_current_place_id);
+ROSYM static Scheme_Object *quote_symbol;
 
 #ifdef MZ_USE_PLACES
 
@@ -132,6 +133,8 @@ void scheme_init_place(Scheme_Env *env)
 #endif
   scheme_finish_primitive_module(plenv);
 
+ REGISTER_SO(quote_symbol);
+ quote_symbol = scheme_intern_symbol("quote");
 }
 
 static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]) {
@@ -227,8 +230,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0])) {
       scheme_wrong_type("dynamic-place", "module-path or path", 0, argc, args);
     }
-    if (SCHEME_SYMBOLP(args[0])) {
-      scheme_wrong_type("dynamic-place", "non-symbol module-path", 0, argc, args);
+    if (SCHEME_PAIRP(args[0]) && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)) {
+      scheme_wrong_type("dynamic-place", "non-interactively defined module-path", 0, argc, args);
     }
     if (!SCHEME_SYMBOLP(args[1])) {
       scheme_wrong_type("dynamic-place", "symbol", 1, argc, args);
