@@ -68,9 +68,14 @@
           (tp-error 'check-with "the test function ~a is expected to return a boolean, but it returned ~v" 
                     (object-name ok?) b))
         (unless b
+          (define check-with-name 
+            (let ([n (symbol->string (object-name ok?))])
+              (if (regexp-match "check-with" n)
+                  "handler"
+                  n)))
           (tp-error 'check-with "~a ~a ~v, which fails to pass check-with's ~a test"
                     tag (if say-evaluated-to "evaluated to" "returned") 
-                    nw (object-name ok?)))
+                    nw check-with-name))
         nw))
     
     ;; Symbol Any -> Void 
