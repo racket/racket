@@ -692,4 +692,15 @@
          (let () (match-define-values (x y 3) (values 1 2 3))
               (list x y)))
 
+   (comp '(1 2 3)
+         (match-let ([(list x y) (list 1 2)] [(list y z) '(2 3)])
+            (list x y z)))
+
+   (comp 'yes
+         (with-handlers ([exn:fail? (lambda _ 'yes)]
+                         [values (lambda _ 'no)])
+           (match-let ([(list x y) (list 1 22)] [(list y z) '(2 3)])
+                      (list x y z))))
+
+
 ))
