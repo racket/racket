@@ -1,4 +1,13 @@
 ------------------------------
+        Version 5.2
+------------------------------
+
+  . changed a few menu keybidings:
+      "New Tab" is now <menukey>-t
+      "Run" is now <menukey>-r
+      "Replace" is now <menukey>-shift-f
+
+------------------------------
         Version 5.1.2
 ------------------------------
 

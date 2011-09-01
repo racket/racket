@@ -3319,7 +3319,7 @@ module browser threading seems wrong.
         (set! file-menu:create-new-tab-item
               (new menu:can-restore-menu-item%
                    (label (string-constant new-tab))
-                   (shortcut #\=)
+                   (shortcut #\t)
                    (parent file-menu)
                    (callback
                     (λ (x y)
@@ -3600,7 +3600,7 @@ module browser threading seems wrong.
                   (string-constant execute-menu-item-label)
                   language-specific-menu
                   (λ (_1 _2) (execute-callback))
-                  #\t
+                  #\r
                   (string-constant execute-menu-item-help-string)))
           (make-object menu:can-restore-menu-item%
             (string-constant ask-quit-menu-item-label)

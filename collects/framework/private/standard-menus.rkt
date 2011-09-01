@@ -911,8 +911,8 @@
             (let ((edit-menu:replace-callback
                    (λ (item evt) (edit-menu:replace-callback item evt))))
               edit-menu:replace-callback))
-           (shortcut #\r)
-           (shortcut-prefix (get-default-shortcut-prefix))
+           (shortcut #\f)
+           (shortcut-prefix (cons 'shift (get-default-shortcut-prefix)))
            (help-string (edit-menu:replace-help-string))
            (demand-callback
             (λ (menu-item) (edit-menu:replace-on-demand menu-item))))))
