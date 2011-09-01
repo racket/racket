@@ -42,6 +42,7 @@
 
               widget-window
               widget-allocation
+              widget-parent
 
               the-accelerator-group
               gtk_window_add_accel_group
@@ -104,6 +105,9 @@
 
 (define (widget-window gtk)
   (GtkWidgetT-window (cast gtk _GtkWidget _GtkWidgetT-pointer)))
+
+(define (widget-parent gtk)
+  (GtkWidgetT-parent (cast gtk _GtkWidget _GtkWidgetT-pointer)))
 
 (define (widget-allocation gtk)
   (GtkWidgetT-alloc (cast gtk _GtkWidget _GtkWidgetT-pointer)))
