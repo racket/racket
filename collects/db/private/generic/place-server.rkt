@@ -3,12 +3,18 @@
          racket/class
          racket/match
          racket/place
+         racket/serialize
          "lazy-require.rkt"
          "interfaces.rkt"
          "prepared.rkt"
          "sql-data.rkt"
          "place-client.rkt")
 (provide connection-server)
+
+(define (pchan-put chan datum)
+  (place-channel-put chan (serialize datum)))
+(define (pchan-get chan)
+  (deserialize (place-channel-get chan)))
 
 #|
 Connection creation protocol
@@ -37,8 +43,7 @@ where <connect-spec> ::= (list 'sqlite3 path/sym mode-sym delay-num limit-num)
     [(list 'connect conn-chan connect-spec)
      (with-handlers ([exn:fail?
                       (lambda (e)
-                        (place-channel-put conn-chan
-                                           (list 'error (exn-message e))))])
+                        (pchan-put conn-chan (list 'error (exn-message e))))])
        (let* ([c
                (match connect-spec
                  [(list 'sqlite3 db mode busy-retry-delay busy-retry-limit)
@@ -60,7 +65,7 @@ where <connect-spec> ::= (list 'sqlite3 path/sym mode-sym delay-num limit-num)
                                        #:character-mode char-mode
                                        #:use-place #f)])]
               [p (new proxy-server% (connection c) (channel conn-chan))])
-         (place-channel-put conn-chan (list 'ok))
+         (pchan-put conn-chan (list 'ok))
          (thread (lambda () (send p serve)))))]))
 
 #|
@@ -87,53 +92,45 @@ server -> client: (or (list 'values result ...)
     (define/private (serve1)
       (with-handlers ([exn?
                        (lambda (e)
-                         (place-channel-put channel (list 'error (exn-message e))))])
+                         (pchan-put channel (list 'error (exn-message e))))])
         (call-with-values
             (lambda ()
-              (match (place-channel-get channel)
+              (match (pchan-get channel)
                 [(list 'disconnect)
                  (send connection disconnect)
                  (set! connection #f)]
                 [(list 'free-statement pstmt-index)
                  (send connection free-statement (hash-ref pstmt-table pstmt-index))
                  (hash-remove! pstmt-table pstmt-index)]
+                [(list 'query fsym stmt)
+                 (send connection query fsym (sexpr->statement stmt))]
                 [msg
-                 (define-syntax-rule (forward-methods (method (arg translate) ...) ...)
+                 (define-syntax-rule (forward-methods (method arg ...) ...)
                    (match msg
-                          [(list 'method arg ...)
-                           (send connection method (translate arg) ...)]
-                          ...))
-                 (define-syntax-rule (id x) x)
+                     [(list 'method arg ...)
+                      (send connection method arg ...)]
+                     ...))
                  (forward-methods (connected?)
-                                  (query (w id) (s translate-in-stmt))
-                                  (prepare (w id) (s id) (m id))
-                                  (list-tables (w id) (s id))
-                                  (start-transaction (w id) (m id))
-                                  (end-transaction (w id) (m id))
-                                  (transaction-status (w id)))]))
+                                  (prepare w s m)
+                                  (list-tables w s)
+                                  (start-transaction w m)
+                                  (end-transaction w m)
+                                  (transaction-status w))]))
           (lambda results
-            (let ([results (for/list ([result (in-list results)]) (translate-result result))])
-              (place-channel-put channel (cons 'values results)))))))
+            (let ([results (for/list ([result (in-list results)]) (result->sexpr result))])
+              (pchan-put channel (cons 'values results)))))))
 
-    (define/private (translate-in-stmt x)
+    (define/private (sexpr->statement x)
       (match x
-        [(list 'string s)
-         s]
-        [(list 'statement-binding pstmt-index args)
-         (statement-binding (hash-ref pstmt-table pstmt-index)
-                            null
-                            (map sexpr->sql-datum args))]))
+        [(list 'string s) s]
+        [(list 'statement-binding pstmt-index meta args)
+         (statement-binding (hash-ref pstmt-table pstmt-index) meta args)]))
 
-    (define/private (translate-result x)
+    (define/private (result->sexpr x)
       (match x
         [(simple-result y)
          (list 'simple-result y)]
         [(rows-result h rows)
-         (for ([row (in-list rows)])
-           (for ([i (in-range (vector-length row))])
-             (let* ([x (vector-ref row i)]
-                    [nx (sql-datum->sexpr x)])
-               (unless (eq? x nx) (vector-set! row i nx)))))
          (list 'rows-result h rows)]
         ;; FIXME: Assumes prepared-statement is concrete class, not interface.
         [(? (lambda (x) (is-a? x prepared-statement%)))

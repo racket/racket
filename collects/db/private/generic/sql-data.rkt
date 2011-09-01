@@ -1,4 +1,5 @@
 #lang racket/base
+(require racket/serialize)
 (provide (all-defined-out))
 
 ;; SQL Data
@@ -10,8 +11,15 @@
 
 (define sql-null
   (let ()
-    (define-struct sql-null ())
-    (make-sql-null)))
+    (struct sql-null ()
+            ;; must deserialize to singleton, so can't just use serializable-struct
+            #:property prop:serializable
+            (make-serialize-info (lambda _ '#())
+                                 #'deserialize-info:sql-null-v0
+                                 #f
+                                 (or (current-load-relative-directory)
+                                     (current-directory))))
+    (sql-null)))
 
 (define (sql-null? x)
   (eq? x sql-null))
@@ -25,6 +33,11 @@
   (if (eq? x #f)
       sql-null
       x))
+
+(define deserialize-info:sql-null-v0
+  (make-deserialize-info
+   (lambda _ sql-null)
+   (lambda () (error 'deserialize-sql-null "cannot have cycles"))))
 
 ;; ----------------------------------------
 
@@ -44,15 +57,15 @@
  - timezone offset too limited
 |#
 
-(define-struct sql-date (year month day) #:transparent)
-(define-struct sql-time (hour minute second nanosecond tz) #:transparent)
-(define-struct sql-timestamp
+(define-serializable-struct sql-date (year month day) #:transparent)
+(define-serializable-struct sql-time (hour minute second nanosecond tz) #:transparent)
+(define-serializable-struct sql-timestamp
   (year month day hour minute second nanosecond tz) 
   #:transparent)
 
 ;; Intervals must be "pre-multiplied" rather than carry extra sign field.
 ;; Rationale: postgresql, at least, allows mixture of signs, eg "1 month - 30 days"
-(define-struct sql-interval
+(define-serializable-struct sql-interval
   (years months days hours minutes seconds nanoseconds)
   #:transparent
   #:guard (lambda (years months days hours minutes seconds nanoseconds _name)
@@ -131,7 +144,7 @@ byte. (Because that's PostgreSQL's binary format.) For example:
 
   (bytes 128 3) represents 1000000 0000011
 |#
-(struct sql-bits (length bv offset))
+(serializable-struct sql-bits (length bv offset))
 
 (define (make-sql-bits len)
   (sql-bits len (make-bytes (/ceiling len 8) 0) 0))
