@@ -862,7 +862,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  --argc;
           if (!*(argv[0])) {
             /* #f => no collects path */
-            collects_path = scheme_false;
+            collects_path = scheme_make_false();
           } else
             collects_path = check_make_path(prog, real_switch, argv[0]);
           was_config_flag = 1;
@@ -1180,12 +1180,12 @@ static int run_from_cmd_line(int argc, char *_argv[],
   /* Setup path for "collects" collection directory: */
   if (!collects_path) {
     if (!_coldir[_coldir_offset])
-      collects_path = scheme_false;
+      collects_path = scheme_make_false();
     else
       collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
-  } else if (!SCHEME_FALSEP(collects_path))
+  } else if (!SAME_OBJ(collects_path, scheme_make_false()))
     collects_path = scheme_path_to_complete_path(collects_path, NULL);
-  if (SCHEME_FALSEP(collects_path)) {
+  if (SAME_OBJ(collects_path, scheme_make_false())) {
     /* empty list of directories => don't set collection dirs
        and don't use collection links files */
     skip_coll_dirs = 1;
