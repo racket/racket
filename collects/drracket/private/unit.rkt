@@ -1146,12 +1146,10 @@ module browser threading seems wrong.
       (define/public-final (set-i _i) (set! i _i))
       (define/public (disable-evaluation)
         (set! enabled? #f)
-        (send defs lock #t)
         (send ints lock #t)
         (send frame disable-evaluation-in-tab this))
       (define/public (enable-evaluation)
         (set! enabled? #t)
-        (send defs lock #f)
         (send ints lock #f)
         (send frame enable-evaluation-in-tab this))
       (define/public (get-enabled) enabled?)
@@ -2647,23 +2645,16 @@ module browser threading seems wrong.
           (send interactions-text reset-console)
           (send interactions-text clear-undos)
           
-          (let ([start 0])
-            (send definitions-text split-snip start)
-            (let* ([name (send definitions-text get-port-name)]
-                   [text-port (open-input-text-editor definitions-text start 'end values name #t)])
-              (port-count-lines! text-port)
-              (let* ([line (send definitions-text position-paragraph start)]
-                     [column (- start (send definitions-text paragraph-start-position line))]
-                     [relocated-port (relocate-input-port text-port 
-                                                          (+ line 1)
-                                                          column
-                                                          (+ start 1))])
-                (port-count-lines! relocated-port)
-                (send interactions-text evaluate-from-port
-                      relocated-port
-                      #t
-                      (λ ()
-                        (send interactions-text clear-undos))))))))
+          (define name (send definitions-text get-port-name))
+          (define defs-copy (new text%))
+          (send defs-copy set-style-list (send definitions-text get-style-list)) ;; speeds up the copy
+          (send definitions-text copy-self-to defs-copy)
+          (define text-port (open-input-text-editor defs-copy 0 'end values name #t))
+          (send interactions-text evaluate-from-port
+                text-port
+                #t
+                (λ ()
+                  (send interactions-text clear-undos)))))
       
       (inherit revert save)
       (define/private (check-if-save-file-up-to-date)

@@ -1711,6 +1711,7 @@ If the namespace does not, they are colored the unbound color.
                (define module-language?
                  (is-a? (drracket:language-configuration:language-settings-language settings)
                         drracket:module-language:module-language<%>))
+               (send definitions-text-copy set-style-list (send definitions-text get-style-list)) ;; speeds up the copy
                (send definitions-text copy-self-to definitions-text-copy)
                (with-lock/edit-sequence
                 definitions-text-copy
