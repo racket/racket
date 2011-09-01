@@ -89,8 +89,10 @@
 (define-appserv TransformProcessType (_fun _ProcessSerialNumber-pointer
                                            _uint32
                                            -> _OSStatus))
-(void (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
-                            kProcessTransformToForegroundApplication))
+(let ([v (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
+                               kProcessTransformToForegroundApplication)])
+  (unless (zero? v)
+    (log-error (format "error from TransformProcessType: ~a" v))))
 
 (define app-delegate (tell (tell MyApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)
@@ -108,8 +110,9 @@
 (define-appserv CGDisplayRegisterReconfigurationCallback 
   (_fun (_fun #:atomic? #t -> _void) _pointer -> _int32))
 (define (on-screen-changed) (post-dummy-event))
-(void
- (CGDisplayRegisterReconfigurationCallback on-screen-changed #f))
+(let ([v (CGDisplayRegisterReconfigurationCallback on-screen-changed #f)])
+  (unless (zero? v)
+    (log-error (format "error from CGDisplayRegisterReconfigurationCallback: ~a" v))))
 
 (tellv app finishLaunching)
 
