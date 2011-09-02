@@ -2984,7 +2984,7 @@ module browser threading seems wrong.
       
       (define/private (update-close-menu-item-shortcut item)
         (cond
-          [(eq? (system-type) 'linux)
+          [(eq? (system-type) 'unix)
            (send item set-label (string-constant close-menu-item))]
           [else
            (define just-one? (and (pair? tabs) (null? (cdr tabs))))
@@ -2998,7 +2998,7 @@ module browser threading seems wrong.
       
       (define/override (file-menu:close-callback item control)
         (define just-one? (and (pair? tabs) (null? (cdr tabs))))
-        (if (and (eq? (system-type) 'linux)
+        (if (and (eq? (system-type) 'unix)
                    (not just-one?))
             (close-current-tab)
             (super file-menu:close-callback item control)))
@@ -3342,7 +3342,7 @@ module browser threading seems wrong.
           (make-object separator-menu-item% file-menu))]
       (define close-tab-menu-item #f)
       (define/override (file-menu:between-close-and-quit file-menu)
-        (unless (eq? (system-type) 'linux)
+        (unless (eq? (system-type) 'unix)
           (set! close-tab-menu-item
                 (new (get-menu-item%)
                      (label (string-constant close-tab))
