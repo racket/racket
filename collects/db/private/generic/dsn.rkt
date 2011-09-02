@@ -1,9 +1,8 @@
 #lang racket/base
-(require "lazy-require.rkt"
+(require unstable/lazy-require
          racket/match
          racket/file
-         racket/list
-         racket/runtime-path)
+         racket/list)
 (provide dsn-connect
          (struct-out data-source)
          connector?
@@ -17,13 +16,11 @@
          sqlite3-data-source
          odbc-data-source)
 
-(define-lazy-require-definer define-main "../../main.rkt")
-
-(define-main
-  postgresql-connect
-  mysql-connect
-  sqlite3-connect
-  odbc-connect)
+(lazy-require
+ ["../../main.rkt" (postgresql-connect
+                    mysql-connect
+                    sqlite3-connect
+                    odbc-connect)])
 
 #|
 DSN v0.1 format

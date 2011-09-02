@@ -88,6 +88,7 @@ Keep documentation and tests up to date.
 @include-section["generics.scrbl"]
 @include-section["hash.scrbl"]
 @include-section["class-iop.scrbl"] ;; Interface-oriented Programming
+@include-section["lazy-require.scrbl"]
 @include-section["list.scrbl"]
 @include-section["logging.scrbl"]
 @include-section["markparam.scrbl"]

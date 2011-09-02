@@ -4,7 +4,7 @@
          racket/match
          racket/place
          racket/serialize
-         "lazy-require.rkt"
+         unstable/lazy-require
          "interfaces.rkt"
          "prepared.rkt"
          "sql-data.rkt"
@@ -31,12 +31,10 @@ where <connect-spec> ::= (list 'sqlite3 path/sym mode-sym delay-num limit-num)
     (serve client-chan)
     (loop)))
 
-(define-lazy-require-definer define-main "../../main.rkt")
-
-(define-main
-  sqlite3-connect
-  odbc-connect
-  odbc-driver-connect)
+(lazy-require
+ ["../../main.rkt" (sqlite3-connect
+                    odbc-connect
+                    odbc-driver-connect)])
 
 (define (serve client-chan)
   (match (place-channel-get client-chan)
