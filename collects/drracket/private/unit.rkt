@@ -2650,6 +2650,7 @@ module browser threading seems wrong.
           (send defs-copy set-style-list (send definitions-text get-style-list)) ;; speeds up the copy
           (send definitions-text copy-self-to defs-copy)
           (define text-port (open-input-text-editor defs-copy 0 'end values name #t))
+          (port-count-lines! text-port)
           (send interactions-text evaluate-from-port
                 text-port
                 #t
