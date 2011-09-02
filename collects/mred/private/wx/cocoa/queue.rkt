@@ -82,8 +82,8 @@
 ;; explicitly register with the dock so the application can receive
 ;; keyboard events.
 (define-cstruct _ProcessSerialNumber
-  ([highLongOfPSN _ulong]
-   [lowLongOfPSN _ulong]))
+  ([highLongOfPSN _uint32]
+   [lowLongOfPSN _uint32]))
 (define kCurrentProcess 2)
 (define kProcessTransformToForegroundApplication 1)
 (define-appserv TransformProcessType (_fun _ProcessSerialNumber-pointer
