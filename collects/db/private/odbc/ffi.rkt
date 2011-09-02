@@ -20,11 +20,6 @@
 (define _sqluinteger _uint)
 (define _sqlreturn _sqlsmallint)
 
-;; Windows ODBC defines wchar_t, thus WCHAR, as 16-bit
-;; unixodbc defines WCHAR as 16-bit for compat w/ Windows
-;; (even though Linux wchar_t is 32-bit)
-(define WCHAR-SIZE 2)
-
 (define-ffi-definer define-mz #f)
 
 (define-mz scheme_utf16_to_ucs4
@@ -118,7 +113,21 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
 (define odbc-lib
   (case (system-type)
     ((windows) (ffi-lib "odbc32.dll"))
-    (else (ffi-lib "libodbc" '("1" #f)))))
+    ((macosx)  (ffi-lib "libiodbc" '("2" #f)))
+    ((unix)    (ffi-lib "libodbc" '("1" #f)))))
+
+(define WCHAR-SIZE
+  (case (system-type)
+    ((windows)
+     ;; Windows ODBC defines wchar_t, thus WCHAR, thus SQLWCHAR, as 16-bit
+     2)
+    ((macosx)
+     ;; MacOSX uses iodbc, which defines SQLWCHAR as wchar_t, as 32-bit
+     4)
+    ((unix)
+     ;; unixodbc defines WCHAR as 16-bit for compat w/ Windows
+     ;; (even though Linux wchar_t is 32-bit)
+     2)))
 
 (define-ffi-definer define-odbc odbc-lib)
 
