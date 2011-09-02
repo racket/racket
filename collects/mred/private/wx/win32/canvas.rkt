@@ -242,7 +242,7 @@
      (define/override (on-resized)
        (reset-dc))
 
-     (define/private (reset-dc)
+     (define/private (reset-dc [refresh? #t])
        (send dc reset-backing-retained)
        (send dc set-auto-scroll
              (if (get-virtual-width)
@@ -250,16 +250,8 @@
                  0)
              (if (get-virtual-height)
                  (get-virtual-v-pos)
-                 0)))
-
-     (define/public (tell-me-what)
-       (let ([r (GetClientRect (get-client-hwnd))]
-             [rr (GetWindowRect (get-hwnd))])
-         (printf "~s\n"
-                 (list hscroll? vscroll?
-                       (list (RECT-left r) (RECT-top r) (RECT-right r) (RECT-bottom r))
-                       (list (RECT-left rr) (RECT-top rr) (RECT-right rr) (RECT-bottom rr))))))
-
+                 0))
+       (when refresh? (refresh-one)))
 
      (define/override (show-children)
        (when (dc . is-a? . dc<%>)
