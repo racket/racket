@@ -241,17 +241,16 @@ string, @racket[start-pos] is a character position; when
 position; and when @racket[input] is an input port, @racket[start-pos]
 is the number of bytes to skip before starting to match. The
 @racket[end-pos] argument can be @racket[#f], which corresponds to the
-end of the string or the end-of-file in the stream; otherwise, it is a
+end of the string or an end-of-file in the stream; otherwise, it is a
 character or byte position, like @racket[start-pos]. If @racket[input]
-is an input port, and if the end-of-file is reached before
+is an input port, and if an end-of-file is reached before
 @racket[start-pos] bytes are skipped, then the match fails.
 
 In @racket[pattern], a start-of-string @litchar{^} refers to the first
 position of @racket[input] after @racket[start-pos], assuming that
 @racket[input-prefix] is @racket[#""].  The end-of-input @litchar{$}
 refers to the @racket[end-pos]th position or (in the case of an input
-port) the end of file, whichever comes first, assuming that
-@racket[output-prefix] is @racket[#f].
+port) an end-of-file, whichever comes first.
 
 The @racket[input-prefix] specifies bytes that effectively precede
 @racket[input] for the purposes of @litchar{^} and other look-behind
