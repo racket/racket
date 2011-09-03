@@ -47,7 +47,7 @@ operations:
  @item{Allows the @racket["/conf/refresh-passwords"] URL to refresh the password file.}
  @item{Allows the @racket["/conf/collect-garbage"] URL to call the garbage collector.}
  @item{Allows the @racket["/conf/refresh-servlets"] URL to refresh the servlets cache.}
- @item{Execute servlets in the mapping URLs to the given servlet root directory under htdocs.}
+ @item{Executes servlets mapping URLs to the given servlet root directory under htdocs.}
  @item{Serves files under the @racket["/"] URL in the given htdocs directory.}
 ]
 
