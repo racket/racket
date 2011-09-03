@@ -1,11 +1,9 @@
 #lang s-exp syntax/module-reader
 
-typed/scheme/base
+typed-racket/minimal
 
-#:read r:read
-#:read-syntax r:read-syntax
-#:info make-info
 #:language-info make-language-info
+#:info make-info
 
 (define (make-info key default use-default)
   (case key
@@ -13,6 +11,3 @@ typed/scheme/base
 
 (define make-language-info
   `#(typed-racket/language-info get-info ()))
-
-
-(require (prefix-in r: typed-racket/typed-reader))
