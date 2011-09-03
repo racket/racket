@@ -15,7 +15,8 @@ These functions get input from the user and/or display
                    [filename (or/c path-string? #f) #f]
                    [extension (or/c string? #f) #f]
                    [style (listof (or/c 'packages 'enter-packages 'common)) null]
-                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
+                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))]
+                   [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c path? #f)]{
 
 Obtains a file pathname from the user via the platform-specific
@@ -65,8 +66,10 @@ On Windows and Unix, @racket[filters] determines a set of filters from
  that have any of these suffixes in any filter are selectable; a
  @racket["*.*"] glob makes all files available for selection.
 
-See also @racket[path-dialog%].
+The @racket[dialog-mixin] is applied to @racket[path-dialog%] before
+creating an instance of the class for this dialog.
 
+See also @racket[path-dialog%] for a richer interface.
 
 }
 
@@ -76,7 +79,8 @@ See also @racket[path-dialog%].
                         [filename (or/c path-string? #f) #f]
                         [extension (or/c string? #f) #f]
                         [style (listof (or/c 'packages 'enter-packages 'common)) null]
-                        [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
+                        [filters (listof (list/c string? string?)) '(("Any" "*.*"))]
+                        [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c (listof path?) #f)]{
 Like
 @racket[get-file], except that the user can select multiple files, and the
@@ -90,7 +94,8 @@ Like
                    [filename (or/c path-string? #f) #f]
                    [extension (or/c string? #f) #f]
                    [style (listof (or/c 'packages 'enter-packages 'common)) null]
-                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
+                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))]
+                   [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c path? #f)]{
 
 Obtains a file pathname from the user via the platform-specific
@@ -149,14 +154,17 @@ On Unix, @racket[extension] is ignored, and @racket[filters] is used
 
 The @racket[style] list is treated as for @racket[get-file].
 
-See also @racket[path-dialog%].
+The @racket[dialog-mixin] is applied to @racket[path-dialog%] before
+creating an instance of the class for this dialog.
 
+See also @racket[path-dialog%] for a richer interface.
 }
 
 @defproc[(get-directory [message (or/c string? #f) #f]
                         [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                         [directory (or/c path? #f) #f]
-                        [style (listof (or/c 'enter-packages 'common)) null])
+                        [style (listof (or/c 'enter-packages 'common)) null]
+                        [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c path #f)]{
 
 Obtains a directory pathname from the user via the platform-specific
@@ -178,7 +186,11 @@ specified.  The latter
  package. A package is a directory with a special suffix (e.g.,
  ``.app'') that the Finder normally displays like a file.
 
-See also @racket[path-dialog%].
+The @racket[dialog-mixin] is applied to @racket[path-dialog%] before
+creating an instance of the class for this dialog.
+
+See also @racket[path-dialog%] for a richer interface.
+
 }
 
 @defproc[(message-box [title label-string?]
