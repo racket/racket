@@ -8,6 +8,7 @@
          syntax/parse
          (env type-env-structs tvar-env type-name-env type-alias-env lexical-env index-env)
          racket/match
+         "parse-classes.rkt"
          (for-template scheme/base "../base-env/colon.rkt")
          ;; needed at this phase for tests
          (combine-in (prefix-in t: "../base-env/base-types-extra.rkt") "../base-env/colon.rkt")
@@ -29,28 +30,6 @@
   (let* ([stx* (datum->syntax loc datum loc loc)])
     (p stx*)))
 
-
-(define-syntax-class star
-  #:description "*"
-  (pattern star:id
-           #:fail-unless (eq? '* (syntax-e #'star)) "missing *")
-  (pattern star:id
-           #:fail-unless (eq? '...* (syntax-e #'star)) "missing ...*"))
-
-(define-syntax-class ddd
-  #:description "..."
-  (pattern ddd:id
-           #:fail-unless (eq? '... (syntax-e #'ddd)) "missing ..."))
-
-(define-splicing-syntax-class ddd/bound
-  #:description "... followed by variable name"
-  #:attributes (bound)
-  (pattern i:id
-           #:attr s (symbol->string (syntax-e #'i))
-           #:fail-unless ((string-length (attribute s)) . > . 3) #f
-           #:fail-unless (equal? "..." (substring (attribute s) 0 3)) "missing ..."
-           #:attr bound (datum->syntax #'i (string->symbol (substring (attribute s) 3)) #'i #'i))
-  (pattern (~seq _:ddd bound:id)))
 
 (define (parse-all-body s)
   (syntax-parse s
