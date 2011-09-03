@@ -56,8 +56,8 @@ source location to the generated identifiers.}
                                   [omit-set? boolean?]
 
                                   [super-type any/c #f]
-                                  [prop-value-list list? empty]
-                                  [immutable-k-list list? empty])
+                                  [prop-value-list list? '(list)]
+                                  [immutable-k-list list? '(list)])
          (listof identifier?)]{
 
 Takes the same arguments as @racket[build-struct-names] and generates
@@ -65,7 +65,7 @@ an S-expression for code using @racket[make-struct-type] to generate
 the structure type and return values for the identifiers created by
 @racket[build-struct-names].  The optional @racket[super-type],
 @racket[prop-value-list], and @racket[immutable-k-list] parameters take
-S-expression values that are used as the corresponding arguments to
+S-expressions that are used as the corresponding argument expressions to
 @racket[make-struct-type].}
 
 
@@ -76,8 +76,8 @@ S-expression values that are used as the corresponding arguments to
 				   [omit-sel? boolean?]
 				   [omit-set? boolean?]
 				   [super-type any/c #f]
-				   [prop-value-list list? empty]
-				   [immutable-k-list list? empty])
+				   [prop-value-list list? '(list)]
+				   [immutable-k-list list? '(list)])
 	 (listof identifier?)]{
 
 Like @racket[build-struct-generation], but given the names produced by

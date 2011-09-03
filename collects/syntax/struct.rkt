@@ -121,17 +121,17 @@
 		     (loop (cdr l))))))))))
 
   (define build-struct-generation
-    (lambda (name-stx fields omit-sel? omit-set? [super-type #f] [prop-value-list null]
-                      [immutable-positions null] [mk-rec-prop-list (lambda (struct: make- ? acc mut) null)]
+    (lambda (name-stx fields omit-sel? omit-set? [super-type #f] [prop-value-list '(list)]
+                      [immutable-positions '(list)]
                       #:constructor-name [ctr-name #f])
       (let ([names (build-struct-names name-stx fields omit-sel? omit-set?
                                        #:constructor-name ctr-name)])
 	(build-struct-generation* names name-stx fields omit-sel? omit-set? super-type prop-value-list
-				  immutable-positions mk-rec-prop-list))))
+				  immutable-positions))))
 
   (define build-struct-generation*
-    (lambda (names name fields omit-sel? omit-set? [super-type #f] [prop-value-list null]
-                   [immutable-positions null] [mk-rec-prop-list (lambda (struct: make- ? acc mut) null)])
+    (lambda (names name fields omit-sel? omit-set? [super-type #f] [prop-value-list '(list)]
+                   [immutable-positions '(list)])
       (let ([num-fields (length fields)]
 	    [acc/mut-makers (let loop ([l fields][n 0])
 			      (if (null? l)
@@ -151,8 +151,7 @@
 				     (if omit-set?
 					 null
 					 (mk-one #f))
-				     (loop (cdr l) (add1 n))))))]
-	    [extra-props (mk-rec-prop-list 'struct: 'make- '? 'acc 'mut)])
+				     (loop (cdr l) (add1 n))))))])
 	`(let-values ([(struct: make- ? acc mut)
 		       (make-struct-type ',name ,super-type ,num-fields 0 #f 
 					 ,prop-value-list (current-inspector)
