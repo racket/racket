@@ -209,7 +209,9 @@ at least @racket[(add1 pos)] (for @racket[unsafe-list-ref]) or
 @defproc[(unsafe-set-box*! [v (and/c box? (not/c impersonator?))] [val any/c]) void?]
 )]{
 
-Unsafe versions of @racket[unbox] and @racket[set-box!].}
+Unsafe versions of @racket[unbox] and @racket[set-box!], where the
+@schemeidfont{box*} variants can be faster but do not work on
+@tech{impersonators}.}
 
 
 @deftogether[(
@@ -222,9 +224,11 @@ Unsafe versions of @racket[unbox] and @racket[set-box!].}
 )]{
 
 Unsafe versions of @racket[vector-length], @racket[vector-ref], and
-@racket[vector-set!]. A vector's size can never be larger than a
-@tech{fixnum} (so even @racket[vector-length] always returns a
-fixnum).}
+@racket[vector-set!], where the @schemeidfont{vector*} variants can be
+faster but do not work on @tech{impersonators}.
+
+A vector's size can never be larger than a @tech{fixnum}, so even
+@racket[vector-length] always returns a fixnum.}
 
 
 @deftogether[(
@@ -300,7 +304,9 @@ Unsafe versions of @racket[u16vector-ref] and
 )]{
 
 Unsafe field access and update for an instance of a structure
-type. The index @racket[k] must be between @racket[0] (inclusive) and
+type, where the @schemeidfont{struct*} variants can be
+faster but do not work on @tech{impersonators}.
+The index @racket[k] must be between @racket[0] (inclusive) and
 the number of fields in the struture (exclusive). In the case of
 @racket[unsafe-struct-set!], the field must be mutable.}
 
