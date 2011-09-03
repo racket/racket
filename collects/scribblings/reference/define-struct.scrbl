@@ -236,11 +236,12 @@ preferred.
 @defform[(define-struct/derived (id . rest-form) 
            id-maybe-super (field ...) struct-option ...)]{
 
-Like @racket[define-struct], but intended for use by macros that
-expand to @racket[define-struct]. The form immediately after
-@racket[define-struct/derived] is used for all syntax-error reporting,
-and the only constraint on the form is that it starts with some
-@racket[id].
+The same as @racket[define-struct], but with an extra @racket[(id
+. rest-form)] sub-form that is treated as the overall form for
+syntax-error reporting and otherwise ignored.  The only constraint on
+the sub-form for error reporting is that it starts with @racket[id].
+The @racket[define-struct/derived] form is intended for use by macros
+that expand to @racket[define-struct].
 
 @defexamples[
 #:eval posn-eval
