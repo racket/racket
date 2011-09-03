@@ -631,6 +631,7 @@ plt-extras :+= (package: "frtime/")
 ;; -------------------- typed-scheme
 dr-extras :+= (package: "typed-scheme/" ; used in drracket
                         #:docs "ts-{reference|guide}/")
+              (package: "typed-racket")
               (- (collects: "typed/")
                  (cond (not plt) => (collects: "typed/test-engine/")
                                     (collects: "typed/rackunit/")
