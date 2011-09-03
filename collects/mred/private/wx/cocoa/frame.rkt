@@ -86,6 +86,19 @@
         (when wxb
           (let ([wx (->wx wxb)])
             (when wx
+              ;; Sometimes, a sheet becomes the main window and the parent
+              ;; still thinks that the parent is the main window. Tell
+              ;; the parent otherwise.
+              (let ([p (send wx get-parent)])
+                (when p
+                  (let ([s (send p get-sheet)])
+                    (when (eq? s wx)
+                      (let ([parent (send p get-cocoa)])
+                        (when (tell #:type _BOOL parent isMainWindow)
+                          ;; The Cocoa docs say never to call this method directly,
+                          ;; but we're trying to fix up a case where Cocoa seems
+                          ;; to be confused:
+                          (tellv parent resignMainWindow)))))))
               (set! front wx)
               (send wx install-wait-cursor)
               (send wx install-mb)
@@ -344,7 +357,8 @@
     (define/public (force-window-focus)
       (let ([next (get-app-front-window)])
         (cond
-         [next (tellv next makeKeyWindow)]
+         [next 
+          (tellv next makeKeyWindow)]          
          [root-fake-frame 
           ;; Make key focus shift to root frame:
           (let ([root-cocoa (send root-fake-frame get-cocoa)])
