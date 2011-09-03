@@ -140,6 +140,14 @@
   (_fun _sqlite3_statement
         -> _string))
 
+(define-sqlite sqlite3_changes
+  (_fun _sqlite3_database
+        -> _int))
+
+(define-sqlite sqlite3_last_insert_rowid
+  (_fun _sqlite3_database
+        -> _int))
+
 ;; ----------------------------------------
 
 #|

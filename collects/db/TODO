@@ -71,3 +71,10 @@ Misc
   - connection-pool-lease-evt
   - when is it useful in practice?
     - would make it easier to handle timeouts...
+
+- on insert, return last inserted id
+  - postgresql: parse CommandComplete msg tag
+  - mysql: in ok-packet (what conditions, though?)
+  - sqlite3: sqlite3_last_insert_rowid(), use sqlite3_changes() to see if insert succeeded,
+    but still need to tell if stmt was even insert (parse sql?)
+  - odbc: ???

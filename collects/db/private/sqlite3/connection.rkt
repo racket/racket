@@ -37,14 +37,13 @@
     (define/override (connected?) (and -db #t))
 
     (define/public (query fsym stmt)
-      (let-values ([(stmt* info rows)
+      (let-values ([(stmt* result)
                     (call-with-lock fsym
                       (lambda ()
                         (check-valid-tx-status fsym)
                         (query1 fsym stmt)))])
         (statement:after-exec stmt)
-        (cond [(pair? info) (rows-result info rows)]
-              [else (simple-result '())])))
+        result))
 
     (define/private (query1 fsym stmt)
       (let* ([stmt (cond [(string? stmt)
@@ -64,12 +63,23 @@
             (load-param fsym db stmt i param))
           (let* ([info
                   (for/list ([i (in-range (sqlite3_column_count stmt))])
-                    `((name ,(sqlite3_column_name stmt i))
-                      (decltype ,(sqlite3_column_decltype stmt i))))]
+                    `((name . ,(sqlite3_column_name stmt i))
+                      (decltype . ,(sqlite3_column_decltype stmt i))))]
                  [rows (step* fsym db stmt)])
             (HANDLE fsym (sqlite3_reset stmt))
             (HANDLE fsym (sqlite3_clear_bindings stmt))
-            (values stmt info rows)))))
+            (values stmt
+                    (cond [(pair? info)
+                           (rows-result info rows)]
+                          [else
+                           (let ([changes (sqlite3_changes db)])
+                             (cond [(and (positive? changes)
+                                         #f ;; Note: currently disabled
+                                         #| FIXME: statement was INSERT stmt |#)
+                                    (simple-result
+                                     (list (cons 'last-insert-rowid
+                                                 (sqlite3_last_insert_rowid db))))]
+                                   [else (simple-result '())]))]))))))
 
     (define/private (load-param fsym db stmt i param)
       (HANDLE fsym
@@ -203,7 +213,7 @@
                  (let ([db (get-db fsym)])
                    (when (get-tx-status db)
                      (error/already-in-tx fsym))
-                   (let-values ([(stmt* _info _rows)
+                   (let-values ([(stmt* _result)
                                  (query1 fsym "BEGIN TRANSACTION")])
                      stmt*))))])
         (statement:after-exec stmt)
@@ -217,7 +227,7 @@
                    (unless (eq? mode 'rollback)
                      (check-valid-tx-status fsym))
                    (when (get-tx-status db)
-                     (let-values ([(stmt* _info _rows)
+                     (let-values ([(stmt* _result)
                                    (case mode
                                      ((commit)
                                       (query1 fsym "COMMIT TRANSACTION"))
@@ -235,14 +245,11 @@
              ;; schema ignored, because sqlite doesn't support
              (string-append "SELECT tbl_name from sqlite_master "
                             "WHERE type = 'table' or type = 'view'")])
-        (let-values ([(stmt rows)
+        (let-values ([(stmt result)
                       (call-with-lock fsym
-                        (lambda ()
-                          (let-values ([(stmt _info rows)
-                                        (query1 fsym stmt)])
-                            (values stmt rows))))])
+                        (lambda () (query1 fsym stmt)))])
           (statement:after-exec stmt)
-          (for/list ([row (in-list rows)])
+          (for/list ([row (in-list (rows-result-rows result))])
             (vector-ref row 0)))))
 
     ;; ----

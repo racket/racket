@@ -104,7 +104,9 @@
  [query-exec
   (->* (connection? statement?) () #:rest list? any)]
  [query-rows
-  (->* (connection? statement?) () #:rest list? (listof vector?))]
+  (->* (connection? statement?)
+       (#:group (or/c (vectorof string?) (listof (vectorof string?))))
+       #:rest list? (listof vector?))]
  [query-list
   (->* (connection? statement?) () #:rest list? list?)]
  [query-row

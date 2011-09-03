@@ -142,7 +142,7 @@
   (let* ([sql (compose-statement 'query-rows c sql args 'rows)]
          [result (query/rows c 'query-rows sql #f)]
          [result
-          (cond [(pair? group-fields-list)
+          (cond [(not (null? group-fields-list))
                  (group-rows-result* 'query-rows result group-fields-list
                                      (not (memq 'preserve-null-rows group-mode))
                                      (memq 'list group-mode))]
