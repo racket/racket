@@ -1636,13 +1636,13 @@
 		  ;;  forms know that it's ok to expand in this internal
 		  ;;  definition context.
 		  [int-def-ctx (build-expand-context (make-expanding-for-intermediate-local))])
-	      (let* ([partly-expanded-defns 
-		      (map (lambda (d)
-			     (local-expand
-			      d
-			      int-def-ctx
-			      (kernel-form-identifier-list)))
-			   defns)]
+	      (let* ([partly-expand (lambda (d)
+                                      (local-expand
+                                       d
+                                       int-def-ctx
+                                       (kernel-form-identifier-list)))]
+                     [partly-expanded-defns
+		      (map partly-expand defns)]
 		     [flattened-defns
 		      (let loop ([l partly-expanded-defns][origs defns])
 			(apply
@@ -1653,7 +1653,7 @@
 				  ;; or `define-syntaxes', because only macros can generate
 				  ;; them
 				  [(begin defn ...)
-				   (let ([l (syntax->list (syntax (defn ...)))])
+				   (let ([l (map partly-expand (syntax->list (syntax (defn ...))))])
 				     (loop l l))]
 				  [(define-values . _)
 				   (list d)]
