@@ -576,7 +576,7 @@
 
  (close-info "Diese Datei schließen")
  (close-menu-item "&Schließen")
- (close-window-menu-item "&Fenster schließen")
+ (close-window-menu-item "Fenster &schließen")
 
  (quit-info "Alle Fenster schließen")
  (quit-menu-item-windows "Be&enden")
