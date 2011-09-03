@@ -14,7 +14,7 @@ These functions get input from the user and/or display
                    [directory (or/c path-string? #f) #f]
                    [filename (or/c path-string? #f) #f]
                    [extension (or/c string? #f) #f]
-                   [style (listof (or/c 'packages 'enter-packages)) null]
+                   [style (listof (or/c 'packages 'enter-packages 'common)) null]
                    [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
          (or/c path? #f)]{
 
@@ -75,7 +75,7 @@ See also @racket[path-dialog%].
                         [directory (or/c path-string? #f) #f]
                         [filename (or/c path-string? #f) #f]
                         [extension (or/c string? #f) #f]
-                        [style null? null]
+                        [style (listof (or/c 'packages 'enter-packages 'common)) null]
                         [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
          (or/c (listof path?) #f)]{
 Like
@@ -89,7 +89,7 @@ Like
                    [directory (or/c path-string? #f) #f]
                    [filename (or/c path-string? #f) #f]
                    [extension (or/c string? #f) #f]
-                   [style (listof (or/c 'packages 'enter-packages)) null]
+                   [style (listof (or/c 'packages 'enter-packages 'common)) null]
                    [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
          (or/c path? #f)]{
 
@@ -156,7 +156,7 @@ See also @racket[path-dialog%].
 @defproc[(get-directory [message (or/c string? #f) #f]
                         [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                         [directory (or/c path? #f) #f]
-                        [style (listof (or/c 'enter-packages)) null])
+                        [style (listof (or/c 'enter-packages 'common)) null])
          (or/c path #f)]{
 
 Obtains a directory pathname from the user via the platform-specific
