@@ -56,10 +56,21 @@
       (queue-prefs-event)
       #t]
   [-a _BOOL (validateMenuItem: [_id menuItem])
-      (if (ptr-equal? (selector openPreferences:) 
-                      (tell #:type _SEL menuItem action))
-          (not (eq? (application-pref-handler) nothing-application-pref-handler))
-          (super-tell #:type _BOOL validateMenuItem: menuItem))]
+      (cond 
+       [(ptr-equal? (selector openPreferences:) 
+                    (tell #:type _SEL menuItem action))
+        (not (eq? (application-pref-handler) nothing-application-pref-handler))]
+       [(ptr-equal? (selector openAbout:) 
+                    (tell #:type _SEL menuItem action))
+        #t]
+       [else
+        (super-tell #:type _BOOL validateMenuItem: menuItem)])]
+  [-a _BOOL (openAbout: [_id sender])
+      (if (eq? nothing-application-about-handler
+               (application-about-handler))
+          (tellv app orderFrontStandardAboutPanel: sender)
+          (queue-about-event))
+      #t]
   [-a _BOOL (application: [_id theApplication] openFile: [_NSString filename])
       (queue-file-event (string->path filename))]
   [-a _BOOL (applicationShouldHandleReopen: [_id app] hasVisibleWindows: [_BOOL has-visible?])

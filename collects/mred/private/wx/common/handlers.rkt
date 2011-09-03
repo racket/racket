@@ -6,7 +6,8 @@
               application-about-handler
               application-pref-handler
               
-              nothing-application-pref-handler))
+              nothing-application-pref-handler
+              nothing-application-about-handler))
 
 (define saved-files null)
 (define afh (lambda (f)
@@ -26,7 +27,8 @@
    [(proc) (set! aqh proc)]
    [() aqh]))
 
-(define aah void)
+(define (nothing-application-about-handler) (void))
+(define aah nothing-application-about-handler)
 (define application-about-handler
   (case-lambda
    [(proc) (set! aah proc)]

@@ -54,6 +54,7 @@
 
               queue-quit-event
               queue-prefs-event
+              queue-about-event
               queue-file-event
 
               begin-busy-cursor
@@ -570,6 +571,10 @@
 (define (queue-prefs-event)
   ;; called in event-pump thread
   (queue-event main-eventspace (application-pref-handler) 'med))
+
+(define (queue-about-event)
+  ;; called in event-pump thread
+  (queue-event main-eventspace (application-about-handler) 'med))
 
 (define (queue-file-event file)
   ;; called in event-pump thread
