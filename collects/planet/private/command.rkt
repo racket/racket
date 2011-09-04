@@ -112,7 +112,7 @@
 ;; are eaten in the process.
 (define (wrap-to-count str n)
   (cond
-    [(< (string-length str) n) (list str)]
+    [(<= (string-length str) n) (list str)]
     [(regexp-match-positions #rx"\n" str 0 n)
      =>
      (λ (posn)
