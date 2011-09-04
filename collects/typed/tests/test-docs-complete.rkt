@@ -7,7 +7,7 @@
                   place-sleep
                   procedure-closure-contents-eq?
                   processor-count))
-(check-docs (quote typed-scheme) #:skip exclude)
+(check-docs (quote typed-racket) #:skip exclude)
 (check-docs (quote typed/scheme) #:skip exclude)
 (check-docs (quote typed/scheme/base) #:skip exclude)
 (check-docs (quote typed/racket) #:skip exclude)

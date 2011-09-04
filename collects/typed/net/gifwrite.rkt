@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed-racket
 
 (require typed/file/gif)
 (provide (all-from-out typed/file/gif))

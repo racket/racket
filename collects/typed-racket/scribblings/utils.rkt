@@ -4,7 +4,7 @@
 (provide (all-defined-out))
 
 (define (item* header . args) (apply item @bold[header]{: } args))
-(define-syntax-rule (tmod forms ...) (racketmod typed-scheme forms ...))
+(define-syntax-rule (tmod forms ...) (racketmod typed-racket forms ...))
 (define (gtech . x)
   (apply tech x #:doc '(lib "scribblings/guide/guide.scrbl")))
 (define (rtech . x)

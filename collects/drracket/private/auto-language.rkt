@@ -1,7 +1,7 @@
-#lang typed-scheme
+#lang typed-racket
 
-(require typed/framework/framework 
-	 typed/mred/mred
+(require typed/framework/framework
+         typed/mred/mred
          racket/class)
 
 (provide pick-new-language looks-like-module?)

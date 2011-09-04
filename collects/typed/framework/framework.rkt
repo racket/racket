@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed-racket
 
 (require typed/private/utils typed/mred/mred)
 

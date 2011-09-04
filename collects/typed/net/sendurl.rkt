@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed-racket
 (require/typed net/sendurl
 	       [send-url (String -> Void)]
 	       [unix-browser-list (Listof Symbol)]

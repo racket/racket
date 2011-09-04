@@ -1,6 +1,6 @@
 #;
 (exn-pred 2)
-#lang typed-scheme
+#lang typed-racket
 
 (require scheme/list)
 

@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed-racket
 (require/opaque-type Char-Set char-set? srfi/14)
 
 (define-type-alias Cursor (Pair 0 (Listof (Pair Integer Integer))))

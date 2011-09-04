@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed-racket
 
 (define-syntax-rule (dt nm t)
   (begin (define-type-alias nm t) (provide nm)))

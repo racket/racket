@@ -26,7 +26,7 @@ Usage:
 
 Examples:
 
-  (check-requires 'typed-scheme)
+  (check-requires 'typed-racket)
   (check-requires 'unstable/markparam)
   (check-requires 'macro-debugger/syntax-browser/widget)
 

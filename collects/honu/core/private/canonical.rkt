@@ -3,7 +3,7 @@
 (provide (all-defined-out))
 
 (require "literals.rkt"
-         (for-template "honu-typed-scheme.rkt")
+         (for-template "honu-typed-racket.rkt")
          syntax/parse)
 
 ;; syntax -> string

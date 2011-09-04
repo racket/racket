@@ -2,7 +2,7 @@
 (exn-pred exn:fail:contract?)
 #lang scheme/load
 
-(module m typed-scheme
+(module m typed-racket
   (: f Any)
   (define f (lambda: ([x : Number]) (add1 x)))
   (provide f))

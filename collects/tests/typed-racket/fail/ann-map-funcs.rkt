@@ -1,6 +1,6 @@
 #;
 (exn-pred 3)
-#lang typed-scheme
+#lang typed-racket
 
 (: map-with-funcs (All (b a ...) ((a ... a -> b) * -> (a ... a -> (Listof b)))))
 

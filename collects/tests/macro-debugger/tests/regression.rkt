@@ -144,7 +144,7 @@
                            (local [(define x 1)] x))))])
         (check-pred list? rs)))
 
-    ;; Distilled from Sam/typed-scheme (8/24/2007)
+    ;; Distilled from Sam/typed-racket (8/24/2007)
     (test-case "transformer calls 'expand'"
       (check-pred deriv?
                   (trace '(let-syntax ([m (lambda (stx)
