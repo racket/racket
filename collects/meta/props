@@ -1962,15 +1962,15 @@ path/s is either such a string or a list of them.
 "collects/tests/syntax-color/paren-tree.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/syntax-color/token-tree.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/test-engine" responsible (kathyg)
-"collects/tests/typed-scheme" responsible (samth stamourv)
-"collects/tests/typed-scheme/fail" drdr:command-line #f
-"collects/tests/typed-scheme/fail/with-type3.rkt" responsible (sstrickl)
-"collects/tests/typed-scheme/nightly-run.rkt" drdr:command-line #f
-"collects/tests/typed-scheme/optimizer" responsible (stamourv)
-"collects/tests/typed-scheme/optimizer/run.rkt" drdr:timeout 1200
-"collects/tests/typed-scheme/optimizer/transform.rkt" drdr:command-line #f
-"collects/tests/typed-scheme/run.rkt" drdr:command-line (racket "-t" * "--" "--nightly") drdr:timeout 1800
-"collects/tests/typed-scheme/xfail" drdr:command-line #f
+"collects/tests/typed-racket" responsible (samth stamourv)
+"collects/tests/typed-racket/fail" drdr:command-line #f
+"collects/tests/typed-racket/fail/with-type3.rkt" responsible (sstrickl)
+"collects/tests/typed-racket/nightly-run.rkt" drdr:command-line #f
+"collects/tests/typed-racket/optimizer" responsible (stamourv)
+"collects/tests/typed-racket/optimizer/run.rkt" drdr:timeout 1200
+"collects/tests/typed-racket/optimizer/transform.rkt" drdr:command-line #f
+"collects/tests/typed-racket/run.rkt" drdr:command-line (racket "-t" * "--" "--nightly") drdr:timeout 1800
+"collects/tests/typed-racket/xfail" drdr:command-line #f
 "collects/tests/units" responsible (sstrickl)
 "collects/tests/units/multi-mod-sigs.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/units/test-cert.rktl" drdr:command-line (racket "-f" *)
@@ -2024,9 +2024,10 @@ path/s is either such a string or a list of them.
 "collects/typed/mred/mred.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/typed/rackunit" responsible (jay)
 "collects/typed/rackunit/gui.rkt" drdr:command-line (gracket "-t" *)
+"collects/typed-racket" responsible (samth stamourv)
+"collects/typed-racket/base-env/base-special-env.rkt" drdr:command-line (raco "make" *)
+"collects/typed-racket/optimizer" responsible (stamourv)
 "collects/typed-scheme" responsible (samth stamourv)
-"collects/typed-scheme/base-env/base-special-env.rkt" drdr:command-line (raco "make" *)
-"collects/typed-scheme/optimizer" responsible (stamourv)
 "collects/unstable" responsible (jay samth cce ryanc)
 "collects/unstable/automata" responsible (jay)
 "collects/unstable/byte-counting-port.rkt" responsible (jay)
