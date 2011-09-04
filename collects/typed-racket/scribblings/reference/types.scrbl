@@ -68,6 +68,7 @@ Negative-Single-Flonum
 Nonnegative-Exact-Rational
 Nonnegative-Flonum
 Nonnegative-Inexact-Real
+Nonnegative-Integer
 Nonnegative-Real
 Nonnegative-Single-Flonum
 Nonpositive-Exact-Rational
