@@ -1,9 +1,8 @@
-(module messagebox mzscheme
+#lang racket/base
   (require mzlib/class
            mzlib/class100
-           mzlib/etc
            mzlib/string
-           (prefix wx: "kernel.rkt")
+           (prefix-in wx: "kernel.rkt")
            "const.rkt"
            "check.rkt"
            "helper.rkt"
@@ -24,7 +23,8 @@
     (lambda (who title message
 		 button1 button2 button3
 		 parent style close-result
-		 check? two-results? check-message)
+		 check? two-results? check-message
+                 dialog-mixin)
       (check-label-string who title)
       (check-string/false who message)
       (when check?
@@ -46,7 +46,8 @@
                    who title message
                    button1 button2 button3
                    parent style close-result
-                   check? two-results? check-message))]
+                   check? two-results? check-message
+                   dialog-mixin))]
 	    [es (if parent
 		    (send parent get-eventspace)
 		    (wx:current-eventspace))])
@@ -65,51 +66,53 @@
     (lambda (who title message
 		 button1 button2 button3
 		 parent style close-result
-		 check? two-results? check-message)
+		 check? two-results? check-message 
+                 dialog-mixin)
       (let* ([strings (regexp-split #rx"\n" message)]
 	     [single? (and (< (length strings) 10) 
 			   (andmap (lambda (s) (< (string-length s) 60)) strings))]
-	     [f (make-object (class100 dialog% ()
-			       (public
-				 [get-message
-				  (lambda () message)])
-			       (augment
-				[can-close? (lambda ()
-					      (if (memq 'disallow-close style)
-						  (begin
-						    (wx:bell)
-						    #f)
-						  #t))])
-			       (override
-				 [on-subwindow-event 
-				  (lambda (w e)
-				    (if (send e button-down?)
-					(if (is-a? w button%)
-					    #f
-					    (if (or (is-a? w message%)
-						    (and
-						     (is-a? w editor-canvas%)
-						     (let-values ([(w h) (send w get-client-size)])
-						       (< (send e get-x) w))))
-						(begin
-						  (send w popup-menu
-							(let ([m (make-object popup-menu%)])
-							  (make-object menu-item%
-								       "Copy Message"
-								       m
-								       (lambda (i e)
-									 (send (wx:get-the-clipboard)
-									       set-clipboard-string
-									       message
-									       (send e get-time-stamp))))
-							  m)
-							(send e get-x)
-							(send e get-y))
-						  #t)
-						#f))
-					#f))])
-			       (sequence
-				 (super-init title parent box-width))))]
+             [f (make-object (dialog-mixin
+                              (class100 dialog% ()
+                                (public
+                                  [get-message
+                                   (lambda () message)])
+                                (augment
+                                 [can-close? (lambda ()
+                                               (if (memq 'disallow-close style)
+                                                   (begin
+                                                     (wx:bell)
+                                                     #f)
+                                                   #t))])
+                                (override
+                                  [on-subwindow-event 
+                                   (lambda (w e)
+                                     (if (send e button-down?)
+                                         (if (is-a? w button%)
+                                             #f
+                                             (if (or (is-a? w message%)
+                                                     (and
+                                                      (is-a? w editor-canvas%)
+                                                      (let-values ([(w h) (send w get-client-size)])
+                                                        (< (send e get-x) w))))
+                                                 (begin
+                                                   (send w popup-menu
+                                                         (let ([m (make-object popup-menu%)])
+                                                           (make-object menu-item%
+                                                             "Copy Message"
+                                                             m
+                                                             (lambda (i e)
+                                                               (send (wx:get-the-clipboard)
+                                                                     set-clipboard-string
+                                                                     message
+                                                                     (send e get-time-stamp))))
+                                                           m)
+                                                         (send e get-x)
+                                                         (send e get-y))
+                                                   #t)
+                                                 #f))
+                                         #f))])
+                                (sequence
+                                  (super-init title parent box-width)))))]
 	     [result close-result]
 	     [icon-id (cond
 		       [(memq 'stop style) 'stop]
@@ -224,20 +227,21 @@
 		result))))))
 
   (define message-box/custom
-    (opt-lambda (title message 
-		       button1
-		       button2
-		       button3
-		       [parent #f]
-		       [style '(no-default)]
-		       [close-result #f])
+    (lambda (title message 
+                   button1
+                   button2
+                   button3
+                   [parent #f]
+                   [style '(no-default)]
+                   [close-result #f]
+                   #:dialog-mixin [dialog-mixin values])
       (do-message-box/custom 'message-box/custom
 			     title message button1 button2 button3
 			     parent style close-result
-			     #f #f #f)))
+			     #f #f #f dialog-mixin)))
 
   (define do-message-box
-    (lambda (who title message parent style check? check-message)
+    (lambda (who title message parent style check? check-message dialog-mixin)
       (check-label-string who title)
       (check-string/false who message)
       (when check?
@@ -276,7 +280,8 @@
 						  (list default)
 						  (list default 'disallow-close)))
 					     close-val
-					     check? #t check-message)])
+					     check? #t check-message
+                                             dialog-mixin)])
 	  (let ([result (case result
 			  [(1) one-v]
 			  [(2) two-v])])
@@ -285,23 +290,25 @@
 		result))))))
 
   (define message-box
-    (opt-lambda (title message [parent #f] [style '(ok)])
-      (do-message-box 'message-box title message parent style #f #f)))
+    (lambda (title message [parent #f] [style '(ok)] #:dialog-mixin [dialog-mixin values])
+      (do-message-box 'message-box title message parent style #f #f dialog-mixin)))
 
   (define message+check-box/custom
-    (opt-lambda (title message 
+    (lambda (title message 
 		       checkbox-message
 		       button1
 		       button2
 		       button3
 		       [parent #f]
 		       [style '(no-default)]
-		       [close-result #f])
+		       [close-result #f]
+                       #:dialog-mixin [dialog-mixin values])
       (do-message-box/custom 'message+check-box/custom
 			     title message button1 button2 button3
-			     parent style close-result
-			     #t #t checkbox-message)))
+                             parent style close-result
+			     #t #t checkbox-message
+                             dialog-mixin)))
 
   (define message+check-box
-    (opt-lambda (title message check-message [parent #f] [style '(ok)])
-      (do-message-box 'message-box title message parent style #t check-message))))
+    (lambda (title message check-message [parent #f] [style '(ok)] #:dialog-mixin [dialog-mixin values])
+      (do-message-box 'message-box title message parent style #t check-message dialog-mixin)))

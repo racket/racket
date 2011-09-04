@@ -196,7 +196,8 @@ See also @racket[path-dialog%] for a richer interface.
 @defproc[(message-box [title label-string?]
                       [message string?]
                       [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
-                      [style (listof (or/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)])
+                      [style (listof (or/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)]
+                      [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (or/c 'ok 'cancel 'yes 'no)]{
 
 See also @racket[message-box/custom].
@@ -239,10 +240,14 @@ The class that implements the dialog provides a @racket[get-message]
  a string. (The dialog is accessible through the
  @racket[get-top-level-windows] function.)
 
-The @racket[message-box] function can be called int a thread other
+The @racket[message-box] function can be called in a thread other
  than the handler thread of the relevant eventspace (i.e., the eventspace of
  @racket[parent], or the current eventspace if @racket[parent] is @racket[#f]), in which case the
- current thread blocks while the dialog runs on the handler thread.}
+ current thread blocks while the dialog runs on the handler thread.
+ 
+The @racket[dialog-mixin] argument is applied to the class that implements the dialog
+before the dialog is created. 
+}
 
 @defproc[(message-box/custom [title label-string?]
                              [message string]
@@ -254,7 +259,8 @@ The @racket[message-box] function can be called int a thread other
                                                   'disallow-close 'no-default 
                                                   'default=1 'default=2 'default=3))
                                    '(no-default)]
-                             [close-result any/c #f])
+                             [close-result any/c #f]
+                             [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (or/c 1 2 3 close-result)]{
 
 Displays a message to the user in a (modal) dialog, using
@@ -324,10 +330,14 @@ The class that implements the dialog provides a @racket[get-message]
  a string. (The dialog is accessible through the
 @racket[get-top-level-windows] function.)
 
-The @racket[message-box/custom] function can be called int a thread
+The @racket[message-box/custom] function can be called in a thread
  other than the handler thread of the relevant eventspace (i.e., the eventspace of
  @racket[parent], or the current eventspace if @racket[parent] is @racket[#f]), in which case the
- current thread blocks while the dialog runs on the handler thread.}
+ current thread blocks while the dialog runs on the handler thread.
+ 
+The @racket[dialog-mixin] argument is applied to the class that implements the dialog
+before the dialog is created. 
+}
 
 @defproc[(message+check-box [title label-string?]
                             [message string?]
@@ -335,7 +345,8 @@ The @racket[message-box/custom] function can be called int a thread
                             [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                             [style (listof (or/c 'ok 'ok-cancel 'yes-no 
                                                  'caution 'stop 'checked))
-                              '(ok)])
+                              '(ok)]
+                            [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (values (or/c 'ok 'cancel 'yes 'no) boolean?)]{
 
 See also @racket[message+check-box/custom].
@@ -361,7 +372,8 @@ Like @racket[message-box], except that
                                                         'disallow-close 'no-default 
                                                         'default=1 'default=2 'default=3))
                                           '(no-default)]
-                                   [close-result any/c #f])
+                                   [close-result any/c #f]
+                                   [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (or/c 1 2 3 (λ (x) (eq? x close-result)))]{
 
 Like @racket[message-box/custom], except that
@@ -372,10 +384,6 @@ Like @racket[message-box/custom], except that
  @item{@racket[style] can contain @racket['checked] to indicate that the check box
        should be initially checked.}
 ]
-
-
-
-
 }
 
 @defproc[(get-text-from-user [title string?]
