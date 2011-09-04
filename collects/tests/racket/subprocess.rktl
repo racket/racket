@@ -413,15 +413,13 @@
                                 "-e"
                                 "(let loop () (loop))"))]
                  [running? (lambda (sub-pid)
-                             (equal?
-                              (list (number->string sub-pid))
-                              (regexp-match
-                               (format "(?m:^ *~a(?=[^0-9]))" sub-pid)
-                               (let ([s (open-output-string)])
-                                 (parameterize ([current-output-port s]
-                                                [current-input-port (open-input-string "")])
-                                   (system (format "ps x")))
-                                 (get-output-string s)))))])
+                             (regexp-match?
+                              (format "(?m:^ *~a(?=[^0-9]))" sub-pid)
+                              (let ([s (open-output-string)])
+                                (parameterize ([current-output-port s]
+                                               [current-input-port (open-input-string "")])
+                                  (system (format "ps x")))
+                                (get-output-string s))))])
              (let ([sub-pid (read (car l))])
                (test 'running (list-ref l 4) 'status)
                (test #t running? sub-pid)
@@ -435,6 +433,13 @@
     (try #t)
     (try #f)))
   
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check status result
+
+(unless (eq? (system-type) 'windows)
+  (parameterize ([current-input-port (open-input-string "")])
+    (test 3 system/exit-code "exit 3")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

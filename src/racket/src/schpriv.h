@@ -514,6 +514,7 @@ void scheme_kickoff_green_thread_time_slice_timer(intptr_t usec);
 #ifdef UNIX_PROCESSES
 void scheme_block_child_signals(int block);
 void scheme_check_child_done(void);
+int scheme_extract_child_status(int status);
 #endif
 
 void scheme_prepare_this_thread_for_GC(Scheme_Thread *t);

@@ -517,7 +517,7 @@ int scheme_get_child_status(int pid, int is_group, int *status) {
     } while ((pid2 == -1) && (errno == EINTR));
 
     if (pid2 > 0)
-      add_child_status(pid, status);
+      add_child_status(pid, scheme_extract_child_status(status));
   }
 
   mzrt_mutex_lock(child_status_lock);
@@ -631,7 +631,7 @@ static void *mz_proc_thread_signal_worker(void *data) {
           free(unused_status);
           unused_status = next;
         } else
-          add_child_status(pid, status);
+          add_child_status(pid, scheme_extract_child_status(status));
       } else {
         if (is_group) {
           prev_unused = unused_status;

@@ -7448,14 +7448,7 @@ static void check_child_done(pid_t pid)
           unused = (void **)next;
         }
 
-        START_XFORM_SKIP;
-        if (WIFEXITED(status))
-          status = WEXITSTATUS(status);
-        else if (WIFSIGNALED(status))
-          status = WTERMSIG(status) + 128;
-        else
-          status = MZ_FAILURE_STATUS;
-        END_XFORM_SKIP;
+        status = scheme_extract_child_status(status);
 
         prev = NULL;
         for (sc = scheme_system_children; sc; prev = sc, sc = sc->next) {
@@ -7487,6 +7480,20 @@ void scheme_check_child_done(void)
   }
 }
 
+#endif
+
+#if defined(UNIX_PROCESSES)
+int scheme_extract_child_status(int status) XFORM_SKIP_PROC
+{
+  if (WIFEXITED(status))
+    status = WEXITSTATUS(status);
+  else if (WIFSIGNALED(status))
+    status = WTERMSIG(status) + 128;
+  else
+    status = MZ_FAILURE_STATUS;
+
+  return status;
+}
 #endif
 
 /*========================================================================*/
