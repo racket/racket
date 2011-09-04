@@ -1504,7 +1504,7 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/wxme.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/honu" responsible (rafkind)
 "collects/tests/htdp-lang" responsible (robby mflatt matthias)
-"collects/tests/htdp-lang/advanced.rktl" drdr:command-line (racket "-f" *) drdr:timeout 180
+"collects/tests/htdp-lang/advanced.rktl" drdr:command-line (racket "-f" *) drdr:timeout 360
 "collects/tests/htdp-lang/basic.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/beg-adv.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/beg-bega.rktl" drdr:command-line #f
@@ -1516,8 +1516,8 @@ path/s is either such a string or a list of them.
 "collects/tests/htdp-lang/htdp-image.rktl" responsible (robby) drdr:command-line (gracket "-f" *)
 "collects/tests/htdp-lang/htdp-test.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/htdp-lang/htdp.rktl" drdr:command-line #f
-"collects/tests/htdp-lang/intermediate-lambda.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/htdp-lang/intermediate.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/htdp-lang/intermediate-lambda.rktl" drdr:command-line (racket "-f" *) drdr:timeout 360
+"collects/tests/htdp-lang/intermediate.rktl" drdr:command-line (racket "-f" *) drdr:timeout 360
 "collects/tests/htdp-lang/intm-adv.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/intm-intml.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/intmlam-adv.rktl" drdr:command-line #f
