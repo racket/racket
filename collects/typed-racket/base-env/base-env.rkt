@@ -2473,3 +2473,6 @@
 [will-register (-poly (a) (-> -Will-Executor a (-> a ManyUniv) -Void))]
 [will-execute (-> -Will-Executor ManyUniv)]
 [will-try-execute (-> -Will-Executor ManyUniv)]
+
+;; reader graphs
+[make-reader-graph (-> Univ Univ)]
