@@ -73,7 +73,9 @@
                       (let loop ([form (case (syntax-e kind)
                                          [(form) (if (identifier? s-exp)
                                                      null
-                                                     (cdr (syntax-e s-exp)))]
+                                                     (if (pair? (syntax-e s-exp))
+                                                         (cdr (syntax-e s-exp))
+                                                         null))]
                                          [(form/none) s-exp]
                                          [(form/maybe)
                                           (syntax-case s-exp ()
