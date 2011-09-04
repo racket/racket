@@ -12,7 +12,7 @@
   (rename-in honu/core/private/literals
              [honu-= =]
              [semicolon |;|])
-  (rename-in (only-in honu/core/private/honu-typed-racket honu-var)
+  (rename-in (only-in honu/core/private/honu-typed-scheme honu-var)
              [honu-var var])
   (for-syntax racket/base
               honu/core/private/macro2

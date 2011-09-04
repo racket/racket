@@ -140,8 +140,8 @@
             #:cache-keys? #t))))
 
 (define modules-from-framework (trace-modules '(framework)))
-(define modules-from-typed-racket
-  #;(trace-modules '(typed-racket))
+(define modules-from-typed-scheme
+  #;(trace-modules '(typed-scheme))
   '(#|
     mzlib/contract
     mzlib/etc
@@ -267,59 +267,59 @@
     syntax/stx
     mzlib/trace
     |#
-    typed-racket
-    typed-racket/minimal
-    typed-racket/private/base-env
-    typed-racket/private/base-types
-    typed-racket/private/check-subforms-unit
-    typed-racket/private/def-binding
-    typed-racket/private/effect-rep
-    typed-racket/private/extra-procs
-    typed-racket/private/free-variance
-    typed-racket/private/infer
-    typed-racket/private/infer-ops
-    typed-racket/private/init-envs
-    typed-racket/private/internal-forms
-    typed-racket/private/interning
-    typed-racket/private/lexical-env
-    typed-racket/private/mutated-vars
-    typed-racket/private/parse-type
-    typed-racket/private/planet-requires
-    typed-racket/private/prims
-    typed-racket/private/provide-handling
-    typed-racket/private/remove-intersect
-    typed-racket/private/rep-utils
-    typed-racket/private/require-contract
-    typed-racket/private/resolve-type
-    typed-racket/private/signatures
-    typed-racket/private/subtype
-    typed-racket/private/syntax-traversal
-    typed-racket/private/tables
-    typed-racket/private/tc-app-unit
-    typed-racket/private/tc-expr-unit
-    typed-racket/private/tc-if-unit
-    typed-racket/private/tc-lambda-unit
-    typed-racket/private/tc-let-unit
-    typed-racket/private/tc-structs
-    typed-racket/private/tc-toplevel
-    typed-racket/private/tc-utils
-    typed-racket/private/type-alias-env
-    typed-racket/private/type-annotation
-    typed-racket/private/type-comparison
-    typed-racket/private/type-contract
-    typed-racket/private/type-effect-convenience
-    typed-racket/private/type-effect-printer
-    typed-racket/private/type-env
-    typed-racket/private/type-environments
-    typed-racket/private/type-name-env
-    typed-racket/private/type-rep
-    typed-racket/private/type-utils
-    typed-racket/private/typechecker
-    typed-racket/private/unify
-    typed-racket/private/union
-    typed-racket/private/unit-utils
-    typed-racket/private/utils
-    typed-racket/typed-racket))
+    typed-scheme
+    typed-scheme/minimal
+    typed-scheme/private/base-env
+    typed-scheme/private/base-types
+    typed-scheme/private/check-subforms-unit
+    typed-scheme/private/def-binding
+    typed-scheme/private/effect-rep
+    typed-scheme/private/extra-procs
+    typed-scheme/private/free-variance
+    typed-scheme/private/infer
+    typed-scheme/private/infer-ops
+    typed-scheme/private/init-envs
+    typed-scheme/private/internal-forms
+    typed-scheme/private/interning
+    typed-scheme/private/lexical-env
+    typed-scheme/private/mutated-vars
+    typed-scheme/private/parse-type
+    typed-scheme/private/planet-requires
+    typed-scheme/private/prims
+    typed-scheme/private/provide-handling
+    typed-scheme/private/remove-intersect
+    typed-scheme/private/rep-utils
+    typed-scheme/private/require-contract
+    typed-scheme/private/resolve-type
+    typed-scheme/private/signatures
+    typed-scheme/private/subtype
+    typed-scheme/private/syntax-traversal
+    typed-scheme/private/tables
+    typed-scheme/private/tc-app-unit
+    typed-scheme/private/tc-expr-unit
+    typed-scheme/private/tc-if-unit
+    typed-scheme/private/tc-lambda-unit
+    typed-scheme/private/tc-let-unit
+    typed-scheme/private/tc-structs
+    typed-scheme/private/tc-toplevel
+    typed-scheme/private/tc-utils
+    typed-scheme/private/type-alias-env
+    typed-scheme/private/type-annotation
+    typed-scheme/private/type-comparison
+    typed-scheme/private/type-contract
+    typed-scheme/private/type-effect-convenience
+    typed-scheme/private/type-effect-printer
+    typed-scheme/private/type-env
+    typed-scheme/private/type-environments
+    typed-scheme/private/type-name-env
+    typed-scheme/private/type-rep
+    typed-scheme/private/type-utils
+    typed-scheme/private/typechecker
+    typed-scheme/private/unify
+    typed-scheme/private/union
+    typed-scheme/private/unit-utils
+    typed-scheme/private/utils
+    typed-scheme/typed-scheme))
 
 (define big-libs-tests
-  (test-libs "Collections" modules-from-typed-racket))
+  (test-libs "Collections" modules-from-typed-scheme))

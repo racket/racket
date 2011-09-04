@@ -1,4 +1,4 @@
-#lang typed-racket
+#lang typed-scheme
 
 (require typed/private/utils)
 
@@ -7,3 +7,4 @@
   [dns-get-name (String String -> String)]
   [dns-get-mail-exchanger (String String -> String )]
   [dns-find-nameserver (-> (Option String))])
+

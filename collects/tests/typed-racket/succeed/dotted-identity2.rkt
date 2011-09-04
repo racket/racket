@@ -1,7 +1,6 @@
-#lang typed-racket
+#lang typed-scheme
 
-;; I don't believe the below should work, but it points out where that
-;; internal error is coming from.
+;; I don't believe the below should work, but it points out where that internal error is coming from.
 
 (: f (All (a ...) ((a ... a -> Integer) -> (a ... a -> Integer))))
 (define (f x) x)

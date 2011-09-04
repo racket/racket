@@ -2,7 +2,7 @@
 
 #|
 
-(require "honu-typed-racket.rkt"
+(require "honu-typed-scheme.rkt"
          "literals.rkt"
          syntax/parse
          mzlib/trace
@@ -16,7 +16,7 @@
                      "syntax.rkt"
                      (only-in racket (... scheme-ellipses))
                      "literals.rkt")
-         (for-template "honu-typed-racket.rkt"
+         (for-template "honu-typed-scheme.rkt"
                        "literals.rkt"
                        "syntax.rkt"
                        (only-in racket ...)

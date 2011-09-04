@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "honu-typed-racket.rkt"
+(require "honu-typed-scheme.rkt"
          "literals.rkt"
          "parse.ss"
          "syntax.ss"
@@ -16,7 +16,7 @@
                      "parse.rkt"
                      "syntax.rkt"
                      "literals.rkt"
-                     "honu-typed-racket.rkt"
+                     "honu-typed-scheme.rkt"
                      racket/base
                      syntax/parse
                      syntax/stx

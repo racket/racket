@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "private/honu-typed-racket.rkt"
+(require "private/honu-typed-scheme.rkt"
          "private/honu2.rkt"
          "private/macro2.rkt"
          (for-syntax (only-in "private/parse2.rkt" honu-expression))
@@ -51,10 +51,10 @@
 (require (for-meta 2 racket/base))
 (require racket/class)
 
-(require "private/honu-typed-racket.rkt"
+(require "private/honu-typed-scheme.rkt"
          "private/parse.rkt"
          (for-syntax "private/literals.rkt")
-         (for-syntax "private/honu-typed-racket.rkt")
+         (for-syntax "private/honu-typed-scheme.rkt")
          (for-syntax "private/parse.rkt")
          (for-syntax "private/canonical.rkt")
          syntax/parse
