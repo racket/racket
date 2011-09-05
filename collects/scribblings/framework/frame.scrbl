@@ -163,7 +163,7 @@
   }
 }
 
-@definterface[frame:focus-table<%> (frame%)]{}
+@definterface[frame:focus-table<%> (top-level-window<%>)]{}
 
 @defmixin[frame:focus-table-mixin (frame%) (frame:focus-table<%>)]{
 

@@ -133,7 +133,7 @@
                    get-filename
                    make-visible))
 
-(define focus-table<%> (interface ((class->interface frame%))))
+(define focus-table<%> (interface (top-level-window<%>)))
 (define focus-table-mixin
   (mixin (top-level-window<%>) (focus-table<%>)
     (inherit get-eventspace)
