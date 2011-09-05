@@ -59,7 +59,7 @@
       (and argtys (list (tc-result1: argtys-t) ...)))
      (or
       ;; find the first function where the argument types match
-      (for/first ([dom doms] [rng rngs] [rest rests] [a arrs]
+      (for/first ([dom (in-list doms)] [rng (in-list rngs)] [rest (in-list rests)] [a (in-list arrs)]
                   #:when (subtypes/varargs argtys-t dom rest))
         ;; then typecheck here
         ;; we call the separate function so that we get the appropriate
