@@ -49,7 +49,8 @@
 
 (define (->bytes x)
   (cond [(path? x) (path->bytes x)]
-        [(string? x) (string->bytes/locale x)]))
+        [(string? x) (string->bytes/locale x)]
+        [(equal? x 'relative) (->bytes (path->complete-path (current-directory)))]))
 
 (define collects-queue% 
   (class* object% (work-queue<%>) 
