@@ -41,7 +41,8 @@ static int id_counter;
 static mzrt_mutex *id_counter_mutex;
 
 SHARED_OK mz_proc_thread *scheme_master_proc_thread;
-THREAD_LOCAL_DECL(struct Scheme_Place_Object *place_object);
+THREAD_LOCAL_DECL(static struct Scheme_Place_Object *place_object);
+THREAD_LOCAL_DECL(static uintptr_t force_gc_for_place_accounting);
 static Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_wait(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_kill(int argc, Scheme_Object *args[]);
@@ -169,6 +170,8 @@ typedef struct Place_Start_Data {
   Scheme_Object *current_library_collection_paths;
   mzrt_sema *ready;  /* malloc'ed item */
   struct Scheme_Place_Object *place_obj;   /* malloc'ed item */
+  struct NewGC *parent_gc;
+  Scheme_Object *cust_limit;
 } Place_Start_Data;
 
 static void null_out_runtime_globals() {
@@ -205,6 +208,14 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   Scheme_Object         *collection_paths;
   Scheme_Place_Object   *place_obj;
   mzrt_sema             *ready;
+  struct NewGC          *parent_gc;
+  Scheme_Custodian      *cust;
+  intptr_t              mem_limit;
+
+  /* To avoid runaway place creation, check for termination before continuing. */
+  scheme_thread_block(0.0);
+
+  parent_gc = GC_get_current_instance();
 
   /* create place object */
   place = MALLOC_ONE_TAGGED(Scheme_Place);
@@ -217,13 +228,24 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     place_obj->parent_signal_handle = handle;
   }
 
+  /* The use_factor partly determines how often a child place notifies
+     a parent place that it is using more memory. If the child
+     notified the parent evey time its memory use increased, that
+     would probably be too often. But notifying every time the memory
+     use doubles isn't good enough, because a long chain of places
+     wouldn't alert parents often enough to limit total memory
+     use. Decreasing the factor for each generation means that the
+     alerts become more frequent as nesting gets deeper. */
+  place_obj->use_factor = (place_object ? (place_object->use_factor / 2) : 1.0);
+
   mzrt_sema_create(&ready, 0);
 
   /* pass critical info to new place */
   place_data = MALLOC_ONE(Place_Start_Data);
   place_data->ready    = ready;
   place_data->place_obj = place_obj;
-
+  place_data->parent_gc = parent_gc;
+  
   {
     Scheme_Object *so;
 
@@ -257,11 +279,17 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   collection_paths = places_deep_copy_to_master(collection_paths);
   place_data->current_library_collection_paths = collection_paths;
 
+  cust = scheme_get_current_custodian();
+  mem_limit = GC_get_account_memory_limit(cust);
+  place_data->cust_limit = scheme_make_integer(mem_limit);
+  place_obj->memory_limit = mem_limit;
+  place_obj->parent_need_gc = &force_gc_for_place_accounting;
+
   /* create new place */
   proc_thread = mz_proc_thread_create(place_start_proc, place_data);
 
   if (!proc_thread) {
-      mzrt_sema_destroy(ready);
+    mzrt_sema_destroy(ready);
     scheme_signal_error("place: place creation failed");
   }
 
@@ -277,9 +305,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_data->place_obj = NULL;
   
   {
-    Scheme_Custodian *cust;
     Scheme_Custodian_Reference *mref;
-    cust = scheme_get_current_custodian();
     mref = scheme_add_managed(NULL,
                               (Scheme_Object *)place,
                               cust_kill_place,
@@ -287,6 +313,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
                               1);
     place->mref = mref;
   }
+
+#ifdef MZ_PRECISE_GC
+  GC_register_new_thread(place, cust);
+#endif
 
   return (Scheme_Object*) place;
 }
@@ -310,13 +340,16 @@ static void do_place_kill(Scheme_Place *place)
     mzrt_mutex_unlock(place_obj->lock);
   }
 
+  scheme_resume_one_place(place);
+
   scheme_remove_managed(place->mref, (Scheme_Object *)place);
   place->place_obj = NULL;
 }
 
-static int do_place_break(Scheme_Place *place) {
+static int do_place_break(Scheme_Place *place) 
+{
   Scheme_Place_Object *place_obj;
-  place_obj = (Scheme_Place_Object*) place->place_obj;
+  place_obj = place->place_obj;
 
   {
     mzrt_mutex_lock(place_obj->lock);
@@ -332,7 +365,8 @@ static int do_place_break(Scheme_Place *place) {
   return 0;
 }
 
-static void cust_kill_place(Scheme_Object *pl, void *notused) {
+static void cust_kill_place(Scheme_Object *pl, void *notused) 
+{
   do_place_kill((Scheme_Place *)pl);
 }
 
@@ -1734,28 +1768,121 @@ static void *place_start_proc(void *data_arg) {
   return rc;
 }
 
+void scheme_pause_one_place(Scheme_Place *p)
+{
+  Scheme_Place_Object *place_obj = p->place_obj;
+
+  if (place_obj) {
+    mzrt_mutex_lock(place_obj->lock);
+    if (!place_obj->pause) {
+      mzrt_sema *s;
+      mzrt_sema_create(&s, 0);
+      place_obj->pause = s;
+    }
+    mzrt_mutex_unlock(place_obj->lock);
+  }
+}
+
+void scheme_resume_one_place(Scheme_Place *p)
+{
+  Scheme_Place_Object *place_obj = p->place_obj;
+
+  if (place_obj) {
+    mzrt_mutex_lock(place_obj->lock);
+    if (place_obj->pause) {
+      mzrt_sema *s = place_obj->pause;
+      place_obj->pause = NULL;
+      if (!place_obj->pausing) {
+        mzrt_sema_destroy(s);
+      } else {
+        mzrt_sema_post(s);
+      }
+    }
+    mzrt_mutex_unlock(place_obj->lock);
+  }
+}
+
 void scheme_place_check_for_interruption() 
 {
   Scheme_Place_Object *place_obj;
   char local_die;
   char local_break;
+  mzrt_sema *local_pause;
+
+  place_obj = place_object;
+  if (!place_obj)
+    return;
+  
+  while (1) {
+    mzrt_mutex_lock(place_obj->lock);
+  
+    local_die = place_obj->die;
+    local_break = place_obj->pbreak;
+    local_pause = place_obj->pause;
+    place_obj->pbreak = 0;
+    if (local_pause)
+      place_obj->pausing = 1;
+    
+    mzrt_mutex_unlock(place_obj->lock);
+    
+    if (local_pause) {
+      scheme_pause_all_places();
+      mzrt_sema_wait(local_pause);
+      mzrt_sema_destroy(local_pause);
+      scheme_resume_all_places();
+    } else
+      break;
+  }
+  
+  if (local_die)
+    scheme_kill_thread(scheme_main_thread);
+  if (local_break)
+    scheme_break_thread(NULL);
+}
+
+void scheme_place_set_memory_use(intptr_t mem_use)
+{
+  Scheme_Place_Object *place_obj;
 
   place_obj = place_object;
   if (!place_obj)
     return;
 
   mzrt_mutex_lock(place_obj->lock);
-  
-  local_die = place_obj->die;
-  local_break = place_obj->pbreak;
-  place_obj->pbreak = 0;
-  
+  place_obj->memory_use = mem_use;
   mzrt_mutex_unlock(place_obj->lock);
-  
-  if (local_die)
-    scheme_kill_thread(scheme_main_thread);
-  if (local_break)
-    scheme_break_thread(NULL);
+
+  if (place_obj->parent_signal_handle && place_obj->memory_limit) {
+    if (mem_use > place_obj->memory_limit) {
+      /* tell the parent place to force a GC, and therefore check
+         custodian limits that will kill this place; pause this
+         place and its children to give the original place time 
+         to kill this one */
+      scheme_pause_all_places();
+      mzrt_ensure_max_cas(place_obj->parent_need_gc, 1);
+      scheme_signal_received_at(place_obj->parent_signal_handle);
+    } else if (mem_use > (1 + place_obj->use_factor) * place_obj->prev_notify_memory_use) {
+      /* make sure the parent notices that we're using more memory: */
+      scheme_signal_received_at(place_obj->parent_signal_handle);
+      place_obj->prev_notify_memory_use = mem_use;
+    } else if (mem_use < place_obj->prev_notify_memory_use) {
+      place_obj->prev_notify_memory_use = mem_use;
+    }
+  }
+}
+
+void scheme_place_check_memory_use()
+{
+  intptr_t m;
+
+  m = GC_propagate_hierarchy_memory_use();
+  scheme_place_set_memory_use(m);
+
+  if (force_gc_for_place_accounting) {
+    force_gc_for_place_accounting = 0;
+    scheme_collect_garbage();
+    scheme_resume_all_places();
+  }
 }
 
 static void place_set_result(Scheme_Object *result)
@@ -1797,6 +1924,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   Scheme_Place_Object *place_obj;
   Scheme_Object *place_main;
   Scheme_Object *a[2], *channel;
+  intptr_t mem_limit;
   mzrt_thread_id ptid;
   ptid = mz_proc_thread_self();
   
@@ -1812,8 +1940,10 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   scheme_current_place_id = ++id_counter;
   mzrt_mutex_unlock(id_counter_mutex);
 
+  mem_limit = SCHEME_INT_VAL(place_data->cust_limit);
+  
   /* scheme_make_thread behaves differently if the above global vars are not null */
-  scheme_place_instance_init(stack_base);
+  scheme_place_instance_init(stack_base, place_data->parent_gc, mem_limit);
 
   a[0] = scheme_places_deep_copy(place_data->current_library_collection_paths);
   scheme_current_library_collection_paths(1, a);

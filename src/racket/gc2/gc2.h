@@ -33,7 +33,8 @@ typedef void (*GC_collect_start_callback_Proc)(void);
 typedef void (*GC_collect_end_callback_Proc)(void);
 typedef void (*GC_collect_inform_callback_Proc)(int master_gc, int major_gc, 
                                                 intptr_t pre_used, intptr_t post_used,
-                                                intptr_t pre_admin, intptr_t post_admin);
+                                                intptr_t pre_admin, intptr_t post_admin,
+                                                intptr_t post_child_places_used);
 typedef uintptr_t (*GC_get_thread_stack_base_Proc)(void);
 typedef void (*GC_Post_Propagate_Hook_Proc)(struct NewGC *);
 /* 
@@ -105,11 +106,13 @@ GC2_EXTERN void GC_register_root_custodian(void *);
 
 GC2_EXTERN void GC_register_new_thread(void *, void *);
 /*
-   Indicates that a just-allocated point is for a thread record
-   owned by a particular custodian. */
+   Indicates that a just-allocated point is for a thread 
+   or place owned by a particular custodian. */
+
 GC2_EXTERN void GC_register_thread(void *, void *);
 /*
-   Indicates that a a thread record is owned by a particular custodian. */
+   Indicates that a a thread or place is now owned by a
+   particular custodian. */
 
 GC2_EXTERN GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc);
 GC2_EXTERN GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc);
@@ -149,6 +152,11 @@ GC2_EXTERN int GC_set_account_hook(int type, void *c1, uintptr_t b, void *c2);
 /*
   Set a memory-accounting property. Returns 0 for failure (i.e., not
   supported). */
+
+GC2_EXTERN uintptr_t GC_get_account_memory_limit(void *c1);
+/*
+  Returns a moemory accounting limit for c1 (or any ancestor),
+  or 0 if none is set. */
 
 GC2_EXTERN void GC_gcollect(void);
 /*
@@ -433,19 +441,33 @@ GC2_EXTERN void GC_write_barrier(void *p);
    Explicit write barrier to ensure that a write-barrier signal is not
    triggered by a memory write.
 */
+
 GC2_EXTERN void GC_switch_out_master_gc();
 /*
    Makes the current GC the master GC.
    Creates a new place specific GC and links it to the master GC.
 */
-GC2_EXTERN void GC_construct_child_gc();
+
+GC2_EXTERN struct NewGC *GC_get_current_instance();
 /*
-   Creates a new place specific GC and links to the master GC.
+   Returns a representation of the current GC.
 */
+
+GC2_EXTERN void GC_construct_child_gc(struct NewGC *parent_gc, intptr_t limit);
+/*
+   Creates a new place-specific GC that is a child for memory-accounting
+   purposes of the give parent GC. If `limit' is not 0, set the maximum
+   amount of memory the new GC is supposed to use.
+*/
+
+GC2_EXTERN intptr_t GC_propagate_hierarchy_memory_use();
+/* 
+   Notifies the parent GC (if any) of memory use by the current GC
+   and its children. The result is total memory use. */
 
 GC2_EXTERN void GC_destruct_child_gc();
 /*
-   Destroys a place specific GC once the place has finished.
+   Destroys a place-specific GC once the place has finished.
 */
 
 GC2_EXTERN void *GC_switch_to_master_gc();

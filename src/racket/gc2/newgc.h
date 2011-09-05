@@ -245,6 +245,15 @@ typedef struct NewGC {
 
   Allocator *saved_allocator;
 
+#ifdef MZ_USE_PLACES
+  struct NewGC *parent_gc; /* parent for the purpose of reporting memory use */
+  intptr_t previously_reported_total; /* how much we previously reported to the parent */
+  mzrt_mutex *child_total_lock; /* lock on `child_gc_total' */
+#endif
+  intptr_t child_gc_total;
+
+  uintptr_t place_memory_limit; /* set to propagate a custodian limit from a parent place */  
+
 #if defined(GC_DEBUG_PAGES)
   FILE *GCVERBOSEFH;
 #endif

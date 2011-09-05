@@ -113,7 +113,6 @@ static Scheme_Object *rename_transformer_p(int argc, Scheme_Object *argv[]);
 static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
 
 Scheme_Env *scheme_engine_instance_init();
-Scheme_Env *scheme_place_instance_init();
 static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thread);
 
 #ifdef MZ_PRECISE_GC
@@ -503,11 +502,11 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   return env;
 }
 
-Scheme_Env *scheme_place_instance_init(void *stack_base) {
+Scheme_Env *scheme_place_instance_init(void *stack_base, struct NewGC *parent_gc, intptr_t memory_limit) {
   Scheme_Env *env;
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   int *signal_fd;
-  GC_construct_child_gc();
+  GC_construct_child_gc(parent_gc, memory_limit);
 #endif
   env = place_instance_init(stack_base, 0);
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)

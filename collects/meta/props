@@ -1856,6 +1856,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/read.rktl" drdr:command-line #f
 "collects/tests/racket/readtable.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/restart.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/runaway-place.rkt" drdr:command-line (racket "-tm" *)
 "collects/tests/racket/runflats.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/rx.rktl" drdr:command-line #f
 "collects/tests/racket/sandbox.rktl" drdr:command-line (racket "-f" *)

@@ -3669,19 +3669,29 @@ typedef struct Scheme_Place {
   Scheme_Object *channel;
   Scheme_Custodian_Reference *mref;
   intptr_t result; /* set when place_obj becomes NULL */
+#ifdef MZ_PRECISE_GC
+  struct GC_Thread_Info *gc_info; /* managed by the GC */
+#endif
 } Scheme_Place;
 
 typedef struct Scheme_Place_Object {
   Scheme_Object so;
 #if defined(MZ_USE_PLACES)
   mzrt_mutex *lock;
+  mzrt_sema *pause;
 #endif
   char die;
   char pbreak;
+  char pausing;
   void *signal_handle;
   void *parent_signal_handle; /* set to NULL when the place terminates */
   intptr_t result; /* initialized to 1, reset when parent_signal_handle becomes NULL */
-  /*Thread_Local_Variables *tlvs; */
+
+  intptr_t memory_use; /* set by inform hook on GC, used by GC for memory accounting */
+  intptr_t prev_notify_memory_use; /* if memory_use > use_factor * prev_notify_memory_use, alert parent */
+  double use_factor;
+  intptr_t memory_limit; /* custodian-based limit on the place's memory use */
+  uintptr_t *parent_need_gc; /* ptr to a variable in parent to force a GC (triggering accounting) */
 } Scheme_Place_Object;
 
 typedef struct Scheme_Serialized_File_FD{
@@ -3714,11 +3724,18 @@ void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover,
 
 #define SCHEME_PLACE_OBJECTP(o) (SCHEME_TYPE(o) == scheme_place_object_type)
 
-Scheme_Env *scheme_place_instance_init();
+Scheme_Env *scheme_place_instance_init(void *stack_base, struct NewGC *, intptr_t memory_limit);
 Scheme_Object *scheme_make_place_object();
 void scheme_place_instance_destroy(int force);
 void scheme_kill_green_thread_timer();
 void scheme_place_check_for_interruption();
 void scheme_check_place_port_ok();
+void scheme_place_set_memory_use(intptr_t amt);
+void scheme_place_check_memory_use();
+
+void scheme_pause_all_places();
+void scheme_pause_one_place(Scheme_Place *p);
+void scheme_resume_all_places();
+void scheme_resume_one_place(Scheme_Place *p);
 
 #endif /* __mzscheme_private__ */
