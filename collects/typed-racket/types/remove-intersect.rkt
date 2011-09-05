@@ -80,16 +80,9 @@
          [(list (Struct: n #f flds _ _ _ _ _)
                 (StructTop: (Struct: n* #f flds* _ _ _ _ _)))
           #f]
-         [(list (and t1 (Struct: n p flds _ _ _ _ _))
-                (and t2 (Struct: n* p* flds* _ _ _ _ _)))
-          (let ([p1 (if (Name? p) (resolve-name p) p)]
-                [p2 (if (Name? p*) (resolve-name p*) p*)])
-            (or (and p2 (overlap t1 p2))
-                (and p1 (overlap t2 p1))
-                (and (= (length flds) (length flds*))
-                     (for/and ([f flds] [f* flds*])
-                       (match* (f f*)
-                               [((fld: t _ _) (fld: t* _ _)) (overlap t t*)])))))]
+         [(list (and t1 (Struct: _ _ _ _ _ _ _ _))
+                (and t2 (Struct: _ _ _ _ _ _ _ _)))
+          (or (subtype t1 t2) (subtype t2 t1))]
          [(list (== (-val eof))
                 (Function: _))
           #f]
