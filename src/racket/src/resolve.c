@@ -729,7 +729,7 @@ case_lambda_resolve(Scheme_Object *expr, Resolve_Info *rslv)
   return expr;
 }
 
-static Scheme_Object *do_define_syntaxes_resolve(Scheme_Object *data, Resolve_Info *info, int for_stx)
+static Scheme_Object *do_define_syntaxes_resolve(Scheme_Object *data, Resolve_Info *info)
 {
   Comp_Prefix *cp;
   Resolve_Prefix *rp;
@@ -748,8 +748,6 @@ static Scheme_Object *do_define_syntaxes_resolve(Scheme_Object *data, Resolve_In
 
   einfo = scheme_resolve_info_create(rp);
 
-  if (for_stx)
-    names = scheme_resolve_list(names, einfo);
   val = scheme_resolve_expr(val, einfo);
 
   rp = scheme_remap_prefix(rp, einfo);
@@ -770,19 +768,54 @@ static Scheme_Object *do_define_syntaxes_resolve(Scheme_Object *data, Resolve_In
     names = SCHEME_CDR(names);
   }
 
-  vec->type = (for_stx ? scheme_define_for_syntax_type : scheme_define_syntaxes_type);
+  vec->type = scheme_define_syntaxes_type;
 
   return vec;
 }
 
 static Scheme_Object *define_syntaxes_resolve(Scheme_Object *data, Resolve_Info *info)
 {
-  return do_define_syntaxes_resolve(data, info, 0);
+  return do_define_syntaxes_resolve(data, info);
 }
 
-static Scheme_Object *define_for_syntaxes_resolve(Scheme_Object *data, Resolve_Info *info)
+static Scheme_Object *begin_for_syntax_resolve(Scheme_Object *data, Resolve_Info *info)
 {
-  return do_define_syntaxes_resolve(data, info, 1);
+  Comp_Prefix *cp;
+  Resolve_Prefix *rp;
+  Scheme_Object *l, *p, *a, *base_stack_depth, *dummy, *vec;
+  Resolve_Info *einfo;
+
+  cp = (Comp_Prefix *)SCHEME_VEC_ELS(data)[0];
+  dummy = SCHEME_VEC_ELS(data)[1];
+  l = SCHEME_VEC_ELS(data)[2];
+
+  rp = scheme_resolve_prefix(1, cp, 1);
+
+  dummy = scheme_resolve_expr(dummy, info);
+
+  einfo = scheme_resolve_info_create(rp);
+
+  p = scheme_null;
+  while (!SCHEME_NULLP(l)) {
+    a = SCHEME_CAR(l);
+    a = scheme_resolve_expr(a, einfo);
+    p = scheme_make_pair(a, p);
+    l = SCHEME_CDR(l);
+  }
+  l = scheme_reverse(p);
+  
+  rp = scheme_remap_prefix(rp, einfo);
+
+  base_stack_depth = scheme_make_integer(einfo->max_let_depth);
+  
+  vec = scheme_make_vector(4, NULL);
+  SCHEME_VEC_ELS(vec)[0] = l;
+  SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)rp;
+  SCHEME_VEC_ELS(vec)[2] = base_stack_depth;
+  SCHEME_VEC_ELS(vec)[3] = dummy;
+  vec->type = scheme_begin_for_syntax_type;
+
+  return vec;
 }
 
 /*========================================================================*/
@@ -2152,20 +2185,20 @@ module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
   rslv->in_module = 1;
   scheme_enable_expression_resolve_lifts(rslv);
 
-  cnt = SCHEME_VEC_SIZE(m->body);
+  cnt = SCHEME_VEC_SIZE(m->bodies[0]);
   for (i = 0; i < cnt; i++) {
     Scheme_Object *e;
-    e = scheme_resolve_expr(SCHEME_VEC_ELS(m->body)[i], rslv);
-    SCHEME_VEC_ELS(m->body)[i] = e;
+    e = scheme_resolve_expr(SCHEME_VEC_ELS(m->bodies[0])[i], rslv);
+    SCHEME_VEC_ELS(m->bodies[0])[i] = e;
   }
 
   m->max_let_depth = rslv->max_let_depth;
 
   lift_vec = rslv->lifts;
   if (!SCHEME_NULLP(SCHEME_VEC_ELS(lift_vec)[0])) {
-    b = scheme_append(SCHEME_VEC_ELS(lift_vec)[0], scheme_vector_to_list(m->body));
+    b = scheme_append(SCHEME_VEC_ELS(lift_vec)[0], scheme_vector_to_list(m->bodies[0]));
     b = scheme_list_to_vector(b);
-    m->body = b;
+    m->bodies[0] = b;
   }
   rp->num_lifts = SCHEME_INT_VAL(SCHEME_VEC_ELS(lift_vec)[1]);
 
@@ -2288,8 +2321,8 @@ Scheme_Object *scheme_resolve_expr(Scheme_Object *expr, Resolve_Info *info)
     return define_values_resolve(expr, info);
   case scheme_define_syntaxes_type:
     return define_syntaxes_resolve(expr, info);
-  case scheme_define_for_syntax_type:
-    return define_for_syntaxes_resolve(expr, info);
+  case scheme_begin_for_syntax_type:
+    return begin_for_syntax_resolve(expr, info);
   case scheme_set_bang_type:
     return set_resolve(expr, info);
   case scheme_require_form_type:

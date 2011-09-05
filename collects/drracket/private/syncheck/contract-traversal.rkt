@@ -109,7 +109,7 @@
             (call-give-up)]
            [(define-syntaxes (id ...) expr)
             (call-give-up)]
-           [(define-values-for-syntax (id ...) expr)
+           [(begin-for-syntax (id ...) expr)
             (call-give-up)]
            [(#%require rspec ...)
             (call-give-up)]

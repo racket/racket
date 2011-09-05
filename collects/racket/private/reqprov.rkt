@@ -636,36 +636,41 @@
      (lambda (stx modes)
        (syntax-case stx ()
          [(_) 
-          (let-values ([(ids stx-ids) (syntax-local-module-defined-identifiers)]
-                       [(same-ctx?) (lambda (free-identifier=?)
-                                      (lambda (id)
-                                        (free-identifier=? id
-                                                           (datum->syntax
-                                                            stx
-                                                            (syntax-e id)))))])
-            (append
-             (if (memq 1 modes)
-                 (map (lambda (id)
-                        (make-export id (syntax-e id) 1 #f stx))
-                      (filter (same-ctx? free-transformer-identifier=?)
-                              stx-ids))
-                 null)
-             (if (or (null? modes)
-                     (memq 0 modes))
-                 (map (lambda (id)
-                        (make-export id (syntax-e id) 0 #f stx))
-                      (filter (lambda (id)
-                                (and ((same-ctx? free-identifier=?) id)
-                                     (let-values ([(v id) (syntax-local-value/immediate
-                                                           id
-                                                           (lambda () (values #f #f)))])
-                                       (not
-                                        (and (rename-transformer? v)
-                                             (syntax-property 
-                                              (rename-transformer-target v)
-                                              'not-provide-all-defined))))))
-                              ids))
-                 null)))]))))
+          (let* ([ht (syntax-local-module-defined-identifiers)]
+                 [same-ctx? (lambda (free-identifier=?)
+                              (lambda (id)
+                                (free-identifier=? id
+                                                   (datum->syntax
+                                                    stx
+                                                    (syntax-e id)))))]
+                 [modes (if (null? modes)
+                            '(0)
+                            modes)])
+            (apply
+             append
+             (map (lambda (mode)
+                    (let* ([phase (and mode (+ mode (syntax-local-phase-level)))]
+                           [same-ctx-in-phase?
+                            (same-ctx? 
+                             (cond
+                              [(eq? mode 0) free-identifier=?]
+                              [(eq? mode 1) free-transformer-identifier=?]
+                              [else (lambda (a b)
+                                      (free-identifier=? a b phase))]))])
+                      (map (lambda (id)
+                             (make-export id (syntax-e id) mode #f stx))
+                           (filter (lambda (id)
+                                     (and (same-ctx-in-phase? id)
+                                          (let-values ([(v id) (syntax-local-value/immediate
+                                                                id
+                                                                (lambda () (values #f #f)))])
+                                            (not
+                                             (and (rename-transformer? v)
+                                                  (syntax-property 
+                                                   (rename-transformer-target v)
+                                                   'not-provide-all-defined))))))
+                                   (hash-ref ht phase null)))))
+                  modes)))]))))
 
   (define-syntax all-from-out
     (make-provide-transformer
@@ -815,7 +820,7 @@
                    (equal? '(0) modes))
          (raise-syntax-error
           #f
-          "allowed only for phase level 0"
+          "allowed only for relative phase level 0"
           stx))
        (syntax-case stx ()
          [(_ id)
@@ -848,13 +853,14 @@
                                           null]
                                          [else (cons (car ids) (loop (cdr ids)))]))))]
                          ;; FIXME: we're building a list of all imports on every expansion
-                         ;; of `syntax-out'. That could become expensive if `syntax-out' is
+                         ;; of `struct-out'. That could become expensive if `struct-out' is
                          ;; used a lot.
-                         [avail-ids (append (let-values ([(ids _) (syntax-local-module-defined-identifiers)])
-                                              ids)
+                         [avail-ids (append (hash-ref (syntax-local-module-defined-identifiers)
+                                                      (syntax-local-phase-level)
+                                                      null)
                                             (let ([idss (syntax-local-module-required-identifiers #f #t)])
                                               (if idss
-                                                  (let ([a (assoc 0 idss)])
+                                                  (let ([a (assoc (syntax-local-phase-level) idss)])
                                                     (if a
                                                         (cdr a)
                                                         null))

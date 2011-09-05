@@ -10,7 +10,7 @@
                         (update rhs))]
       [(? def-syntaxes?)
        (error 'increment "Doesn't handle syntax")]
-      [(? def-for-syntax?)
+      [(? seq-for-syntax?)
        (error 'increment "Doesn't handle syntax")]
       [(struct req (reqs dummy))
        (make-req reqs (update dummy))]

@@ -150,7 +150,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *cached_mod_beg_stx_;
   struct Scheme_Object *cached_dv_stx_;
   struct Scheme_Object *cached_ds_stx_;
-  struct Scheme_Object *cached_dvs_stx_;
+  struct Scheme_Object *cached_bfs_stx_;
   int cached_stx_phase_;
   struct Scheme_Object *cwv_stx_;
   int cwv_stx_phase_;
@@ -488,7 +488,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define cached_mod_beg_stx XOA (scheme_get_thread_local_variables()->cached_mod_beg_stx_)
 #define cached_dv_stx XOA (scheme_get_thread_local_variables()->cached_dv_stx_)
 #define cached_ds_stx XOA (scheme_get_thread_local_variables()->cached_ds_stx_)
-#define cached_dvs_stx XOA (scheme_get_thread_local_variables()->cached_dvs_stx_)
+#define cached_bfs_stx XOA (scheme_get_thread_local_variables()->cached_bfs_stx_)
 #define cached_stx_phase XOA (scheme_get_thread_local_variables()->cached_stx_phase_)
 #define cwv_stx XOA (scheme_get_thread_local_variables()->cwv_stx_)
 #define cwv_stx_phase XOA (scheme_get_thread_local_variables()->cwv_stx_phase_)

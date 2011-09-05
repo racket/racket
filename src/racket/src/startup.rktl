@@ -41,8 +41,8 @@
              parameterize
              define)
 
-  (define-values-for-syntax (here-stx)
-    (quote-syntax here))
+  (begin-for-syntax 
+   (define-values (here-stx) (quote-syntax here)))
 
   (define-syntaxes (unless)
     (lambda (stx)

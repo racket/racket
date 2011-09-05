@@ -106,26 +106,28 @@ structures that are produced by @racket[zo-parse] and consumed by
 @defstruct+[(def-syntaxes form) ([ids (listof symbol?)]
                                  [rhs (or/c expr? seq? any/c)]
                                  [prefix prefix?]
-                                 [max-let-depth exact-nonnegative-integer?])]
-@defstruct+[(def-for-syntax form)
-            ([ids (listof toplevel?)]
-             [rhs (or/c expr? seq? any/c)]
+                                 [max-let-depth exact-nonnegative-integer?]
+                                 [dummy (or/c toplevel? #f)])]
+@defstruct+[(seq-for-syntax form)
+            ([forms (listof (or/c form? any/c))]
              [prefix prefix?]
-             [max-let-depth exact-nonnegative-integer?])]
+             [max-let-depth exact-nonnegative-integer?]
+             [dummy (or/c toplevel? #f)])]
 )]{
   Represents a @racket[define-syntaxes] or
-  @racket[define-values-for-syntax] form.  The @racket[rhs] expression
-  has its own @racket[prefix], which is pushed before evaluating
-  @racket[rhs]; the stack is restored after obtaining the result values.
+  @racket[begin-for-syntax] form.  The @racket[rhs] expression or set of
+  @racket[forms] forms has its own @racket[prefix], which is pushed before evaluating
+  @racket[rhs] or the @racket[forms]; the stack is restored after obtaining the result values.
   The @racket[max-let-depth] field indicates the maximum size of the
   stack that will be created by @racket[rhs] (not counting
-  @racket[prefix]).}
+  @racket[prefix]).  The @racket[dummy] variable is used to access the enclosing 
+  namespace.}
 
 @defstruct+[(req form) ([reqs stx?]
                         [dummy toplevel?])]{
   Represents a top-level @racket[#%require] form (but not one in a
   @racket[module] form) with a sequence of specifications @racket[reqs].
-  The @racket[dummy] variable is used to access to the top-level
+  The @racket[dummy] variable is used to access the top-level
   namespace.}
 
 @defstruct+[(seq form) ([forms (listof (or/c form? any/c))])]{
@@ -155,17 +157,17 @@ structures that are produced by @racket[zo-parse] and consumed by
              [requires (listof (cons/c (or/c exact-integer? #f)
                                        (listof module-path-index?)))]
              [body (listof (or/c form? any/c))]
-             [syntax-body (listof (or/c def-syntaxes? def-for-syntax?))]
-             [unexported (list/c (listof symbol?)
-                                 (listof symbol?)
-                                 (listof symbol?))]
+             [syntax-bodies  (listof (cons/c exact-positive-integer?
+                                             (listof (or/c def-syntaxes? 
+                                                           seq-for-syntax?))))]
+             [unexported (listof (list/c exact-nonnegative-integer?
+                                         (listof symbol?)
+                                         (listof symbol?)))]
              [max-let-depth exact-nonnegative-integer?]
              [dummy toplevel?]
              [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
              [internal-context (or/c #f #t stx?)])]{
-  Represents a @racket[module] declaration.  The @racket[body] forms use
-  @racket[prefix], rather than any prefix in place for the module
-  declaration itself (and each @racket[syntax-body] has its own prefix).
+  Represents a @racket[module] declaration.
 
   The @racket[provides] and @racket[requires] lists are each an
   association list from phases to exports or imports.  In the case of
@@ -173,15 +175,21 @@ structures that are produced by @racket[zo-parse] and consumed by
   variables, and another for exported syntax.  In the case of
   @racket[requires], each phase maps to a list of imported module paths.
 
-  The @racket[body] field contains the module's run-time code, and
-  @racket[syntax-body] contains the module's compile-time code.  After
-  each form in @racket[body] or @racket[syntax-body] is evaluated, the
-  stack is restored to its depth from before evaluating the form.
+  The @racket[body] field contains the module's run-time (i.e., phase
+  0) code. The @racket[syntax-bodies] list has a list of forms for
+  each higher phase in the module body; the phases are in order
+  starting with phase 1.  The @racket[body] forms use @racket[prefix],
+  rather than any prefix in place for the module declaration itself,
+  while members of lists in @racket[syntax-bodies] have their own
+  prefixes. After each form in @racket[body] or @racket[syntax-bodies]
+  is evaluated, the stack is restored to its depth from before
+  evaluating the form.
 
-  The @racket[unexported] list contains lists of symbols for unexported
-  definitions that can be accessed through macro expansion.  The first
-  list is phase-0 variables, the second is phase-0 syntax, and the last
-  is phase-1 variables.
+  The @racket[unexported] list contains lists of symbols for
+  unexported definitions that can be accessed through macro expansion
+  and that are implemented through the forms in @racket[body] and
+  @racket[syntax-bodies].  Each list in @racket[unexported] starts
+  with a phase level.
 
   The @racket[max-let-depth] field indicates the maximum stack depth
   created by @racket[body] forms (not counting the @racket[prefix]
@@ -202,8 +210,8 @@ structures that are produced by @racket[zo-parse] and consumed by
             ([name symbol?]
              [src (or/c module-path-index? #f)]
              [src-name symbol?]
-             [nom-mod (or/c module-path-index? #f)]
-             [src-phase (or/c 0 1)]
+             [nom-src (or/c module-path-index? #f)]
+             [src-phase exact-nonnegative-integer?]
              [protected? boolean?])]{
   Describes an individual provided identifier within a @racket[mod]
   instance.}

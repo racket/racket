@@ -187,7 +187,7 @@
       [(#%require . _) (void)]
       [(#%provide . _) (void)]
       [(define-syntaxes . _) (void)]
-      [(define-values-for-syntax . _) (void)]
+      [(begin-for-syntax . _) (void)]
 
       ;; FIXME - we no longer need these special cases
       ;; these forms are handled in pass1

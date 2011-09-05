@@ -430,7 +430,7 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
   Scheme_Object *name, *val, *base_stack_depth, *dummy;
   int sdepth;
 
-  if (!SAME_TYPE(SCHEME_TYPE(data), (for_stx ? scheme_define_for_syntax_type : scheme_define_syntaxes_type))
+  if (!SAME_TYPE(SCHEME_TYPE(data), (for_stx ? scheme_begin_for_syntax_type : scheme_define_syntaxes_type))
       || (SCHEME_VEC_SIZE(data) < 4))
     scheme_ill_formed_code(port);
 
@@ -462,10 +462,13 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
   if (!for_stx) {
     scheme_validate_code(port, SCHEME_VEC_ELS(data)[0], sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts, NULL, 0);
   } else {
-    /* Make a fake `define-values' to check with respect to the exp-time stack */
-    val = scheme_clone_vector(data, 3, 1);
-    SCHEME_VEC_ELS(val)[0] = SCHEME_VEC_ELS(data)[0];
-    scheme_validate_code(port, val, sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts, NULL, 0);
+    val = SCHEME_VEC_ELS(data)[0];
+    while (SCHEME_PAIRP(val)) {
+      scheme_validate_code(port, SCHEME_CAR(val), sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts, NULL, 0);
+      val = SCHEME_CDR(val);
+    }
+    if (!SCHEME_NULLP(val))
+      scheme_ill_formed_code(port);
   }
 }
 
@@ -481,13 +484,13 @@ static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
                               num_toplevels, num_stxes, num_lifts, tl_use_map, 0);
 }
 
-static void define_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-					 char *stack, Validate_TLS tls,
-                                         int depth, int letlimit, int delta, 
-					 int num_toplevels, int num_stxes, int num_lifts, 
-                                         void *tl_use_map, int result_ignored,
-                                         struct Validate_Clearing *vc, int tailpos,
-                                         Scheme_Hash_Tree *procs)
+static void begin_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
+                                        char *stack, Validate_TLS tls,
+                                        int depth, int letlimit, int delta, 
+                                        int num_toplevels, int num_stxes, int num_lifts, 
+                                        void *tl_use_map, int result_ignored,
+                                        struct Validate_Clearing *vc, int tailpos,
+                                        Scheme_Hash_Tree *procs)
 {
   do_define_syntaxes_validate(data, port, stack, tls, depth, letlimit, delta, 
                               num_toplevels, num_stxes, num_lifts, tl_use_map, 1);
@@ -849,7 +852,7 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
                             Scheme_Hash_Tree *procs)
 {
   Scheme_Module *m;
-  int i, cnt, let_depth;
+  int i, j, cnt, let_depth;
   Resolve_Prefix *rp;
   Scheme_Object *e;
 
@@ -859,23 +862,25 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
   if (!SCHEME_MODNAMEP(m->modname))
     scheme_ill_formed_code(port);
 
-  scheme_validate_code(port, m->body, m->max_let_depth,
+  scheme_validate_code(port, m->bodies[0], m->max_let_depth,
                        m->prefix->num_toplevels, m->prefix->num_stxes, m->prefix->num_lifts,
                        NULL,
                        1);
   
   /* validate exp-time code */
-  cnt = SCHEME_VEC_SIZE(m->et_body);
-  for (i = 0; i < cnt; i++) {
-    e = SCHEME_VEC_ELS(m->et_body)[i];
+  for (j = m->num_phases; j-- > 1; ) {
+    cnt = SCHEME_VEC_SIZE(m->bodies[j]);
+    for (i = 0; i < cnt; i++) {
+      e = SCHEME_VEC_ELS(m->bodies[j])[i];
       
-    let_depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(e)[2]);
-    rp = (Resolve_Prefix *)SCHEME_VEC_ELS(e)[3];
-    e = SCHEME_VEC_ELS(e)[1];
+      let_depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(e)[2]);
+      rp = (Resolve_Prefix *)SCHEME_VEC_ELS(e)[3];
+      e = SCHEME_VEC_ELS(e)[1];
       
-    scheme_validate_code(port, e, let_depth,
-                         rp->num_toplevels, rp->num_stxes, rp->num_lifts, NULL,
-                         0);
+      scheme_validate_code(port, e, let_depth,
+                           rp->num_toplevels, rp->num_stxes, rp->num_lifts, NULL,
+                           0);
+    }
   }
 }
 
@@ -1442,11 +1447,11 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
                              num_toplevels, num_stxes, num_lifts, tl_use_map, 
                              result_ignored, vc, tailpos, procs);
     break;
-  case scheme_define_for_syntax_type:
+  case scheme_begin_for_syntax_type:
     no_flo(need_flonum, port);
-    define_for_syntaxes_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                                 num_toplevels, num_stxes, num_lifts, tl_use_map, 
-                                 result_ignored, vc, tailpos, procs);
+    begin_for_syntaxes_validate(expr, port, stack, tls, depth, letlimit, delta, 
+                                num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                                result_ignored, vc, tailpos, procs);
     break;
   case scheme_set_bang_type:
     no_flo(need_flonum, port);

@@ -5,28 +5,29 @@
   (#%provide require require-for-syntax require-for-template require-for-label
              provide provide-for-syntax provide-for-label)
 
-  (define-values-for-syntax (rebuild-elem)
-    (lambda (stx elem sub pos loop ids)
-      ;; For sub-forms, we loop and reconstruct:
-      (for-each (lambda (id)
-                  (unless (identifier? id)
-                    (raise-syntax-error
-                     #f
-                     "expected an identifier"
-                     stx
-                     id)))
-                (syntax->list ids))
-      (let rloop ([elem elem][pos pos])
-        (if (syntax? elem)
-            (datum->syntax elem
-                                  (rloop (syntax-e elem) pos)
-                                  elem
-                                  elem)
-            (if (zero? pos)
-                (cons (loop (car elem))
-                      (cdr elem))
-                (cons (car elem)
-                      (rloop (cdr elem) (sub1 pos))))))))
+  (begin-for-syntax
+   (define-values (rebuild-elem)
+     (lambda (stx elem sub pos loop ids)
+       ;; For sub-forms, we loop and reconstruct:
+       (for-each (lambda (id)
+                   (unless (identifier? id)
+                     (raise-syntax-error
+                      #f
+                      "expected an identifier"
+                      stx
+                      id)))
+                 (syntax->list ids))
+       (let rloop ([elem elem][pos pos])
+         (if (syntax? elem)
+             (datum->syntax elem
+                            (rloop (syntax-e elem) pos)
+                            elem
+                            elem)
+             (if (zero? pos)
+                 (cons (loop (car elem))
+                       (cdr elem))
+                 (cons (car elem)
+                       (rloop (cdr elem) (sub1 pos)))))))))
 
 
   (define-syntaxes (require require-for-syntax require-for-template require-for-label)

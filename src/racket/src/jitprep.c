@@ -483,7 +483,7 @@ static Scheme_Object *define_syntaxes_jit(Scheme_Object *expr)
   return do_define_syntaxes_clone(expr, 1);
 }
 
-static Scheme_Object *define_for_syntaxes_jit(Scheme_Object *expr)
+static Scheme_Object *begin_for_syntax_jit(Scheme_Object *expr)
 {
   return do_define_syntaxes_clone(expr, 1);
 }
@@ -583,8 +583,8 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
     return define_values_jit(expr);
   case scheme_define_syntaxes_type:
     return define_syntaxes_jit(expr);
-  case scheme_define_for_syntax_type:
-    return define_for_syntaxes_jit(expr);
+  case scheme_begin_for_syntax_type:
+    return begin_for_syntax_jit(expr);
   case scheme_set_bang_type:
     return set_jit(expr);
   case scheme_boxenv_type:
@@ -622,9 +622,26 @@ static Scheme_Object *do_define_syntaxes_clone(Scheme_Object *expr, int jit)
   
   rhs = SCHEME_VEC_ELS(expr)[0];
 #ifdef MZ_USE_JIT
-  if (jit)
-    naya = scheme_jit_expr(rhs);
-  else
+  if (jit) {
+    if (SAME_TYPE(SCHEME_TYPE(expr), scheme_define_syntaxes_type))
+      naya = scheme_jit_expr(rhs);
+    else {
+      int changed = 0;
+      Scheme_Object *a, *l = rhs;
+      naya = scheme_null;
+      while (!SCHEME_NULLP(l)) {
+        a = scheme_jit_expr(SCHEME_CAR(l));
+        if (!SAME_OBJ(a, SCHEME_CAR(l)))
+          changed = 1;
+        naya = scheme_make_pair(a, naya);
+        l = SCHEME_CDR(l);
+      }
+      if (changed)
+        naya = scheme_reverse(naya);
+      else
+        naya = rhs;
+    }
+  } else
 #endif
     naya = rhs;
 

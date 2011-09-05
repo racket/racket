@@ -21,7 +21,7 @@
                                             begin begin0 set!
                                             with-continuation-mark
                                             if #%plain-app #%expression
-                                            define-values define-syntaxes define-values-for-syntax
+                                            define-values define-syntaxes begin-for-syntax
                                             module 
                                             #%plain-module-begin 
                                             #%require #%provide 
@@ -78,7 +78,7 @@
                 begin0
                 define-values
                 define-syntaxes
-                define-values-for-syntax
+                begin-for-syntax
                 set!
                 let-values
                 letrec-values

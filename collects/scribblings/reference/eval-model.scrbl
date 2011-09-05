@@ -556,15 +556,18 @@ effect on further program parsing, as described in
 @secref["intro-binding"].
 
 Within a module, some definitions are shifted by a phase already; the
-@racket[define-for-syntax] form is like @racket[define], but it
-defines a variable at relative @tech{phase} 1, instead of relative
-@tech{phase} 0. Thus, if the module is @tech{instantiate}d at phase 1,
-the variables for @racket[define-for-syntax] are created at phase 2,
+@racket[begin-for-syntax] form is similar to @racket[begin], but it
+shifts expressions and definitions by a relative @tech{phase} 1. 
+Thus, if the module is @tech{instantiate}d at phase 1,
+the variables defined with @racket[begin-for-syntax] are created at phase 2,
 and so on. Moreover, this relative phase acts as another layer of
-prefixing, so that a @racket[define] of @racket[x] and a
-@racket[define-for-syntax] of @racket[x] can co-exist in a module
-without colliding. Again, the higher phases are mainly related to
-program parsing, instead of normal evaluation.
+prefixing, so that a @racket[define] of @racket[x] and a 
+@racket[begin-for-syntax]-wrapped
+@racket[define] of @racket[x] can co-exist in a module
+without colliding. A @racket[begin-for-syntax] form can be nested
+within a @racket[begin-for-syntax] form, in which case definitions and
+expressions are in relative @tech{phase} 2, and so on. Higher phases are 
+mainly related to program parsing, instead of normal evaluation.
 
 If a module @tech{instantiate}d at @tech{phase} @math{n}
 @racket[require]s another module, then the @racket[require]d module is
@@ -588,7 +591,7 @@ module forms (see @secref["mod-parse"]), and are, again, conceptually
 distinguished by prefixes.
 
 Top-level variables can exist in multiple phases in the same way as
-within modules. For example, @racket[define-for-syntax] creates a
+within modules. For example, @racket[define] within @racket[begin-for-syntax] creates a
 @tech{phase} 1 variable. Furthermore, reflective operations like
 @racket[make-base-namespace] and @racket[eval] provide access to
 top-level variables in higher @tech{phases}, while module

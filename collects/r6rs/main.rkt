@@ -161,7 +161,7 @@ FIXME:
                         (free-identifier=? id #'def)))
                  (list #'define-values
                        #'define-syntaxes
-                       #'define-values-for-syntax))
+                       #'begin-for-syntax))
           #`(begin #,a (library-body/defns . more))]
          [(#%require . _)
           ;; We allow `require' mixed with definitions, because it
@@ -268,9 +268,8 @@ FIXME:
                                (hash-set! table
                                           (syntax-e id)
                                           (cons (cons id phase) l))))))])
-          (let-values ([(ids for-syntax-ids) (syntax-local-module-defined-identifiers)])
-            (for-each (map-id 0) ids)
-            (for-each (map-id 1) for-syntax-ids))
+          (for ([(phase ids) (in-hash (syntax-local-module-defined-identifiers))])
+            (for-each (map-id phase) ids))
           (for-each (lambda (l)
                       (if (car l)
                           (for-each (map-id (car l)) (cdr l))

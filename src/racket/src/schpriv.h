@@ -398,7 +398,7 @@ extern Scheme_Object *scheme_begin_stx;
 extern Scheme_Object *scheme_module_begin_stx;
 extern Scheme_Object *scheme_define_values_stx;
 extern Scheme_Object *scheme_define_syntaxes_stx;
-extern Scheme_Object *scheme_define_for_syntaxes_stx;
+extern Scheme_Object *scheme_begin_for_syntax_stx;
 extern Scheme_Object *scheme_top_stx;
 
 extern Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write_special_symbol;
@@ -2672,7 +2672,7 @@ struct Start_Module_Args;
 
 #ifdef MZ_USE_JIT
 void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name);
-void *scheme_module_exprun_start(Scheme_Env *menv, int set_ns, Scheme_Object *name);
+void *scheme_module_exprun_start(Scheme_Env *menv, int phase_plus_set_ns, Scheme_Object *name);
 void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name);
 #endif
 void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env);
@@ -2931,6 +2931,7 @@ struct Scheme_Env {
   struct Scheme_Env *exp_env;
   struct Scheme_Env *template_env;
   struct Scheme_Env *label_env;
+  struct Scheme_Env *instance_env; /* shortcut to env where module is instantiated */
 
   Scheme_Hash_Table *shadowed_syntax; /* top level only */
 
@@ -2939,7 +2940,8 @@ struct Scheme_Env {
   Scheme_Object *link_midx;
   Scheme_Object *require_names, *et_require_names, *tt_require_names, *dt_require_names; /* resolved */
   Scheme_Hash_Table *other_require_names;
-  char running, et_running, attached, ran;
+  char *running; /* array of size `num_phases' if `module' and `mod_phase==0' */
+  char attached, ran;
   Scheme_Object *did_starts;
   Scheme_Object *available_next[2];
 
@@ -2964,6 +2966,19 @@ struct Scheme_Env {
 /* A Scheme_Module corresponds to a module declaration. A module
    instantiation is reprsented by a Scheme_Env */
 
+typedef struct Scheme_Module_Export_Info {
+  MZTAG_IF_REQUIRED
+  char *provide_protects;            /* 1 => protected, 0 => not */
+  Scheme_Object **indirect_provides; /* symbols (internal names) */
+  int num_indirect_provides;
+
+  /* Only if needed to reconstruct the renaming: */
+  Scheme_Object **indirect_syntax_provides; /* symbols (internal names) */
+  int num_indirect_syntax_provides;
+
+  Scheme_Hash_Table *accessible; /* (symbol -> ...) */
+} Scheme_Module_Export_Info;
+
 typedef struct Scheme_Module
 {
   Scheme_Object so; /* scheme_module_type */
@@ -2982,29 +2997,17 @@ typedef struct Scheme_Module
   Scheme_Invoke_Proc prim_body;
   Scheme_Invoke_Proc prim_et_body;
 
-  Scheme_Object *body;        /* or data, if prim_body */
-  Scheme_Object *et_body;     /* list of (vector list-of-names expr depth-int resolve-prefix) */
+  Scheme_Object **bodies; /* array `num_phases' long */
 
   char no_cert;
   
   struct Scheme_Module_Exports *me;
 
-  char *provide_protects;            /* 1 => protected, 0 => not */
-  Scheme_Object **indirect_provides; /* symbols (internal names) */
-  int num_indirect_provides;
-
-  /* Only if needed to reconstruct the renaming: */
-  Scheme_Object **indirect_syntax_provides; /* symbols (internal names) */
-  int num_indirect_syntax_provides;
-
-  char *et_provide_protects;            /* 1 => protected, 0 => not */
-  Scheme_Object **et_indirect_provides; /* symbols (internal names) */
-  int num_indirect_et_provides;
+  int num_phases;
+  Scheme_Module_Export_Info **exp_infos; /* array `num_phases' long */
 
   Scheme_Object *self_modidx;
 
-  Scheme_Hash_Table *accessible; /* (symbol -> ...) */
-  Scheme_Hash_Table *et_accessible; /* phase -> (symbol -> ...) */
   Scheme_Object *insp; /* declaration-time inspector, for module instantiation
                           and enabling access to protected imports */
 
@@ -3036,7 +3039,7 @@ typedef struct Scheme_Module_Phase_Exports
   Scheme_Object **provide_srcs;      /* module access paths, #f for self */
   Scheme_Object **provide_src_names; /* symbols (original internal names) */
   Scheme_Object **provide_nominal_srcs; /* import source if re-exported; NULL or array of lists */
-  char *provide_src_phases;          /* NULL, or src phase for for-syntax import */
+  int *provide_src_phases;          /* NULL, or src phase for for-syntax import */
   int num_provides;
   int num_var_provides;              /* non-syntax listed first in provides */
 
@@ -3142,7 +3145,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                                                  Scheme_Env *from_env, int *_would_complain,
                                                  Scheme_Object **_is_constant);
 void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env);
-Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name);
+Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name, int mod_phase);
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 				   Scheme_Object *shift_from_modidx,

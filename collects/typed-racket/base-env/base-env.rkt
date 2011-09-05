@@ -1293,7 +1293,7 @@
 [syntax-local-make-delta-introducer (-> (-Syntax Sym) (-> (-Syntax Sym) (-Syntax Sym)))]
 
 [syntax-local-transforming-module-provides? (-> B)]
-[syntax-local-module-defined-identifiers (-> (-values (list (-Syntax Sym) (-Syntax Sym))))]
+[syntax-local-module-defined-identifiers (-> (-HT (Un B -Int) (-lst (-Syntax Sym))))]
 [syntax-local-module-required-identifiers (-> (-opt -Module-Path) (Un B -Int) (-lst (-pair (-opt -Int) (-lst (-Syntax Sym)))))]
 
 ;Section 11.5
