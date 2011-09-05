@@ -510,7 +510,7 @@
    (parameterize ([compile-notify-handler 
                    (lambda (path)
                      (when (compiler:option:somewhat-verbose)
-                       (printf "  making ~s\n" (path->string path))))])
+                       (printf "  making ~s\n" path)))])
      (apply compile-collection-zos source-files))]
   [(cc)
    (for ([file source-files])
