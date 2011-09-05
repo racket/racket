@@ -1201,18 +1201,21 @@ This produces an ACK message
         (case language-cust
           [(raw) (void)]
           [else
+           (define edit-target (queue-callback/res (λ () (send drscheme-frame get-edit-target-window))))
+           (define defs-focus? (eq? edit-target definitions-canvas))
+           (define ints-focus? (eq? edit-target interactions-canvas))
            (cond
              [(eq? source-location 'definitions)
-              (unless (send definitions-canvas has-focus?)
+              (unless defs-focus?
                 (fprintf (current-error-port)
                          "FAILED execute test for ~s\n  expected definitions to have the focus\n"
                          program))]
              [(eq? source-location 'interactions)
-              (unless (send interactions-canvas has-focus?)
+              (unless ints-focus?
                 (fprintf (current-error-port)
                          "FAILED execute test for ~s\n  expected interactions to have the focus\n"
                          program))]
-             [(queue-callback/res (λ () (send definitions-canvas has-focus?)))
+             [defs-focus?
               (let ([start (car source-location)]
                     [finish (cdr source-location)])
                 (let* ([error-ranges (queue-callback/res (λ () (send interactions-text get-error-ranges)))]

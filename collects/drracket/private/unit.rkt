@@ -150,7 +150,8 @@ module browser threading seems wrong.
                                      [else
                                       (message-box 
                                        (string-constant drscheme)
-                                       "Must choose a filename that ends with either .png, .jpg, .xbm, or .xpm")])))))]))))))
+                                       "Must choose a filename that ends with either .png, .jpg, .xbm, or .xpm"
+                                       #:dialog-mixin frame:focus-table-mixin)])))))]))))))
            
            (void))))))
   
@@ -338,7 +339,8 @@ module browser threading seems wrong.
                    (message-box
                     (string-constant drscheme)
                     v
-                    dlg)])))]
+                    dlg
+                    #:dialog-mixin frame:focus-table-mixin)])))]
            [cancel-callback 
             (λ () (send dlg show #f))])
       (let-values ([(ok cancel) 
@@ -364,7 +366,8 @@ module browser threading seems wrong.
         [(not program-filename)
          (message-box (string-constant create-executable-title)
                       (string-constant must-save-before-executable)
-                      frame)]
+                      frame
+                      #:dialog-mixin frame:focus-table-mixin)]
         [else
          (when (or (not (send definitions-text is-modified?))
                    (gui-utils:get-choice
@@ -1667,7 +1670,8 @@ module browser threading seems wrong.
                             (gui-utils:format-literal-label (string-constant erase-log-directory-contents)
                                                             transcript-directory)
                             this
-                            '(yes-no))])
+                            '(yes-no)
+                            #:dialog-mixin frame:focus-table-mixin)])
                 (cond
                   [(eq? query 'no) 
                    #f]
@@ -1680,7 +1684,8 @@ module browser threading seems wrong.
                                                                        (if (exn? exn)
                                                                            (format "~a" (exn-message exn))
                                                                            (format "~s" exn)))
-                                       this)
+                                       this
+                                       #:dialog-mixin frame:focus-table-mixin)
                                       #f)])
                      (for-each (λ (file) (delete-file (build-path transcript-directory file)))
                                dir-list)
@@ -2669,7 +2674,8 @@ module browser threading seems wrong.
                   #f
                   this
                   '(caution default=2 number-order)
-                  1)])
+                  1
+                  #:dialog-mixin frame:focus-table-mixin)])
             (case user-choice
               [(1) (void)]
               [(2) (revert)]))))
@@ -3177,7 +3183,8 @@ module browser threading seems wrong.
                            strs))])
           (unless can-browse?
             (message-box (string-constant drscheme)
-                         (string-constant module-browser-only-in-plt-and-module-langs)))
+                         (string-constant module-browser-only-in-plt-and-module-langs)
+                         #:dialog-mixin frame:focus-table-mixin))
           can-browse?))
       
       (define/private (update-module-browser-pane)
@@ -3577,7 +3584,8 @@ module browser threading seems wrong.
                                                                                     (send l capability-value 'drscheme:teachpack-menu-items)
                                                                                     (format "\n  ~a" (send l get-language-name))))
                                                                                  (drracket:language-configuration:get-languages))))))
-                                         this))])))])))
+                                         this
+                                         #:dialog-mixin frame:focus-table-mixin))])))])))
       
       (define/private (initialize-menus)
         (let* ([mb (get-menu-bar)]
@@ -4650,8 +4658,9 @@ module browser threading seems wrong.
                  (frame:editor-mixin
                   (frame:standard-menus-mixin
                    (frame:register-group-mixin
-                    (frame:basic-mixin
-                     frame%))))))))))))))))))
+                    (frame:focus-table-mixin
+                     (frame:basic-mixin
+                      frame%)))))))))))))))))))
   
   (define-local-member-name enable-two-way-prefs)
   (define (make-two-way-prefs-dragable-panel% % pref-key)

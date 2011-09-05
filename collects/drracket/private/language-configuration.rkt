@@ -162,7 +162,7 @@
     (define language-dialog
       (λ (show-welcome? language-settings-to-show [parent #f])
         (define ret-dialog%
-          (class dialog%
+          (class (frame:focus-table-mixin dialog%)
             (define/override (on-subwindow-char receiver evt)
               (case (send evt get-key-code)
                 [(escape) (cancel-callback)]
@@ -170,7 +170,7 @@
                 [else
                  (or (key-pressed receiver evt)
                      (super on-subwindow-char receiver evt))]))
-            (super-instantiate ())))
+            (super-new)))
         
         (define dialog (instantiate ret-dialog% ()
                          (label (if show-welcome?
@@ -214,7 +214,8 @@
         (define (ok-callback)
           (unless (enter-callback)
             (message-box (string-constant drscheme)
-                         (string-constant please-select-a-language))))
+                         (string-constant please-select-a-language)
+                         #:dialog-mixin frame:focus-table-mixin)))
         
         ;; cancel-callback : -> void
         (define (cancel-callback)
@@ -1285,7 +1286,8 @@
                                                 (message-box (string-constant drscheme)
                                                              (if (exn? x)
                                                                  (exn-message x)
-                                                                 (format "uncaught exception: ~s" x)))
+                                                                 (format "uncaught exception: ~s" x))
+                                                             #:dialog-mixin frame:focus-table-mixin)
                                                 read-syntax/namespace-introduce)])
                                (contract
                                 (->* ()
@@ -1335,7 +1337,8 @@
                  numberss
                  summaries
                  urls
-                 reader-specs))])))))
+                 reader-specs)
+                #:dialog-mixin frame:focus-table-mixin)])))))
     
     (define (platform-independent-string->path str)
       (apply

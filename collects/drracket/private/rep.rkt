@@ -903,7 +903,7 @@ TODO
                                   (floor (/ new-limit 1024 1024))))
                      frame
                      '(default=1 stop)
-                     )])
+                     #:dialog-mixin frame:focus-table-mixin)])
           (when (equal? ans 3)
             (set-custodian-limit new-limit)
             (preferences:set 'drracket:child-only-memory-limit new-limit))
@@ -1369,7 +1369,8 @@ TODO
                          #f
                          (or (get-top-level-window) (get-can-close-parent))
                          '(default=1 caution)
-                         2)
+                         2
+                         #:dialog-mixin frame:focus-table-mixin)
                         1)]
                [(let ([user-eventspace (get-user-eventspace)])
                   (and user-eventspace
@@ -1383,7 +1384,8 @@ TODO
                          #f
                          (or (get-top-level-window) (get-can-close-parent))
                          '(default=1 caution)
-                         2)
+                         2
+                         #:dialog-mixin frame:focus-table-mixin)
                         1)]
                [else #t])
              (inner #t can-close?)))

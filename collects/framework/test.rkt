@@ -1,10 +1,12 @@
 #lang at-exp scheme/gui
 
-(require scribble/srcdoc)
-(require/doc scheme/base scribble/manual)
+(require scribble/srcdoc
+         (prefix-in :: framework/private/focus-table))
+(require/doc scheme/base scribble/manual
+             (for-label framework))
 
 (define (test:top-level-focus-window-has? pred)
-  (let ([tlw (get-top-level-focus-window)])
+  (let ([tlw (test:get-active-top-level-window)])
     (and tlw
          (let loop ([tlw tlw])
            (or (pred tlw)
@@ -165,16 +167,30 @@
 (define current-get-eventspaces
   (make-parameter (λ () (list (current-eventspace)))))
 
-(define (get-active-frame)
+(define test:use-focus-table (make-parameter #f))
+
+(define (test:get-active-top-level-window)
   (ormap (λ (eventspace)
            (parameterize ([current-eventspace eventspace])
-             (get-top-level-focus-window)))
+             (cond
+               [(test:use-focus-table)
+                (define lst (::frame:lookup-focus-table))
+                (define focusd (and (not (null? lst)) (car lst)))
+                (when (eq? (test:use-focus-table) 'debug)
+                  (define f2 (get-top-level-focus-window))
+                  (unless (eq? focusd f2)
+                    (eprintf "found mismatch focus-table: ~s vs get-top-level-focus-window: ~s\n" 
+                             (map (λ (x) (send x get-label)) lst) 
+                             (and f2 (list (send f2 get-label))))))
+                focusd]
+               [else
+                (get-top-level-focus-window)])))
          ((current-get-eventspaces))))
 
 (define (get-focused-window)
-  (let ([f (get-active-frame)])
+  (let ([f (test:get-active-top-level-window)])
     (and f
-         (send f get-focus-window))))
+         (send f get-edit-target-window))))
 
 (define time-stamp current-milliseconds)
 
@@ -200,14 +216,13 @@
 ;; get-parent returns () for no parent.
 ;;
 
-(define in-active-frame?
-  (λ (window)
-    (let ([frame  (get-active-frame)])
-      (let loop ([window  window])
-        (cond [(not window) #f]
-              [(null? window) #f]  ;; is this test needed?
-              [(eq? window frame) #t]
-              [else  (loop (send window get-parent))])))))
+(define (in-active-frame? window)
+  (let ([frame  (test:get-active-top-level-window)])
+    (let loop ([window  window])
+      (cond [(not window) #f]
+            [(null? window) #f]  ;; is this test needed?
+            [(eq? window frame) #t]
+            [else  (loop (send window get-parent))]))))
 
 ;;
 ;; Verify modifier list.
@@ -239,7 +254,7 @@
     (cond
       [(or (string? b-desc)
            (procedure? b-desc))
-       (let* ([active-frame (get-active-frame)]
+       (let* ([active-frame (test:get-active-top-level-window)]
               [_ (unless active-frame
                    (error object-tag
                           "could not find object: ~a, no active frame" 
@@ -516,7 +531,7 @@
              [else 
               (error
                key-tag
-               "focused window is not a text-field% and does not have on-char")])]
+               "focused window is not a text-field% and does not have on-char, ~e" window)])]
           [(send (car l) on-subwindow-char window event) #f]
           [else (loop (cdr l))])))
 
@@ -573,21 +588,20 @@
 
 (define menu-tag 'test:menu-select)
 
-(define menu-select
-  (λ (menu-name . item-names)
-    (cond
-      [(not (string? menu-name))
-       (error menu-tag "expects string, given: ~e" menu-name)]
-      [(not (andmap string? item-names))
-       (error menu-tag "expects strings, given: ~e" item-names)]
-      [else
-       (run-one
-        (λ ()
-          (let* ([frame (get-active-frame)]
-                 [item (get-menu-item frame (cons menu-name item-names))]
-                 [evt (make-object control-event% 'menu)])
-            (send evt set-time-stamp (current-milliseconds))
-            (send item command evt))))])))
+(define (menu-select menu-name . item-names)
+  (cond
+    [(not (string? menu-name))
+     (error menu-tag "expects string, given: ~e" menu-name)]
+    [(not (andmap string? item-names))
+     (error menu-tag "expects strings, given: ~e" item-names)]
+    [else
+     (run-one
+      (λ ()
+        (let* ([frame (test:get-active-top-level-window)]
+               [item (get-menu-item frame (cons menu-name item-names))]
+               [evt (make-object control-event% 'menu)])
+          (send evt set-time-stamp (current-milliseconds))
+          (send item command evt))))]))
 
 (define get-menu-item
   (λ (frame item-names)
@@ -1021,7 +1035,7 @@
   test:top-level-focus-window-has?
   (-> (-> (is-a?/c area<%>) boolean?) boolean?)
   (test)
-  @{Calls @racket[test] for each child of the top-level-focus-frame
+  @{Calls @racket[test] for each child of the @racket[test:get-active-top-level-window]
           and returns @racket[#t] if @racket[test] ever does, otherwise
           returns @racket[#f]. If there
           is no top-level-focus-window, returns @racket[#f].})
@@ -1041,4 +1055,20 @@
   test:run-one
   (-> (-> void?) void?)
   (f)
-  @{Runs the function @racket[f] as if it was a simulated event.}))
+  @{Runs the function @racket[f] as if it was a simulated event.})
+ 
+ (parameter-doc
+  test:use-focus-table
+  (parameter/c (or/c boolean? 'debug))
+  use-focus-table?
+  @{If @racket[#t], then the test framework uses @racket[frame:lookup-focus-table] to determine
+    which is the focused frame. If @racket[#f], then it uses @racket[get-top-level-focus-window].
+    If @racket[test:use-focus-table]'s value is @racket['debug], then it still uses 
+    @racket[frame:lookup-focus-table] but it also prints a message to the @racket[current-error-port]
+    when the two methods would give different results.})
+ 
+ (proc-doc/names
+  test:get-active-top-level-window
+  (-> (or/c (is-a?/c frame%) (is-a?/c dialog%) #f))
+  ()
+  @{Returns the frontmost frame, based on @racket[test:use-focus-table].}))

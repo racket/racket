@@ -612,7 +612,8 @@ If the namespace does not, they are colored the unbound color.
                             (string-constant cancel)
                             #f
                             parent
-                            '(stop default=2))
+                            '(stop default=2)
+                            #:dialog-mixin frame:focus-table-mixin)
                            1)))
                     
                     (when do-renaming?

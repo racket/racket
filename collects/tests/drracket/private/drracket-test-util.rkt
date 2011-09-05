@@ -61,7 +61,7 @@
 	(fw:preferences:set 'framework:file-dialogs 'common)
 	(open-dialog)
 	(let ([dlg (wait-for-new-frame drs)])
-	  (send (find-labelled-window "Filename:") focus)
+	  (send (find-labelled-window "Filename:" #f (fw:test:get-active-top-level-window)) focus)
 	  (fw:test:keystroke #\a (list (case (system-type)
 					 [(windows) 'control]
 					 [(macosx macos) 'meta]
@@ -100,7 +100,7 @@
   (define (wait-for-drscheme-frame [print-message? #f])
     (let ([wait-for-drscheme-frame-pred
            (lambda ()
-             (let ([active (get-top-level-focus-window)])
+             (let ([active (fw:test:get-active-top-level-window)])
                (if (and active
                         (drscheme-frame? active))
                    active
@@ -123,15 +123,14 @@
      [(old-frame extra-eventspaces timeout)
       (let ([wait-for-new-frame-pred
 	     (lambda ()
-	       (let ([active (or (get-top-level-focus-window)
-				 (ormap
+	       (let ([active (or (fw:test:get-active-top-level-window)
+                                 (ormap
 				  (lambda (eventspace)
-				    (parameterize ([current-eventspace eventspace])
-				      (get-top-level-focus-window)))
+                                    (parameterize ([current-eventspace eventspace])
+                                      (fw:test:get-active-top-level-window)))
 				  extra-eventspaces))])
 		 (if (and active
-                          (send active get-focus-window)
-			  (not (eq? active old-frame)))
+                          (not (eq? active old-frame)))
 		     active
 		     #f)))])
 	(poll-until wait-for-new-frame-pred timeout))]))
@@ -172,7 +171,7 @@
   
   (define (verify-drscheme-frame-frontmost function-name frame)
     (on-eventspace-handler-thread 'verify-drscheme-frame-frontmost)
-    (let ([tl (get-top-level-focus-window)])
+    (let ([tl (fw:test:get-active-top-level-window)])
       (unless (and (eq? frame tl)
                    (drscheme-frame? tl))
         (error function-name "drscheme frame not frontmost: ~e (found ~e)" frame tl))))
@@ -180,9 +179,9 @@
   (define (clear-definitions frame)
     (queue-callback/res (λ () (verify-drscheme-frame-frontmost 'clear-definitions frame)))
     (fw:test:new-window (queue-callback/res (λ () (send frame get-definitions-canvas))))
-    (let ([window (queue-callback/res (λ () (send frame get-focus-window)))])
+    (let ([window (queue-callback/res (λ () (send frame get-edit-target-window)))])
       (let-values ([(cw ch) (queue-callback/res (λ () (send window get-client-size)))]
-		   [(w h) (queue-callback/res (λ () (send window get-size)))])
+                   [(w h) (queue-callback/res (λ () (send window get-size)))])
         (fw:test:mouse-click 'left
 			     (inexact->exact (floor (+ cw (/ (- w cw) 2))))
 			     (inexact->exact (floor (+ ch (/ (- h ch) 2)))))))
@@ -344,10 +343,10 @@
                    (andmap (lambda (x) (or string? regexp?)) in-language-spec))
         (error 'set-language-level! "expected a non-empty list of regexps and strings for language, got: ~e" in-language-spec))
       (not-on-eventspace-handler-thread 'set-language-level!)
-      (let ([drs-frame (get-top-level-focus-window)])
+      (let ([drs-frame (fw:test:get-active-top-level-window)])
         (fw:test:menu-select "Language" "Choose Language...")
         (let* ([language-dialog (wait-for-new-frame drs-frame)]
-               [language-choice (find-labelled-window #f hierarchical-list%)]
+               [language-choice (find-labelled-window #f hierarchical-list% (fw:test:get-active-top-level-window))]
                [b1 (box 0)]
                [b2 (box 0)]
                [click-on-snip
@@ -411,7 +410,7 @@
                        drs-frame)))))))) 
   (define (set-module-language! [close-dialog? #t])
     (not-on-eventspace-handler-thread 'set-module-language!)
-    (let ([drs-frame (get-top-level-focus-window)])
+    (let ([drs-frame (fw:test:get-active-top-level-window)])
       (fw:test:menu-select "Language" "Choose Language...")
       (let* ([language-dialog (wait-for-new-frame drs-frame)])
         (fw:test:set-radio-box-item! #rx"Use the language declared in the source")
@@ -616,7 +615,9 @@
       ;; been read by this point, but hopefully that won't affect much
       ;; of the startup of drscheme)
       (fw:preferences:restore-defaults)
-
+      
+      (fw:test:use-focus-table #t)
+      
       (thread (λ () 
 		 (let ([orig-display-handler (error-display-handler)])
 		   (uncaught-exception-handler

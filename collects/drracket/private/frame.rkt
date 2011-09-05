@@ -295,7 +295,8 @@
                              [else
                               (message-box (string-constant drscheme)
                                            (format (string-constant keybindings-planet-malformed-spec)
-                                                   planet-spec))]))))))
+                                                   planet-spec)
+                                           #:dialog-mixin frame:focus-table-mixin)]))))))
                (let ([ud (preferences:get 'drracket:user-defined-keybindings)])
                  (unless (null? ud)
                    (new separator-menu-item% (parent keybindings-menu))
@@ -343,7 +344,8 @@
                                                  (if (path? item)
                                                      (path->string item)
                                                      (format "~s" item))
-                                                 (exn-message x)))
+                                                 (exn-message x))
+                                         #:dialog-mixin frame:focus-table-mixin)
                             #f)])
       (keymap:add-user-keybindings-file item)
       #t))
@@ -459,7 +461,8 @@
                        (message-box (string-constant drscheme)
                                     (if (exn? exn)
                                         (format "~a" (exn-message exn))
-                                        (format "~s" exn))))])
+                                        (format "~s" exn))
+                                    #:dialog-mixin frame:focus-table-mixin))])
       (let* ([url (string->url s-url)]
              [tmp-filename (make-temporary-file "tmp~a.plt")]
              [port (get-impure-port url)]

@@ -162,6 +162,35 @@
     using the @method[frame:basic<%> make-root-area-container] method).
   }
 }
+
+@definterface[frame:focus-table<%> (frame%)]{}
+
+@defmixin[frame:focus-table-mixin (frame%) (frame:focus-table<%>)]{
+
+  Instances of classes returned from this mixin track how frontmost they are
+  based on calls made to methods at the Racket level, instead of using
+  the calls made by the operating system as it tracks the focus.
+  
+  See also @racket[frame:lookup-focus-table], @racket[test:use-focus-table]
+  and @racket[test:get-active-top-level-window].
+                                                         
+  @defmethod[#:mode override (show [on? boolean?]) void?]{
+    When @racket[on?] is @racket[#t], adds this frame to the 
+    front of the list of frames stored with the frame's eventspace. When 
+    @racket[on?] is @racket[#f], this method removes this frame
+    from the list.
+
+    See also @racket[frame:lookup-focus-table], @racket[test:use-focus-table]
+    and @racket[test:get-active-top-level-window].
+  }
+  @defmethod[#:mode augment (on-close) void?]{
+    Removes this frame from the list of frames stored with the frame's eventspace.
+    
+    See also @racket[frame:lookup-focus-table], @racket[test:use-focus-table]
+    and @racket[test:get-active-top-level-window].
+  }
+}
+                                                     
 @definterface[frame:size-pref<%> (frame:basic<%>)]{
 
 }

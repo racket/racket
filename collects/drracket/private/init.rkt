@@ -1,7 +1,8 @@
 #lang racket/unit
   (require string-constants
            "drsig.rkt"
-           racket/gui/base)
+           racket/gui/base
+           framework)
   
   
   (import)
@@ -50,4 +51,4 @@
          
          (parameterize ([current-custodian system-custodian])
            (parameterize ([current-eventspace error-display-eventspace])
-             (message-box title text #f '(stop ok))))))))
+             (message-box title text #f '(stop ok) #:dialog-mixin frame:focus-table-mixin)))))))

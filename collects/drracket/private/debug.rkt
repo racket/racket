@@ -900,7 +900,8 @@ profile todo:
               (message-box (string-constant drscheme)
                            (string-constant editor-changed-since-srcloc-recorded)
                            frame
-                           '(ok caution))))
+                           '(ok caution)
+                           #:dialog-mixin frame:focus-table-mixin)))
           (when (and rep editor)
             (when (is-a? editor text:basic<%>)
               (send rep highlight-errors same-src-srclocs '())
@@ -1007,7 +1008,8 @@ profile todo:
                     (string-constant test-coverage-clear-and-do-not-ask-again)
                     (send (get-canvas) get-top-level-window)
                     '(default=1)
-                    2)])
+                    2
+                    #:dialog-mixin frame:focus-table-mixin)])
               (case msg-box-result
                 [(1) #t]
                 [(2) #f]
@@ -1419,7 +1421,8 @@ profile todo:
                     (eq? (message-box (string-constant drscheme)
                                       (string-constant profiling-clear?)
                                       frame
-                                      '(yes-no))
+                                      '(yes-no)
+                                      #:dialog-mixin frame:focus-table-mixin)
                          'yes))))))
       
       (define/private (do-reset-profile)
@@ -1561,7 +1564,8 @@ profile todo:
            (send (get-current-tab) refresh-profile)]
           [else
            (message-box (string-constant drscheme)
-                        (string-constant profiling-no-information-available))]))
+                        (string-constant profiling-no-information-available)
+                        #:dialog-mixin frame:focus-table-mixin)]))
       
       (define/public (hide-profile-gui)
         (when profile-gui-constructed?

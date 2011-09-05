@@ -488,7 +488,7 @@
       (set-definitions-to-program drs-frame program)
       (let* ([stepper-frame (start-stepper drs-frame)]
              [steps (get-all-steps stepper-frame)])
-        (test:menu-select "File" "Close")
+        (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Window"))
         (let ([drs-frame1 (wait-for-new-frame stepper-frame)])
           (unless (eq? drs-frame1 drs-frame)
             (error 'step-and-extract "didn't get back to drscheme frame, got: ~e" drs-frame)))

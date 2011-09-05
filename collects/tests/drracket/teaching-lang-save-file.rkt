@@ -30,7 +30,7 @@
          (error 'save-teaching-lang-file.rkt
                 "expected the saved file to contain the word 'metadata' in a comment"))
        (do-execute drr-frame)
-       (test:menu-select "File" "Close Tab")
+       (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Tab"))
        (use-get/put-dialog 
         (λ () 
           (test:menu-select "File" "Open..."))
@@ -40,7 +40,7 @@
                       drr-frame
                       (send interactions-text paragraph-start-position 2)
                       (send interactions-text last-position))])
-         (test:menu-select "File" "Close Tab")
+         (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Tab"))
          (delete-file fn)
          (unless (equal? result "1\n> ")
            (error 'save-teaching-lang-file.rkt "expected the program to produce 1 (followed by the prompt), got ~s" result)))))))

@@ -9,7 +9,12 @@
          framework/framework-unit
          framework/private/sig
          (for-syntax scheme/base)
-         scribble/srcdoc)
+         scribble/srcdoc) 
+
+;; these next two lines do a little dance to make the
+;; require/doc setup work out properly
+(require (prefix-in :: framework/private/focus-table))
+(define frame:lookup-focus-table ::frame:lookup-focus-table)
 
 (require framework/preferences
          framework/test
@@ -709,7 +714,24 @@
             @racket[bitmap% get-loaded-mask]) and @racket['large].}]
     
     Defaults to @racket[#f].})
-
+ 
+ (proc-doc/names
+  frame:lookup-focus-table
+  (->* () (eventspace?) (listof (is-a?/c frame:focus-table<%>)))
+  (()
+   ((eventspace (current-eventspace))))
+  @{Returns a list of the frames in @racket[eventspace], where the first element of the list
+    is the frame with the focus.
+    
+    The order and contents of the list are maintained by
+    the methods in @racket[frame:focus-table-mixin], meaning that the
+    OS-level callbacks that track the focus of individual frames is 
+    ignored.
+    
+    See also @racket[test:use-focus-table] and @racket[test:get-active-top-level-window].
+    
+    })
+ 
  (proc-doc/names
   group:get-the-frame-group
   (-> (is-a?/c group:%))

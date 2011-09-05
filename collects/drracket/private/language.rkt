@@ -783,7 +783,8 @@
             [(string=? "" filename-str)
              (message-box (string-constant drscheme)
                           (string-constant please-specify-a-filename)
-                          dlg)
+                          dlg
+                          #:dialog-mixin frame:focus-table-mixin)
              #f]
             [(not (users-name-ok? mode extension dlg (string->path filename-str)))
              #f]
@@ -797,7 +798,8 @@
       (eq? (message-box (string-constant drscheme)
                         (format (string-constant are-you-sure-delete?) filename)
                         dlg
-                        '(yes-no))
+                        '(yes-no)
+                        #:dialog-mixin frame:focus-table-mixin)
            'yes))
     
     (define cancelled? #t)
@@ -904,7 +906,8 @@
                                [(distribution) (string-constant distribution)])
                              name
                              extension)
-                            parent)
+                            parent
+                            #:dialog-mixin frame:focus-table-mixin)
                #f)))))
   
   ;; default-executable-filename : path symbol boolean -> path
@@ -940,7 +943,8 @@
                      (λ (x)
                        (message-box 
                         (string-constant drscheme)
-                        (format "~a" (exn-message x)))
+                        (format "~a" (exn-message x))
+                        #:dialog-mixin frame:focus-table-mixin)
                        (void))])
       (define init-code-tmp-filename (make-temporary-file "drs-standalone-exectable-init~a"))
       (define bootstrap-tmp-filename (make-temporary-file "drs-standalone-exectable-bootstrap~a"))
@@ -1163,7 +1167,8 @@
                      (λ (x)
                        (message-box 
                         (string-constant drscheme)
-                        (format "~a" (exn-message x)))
+                        (format "~a" (exn-message x))
+                        #:dialog-mixin frame:focus-table-mixin)
                        (void))])
       
       ((if gui? make-mred-launcher make-mzscheme-launcher)
