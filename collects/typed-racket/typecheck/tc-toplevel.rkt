@@ -252,65 +252,70 @@
     [_ (int-err "not define-type-alias")]))
 
 (define (type-check forms0)
-  (begin-with-definitions
-    (define forms (syntax->list forms0))
-    (define-values (type-aliases struct-defs stx-defs0 val-defs0 provs reqs)
-      (filter-multiple
-       forms
-       (internal-syntax-pred define-type-alias-internal)
-       (lambda (e) (or ((internal-syntax-pred define-typed-struct-internal) e)
-                       ((internal-syntax-pred define-typed-struct/exec-internal) e)))
-       parse-syntax-def
-       parse-def
-       provide?
-       define/fixup-contract?))
-    (for-each (compose register-type-alias parse-type-alias) type-aliases)
-    ;; add the struct names to the type table
-    (for-each (compose add-type-name! names-of-struct) struct-defs)
-    ;; resolve all the type aliases, and error if there are cycles
-    (resolve-type-aliases parse-type)
-    ;; do pass 1, and collect the defintions
-    (define defs (apply append (filter list? (map tc-toplevel/pass1 forms))))
-    ;; separate the definitions into structures we'll handle for provides
-    (define def-tbl
-      (for/fold ([h (make-immutable-free-id-table)])
-        ([def (in-list defs)])
-        (dict-set h (binding-name def) def)))
-    ;; typecheck the expressions and the rhss of defintions
-    (for-each tc-toplevel/pass2 forms)
-    ;; check that declarations correspond to definitions
-    (check-all-registered-types)
-    ;; report delayed errors
-    (report-all-errors)
-    (define syntax-provide? #f)
-    (define provide-tbl
-      (for/fold ([h (make-immutable-free-id-table)]) ([p (in-list provs)])
-        (define-syntax-class unknown-provide-form
-         (pattern
-          (~and name
-           (~or (~datum protect) (~datum for-syntax) (~datum for-label) (~datum for-meta)
-                (~datum struct) (~datum all-from) (~datum all-from-except)
-                (~datum all-defined) (~datum all-defined-except)
-                (~datum prefix-all-defined) (~datum prefix-all-defined-except)
-                (~datum expand)))))
-        (syntax-parse p #:literals (#%provide)
-          [(#%provide form ...)
-           (for/fold ([h h]) ([f (syntax->list #'(form ...))])
-             (parameterize ([current-orig-stx f])
-               (syntax-parse f
-                 [i:id
-                  (when (def-stx-binding? (dict-ref def-tbl #'i #f))
-                    (set! syntax-provide? #t))
-                  (dict-set h #'i #'i)]
-                 [((~datum rename) in out)
-                  (when (def-stx-binding? (dict-ref def-tbl #'in #f))
-                    (set! syntax-provide? #t))
-                  (dict-set h #'in #'out)]
-                 [(name:unknown-provide-form . _)
-                  (tc-error "provide: ~a not supported by Typed Racket" (syntax-e #'name.name))]
-                 [_ (int-err "unknown provide form")])))]
-          [_ (int-err "non-provide form! ~a" (syntax->datum p))])))
-    ;; compute the new provides
+  (define forms (syntax->list forms0))
+  (define-values (type-aliases struct-defs stx-defs0 val-defs0 provs reqs)
+    (filter-multiple
+     forms
+     (internal-syntax-pred define-type-alias-internal)
+     (lambda (e) (or ((internal-syntax-pred define-typed-struct-internal) e)
+                     ((internal-syntax-pred define-typed-struct/exec-internal) e)))
+     parse-syntax-def
+     parse-def
+     provide?
+     define/fixup-contract?))
+  (do-time "Form splitting done")
+  (for-each (compose register-type-alias parse-type-alias) type-aliases)
+  ;; add the struct names to the type table
+  (for-each (compose add-type-name! names-of-struct) struct-defs)
+  ;; resolve all the type aliases, and error if there are cycles
+  (resolve-type-aliases parse-type)
+  (do-time "Starting pass1")
+  ;; do pass 1, and collect the defintions
+  (define defs (apply append (filter list? (map tc-toplevel/pass1 forms))))
+  (do-time "Finished pass1")
+  ;; separate the definitions into structures we'll handle for provides
+  (define def-tbl
+    (for/fold ([h (make-immutable-free-id-table)])
+      ([def (in-list defs)])
+      (dict-set h (binding-name def) def)))
+  ;; typecheck the expressions and the rhss of defintions
+  (do-time "Starting pass2")
+  (for-each tc-toplevel/pass2 forms)
+  (do-time "Finished pass2")
+  ;; check that declarations correspond to definitions
+  (check-all-registered-types)
+  ;; report delayed errors
+  (report-all-errors)
+  (define syntax-provide? #f)
+  (define provide-tbl
+    (for/fold ([h (make-immutable-free-id-table)]) ([p (in-list provs)])
+      (define-syntax-class unknown-provide-form
+        (pattern
+         (~and name
+               (~or (~datum protect) (~datum for-syntax) (~datum for-label) (~datum for-meta)
+                    (~datum struct) (~datum all-from) (~datum all-from-except)
+                    (~datum all-defined) (~datum all-defined-except)
+                    (~datum prefix-all-defined) (~datum prefix-all-defined-except)
+                    (~datum expand)))))
+      (syntax-parse p #:literals (#%provide)
+        [(#%provide form ...)
+         (for/fold ([h h]) ([f (syntax->list #'(form ...))])
+           (parameterize ([current-orig-stx f])
+             (syntax-parse f
+               [i:id
+                (when (def-stx-binding? (dict-ref def-tbl #'i #f))
+                  (set! syntax-provide? #t))
+                (dict-set h #'i #'i)]
+               [((~datum rename) in out)
+                (when (def-stx-binding? (dict-ref def-tbl #'in #f))
+                  (set! syntax-provide? #t))
+                (dict-set h #'in #'out)]
+               [(name:unknown-provide-form . _)
+                (tc-error "provide: ~a not supported by Typed Racket" (syntax-e #'name.name))]
+               [_ (int-err "unknown provide form")])))]
+        [_ (int-err "non-provide form! ~a" (syntax->datum p))])))
+  ;; compute the new provides
+  (define new-stx 
     (with-syntax*
         ([the-variable-reference (generate-temporary #'blame)]
          [(new-provs ...)
@@ -319,11 +324,13 @@
           #,(if (null? (syntax-e #'(new-provs ...)))
                 #'(begin)
                 #'(define the-variable-reference (quote-module-name)))
-           #,(env-init-code syntax-provide? provide-tbl def-tbl)
-           #,(tname-env-init-code)
-           #,(talias-env-init-code)
-           (begin-for-syntax #,(make-struct-table-code))
-           (begin new-provs ...)))))
+          #,(env-init-code syntax-provide? provide-tbl def-tbl)
+          #,(tname-env-init-code)
+          #,(talias-env-init-code)
+          (begin-for-syntax #,(make-struct-table-code))
+          (begin new-provs ...))))
+  (do-time "finished provide generation")
+  new-stx)
 
 ;; typecheck a whole module
 ;; syntax -> syntax
