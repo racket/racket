@@ -2,7 +2,7 @@
 @(require scribble/manual
           scribble/eval
           scribble/struct
-          scheme/sandbox
+          racket/sandbox
           "config.rkt"
           "tabbing.rkt"
           (for-label (prefix-in srfi: srfi/19)
@@ -57,33 +57,33 @@ along with their corresponding Racket representations.
 @centered{
 @tabbing{
   @bold{PostgreSQL type}  @& @bold{pg_type.typname}  @& @bold{Racket type} @//
-  @racket['boolean]       @& @tt{bool}               @& @scheme[boolean?] @//
-  @racket['char1]         @& @tt{char}               @& @scheme[char?] @//
-  @racket['smallint]      @& @tt{int2}               @& @scheme[exact-integer?] @//
-  @racket['integer]       @& @tt{int4}               @& @scheme[exact-integer?] @//
-  @racket['bigint]        @& @tt{int8}               @& @scheme[exact-integer?] @//
-  @racket['real]          @& @tt{float4}             @& @scheme[real?] @//
-  @racket['double]        @& @tt{float8}             @& @scheme[real?] @//
-  @racket['decimal]       @& @tt{numeric}            @& @scheme[number?] @//
-  @racket['character]     @& @tt{bpchar}             @& @scheme[string?] @//
-  @racket['varchar]       @& @tt{varchar}            @& @scheme[string?] @//
-  @racket['text]          @& @tt{text}               @& @scheme[string?] @//
-  @racket['bytea]         @& @tt{bytea}              @& @scheme[bytes?] @//
-  @racket['date]          @& @tt{date}               @& @scheme[sql-date?] @//
-  @racket['time]          @& @tt{time}               @& @scheme[sql-time?] @//
-  @racket['timetz]        @& @tt{timetz}             @& @scheme[sql-time?] @//
-  @racket['timestamp]     @& @tt{timestamp}          @& @scheme[sql-timestamp?] @//
-  @racket['timestamptz]   @& @tt{timestamptz}        @& @scheme[sql-timestamp?] @//
-  @racket['interval]      @& @tt{interval}           @& @scheme[sql-interval?] @//
-  @racket['bit]           @& @tt{bit}                @& @scheme[sql-bits?] @//
-  @racket['varbit]        @& @tt{varbit}             @& @scheme[sql-bits?] @//
+  @racket['boolean]       @& @tt{bool}               @& @racket[boolean?] @//
+  @racket['char1]         @& @tt{char}               @& @racket[char?] @//
+  @racket['smallint]      @& @tt{int2}               @& @racket[exact-integer?] @//
+  @racket['integer]       @& @tt{int4}               @& @racket[exact-integer?] @//
+  @racket['bigint]        @& @tt{int8}               @& @racket[exact-integer?] @//
+  @racket['real]          @& @tt{float4}             @& @racket[real?] @//
+  @racket['double]        @& @tt{float8}             @& @racket[real?] @//
+  @racket['decimal]       @& @tt{numeric}            @& @racket[number?] @//
+  @racket['character]     @& @tt{bpchar}             @& @racket[string?] @//
+  @racket['varchar]       @& @tt{varchar}            @& @racket[string?] @//
+  @racket['text]          @& @tt{text}               @& @racket[string?] @//
+  @racket['bytea]         @& @tt{bytea}              @& @racket[bytes?] @//
+  @racket['date]          @& @tt{date}               @& @racket[sql-date?] @//
+  @racket['time]          @& @tt{time}               @& @racket[sql-time?] @//
+  @racket['timetz]        @& @tt{timetz}             @& @racket[sql-time?] @//
+  @racket['timestamp]     @& @tt{timestamp}          @& @racket[sql-timestamp?] @//
+  @racket['timestamptz]   @& @tt{timestamptz}        @& @racket[sql-timestamp?] @//
+  @racket['interval]      @& @tt{interval}           @& @racket[sql-interval?] @//
+  @racket['bit]           @& @tt{bit}                @& @racket[sql-bits?] @//
+  @racket['varbit]        @& @tt{varbit}             @& @racket[sql-bits?] @//
 
-  @racket['point]         @& @tt{point}              @& @scheme[point?] @//
-  @racket['lseg]          @& @tt{lseg}               @& @scheme[line?] @//
-  @racket['path]          @& @tt{path}               @& @scheme[pg-path?] @//
-  @racket['box]           @& @tt{box}                @& @scheme[pg-box?] @//
-  @racket['polygon]       @& @tt{polygon}            @& @scheme[polygon?] @//
-  @racket['circle]        @& @tt{circle}             @& @scheme[pg-circle?]
+  @racket['point]         @& @tt{point}              @& @racket[point?] @//
+  @racket['lseg]          @& @tt{lseg}               @& @racket[line?] @//
+  @racket['path]          @& @tt{path}               @& @racket[pg-path?] @//
+  @racket['box]           @& @tt{box}                @& @racket[pg-box?] @//
+  @racket['polygon]       @& @tt{polygon}            @& @racket[polygon?] @//
+  @racket['circle]        @& @tt{circle}             @& @racket[pg-circle?]
 }
 }
 
@@ -92,7 +92,7 @@ syntax (the quotation marks are significant), is one byte, essentially
 a tiny integer written as a character.
 
 A SQL value of type @tt{decimal} is converted to either an exact
-rational or @scheme[+nan.0]. When converting Racket values to SQL
+rational or @racket[+nan.0]. When converting Racket values to SQL
 @tt{decimal}, exact rational values representable by finite decimal
 strings are converted without loss of precision. (Precision may be
 lost, of course, if the value is then stored in a database field of
@@ -136,19 +136,19 @@ with their corresponding Racket representations.
 @centered{
 @tabbing[#:spacing 8]{
   @bold{MySQL type}            @& @bold{Racket type} @//
-  @racket['integer]            @& @scheme[exact-integer?] @//
-  @racket['tinyint]            @& @scheme[exact-integer?] @//
-  @racket['smallint]           @& @scheme[exact-integer?] @//
-  @racket['mediumint]          @& @scheme[exact-integer?] @//
-  @racket['bigint]             @& @scheme[exact-integer?] @//
-  @racket['real]               @& @scheme[real?] @//
-  @racket['double]             @& @scheme[real?] @//
-  @racket['decimal]            @& @scheme[exact?] @//
-  @racket['varchar]            @& @scheme[string?] @//
-  @racket['var-string]         @& @scheme[string?] or @scheme[bytes?], but see below @//
-  @racket['date]               @& @scheme[sql-date?] @//
-  @racket['time]               @& @scheme[sql-time?] or @racket[sql-day-time-interval?] @//
-  @racket['datetime]           @& @scheme[sql-timestamp?] @//
+  @racket['integer]            @& @racket[exact-integer?] @//
+  @racket['tinyint]            @& @racket[exact-integer?] @//
+  @racket['smallint]           @& @racket[exact-integer?] @//
+  @racket['mediumint]          @& @racket[exact-integer?] @//
+  @racket['bigint]             @& @racket[exact-integer?] @//
+  @racket['real]               @& @racket[real?] @//
+  @racket['double]             @& @racket[real?] @//
+  @racket['decimal]            @& @racket[exact?] @//
+  @racket['varchar]            @& @racket[string?] @//
+  @racket['var-string]         @& @racket[string?] or @racket[bytes?], but see below @//
+  @racket['date]               @& @racket[sql-date?] @//
+  @racket['time]               @& @racket[sql-time?] or @racket[sql-day-time-interval?] @//
+  @racket['datetime]           @& @racket[sql-timestamp?] @//
 
   @racket['blob]               @& @racket[bytes?] @//
   @racket['tinyblob]           @& @racket[bytes?] @//
@@ -195,10 +195,10 @@ constraints (with the exception of @tt{integer primary key}) on
 @centered{
 @tabbing{
   @bold{SQLite storage class}  @& @bold{Racket type} @//
-  @tt{integer}                 @& @scheme[exact-integer?] @//
-  @tt{real}                    @& @scheme[real?] @//
-  @tt{text}                    @& @scheme[string?] @//
-  @tt{blob}                    @& @scheme[bytes?]
+  @tt{integer}                 @& @racket[exact-integer?] @//
+  @tt{real}                    @& @racket[real?] @//
+  @tt{text}                    @& @racket[string?] @//
+  @tt{blob}                    @& @racket[bytes?]
 }
 }
 
@@ -229,26 +229,26 @@ along with their corresponding Racket representations.
 @centered{
 @tabbing[#:spacing 8]{
   @bold{ODBC type}        @& @bold{Racket type} @//
-  @racket['character]     @& @scheme[string?] @//
-  @racket['varchar]       @& @scheme[string?] @//
-  @racket['longvarchar]   @& @scheme[string?] @//
-  @racket['numeric]       @& @scheme[rational?] @//
-  @racket['decimal]       @& @scheme[rational?] @//
-  @racket['integer]       @& @scheme[exact-integer?] @//
-  @racket['tinyint]       @& @scheme[exact-integer?] @//
-  @racket['smallint]      @& @scheme[exact-integer?] @//
-  @racket['bigint]        @& @scheme[exact-integer?] @//
-  @racket['float]         @& @scheme[real?] @//
-  @racket['real]          @& @scheme[real?] @//
-  @racket['double]        @& @scheme[real?] @//
-  @racket['date]          @& @scheme[sql-date?] @//
-  @racket['time]          @& @scheme[sql-time?] @//
-  @racket['datetime]      @& @scheme[sql-timestamp?] @//
-  @racket['timestamp]     @& @scheme[sql-timestamp?] @//
-  @racket['binary]        @& @scheme[bytes?] @//
-  @racket['varbinary]     @& @scheme[bytes?] @//
-  @racket['longvarbinary] @& @scheme[bytes?] @//
-  @racket['bit1]          @& @scheme[boolean?]
+  @racket['character]     @& @racket[string?] @//
+  @racket['varchar]       @& @racket[string?] @//
+  @racket['longvarchar]   @& @racket[string?] @//
+  @racket['numeric]       @& @racket[rational?] @//
+  @racket['decimal]       @& @racket[rational?] @//
+  @racket['integer]       @& @racket[exact-integer?] @//
+  @racket['tinyint]       @& @racket[exact-integer?] @//
+  @racket['smallint]      @& @racket[exact-integer?] @//
+  @racket['bigint]        @& @racket[exact-integer?] @//
+  @racket['float]         @& @racket[real?] @//
+  @racket['real]          @& @racket[real?] @//
+  @racket['double]        @& @racket[real?] @//
+  @racket['date]          @& @racket[sql-date?] @//
+  @racket['time]          @& @racket[sql-time?] @//
+  @racket['datetime]      @& @racket[sql-timestamp?] @//
+  @racket['timestamp]     @& @racket[sql-timestamp?] @//
+  @racket['binary]        @& @racket[bytes?] @//
+  @racket['varbinary]     @& @racket[bytes?] @//
+  @racket['longvarbinary] @& @racket[bytes?] @//
+  @racket['bit1]          @& @racket[boolean?]
 }
 }
 
@@ -281,13 +281,13 @@ that have no existing appropriate counterpart in Racket.
 
 @subsection{SQL NULL}
 
-SQL @tt{NULL} is translated into the unique @scheme[sql-null] value.
+SQL @tt{NULL} is translated into the unique @racket[sql-null] value.
 
 @defthing[sql-null sql-null?]{
 
   A special value used to represent @tt{NULL} values in query
-  results. The @scheme[sql-null] value may be recognized using
-  @scheme[eq?].
+  results. The @racket[sql-null] value may be recognized using
+  @racket[eq?].
 
 @(examples/results
   [(query-value c "select NULL")
@@ -362,12 +362,12 @@ values.
 
   Represents SQL times and timestamps.
 
-  The @scheme[tz] field indicates the time zone offset as the number
+  The @racket[tz] field indicates the time zone offset as the number
   of seconds east of GMT (as in SRFI 19). If @racket[tz] is
   @racket[#f], the time or timestamp does not carry time zone
   information.
 
-  The @scheme[sql-time] and @scheme[sql-timestamp] structures store
+  The @racket[sql-time] and @racket[sql-timestamp] structures store
   fractional seconds to nanosecond precision for compatibility with
   SRFI 19. Note, however, that database systems generally do not
   support nanosecond precision; PostgreSQL, for example, only supports
