@@ -367,7 +367,8 @@
                               [proc* (fail! proc proc*)]
                               [else A0])])
                  (subtype/flds* A flds flds*))]
-              [((Struct: _ _ _ _ _ _ _ _) (StructTop: (== s type-equal?)))
+              [((Struct: nm _ _ _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _ _ _))) (=> nevermind)
+               (unless (free-identifier=? nm nm*) (nevermind))
                A0]
               ;ephemerons are covariant
               [((Ephemeron: s) (Ephemeron: t))

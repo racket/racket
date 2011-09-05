@@ -196,7 +196,7 @@
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(app has-name? (? values name))
      (fp "~a" name)]
-    [(StructTop: st) (fp "~a" st)]
+    [(StructTop: st) (fp "(struct-top: ~a)" st)]
     [(BoxTop:) (fp "Box")]
     [(ChannelTop:) (fp "Channel")]
     [(ThreadCellTop:) (fp "ThreadCell")]
