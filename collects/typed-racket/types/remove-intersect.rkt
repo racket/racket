@@ -26,6 +26,10 @@
          [(list (Name: n) (Name: n*))
           (or (free-identifier=? n n*)
               (overlap (resolve-once t1) (resolve-once t2)))]
+         [(list _ (Name: _))
+           (overlap t1 (resolve-once t2))]
+         [(list (Name: _) _)
+           (overlap (resolve-once t1) t2)]
          [(list (? Mu?) _) (overlap (unfold t1) t2)]
          [(list _ (? Mu?)) (overlap t1 (unfold t2))]
 
