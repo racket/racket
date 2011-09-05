@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require syntax/boundmap (for-syntax scheme/base syntax/parse))
+(require syntax/id-table racket/dict (for-syntax racket/base syntax/parse))
 
 (provide defintern hash-id)
 
@@ -34,12 +34,12 @@
 (define count! (make-count!))
 (define id-count! (make-count!))
 
-(define identifier-table (make-module-identifier-mapping))
+(define identifier-table (make-free-id-table))
 
 (define (hash-id id)
-  (module-identifier-mapping-get
+  (dict-ref
    identifier-table
    id
    (lambda () (let ([c (id-count!)])
-                (module-identifier-mapping-put! identifier-table id c)
+                (dict-set! identifier-table id c)
                 c))))
