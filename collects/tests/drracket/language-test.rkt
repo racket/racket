@@ -1107,10 +1107,10 @@ the settings above should match r5rs
 (define (test-setting set-setting setting-name expression result)
   (set-language #f)
   (set-setting)
-  (let ([f (get-top-level-focus-window)])
+  (let ([f (test:get-active-top-level-window)])
     (fw:test:button-push "OK")
     (wait-for-new-frame f))
-  (let* ([drs (get-top-level-focus-window)]
+  (let* ([drs (test:get-active-top-level-window)]
          [interactions (send drs get-interactions-text)])
     (clear-definitions drs)
     (type-in-definitions drs expression)
@@ -1124,7 +1124,7 @@ the settings above should match r5rs
 (define (test-hash-bang)
   (let* ([expression "#!/bin/sh\n1"]
          [result "1"]
-         [drs (get-top-level-focus-window)]
+         [drs (test:get-active-top-level-window)]
          [interactions (queue-callback (λ () (send drs get-interactions-text)))])
     (clear-definitions drs)
     (type-in-definitions drs expression)
@@ -1235,7 +1235,7 @@ the settings above should match r5rs
             (fw:test:set-check-box!
              "Insert newlines in printed values"
              pretty?)
-            (let ([f (get-top-level-focus-window)])
+            (let ([f (test:get-active-top-level-window)])
               (fw:test:button-push "OK")
               (wait-for-new-frame f)))]
          [shorten

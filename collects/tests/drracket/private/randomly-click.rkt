@@ -69,7 +69,7 @@
      (send area get-label)]))
 
 (define (g open-dialog)
-  (let ((base-window (get-top-level-focus-window)))
+  (let ((base-window (test:get-active-top-level-window)))
     (open-dialog)
     (wait-for-different-frame base-window)
     (let loop ([n numButtonsToPush]
@@ -84,7 +84,7 @@
          (when (= 1 (modulo n 10)) (printf "\n"))
          (flush-output)
          
-         (let ((window (get-top-level-focus-window)))
+         (let ((window (test:get-active-top-level-window)))
            (cond
              ;; Back to base-window is not interesting, Reopen
              [(eq? base-window window)
@@ -92,9 +92,6 @@
               (wait-for-different-frame base-window)
               (loop (- n 1) actions)]
              
-             ;; get-top-level-focus-window returns #f may imply window not in current eventspace
-             ;; but it also might just mean we didn't look into subeventspaces(?)
-             ;; or that we need to wait for something to happen in the GUI(?)
              [(eq? window #f)
               (sleep .1)
               (loop (- n 1) actions)]
@@ -137,7 +134,7 @@
 ;; the splash screen is in a separate eventspace so wont' show up.
 (define (wait-for-first-frame)
   (let loop ()
-    (let ([tlw (get-top-level-focus-window)])
+    (let ([tlw (test:get-active-top-level-window)])
       (cond
         [(not tlw)
          (sleep 1/20)
@@ -151,7 +148,7 @@
       [(zero? n)
        (error 'wait-for-different-frame "never got that new window, only this one: ~s" win)]
       [else
-       (let ([tlw (get-top-level-focus-window)])
+       (let ([tlw (test:get-active-top-level-window)])
          (when (eq? win tlw)
            (sleep 1/10)
            (loop (- n 1))))])))

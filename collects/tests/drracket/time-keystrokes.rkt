@@ -41,7 +41,7 @@
         (let loop ([n 10])
           (when (zero? n)
             (error 'time-keystrokes "could not find drscheme frame"))
-          (let ([front-frame (get-top-level-focus-window)])
+          (let ([front-frame (test:get-active-top-level-window)])
             (unless (eq? front-frame frame)
               (sleep 1/10)
               (loop (- n 1)))))

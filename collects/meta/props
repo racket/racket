@@ -1432,7 +1432,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/example-tool.rkt" drdr:command-line (gracket "-t" *)
 "collects/tests/drracket/get-defs-test.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/hangman.rkt" responsible (robby matthias) drdr:command-line (gracket *)
-"collects/tests/drracket/io.rkt" drdr:command-line (gracket *)
+"collects/tests/drracket/io.rkt" drdr:command-line (gracket *) drdr:timeout 500
 "collects/tests/drracket/language-test.rkt" responsible (robby matthias) drdr:command-line (gracket *) drdr:timeout 600
 "collects/tests/drracket/leaky-frame.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)

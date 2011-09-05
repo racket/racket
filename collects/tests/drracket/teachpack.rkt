@@ -109,11 +109,11 @@
                     (lambda ()
                       (let ([active
                              (or
-                              (get-top-level-focus-window)
+                              (test:get-active-top-level-window)
                               (and (send interactions-text get-user-eventspace)
                                    (parameterize ([current-eventspace
                                                    (send interactions-text get-user-eventspace)])
-                                     (get-top-level-focus-window))))])
+                                     (test:get-active-top-level-window))))])
                         (if (and active (not (eq? active drs-frame)))
                             active
                             #f)))])
@@ -198,7 +198,7 @@
                   (fw:test:menu-select "Language" "Clear All Teachpacks")
                   (fw:test:menu-select "Language" "Add Teachpack...")
                   (wait-for-new-frame drs-frame)
-                  (let* ([tp-dialog (get-top-level-focus-window)]
+                  (let* ([tp-dialog (test:get-active-top-level-window)]
                          [choice (find/select-relevant-choice tp-dialog (path->string teachpack))])
                     (fw:test:button-push "OK")
                     (wait-for-new-frame tp-dialog))

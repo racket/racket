@@ -1336,7 +1336,7 @@ This produces an ACK message
          (begin
            (set-language-level! level #f)
            (test:set-radio-box-item! "No debugging or profiling")
-           (let ([f (get-top-level-focus-window)])
+           (let ([f (test:get-active-top-level-window)])
              (test:button-push "OK")
              (wait-for-new-frame f)))]
         [(debug)
@@ -1345,7 +1345,7 @@ This produces an ACK message
          (begin
            (set-language-level! level #f)
            (test:set-radio-box-item! "Debugging and profiling")
-           (let ([f (get-top-level-focus-window)])
+           (let ([f (test:get-active-top-level-window)])
              (test:button-push "OK")
              (wait-for-new-frame f)))])
          
