@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label scheme
+          (for-label racket/base
                      profile/analyzer
                      (prefix-in text: profile/render-text)
                      (prefix-in graphviz: profile/render-graphviz)))
@@ -9,11 +9,11 @@
 @title[#:tag "renderers"]{Profile Renderers}
 
 After collecting the profile samples and analyzing the data, the last
-aspect of profiling is to render the results.  The profile collection
-provides several renderers, each providing a rendering function that
-consumes a @racket[profile] instance.  See the
+step of the profiling process is to render the results.  The profile
+collection provides several renderers, each providing a rendering
+function that consumes a @racket[profile] instance.  See the
 @seclink["analyzer"]{analyzer} section for a description of the
-@racket[profile] struct if you want to implement your own renderer.
+@racket[profile] struct if you want to implement a new renderer.
 
 @;--------------------------------------------------------------------
 @section{Textual Rendering}
@@ -29,7 +29,7 @@ consumes a @racket[profile] instance.  See the
 
 Prints the given @racket[profile] results as a textual table.
 
-The printout begins with some general facts about the profile, and
+The printout begins with some general details about the profile, and
 then a table that represents the call-graph is printed.  Each row in
 this table looks like:
 
@@ -38,17 +38,17 @@ this table looks like:
   [N1] N2(N3%) N4(N5%)  A ...path/to/source.rkt:12:34
                           C [M3] M4%}
 
-Where actual numbers appear in the printout.  The meaning of the
+where actual numbers appear in the printout.  The meaning of the
 numbers and labels is as follows:
 @itemize[
 @item{@tt{A} --- the name of the function that this node represents,
   followed by the source location for the function if it is known.
-  The name can be ``???'' for functions with no identifier, but in
-  this case the source location will identify them.}
+  The name can be ``???'' for anonymous functions, but in this case
+  the source location will identify them.}
 @item{@tt{N1} --- an index number associated with this node.  This is
-  important in references to this function, since the symbolic names
-  are not unique (and some can be missing).  The number itself has no
-  significance, it simply goes from 1 up.}
+  useful in references to this function, since the symbolic names are
+  not unique (and some can be missing).  The number itself has no
+  significance.}
 @item{@tt{N2} --- the time (in milliseconds) that this function has
   been anywhere in a stack snapshot.  This is the total time that the
   execution was somewhere in this function or in its callees.
@@ -59,13 +59,12 @@ numbers and labels is as follows:
   whole execution.}
 @item{@tt{N4} --- the time (in milliseconds) that this function has
   been at the top of the stack snapshot.  This is the time that this
-  function consumed doing work itself rather than calling other
-  functions.  (Corresponds to the @racket[node-self] field.)}
+  function was itself doing work rather than calling other functions.
+  (Corresponds to the @racket[node-self] field.)}
 @item{@tt{N5} --- this is the percentage of @tt{N4} out of the total
   observed time of the profile.  Functions with high values here can
   be good candidates for optimization, But, of course, they can
-  represent doing real work due to one of its callers that need to be
-  optimized.}
+  represent doing real work for a caller that needs to be optimized.}
 @item{@tt{B} and @tt{C} --- these are labels for the callers and
   callees of the function.  Any number of callers and callees can
   appear here (including 0).  The function itself can also appear in

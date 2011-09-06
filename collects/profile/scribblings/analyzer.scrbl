@@ -1,45 +1,45 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label scheme profile/analyzer))
+          (for-label racket/base profile/analyzer))
 
 @title[#:tag "analyzer"]{Analyzing Profile Data}
 
 @defmodule[profile/analyzer]
 
-Once a profile run is done, and the results are collected, the next
-step is to analyze the data.  In this step the sample time are
-computed and summed, a call-graph representing the observed function
-calls is built, and per-node and per-edge information is created.
-This is the job of the main function provided by
-@racket[profile/analyzer].
+Once a profile run is done and the results are collected, the next
+step is to analyze the data.  In this step sample times are computed
+and summed, a call-graph representing observed function calls is
+built, and per-node and per-edge information is created.  This is the
+job of the main function provided by @racket[profile/analyzer].
 
 @defproc[(analyze-samples [raw-sample-data any/c])
          profile?]{
 
 This function consumes the raw result of the
-@seclink["sampler"]{sampler} (which is given in an undocumented form),
-analyzes it, and returns a @racket[profile] value holding the analyzed
-results.  Without this function, the results of the sampler are
+@seclink["sampler"]{sampler} (given in an undocumented form), analyzes
+it, and returns a @racket[profile] value holding the analyzed results.
+Without this function, the results of the sampler should be considered
 meaningless.}
 
 
-@defstruct[profile ([total-time exact-nonnegative-integer?]
-                    [cpu-time   exact-nonnegative-integer?]
-                    [sample-number exact-nonnegative-integer?]
-                    [thread-times  (listof (cons exact-nonnegative-integer?
-                                                 exact-nonnegative-integer?))]
-                    [nodes  (listof node?)]
-                    [*-node node?])]{
+@defstruct*[profile ([total-time exact-nonnegative-integer?]
+                     [cpu-time   exact-nonnegative-integer?]
+                     [sample-number exact-nonnegative-integer?]
+                     [thread-times  (listof (cons exact-nonnegative-integer?
+                                                  exact-nonnegative-integer?))]
+                     [nodes  (listof node?)]
+                     [*-node node?])]{
 
-Represents the analyzed profile result.
+Represents an analyzed profile result.
 
 @itemize[
 
 @item{@racket[total-time] is the total observed time (in milliseconds)
-  included in the profile.  This is different than the actual time the
-  profiling took, due to unaccounted-for time spent in untracked
-  threads.  (E.g., the sampler thread itself.)}
+  included in the profile run.  This can be different from the actual
+  time the profiling took, due to unaccounted-for time spent in
+  untracked threads.  (E.g., time spent in the sampler thread
+  itself.)}
 
 @item{@racket[cpu-time] is the actual cpu time consumed by the process
   during the profiler's work.}
@@ -61,69 +61,70 @@ Represents the analyzed profile result.
   amount of time (time spent either in the function or in its callees)
   as a secondary key.}
 
-@item{@racket[*-node] holds a ``special'' node value that is
-  constructed for every graph.  This node is used as the caller for
-  all top-level function nodes and as the callee for all leaf nodes.
-  It can therefore be used to start a scan of the call graph.  In
-  addition, the times associated with its "callers and callees"
-  actually represent the time these functions spent being the root of
-  the computation or its leaf.  (This can be different from a node's
-  ``self'' time, since it is divided by the number of instances a
-  function had on the stack for every sample --- so for recursive
-  functions this value is different from.)}
+@item{@racket[*-node] holds a ``special'' root node value that is
+  constructed for every call graph.  This node is used as the caller
+  for all top-level function nodes and as the callee for all leaf
+  nodes.  It can therefore be used to start a recursive scan of the
+  call graph.  In addition, the times associated with its ``callers''
+  and ``callees'' actually represent the time these functions spent
+  being the root of the computation or its leaf.  (This can be
+  different from a node's ``self'' time, since it is divided by the
+  number of instances a function had on the stack in each sample---so
+  for recursive functions this value is always different from the
+  ``self'' time.)}
 
 ]}
 
 
-@defstruct[node ([id      (or/c #f symbol?)]
-                 [src     (or/c #f srcloc?)]
-                 [thread-ids (listof exact-nonnegative-integer?)]
-                 [total   exact-nonnegative-integer?]
-                 [self    exact-nonnegative-integer?]
-                 [callers (listof edge?)]
-                 [callees (listof edge?)])]{
+@defstruct*[node ([id      (or/c #f symbol?)]
+                  [src     (or/c #f srcloc?)]
+                  [thread-ids (listof exact-nonnegative-integer?)]
+                  [total   exact-nonnegative-integer?]
+                  [self    exact-nonnegative-integer?]
+                  [callers (listof edge?)]
+                  [callees (listof edge?)])]{
 
 Represents a function call node in the call graph of an analyzed
 profile result.
 
 @itemize[
 
-@item{The @racket[id] and @racket[src] field hold a symbol naming the
+@item{The @racket[id] and @racket[src] fields hold a symbol naming the
   function and/or its source location as a @racket[srcloc] value.
   This is the same as the results of
-  @racket[continuation-mark-set->context], so at most of of these can
+  @racket[continuation-mark-set->context], so at most one of these can
   be @racket[#f], except for the special @racket[*-node] (see the
-  @racket[profile] struct) that can be identified by both of these
-  being @racket[#f].}
+  @racket[profile] struct) that can be identified by both being
+  @racket[#f].}
 
 @item{@racket[thread-ids] holds a list of thread identifiers that were
   observed executing this function.}
 
-@item{@racket[total] holds the total time (in milliseconds) where this
+@item{@racket[total] holds the total time (in milliseconds) that this
   function was anywhere on the stack.  It is common to see a few
   toplevel functions that have close to a 100% total time, but
-  otherwise small @racket[self] times --- these functions are the ones
-  that derive the work that was done, but they don't do any hard work
+  otherwise small @racket[self] times---these functions are the ones
+  that initiate the actual work, but they don't do any hard work
   directly.}
 
-@item{@racket[self] holds the total time (in milliseconds) where this
+@item{@racket[self] holds the total time (in milliseconds) that this
   function was observed as the leaf of the stack.  It represents the
-  actual work done by this function, rather than @racket[total] that
-  represents the work done by both the function and its callees.}
+  actual work done by this function, rather than the @racket[total]
+  time spent by both the function and its callees.}
 
-@item{@racket[callers] and @racket[callees] hold the list of caller
-  and callee nodes.  The nodes are not actually held in these lists,
-  instead, @racket[edge] values are used --- and provide information
-  specific to an edge in the call-graph.}
+@item{@racket[callers] and @racket[callees] hold the list of callers
+  and callees.  The nodes are not actually held in these lists,
+  instead, @racket[edge] values are used---and provide information
+  specific to each edge in the call-graph.}
 
 ]}
 
 
-@defstruct[edge ([total       exact-nonnegative-integer?]
-                 [caller      node?]
-                 [caller-time exact-nonnegative-integer?]
-                 [callee      node?]
-                 [callee-time exact-nonnegative-integer?])]{
+@defstruct*[edge ([total       exact-nonnegative-integer?]
+                  [caller      node?]
+                  [caller-time exact-nonnegative-integer?]
+                  [callee      node?]
+                  [callee-time exact-nonnegative-integer?])]{
 
 Represents an edge between two function call nodes in the call graph
 of an analyzed profile result.

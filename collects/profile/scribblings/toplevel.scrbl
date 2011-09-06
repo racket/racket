@@ -1,8 +1,8 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label scheme profile profile/sampler
-                     (only-in profile/analyzer analyze-samples)
+          (for-label racket/base profile profile/sampler
+                     (only-in profile/analyzer analyze-samples profile?)
                      (prefix-in text: profile/render-text)))
 
 @title{Toplevel Interface}
@@ -10,7 +10,7 @@
 @defmodule[profile]
 
 This module provides one procedure and one macro that are convenient
-high-level entry points for timing expressions.  This hides the
+high-level entry points for profiling expressions.  It abstracts over
 details that are available through other parts of the library, and is
 intended as a convenient tool for profiling code.
 
@@ -25,53 +25,55 @@ intended as a convenient tool for profiling code.
            #f])
          void?]{
 
-Executes the given thunk while collecting profiling data, and render
-this data when done.  Keyword arguments can customize the profiling:
+Executes the given @racket[thunk] and collect profiling data during
+execution, eventually analyzing and rendering this.  Keyword arguments
+can customize the profiling:
 @itemize[
 
-@item{The profiler works by @racket[create-sampler] starting a
-  ``sampler'' thread whose job is to collect stack samples
-  periodically (using @racket[continuation-mark-set->context]).
-  @racket[delay] determines the amount of time the sampler
-  @racket[sleep]s for between samples.  Note that this is will be
-  close, but not identical to, the frequency in which data is actually
-  sampled.}
+@item{The profiler works by starting a ``sampler'' thread to
+  periodically collect stack snapshots (using
+  @racket[continuation-mark-set->context]).  To determine the
+  frequency of these collections, the sampler thread sleeps
+  @racket[delay] seconds between collections.  Note that this is will
+  be close, but not identical to, the frequency in which data is
+  actually sampled.  (The @racket[delay] value is passed on to
+  @racket[create-sampler], which creates the sampler thread.)}
 
-@item{When the profiled computation takes a short amount of time, the
-  collected data will not be accurate.  In this case, you can specify
-  an @racket[iterations] argument to repeat the evaluation a number of
-  times which will improve the accuracy of the resulting report.}
+@item{Due to the statistical nature of the profiler, longer executions
+  result in more accurate analysis.  You can specify a number of
+  @racket[iterations] to repeat the @racket[thunk] to collect more
+  data.}
 
-@item{Normally, the sampler collects snapshots of the
-  @racket[current-thread]'s stack.  If there is some computation that
-  happens on a different thread, that work will not be reflected in
-  the results: the only effect will be suspiciously small value for
-  the observed time, because the collected data is taking into account
-  the cpu time that the thread actually performed (it uses
-  @racket[current-process-milliseconds] with the running thread as an
-  argument).  Specifying a non-@racket[#f] value for the
-  @racket[threads?] argument will arrange for all threads that are
-  started during the evaluation to be tracked.  Note that this means
-  that the computation will actually run in a new sub-custodian, as
-  this is the only way to be able to track such threads.}
+@item{Normally, the sampler collects only snapshots of the
+  @racket[current-thread]'s stack.  Profiling a computation that
+  creates threads will therefore lead to bad analysis: the timing
+  results will be correct, but because the profiler is unaware of
+  other threads the observed time will be suspiciously small, and work
+  done in other threads will not be included in the results.  To track
+  all threads, specify a non-@racket[#f] value for the
+  @racket[threads?] argument---this will execute the computation in a
+  fresh custodian, and keep track of all threads under this
+  custodian.}
 
-@item{Once the computation has finished, the sampler is stopped, and
-  the accumulated data is collected.  It is then analyzed by
-  @racket[analyze-samples], and the analyzed profile data is fed into
-  a renderer.  Use an identity function (@racket[values]) to get the
-  analyzed result, and render it yourself, or use one of the existing
-  renderers (see @secref["renderers"]).}
+@item{Once the computation is done and the sampler is stopped, the
+  accumulated data is analyzed (by @racket[analyze-samples]) and the
+  resulting profile value is sent to the @racket[renderer] function.
+  See @secref["renderers"] for available renderers.  You can also use
+  @racket[values] as a ``renderer''---in this case the
+  @racket[profile-thunk] returns the analyzed information which can
+  now be rendered multiple times, or saved for future rendering.}
 
-@item{The @racket[periodic-renderer] argument can be set to a list
-  holding a delay time and a renderer.  In this case, the given
-  renderer will be called periodically.  This is useful for cases
-  where you want a dynamically updated display of the results.  This
-  delay should be larger than the sampler delay.}
+@item{To provide feedback information during execution, specify a
+  @racket[periodic-renderer].  This should be a list holding a delay
+  time (in seconds) and a renderer function.  The delay determines the
+  frequency in which the renderer is called, and it should be larger
+  than the sampler delay (usually much larger since it can involve
+  more noticeable overhead, and it is intended for a human observer).}
 
 ]}
 
 @defform[(profile expr keyword-arguments ...)]{
 
-A macro version of @racket[profile-thunk].  The keyword arguments can
-be specified in the same was as for a function call: they can appear
-before and/or after the expression to be profiled.}
+A macro version of @racket[profile-thunk].  Keyword arguments can be
+specified as in a function call: they can appear before and/or after
+the expression to be profiled.}
