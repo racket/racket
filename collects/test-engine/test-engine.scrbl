@@ -34,8 +34,8 @@ value or an inexact number.}
 @defform[(check-within (test any/c) (expected any/c) (delta number?))]{
 Checks whether the value of the @racket[test] expression is structurally
 equal to the value produced by the @racket[expected] expression; every
-number in the first expression must be within delta of the corresponding
-number in the second expression.
+number in the first expression must be within @racket[delta] of the
+corresponding number in the second expression.
 
 It is an error for @racket[test] or @racket[expected] to produce a function
 value.} 
@@ -50,7 +50,7 @@ Checks whether the value of the @racket[test] expression is structurally
 equal to any of the values produced by the @racket[expected] expressions.
 
 It is an error for @racket[test] or any of the @racket[expected] expression
-to produce a function value.}
+to produce a function value or an inexact number.}
 
 @defform[(check-range (test number/c) (min number/c) (max number/c))]{
 Checks whether value of @racket[test] is between the values of the
