@@ -32,37 +32,42 @@
 ;; Write the headers portion of a response to an output port.
 ;; NOTE: According to RFC 2145 the server should write HTTP/1.1
 ;;       header for *all* clients.
-(define-syntax-rule (maybe-hash-set! h k v)
-  (unless (hash-has-key? h k)
-    (hash-set! h k (header k v))))
-(define-syntax-rule (maybe-hash-set!* h [k v] ...)
-  (begin (maybe-hash-set! h k v)
-         ...))
+(define-syntax-rule (maybe-header h k v)
+  (if (hash-has-key? h k)
+    empty
+    (list (header k v))))
+(define-syntax-rule (maybe-headers h [k v] ...)
+  (append (maybe-header h k v)
+          ...))
 
 (define (output-response-head conn bresp)
   (fprintf (connection-o-port conn)
            "HTTP/1.1 ~a ~a\r\n"
            (response-code bresp)
            (response-message bresp))
-  (define hs (make-hash))
-  (for ([h (in-list (response-headers bresp))])
-    (hash-set! hs (header-field h) h))
-  (maybe-hash-set!*
-   hs
-   [#"Date" 
-    (string->bytes/utf-8 (seconds->gmt-string (current-seconds)))]
-   [#"Last-Modified"
-    (string->bytes/utf-8 (seconds->gmt-string (response-seconds bresp)))]
-   [#"Server"
-    #"Racket"]
-   [#"Content-Type"
-    (response-mime bresp)])
-  (when (connection-close? conn)
-    (hash-set! hs #"Connection"
-               (make-header #"Connection" #"close")))
+  (define hs (response-headers bresp))
+  (define seen? (make-hash))
+  (for ([h (in-list hs)])
+    (hash-set! seen? (header-field h) #t))
   (output-headers
-   conn 
-   (hash-values hs)))
+   conn
+   (append
+    (maybe-headers
+     seen?
+     [#"Date" 
+      (string->bytes/utf-8 (seconds->gmt-string (current-seconds)))]
+     [#"Last-Modified"
+      (string->bytes/utf-8 (seconds->gmt-string (response-seconds bresp)))]
+     [#"Server"
+      #"Racket"]
+     [#"Content-Type"
+      (response-mime bresp)])
+    (if (connection-close? conn)
+        (maybe-headers
+         seen?
+         [#"Connection" #"close"])
+        empty)
+    hs)))
 
 ;; output-headers : connection (list-of header) -> void
 (define (output-headers conn headers)

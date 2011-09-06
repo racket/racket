@@ -55,7 +55,13 @@
                   (output output-response 
                           (response 404 #"404" (current-seconds) #"text/html"
                                     (list (make-header #"Header" #"Value")) void))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\nHeader: Value\r\n\r\n"))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\nHeader: Value\r\n\r\n")
+     (test-equi? "response (both)" 
+                  (output output-response 
+                          (response 404 #"404" (current-seconds) #"text/html"
+                                    (list (make-header #"Header" #"Value1")
+                                          (make-header #"Header" #"Value2")) void))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\nHeader: Value1\r\nHeader: Value2\r\n\r\n"))
     
     (test-suite 
      "response/full"
