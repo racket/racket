@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/list
          racket/stxparam
+         unstable/syntax
          "runtime-progress.rkt"
          "runtime-failure.rkt"
          (for-syntax racket/base
@@ -257,15 +258,33 @@
 (provide check-literal
          free-identifier=?/phases)
 
-;; check-literal : id phase-level phase-level stx -> void
-;; FIXME: change to normal 'error', if src gets stripped away
-(define (check-literal id abs-phase mod-phase ctx)
-  (unless (identifier-binding id abs-phase)
+;; (check-literal id phase-level-expr ctx) -> void
+(define-syntax (check-literal stx)
+  (syntax-case stx ()
+    [(check-literal id used-phase-expr ctx)
+     (let* ([ok-phases/ct-rel
+             ;; id is bound at each of ok-phases/ct-rel
+             ;; (phase relative to the compilation of the module in which the
+             ;; 'syntax-parse' (or related) form occurs)
+             (filter (lambda (p) (identifier-binding #'id p)) '(0 1 -1 #f))])
+       ;; so we can avoid run-time call to identifier-binding if
+       ;;   (+ (phase-of-enclosing-module) ok-phase/ct-rel) = used-phase
+       (with-syntax ([ok-phases/ct-rel ok-phases/ct-rel])
+         #'(check-literal* (quote-syntax id)
+                           used-phase-expr
+                           (phase-of-enclosing-module)
+                           'ok-phases/ct-rel
+                           (quote-syntax ctx))))]))
+
+(define (check-literal* id used-phase mod-phase ok-phases/ct-rel ctx)
+  (unless (or (memv (and used-phase (- used-phase mod-phase))
+                    ok-phases/ct-rel)
+              (identifier-binding id used-phase))
     (raise-syntax-error
      #f
      (format "literal is unbound in phase ~a (phase ~a relative to the enclosing module)"
-             abs-phase
-             (and abs-phase (- abs-phase mod-phase)))
+             used-phase
+             (and used-phase (- used-phase mod-phase)))
      ctx id)))
 
 ;; free-identifier=?/phases : id phase-level id phase-level -> boolean
