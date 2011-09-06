@@ -16,7 +16,7 @@
  [print-headers (output-port? (listof header?) . -> . void)]
  [rename ext:output-response output-response (connection? response? . -> . void)]
  [rename ext:output-response/method output-response/method (connection? response? bytes? . -> . void)]
- [rename ext:output-file output-file (connection? path-string? bytes? bytes? (or/c pair? false/c) . -> . void)])
+ [rename ext:output-file output-file (connection? path-string? bytes? (or/c bytes? false/c) (or/c pair? false/c) . -> . void)])
 
 (define (output-response conn resp)
   (output-response/method conn resp #"GET"))
@@ -59,9 +59,13 @@
      [#"Last-Modified"
       (string->bytes/utf-8 (seconds->gmt-string (response-seconds bresp)))]
      [#"Server"
-      #"Racket"]
-     [#"Content-Type"
-      (response-mime bresp)])
+      #"Racket"])
+    (if (response-mime bresp)
+        (maybe-headers
+         seen?
+         [#"Content-Type"
+          (response-mime bresp)])
+        empty)
     (if (connection-close? conn)
         (maybe-headers
          seen?
@@ -152,12 +156,12 @@
 ;; A boundary is generated only if a multipart/byteranges response needs
 ;; to be generated (i.e. if a Ranges header was specified with more than
 ;; one range in it).
-(define (output-file conn file-path method mime-type ranges)
+(define (output-file conn file-path method maybe-mime-type ranges)
   (output-file/boundary
    conn
    file-path
    method
-   mime-type
+   maybe-mime-type
    ranges
    (if (and ranges (> (length ranges) 1))
        (md5 (string->bytes/utf-8 (number->string (current-inexact-milliseconds))))
@@ -170,7 +174,7 @@
 ;;              (U (listof (U byte-range-spec suffix-byte-range-spec)) #f)
 ;;              (U bytes #f)
 ;;           -> void
-(define (output-file/boundary conn file-path method mime-type ranges boundary)
+(define (output-file/boundary conn file-path method maybe-mime-type ranges boundary)
   ; total-file-length : integer
   (define total-file-length
     (file-size file-path))
@@ -189,7 +193,7 @@
                               (exn-message exn))
                      (output-response-head
                       conn
-                      (make-416-response modified-seconds mime-type)))])
+                      (make-416-response modified-seconds maybe-mime-type)))])
     (let* (; converted-ranges : (alist-of integer integer)
            ; This is a list of actual start and end offsets in the file. 
            ; See the comments for convert-http-ranges for more information.
@@ -203,7 +207,7 @@
            ; response. This *must be* the same length as converted-ranges.
            [multipart-headers
             (if (> (length converted-ranges) 1)
-                (prerender-multipart/byteranges-headers mime-type converted-ranges total-file-length)
+                (prerender-multipart/byteranges-headers maybe-mime-type converted-ranges total-file-length)
                 (list #""))]
            ; total-content-length : integer
            [total-content-length
@@ -226,8 +230,8 @@
       (output-response-head
        conn
        (if ranges
-           (make-206-response modified-seconds mime-type total-content-length total-file-length converted-ranges boundary)
-           (make-200-response modified-seconds mime-type total-content-length)))
+           (make-206-response modified-seconds maybe-mime-type total-content-length total-file-length converted-ranges boundary)
+           (make-200-response modified-seconds maybe-mime-type total-content-length)))
       ; Send the appropriate file content:
       (when (bytes-ci=? method #"GET")
         (adjust-connection-timeout! ; Give it one second per byte.
@@ -261,13 +265,14 @@
                        (loop rest (cdr multipart-headers))]))))))))))
 
 ;; prerender-multipart/byteranges-headers : bytes (alist-of integer integer) integer -> (list-of bytes)
-(define (prerender-multipart/byteranges-headers mime-type converted-ranges total-file-length)
+(define (prerender-multipart/byteranges-headers maybe-mime-type converted-ranges total-file-length)
   (map (lambda (range)
          (match range
            [(list-rest start end)
             (let ([out (open-output-bytes)])
-              (print-headers out (list (make-header #"Content-Type" mime-type)
-                                       (make-content-range-header start end total-file-length)))
+              (when maybe-mime-type
+                (print-headers out (list (make-header #"Content-Type" maybe-mime-type))))
+              (print-headers out (list (make-content-range-header start end total-file-length)))
               (begin0 (get-output-bytes out)
                       (close-output-port out)))]))
        converted-ranges))
@@ -326,14 +331,14 @@
       converted))
 
 ;; make-206-response : integer bytes integer integer (alist-of integer integer) bytes -> basic-response
-(define (make-206-response modified-seconds mime-type total-content-length total-file-length converted-ranges boundary)
+(define (make-206-response modified-seconds maybe-mime-type total-content-length total-file-length converted-ranges boundary)
   (if (= (length converted-ranges) 1)
       (let ([start (caar converted-ranges)]
             [end   (cdar converted-ranges)])
         (response
          206 #"Partial content"
          modified-seconds
-         mime-type 
+         maybe-mime-type 
          (list (make-header #"Accept-Ranges" #"bytes")
                (make-content-length-header total-content-length)
                (make-content-range-header start end total-file-length))
@@ -347,21 +352,21 @@
        void)))
 
 ;; make-200-response : integer bytes integer -> basic-response
-(define (make-200-response modified-seconds mime-type total-content-length)
+(define (make-200-response modified-seconds maybe-mime-type total-content-length)
   (response
    200 #"OK"
    modified-seconds
-   mime-type 
+   maybe-mime-type 
    (list (make-header #"Accept-Ranges" #"bytes")
          (make-content-length-header total-content-length))
    void))
 
 ;; make-416-response : integer bytes -> basic-response
-(define (make-416-response modified-seconds mime-type)
+(define (make-416-response modified-seconds maybe-mime-type)
   (response
    416 #"Invalid range request"
    modified-seconds
-   mime-type 
+   maybe-mime-type 
    null
    void))
 

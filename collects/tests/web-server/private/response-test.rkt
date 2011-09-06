@@ -36,6 +36,11 @@
                           (response 404 #"404" (current-seconds) #"text/html"
                                     (list) void))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n")
+     (test-equi? "response" 
+                  (output output-response 
+                          (response 404 #"404" (current-seconds) #f
+                                    (list) void))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nConnection: close\r\n\r\n")
      (test-equi? "response (header)" 
                   (output output-response 
                           (response 404 #"404" (current-seconds) #"text/html"
@@ -231,12 +236,12 @@
       
       (test-equi? "(get) multiple ranges"
                    (output output-file/boundary tmp-file #"GET" #"text/html" '((10 . 19) (30 . 39) (50 . 59)) #"BOUNDARY")
-                   #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 260\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 10-19/81\r\n\r\nd><title>A\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 30-39/81\r\n\r\ntle></head\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 50-59/81\r\n\r\ne's some c\r\n--BOUNDARY--\r\n")
+                   #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 266\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 10-19/81\r\n\r\nd><title>A\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 30-39/81\r\n\r\ntle></head\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 50-59/81\r\n\r\ne's some c\r\n\r\n--BOUNDARY--\r\n")
       
       (test-equi? "(get) some bad ranges"
                   (parameterize ([current-error-port (open-output-nowhere)])
                    (output output-file/boundary tmp-file #"GET" #"text/html" '((10 . 19) (1000 . 1050) (30 . 39) (50 . 49)) #"BOUNDARY"))
-                   #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 178\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 10-19/81\r\n\r\nd><title>A\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 30-39/81\r\n\r\ntle></head\r\n--BOUNDARY--\r\n")
+                   #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 182\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 10-19/81\r\n\r\nd><title>A\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 30-39/81\r\n\r\ntle></head\r\n\r\n--BOUNDARY--\r\n")
       
       (test-equi? "(get) all bad ranges"
                   (parameterize ([current-error-port (open-output-nowhere)])
@@ -281,11 +286,11 @@
       
       (test-equi? "(head) multiple ranges"
                    (output output-file/boundary tmp-file #"HEAD" #"text/html" '((10 . 19) (30 . 39) (50 . 59)) #"BOUNDARY")
-                   #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 260\r\n\r\n")
+                   #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 266\r\n\r\n")
       
       (test-equi? "(head) some bad ranges"
                    (output output-file/boundary tmp-file #"HEAD" #"text/html" '((10 . 19) (1000 . 1050) (30 . 39) (50 . 49)) #"BOUNDARY")
-                   #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 178\r\n\r\n")
+                   #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 182\r\n\r\n")
       
       (test-equi? "(head) all bad ranges"
                   (parameterize ([current-error-port (open-output-nowhere)])

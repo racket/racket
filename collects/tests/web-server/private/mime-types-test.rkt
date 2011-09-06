@@ -28,7 +28,7 @@ END
     (check-not-false (read-mime-types test-file)))
    (test-case
     "Default mime-type given"
-    (check-equal? ((make-path->mime-type test-file) (build-path "test.html")) TEXT/HTML-MIME-TYPE))
+    (check-equal? ((make-path->mime-type test-file) (build-path "test.html")) #f))
    (test-case
     "MIME type resolves (single in file)"
     (check-equal? ((make-path->mime-type test-file) (build-path "test.mp4")) #"video/mp4"))

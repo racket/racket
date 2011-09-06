@@ -24,8 +24,8 @@
          ([code number?]
           [message bytes?]
           [seconds number?]
-          [mime bytes?]
+          [mime (or/c false/c bytes?)]
           [headers (listof header?)]
           [output (output-port? . -> . void)])]
- [response/full (-> number? bytes? number? bytes? (listof header?) (listof bytes?) response?)]
+ [response/full (-> number? bytes? number? (or/c false/c bytes?) (listof header?) (listof bytes?) response?)]
  [TEXT/HTML-MIME-TYPE bytes?])

@@ -164,7 +164,7 @@ Here is an example typical of what you will find in many applications:
            ([code number?]
             [message bytes?]
             [seconds number?]
-            [mime bytes?]
+            [mime (or/c false/c bytes?)]
             [headers (listof header?)]
             [output (output-port? . -> . void)])]{
  An HTTP response where @racket[output] produces the body. @racket[code] is the response code,
@@ -182,7 +182,7 @@ Here is an example typical of what you will find in many applications:
  ]
 }
 
-@defproc[(response/full [code number?] [message bytes?] [seconds number?] [mime bytes?]
+@defproc[(response/full [code number?] [message bytes?] [seconds number?] [mime (or/c false/c bytes?)]
                         [headers (listof header?)] [body (listof bytes?)])
          response?]{
  A constructor for responses where @racket[body] is the response body.
@@ -481,7 +481,7 @@ web-server/insta
                          [#:code code number? 200]
                          [#:message message bytes? #"Okay"]
                          [#:seconds seconds number? (current-seconds)]
-                         [#:mime-type mime-type bytes? TEXT/HTML-MIME-TYPE]
+                         [#:mime-type mime-type (or/c false/c bytes?) TEXT/HTML-MIME-TYPE]
                          [#:headers headers (listof header?) empty]
                          [#:cookies cookies (listof cookie?) empty]
                          [#:preamble preamble bytes? #""])
