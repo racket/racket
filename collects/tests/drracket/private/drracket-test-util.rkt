@@ -593,7 +593,7 @@
   ;; but just to print and return.
   (define orig-display-handler (error-display-handler))
   
-  (define (fire-up-drscheme-and-run-tests run-test)
+  (define (fire-up-drscheme-and-run-tests #:use-focus-table? [use-focus-table? #t] run-test)
     (on-eventspace-handler-thread 'fire-up-drscheme-and-run-tests)
     (let ()
       ;; change the preferences system so that it doesn't write to 
@@ -616,7 +616,7 @@
       ;; of the startup of drscheme)
       (fw:preferences:restore-defaults)
       
-      (fw:test:use-focus-table #t)
+      (fw:test:use-focus-table use-focus-table?)
       
       (thread (λ () 
 		 (let ([orig-display-handler (error-display-handler)])

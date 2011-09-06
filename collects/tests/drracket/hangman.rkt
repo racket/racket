@@ -3,6 +3,7 @@
          racket/class)
 
 (fire-up-drscheme-and-run-tests 
+ #:use-focus-table? #f
  (λ ()
    (define drs (wait-for-drscheme-frame))
    (define defs (send drs get-definitions-text))

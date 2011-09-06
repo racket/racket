@@ -572,14 +572,14 @@ If the namespace does not, they are colored the unbound color.
             (define/public (syncheck:add-rename-menu id-as-sym to-be-renamed/poss name-dup?)
               (define (make-menu menu)
                 (let ([name-to-offer (format "~a" id-as-sym)])
-                  (instantiate menu-item% ()
-                    (parent menu)
-                    (label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer))
-                    (callback
-                     (λ (x y)
-                       (let ([frame-parent (find-menu-parent menu)])
-                         (rename-callback name-to-offer
-                                          frame-parent)))))))
+                  (new menu-item%
+                       [parent menu]
+                       [label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer)]
+                       [callback
+                        (λ (x y)
+                          (let ([frame-parent (find-menu-parent menu)])
+                            (rename-callback name-to-offer
+                                             frame-parent)))])))
               
               ;; rename-callback : string 
               ;;                   (and/c syncheck-text<%> definitions-text<%>)
@@ -596,7 +596,8 @@ If the namespace does not, they are colored the unbound color.
                            (string-constant cs-rename-id)
                            (fw:gui-utils:format-literal-label (string-constant cs-rename-var-to) name-to-offer)
                            parent
-                           name-to-offer)))])
+                           name-to-offer
+                           #:dialog-mixin frame:focus-table-mixin)))])
                   (when new-str
                     (define new-sym (format "~s" (string->symbol new-str)))
                     (define dup-name? (name-dup? new-sym))
