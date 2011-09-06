@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require "structs.rkt" scheme/list scheme/nest)
+(require "structs.rkt" racket/list)
 
 ;; Format a percent number, possibly doing the division too.  If we do the
 ;; division, then be careful: if we're dividing by zero, then make the result

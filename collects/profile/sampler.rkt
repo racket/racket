@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; The core profiler sample collector
 ;; (This module is a private tool for collecting profiling data, and should not

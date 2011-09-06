@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
 (provide profile-thunk profile)
 
 (require "sampler.rkt" "analyzer.rkt"
          (prefix-in text: "render-text.rkt")
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 
 (define (profile-thunk thunk
                        #:delay   [delay 0.05]

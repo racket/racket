@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Struct definitions for the profiler
 

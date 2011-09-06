@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Analyzer for the sampler results
 
 (provide analyze-samples)
 
-(require "structs.rkt" "utils.rkt" scheme/list)
+(require "structs.rkt" "utils.rkt" racket/list)
 
 (define-syntax-rule (with-hash <hash> <key> <expr>)
   (hash-ref! <hash> <key> (lambda () <expr>)))
