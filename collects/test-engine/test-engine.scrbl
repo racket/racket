@@ -49,15 +49,16 @@ the error message matches the string, if it is present.}
 
 @defform[(check-member-of (test any/c) (expected any/c) ...)]{
 
-Accepts at least two value-producing expressions. Structurally compares the first
-value to each value subsequent value specified.
+Checks whether the value of the @racket[test] expression is structurally
+equal to any of the values produced by the @racket[expected] expressions.
 
-It is an error to produce a function value.}
+It is an error for @racket[test] or any of the @racket[expected] expression
+to produce a function value.}
 
 @defform[(check-range (test number/c) (min number/c) (max number/c))]{
 
-Accepts three number-producing expressions. Performs the following comparison:
-min <= test <= max.}
+Checks whether value of @racket[test] is between the values of the
+@racket[min] and @racket[max] expressions [inclusive].}
 
 @defproc[(test) void?]{
 
