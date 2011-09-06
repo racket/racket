@@ -340,6 +340,9 @@
         (define output (map render-event output-log))
         (response/xexpr
          `(html (head (title ,title)
+                      (script ([language "javascript"] [type "text/javascript"] [src "jquery-1.6.2.min.js"]))
+                      (script ([language "javascript"] [type "text/javascript"] [src "jquery.flot.js"]))
+                      (script ([language "javascript"] [type "text/javascript"] [src "jquery.flot.selection.js"]))
                       (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
                 (body 
                  (div ([class "log, content"])
@@ -370,6 +373,14 @@
                             '()
                             `((div ([class "output"]) " "
                                    ,@output)))
+                      (div ([id "_chart"] [style "width:800px;height:300px;"]))
+                      (script ([language "javascript"] [type "text/javascript"] [src "chart.js"]))
+                      (script ([language "javascript"] [type "text/javascript"])
+                              ,(format "get_data('/json/timing/~a');" the-base-path))
+                      (button ([onclick "reset_chart()"]) "Reset")
+                      (button ([id "setlegend"] [onclick "set_legend(!cur_options.legend.show)"])
+                              "Hide Legend")
+
                       ,(with-handlers ([exn:fail?
                                         ; XXX Remove this eventually
                                         (lambda (x)
