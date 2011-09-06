@@ -14,8 +14,9 @@
 ;;   identifiable by having both id and src fields being #f.  Can be used to
 ;;   start a graph traversal from the top or the bottom.
 (provide (struct-out profile))
-(define-struct profile
-  (total-time cpu-time sample-number thread-times nodes *-node))
+(struct profile
+  (total-time cpu-time sample-number thread-times nodes *-node)
+  #:constructor-name make-profile)
 
 ;; An entry for a single profiled function:
 ;; - id, src: the corresponding values from `continuation-mark-set->context'.
@@ -36,7 +37,8 @@
   #:property prop:custom-write
   (lambda (node o w?)
     (fprintf o "#<node:~s>"
-             (or (node-id node) (if (node-src node) '??? 'ROOT)))))
+             (or (node-id node) (if (node-src node) '??? 'ROOT))))
+  #:constructor-name make-node)
 
 ;; An edge representing function calls between two nodes:
 ;; - total: the total time spent while the call was anywhere on the stack.
@@ -52,4 +54,5 @@
   (lambda (edge o w?)
     (fprintf o "#<edge:~s-~s>"
              (or (node-id (edge-caller edge)) '???)
-             (or (node-id (edge-callee edge)) '???))))
+             (or (node-id (edge-callee edge)) '???)))
+  #:constructor-name make-edge)

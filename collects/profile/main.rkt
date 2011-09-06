@@ -2,7 +2,7 @@
 
 (provide profile-thunk profile)
 
-(require "sampler.rkt" "analyzer.rkt"
+(require "sampler.rkt" (except-in "analyzer.rkt" profile)
          (prefix-in text: "render-text.rkt")
          (for-syntax racket/base))
 
