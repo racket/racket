@@ -3724,7 +3724,9 @@ void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover,
 
 #define SCHEME_PLACE_OBJECTP(o) (SCHEME_TYPE(o) == scheme_place_object_type)
 
+#ifdef MZ_USE_PLACES
 Scheme_Env *scheme_place_instance_init(void *stack_base, struct NewGC *, intptr_t memory_limit);
+#endif
 Scheme_Object *scheme_make_place_object();
 void scheme_place_instance_destroy(int force);
 void scheme_kill_green_thread_timer();

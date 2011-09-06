@@ -65,6 +65,7 @@ inline static void mark_threads(NewGC *gc, int owner)
         }
       } else {
         /* place */
+#ifdef MZ_USE_PLACES
         /* add in the memory used by the place's GC */
         intptr_t sz;
         Scheme_Place_Object *place_obj = ((Scheme_Place *)work->thread)->place_obj;
@@ -74,6 +75,7 @@ inline static void mark_threads(NewGC *gc, int owner)
           mzrt_mutex_unlock(place_obj->lock);
           account_memory(gc, owner, gcBYTES_TO_WORDS(sz));
         }
+#endif
       }
     }
   }
