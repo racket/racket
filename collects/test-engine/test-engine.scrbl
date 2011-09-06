@@ -24,31 +24,28 @@ and reported by the test function.  Note that the check forms only
 register checks to be performed.  The checks are actually run by the
 @racket[test] function.
 
-@defproc[(check-expect (test any/c) (expected any/c)) void?]{
+@defform[(check-expect (test any/c) (expected any/c))]{
+Checks whether the value of the @racket[test] expression is structurally
+equal to the value produced by the @racket[expected] expression.
 
-Accepts two value-producing expressions and structurally compares the
-resulting values.
+It is an error for @racket[test] or @racket[expected] to produce a function
+value or an inexact number.} 
 
-It is an error to produce a function value or an inexact number.}
+@defform[(check-within (test any/c) (expected any/c) (delta number?))]{
+Checks whether the value of the @racket[test] expression is structurally
+equal to the value produced by the @racket[expected] expression; every
+number in the first expression must be within delta of the corresponding
+number in the second expression.
 
+It is an error for @racket[test] or @racket[expected] to produce a function
+value.} 
 
-@defproc[(check-within (test any/c) (expected any/c) (delta number?)) void?]{
-
-Like @racket[check-expect], but with an extra expression that produces
-a number delta. Every number in the first expression must be within
-delta of the cooresponding number in the second expression.
-
-It is an error to produce a function value.}
-
-
-@defproc*[([(check-error (test any/c) (msg string?)) void?]
-           [(check-error (test any/c)) void?])]{
-
-Checks that evaluating the first expression signals an error, where
-the error message matches the string, if it is present.}
+@defform*[ [(check-error (test any/c))
+            (check-error (test any/c) (msg string?))] ]{
+Checks that evaluating @racket[test] signals an error, where
+the error message matches the string (if any).}
 
 @defform[(check-member-of (test any/c) (expected any/c) ...)]{
-
 Checks whether the value of the @racket[test] expression is structurally
 equal to any of the values produced by the @racket[expected] expressions.
 
@@ -56,7 +53,6 @@ It is an error for @racket[test] or any of the @racket[expected] expression
 to produce a function value.}
 
 @defform[(check-range (test number/c) (min number/c) (max number/c))]{
-
 Checks whether value of @racket[test] is between the values of the
 @racket[min] and @racket[max] expressions [inclusive].}
 
