@@ -591,7 +591,8 @@
                            (begin
                              (message-box (string-constant drscheme)
                                           (format (string-constant already-added-teachpack)
-                                                  (cadr teachpack)))
+                                                  (cadr teachpack))
+                                          #:dialog-mixin frame:focus-table-mixin)
                              settings)
                            
                            (let ([new-tps (append old-tps (list teachpack))])
@@ -686,7 +687,7 @@
                           tp-dirs))
         (define sort-order (λ (x y) (string<=? (path->string x) (path->string y))))
         (define pre-installed-tpss (map (λ (tps) (sort tps sort-order)) tpss))
-        (define dlg (new dialog% [parent parent] [label (string-constant drscheme)]))
+        (define dlg (new (frame:focus-table-mixin dialog%) [parent parent] [label (string-constant drscheme)]))
         (define hp (new horizontal-panel% [parent dlg]))
         (define answer #f)
         (define compiling? #f)
