@@ -4,11 +4,22 @@ Add support for the collection links file, including
 
 Version 5.1.3.3
 unsafe/ffi: added support for C arrays and unions
+Fixed the planet module-name-resolver to be thread safe
+mrlib/include-bitmap: Adjust include-bitmap so it does not 
+ write to the filesystem
+framework: the finder get-file & put-file dialogs no 
+ longer normalize their results
+framework: added to the testing library so that tests can be
+ run when ignoring focus information from the underlying OS
 
 Version 5.1.2.3
 Added set-port-next-location! and changed the default prompt 
  read handler to use it when input and output ar terminals
 racket/gui: removed unsupported MDI styles and method
+compiler/cm: added support for using more powerful 
+ security-guards when writing to the filesystem
+Fixed an old bug so that planet now uses the already-downloaded 
+ .plt files (when present)
 
 Version 5.1.2.2
 Changed the location-creation semantics of internal definitions
