@@ -165,4 +165,4 @@
 (define-syntax (honu-top-interaction stx)
   (syntax-case stx ()
     [(_ rest ...)
-     #'(printf "~a\n" (honu-unparsed-begin rest ...))]))
+     #'(#%top-interaction . (honu-unparsed-begin rest ...))]))

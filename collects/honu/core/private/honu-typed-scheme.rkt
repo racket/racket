@@ -457,7 +457,9 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
     [(_) #'(void)]
     [(_ forms ...)
      (define-values (parsed unparsed) (honu-expand #'(forms ...)))
-     (debug "expanded ~a\n" (syntax->datum parsed))
+     (debug "expanded ~a unexpanded ~a\n"
+            (syntax->datum parsed)
+            (syntax->datum unparsed))
      (with-syntax ([parsed parsed]
                    [(unparsed ...) unparsed])
        (if (null? (syntax->datum #'(unparsed ...)))
