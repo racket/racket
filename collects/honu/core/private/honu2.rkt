@@ -3,6 +3,7 @@
 (require "macro2.rkt"
          "operator.rkt"
          "struct.rkt"
+         "honu-typed-scheme.rkt"
          (only-in "literals.rkt"
                   honu-then
                   semicolon)
@@ -159,3 +160,9 @@
 (define-binary-operator honu-map 0.09 'left map)
 
 (define-unary-operator honu-not 0.7 'left not)
+
+(provide honu-top-interaction)
+(define-syntax (honu-top-interaction stx)
+  (syntax-case stx ()
+    [(_ rest ...)
+     #'(printf "~a\n" (honu-unparsed-begin rest ...))]))

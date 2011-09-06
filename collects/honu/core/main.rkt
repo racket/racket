@@ -11,6 +11,7 @@
          print printf true false
          (for-syntax (rename-out [honu-expression expression]))
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
+                     [honu-top-interaction #%top-interaction]
                      [honu-function function]
                      [honu-macro macro]
                      [honu-syntax syntax]

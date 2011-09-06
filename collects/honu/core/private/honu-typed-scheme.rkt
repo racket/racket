@@ -460,7 +460,9 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      (debug "expanded ~a\n" (syntax->datum parsed))
      (with-syntax ([parsed parsed]
                    [(unparsed ...) unparsed])
-       #'(begin parsed (honu-unparsed-begin unparsed ...)))]))
+       (if (null? (syntax->datum #'(unparsed ...)))
+         #'parsed
+         #'(begin parsed (honu-unparsed-begin unparsed ...))))]))
 
 (define-syntax (#%dynamic-honu-module-begin stx)
   (syntax-case stx ()
