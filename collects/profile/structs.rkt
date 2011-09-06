@@ -15,8 +15,7 @@
 ;;   start a graph traversal from the top or the bottom.
 (provide (struct-out profile))
 (struct profile
-  (total-time cpu-time sample-number thread-times nodes *-node)
-  #:constructor-name make-profile)
+  (total-time cpu-time sample-number thread-times nodes *-node))
 
 ;; An entry for a single profiled function:
 ;; - id, src: the corresponding values from `continuation-mark-set->context'.
@@ -37,8 +36,7 @@
   #:property prop:custom-write
   (lambda (node o w?)
     (fprintf o "#<node:~s>"
-             (or (node-id node) (if (node-src node) '??? 'ROOT))))
-  #:constructor-name make-node)
+             (or (node-id node) (if (node-src node) '??? 'ROOT)))))
 
 ;; An edge representing function calls between two nodes:
 ;; - total: the total time spent while the call was anywhere on the stack.
@@ -54,5 +52,4 @@
   (lambda (edge o w?)
     (fprintf o "#<edge:~s-~s>"
              (or (node-id (edge-caller edge)) '???)
-             (or (node-id (edge-callee edge)) '???)))
-  #:constructor-name make-edge)
+             (or (node-id (edge-callee edge)) '???))))
