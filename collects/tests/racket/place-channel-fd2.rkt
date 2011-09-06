@@ -24,17 +24,19 @@
   (flush-output p))
 
 (sleep 3)
-(with-handlers ([exn? (lambda (e) (eprintf "Child Read Exception Caught ~e\n" e))])
-  (fprintf (current-error-port) "ChildRead1 ~a\n" (read)))
-(with-handlers ([exn? (lambda (e) (eprintf "Child Read Exception Caught ~e\n" e))])
-  (fprintf (current-error-port) "ChildRead2 ~a\n" (read)))
+(with-handlers ([exn? (lambda (e) (eprintf "Child Read1 Exception Caught ~e\n" e))])
+  (define r (read))
+  (log-debug (format "Child Read1 ~a\n" r)))
+(with-handlers ([exn? (lambda (e) (eprintf "Child Read2 Exception Caught ~e\n" e))])
+  (define r (read))
+  (log-debug (format "Child Read2 ~a\n" r)))
 ;(close-input-port)
 
 (sleep 3)
 (with-handlers ([exn? (lambda (e) (eprintf "Child Write StdOut Exception Caught ~e\n" e))])
   (write-flush "ByeO"))
-(with-handlers ([exn? (lambda (e) (fprintf "Child Write StdErr Exception Caught ~e\n" e))])
-  (write-flush "ByeE" (current-error-port)))
+(with-handlers ([exn? (lambda (e) (eprintf "Child Write StdErr Exception Caught ~e\n" e))])
+  (log-debug "ByeE"))
 END
 )))
 
