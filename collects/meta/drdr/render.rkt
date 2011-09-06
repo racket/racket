@@ -282,6 +282,21 @@
       [(struct stderr (bs))
        `(pre ([class "stderr"]) ,(bytes->string/utf-8 bs))])))
 
+(define (json-timing req path-to-file)
+  (let* ([timing-pth (path-timing-log (apply build-path path-to-file))]
+         [s (file->string timing-pth)]
+         [s (regexp-replace* (regexp-quote "(") s "[")]
+         [s (regexp-replace* (regexp-quote ")") s "]")]
+         [s (format "[~a]" s)])
+    (response
+     200 #"Okay"
+     (file-or-directory-modify-seconds timing-pth)
+     #"application/json"
+     (list (make-header #"Access-Control-Allow-Origin"
+                        #"*"))
+     (lambda (out)
+       (write-string s out)))))
+
 (define (render-log log-pth)
   (match (log-rendering log-pth)
     [#f
@@ -940,6 +955,7 @@
    [("help") show-help]
    [("") show-revisions]
    [("diff" (integer-arg) (integer-arg) (string-arg) ...) show-diff]
+   [("json" "timing" (string-arg) ...) json-timing]
    [("current" "") show-revision/current]
    [("current" (string-arg) ...) show-file/current]
    [((integer-arg) "") show-revision]
