@@ -390,7 +390,8 @@ Like @racket[message-box/custom], except that
                              [message (or/c string? #f)]
                              [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                              [init-val string? ""]
-                             [style (listof 'password) null])
+                             [style (listof 'password) null]
+                             [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values]) 
          (or/c string? #f)]{
 
 Gets a text string from the user via a modal dialog, using
@@ -406,8 +407,8 @@ If @racket[style] includes @racket['password], the dialog's text field
  draws each character of its content using a generic symbol, instead
  of the actual character.
 
-
-
+The @racket[dialog-mixin] argument is applied to the class that implements the dialog
+before the dialog is created. 
 }
 
 @defproc[(get-choices-from-user [title string?]
