@@ -282,20 +282,38 @@
       [(struct stderr (bs))
        `(pre ([class "stderr"]) ,(bytes->string/utf-8 bs))])))
 
+(define (json-out out x)
+  (cond
+   [(list? x)
+    (fprintf out "[")
+    (let loop ([l x])
+      (match l
+        [(list)
+         (void)]
+        [(list e)
+         (json-out out e)]
+        [(list-rest e es)
+         (json-out out e)
+         (fprintf out ",")
+         (loop es)]))
+    (fprintf out "]")]
+   [else
+    (display x out)]))
+          
 (define (json-timing req path-to-file)
-  (let* ([timing-pth (path-timing-log (apply build-path path-to-file))]
-         [s (file->string timing-pth)]
-         [s (regexp-replace* (regexp-quote "(") s "[")]
-         [s (regexp-replace* (regexp-quote ")") s "]")]
-         [s (format "[~a]" s)])
-    (response
-     200 #"Okay"
-     (file-or-directory-modify-seconds timing-pth)
-     #"application/json"
-     (list (make-header #"Access-Control-Allow-Origin"
-                        #"*"))
-     (lambda (out)
-       (write-string s out)))))
+  (define timing-pth (path-timing-log (apply build-path path-to-file)))
+  (define ts (file->list timing-pth))
+  (response
+   200 #"Okay"
+   (file-or-directory-modify-seconds timing-pth)
+   #"application/json"
+   (list (make-header #"Access-Control-Allow-Origin"
+                      #"*"))
+   (lambda (out)
+     (fprintf out "[")
+     (for ([l (in-list (add-between ts ","))])
+          (json-out out l))         
+     (fprintf out "]"))))
 
 (define (render-log log-pth)
   (match (log-rendering log-pth)
