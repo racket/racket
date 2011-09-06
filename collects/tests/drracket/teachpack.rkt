@@ -1,9 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
 (require "private/drracket-test-util.rkt"
-         scheme/class
-         scheme/path
-         scheme/gui/base
+         racket/class
+         racket/path
+         racket/gui/base
+         framework
          (prefix-in fw: framework))
 
 (provide run-test)
