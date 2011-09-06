@@ -4,7 +4,7 @@
 
 (provide honu-info)
 (define (honu-info key default default-filter)
-  (printf "get info for ~a\n" key)
+  ; (printf "get info for ~a\n" key)
   (case key
     [(color-lexer) (dynamic-require 'honu/core/read
                                     'color-lexer)]
