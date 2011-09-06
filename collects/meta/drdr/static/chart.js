@@ -13,7 +13,7 @@ function moving_avg(arr, i, _acc, _m) {
 var data = null;
 var sub_times = [];
 var overall_times = [];
-var overall_avg = [];
+//var overall_avg = [];
 var chart_data = [];
 var options = { selection: { mode: "xy" },
                 legend: { backgroundOpacity: 0, position: "sw", show: true },
@@ -63,7 +63,7 @@ placeholder.bind("plothover", function (event, pos, item) {
 function load_data(d) {
     chart_data = [];
     overall_times = [];
-    overall_avg = [];
+    //overall_avg = [];
     sub_times = [];
     pdata = []
     reset_chart();
@@ -77,9 +77,9 @@ function load_data(d) {
     // build the timing data arrays
     for (var i = 0; i < pdata.length; i++) {
         overall_times.push([pdata[i][0], pdata[i][1]]);
-        overall_avg.push([pdata[i][0],
-                          moving_avg(pdata, i,
-                                     function(j) { return pdata[j][1]; })]);
+        // overall_avg.push([pdata[i][0],
+        //                   moving_avg(pdata, i,
+        //                              function(j) { return pdata[j][1]; })]);
         max_overall = Math.max(max_overall, pdata[i][1]);
         if (pdata[i][2].length != 0) {
             for (var j = 0; j < pdata[i][2].length; j++) {
@@ -98,7 +98,7 @@ function load_data(d) {
 
     // put the data into the chart format
     chart_data.push({data: overall_times, label: "Overall Time"});
-    chart_data.push({data: overall_avg, label: "Overall Moving Avg"});
+    //chart_data.push({data: overall_avg, label: "Overall Moving Avg"});
     for(var i = 0; i < sub_times.length; i++) {
         chart_data.push({data: sub_times[i], label: "Timer "+ (i+1), points: { show: true }, yaxis: ya});
     }

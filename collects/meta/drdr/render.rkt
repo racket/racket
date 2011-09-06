@@ -340,9 +340,9 @@
         (define output (map render-event output-log))
         (response/xexpr
          `(html (head (title ,title)
-                      (script ([language "javascript"] [type "text/javascript"] [src "jquery-1.6.2.min.js"]))
-                      (script ([language "javascript"] [type "text/javascript"] [src "jquery.flot.js"]))
-                      (script ([language "javascript"] [type "text/javascript"] [src "jquery.flot.selection.js"]))
+                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery-1.6.2.min.js"]) "")
+                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery.flot.js"]) "")
+                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery.flot.selection.js"]) "")
                       (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
                 (body 
                  (div ([class "log, content"])
@@ -373,31 +373,17 @@
                             '()
                             `((div ([class "output"]) " "
                                    ,@output)))
-                      (div ([id "_chart"] [style "width:800px;height:300px;"]))
-                      (script ([language "javascript"] [type "text/javascript"] [src "chart.js"]))
+
+                      (p)
+                      
+                      (div ([id "_chart"] [style "width:800px;height:300px;"]) "")
+                      (script ([language "javascript"] [type "text/javascript"] [src "/chart.js"]) "")
                       (script ([language "javascript"] [type "text/javascript"])
-                              ,(format "get_data('/json/timing/~a');" the-base-path))
+                              ,(format "get_data('/json/timing~a');" the-base-path))
                       (button ([onclick "reset_chart()"]) "Reset")
                       (button ([id "setlegend"] [onclick "set_legend(!cur_options.legend.show)"])
                               "Hide Legend")
-
-                      ,(with-handlers ([exn:fail?
-                                        ; XXX Remove this eventually
-                                        (lambda (x)
-                                          ; XXX use dirstruct functions
-                                          (define png-path
-                                            (format "/data~a" (path-add-suffix (path-add-suffix the-base-path #".timing") #".png")))
-                                          `(div ([class "timing"])
-                                                (a ([href ,png-path])
-                                                   (img ([src ,png-path])))))])
-                         (make-cdata
-                          #f #f
-                          (local [(define content 
-                                    (file->string
-                                     (path-timing-html (substring (path->string* the-base-path) 1))))]
-                            #;(regexp-replace* #rx"&(?![a-z]+;)" content "\\&amp;\\1")
-                            (regexp-replace* #rx"&gt;" content ">"))
-                          ))
+                      
                       ,(footer)))))])]))
 
 (define (number->string/zero v)

@@ -1,7 +1,6 @@
 #lang racket
 (require (planet jaymccarthy/job-queue)
          racket/system
-         (prefix-in graph-one: "graph.rkt")
          "config.rkt"
          "notify.rkt"
          "dirstruct.rkt"
@@ -12,14 +11,11 @@
 
 (define start-revision #f)
 (define history? #f)
-(define just-graphs? #f)
 
 (command-line #:program "time"
               #:once-each
               ["-H" "Run on all revisions"
                     (set! history? #t)]
-              ["-G" "Just graphs"
-                    (set! just-graphs? #t)]
               ["-r" rev
                     "Start with a particular revision"
                     (set! start-revision (string->number rev))])
@@ -34,23 +30,20 @@
   (submit-job!
    test-workers
    (lambda ()
-     (unless just-graphs?
-       (notify! "Dropping timing for ~a" filename)
-       (apply 
-        system*/exit-code
-        (path->string
-         (build-path (plt-directory) "plt" "bin" "racket"))
-        "-t" 
-        (path->string (build-path (drdr-directory) "time-file.rkt"))
-        "--"
-        (append
-         (if history?
-             (list "-H")
-             (list "-r" (number->string start-revision)))
-         (list
-          (path->string filename)))))
-     (notify! "Generating graph for ~a" filename)
-     (graph-one:main filename)
+     (notify! "Dropping timing for ~a" filename)
+     (apply 
+      system*/exit-code
+      (path->string
+       (build-path (plt-directory) "plt" "bin" "racket"))
+      "-t" 
+      (path->string (build-path (drdr-directory) "time-file.rkt"))
+      "--"
+      (append
+       (if history?
+           (list "-H")
+           (list "-r" (number->string start-revision)))
+       (list
+        (path->string filename))))
      (notify! "Done with ~a" filename)
      (semaphore-post count-sema))))
 
