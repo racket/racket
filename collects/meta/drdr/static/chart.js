@@ -1,25 +1,13 @@
-function moving_avg(arr, i, _acc, _m) {
-    var acc = _acc || function(j) { return arr[j]; };
-    var m = _m || 5;
-    var top = Math.min(i + m, arr.length);
-    var bot = Math.max(0, i - m);
-    var n = top - bot;
-    var sum = 0;
-    for (var i = bot; i < top; i++)
-        sum += acc(i);
-    return sum/n;
-}
-
+var path = ""
 var data = null;
 var sub_times = [];
 var overall_times = [];
-//var overall_avg = [];
 var chart_data = [];
 var options = { selection: { mode: "xy" },
                 legend: { backgroundOpacity: 0, position: "sw", show: true },
                 xaxes: [{label: 'push'}],
                 yaxes: [{}, {position: "right"}],
-                grid: { hoverable : true }
+                grid: { clickable: true, hoverable : true }
               };
 var placeholder = $("#_chart");
 var cur_options = options;
@@ -38,32 +26,59 @@ function showTooltip(x, y, contents) {
     }).appendTo("body").fadeIn(200);
 }
 
+function makeTooltip(item,path) {
+    var x = item.datapoint[0];
+    var y = item.datapoint[1].toFixed(2);
+    showTooltip(item.pageX, item.pageY,
+                item.series.label + ' at <a href="http://drdr.racket-lang.org/'
+                + x + path + '">push ' + x + "</a>: "
+                + y + " ms");
+}
 placeholder.bind("plotselected", handle_selection);
 
-placeholder.bind("plothover", function (event, pos, item) {
+// is the tooltip shown b/c of a click?
+var tooltip_clicked = false;
+
+function remove_tooltip() {
+    tooltip_clicked = false;
+    $("#tooltip").remove();
+}
+
+function hover(event,pos,item) {
+    if (tooltip_clicked) return;
     if (item) {
+        // don't re-show the same tool-tip that's already shown
         if (previousPoint != item.dataIndex) {
             previousPoint = item.dataIndex;
-
-            $("#tooltip").remove();
-            var x = item.datapoint[0],
-            y = item.datapoint[1].toFixed(2);
-
-            showTooltip(item.pageX, item.pageY,
-                        item.series.label + " at push " + x + ": "
-                        + y + " ms");
+            remove_tooltip();
+            makeTooltip(item,path);
         }
     }
     else {
-        $("#tooltip").remove();
+        remove_tooltip();
         previousPoint = null;
     }
-});
+}
+
+function click(e,pos,item) {
+    if (tooltip_clicked) {
+        remove_tooltip();
+        return;
+    }
+    if (!item) return;
+    tooltip_clicked = true;
+    // if we've already got the tooltip, just keep it around
+    if (previousPoint != item.dataIndex) {
+        $("#tooltip").remove();
+        makeTooltip(item,path);
+    }
+}
+placeholder.bind("plothover", hover);
+placeholder.bind("plotclick", click);
 
 function load_data(d) {
     chart_data = [];
     overall_times = [];
-    //overall_avg = [];
     sub_times = [];
     pdata = []
     reset_chart();
@@ -77,9 +92,6 @@ function load_data(d) {
     // build the timing data arrays
     for (var i = 0; i < pdata.length; i++) {
         overall_times.push([pdata[i][0], pdata[i][1]]);
-        // overall_avg.push([pdata[i][0],
-        //                   moving_avg(pdata, i,
-        //                              function(j) { return pdata[j][1]; })]);
         max_overall = Math.max(max_overall, pdata[i][1]);
         if (pdata[i][2].length != 0) {
             for (var j = 0; j < pdata[i][2].length; j++) {
@@ -98,15 +110,18 @@ function load_data(d) {
 
     // put the data into the chart format
     chart_data.push({data: overall_times, label: "Overall Time"});
-    //chart_data.push({data: overall_avg, label: "Overall Moving Avg"});
     for(var i = 0; i < sub_times.length; i++) {
         chart_data.push({data: sub_times[i], label: "Timer "+ (i+1), points: { show: true }, yaxis: ya});
     }
 }
 
-function get_data(url) {
-    //console.log("URL:", url);
-    $.ajax({url: url,
+function get_data(_path) {
+    if (_path[0] != '/')
+        _path = '/' + _path;
+    path = _path;
+    console.log("_path",_path);
+    console.log("path",path);
+    $.ajax({url: 'http://drdr.racket-lang.org/json/timing'+path,
             beforeSend: function(xhr) {
                 xhr.overrideMimeType( 'text/plain; charset=x-user-defined' );
             },
@@ -118,7 +133,7 @@ function show() { $.plot(placeholder, chart_data, cur_options); }
 
 function handle_selection(event, ranges) {
     cur_options = $.extend(true, {}, cur_options, {
-        yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to },
+        yaxes: [ { min: ranges.yaxis.from, max: ranges.yaxis.to },cur_options.yaxes[1]],
         xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to }});
     show();
 }
