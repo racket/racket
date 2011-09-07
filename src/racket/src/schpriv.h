@@ -535,6 +535,7 @@ Scheme_Object *scheme_get_thread_suspend(Scheme_Thread *p);
 void scheme_zero_unneeded_rands(Scheme_Thread *p);
 
 int scheme_can_break(Scheme_Thread *p);
+void scheme_thread_wait(Scheme_Object *thread);
 
 # define DO_CHECK_FOR_BREAK(p, e) \
 	if (DECREMENT_FUEL(scheme_fuel_counter, 1) <= 0) { \
@@ -3681,6 +3682,7 @@ typedef struct Scheme_Place {
 #ifdef MZ_PRECISE_GC
   struct GC_Thread_Info *gc_info; /* managed by the GC */
 #endif
+  Scheme_Object *pumper_threads; /* Scheme_Vector of scheme threads */
 } Scheme_Place;
 
 typedef struct Scheme_Place_Object {

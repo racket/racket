@@ -44,6 +44,7 @@ SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(static struct Scheme_Place_Object *place_object);
 THREAD_LOCAL_DECL(static uintptr_t force_gc_for_place_accounting);
 static Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_pumper_threads(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_wait(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_kill(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_break(int argc, Scheme_Object *args[]);
@@ -120,7 +121,8 @@ void scheme_init_place(Scheme_Env *env)
 
   GLOBAL_PRIM_W_ARITY("place-enabled?",       scheme_place_enabled,   0, 0, plenv);
   GLOBAL_PRIM_W_ARITY("place-shared?",        scheme_place_shared,    1, 1, plenv);
-  PLACE_PRIM_W_ARITY("dynamic-place",         scheme_place,           2, 2, plenv);
+  PLACE_PRIM_W_ARITY("dynamic-place",         scheme_place,           5, 5, plenv);
+  PLACE_PRIM_W_ARITY("place-pumper-threads",  place_pumper_threads,   1, 2, plenv);
   PLACE_PRIM_W_ARITY("place-sleep",           place_sleep,     1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",            place_wait,      1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-kill",            place_kill,      1, 1, plenv);
@@ -177,6 +179,9 @@ typedef struct Place_Start_Data {
   struct Scheme_Place_Object *place_obj;   /* malloc'ed item */
   struct NewGC *parent_gc;
   Scheme_Object *cust_limit;
+  intptr_t in;
+  intptr_t out;
+  intptr_t err;
 } Place_Start_Data;
 
 static void null_out_runtime_globals() {
@@ -206,6 +211,28 @@ Scheme_Object *scheme_make_place_object() {
   return (Scheme_Object *)place_obj;
 }
 
+static void close_six_fds(int *rw) {
+  int i;
+  for (i=0; i<6; i++) { if (rw[i] >= 0) scheme_close_file_fd(rw[i]); }
+}
+
+Scheme_Object *place_pumper_threads(int argc, Scheme_Object *args[]) {
+  Scheme_Place          *place;
+  Scheme_Object         *tmp;
+
+  place = (Scheme_Place *) args[0];
+  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
+    scheme_wrong_type("place-pumper-threads", "place", 0, argc, args);
+
+  if (argc == 2) {
+    tmp = args[1];
+    if (!SCHEME_VECTORP(tmp) || SCHEME_VEC_SIZE(tmp) != 3)
+      scheme_wrong_type("place-pumper-threads", "vector of size 3", 1, argc, args);
+    place->pumper_threads = tmp;
+  }
+  return place->pumper_threads;
+}
+
 Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   Place_Start_Data      *place_data;
@@ -216,6 +243,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   struct NewGC          *parent_gc;
   Scheme_Custodian      *cust;
   intptr_t              mem_limit;
+  Scheme_Object         *in_arg;
+  Scheme_Object         *out_arg;
+  Scheme_Object         *err_arg;
+  int rw[6] = {-1, -1, -1, -1, -1, -1};
 
   /* To avoid runaway place creation, check for termination before continuing. */
   scheme_thread_block(0.0);
@@ -254,14 +285,28 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   {
     Scheme_Object *so;
 
+    in_arg = args[2];
+    out_arg = args[3];
+    err_arg = args[4];
+
     if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0])) {
       scheme_wrong_type("dynamic-place", "module-path or path", 0, argc, args);
     }
-    if (SCHEME_PAIRP(args[0]) && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)) {
-      scheme_wrong_type("dynamic-place", "non-interactively defined module-path", 0, argc, args);
-    }
     if (!SCHEME_SYMBOLP(args[1])) {
       scheme_wrong_type("dynamic-place", "symbol", 1, argc, args);
+    }
+    if (SCHEME_TRUEP(in_arg) && !SCHEME_TRUEP(scheme_file_stream_port_p(1, &in_arg))) {
+      scheme_wrong_type("dynamic-place", "file-stream-input-port or #f", 2, argc, args);
+    }
+    if (SCHEME_TRUEP(out_arg) && !SCHEME_TRUEP(scheme_file_stream_port_p(1, &out_arg))) {
+      scheme_wrong_type("dynamic-place", "file-stream-output-port or #f", 3, argc, args);
+    }
+    if (SCHEME_TRUEP(err_arg) && !SCHEME_TRUEP(scheme_file_stream_port_p(1, &err_arg))) {
+      scheme_wrong_type("dynamic-place", "file-stream-output-port or #f", 4, argc, args);
+    }
+
+    if (SCHEME_PAIRP(args[0]) && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)) {
+      scheme_arg_mismatch("dynamic-place", "dynamic-place works on only on filesystem  module-paths", args[0]);
     }
 
     so = places_deep_copy_to_master(args[0]);
@@ -289,6 +334,65 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_data->cust_limit = scheme_make_integer(mem_limit);
   place_obj->memory_limit = mem_limit;
   place_obj->parent_need_gc = &force_gc_for_place_accounting;
+
+  { 
+    intptr_t tmpfd;
+    int errorno;
+
+    if (SCHEME_TRUEP(in_arg)) {
+      scheme_get_port_file_descriptor(in_arg, &tmpfd);
+      tmpfd = scheme_dup_file(tmpfd);
+      if (tmpfd == -1) {
+        errorno = scheme_errno();
+        close_six_fds(rw);
+        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor(%e)", errorno);
+      }
+      rw[0] = tmpfd;
+    }
+    else if (pipe(rw)) {
+      errorno = scheme_errno();
+      close_six_fds(rw);
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard input streams (%e)", errorno);
+    }
+
+    if (SCHEME_TRUEP(out_arg)) {
+      scheme_get_port_file_descriptor(out_arg, &tmpfd);
+      tmpfd = scheme_dup_file(tmpfd);
+      if (tmpfd == -1) {
+        errorno = scheme_errno();
+        close_six_fds(rw);
+        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor(%e)", errorno);
+      }
+      rw[3] = tmpfd;
+    }
+    else if (pipe(rw + 2)) {
+      errorno = scheme_errno();
+      close_six_fds(rw);
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard output streams (%e)", errorno);
+    }
+
+    if (SCHEME_TRUEP(err_arg)) {
+      scheme_get_port_file_descriptor(err_arg, &tmpfd);
+      tmpfd = scheme_dup_file(tmpfd);
+      if (tmpfd == -1) {
+        errorno = scheme_errno();
+        close_six_fds(rw);
+        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor(%e)", errorno);
+      }
+      rw[5] = tmpfd;
+    }
+    else if (pipe(rw + 4)) {
+      errorno = scheme_errno();
+      close_six_fds(rw);
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard error streams (%e)", errorno);
+    }
+
+    {
+      place_data->in = rw[0];
+      place_data->out = rw[3];
+      place_data->err = rw[5];
+    }
+  }
 
   /* create new place */
   proc_thread = mz_proc_thread_create(place_start_proc, place_data);
@@ -323,7 +427,32 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   GC_register_new_thread(place, cust);
 #endif
 
-  return (Scheme_Object*) place;
+  {
+    Scheme_Object *a[4];
+    Scheme_Object *tmpport;
+    a[0] = (Scheme_Object *) place;
+    if (rw[1] >= 0) {
+      tmpport = scheme_make_fd_output_port(rw[1], scheme_intern_symbol("place-in"),  1, 1, 0);
+      a[1] = tmpport;
+    }
+    else
+      a[1] = scheme_false;
+
+    if (rw[2] >= 0) {
+      tmpport = scheme_make_fd_input_port(rw[2],  scheme_intern_symbol("place-out"), 1, 1);
+      a[2] = tmpport;
+    }
+    else
+      a[2] = scheme_false;
+
+    if (rw[4] >= 0) {
+      tmpport = scheme_make_fd_input_port(rw[4],  scheme_intern_symbol("place-err"), 1, 1);
+      a[3] = tmpport;
+    }
+    else
+      a[3] = scheme_false;
+    return scheme_values(4, a);
+  }
 }
 
 static void do_place_kill(Scheme_Place *place) 
@@ -859,6 +988,7 @@ static int place_wait_ready(Scheme_Object *_p) {
 
   if (done) {
     do_place_kill(p); /* sets result, frees place */
+    /* wait for pumper threads to finish */
     return 1;
   }
 
@@ -873,6 +1003,16 @@ static Scheme_Object *place_wait(int argc, Scheme_Object *args[]) {
     scheme_wrong_type("place-wait", "place", 0, argc, args);
   
   scheme_block_until(place_wait_ready, NULL, (Scheme_Object*)place, 0);
+
+  if (SCHEME_VECTORP(place->pumper_threads)) {
+    int i;
+    for (i=0; i<3; i++) {
+      Scheme_Object *tmp;
+      tmp = SCHEME_VEC_ELS(place->pumper_threads)[i];
+      if (SCHEME_THREADP(tmp)) 
+        scheme_thread_wait(tmp);
+    }
+  }
 
   return scheme_make_integer(place->result);
 }
@@ -2014,6 +2154,32 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     place_obj->signal_handle = signal_handle;
   }
 
+  {
+    Scheme_Object *tmp;
+    if (place_data->in >= 0) {
+      tmp = scheme_make_fd_input_port (place_data->in,  scheme_intern_symbol("place-in"),  1, 1);
+      if (scheme_orig_stdin_port) {
+        scheme_close_input_port(scheme_orig_stdin_port);
+      }
+      scheme_orig_stdin_port = tmp;
+    }
+    if (place_data->out >= 0) {
+      tmp = scheme_make_fd_output_port(place_data->out, scheme_intern_symbol("place-out"), 1, 1, 0);
+      if (scheme_orig_stdout_port) {
+        scheme_close_output_port(scheme_orig_stdout_port);
+      }
+      scheme_orig_stdout_port = tmp;
+    }
+    if (place_data->err >= 0) {
+      tmp = scheme_make_fd_output_port(place_data->err, scheme_intern_symbol("place-err"), 1, 1, 0);
+      if (scheme_orig_stderr_port) {
+        scheme_close_output_port(scheme_orig_stderr_port);
+      }
+      scheme_orig_stderr_port = tmp;
+    }
+    scheme_init_port_config();
+  }
+
   mzrt_sema_post(place_data->ready);
   place_data = NULL;
 # ifdef MZ_PRECISE_GC
@@ -2059,6 +2225,10 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   }
 
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
+
+  scheme_close_input_port(scheme_orig_stdin_port);
+  scheme_close_output_port(scheme_orig_stdout_port);
+  scheme_close_output_port(scheme_orig_stderr_port);
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
   scheme_place_instance_destroy(place_obj->die);

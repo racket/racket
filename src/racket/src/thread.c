@@ -2993,6 +2993,10 @@ static Scheme_Object *thread_wait(int argc, Scheme_Object *args[])
   return scheme_void;
 }
 
+void scheme_thread_wait(Scheme_Object *thread) {
+  thread_wait(1, &thread);
+}
+
 static void register_thread_sync()
 {
   scheme_add_evt(scheme_thread_type, 

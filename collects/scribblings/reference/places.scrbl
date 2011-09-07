@@ -104,7 +104,9 @@ are simulated using @racket[thread].}
 }
 
 
-@defproc[(dynamic-place [module-path module-path?] [start-proc symbol?]) place?]{
+@defproc[(dynamic-place [module-path module-path?] 
+                        [start-proc symbol?]
+                        place?]{
 
  Creates a @tech{place} to run the procedure that is identified by
  @racket[module-path] and @racket[start-proc]. The result is a
@@ -132,6 +134,45 @@ are simulated using @racket[thread].}
  @tech{completion value} @racket[0].}
 
 
+@defproc[(dynamic-place* [module-path module-path?] 
+                         [start-proc symbol?]
+                         [#:in in (or/c input-port? #f) #f]
+                         [#:out out (or/c output-port? #f) (current-output-port)]
+                         [#:err err (or/c output-port? #f) (current-error-port)]
+                         (values place? (or/c input-port? #f) (or/c output-port? #f) (or/c output-port? #f)]{
+
+ The @racket[dynamic-place*] function behaves just like the
+ @racket[dynamic-place] but allows the user to specify the standard
+ in, out, and error ports for the new place. Upon execution of
+ @racket[dynamic-place*], the @racket[in], @racket[out], and
+ @racket[err] ports become the @racket[current-input-port],
+ @racket[current-output-port], and @racket[current-error-port] for the
+ @tech{place}.  Any of the ports can be @racket[#f], in which case a
+ system pipe is created and returned by @racket[dynamic-place*]. The
+ @racket[stderr] argument can be @racket['stdout], in which case the
+ same file-stream port or system pipe that is supplied as standard
+ output is also used for standard error.  For each port or
+ @racket['stdout] that is provided, no pipe is created and the
+ corresponding returned value is @racket[#f]
+
+The @racket[dynamic-place*] procedure returns four values:
+
+@itemize[
+
+ @item{a place descriptor value representing the created place;}
+
+ @item{an output port piped to the place's standard input, or
+ @racket[#f] if @racket[in] was a port;}
+
+ @item{an input port piped from the place's standard output, or
+ @racket[#f] if @racket[out] was a port;}
+
+ @item{an input port piped from the place's standard error, or
+ @racket[#f] if @racket[err] was a port or @racket['stdout].}
+
+
+}
+
 @defform[(place id body ...+)]{
   Creates a place that evaluates @racket[body]
   expressions with @racket[id] bound to a place channel.  The
@@ -141,6 +182,17 @@ are simulated using @racket[thread].}
   the module. The result of @racket[place] is a place descriptor,
   like the result of @racket[dynamic-place].
 }
+
+@defform[(place* [#:in in #f] 
+                 [#:out out (current-output-port)]
+                 [#:err err (current-error-port)]
+                 id 
+                 body ...+)]{
+ Behaves like @racket[place] and allows the user to set
+ the @racket[current-input-port], @racket[current-output-port], and 
+ @racket[current-error-port] for the @tech{place}. The result of a 
+ @racket[place*] form is analogous to the result of @racket[dynamic-place*].
+ }
 
 
 @defproc[(place-wait [p place?]) exact-integer?]{

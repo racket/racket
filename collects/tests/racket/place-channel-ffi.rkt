@@ -3,6 +3,7 @@
 (require racket/place
          ffi/unsafe
          racket/runtime-path
+         rackunit
          (for-syntax racket/base))
 
 (provide main)
@@ -34,9 +35,13 @@
   (define bn (BN_new))
   (set-BN-j1! bn 1334)
   (printf "BN-j1 ~a ~v\n" (BN-j1 bn) (cpointer-tag bn))
+  (check-equal? (BN-j1 bn) 1334)
+  (check-equal? (cpointer-tag bn) 'BN)
+  (check-equal? BN-tag 'BN)
   (printf "BN tag ~v\n" BN-tag)
   (define p (place ch
                    (define b (place-channel-get ch))
-                   (printf "Got it ~a\n" (BN-j1 b))))
+                   (printf "Got it ~a\n" (BN-j1 b))
+                   (check-equal? (BN-j1 b) 1334)))
   (place-channel-put p bn)
   (place-wait p))

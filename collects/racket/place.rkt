@@ -7,11 +7,13 @@
          racket/fixnum
          racket/flonum
          racket/vector
+         "../mzlib/private/streams.rkt"
 
          (for-syntax racket/base
                      racket/syntax))
 
 (provide dynamic-place
+         dynamic-place*
          place-sleep
          place-wait 
          place-kill
@@ -25,6 +27,7 @@
          place-channel-put/get
          processor-count
          place
+         place*
          (rename-out [pl-place-enabled? place-enabled?])
          place-dead-evt)
 
@@ -125,7 +128,6 @@
 
 (define-syntax-rule (define-pl x p t) (define x (if (pl-place-enabled?) p t)))
 
-(define-pl dynamic-place      pl-dynamic-place      th-dynamic-place)
 (define-pl place-sleep        pl-place-sleep        th-place-sleep)
 (define-pl place-wait         pl-place-wait         th-place-wait)
 (define-pl place-kill         pl-place-kill         th-place-kill)
@@ -138,33 +140,102 @@
 (define-pl place-message-allowed? pl-place-message-allowed? th-place-message-allowed?)
 (define-pl place-dead-evt     pl-place-dead-evt     th-place-dead-evt)
 
-(define-syntax-rule (define-syntax-case (N a ...) b ...)
-  (define-syntax (N stx)
-    (syntax-case stx ()
-      [(_ a ...) b ...])))
+(define (pump-place p pin pout perr in out err)
+  (cond
+    [(pl-place-enabled?)
+      (define-values (t-in t-out t-err) (pump-ports (place-dead-evt p) pin pout perr in out err))
+      (pl-place-pumper-threads p (vector t-in t-out t-err))]
+    [else (void)]))
 
-(define-syntax (place stx)
+(define (dynamic-place module-path function)
+  (define-values (p i o e) (dynamic-place* module-path 
+                                           function 
+                                           #:in #f 
+                                           #:out (current-output-port) 
+                                           #:err (current-error-port)))
+  (close-output-port i)
+  p)
+
+(define (dynamic-place* module-path
+                       function
+                       #:in [in #f]
+                       #:out [out (current-output-port)]
+                       #:err [err (current-error-port)])
+  (cond
+    [(pl-place-enabled?)
+      (define-values (p pin pout perr)
+        (pl-dynamic-place module-path
+                          function
+                          (if-stream-in  'dynamic-place in)
+                          (if-stream-out 'dynamic-place out)
+                          (if-stream-out 'dynamic-place err)))
+
+      (pump-place p pin pout perr in out err)
+      (values p 
+              (and (not in) pin)
+              (and (not out) pout)
+              (and (not err) perr))]
+
+    [else
+      (define-values (inr  inw ) (if in  (values #f #f) (make-pipe)))
+      (define-values (outr outw) (if out (values #f #f) (make-pipe)))
+      (define-values (errr errw) (if err (values #f #f) (make-pipe)))
+
+      (parameterize ([current-input-port  (or in  inr)]
+                     [current-output-port (or out outw)]
+                     [current-error-port  (or err errw)])
+        (values (th-dynamic-place module-path function)
+                (and (not in ) inw )
+                (and (not out) outr)
+                (and (not err) errr)))]))
+
+(define-for-syntax (place-form _in _out _err _dynamic-place-func stx)
   (syntax-case stx ()
     [(_ ch body1 body ...)
      (begin
-       #;(when (in-module-expansion?)
+       (unless (syntax-transforming-module-expression?)
          (raise-syntax-error #f "can only be used in a module" stx))
        (unless (identifier? #'ch)
-         (raise-syntax-error #f "expected an indentifier" stx #'ch))
+         (raise-syntax-error #f "expected an identifier" stx #'ch))
        (with-syntax ([internal-def-name
                       (syntax-local-lift-expression #'(lambda (ch) body1 body ...))]
-                     [func-name (generate-temporary #'place/anon)])
+                     [func-name (generate-temporary #'place/anon)]
+                     [in _in]
+                     [out _out]
+                     [err _err]
+                     [dynamic-place-func _dynamic-place-func])
          (syntax-local-lift-provide #'(rename internal-def-name func-name))
-         #'(place/proc (#%variable-reference) 'func-name)))]
+         #'(place/proc (#%variable-reference) 'func-name dynamic-place-func #:in in #:out out #:err err)))]
     [(_ ch)
      (raise-syntax-error #f "expected at least one body expression" stx)]))
 
-(define (place/proc vr func-name)
+(define-syntax (place stx)
+  (place-form #'#f #'(current-output-port) #'(current-error-port) #'dynamic-place stx))
+
+(define-syntax (place* stx)
+  (syntax-case stx ()
+    [(_ #:in in #:out out #:err err ch body ...) (place-form #'in #'out #'err  #'dynamic-place* #'('place* ch body ...))]
+    [(_ #:in in #:out out ch body ...)           (place-form #'in #'out #'#f   #'dynamic-place* #'('place* ch body ...))]
+    [(_ #:out out #:err err ch body ...)         (place-form #'#f #'out #'err  #'dynamic-place* #'('place* ch body ...))]
+    [(_ #:in in #:err err ch body ...)           (place-form #'in #'#f  #'err  #'dynamic-place* #'('place* ch body ...))]
+    [(_ #:in in ch body ...)                     (place-form #'in #'#f  #'#f   #'dynamic-place* #'('place* ch body ...))]
+    [(_ #:out out ch body ...)                   (place-form #'#f #'out #'#f   #'dynamic-place* #'('place* ch body ...))]
+    [(_ #:err err ch body ...)                   (place-form #'#f #'#f  #'err  #'dynamic-place* #'('place* ch body ...))]
+    [(_ ch body ...)                             (place-form #'#f #'#f  #'#f   #'dynamic-place* #'('place* ch body ...))]
+))
+
+(define (place/proc vr 
+                    func-name 
+                    [dynamic-place-func dynamic-place] 
+                    #:in [in #f]  
+                    #:out [out (current-output-port)] 
+                    #:err [err (current-error-port)])
   (define name
     (resolved-module-path-name
      (variable-reference->resolved-module-path
       vr)))
   (when (symbol? name)
-     (error 'place "the current module-path-name should be a path and not a symbol (if you are in DrRacket, save the file)"))
-  (dynamic-place name func-name))
-
+     (error 'place "the current module-path-name is not a file path"))
+  (if (eq? dynamic-place-func dynamic-place)
+    (dynamic-place-func name func-name)
+    (dynamic-place-func name func-name #:in in #:out out #:err err)))
