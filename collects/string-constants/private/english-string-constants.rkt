@@ -478,6 +478,7 @@ please adhere to these guidelines:
  (show-interactions-on-execute "Automatically open interactions window when running a program")
  (switch-to-module-language-automatically "Automatically switch to the module language when opening a module")
  (interactions-beside-definitions "Put the interactions window beside the definitions window") ;; in preferences, below the checkbox one line above this one
+ (old-style-keybindings "Old-style keybindings (Run: <menukey>-t; New-tab: <menukey>-=; Replace: <menukey>-r)")
  (show-line-numbers "Show line numbers")
  (show-line-numbers/menu "Show Line &Numbers")  ;; just like the above, but capitalized for appearance in a menu item
  (hide-line-numbers/menu "Hide Line &Numbers")
@@ -1373,7 +1374,7 @@ please adhere to these guidelines:
   ;; title of this section of the dialog (possibly the word
   ;; `Collection' should not be translated)
   (ml-cp-collection-paths "Collection Paths")
-
+  
   ;; button labels
   (ml-cp-add "Add")
   (ml-cp-add-default "Add Default")

@@ -3338,7 +3338,7 @@ module browser threading seems wrong.
         (set! file-menu:create-new-tab-item
               (new menu:can-restore-menu-item%
                    (label (string-constant new-tab))
-                   (shortcut #\t)
+                   (shortcut (if (preferences:get 'drracket:use-old-style-keybindings) #\= #\t))
                    (parent file-menu)
                    (callback
                     (λ (x y)
@@ -3417,8 +3417,13 @@ module browser threading seems wrong.
                         (preferences:get 'framework:print-output-mode)))))
         (super file-menu:between-print-and-close file-menu))
       
+      (inherit edit-menu:get-replace-item)
       (define/override (edit-menu:between-find-and-preferences edit-menu)
         (super edit-menu:between-find-and-preferences edit-menu)
+        (when (preferences:get 'drracket:use-old-style-keybindings)
+          (define item (edit-menu:get-replace-item)) 
+          (send item set-shortcut #\r)
+          (send item set-shortcut-prefix (get-default-shortcut-prefix))) 
         (new menu:can-restore-menu-item%
              [label (string-constant complete-word)]
              [shortcut #\/]
@@ -3621,7 +3626,7 @@ module browser threading seems wrong.
                   (string-constant execute-menu-item-label)
                   language-specific-menu
                   (λ (_1 _2) (execute-callback))
-                  #\r
+                  (if (preferences:get 'drracket:use-old-style-keybindings) #\t #\r)
                   (string-constant execute-menu-item-help-string)))
           (make-object menu:can-restore-menu-item%
             (string-constant ask-quit-menu-item-label)

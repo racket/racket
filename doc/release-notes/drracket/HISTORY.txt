@@ -2,10 +2,13 @@
         Version 5.2
 ------------------------------
 
-  . changed a few menu keybidings:
+  . changed a three menu keybidings:
       "New Tab" is now <menukey>-t
       "Run" is now <menukey>-r
       "Replace" is now <menukey>-shift-f
+
+    The preferences dialog (general tab) has a checkbox to
+    restore the old behavior.
 
   . added online expansion and check syntax
 
