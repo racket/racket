@@ -3,12 +3,33 @@ var data = null;
 var sub_times = [];
 var overall_times = [];
 var chart_data = [];
+var show_hide = {}
 var options = { selection: { mode: "xy" },
-                legend: { backgroundOpacity: 0, position: "sw", show: true },
+                legend: { backgroundOpacity: 0,
+                          position: "sw",
+                          show: true,
+                          noColumns : 1,
+                          labelFormatter :
+                          function(label, series) {
+                              if (show_hide[label] === undefined)
+                                  show_hide[label] = true;
+                              var css = '';
+                              if (!show_hide[label]) {
+                                  css = 'style="font-style: italic"';
+                              }
+                              var v = '<div '+css+' onclick="legend_click(\''+label+'\')">' + label + '</div>';
+                              return v;}},
                 xaxes: [{label: 'push'}],
                 yaxes: [{}, {position: "right"}],
                 grid: { clickable: true, hoverable : true }
               };
+
+function legend_click(l) {
+    console.log(show_hide[l]);
+    show_hide[l] = !show_hide[l];
+    show();
+}
+
 var placeholder = $("#_chart");
 var cur_options = options;
 var previousPoint = null;
@@ -106,13 +127,15 @@ function load_data(d) {
     // and the internal timings?
 
     var ya = 1;
-    if (max_overall > (5 * max_sub)) { ya = 2; }
+    if ((max_overall > (5 * max_sub)) || ((max_overall * 5) < max_sub))
+        ya = 2;
 
     // put the data into the chart format
     chart_data.push({data: overall_times, label: "Overall Time"});
     for(var i = 0; i < sub_times.length; i++) {
         chart_data.push({data: sub_times[i], label: "Timer "+ (i+1), points: { show: true }, yaxis: ya});
     }
+    options.legend.noColumns = Math.max(1,Math.round(chart_data.length / 10));
 }
 
 function get_data(_path) {
@@ -129,7 +152,21 @@ function get_data(_path) {
 }
 
 
-function show() { $.plot(placeholder, chart_data, cur_options); }
+function show() {
+    for(var i = 0; i < chart_data.length; i++) {
+        if (show_hide[chart_data[i].label] === false) {
+            if (!chart_data[i].saved)
+                chart_data[i].saved = chart_data[i].data
+            chart_data[i].data = [];
+        }
+        else if (chart_data[i].data.length === 0 && chart_data[i].saved !== null) {
+            chart_data[i].data = chart_data[i].saved;
+            chart_data[i].saved = null;
+        }
+    }
+    //console.log(chart_data);
+    $.plot(placeholder, chart_data, cur_options);
+}
 
 function handle_selection(event, ranges) {
     cur_options = $.extend(true, {}, cur_options, {
@@ -147,4 +184,4 @@ function set_legend(new_val) {
       $("#setlegend").text("Show Legend")
 }
 
-function reset_chart() { cur_options = options; show(); }
+function reset_chart() { cur_options = options; show_hide = {}; show(); }
