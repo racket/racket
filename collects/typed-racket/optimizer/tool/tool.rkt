@@ -42,7 +42,7 @@
          (let ([color (if (= badness 0)
                           "lightgreen"
                           (vector-ref color-table badness))])
-           (send this highlight-range start end color)
+           (send this highlight-range start end color #f 'high)
            (send this set-clickback start end (popup-callback l))
            ;; record highlight to undo it later
            (list start end color))]))
