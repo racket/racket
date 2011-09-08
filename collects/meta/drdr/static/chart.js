@@ -19,19 +19,18 @@ var options = { selection: { mode: "xy" },
                               }
                               var v = '<div '+css+' onclick="legend_click(\''+label+'\')">' + label + '</div>';
                               return v;}},
-                xaxes: [{label: 'push'}],
-                yaxes: [{}, {position: "right"}],
+                xaxes: [{min: null, max: null, label: 'push'}],
+                yaxes: [{min: null, max: null, label: "time"},
+                        {position: "right"}],
                 grid: { clickable: true, hoverable : true }
               };
 
 function legend_click(l) {
-    console.log(show_hide[l]);
     show_hide[l] = !show_hide[l];
     show();
 }
 
 var placeholder = $("#_chart");
-var cur_options = options;
 var previousPoint = null;
 
 function showTooltip(x, y, contents) {
@@ -94,8 +93,7 @@ function click(e,pos,item) {
         makeTooltip(item,path);
     }
 }
-placeholder.bind("plothover", hover);
-placeholder.bind("plotclick", click);
+
 
 function load_data(d) {
     chart_data = [];
@@ -135,15 +133,13 @@ function load_data(d) {
     for(var i = 0; i < sub_times.length; i++) {
         chart_data.push({data: sub_times[i], label: "Timer "+ (i+1), points: { show: true }, yaxis: ya});
     }
-    options.legend.noColumns = Math.max(1,Math.round(chart_data.length / 10));
+    cur_options.legend.noColumns = Math.max(1,Math.round(chart_data.length / 10));
 }
 
 function get_data(_path) {
     if (_path[0] != '/')
         _path = '/' + _path;
     path = _path;
-    console.log("_path",_path);
-    console.log("path",path);
     $.ajax({url: 'http://drdr.racket-lang.org/json/timing'+path,
             beforeSend: function(xhr) {
                 xhr.overrideMimeType( 'text/plain; charset=x-user-defined' );
@@ -164,15 +160,29 @@ function show() {
             chart_data[i].saved = null;
         }
     }
-    //console.log(chart_data);
     $.plot(placeholder, chart_data, cur_options);
+}
+
+function serialize_zoom(options) {
+    var o = {};
+    if (options.xaxes[0].min)
+        o.xmin = options.xaxes[0].min;
+    if (options.xaxes[0].max)
+        o.xmax = options.xaxes[0].max;
+    if (options.yaxes[0].min)
+        o.ymin = options.yaxes[0].min;
+    if (options.yaxes[0].max)
+        o.ymax = options.yaxes[0].max;
+    window.location.hash = "#" + (JSON.stringify(o));
 }
 
 function handle_selection(event, ranges) {
     cur_options = $.extend(true, {}, cur_options, {
         yaxes: [ { min: ranges.yaxis.from, max: ranges.yaxis.to },cur_options.yaxes[1]],
-        xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to }});
+        xaxes: [ { min: ranges.xaxis.from, max: ranges.xaxis.to } ]});
+    serialize_zoom(cur_options);
     show();
+
 }
 
 function set_legend(new_val) {
@@ -184,4 +194,24 @@ function set_legend(new_val) {
       $("#setlegend").text("Show Legend")
 }
 
-function reset_chart() { cur_options = options; show_hide = {}; show(); }
+function reset_chart() {
+    cur_options = options; show_hide = {}; show();
+}
+
+placeholder.bind("plothover", hover);
+placeholder.bind("plotclick", click);
+
+var opts = {xmin : null, ymin: null, xmax: null, ymax : null};
+
+var cur_options = options;
+
+try {
+    opts = JSON.parse(window.location.hash.substring(1));
+} catch(e) {}
+
+if (opts) {
+    cur_options.xaxes[0].min = opts.xmin;
+    cur_options.xaxes[0].max = opts.xmax;
+    cur_options.yaxes[0].min = opts.ymin;
+    cur_options.yaxes[0].max = opts.ymax;
+}
