@@ -18,6 +18,7 @@
          planet/config
          setup/dirs
          racket/place
+         "tooltip.rkt"
          "drsig.rkt"
          "rep.rkt"
          "eval-helpers.rkt"
@@ -909,24 +910,11 @@
         (cond
           [tooltip-labels
            (unless tooltip-frame
-             (set! tooltip-frame 
-                   (new (class frame%
-                          (define/override (on-subwindow-event r evt)
-                            (cond
-                              [(send evt button-down?)
-                               (hide-tooltip)
-                               #t]
-                              [else #f]))
-                          (super-new [style '(no-resize-border no-caption float)]
-                                     [label ""]
-                                     [stretchable-width #f]
-                                     [stretchable-height #f] ))))
-             (new yellow-message% [parent tooltip-frame]))
-           (send (car (send tooltip-frame get-children)) set-lab tooltip-labels)
-           (send tooltip-frame reflow-container)
+             (set! tooltip-frame (new tooltip-frame%)))
+           (send tooltip-frame set-tooltip tooltip-labels)
            (define-values (rx ry) (send running-canvas client->screen 0 0))
-           (send tooltip-frame move (- rx (send tooltip-frame get-width)) (- ry (send tooltip-frame get-height)))
-           (send tooltip-frame show #t)]
+           (define-values (cw ch) (send running-canvas get-client-size))
+           (send tooltip-frame show-over rx ry cw ch #:prefer-upper-left? #t)]
           [else
            (when tooltip-frame
              (send tooltip-frame show #f))]))

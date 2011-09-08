@@ -31,7 +31,7 @@
         (set! trace (cons (cons 'name args) trace))))
 
     ; (log syncheck:color-range) ;; we don't want log these as they are too distracting to keep popping up
-    ; (log syncheck:add-mouse-over-status) ;; we don't log these as they require space in the window
+    (log syncheck:add-mouse-over-status)
     (log syncheck:add-arrow)
     (log syncheck:add-tail-arrow)
     (log syncheck:add-background-color)

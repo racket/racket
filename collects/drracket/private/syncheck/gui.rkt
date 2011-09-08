@@ -50,7 +50,8 @@ If the namespace does not, they are colored the unbound color.
          "intf.rkt"
          "colors.rkt"
          "traversals.rkt"
-         "annotate.rkt")
+         "annotate.rkt"
+         "../tooltip.rkt")
 (provide tool@)
 
 (define orig-output-port (current-output-port))
@@ -197,6 +198,8 @@ If the namespace does not, they are colored the unbound color.
                   actual? level) ;; level is one of 'lexical, 'top-level, 'import
       #:transparent)
     (define-struct (tail-arrow arrow) (from-text from-pos to-text to-pos) #:transparent)
+    
+    (define-struct tooltip-info (text pos-left pos-right msg) #:transparent)
     
     ;; color : string
     ;; text: text:basic<%>
@@ -470,10 +473,7 @@ If the namespace does not, they are colored the unbound color.
               (set! arrow-records (make-hasheq))
               (set! bindings-table (make-hash))
               (set! cleanup-texts '())
-              (set! style-mapping (make-hash))
-              (let ([f (get-top-level-window)])
-                (when f
-                  (send f open-status-line 'drracket:check-syntax:mouse-over))))
+              (set! style-mapping (make-hash)))
             
             (define/public (syncheck:arrows-visible?)
               (or arrow-records cursor-location cursor-text))
@@ -493,9 +493,7 @@ If the namespace does not, they are colored the unbound color.
                 (set! style-mapping #f)
                 (invalidate-bitmap-cache)
                 (update-docs-background #f)
-                (let ([f (get-top-level-window)])
-                  (when f
-                    (send f close-status-line 'drracket:check-syntax:mouse-over)))))
+                (clear-tooltips)))
             
             ;; syncheck:apply-style/remember : (is-a?/c text%) number number style% symbol -> void
             (define/public (syncheck:apply-style/remember txt start finish style mode)
@@ -705,9 +703,10 @@ If the namespace does not, they are colored the unbound color.
             
             ;; syncheck:add-mouse-over-status : text pos-left pos-right string -> void
             (define/public (syncheck:add-mouse-over-status text pos-left pos-right str)
-              (let ([str (gui-utils:format-literal-label "~a" str)])
-                (when arrow-records
-                  (add-to-range/key text pos-left pos-right str #f #f))))
+              (when arrow-records
+                (add-to-range/key text pos-left pos-right 
+                                  (make-tooltip-info text pos-left pos-right str)
+                                  #f #f)))
             
             ;; add-to-range/key : text number number any any boolean -> void
             ;; adds `key' to the range `start' - `end' in the editor
@@ -897,9 +896,6 @@ If the namespace does not, they are colored the unbound color.
                        (set! cursor-location #f)
                        (set! cursor-text #f)
                        (set! cursor-eles #f)
-                       (let ([f (get-top-level-window)])
-                         (when f
-                           (send f update-status-line 'drracket:check-syntax:mouse-over #f)))
                        (invalidate-bitmap-cache))
                      (super on-event event)]
                     [(or (send event moving?)
@@ -938,20 +934,18 @@ If the namespace does not, they are colored the unbound color.
                          (set! cursor-eles eles)
                          (update-docs-background eles)
                          (when eles
-                           (update-status-line eles)
+                           (update-tooltips eles)
                            (for ([ele (in-list eles)])
                              (cond [(arrow? ele)
                                     (update-arrow-poss ele)]))
                            (invalidate-bitmap-cache)))))]
                   [else
                    (update-docs-background #f)
-                   (let ([f (get-top-level-window)])
-                     (when f
-                       (send f update-status-line 'drracket:check-syntax:mouse-over #f)))
                    (when (or cursor-location cursor-text)
                      (set! cursor-location #f)
                      (set! cursor-text #f)
                      (set! cursor-eles #f)
+                     (clear-tooltips)
                      (invalidate-bitmap-cache))])))
 
             (define/public (syncheck:build-popup-menu pos text)
@@ -1036,22 +1030,70 @@ If the namespace does not, they are colored the unbound color.
                                
                                  menu)]))))))
             
-            (define/private (update-status-line eles)
-              (let ([has-txt? #f])
-                (for-each (λ (ele)
-                            (cond
-                              [(string? ele)
-                               (set! has-txt? #t)
-                               (let ([f (get-top-level-window)])
-                                 (when f
-                                   (send f update-status-line 
-                                         'drracket:check-syntax:mouse-over 
-                                         ele)))]))
-                          eles)
-                (unless has-txt?
-                  (let ([f (get-top-level-window)])
-                    (when f
-                      (send f update-status-line 'drracket:check-syntax:mouse-over #f))))))
+            (define tooltip-frame #f)
+            (define/private (update-tooltips eles)
+              (unless tooltip-frame (set! tooltip-frame (new tooltip-frame%)))
+              (define tooltip-infos (filter tooltip-info? eles))
+              (cond
+                [(null? tooltip-infos)
+                 (send tooltip-frame show #f)]
+                [else
+                 (send tooltip-frame set-tooltip (map tooltip-info-msg tooltip-infos))
+                 (let loop ([tooltip-infos tooltip-infos]
+                            [l #f]
+                            [t #f]
+                            [r #f]
+                            [b #f])
+                   (cond
+                     [(null? tooltip-infos)
+                      (if (and l t r b)
+                          (send tooltip-frame show-over l t (- r l) (- b t))
+                          (send tooltip-frame show #f))]
+                     [else
+                      (define-values (tl tt tr tb) (tooltip-info->ltrb (car tooltip-infos)))
+                      (define (min/f x y) (cond [(and x y) (min x y)] [x x] [y y] [else #f]))
+                      (define (max/f x y) (cond [(and x y) (max x y)] [x x] [y y] [else #f]))
+                      (loop (cdr tooltip-infos)
+                            (min/f tl l)
+                            (min/f tt t)
+                            (max/f tr r)
+                            (max/f tb b))]))]))
+            
+            (define/private (clear-tooltips)
+              (when tooltip-frame (send tooltip-frame show #f)))
+
+            (define/private (tooltip-info->ltrb tooltip)
+              (define xlb (box 0))
+              (define ylb (box 0))
+              (define xrb (box 0))
+              (define yrb (box 0))
+              (define left-pos (tooltip-info-pos-left tooltip))
+              (define right-pos (tooltip-info-pos-right tooltip))
+              (define text (tooltip-info-text tooltip))
+              (send text position-location left-pos xlb ylb #t)
+              (send text position-location right-pos xrb yrb #f)
+              (define-values (xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb)))
+              (define-values (xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb)))
+              (define window
+                (let loop ([ed text])
+                  (cond
+                    [(send ed get-canvas) => values]
+                    [else
+                     (define admin (send ed get-admin))
+                     (if (is-a? admin editor-snip-editor-admin<%>)
+                         (loop (send (send admin get-snip) get-editor))
+                         #f)])))
+              (cond
+                [window
+                 (define (c n) (inexact->exact (round n)))
+                 (define-values (glx gly) (send window client->screen (c xl-off) (c yl-off)))
+                 (define-values (grx gry) (send window client->screen (c xr-off) (c yr-off)))
+                 (values (min glx grx)
+                         (min gly gry)
+                         (max glx grx)
+                         (max gly gry))]
+                [else
+                 (values #f #f #f #f)]))
             
             (define current-colored-region #f)
             ;; update-docs-background : (or/c false/c (listof any)) -> void
