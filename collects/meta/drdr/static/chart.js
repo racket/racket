@@ -28,6 +28,7 @@ var options = { selection: { mode: "xy" },
 function legend_click(l) {
     show_hide[l] = !show_hide[l];
     show();
+    serialize_opts(options);
 }
 
 var placeholder = $("#_chart");
@@ -100,7 +101,6 @@ function load_data(d) {
     overall_times = [];
     sub_times = [];
     pdata = []
-    reset_chart();
     data = d;
 
     pdata = data && JSON.parse(data);
@@ -163,7 +163,7 @@ function show() {
     $.plot(placeholder, chart_data, cur_options);
 }
 
-function serialize_zoom(options) {
+function serialize_opts(options) {
     var o = {};
     if (options.xaxes[0].min)
         o.xmin = options.xaxes[0].min;
@@ -173,14 +173,14 @@ function serialize_zoom(options) {
         o.ymin = options.yaxes[0].min;
     if (options.yaxes[0].max)
         o.ymax = options.yaxes[0].max;
-    window.location.hash = "#" + (JSON.stringify(o));
+    window.location.hash = "#" + (JSON.stringify([o,show_hide]));
 }
 
 function handle_selection(event, ranges) {
     cur_options = $.extend(true, {}, cur_options, {
         yaxes: [ { min: ranges.yaxis.from, max: ranges.yaxis.to },cur_options.yaxes[1]],
         xaxes: [ { min: ranges.xaxis.from, max: ranges.xaxis.to } ]});
-    serialize_zoom(cur_options);
+    serialize_opts(cur_options);
     show();
 
 }
@@ -210,8 +210,12 @@ try {
 } catch(e) {}
 
 if (opts) {
-    cur_options.xaxes[0].min = opts.xmin;
-    cur_options.xaxes[0].max = opts.xmax;
-    cur_options.yaxes[0].min = opts.ymin;
-    cur_options.yaxes[0].max = opts.ymax;
+    cur_options.xaxes[0].min = opts[0].xmin;
+    cur_options.xaxes[0].max = opts[0].xmax;
+    cur_options.yaxes[0].min = opts[0].ymin;
+    cur_options.yaxes[0].max = opts[0].ymax;
+    for(i in opts[1]) {
+        console.log(i,opts[1][i]);
+        show_hide[i] = opts[1][i];
+    }
 }
