@@ -977,6 +977,29 @@
                  x)
           '(2 1)))
   
+  (let ()
+    (define-language L
+      (n z (s n)))
+    
+    (define-metafunction L
+      [(f n)
+       n_1
+       (judgment-holds (p n n_1))])
+    
+    (define-judgment-form L
+      #:mode (p I O)
+      #:contract (p n n)
+      [(p z z)]
+      [(p (s n) n)]
+      [(p (s n) z)])
+    
+    (test (term (f (s z)))
+          (term z))
+    (test (with-handlers ([exn:fail:redex? exn-message])
+            (term (f (s (s z))))
+            "")
+          #rx"different ways and returned different results"))
+  
   (parameterize ([current-namespace (make-base-namespace)])
     (eval '(require redex/reduction-semantics))
     (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))

@@ -706,7 +706,7 @@ otherwise.
                        (fresh fresh-clause ...)
                        (side-condition racket-expression)
                        (where @#,ttpattern @#,tttterm)
-                       (judgment-holds (judgment-form-id pat/term))
+                       (judgment-holds (judgment-form-id pat/term ...))
                        (side-condition/hidden racket-expression)
                        (where/hidden @#,ttpattern @#,tttterm)]
                [shortcuts (code:line)
@@ -960,7 +960,10 @@ it is traversing through the reduction graph.
 
 @declare-exporting[redex/reduction-semantics redex]
 
-@defform/subs[#:literals (: -> where side-condition side-condition/hidden where/hidden)
+@defform/subs[#:literals (: -> 
+                          where side-condition 
+                          side-condition/hidden where/hidden 
+                          judgment-holds)
              (define-metafunction language
                metafunction-contract
                [(name @#,ttpattern ...) @#,tttterm extras ...] 
@@ -974,7 +977,9 @@ it is traversing through the reduction graph.
               [extras (side-condition racket-expression)
                       (side-condition/hidden racket-expression)
                       (where pat @#,tttterm)
-                      (where/hidden pat @#,tttterm)])]{
+                      (where/hidden pat @#,tttterm)
+                      (judgment-holds 
+                       (judgment-form-id pat/term ...))])]{
 
 The @racket[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side

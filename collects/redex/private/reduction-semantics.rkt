@@ -328,7 +328,7 @@
               [env (make-immutable-hash
                     (map (λ (x e) (cons (syntax-e x) e))
                          names w/ellipses))])
-     (syntax-case stx (fresh)
+     (syntax-case stx (fresh judgment-holds)
        [() body]
        [((-where x e) y ...)
         (where-keyword? #'-where)
@@ -390,6 +390,8 @@
                         (verify-names-ok '#,orig-name the-names len-counter)
                         (variables-not-in #,to-not-be-in the-names))])
                     #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
+       [((judgment-holds j) . after)
+        (loop (cons #'j #'after) to-not-be-in env)]
        [((form-name . pats) . after)
         (judgment-form-id? #'form-name)
         (let*-values ([(premise) (syntax-case stx () [(p . _) #'p])]
@@ -1763,7 +1765,7 @@
    (λ (stuffs)
      (for-each
       (λ (stuff)
-        (syntax-case stuff (where side-condition where/hidden side-condition/hidden)
+        (syntax-case stuff (where side-condition where/hidden side-condition/hidden judgment-holds)
           [(side-condition tl-side-conds ...) 
            (void)]
           [(side-condition/hidden tl-side-conds ...) 
@@ -1780,6 +1782,11 @@
            (raise-syntax-error 'define-metafunction 
                                "malformed where/hidden clause"
                                stuff)]
+          [(judgment-holds (form-name . _))
+           (unless (judgment-form-id? #'form-name)
+             (raise-syntax-error 'define-metafunction
+                                 "expected the name of a judgment-form"
+                                 #'form-name))]
           [_
            (raise-syntax-error 'define-metafunction 
                                "expected a side-condition or where clause"
@@ -1875,16 +1882,6 @@
     #'(λ (input)
         (for/fold ([outputs '()]) ([rule (list clause-proc ...)])
                   (append (rule input) outputs)))))
-
-(define-for-syntax (in-order-non-hidden extras)
-  (reverse 
-   (filter (λ (extra)
-             (syntax-case extra (where/hidden
-                               side-condition/hidden)
-               [(where/hidden pat exp) #f]
-               [(side-condition/hidden x) #f]
-               [_ #t])) 
-           (syntax->list extras))))
 
 (define-for-syntax (do-compile-judgment-form-lws clauses)
   (syntax-case clauses ()
@@ -2003,6 +2000,9 @@
                        [(form-name . _)
                         (judgment-form-id? #'form-name)
                         #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
+                       [(form-name . _)
+                        (judgment-form-id? #'form-name)
+                        #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
                        [(where pat (unquote (f _ _)))
                         (and (or (identifier? #'pat)
                                  (andmap identifier? (syntax->list #'pat)))
@@ -2053,6 +2053,17 @@
                            where/sc/lw ...)
                      rhs/lw)
                ...))]))
+
+(define-for-syntax (in-order-non-hidden extras)
+  (for/fold ([visible empty]) ([extra (syntax->list extras)])
+            (syntax-case extra (where/hidden
+                                side-condition/hidden
+                                judgment-holds)
+              [(where/hidden pat exp) visible]
+              [(side-condition/hidden x) visible]
+              [(judgment-holds judgment)
+               (cons #'judgment visible)]
+              [_ (cons extra visible)])))
 
 (define-syntax (compile-judgment-form-proc stx)
   (syntax-case stx ()
