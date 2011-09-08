@@ -2024,11 +2024,11 @@
                        [maybe-ellipsis
                         (ellipsis? #'maybe-ellipsis)
                         (to-lw/proc #'maybe-ellipsis)]))
-                   (in-order-non-hidden hm)))
+                   (visible-extras hm)))
                 (syntax->list #'seq-of-tl-side-cond/binds))]
           [(((where-bind-id/lw . where-bind-pat/lw) ...) ...)
            (map (λ (clauses)
-                  (for/fold ([binds '()]) ([clause (in-order-non-hidden clauses)])
+                  (for/fold ([binds '()]) ([clause (visible-extras clauses)])
                             (syntax-case clause (where)
                               [(form-name . pieces)
                                (judgment-form-id? #'form-name)
@@ -2054,7 +2054,7 @@
                      rhs/lw)
                ...))]))
 
-(define-for-syntax (in-order-non-hidden extras)
+(define-for-syntax (visible-extras extras)
   (for/fold ([visible empty]) ([extra (syntax->list extras)])
             (syntax-case extra (where/hidden
                                 side-condition/hidden
