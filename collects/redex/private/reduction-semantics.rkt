@@ -1976,9 +1976,6 @@
           (fold-clause (bind 'rhs-only) void (make-immutable-free-id-table) clause)))
        (fold-clause (bind 'rhs-only) do-tmpl (make-immutable-free-id-table) clause)))
 
-;; Defined as a macro instead of an ordinary phase 1 function so that the
-;; to-lw/proc calls occur after bindings are established for all meta-functions
-;; and relations.
 (define-syntax (generate-lws stx)
   (syntax-case stx ()
     [(_ relation? seq-of-lhs seq-of-lhs-for-lw seq-of-tl-side-cond/binds seq-of-rhs)
