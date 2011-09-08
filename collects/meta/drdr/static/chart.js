@@ -102,7 +102,7 @@ function load_data(d) {
     sub_times = [];
     pdata = []
     data = d;
-
+    reset_chart();
     pdata = data && JSON.parse(data);
 
     var max_overall = 0;
@@ -129,9 +129,13 @@ function load_data(d) {
         ya = 2;
 
     // put the data into the chart format
-    chart_data.push({data: overall_times, label: "Overall Time"});
+    chart_data.push({data: overall_times, label: "Overall Time", color: "#804040"});
     for(var i = 0; i < sub_times.length; i++) {
-        chart_data.push({data: sub_times[i], label: "Timer "+ (i+1), points: { show: true }, yaxis: ya});
+        var n = (sub_times[i].length/overall_times.length);
+        chart_data.push({data: sub_times[i], label: "Timer "+ (i+1),
+                         lines: { show: (.9<n) },
+                         points: { show: !(.9<n) },
+                         yaxis: ya});
     }
     cur_options.legend.noColumns = Math.max(1,Math.round(chart_data.length / 10));
 }
@@ -209,7 +213,7 @@ try {
     opts = JSON.parse(window.location.hash.substring(1));
 } catch(e) {}
 
-if (opts) {
+if (opts && opts.length == 2) {
     cur_options.xaxes[0].min = opts[0].xmin;
     cur_options.xaxes[0].max = opts[0].xmax;
     cur_options.yaxes[0].min = opts[0].ymin;
