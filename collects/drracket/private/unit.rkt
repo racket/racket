@@ -1265,6 +1265,8 @@ module browser threading seems wrong.
       (define/public-final (toggle-log)
         (set! log-visible? (not log-visible?))
         (send frame show/hide-log log-visible?))
+      (define/public-final (hide-log)
+        (when log-visible? (toggle-log)))
       (define/public-final (update-log)
         (send frame show/hide-log log-visible?))
       (define/public-final (update-logger-window command)
@@ -1431,19 +1433,25 @@ module browser threading seems wrong.
                         (remq logger-panel l)])))]
             [else
              (when show? ;; if we want to hide and it isn't built yet, do nothing
+               (define logger-gui-tab-panel-parent (new horizontal-panel% [parent logger-panel] [stretchable-height #f]))
                (set! logger-gui-tab-panel
                      (new tab-panel% 
                           [choices (list (string-constant logging-all)
                                          "fatal" "error" "warning" "info" "debug")]
-                          [parent logger-panel]
+                          [parent logger-gui-tab-panel-parent]
+                          [stretchable-height #f]
+                          [style '(no-border)]
                           [callback
                            (λ (tp evt)
                              (preferences:set 'drracket:logger-gui-tab-panel-level (send logger-gui-tab-panel get-selection))
                              (update-logger-window #f))]))
+               (new button% [label (string-constant hide-log)]
+                    [callback (λ (x y) (send current-tab hide-log))]
+                    [parent logger-gui-tab-panel-parent])
                (send logger-gui-tab-panel set-selection (preferences:get 'drracket:logger-gui-tab-panel-level))
                (new-logger-text)
                (set! logger-gui-canvas 
-                     (new editor-canvas% [parent logger-gui-tab-panel] [editor logger-gui-text]))
+                     (new editor-canvas% [parent logger-panel] [editor logger-gui-text]))
                (send logger-menu-item set-label (string-constant hide-log))
                (update-logger-window #f)
                (send logger-parent-panel change-children (lambda (l) (append l (list logger-panel)))))])
@@ -3122,8 +3130,7 @@ module browser threading seems wrong.
                    [label (string-constant show-log)]
                    [parent show-menu]
                    [callback
-                    (λ (x y) (send current-tab toggle-log))]))
-        )
+                    (λ (x y) (send current-tab toggle-log))])))
       
       
       ;                                                                                                       

@@ -341,7 +341,8 @@ See the scribble documentation on the planet/resolver module.
                  [current-eval (call-with-parameterization orig-paramz current-eval)]
                  [current-module-declare-name #f]
                  [use-compiled-file-paths (call-with-parameterization orig-paramz use-compiled-file-paths)]
-                 [current-library-collection-paths (call-with-parameterization orig-paramz current-library-collection-paths)])
+                 [current-library-collection-paths (call-with-parameterization orig-paramz current-library-collection-paths)]
+                 [powerful-security-guard (call-with-parameterization orig-paramz current-security-guard)])
     (let-values ([(path pkg) (get-planet-module-path/pkg/internal spec rmp stx load?)])
       (when load? (add-pkg-to-diamond-registry! pkg stx))
       (do-require path (pkg-path pkg) rmp stx load?))))
@@ -485,14 +486,15 @@ See the scribble documentation on the planet/resolver module.
     (try-make-directory* dir)
     (unless (equal? (normalize-path (uninstalled-pkg-path uninst-p))
                     (normalize-path full-pkg-path))
-      (call-with-file-lock/timeout
-       full-pkg-path
-       'exclusive
-       (λ ()
-         (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
-         (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path))
-       (λ ()
-         (log-error (format "planet/resolver.rkt: unable to save the planet package ~a" full-pkg-path)))))
+      (parameterize ([current-security-guard (or (powerful-security-guard) (current-security-guard))])
+        (call-with-file-lock/timeout
+         full-pkg-path
+         'exclusive
+         (λ ()
+           (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
+           (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path))
+         (λ ()
+           (log-error (format "planet/resolver.rkt: unable to save the planet package ~a" full-pkg-path))))))
     full-pkg-path))
 
 ;; =============================================================================
