@@ -70,11 +70,7 @@
     [":" (token-identifier ':)]
     ["'" (token-identifier 'quote)]
     ["`" (token-identifier 'quasiquote)]
-    ;; ["=" (token-identifier '=)]
     [operator (token-identifier (string->symbol lexeme))]
-    ;; ["*" (token-identifier '*)]
-    ;; ["/" (token-identifier '/)]
-    ;; ["+" (token-identifier '+)]
     [";" (token-identifier '|;|)]
     ;; strip the quotes from the resulting string
     ;; TODO: find a more optimal way

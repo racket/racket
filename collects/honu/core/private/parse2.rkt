@@ -264,13 +264,20 @@
                      ;; expression or function application
                      [(#%parens args ...)
                       (if current
-                        (let ()
-                          (debug "function call ~a\n" left)
-                          (define call (with-syntax ([current current]
-                                                           [(parsed-args ...)
-                                                            (parse-comma-expression #'(args ...)) ])
-                                          #'(current parsed-args ...)))
-                          (do-parse #'(rest ...) precedence left call))
+                        (if (> precedence 9000)
+                          (let ()
+                            (define call (with-syntax ([current (left current)]
+                                                       [(parsed-args ...)
+                                                        (parse-comma-expression #'(args ...)) ])
+                                           #'(current parsed-args ...)))
+                            (do-parse #'(rest ...) 9000 (lambda (x) x) call))
+                          (let ()
+                            (debug "function call ~a\n" left)
+                            (define call (with-syntax ([current current]
+                                                       [(parsed-args ...)
+                                                        (parse-comma-expression #'(args ...)) ])
+                                           #'(current parsed-args ...)))
+                            (do-parse #'(rest ...) precedence left call)))
                         (let ()
                           (debug "inner expression ~a\n" #'(args ...))
                           (define-values (inner-expression unparsed) (parse #'(args ...)))

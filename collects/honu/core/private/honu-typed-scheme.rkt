@@ -409,6 +409,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
            #'(provide x.x ...))
          #'rest)])))
 
+#;
 (honu:define-honu-syntax honu-require
   (lambda (body ctx)
     (define-syntax-class for-syntax-form

@@ -166,3 +166,13 @@
   (syntax-case stx ()
     [(_ rest ...)
      #'(#%top-interaction . (honu-unparsed-begin rest ...))]))
+
+(provide honu-require)
+(define-honu-syntax honu-require
+  (lambda (code context)
+    (syntax-parse code
+      [(_ module . rest)
+       (values
+         #'(require module)
+         #'rest
+         #f)])))

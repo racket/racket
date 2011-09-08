@@ -13,6 +13,7 @@
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-top-interaction #%top-interaction]
                      [honu-function function]
+                     [honu-require require]
                      [honu-macro macro]
                      [honu-syntax syntax]
                      [honu-var var]
