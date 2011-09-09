@@ -173,10 +173,12 @@
    (! (cdr (append (list (/ 1 0)) '()))) => '()
    (! (cdr (append '() (list (/ 1 0))))) => '()
    (! (append (/ 1 0) '())) =error> "/: division by zero"
+   (! (append (/ 1 0) '() '())) =error> "/: division by zero"
    (! (append (/ 1 0) '(1))) =error> "/: division by zero"
    (! (append '() (/ 1 0))) =error> "/: division by zero"
    (! (car (append '(1) (/ 1 0)))) => 1
    (! (cdr (append '(1) (/ 1 0)))) =error> "/: division by zero"
+   (! (car (append '(1) 1 (/ 1 0)))) => 1
    (! (foldr (/ 1 0) 0 '())) =error> "/: division by zero"
    (! (foldr 1 (/ 1 0) '())) =error> "/: division by zero"
    (! (foldr 1 2 (/ 1 0))) =error> "/: division by zero"
