@@ -3,12 +3,24 @@
          "deriv.rkt")
 (provide (all-defined-out))
 
-(define-tokens basic-tokens
+(define-tokens basic-empty-tokens
   (start                ; .
-   visit                ; syntax
-   resolve              ; identifier
    next                 ; .
    next-group           ; .
+   phase-up             ; .
+   ...                  ; .
+   EOF                  ; .
+   enter-bind           ; .
+   exit-bind            ; .
+   IMPOSSIBLE           ; useful for error-handling clauses that have no
+                        ; NoError counterpart
+   top-non-begin        ; .
+   prepare-env          ; .
+   ))
+
+(define-tokens basic-tokens
+  (visit                ; syntax
+   resolve              ; identifier
    enter-macro          ; syntax
    macro-pre-transform  ; syntax
    macro-post-transform ; syntax
@@ -24,10 +36,7 @@
    exit-list            ; syntaxes
    enter-check          ; syntax
    exit-check           ; syntax
-   phase-up             ; .
    module-body          ; (list-of (cons syntax boolean))
-   ...                  ; .
-   EOF                  ; .
    syntax-error         ; exn
    lift-loop            ; syntax = new form (let or begin; let if for_stx)
    lift/let-loop        ; syntax = new let form
@@ -44,8 +53,6 @@
    exit-local           ; syntax
 
    local-bind           ; (listof identifier)
-   enter-bind           ; .
-   exit-bind            ; .
    opaque               ; opaque-syntax
 
    variable             ; (cons identifier identifier)
@@ -54,10 +61,7 @@
    rename-one           ; syntax
    rename-list          ; (list-of syntax)
 
-   IMPOSSIBLE           ; useful for error-handling clauses that have no NoError counterpart
-
    top-begin            ; identifier
-   top-non-begin        ; .
 
    local-remark         ; (listof (U string syntax))
    local-artificial-step ; (list syntax syntax syntax syntax)
@@ -88,6 +92,7 @@
    prim-expression
    prim-varref
    prim-#%stratified-body
+   prim-begin-for-syntax
    ))
 
 ;; ** Signals to tokens
@@ -182,7 +187,9 @@
     (152 track-origin            ,token-track-origin)
     (153 local-value             ,token-local-value)
     (154 local-value-result      ,token-local-value-result)
-    (155 prim-#%stratified-body)))
+    (155 prim-#%stratified-body)
+    (156 prim-begin-for-syntax)
+    (157 prepare-env)))
 
 (define (signal->symbol sig)
   (if (symbol? sig)

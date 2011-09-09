@@ -116,6 +116,9 @@ The limitations:
       (if (list? arg)
           (apply recur arg)
           (analyze arg refs))))
+  (define (recur/phase-up . args)
+    (parameterize ((phase (add1 (phase))))
+      (apply recur args)))
   (define (add! ids)
     (reftable-add-all! refs (phase) ids))
 
@@ -147,8 +150,7 @@ The limitations:
     [(local-exn exn)
      (void)]
     [(local-expansion z1 z2 for-stx? me1 inner lifted me2 opaque)
-     (parameterize ((phase (+ (phase) (if for-stx? 1 0))))
-       (recur inner))]
+     ((if for-stx? recur/phase-up recur) inner)]
     [(local-lift expr ids)
      (void)]
     [(local-lift-end decl)
@@ -171,13 +173,16 @@ The limitations:
      (void)]
     [(p:module z1 z2 rs ?1 locals tag rename check tag2 ?3 body shift)
      (recur locals check body)]
-    [(p:#%module-begin z1 z2 rs ?1 me pass1 pass2 ?2)
-     (recur pass1 pass2)]
-    [(p:define-syntaxes z1 z2 rs ?1 rhs locals)
-     (parameterize ((phase (+ (phase) 1)))
-       (recur rhs locals))]
+    [(p:#%module-begin z1 z2 rs ?1 me body ?2)
+     (recur body)]
+    [(p:define-syntaxes z1 z2 rs ?1 prep rhs locals)
+     (recur prep locals)
+     (recur/phase-up rhs)]
     [(p:define-values z1 z2 rs ?1 rhs)
      (recur rhs)]
+    [(p:begin-for-syntax z1 z2 rs ?1 prep body)
+     (recur prep)
+     (recur/phase-up body)]
 
     [(p:#%expression z1 z2 rs ?1 inner untag)
      (recur inner)]
@@ -205,8 +210,8 @@ The limitations:
      (recur rhss body)]
     [(p:letrec-values _ _ _ _ renames rhss body)
      (recur rhss body)]
-    [(p:letrec-syntaxes+values _ _ _ _ srenames sbindrhss vrenames vrhss body tag)
-     (recur sbindrhss vrhss body)]
+    [(p:letrec-syntaxes+values _ _ _ _ srenames prep sbindrhss vrenames vrhss body tag)
+     (recur prep sbindrhss vrhss body)]
 
     [(p:provide _ _ _ _ inners ?2)
      (recur inners)]
@@ -226,7 +231,6 @@ The limitations:
     [(p:quote-syntax z1 z2 _ _)
      (when z2 (analyze/quote-syntax z2 refs))]
     [(p:#%variable-reference _ _ _ _)
-     ;; FIXME
      (void)]
 
     [(lderiv _ _ ?1 derivs)
@@ -243,15 +247,18 @@ The limitations:
      (recur head)]
     [(b:defvals _ head ?1 rename ?2)
      (recur head)]
-    [(b:defstx _ head ?1 rename ?2 bindrhs)
-     (recur head bindrhs)]
+    [(b:defstx _ head ?1 rename ?2 prep bindrhs)
+     (recur head prep bindrhs)]
 
     [(bind-syntaxes rhs locals)
-     (parameterize ((phase (+ 1 (phase))))
-       (recur rhs locals))]
+     (recur/phase-up rhs)
+     (recur locals)]
 
     [(clc ?1 renames body)
      (recur body)]
+
+    [(module-begin/phase pass1 pass2 pass3)
+     (recur pass1 pass2 pass3)]
 
     [(mod:prim head rename prim)
      (recur head prim)]
@@ -266,8 +273,12 @@ The limitations:
     [(mod:skip)
      (void)]
 
+    ;; Shouldn't occur in module expansion.
+    ;; (Unless code calls 'expand' at compile-time; weird, but possible.)
     [(ecte _ _ locals first second locals2)
      (recur locals first second locals2)]
+    [(bfs:lift lderiv lifts)
+     (recur lderiv)]
 
     [#f
      (void)]))

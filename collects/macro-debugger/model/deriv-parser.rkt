@@ -28,9 +28,9 @@
   (parser
    (options (start Expansion)
             (src-pos)
-            (tokens basic-tokens prim-tokens renames-tokens)
+            (tokens basic-empty-tokens basic-tokens prim-tokens renames-tokens)
             (end EOF)
-            #|(debug "/tmp/ryan/DEBUG-PARSER.txt")|#
+            (debug "/tmp/ryan/DEBUG-PARSER.txt")
             (error deriv-error))
 
    ;; tokens
@@ -55,7 +55,8 @@
     tag
     IMPOSSIBLE
     start
-    top-non-begin)
+    top-non-begin
+    prepare-env)
 
     ;; Entry point
    (productions
@@ -118,6 +119,10 @@
     ;; Answer = (listof LocalAction)
     (Eval
      [((? LocalActions)) $1])
+
+    ;; Prepare env for compilation
+    (PrepareEnv
+     [(prepare-env (? Eval)) $2])
 
     ;; Expansion of an expression to primitive form
     (CheckImmediateMacro
@@ -198,9 +203,9 @@
       (make local-lift-require (car $1) (cadr $1) (cddr $1))]
      [(lift-provide)
       (make local-lift-provide $1)]
-     [(local-bind ! rename-list)
+     [(local-bind ! rename-list next)
       (make local-bind $1 $2 $3 #f)]
-     [(local-bind rename-list (? BindSyntaxes))
+     [(local-bind rename-list (? BindSyntaxes) next)
       (make local-bind $1 #f $2 $3)]
      [(track-origin)
       (make track-origin (car $1) (cdr $1))]
@@ -266,14 +271,15 @@
      [((? PrimRequire)) ($1 e1 e2 rs)]
      [((? PrimProvide)) ($1 e1 e2 rs)]
      [((? PrimVarRef)) ($1 e1 e2 rs)]
-     [((? PrimStratifiedBody)) ($1 e1 e2 rs)])
+     [((? PrimStratifiedBody)) ($1 e1 e2 rs)]
+     [((? PrimBeginForSyntax)) ($1 e1 e2 rs)])
 
     (PrimModule
      (#:args e1 e2 rs)
-     [(prim-module ! next (? Eval) OptTag rename-one
+     [(prim-module ! (? PrepareEnv) OptTag rename-one
                    (? OptCheckImmediateMacro) OptTag !
                    (? EE) rename-one)
-      (make p:module e1 e2 rs $2 $4 $5 $6 $7 $8 $9 $10 $11)])
+      (make p:module e1 e2 rs $2 $3 $4 $5 $6 $7 $8 $9 $10)])
     (OptTag
      [() #f]
      [(tag) $1])
@@ -283,9 +289,12 @@
 
     (Prim#%ModuleBegin
      (#:args e1 e2 rs)
-     [(prim-#%module-begin ! rename-one
-                           (? ModulePass1) next-group (? ModulePass2) !)
-      (make p:#%module-begin e1 e2 rs $2 $3 $4 $6 $7)])
+     [(prim-#%module-begin ! rename-one (? ModuleBegin/Phase) !)
+      (make p:#%module-begin e1 e2 rs $2 $3 $4 $5)])
+
+    (ModuleBegin/Phase
+     [((? ModulePass1) next-group (? ModulePass2) next-group (? ModulePass3))
+      (make module-begin/phase $1 $3 $5)])
 
     (ModulePass1
      (#:skipped null)
@@ -307,17 +316,12 @@
      (#:args e1)
      [(enter-prim prim-define-values ! exit-prim)
       (make p:define-values $1 $4 null $3 #f)]
-     [(enter-prim prim-define-syntaxes (? Eval)
+     [(enter-prim prim-define-syntaxes ! (? PrepareEnv)
                   phase-up (? EE/LetLifts) (? Eval) exit-prim)
-      ;; FIXME: define-syntax can trigger instantiation of phase-1 code from other
-      ;; modules. Ideally, should have [ ... prim-define-syntaxes ! (? Eval) ... ]
-      ;; but gives shift/reduce conflict.
-      ;; One solution: add 'next marker between form check and phase-1 init.
-      ;; Also search for other places where phase-1 init can happen.
-      (let ([$3
-             (for/or ([local-action (in-list $3)])
-               (and (local-exn? local-action) (local-exn-exn local-action)))])
-        (make p:define-syntaxes $1 $7 null $3 $5 $6))]
+      (make p:define-syntaxes $1 $8 null $3 $4 $6 $7)]
+     [(enter-prim prim-begin-for-syntax ! (? PrepareEnv)
+                  phase-up (? ModuleBegin/Phase) exit-prim)
+      (make p:begin-for-syntax $1 $7 null $3 $4 $6)]
      [(enter-prim prim-require (? Eval) exit-prim)
       (make p:require $1 $4 null #f $3)]
      [()
@@ -335,15 +339,22 @@
      ;; not normal; already handled
      [()
       (make mod:skip)]
-     ;; provide: special
-     [(enter-prim prim-provide (? ModuleProvide/Inner) ! exit-prim)
-      (make mod:cons (make p:provide $1 $5 null #f $3 $4))]
      ;; normal: expand completely
      [((? EE))
       (make mod:cons $1)]
      ;; catch lifts
      [(EE module-lift-loop)
       (make mod:lift $1 #f $2)])
+
+    (ModulePass3
+     (#:skipped null)
+     [() null]
+     [((? ModulePass3-Part) (? ModulePass3))
+      (cons $1 $2)])
+
+    (ModulePass3-Part
+     [(enter-prim prim-provide (? ModuleProvide/Inner) ! exit-prim)
+      (make p:provide $1 $5 null #f $3 $4)])
 
     (ModuleProvide/Inner
      (#:skipped null)
@@ -354,8 +365,8 @@
     ;; Definitions
     (PrimDefineSyntaxes
      (#:args e1 e2 rs)
-     [(prim-define-syntaxes ! (? EE/LetLifts) (? Eval))
-      (make p:define-syntaxes e1 e2 rs $2 $3 $4)])
+     [(prim-define-syntaxes ! (? PrepareEnv) (? EE/LetLifts) (? Eval))
+      (make p:define-syntaxes e1 e2 rs $2 $3 $4 $5)])
 
     (PrimDefineValues
      (#:args e1 e2 rs)
@@ -444,13 +455,13 @@
     (PrimLetrecSyntaxes+Values
      (#:args e1 e2 rs)
      [(prim-letrec-syntaxes+values ! renames-letrec-syntaxes
-      (? NextBindSyntaxess) next-group (? EB) OptTag)
-      (make p:letrec-syntaxes+values e1 e2 rs $2 $3 $4 #f null $6 $7)]
-     [(prim-letrec-syntaxes+values renames-letrec-syntaxes
-       NextBindSyntaxess next-group
+       (? PrepareEnv) (? NextBindSyntaxess) next-group (? EB) OptTag)
+      (make p:letrec-syntaxes+values e1 e2 rs $2 $3 $4 $5 #f null $7 $8)]
+     [(prim-letrec-syntaxes+values renames-letrec-syntaxes 
+       PrepareEnv NextBindSyntaxess next-group
        prim-letrec-values
        renames-let (? NextEEs) next-group (? EB) OptTag)
-      (make p:letrec-syntaxes+values e1 e2 rs #f $2 $3 $6 $7 $9 $10)])
+      (make p:letrec-syntaxes+values e1 e2 rs #f $2 $3 $4 $7 $8 $10 $11)])
 
     ;; Atomic expressions
     (Prim#%Datum
@@ -490,6 +501,16 @@
      (#:args e1 e2 rs)
      [(prim-#%stratified-body ! (? EB)) (make p:#%stratified-body e1 e2 rs $2 $3)])
 
+    (PrimBeginForSyntax
+     (#:args e1 e2 rs)
+     [(prim-begin-for-syntax ! (? PrepareEnv) (? BeginForSyntax*))
+      (make p:begin-for-syntax e1 e2 rs $2 $3 $4)])
+    (BeginForSyntax*
+     [((? EL))
+      (list $1)]
+     [(EL module-lift-loop (? BeginForSyntax*))
+      (cons (make bfs:lift $1 $2) $3)])
+
     (PrimSet
      (#:args e1 e2 rs)
      ;; Unrolled to avoid shift/reduce
@@ -526,8 +547,8 @@
      [(next renames-block CheckImmediateMacro prim-define-values ! rename-one !)
       (make b:defvals $2 $3 $5 $6 $7)]
      [(next renames-block CheckImmediateMacro
-            prim-define-syntaxes ! rename-one ! (? BindSyntaxes))
-      (make b:defstx $2 $3 $5 $6 $7 $8)])
+            prim-define-syntaxes ! rename-one ! (? PrepareEnv) (? BindSyntaxes))
+      (make b:defstx $2 $3 $5 $6 $7 $8 $9)])
 
     ;; BindSyntaxes Answer = Derivation
     (BindSyntaxes

@@ -114,6 +114,9 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_PRIM_STRATIFIED(observer) \
         _SCHEME_EXPOBS(observer,155,scheme_false)
 
+#define SCHEME_EXPAND_OBSERVE_PRIM_BEGIN_FOR_SYNTAX(observer) \
+        _SCHEME_EXPOBS(observer,156,scheme_false)
+
 #define SCHEME_EXPAND_OBSERVE_VARIABLE(observer,e1,e2)       \
         _SCHEME_EXPOBS(observer,125,scheme_make_pair(e1, e2))
 
@@ -126,7 +129,7 @@ extern Scheme_Object *scheme_get_expand_observe();
         _SCHEME_EXPOBS(observer,128,stx)
 #define SCHEME_EXPAND_OBSERVE_LETLIFT_LOOP(observer,stx) \
         _SCHEME_EXPOBS(observer,136,stx)
-#define SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observe,stxs) \
+#define SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer,stxs) \
         _SCHEME_EXPOBS(observer,137,stxs)
 #define SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer,stx) \
         _SCHEME_EXPOBS(observer,135,stx)
@@ -185,6 +188,9 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_LOCAL_VALUE_RESULT(obs,bound) \
         _SCHEME_EXPOBS(obs,154,bound)
 
-/* next: 156 */
+#define SCHEME_EXPAND_OBSERVE_PREPARE_ENV(obs) \
+        _SCHEME_EXPOBS(obs,157,scheme_false)
+
+/* next: 158 */
 
 #endif

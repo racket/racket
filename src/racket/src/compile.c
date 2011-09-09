@@ -3135,7 +3135,6 @@ single_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
   form_name = SCHEME_STX_CAR(form);
 
   if (simplify && (erec[drec].depth == -1)) {
-    /* FIXME [Ryan?]: this needs EXPAND_OBSERVE callbacks? */
     expr = scheme_stx_track(expr, form, form_name);
     SCHEME_EXPAND_OBSERVE_TAG(erec[drec].observer,expr);
     return expr;
@@ -3300,10 +3299,12 @@ define_syntaxes_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Ex
 
   form = orig_form;
 
+  scheme_define_parse(form, &names, &code, 1, env, 0);
+
+  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(erec[drec].observer);
+
   scheme_prepare_exp_env(env->genv);
   scheme_prepare_compile_env(env->genv->exp_env);
-
-  scheme_define_parse(form, &names, &code, 1, env, 0);
   
   env = scheme_new_expand_env(env->genv->exp_env, env->insp, 0);
 
@@ -3326,8 +3327,7 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
   Scheme_Object *form, *context_key, *l, *fn, *vec, *dummy;
   Scheme_Comp_Env *env;
 
-  /* FIXME [Ryan?]: */
-  /* SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(erec[drec].observer); */
+  SCHEME_EXPAND_OBSERVE_PRIM_BEGIN_FOR_SYNTAX(rec[drec].observer);
 
   form = orig_form;
 
@@ -3335,6 +3335,8 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
     scheme_wrong_syntax(NULL, NULL, form, "illegal use (not at top-level)");
 
   (void)check_form(form, form);
+
+  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(rec[drec].observer);
 
   scheme_prepare_exp_env(in_env->genv);
   scheme_prepare_compile_env(in_env->genv->exp_env);
@@ -3380,7 +3382,7 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
       break;
     } else {
       /* We have lifts: */
-      /* FIXME [Ryan?]: need some expand-observe callback here? */
+      SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(rec[drec].observer, l);
     }
   }
 
@@ -3802,7 +3804,8 @@ do_letrec_syntaxes(const char *where,
 
   body = scheme_add_env_renames(body, stx_env, origenv);
   SCHEME_EXPAND_OBSERVE_LETREC_SYNTAXES_RENAMES(rec[drec].observer, bindings, var_bindings, body);
-  
+
+  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(rec[drec].observer);
   scheme_prepare_exp_env(stx_env->genv);
   scheme_prepare_compile_env(stx_env->genv->exp_env);
 
@@ -5706,6 +5709,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
 	  if (!is_val) {
 	    /* Evaluate and bind syntaxes */
+            SCHEME_EXPAND_OBSERVE_PREPARE_ENV(rec[drec].observer);
 	    scheme_prepare_exp_env(new_env->genv);
             scheme_prepare_compile_env(new_env->genv->exp_env);
 	    pos = 0;

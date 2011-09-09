@@ -5713,7 +5713,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 			    self_modidx,
 			    scheme_false);
 
-  SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(rec[drec].observer);
 
   /* load the module for the initial require */
   iim = module_load(_module_resolve(iidx, m->ii_src, NULL, 1), menv, NULL); 
@@ -6669,7 +6669,11 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   /* For syntax-local-context, etc., in a d-s RHS: */
   rhs_env = scheme_new_comp_env(env->genv, env->insp, SCHEME_TOPLEVEL_FRAME);
 
-  observer = rec[drec].observer;
+  if (erec) {
+    observer = erec[derec].observer;
+  } else {
+    observer = NULL;
+  }
 
   maybe_has_lifts = 0;
   lift_ctx = scheme_generate_lifts_key();
@@ -6710,7 +6714,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	erec1.comp = 0;
 	erec1.depth = -1;
 	erec1.value_name = scheme_false;
-        erec1.observer = rec[drec].observer;
+        erec1.observer = observer;
         erec1.pre_unwrapped = 0;
         erec1.env_already = 0;
         erec1.comp_flags = rec[drec].comp_flags;
@@ -6850,20 +6854,24 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  for_stx = scheme_stx_module_eq(begin_for_syntax_stx, fst, phase);
           
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
-          SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(observer);
 
           if (for_stx) {
+            SCHEME_EXPAND_OBSERVE_PRIM_BEGIN_FOR_SYNTAX(observer);
             if (scheme_stx_proper_list_length(e) < 0)
               scheme_wrong_syntax(NULL, NULL, e, NULL);
             code = e;
-          } else
+          } else {
+            SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(observer);
             scheme_define_parse(e, &names, &code, 1, env, 1);
+          }
 
           if (!for_stx && SCHEME_STX_PAIRP(names) && SCHEME_STX_NULLP(SCHEME_STX_CDR(names)))
             boundname = SCHEME_STX_CAR(names);
           else
             boundname = scheme_false;
-	  
+
+          SCHEME_EXPAND_OBSERVE_PREPARE_ENV(observer);
+          
 	  scheme_prepare_exp_env(env->genv);
 	  scheme_prepare_compile_env(env->genv->exp_env);
 	  eenv = scheme_new_comp_env(env->genv->exp_env, env->insp, 0);
@@ -6935,7 +6943,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             erec1.comp = 0;
             erec1.depth = -1;
             erec1.value_name = boundname;
-            erec1.observer = rec[drec].observer;
+            erec1.observer = observer;
             erec1.pre_unwrapped = 0;
             erec1.env_already = 0;
             erec1.comp_flags = rec[drec].comp_flags;
@@ -6945,7 +6953,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             adt = scheme_hash_tree_set(bxs->all_defs, scheme_make_integer(phase), all_rt_defs);
             bxs->all_defs = adt;
             if (erec) {
-              SCHEME_EXPAND_OBSERVE_PHASE_UP(observer); /* FIXME [Ryan?]? */
+              SCHEME_EXPAND_OBSERVE_PHASE_UP(observer);
               /* We expand & compile the for-syntax code in one pass. */
             }
             m = do_module_begin_at_phase(code, eenv, 
@@ -7261,6 +7269,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   
   /* Pass 3 */
   /* if at phase 0, expand provides for all phases */
+  SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);
+  
   if (phase == 0) {
     Scheme_Object *expanded_provides;
 

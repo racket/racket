@@ -1,6 +1,8 @@
 #lang racket/base
 (provide (all-defined-out))
 
+;; PrepareExpEnv = (listof LocalAction)
+
 ;; A Node(a) is:
 ;;   (make-node a ?a)
 (define-struct node (z1 z2) #:transparent)
@@ -48,15 +50,15 @@
 (define-struct (prule base) () #:transparent)
 (define-struct (p:variable prule) () #:transparent)
 
-;;   (make-p:module <Base> (listof LocalAction) ?stx stx ?Deriv ?stx ?exn Deriv ?stx)
-;;   (make-p:#%module-begin <Base> Stx ModulePass1 ModulePass2 ?exn)
-(define-struct (p:module prule) (locals tag rename check tag2 ?3 body shift)
+;;   (make-p:module <Base> PrepareEnv ?stx stx ?Deriv ?stx ?exn Deriv ?stx)
+;;   (make-p:#%module-begin <Base> Stx ModuleBegin/Phase ?exn)
+(define-struct (p:module prule) (prep tag rename check tag2 ?3 body shift)
   #:transparent)
-(define-struct (p:#%module-begin prule) (me pass1 pass2 ?2) #:transparent)
+(define-struct (p:#%module-begin prule) (me body ?2) #:transparent)
 
-;;   (make-p:define-syntaxes <Base> DerivLL (listof LocalAction))
+;;   (make-p:define-syntaxes <Base> (listof LocalAction) DerivLL (listof LocalAction))
 ;;   (make-p:define-values <Base> Deriv)
-(define-struct (p:define-syntaxes prule) (rhs locals) #:transparent)
+(define-struct (p:define-syntaxes prule) (prep rhs locals) #:transparent)
 (define-struct (p:define-values prule) (rhs) #:transparent)
 
 ;;   (make-p:#%expression <Base> Deriv ?Stx)
@@ -81,13 +83,14 @@
 ;;   (make-p:case-lambda <Base> (list-of CaseLambdaClause))
 ;;   (make-p:let-values <Base> LetRenames (list-of Deriv) BDeriv)
 ;;   (make-p:letrec-values <Base> LetRenames (list-of Deriv) BDeriv)
-;;   (make-p:letrec-syntaxes+values <Base> LSVRenames (list-of BindSyntaxes) (list-of Deriv) BDeriv ?Stx)
+;;   (make-p:letrec-syntaxes+values <Base> LSVRenames PrepareExpEnv
+;;      (list-of BindSyntaxes) (list-of Deriv) BDeriv ?Stx)
 (define-struct (p:lambda prule) (renames body) #:transparent)
 (define-struct (p:case-lambda prule) (renames+bodies) #:transparent)
 (define-struct (p:let-values prule) (renames rhss body) #:transparent)
 (define-struct (p:letrec-values prule) (renames rhss body) #:transparent)
 (define-struct (p:letrec-syntaxes+values prule)
-  (srenames sbindrhss vrenames vrhss body tag)
+  (srenames prep sbindrhss vrenames vrhss body tag)
   #:transparent)
 
 ;;   (make-p:provide <Base> (listof Deriv) ?exn)
@@ -98,6 +101,12 @@
 
 ;;   (make-p:#%stratified-body <Base> BDeriv)
 (define-struct (p:#%stratified-body prule) (bderiv) #:transparent)
+
+;;   (make-p:begin-for-syntax <base> (listof LocalAction) BFSBody)
+;;     where BFSBody is one of
+;;       - ModuleBegin/Phase
+;;       - (list BeginForSyntaxLifts ... LDeriv))
+(define-struct (p:begin-for-syntax prule) (prep body) #:transparent)
 
 ;;   (make-p:stop <Base>)
 ;;   (make-p:unknown <Base>)
@@ -129,13 +138,13 @@
 ;;   (make-b:expr BlockRenames Deriv)
 ;;   (make-b:splice BlockRenames Deriv ?exn Stxs ?exn)
 ;;   (make-b:defvals BlockRenames Deriv ?exn Stx ?exn)
-;;   (make-b:defstx BlockRenames Deriv ?exn Stx ?exn BindSyntaxes)
+;;   (make-b:defstx BlockRenames Deriv ?exn Stx ?exn PrepareExpEnv BindSyntaxes)
 (define-struct b:error (?1) #:transparent)
 (define-struct brule (renames) #:transparent)
 (define-struct (b:expr brule) (head) #:transparent)
 (define-struct (b:splice brule) (head ?1 tail ?2) #:transparent)
 (define-struct (b:defvals brule) (head ?1 rename ?2) #:transparent)
-(define-struct (b:defstx brule) (head ?1 rename ?2 bindrhs) #:transparent)
+(define-struct (b:defstx brule) (head ?1 rename ?2 prep bindrhs) #:transparent)
 
 ;; A BindSyntaxes is
 ;;   (make-bind-syntaxes DerivLL (listof LocalAction))
@@ -147,8 +156,16 @@
 
 ;; A BlockRename is (cons Stx Stx)
 
+;; A BeginForSyntaxLifts is
+;;   (make-bfs:lift LDeriv (listof stx))
+(define-struct bfs:lift (lderiv lifts) #:transparent)
+
+;; A ModuleBegin/Phase is (module-begin/phase ModulePass1 ModulePass2 ModulePass3)
+(define-struct module-begin/phase (pass1 pass2 pass3) #:transparent)
+
 ;; A ModPass1 is (list-of ModRule1)
 ;; A ModPass2 is (list-of ModRule2)
+;; A ModPass3 is (list-of p:provide)
 
 ;; A ModRule1 is one of 
 ;;   (make-mod:prim Deriv Stx ModPrim)
@@ -167,12 +184,12 @@
 (define-struct (mod:cons modrule) (head) #:transparent)
 (define-struct (mod:skip modrule) () #:transparent)
 
-;; A ModPrim is a PRule in:
-;;   (make-p:define-values <Base> #:transparent)
-;;   (make-p:define-syntaxes <Base> Deriv)
-;;   (make-p:require <Base> (listof LocalAction))
-;;   (make-p:provide <Base>)
-;;   #f
+;; A ModPrim is either #f or one of the following PRule variants:
+;;  - p:define-values
+;;  - p:define-syntaxes
+;;  - p:begin-for-syntax
+;;  - p:require
+;;  - p:provide
 
 
 ;; ECTE represents expand/compile-time-evals
