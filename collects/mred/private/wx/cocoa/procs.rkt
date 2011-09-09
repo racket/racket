@@ -89,7 +89,7 @@
 
 (define (check-for-break) #f)
 
-(define (display-origin xb yb all? num)
+(define (display-origin xb yb all? num fail)
   (if (or all? (positive? num))
       (unless (atomically
                (with-autorelease
@@ -108,13 +108,13 @@
                                                     (NSSize-height (NSRect-size f0)))))))
                         #t)
                       #f))))
-        (error 'get-display-left-top-inset "no such monitor: ~v" num))
+        (fail))
       (set-box! xb 0))
   (when (zero? num)
     (set-box! yb 0))
   (set-box! yb (+ (unbox yb) (get-menu-bar-height))))
 
-(define (display-size xb yb all? num)
+(define (display-size xb yb all? num fail)
   (unless (atomically
            (with-autorelease
             (let ([screens (tell NSScreen screens)])
@@ -134,7 +134,7 @@
                                               (get-menu-bar-height)]))))
                     #t)
                   #f))))
-    (error 'get-display-size "no such monitor: ~v" num)))
+    (fail)))
 
 
 (define (display-count)

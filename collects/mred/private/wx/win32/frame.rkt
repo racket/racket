@@ -78,12 +78,12 @@
 			 #f)
     (reverse rects)))
 
-(define (display-size xb yb all? num)
+(define (display-size xb yb all? num fail)
   (cond
    [(positive? num)
     (let ([rs (get-all-screen-rects)])
       (unless (num . < . (length rs))
-	(error 'get-display-size "no such monitor: ~v" num))
+        (fail))
       (let ([r (list-ref rs num)])
 	(set-box! xb (- (caddr r) (car r)))
 	(set-box! yb (- (cadddr r) (cadr r)))))]
@@ -99,12 +99,12 @@
       (set-box! xb (- (RECT-right r) (RECT-left r)))
       (set-box! yb (- (RECT-bottom r) (RECT-top r))))]))
 
-(define (display-origin xb yb avoid-bars? num)
+(define (display-origin xb yb avoid-bars? num fail)
   (cond
    [(positive? num)
     (let ([rs (get-all-screen-rects)])
       (unless (num . < . (length rs))
-	(error 'get-display-left-top-inset "no such monitor: ~v" num))
+	(fail))
       (let ([r (list-ref rs num)])
 	(set-box! xb (- (car r)))
 	(set-box! yb (- (cadr r)))))]
@@ -435,7 +435,7 @@
 	  [wh (box 0)]
 	  [wx (box 0)]
 	  [wy (box 0)])
-      (display-size sw sh #f 0)
+      (display-size sw sh #f 0 void)
       (if wrt
 	  (begin
 	    (send wrt get-size ww wh)

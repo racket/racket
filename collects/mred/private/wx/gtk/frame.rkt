@@ -265,7 +265,7 @@
                 (send p get-size sw-box sh-box)
                 (set-box! sx-box (send p get-x))
                 (set-box! sy-box (send p get-y)))
-              (display-size sw-box sh-box #t 0)))
+              (display-size sw-box sh-box #t 0 void)))
         (let* ([sw (unbox sw-box)]
                [sh (unbox sh-box)]
                [fw (unbox w-box)]
@@ -497,21 +497,21 @@
 (define-gdk gdk_screen_get_monitor_geometry (_fun _GdkScreen _int _GdkRectangle-pointer -> _void))
 (define-gdk gdk_screen_get_n_monitors (_fun _GdkScreen -> _int))
 
-(define (monitor-rect who num)
+(define (monitor-rect num fail)
   (let ([s (gdk_screen_get_default)]
 	[r (make-GdkRectangle 0 0 0 0)])
     (unless (num . < . (gdk_screen_get_n_monitors s))
-      (error who "no such monitor: ~v" num))
+      (fail))
     (gdk_screen_get_monitor_geometry s num r)
     r))
 
-(define (display-origin x y all? num)
-  (let ([r (monitor-rect 'get-display-left-top-inset num)])
+(define (display-origin x y all? num fail)
+  (let ([r (monitor-rect num fail)])
     (set-box! x (- (GdkRectangle-x r)))
     (set-box! y (- (GdkRectangle-y r)))))
 
-(define (display-size w h all? num)
-  (let ([r (monitor-rect 'get-display-size num)])
+(define (display-size w h all? num fail)
+  (let ([r (monitor-rect num fail)])
     (set-box! w (GdkRectangle-width r))
     (set-box! h (GdkRectangle-height r))))
 

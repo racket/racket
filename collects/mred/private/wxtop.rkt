@@ -35,19 +35,22 @@
     (lambda ([full-screen? #f] #:monitor [monitor 0])
       (unless (exact-nonnegative-integer? monitor)
 	(raise-type-error 'get-display-size "exact non-negative integer" monitor))
-      (let ([xb (box 0)]
-	    [yb (box 0)])
-	(wx:display-size xb yb full-screen? monitor)
-	(values (unbox xb) (unbox yb)))))
+      (let/ec esc
+        (let ([xb (box 0)]
+              [yb (box 0)])
+          (wx:display-size xb yb full-screen? monitor
+                           (lambda () (esc #f #f)))
+          (values (unbox xb) (unbox yb))))))
 
   (define get-display-left-top-inset
     (lambda ([advisory? #f] #:monitor [monitor 0])
       (unless (exact-nonnegative-integer? monitor)
 	(raise-type-error 'get-display-left-top-inset "exact non-negative integer" monitor))
-      (let ([xb (box 0)]
-	    [yb (box 0)])
-	(wx:display-origin xb yb advisory? monitor)
-	(values (unbox xb) (unbox yb)))))
+      (let/ec esc
+        (let ([xb (box 0)]
+              [yb (box 0)])
+          (wx:display-origin xb yb advisory? monitor (lambda () (esc #f #f)))
+          (values (unbox xb) (unbox yb))))))
 
   (define get-display-count
     (lambda ()

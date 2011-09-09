@@ -29,7 +29,8 @@ Returns the depth of the main display (a value of 1 denotes a monochrome display
 
 @defproc[(get-display-left-top-inset [avoid-bars? any/c #f]
                                      [#:monitor monitor exact-nonnegative-integer? 0])
-         (values exact-nonnegative-integer? exact-nonnegative-integer?)]{
+         (values (or/c exact-nonnegative-integer? #f)
+                 (or/c exact-nonnegative-integer? #f))]{
 
 When the optional argument is @racket[#f] (the default), this function
  returns the offset of @racket[monitor]'s origin from the
@@ -46,13 +47,15 @@ When the optional @racket[avoid-bars?] argument is true, for @racket[monitor]
  monitor @racket[0], the result is always @racket[0] and @racket[0].
  For monitors other than @racket[0], @racket[avoid-bars?] has no effect.
 
-If @racket[monitor] is not less than the current number of available monitors, the
- @racket[exn:fail] exception is raised.}
+If @racket[monitor] is not less than the current number of available
+ monitors (which can change at any time), the results are @racket[#f]
+ and @racket[#f].}
 
 
 @defproc[(get-display-size [full-screen? any/c #f]
                            [#:monitor monitor exact-nonnegative-integer? 0])
-         (values exact-nonnegative-integer? exact-nonnegative-integer?)]{
+         (values (or/c exact-nonnegative-integer? #f)
+                 (or/c exact-nonnegative-integer? #f))]{
 
 @index["screen resolution"]{Gets} the physical size of the specified @racket[monitor] in
  pixels.  On Windows, this size does not include the task bar by
@@ -62,8 +65,9 @@ If @racket[monitor] is not less than the current number of available monitors, t
 On Windows and Mac OS X, if the optional argument is true and @racket[monitor] is @racket[0], then
  the task bar, menu bar, and dock area are included in the result.
 
-If @racket[monitor] is not less than the current number of available monitors, the
- @racket[exn:fail] exception is raised.}
+If @racket[monitor] is not less than the current number of available
+ monitors (which can change at any time), the results are @racket[#f]
+ and @racket[#f].}
 
 
 @defproc[(is-color-display?)
