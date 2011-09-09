@@ -10,6 +10,7 @@
            application-about-handler
            application-quit-handler
            application-file-handler
+           application-start-empty-handler
            current-eventspace-has-standard-menus?
            current-eventspace-has-menu-root?
            eventspace-handler-thread)
@@ -150,6 +151,17 @@
 			values
                         requeue-saved-files))]))
 
+  (define application-start-empty-handler
+    (case-lambda
+     [() (or (and (wx:main-eventspace? (wx:current-eventspace))
+		  (app-handler-orig (wx:application-start-empty-handler)))
+	     void)]
+     [(proc)
+      (set-handler! 'application-start-empty-handler proc
+		    wx:application-start-empty-handler
+		    0
+		    values
+                    void)]))
 
   (define (current-eventspace-has-standard-menus?)
     (and (eq? 'macosx (system-type))

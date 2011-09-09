@@ -10,6 +10,7 @@ application-about-handler
 application-file-handler
 application-preferences-handler
 application-quit-handler
+application-start-empty-handler
 area-container-window<%>
 area-container<%>
 area<%>

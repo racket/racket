@@ -272,6 +272,7 @@
 	   application-preferences-handler
 	   application-quit-handler
 	   application-file-handler
+	   application-start-empty-handler
 	   current-eventspace-has-standard-menus?
 	   current-eventspace-has-menu-root?
 	   eventspace-handler-thread

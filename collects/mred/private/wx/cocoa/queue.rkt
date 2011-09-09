@@ -47,6 +47,8 @@
 
 (define app (tell NSApplication sharedApplication))
 
+(define got-file? #f)
+
 (define-objc-class MyApplicationDelegate NSObject #:protocols (NSApplicationDelegate)
   []
   [-a _NSUInteger (applicationShouldTerminate: [_id app])
@@ -72,7 +74,11 @@
           (queue-about-event))
       #t]
   [-a _BOOL (application: [_id theApplication] openFile: [_NSString filename])
+      (set! got-file? #t)
       (queue-file-event (string->path filename))]
+  [-a _void (applicationDidFinishLaunching: [_id notification])
+      (unless got-file?
+        (queue-start-empty-event))]
   [-a _BOOL (applicationShouldHandleReopen: [_id app] hasVisibleWindows: [_BOOL has-visible?])
       ;; If we have any visible windows, return #t to do the default thing.
       ;; Otherwise return #f, because we don't want any invisible windows resurrected.

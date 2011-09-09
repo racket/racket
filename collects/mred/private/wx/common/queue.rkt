@@ -56,6 +56,7 @@
               queue-prefs-event
               queue-about-event
               queue-file-event
+              queue-start-empty-event
 
               begin-busy-cursor
               end-busy-cursor
@@ -580,6 +581,11 @@
   ;; called in event-pump thread
   (queue-event main-eventspace (lambda ()
                                  ((application-file-handler) file))
+               'med))
+
+(define (queue-start-empty-event)
+  ;; called in event-pump thread
+  (queue-event main-eventspace (application-start-empty-handler)
                'med))
 
 (define (begin-busy-cursor) 

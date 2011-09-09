@@ -38,4 +38,5 @@
          application-file-handler
          application-quit-handler
          application-about-handler
-         application-pref-handler)
+         application-pref-handler
+         application-start-empty-handler)
