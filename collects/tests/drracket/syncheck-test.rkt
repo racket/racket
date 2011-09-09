@@ -975,24 +975,24 @@ trigger runtime errors in check syntax.
   (define (main)
     (fire-up-drscheme-and-run-tests
      (λ ()
-	(let ([drs (wait-for-drscheme-frame)])
-	  (set-language-level! (list "Pretty Big"))
-	  (do-execute drs)
-          (let* ([defs (queue-callback/res (λ () (send drs get-definitions-text)))]
-		 [filename (make-temporary-file "syncheck-test~a")])
-	    (let-values ([(dir _1 _2) (split-path filename)])
-              (queue-callback/res (λ () (send defs save-file filename)))
-	      (preferences:set 'framework:coloring-active #f)
-              (close-the-error-window-test drs)
-              (for-each (run-one-test (normalize-path dir)) tests)
-              (preferences:set 'framework:coloring-active #t)
-	      (queue-callback/res
-               (λ () 
-                 (send defs save-file) ;; clear out autosave
-                 (send defs set-filename #f)))
-              (delete-file filename)
-              
-              (printf "Ran ~a tests.\n" total-tests-run)))))))
+       (let ([drs (wait-for-drscheme-frame)])
+         (set-language-level! (list "Pretty Big"))
+         (do-execute drs)
+         (let* ([defs (queue-callback/res (λ () (send drs get-definitions-text)))]
+                [filename (make-temporary-file "syncheck-test~a")])
+           (let-values ([(dir _1 _2) (split-path filename)])
+             (queue-callback/res (λ () (send defs save-file filename)))
+             (preferences:set 'framework:coloring-active #f)
+             (close-the-error-window-test drs)
+             (for-each (run-one-test (normalize-path dir)) tests)
+             (preferences:set 'framework:coloring-active #t)
+             (queue-callback/res
+              (λ () 
+                (send defs save-file) ;; clear out autosave
+                (send defs set-filename #f)))
+             (delete-file filename)
+             
+             (printf "Ran ~a tests.\n" total-tests-run)))))))
   
   (define (close-the-error-window-test drs)
     (clear-definitions drs)
@@ -1020,7 +1020,7 @@ trigger runtime errors in check syntax.
                [relative (find-relative-path save-dir (collection-path "mzlib"))])
            (cond
              [(dir-test? test)
-              (insert-in-definitions drs (format input (path->string relative)))]
+              (insert-in-definitions drs (format input (path->require-string relative)))]
              [else (insert-in-definitions drs input)])
            (click-check-syntax-and-check-errors drs test)
            
@@ -1030,8 +1030,8 @@ trigger runtime errors in check syntax.
                                [(dir-test? test)
                                 (map (lambda (x)
                                        (list (if (eq? (car x) 'relative-path)
-                                               (path->string relative)
-                                               (car x))
+                                                 (path->require-string relative)
+                                                 (car x))
                                              (cadr x)))
                                      expected)]
                                [else
@@ -1080,6 +1080,13 @@ trigger runtime errors in check syntax.
                       "syncheck-test.rkt FAILED\n   test ~s\n  got ~s\n" 
                       test
                       result)))])))
+  
+  (define (path->require-string relative)
+    (define (p->string p)
+      (cond
+        [(eq? p 'up) ".."]
+        [else (path->string p)]))
+    (apply string-append (add-between (map p->string (explode-path relative)) "/"))) 
   
   
   (define remappings
