@@ -1297,6 +1297,10 @@
       
       (define error-ranges '())
       (define/private (clear-old-error)
+        (for ([an-error-range (in-list error-ranges)])
+          (when (error-range-clear-highlight an-error-range)
+            ((error-range-clear-highlight an-error-range))
+            (set-error-range-clear-highlight! an-error-range #f)))
         (set! error-ranges '())
         (invalidate-bitmap-cache 0 0 'display-end 'display-end))
       
