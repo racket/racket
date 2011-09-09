@@ -46,6 +46,7 @@ mred-launcher-put-file-extension+style+filters
 mzscheme-launcher-put-file-extension+style+filters
 
 build-aux-from-path
+extract-aux-from-path
 current-launcher-variant
 available-mred-variants
 available-mzscheme-variants

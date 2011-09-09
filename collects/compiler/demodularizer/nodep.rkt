@@ -112,7 +112,8 @@
 
 (define (nodep-module mod-form phase)
   (match mod-form
-    [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported max-let-depth dummy lang-info internal-context))
+    [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies
+                       unexported max-let-depth dummy lang-info internal-context))
      (define new-prefix prefix)
      ; Cache all the mpi paths
      (for-each (match-lambda

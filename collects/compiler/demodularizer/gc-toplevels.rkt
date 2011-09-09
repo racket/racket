@@ -64,7 +64,7 @@
        (build-graph! new-lhs rhs)]
       [(? def-syntaxes?)
        (error 'build-graph "Doesn't handle syntax")]
-      [(? def-for-syntax?)
+      [(? seq-for-syntax?)
        (error 'build-graph "Doesn't handle syntax")]
       [(struct req (reqs dummy))
        (build-graph! lhs dummy)]
@@ -197,7 +197,7 @@
            #f)]
       [(? def-syntaxes?)
        (error 'gc-tls "Doesn't handle syntax")]
-      [(? def-for-syntax?)
+      [(? seq-for-syntax?)
        (error 'gc-tls "Doesn't handle syntax")]
       [(struct req (reqs dummy))
        (make-req reqs (update dummy))]

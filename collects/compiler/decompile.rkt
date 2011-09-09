@@ -164,16 +164,20 @@
 
 (define (decompile-module mod-form stack stx-ht)
   (match mod-form
-    [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported 
+    [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies unexported 
                        max-let-depth dummy lang-info internal-context))
      (let-values ([(globs defns) (decompile-prefix prefix stx-ht)]
                   [(stack) (append '(#%modvars) stack)]
                   [(closed) (make-hasheq)])
        `(module ,name ....
           ,@defns
-          ,@(map (lambda (form)
-                   (decompile-form form globs stack closed stx-ht))
-                 syntax-body)
+          ,@(for/list ([b (in-list syntax-bodies)])
+              (let loop ([n (sub1 (car b))])
+                (if (zero? n)
+                    (cons 'begin
+                          (for/list ([form (in-list (cdr b))])
+                            (decompile-form form globs stack closed stx-ht)))
+                    (list 'begin-for-syntax (loop (sub1 n))))))
           ,@(map (lambda (form)
                    (decompile-form form globs stack closed stx-ht))
                  body)))]
@@ -190,18 +194,19 @@
                                 (list-ref/protect (glob-desc-vars globs) pos 'def-vals)]))
                            ids)
         ,(decompile-expr rhs globs stack closed))]
-    [(struct def-syntaxes (ids rhs prefix max-let-depth))
+    [(struct def-syntaxes (ids rhs prefix max-let-depth dummy))
      `(define-syntaxes ,ids
         ,(let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
            `(let ()
               ,@defns
               ,(decompile-form rhs globs '(#%globals) closed stx-ht))))]
-    [(struct def-for-syntax (ids rhs prefix max-let-depth))
-     `(define-values-for-syntax ,ids
-        ,(let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
-           `(let ()
+    [(struct seq-for-syntax (exprs prefix max-let-depth dummy))
+     `(begin-for-syntax
+       ,(let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
+          `(let ()
              ,@defns
-             ,(decompile-form rhs globs '(#%globals) closed stx-ht))))]
+             ,@(for/list ([rhs (in-list exprs)])
+                 (decompile-form rhs globs '(#%globals) closed stx-ht)))))]
     [(struct seq (forms))
      `(begin ,@(map (lambda (form)
                       (decompile-form form globs stack closed stx-ht))

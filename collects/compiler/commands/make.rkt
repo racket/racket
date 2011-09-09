@@ -66,7 +66,7 @@
                       (lambda (p)
                         (set! did-one? #t)
                         (when (verbose)
-                          (printf "  making ~s\n" (path->string p))))])
+                          (printf "  making ~s\n" p)))])
         (for ([file source-files])
           (unless (file-exists? file)
             (error mzc-symbol "file does not exist: ~a" file))
