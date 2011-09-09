@@ -2796,12 +2796,13 @@ void free_fficall_data(void *ignored, void *p)
   free(p);
 }
 
+static Scheme_Object *ffi_name_prefix = NULL;
+
 /* (ffi-call ffi-obj in-types out-type [abi save-errno? orig-place?]) -> (in-types -> out-value) */
 /* the real work is done by ffi_do_call above */
 #define MYNAME "ffi-call"
 static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
 {
-    static Scheme_Object *ffi_name_prefix = NULL;
     Scheme_Object *itypes = argv[1];
     Scheme_Object *otype  = argv[2];
     Scheme_Object *obj, *data, *p, *base;
@@ -2816,9 +2817,6 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
   #else
   # define FFI_CALL_VEC_SIZE 7
   #endif
-    MZ_REGISTER_STATIC(ffi_name_prefix);
-    if (!ffi_name_prefix)
-      ffi_name_prefix = scheme_make_byte_string_without_copying("ffi:");
     if (!SCHEME_FFIANYPTRP(argv[0]))
       scheme_wrong_type(MYNAME, "ffi-obj-or-cpointer", 0, argc, argv);
     obj = SCHEME_FFIANYPTR_VAL(argv[0]);
@@ -3403,6 +3401,9 @@ void scheme_init_foreign_globals()
   fail_ok_sym = scheme_intern_symbol("fail-ok");
   MZ_REGISTER_STATIC(abs_sym);
   abs_sym = scheme_intern_symbol("abs");
+
+  MZ_REGISTER_STATIC(ffi_name_prefix);
+  ffi_name_prefix = scheme_make_byte_string_without_copying("ffi:");
 }
 
 void scheme_init_foreign_places() {
