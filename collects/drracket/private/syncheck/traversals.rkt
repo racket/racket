@@ -185,7 +185,7 @@
             (syntax-case* sexp (#%plain-lambda case-lambda if begin begin0 let-values letrec-values set!
                                                quote quote-syntax with-continuation-mark 
                                                #%plain-app #%top #%plain-module-begin
-                                               define-values define-syntaxes define-values-for-syntax module
+                                               define-values define-syntaxes begin-for-syntax module
                                                #%require #%provide #%expression)
               (if high-level? free-transformer-identifier=? free-identifier=?)
               [(#%plain-lambda args bodies ...)
@@ -317,12 +317,10 @@
                  (add-binders (syntax names) binders binding-inits #'exp)
                  (maybe-jump (syntax names))
                  (level-loop (syntax exp) #t))]
-              [(define-values-for-syntax names exp)
+              [(begin-for-syntax exp ...)
                (begin
                  (annotate-raw-keyword sexp varrefs)
-                 (add-binders (syntax names) high-binders binding-inits #'exp)
-                 (maybe-jump (syntax names))
-                 (level-loop (syntax exp) #t))]
+                 (for-each (lambda (e) (level-loop e #t)) (syntax->list (syntax (exp ...)))))]
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword sexp varrefs)
