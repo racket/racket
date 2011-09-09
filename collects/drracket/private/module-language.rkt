@@ -1375,11 +1375,15 @@
                (set-error-range-clear-highlight! an-error-range #f)))
            (super on-event evt)]
           [(send evt button-down? 'left)
+           (define used-click? #f)
            (for ([an-error-range (in-list error-ranges)])
              (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
              (when (and (<= x1 mx x2)
                         (<= y2 my y3))
-               (set-position (error-range-start an-error-range))))]
+               (set! used-click? #t)
+               (set-position (error-range-start an-error-range))))
+           (unless used-click?
+             (super on-event evt))]
           [else
            (super on-event evt)]))
       
