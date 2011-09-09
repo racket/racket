@@ -896,6 +896,7 @@ If the namespace does not, they are colored the unbound color.
                        (set! cursor-location #f)
                        (set! cursor-text #f)
                        (set! cursor-eles #f)
+                       (clear-tooltips)
                        (invalidate-bitmap-cache))
                      (super on-event event)]
                     [(or (send event moving?)
@@ -1038,14 +1039,16 @@ If the namespace does not, they are colored the unbound color.
                 [(null? tooltip-infos)
                  (send tooltip-frame show #f)]
                 [else
-                 (send tooltip-frame set-tooltip (map tooltip-info-msg tooltip-infos))
                  (let loop ([tooltip-infos tooltip-infos]
                             [l #f]
                             [t #f]
                             [r #f]
-                            [b #f])
+                            [b #f]
+                            [strings (set)])
                    (cond
                      [(null? tooltip-infos)
+                      (send tooltip-frame set-tooltip 
+                            (sort (set->list strings) string<=?))
                       (if (and l t r b)
                           (send tooltip-frame show-over l t (- r l) (- b t))
                           (send tooltip-frame show #f))]
@@ -1057,7 +1060,8 @@ If the namespace does not, they are colored the unbound color.
                             (min/f tl l)
                             (min/f tt t)
                             (max/f tr r)
-                            (max/f tb b))]))]))
+                            (max/f tb b)
+                            (set-add strings (tooltip-info-msg (car tooltip-infos))))]))]))
             
             (define/private (clear-tooltips)
               (when tooltip-frame (send tooltip-frame show #f)))
