@@ -128,12 +128,12 @@
 
 ;; Floating-point numbers
 (define -FlonumPosZero (make-Base 'Float-Positive-Zero
-                                  #'(lambda (x) (eq? x 0.0))
-                                  (lambda (x) (eq? x 0.0))
+                                  #'(lambda (x) (eqv? x 0.0))
+                                  (lambda (x) (eqv? x 0.0))
                                   #'-FlonumPosZero))
 (define -FlonumNegZero (make-Base 'Float-Negative-Zero
-                                  #'(lambda (x) (eq? x -0.0))
-                                  (lambda (x) (eq? x -0.0))
+                                  #'(lambda (x) (eqv? x -0.0))
+                                  (lambda (x) (eqv? x -0.0))
                                   #'-FlonumNegZero))
 (define -FlonumZero (*Un -FlonumPosZero -FlonumNegZero))
 (define -FlonumNan (make-Base 'Float-Nan
