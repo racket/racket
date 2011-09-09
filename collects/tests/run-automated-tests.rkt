@@ -54,6 +54,7 @@
               #:load? [load? #f] #:handler? [handler? #t]
               #:timeout [timeout 10] ; in minutes
               #:additional-modules [additional-modules '()])
+  (define gloabl-state (current-preserved-thread-cell-values))
   (define stderr (current-error-port))
   (define (echo fmt . args)
     (flush-output (current-output-port))
@@ -92,7 +93,8 @@
             (thunk))
           (thunk)))
       (kill-thread timeout-thread)
-      (echo "no failures."))))
+      (echo "no failures.")))
+  (current-preserved-thread-cell-values gloabl-state))
 
 (all-tests)
 
