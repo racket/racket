@@ -128,7 +128,7 @@
              (append (requires->modlist requires phase)
                      (if (and phase (zero? phase))
                          (begin (log-debug (format "[~S] lang-info : ~S" name lang-info)) ; XXX Seems to always be #f now
-                                (list (make-mod name srcname self-modidx new-prefix provides requires body syntax-bodies empty
+                                (list (make-mod name srcname self-modidx new-prefix provides requires body empty
                                                 unexported max-let-depth dummy lang-info internal-context)))
                          (begin (log-debug (format "[~S] Dropping module @ ~S" name phase))
                                 empty))))]              

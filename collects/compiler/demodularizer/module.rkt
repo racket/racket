@@ -24,7 +24,7 @@
                 (list (cons 0 requires))
                 new-forms
                 empty ; syntax-body
-                (list empty empty empty) ; unexported
+                (list) ; unexported
                 max-let-depth
                 (make-toplevel 0 0 #f #f) ; dummy
                 lang-info
