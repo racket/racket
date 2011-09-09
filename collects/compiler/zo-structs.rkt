@@ -80,7 +80,7 @@
                               [src (or/c module-path-index? #f)] 
                               [src-name symbol?] 
                               [nom-src any/c] ; should be (or/c module-path-index? #f)
-                              [src-phase (or/c 0 1)] 
+                              [src-phase exact-nonnegative-integer?] 
                               [protected? boolean?]))
 
 (define-form-struct (toplevel expr) ([depth exact-nonnegative-integer?] 
@@ -89,18 +89,19 @@
                                      [ready? boolean?]))  ; access binding via prefix array (which is on stack)
 
 (define-form-struct (seq form) ([forms (listof (or/c form? any/c))])) ; `begin'
+(define-form-struct (seq-for-syntax form) ([forms (listof (or/c form? any/c))] ; `begin-for-syntax'
+                                           [prefix prefix?] 
+                                           [max-let-depth exact-nonnegative-integer?]
+                                           [dummy (or/c toplevel? #f)]))
 
 ;; Definitions (top level or within module):
-(define-form-struct (def-values form) ([ids (listof (or/c toplevel? symbol?))] ; added symbol?
+(define-form-struct (def-values form) ([ids (listof (or/c toplevel? symbol?))]
                                        [rhs (or/c expr? seq? any/c)])) 
-(define-form-struct (def-syntaxes form) ([ids (listof (or/c toplevel? symbol?))] ; added symbol?                                        
+(define-form-struct (def-syntaxes form) ([ids (listof (or/c toplevel? symbol?))]
                                          [rhs (or/c expr? seq? any/c)] 
                                          [prefix prefix?] 
-                                         [max-let-depth exact-nonnegative-integer?])) 
-(define-form-struct (def-for-syntax form) ([ids (listof (or/c toplevel? symbol?))] ; added symbol?
-                                           [rhs (or/c expr? seq? any/c)] 
-                                           [prefix prefix?] 
-                                           [max-let-depth exact-nonnegative-integer?])) 
+                                         [max-let-depth exact-nonnegative-integer?]
+                                         [dummy (or/c toplevel? #f)]))
 
 (define-form-struct (mod form) ([name symbol?] 
                                 [srcname symbol?]
@@ -111,10 +112,12 @@
                                                           (listof provided?)))] 
                                 [requires (listof (cons/c (or/c exact-integer? #f)
                                                           (listof module-path-index?)))]
-                                [body (listof (or/c form? any/c))] 
-                                [syntax-body (listof (or/c def-syntaxes? def-for-syntax?))] 
-                                [unexported (list/c (listof symbol?) (listof symbol?)
-                                                    (listof symbol?))] 
+                                [body (listof (or/c form? any/c))]
+                                [syntax-bodies (listof (cons/c exact-positive-integer?
+                                                               (listof (or/c def-syntaxes? seq-for-syntax?))))]
+                                [unexported (listof (list/c exact-nonnegative-integer?
+                                                            (listof symbol?)
+                                                            (listof symbol?)))]
                                 [max-let-depth exact-nonnegative-integer?]
                                 [dummy toplevel?]
                                 [lang-info (or/c #f (vector/c module-path? symbol? any/c))]

@@ -1,13 +1,14 @@
 #lang scheme/base
 
 (require
- (except-in "base-env/prims.rkt"
+ (except-in typed-racket/base-env/prims
             require/typed require/opaque-type require-typed-struct)
- "base-env/base-types-extra.rkt"
+ typed-racket/base-env/base-types-extra
  (for-syntax scheme/base syntax/parse syntax/struct))
 (provide (all-from-out scheme/base)
 	 (all-defined-out)
-	 (all-from-out "base-env/prims.rkt" "base-env/base-types-extra.rkt"))
+	 (all-from-out typed-racket/base-env/prims 
+                       typed-racket/base-env/base-types-extra))
 
 
 (define-syntax (require/typed stx)

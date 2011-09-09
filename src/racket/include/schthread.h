@@ -122,6 +122,7 @@ typedef struct Thread_Local_Variables {
   uintptr_t GC_gen0_alloc_page_ptr_;
   uintptr_t GC_gen0_alloc_page_end_;
   int GC_gen0_alloc_only_;
+  uintptr_t force_gc_for_place_accounting_;
   void *bignum_cache_[BIGNUM_CACHE_SIZE];
   int cache_count_;
   struct Scheme_Hash_Table *toplevels_ht_;
@@ -149,7 +150,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *cached_mod_beg_stx_;
   struct Scheme_Object *cached_dv_stx_;
   struct Scheme_Object *cached_ds_stx_;
-  struct Scheme_Object *cached_dvs_stx_;
+  struct Scheme_Object *cached_bfs_stx_;
   int cached_stx_phase_;
   struct Scheme_Object *cwv_stx_;
   int cwv_stx_phase_;
@@ -459,6 +460,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define GC_gen0_alloc_page_end XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_page_end_)
 #define GC_gen0_alloc_only XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_only_)
 #define GC_variable_stack XOA (scheme_get_thread_local_variables()->GC_variable_stack_)
+#define force_gc_for_place_accounting XOA (scheme_get_thread_local_variables()->force_gc_for_place_accounting_)
 #define bignum_cache XOA (scheme_get_thread_local_variables()->bignum_cache_)
 #define cache_count XOA (scheme_get_thread_local_variables()->cache_count_)
 #define toplevels_ht XOA (scheme_get_thread_local_variables()->toplevels_ht_)
@@ -486,7 +488,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define cached_mod_beg_stx XOA (scheme_get_thread_local_variables()->cached_mod_beg_stx_)
 #define cached_dv_stx XOA (scheme_get_thread_local_variables()->cached_dv_stx_)
 #define cached_ds_stx XOA (scheme_get_thread_local_variables()->cached_ds_stx_)
-#define cached_dvs_stx XOA (scheme_get_thread_local_variables()->cached_dvs_stx_)
+#define cached_bfs_stx XOA (scheme_get_thread_local_variables()->cached_bfs_stx_)
 #define cached_stx_phase XOA (scheme_get_thread_local_variables()->cached_stx_phase_)
 #define cwv_stx XOA (scheme_get_thread_local_variables()->cwv_stx_)
 #define cwv_stx_phase XOA (scheme_get_thread_local_variables()->cwv_stx_phase_)

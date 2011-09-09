@@ -194,6 +194,40 @@
 	(eval `(require 'f))
 	(test (list* 'd 'b finished) values l)))))
 
+(let* ([n (make-base-namespace)]
+       [l null]
+       [here (lambda (v)
+	       (set! l (cons v l)))])
+  (parameterize ([current-namespace n])
+    (eval `(module a racket/base
+             (require (for-syntax racket/base)
+                      (for-meta 2 racket/base))
+	     (define a 1)
+             (define-syntax (a-macro stx) #'-1)
+             (begin-for-syntax
+              (,here 'pma))
+             (begin-for-syntax
+              (,here 'ma)
+              (define a-meta 10)
+              (define-syntax (a-meta-macro stx) #'-1)
+              (begin-for-syntax
+               (define a-meta-meta 100)
+               (,here 'mma)))
+	     (,here 'a)
+	     (provide a a-macro (for-syntax a-meta-macro))))
+    (test '(ma mma pma) values l)
+    (set! l null)
+    (dynamic-require ''a #f)
+    (test '(a) values l)
+    (eval `10)
+    (test '(a) values l)
+    (dynamic-require ''a 0) ; => 'a is available...
+    (eval `10)
+    (test '(ma pma a) values l)
+    (eval '(begin-for-syntax)) ; triggers phase-1 visit => phase-2 instantiate
+    (test '(mma ma pma a) values l)
+    (void)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check redundant import and re-provide
 

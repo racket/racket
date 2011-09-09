@@ -3,8 +3,7 @@
          racket/gui/base
          framework
          drscheme/tool
-         racket/unit
-         (prefix-in drlink: "private/gui/drracket-link.rkt"))
+         racket/unit)
 
 (provide tool@)
 
@@ -12,8 +11,6 @@
 
 (define BACKTRACE-NO-MESSAGE "No message.")
 (define LINK-MODULE-SPEC 'rackunit/private/gui/drracket-link)
-
-(define-namespace-anchor drracket-ns-anchor)
 
 ;; ----
 
@@ -63,25 +60,17 @@
          (drscheme:debug:open-and-highlight-in-file
           (list (make-srcloc src #f #f pos span))))))
 
-    ;; Send them off to the drscheme-ui module.
-    ;; We'll still have to attach our instantiation of drscheme-link
-    ;; to the user namespace.
-    (set-box! drlink:link
-              (vector get-errortrace-backtrace
-                      show-backtrace
-                      show-source))
-
-    (define drracket-ns (namespace-anchor->namespace drracket-ns-anchor))
-
     (define interactions-text-mixin
       (mixin ((class->interface drscheme:rep:text%)) ()
         (inherit get-user-namespace)
         (super-new)
 
         (define/private (setup-helper-module)
-          (namespace-attach-module drracket-ns
-                                   LINK-MODULE-SPEC
-                                   (get-user-namespace)))
+          (let ([link (parameterize ((current-namespace (get-user-namespace)))
+                        (dynamic-require LINK-MODULE-SPEC 'link))])
+            (set-box! link (vector get-errortrace-backtrace
+                                   show-backtrace
+                                   show-source))))
 
         (define/override (reset-console)
           (super reset-console)

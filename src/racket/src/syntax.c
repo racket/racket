@@ -4355,8 +4355,11 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 		result = glob_id;
 	      } else {
 		result = SCHEME_CDR(rename);
-		if (SCHEME_PAIRP(result))
+		if (SCHEME_PAIRP(result)) {
+                  if (SCHEME_INTP(SCHEME_CAR(result))) /* phase? */
+                    result = SCHEME_CDR(result);
 		  result = SCHEME_CAR(result);
+                }
 	      }
 	    } else
 	      result = glob_id;

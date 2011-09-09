@@ -5,9 +5,7 @@
    Please see full copyright in the documentation
    Search for "FIXME" for known improvement points 
 
-   IF YOU'RE NOT ADAM (AND PROBABLY IF YOU ARE) READ THIS FIRST:
-
-   This is now a hybrid copying/mark-compact collector. The nursery
+   This is a hybrid copying/mark-compact collector. The nursery
    (generation 0) is copied into the old generation (generation 1),
    but the old generation compacts. This yields a nice combination
    of performance, scalability and memory efficiency.
@@ -889,20 +887,15 @@ static void *allocate_big(const size_t request_size_bytes, int type)
 #ifdef NEWGC_BTC_ACCOUNT
   if(GC_out_of_memory) {
 #ifdef MZ_USE_PLACES 
-  if (premaster_or_place_gc(gc)) {
+    if (premaster_or_place_gc(gc)) {
 #endif
-    if (BTC_single_allocation_limit(gc, request_size_bytes)) {
-      /* We're allowed to fail. Check for allocations that exceed a single-time
-         limit. Otherwise, the limit doesn't work as intended, because
-         a program can allocate a large block that nearly exhausts memory,
-         and then a subsequent allocation can fail. As long as the limit
-         is much smaller than the actual available memory, and as long as
-         GC_out_of_memory protects any user-requested allocation whose size
-         is independent of any existing object, then we can enforce the limit. */
-      GC_out_of_memory();
-    }
+      if (BTC_single_allocation_limit(gc, request_size_bytes)) {
+        /* We're allowed to fail. Check for allocations that exceed a single-time
+           limit. See BTC_single_allocation_limit() for more information. */
+        GC_out_of_memory();
+      }
 #ifdef MZ_USE_PLACES 
-  }
+    }
 #endif
   }
 #endif
@@ -1666,7 +1659,7 @@ inline static void master_set_max_size(NewGC *gc)
 
 inline static void reset_nursery(NewGC *gc)
 {
-  uintptr_t new_gen0_size; 
+  uintptr_t new_gen0_size;
   new_gen0_size = NUM((GEN0_SIZE_FACTOR * (float)gc->memory_in_use) + GEN0_SIZE_ADDITION);
   if(new_gen0_size > GEN0_MAX_SIZE)
     new_gen0_size = GEN0_MAX_SIZE;
@@ -2255,12 +2248,28 @@ int GC_set_account_hook(int type, void *c1, uintptr_t b, void *c2)
 #endif
 }
 
+uintptr_t GC_get_account_memory_limit(void *c1)
+{
+#ifdef NEWGC_BTC_ACCOUNT
+  NewGC *gc = GC_get_GC();
+  uintptr_t v = BTC_get_account_hook(c1);
+  if (gc->place_memory_limit < (uintptr_t)(intptr_t)-1) {
+    if (!v || (gc->place_memory_limit < v))
+      return gc->place_memory_limit;
+  }
+  return v;
+#else
+  return 0;
+#endif
+}
+
 void GC_register_thread(void *t, void *c)
 {
 #ifdef NEWGC_BTC_ACCOUNT
   BTC_register_thread(t, c);
 #endif
 }
+
 void GC_register_new_thread(void *t, void *c)
 {
 #ifdef NEWGC_BTC_ACCOUNT
@@ -2560,14 +2569,15 @@ void GC_set_put_external_event_fd(void *fd) {
 }
 #endif
 
-static void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
-  if (parentgc) {
-    newgc->mark_table  = parentgc->mark_table;
-    newgc->fixup_table = parentgc->fixup_table;
-    newgc->dumping_avoid_collection = parentgc->dumping_avoid_collection - 1;
-  }
-  else {
-
+static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
+  if (inheritgc) {
+    newgc->mark_table  = inheritgc->mark_table;
+    newgc->fixup_table = inheritgc->fixup_table;
+    newgc->dumping_avoid_collection = inheritgc->dumping_avoid_collection - 1;
+#ifdef MZ_USE_PLACES
+    newgc->parent_gc = parentgc;
+#endif
+  } else {
 #ifdef MZ_USE_PLACES
     NewGCMasterInfo_initialize();
 #endif
@@ -2595,10 +2605,17 @@ static void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
   newgc->generations_available = 1;
   newgc->last_full_mem_use = (20 * 1024 * 1024);
   newgc->new_btc_mark = 1;
+
+  newgc->place_memory_limit = (uintptr_t)(intptr_t)-1;
+
+#ifdef MZ_USE_PLACES
+  mzrt_mutex_create(&newgc->child_total_lock);
+#endif
 }
 
 /* NOTE This method sets the constructed GC as the new Thread Specific GC. */
-static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
+static NewGC *init_type_tags_worker(NewGC *inheritgc, NewGC *parentgc, 
+                                    int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
 {
   NewGC *gc;
 
@@ -2617,7 +2634,7 @@ static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mu
   gc->cust_box_tag    = custbox;
 # endif
 
-  NewGC_initialize(gc, parentgc);
+  NewGC_initialize(gc, inheritgc, parentgc);
 
 
   /* Our best guess at what the OS will let us allocate: */
@@ -2631,7 +2648,7 @@ static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mu
   gc->gen0.page_alloc_size = GEN0_PAGE_SIZE;
   resize_gen0(gc, GEN0_INITIAL_SIZE);
 
-  if (!parentgc) {
+  if (!inheritgc) {
     GC_register_traversers2(gc->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
     GC_register_traversers2(gc->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
     GC_register_traversers2(gc->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
@@ -2647,22 +2664,27 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
 {
   static int initialized = 0;
 
-  if(!initialized) {
+  if (!initialized) {
     initialized = 1;
-    init_type_tags_worker(NULL, count, pair, mutable_pair, weakbox, ephemeron, weakarray, custbox);
-  }
-  else {
+    init_type_tags_worker(NULL, NULL, count, pair, mutable_pair, weakbox, ephemeron, weakarray, custbox);
+  } else {
     GCPRINT(GCOUTF, "GC_init_type_tags should only be called once!\n");
     abort();
   }
 }
 
+struct NewGC *GC_get_current_instance() {
+  return GC_get_GC();
+}
+
 #ifdef MZ_USE_PLACES
-void GC_construct_child_gc() {
+void GC_construct_child_gc(struct NewGC *parent_gc, intptr_t limit) {
   NewGC *gc = MASTERGC;
-  NewGC *newgc = init_type_tags_worker(gc, 0, 0, 0, gc->weak_box_tag, gc->ephemeron_tag, gc->weak_array_tag, gc->cust_box_tag);
+  NewGC *newgc = init_type_tags_worker(gc, parent_gc, 0, 0, 0, gc->weak_box_tag, gc->ephemeron_tag, gc->weak_array_tag, gc->cust_box_tag);
   newgc->primoridal_gc = MASTERGC;
   newgc->dont_master_gc_until_child_registers = 1;
+  if (limit)
+    newgc->place_memory_limit = limit;
 }
 
 void GC_destruct_child_gc() {
@@ -2729,7 +2751,7 @@ void GC_switch_out_master_gc() {
     MASTERGC->dumping_avoid_collection++;
 
     save_globals_to_gc(MASTERGC);
-    GC_construct_child_gc();
+    GC_construct_child_gc(NULL, 0);
     GC_allow_master_gc_check();
   }
   else {
@@ -2825,12 +2847,19 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
 intptr_t GC_get_memory_use(void *o) 
 {
   NewGC *gc = GC_get_GC();
+  intptr_t amt;
 #ifdef NEWGC_BTC_ACCOUNT
   if(o) {
     return BTC_get_memory_use(gc, o);
   }
 #endif
-  return gen0_size_in_use(gc) + gc->memory_in_use;
+  amt = gen0_size_in_use(gc) + gc->memory_in_use;
+#ifdef MZ_USE_PLACES
+  mzrt_mutex_lock(gc->child_total_lock);
+  amt += gc->child_gc_total;
+  mzrt_mutex_unlock(gc->child_total_lock);
+#endif
+  return amt;
 }
 
 /*****************************************************************************/
@@ -4526,7 +4555,8 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 #endif
     gc->GC_collect_inform_callback(is_master, gc->gc_full, 
                                    old_mem_use + old_gen0, gc->memory_in_use, 
-                                   old_mem_allocated, mmu_memory_allocated(gc->mmu));
+                                   old_mem_allocated, mmu_memory_allocated(gc->mmu),
+                                   gc->child_gc_total);
   }
 #ifdef MZ_USE_PLACES
   if (lmi) {
@@ -4537,6 +4567,7 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
     lmi->pre_admin = old_mem_allocated;
     lmi->post_admin = mmu_memory_allocated(gc->mmu);
   }
+  GC_propagate_hierarchy_memory_use();
 #endif
 
   TIME_STEP("ended");
@@ -4601,12 +4632,32 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
         if (gc->GC_collect_inform_callback) {
           gc->GC_collect_inform_callback(1, sub_lmi.full,
                                          sub_lmi.pre_used, sub_lmi.post_used,
-                                         sub_lmi.pre_admin, sub_lmi.post_admin);
+                                         sub_lmi.pre_admin, sub_lmi.post_admin,
+                                         0);
         }
       }
     }
   }
 #endif
+}
+
+intptr_t GC_propagate_hierarchy_memory_use() 
+{
+  NewGC *gc = GC_get_GC();
+
+#ifdef MZ_USE_PLACES
+  if (gc->parent_gc) {
+    /* report memory use to parent */
+    intptr_t total = gc->memory_in_use + gc->child_gc_total;
+    intptr_t delta = total - gc->previously_reported_total;
+    mzrt_mutex_lock(gc->parent_gc->child_total_lock);
+    gc->parent_gc->child_gc_total += delta;
+    mzrt_mutex_unlock(gc->parent_gc->child_total_lock);
+    gc->previously_reported_total = total;
+  }
+#endif
+
+  return gc->memory_in_use + gc->child_gc_total;
 }
 
 #if MZ_GC_BACKTRACE

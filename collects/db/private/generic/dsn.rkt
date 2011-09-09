@@ -1,20 +1,26 @@
 #lang racket/base
-(require "lazy-require.rkt"
-         racket/contract
+(require unstable/lazy-require
          racket/match
          racket/file
-         racket/list
-         racket/runtime-path
-         racket/promise
-         "main.rkt")
+         racket/list)
+(provide dsn-connect
+         (struct-out data-source)
+         connector?
+         arglist?
+         writable-datum?
+         current-dsn-file
+         get-dsn
+         put-dsn
+         postgresql-data-source
+         mysql-data-source
+         sqlite3-data-source
+         odbc-data-source)
 
-(define-lazy-require-definer define-main "../../main.rkt")
-
-(define-main
-  postgresql-connect
-  mysql-connect
-  sqlite3-connect
-  odbc-connect)
+(lazy-require
+ ["../../main.rkt" (postgresql-connect
+                    mysql-connect
+                    sqlite3-connect
+                    odbc-connect)])
 
 #|
 DSN v0.1 format
@@ -47,15 +53,15 @@ considered important.
 
 (define none (gensym 'none))
 
-(define (datum? x)
+(define (writable-datum? x)
   (or (symbol? x)
       (string? x)
       (number? x)
       (boolean? x)
       (null? x)
       (and (pair? x)
-           (datum? (car x))
-           (datum? (cdr x)))))
+           (writable-datum? (car x))
+           (writable-datum? (cdr x)))))
 
 (define (connector? x)
   (memq x '(postgresql mysql sqlite3 odbc)))
@@ -72,11 +78,11 @@ considered important.
                      (reverse kwargs))]
               [(keyword? (car x))
                (cond [(null? (cdr x)) (fail "keyword without argument: ~a" (car x))]
-                     [(datum? (cadr x))
+                     [(writable-datum? (cadr x))
                       (loop (cddr x) pargs (cons (list (car x) (cadr x)) kwargs))]
                      [else
                       (fail "expected readable datum: ~e" (cadr x))])]
-              [(datum? (car x))
+              [(writable-datum? (car x))
                (loop (cdr x) (cons (car x) pargs) kwargs)]
               [else (fail "expected readable datum: ~e" (car x))]))
       (fail "expected list")))
@@ -93,7 +99,7 @@ considered important.
     (if (list? x)
         (map (lambda (x)
                (match x
-                 [(list (? symbol? key) (? datum? value))
+                 [(list (? symbol? key) (? writable-datum? value))
                   x]
                  [else (fail "expected extension entry: ~e" x)]))
              x)
@@ -189,60 +195,9 @@ considered important.
 
 (define sqlite3-data-source
   (mk-specialized 'sqlite3-data-source 'sqlite3 0
-                  '(#:database #:mode #:busy-retry-limit #:busy-retry-delay)))
+                  '(#:database #:mode #:busy-retry-limit #:busy-retry-delay #:use-place)))
 
 (define odbc-data-source
   (mk-specialized 'odbc-data-source 'odbc 0
                   '(#:dsn #:user #:password #:notice-handler
-                    #:strict-parameter-types? #:character-mode)))
-
-(provide/contract
- [struct data-source
-         ([connector connector?]
-          [args arglist?]
-          [extensions (listof (list/c symbol? datum?))])]
- [dsn-connect procedure?] ;; Can't express "or any kw at all" w/ ->* contract.
- [current-dsn-file (parameter/c path-string?)]
- [get-dsn
-  (->* (symbol?) (any/c #:dsn-file path-string?) any)]
- [put-dsn
-  (->* (symbol? (or/c data-source? #f)) (#:dsn-file path-string?) void?)]
- [postgresql-data-source
-  (->* ()
-       (#:user string?
-        #:database string?
-        #:server string?
-        #:port exact-positive-integer?
-        #:socket (or/c string? 'guess)
-        #:password (or/c string? #f)
-        #:allow-cleartext-password? boolean?
-        #:ssl (or/c 'yes 'optional 'no)
-        #:notice-handler (or/c 'output 'error)
-        #:notification-handler (or/c 'output 'error))
-       data-source?)]
- [mysql-data-source
-  (->* ()
-       (#:user string?
-        #:database string?
-        #:server string?
-        #:port exact-positive-integer?
-        #:socket (or/c string? 'guess)
-        #:password (or/c string? #f)
-        #:notice-handler (or/c 'output 'error))
-       data-source?)]
- [sqlite3-data-source
-  (->* ()
-       (#:database (or/c string? 'memory 'temporary)
-        #:mode (or/c 'read-only 'read/write 'create)
-        #:busy-retry-limit (or/c exact-nonnegative-integer? +inf.0)
-        #:busy-retry-delay (and/c rational? (not/c negative?)))
-       data-source?)]
- [odbc-data-source
-  (->* ()
-       (#:dsn string?
-        #:user string?
-        #:password string?
-        #:notice-handler (or/c 'output 'error)
-        #:strict-parameter-types? boolean?
-        #:character-mode (or/c 'wchar 'utf-8 'latin-1))
-       data-source?)])
+                    #:strict-parameter-types? #:character-mode #:use-place)))

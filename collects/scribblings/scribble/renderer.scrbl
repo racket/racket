@@ -15,11 +15,17 @@
      (intro)))
 
 @(begin
-  (define-syntax-rule (def-render-mixin id)
+  (define-syntax-rule (def-html-render-mixin id)
     (begin
       (require (for-label scribble/html-render))
       (define id @racket[render-mixin])))
-  (def-render-mixin html:render-mixin))
+  (def-html-render-mixin html:render-mixin))
+@(begin
+  (define-syntax-rule (def-latex-render-mixin id)
+    (begin
+      (require (for-label scribble/latex-render))
+      (define id @racket[render-mixin])))
+  (def-latex-render-mixin latex:render-mixin))
 
 @title[#:tag "renderer"]{Renderers}
 
@@ -281,3 +287,14 @@ files.}
 @defmixin[render-mixin (render%) ()]{
 
 Specializes a @racket[render%] class for generating Latex input.}}
+
+@; ----------------------------------------
+
+@section{PDF Renderer}
+
+@defmodule/local[scribble/pdf-render]{
+
+@defmixin[render-mixin (render%) ()]{
+
+Specializes a @racket[render%] class for generating PDF output via
+Latex, building on @|latex:render-mixin| from @racketmodname[scribble/latex-render].}}

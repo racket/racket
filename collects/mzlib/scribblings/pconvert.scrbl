@@ -230,7 +230,7 @@ conversion when the value of @racket[constructor-style-printing] is
 @racket[#f]. If @racket[quasi-read-style-printing] is set to
 @racket[#f], then boxes and vectors are unquoted and represented using
 constructors. For example, the list of a box containing the number 1
-and a vector containing the number 1 is represented as @racket[`(,(box
+and a vector containing the number 1 is represented as @racketresult[`(,(box
 1) ,(vector 1))]. If the parameter's value is @racket[#t], then
 @racket[#&....]  and @racket[#(....)] are used, e.g., @racket[`(#&1
 #(1))].  The initial value of the parameter is @racket[#t].}

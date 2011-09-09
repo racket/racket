@@ -211,7 +211,7 @@
              [font font]
              [no-show? (memq 'deleted style)])
 
-  (set-auto-size)
+  (set-auto-size 32) ; 32 is extra width
 
   (connect-changed selection)
   (connect-activated client-gtk)

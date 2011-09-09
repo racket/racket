@@ -445,11 +445,10 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
          #'rest)])))
 
 (define-for-syntax (honu-expand forms)
-  (parse-all forms))
+  (parse-one forms))
 
 (define-for-syntax (honu-compile forms)
   #'(void))
-
 
 (define-syntax (honu-unparsed-begin stx)
   (emit-remark "Honu unparsed begin!" stx)
@@ -457,9 +456,15 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
   (syntax-parse stx
     [(_) #'(void)]
     [(_ forms ...)
-     (define expanded (honu-expand #'(forms ...)))
-     (debug "expanded ~a\n" (syntax->datum expanded))
-     expanded]))
+     (define-values (parsed unparsed) (honu-expand #'(forms ...)))
+     (debug "expanded ~a unexpanded ~a\n"
+            (syntax->datum parsed)
+            (syntax->datum unparsed))
+     (with-syntax ([parsed parsed]
+                   [(unparsed ...) unparsed])
+       (if (null? (syntax->datum #'(unparsed ...)))
+         #'parsed
+         #'(begin parsed (honu-unparsed-begin unparsed ...))))]))
 
 (define-syntax (#%dynamic-honu-module-begin stx)
   (syntax-case stx ()

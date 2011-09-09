@@ -20,4 +20,3 @@ get-cgi-method
 ;; -- general HTML utilities --
 string->html
 generate-link-text
-

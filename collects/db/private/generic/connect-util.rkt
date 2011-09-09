@@ -1,8 +1,11 @@
 #lang racket/base
-(require racket/contract
-         racket/class
-         "interfaces.rkt"
-         (only-in "functions.rkt" connection?))
+(require racket/class
+         "interfaces.rkt")
+(provide kill-safe-connection
+         virtual-connection
+         connection-pool
+         connection-pool?
+         connection-pool-lease)
 
 ;; manager% implements kill-safe manager thread w/ request channel
 (define manager%
@@ -22,7 +25,7 @@
            (loop)))))
 
     (define/public (call proc)
-      (thread-resume mthread)
+      (thread-resume mthread (current-thread))
       (let ([result #f]
             [sema (make-semaphore 0)])
         (channel-put req-channel
@@ -61,6 +64,7 @@
       (get-dbsystem)
       (query fsym stmt)
       (prepare fsym stmt close-on-exec?)
+      (get-base)
       (free-statement stmt)
       (transaction-status fsym)
       (start-transaction fsym isolation)
@@ -80,7 +84,7 @@
 ;; Virtual connection
 
 (define virtual-connection%
-  (class* object% (connection<%> no-cache-prepare<%>)
+  (class* object% (connection<%>)
     (init-private connector     ;; called from client thread
                   get-key       ;; called from client thread
                   timeout)
@@ -178,6 +182,9 @@
       (#f #f     (transaction-status fsym))
       (#t '_     (list-tables fsym schema)))
 
+    (define/public (get-base)
+      (get-connection #t))
+
     (define/public (disconnect)
       (let ([c (get-connection #f)]
             [key (get-key)])
@@ -187,7 +194,8 @@
       (void))
 
     (define/public (prepare fsym stmt close-on-exec?)
-      (unless close-on-exec?
+      ;; FIXME: hacky way of supporting virtual-statement
+      (unless (or close-on-exec? (eq? fsym 'virtual-statement))
         (error fsym "cannot prepare statement with virtual connection"))
       (send (get-connection #t) prepare fsym stmt close-on-exec?))
 
@@ -329,6 +337,7 @@
       (get-dbsystem)
       (query fsym stmt)
       (prepare fsym stmt close-on-exec?)
+      (get-base)
       (free-statement stmt)
       (transaction-status fsym)
       (start-transaction fsym isolation)
@@ -370,24 +379,3 @@
       (uerror 'connection-pool-lease
               "cannot obtain connection; connection pool limit reached"))
     result))
-
-;; ========================================
-
-(provide/contract
- [kill-safe-connection
-  (-> connection? connection?)]
- [virtual-connection
-  (->* ((or/c (-> connection?) connection-pool?))
-       ()
-       connection?)]
- [connection-pool
-  (->* ((-> connection?))
-       (#:max-connections (or/c (integer-in 1 10000) +inf.0)
-        #:max-idle-connections (or/c (integer-in 1 10000) +inf.0))
-       connection-pool?)]
- [connection-pool?
-  (-> any/c boolean?)]
- [connection-pool-lease
-  (->* (connection-pool?)
-       ((or/c custodian? evt?))
-       connection?)])

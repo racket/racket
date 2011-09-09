@@ -102,6 +102,10 @@ probably will not).}
 
 @section{SMTP Unit}
 
+@margin-note{@racket[smtp@] and @racket[smtp^] are deprecated.
+They exist for backward-compatibility and will likely be removed in
+the future. New code should use the @racketmodname[net/smtp] module.}
+
 @defmodule[net/smtp-unit]
 
 @defthing[smtp@ unit?]{

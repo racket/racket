@@ -17,7 +17,8 @@
   ;; get the module-language-compile-lock in the initial message
   (set! module-language-parallel-lock-client
         (compile-lock->parallel-lock-client
-         (place-channel-get p)))
+         (place-channel-get p)
+         (current-custodian)))
   
   ;; get the handlers in a second message
   (set! handlers (for/list ([lst (place-channel-get p)])
@@ -43,6 +44,7 @@
 
 (define (abort-job job)
   (custodian-shutdown-all (job-cust job))
+  (log-info "expanding-place.rkt: kill")
   (place-channel-put (job-response-pc job) #f))
 
 (struct exn:access exn:fail ())

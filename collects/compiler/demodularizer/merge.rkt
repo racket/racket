@@ -108,7 +108,8 @@
 
 (define (merge-module max-let-depth top-prefix mod-form)
   (match mod-form
-    [(struct mod (name srcname self-modidx mod-prefix provides requires body syntax-body unexported mod-max-let-depth dummy lang-info internal-context))
+    [(struct mod (name srcname self-modidx mod-prefix provides requires body syntax-bodies
+                       unexported mod-max-let-depth dummy lang-info internal-context))
      (define toplevel-offset (length (prefix-toplevels top-prefix)))
      (define topsyntax-offset (length (prefix-stxs top-prefix)))
      (define lift-offset (prefix-num-lifts top-prefix))

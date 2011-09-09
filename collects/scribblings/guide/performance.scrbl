@@ -394,3 +394,4 @@ argument instead.
 @; ----------------------------------------------------------------------
 
 @include-section["futures.scrbl"]
+@include-section["places.scrbl"]

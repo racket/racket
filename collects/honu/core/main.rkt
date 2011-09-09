@@ -2,13 +2,19 @@
 
 (require "private/honu-typed-scheme.rkt"
          "private/honu2.rkt"
+         "private/macro2.rkt"
+         (for-syntax (only-in "private/parse2.rkt" honu-expression))
          (prefix-in literal: "private/literals.rkt"))
 
 (provide #%top
          #%datum
          print printf true false
+         (for-syntax (rename-out [honu-expression expression]))
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
+                     [honu-top-interaction #%top-interaction]
                      [honu-function function]
+                     [honu-macro macro]
+                     [honu-syntax syntax]
                      [honu-var var]
                      [honu-val val]
                      [honu-for for]
@@ -21,6 +27,7 @@
                      [honu-> >] [honu-< <]
                      [honu->= >=] [honu-<= <=]
                      [honu-= =]
+                     [honu-assignment :=]
                      [literal:honu-<- <-]
                      [honu-map map]
                      [honu-flow \|]

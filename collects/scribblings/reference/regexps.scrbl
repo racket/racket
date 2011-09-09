@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require scribble/bnf "mz.rkt" "rx.rkt")
+@(require scribble/bnf 
+          "mz.rkt" 
+          "rx.rkt"
+          (for-syntax racket/base))
 
 @title[#:tag "regexp"]{Regular Expressions}
 
@@ -7,6 +10,27 @@
 @section-index{pattern matching}
 @section-index["strings" "pattern matching"]
 @section-index["input ports" "pattern matching"]
+
+@(define-syntax (rx-examples stx)
+  (syntax-case stx ()
+   [(_ [num rx input] ...)
+    (with-syntax ([(ex ...)
+                   (map (lambda (num rx input)
+                          `(eval:alts #,(racket 
+                                         (code:line 
+                                          (regexp-match ,rx ,input) 
+                                          (code:comment @#,t["ex"
+                                                             (let ([s (number->string ,num)])
+                                                               (elemtag `(rxex ,s) 
+                                                                        (racketcommentfont s)))
+                                                             ,(if (pregexp? (syntax-e rx))
+                                                                  `(list ", uses " (racketmetafont "#px"))
+                                                                  "")])))
+                                      (regexp-match ,rx ,input)))
+                        (syntax->list #'(num ...))
+                        (syntax->list #'(rx ...))
+                        (syntax->list #'(input ...)))])
+      #`(examples ex ...))]))
 
 @guideintro["regexp"]{regular expressions}
 
@@ -65,6 +89,45 @@ The following completes the grammar for @racket[pregexp], which uses
 The Unicode categories follow.
 
 @category-table
+
+@rx-examples[
+[1 #rx"a|b" "cat"]
+[2 #rx"[at]" "cat"]
+[3 #rx"ca*[at]" "caaat"]
+[4 #rx"ca+[at]" "caaat"]
+[5 #rx"ca?t?" "ct"]
+[6 #rx"ca*?[at]" "caaat"]
+[7 #px"ca{2}" "caaat"]
+[8 #px"ca{2,}t" "catcaat"]
+[9 #px"ca{,2}t" "caaatcat"]
+[10 #px"ca{1,2}t" "caaatcat"]
+[11 #rx"(c*)(a*)" "caat"]
+[12 #rx"[^ca]" "caat"]
+[13 #rx".(.)." "cat"]
+[14 #rx"^a|^c" "cat"]
+[15 #rx"a$|t$" "cat"]
+[16 #px"c(.)\\1t" "caat"]
+[17 #px".\\b." "cat in hat"]
+[18 #px".\\B." "cat in hat"]
+[19 #px"\\p{Ll}" "Cat"]
+[20 #px"\\P{Ll}" "cat!"]
+[21 #rx"\\|" "c|t"]
+[22 #rx"[a-f]*" "cat"]
+[23 #px"[a-f\\d]*" "1cat"]
+[24 #px" [\\w]" "cat hat"]
+[25 #px"t[\\s]" "cat\nhat"]
+[26 #px"[[:lower:]]+" "Cat"]
+[27 #rx"[]]" "c]t"]
+[28 #rx"[-]" "c-t"]
+[29 #rx"[]a[]+" "c[a]t"]
+[30 #rx"[a^]+" "ca^t"]
+[31 #rx".a(?=p)" "cat nap"]
+[32 #rx".a(?!t)" "cat nap"]
+[33 #rx"(?<=n)a." "cat nap"]
+[34 #rx"(?<!c)a." "cat nap"]
+[35 #rx"(?i:a)[tp]" "cAT nAp"]
+[36 #rx"(?(?<=c)a|b)+" "cabal"]
+]
 
 @;------------------------------------------------------------------------
 @section{Additional Syntactic Constraints}
@@ -241,17 +304,16 @@ string, @racket[start-pos] is a character position; when
 position; and when @racket[input] is an input port, @racket[start-pos]
 is the number of bytes to skip before starting to match. The
 @racket[end-pos] argument can be @racket[#f], which corresponds to the
-end of the string or the end-of-file in the stream; otherwise, it is a
+end of the string or an end-of-file in the stream; otherwise, it is a
 character or byte position, like @racket[start-pos]. If @racket[input]
-is an input port, and if the end-of-file is reached before
+is an input port, and if an end-of-file is reached before
 @racket[start-pos] bytes are skipped, then the match fails.
 
 In @racket[pattern], a start-of-string @litchar{^} refers to the first
 position of @racket[input] after @racket[start-pos], assuming that
 @racket[input-prefix] is @racket[#""].  The end-of-input @litchar{$}
 refers to the @racket[end-pos]th position or (in the case of an input
-port) the end of file, whichever comes first, assuming that
-@racket[output-prefix] is @racket[#f].
+port) an end-of-file, whichever comes first.
 
 The @racket[input-prefix] specifies bytes that effectively precede
 @racket[input] for the purposes of @litchar{^} and other look-behind

@@ -198,7 +198,7 @@ static void get_ready_for_GC(void);
 static void done_with_GC(void);
 #ifdef MZ_PRECISE_GC
 static void inform_GC(int master_gc, int major_gc, intptr_t pre_used, intptr_t post_used,
-                      intptr_t pre_admin, intptr_t post_admin);
+                      intptr_t pre_admin, intptr_t post_admin, intptr_t post_child_places_used);
 #endif
 
 THREAD_LOCAL_DECL(static volatile short delayed_break_ready);
@@ -988,7 +988,9 @@ static void adjust_custodian_family(void *mgr, void *skip_move)
 	      o = WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
 	      if (o)
 		GC_register_thread(o, parent);
-	    }
+	    } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_place_type)) {
+              GC_register_thread(o, parent);
+            }
 	  }
 #endif
 	}
@@ -1452,6 +1454,30 @@ int scheme_custodian_is_shut_down(Scheme_Custodian* c)
 static Scheme_Object *extract_thread(Scheme_Object *o)
 {
   return (Scheme_Object *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
+}
+
+static void pause_place(Scheme_Object *o)
+{
+#ifdef MZ_USE_PLACES
+  scheme_pause_one_place((Scheme_Place *)o);
+#endif
+}
+
+void scheme_pause_all_places()
+{
+  for_each_managed(scheme_place_type, pause_place);
+}
+
+static void resume_place(Scheme_Object *o)
+{
+#ifdef MZ_USE_PLACES
+  scheme_resume_one_place((Scheme_Place *)o);
+#endif
+}
+
+void scheme_resume_all_places()
+{
+  for_each_managed(scheme_place_type, resume_place);
 }
 
 void scheme_init_custodian_extractors()
@@ -4195,6 +4221,13 @@ void scheme_thread_block(float sleep_time)
 #if defined(MZ_USE_PLACES)
   if (!do_atomic)
     scheme_place_check_for_interruption();
+#endif
+
+  /* Propagate memory-use information and check for custodian-based
+     GC triggers due to child place memory use: */
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  scheme_place_check_memory_use();
+  check_scheduled_kills();
 #endif
   
   if (sleep_end > 0) {
@@ -7695,7 +7728,8 @@ static char *gc_num(char *nums, int v)
 
 static void inform_GC(int master_gc, int major_gc, 
                       intptr_t pre_used, intptr_t post_used,
-                      intptr_t pre_admin, intptr_t post_admin)
+                      intptr_t pre_admin, intptr_t post_admin,
+                      intptr_t post_child_places_used)
 {
   Scheme_Logger *logger = scheme_get_main_logger();
   if (logger) {
@@ -7731,6 +7765,11 @@ static void inform_GC(int master_gc, int major_gc,
     scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, NULL);
   }
 
+#ifdef MZ_USE_PLACES
+  if (!master_gc) {
+    scheme_place_set_memory_use(post_used + post_child_places_used);
+  }
+#endif
 }
 #endif
 

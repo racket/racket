@@ -1,16 +1,13 @@
 #lang racket/base
 (require racket/class
-         racket/contract
          racket/tcp
          openssl
          "../generic/interfaces.rkt"
          "../generic/socket.rkt"
-         "connection.rkt"
-         "dbsystem.rkt")
+         "connection.rkt")
 (provide postgresql-connect
          postgresql-guess-socket-path
-         postgresql-password-hash
-         (rename-out [dbsystem postgresql-dbsystem]))
+         postgresql-password-hash)
 
 (define (postgresql-connect #:user user
                             #:database database

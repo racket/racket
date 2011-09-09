@@ -876,6 +876,7 @@ namespace_val {
   gcMARK2(e->exp_env, gc);
   gcMARK2(e->template_env, gc);
   gcMARK2(e->label_env, gc);
+  gcMARK2(e->instance_env, gc);
 
   gcMARK2(e->shadowed_syntax, gc);
 
@@ -885,6 +886,7 @@ namespace_val {
   gcMARK2(e->tt_require_names, gc);
   gcMARK2(e->dt_require_names, gc);
   gcMARK2(e->other_require_names, gc);
+  gcMARK2(e->running, gc);
   gcMARK2(e->did_starts, gc);
   gcMARK2(e->available_next[0], gc);
   gcMARK2(e->available_next[1], gc);
@@ -1009,23 +1011,13 @@ module_val {
   gcMARK2(m->dt_requires, gc);
   gcMARK2(m->other_requires, gc);
 
-  gcMARK2(m->body, gc);
-  gcMARK2(m->et_body, gc);
+  gcMARK2(m->bodies, gc);
 
   gcMARK2(m->me, gc);
 
-  gcMARK2(m->provide_protects, gc);
-  gcMARK2(m->indirect_provides, gc);
-
-  gcMARK2(m->indirect_syntax_provides, gc);
-
-  gcMARK2(m->et_provide_protects, gc);
-  gcMARK2(m->et_indirect_provides, gc);
+  gcMARK2(m->exp_infos, gc);
 
   gcMARK2(m->self_modidx, gc);
-
-  gcMARK2(m->accessible, gc);
-  gcMARK2(m->et_accessible, gc);
 
   gcMARK2(m->insp, gc);
 
@@ -1043,6 +1035,20 @@ module_val {
   gcMARK2(m->primitive, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Module));
+}
+
+exp_info_val {
+ mark:
+  Scheme_Module_Export_Info *m = (Scheme_Module_Export_Info *)p;
+
+  gcMARK2(m->provide_protects, gc);
+  gcMARK2(m->indirect_provides, gc);
+
+  gcMARK2(m->indirect_syntax_provides, gc);
+
+  gcMARK2(m->accessible, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Export_Info));
 }
 
 module_phase_exports_val {
@@ -1476,6 +1482,15 @@ serialized_file_fd_val {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_File_FD));
+}
+
+serialized_socket_fd_val {
+ mark:
+  Scheme_Serialized_Socket_FD *sfd = (Scheme_Serialized_Socket_FD *) p;
+  gcMARK2(sfd->name, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_Socket_FD));
 }
 
 END place;

@@ -113,9 +113,10 @@ please adhere to these guidelines:
  (untitled-n "Untitled ~a")
  (warning "Warning")
  (error "Error")
- (close "Close") ;; as in, close an open window. must match close-menu-item
+ (close "Close") ;; as in, close an open window or tab. must match close-menu-item
                  ;; in the sense that, when the &s have been stripped from
                  ;; close-menu-item, it must be the same string as this.
+ (close-window "Close Window")
  (stop "Stop")   
  (&stop "&Stop") ;; for use in button and menu item labels, with short cut.
  (are-you-sure-delete? "Are you sure you want to delete ~a?") ;; ~a is a filename or directory name
@@ -477,6 +478,7 @@ please adhere to these guidelines:
  (show-interactions-on-execute "Automatically open interactions window when running a program")
  (switch-to-module-language-automatically "Automatically switch to the module language when opening a module")
  (interactions-beside-definitions "Put the interactions window beside the definitions window") ;; in preferences, below the checkbox one line above this one
+ (old-style-keybindings "Old-style keybindings (Run: <menukey>-t; New-tab: <menukey>-=; Replace: <menukey>-r)")
  (show-line-numbers "Show line numbers")
  (show-line-numbers/menu "Show Line &Numbers")  ;; just like the above, but capitalized for appearance in a menu item
  (hide-line-numbers/menu "Hide Line &Numbers")
@@ -674,6 +676,7 @@ please adhere to these guidelines:
 
  (close-info "Close this file")
  (close-menu-item "&Close")
+ (close-window-menu-item "&Close Window")
 
  (quit-info "Close all windows")
  (quit-menu-item-windows "E&xit")
@@ -1371,7 +1374,7 @@ please adhere to these guidelines:
   ;; title of this section of the dialog (possibly the word
   ;; `Collection' should not be translated)
   (ml-cp-collection-paths "Collection Paths")
-
+  
   ;; button labels
   (ml-cp-add "Add")
   (ml-cp-add-default "Add Default")

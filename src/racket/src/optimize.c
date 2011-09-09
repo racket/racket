@@ -2996,7 +2996,7 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
   return obj;
 }
 
-static Scheme_Object *do_define_syntaxes_optimize(Scheme_Object *data, Optimize_Info *info, int for_stx)
+static Scheme_Object *do_define_syntaxes_optimize(Scheme_Object *data, Optimize_Info *info)
 {
   Scheme_Object *val;
   Optimize_Info *einfo;
@@ -3016,12 +3016,29 @@ static Scheme_Object *do_define_syntaxes_optimize(Scheme_Object *data, Optimize_
 
 static Scheme_Object *define_syntaxes_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
-  return do_define_syntaxes_optimize(data, info, 0);
+  return do_define_syntaxes_optimize(data, info);
 }
 
-static Scheme_Object *define_for_syntaxes_optimize(Scheme_Object *data, Optimize_Info *info, int context)
+static Scheme_Object *begin_for_syntax_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
-  return do_define_syntaxes_optimize(data, info, 1);
+  Scheme_Object *l, *a;
+  Optimize_Info *einfo;
+
+  l = SCHEME_VEC_ELS(data)[2];
+
+  while (!SCHEME_NULLP(l)) {
+    einfo = scheme_optimize_info_create();
+    if (info->inline_fuel < 0)
+      einfo->inline_fuel = -1;
+    
+    a = SCHEME_CAR(l);
+    a = scheme_optimize_expr(a, einfo, 0);
+    SCHEME_CAR(l) = a;
+
+    l = SCHEME_CDR(l);
+  }
+
+  return data;
 }
 
 /*========================================================================*/
@@ -4517,7 +4534,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   old_context = info->context;
   info->context = (Scheme_Object *)m;
 
-  cnt = SCHEME_VEC_SIZE(m->body);
+  cnt = SCHEME_VEC_SIZE(m->bodies[0]);
 
   if (OPT_ESTIMATE_FUTURE_SIZES) {
     if (info->enforce_const) {
@@ -4525,7 +4542,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
          size estimate, which is used to discourage early loop unrolling
          at the expense of later inlining. */
       for (i_m = 0; i_m < cnt; i_m++) {
-        e = SCHEME_VEC_ELS(m->body)[i_m];
+        e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
         if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type))  {
           int n;
 
@@ -4562,7 +4579,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   for (i_m = 0; i_m < cnt; i_m++) {
     /* Optimize this expression: */
-    e = SCHEME_VEC_ELS(m->body)[i_m];
+    e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
 
     is_proc_def = 0;
     if (OPT_DISCOURAGE_EARLY_INLINE && info->enforce_const) {
@@ -4587,7 +4604,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       info->use_psize = 0;
       info->inline_fuel = inline_fuel;
     }
-    SCHEME_VEC_ELS(m->body)[i_m] = e;
+    SCHEME_VEC_ELS(m->bodies[0])[i_m] = e;
 
     if (info->enforce_const) {
       /* If this expression/definition can't have any side effect
@@ -4717,7 +4734,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
              shift-cloning, since there are no local variables in scope. */
           int old_sz, new_sz;
 
-          e = SCHEME_VEC_ELS(m->body)[start_simltaneous];
+          e = SCHEME_VEC_ELS(m->bodies[0])[start_simltaneous];
 
           if (OPT_DELAY_GROUP_PROPAGATE || OPT_LIMIT_FUNCTION_RESIZE) {
             if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
@@ -4730,7 +4747,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             old_sz = 0;
 
           e = scheme_optimize_expr(e, info, 0);
-	  SCHEME_VEC_ELS(m->body)[start_simltaneous] = e;
+	  SCHEME_VEC_ELS(m->bodies[0])[start_simltaneous] = e;
 
           if (re_consts) {
             /* Install optimized closures into constant table ---
@@ -4809,7 +4826,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     int can_omit = 0;
     for (i_m = 0; i_m < cnt; i_m++) {
       /* Optimize this expression: */
-      e = SCHEME_VEC_ELS(m->body)[i_m];
+      e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
       if (scheme_omittable_expr(e, -1, -1, 0, NULL, -1)) {
         can_omit++;
       }
@@ -4820,12 +4837,12 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       vec = scheme_make_vector(cnt - can_omit, NULL);
       for (i_m = 0; i_m < cnt; i_m++) {
         /* Optimize this expression: */
-        e = SCHEME_VEC_ELS(m->body)[i_m];
+        e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
         if (!scheme_omittable_expr(e, -1, -1, 0, NULL, -1)) {
           SCHEME_VEC_ELS(vec)[j++] = e;
         }
       }
-      m->body = vec;
+      m->bodies[0] = vec;
     }
   }
 
@@ -5007,8 +5024,8 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
     return set_optimize(expr, info, context);
   case scheme_define_syntaxes_type:
     return define_syntaxes_optimize(expr, info, context);
-  case scheme_define_for_syntax_type:
-    return define_for_syntaxes_optimize(expr, info, context);
+  case scheme_begin_for_syntax_type:
+    return begin_for_syntax_optimize(expr, info, context);
   case scheme_case_lambda_sequence_type:
     return case_lambda_optimize(expr, info, context);
   case scheme_begin0_sequence_type:
@@ -5225,7 +5242,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
     return expr;
   case scheme_define_values_type:
   case scheme_define_syntaxes_type:
-  case scheme_define_for_syntax_type:
+  case scheme_begin_for_syntax_type:
   case scheme_boxenv_type:
     return NULL;
   case scheme_require_form_type:
@@ -5396,7 +5413,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
   case scheme_boxenv_type:
   case scheme_define_values_type:
   case scheme_define_syntaxes_type:
-  case scheme_define_for_syntax_type:
+  case scheme_begin_for_syntax_type:
   case scheme_require_form_type:
   case scheme_module_type:
     scheme_signal_error("scheme_optimize_shift: no shift available for %d", SCHEME_TYPE(expr));

@@ -25,6 +25,7 @@
    bmp
    (λ (drs-frame)
      (define fn (send (send drs-frame get-definitions-text) get-filename))
+     (define html? (equal? suffix #".html"))
      (cond
        [fn
         (parameterize ([drracket:rep:after-expression
@@ -32,15 +33,21 @@
                           (printf "scribble: loading xref\n")
                           (define xref ((dynamic-require 'setup/xref 'load-collections-xref)))
                           (printf "scribble: rendering\n")
-                          ((dynamic-require 'scribble/render 'render) 
-                           (list (eval 'doc))
-                           (list fn)
-                           #:xrefs (list xref))
+                          (parameterize ([current-input-port (open-input-string "")])
+                            ((dynamic-require 'scribble/render 'render) 
+                             (list (eval 'doc))
+                             (list fn)
+                             #:render-mixin (dynamic-require (if html? 
+                                                                 'scribble/html-render
+                                                                 'scribble/pdf-render)
+                                                             'render-mixin)
+                             #:xrefs (list xref)))
                           (cond
-                            [(equal? suffix #".html")
+                            [html?
                              (send-url/file (path-replace-suffix fn suffix))]
                             [else
-                             (system (format "open ~s" (path->string (path-replace-suffix fn suffix))))]))]) 
+                             (parameterize ([current-input-port (open-input-string "")])
+                               (system (format "open \"~a\"" (path->string (path-replace-suffix fn suffix)))))]))]) 
           (send drs-frame execute-callback))]
        [else
         (message-box "Scribble" "Cannot render buffer without filename")]))))

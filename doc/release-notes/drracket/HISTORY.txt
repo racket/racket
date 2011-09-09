@@ -1,4 +1,51 @@
 ------------------------------
+        Version 5.2
+------------------------------
+
+  . changed a three menu keybidings:
+      "New Tab" is now <menukey>-t
+      "Run" is now <menukey>-r
+      "Replace" is now <menukey>-shift-f
+
+    The preferences dialog (general tab) has a checkbox to
+    restore the old behavior.
+
+  . added online expansion and check syntax
+
+  . 2htdp/image: 
+     - shrunk the size of saved files that contain 2htdp/image bitmaps
+       (you can get these by copying and pasting from the REPL; using
+        "insert image" isn't affected)
+
+     - use the pre-multiplied alphas when doing image comparsion
+
+     - sped up rotation and flipping of bitmaps
+
+  . improved the way the scribble-language buttons (render html and
+    render pdf) work; they now basically do what 'Run' does, plus the
+    extra work of rendering the document; before they had their own error
+    handling and sandboxing code, which was less integrated with DrRacket
+
+  . improved the preference handling for the frame's location
+    (specifically for the multiple-monitors case)
+
+  . check syntax no longer turns the module in the #lang line red
+
+  . improved the handling of the 'Open Recent' menu item; specifically it
+    discards duplicates in a smarter way.
+
+  . adjust DrRacket to be more accomodating to hostile filesystems; specifically
+    it no longer fails if it cannot read the preference system and it no longer
+    writes anywhere to the filesystem during startup except the prefs (and if that
+    fails, it survives in a less annoying manner)
+
+  . DrRacket no longer locks the definitions text while evaluating the program
+    (it makes a copy of the definitions text and uses that copy now)
+
+  . cleaned up the Close/Close Window/Close Tab menu items to match
+    the platform-specific conventions
+
+------------------------------
         Version 5.1.2
 ------------------------------
 

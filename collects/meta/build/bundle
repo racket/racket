@@ -5,6 +5,7 @@
 
 (require racket/cmdline racket/runtime-path racket/match racket/promise
          racket/list ; for use in specs too
+         racket/string
          racket/file (only-in racket/system system)
          (except-in racket/mpair mappend)
          meta/checker (prefix-in dist: meta/dist-specs) meta/specs)
@@ -239,7 +240,13 @@
   (let* ([collects (or (tree-filter "/racket/collects/" (car trees))
                        (error 'make-info-domain "got no collects in tree"))]
          [info (filter (lambda (x)
-                         (let ([x (path->string (bytes->path (car x)))])
+                         (define p (car x))
+                         (unless (and (list? p)
+                                      ((length p) . >= . 2)
+                                      (eq? 'info (car p))
+                                      (andmap bytes? (cdr p)))
+                           (error 'bundle "unexpected path form in cache.rktd: ~e" p))
+                         (let ([x (string-join (map bytes->string/utf-8 (cdr p)) "/")])
                            (pair? (tree-filter (concat "/racket/collects/" x)
                                                collects))))
                        *info-domain-cache*)])

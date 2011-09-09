@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Analyzer for the sampler results
 
-(provide analyze-samples)
+(require "structs.rkt" "utils.rkt" racket/list)
 
-(require "structs.rkt" "utils.rkt" scheme/list)
+(provide analyze-samples (all-from-out "structs.rkt"))
 
 (define-syntax-rule (with-hash <hash> <key> <expr>)
   (hash-ref! <hash> <key> (lambda () <expr>)))
@@ -25,14 +25,14 @@
   (define id+src->node-hash (make-hasheq))
   (define (id+src->node id+src)
     (with-hash id+src->node-hash id+src
-               (make-node (car id+src) (cdr id+src) '() 0 0 '() '())))
+               (node (car id+src) (cdr id+src) '() 0 0 '() '())))
   ;; special node that is the caller of toplevels and callee of leaves
   (define *-node (id+src->node '(#f . #f)))
   (define call->edge
     (let ([t (make-hasheq)])
       (lambda (ler lee)
         (with-hash (with-hash t ler (make-hasheq)) lee
-                   (let ([e (make-edge 0 ler 0 lee 0)])
+                   (let ([e (edge 0 ler 0 lee 0)])
                      (set-node-callers! lee (cons e (node-callers lee)))
                      (set-node-callees! ler (cons e (node-callees ler)))
                      e)))))
@@ -84,14 +84,13 @@
     (for ([n (in-list nodes)])
       (set-node-callees! n (sort (node-callees n) > #:key edge-callee-time))
       (set-node-callers! n (sort (node-callers n) > #:key edge-caller-time)))
-    (make-profile
-     total-time
-     cpu-time
-     (length samples)
-     (for/list ([time (in-vector thread-times)] [n (in-naturals 0)])
-       (cons n time))
-     nodes
-     *-node)))
+    (profile total-time
+             cpu-time
+             (length samples)
+             (for/list ([time (in-vector thread-times)] [n (in-naturals 0)])
+               (cons n time))
+             nodes
+             *-node)))
 
 ;; Groups raw samples by their thread-id, returns a vector with a field for
 ;; each thread id holding the sample data for that thread.  The samples in

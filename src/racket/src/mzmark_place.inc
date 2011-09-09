@@ -127,3 +127,28 @@ static int serialized_file_fd_val_FIXUP(void *p, struct NewGC *gc) {
 #define serialized_file_fd_val_IS_CONST_SIZE 1
 
 
+static int serialized_socket_fd_val_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_Socket_FD));
+}
+
+static int serialized_socket_fd_val_MARK(void *p, struct NewGC *gc) {
+  Scheme_Serialized_Socket_FD *sfd = (Scheme_Serialized_Socket_FD *) p;
+  gcMARK2(sfd->name, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_Socket_FD));
+}
+
+static int serialized_socket_fd_val_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Serialized_Socket_FD *sfd = (Scheme_Serialized_Socket_FD *) p;
+  gcFIXUP2(sfd->name, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_Socket_FD));
+}
+
+#define serialized_socket_fd_val_IS_ATOMIC 0
+#define serialized_socket_fd_val_IS_CONST_SIZE 1
+
+

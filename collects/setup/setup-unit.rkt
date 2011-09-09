@@ -26,6 +26,7 @@
          "dirs.rkt"
          "main-collects.rkt"
          "path-to-relative.rkt"
+         "path-relativize.rkt"
          "private/omitted-paths.rkt"
          "parallel-build.rkt"
          "collects.rkt"
@@ -655,7 +656,7 @@
              [dir-table (make-hash)]
              [doing-path (lambda (path)
                            (unless (verbose)
-                             (let ([path (normal-case-path (path-only path))])
+                             (let ([path (path-only path)])
                                (unless (hash-ref dir-table path #f)
                                  (hash-set! dir-table path #t)
                                  (print-verbose oop path)))))])
@@ -792,8 +793,23 @@
     ;; about those collections that exist in the same root as the ones in
     ;; `collections-to-compile'.
     (let ([ht (make-hash)]
-          [ht-orig (make-hash)])
+          [ht-orig (make-hash)]
+          [roots (make-hash)])
       (for ([cc ccs-to-compile])
+        (define-values (path->info-relative info-relative->path)
+          (apply values
+                 (hash-ref roots 
+                           (cc-info-root cc)
+                           (lambda ()
+                             (define-values (p-> ->p)
+                               (if (cc-info-root cc)
+                                   (make-relativize (lambda () (cc-info-root cc))
+                                                    'info
+                                                    'path->info-relative
+                                                    'info-relative->path)
+                                   (values #f #f)))
+                             (hash-set! roots (cc-info-root cc) (list p-> ->p))
+                             (list p-> ->p)))))
         (let* ([domain (with-handlers ([exn:fail? (lambda (x) (lambda () null))])
                          (dynamic-require
                           (build-path (cc-path cc) "info.rkt")
@@ -817,13 +833,16 @@
                             (set! all-ok? #t)
                             (for ([i l])
                               (match i
-                                [(list (? bytes? a) (list (? symbol? b) ...) c (? integer? d) (? integer? e))
-                                 (let ([p (bytes->path a)])
+                                [(list (and a (or (? bytes?) (list 'info (? bytes?) ...)))
+                                       (list (? symbol? b) ...) c (? integer? d) (? integer? e))
+                                 (let ([p (if (bytes? a)
+                                              (bytes->path a)
+                                              a)])
                                    ;; Check that the path is suitably absolute or relative:
                                    (let ([dir (case (cc-info-path-mode cc)
                                                 [(relative abs-in-relative)
-                                                 (or (and (relative-path? p)
-                                                          (build-path (cc-info-root cc) p))
+                                                 (or (and (list? p)
+                                                          (info-relative->path p))
                                                      (and (complete-path? p)
                                                           ;; `c' must be `(lib ...)'
                                                           (list? c) 
@@ -839,11 +858,25 @@
                                                  (and (complete-path? p)
                                                       p)])])
                                      (if (and dir
+                                              (let ([omit-root
+                                                      (if (path? p)
+                                                          ;; absolute path => need a root for checking omits;
+                                                          ;; for a collection path of length N, go up N-1 dirs:
+                                                          (simplify-path (apply build-path p (for/list ([i (cddr c)]) 'up)) #f)
+                                                          ;; relative path => no root needed for checking omits:
+                                                          #f)])
+                                                (not (eq? 'all (omitted-paths dir getinfo omit-root))))
                                               (or (file-exists? (build-path dir "info.rkt"))
                                                   (file-exists? (build-path dir "info.ss"))))
                                          (hash-set! t a (list b c d e))
-                                         (set! all-ok? #f))))]
-                                [_ (set! all-ok? #f)])))
+                                         (begin
+                                           (when (verbose)
+                                             (printf " drop entry: ~s\n" i))
+                                           (set! all-ok? #f)))))]
+                                [_ 
+                                 (when (verbose)
+                                   (printf " bad entry: ~s\n" i))
+                                 (set! all-ok? #f)])))
                           ;; Record the table loaded for this collection root
                           ;; in the all-roots table:
                           (hash-set! ht (cc-info-path cc) t)
@@ -854,14 +887,18 @@
                                      (and all-ok? (hash-copy t)))
                           t))))])
           ;; Add this collection's info to the table, replacing any information
-          ;; already there.
-          (hash-set! t
-                     (path->bytes (if (eq? (cc-info-path-mode cc) 'relative)
-                                      ;; Use relative path:
-                                      (apply build-path (cc-collection cc))
-                                      ;; Use absolute path:
-                                      (cc-path cc)))
-                     (cons (domain) (cc-shadowing-policy cc)))))
+          ;; already there, if the collection has an "info.ss" file:
+          (when (or (file-exists? (build-path (cc-path cc) "info.rkt"))
+                    (file-exists? (build-path (cc-path cc) "info.ss")))
+            (hash-set! t
+                       (if (eq? (cc-info-path-mode cc) 'relative)
+                           ;; Use relative path:
+                           (path->info-relative (apply build-path 
+                                                       (cc-info-root cc)
+                                                       (cc-collection cc)))
+                           ;; Use absolute path:
+                           (path->bytes (cc-path cc)))
+                       (cons (domain) (cc-shadowing-policy cc))))))
       ;; Write out each collection-root-specific table to a "cache.rktd" file:
       (hash-for-each ht
         (lambda (info-path ht)
@@ -870,6 +907,16 @@
             (make-directory* base)
             (let ([p info-path])
               (setup-printf "updating" "~a" (path->relative-string/setup p))
+              (when (verbose)
+                (let ([ht0 (hash-ref ht-orig info-path)])
+                  (when ht0
+                    (for ([(k v) (in-hash ht)])
+                      (let ([v2 (hash-ref ht0 k #f)])
+                        (unless (equal? v v2)
+                          (printf " ~s -> ~s\n   instead of ~s\n" k v v2))))
+                    (for ([(k v) (in-hash ht0)])
+                      (unless (hash-ref ht k #f)
+                        (printf " ~s removed\n" k))))))
               (with-handlers ([exn:fail? (warning-handler (void))])
                 (with-output-to-file p
                   #:exists 'truncate/replace

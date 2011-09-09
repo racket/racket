@@ -142,6 +142,16 @@ annotations:
 
 ]
 
+Check Syntax also runs interactively and the bottom, rightmost corner of the DrRacket window
+shows its status. A blue or green dot indicates that Check Syntax is running in the background
+(the green dot indicates that the check syntax information has been computed and is
+now being put into the DrRacket window proper). A red dot means that something has gone wrong;
+move your mouse over the dot to find out what is wrong. Mis-matched parentheses indicates
+that the buffer's parens are also mismatched; mouse over the parens for details.
+
+Also, right-clicking in that area yields a menu that lets you disable
+(or re-eneable) online Check Syntax.
+
 The @as-index{@onscreen{Run} button} evaluates the program in the
 @tech{definitions window} and resets the @tech{interactions window}.
 

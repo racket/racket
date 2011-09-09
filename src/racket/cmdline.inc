@@ -860,7 +860,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  }
 	  argv++;
 	  --argc;
-	  collects_path = check_make_path(prog, real_switch, argv[0]);
+          if (!*(argv[0])) {
+            /* #f => no collects path */
+            collects_path = scheme_make_false();
+          } else
+            collects_path = check_make_path(prog, real_switch, argv[0]);
           was_config_flag = 1;
 	  break;
 	case 'A':
@@ -1175,16 +1179,19 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
   if (!collects_path) {
-    if (!_coldir[_coldir_offset]) {
-      /* empty list of directories => don't set collection dirs
-         and don't use collection links files */
-      skip_coll_dirs = 1;
-      scheme_set_ignore_link_paths(1);
-      collects_path = scheme_make_path(".");
-    } else
+    if (!_coldir[_coldir_offset])
+      collects_path = scheme_make_false();
+    else
       collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
-  } else
+  } else if (!SAME_OBJ(collects_path, scheme_make_false()))
     collects_path = scheme_path_to_complete_path(collects_path, NULL);
+  if (SAME_OBJ(collects_path, scheme_make_false())) {
+    /* empty list of directories => don't set collection dirs
+       and don't use collection links files */
+    skip_coll_dirs = 1;
+    scheme_set_ignore_link_paths(1);
+    collects_path = scheme_make_path(".");
+  }
   scheme_set_collects_path(collects_path);
 
   /* Make list of additional collection paths: */
@@ -1343,7 +1350,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -z, --text-repl : Use text `read-eval-print-loop' for -i\n"
 # endif
          "  -I <path> : Set <init-lib> to <path>\n"
-	 "  -X <dir>, --collects <dir> : Main collects at <dir>\n"
+	 "  -X <dir>, --collects <dir> : Main collects at <dir> (or \"\" disables all)\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> (after main collects)\n"
 	 "  -A <dir>, --addon <dir> : Addon directory at <dir>\n"
 	 "  -K <file>, --links <file> : User-specific collection links at <file>\n"

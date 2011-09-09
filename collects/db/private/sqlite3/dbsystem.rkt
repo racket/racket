@@ -1,8 +1,6 @@
 #lang racket/base
 (require racket/class
-         "../generic/interfaces.rkt"
-         "../generic/sql-data.rkt"
-         "ffi-constants.rkt")
+         "../generic/interfaces.rkt")
 (provide dbsystem)
 
 (define sqlite3-dbsystem%

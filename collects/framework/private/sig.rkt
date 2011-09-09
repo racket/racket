@@ -256,6 +256,7 @@
   
   (define-signature frame-class^
     (basic<%>
+     focus-table<%>
      size-pref<%>
      register-group<%>
      status-line<%>
@@ -285,6 +286,7 @@
      delegate%
      pasteboard%
      
+     focus-table-mixin
      basic-mixin
      size-pref-mixin
      register-group-mixin

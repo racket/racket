@@ -180,7 +180,7 @@
 		 ;; Lift out certain forms to make them visible to the module
 		 ;;  expander:
 		 (syntax-case e2 (#%require #%provide
-				  define-syntaxes define-values-for-syntax define-values begin
+				  define-syntaxes begin-for-syntax define-values begin
 				  define-signature :)
 		   ((#%require . __)
 		    #`(begin #,e2 (frm e3s #,e1s #,def-ids)))
@@ -188,7 +188,7 @@
 		    #`(begin #,e2 (frm e3s #,e1s #,def-ids)))
 		   ((define-syntaxes (id ...) . _)
 		    #`(begin #,e2 (frm e3s #,e1s (id ... . #,def-ids))))
-		   ((define-values-for-syntax . _)
+		   ((begin-for-syntax . _)
 		    #`(begin #,e2 (frm e3s #,e1s #,def-ids)))
 		   ((begin b1 ...)
 		    (syntax-track-origin 

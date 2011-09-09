@@ -92,6 +92,10 @@ struct SOCKADDR_IN {
 extern int scheme_stupid_windows_machine;
 #endif
 
+intptr_t scheme_socket_errno() {
+  return SOCK_ERRNO();
+}
+
 #include "schfd.h"
 
 #define TCP_BUFFER_SIZE 4096
@@ -1435,7 +1439,7 @@ tcp_out_buffer_mode(Scheme_Port *p, int mode)
 }
 
 static Scheme_Object *
-make_tcp_input_port(void *data, const char *name, Scheme_Object *cust)
+make_tcp_input_port_symbol_name(void *data, Scheme_Object *name, Scheme_Object *cust)
 {
   Scheme_Input_Port *ip;
 
@@ -1444,7 +1448,7 @@ make_tcp_input_port(void *data, const char *name, Scheme_Object *cust)
   
   ip = scheme_make_input_port(scheme_tcp_input_port_type,
 			      data,
-			      scheme_intern_symbol(name),
+                              name,
 			      tcp_get_string,
 			      NULL,
 			      scheme_progress_evt_via_get,
@@ -1460,7 +1464,13 @@ make_tcp_input_port(void *data, const char *name, Scheme_Object *cust)
 }
 
 static Scheme_Object *
-make_tcp_output_port(void *data, const char *name, Scheme_Object *cust)
+make_tcp_input_port(void *data, const char *name, Scheme_Object *cust)
+{
+  return make_tcp_input_port_symbol_name(data, scheme_intern_symbol(name), cust);
+}
+
+static Scheme_Object *
+make_tcp_output_port_symbol_name(void *data, Scheme_Object *name, Scheme_Object *cust)
 {
   Scheme_Output_Port *op;
 
@@ -1469,7 +1479,7 @@ make_tcp_output_port(void *data, const char *name, Scheme_Object *cust)
 
   op = scheme_make_output_port(scheme_tcp_output_port_type,
 						  data,
-						  scheme_intern_symbol(name),
+						  name,
 						  scheme_write_evt_via_write,
 						  tcp_write_string,
 						  (Scheme_Out_Ready_Fun)tcp_check_write,
@@ -1482,6 +1492,12 @@ make_tcp_output_port(void *data, const char *name, Scheme_Object *cust)
   op->p.buffer_mode_fun = tcp_out_buffer_mode;
 
   return (Scheme_Object *)op;
+}
+
+static Scheme_Object *
+make_tcp_output_port(void *data, const char *name, Scheme_Object *cust)
+{
+  return make_tcp_output_port_symbol_name(data, scheme_intern_symbol(name), cust);
 }
 
 #endif /* USE_TCP */
@@ -2383,6 +2399,10 @@ static Scheme_Object *tcp_abandon_port(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
+void scheme_tcp_abandon_port(Scheme_Object *port) {
+  tcp_abandon_port(1, &port);
+}
+
 static Scheme_Object *tcp_port_p(int argc, Scheme_Object *argv[])
 {
 #ifdef USE_TCP
@@ -2509,19 +2529,67 @@ void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
   }
 }
 
+void scheme_socket_to_input_port(intptr_t s, Scheme_Object *name, int takeover,
+                                 Scheme_Object **_inp)
+{
+  Scheme_Tcp *tcp;
+  Scheme_Object *v;
+
+  tcp = make_tcp_port_data(s, takeover ? 1 : 2);
+
+  v = make_tcp_input_port_symbol_name(tcp, name, NULL);
+  *_inp = v;
+  
+  if (takeover) {
+    REGISTER_SOCKET(s);
+  }
+}
+
+void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover,
+                                  Scheme_Object **_outp)
+{
+  Scheme_Tcp *tcp;
+  Scheme_Object *v;
+
+  tcp = make_tcp_port_data(s, takeover ? 1 : 2);
+
+  v = make_tcp_output_port_symbol_name(tcp, name, NULL);
+  *_outp = v;
+  
+  if (takeover) {
+    REGISTER_SOCKET(s);
+  }
+}
+
 intptr_t scheme_dup_socket(intptr_t fd) {
-#ifdef USE_WINSOCK_TCP
+#ifdef USE_SOCKETS_TCP
+# ifdef USE_WINSOCK_TCP
   intptr_t nsocket;
+  intptr_t rc;
   WSAPROTOCOL_INFO protocolInfo;
-  WSADuplicateSocket(fd, GetCurrentProcessId(), &protocolInfo);
+  rc = WSADuplicateSocket(fd, GetCurrentProcessId(), &protocolInfo);
+  if (rc)
+    return rc;
   nsocket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
+  REGISTER_SOCKET(nsocket);
   return nsocket;
-#else
+# else
   intptr_t nfd;
   do {
     nfd = dup(fd);
   } while (nfd == -1 && errno == EINTR);
   return nfd;
+# endif
+#else
+  return -1;
+#endif
+}
+
+void scheme_close_socket_fd(intptr_t fd) 
+{
+#ifdef USE_SOCKETS_TCP
+  UNREGISTER_SOCKET(fd);
+  closesocket(fd);
 #endif
 }
 

@@ -132,6 +132,22 @@
   (_fun _sqlite3_database
         -> _bool))
 
+(define-sqlite sqlite3_next_stmt
+  (_fun _sqlite3_database _sqlite3_statement/null
+        -> _sqlite3_statement/null))
+
+(define-sqlite sqlite3_sql
+  (_fun _sqlite3_statement
+        -> _string))
+
+(define-sqlite sqlite3_changes
+  (_fun _sqlite3_database
+        -> _int))
+
+(define-sqlite sqlite3_last_insert_rowid
+  (_fun _sqlite3_database
+        -> _int))
+
 ;; ----------------------------------------
 
 #|

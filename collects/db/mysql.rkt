@@ -13,7 +13,7 @@
         #:port (or/c exact-positive-integer? #f)
         #:socket (or/c path-string? 'guess #f)
         #:notice-handler (or/c 'output 'error output-port? procedure?))
-       any/c)]
+       connection?)]
  [mysql-guess-socket-path
   (-> path-string?)]
  [mysql-password-hash

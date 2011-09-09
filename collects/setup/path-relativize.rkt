@@ -20,8 +20,7 @@
   ;; tree, so we explode the paths. This is slower than the old way
   ;; (by a factor of 2 or so), but it's simpler and more portable.
   (define (explode-path path)
-    (let loop ([path (simplify-path
-                      (normal-case-path (path->complete-path path)))]
+    (let loop ([path (simplify-path (path->complete-path path))]
                [rest null])
       (let-values ([(base name dir?) (split-path path)])
         (if (path? base)

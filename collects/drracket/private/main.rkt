@@ -116,7 +116,7 @@
                                  ll))))
 
 (drr:set-default 'drracket:module-language-first-line-special? #t boolean?)
-
+(drr:set-default 'drracket:use-old-style-keybindings #f boolean?)
 (drr:set-default 'drracket:defns-popup-sort-by-name? #f boolean?)
 (drr:set-default 'drracket:show-line-numbers? #f boolean?)
 
@@ -329,6 +329,10 @@
 
      (make-check-box 'drracket:module-language-first-line-special?
                      (string-constant ml-always-show-#lang-line)
+                     editor-panel)
+     
+     (make-check-box 'drracket:use-old-style-keybindings
+                     (string-constant old-style-keybindings)
                      editor-panel)))
   
   (preferences:add-to-editor-checkbox-panel

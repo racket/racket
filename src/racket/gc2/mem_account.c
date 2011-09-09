@@ -12,6 +12,8 @@ static const int btc_redirect_custodian = 510;
 static const int btc_redirect_ephemeron = 509;
 static const int btc_redirect_cust_box  = 508;
 
+inline static void account_memory(NewGC *gc, int set, intptr_t amount);
+
 /*****************************************************************************/
 /* thread list                                                               */
 /*****************************************************************************/
@@ -23,7 +25,10 @@ inline static void BTC_register_new_thread(void *t, void *c)
   GC_Thread_Info *work;
 
   work = (GC_Thread_Info *)ofm_malloc(sizeof(GC_Thread_Info));
-  ((Scheme_Thread *)t)->gc_info = work;
+  if (((Scheme_Object *)t)->type == scheme_thread_type)
+    ((Scheme_Thread *)t)->gc_info = work;
+  else
+    ((Scheme_Place *)t)->gc_info = work;
   work->owner = current_owner(gc, (Scheme_Custodian *)c);
   work->thread = t;
 
@@ -35,8 +40,11 @@ inline static void BTC_register_thread(void *t, void *c)
 {
   NewGC *gc = GC_get_GC();
   GC_Thread_Info *work;
-
-  work = ((Scheme_Thread *)t)->gc_info;
+  
+  if (((Scheme_Object *)t)->type == scheme_thread_type)
+    work = ((Scheme_Thread *)t)->gc_info;
+  else
+    work = ((Scheme_Place *)t)->gc_info;
   work->owner = current_owner(gc, (Scheme_Custodian *)c);
 }
 
@@ -45,15 +53,32 @@ inline static void mark_threads(NewGC *gc, int owner)
   GC_Thread_Info *work;
   Mark2_Proc thread_mark = gc->mark_table[btc_redirect_thread];
 
-  for(work = gc->thread_infos; work; work = work->next)
-    if(work->owner == owner) {
-      if (((Scheme_Thread *)work->thread)->running) {
-        thread_mark(work->thread, gc);
-        if (work->thread == scheme_current_thread) {
-          GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
+  for(work = gc->thread_infos; work; work = work->next) {
+    if (work->owner == owner) {
+      if (((Scheme_Object *)work->thread)->type == scheme_thread_type) {
+        /* thread */
+        if (((Scheme_Thread *)work->thread)->running) {
+          thread_mark(work->thread, gc);
+          if (work->thread == scheme_current_thread) {
+            GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
+          }
         }
+      } else {
+        /* place */
+#ifdef MZ_USE_PLACES
+        /* add in the memory used by the place's GC */
+        intptr_t sz;
+        Scheme_Place_Object *place_obj = ((Scheme_Place *)work->thread)->place_obj;
+        if (place_obj) {
+          mzrt_mutex_lock(place_obj->lock);
+          sz = place_obj->memory_use;
+          mzrt_mutex_unlock(place_obj->lock);
+          account_memory(gc, owner, gcBYTES_TO_WORDS(sz));
+        }
+#endif
       }
     }
+  }
 }
 
 inline static void clean_up_thread_list(NewGC *gc)
@@ -355,10 +380,10 @@ inline static void BTC_initialize_mark_table(NewGC *gc) {
 }
 
 inline static int BTC_get_redirect_tag(NewGC *gc, int tag) {
-  if (tag == scheme_thread_type )         { tag = btc_redirect_thread; }
-  else if (tag == scheme_custodian_type ) { tag = btc_redirect_custodian; }
-  else if (tag == gc->ephemeron_tag )     { tag = btc_redirect_ephemeron; }
-  else if (tag == gc->cust_box_tag )      { tag = btc_redirect_cust_box; }
+  if (tag == scheme_thread_type)         { tag = btc_redirect_thread; }
+  else if (tag == scheme_custodian_type) { tag = btc_redirect_custodian; }
+  else if (tag == gc->ephemeron_tag)     { tag = btc_redirect_ephemeron; }
+  else if (tag == gc->cust_box_tag)      { tag = btc_redirect_cust_box; }
   return tag;
 }
 
@@ -535,7 +560,7 @@ inline static void BTC_run_account_hooks(NewGC *gc)
   AccountHook *work = gc->hooks; 
   AccountHook *prev = NULL;
 
-  while(work) {
+  while (work) {
     if( ((work->type == MZACCT_REQUIRE) && 
           ((gc->used_pages > (gc->max_pages_for_use / 2))
            || ((((gc->max_pages_for_use / 2) - gc->used_pages) * APAGE_SIZE)
@@ -563,7 +588,7 @@ static uintptr_t custodian_single_time_limit(NewGC *gc, int set)
   const int table_size = gc->owner_table_size;
 
   if (!set)
-    return (uintptr_t)(intptr_t)-1;
+    return gc->place_memory_limit;
 
   if (gc->reset_limits) {
     int i;
@@ -575,7 +600,7 @@ static uintptr_t custodian_single_time_limit(NewGC *gc, int set)
 
   if (!owner_table[set]->limit_set) {
     /* Check for limits on this custodian or one of its ancestors: */
-    uintptr_t limit = (uintptr_t)-1;
+    uintptr_t limit = gc->place_memory_limit;
     Scheme_Custodian *orig = (Scheme_Custodian *) owner_table[set]->originator, *c;
     AccountHook *work = gc->hooks;
 
@@ -614,20 +639,38 @@ intptr_t BTC_get_memory_use(NewGC* gc, void *o)
   return 0;
 }
 
-int BTC_single_allocation_limit(NewGC *gc, size_t sizeb) {
-  /* We're allowed to fail. Check for allocations that exceed a single-time
-   * limit. Otherwise, the limit doesn't work as intended, because
-   * a program can allocate a large block that nearly exhausts memory,
-   * and then a subsequent allocation can fail. As long as the limit
-   * is much smaller than the actual available memory, and as long as
-   * GC_out_of_memory protects any user-requested allocation whose size
-   * is independent of any existing object, then we can enforce the limit. */
+int BTC_single_allocation_limit(NewGC *gc, size_t sizeb) 
+/* Use this function to check for allocations that exceed a single-time
+ * limit. Otherwise, the limit doesn't work as intended, because
+ * a program can allocate a large block that nearly exhausts memory,
+ * and then a subsequent allocation can fail. As long as the limit
+ * is much smaller than the actual available memory, and as long as
+ * GC_out_of_memory protects any user-requested allocation whose size
+ * is independent of any existing object, then we can enforce the limit. */
+{
   Scheme_Thread *p = scheme_current_thread;
   if (p)
     return (custodian_single_time_limit(gc, thread_get_owner(p)) < sizeb);
   else
-    return 0;
+    return (gc->place_memory_limit < sizeb);
 }
+
+static uintptr_t BTC_get_account_hook(void *c1)
+{
+  NewGC *gc = GC_get_GC();
+  uintptr_t mem;
+
+  if (!gc->really_doing_accounting)
+    return 0;
+
+  mem = custodian_single_time_limit(gc, custodian_to_owner_set(gc, c1));
+  
+  if (mem == (uintptr_t)(intptr_t)-1)
+    return 0;
+
+  return mem;
+}
+
 
 static inline void BTC_clean_up(NewGC *gc) {
   clean_up_thread_list(gc);

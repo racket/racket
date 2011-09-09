@@ -140,6 +140,10 @@ query is invalid.}
 
 @section{CGI Unit}
 
+@margin-note{@racket[cgi@] and @racket[cgi^] are deprecated.
+They exist for backward-compatibility and will likely be removed in
+the future. New code should use the @racketmodname[net/cgi] module.}
+
 @defmodule[net/cgi-unit]
 
 @defthing[cgi@ unit?]{

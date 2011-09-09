@@ -28,5 +28,5 @@
 (provide/contract
  [response/xexpr 
   ((pretty-xexpr/c)
-   (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:cookies (listof cookie?) #:headers (listof header?) #:preamble bytes?)
+   (#:code number? #:message bytes? #:seconds number? #:mime-type (or/c false/c bytes?) #:cookies (listof cookie?) #:headers (listof header?) #:preamble bytes?)
    . ->* . response?)])

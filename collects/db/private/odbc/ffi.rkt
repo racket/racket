@@ -1,6 +1,5 @@
 #lang racket/base
-(require (rename-in racket/contract [-> c->])
-         ffi/unsafe
+(require ffi/unsafe
          ffi/unsafe/define
          "ffi-constants.rkt")
 (provide (all-from-out "ffi-constants.rkt"))
@@ -20,11 +19,6 @@
 (define _sqlinteger _sint)
 (define _sqluinteger _uint)
 (define _sqlreturn _sqlsmallint)
-
-;; Windows ODBC defines wchar_t, thus WCHAR, as 16-bit
-;; unixodbc defines WCHAR as 16-bit for compat w/ Windows
-;; (even though Linux wchar_t is 32-bit)
-(define WCHAR-SIZE 2)
 
 (define-ffi-definer define-mz #f)
 
@@ -119,9 +113,27 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
 (define odbc-lib
   (case (system-type)
     ((windows) (ffi-lib "odbc32.dll"))
-    (else (ffi-lib "libodbc" '("1" #f)))))
+    ((macosx)  (ffi-lib "libiodbc" '("2" #f)))
+    ((unix)    (ffi-lib "libodbc" '("1" #f)))))
+
+(define WCHAR-SIZE
+  (case (system-type)
+    ((windows)
+     ;; Windows ODBC defines wchar_t, thus WCHAR, thus SQLWCHAR, as 16-bit
+     2)
+    ((macosx)
+     ;; MacOSX uses iodbc, which defines SQLWCHAR as wchar_t, as 32-bit
+     4)
+    ((unix)
+     ;; unixodbc defines WCHAR as 16-bit for compat w/ Windows
+     ;; (even though Linux wchar_t is 32-bit)
+     2)))
 
 (define-ffi-definer define-odbc odbc-lib)
+
+(define (ok-status? n)
+  (or (= n SQL_SUCCESS)
+      (= n SQL_SUCCESS_WITH_INFO)))
 
 (define-odbc SQLAllocHandle
   (_fun (type : _sqlsmallint)
@@ -168,7 +180,8 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
                      (len : (_ptr o _sqlsmallint))
                      -> (status : _sqlreturn)
                      -> (values status
-                                (bytes->string/utf-8 value #f 0 len)))))
+                                (and (ok-status? status)
+                                     (bytes->string/utf-8 value #f 0 len))))))
 
 (define-odbc SQLGetFunctions
   (_fun (handle : _sqlhdbc)
@@ -211,7 +224,7 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (out-len : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
         -> (values status
-                   (and (or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+                   (and (ok-status? status)
                         (bytes->string/utf-8 out-buf #f 0 out-len)))))
 
 (define-odbc SQLDataSources
@@ -226,9 +239,9 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (descr-length : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
         -> (values status
-                   (and (or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+                   (and (ok-status? status)
                         (bytes->string/utf-8 server-buf #f 0 server-length))
-                   (and (or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+                   (and (ok-status? status)
                         (bytes->string/utf-8 descr-buf #f 0 descr-length)))))
 
 (define-odbc SQLDrivers
@@ -242,7 +255,7 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         ((if attrs-buf (bytes-length attrs-buf) 0) : _sqlsmallint)
         (attrs-length : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
-        -> (if (or (= status SQL_SUCCESS) (= status SQL_SUCCESS_WITH_INFO))
+        -> (if (ok-status? status)
                (values status
                        (bytes->string/utf-8 driver-buf #f 0 driver-length)
                        attrs-length)
@@ -308,7 +321,8 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (nullable : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
         -> (values status
-                   (bytes->string/utf-8 column-buf #f 0 column-len)
+                   (and (ok-status? status)
+                        (bytes->string/utf-8 column-buf #f 0 column-len))
                    data-type size digits nullable)))
 
 (define-odbc SQLFetch
@@ -356,9 +370,11 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
         (message-len : (_ptr o _sqlsmallint))
         -> (status : _sqlreturn)
         -> (values status
-                   (bytes->string/utf-8 sql-state-buf #\? 0 5)
+                   (and (ok-status? status)
+                        (bytes->string/utf-8 sql-state-buf #\? 0 5))
                    native-errcode
-                   (bytes->string/utf-8 message-buf #\? 0 message-len))))
+                   (and (ok-status? status)
+                        (bytes->string/utf-8 message-buf #\? 0 message-len)))))
 
 (define-odbc SQLEndTran
   (_fun (handle completion-type) ::

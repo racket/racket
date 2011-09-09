@@ -1,7 +1,7 @@
 #lang racket/base
 (provide (rename-out (module-begin #%module-begin)))
 (require (prefix-in ts: typed/racket/base)
-         (for-syntax racket/base (prefix-in r: typed-scheme/typed-reader))
+         (for-syntax racket/base (prefix-in r: typed-racket/typed-reader))
          racket/include typed/racket/base racket/file)
 
 (define-syntax (module-begin stx)

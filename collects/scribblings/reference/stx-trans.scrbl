@@ -473,8 +473,9 @@ to a top-level definition. A compile-time expression in a
 @racket[letrec-syntaxes+values] or @racket[define-syntaxes] binding is
 lifted to a @racket[let] wrapper around the corresponding right-hand
 side of the binding. A compile-time expression within
-@racket[begin-for-syntax] is lifted to a @racket[define-for-syntax]
-declaration just before the requesting expression.
+@racket[begin-for-syntax] is lifted to a @racket[define]
+declaration just before the requesting expression within the 
+@racket[begin-for-syntax].
 
 Other syntactic forms can capture lifts by using
 @racket[local-expand/capture-lifts] or
@@ -524,9 +525,8 @@ then the @exnraise[exn:fail:contract].}
 
 Lifts a @racket[#%require] form corresponding to
 @racket[raw-require-spec] (either as a @tech{syntax object} or datum)
-to the top-level or to the top of the module currently being expanded,
-wrapping it with @racket[for-meta] if the current expansion context is
-not @tech{phase level} 0.
+to the top-level or to the top of the module currently being expanded
+ or to an enclosing @racket[begin-for-syntax]..
 
 The resulting syntax object is the same as @racket[stx], except that a
 fresh @tech{syntax mark} is added. The same @tech{syntax mark} is
@@ -551,7 +551,7 @@ by the macro expander can prevent access to the new imports.
 
 Lifts a @racket[#%provide] form corresponding to
 @racket[raw-provide-spec-stx] to the top of the module currently being
-expanded.
+expanded or to an enclosing @racket[begin-for-syntax].
 
 @transform-time[] If the current expression being transformed is not
 within a @racket[module] form, or if it is not a run-time expression,
@@ -639,22 +639,6 @@ resulting identifier is @tech{tainted}.
 
 @transform-time[]}
 
-
-@defproc[(syntax-local-armer)
-         ((syntax?) (any/c any/c) . ->* . syntax?)]{
-
-Returns a procedure that captures the declaration-time code inspector
-of the module in which a syntax transformer was bound (if a syntax
-transformer is being applied) or the module being visited. The result
-is a procedure like @racket[syntax-taint-arm], except that the
-optional third argument is automatically the captured inspector.
-
-The @racket[syntax-local-armer] function is needed by
-macro-generating macros, where a syntax object in the generated macro
-needs to be protected using the code inspector of the generating
-macro's module.
-
-@transform-time[]}
 
 @defproc[(syntax-local-certifier [active? boolean? #f])
          ((syntax?) (any/c (or/c procedure? #f)) 
@@ -748,20 +732,20 @@ Returns @racket[#t] while a @tech{provide transformer} is running (see
 @racket[#%provide] is expanded, @racket[#f] otherwise.}
 
 
-@defproc[(syntax-local-module-defined-identifiers) 
-         (values (listof identifier?) (listof identifier?))]{
+@defproc[(syntax-local-module-defined-identifiers) (and/c hash? immutable?)]{
 
 Can be called only while
 @racket[syntax-local-transforming-module-provides?] returns
 @racket[#t].
 
-It returns two lists of identifiers corresponding to all definitions
+It returns a hash table mapping a @tech{phase-level} number (such as
+@racket[0]) to a list of all definitions at that @tech{phase level}
 within the module being expanded. This information is used for
 implementing @racket[provide] sub-forms like @racket[all-defined-out].
 
-The first result list corresponds to @tech{phase} 0 (i.e., normal)
-definitions, and the second corresponds to @tech{phase} -1 (i.e.,
-for-syntax) definitions.}
+Beware that the @tech{phase-level} keys are absolute relative to the
+enclosing module, and not relative to the current transformer phase
+level as reported by @racket[syntax-local-phase-level].}
 
 
 @defproc[(syntax-local-module-required-identifiers
@@ -785,7 +769,11 @@ with a @racket[phase-level] shift, of all shifts if
 When an identifier is renamed on import, the result association list
 includes the identifier by its internal name. Use
 @racket[identifier-binding] to obtain more information about the
-identifier.}
+identifier.
+
+Beware that the @tech{phase-level} keys are absolute relative to the
+enclosing module, and not relative to the current transformer phase
+level as reported by @racket[syntax-local-phase-level].}
 
 @deftogether[(
 @defthing[prop:liberal-define-context struct-type-property?]

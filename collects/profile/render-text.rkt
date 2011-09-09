@@ -1,8 +1,8 @@
-#lang at-exp scheme/base
+#lang at-exp racket/base
 
 (provide render)
 
-(require "structs.rkt" "analyzer.rkt" "utils.rkt" scheme/list)
+(require "analyzer.rkt" "utils.rkt" racket/list)
 
 (define (f:msec msec)
   (number->string (round (inexact->exact msec))))

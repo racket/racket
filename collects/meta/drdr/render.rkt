@@ -282,6 +282,39 @@
       [(struct stderr (bs))
        `(pre ([class "stderr"]) ,(bytes->string/utf-8 bs))])))
 
+(define (json-out out x)
+  (cond
+   [(list? x)
+    (fprintf out "[")
+    (let loop ([l x])
+      (match l
+        [(list)
+         (void)]
+        [(list e)
+         (json-out out e)]
+        [(list-rest e es)
+         (json-out out e)
+         (fprintf out ",")
+         (loop es)]))
+    (fprintf out "]")]
+   [else
+    (display x out)]))
+          
+(define (json-timing req path-to-file)
+  (define timing-pth (path-timing-log (apply build-path path-to-file)))
+  (define ts (file->list timing-pth))
+  (response
+   200 #"Okay"
+   (file-or-directory-modify-seconds timing-pth)
+   #"application/json"
+   (list (make-header #"Access-Control-Allow-Origin"
+                      #"*"))
+   (lambda (out)
+     (fprintf out "[")
+     (for ([l (in-list (add-between ts ","))])
+          (json-out out l))         
+     (fprintf out "]"))))
+
 (define (render-log log-pth)
   (match (log-rendering log-pth)
     [#f
@@ -307,6 +340,9 @@
         (define output (map render-event output-log))
         (response/xexpr
          `(html (head (title ,title)
+                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery-1.6.2.min.js"]) "")
+                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery.flot.js"]) "")
+                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery.flot.selection.js"]) "")
                       (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
                 (body 
                  (div ([class "log, content"])
@@ -337,23 +373,17 @@
                             '()
                             `((div ([class "output"]) " "
                                    ,@output)))
-                      ,(with-handlers ([exn:fail?
-                                        ; XXX Remove this eventually
-                                        (lambda (x)
-                                          ; XXX use dirstruct functions
-                                          (define png-path
-                                            (format "/data~a" (path-add-suffix (path-add-suffix the-base-path #".timing") #".png")))
-                                          `(div ([class "timing"])
-                                                (a ([href ,png-path])
-                                                   (img ([src ,png-path])))))])
-                         (make-cdata
-                          #f #f
-                          (local [(define content 
-                                    (file->string
-                                     (path-timing-html (substring (path->string* the-base-path) 1))))]
-                            #;(regexp-replace* #rx"&(?![a-z]+;)" content "\\&amp;\\1")
-                            (regexp-replace* #rx"&gt;" content ">"))
-                          ))
+
+                      (p)
+                      
+                      (div ([id "_chart"] [style "width:800px;height:300px;"]) "")
+                      (script ([language "javascript"] [type "text/javascript"] [src "/chart.js"]) "")
+                      (script ([language "javascript"] [type "text/javascript"])
+                              ,(format "get_data('~a');" the-base-path))
+                      (button ([onclick "reset_chart()"]) "Reset")
+                      (button ([id "setlegend"] [onclick "set_legend(!cur_options.legend.show)"])
+                              "Hide Legend")
+                      
                       ,(footer)))))])]))
 
 (define (number->string/zero v)
@@ -940,6 +970,7 @@
    [("help") show-help]
    [("") show-revisions]
    [("diff" (integer-arg) (integer-arg) (string-arg) ...) show-diff]
+   [("json" "timing" (string-arg) ...) json-timing]
    [("current" "") show-revision/current]
    [("current" (string-arg) ...) show-file/current]
    [((integer-arg) "") show-revision]

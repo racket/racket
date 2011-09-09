@@ -280,7 +280,8 @@
               (unless (eq? client-gtk container-gtk)
                 (gtk_fixed_set_has_window client-gtk #t)) ; imposes clipping
               (when has-border?
-                (gtk_container_set_border_width h margin))
+                (gtk_container_set_border_width h margin)
+                (connect-expose-border h))
               (gtk_box_pack_start h v #t #t 0)
               (gtk_box_pack_start v client-gtk #t #t 0)
               (gtk_box_pack_start h v2 #f #f 0)

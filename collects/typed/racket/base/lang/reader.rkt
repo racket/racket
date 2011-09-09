@@ -12,7 +12,7 @@ typed/racket/base
     [else (use-default key default)]))
 
 (define make-language-info
-  `#(typed-scheme/language-info get-info ()))
+  `#(typed-racket/language-info get-info ()))
 
 
-(require (prefix-in r: typed-scheme/typed-reader))
+(require (prefix-in r: typed-racket/typed-reader))

@@ -21,7 +21,7 @@
      [racket/match                           no-bypass]
      ['#%builtin                             no-drop]
 
-     [typed-scheme/private/base-env          no-drop]
-     [typed-scheme/private/base-special-env  no-drop]
-     [typed-scheme/private/base-env-numeric  no-drop]
-     [typed-scheme/private/base-env-indexing no-drop])))
+     [typed-racket/private/base-env          no-drop]
+     [typed-racket/private/base-special-env  no-drop]
+     [typed-racket/private/base-env-numeric  no-drop]
+     [typed-racket/private/base-env-indexing no-drop])))

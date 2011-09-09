@@ -42,6 +42,7 @@
 
               widget-window
               widget-allocation
+              widget-parent
 
               the-accelerator-group
               gtk_window_add_accel_group
@@ -104,6 +105,9 @@
 
 (define (widget-window gtk)
   (GtkWidgetT-window (cast gtk _GtkWidget _GtkWidgetT-pointer)))
+
+(define (widget-parent gtk)
+  (GtkWidgetT-parent (cast gtk _GtkWidget _GtkWidgetT-pointer)))
 
 (define (widget-allocation gtk)
   (GtkWidgetT-alloc (cast gtk _GtkWidget _GtkWidgetT-pointer)))
@@ -506,13 +510,13 @@
           (set! client-delta-h (- (GtkRequisition-height req)
                                   (GtkRequisition-height creq))))))
 
-    (define/public (set-auto-size)
+    (define/public (set-auto-size [dw 0] [dh 0])
       (let ([req (make-GtkRequisition 0 0)])
         (gtk_widget_size_request gtk req)
         (set-size -11111
                   -11111
-                  (GtkRequisition-width req)
-                  (GtkRequisition-height req))))
+                  (+ (GtkRequisition-width req) dw)
+                  (+ (GtkRequisition-height req) dh))))
 
     (define shown? #f)
     (define/public (direct-show on?)

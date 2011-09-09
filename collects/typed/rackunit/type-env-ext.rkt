@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require typed-scheme/utils/utils
+(require typed-racket/utils/utils
          (prefix-in ru: (combine-in rackunit rackunit/private/test-case rackunit/private/check))
          (for-syntax
           scheme/base syntax/parse

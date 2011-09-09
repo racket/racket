@@ -68,7 +68,7 @@
          (eval/compile stx)]
         [(define-syntaxes . _)
          (eval/compile stx)]
-        [(define-values-for-syntax . _)
+        [(begin-for-syntax . _)
          (eval/compile stx)]
         [(define-values (id ...) . _)
 	 (begin0

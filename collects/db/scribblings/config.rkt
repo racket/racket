@@ -1,12 +1,14 @@
 #lang racket/base
 (require scribble/manual
          scribble/eval
-         racket/sandbox
          (for-label racket/base
                     racket/contract))
 (provide (all-defined-out)
          (for-label (all-from-out racket/base)
                     (all-from-out racket/contract)))
+
+(define (tech/reference . pre-flows)
+  (apply tech #:doc '(lib "scribblings/reference/reference.scrbl") pre-flows))
 
 ;; ----
 
@@ -14,8 +16,11 @@
 (void
  (interaction-eval #:eval the-eval
                    (require racket/class
-                            db
+                            racket/pretty
+                            db/base
                             db/util/datetime))
+ (interaction-eval #:eval the-eval
+                   (current-print pretty-print-handler))
  (interaction-eval #:eval the-eval
                    (define connection% (class object% (super-new))))
  (interaction-eval #:eval the-eval

@@ -45,8 +45,8 @@ static Scheme_Object *read_define_values(Scheme_Object *obj);
 static Scheme_Object *write_define_values(Scheme_Object *obj);
 static Scheme_Object *read_define_syntaxes(Scheme_Object *obj);
 static Scheme_Object *write_define_syntaxes(Scheme_Object *obj);
-static Scheme_Object *read_define_for_syntax(Scheme_Object *obj);
-static Scheme_Object *write_define_for_syntax(Scheme_Object *obj);
+static Scheme_Object *read_begin_for_syntax(Scheme_Object *obj);
+static Scheme_Object *write_begin_for_syntax(Scheme_Object *obj);
 static Scheme_Object *read_set_bang(Scheme_Object *obj);
 static Scheme_Object *write_set_bang(Scheme_Object *obj);
 static Scheme_Object *read_boxenv(Scheme_Object *obj);
@@ -125,8 +125,8 @@ void scheme_init_marshal(Scheme_Env *env)
   scheme_install_type_reader(scheme_define_values_type, read_define_values);
   scheme_install_type_writer(scheme_define_syntaxes_type, write_define_syntaxes);
   scheme_install_type_reader(scheme_define_syntaxes_type, read_define_syntaxes);
-  scheme_install_type_writer(scheme_define_for_syntax_type, write_define_for_syntax);
-  scheme_install_type_reader(scheme_define_for_syntax_type, read_define_for_syntax);
+  scheme_install_type_writer(scheme_begin_for_syntax_type, write_begin_for_syntax);
+  scheme_install_type_reader(scheme_begin_for_syntax_type, read_begin_for_syntax);
   scheme_install_type_writer(scheme_set_bang_type, write_set_bang);
   scheme_install_type_reader(scheme_set_bang_type, read_set_bang);
   scheme_install_type_writer(scheme_boxenv_type, write_boxenv);
@@ -407,16 +407,16 @@ static Scheme_Object *write_define_syntaxes(Scheme_Object *obj)
   return write_define_values(obj);
 }
 
-static Scheme_Object *read_define_for_syntax(Scheme_Object *obj)
+static Scheme_Object *read_begin_for_syntax(Scheme_Object *obj)
 {
   if (!SCHEME_VECTORP(obj)) return NULL;
 
   obj = scheme_clone_vector(obj, 0, 0);
-  obj->type = scheme_define_for_syntax_type;
+  obj->type = scheme_begin_for_syntax_type;
   return obj;
 }
 
-static Scheme_Object *write_define_for_syntax(Scheme_Object *obj)
+static Scheme_Object *write_begin_for_syntax(Scheme_Object *obj)
 {
   return write_define_values(obj);
 }
@@ -1125,8 +1125,8 @@ static Scheme_Object *write_module(Scheme_Object *obj)
 {
   Scheme_Module *m = (Scheme_Module *)obj;
   Scheme_Module_Phase_Exports *pt;
-  Scheme_Object *l, *v;
-  int i, k, count, cnt;
+  Scheme_Object *l, *v, *phase;
+  int i, j, k, count, cnt;
 
   l = scheme_null;
   cnt = 0;
@@ -1147,22 +1147,27 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   l = cons(m->et_requires, l);
   l = cons(m->requires, l);
 
-  l = cons(m->body, l);
-  l = cons(m->et_body, l);
+  for (j = 0; j < m->num_phases; j++) {
+    l = cons(m->bodies[j], l);
+  }
 
   cnt = 0;
   for (k = -3; k < (m->me->other_phases ? m->me->other_phases->size : 0); k++) {
     switch (k) {
     case -3:
+      phase = scheme_make_integer(-1);
       pt = m->me->dt;
       break;
     case -2:
+      phase = scheme_make_integer(1);
       pt = m->me->et;
       break;
     case -1:
+      phase = scheme_make_integer(0);
       pt = m->me->rt;
       break;
     default:
+      phase = m->me->other_phases->keys[k];
       pt = (Scheme_Module_Phase_Exports *)m->me->other_phases->vals[k];
     }
     
@@ -1203,76 +1208,58 @@ static Scheme_Object *write_module(Scheme_Object *obj)
       if (pt->provide_src_phases) {
         v = scheme_make_vector(count, NULL);
         for (i = 0; i < count; i++) {
-          SCHEME_VEC_ELS(v)[i] = (pt->provide_src_phases[i] ? scheme_true : scheme_false);
+          SCHEME_VEC_ELS(v)[i] = scheme_make_integer(pt->provide_src_phases[i]);
         } 
       } else
         v = scheme_false;
       l = cons(v, l);
 
+      if ((SCHEME_INT_VAL(phase) >= 0) && (SCHEME_INT_VAL(phase) < m->num_phases)) {
+        Scheme_Module_Export_Info *exp_info = m->exp_infos[SCHEME_INT_VAL(phase)];
+
+        if (exp_info) {
+          v = scheme_false;
+
+          if (exp_info->provide_protects) {
+            for (i = 0; i < count; i++) {
+              if (exp_info->provide_protects[i])
+                break;
+            }
+            if (i < count) {
+              v = scheme_make_vector(count, NULL);
+              for (i = 0; i < count; i++) {
+                SCHEME_VEC_ELS(v)[i] = (exp_info->provide_protects[i] ? scheme_true : scheme_false);
+              }
+            }
+          }
+          l = cons(v, l);
+
+          count = exp_info->num_indirect_provides;
+          l = cons(scheme_make_integer(count), l);
+          v = scheme_make_vector(count, NULL);
+          for (i = 0; i < count; i++) {
+            SCHEME_VEC_ELS(v)[i] = exp_info->indirect_provides[i];
+          }
+          l = cons(v, l);
+          
+          count = exp_info->num_indirect_syntax_provides;
+          l = cons(scheme_make_integer(count), l);
+          v = scheme_make_vector(count, NULL);
+          for (i = 0; i < count; i++) {
+            SCHEME_VEC_ELS(v)[i] = exp_info->indirect_syntax_provides[i];
+          }
+          l = cons(v, l);
+        } else
+          l = cons(scheme_void, l);
+      } else
+        l = cons(scheme_void, l);
+      
       l = cons(pt->phase_index, l);
       cnt++;
     }
   }
-
   l = cons(scheme_make_integer(cnt), l);
-
-  count = m->me->rt->num_provides;
-  if (m->provide_protects) {
-    for (i = 0; i < count; i++) {
-      if (m->provide_protects[i])
-	break;
-    }
-    if (i < count) {
-      v = scheme_make_vector(count, NULL);
-      for (i = 0; i < count; i++) {
-	SCHEME_VEC_ELS(v)[i] = (m->provide_protects[i] ? scheme_true : scheme_false);
-      }
-    } else
-      v = scheme_false;
-    l = cons(v, l);
-  } else
-    l = cons(scheme_false, l);
-  
-  count = m->me->et->num_provides;
-  if (m->et_provide_protects) {
-    for (i = 0; i < count; i++) {
-      if (m->et_provide_protects[i])
-	break;
-    }
-    if (i < count) {
-      v = scheme_make_vector(count, NULL);
-      for (i = 0; i < count; i++) {
-	SCHEME_VEC_ELS(v)[i] = (m->et_provide_protects[i] ? scheme_true : scheme_false);
-      }
-    } else
-      v = scheme_false;
-    l = cons(v, l);
-  } else
-    l = cons(scheme_false, l);
-  
-  count = m->num_indirect_provides;
-  l = cons(scheme_make_integer(count), l);
-  v = scheme_make_vector(count, NULL);
-  for (i = 0; i < count; i++) {
-    SCHEME_VEC_ELS(v)[i] = m->indirect_provides[i];
-  }
-  l = cons(v, l);
-
-  count = m->num_indirect_syntax_provides;
-  l = cons(scheme_make_integer(count), l);
-  v = scheme_make_vector(count, NULL);
-  for (i = 0; i < count; i++) {
-    SCHEME_VEC_ELS(v)[i] = m->indirect_syntax_provides[i];
-  }
-  l = cons(v, l);
-
-  count = m->num_indirect_et_provides;
-  l = cons(scheme_make_integer(count), l);
-  v = scheme_make_vector(count, NULL);
-  for (i = 0; i < count; i++) {
-    SCHEME_VEC_ELS(v)[i] = m->et_indirect_provides[i];
-  }
-  l = cons(v, l);
+  l = cons(scheme_make_integer(m->num_phases), l);
 
   l = cons((Scheme_Object *)m->prefix, l);
   l = cons(m->dummy, l);
@@ -1318,12 +1305,14 @@ static int check_requires_ok(Scheme_Object *l)
 static Scheme_Object *read_module(Scheme_Object *obj)
 {
   Scheme_Module *m;
-  Scheme_Object *ie, *nie;
-  Scheme_Object *eesp, *esp, *esn, *esph, *es, *esnom, *e, *nve, *ne, **v;
+  Scheme_Object *ie, *nie, **bodies;
+  Scheme_Object *esp, *esn, *esph, *es, *esnom, *e, *nve, *ne, **v;
   Scheme_Module_Exports *me;
   Scheme_Module_Phase_Exports *pt;
-  char *ps, *sps;
-  int i, count, cnt;
+  Scheme_Module_Export_Info **exp_infos, *exp_info;
+  char *ps;
+  int *sps;
+  int i, j, count, cnt;
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
@@ -1387,67 +1376,21 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
-  ie = SCHEME_CAR(obj);
+  cnt = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  nie = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
-  
-  count = SCHEME_INT_VAL(nie);
+  if (cnt < 1) return_NULL();
 
-  if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return_NULL();
-  v = MALLOC_N(Scheme_Object *, count);
-  for (i = 0; i < count; i++) {
-    v[i] = SCHEME_VEC_ELS(ie)[i];
+  m->num_phases = cnt;
+  exp_infos = MALLOC_N(Scheme_Module_Export_Info *, cnt);
+  while (cnt--) {
+    exp_info = MALLOC_ONE_RT(Scheme_Module_Export_Info);
+    SET_REQUIRED_TAG(exp_info->type = scheme_rt_export_info);
+    exp_infos[cnt] = exp_info;
   }
-  m->et_indirect_provides = v;
-  m->num_indirect_et_provides = count;
-
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  ie = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
-
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  nie = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
+  m->exp_infos = exp_infos;
+  cnt = m->num_phases;
   
-  count = SCHEME_INT_VAL(nie);
-
-  if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return_NULL();
-  v = MALLOC_N(Scheme_Object *, count);
-  for (i = 0; i < count; i++) {
-    v[i] = SCHEME_VEC_ELS(ie)[i];
-  }
-  m->indirect_syntax_provides = v;
-  m->num_indirect_syntax_provides = count;
-
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  ie = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
-
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  nie = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
-  
-  count = SCHEME_INT_VAL(nie);
-
-  if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return_NULL();
-  v = MALLOC_N(Scheme_Object *, count);
-  for (i = 0; i < count; i++) {
-    v[i] = SCHEME_VEC_ELS(ie)[i];
-  }
-  m->indirect_provides = v;
-  m->num_indirect_provides = count;
-
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  eesp = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
-
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  esp = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
-
   if (!SCHEME_PAIRP(obj)) return_NULL();
   cnt = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
@@ -1483,6 +1426,67 @@ static Scheme_Object *read_module(Scheme_Object *obj)
     }
 
     if (!SCHEME_PAIRP(obj)) return_NULL();
+    ie = SCHEME_CAR(obj);
+    obj = SCHEME_CDR(obj);
+    if (SCHEME_VOIDP(ie)) {
+      /* no exp_infos entry */
+      count = -1;
+    } else {
+      if (!SCHEME_INTP(phase) || (SCHEME_INT_VAL(phase) < 0)
+          || (SCHEME_INT_VAL(phase) >= m->num_phases))
+        return_NULL();
+      exp_info = m->exp_infos[SCHEME_INT_VAL(phase)];
+      
+      if (!SCHEME_PAIRP(obj)) return_NULL();
+      nie = SCHEME_CAR(obj);
+      obj = SCHEME_CDR(obj);
+  
+      count = SCHEME_INT_VAL(nie);
+      if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return_NULL();
+      v = MALLOC_N(Scheme_Object *, count);
+      for (i = 0; i < count; i++) {
+        v[i] = SCHEME_VEC_ELS(ie)[i];
+      }
+      exp_info->indirect_syntax_provides = v;
+      exp_info->num_indirect_syntax_provides = count;
+
+      if (!SCHEME_PAIRP(obj)) return_NULL();
+      ie = SCHEME_CAR(obj);
+      obj = SCHEME_CDR(obj);
+
+      if (!SCHEME_PAIRP(obj)) return_NULL();
+      nie = SCHEME_CAR(obj);
+      obj = SCHEME_CDR(obj);
+  
+      count = SCHEME_INT_VAL(nie);
+
+      if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return_NULL();
+      v = MALLOC_N(Scheme_Object *, count);
+      for (i = 0; i < count; i++) {
+        v[i] = SCHEME_VEC_ELS(ie)[i];
+      }
+      exp_info->indirect_provides = v;
+      exp_info->num_indirect_provides = count;
+
+      if (!SCHEME_PAIRP(obj)) return_NULL();
+      esp = SCHEME_CAR(obj);
+      obj = SCHEME_CDR(obj);
+
+      if (SCHEME_FALSEP(esp)) {
+        exp_info->provide_protects = NULL;
+        count = -1;
+      } else {
+        if (!SCHEME_VECTORP(esp)) return_NULL();
+        count = SCHEME_VEC_SIZE(esp);
+        ps = MALLOC_N_ATOMIC(char, count);
+        for (i = 0; i < count; i++) {
+          ps[i] = SCHEME_TRUEP(SCHEME_VEC_ELS(esp)[i]);
+        }
+        exp_info->provide_protects = ps;
+      }
+    }
+
+    if (!SCHEME_PAIRP(obj)) return_NULL();
     esph = SCHEME_CAR(obj);
     obj = SCHEME_CDR(obj);
 
@@ -1510,6 +1514,8 @@ static Scheme_Object *read_module(Scheme_Object *obj)
     ne = SCHEME_CAR(obj);
     obj = SCHEME_CDR(obj);
 
+    if ((count != -1) && (SCHEME_INT_VAL(ne) != count)) return_NULL();
+    
     count = SCHEME_INT_VAL(ne);
     pt->num_provides = count;
     pt->num_var_provides = SCHEME_INT_VAL(nve);
@@ -1550,9 +1556,9 @@ static Scheme_Object *read_module(Scheme_Object *obj)
       sps = NULL;
     else {
       if (!SCHEME_VECTORP(esph) || (SCHEME_VEC_SIZE(esph) != count)) return_NULL();
-      sps = MALLOC_N_ATOMIC(char, count);
+      sps = MALLOC_N_ATOMIC(int, count);
       for (i = 0; i < count; i++) {
-        sps[i] = SCHEME_TRUEP(SCHEME_VEC_ELS(esph)[i]);
+        sps[i] = SCHEME_INT_VAL(SCHEME_VEC_ELS(esph)[i]);
       }
     }
     pt->provide_src_phases = sps;
@@ -1560,55 +1566,40 @@ static Scheme_Object *read_module(Scheme_Object *obj)
 
   count = me->rt->num_provides;
 
-  if (SCHEME_FALSEP(esp)) {
-    m->provide_protects = NULL;
-  } else {
-    if (!SCHEME_VECTORP(esp) || (SCHEME_VEC_SIZE(esp) != count)) return_NULL();
-    ps = MALLOC_N_ATOMIC(char, count);
-    for (i = 0; i < count; i++) {
-      ps[i] = SCHEME_TRUEP(SCHEME_VEC_ELS(esp)[i]);
-    }
-    m->provide_protects = ps;
-  }
-
-  if (SCHEME_FALSEP(eesp)) {
-    m->et_provide_protects = NULL;
-  } else {
-    if (!SCHEME_VECTORP(eesp) || (SCHEME_VEC_SIZE(eesp) != count)) return_NULL();
-    ps = MALLOC_N_ATOMIC(char, count);
-    for (i = 0; i < count; i++) {
-      ps[i] = SCHEME_TRUEP(SCHEME_VEC_ELS(eesp)[i]);
-    }
-    m->et_provide_protects = ps;
-  }
-
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  e = SCHEME_CAR(obj);
-  if (!SCHEME_VECTORP(e)) return_NULL();
-  m->et_body = e;
-  for (i = SCHEME_VEC_SIZE(e); i--; ) {
-    e = SCHEME_VEC_ELS(m->et_body)[i];
+  bodies = MALLOC_N(Scheme_Object*, m->num_phases);
+  m->bodies = bodies;
+  for (j = m->num_phases; j--; ) {
+    if (!SCHEME_PAIRP(obj)) return_NULL();
+    e = SCHEME_CAR(obj);
     if (!SCHEME_VECTORP(e)) return_NULL();
-    /* SCHEME_VEC_ELS(e)[1] should be code */
-    if (!SCHEME_INTP(SCHEME_VEC_ELS(e)[2])) return_NULL();
-    if (!SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(e)[3]), scheme_resolve_prefix_type))
-      return_NULL();
-    e = SCHEME_VEC_ELS(e)[0];
-    if (!SCHEME_SYMBOLP(e)) {
-      while (SCHEME_PAIRP(e)) {
-        if (!SCHEME_SYMBOLP(SCHEME_CAR(e))) return_NULL();
-        e = SCHEME_CDR(e);
+    if (j) {
+      bodies[j] = e;
+      for (i = SCHEME_VEC_SIZE(e); i--; ) {
+        e = SCHEME_VEC_ELS(bodies[j])[i];
+        if (!SCHEME_VECTORP(e)) return_NULL();
+        if (SCHEME_VEC_SIZE(e) != 5) return_NULL();
+        /* SCHEME_VEC_ELS(e)[1] should be code */
+        if (!SCHEME_INTP(SCHEME_VEC_ELS(e)[2])) return_NULL();
+        if (!SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(e)[3]), scheme_resolve_prefix_type))
+          return_NULL();
+        if (SCHEME_FALSEP(SCHEME_VEC_ELS(e)[0])) {
+          if (SCHEME_FALSEP(SCHEME_VEC_ELS(e)[4])) return_NULL();
+        } else {
+          e = SCHEME_VEC_ELS(e)[0];
+          if (!SCHEME_SYMBOLP(e)) {
+            while (SCHEME_PAIRP(e)) {
+              if (!SCHEME_SYMBOLP(SCHEME_CAR(e))) return_NULL();
+              e = SCHEME_CDR(e);
+            }
+            if (!SCHEME_NULLP(e)) return_NULL();
+          }
+        }
       }
-      if (!SCHEME_NULLP(e)) return_NULL();
+    } else {
+      bodies[j] = e;
     }
+    obj = SCHEME_CDR(obj);
   }
-  obj = SCHEME_CDR(obj);
-
-  if (!SCHEME_PAIRP(obj)) return_NULL();
-  e = SCHEME_CAR(obj);
-  if (!SCHEME_VECTORP(e)) return_NULL();
-  m->body = e;
-  obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
   if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return_NULL();

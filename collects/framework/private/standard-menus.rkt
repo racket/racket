@@ -272,7 +272,11 @@
     file-menu:close-callback
     (λ (item control) (when (can-close?) (on-close) (show #f)) #t))
    (define/public (file-menu:get-close-item) file-menu:close-item)
-   (define/public (file-menu:close-string) (string-constant close-menu-item))
+   (define/public
+    (file-menu:close-string)
+    (if (eq? (system-type) 'unix)
+      (string-constant close-menu-item)
+      (string-constant close-window-menu-item)))
    (define/public (file-menu:close-help-string) (string-constant close-info))
    (define/public file-menu:close-on-demand (λ (menu-item) (void)))
    (define/public (file-menu:create-close?) #t)
@@ -911,8 +915,8 @@
             (let ((edit-menu:replace-callback
                    (λ (item evt) (edit-menu:replace-callback item evt))))
               edit-menu:replace-callback))
-           (shortcut #\r)
-           (shortcut-prefix (get-default-shortcut-prefix))
+           (shortcut #\f)
+           (shortcut-prefix (cons 'shift (get-default-shortcut-prefix)))
            (help-string (edit-menu:replace-help-string))
            (demand-callback
             (λ (menu-item) (edit-menu:replace-on-demand menu-item))))))

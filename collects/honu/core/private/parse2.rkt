@@ -120,6 +120,13 @@
           (loop (cons parsed used)
                 unparsed))))))
 
+(define parsed-property (gensym 'honu-parsed))
+(define (parsed-syntax syntax)
+  (syntax-property syntax parsed-property #t))
+
+(define (parsed-syntax? syntax)
+  (syntax-property syntax parsed-property))
+
 (define (stopper? what)
   (define-literal-set check (honu-comma semicolon colon))
   (define is (and (identifier? what)
@@ -178,6 +185,8 @@
                           #'rest)
                   (do-parse #'rest precedence
                             left #'parsed)))))]
+         [(parsed-syntax? #'head)
+          (do-parse #'(rest ...) precedence left #'head)]
          [(honu-operator? #'head)
           (define new-precedence (transformer:honu-operator-ref (syntax-local-value #'head) 0))
           (define association (transformer:honu-operator-ref (syntax-local-value #'head) 1))
@@ -283,12 +292,19 @@
                       (error 'parse "function call")]
                      [else (error 'what "dont know how to parse ~a" #'head)])])])]))
 
-  (do-parse input 0 (lambda (x) x) #f))
+  (define-values (parsed unparsed)
+                 (do-parse input 0 (lambda (x) x) #f))
+  (values (parsed-syntax parsed)
+          unparsed))
 
 (define (empty-syntax? what)
   (syntax-parse what
     [() #t]
     [else #f]))
+
+(provide parse-one)
+(define (parse-one code)
+  (parse (strip-stops code)))
 
 (define (parse-all code)
   (let loop ([all '()]

@@ -113,7 +113,6 @@ static Scheme_Object *rename_transformer_p(int argc, Scheme_Object *argv[]);
 static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
 
 Scheme_Env *scheme_engine_instance_init();
-Scheme_Env *scheme_place_instance_init();
 static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thread);
 
 #ifdef MZ_PRECISE_GC
@@ -503,20 +502,22 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   return env;
 }
 
-Scheme_Env *scheme_place_instance_init(void *stack_base) {
+#ifdef MZ_USE_PLACES
+Scheme_Env *scheme_place_instance_init(void *stack_base, struct NewGC *parent_gc, intptr_t memory_limit) {
   Scheme_Env *env;
-#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+# if defined(MZ_PRECISE_GC)
   int *signal_fd;
-  GC_construct_child_gc();
-#endif
+  GC_construct_child_gc(parent_gc, memory_limit);
+# endif
   env = place_instance_init(stack_base, 0);
-#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+# if defined(MZ_PRECISE_GC)
   signal_fd = scheme_get_signal_handle();
   GC_set_put_external_event_fd(signal_fd);
-#endif
+# endif
   scheme_set_can_break(1);
   return env; 
 }
+#endif
 
 static void force_more_closed(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
 {
@@ -836,6 +837,7 @@ scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree
 
   scheme_prepare_label_env(env);
   menv->label_env = env->label_env;
+  menv->instance_env = env;
 
   if (new_exp_module_tree) {
     Scheme_Object *p;
@@ -887,6 +889,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     env->exp_env = eenv;
     eenv->template_env = env;
     eenv->label_env = env->label_env;
+    eenv->instance_env = env->instance_env;
 
     scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
     eenv->rename_set = env->rename_set;
@@ -930,6 +933,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
     env->template_env = eenv;
     eenv->exp_env = env;       
     eenv->label_env = env->label_env;
+    eenv->instance_env = env->instance_env;
 
     if (env->disallow_unbound)
       eenv->disallow_unbound = env->disallow_unbound;
@@ -963,6 +967,7 @@ void scheme_prepare_label_env(Scheme_Env *env)
     lenv->exp_env = lenv;
     lenv->label_env = lenv;
     lenv->template_env = lenv;
+    lenv->instance_env = env->instance_env;
   }
 }
 
@@ -982,7 +987,9 @@ Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obje
   menv2->module_registry = ns->module_registry;
   menv2->insp = menv->insp;
 
-  if (menv->phase < clone_phase)
+  menv2->instance_env = menv2;
+
+  if (menv->phase < clone_phase) 
     menv2->syntax = menv->syntax;
   else {
     bucket_table = scheme_make_bucket_table(7, SCHEME_hash_ptr);
@@ -993,11 +1000,21 @@ Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obje
   menv2->mod_phase = menv->mod_phase;
   menv2->link_midx = menv->link_midx;
   if (menv->phase <= clone_phase) {
-    menv2->running = menv->running;
     menv2->ran = menv->ran;
   }
-  if (menv->phase < clone_phase)
-    menv2->et_running = menv->et_running;
+  if (menv->mod_phase == 0) {
+    char *running;
+    int amt;
+    running = (char *)scheme_malloc_atomic(menv->module->num_phases);
+    menv2->running = running;
+    memset(running, 0, menv->module->num_phases);
+    amt = (clone_phase - menv->phase) + 1;
+    if (amt > 0) {
+      if (amt > menv->module->num_phases)
+        amt = menv->module->num_phases;
+      memcpy(running, menv->running, amt);
+    }
+  }
 
   menv2->require_names = menv->require_names;
   menv2->et_require_names = menv->et_require_names;
@@ -2300,18 +2317,12 @@ local_module_exports(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 local_module_definitions(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *a[2];
-
   if (!scheme_current_thread->current_local_env
       || !scheme_current_thread->current_local_bindings)
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
 		     "syntax-local-module-defined-identifiers: not currently transforming module provides");
   
-  a[0] = SCHEME_CDR(scheme_current_thread->current_local_bindings);
-  a[1] = SCHEME_CDR(a[0]);
-  a[0] = SCHEME_CAR(a[0]);
-
-  return scheme_values(2, a);
+  return SCHEME_CDR(scheme_current_thread->current_local_bindings);
 }
 
 static Scheme_Object *

@@ -147,7 +147,7 @@
   
   (set-module-language! #f)
   (test:set-radio-box-item! "Debugging")
-  (let ([f (queue-callback/res (λ () (get-top-level-focus-window)))])
+  (let ([f (queue-callback/res (λ () (test:get-active-top-level-window)))])
     (test:button-push "OK")
     (wait-for-new-frame f))
 
@@ -163,7 +163,7 @@
   (define (setup-dialog/run proc)
     (set-module-language! #f)
     (proc)
-    (let ([f (get-top-level-focus-window)])
+    (let ([f (test:get-active-top-level-window)])
       (test:button-push "OK")
       (wait-for-new-frame f))
     (do-execute drs)

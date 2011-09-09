@@ -11,19 +11,19 @@ The syntax of a Racket program is defined by
 
 @itemize[
 
- @item{a @deftech{read} phase that processes a character stream into a
+ @item{a @deftech{read} pass that processes a character stream into a
        @tech{syntax object}; and}
 
- @item{an @deftech{expand} phase that processes a syntax object to
+ @item{an @deftech{expand} pass that processes a syntax object to
        produce one that is fully parsed.}
 
 ]
 
-For details on the @tech{read} phase, see @secref["reader"]. Source
+For details on the @tech{read} pass, see @secref["reader"]. Source
 code is normally read in @racket[read-syntax] mode, which produces a
 @tech{syntax object}.
 
-The @tech{expand} phase recursively processes a @tech{syntax object}
+The @tech{expand} pass recursively processes a @tech{syntax object}
 to produce a complete @tech{parse} of the program. @tech{Binding}
 information in a @tech{syntax object} drives the @tech{expansion}
 process, and when the @tech{expansion} process encounters a
@@ -186,7 +186,7 @@ the binding (according to @racket[free-identifier=?]) matters.}
 
 @racketgrammar*[
 #:literals (#%expression module #%plain-module-begin begin #%provide
-            define-values define-syntaxes define-values-for-syntax
+            define-values define-syntaxes begin-for-syntax
             #%require
             #%plain-lambda case-lambda if begin begin0 let-values letrec-values
             set! quote-syntax quote with-continuation-mark
@@ -196,13 +196,14 @@ the binding (according to @racket[free-identifier=?]) matters.}
                 (module id name-id
                   (#%plain-module-begin
                    module-level-form ...))
-                (begin top-level-form ...)]
+                (begin top-level-form ...)
+                (begin-for-syntax top-level-form ...)]
 [module-level-form general-top-level-form
-                   (#%provide raw-provide-spec ...)]
+                   (#%provide raw-provide-spec ...)
+                   (begin-for-syntax module-level-form ...)]
 [general-top-level-form expr
                         (define-values (id ...) expr)
                         (define-syntaxes (id ...) expr)
-                        (define-values-for-syntax (id ...) expr)
                         (#%require raw-require-spec ...)]
 [expr id
       (#%plain-lambda formals expr ...+)
@@ -243,15 +244,14 @@ binding to the @racket[#%plain-lambda] of the
 syntactic-form names refer to the bindings defined in
 @secref["syntax"].
 
-Only @tech{phase levels} 0 and 1 are relevant for the parse of a
-program (though the @racket[_datum] in a @racket[quote-syntax] form
-preserves its information for all @tech{phase level}s). In particular,
-the relevant @tech{phase level} is 0, except for the @racket[_expr]s
-in a @racket[define-syntax], @racket[define-syntaxes],
-@racket[define-for-syntax], or @racket[define-values-for-syntax] form,
-in which case the relevant @tech{phase level} is 1 (for which
-comparisons are made using @racket[free-transformer-identifier=?]
-instead of @racket[free-identifier=?]).
+In a fully expanded program for a namespace whose @tech{base phase} is
+0, the relevant @tech{phase level} for a binding in the program is
+@math{N} if the bindings has @math{N} surrounding
+@racket[begin-for-syntax] and @racket[define-syntaxes] forms---not
+counting any @racket[begin-for-syntax] forms that wrap a
+@racket[module] form for the body of the @racket[module]. The
+@racket[_datum] in a @racket[quote-syntax] form, however, always
+preserves its information for all @tech{phase level}s.
 
 In addition to the grammar above, @racket[letrec-syntaxes+values] can
 appear in a fully local-expanded expression, as can
@@ -427,11 +427,13 @@ core syntactic forms are encountered:
        at @tech{phase level} 0 (i.e., the @tech{base environment} is
        extended).}
 
- @item{When a @racket[define-for-syntax] or
-       @racket[define-values-for-syntax] form is encountered at the
-       top level or module level, bindings are introduced as for
-       @racket[define-values], but at @tech{phase level} 1 (i.e., the
-       @tech{transformer environment} is extended).}
+ @item{When a @racket[begin-for-syntax] form is encountered at the top
+       level or module level, bindings are introduced as for
+       @racket[define-values] and @racket[define-syntaxes], but at
+       @tech{phase level} 1 (i.e., the @tech{transformer environment}
+       is extended). More generally, @racket[begin-for-syntax] forms
+       can be nested, an each @racket[begin-for-syntax] shifts its
+       body definition by one @tech{phase level}.}
 
  @item{When a @racket[let-values] form is encountered, the body of the
        @racket[let-values] form is extended (by creating new
@@ -578,11 +580,11 @@ to its handling of @racket[define-syntaxes]. A
 level @math{n} (not just 0), in which case the expression for the
 @tech{transformer binding} is expanded at @tech{phase level} @math{n+1}.
 
-The expression in a @racket[define-for-syntax] or
-@racket[define-values-for-syntax] form is expanded and evaluated in
-the same way as for @racket[syntax]. However, the introduced binding
-is a variable binding at @tech{phase level} 1 (not a @tech{transformer
-binding} at @tech{phase level} 0).
+The expressions in a @racket[begin-for-syntax] form are expanded and
+evaluated in the same way as for @racket[define-syntaxes]. However,
+any introduced bindings from definition within
+@racket[begin-for-syntax] are at @tech{phase level} 1 (not a
+@tech{transformer binding} at @tech{phase level} 0).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "partial-expansion"]{Partial Expansion}
@@ -654,10 +656,10 @@ the @racket[letrec-syntaxes+values] form.
 
 A @racket[require] form not only introduces @tech{bindings} at
 expansion time, but also @deftech{visits} the referenced module when
-it is encountered by the expander. That is, the expander
-instantiates any @racket[define-for-syntax]ed variables defined
-in the module, and also evaluates all expressions for
-@racket[define-syntaxes] @tech{transformer bindings}.
+it is encountered by the expander. That is, the expander instantiates
+any variables defined in the module within @racket[begin-for-syntax],
+and it also evaluates all expressions for @racket[define-syntaxes]
+@tech{transformer bindings}.
 
 Module @tech{visits} propagate through @racket[require]s in the same
 way as module @tech{instantiation}. Moreover, when a module is
@@ -673,8 +675,8 @@ implicitly @tech{visit}ed. Thus, when the expander encounters
 @tech{instantiate}s the required module at @tech{phase} 1, in addition
 to adding bindings at @tech{phase level} 1 (i.e., the
 @tech{transformer environment}). Similarly, the expander immediately
-evaluates any @racket[define-values-for-syntax] form that it
-encounters.
+evaluates any form that it encounters within
+@racket[begin-for-syntax].
 
 @tech{Phases} beyond 0 are @tech{visit}ed on demand. For example,
 when the right-hand side of a @tech{phase}-0 @racket[let-syntax] is to

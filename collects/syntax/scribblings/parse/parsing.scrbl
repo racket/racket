@@ -3,7 +3,8 @@
           scribble/struct
           scribble/decode
           scribble/eval
-          "parse-common.rkt")
+          "parse-common.rkt"
+          (for-label racket/syntax))
 
 @title{Parsing Syntax}
 
@@ -58,7 +59,9 @@ The following options are supported:
              #:contracts ([context-expr syntax?])]{
 
 When present, @racket[context-expr] is used in reporting parse
-failures; otherwise @racket[stx-expr] is used.
+failures; otherwise @racket[stx-expr] is used. The
+@racket[current-syntax-context] parameter is also set to the value of
+@racket[context-expr].
 
 @(myexamples
   (syntax-parse #'(a b 3)

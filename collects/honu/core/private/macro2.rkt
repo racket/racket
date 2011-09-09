@@ -3,6 +3,7 @@
 (require (for-syntax "transformer.rkt"
                      syntax/define
                      syntax/parse
+                     syntax/stx
                      "literals.rkt"
                      "parse2.rkt"
                      "debug.rkt"
@@ -17,30 +18,39 @@
       (syntax/loc stx
                  (define-syntax id (make-honu-transformer rhs))))))
 
-(define-for-syntax (convert-pattern pattern)
-  (syntax-parse pattern
-    [(name semicolon class)
-     #'(~var name class)]))
+(define-for-syntax (convert-pattern original-pattern)
+  (define-splicing-syntax-class pattern-type
+    #:literal-sets (cruft)
+    [pattern (~seq name colon class)
+             #:with result #'(~var name class #:attr-name-separator "_")]
+    [pattern x #:with result #'x])
+  (syntax-parse original-pattern
+    [(thing:pattern-type ...)
+     #'(thing.result ...)]))
 
-(provide macro)
-(define-honu-syntax macro 
+(provide honu-macro)
+(define-honu-syntax honu-macro 
   (lambda (code context)
     (debug "Macroize ~a\n" code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name literals (#%braces pattern ...) (#%braces action ...) . rest)
        (debug "Pattern is ~a\n" #'(pattern ...))
        (values
-         (with-syntax ([syntax-parse-pattern
+         (with-syntax ([(syntax-parse-pattern ...)
                          (convert-pattern #'(pattern ...))])
            #'(define-honu-syntax name
                (lambda (stx context-name)
                  (syntax-parse stx
-                   [(_ syntax-parse-pattern . more)
+                   [(_ syntax-parse-pattern ... . more)
                     (values #'(let-syntax ([do-parse (lambda (stx)
-                                                       (parse-all stx))])
+                                                       (define what (parse-all (stx-cdr stx)))
+                                                       (debug "Macro parse all ~a\n" what)
+                                                       what)])
                                 (do-parse action ...))
-                            #'more)]))))
-         #'rest)])))
+                            #'more
+                            #t)]))))
+         #'rest
+         #t)])))
 
 (provide (rename-out [honu-with-syntax withSyntax]))
 (define-honu-syntax honu-with-syntax
@@ -49,3 +59,18 @@
       [(_ [#%brackets name:id data]
           (#%braces code ...))
        #'(with-syntax ([name data]) code ...)])))
+
+(define-syntax (parse-stuff stx)
+  (syntax-parse stx
+    [(_ stuff ...)
+     (parse-all #'(stuff ...))]))
+
+(provide honu-syntax)
+(define-honu-syntax honu-syntax
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ (#%parens stuff ...) . rest)
+       (values
+         #'(parse-stuff stuff ...)
+         #'rest
+         #f)])))

@@ -14,8 +14,9 @@ These functions get input from the user and/or display
                    [directory (or/c path-string? #f) #f]
                    [filename (or/c path-string? #f) #f]
                    [extension (or/c string? #f) #f]
-                   [style (listof (or/c 'packages 'enter-packages)) null]
-                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
+                   [style (listof (or/c 'packages 'enter-packages 'common)) null]
+                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))]
+                   [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c path? #f)]{
 
 Obtains a file pathname from the user via the platform-specific
@@ -65,8 +66,10 @@ On Windows and Unix, @racket[filters] determines a set of filters from
  that have any of these suffixes in any filter are selectable; a
  @racket["*.*"] glob makes all files available for selection.
 
-See also @racket[path-dialog%].
+The @racket[dialog-mixin] is applied to @racket[path-dialog%] before
+creating an instance of the class for this dialog.
 
+See also @racket[path-dialog%] for a richer interface.
 
 }
 
@@ -75,8 +78,9 @@ See also @racket[path-dialog%].
                         [directory (or/c path-string? #f) #f]
                         [filename (or/c path-string? #f) #f]
                         [extension (or/c string? #f) #f]
-                        [style null? null]
-                        [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
+                        [style (listof (or/c 'packages 'enter-packages 'common)) null]
+                        [filters (listof (list/c string? string?)) '(("Any" "*.*"))]
+                        [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c (listof path?) #f)]{
 Like
 @racket[get-file], except that the user can select multiple files, and the
@@ -89,8 +93,9 @@ Like
                    [directory (or/c path-string? #f) #f]
                    [filename (or/c path-string? #f) #f]
                    [extension (or/c string? #f) #f]
-                   [style (listof (or/c 'packages 'enter-packages)) null]
-                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
+                   [style (listof (or/c 'packages 'enter-packages 'common)) null]
+                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))]
+                   [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c path? #f)]{
 
 Obtains a file pathname from the user via the platform-specific
@@ -149,14 +154,17 @@ On Unix, @racket[extension] is ignored, and @racket[filters] is used
 
 The @racket[style] list is treated as for @racket[get-file].
 
-See also @racket[path-dialog%].
+The @racket[dialog-mixin] is applied to @racket[path-dialog%] before
+creating an instance of the class for this dialog.
 
+See also @racket[path-dialog%] for a richer interface.
 }
 
 @defproc[(get-directory [message (or/c string? #f) #f]
                         [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                         [directory (or/c path? #f) #f]
-                        [style (listof (or/c 'enter-packages)) null])
+                        [style (listof (or/c 'enter-packages 'common)) null]
+                        [#:dialog-mixin dialog-mixin (make-mixin-contract path-dialog%) (λ (x) x)])
          (or/c path #f)]{
 
 Obtains a directory pathname from the user via the platform-specific
@@ -178,13 +186,18 @@ specified.  The latter
  package. A package is a directory with a special suffix (e.g.,
  ``.app'') that the Finder normally displays like a file.
 
-See also @racket[path-dialog%].
+The @racket[dialog-mixin] is applied to @racket[path-dialog%] before
+creating an instance of the class for this dialog.
+
+See also @racket[path-dialog%] for a richer interface.
+
 }
 
 @defproc[(message-box [title label-string?]
                       [message string?]
                       [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
-                      [style (listof (or/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)])
+                      [style (listof (or/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)]
+                      [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (or/c 'ok 'cancel 'yes 'no)]{
 
 See also @racket[message-box/custom].
@@ -227,10 +240,14 @@ The class that implements the dialog provides a @racket[get-message]
  a string. (The dialog is accessible through the
  @racket[get-top-level-windows] function.)
 
-The @racket[message-box] function can be called int a thread other
+The @racket[message-box] function can be called in a thread other
  than the handler thread of the relevant eventspace (i.e., the eventspace of
  @racket[parent], or the current eventspace if @racket[parent] is @racket[#f]), in which case the
- current thread blocks while the dialog runs on the handler thread.}
+ current thread blocks while the dialog runs on the handler thread.
+ 
+The @racket[dialog-mixin] argument is applied to the class that implements the dialog
+before the dialog is created. 
+}
 
 @defproc[(message-box/custom [title label-string?]
                              [message string]
@@ -242,7 +259,8 @@ The @racket[message-box] function can be called int a thread other
                                                   'disallow-close 'no-default 
                                                   'default=1 'default=2 'default=3))
                                    '(no-default)]
-                             [close-result any/c #f])
+                             [close-result any/c #f]
+                             [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (or/c 1 2 3 close-result)]{
 
 Displays a message to the user in a (modal) dialog, using
@@ -312,10 +330,14 @@ The class that implements the dialog provides a @racket[get-message]
  a string. (The dialog is accessible through the
 @racket[get-top-level-windows] function.)
 
-The @racket[message-box/custom] function can be called int a thread
+The @racket[message-box/custom] function can be called in a thread
  other than the handler thread of the relevant eventspace (i.e., the eventspace of
  @racket[parent], or the current eventspace if @racket[parent] is @racket[#f]), in which case the
- current thread blocks while the dialog runs on the handler thread.}
+ current thread blocks while the dialog runs on the handler thread.
+ 
+The @racket[dialog-mixin] argument is applied to the class that implements the dialog
+before the dialog is created. 
+}
 
 @defproc[(message+check-box [title label-string?]
                             [message string?]
@@ -323,7 +345,8 @@ The @racket[message-box/custom] function can be called int a thread
                             [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                             [style (listof (or/c 'ok 'ok-cancel 'yes-no 
                                                  'caution 'stop 'checked))
-                              '(ok)])
+                              '(ok)]
+                            [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (values (or/c 'ok 'cancel 'yes 'no) boolean?)]{
 
 See also @racket[message+check-box/custom].
@@ -349,7 +372,8 @@ Like @racket[message-box], except that
                                                         'disallow-close 'no-default 
                                                         'default=1 'default=2 'default=3))
                                           '(no-default)]
-                                   [close-result any/c #f])
+                                   [close-result any/c #f]
+                                   [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (or/c 1 2 3 (λ (x) (eq? x close-result)))]{
 
 Like @racket[message-box/custom], except that
@@ -360,17 +384,14 @@ Like @racket[message-box/custom], except that
  @item{@racket[style] can contain @racket['checked] to indicate that the check box
        should be initially checked.}
 ]
-
-
-
-
 }
 
 @defproc[(get-text-from-user [title string?]
                              [message (or/c string? #f)]
                              [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                              [init-val string? ""]
-                             [style (listof 'password) null])
+                             [style (listof 'password) null]
+                             [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values]) 
          (or/c string? #f)]{
 
 Gets a text string from the user via a modal dialog, using
@@ -386,8 +407,8 @@ If @racket[style] includes @racket['password], the dialog's text field
  draws each character of its content using a generic symbol, instead
  of the actual character.
 
-
-
+The @racket[dialog-mixin] argument is applied to the class that implements the dialog
+before the dialog is created. 
 }
 
 @defproc[(get-choices-from-user [title string?]

@@ -98,6 +98,18 @@
 (test (render-metafunction S)
       "metafunction.png")
 
+(let ()
+  (define-metafunction lang
+    [(f (e_1 e_2))
+     (e_3 e_4)
+     (judgment-holds (J e_1 e_3))
+     (judgment-holds (J e_2 e_4))])
+  (define-judgment-form lang
+    #:mode (J I O)
+    [(J e e)])
+  (test (render-metafunction f)
+        "metafunction-judgment-holds.png"))
+
 (define-metafunction lang
   [(T x y)
    1

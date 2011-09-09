@@ -89,7 +89,7 @@
   
   (define definitions-text-mixin
     (mixin (text:basic<%> drracket:unit:definitions-text<%>) (drracket:module-language-tools:definitions-text<%>)
-      (inherit get-next-settings)
+      (inherit get-next-settings get-filename)
       (define in-module-language? #f)      ;; true when we are in the module language
       (define hash-lang-last-location #f)  ;; non-false when we know where the hash-lang line ended
       (define hash-lang-language #f)       ;; non-false is the string that was parsed for the language
@@ -101,13 +101,26 @@
         (inner (void) after-delete start len)
         (modification-at start))
       
+      (define last-filename #f)
+      (define/augment (after-save-file success?)
+        (inner (void) after-save-file success?)
+        (define this-filename (get-filename))
+        (unless (equal? last-filename this-filename)
+          (set! last-filename this-filename)
+          (modification-at #f)))
+      
       (define timer #f)
       
+      ;; modification-at : (or/c #f number) -> void
+      ;; checks to see if the lang line has changed when start
+      ;; is in the region of the lang line, or when start is #f, or
+      ;; when there is no #lang line known.
       (define/private (modification-at start)
         (send (send (get-tab) get-frame) when-initialized
               (λ ()
                 (when in-module-language?
-                  (when (or (not hash-lang-last-location)
+                  (when (or (not start)
+                            (not hash-lang-last-location)
                             (<= start hash-lang-last-location))
                     
                     (unless timer

@@ -20,7 +20,10 @@
 		   fn))
 		(string->path s))]
 	     [(-build-path elem ...)
-	      (module-or-top-identifier=? #'-build-path build-path-stx)
+              (begin
+                (collect-garbage)
+                (module-identifier=? #'-build-path build-path-stx)
+                (module-or-top-identifier=? #'-build-path build-path-stx))
 	      (let ([l (syntax-object->datum (syntax (elem ...)))])
 		(when (null? l)
 		  (raise-syntax-error

@@ -4,6 +4,7 @@
                      racket/syntax
                      "rep-data.rkt"
                      "rep.rkt")
+         racket/syntax
          "parse.rkt"
          "keywords.rkt"
          "runtime.rkt"
@@ -163,14 +164,15 @@
                        [(def ...) defs]
                        [expr expr])
            #'(defattrs/unpack (a ...)
-               (let* ([x expr]
+               (let* ([x (datum->syntax #f expr)]
                       [cx x]
                       [pr (ps-empty x x)]
                       [es null]
                       [fh0 (syntax-patterns-fail x)])
-                 def ...
-                 (#%expression
-                  (with ([fail-handler fh0]
-                         [cut-prompt fh0])
-                    (parse:S x cx pattern pr es
-                             (list (attribute name) ...)))))))))]))
+                 (parameterize ((current-syntax-context x))
+                   def ...
+                   (#%expression
+                    (with ([fail-handler fh0]
+                           [cut-prompt fh0])
+                          (parse:S x cx pattern pr es
+                                   (list (attribute name) ...))))))))))]))

@@ -33,8 +33,8 @@
 
   (test-suite (format "simple (~a)" prep-mode)
 
-    (test-case "query-exec"
-      (unless (ANYFLAGS 'isora 'isdb2) ;; table isn't temp, so don't tamper with it
+    (unless (ANYFLAGS 'isora 'isdb2) ;; table isn't temp, so don't tamper with it
+      (test-case "query-exec"
         (with-connection c
           (check-pred void? (Q c query-exec "insert into the_numbers values(-1, 'mysterious')"))
           (check-equal? (Q c query-value "select descr from the_numbers where N = -1")
@@ -143,8 +143,8 @@
           (check set-equal?
                  (map vector (map car test-data))
                  (rows-result-rows q)))))
-    (test-case "query - update"
-      (unless (ANYFLAGS 'isora 'isdb2)
+    (unless (ANYFLAGS 'isora 'isdb2)
+      (test-case "query - update"
         (with-connection c
           (let [(q (query c "update the_numbers set N = -1 where N = 1"))]
             (check-pred simple-result? q)))))
@@ -226,8 +226,8 @@
 
     ;; Added 18 May 2003: Corrected a bug which incorrectly interleaved
     ;; nulls with returned fields.
-    (test-case "nulls arrive in correct order"
-      (unless (TESTFLAGS 'odbc 'issl)
+    (unless (TESTFLAGS 'odbc 'issl)
+      (test-case "nulls arrive in correct order"
         (with-connection c
           ;; raw NULL has PostgreSQL type "unknown", not allowed
           (define (clean . strs)
@@ -257,8 +257,8 @@
     (test-case "query - not a statement"
       (with-connection c
         (check-exn exn:fail? (lambda () (query c 5)))))
-    (test-case "query - multiple statements in string"
-      (unless (or (TESTFLAGS 'odbc 'ispg) (ANYFLAGS 'isdb2))
+    (unless (or (TESTFLAGS 'odbc 'ispg) (ANYFLAGS 'isdb2))
+      (test-case "query - multiple statements in string"
         (with-connection c
           (check-exn exn:fail?
                      (lambda ()
@@ -276,6 +276,65 @@
         (check-equal? (query-value c (select-val "17"))
                       (if (TESTFLAGS 'odbc 'issl) "17" 17))))))
 
+(define virtual-statement-tests
+  (let ()
+    (define (check-prep-once mk-connection)
+      (let* ([counter 0]
+             [c (mk-connection)]
+             [vstmt (virtual-statement
+                     (lambda (dbsys)
+                       (set! counter (add1 counter))
+                       (select-val "17")))])
+        (query-value c vstmt)
+        (check-equal? counter 1 "first query")
+        (query-value c vstmt)
+        (check-equal? counter 1 "second query")
+        (disconnect c)))
+    (test-suite "virtual-statements"
+      (test-case "prep once"
+        (check-prep-once connect-and-setup))
+      (test-case "prep once for virtual-connection"
+        (check-prep-once
+         (lambda () (virtual-connection connect-and-setup))))
+      (test-case "prep once for virtual-connection/pool"
+        (check-prep-once
+         (lambda () (virtual-connection (connection-pool connect-and-setup))))))))
+
+(define pool-tests
+  (test-suite "connection pools"
+    (test-case "lease, limit, release"
+      (let* ([counter 0]
+             [p (connection-pool (lambda () (set! counter (+ 1 counter)) (connect-for-test))
+                                 #:max-connections 2)]
+             [c1 (connection-pool-lease p)]
+             [c2 (connection-pool-lease p)])
+        ;; Two created
+        (check-equal? counter 2)
+        ;; Can't create new one yet
+        (check-exn exn:fail? (lambda () (connection-pool-lease p)))
+        ;; But if we free one...
+        (disconnect c2)
+        (check-equal? (connected? c2) #f)
+        (let ([c3 (connection-pool-lease p)])
+          (check-equal? counter 2 "not new") ;; used idle, not new connection
+          (check-equal? (connected? c3) #t))))
+    (test-case "release on evt"
+      (let* ([p (connection-pool connect-for-test #:max-connections 2)]
+             [sema (make-semaphore 0)]
+             [c1 (connection-pool-lease p sema)])
+        (check-equal? (connected? c1) #t)
+        ;; Closes when evt ready
+        (begin (semaphore-post sema) (sleep 0.1))
+        (check-equal? (connected? c1) #f)))
+    (test-case "release on custodian"
+      (let* ([p (connection-pool connect-for-test #:max-connections 2)]
+             [cust (make-custodian)]
+             [c1 (connection-pool-lease p cust)])
+        (check-equal? (connected? c1) #t)
+        ;; Closes when custodian shutdown
+        (begin (custodian-shutdown-all cust) (sleep 0.1))
+        (check-equal? (connected? c1) #f)))))
+
 (define test
   (test-suite "query API"
     (simple-tests 'string)
@@ -284,4 +343,6 @@
     (simple-tests 'gen)
     low-level-tests
     misc-tests
+    virtual-statement-tests
+    pool-tests
     error-tests))

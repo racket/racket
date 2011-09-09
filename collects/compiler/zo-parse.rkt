@@ -181,19 +181,19 @@
    (cdr (vector->list v))
    (vector-ref v 0)))
 
-; XXX Allocates unnessary list
-(define (read-define-syntaxes mk v)
-  (mk (list-tail (vector->list v) 4)
-      (vector-ref v 0)
-      (vector-ref v 1)
-      (vector-ref v 2)
-      #;(vector-ref v 3)))
-
 (define (read-define-syntax v)
-  (read-define-syntaxes make-def-syntaxes v))
+  (make-def-syntaxes (list-tail (vector->list v) 4)
+                     (vector-ref v 0)
+                     (vector-ref v 1)
+                     (vector-ref v 2)
+                     (vector-ref v 3)))
 
-(define (read-define-for-syntax v)
-  (read-define-syntaxes make-def-for-syntax v))
+(define (read-begin-for-syntax v)
+  (make-seq-for-syntax 
+   (vector-ref v 0)
+   (vector-ref v 1)
+   (vector-ref v 2)
+   (vector-ref v 3)))
 
 (define (read-set! v)
   (make-assign (cadr v) (cddr v) (car v)))
@@ -225,50 +225,65 @@
              (lambda _ #t)
              (lambda _ #t)))))
 
+(define (split-phase-data rest n)
+  (let loop ([n n] [rest rest] [phase-accum null])
+    (cond
+     [(zero? n)
+      (values (reverse phase-accum) rest)]
+     [else
+      (let ([maybe-indirect (list-ref rest 1)])
+        (if (void? maybe-indirect) 
+            ;; no indirect or protect info:
+            (loop (sub1 n)
+                  (list-tail rest 9)
+                  (cons (take rest 9) phase-accum))
+            ;; has indirect or protect info:
+            (loop (sub1 n)
+                  (list-tail rest (+ 5 8))
+                  (cons (take rest (+ 5 8)) phase-accum))))])))
+      
 (define (read-module v)
   (match v
     [`(,name ,srcname ,self-modidx ,lang-info ,functional? ,et-functional?
              ,rename ,max-let-depth ,dummy
-             ,prefix
-             ,indirect-et-provides ,num-indirect-et-provides 
-             ,indirect-syntax-provides ,num-indirect-syntax-provides 
-             ,indirect-provides ,num-indirect-provides 
-             ,protects ,et-protects
+             ,prefix ,num-phases
              ,provide-phase-count . ,rest)
-     (let ([phase-data (take rest (* 8 provide-phase-count))])
-       (match (list-tail rest (* 8 provide-phase-count))
-         [`(,syntax-body ,body
-                         ,requires ,syntax-requires ,template-requires ,label-requires
-                         ,more-requires-count . ,more-requires)
+     (let*-values ([(phase-data rest-module) (split-phase-data rest provide-phase-count)]
+                   [(bodies rest-module) (values (take rest-module num-phases)
+                                                 (drop rest-module num-phases))])
+       (match rest-module
+         [`(,requires ,syntax-requires ,template-requires ,label-requires
+                      ,more-requires-count . ,more-requires)
           (make-mod name srcname self-modidx
-                    prefix (let loop ([l phase-data])
-                             (if (null? l)
-                                 null
-                                 (let ([num-vars (list-ref l 6)]
-                                       [ps (for/list ([name (in-vector (list-ref l 5))]
-                                                      [src (in-vector (list-ref l 4))]
-                                                      [src-name (in-vector (list-ref l 3))]
-                                                      [nom-src (or (list-ref l 2)
-                                                                   (in-cycle (in-value #f)))]
-                                                      [src-phase (or (list-ref l 1)
-                                                                     (in-cycle (in-value #f)))]
-                                                      [protected? (or (case (car l)
-                                                                        [(0) protects]
-                                                                        [(1) et-protects]
-                                                                        [else #f])
-                                                                      (in-cycle (in-value #f)))])
-                                             (make-provided name src src-name 
-                                                            (or nom-src src)
-                                                            (if src-phase 1 0)
-                                                            protected?))])
-                                   (if (null? ps)
-                                       (loop (list-tail l 8))
-                                       (cons
-                                        (list
-                                         (car l)
-                                         (take ps num-vars)
-                                         (drop ps num-vars))
-                                        (loop (list-tail l 8)))))))
+                    prefix
+                    ;; provides:
+                    (for/list ([l (in-list phase-data)])
+                      (let* ([phase (list-ref l 0)]
+                             [has-info? (not (void? (list-ref l 1)))]
+                             [delta (if has-info? 5 1)]
+                             [num-vars (list-ref l (+ delta 6))]
+                             [num-all (list-ref l (+ delta 7))]
+                             [ps (for/list ([name (in-vector (list-ref l (+ delta 5)))]
+                                            [src (in-vector (list-ref l (+ delta 4)))]
+                                            [src-name (in-vector (list-ref l (+ delta 3)))]
+                                            [nom-src (or (list-ref l (+ delta 2))
+                                                         (in-cycle (in-value #f)))]
+                                            [src-phase (or (list-ref l (+ delta 1))
+                                                           (in-cycle (in-value 0)))]
+                                            [protected? (cond
+                                                         [(or (not has-info?)
+                                                              (not (list-ref l 5)))
+                                                          (in-cycle (in-value #f))]
+                                                         [else (list-ref l 5)])])
+                                   (make-provided name src src-name 
+                                                  (or nom-src src)
+                                                  src-phase
+                                                  protected?))])
+                        (list
+                         phase
+                         (take ps num-vars)
+                         (drop ps num-vars))))
+                    ;; requires:
                     (list*
                      (cons 0 requires)
                      (cons 1 syntax-requires)
@@ -276,20 +291,34 @@
                      (cons #f label-requires)
                      (for/list ([(phase reqs) (in-list* more-requires 2)])
                        (cons phase reqs)))
-                    (vector->list body)
-                    (map (lambda (sb)
-                           (match sb
-                             [(? def-syntaxes?) sb]
-                             [(? def-for-syntax?) sb]
-                             [`#(,ids ,expr ,max-let-depth ,prefix ,for-stx?)
-                              ((if for-stx?
-                                   make-def-for-syntax
-                                   make-def-syntaxes)
-                               (if (list? ids) ids (list ids)) expr prefix max-let-depth)]))
-                         (vector->list syntax-body))
-                    (list (vector->list indirect-provides)
-                          (vector->list indirect-syntax-provides)
-                          (vector->list indirect-et-provides))
+                    ;; body:
+                    (vector->list (last bodies))
+                    ;; syntax-bodies: add phase to each list, break apart
+                    (for/list ([b (cdr (reverse bodies))]
+                               [i (in-naturals 1)])
+                      (cons i
+                            (for/list ([sb (in-vector b)])
+                              (match sb
+                                [`#(,ids ,expr ,max-let-depth ,prefix ,for-stx?)
+                                 (if for-stx?
+                                     (make-seq-for-syntax (list expr) prefix max-let-depth #f)
+                                     (make-def-syntaxes
+                                      (if (list? ids) ids (list ids)) expr prefix max-let-depth #f))]
+                                [else (error 'zo-parse "bad phase ~a body element: ~e" i sb)]))))
+                    ;; unexported:
+                    (for/list ([l (in-list phase-data)]
+                               #:when (not (void? (list-ref l 1))))
+                      (let* ([phase (list-ref l 0)]
+                             [indirect-syntax 
+                              ;; could check: (list-ref l 2) should be size of vector:
+                              (list-ref l 1)]
+                             [indirect 
+                              ;; could check: (list-ref l 4) should be size of vector:
+                              (list-ref l 3)])
+                        (list
+                         phase
+                         (vector->list indirect)
+                         (vector->list indirect-syntax))))
                     max-let-depth
                     dummy
                     lang-info
@@ -313,7 +342,7 @@
     [(14) 'quote-syntax-type]
     [(15) 'define-values-type]
     [(16) 'define-syntaxes-type]
-    [(17) 'define-for-syntax-type]
+    [(17) 'begin-for-syntax-type]
     [(18) 'set-bang-type]
     [(19) 'boxenv-type]
     [(20) 'begin0-sequence-type]
@@ -350,7 +379,7 @@
     (cons 'free-id-info-type read-free-id-info)
     (cons 'define-values-type read-define-values)
     (cons 'define-syntaxes-type read-define-syntax)
-    (cons 'define-for-syntax-type read-define-for-syntax)
+    (cons 'begin-for-syntax-type read-begin-for-syntax)
     (cons 'set-bang-type read-set!)
     (cons 'boxenv-type read-boxenv)
     (cons 'require-form-type read-require)

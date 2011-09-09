@@ -1,4 +1,3 @@
-internal docs
 ----
 
 Testing
@@ -31,11 +30,11 @@ Types
 
 Misc
 
+- internal docs
+
 - use ffi/unsafe/alloc to simplify odbc handle allocation
 
 - add ODBC-like functions for inspecting schemas (list-tables, etc)
-  - util/schema (?), util/info (for information_schema) (?)
-  - at least, table-exists? : string [...] -> boolean?
 
 - for wrapped/managed connections, detect if underlying connection gets
   disconnected by server (eg, times out after 10 minutes of inactivity)
@@ -67,10 +66,15 @@ Misc
   - how do people want to use cursors?
   - how about implicit support only in 'in-query'?
 
-- ODBC: use async execution to avoid blocking all Racket threads
-
 - add evt versions of functions
   - for query functions (?)
   - connection-pool-lease-evt
   - when is it useful in practice?
     - would make it easier to handle timeouts...
+
+- on insert, return last inserted id
+  - postgresql: parse CommandComplete msg tag
+  - mysql: in ok-packet (what conditions, though?)
+  - sqlite3: sqlite3_last_insert_rowid(), use sqlite3_changes() to see if insert succeeded,
+    but still need to tell if stmt was even insert (parse sql?)
+  - odbc: ???

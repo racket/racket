@@ -354,29 +354,6 @@
   (test-long (lambda (x) (intern-num-sym (modulo x 1000))) "Listof symbols")
   (test-long (lambda (x) #s(clown "Binky" "pie")) "Listof prefabs")
   (test-long (lambda (x) (read (open-input-string "#0=(#0# . #0#)"))) "Listof cycles")
-
-  (define port-ch (make-channel))
-  
-  (thread 
-    (lambda () 
-      (define p (place ch
-                            (match (place-channel-get ch)
-                              [(list in out)
-                                (define x (read in))
-                                (printf "IN PLACE ~a\n" x)
-                                (write (string-append "From Place " x) out)
-                                (flush-output out)])))
-      (define s (tcp-listen 0))
-      (define-values (h1 p1 h2 p2) (tcp-addresses s #t))
-      (printf "~a ~a ~a ~a\n" h1 p1 h2 p2)
-      (channel-put port-ch p1)
-      (define-values (in out) (tcp-accept s))
-      (place-channel-put p (list in out))
-      (place-wait p)))
-
-  (define-values (in out) (tcp-connect "localhost" (channel-get port-ch)))
-  (write "Hello There" out)
-  (flush-output out)
-  (displayln (read in)))
+)
   
 ;(report-errs)

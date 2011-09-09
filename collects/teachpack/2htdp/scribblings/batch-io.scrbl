@@ -45,6 +45,9 @@
 The batch-io teachpack introduces several functions and a form for reading
  content from files and one function for writing to a file.
 
+@; -----------------------------------------------------------------------------
+@section{IO Functions}
+
 All functions that read a file consume the name of a file and possibly
  additional arguments. They assume that the specified file exists in the
  same folder as the program; if not they signal an error:
@@ -148,6 +151,17 @@ There is only one writer function at the moment:
    (with-handlers ([exn:fail:filesystem? void])
      (delete-file "output.txt")))
 
+@bold{Warning}: The file IO functions in this teachpack are platform
+ dependent. That is, as long as your programs and your files live on the
+ same platform, you should not have any problems reading the files that
+ programs wrote and vice versa. If, however, one of your programs writes a
+ file on a Windows operating system and if you then copy this output file
+ to a Mac, reading the copied text file may produce extraneous ``return''
+ characters. Note that this describes only one example of possible
+ malfunction; there are other cases when trans-platform actions may cause
+ this teachpack to fail. 
+
+@; -----------------------------------------------------------------------------
 @section{Testing}
 
 @defform[(simulate-file process str ...)]{

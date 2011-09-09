@@ -462,6 +462,9 @@ sub-form in a procedure being documented).}
 @racket[racketfont], but colored as meta-syntax, such as backquote or
 unquote.}
 
+@defproc[(racketcommentfont [pre-content pre-content?] ...) element?]{Like
+@racket[racketfont], but colored as a comment.}
+
 @defproc[(racketerror [pre-content pre-content?] ...) element?]{Like
 @racket[racketfont], but colored as error-message text.}
 

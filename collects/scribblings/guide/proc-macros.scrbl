@@ -352,19 +352,20 @@ make all of these modes treat code consistently, Racket separates the
 binding spaces for different phases.
 
 To define a @racket[check-ids] function that can be referenced at
-compile time, use @racket[define-for-syntax]:
+compile time, use @racket[begin-for-syntax]:
 
 @racketblock/eval[
 #:eval check-eval
-(define-for-syntax (check-ids stx forms)
-  (for-each
-   (lambda (form)
-     (unless (identifier? form)
-       (raise-syntax-error #f
-                           "not an identifier"
-                           stx
-                           form)))
-   (syntax->list forms)))
+(begin-for-syntax
+  (define (check-ids stx forms)
+    (for-each
+     (lambda (form)
+       (unless (identifier? form)
+         (raise-syntax-error #f
+                             "not an identifier"
+                             stx
+                             form)))
+     (syntax->list forms))))
 ]
 
 With this for-syntax definition, then @racket[swap] works:
@@ -446,6 +447,7 @@ the right-hand side of the inner @racket[define-syntax] is in the
 2}. To import @racket[syntax-case] into that phase level, you would
 have to use @racket[(require (for-syntax (for-syntax racket/base)))]
 or, equivalently, @racket[(require (for-meta 2 racket/base))].  For example,
+
 @codeblock|{
 #lang racket/base
 (require  ;; This provides the bindings for the definition

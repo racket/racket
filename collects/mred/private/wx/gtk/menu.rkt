@@ -181,25 +181,27 @@
               (unless (unbox cnb) 
                 (cb this e)))))))
   
-  (define/private (adjust-shortcut item-gtk title)
+  (define/private (adjust-shortcut item-gtk title need-clear?)
     (let ([m (regexp-match #rx"\t(Ctrl[+])?(Shift[+])?(Meta[+])?(Alt[+])?(.|[0-9]+)$" 
                            title)])
-      (when m
-        (let ([mask (+ (if (list-ref m 1) GDK_CONTROL_MASK 0)
-                       (if (list-ref m 2) GDK_SHIFT_MASK 0)
-                       (if (list-ref m 3) GDK_MOD1_MASK 0)
-                       (if (list-ref m 4) GDK_META_MASK 0))]
-              [code (let ([s (list-ref m 5)])
-                      (if (= 1 (string-length s))
-                          (gdk_unicode_to_keyval 
-                           (char->integer (string-ref s 0)))
-                          (string->number s)))])
-          (unless (zero? code)
-            (let ([accel-path (format "<GRacket>/Hardwired/~a" title)])
-              (gtk_accel_map_add_entry accel-path
-                                       code
-                                       mask)
-              (gtk_menu_item_set_accel_path item-gtk accel-path)))))))
+      (if m
+          (let ([mask (+ (if (list-ref m 1) GDK_CONTROL_MASK 0)
+                         (if (list-ref m 2) GDK_SHIFT_MASK 0)
+                         (if (list-ref m 3) GDK_MOD1_MASK 0)
+                         (if (list-ref m 4) GDK_META_MASK 0))]
+                [code (let ([s (list-ref m 5)])
+                        (if (= 1 (string-length s))
+                            (gdk_unicode_to_keyval 
+                             (char->integer (string-ref s 0)))
+                            (string->number s)))])
+            (unless (zero? code)
+              (let ([accel-path (format "<GRacket>/Hardwired/~a" title)])
+                (gtk_accel_map_add_entry accel-path
+                                         code
+                                         mask)
+                (gtk_menu_item_set_accel_path item-gtk accel-path))))
+          (when need-clear?
+            (gtk_menu_item_set_accel_path item-gtk #f)))))
   
   (public [append-item append])
   (define (append-item i label help-str-or-submenu chckable?)
@@ -226,7 +228,7 @@
                             [menu-item i]
                             [parent this])])
              (set! items (append items (list (list item item-gtk label chckable?))))
-             (adjust-shortcut item-gtk label)))
+             (adjust-shortcut item-gtk label #f)))
        (gtk_menu_shell_append gtk item-gtk)
        (gtk_widget_show item-gtk))))
 
@@ -258,7 +260,8 @@
     (let ([gtk (find-gtk item)])
       (when gtk
         (gtk_label_set_text_with_mnemonic (gtk_bin_get_child gtk) 
-                                          (fixup-mnemonic str)))))
+                                          (fixup-mnemonic str))
+        (adjust-shortcut gtk str #t))))
 
   (define/public (enable item on?)
     (let ([gtk (find-gtk item)])

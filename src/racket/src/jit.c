@@ -2364,7 +2364,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   case scheme_splice_sequence_type:
   case scheme_define_values_type:
   case scheme_define_syntaxes_type:
-  case scheme_define_for_syntax_type:
+  case scheme_begin_for_syntax_type:
   case scheme_require_form_type:
   case scheme_module_type:
     {

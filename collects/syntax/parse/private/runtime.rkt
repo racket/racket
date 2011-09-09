@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/list
          racket/stxparam
+         unstable/syntax
          "runtime-progress.rkt"
          "runtime-failure.rkt"
          (for-syntax racket/base
@@ -257,15 +258,33 @@
 (provide check-literal
          free-identifier=?/phases)
 
-;; check-literal : id phase-level phase-level stx -> void
-;; FIXME: change to normal 'error', if src gets stripped away
-(define (check-literal id abs-phase mod-phase ctx)
-  (unless (identifier-binding id abs-phase)
+;; (check-literal id phase-level-expr ctx) -> void
+(define-syntax (check-literal stx)
+  (syntax-case stx ()
+    [(check-literal id used-phase-expr ctx)
+     (let* ([ok-phases/ct-rel
+             ;; id is bound at each of ok-phases/ct-rel
+             ;; (phase relative to the compilation of the module in which the
+             ;; 'syntax-parse' (or related) form occurs)
+             (filter (lambda (p) (identifier-binding #'id p)) '(0 1 -1 #f))])
+       ;; so we can avoid run-time call to identifier-binding if
+       ;;   (+ (phase-of-enclosing-module) ok-phase/ct-rel) = used-phase
+       (with-syntax ([ok-phases/ct-rel ok-phases/ct-rel])
+         #'(check-literal* (quote-syntax id)
+                           used-phase-expr
+                           (phase-of-enclosing-module)
+                           'ok-phases/ct-rel
+                           (quote-syntax ctx))))]))
+
+(define (check-literal* id used-phase mod-phase ok-phases/ct-rel ctx)
+  (unless (or (memv (and used-phase (- used-phase mod-phase))
+                    ok-phases/ct-rel)
+              (identifier-binding id used-phase))
     (raise-syntax-error
      #f
      (format "literal is unbound in phase ~a (phase ~a relative to the enclosing module)"
-             abs-phase
-             (and abs-phase (- abs-phase mod-phase)))
+             used-phase
+             (and used-phase (- used-phase mod-phase)))
      ctx id)))
 
 ;; free-identifier=?/phases : id phase-level id phase-level -> boolean
@@ -273,23 +292,27 @@
 ;; that y has at phase-level y.
 ;; At least one of the identifiers MUST have a binding (module or lexical)
 (define (free-identifier=?/phases x phase-x y phase-y)
-  (let ([bx (identifier-binding x phase-x)]
-        [by (identifier-binding y phase-y)])
-    (cond [(and (list? bx) (list? by))
-           (let ([modx (module-path-index-resolve (first bx))]
-                 [namex (second bx)]
-                 [phasex (fifth bx)]
-                 [mody (module-path-index-resolve (first by))]
-                 [namey (second by)]
-                 [phasey (fifth by)])
-             (and (eq? modx mody) ;; resolved-module-paths are interned
-                  (eq? namex namey)
-                  (equal? phasex phasey)))]
-          [else
-           ;; Module is only way to get phase-shift; if not module-bound names,
-           ;; then only identifiers at same phase can refer to same binding.
-           (and (equal? phase-x phase-y)
-                (free-identifier=? x y phase-x))])))
+  (cond [(eqv? phase-x phase-y)
+         (free-identifier=? x y phase-x)]
+        [else
+         (let ([bx (identifier-binding x phase-x)]
+               [by (identifier-binding y phase-y)])
+           (cond [(and (pair? bx) (pair? by))
+                  (let ([mpix (first bx)]
+                        [namex (second bx)]
+                        [defphasex (fifth bx)]
+                        [mpiy (first by)]
+                        [namey (second by)]
+                        [defphasey (fifth by)])
+                    (and (eq? namex namey)
+                         ;; resolved-module-paths are interned
+                         (eq? (module-path-index-resolve mpix)
+                              (module-path-index-resolve mpiy))
+                         (eqv? defphasex defphasey)))]
+                 [else
+                  ;; Module is only way to get phase-shift; phases differ, so
+                  ;; if not module-bound names, no way can refer to same binding.
+                  #f]))]))
 
 ;; ----
 

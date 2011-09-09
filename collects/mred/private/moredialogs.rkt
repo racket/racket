@@ -1,19 +1,14 @@
-(module moredialogs mzscheme
-  (require mzlib/class
-           mzlib/etc
-           mzlib/list
-           (prefix wx: "kernel.rkt")
-           (prefix wx: racket/snip)
+#lang racket/base
+  (require racket/class
+           (prefix-in wx: "kernel.rkt")
+           (prefix-in wx: racket/snip)
            "lock.rkt"
            "const.rkt"
            "check.rkt"
            "wx.rkt"
            "helper.rkt"
-           "editor.rkt"
            "mrtop.rkt"
            "mrcanvas.rkt"
-           "mrpopup.rkt"
-           "mrmenu.rkt"
            "mritem.rkt"
            "mrpanel.rkt"
            "mrtextfield.rkt")
@@ -190,34 +185,33 @@
   (define (can-get-page-setup-from-user?)
     (wx:can-show-print-setup?))
 
-  (define get-text-from-user
-    (case-lambda
-     [(title message) (get-text-from-user title message #f "" null)]
-     [(title message parent) (get-text-from-user title message parent "" null)]
-     [(title message parent init-val) (get-text-from-user title message parent init-val null)]
-     [(title message parent init-val style)
-      (check-label-string 'get-text-from-user title)
-      (check-label-string/false 'get-text-from-user message)
-      (check-top-level-parent/false 'get-text-from-user parent)
-      (check-string 'get-text-from-user init-val)
-      (check-style 'get-text-from-user #f '(password) style)
-      (let* ([f (make-object dialog% title parent box-width)]
-	     [ok? #f]
-	     [done (lambda (?) (lambda (b e) (set! ok? ?) (send f show #f)))])
-	(let ([t (make-object text-field% message f (lambda (t e) (when (eq? (send e get-event-type) 'text-field-enter)
-								    ((done #t) #f #f)))
-			      init-val (list* 'single 'vertical-label style))]
-	      [p (make-object horizontal-pane% f)])
-          (send p set-alignment 'right 'center)
-	  (send f stretchable-height #f)
-          (ok-cancel
-           (lambda () (make-object button% "OK" p (done #t) '(border)))
-           (lambda () (make-object button% "Cancel" p (done #f))))
-	  (send (send t get-editor) select-all)
-	  (send t focus)
-	  (send f center)
-	  (send f show #t)
-	  (and ok? (send t get-value))))]))
+  (define (get-text-from-user title message
+                              [parent #f]
+                              [init-val ""]
+                              [style null]
+                              #:dialog-mixin [dialog-mixin values])
+    (check-label-string 'get-text-from-user title)
+    (check-label-string/false 'get-text-from-user message)
+    (check-top-level-parent/false 'get-text-from-user parent)
+    (check-string 'get-text-from-user init-val)
+    (check-style 'get-text-from-user #f '(password) style)
+    (define f (make-object (dialog-mixin dialog%) title parent box-width))
+    (define ok? #f)
+    (define ((done ?) b e) (set! ok? ?) (send f show #f))
+    (define t (make-object text-field% message f (lambda (t e) (when (eq? (send e get-event-type) 'text-field-enter)
+                                                                 ((done #t) #f #f)))
+                init-val (list* 'single 'vertical-label style)))
+    (define p (make-object horizontal-pane% f))
+    (send p set-alignment 'right 'center)
+    (send f stretchable-height #f)
+    (ok-cancel
+     (lambda () (make-object button% "OK" p (done #t) '(border)))
+     (lambda () (make-object button% "Cancel" p (done #f))))
+    (send (send t get-editor) select-all)
+    (send t focus)
+    (send f center)
+    (send f show #t)
+    (and ok? (send t get-value)))
 
   (define get-choices-from-user
     (case-lambda
@@ -347,4 +341,4 @@
 	    (send f center)
 	    (send f show #t)
 	    (and ok?
-                 (get-current-color))))])))
+                 (get-current-color))))]))

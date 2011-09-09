@@ -78,7 +78,18 @@ Various common pieces of code that both the client and server need to access
            check/take-installation-lock
            dir->successful-installation-file
            dir->unpacked-file
-           dir->metadata-files)
+           dir->metadata-files
+           
+           powerful-security-guard
+           with-powerful-security-guard)
+  
+  (define powerful-security-guard (make-parameter #f))
+  (define-syntax-rule 
+    (with-powerful-security-guard e1 e2 ...)
+    (with-powerful-security-guard/proc (λ () e1 e2 ...)))
+  (define (with-powerful-security-guard/proc t)
+    (parameterize ([current-security-guard (or (powerful-security-guard) (current-security-guard))])
+      (t)))
   
   ; ==========================================================================================
   ; CACHE LOGIC
@@ -222,25 +233,27 @@ Various common pieces of code that both the client and server need to access
   ;; get-hard-link-table/internal : -> assoc-table
   (define (get-hard-link-table/internal)
     (verify-well-formed-hard-link-parameter!)
-    (if (file-exists? (HARD-LINK-FILE))
-        (map (lambda (item) (update/create-element 6 (λ (_) 'development-link) (update-element 4 bytes->path item)))
-             (with-input-from-file (HARD-LINK-FILE) read-all))
-        '()))
+    (with-powerful-security-guard
+     (if (file-exists? (HARD-LINK-FILE))
+         (map (lambda (item) (update/create-element 6 (λ (_) 'development-link) (update-element 4 bytes->path item)))
+              (with-input-from-file (HARD-LINK-FILE) read-all))
+         '())))
   
   (define (with-hard-link-lock t)
-    (let-values ([(base name dir) (split-path (HARD-LINK-FILE))])
-      (try-make-directory* base))
-    (call-with-file-lock/timeout
-     (HARD-LINK-FILE)
-     'exclusive
-     t
-     (λ () 
-       (error 'planet/planet-shared.rkt "unable to obtain lock on ~s" (HARD-LINK-FILE)))))
+    (with-powerful-security-guard
+     (let-values ([(base name dir) (split-path (HARD-LINK-FILE))])
+       (try-make-directory* base))
+     (call-with-file-lock/timeout
+      (HARD-LINK-FILE)
+      'exclusive
+      t
+      (λ () 
+        (error 'planet/planet-shared.rkt "unable to obtain lock on ~s" (HARD-LINK-FILE))))))
   
   (define (get-hard-link-table)
     ;; we can only call with-hard-link-lock when the directory containing
     ;; (HARD-LINK-FILE) exists
-    (if (file-exists? (HARD-LINK-FILE))
+    (if (with-powerful-security-guard (file-exists? (HARD-LINK-FILE)))
         (with-hard-link-lock
          (λ ()
            (get-hard-link-table/internal)))
@@ -267,14 +280,15 @@ Various common pieces of code that both the client and server need to access
   ;; assumes that the lock on the HARD-LINK table file has been acquired
   (define (save-hard-link-table table)
     (verify-well-formed-hard-link-parameter!)
-    (with-output-to-file (HARD-LINK-FILE) #:exists 'truncate
-      (lambda ()
-        (display "")
-        (for-each 
-         (lambda (row)
-           (write (update-element 4 path->bytes row))
-           (newline))
-         table))))
+    (with-powerful-security-guard
+     (with-output-to-file (HARD-LINK-FILE) #:exists 'truncate
+       (lambda ()
+         (display "")
+         (for-each 
+          (lambda (row)
+            (write (update-element 4 path->bytes row))
+            (newline))
+          table)))))
   
   ;; add-hard-link! string (listof string) num num path -> void
   ;; adds the given hard link, clearing any previous ones already in place
@@ -770,7 +784,7 @@ Various common pieces of code that both the client and server need to access
   ;; make sure the lock file exists
   (with-handlers ((exn:fail:filesystem:exists? void))
     (call-with-output-file lf void))
-  (define p (open-output-file lf #:exists 'truncate))
+  (define p (with-powerful-security-guard (open-output-file lf #:exists 'truncate)))
   (cond
     [(port-try-file-lock? p 'exclusive)
      ;; we got the lock; keep the file open

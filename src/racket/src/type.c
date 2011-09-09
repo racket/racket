@@ -125,7 +125,7 @@ scheme_init_type ()
 
   set_name(scheme_define_values_type, "<define-values-code>");
   set_name(scheme_define_syntaxes_type, "<define-syntaxes-code>");
-  set_name(scheme_define_for_syntax_type, "<define-for-syntax-code>");
+  set_name(scheme_begin_for_syntax_type, "<begin-for-syntax-code>");
   set_name(scheme_begin0_sequence_type, "<begin0-code>");
   set_name(scheme_splice_sequence_type, "<splicing-begin-code>");
   set_name(scheme_module_type, "<module-code>");
@@ -297,12 +297,13 @@ scheme_init_type ()
   set_name(_scheme_values_types_, "<resurrected>");
   set_name(_scheme_compiled_values_types_, "<internal>");
 
+  set_name(scheme_place_type, "<place>");
+  set_name(scheme_place_async_channel_type, "<place-half-channel>");
+  set_name(scheme_place_bi_channel_type, "<place-channel>");
+
 #ifdef MZ_GC_BACKTRACE
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
 #endif
-  set_name(scheme_place_type, "<place>");
-  set_name(scheme_place_async_channel_type, "<place_async_channel>");
-  set_name(scheme_place_bi_channel_type, "<place_bidirectional_channel>");
 }
 
 Scheme_Type scheme_make_type(const char *name)
@@ -539,7 +540,7 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(scheme_define_values_type, vector_obj);
   GC_REG_TRAV(scheme_define_syntaxes_type, vector_obj);
-  GC_REG_TRAV(scheme_define_for_syntax_type, vector_obj);
+  GC_REG_TRAV(scheme_begin_for_syntax_type, vector_obj);
   GC_REG_TRAV(scheme_varref_form_type, twoptr_obj);
   GC_REG_TRAV(scheme_apply_values_type, twoptr_obj);
   GC_REG_TRAV(scheme_boxenv_type, twoptr_obj);
@@ -548,6 +549,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_splice_sequence_type, seq_rec);
   GC_REG_TRAV(scheme_set_bang_type, set_bang);
   GC_REG_TRAV(scheme_module_type, module_val);
+  GC_REG_TRAV(scheme_rt_export_info, exp_info_val);
   GC_REG_TRAV(scheme_require_form_type, twoptr_obj);
 
   GC_REG_TRAV(_scheme_values_types_, bad_trav);

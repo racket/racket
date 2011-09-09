@@ -6,7 +6,7 @@
          web-server/http)
 (provide/contract
  [read-mime-types (path-string? . -> . (hash/c symbol? bytes?))]
- [make-path->mime-type (path-string? . -> . (path? . -> . bytes?))])
+ [make-path->mime-type (path-string? . -> . (path? . -> . (or/c false/c bytes?)))])
 
 ; read-mime-types : path? -> hash-table?
 (define (read-mime-types a-path)
@@ -40,5 +40,5 @@
       [(regexp #rx#".*\\.([^\\.]*$)" (list _ sffx))
        (hash-ref (force MIME-TYPE-TABLE)
                  (lowercase-symbol! sffx)
-                 TEXT/HTML-MIME-TYPE)]
-      [_ TEXT/HTML-MIME-TYPE])))
+                 #f)]
+      [_ #f])))

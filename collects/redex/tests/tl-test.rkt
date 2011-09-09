@@ -977,6 +977,33 @@
                  x)
           '(2 1)))
   
+  (let ()
+    (define-language L
+      (n z (s n)))
+    
+    (define-metafunction L
+      [(f n)
+       n_1
+       (judgment-holds (p n n_1))])
+    
+    (define-judgment-form L
+      #:mode (p I O)
+      #:contract (p n n)
+      [(p z z)]
+      [(p (s n) n)]
+      [(p (s n) z)])
+    
+    (test (term (f (s z)))
+          (term z))
+    (test (with-handlers ([exn:fail:redex? exn-message])
+            (term (f (s (s z))))
+            "")
+          #rx"different ways and returned different results"))
+  
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(require redex/reduction-semantics))
+    (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
+  
   ;; errors for not-yet-defined metafunctions
   (test (parameterize ([current-namespace (make-empty-namespace)])
           (namespace-attach-module (namespace-anchor->namespace this-namespace) 'redex/reduction-semantics)
@@ -989,14 +1016,14 @@
           (with-handlers ([exn:fail:redex? exn-message])
             (eval '(require 'm))
             #f))
-        "metafunction q applied before its definition")
+        "reference to metafunction q before its definition")
   (test (with-handlers ([exn:fail:redex? exn-message])
           (let ()
             (term (q))
             (define-language L)
             (define-metafunction L [(q) ()])
             #f))
-        "metafunction q applied before its definition")
+        "reference to metafunction q before its definition")
   
   (exec-syntax-error-tests "syn-err-tests/metafunction-definition.rktd")
 ;                                                                                                 
@@ -1818,6 +1845,19 @@
                    (judgment-holds (R a any))))
              'a)
             '(a b)))
+    
+    ; a call to a metafunction that looks like a pattern variable
+    (let ()
+      (define result 'result)
+      (define-language L
+        (f any))
+      (define-judgment-form L
+        #:mode (J O)
+        [(J (f_2))])
+      (define-metafunction L
+        [(f_2) ,result])
+      (test (judgment-holds (J any) any)
+            (list result)))
   
     ;                                                                 
     ;                                                                 
@@ -2127,9 +2167,32 @@
       (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd")
       (exec-runtime-error-tests "run-err-tests/judgment-form-ellipses.rktd"))
     
-    (parameterize ([current-namespace (make-base-namespace)])
-      (eval '(require redex/reduction-semantics))
-      (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd"))
+  
+;                                                                               
+;                                                                               
+;                                                                               
+;       ;            ;;    ;                                                    
+;       ;           ;      ;                          ;                         
+;       ;           ;                                 ;                         
+;    ;;;;   ;;;    ;;;     ;    ;;;;    ;;;          ;;;     ;;;   ; ;;   ;;;;; 
+;   ;   ;  ;   ;    ;      ;    ;   ;  ;   ;  ;;;;;   ;     ;   ;  ;;  ;  ; ; ; 
+;   ;   ;  ;;;;;    ;      ;    ;   ;  ;;;;;          ;     ;;;;;  ;   ;  ; ; ; 
+;   ;   ;  ;        ;      ;    ;   ;  ;              ;     ;      ;      ; ; ; 
+;   ;   ;  ;   ;    ;      ;    ;   ;  ;   ;          ;     ;   ;  ;      ; ; ; 
+;    ;;;;   ;;;     ;      ;    ;   ;   ;;;            ;;    ;;;   ;      ; ; ; 
+;                                                                               
+;                                                                               
+;                                                                               
+  
+  (test (let ()
+          (define-term x 1)
+          (term (x x)))
+        (term (1 1)))
+  (test (let ()
+          (define-term x 1)
+          (let ([x 'whatever])
+            (term (x x))))
+        (term (x x)))
     
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;

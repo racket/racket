@@ -10,6 +10,7 @@ run() {
 
 cd tests 
 
+run key-error.rkt
 run bad-draw.rkt
 run error-in-tick.rkt
 run error-in-draw.rkt
@@ -34,3 +35,4 @@ run record-stop-when.rkt
 run stop-when-crash.rkt
 run on-tick-universe-with-limit.rkt
 run on-tick-with-limit.rkt
+

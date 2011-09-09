@@ -242,7 +242,12 @@ flags:
   @item{@FlagFirst{X} @nonterm{dir} or @DFlagFirst{collects}
         @nonterm{dir} : Sets @nonterm{dir} as the path to the main
         collection of libraries by making @racket[(find-system-path
-        'collects-dir)] produce @nonterm{dir}.}
+        'collects-dir)] produce @nonterm{dir}. If @nonterm{dir} is an
+        empty string, then @racket[(find-system-path 'collects-dir)]
+        returns @filepath{.}, but
+        @racket[current-library-collection-paths] is initialized to
+        the empty list and @racket[use-collection-link-paths] is
+        initialized to @racket[#f].}
 
   @item{@FlagFirst{S} @nonterm{dir} or @DFlagFirst{search}
         @nonterm{dir} : Adds @nonterm{dir} to the default library

@@ -30,7 +30,7 @@
   (provide/contract [id styling-f/c] ...))
 (provide-styling racketmodfont racketoutput
                  racketerror racketfont racketvalfont racketresultfont racketidfont racketvarfont
-                 racketparenfont racketkeywordfont racketmetafont
+                 racketcommentfont racketparenfont racketkeywordfont racketmetafont
                  onscreen defterm filepath exec envvar Flag DFlag PFlag DPFlag math
                  procedure
                  indexed-file indexed-envvar idefterm pidefterm)
@@ -101,6 +101,8 @@
   (make-element paren-color (decode-content str)))
 (define (racketmetafont . str)
   (make-element meta-color (decode-content str)))
+(define (racketcommentfont . str)
+  (make-element comment-color (decode-content str)))
 (define (racketmodfont . str)
   (make-element module-color (decode-content str)))
 (define (racketkeywordfont . str)

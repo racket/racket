@@ -147,5 +147,81 @@
       (test (void) dynamic-require 'compiler/cm #f))))
 
 ;; ----------------------------------------
+;; test for make-compile-lock
+
+(let ()
+  #|
+  
+This test creates a file to compile that, during compilation, conditionally
+freezes forever. It first creates a thread to compile the file in freeze-forever
+mode, and then, when the thread is stuck, creates a second thread to compile
+the file and kills the first thread. The second compile should complete properly
+and the test makes sure that it does and that the first thread doesn't complete.
+
+  |#
+  
+  (define (sexps=>file file #:lang [lang #f] . sexps)
+    (call-with-output-file file 
+      (λ (port)
+        (when lang (fprintf port "~a\n" lang))
+        (for ([x (in-list sexps)]) (fprintf port "~s\n" x)))
+      #:exists 'truncate))
+
+  (define (poll-file file for)
+    (let loop ([n 100])
+      (when (zero? n)
+        (error 'compiler/cm::poll-file "never found ~s in ~s" for file))
+      (define now (call-with-input-file file (λ (port) (read-line port))))
+      (unless (equal? now for)
+        (sleep .1)
+        (loop (- n 1)))))
+  
+  (define file-to-compile (make-temporary-file "cmtest-file-to-compile~a.rkt"))
+  (define control-file (make-temporary-file "cmtest-control-file-~a.rktd"))
+  (define about-to-get-stuck-file (make-temporary-file "cmtest-about-to-get-stuck-file-~a.rktd"))
+  
+  (sexps=>file file-to-compile #:lang "#lang racket"
+               `(define-syntax (m stx)
+                  (call-with-output-file ,(path->string about-to-get-stuck-file) 
+                    (λ (port) (fprintf port "about\n"))
+                    #:exists 'truncate)
+                  (if (call-with-input-file ,(path->string control-file) read)
+                      (semaphore-wait (make-semaphore 0))
+                      #'1))
+               '(void (m)))
+  (sexps=>file control-file #t)
+  
+  (define p-l-c (compile-lock->parallel-lock-client (make-compile-lock) (current-custodian)))
+  (define t1-finished? #f)
+  (parameterize ([parallel-lock-client p-l-c]
+                 [current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)])
+    (define finished (make-channel))
+    (define t1 (thread (λ () (dynamic-require file-to-compile #f) (set! t1-finished? #t))))
+    (poll-file about-to-get-stuck-file "about")
+    (sexps=>file control-file #f)
+    (define t2 (thread (λ () (dynamic-require file-to-compile #f) (channel-put finished #t))))
+    (sleep .1) ;; give thread t2 time to get stuck waiting for t1 to compile
+    (kill-thread t1)
+    (channel-get finished)
+
+    (test #f 't1-finished? t1-finished?)
+    
+    (test #t 
+          'compile-lock::compiled-file-exists
+          (file-exists?
+           (let-values ([(base name dir?) (split-path file-to-compile)])
+             (build-path base 
+                         "compiled" 
+                         (bytes->path (regexp-replace #rx"[.]rkt" (path->bytes name) "_rkt.zo"))))))
+    
+    (define compiled-dir
+      (let-values ([(base name dir?) (split-path file-to-compile)])
+        (build-path base "compiled")))
+    (delete-file file-to-compile)
+    (delete-file control-file)
+    (delete-file about-to-get-stuck-file)
+    (delete-directory/files compiled-dir)))
+
+;; ----------------------------------------
 
 (report-errs)

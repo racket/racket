@@ -42,7 +42,7 @@ including the following:
 
  @item{@racketmodname[typed/racket] --- like
        @racketmodname[racket], but statically typed; see
-       @other-manual['(lib "typed-scheme/scribblings/ts-guide.scrbl")]}
+       @other-manual['(lib "typed-racket/scribblings/ts-guide.scrbl")]}
 
  @item{@racketmodname[lazy] --- like @racketmodname[racket/base], but
        avoids evaluating an expression until its value is needed; see

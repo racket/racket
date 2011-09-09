@@ -1,14 +1,15 @@
 #lang scheme/unit
 
   (require string-constants
+           (prefix-in r: racket/gui/base)
            "sig.rkt"
            "../preferences.rkt"
            mred/mred-sig
            scheme/path)
   
-  
   (import mred^
-          [prefix keymap: framework:keymap^])
+          [prefix keymap: framework:keymap^]
+          [prefix frame: framework:frame^])
   
   (export (rename framework:finder^
                   [-put-file put-file]
@@ -44,7 +45,8 @@
              [name (or (and (string? name) (file-name-from-path name))
                        name)]
              [f (put-file prompt parent-win directory name
-                          (default-extension) style (default-filters))])
+                          (default-extension) style (default-filters)
+                          #:dialog-mixin frame:focus-table-mixin)])
         (and f (or (not filter) (filter-match? filter f filter-msg))
              (let* ([f (normal-case-path (simple-form-path f))]
                     [dir (path-only f)]
@@ -60,6 +62,7 @@
                   #f]
                  [else f]))))))
   
+  (define op (current-output-port))
   (define (*get-file style)
     (lambda ([directory #f]
              [prompt (string-constant select-file)]
@@ -67,7 +70,8 @@
              [filter-msg (string-constant file-wrong-form)]
              [parent-win (dialog-parent-parameter)])
       (let ([f (get-file prompt parent-win directory #f
-                         (default-extension) style (default-filters))])
+                         (default-extension) style (default-filters)
+                         #:dialog-mixin frame:focus-table-mixin)])
         (and f (or (not filter) (filter-match? filter f filter-msg))
              (cond [(directory-exists? f)
                     (message-box (string-constant error)

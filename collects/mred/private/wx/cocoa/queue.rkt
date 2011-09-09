@@ -56,10 +56,21 @@
       (queue-prefs-event)
       #t]
   [-a _BOOL (validateMenuItem: [_id menuItem])
-      (if (ptr-equal? (selector openPreferences:) 
-                      (tell #:type _SEL menuItem action))
-          (not (eq? (application-pref-handler) nothing-application-pref-handler))
-          (super-tell #:type _BOOL validateMenuItem: menuItem))]
+      (cond 
+       [(ptr-equal? (selector openPreferences:) 
+                    (tell #:type _SEL menuItem action))
+        (not (eq? (application-pref-handler) nothing-application-pref-handler))]
+       [(ptr-equal? (selector openAbout:) 
+                    (tell #:type _SEL menuItem action))
+        #t]
+       [else
+        (super-tell #:type _BOOL validateMenuItem: menuItem)])]
+  [-a _BOOL (openAbout: [_id sender])
+      (if (eq? nothing-application-about-handler
+               (application-about-handler))
+          (tellv app orderFrontStandardAboutPanel: sender)
+          (queue-about-event))
+      #t]
   [-a _BOOL (application: [_id theApplication] openFile: [_NSString filename])
       (queue-file-event (string->path filename))]
   [-a _BOOL (applicationShouldHandleReopen: [_id app] hasVisibleWindows: [_BOOL has-visible?])
@@ -82,15 +93,17 @@
 ;; explicitly register with the dock so the application can receive
 ;; keyboard events.
 (define-cstruct _ProcessSerialNumber
-  ([highLongOfPSN _ulong]
-   [lowLongOfPSN _ulong]))
+  ([highLongOfPSN _uint32]
+   [lowLongOfPSN _uint32]))
 (define kCurrentProcess 2)
 (define kProcessTransformToForegroundApplication 1)
 (define-appserv TransformProcessType (_fun _ProcessSerialNumber-pointer
                                            _uint32
                                            -> _OSStatus))
-(void (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
-                            kProcessTransformToForegroundApplication))
+(let ([v (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
+                               kProcessTransformToForegroundApplication)])
+  (unless (zero? v)
+    (log-error (format "error from TransformProcessType: ~a" v))))
 
 (define app-delegate (tell (tell MyApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)
@@ -108,8 +121,9 @@
 (define-appserv CGDisplayRegisterReconfigurationCallback 
   (_fun (_fun #:atomic? #t -> _void) _pointer -> _int32))
 (define (on-screen-changed) (post-dummy-event))
-(void
- (CGDisplayRegisterReconfigurationCallback on-screen-changed #f))
+(let ([v (CGDisplayRegisterReconfigurationCallback on-screen-changed #f)])
+  (unless (zero? v)
+    (log-error (format "error from CGDisplayRegisterReconfigurationCallback: ~a" v))))
 
 (tellv app finishLaunching)
 

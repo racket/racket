@@ -33,7 +33,7 @@
         ;; that expect to get (lib "racket/init") as a result.
         #:additional-modules '((lib "racket/init")))
   ;; (test "planet/lang.rkt")
-  (test "typed-scheme/nightly-run.rkt" #:timeout 25)
+  (test "typed-racket/nightly-run.rkt" #:timeout 25)
   (test "match/plt-match-tests.rkt")
   ;; (test "stepper/automatic-tests.rkt" #:additional-modules (scheme/base))
   (test "lazy/main.rkt")

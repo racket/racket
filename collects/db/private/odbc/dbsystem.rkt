@@ -1,11 +1,8 @@
 #lang racket/base
 (require racket/class
-         ffi/unsafe
-         ffi/unsafe/atomic
          "../generic/interfaces.rkt"
          "../generic/sql-data.rkt"
-         "../generic/sql-convert.rkt"
-         "ffi.rkt")
+         "../generic/sql-convert.rkt")
 (provide dbsystem
          supported-typeid?)
 

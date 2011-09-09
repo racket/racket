@@ -28,6 +28,11 @@
 #ifdef DOS_FILE_SYSTEM
 # include <windows.h>
 #endif
+#ifdef NO_ERRNO_GLOBAL
+# define errno -1
+#else
+# include <errno.h>
+#endif
 #ifdef USE_C_SYSLOG
 # include <syslog.h>
 # include <stdarg.h>
@@ -155,6 +160,14 @@ static void default_output(char *s, intptr_t len)
 {
   fwrite(s, len, 1, stderr);
   fflush(stderr);
+}
+
+intptr_t scheme_errno() {
+#ifdef WINDOWS_FILE_HANDLES
+  return GetLastError();
+#else
+  return errno;
+#endif
 }
 
 Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)

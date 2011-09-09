@@ -628,13 +628,14 @@ plt-extras :+= (collects: "texpict/")
 ;; -------------------- frtime
 plt-extras :+= (package: "frtime/")
 
-;; -------------------- typed-scheme
-dr-extras :+= (package: "typed-scheme/" ; used in drracket
+;; -------------------- typed-racket
+dr-extras :+= (package: "typed-racket/" ; used in drracket
                         #:docs "ts-{reference|guide}/")
               (- (collects: "typed/")
                  (cond (not plt) => (collects: "typed/test-engine/")
                                     (collects: "typed/rackunit/")
                                     (srcfile: "typed/rackunit.rkt")))
+              (collects: "typed-scheme") ; compatibility
 
 ;; -------------------- gui-debugger
 plt-extras :+= (collects: "gui-debugger/")

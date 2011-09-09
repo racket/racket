@@ -40,3 +40,10 @@
 (#rx"term .* does not match pattern"
  ([rhs 'a]) ([ellipsis ...])
  (term-let ([(x ellipsis) rhs]) 3))
+
+("reference to term x before its definition"
+ ([use x]) ([def x])
+ (let ()
+   (define t (term (use y)))
+   (define-term def z)
+   t))

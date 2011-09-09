@@ -14,7 +14,7 @@
  [read-range-header (-> (listof header?) (or/c (listof pair?) false/c))]
  [make
   (->* (#:url->path url->path/c)
-       (#:path->mime-type (path-string? . -> . bytes?)
+       (#:path->mime-type (path-string? . -> . (or/c false/c bytes?))
                           #:indices (listof path-string?))
        dispatcher/c)])
 
@@ -27,7 +27,7 @@
 (define interface-version 'v1)
 
 (define (make #:url->path url->path
-              #:path->mime-type [path->mime-type (lambda (path) TEXT/HTML-MIME-TYPE)]
+              #:path->mime-type [path->mime-type (lambda (path) #f)]
               #:indices [indices (list "index.html" "index.htm")])
   (lambda (conn req)
     (define uri (request-uri req))

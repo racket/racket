@@ -20,7 +20,7 @@ enum {
 
   scheme_define_values_type,            /* 15 */
   scheme_define_syntaxes_type,          /* 16 */
-  scheme_define_for_syntax_type,        /* 17 */
+  scheme_begin_for_syntax_type,         /* 17 */
   scheme_set_bang_type,                 /* 18 */
   scheme_boxenv_type,                   /* 19 */
   scheme_begin0_sequence_type,          /* 20 */
@@ -270,6 +270,7 @@ enum {
   scheme_rt_validate_clearing,          /* 246 */
   scheme_rt_rb_node,                    /* 247 */
   scheme_rt_lightweight_cont,           /* 248 */
+  scheme_rt_export_info,                /* 249 */
 #endif
 
   _scheme_last_type_

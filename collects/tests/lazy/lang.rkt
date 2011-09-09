@@ -209,4 +209,5 @@
             (list-tests)
             (take-tests)
             (misc-tests)
-            (pcps-tests))))
+            (pcps-tests)
+            (strictness-tests))))

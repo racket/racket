@@ -2,7 +2,7 @@
 @(require scribble/manual
           scribble/eval
           scribble/struct
-          scheme/sandbox
+          racket/sandbox
           "config.rkt"
           (for-label db db/util/datetime db/util/geometry db/util/postgresql))
 

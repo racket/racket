@@ -7,8 +7,8 @@
 (export test^)
 
 (define (test-concurrency workers)
-  (test-case (format "lots of threads (~s)" workers)
-    (unless (ANYFLAGS 'isora 'isdb2)
+  (unless (ANYFLAGS 'isora 'isdb2)
+    (test-case (format "lots of threads (~s)" workers)
       (call-with-connection
        (lambda (c)
          (query-exec c "create temporary table play_numbers (n integer)")
@@ -40,8 +40,8 @@
             (query-value c "select max(n) from play_numbers"))))
 
 (define (kill-safe-test proxy?)
-  (test-case (format "kill-safe test~a" (if proxy? " (proxy)" ""))
-    (unless (ANYFLAGS 'isora 'isdb2)
+  (unless (ANYFLAGS 'isora 'isdb2)
+    (test-case (format "kill-safe test~a" (if proxy? " (proxy)" ""))
     (call-with-connection
      (lambda (c0)
        (let ([c (if proxy?
@@ -62,50 +62,48 @@
          (for ([t (in-hash-keys threads)])
            (sync t))))))))
 
-;; ----
-
-(define pool-test
-  (test-suite "connection pools"
-    (test-case "lease, limit, release"
-      (let* ([counter 0]
-             [p (connection-pool (lambda () (set! counter (+ 1 counter)) (connect-for-test))
-                                 #:max-connections 2)]
-             [c1 (connection-pool-lease p)]
-             [c2 (connection-pool-lease p)])
-        ;; Two created
-        (check-equal? counter 2)
-        ;; Can't create new one yet
-        (check-exn exn:fail? (lambda () (connection-pool-lease p)))
-        ;; But if we free one...
-        (disconnect c2)
-        (check-equal? (connected? c2) #f)
-        (let ([c3 (connection-pool-lease p)])
-          (check-equal? counter 2 "not new") ;; used idle, not new connection
-          (check-equal? (connected? c3) #t))))
-    (test-case "release on evt"
-      (let* ([p (connection-pool connect-for-test #:max-connections 2)]
-             [sema (make-semaphore 0)]
-             [c1 (connection-pool-lease p sema)])
-        (check-equal? (connected? c1) #t)
-        ;; Closes when evt ready
-        (begin (semaphore-post sema) (sleep 0.1))
-        (check-equal? (connected? c1) #f)))
-    (test-case "release on custodian"
-      (let* ([p (connection-pool connect-for-test #:max-connections 2)]
-             [cust (make-custodian)]
-             [c1 (connection-pool-lease p cust)])
-        (check-equal? (connected? c1) #t)
-        ;; Closes when custodian shutdown
-        (begin (custodian-shutdown-all cust) (sleep 0.1))
-        (check-equal? (connected? c1) #f)))))
+(define (async-test)
+  (unless (ANYFLAGS 'ismy 'isora 'isdb2)
+    (test-case "asynchronous execution"
+      (call-with-connection
+       (lambda (c)
+         (query-exec c "create temporary table nums (n integer)")
+         (for ([i (in-range 40)])
+           (query-exec c (sql "insert into nums (n) values ($1)") i))
+         (let* ([the-sql "select cast(max(a.n * b.n *c.n * d.n) as varchar) \
+                          from nums a, nums b, nums c, nums d"]
+                [pst (prepare c the-sql)]
+                [sema (make-semaphore 0)]
+                [peek (semaphore-peek-evt sema)]
+                [counter 0]
+                [thd
+                 (thread (lambda ()
+                           (let loop ()
+                             (sync peek)
+                             (set! counter (add1 counter))
+                             (sleep 0.01)
+                             (loop))))])
+           (let ([start (current-inexact-milliseconds)])
+             (semaphore-post sema)
+             (query-value c pst)
+             (semaphore-wait sema)
+             (let ([end (current-inexact-milliseconds)])
+               (when (ANYFLAGS 'postgresql 'mysql 'async)
+                 (when #f
+                   (printf "counter = ~s\n" counter)
+                   (printf "time elapsed = ~s\n" (- end start)))
+                 ;; If c does not execute asynchronously, expect counter to be about 0.
+                 (check-pred positive? counter)
+                 (let ([expected-counter (/ (- end start) (* 0.01 1000))])
+                   (check > counter (* 0.5 expected-counter))))))))))))
 
 ;; ----
 
 (define test
   (test-suite "Concurrency"
+    (async-test)
     ;; Tests whether connections are properly locked.
     (test-concurrency 1)
     (test-concurrency 2)
     (test-concurrency 20)
-    (kill-safe-test #t)
-    pool-test))
+    (kill-safe-test #t)))

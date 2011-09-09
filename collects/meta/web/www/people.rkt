@@ -113,6 +113,6 @@
        In particular, please check out the Racket-related work being done at
        @|-schematics|.}
     @h4{And ...}
-    @p{Finally, Racket is supported by an band of volunteers who contribute not
+    @p{Finally, Racket is supported by a band of volunteers who contribute not
        only code and documentation but also infectious enthusiasm—too many to
        name but whose help and encouragement make this fun and worthwhile.}})

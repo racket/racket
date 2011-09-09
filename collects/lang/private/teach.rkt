@@ -1636,13 +1636,13 @@
 		  ;;  forms know that it's ok to expand in this internal
 		  ;;  definition context.
 		  [int-def-ctx (build-expand-context (make-expanding-for-intermediate-local))])
-	      (let* ([partly-expanded-defns 
-		      (map (lambda (d)
-			     (local-expand
-			      d
-			      int-def-ctx
-			      (kernel-form-identifier-list)))
-			   defns)]
+	      (let* ([partly-expand (lambda (d)
+                                      (local-expand
+                                       d
+                                       int-def-ctx
+                                       (kernel-form-identifier-list)))]
+                     [partly-expanded-defns
+		      (map partly-expand defns)]
 		     [flattened-defns
 		      (let loop ([l partly-expanded-defns][origs defns])
 			(apply
@@ -1653,7 +1653,7 @@
 				  ;; or `define-syntaxes', because only macros can generate
 				  ;; them
 				  [(begin defn ...)
-				   (let ([l (syntax->list (syntax (defn ...)))])
+				   (let ([l (map partly-expand (syntax->list (syntax (defn ...))))])
 				     (loop l l))]
 				  [(define-values . _)
 				   (list d)]
@@ -2145,9 +2145,7 @@
 	       (with-syntax ([x (loop (syntax x) (sub1 depth))]
 			     [rest (loop (syntax rest) depth)]
 			     [uq-splicing (stx-car (stx-car stx))])
-		 (stepper-syntax-property (syntax/loc stx (the-cons/matchable (list (quote uq-splicing) x) rest))
-                                  'stepper-hint
-                                  'quasiquote-the-cons-application)))]
+                 (syntax/loc stx (the-cons/matchable (list (quote uq-splicing) x) rest))))]
 	  [intermediate-unquote-splicing
 	   (teach-syntax-error
 	    'quasiquote
@@ -2161,9 +2159,7 @@
 	  [(a . b)
 	   (with-syntax ([a (loop (syntax a) depth)]
 			 [b (loop (syntax b) depth)])
-	     (stepper-syntax-property (syntax/loc stx (the-cons/matchable a b))
-                              'stepper-hint
-                              'quasiquote-the-cons-application))]
+             (syntax/loc stx (the-cons/matchable a b)))]
 	  [any
 	   (syntax/loc stx (quote any))])))
 

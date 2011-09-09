@@ -50,7 +50,6 @@
                      [(rest ...) (if n
                                      #`((subscript #,(format "~a" n)))
                                      #`())])
-         
          #`(begin
              (require (for-label for-label-mod ... ...))
              #,@(if n

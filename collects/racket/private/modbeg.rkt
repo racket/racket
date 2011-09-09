@@ -61,7 +61,7 @@
                                                  begin begin0 set!
                                                  with-continuation-mark
                                                  if #%app #%expression
-                                                 define-values define-syntaxes define-values-for-syntax
+                                                 define-values define-syntaxes begin-for-syntax
                                                  module 
                                                  #%module-begin 
                                                  #%require #%provide 
@@ -98,7 +98,7 @@
                                                            (free-identifier=? i a))
                                                          (syntax->list
                                                           (quote-syntax 
-                                                           (define-values define-syntaxes define-values-for-syntax
+                                                           (define-values define-syntaxes begin-for-syntax
                                                              module 
                                                              #%module-begin 
                                                              #%require #%provide))))

@@ -28,7 +28,9 @@
 
     Return @racket[menu-bar%].
   }
-  @defmethod*[(((make-root-area-container (class (implementation?/c area-container<%>)) (parent (is-a?/c area-container<%>))) (is-a?/c area-container<%>)))]{
+  @defmethod*[(((make-root-area-container (class (implementation?/c area-container<%>))
+                                          (parent (is-a?/c area-container<%>)))
+                (is-a?/c area-container<%>)))]{
     Override this method to insert a panel in between the panel used by
     the clients of this frame and the frame itself. For example, to insert
     a status line panel override this method with something like this:
@@ -160,6 +162,35 @@
     using the @method[frame:basic<%> make-root-area-container] method).
   }
 }
+
+@definterface[frame:focus-table<%> (top-level-window<%>)]{}
+
+@defmixin[frame:focus-table-mixin (frame%) (frame:focus-table<%>)]{
+
+  Instances of classes returned from this mixin track how frontmost they are
+  based on calls made to methods at the Racket level, instead of using
+  the calls made by the operating system as it tracks the focus.
+  
+  See also @racket[frame:lookup-focus-table], @racket[test:use-focus-table]
+  and @racket[test:get-active-top-level-window].
+                                                         
+  @defmethod[#:mode override (show [on? boolean?]) void?]{
+    When @racket[on?] is @racket[#t], adds this frame to the 
+    front of the list of frames stored with the frame's eventspace. When 
+    @racket[on?] is @racket[#f], this method removes this frame
+    from the list.
+
+    See also @racket[frame:lookup-focus-table], @racket[test:use-focus-table]
+    and @racket[test:get-active-top-level-window].
+  }
+  @defmethod[#:mode augment (on-close) void?]{
+    Removes this frame from the list of frames stored with the frame's eventspace.
+    
+    See also @racket[frame:lookup-focus-table], @racket[test:use-focus-table]
+    and @racket[test:get-active-top-level-window].
+  }
+}
+                                                     
 @definterface[frame:size-pref<%> (frame:basic<%>)]{
 
 }
@@ -264,7 +295,9 @@
 }
 @defmixin[frame:status-line-mixin (frame:basic<%>) (frame:status-line<%>)]{
 
-  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%)) (parent (is-a?/c panel%))) (is-a?/c panel%)))]{
+  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%)) 
+                                                          (parent (is-a?/c panel%)))
+                                (is-a?/c panel%)))]{
 
     Adds a panel at the bottom of the frame to hold the status
     lines.
@@ -344,7 +377,9 @@
   The result of this mixin uses the same initialization arguments as the
   mixin's argument.
 
-  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c area-container<%>)) (parent (is-a?/c area-container<%>))) (is-a?/c area-container<%>)))]{
+  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c area-container<%>))
+                                                          (parent (is-a?/c area-container<%>)))
+                                (is-a?/c area-container<%>)))]{
 
     Builds an extra panel for displaying various information.
   }
@@ -526,7 +561,16 @@
                    (height (or/c (integer-in 0 10000) false/c) #f)
                    (x (or/c (integer-in -10000 10000) false/c) #f)
                    (y (or/c (integer-in -10000 10000) false/c) #f)
-                   (style (listof (or/c 'no-resize-border 'no-caption 'no-system-menu 'hide-menu-bar 'mdi-parent 'mdi-child 'toolbar-button 'float 'metal)) null)
+                   (style (listof (or/c 'no-resize-border
+                                        'no-caption
+                                        'no-system-menu
+                                        'hide-menu-bar
+                                        'mdi-parent
+                                        'mdi-child
+                                        'toolbar-button
+                                        'float
+                                        'metal))
+                          null)
                    (enabled any/c #t)
                    (border (integer-in 0 1000) 0)
                    (spacing (integer-in 0 1000) 0)
@@ -590,7 +634,9 @@
     returns @racket[#t].
   }
 
-  @defmethod*[#:mode override (((file-menu:save-as-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
+  @defmethod*[#:mode override (((file-menu:save-as-callback (item (is-a?/c menu-item%))
+                                                            (evt (is-a?/c control-event%)))
+                                void?))]{
     Prompts the user for a file name and uses that filename to save the buffer.
     Calls @method[frame:editor<%> save-as] with no arguments.
   }
@@ -599,7 +645,9 @@
     returns @racket[#t].
   }
 
-  @defmethod*[#:mode override (((file-menu:print-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
+  @defmethod*[#:mode override (((file-menu:print-callback (item (is-a?/c menu-item%)) 
+                                                          (evt (is-a?/c control-event%)))
+                                void?))]{
     Calls the @method[editor<%> print] method of @racket[editor<%>] with the
     default arguments, except that the @racket[output-mode] argument is the
     result of calling @racket[preferences:get] with
@@ -619,7 +667,9 @@
     text.
   }
 
-  @defmethod*[#:mode override (((help-menu:about-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
+  @defmethod*[#:mode override (((help-menu:about-callback (item (is-a?/c menu-item%)) 
+                                                          (evt (is-a?/c control-event%)))
+                                void?))]{
     Calls @racket[message-box] with a message welcoming the user to the
     application named by @racket[application:current-app-name]
   }
@@ -663,7 +713,9 @@
     @racket['framework:open-here?] is set.
   }
 
-  @defmethod*[#:mode override (((file-menu:new-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
+  @defmethod*[#:mode override (((file-menu:new-callback (item (is-a?/c menu-item%))
+                                                        (evt (is-a?/c control-event%))) 
+                                void?))]{
     When the preference @racket['framework:open-here?]  preference is set, this
     method prompts the user, asking if they would like to create a new frame,
     or just clear out this one. If they clear it out and the file hasn't been
@@ -766,7 +818,9 @@
   Adds support for a 20,000-feet view via @racket[text:delegate<%>] and
   @racket[text:delegate-mixin].
 
-  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%)) (parent (is-a?/c panel%))) (is-a?/c panel%)))]{
+  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%))
+                                                          (parent (is-a?/c panel%)))
+                                (is-a?/c panel%)))]{
     Adds a panel outside to hold the delegate @racket[editor-canvas%] and
     @racket[text%].
   }
@@ -867,7 +921,10 @@
     returns @racket[#t].
   }
 
-  @defmethod*[#:mode override (((edit-menu:find-again-backwards-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
+  @defmethod*[#:mode override (((edit-menu:find-again-backwards-callback
+                                 (item (is-a?/c menu-item%))
+                                 (evt (is-a?/c control-event%)))
+                                void?))]{
     Calls @method[frame:searchable unhide-search] and then
     @method[frame:searchable<%> search].
   }

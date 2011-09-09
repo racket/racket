@@ -16,6 +16,22 @@ administrative functions for managing connections.
 
 @declare-exporting[db]
 
+There are four kinds of base connection, and they are divided into two
+groups: @deftech{wire-based connections} and @deftech{FFI-based
+connections}. PostgreSQL and MySQL connections are wire-based, and
+SQLite and ODBC connections are FFI-based.
+
+Wire-based connections communicate using @tech/reference{ports}, which
+do not cause other Racket threads to block. In contrast, all Racket
+threads are blocked during an FFI call, so FFI-based connections can
+seriously degrade the interactivity of a Racket program, particularly
+if long-running queries are performed using the connection. This
+problem can be avoided by creating the FFI-based connection in a
+separate @tech/reference{place} using the @racket[#:use-place]
+keyword argument. Such a connection will not block all Racket threads
+during queries; the disadvantage is the cost of creating and
+communicating with a separate @tech/reference{place}.
+
 Base connections are made using the following functions.
 
 @defproc[(postgresql-connect [#:user user string?]
@@ -188,7 +204,8 @@ Base connections are made using the following functions.
                 [#:busy-retry-limit busy-retry-limit 
                  (or/c exact-nonnegative-integer? +inf.0) 10]
                 [#:busy-retry-delay busy-retry-delay
-                 (and/c rational? (not/c negative?)) 0.1])
+                 (and/c rational? (not/c negative?)) 0.1]
+                [#:use-place use-place boolean? #f])
          connection?]{
 
   Opens the SQLite database at the file named by @racket[database], if
@@ -214,6 +231,10 @@ Base connections are made using the following functions.
   attempted once. If after @racket[busy-retry-limit] retries the
   operation still does not succeed, an exception is raised.
 
+  If @racket[use-place] is true, the actual connection is created in
+  a distinct @tech/reference{place} for database connections and a
+  proxy is returned.
+
   If the connection cannot be made, an exception is raised.
 
   @(examples/results
@@ -234,7 +255,8 @@ Base connections are made using the following functions.
                        [#:strict-parameter-types? strict-parameter-types? boolean? #f]
                        [#:character-mode character-mode
                         (or/c 'wchar 'utf-8 'latin-1)
-                        'wchar])
+                        'wchar]
+                       [#:use-place use-place boolean? #f])
          connection?]{
 
   Creates a connection to the ODBC Data Source named @racket[dsn]. The
@@ -258,6 +280,10 @@ Base connections are made using the following functions.
   See @secref["odbc-status"] for notes on specific ODBC drivers and
   recommendations for connection options.
 
+  If @racket[use-place] is true, the actual connection is created in
+  a distinct @tech/reference{place} for database connections and a
+  proxy is returned.
+
   If the connection cannot be made, an exception is raised.
 }
 
@@ -269,7 +295,8 @@ Base connections are made using the following functions.
                               [#:strict-parameter-types? strict-parameter-types? boolean? #f]
                               [#:character-mode character-mode
                                (or/c 'wchar 'utf-8 'latin-1)
-                               'wchar])
+                               'wchar]
+                              [#:use-place use-place boolean? #f])
          connection?]{
 
   Creates a connection using an ODBC connection string containing a
@@ -606,7 +633,8 @@ ODBC's DSNs.
            [#:busy-retry-limit busy-retry-limit 
             (or/c exact-nonnegative-integer? +inf.0) @#,absent]
            [#:busy-retry-delay busy-retry-delay
-            (and/c rational? (not/c negative?)) @#,absent])
+            (and/c rational? (not/c negative?)) @#,absent]
+           [#:use-place use-place boolean? @#,absent])
          data-source?]
 @defproc[(odbc-data-source
            [#:dsn dsn (or/c string? #f) @#,absent]

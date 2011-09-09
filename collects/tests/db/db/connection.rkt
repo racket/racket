@@ -1,8 +1,10 @@
 #lang racket/unit
 (require (for-syntax racket/base)
+         racket/class
          rackunit
          "../config.rkt"
-         db/base)
+         db/base
+         (only-in db/private/generic/interfaces locking%))
 (import config^ database^)
 (export test^)
 
@@ -30,22 +32,33 @@
            (check-true (dbsystem? sys))
            (check-pred symbol? (dbsystem-name sys))))))
 
-    (test-case "connected?, disconnect work w/ custodian 'damage'"
+    (test-case "connected?, disconnect work w/ custodian damage"
       (let ([c0 (current-custodian)]
             [c1 (make-custodian)])
         (let ([cx (parameterize ((current-custodian c1))
                     (connect-for-test))])
-          ;; cx's ports (if applicable) are controlled by c1
+          ;; cx's ports (if applicable) are managed by c1
           (check-true (connected? cx))
           (custodian-shutdown-all c1)
           (check-completes (lambda () (connected? cx)) "connected?")
           (when (memq dbsys '(mysql postgresql))
+            ;; wire-based connection is disconnected; it had better know it
             (check-false (connected? cx)))
-          (check-completes (lambda () (disconnect cx)) "disconnect"))))
+          (check-completes (lambda () (disconnect cx)) "disconnect")
+          (check-false (connected? cx)))))
 
-    ;; FIXME: Still need to test the disconnect works on cx left locked
-    ;; because of kill-thread (currently probably doesn't for sqlite3,odbc).
-    ;; ie: "connected?, disconnect work w/ kill-thread 'damage'"
+    (test-case "connected?, disconnect work w/ kill-thread damage"
+      (let ([cx (connect-for-test)])
+        (when (is-a? cx locking%)
+          (check-true (connected? cx))
+          (let ([thd
+                 (thread
+                  (lambda ()
+                    (send cx call-with-lock 'test (lambda () (sync never-evt)))))])
+            (kill-thread thd)
+            (check-completes (lambda () (connected? cx)) "connected?")
+            (check-completes (lambda () (disconnect cx)) "disconnect")
+            (check-false (connected? cx))))))
     ))
 
 (define TIMEOUT 2) ;; seconds

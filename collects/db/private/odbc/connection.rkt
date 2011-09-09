@@ -3,6 +3,7 @@
          racket/list
          racket/math
          ffi/unsafe
+         ffi/unsafe/atomic
          "../generic/interfaces.rkt"
          "../generic/prepared.rkt"
          "../generic/sql-data.rkt"
@@ -24,7 +25,7 @@
                   char-mode)
     (init strict-parameter-types?)
 
-    (define statement-table (make-weak-hasheq))
+    (define statement-table (make-hasheq))
     (define lock (make-semaphore 1))
 
     (define use-describe-param?
@@ -437,13 +438,14 @@
 
     (define/public (disconnect)
       (define (go)
+        (start-atomic)
         (let ([db* db]
               [env* env])
+          (set! db #f)
+          (set! env #f)
+          (end-atomic)
           (when db*
             (let ([statements (hash-map statement-table (lambda (k v) k))])
-              (set! db #f)
-              (set! env #f)
-              (set! statement-table #f)
               (for ([pst (in-list statements)])
                 (free-statement* 'disconnect pst))
               (handle-status 'disconnect (SQLDisconnect db*) db*)
@@ -452,16 +454,21 @@
               (void)))))
       (call-with-lock* 'disconnect go go #f))
 
+    (define/public (get-base) this)
+
     (define/public (free-statement pst)
       (define (go) (free-statement* 'free-statement pst))
       (call-with-lock* 'free-statement go go #f))
 
     (define/private (free-statement* fsym pst)
+      (start-atomic)
       (let ([stmt (send pst get-handle)])
+        (send pst set-handle #f)
+        (end-atomic)
         (when stmt
-          (send pst set-handle #f)
           (handle-status 'free-statement (SQLFreeStmt stmt SQL_CLOSE) stmt)
           (handle-status 'free-statement (SQLFreeHandle SQL_HANDLE_STMT stmt) stmt)
+          (hash-remove! statement-table pst)
           (void))))
 
     ;; Transactions
@@ -654,3 +661,19 @@
 
 (define (field-dvec->typeid dvec)
   (vector-ref dvec 1))
+
+#|
+Historical note: I tried using ODBC async execution to avoid blocking
+all Racket threads for a long time.
+
+1) The postgresql, mysql, and oracle drivers don't even support async
+execution. Only DB2 (and probably SQL Server, but I didn't try it).
+
+2) Tests using the DB2 driver gave bafflind HY010 (function sequence
+error). My best theory so far is that DB2 (or maybe unixodbc) requires
+poll call arguments to be identical to original call arguments, which
+means that I would have to replace all uses of (_ptr o X) with
+something stable across invocations.
+
+All in all, not worth it, especially given #:use-place solution.
+|#

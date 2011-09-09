@@ -1,41 +1,51 @@
 #lang racket/base
 (require racket/class
-         racket/contract
          ffi/file
+         "../generic/place-client.rkt"
          "connection.rkt"
          "dbsystem.rkt"
          "ffi.rkt")
-(provide sqlite3-connect
-         (rename-out [dbsystem sqlite3-dbsystem]))
+(provide sqlite3-connect)
 
-(define (sqlite3-connect #:database path-or-sym
+(define (sqlite3-connect #:database path
                          #:mode [mode 'read/write]
                          #:busy-retry-delay [busy-retry-delay 0.1]
-                         #:busy-retry-limit [busy-retry-limit 10])
+                         #:busy-retry-limit [busy-retry-limit 10]
+                         #:use-place [use-place #f])
   (let ([path
-         (cond [(symbol? path-or-sym)
-                (case path-or-sym
-                  ;; Private, temporary in-memory
-                  [(memory) #":memory:"]
-                  ;; Private, temporary on-disk
-                  [(temporary) #""])]
-               [(or (path? path-or-sym) (string? path-or-sym))
-                (let ([path (cleanse-path (path->complete-path path-or-sym))])
-                  (security-guard-check-file 'sqlite3-connect
-                                             path
-                                             (case mode
-                                               ((read-only) '(read))
-                                               (else '(read write))))
-                  (path->bytes path))])])
-    (let-values ([(db open-status)
-                  (sqlite3_open_v2 path
-                                   (case mode
-                                     ((read-only) SQLITE_OPEN_READONLY)
-                                     ((read/write) SQLITE_OPEN_READWRITE)
-                                     ((create)
-                                      (+ SQLITE_OPEN_READWRITE SQLITE_OPEN_CREATE))))])
-      (handle-status* 'sqlite3-connect open-status db)
-      (new connection%
-           (db db)
-           (busy-retry-limit busy-retry-limit)
-           (busy-retry-delay busy-retry-delay)))))
+         (case path
+           ((memory temporary) path)
+           (else
+            (let ([path (cleanse-path (path->complete-path path))])
+              (security-guard-check-file 'sqlite3-connect
+                                         path
+                                         (case mode
+                                           ((read-only) '(read))
+                                           (else '(read write))))
+              path)))])
+    (cond [use-place
+           (place-connect (list 'sqlite3 path mode busy-retry-delay busy-retry-limit)
+                          sqlite-place-proxy%)]
+          [else
+           (let ([path-bytes
+                  (case path
+                    ((memory) #":memory:")
+                    ((temporary) #"")
+                    (else (path->bytes path)))])
+             (let-values ([(db open-status)
+                           (sqlite3_open_v2 path-bytes
+                                            (case mode
+                                              ((read-only) SQLITE_OPEN_READONLY)
+                                              ((read/write) SQLITE_OPEN_READWRITE)
+                                              ((create)
+                                               (+ SQLITE_OPEN_READWRITE SQLITE_OPEN_CREATE))))])
+               (handle-status* 'sqlite3-connect open-status db)
+               (new connection%
+                    (db db)
+                    (busy-retry-limit busy-retry-limit)
+                    (busy-retry-delay busy-retry-delay))))])))
+
+(define sqlite-place-proxy%
+  (class place-proxy-connection%
+    (super-new)
+    (define/override (get-dbsystem) dbsystem)))

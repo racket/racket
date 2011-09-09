@@ -115,3 +115,15 @@
 (htdp-err/rt-test (-) (exn-type-and-msg exn:application:arity? "-: expects at least 1 argument, given 0"))
 (htdp-err/rt-test (/) (exn-type-and-msg exn:application:arity? "/: expects at least 1 argument, given 0"))
 ;(htdp-test 1 (/ 1) exn:application:arity?)
+
+;; Check that `local' works with macros that expand to `begin':
+(module my-multi-defn racket/base
+  (provide multi)
+  (define-syntax-rule (multi a b)
+    (begin
+      (define a 1)
+      (define b 2))))
+(htdp-teachpack my-multi-defn)
+
+(htdp-test '(2 1) 'local (local [(multi x y)]
+                           (list y x)))

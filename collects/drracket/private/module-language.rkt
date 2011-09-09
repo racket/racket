@@ -9,7 +9,7 @@
          racket/sandbox
          racket/runtime-path
          racket/math
-         mred
+         racket/gui/base
          compiler/embed
          compiler/cm
          launcher
@@ -18,6 +18,7 @@
          planet/config
          setup/dirs
          racket/place
+         "tooltip.rkt"
          "drsig.rkt"
          "rep.rkt"
          "eval-helpers.rkt"
@@ -532,7 +533,9 @@
        new-parent
        #:case-sensitive #t
        
-       #:get-debugging-radio-box (λ (rb-l rb-r) (set! left-debugging-radio-box rb-l) (set! right-debugging-radio-box rb-r))
+       #:get-debugging-radio-box (λ (rb-l rb-r) 
+                                   (set! left-debugging-radio-box rb-l)
+                                   (set! right-debugging-radio-box rb-r))
        
        #:debugging-radio-box-callback
        (λ (debugging-radio-box evt)
@@ -658,7 +661,8 @@
     
     (define (get-lb-vector)
       (list->vector (for/list ([n (in-range (send collection-paths-lb get-number))])
-                              (cons (send collection-paths-lb get-string n) (send collection-paths-lb get-data n)))))
+                              (cons (send collection-paths-lb get-string n)
+                                    (send collection-paths-lb get-data n)))))
     
     (define (set-lb-vector vec)
       (send collection-paths-lb clear)
@@ -829,7 +833,9 @@
                    [stretchable-height #f]
                    [parent expand-error-parent-panel]))
         
-        (set! expand-error-message (new error-message% [parent expand-error-panel] [stretchable-width #t] [msg "hi"]))
+        (set! expand-error-message (new error-message% [parent expand-error-panel]
+                                        [stretchable-width #t]
+                                        [msg "hi"]))
         (set! expand-error-button-parent-panel
               (new vertical-panel% 
                    [stretchable-width #f]
@@ -909,24 +915,11 @@
         (cond
           [tooltip-labels
            (unless tooltip-frame
-             (set! tooltip-frame 
-                   (new (class frame%
-                          (define/override (on-subwindow-event r evt)
-                            (cond
-                              [(send evt button-down?)
-                               (hide-tooltip)
-                               #t]
-                              [else #f]))
-                          (super-new [style '(no-resize-border no-caption float)]
-                                     [label ""]
-                                     [stretchable-width #f]
-                                     [stretchable-height #f] ))))
-             (new yellow-message% [parent tooltip-frame]))
-           (send (car (send tooltip-frame get-children)) set-lab tooltip-labels)
-           (send tooltip-frame reflow-container)
+             (set! tooltip-frame (new tooltip-frame%)))
+           (send tooltip-frame set-tooltip tooltip-labels)
            (define-values (rx ry) (send running-canvas client->screen 0 0))
-           (send tooltip-frame move (- rx (send tooltip-frame get-width)) (- ry (send tooltip-frame get-height)))
-           (send tooltip-frame show #t)]
+           (define-values (cw ch) (send running-canvas get-client-size))
+           (send tooltip-frame show-over rx ry cw ch #:prefer-upper-left? #t)]
           [else
            (when tooltip-frame
              (send tooltip-frame show #f))]))
@@ -1098,10 +1091,11 @@
       (unless place-initialized?
         (set! place-initialized? #t)
         (place-channel-put expanding-place module-language-compile-lock)
-        (place-channel-put expanding-place 
-                           (for/list ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
-                             (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
-                                   (drracket:module-language-tools:online-expansion-handler-id o-e-h)))))
+        (place-channel-put
+         expanding-place 
+         (for/list ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
+           (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
+                 (drracket:module-language-tools:online-expansion-handler-id o-e-h)))))
       (set! pending-thread
             (thread (λ () 
                       (define-values (pc-in pc-out) (place-channel))
@@ -1131,7 +1125,7 @@
             drracket:unit:definitions-text<%>
             drracket:module-language-tools:definitions-text<%>) ()
       (inherit last-position find-first-snip get-top-level-window get-filename
-               get-tab highlight-range get-canvas 
+               get-tab get-canvas invalidate-bitmap-cache 
                set-position get-start-position get-end-position)
       
       (define compilation-out-of-date? #f)
@@ -1145,7 +1139,6 @@
       
       (define/private (buffer-modified)
         (clear-old-error)
-        (set! clear-old-error void)
         (reset-frame-expand-error)
         (let ([tlw (get-top-level-window)])
           (when expanding-place
@@ -1178,7 +1171,6 @@
                              (λ (res) (show-results res)))
               (when status-line-open?
                 (clear-old-error)
-                (set! clear-old-error void)
                 (reset-frame-expand-error))
               (send (get-tab) show-bkg-running 'running sc-online-expansion-running)))))
       
@@ -1203,7 +1195,6 @@
           (values str fn)))
       
       (define status-line-open? #f)
-      (define clear-old-error void) 
       
       (define error-message-str #f)
       (define error-message-srclocs '())
@@ -1255,40 +1246,35 @@
           [(exn)
            (define tlw (send (get-tab) get-frame))
            (send (get-tab) show-bkg-running 'nothing #f)
-           (clear-old-error)
            (set! error-message-str (vector-ref res 1))
            (set! error-message-srclocs (vector-ref res 2))
-           (set! clear-old-error
-                 (for/fold ([clear void])
-                           ([range (in-list (vector-ref res 2))])
+           (set! error-ranges 
+                 (for/list ([range (in-list (vector-ref res 2))])
                    (define pos (vector-ref range 0))
                    (define span (vector-ref range 1))
-                   (define clear-next (highlight-range (- pos 1) (+ pos span -1) "Gold" #f 'high))
-                   (lambda () (clear) (clear-next))))
+                   (list (- pos 1) (+ pos span -1))))
+           ;; should really only invalidate the appropriate region here (and in clear-error-ranges)
+           (invalidate-bitmap-cache 0 0 'display-end 'display-end)
            (update-frame-expand-error)]
           [(access-violation)
            (send (get-tab) show-bkg-running 'failed (gui-utils:format-literal-label "~a" (vector-ref res 1)))
            (clear-old-error)
-           (set! clear-old-error void)
            (reset-frame-expand-error)]
           [(reader-in-defs-error)
-           (send (get-tab) show-bkg-running 'reader-in-defs-error (gui-utils:format-literal-label "~a" (vector-ref res 1)))
+           (send (get-tab) show-bkg-running 'reader-in-defs-error
+                 (gui-utils:format-literal-label "~a" (vector-ref res 1)))
            (clear-old-error)
-           (set! clear-old-error void)
            (reset-frame-expand-error)]
           [(abnormal-termination)
            (send (get-tab) show-bkg-running 'failed sc-abnormal-termination)
            (clear-old-error)
-           (set! clear-old-error void)
            (reset-frame-expand-error)]
           [(no-errors)
            (send (get-tab) show-bkg-running 'nothing #f)
            (clear-old-error)
-           (set! clear-old-error void)
            (reset-frame-expand-error)]
           [(handler-results)
            (clear-old-error)
-           (set! clear-old-error void)
            (reset-frame-expand-error)
            ;; inform the installed handlers that something has come back
            (for ([key-val (in-list (vector-ref res 1))])
@@ -1302,6 +1288,68 @@
            (send (get-tab) show-bkg-running 'nothing #f)]
           [else
            (error 'module-language.rkt "unknown response from the expanding place: ~s\n" res)]))
+      
+      
+      (define error-ranges '())
+      (define/private (clear-old-error)
+        (set! error-ranges '())
+        (invalidate-bitmap-cache 0 0 'display-end 'display-end))
+      
+      (define byt (box 0.0))
+      (define byb (box 0.0))
+      (define vbx (box 0.0))
+      (define vby (box 0.0))
+      (define vbw (box 0.0))
+      (define vbh (box 0.0))
+    
+      (inherit position-location get-admin)
+      (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+        (super on-paint before? dc left top right bottom dx dy draw-caret)
+        (unless before?
+          (define pen-width 8)
+          (define saved-brush (send dc get-brush))
+          (define saved-pen (send dc get-pen))
+          (define smoothing (send dc get-smoothing))
+          (send dc set-smoothing 'smoothed)
+          
+          (define path (new dc-path%))
+          (send dc set-brush "black" 'transparent)
+          (send dc set-pen (send the-pen-list find-or-create-pen "red" pen-width 'solid 'butt 'miter))
+          (send dc set-alpha .4)
+          
+          (for ([error-range (in-list error-ranges)])
+            (define start-pos (list-ref error-range 0))
+            (define end-pos (list-ref error-range 1))
+            (position-location start-pos #f byt)
+            (position-location end-pos #f byb #f)
+            (send (get-admin) get-view vbx vby vbw vbh)
+            
+            (define x2 (+ dx (unbox vbx) (unbox vbw) (- (/ pen-width 2)) (- (/ pen-width 1))))
+            (define y2 (+ dy (unbox byt)))
+            
+            (define x1 (+ x2 (- (/ pen-width 1))))
+            (define y1 y2)
+            
+            (define x3 x2)
+            (define y3 (+ dy (unbox byb)))
+            
+            (define x4 x1)
+            (define y4 y3)
+            
+            (send path move-to x1 y1)
+            (send path line-to x2 y2)
+            (send path line-to x3 y3)
+            (send path line-to x4 y4)
+            (send path line-to x3 y3)
+            (send path line-to x2 y2)
+            (send path move-to x1 y1)
+            (send path close))
+          
+          (send dc draw-path path)
+          (send dc set-alpha 1)
+          (send dc set-brush saved-brush)
+          (send dc set-pen saved-pen)
+          (send dc set-smoothing smoothing)))
       
       (define/override (move-to-new-language)
         ;; this is here to get things running for the initital tab in a new frame
@@ -1396,7 +1444,8 @@
   
   (define module-language-parallel-lock-client
     (compile-lock->parallel-lock-client
-     module-language-compile-lock))
+     module-language-compile-lock
+     (current-custodian)))
 
   ;; in-module-language : top-level-window<%> -> module-language-settings or #f
   (define (in-module-language tlw)

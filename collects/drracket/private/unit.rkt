@@ -150,7 +150,8 @@ module browser threading seems wrong.
                                      [else
                                       (message-box 
                                        (string-constant drscheme)
-                                       "Must choose a filename that ends with either .png, .jpg, .xbm, or .xpm")])))))]))))))
+                                       "Must choose a filename that ends with either .png, .jpg, .xbm, or .xpm"
+                                       #:dialog-mixin frame:focus-table-mixin)])))))]))))))
            
            (void))))))
   
@@ -338,7 +339,8 @@ module browser threading seems wrong.
                    (message-box
                     (string-constant drscheme)
                     v
-                    dlg)])))]
+                    dlg
+                    #:dialog-mixin frame:focus-table-mixin)])))]
            [cancel-callback 
             (λ () (send dlg show #f))])
       (let-values ([(ok cancel) 
@@ -364,7 +366,8 @@ module browser threading seems wrong.
         [(not program-filename)
          (message-box (string-constant create-executable-title)
                       (string-constant must-save-before-executable)
-                      frame)]
+                      frame
+                      #:dialog-mixin frame:focus-table-mixin)]
         [else
          (when (or (not (send definitions-text is-modified?))
                    (gui-utils:get-choice
@@ -1146,12 +1149,10 @@ module browser threading seems wrong.
       (define/public-final (set-i _i) (set! i _i))
       (define/public (disable-evaluation)
         (set! enabled? #f)
-        (send defs lock #t)
         (send ints lock #t)
         (send frame disable-evaluation-in-tab this))
       (define/public (enable-evaluation)
         (set! enabled? #t)
-        (send defs lock #f)
         (send ints lock #f)
         (send frame enable-evaluation-in-tab this))
       (define/public (get-enabled) enabled?)
@@ -1264,6 +1265,8 @@ module browser threading seems wrong.
       (define/public-final (toggle-log)
         (set! log-visible? (not log-visible?))
         (send frame show/hide-log log-visible?))
+      (define/public-final (hide-log)
+        (when log-visible? (toggle-log)))
       (define/public-final (update-log)
         (send frame show/hide-log log-visible?))
       (define/public-final (update-logger-window command)
@@ -1430,19 +1433,25 @@ module browser threading seems wrong.
                         (remq logger-panel l)])))]
             [else
              (when show? ;; if we want to hide and it isn't built yet, do nothing
+               (define logger-gui-tab-panel-parent (new horizontal-panel% [parent logger-panel] [stretchable-height #f]))
                (set! logger-gui-tab-panel
                      (new tab-panel% 
                           [choices (list (string-constant logging-all)
                                          "fatal" "error" "warning" "info" "debug")]
-                          [parent logger-panel]
+                          [parent logger-gui-tab-panel-parent]
+                          [stretchable-height #f]
+                          [style '(no-border)]
                           [callback
                            (λ (tp evt)
                              (preferences:set 'drracket:logger-gui-tab-panel-level (send logger-gui-tab-panel get-selection))
                              (update-logger-window #f))]))
+               (new button% [label (string-constant hide-log)]
+                    [callback (λ (x y) (send current-tab hide-log))]
+                    [parent logger-gui-tab-panel-parent])
                (send logger-gui-tab-panel set-selection (preferences:get 'drracket:logger-gui-tab-panel-level))
                (new-logger-text)
                (set! logger-gui-canvas 
-                     (new editor-canvas% [parent logger-gui-tab-panel] [editor logger-gui-text]))
+                     (new editor-canvas% [parent logger-panel] [editor logger-gui-text]))
                (send logger-menu-item set-label (string-constant hide-log))
                (update-logger-window #f)
                (send logger-parent-panel change-children (lambda (l) (append l (list logger-panel)))))])
@@ -1669,7 +1678,8 @@ module browser threading seems wrong.
                             (gui-utils:format-literal-label (string-constant erase-log-directory-contents)
                                                             transcript-directory)
                             this
-                            '(yes-no))])
+                            '(yes-no)
+                            #:dialog-mixin frame:focus-table-mixin)])
                 (cond
                   [(eq? query 'no) 
                    #f]
@@ -1682,7 +1692,8 @@ module browser threading seems wrong.
                                                                        (if (exn? exn)
                                                                            (format "~a" (exn-message exn))
                                                                            (format "~s" exn)))
-                                       this)
+                                       this
+                                       #:dialog-mixin frame:focus-table-mixin)
                                       #f)])
                      (for-each (λ (file) (delete-file (build-path transcript-directory file)))
                                dir-list)
@@ -2647,23 +2658,17 @@ module browser threading seems wrong.
           (send interactions-text reset-console)
           (send interactions-text clear-undos)
           
-          (let ([start 0])
-            (send definitions-text split-snip start)
-            (let* ([name (send definitions-text get-port-name)]
-                   [text-port (open-input-text-editor definitions-text start 'end values name #t)])
-              (port-count-lines! text-port)
-              (let* ([line (send definitions-text position-paragraph start)]
-                     [column (- start (send definitions-text paragraph-start-position line))]
-                     [relocated-port (relocate-input-port text-port 
-                                                          (+ line 1)
-                                                          column
-                                                          (+ start 1))])
-                (port-count-lines! relocated-port)
-                (send interactions-text evaluate-from-port
-                      relocated-port
-                      #t
-                      (λ ()
-                        (send interactions-text clear-undos))))))))
+          (define name (send definitions-text get-port-name))
+          (define defs-copy (new text%))
+          (send defs-copy set-style-list (send definitions-text get-style-list)) ;; speeds up the copy
+          (send definitions-text copy-self-to defs-copy)
+          (define text-port (open-input-text-editor defs-copy 0 'end values name #t))
+          (port-count-lines! text-port)
+          (send interactions-text evaluate-from-port
+                text-port
+                #t
+                (λ ()
+                  (send interactions-text clear-undos)))))
       
       (inherit revert save)
       (define/private (check-if-save-file-up-to-date)
@@ -2677,7 +2682,8 @@ module browser threading seems wrong.
                   #f
                   this
                   '(caution default=2 number-order)
-                  1)])
+                  1
+                  #:dialog-mixin frame:focus-table-mixin)])
             (case user-choice
               [(1) (void)]
               [(2) (revert)]))))
@@ -2983,22 +2989,33 @@ module browser threading seems wrong.
         (update-close-menu-item-shortcut (file-menu:get-close-item)))
       
       (define/private (update-close-tab-menu-item-shortcut item)
-        (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
-          (send item set-label (if just-one? 
-                                   (string-constant close-tab)
-                                   (string-constant close-tab-amp)))
-          (when (preferences:get 'framework:menu-bindings)
-            (send item set-shortcut (if just-one? #f #\w)))))
+        (define just-one? (and (pair? tabs) (null? (cdr tabs))))
+        (send item set-label (if just-one? 
+                                 (string-constant close-tab)
+                                 (string-constant close-tab-amp)))
+        (when (preferences:get 'framework:menu-bindings)
+          (send item set-shortcut (if just-one? #f #\w))))
       
       (define/private (update-close-menu-item-shortcut item)
-        (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
-          (send item set-label (if just-one? 
-                                   (string-constant close-menu-item)
-                                   (string-constant close)))
-          (when (preferences:get 'framework:menu-bindings)
-            (send item set-shortcut-prefix (if just-one? 
-                                               (get-default-shortcut-prefix) 
-                                               (cons 'shift (get-default-shortcut-prefix)))))))
+        (cond
+          [(eq? (system-type) 'unix)
+           (send item set-label (string-constant close-menu-item))]
+          [else
+           (define just-one? (and (pair? tabs) (null? (cdr tabs))))
+           (send item set-label (if just-one?
+                                    (string-constant close-window-menu-item)
+                                    (string-constant close-window)))
+           (when (preferences:get 'framework:menu-bindings)
+             (send item set-shortcut-prefix (if just-one? 
+                                                (get-default-shortcut-prefix) 
+                                                (cons 'shift (get-default-shortcut-prefix)))))]))
+      
+      (define/override (file-menu:close-callback item control)
+        (define just-one? (and (pair? tabs) (null? (cdr tabs))))
+        (if (and (eq? (system-type) 'unix)
+                   (not just-one?))
+            (close-current-tab)
+            (super file-menu:close-callback item control)))
       
       ;; offer-to-save-file : path -> void
       ;; bring the tab that edits the file named by `path' to the front
@@ -3113,8 +3130,7 @@ module browser threading seems wrong.
                    [label (string-constant show-log)]
                    [parent show-menu]
                    [callback
-                    (λ (x y) (send current-tab toggle-log))]))
-        )
+                    (λ (x y) (send current-tab toggle-log))])))
       
       
       ;                                                                                                       
@@ -3174,7 +3190,8 @@ module browser threading seems wrong.
                            strs))])
           (unless can-browse?
             (message-box (string-constant drscheme)
-                         (string-constant module-browser-only-in-plt-and-module-langs)))
+                         (string-constant module-browser-only-in-plt-and-module-langs)
+                         #:dialog-mixin frame:focus-table-mixin))
           can-browse?))
       
       (define/private (update-module-browser-pane)
@@ -3328,7 +3345,7 @@ module browser threading seems wrong.
         (set! file-menu:create-new-tab-item
               (new menu:can-restore-menu-item%
                    (label (string-constant new-tab))
-                   (shortcut #\=)
+                   (shortcut (if (preferences:get 'drracket:use-old-style-keybindings) #\= #\t))
                    (parent file-menu)
                    (callback
                     (λ (x y)
@@ -3339,16 +3356,17 @@ module browser threading seems wrong.
           (make-object separator-menu-item% file-menu))]
       (define close-tab-menu-item #f)
       (define/override (file-menu:between-close-and-quit file-menu)
-        (set! close-tab-menu-item
-              (new (get-menu-item%)
-                   (label (string-constant close-tab))
-                   (demand-callback
-                    (λ (item)
-                      (send item enable (1 . < . (send tabs-panel get-number)))))
-                   (parent file-menu)
-                   (callback
-                    (λ (x y)
-                      (close-current-tab)))))
+        (unless (eq? (system-type) 'unix)
+          (set! close-tab-menu-item
+                (new (get-menu-item%)
+                     (label (string-constant close-tab))
+                     (demand-callback
+                      (λ (item)
+                        (send item enable (1 . < . (send tabs-panel get-number)))))
+                     (parent file-menu)
+                     (callback
+                      (λ (x y)
+                        (close-current-tab))))))
         (super file-menu:between-close-and-quit file-menu))
       
       (define/override (file-menu:save-string) (string-constant save-definitions))
@@ -3406,8 +3424,13 @@ module browser threading seems wrong.
                         (preferences:get 'framework:print-output-mode)))))
         (super file-menu:between-print-and-close file-menu))
       
+      (inherit edit-menu:get-replace-item)
       (define/override (edit-menu:between-find-and-preferences edit-menu)
         (super edit-menu:between-find-and-preferences edit-menu)
+        (when (preferences:get 'drracket:use-old-style-keybindings)
+          (define item (edit-menu:get-replace-item)) 
+          (send item set-shortcut #\r)
+          (send item set-shortcut-prefix (get-default-shortcut-prefix))) 
         (new menu:can-restore-menu-item%
              [label (string-constant complete-word)]
              [shortcut #\/]
@@ -3573,7 +3596,8 @@ module browser threading seems wrong.
                                                                                     (send l capability-value 'drscheme:teachpack-menu-items)
                                                                                     (format "\n  ~a" (send l get-language-name))))
                                                                                  (drracket:language-configuration:get-languages))))))
-                                         this))])))])))
+                                         this
+                                         #:dialog-mixin frame:focus-table-mixin))])))])))
       
       (define/private (initialize-menus)
         (let* ([mb (get-menu-bar)]
@@ -3609,7 +3633,7 @@ module browser threading seems wrong.
                   (string-constant execute-menu-item-label)
                   language-specific-menu
                   (λ (_1 _2) (execute-callback))
-                  #\t
+                  (if (preferences:get 'drracket:use-old-style-keybindings) #\t #\r)
                   (string-constant execute-menu-item-help-string)))
           (make-object menu:can-restore-menu-item%
             (string-constant ask-quit-menu-item-label)
@@ -4646,8 +4670,9 @@ module browser threading seems wrong.
                  (frame:editor-mixin
                   (frame:standard-menus-mixin
                    (frame:register-group-mixin
-                    (frame:basic-mixin
-                     frame%))))))))))))))))))
+                    (frame:focus-table-mixin
+                     (frame:basic-mixin
+                      frame%)))))))))))))))))))
   
   (define-local-member-name enable-two-way-prefs)
   (define (make-two-way-prefs-dragable-panel% % pref-key)

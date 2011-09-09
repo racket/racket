@@ -398,7 +398,7 @@ extern Scheme_Object *scheme_begin_stx;
 extern Scheme_Object *scheme_module_begin_stx;
 extern Scheme_Object *scheme_define_values_stx;
 extern Scheme_Object *scheme_define_syntaxes_stx;
-extern Scheme_Object *scheme_define_for_syntaxes_stx;
+extern Scheme_Object *scheme_begin_for_syntax_stx;
 extern Scheme_Object *scheme_top_stx;
 
 extern Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write_special_symbol;
@@ -514,6 +514,7 @@ void scheme_kickoff_green_thread_time_slice_timer(intptr_t usec);
 #ifdef UNIX_PROCESSES
 void scheme_block_child_signals(int block);
 void scheme_check_child_done(void);
+int scheme_extract_child_status(int status);
 #endif
 
 void scheme_prepare_this_thread_for_GC(Scheme_Thread *t);
@@ -2671,7 +2672,7 @@ struct Start_Module_Args;
 
 #ifdef MZ_USE_JIT
 void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name);
-void *scheme_module_exprun_start(Scheme_Env *menv, int set_ns, Scheme_Object *name);
+void *scheme_module_exprun_start(Scheme_Env *menv, int phase_plus_set_ns, Scheme_Object *name);
 void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name);
 #endif
 void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env);
@@ -2930,6 +2931,7 @@ struct Scheme_Env {
   struct Scheme_Env *exp_env;
   struct Scheme_Env *template_env;
   struct Scheme_Env *label_env;
+  struct Scheme_Env *instance_env; /* shortcut to env where module is instantiated */
 
   Scheme_Hash_Table *shadowed_syntax; /* top level only */
 
@@ -2938,7 +2940,8 @@ struct Scheme_Env {
   Scheme_Object *link_midx;
   Scheme_Object *require_names, *et_require_names, *tt_require_names, *dt_require_names; /* resolved */
   Scheme_Hash_Table *other_require_names;
-  char running, et_running, attached, ran;
+  char *running; /* array of size `num_phases' if `module' and `mod_phase==0' */
+  char attached, ran;
   Scheme_Object *did_starts;
   Scheme_Object *available_next[2];
 
@@ -2963,6 +2966,19 @@ struct Scheme_Env {
 /* A Scheme_Module corresponds to a module declaration. A module
    instantiation is reprsented by a Scheme_Env */
 
+typedef struct Scheme_Module_Export_Info {
+  MZTAG_IF_REQUIRED
+  char *provide_protects;            /* 1 => protected, 0 => not */
+  Scheme_Object **indirect_provides; /* symbols (internal names) */
+  int num_indirect_provides;
+
+  /* Only if needed to reconstruct the renaming: */
+  Scheme_Object **indirect_syntax_provides; /* symbols (internal names) */
+  int num_indirect_syntax_provides;
+
+  Scheme_Hash_Table *accessible; /* (symbol -> ...) */
+} Scheme_Module_Export_Info;
+
 typedef struct Scheme_Module
 {
   Scheme_Object so; /* scheme_module_type */
@@ -2981,29 +2997,17 @@ typedef struct Scheme_Module
   Scheme_Invoke_Proc prim_body;
   Scheme_Invoke_Proc prim_et_body;
 
-  Scheme_Object *body;        /* or data, if prim_body */
-  Scheme_Object *et_body;     /* list of (vector list-of-names expr depth-int resolve-prefix) */
+  Scheme_Object **bodies; /* array `num_phases' long */
 
   char no_cert;
   
   struct Scheme_Module_Exports *me;
 
-  char *provide_protects;            /* 1 => protected, 0 => not */
-  Scheme_Object **indirect_provides; /* symbols (internal names) */
-  int num_indirect_provides;
-
-  /* Only if needed to reconstruct the renaming: */
-  Scheme_Object **indirect_syntax_provides; /* symbols (internal names) */
-  int num_indirect_syntax_provides;
-
-  char *et_provide_protects;            /* 1 => protected, 0 => not */
-  Scheme_Object **et_indirect_provides; /* symbols (internal names) */
-  int num_indirect_et_provides;
+  int num_phases;
+  Scheme_Module_Export_Info **exp_infos; /* array `num_phases' long */
 
   Scheme_Object *self_modidx;
 
-  Scheme_Hash_Table *accessible; /* (symbol -> ...) */
-  Scheme_Hash_Table *et_accessible; /* phase -> (symbol -> ...) */
   Scheme_Object *insp; /* declaration-time inspector, for module instantiation
                           and enabling access to protected imports */
 
@@ -3035,7 +3039,7 @@ typedef struct Scheme_Module_Phase_Exports
   Scheme_Object **provide_srcs;      /* module access paths, #f for self */
   Scheme_Object **provide_src_names; /* symbols (original internal names) */
   Scheme_Object **provide_nominal_srcs; /* import source if re-exported; NULL or array of lists */
-  char *provide_src_phases;          /* NULL, or src phase for for-syntax import */
+  int *provide_src_phases;          /* NULL, or src phase for for-syntax import */
   int num_provides;
   int num_var_provides;              /* non-syntax listed first in provides */
 
@@ -3141,7 +3145,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                                                  Scheme_Env *from_env, int *_would_complain,
                                                  Scheme_Object **_is_constant);
 void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env);
-Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name);
+Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name, int mod_phase);
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 				   Scheme_Object *shift_from_modidx,
@@ -3482,6 +3486,7 @@ int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info 
 
 int scheme_pipe_char_count(Scheme_Object *p);
 void scheme_alloc_global_fdset();
+Scheme_Object *scheme_port_name(Scheme_Object *p);
 
 #define CURRENT_INPUT_PORT(config) scheme_get_param(config, MZCONFIG_INPUT_PORT)
 #define CURRENT_OUTPUT_PORT(config) scheme_get_param(config, MZCONFIG_OUTPUT_PORT)
@@ -3667,19 +3672,29 @@ typedef struct Scheme_Place {
   Scheme_Object *channel;
   Scheme_Custodian_Reference *mref;
   intptr_t result; /* set when place_obj becomes NULL */
+#ifdef MZ_PRECISE_GC
+  struct GC_Thread_Info *gc_info; /* managed by the GC */
+#endif
 } Scheme_Place;
 
 typedef struct Scheme_Place_Object {
   Scheme_Object so;
 #if defined(MZ_USE_PLACES)
   mzrt_mutex *lock;
+  mzrt_sema *pause;
 #endif
   char die;
   char pbreak;
+  char pausing;
   void *signal_handle;
   void *parent_signal_handle; /* set to NULL when the place terminates */
   intptr_t result; /* initialized to 1, reset when parent_signal_handle becomes NULL */
-  /*Thread_Local_Variables *tlvs; */
+
+  intptr_t memory_use; /* set by inform hook on GC, used by GC for memory accounting */
+  intptr_t prev_notify_memory_use; /* if memory_use > use_factor * prev_notify_memory_use, alert parent */
+  double use_factor;
+  intptr_t memory_limit; /* custodian-based limit on the place's memory use */
+  uintptr_t *parent_need_gc; /* ptr to a variable in parent to force a GC (triggering accounting) */
 } Scheme_Place_Object;
 
 typedef struct Scheme_Serialized_File_FD{
@@ -3692,18 +3707,40 @@ typedef struct Scheme_Serialized_File_FD{
   char flush_mode;
 } Scheme_Serialized_File_FD;
 
+typedef struct Scheme_Serialized_Socket_FD{
+  Scheme_Object so;
+  Scheme_Object *name;
+  intptr_t fd;
+  intptr_t type;
+} Scheme_Serialized_Socket_FD;
+
 int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *so);
 intptr_t scheme_dup_socket(intptr_t fd);
 intptr_t scheme_dup_file(intptr_t fd);
-
+void scheme_close_socket_fd(intptr_t fd);
+void scheme_close_file_fd(intptr_t fd);
+void scheme_tcp_abandon_port(Scheme_Object *port);
+intptr_t scheme_socket_errno();
+intptr_t scheme_errno();
+void scheme_socket_to_input_port(intptr_t s, Scheme_Object *name, int takeover, Scheme_Object **_inp);
+void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover, Scheme_Object **_outp);
 
 #define SCHEME_PLACE_OBJECTP(o) (SCHEME_TYPE(o) == scheme_place_object_type)
 
-Scheme_Env *scheme_place_instance_init();
+#ifdef MZ_USE_PLACES
+Scheme_Env *scheme_place_instance_init(void *stack_base, struct NewGC *, intptr_t memory_limit);
+#endif
 Scheme_Object *scheme_make_place_object();
 void scheme_place_instance_destroy(int force);
 void scheme_kill_green_thread_timer();
 void scheme_place_check_for_interruption();
 void scheme_check_place_port_ok();
+void scheme_place_set_memory_use(intptr_t amt);
+void scheme_place_check_memory_use();
+
+void scheme_pause_all_places();
+void scheme_pause_one_place(Scheme_Place *p);
+void scheme_resume_all_places();
+void scheme_resume_one_place(Scheme_Place *p);
 
 #endif /* __mzscheme_private__ */

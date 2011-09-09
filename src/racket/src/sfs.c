@@ -937,9 +937,23 @@ static Scheme_Object *define_syntaxes_sfs(Scheme_Object *data, SFS_Info *info)
   return do_define_syntaxes_sfs(data, info);
 }
 
-static Scheme_Object *define_for_syntaxes_sfs(Scheme_Object *data, SFS_Info *info)
+static Scheme_Object *begin_for_syntax_sfs(Scheme_Object *data, SFS_Info *info)
 {
-  return do_define_syntaxes_sfs(data, info);
+  Scheme_Object *l, *a;
+
+  if (!info->pass) {
+    int depth;
+    depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[2]);
+
+    for (l = SCHEME_VEC_ELS(data)[0]; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      a = SCHEME_CAR(l);
+      info = scheme_new_sfs_info(depth);
+      a = scheme_sfs(a, info, depth);
+      SCHEME_CAR(l) = a;
+    }
+  }
+
+  return data;
 }
 
 /*========================================================================*/
@@ -1051,7 +1065,7 @@ module_sfs(Scheme_Object *data, SFS_Info *old_info)
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *e, *ex;
   SFS_Info *info;
-  int i, cnt, let_depth;
+  int i, j, cnt, let_depth;
 
   if (!old_info->for_mod) {
     if (old_info->pass)
@@ -1065,25 +1079,27 @@ module_sfs(Scheme_Object *data, SFS_Info *old_info)
 
   info = old_info;
 
-  cnt = SCHEME_VEC_SIZE(m->body);
+  cnt = SCHEME_VEC_SIZE(m->bodies[0]);
   scheme_sfs_start_sequence(info, cnt, 0);
 
   for (i = 0; i < cnt; i++) {
-    e = scheme_sfs_expr(SCHEME_VEC_ELS(m->body)[i], info, -1);
-    SCHEME_VEC_ELS(m->body)[i] = e;
+    e = scheme_sfs_expr(SCHEME_VEC_ELS(m->bodies[0])[i], info, -1);
+    SCHEME_VEC_ELS(m->bodies[0])[i] = e;
   }
 
   if (!info->pass) {
-    cnt = SCHEME_VEC_SIZE(m->et_body);
-    for (i = 0; i < cnt; i++) {
-      e = SCHEME_VEC_ELS(m->et_body)[i];
-      
-      let_depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(e)[2]);
-      ex = SCHEME_VEC_ELS(e)[1];
-      
-      info = scheme_new_sfs_info(let_depth);
-      ex = scheme_sfs(ex, info, let_depth);
-      SCHEME_VEC_ELS(e)[1] = ex;
+    for (j = m->num_phases; j-- > 1; ) {
+      cnt = SCHEME_VEC_SIZE(m->bodies[j]);
+      for (i = 0; i < cnt; i++) {
+        e = SCHEME_VEC_ELS(m->bodies[j])[i];
+        
+        let_depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(e)[2]);
+        ex = SCHEME_VEC_ELS(e)[1];
+        
+        info = scheme_new_sfs_info(let_depth);
+        ex = scheme_sfs(ex, info, let_depth);
+        SCHEME_VEC_ELS(e)[1] = ex;
+      }
     }
   }
 
@@ -1205,10 +1221,10 @@ Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_
     expr = define_values_sfs(expr, info);
     break;
   case scheme_define_syntaxes_type:
-    expr = define_for_syntaxes_sfs(expr, info);
-    break;
-  case scheme_define_for_syntax_type:
     expr = define_syntaxes_sfs(expr, info);
+    break;
+  case scheme_begin_for_syntax_type:
+    expr = begin_for_syntax_sfs(expr, info);
     break;
   case scheme_set_bang_type:
     expr = set_sfs(expr, info);

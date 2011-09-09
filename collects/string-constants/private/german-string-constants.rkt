@@ -23,7 +23,10 @@
  (untitled-n "Namenlos ~a")
  (warning "Warnung")
  (error "Fehler")
- (close "Schließen") ;; as in, close an open window
+ (close "Schließen") ;; as in, close an open window or tab. must match close-menu-item
+                  ;; in the sense that, when the &s have been stripped from
+                  ;; close-menu-item, it must be the same string as this.
+ (close-window "Fenster schließen")
  (stop "Stop")
  (&stop "&Stop") ;; for use in button and menu item labels, with short cut.
  (are-you-sure-delete? "Sind Sie sicher, dass Sie ~a löschen wollen?") ;; ~a is a filename or directory name
@@ -573,6 +576,7 @@
 
  (close-info "Diese Datei schließen")
  (close-menu-item "&Schließen")
+ (close-window-menu-item "Fenster &schließen")
 
  (quit-info "Alle Fenster schließen")
  (quit-menu-item-windows "Be&enden")

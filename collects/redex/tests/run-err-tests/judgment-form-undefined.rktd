@@ -1,4 +1,4 @@
-("judgment form q applied before its definition"
+("reference to judgment form q before its definition"
  ([use q]) ([def q])
  (let ()
    (judgment-holds (use 1))

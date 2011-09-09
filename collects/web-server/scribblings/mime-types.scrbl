@@ -17,7 +17,7 @@ files.
 }
 
 @defproc[(make-path->mime-type [p path-string?])
-         (path? . -> . bytes?)]{
+         (path? . -> . (or/c false/c bytes?))]{
  Uses a @racket[read-mime-types] with @racket[p] and constructs a
  function from paths to their MIME type.
 }

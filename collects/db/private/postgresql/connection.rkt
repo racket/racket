@@ -14,6 +14,13 @@
 
 ;; ========================================
 
+;; connector<%>
+;; Manages making connections
+(define connector<%>
+  (interface ()
+    attach-to-ports              ;; input-port output-port -> void
+    start-connection-protocol))  ;; string string string/#f -> void
+
 (define connection-base%
   (class* transactions% (connection<%> connector<%>)
     (init-private notice-handler
@@ -395,6 +402,8 @@
       (let ([n name-counter])
         (set! name-counter (add1 name-counter))
         (format "λmz_~a_~a" process-id n)))
+
+    (define/public (get-base) this)
 
     ;; free-statement : prepared-statement -> void
     (define/public (free-statement pst)

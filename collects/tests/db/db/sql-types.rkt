@@ -12,8 +12,6 @@
 (import config^ database^)
 (export test^)
 
-(define dbsystem #f) ;; hack, set within test suite
-
 (define current-type (make-parameter #f))
 
 (define-syntax-rule (type-test-case types . body)
@@ -23,10 +21,9 @@
   (let* ([known-types (send dbsystem get-known-types)]
          [type (for/or ([type types])
                 (and (member type known-types) type))])
-    (if type
-        (test-case (format "~s" type)
-          (parameterize ((current-type type)) (proc)))
-        (test-case (format "unsupported: ~s" types) (void)))))
+    (when type
+      (test-case (format "~s" type)
+        (parameterize ((current-type type)) (proc))))))
 
 (define (check-timestamptz-equal? a b)
   (check srfi:time=?
@@ -143,11 +140,6 @@
 
 (define test
   (test-suite "SQL types (roundtrip, etc)"
-    #:before (lambda ()
-               (call-with-connection
-                (lambda (c) (set! dbsystem (connection-dbsystem c)))))
-    #:after (lambda () (set! dbsystem #f))
-
     (type-test-case '(bool boolean)
       (call-with-connection
        (lambda (c)
@@ -205,19 +197,20 @@
            (check-roundtrip c -inf.0)
            (check-roundtrip c +nan.0)))))
 
-    (type-test-case '(numeric decimal)
-      (unless (ANYFLAGS 'isdb2) ;; "Driver not capable"
+    (unless (ANYFLAGS 'isdb2) ;; "Driver not capable"
+      (type-test-case '(numeric decimal)
         (call-with-connection
          (lambda (c)
            (check-roundtrip c 0)
            (check-roundtrip c 10)
            (check-roundtrip c -5)
-           (check-roundtrip c 1/2)
-           (check-roundtrip c 1/40)
-           (check-roundtrip c #e1234567890.0987654321)
-           (check-roundtrip c 1/10)
-           (check-roundtrip c 1/400000)
-           (check-roundtrip c 12345678901234567890)
+           (unless (TESTFLAGS 'odbc 'ismy)
+             (check-roundtrip c 12345678901234567890)
+             (check-roundtrip c 1/2)
+             (check-roundtrip c 1/40)
+             (check-roundtrip c #e1234567890.0987654321)
+             (check-roundtrip c 1/10)
+             (check-roundtrip c 1/400000))
            (when (supported? 'numeric-infinities)
              (check-roundtrip c +nan.0))))))
 

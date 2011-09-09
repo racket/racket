@@ -1,0 +1,4 @@
+5.1.3.*
+- Performance work: delayed environment evaluation
+- Support `racket'-style optional arguments
+- Changes to support new-style keyword argument expansion

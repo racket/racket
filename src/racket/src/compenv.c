@@ -1883,7 +1883,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   /* Try syntax table: */
   if (modname) {
-    val = scheme_module_syntax(modname, env->genv, find_id);
+    val = scheme_module_syntax(modname, env->genv, find_id, SCHEME_INT_VAL(mod_defn_phase));
     if (val && !(flags & SCHEME_NO_CERT_CHECKS))
       scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
 					find_id, src_find_id, NULL, NULL, rename_insp,

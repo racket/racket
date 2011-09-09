@@ -1669,10 +1669,7 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 
     save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1, NULL, scheme_false);
     vals = scheme_eval_linked_expr_multi_with_dynamic_state(vals_expr, dyn_state);
-    if (defmacro == 2)
-      dm_env = NULL;
-    else
-      scheme_pop_prefix(save_runstack);
+    scheme_pop_prefix(save_runstack);
   } else {
     vals = _scheme_eval_linked_expr_multi(vals_expr);
     dm_env = NULL;
@@ -1782,16 +1779,13 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
   } else
     name = NULL;
   
-  if (defmacro > 1)
-    scheme_pop_prefix(save_runstack);
-
   {
     const char *symname;
 
     symname = (show_any ? scheme_symbol_name(name) : "");
 
     scheme_wrong_return_arity((defmacro 
-			       ? (dm_env ? "define-syntaxes" : "define-values-for-syntax")
+			       ? "define-syntaxes"
 			       : "define-values"),
 			      i, g,
 			      (g == 1) ? (Scheme_Object **)vals : scheme_current_thread->ku.multiple.array,
@@ -2034,7 +2028,7 @@ static Scheme_Object *splice_execute(Scheme_Object *data)
   }
 }
 
-static Scheme_Object *do_define_syntaxes_execute(Scheme_Object *expr, Scheme_Env *dm_env, int for_stx);
+static Scheme_Object *do_define_syntaxes_execute(Scheme_Object *expr, Scheme_Env *dm_env);
 
 static void *define_syntaxes_execute_k(void)
 {
@@ -2043,11 +2037,11 @@ static void *define_syntaxes_execute_k(void)
   Scheme_Env *dm_env = (Scheme_Env *)p->ku.k.p2;
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
-  return do_define_syntaxes_execute(form, dm_env, p->ku.k.i1);
+  return do_define_syntaxes_execute(form, dm_env);
 }
 
 static Scheme_Object *
-do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env, int for_stx)
+do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
 {
   Scheme_Thread *p = scheme_current_thread;
   Resolve_Prefix *rp;
@@ -2068,7 +2062,6 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env, int for_stx)
       dm_env = scheme_environment_from_dummy(dummy);
     }
     p->ku.k.p2 = (Scheme_Object *)dm_env;
-    p->ku.k.i1 = for_stx;
 
     return (Scheme_Object *)scheme_enlarge_runstack(depth, define_syntaxes_execute_k);
   }
@@ -2095,24 +2088,40 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env, int for_stx)
     scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 
     scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, scheme_false, dm_env, dm_env->link_midx);
-    result = define_execute_with_dynamic_state(form, 4, for_stx ? 2 : 1, rp, dm_env, &dyn_state);
 
+    if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_syntaxes_type)) {
+      result = define_execute_with_dynamic_state(form, 4, 1, rp, dm_env, &dyn_state);
+    } else {
+      Scheme_Object **save_runstack;
+
+      form = SCHEME_VEC_ELS(form)[0];
+
+      save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1, NULL, scheme_false);
+
+      while (!SCHEME_NULLP(form)) {
+        (void)scheme_eval_linked_expr_multi_with_dynamic_state(SCHEME_CAR(form), &dyn_state);
+        form = SCHEME_CDR(form);
+      }
+      
+      scheme_pop_prefix(save_runstack);
+    }
+    
     scheme_pop_continuation_frame(&cframe);
 
-    return result;
+    return scheme_void;
   }
 }
 
 static Scheme_Object *
 define_syntaxes_execute(Scheme_Object *form)
 {
-  return do_define_syntaxes_execute(form, NULL, 0);
+  return do_define_syntaxes_execute(form, NULL);
 }
 
 static Scheme_Object *
-define_for_syntaxes_execute(Scheme_Object *form)
+begin_for_syntax_execute(Scheme_Object *form)
 {
-  return do_define_syntaxes_execute(form, NULL, 1);
+  return do_define_syntaxes_execute(form, NULL);
 }
 
 /*========================================================================*/
@@ -3444,10 +3453,10 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
           v = define_syntaxes_execute(obj);
           break;
         }
-      case scheme_define_for_syntax_type:
+      case scheme_begin_for_syntax_type:
         {
           UPDATE_THREAD_RSPTR();
-          v = define_for_syntaxes_execute(obj);
+          v = begin_for_syntax_execute(obj);
           break;
         }
       case scheme_set_bang_type:
@@ -5179,7 +5188,7 @@ Scheme_Object *scheme_eval_clone(Scheme_Object *expr)
     return scheme_module_eval_clone(expr);
     break;
   case scheme_define_syntaxes_type:
-  case scheme_define_for_syntax_type:
+  case scheme_begin_for_syntax_type:
     return scheme_syntaxes_eval_clone(expr);
   default:
     return expr;

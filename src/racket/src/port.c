@@ -286,6 +286,13 @@ typedef struct Scheme_FD {
 # endif
 } Scheme_FD;
 
+Scheme_Object *scheme_port_name(Scheme_Object *p) {
+  if (p->type == scheme_input_port_type)
+    return ((Scheme_Input_Port *)p)->name;
+  else
+    return ((Scheme_Output_Port *)p)->name;
+}
+
 int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *so) {
   Scheme_FD *fds;
   if (p->type == scheme_input_port_type) {
@@ -294,7 +301,7 @@ int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *
   }
   else {
     fds = (Scheme_FD *) ((Scheme_Output_Port *)p)->port_data;
-    so->name = ((Scheme_Input_Port *)p)->name;
+    so->name = ((Scheme_Output_Port *)p)->name;
   }
   so->regfile = fds->regfile;
   so->textmode = fds->textmode;
@@ -1206,6 +1213,19 @@ intptr_t scheme_dup_file(intptr_t fd) {
     nfd = dup(fd);
   } while (nfd == -1 && errno == EINTR);
   return nfd;
+#endif
+}
+
+void scheme_close_file_fd(intptr_t fd) {
+#ifdef WINDOWS_FILE_HANDLES
+  CloseHandle((HANDLE)fd);
+#else
+  {
+    intptr_t rc;
+    do {
+      rc = close(fd);
+    } while (rc == -1 && errno == EINTR);
+  }
 #endif
 }
 
@@ -7428,14 +7448,7 @@ static void check_child_done(pid_t pid)
           unused = (void **)next;
         }
 
-        START_XFORM_SKIP;
-        if (WIFEXITED(status))
-          status = WEXITSTATUS(status);
-        else if (WIFSIGNALED(status))
-          status = WTERMSIG(status) + 128;
-        else
-          status = MZ_FAILURE_STATUS;
-        END_XFORM_SKIP;
+        status = scheme_extract_child_status(status);
 
         prev = NULL;
         for (sc = scheme_system_children; sc; prev = sc, sc = sc->next) {
@@ -7467,6 +7480,20 @@ void scheme_check_child_done(void)
   }
 }
 
+#endif
+
+#if defined(UNIX_PROCESSES)
+int scheme_extract_child_status(int status) XFORM_SKIP_PROC
+{
+  if (WIFEXITED(status))
+    status = WEXITSTATUS(status);
+  else if (WIFSIGNALED(status))
+    status = WTERMSIG(status) + 128;
+  else
+    status = MZ_FAILURE_STATUS;
+
+  return status;
+}
 #endif
 
 /*========================================================================*/

@@ -9,6 +9,7 @@
          "../preferences.rkt"
          "../gui-utils.rkt"
          "bday.rkt"
+         framework/private/focus-table
          mrlib/close-icon
          mred/mred-sig
          scheme/path)
@@ -131,6 +132,26 @@
                    editing-this-file?
                    get-filename
                    make-visible))
+
+(define focus-table<%> (interface (top-level-window<%>)))
+(define focus-table-mixin
+  (mixin (top-level-window<%>) (focus-table<%>)
+    (inherit get-eventspace)
+    
+    (define/override (show on?)
+      (define old (remove this (frame:lookup-focus-table (get-eventspace))))
+      (define new (if on? (cons this old) old))
+      (frame:set-focus-table (get-eventspace) new)
+      (super show on?))
+    
+    (define/augment (on-close)
+      (frame:set-focus-table (get-eventspace) (remove this (frame:lookup-focus-table (get-eventspace))))
+      (inner (void) on-close))
+    
+    (super-new)
+    
+    (frame:set-focus-table (get-eventspace) (frame:lookup-focus-table (get-eventspace)))))
+
 (define basic-mixin
   (mixin ((class->interface frame%)) (basic<%>)
     
@@ -190,12 +211,11 @@
       (λ (% parent)
         (make-object % parent)))
     
-    (inherit can-close? on-close)
-    (define/public close
-      (λ ()
-        (when (can-close?)
-          (on-close)
-          (show #f))))
+    (inherit on-close can-close?)
+    (define/public (close)
+      (when (can-close?)
+        (on-close)
+        (show #f)))
     
     (inherit accept-drop-files)
     
@@ -2710,7 +2730,7 @@
     (min-width (+ (inexact->exact (ceiling indicator-width)) 4))
     (min-height (+ (inexact->exact (ceiling indicator-height)) 4))))
 
-(define basic% (register-group-mixin (basic-mixin frame%)))
+(define basic% (focus-table-mixin (register-group-mixin (basic-mixin frame%))))
 (define size-pref% (size-pref-mixin basic%))
 (define info% (info-mixin basic%))
 (define text-info% (text-info-mixin info%))

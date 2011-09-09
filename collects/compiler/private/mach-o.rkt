@@ -56,6 +56,7 @@
                  [link-edit-addr 0]
                  [link-edit-offset 0]
                  [link-edit-len 0]
+                 [link-edit-vmlen 0]
                  [dyld-info-pos #f]
                  [dyld-info-offs #f])
             ;; (printf "~a cmds, length 0x~x\n" cnt cmdssz)
@@ -82,6 +83,7 @@
                            (set! link-edit-64? 64?)
                            (set! link-edit-pos pos)
                            (set! link-edit-addr vmaddr)
+                           (set! link-edit-vmlen vmlen)
                            (set! link-edit-offset offset)
                            (set! link-edit-len len)
                            (when (link-edit-len . < . 0)
@@ -145,7 +147,7 @@
                   [out-offset (if move-link-edit?
                                   link-edit-offset
                                   (+ link-edit-offset (round-up-page link-edit-len)))]
-                  [out-addr (+ link-edit-addr (round-up-page link-edit-len))])
+                  [out-addr (+ link-edit-addr (round-up-page link-edit-vmlen))])
               (unless ((+ end-cmd new-cmd-sz) . < . min-used)
                 (error 'check-header 
                        "no room for a new section load command (current end is ~a; min used is ~a)"

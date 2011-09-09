@@ -26,17 +26,15 @@ native client library is required.}
 
 @item{@bold{@as-index{@hyperlink["http://www.sqlite.org"]{SQLite}} version
 3.} The SQLite native client library is required; see
-@secref["sqlite3-native-libs"].}
+@secref["sqlite3-requirements"].}
 
 @item{@bold{@as-index{ODBC}.} An ODBC Driver Manager and appropriate
-ODBC drivers are required; see @secref["odbc-native-libs"]. The
-following additional database systems are known to work with this
-library's ODBC support (see @secref["odbc-status"] for details):
-@itemlist[
-@item{@bold{@as-index{@hyperlink["http://www.oracle.com"]{Oracle}}}}
-@item{@bold{@as-index{@hyperlink["http://www.ibm.com/software/data/db2/"]{DB2}}}}
-@item{@bold{@as-index{@hyperlink["http://www.microsoft.com/sqlserver/"]{SQL Server}}}}
-]}
+ODBC drivers are required; see @secref["odbc-requirements"]. The
+following database systems are known to work with this library via
+ODBC (see @secref["odbc-status"] for details):
+@bold{@as-index{@hyperlink["http://www.ibm.com/software/data/db2/"]{DB2}}},
+@bold{@as-index{@hyperlink["http://www.oracle.com"]{Oracle}}}, and
+@bold{@as-index{@hyperlink["http://www.microsoft.com/sqlserver/"]{SQL Server}}}.}
 ]
 
 The query operations are functional in spirit: queries return results

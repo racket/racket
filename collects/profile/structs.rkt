@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Struct definitions for the profiler
 
@@ -14,7 +14,7 @@
 ;;   identifiable by having both id and src fields being #f.  Can be used to
 ;;   start a graph traversal from the top or the bottom.
 (provide (struct-out profile))
-(define-struct profile
+(struct profile
   (total-time cpu-time sample-number thread-times nodes *-node))
 
 ;; An entry for a single profiled function:

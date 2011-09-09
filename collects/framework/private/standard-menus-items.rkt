@@ -265,7 +265,9 @@
                       '(λ (item control) (when (can-close?) (on-close) (show #f)) #t)
                       #\w
                       '(get-default-shortcut-prefix)
-                      '(string-constant close-menu-item)
+                      '(if (eq? (system-type) 'unix)
+                           (string-constant close-menu-item)
+                           (string-constant close-window-menu-item))
                       on-demand-do-nothing
                       #t)
         (make-between 'file-menu 'close 'quit 'nothing)
@@ -387,8 +389,8 @@
         (make-an-item 'edit-menu 'replace
                       '(string-constant replace-info)
                       '(λ (item control) (void))
-                      #\r
-                      '(get-default-shortcut-prefix)
+                      #\f
+                      '(cons 'shift (get-default-shortcut-prefix))
                       '(string-constant replace-menu-item)
                       on-demand-do-nothing
                       #f)

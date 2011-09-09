@@ -2,69 +2,73 @@
 (require scribble/core scribble/manual scribble/bnf
          racket/list racket/string)
 
+;; If you edit this table, please try to avoid making the table wider
+;; or causing line-wrapping in HTML. (I know that someone who edits
+;; the table is unlikely to see this request, but it's worth a try.)
+
 (define grammar @string-append{
   Regexp   ::= Pces               Match Pces                                      #co
-            |  Regexp|Regexp      Match either Regexp, try left first             #co
+            |  Regexp|Regexp      Match either Regexp, try left first             #co 1
   Pces     ::= Pce                Match Pce                                       #co
             |  PcePces            Match Pce followed by Pces                      #co
-  Pce      ::= Repeat             Match Repeat, longest possible                  #co
-            |  Repeat?            Match Repeat, shortest possible                 #co
+  Pce      ::= Repeat             Match Repeat, longest possible                  #co 3
+            |  Repeat?            Match Repeat, shortest possible                 #co 6
             |  Atom               Match Atom exactly once                         #co
-  Repeat   ::= Atom*              Match Atom 0 or more times                      #co
-            |  Atom+              Match Atom 1 or more times                      #co
-            |  Atom?              Match Atom 0 or 1 times                         #co
+  Repeat   ::= Atom*              Match Atom 0 or more times                      #co 3
+            |  Atom+              Match Atom 1 or more times                      #co 4
+            |  Atom?              Match Atom 0 or 1 times                         #co 5
   Repeat   ::= ...                ...                                             #px
-            |  Atom{N}            Match Atom exactly N times                      #px
-            |  Atom{N,}           Match Atom N or more times                      #px
-            |  Atom{,M}           Match Atom between 0 and M times                #px
-            |  Atom{N,M}          Match Atom between N and M times                #px
-  Atom     ::= (Regexp)           Match sub-expression Regexp and report          #co
-            |  [Rng]              Match any character in Rng                      #co
-            |  [^Rng]             Match any character not in Rng                  #co
-            |  .                  Match any (except newline in multi mode)        #co
-            |  ^                  Match start (or after newline in multi mode)    #co
-            |  $                  Match end (or before newline in multi mode)     #co
-            |  Literal            Match a single literal character                #co
-            |  (?Mode:Regexp)     Match Regexp using Mode                         #co
+            |  Atom{N}            Match Atom exactly N times                      #px 7
+            |  Atom{N,}           Match Atom N or more times                      #px 8
+            |  Atom{,M}           Match Atom between 0 and M times                #px 9
+            |  Atom{N,M}          Match Atom between N and M times                #px 10
+  Atom     ::= (Regexp)           Match sub-expression Regexp and report          #co 11
+            |  [Rng]              Match any character in Rng                      #co 2
+            |  [^Rng]             Match any character not in Rng                  #co 12
+            |  .                  Match any (except newline in multi mode)        #co 13
+            |  ^                  Match start (or after newline in multi mode)    #co 14
+            |  $                  Match end (or before newline in multi mode)     #co 15
+            |  Literal            Match a single literal character                #co 1
+            |  (?Mode:Regexp)     Match Regexp using Mode                         #co 35
             |  (?>Regexp)         Match Regexp, only first possible               #co
             |  Look               Match empty if Look matches                     #co
-            |  (?TstPces|Pces)    Match 1st Pces if Tst, else 2nd Pces            #co
+            |  (?TstPces|Pces)    Match 1st Pces if Tst, else 2nd Pces            #co 36
             |  (?TstPces)         Match Pces if Tst, empty if not Tst             #co
   Atom     ::= ...                ...                                             #px
-            |  \N                 Match latest reported match for N##th _(_       #px
+            |  \N                 Match latest reported match for N##th _(_       #px 16
             |  Class              Match any character in Class                    #px
-            |  \b                 Match _\w*_ boundary                            #px
-            |  \B                 Match where _\b_ does not                       #px
-            |  \p{Property}       Match (UTF-8 encoded) in Property               #px
-            |  \P{Property}       Match (UTF-8 encoded) not in Property           #px
+            |  \b                 Match _\w*_ boundary                            #px 17
+            |  \B                 Match where _\b_ does not                       #px 18
+            |  \p{Property}       Match (UTF-8 encoded) in Property               #px 19
+            |  \P{Property}       Match (UTF-8 encoded) not in Property           #px 20
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _._, _^_, _\_, or _|_                #rx
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _]_, _{_, _}_, _._, _^_, _\_, or _|_ #px
-            |  \Aliteral                Match Aliteral                            #ot
+            |  \Aliteral                Match Aliteral                            #ot 21
   Aliteral :== Any character                                                      #rx
   Aliteral :== Any character except _a_-_z_, _A_-_Z_, _0_-_9_                     #px
-  Rng      ::= ]                  Rng contains _]_ only                           #co
-            |  -                  Rng contains _-_ only                           #co
+  Rng      ::= ]                  Rng contains _]_ only                           #co 27
+            |  -                  Rng contains _-_ only                           #co 28
             |  Mrng               Rng contains everything in Mrng                 #co
             |  Mrng-              Rng contains _-_ and everything in Mrng         #co
-  Mrng     ::= ]Lrng              Mrng contains _]_ and everything in Lrng        #co
-            |  -Lrng              Mrng contains _-_ and everything in Lrng        #co
+  Mrng     ::= ]Lrng              Mrng contains _]_ and everything in Lrng        #co 29
+            |  -Lrng              Mrng contains _-_ and everything in Lrng        #co 29
             |  Lirng              Mrng contains everything in Lirng               #co
   Lirng    ::= Riliteral          Lirng contains a literal character              #co
-            |  Riliteral-Rliteral Lirng contains Unicode range inclusive          #co
+            |  Riliteral-Rliteral Lirng contains Unicode range inclusive          #co 22
             |  LirngLrng          Lirng contains everything in both               #co
-  Lrng     ::= ^                  Lrng contains _^_                               #co
+  Lrng     ::= ^                  Lrng contains _^_                               #co 30
             |  Rliteral-Rliteral  Lrng contains Unicode range inclusive           #co
             |  ^Lrng              Lrng contains _^_ and more                      #co
             |  Lirng              Lrng contains everything in Lirng               #co
-  Look     ::= (?=Regexp)         Match if Regexp matches                         #mode
-            |  (?!Regexp)         Match if Regexp doesn't match                   #mode
-            |  (?<=Regexp)        Match if Regexp matches preceding               #mode
-            |  (?<!Regexp)        Match if Regexp doesn't match preceding         #mode
+  Look     ::= (?=Regexp)         Match if Regexp matches                         #mode 31
+            |  (?!Regexp)         Match if Regexp doesn't match                   #mode 32
+            |  (?<=Regexp)        Match if Regexp matches preceding               #mode 33
+            |  (?<!Regexp)        Match if Regexp doesn't match preceding         #mode 34
   Tst      ::= (N)                True if Nth _(_ has a match                     #mode
-            |  Look               True if Look matches                            #mode
+            |  Look               True if Look matches                            #mode 36
   Lirng    ::= ...                ...                                             #px
             |  Class              Lirng contains all characters in Class          #px
-            |  Posix              Lirng contains all characters in Posix          #px
+            |  Posix              Lirng contains all characters in Posix          #px 26
             |  \Eliteral          Lirng contains Eliteral                         #px
   Riliteral :== Any character except _]_, _-_, or _^_                             #rx
   Riliteral :== Any character except _]_, _\_, _-_, or _^_                        #px
@@ -72,21 +76,21 @@
   Rliteral  :== Any character except _]_, _\_, or _-_                             #px
   Eliteral  :== Any character except _a_-_z_, _A_-_Z_                             #px
   Mode     ::=                    Like the enclosing mode                         #mode
-            |  Modei              Like Mode, but case-insensitive                 #mode
+            |  Modei              Like Mode, but case-insensitive                 #mode 35
             |  Mode-i             Like Mode, but sensitive                        #mode
             |  Modes              Like Mode, but not in multi mode                #mode
             |  Mode-s             Like Mode, but in multi mode                    #mode
             |  Modem              Like Mode, but in multi mode                    #mode
             |  Mode-m             Like Mode, but not in multi mode                #mode
-  Class    ::= \d                 Contains _0_-_9_                                #cat
+  Class    ::= \d                 Contains _0_-_9_                                #cat 23
             |  \D                 Contains ASCII other than those in _\d_         #cat
-            |  \w                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat
+            |  \w                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat 24
             |  \W                 Contains ASCII other than those in _\w_         #cat
-            |  \s                 Contains space, tab, newline, formfeed, return  #cat
+            |  \s                 Contains space, tab, newline, formfeed, return  #cat 25
             |  \S                 Contains ASCII other than those in _\s_         #cat
   Posix    ::= [:alpha:]          Contains _a_-_z_, _A_-_Z_                       #cat
             |  [:upper:]          Contains _A_-_Z_                                #cat
-            |  [:lower:]          Contains _a_-_z_                                #cat
+            |  [:lower:]          Contains _a_-_z_                                #cat 26
             |  [:digit:]          Contains _0_-_9_                                #cat
             |  [:xdigit:]         Contains _0_-_9_, _a_-_f_, _A_-_F_              #cat
             |  [:alnum:]          Contains _a_-_z_, _A_-_Z_, _0_-_9_              #cat
@@ -94,12 +98,12 @@
             |  [:blank:]          Contains space and tab                          #cat
             |  [:space:]          Contains space, tab, newline, formfeed, return  #cat
             |  [:graph:]          Contains all ASCII characters that use ink      #cat
-            |  [:print:]          Contains space, tab, and ASCII ink users (_[:graph:]_ and _[:blank:]_) #cat
+            |  [:print:]          Contains space, tab, and ASCII ink users        #cat
             |  [:cntrl:]          Contains all characters with scalar value < 32  #cat
             |  [:ascii:]          Contains all ASCII characters                   #cat
   Property ::= Category           Includes all characters in Category             #cat
             |  ^Category          Includes all characters not in Category         #cat
-  Category ::= Ll                 Letter, lowercase                               #ucat
+  Category ::= Ll                 Letter, lowercase                               #ucat 19
             |  Lu                 Letter, uppercase                               #ucat
             |  Lt                 Letter, titlecase                               #ucat
             |  Lm                 Letter, modifier                                #ucat
@@ -192,7 +196,7 @@
   (for/list ([line (in-list (regexp-split "\r*\n" grammar))]
              #:when (positive? (string-length line)))
     (regexp-case line
-      [(#px"^(.*?) +#(\\w+)$" line kind) (cons (string->symbol kind) line)]
+      [(#px"^(.*?) +#(\\w+)(?:| ([0-9]+))$" line kind ex) (list (string->symbol kind) line ex)]
       [else (error 'grammar-lines "bad line: ~s" line)])))
 
 (define (table-content modes)
@@ -201,22 +205,29 @@
       x
       (paragraph plain (list (if (element? x) x (element #f x))))))
   (define (row . xs) (map cell xs))
-  (define (render-line line)
+  (define (ex-ref ex) (if ex
+                          (smaller (list 'nbsp (elemref `(rxex ,ex)
+                                                        (format "ex~a" ex))))
+                          ""))
+  (define (render-line line ex)
     (regexp-case line
       [(#rx"^([^ ]*) +::= ((?:[^ ]+| [|] )*) +([^ ].*)$" prod val meaning)
        (row (fixup-ids prod) ::= (lit-ize (fixup-ids val))
-            spacer (as-smaller (as-meaning (fixup-ids meaning))))]
+            spacer (as-smaller (as-meaning (fixup-ids meaning)))
+            (ex-ref ex))]
       [(#rx"^([^ ]*) +:== (.*)$" prod meaning)
        (row (fixup-ids prod) ::= (as-meaning (fixup-ids meaning))
-            'cont 'cont)]
+            'cont 'cont
+            (ex-ref ex))]
       [(#rx"^ + [|]  ((?:[^ ]| [|] )*) +([^ ].*)$" val meaning)
        (row 'nbsp -or- (lit-ize (fixup-ids val))
-            spacer (as-smaller (as-meaning (fixup-ids meaning))))]))
+            spacer (as-smaller (as-meaning (fixup-ids meaning)))
+            (ex-ref ex))]))
   (table (style #f (list (table-columns
                           (map (lambda (s) (style #f (list s)))
-                               '(left left center left left left)))))
+                               '(left left center left left left left)))))
     (for/list ([line (in-list grammar-lines)] #:when (memq (car line) modes))
-      (cons (paragraph plain (list spacer)) (render-line (cdr line))))))
+      (cons (paragraph plain (list spacer)) (render-line (cadr line) (caddr line))))))
 
 (provide common-table rx-table px-table category-table)
 (define common-table   (table-content '(co mode)))

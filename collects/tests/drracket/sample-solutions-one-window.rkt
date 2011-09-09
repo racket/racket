@@ -110,7 +110,7 @@
                  (custodian-shutdown-all cust))))
             (let ([wait-for-kill-window
                    (lambda ()
-                     (let ([f (get-top-level-focus-window)])
+                     (let ([f (test:get-active-top-level-window)])
                        (and f (equal? (send f get-label)
                                       "Evaluation Terminated"))))])
               (poll-until wait-for-kill-window)

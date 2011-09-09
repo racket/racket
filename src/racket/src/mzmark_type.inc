@@ -2167,6 +2167,7 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->exp_env, gc);
   gcMARK2(e->template_env, gc);
   gcMARK2(e->label_env, gc);
+  gcMARK2(e->instance_env, gc);
 
   gcMARK2(e->shadowed_syntax, gc);
 
@@ -2176,6 +2177,7 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->tt_require_names, gc);
   gcMARK2(e->dt_require_names, gc);
   gcMARK2(e->other_require_names, gc);
+  gcMARK2(e->running, gc);
   gcMARK2(e->did_starts, gc);
   gcMARK2(e->available_next[0], gc);
   gcMARK2(e->available_next[1], gc);
@@ -2206,6 +2208,7 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->exp_env, gc);
   gcFIXUP2(e->template_env, gc);
   gcFIXUP2(e->label_env, gc);
+  gcFIXUP2(e->instance_env, gc);
 
   gcFIXUP2(e->shadowed_syntax, gc);
 
@@ -2215,6 +2218,7 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->tt_require_names, gc);
   gcFIXUP2(e->dt_require_names, gc);
   gcFIXUP2(e->other_require_names, gc);
+  gcFIXUP2(e->running, gc);
   gcFIXUP2(e->did_starts, gc);
   gcFIXUP2(e->available_next[0], gc);
   gcFIXUP2(e->available_next[1], gc);
@@ -2508,23 +2512,13 @@ static int module_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(m->dt_requires, gc);
   gcMARK2(m->other_requires, gc);
 
-  gcMARK2(m->body, gc);
-  gcMARK2(m->et_body, gc);
+  gcMARK2(m->bodies, gc);
 
   gcMARK2(m->me, gc);
 
-  gcMARK2(m->provide_protects, gc);
-  gcMARK2(m->indirect_provides, gc);
-
-  gcMARK2(m->indirect_syntax_provides, gc);
-
-  gcMARK2(m->et_provide_protects, gc);
-  gcMARK2(m->et_indirect_provides, gc);
+  gcMARK2(m->exp_infos, gc);
 
   gcMARK2(m->self_modidx, gc);
-
-  gcMARK2(m->accessible, gc);
-  gcMARK2(m->et_accessible, gc);
 
   gcMARK2(m->insp, gc);
 
@@ -2558,23 +2552,13 @@ static int module_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->dt_requires, gc);
   gcFIXUP2(m->other_requires, gc);
 
-  gcFIXUP2(m->body, gc);
-  gcFIXUP2(m->et_body, gc);
+  gcFIXUP2(m->bodies, gc);
 
   gcFIXUP2(m->me, gc);
 
-  gcFIXUP2(m->provide_protects, gc);
-  gcFIXUP2(m->indirect_provides, gc);
-
-  gcFIXUP2(m->indirect_syntax_provides, gc);
-
-  gcFIXUP2(m->et_provide_protects, gc);
-  gcFIXUP2(m->et_indirect_provides, gc);
+  gcFIXUP2(m->exp_infos, gc);
 
   gcFIXUP2(m->self_modidx, gc);
-
-  gcFIXUP2(m->accessible, gc);
-  gcFIXUP2(m->et_accessible, gc);
 
   gcFIXUP2(m->insp, gc);
 
@@ -2596,6 +2580,41 @@ static int module_val_FIXUP(void *p, struct NewGC *gc) {
 
 #define module_val_IS_ATOMIC 0
 #define module_val_IS_CONST_SIZE 1
+
+
+static int exp_info_val_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Export_Info));
+}
+
+static int exp_info_val_MARK(void *p, struct NewGC *gc) {
+  Scheme_Module_Export_Info *m = (Scheme_Module_Export_Info *)p;
+
+  gcMARK2(m->provide_protects, gc);
+  gcMARK2(m->indirect_provides, gc);
+
+  gcMARK2(m->indirect_syntax_provides, gc);
+
+  gcMARK2(m->accessible, gc);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Export_Info));
+}
+
+static int exp_info_val_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Module_Export_Info *m = (Scheme_Module_Export_Info *)p;
+
+  gcFIXUP2(m->provide_protects, gc);
+  gcFIXUP2(m->indirect_provides, gc);
+
+  gcFIXUP2(m->indirect_syntax_provides, gc);
+
+  gcFIXUP2(m->accessible, gc);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Export_Info));
+}
+
+#define exp_info_val_IS_ATOMIC 0
+#define exp_info_val_IS_CONST_SIZE 1
 
 
 static int module_phase_exports_val_SIZE(void *p, struct NewGC *gc) {

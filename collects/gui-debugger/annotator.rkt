@@ -203,9 +203,8 @@
           ]
          [(define-syntaxes (var ...) expr)
           stx]
-         [(define-values-for-syntax (var ...) expr)
-          ;; define-values-for-syntax's RHS is compile time, so treat it
-          ;; like define-syntaxes
+         [(begin-for-syntax . exprs)
+          ;; compile time, so treat it like define-syntaxes
           stx]
          [(begin . top-level-exprs)
           (quasisyntax/loc stx (begin #,@(map (lambda (expr)

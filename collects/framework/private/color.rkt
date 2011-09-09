@@ -638,7 +638,8 @@ added get-regions
                                    (if (is-a? color color%)
                                        color
                                        (if color mismatch-color (get-match-color)))
-                                   (= caret-pos (+ start-pos start)))])
+                                   (= caret-pos (+ start-pos start))
+                                   'low)])
         (set! clear-old-locations
               (let ([old clear-old-locations])
                 (λ ()

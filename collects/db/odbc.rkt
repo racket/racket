@@ -11,13 +11,15 @@
         #:password (or/c string? #f)
         #:notice-handler (or/c 'output 'error output-port? procedure?)
         #:strict-parameter-types? boolean?
-        #:character-mode (or/c 'wchar 'utf-8 'latin-1))
+        #:character-mode (or/c 'wchar 'utf-8 'latin-1)
+        #:use-place boolean?)
        connection?)]
  [odbc-driver-connect
   (->* (string?)
        (#:notice-handler (or/c 'output 'error output-port? procedure?)
         #:strict-parameter-types? boolean?
-        #:character-mode (or/c 'wchar 'utf-8 'latin-1))
+        #:character-mode (or/c 'wchar 'utf-8 'latin-1)
+        #:use-place boolean?)
        connection?)]
  [odbc-data-sources
   (-> (listof (list/c string? string?)))]

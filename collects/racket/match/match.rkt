@@ -19,4 +19,5 @@
 
 (define-forms parse
   match match* match-lambda match-lambda* match-lambda** match-let match-let*
-  match-define match-letrec match/derived match*/derived)
+  match-let-values match-let*-values
+  match-define match-define-values match-letrec match/values match/derived match*/derived)

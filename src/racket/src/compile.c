@@ -108,8 +108,8 @@ static Scheme_Object *quote_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *
 static Scheme_Object *quote_syntax_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *define_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
-static Scheme_Object *define_for_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
-static Scheme_Object *define_for_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
+static Scheme_Object *begin_for_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *begin_for_syntax_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *letrec_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *letrec_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 
@@ -273,9 +273,9 @@ void scheme_init_compile (Scheme_Env *env)
 							quote_syntax_expand), 
 			    env);
   scheme_add_global_keyword("define-syntaxes", scheme_define_syntaxes_syntax, env);
-  scheme_add_global_keyword("define-values-for-syntax", 
-			    scheme_make_compiled_syntax(define_for_syntaxes_syntax, 
-							define_for_syntaxes_expand),
+  scheme_add_global_keyword("begin-for-syntax", 
+			    scheme_make_compiled_syntax(begin_for_syntax_syntax, 
+							begin_for_syntax_expand),
 			    env);
   scheme_add_global_keyword("letrec-syntaxes+values", 
 			    scheme_make_compiled_syntax(letrec_syntaxes_syntax, 
@@ -3135,7 +3135,7 @@ single_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
   form_name = SCHEME_STX_CAR(form);
 
   if (simplify && (erec[drec].depth == -1)) {
-    /* FIXME: this needs EXPAND_OBSERVE callbacks. */
+    /* FIXME [Ryan?]: this needs EXPAND_OBSERVE callbacks? */
     expr = scheme_stx_track(expr, form, form_name);
     SCHEME_EXPAND_OBSERVE_TAG(erec[drec].observer,expr);
     return expr;
@@ -3224,6 +3224,19 @@ quote_syntax_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Inf
 /*                          define-syntaxes                           */
 /**********************************************************************/
 
+static void prep_exp_env_compile_rec(Scheme_Compile_Info *rec, int drec)
+{
+  rec[0].comp = 1;
+  rec[0].dont_mark_local_use = 0;
+  rec[0].resolve_module_ids = 0;
+  rec[0].value_name = NULL;
+  rec[0].observer = NULL;
+  rec[0].pre_unwrapped = 0;
+  rec[0].testing_constantness = 0;
+  rec[0].env_already = 0;
+  rec[0].comp_flags = rec[drec].comp_flags;
+}
+
 static Scheme_Object *stx_val(Scheme_Object *name, Scheme_Object *_env)
 {
   Scheme_Env *env = (Scheme_Env *)_env;
@@ -3233,7 +3246,7 @@ static Scheme_Object *stx_val(Scheme_Object *name, Scheme_Object *_env)
 
 static Scheme_Object *
 do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env, 
-			  Scheme_Compile_Info *rec, int drec, int for_stx)
+			  Scheme_Compile_Info *rec, int drec)
 {
   Scheme_Object *names, *code, *dummy;
   Scheme_Object *val, *vec;
@@ -3248,27 +3261,13 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   scheme_prepare_exp_env(env->genv);
   scheme_prepare_compile_env(env->genv->exp_env);
 
-  if (!for_stx)
-    names = scheme_named_map_1(NULL, stx_val, names, (Scheme_Object *)env->genv);
+  names = scheme_named_map_1(NULL, stx_val, names, (Scheme_Object *)env->genv);
 
   exp_env = scheme_new_comp_env(env->genv->exp_env, env->insp, 0);
 
   dummy = scheme_make_environment_dummy(env);
-  
-  rec1.comp = 1;
-  rec1.dont_mark_local_use = 0;
-  rec1.resolve_module_ids = 0;
-  rec1.value_name = NULL;
-  rec1.observer = NULL;
-  rec1.pre_unwrapped = 0;
-  rec1.testing_constantness = 0;
-  rec1.env_already = 0;
-  rec1.comp_flags = rec[drec].comp_flags;
 
-  if (for_stx) {
-    names = defn_targets_syntax(names, exp_env, &rec1, 0);
-    scheme_compile_rec_done_local(&rec1, 0);
-  }
+  prep_exp_env_compile_rec(&rec1, 0);
 
   val = scheme_compile_expr_lift_to_let(code, exp_env, &rec1, 0);
 
@@ -3278,7 +3277,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   SCHEME_VEC_ELS(vec)[2] = names;
   SCHEME_VEC_ELS(vec)[3] = val;
 
-  vec->type = (for_stx ? scheme_define_for_syntax_type : scheme_define_syntaxes_type);
+  vec->type = scheme_define_syntaxes_type;
 
   scheme_merge_undefineds(exp_env, env);
 
@@ -3289,14 +3288,7 @@ static Scheme_Object *
 define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env, 
 		       Scheme_Compile_Info *rec, int drec)
 {
-  return do_define_syntaxes_syntax(form, env, rec, drec, 0);
-}
-
-static Scheme_Object *
-define_for_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env, 
-			   Scheme_Compile_Info *rec, int drec)
-{
-  return do_define_syntaxes_syntax(form, env, rec, drec, 1);
+  return do_define_syntaxes_syntax(form, env, rec, drec);
 }
 
 static Scheme_Object *
@@ -3328,9 +3320,91 @@ define_syntaxes_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Ex
 }
 
 static Scheme_Object *
-define_for_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
+begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Scheme_Expand_Info *rec, int drec)
 {
-  return define_syntaxes_expand(form, env, erec, drec);
+  Scheme_Expand_Info recs[1];
+  Scheme_Object *form, *context_key, *l, *fn, *vec, *dummy;
+  Scheme_Comp_Env *env;
+
+  /* FIXME [Ryan?]: */
+  /* SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(erec[drec].observer); */
+
+  form = orig_form;
+
+  if (!scheme_is_toplevel(in_env))
+    scheme_wrong_syntax(NULL, NULL, form, "illegal use (not at top-level)");
+
+  (void)check_form(form, form);
+
+  scheme_prepare_exp_env(in_env->genv);
+  scheme_prepare_compile_env(in_env->genv->exp_env);
+
+  if (rec[drec].comp)
+    env = scheme_new_comp_env(in_env->genv->exp_env, in_env->insp, 0);
+  else
+    env = scheme_new_expand_env(in_env->genv->exp_env, in_env->insp, 0);
+
+  if (rec[drec].comp)
+    dummy = scheme_make_environment_dummy(in_env);
+  else
+    dummy = NULL;
+
+  context_key = scheme_generate_lifts_key();
+  
+  l = SCHEME_STX_CDR(form);
+  form = scheme_null;
+
+  while (1) {
+    scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env),
+                                scheme_false, scheme_false, scheme_null, scheme_false);
+
+    if (rec[drec].comp) {
+      scheme_init_compile_recs(rec, drec, recs, 1);
+      prep_exp_env_compile_rec(recs, 0);
+      l = scheme_compile_list(l, env, recs, 0);
+    } else {
+      scheme_init_expand_recs(rec, drec, recs, 1);
+      l = scheme_expand_list(l, env, recs, 0);
+    }
+
+    if (SCHEME_NULLP(form))
+      form = l;
+    else
+      form = scheme_append(l, form);
+    
+    l = scheme_frame_get_lifts(env);
+    if (SCHEME_NULLP(l)) {
+      /* No lifts */
+      if (rec[drec].comp)
+        scheme_merge_compile_recs(rec, drec, NULL, 1); /* fix this if merge changes to do something */
+      break;
+    } else {
+      /* We have lifts: */
+      /* FIXME [Ryan?]: need some expand-observe callback here? */
+    }
+  }
+
+  if (rec[drec].comp) {
+    vec = scheme_make_vector(4, NULL);
+    SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)env->prefix;
+    SCHEME_VEC_ELS(vec)[1] = dummy;
+    SCHEME_VEC_ELS(vec)[2] = form;
+    vec->type = scheme_begin_for_syntax_type;
+
+    return vec;
+  } else {
+    fn = SCHEME_STX_CAR(orig_form);
+    return scheme_datum_to_syntax(cons(fn, form), 
+                                  orig_form, orig_form,
+                                  0, 2);
+  }
+}
+
+static Scheme_Object *
+begin_for_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *env, 
+                        Scheme_Compile_Info *rec, int drec)
+{
+  return begin_for_syntax_expand(form, env, rec, drec);
 }
 
 Scheme_Object *scheme_make_environment_dummy(Scheme_Comp_Env *env)
@@ -4325,7 +4399,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 
 #if 1
   if (!SCHEME_STXP(form))
-    scheme_signal_error("not syntax");
+    scheme_signal_error("internal error: not syntax");
 #endif
 
   if (rec[drec].comp) {
@@ -4338,7 +4412,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     var = SCHEME_STX_VAL(form);
     if (scheme_stx_has_empty_wraps(form)
         && same_effective_env(SCHEME_PTR2_VAL(var), env)) {
-      /* FIXME: this needs EXPAND_OBSERVE callbacks. */
+      /* FIXME [Ryan?]: this needs EXPAND_OBSERVE callbacks. */
       form = scheme_stx_track(SCHEME_PTR1_VAL(var), form, form);
       if (!rec[drec].comp && (rec[drec].depth != -1)) {
         /* Already fully expanded. */

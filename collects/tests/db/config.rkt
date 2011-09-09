@@ -11,7 +11,8 @@
   (dbtestname
    connect
    dbsys
-   dbflags))
+   dbflags
+   kill-safe?))
 
 (define-signature test^ (test))
 (define-signature config^
@@ -26,6 +27,7 @@
    set-equal?
    sql
    select-val
+   dbsystem
    NOISY?
    TESTFLAGS
    ANYFLAGS))
@@ -37,7 +39,8 @@
   (define NOISY? #f)
 
   (define (connect-for-test)
-    (connect))
+    (cond [kill-safe? (kill-safe-connection (connect))]
+          [else (connect)]))
 
   (define test-data
     '((0 "nothing")
@@ -85,6 +88,14 @@
           [(TESTFLAGS 'isdb2)
            (sql (string-append "values (" str ")"))]
           [else (sql (string-append "select " str))]))
+
+  (define dbsystem
+    (with-handlers ([(lambda (e) #t)
+                     (lambda (e) #f)])
+      (let* ([c (connect)]
+             [dbsystem (send c get-dbsystem)])
+        (disconnect c)
+        dbsystem)))
 
   ;; Flags = dbflags U dbsys
 

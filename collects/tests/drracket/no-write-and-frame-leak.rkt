@@ -14,12 +14,6 @@
                  void)])
   (fire-up-drscheme-and-run-tests 
    (λ ()
-     (define drs-frame (wait-for-drscheme-frame))
-     (test:menu-select "File" "Close"))))
-
-(parameterize ([current-command-line-arguments '#()])
-  (fire-up-drscheme-and-run-tests 
-   (λ ()
      (define drs-frame1 (wait-for-drscheme-frame))
      (sync (system-idle-evt))
      
@@ -29,7 +23,7 @@
      (define drs-tabb (make-weak-box (send drs-frame1 get-current-tab)))
      (define tab-nsb (make-weak-box (send (send (send drs-frame1 get-current-tab) get-ints) get-user-namespace)))
      
-     (test:menu-select "File" "Close Tab")
+     (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Tab"))
      (sync (system-idle-evt))
      
      (test:menu-select "File" "New")
@@ -38,7 +32,7 @@
      (define drs-frame2b (make-weak-box (wait-for-new-frame drs-frame1)))
      (define frame2-nsb (make-weak-box (send (send (send (weak-box-value drs-frame2b) get-current-tab) get-ints) get-user-namespace)))
      
-     (test:menu-select "File" "Close")
+     (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Window"))
      (sync (system-idle-evt))
      
      (let loop ([n 30])

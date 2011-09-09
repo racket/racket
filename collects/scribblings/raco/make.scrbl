@@ -389,12 +389,20 @@ result will not call @racket[proc] with @racket['unlock].)
 ]
 }
 
-@defproc[(compile-lock->parallel-lock-client [pc place-channel?])
+@defproc[(compile-lock->parallel-lock-client [pc place-channel?] [cust (or/c #f custodian?) #f])
          (-> (or/c 'lock 'unlock) bytes? boolean?)]{
 
   Returns a function that follows the @racket[parallel-lock-client]
   by communicating over @racket[pc]. The argument must have 
   be the result of @racket[make-compile-lock].
+  
+  This communication protocol implementation is not kill safe. To make it kill safe,
+  it needs a sufficiently powerful custodian, i.e., one that is not subject to
+  termination (unless all of the participants in the compilation are also terminated).
+  It uses this custodian to create a thread that monitors the threads that are
+  doing the compilation. If one of them is terminated, the presence of the
+  custodian lets another one continue. (The custodian is also used to create
+  a thread that manages a thread safe table.)
 }
 
 @defproc[(make-compile-lock) place-channel?]{

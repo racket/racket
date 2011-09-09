@@ -316,7 +316,7 @@ a URL that refreshes the password file, servlet cache, etc.}
                 It defines a dispatcher construction procedure.}]{
 
 @defproc[(make [#:url->path url->path url->path/c]
-               [#:path->mime-type path->mime-type (path? . -> . bytes?) (lambda (path) TEXT/HTML-MIME-TYPE)]
+               [#:path->mime-type path->mime-type (path? . -> . (or/c false/c bytes)?) (lambda (path) #f)]
                [#:indices indices (listof string?) (list "index.html" "index.htm")])
          dispatcher/c]{
  Uses @racket[url->path] to extract a path from the URL in the request

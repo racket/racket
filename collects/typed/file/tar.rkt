@@ -1,5 +1,5 @@
-#lang typed-scheme
-;; typed-scheme wrapper on file/tar
+#lang typed/racket/base
+;; typed-racket wrapper on file/tar
 ;; yc 2009/2/25
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

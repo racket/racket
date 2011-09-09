@@ -119,7 +119,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_beg_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_dv_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_ds_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_dvs_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_bfs_stx);
 THREAD_LOCAL_DECL(static int cached_stx_phase);
 THREAD_LOCAL_DECL(static Scheme_Cont *offstack_cont);
 THREAD_LOCAL_DECL(static Scheme_Overflow *offstack_overflow);
@@ -624,7 +624,7 @@ scheme_init_fun_places()
   REGISTER_SO(cached_mod_beg_stx);
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
-  REGISTER_SO(cached_dvs_stx);
+  REGISTER_SO(cached_bfs_stx);
   REGISTER_SO(offstack_cont);
   REGISTER_SO(offstack_overflow);
 }
@@ -1550,7 +1550,7 @@ cert_with_specials(Scheme_Object *code,
 /* Arms (insp) or re-arms (old_stx) taints. */
 {
   Scheme_Object *prop;
-  int next_cadr_deflt = 0;
+  int next_cadr_deflt = 0, phase_delta = 0;
 
 #ifdef DO_STACK_CHECK
   {
@@ -1609,7 +1609,7 @@ cert_with_specials(Scheme_Object *code,
         name = scheme_stx_taint_disarm(code, NULL);
         name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  Scheme_Object *beg_stx, *mod_stx, *mod_beg_stx, *dv_stx, *ds_stx, *dvs_stx;
+	  Scheme_Object *beg_stx, *mod_stx, *mod_beg_stx, *dv_stx, *ds_stx, *bfs_stx;
 
 	  if (!phase) {
             mod_stx = scheme_module_stx;
@@ -1617,14 +1617,14 @@ cert_with_specials(Scheme_Object *code,
 	    mod_beg_stx = scheme_module_begin_stx;
 	    dv_stx = scheme_define_values_stx;
 	    ds_stx = scheme_define_syntaxes_stx;
-	    dvs_stx = scheme_define_for_syntaxes_stx;
+	    bfs_stx = scheme_begin_for_syntax_stx;
 	  } else if (phase == cached_stx_phase) {
 	    beg_stx = cached_beg_stx;
 	    mod_stx = cached_mod_stx;
 	    mod_beg_stx = cached_mod_beg_stx;
 	    dv_stx = cached_dv_stx;
 	    ds_stx = cached_ds_stx;
-	    dvs_stx = cached_dvs_stx;
+	    bfs_stx = cached_bfs_stx;
 	  } else {
             Scheme_Object *sr;
             sr = scheme_sys_wraps_phase(scheme_make_integer(phase));
@@ -1638,14 +1638,14 @@ cert_with_specials(Scheme_Object *code,
 					    sr, 0, 0);
 	    ds_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_syntaxes_stx), scheme_false, 
 					    sr, 0, 0);
-	    dvs_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_for_syntaxes_stx), scheme_false, 
+	    bfs_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_begin_for_syntax_stx), scheme_false, 
                                              sr, 0, 0);
 	    cached_beg_stx = beg_stx;
 	    cached_mod_stx = mod_stx;
 	    cached_mod_beg_stx = mod_beg_stx;
 	    cached_dv_stx = dv_stx;
 	    cached_ds_stx = ds_stx;
-	    cached_dvs_stx = dvs_stx;
+	    cached_bfs_stx = bfs_stx;
 	    cached_stx_phase = phase;
 	  }
 
@@ -1654,9 +1654,12 @@ cert_with_specials(Scheme_Object *code,
               || scheme_stx_module_eq(mod_beg_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
+	  } else if (scheme_stx_module_eq(bfs_stx, name, phase)) {
+	    trans = 1;
+	    next_cadr_deflt = 0;
+            phase_delta = 1;
 	  } else if (scheme_stx_module_eq(dv_stx, name, phase)
-		     || scheme_stx_module_eq(ds_stx, name, phase)
-		     || scheme_stx_module_eq(dvs_stx, name, phase)) {
+		     || scheme_stx_module_eq(ds_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 1;
 	  }
@@ -1676,9 +1679,9 @@ cert_with_specials(Scheme_Object *code,
     Scheme_Object *a, *d, *v;
     
     a = SCHEME_STX_CAR(code);
-    a = cert_with_specials(a, insp, old_stx, phase, cadr_deflt, 0);
+    a = cert_with_specials(a, insp, old_stx, phase + phase_delta, cadr_deflt, 0);
     d = SCHEME_STX_CDR(code);
-    d = cert_with_specials(d, insp, old_stx, phase, 1, next_cadr_deflt);
+    d = cert_with_specials(d, insp, old_stx, phase + phase_delta, 1, next_cadr_deflt);
 
     v = scheme_make_pair(a, d);
 

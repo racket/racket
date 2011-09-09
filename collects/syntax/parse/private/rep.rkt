@@ -2,8 +2,7 @@
 (require (for-template racket/base
                        racket/stxparam
                        "keywords.rkt"
-                       "runtime.rkt"
-                       (only-in unstable/syntax phase-of-enclosing-module))
+                       "runtime.rkt")
          racket/contract/base
          "minimatch.rkt"
          syntax/id-table
@@ -1301,10 +1300,7 @@ A syntax class is integrable if
 ;; check-literal-entry : stx stx -> (list id id ct-phase ct-phase)
 (define (check-literal-entry stx ctx)
   (define (go internal external phase)
-    (txlift #`(check-literal (quote-syntax #,external)
-                             #,phase
-                             (phase-of-enclosing-module)
-                             (quote-syntax #,ctx)))
+    (txlift #`(check-literal #,external #,phase #,ctx))
     (list internal external phase phase))
   (syntax-case stx ()
     [(internal external #:phase phase)

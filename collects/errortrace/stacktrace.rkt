@@ -377,17 +377,15 @@
              expr
              (rebuild disarmed-expr (list (cons #'rhs marked)))))]
          
-         [(define-values-for-syntax (name ...) rhs)
+         [(begin-for-syntax . exprs)
           top?
-          (let ([marked (with-mark expr
-                                   (annotate-named
-                                    (one-name (syntax (name ...)))
-                                    (syntax rhs)
-                                    (add1 phase)))])
-            (rearm
-             expr
-             (rebuild disarmed-expr (list (cons #'rhs marked)))))]
-         
+          (rearm
+           expr
+           (annotate-seq disarmed-expr
+                         (syntax exprs)
+                         annotate-top 
+                         (add1 phase)))]
+
          [(module name init-import mb)
           (syntax-case (disarm #'mb) ()
             [(__plain-module-begin body ...)
