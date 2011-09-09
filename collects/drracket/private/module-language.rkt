@@ -1120,13 +1120,18 @@
         (place-channel-put expanding-place 'abort)
         (set! pending-thread #f))))
   
+  (struct error-range (start end [clear-highlight #:mutable]))
+  
+  (define online-compilation-error-pen-width 8)
+  
   (define module-language-online-expand-text-mixin 
     (mixin (text:basic<%> 
             drracket:unit:definitions-text<%>
             drracket:module-language-tools:definitions-text<%>) ()
       (inherit last-position find-first-snip get-top-level-window get-filename
                get-tab get-canvas invalidate-bitmap-cache 
-               set-position get-start-position get-end-position)
+               set-position get-start-position get-end-position
+               highlight-range dc-location-to-editor-location)
       
       (define compilation-out-of-date? #f)
       
@@ -1252,7 +1257,7 @@
                  (for/list ([range (in-list (vector-ref res 2))])
                    (define pos (vector-ref range 0))
                    (define span (vector-ref range 1))
-                   (list (- pos 1) (+ pos span -1))))
+                   (error-range (- pos 1) (+ pos span -1) #f)))
            ;; should really only invalidate the appropriate region here (and in clear-error-ranges)
            (invalidate-bitmap-cache 0 0 'display-end 'display-end)
            (update-frame-expand-error)]
@@ -1303,10 +1308,10 @@
       (define vbh (box 0.0))
     
       (inherit position-location get-admin)
+      
       (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
         (super on-paint before? dc left top right bottom dx dy draw-caret)
         (unless before?
-          (define pen-width 8)
           (define saved-brush (send dc get-brush))
           (define saved-pen (send dc get-pen))
           (define smoothing (send dc get-smoothing))
@@ -1314,36 +1319,20 @@
           
           (define path (new dc-path%))
           (send dc set-brush "black" 'transparent)
-          (send dc set-pen (send the-pen-list find-or-create-pen "red" pen-width 'solid 'butt 'miter))
-          (send dc set-alpha .4)
+          (send dc set-pen (send the-pen-list find-or-create-pen "red" 
+                                 online-compilation-error-pen-width
+                                 'solid 'butt 'miter))
+          (send dc set-alpha .25)
           
-          (for ([error-range (in-list error-ranges)])
-            (define start-pos (list-ref error-range 0))
-            (define end-pos (list-ref error-range 1))
-            (position-location start-pos #f byt)
-            (position-location end-pos #f byb #f)
-            (send (get-admin) get-view vbx vby vbw vbh)
+          (for ([an-error-range (in-list error-ranges)])
+            (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
             
-            (define x2 (+ dx (unbox vbx) (unbox vbw) (- (/ pen-width 2)) (- (/ pen-width 1))))
-            (define y2 (+ dy (unbox byt)))
+            (send path move-to (+ dx x2) (+ dy y2))
+            (send path line-to (+ dx x3) (+ dy y3))
+            (send path close)
             
-            (define x1 (+ x2 (- (/ pen-width 1))))
-            (define y1 y2)
-            
-            (define x3 x2)
-            (define y3 (+ dy (unbox byb)))
-            
-            (define x4 x1)
-            (define y4 y3)
-            
-            (send path move-to x1 y1)
-            (send path line-to x2 y2)
-            (send path line-to x3 y3)
-            (send path line-to x4 y4)
-            (send path line-to x3 y3)
-            (send path line-to x2 y2)
-            (send path move-to x1 y1)
-            (send path close))
+            (send path ellipse (+ dx (- x2 4)) (+ dy y2) 4 4)
+            (send path ellipse (+ dx (- x2 4)) (+ dy y3) 4 4))
           
           (send dc draw-path path)
           (send dc set-alpha 1)
@@ -1351,6 +1340,68 @@
           (send dc set-pen saved-pen)
           (send dc set-smoothing smoothing)))
       
+      (define/override (on-event evt)
+        (define-values (mx my) 
+          (dc-location-to-editor-location 
+           (send evt get-x)
+           (send evt get-y)))
+        (cond
+          [(or (send evt moving?)
+               (send evt entering?))
+           (for ([an-error-range (in-list error-ranges)])
+             (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
+             (cond
+               [(and (<= x1 mx x2)
+                     (<= y2 my y3))
+                (unless (error-range-clear-highlight an-error-range)
+                  (set-error-range-clear-highlight! 
+                   an-error-range
+                   (highlight-range (error-range-start an-error-range)
+                                    (error-range-end an-error-range)
+                                    "pink")))]
+               [else
+                (when (error-range-clear-highlight an-error-range)
+                  ((error-range-clear-highlight an-error-range))
+                  (set-error-range-clear-highlight! an-error-range #f))]))
+           (super on-event evt)]
+          [(send evt leaving?)
+           (for ([an-error-range (in-list error-ranges)])
+             (when (error-range-clear-highlight an-error-range)
+               ((error-range-clear-highlight an-error-range))
+               (set-error-range-clear-highlight! an-error-range #f)))
+           (super on-event evt)]
+          [(send evt button-down? 'left)
+           (for ([an-error-range (in-list error-ranges)])
+             (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
+             (when (and (<= x1 mx x2)
+                        (<= y2 my y3))
+               (set-position (error-range-start an-error-range))))]
+          [else
+           (super on-event evt)]))
+      
+      (define/private (get-box an-error-range)
+        (define start-pos (error-range-start an-error-range))
+        (define end-pos (error-range-end an-error-range))
+        (position-location start-pos #f byt)
+        (position-location end-pos #f byb #f)
+        (send (get-admin) get-view vbx vby vbw vbh)
+        
+        (define x2 (+ (unbox vbx) (unbox vbw) 
+                      (- (/ online-compilation-error-pen-width 2))
+                      (- (/ online-compilation-error-pen-width 1))))
+        (define y2 (+ (unbox byt)))
+        
+        (define x1 (+ x2 (- (/ online-compilation-error-pen-width 1))))
+        (define y1 y2)
+        
+        (define x3 x2)
+        (define y3 (unbox byb))
+        
+        (define x4 x1)
+        (define y4 y3)
+        
+        (values x1 y1 x2 y2 x3 y3 x4 y4))
+        
       (define/override (move-to-new-language)
         ;; this is here to get things running for the initital tab in a new frame
         (super move-to-new-language)
