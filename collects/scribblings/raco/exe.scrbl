@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require scribble/manual "common.rkt" (for-label racket/runtime-path))
+@(require scribble/manual 
+          "common.rkt" 
+          (for-label racket/runtime-path
+                     launcher/launcher))
 
 @title[#:tag "exe"]{@exec{raco exe}: Creating Stand-Alone Executables}
 
@@ -61,6 +64,12 @@ and possibly other run-time files declared via
 @racket[define-runtime-path]. The executable can be packaged with
 support libraries to create a distribution using @exec{raco
 distribute}, as described in @secref["exe-dist"].
+
+The @DFlag{ico} (Windows) or @DFlag{icns} (Mac OS X) flag sets the
+icon for the generated executable. For generally, @DPFlag{aux}
+attaches information to the executable based on the auxilliary file's
+suffix; see @racket[extract-aux-from-path] for a list of recognized
+suffixes and meanings.
 
 @; ----------------------------------------------------------------------
 
