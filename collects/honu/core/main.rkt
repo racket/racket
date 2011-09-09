@@ -3,6 +3,7 @@
 (require "private/honu-typed-scheme.rkt"
          "private/honu2.rkt"
          "private/macro2.rkt"
+         "private/class.rkt"
          (for-syntax (only-in "private/parse2.rkt" honu-expression))
          (prefix-in literal: "private/literals.rkt"))
 
@@ -12,6 +13,8 @@
          (for-syntax (rename-out [honu-expression expression]))
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-top-interaction #%top-interaction]
+                     [honu-class class]
+                     [honu-new new]
                      [honu-function function]
                      [honu-require require]
                      [honu-macro macro]

@@ -1,0 +1,10 @@
+#lang honu
+
+class What(x){
+  foobar(z){
+    z + x
+  }
+};
+
+var instance = new What(5);
+printf("got ~a\n", instance.foobar(10))

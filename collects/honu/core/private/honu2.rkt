@@ -4,6 +4,7 @@
          "operator.rkt"
          "struct.rkt"
          "honu-typed-scheme.rkt"
+         racket/class
          (only-in "literals.rkt"
                   honu-then
                   semicolon)
@@ -127,6 +128,8 @@
           (cond
             [(honu-struct? left*) (let ([use (honu-struct-get left*)])
                                     (use left* 'right))]
+            [(object? left*) (lambda args
+                               (send/apply left* right args))]
             ;; possibly handle other types of data
             [else (error 'dot "don't know how to deal with ~a" 'left)])))))
 

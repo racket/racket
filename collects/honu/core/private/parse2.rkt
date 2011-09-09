@@ -134,6 +134,17 @@
   (debug "Comma? ~a ~a\n" what is)
   is)
 
+(provide honu-function)
+(define-splicing-syntax-class honu-function #:literal-sets (cruft)
+  [pattern (~seq function:identifier (#%parens args ...) (#%braces code ...))
+           #:with result
+           (with-syntax ([(parsed-arguments ...)
+                          (parse-arguments #'(args ...))])
+             #'(define (function parsed-arguments ...)
+                 (let-syntax ([parse-more (lambda (stx)
+                                            (parse-all #'(code ...)))])
+                   (parse-more))))])
+
 ;; 1 + 1
 ;; ^
 ;;  left: identity
@@ -217,6 +228,9 @@
                   stream)]
          [else
            (syntax-parse #'(head rest ...) #:literal-sets (cruft)
+             [(function:honu-function . rest)
+              (values #'function.result #'rest)]
+             #;
              [(function:identifier (#%parens args ...) (#%braces code ...) . rest)
               (values (with-syntax ([(parsed-arguments ...)
                                      (parse-arguments #'(args ...))])
