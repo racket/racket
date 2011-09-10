@@ -142,7 +142,7 @@
       (set-selection 0)))
     
   (define gtk (as-gtk-allocation (gtk_scrolled_window_new #f #f)))
-  (gtk_scrolled_window_set_policy gtk GTK_POLICY_NEVER GTK_POLICY_ALWAYS)
+  (gtk_scrolled_window_set_policy gtk GTK_POLICY_AUTOMATIC GTK_POLICY_ALWAYS)
 
   (define headers? (memq 'column-headers style))
   (define click-headers? (and headers?

@@ -95,7 +95,7 @@
       (define cols
         (for/list ([title (in-list columns)])
           (let ([col (as-objc-allocation
-                      (tell (tell NSTableColumn alloc) initWithIdentifier: content-cocoa))])
+                      (tell (tell NSTableColumn alloc) initWithIdentifier: #:type _NSString title))])
             (tellv content-cocoa addTableColumn: col)
             (tellv (tell col headerCell) setStringValue: #:type _NSString title)
             col)))
@@ -105,6 +105,7 @@
 
   (tellv cocoa setDocumentView: content-cocoa)
   (tellv cocoa setHasVerticalScroller: #:type _BOOL #t)
+  (tellv cocoa setHasHorizontalScroller: #:type _BOOL #t)
   (unless (memq 'column-headers style)
     (tellv content-cocoa setHeaderView: #f))
   (define allow-multi? (not (eq? kind 'single)))
