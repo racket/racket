@@ -410,7 +410,7 @@
 	 (lambda ()
 	   (unless (and already-trying? (not (eq? 'unix (system-type))))
 	     (parameterize ([wx:current-eventspace (get-eventspace)])
-	       (wx:queue-callback (lambda () (resized)) #t))))])
+	       (wx:queue-callback (lambda () (resized)) wx:middle-queue-key))))])
 
       (public
         [position-for-initial-show

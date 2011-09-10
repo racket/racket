@@ -422,7 +422,8 @@
                 gtk)
     (init [no-show? #f]
           [extra-gtks null]
-          [add-to-parent? #t])
+          [add-to-parent? #t]
+          [connect-size-allocate? #t])
 
     (super-new [gtk gtk]
                [extra-gtks extra-gtks]
@@ -435,7 +436,8 @@
 
     (define/public (get-unset-pos) 0)
 
-    (connect-size-allocate gtk)
+    (when connect-size-allocate?
+      (connect-size-allocate gtk))
 
     (when add-to-parent?
       (gtk_container_add (send parent get-container-gtk) gtk))
@@ -451,8 +453,8 @@
     (define/public (set-size x y w h)
       (unless (and (or (= x -11111) (= save-x x))
                    (or (= y -11111) (= save-y y))
-                   (or (= w -1) (= save-w w))
-                   (or (= h -1) (= save-h h)))
+                   (or (= w -1) (= save-w (max w client-delta-w)))
+                   (or (= h -1) (= save-h (max h client-delta-h))))
         (unless (= x -11111) (set! save-x x))
         (unless (= y -11111) (set! save-y y))
         (unless (= w -1) (set! save-w w))

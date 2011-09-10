@@ -181,7 +181,8 @@
                [client-gtk panel-gtk]
                [no-show? #t]
                [add-to-parent? #f]
-               [extra-gtks (list panel-gtk)])
+               [extra-gtks (list panel-gtk)]
+               [connect-size-allocate? #f])
 
     (set-size x y w h)
 
@@ -287,8 +288,7 @@
 
     (define/override (really-set-size gtk x y processed-x processed-y w h)
       (set-top-position x y)
-      (gtk_window_resize gtk (max 1 w) (max 1 h))
-      (queue-on-size))
+      (gtk_window_resize gtk (max 1 w) (max 1 h)))
 
     (define/override (show on?)
       (let ([es (get-eventspace)])
