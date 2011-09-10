@@ -108,7 +108,12 @@
                                            -> _OSStatus))
 (let ([v (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
                                kProcessTransformToForegroundApplication)])
-  (unless (zero? v)
+  (unless (or (zero? v)
+	      ;; As of Mac OS X 10.7, TransformProcessType() complains
+	      ;; if the application is already a foreground application,
+	      ;; so just ignore that error (even though it correctly flagged
+	      ;; a bug in the `_ProcessSerialNumber' definition at one point).
+	      (= v -50))
     (log-error (format "error from TransformProcessType: ~a" v))))
 
 (define app-delegate (tell (tell MyApplicationDelegate alloc) init))
