@@ -1793,6 +1793,11 @@ void scheme_schedule_custodian_close(Scheme_Custodian *c)
 
 static void check_scheduled_kills()
 {
+  if (scheme_no_stack_overflow) {
+    /* don't shutdown something that may be in an atomic callback */
+    return;
+  }
+
   while (scheduled_kills && !SCHEME_NULLP(scheduled_kills)) {
     Scheme_Object *k;
     k = SCHEME_CAR(scheduled_kills);
