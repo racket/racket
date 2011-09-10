@@ -86,7 +86,11 @@
 	   (assoc-pair "CFBundleExecutable"
 		       ,app-name)
 	   (assoc-pair "CFBundleIdentifier"
-		       ,(format "org.racket-lang.~a" app-name))
+		       ,(format "org.racket-lang.~a~a" app-name
+                                (if (fixnum? (expt 2 32))
+                                    ;; See comment on similar code in compiler/embed-unit:
+                                    "-64"
+                                    "")))
 	   ,@(if app?
 		 `((assoc-pair "CFBundleIconFile"
 			       ,app-name))
