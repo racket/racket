@@ -849,6 +849,7 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv)
     (*argc)--;
     *argv = new_argv;
   }
+  scheme_register_process_global("PLT_IS_FOREGROUND_APP", (void *)(intptr_t)0x1);
 }
 
 #endif
