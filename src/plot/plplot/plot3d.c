@@ -768,7 +768,7 @@ c_plot3dc(PLFLT *x, PLFLT *y, PLFLT **z,
       ny = _ny;	  
     }
 
-   if ((opt & BASE_CONT) || (opt & TOP_CONT) || (opt && MAG_COLOR) ) { 
+   if ((opt & BASE_CONT) || (opt & TOP_CONT) || (opt & MAG_COLOR) ) { 
      /*  
       * Don't use the data z value to scale the color, use the z axis
       * values set by plw3d()
