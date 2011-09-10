@@ -9614,6 +9614,7 @@ static void *do_watch(void *other)
 
     pt_sema_post(&done_sema);
   }
+  return NULL;
 }
 
 void scheme_start_sleeper_thread(void (*given_sleep)(float seconds, void *fds), float secs, void *fds, int hit_fd)
