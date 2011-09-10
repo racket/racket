@@ -50,14 +50,24 @@
 (void (get-xref)) ;; do this now so that it doesn't get killed during a call to 'go'
 
 (define (go expanded path the-source)
-  (define obj (new obj% [src the-source]))
-  (define-values (expanded-expression expansion-completed) 
-    (make-traversal (current-namespace)
-                    (if path
-                        (let-values ([(base name dir) (split-path path)])
-                          base)
-                        (current-directory))))
-  (parameterize ([current-annotations obj])
-    (expanded-expression expanded)
-    (expansion-completed))
-  (send obj get-trace))
+  (with-handlers ((exn:fail? (λ (x) 
+                               (printf "~a\n" (exn-message x))
+                               (printf "---\n")
+                               (for ([x (in-list 
+                                         (continuation-mark-set->context 
+                                          (exn-continuation-marks
+                                           x)))])
+                                 (printf "  ~s\n" x))
+                               (printf "===\n")
+                               (raise x))))
+    (define obj (new obj% [src the-source]))
+    (define-values (expanded-expression expansion-completed) 
+      (make-traversal (current-namespace)
+                      (if path
+                          (let-values ([(base name dir) (split-path path)])
+                            base)
+                          (current-directory))))
+    (parameterize ([current-annotations obj])
+      (expanded-expression expanded)
+      (expansion-completed))
+    (send obj get-trace)))

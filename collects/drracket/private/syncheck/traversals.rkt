@@ -11,8 +11,7 @@
          racket/list
          syntax/boundmap
          scribble/xref
-         scribble/manual-struct
-         (for-syntax racket/base))
+         scribble/manual-struct)
 
 (provide make-traversal)
     
@@ -43,21 +42,14 @@
     ;; is called once for each top-level expression and the second
     ;; value is called once, after all expansion is complete.
     (define (make-traversal user-namespace user-directory)
-      (let* ([tl-low-binders (make-id-set)]
-             [tl-high-binders (make-id-set)]
-             [tl-low-varrefs (make-id-set)]
-             [tl-high-varrefs (make-id-set)]
-             [tl-low-varsets (make-id-set)]
-             [tl-high-varsets (make-id-set)]
-             [tl-low-tops (make-id-set)]
-             [tl-high-tops (make-id-set)]
+      (let* ([tl-phase-to-binders (make-hash)]
+             [tl-phase-to-varrefs (make-hash)]
+             [tl-phase-to-varsets (make-hash)]
+             [tl-phase-to-tops (make-hash)]
              [tl-binding-inits (make-id-set)]
              [tl-templrefs (make-id-set)]
-             [tl-requires (make-hash)]
+             [tl-phase-to-requires (make-hash)]
              [tl-module-lang-requires (make-hash)]
-             [tl-require-for-syntaxes (make-hash)]
-             [tl-require-for-templates (make-hash)]
-             [tl-require-for-labels (make-hash)]
              [expanded-expression
               (λ (sexp [visit-id void])
                 (parameterize ([current-load-relative-directory user-directory])
@@ -66,14 +58,11 @@
                                       [else #f])])
                     (cond
                       [is-module?
-                       (let ([low-binders (make-id-set)]
-                             [high-binders (make-id-set)]
-                             [varrefs (make-id-set)]
-                             [high-varrefs (make-id-set)]
-                             [varsets (make-id-set)]
-                             [high-varsets (make-id-set)]
-                             [low-tops (make-id-set)]
-                             [high-tops (make-id-set)]
+                       (let ([phase-to-binders (make-hash)]
+                             [phase-to-varrefs (make-hash)]
+                             [phase-to-varsets (make-hash)]
+                             [phase-to-tops (make-hash)]
+                             [phase-to-requires (make-hash)]
                              [binding-inits (make-id-set)]
                              [templrefs (make-id-set)]
                              [module-lang-requires (make-hash)]
@@ -83,64 +72,49 @@
                              [require-for-labels (make-hash)])
                           (annotate-basic sexp
                                           user-namespace user-directory visit-id
-                                          low-binders high-binders
-                                          varrefs high-varrefs
-                                          varsets high-varsets
-                                          low-tops high-tops
+                                          phase-to-binders
+                                          phase-to-varrefs
+                                          phase-to-varsets
+                                          phase-to-tops
                                           binding-inits
                                           templrefs
                                           module-lang-requires
-                                          requires require-for-syntaxes require-for-templates require-for-labels) 
+                                          phase-to-requires) 
                          (annotate-variables user-namespace
                                              user-directory
-                                             low-binders
-                                             high-binders
-                                             varrefs
-                                             high-varrefs
-                                             varsets
-                                             high-varsets
-                                             low-tops
-                                             high-tops
+                                             phase-to-binders
+                                             phase-to-varrefs
+                                             phase-to-varsets
+                                             phase-to-tops
                                              templrefs
                                              module-lang-requires
-                                             requires
-                                             require-for-syntaxes
-                                             require-for-templates
-                                             require-for-labels)
-                         (annotate-contracts sexp low-binders binding-inits))]
+                                             phase-to-requires)
+                         (annotate-contracts sexp 
+                                             (hash-ref phase-to-binders 0 (λ () (make-id-set)))
+                                             binding-inits))]
                       [else
                        (annotate-basic sexp
                                        user-namespace user-directory visit-id
-                                       tl-low-binders tl-high-binders
-                                       tl-low-varrefs tl-high-varrefs
-                                       tl-low-varsets tl-high-varsets
-                                       tl-low-tops tl-high-tops
+                                       tl-phase-to-binders
+                                       tl-phase-to-varrefs
+                                       tl-phase-to-varsets
+                                       tl-phase-to-tops
                                        tl-binding-inits
                                        tl-templrefs
                                        tl-module-lang-requires
-                                       tl-requires
-                                       tl-require-for-syntaxes
-                                       tl-require-for-templates
-                                       tl-require-for-labels)]))))]
+                                       tl-phase-to-requires)]))))]
              [expansion-completed
               (λ ()
                 (parameterize ([current-load-relative-directory user-directory])
                   (annotate-variables user-namespace
                                       user-directory
-                                      tl-low-binders
-                                      tl-high-binders
-                                      tl-low-varrefs
-                                      tl-high-varrefs
-                                      tl-low-varsets
-                                      tl-high-varsets
-                                      tl-low-tops
-                                      tl-high-tops
+                                      tl-phase-to-binders
+                                      tl-phase-to-varrefs
+                                      tl-phase-to-varsets
+                                      tl-phase-to-tops
                                       tl-templrefs
                                       tl-module-lang-requires
-                                      tl-requires
-                                      tl-require-for-syntaxes
-                                      tl-require-for-templates
-                                      tl-require-for-labels)))])
+                                      tl-phase-to-requires)))])
         (values expanded-expression expansion-completed)))
     
     
@@ -156,26 +130,26 @@
     ;;               -> void
     (define (annotate-basic sexp 
                             user-namespace user-directory visit-id
-                            low-binders high-binders 
-                            low-varrefs high-varrefs 
-                            low-varsets high-varsets
-                            low-tops high-tops
+                            phase-to-binders 
+                            phase-to-varrefs 
+                            phase-to-varsets
+                            phase-to-tops
                             binding-inits
                             templrefs
                             module-lang-requires
-                            requires require-for-syntaxes require-for-templates require-for-labels)
+                            phase-to-requires)
       
       (let ([tail-ht (make-hasheq)]
             [maybe-jump (λ (vars) (visit-id vars))])
 
         (let level-loop ([sexp sexp]
-                         [high-level? #f])
-          
-          (let* ([loop (λ (sexp) (level-loop sexp high-level?))]
-                 [varrefs (if high-level? high-varrefs low-varrefs)]
-                 [varsets (if high-level? high-varsets low-varsets)]
-                 [binders (if high-level? high-binders low-binders)]
-                 [tops (if high-level? high-tops low-tops)]
+                         [level 0])
+          (let* ([loop (λ (sexp) (level-loop sexp level))]
+                 [varrefs (lookup-phase-to-mapping phase-to-varrefs level)]
+                 [varsets (lookup-phase-to-mapping phase-to-varsets level)]
+                 [binders (lookup-phase-to-mapping phase-to-binders level)]
+                 [tops (lookup-phase-to-mapping phase-to-tops level)]
+                 [requires (hash-ref! phase-to-requires level (λ () (make-hash)))]
                  [collect-general-info
                   (λ (stx)
                     (add-origins stx varrefs)
@@ -187,7 +161,7 @@
                                                #%plain-app #%top #%plain-module-begin
                                                define-values define-syntaxes begin-for-syntax module
                                                #%require #%provide #%expression)
-              (if high-level? free-transformer-identifier=? free-identifier=?)
+              (λ (x y) (free-identifier=?/phases x level y 0))
               [(#%plain-lambda args bodies ...)
                (begin
                  (annotate-raw-keyword sexp varrefs)
@@ -316,11 +290,11 @@
                  (annotate-raw-keyword sexp varrefs)
                  (add-binders (syntax names) binders binding-inits #'exp)
                  (maybe-jump (syntax names))
-                 (level-loop (syntax exp) #t))]
+                 (level-loop (syntax exp) (+ level 1)))]
               [(begin-for-syntax exp ...)
                (begin
                  (annotate-raw-keyword sexp varrefs)
-                 (for-each (lambda (e) (level-loop e #t)) (syntax->list (syntax (exp ...)))))]
+                 (for-each (lambda (e) (level-loop e (+ level 1))) (syntax->list (syntax (exp ...)))))]
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword sexp varrefs)
@@ -333,7 +307,8 @@
               ; top level or module top level only:
               [(#%require require-specs ...)
                (let ([at-phase
-                      (lambda (stx requires)
+                      (lambda (stx level)
+                        (define requires (hash-ref! phase-to-requires level (λ () (make-hash))))
                         (syntax-case stx ()
                           [(_ require-specs ...)
                            (with-syntax ([((require-specs ...) ...)
@@ -352,31 +327,27 @@
                                (for-each (add-require-spec requires)
                                          new-specs
                                          (syntax->list (syntax (require-specs ... ...))))))]))])
-                 (for-each (lambda (spec)
-                             (let loop ([spec spec])
-                               (syntax-case* spec (for-syntax for-template for-label for-meta just-meta) 
-                                             (lambda (a b)
-                                               (eq? (syntax-e a) (syntax-e b)))
-                                 [(just-meta phase specs ...)
-                                  (for-each loop (syntax->list #'(specs ...)))]
-                                 [(for-syntax specs ...)
-                                  (at-phase spec require-for-syntaxes)]
-                                 [(for-meta 1 specs ...)
-                                  (at-phase #'(for-syntax specs ...) require-for-syntaxes)]
-                                 [(for-template specs ...)
-                                  (at-phase spec require-for-templates)]
-                                 [(for-meta -1 specs ...)
-                                  (at-phase #'(for-template specs ...) require-for-templates)]
-                                 [(for-label specs ...)
-                                  (at-phase spec require-for-labels)]
-                                 [(for-meta #f specs ...)
-                                  (at-phase #'(for-label specs ...) require-for-labels)]
-                                 [(for-meta 0 specs ...)
-                                  (at-phase #'(for-run specs ...) requires)]
-                                 [(for-meta . _) (void)]
-                                 [else
-                                  (at-phase (list #f spec) requires)])))
-                           (syntax->list #'(require-specs ...))))]
+                 (for ([spec (in-list (syntax->list #'(require-specs ...)))])
+                   (let loop ([spec spec]
+                              [level level])
+                     (define (add-to-level n) (and n level (+ n level)))
+                     (syntax-case* spec (for-syntax for-template for-label for-meta just-meta) 
+                       (lambda (a b)
+                         (eq? (syntax-e a) (syntax-e b)))
+                       [(just-meta phase specs ...)
+                        (for ([spec (in-list (syntax->list #'(specs ...)))])
+                          (loop spec (add-to-level (syntax-e #'phase))))]
+                       [(for-meta phase specs ...)
+                        (for ([spec (in-list (syntax->list #'(specs ...)))])
+                          (loop spec (add-to-level (syntax-e #'phase))))]
+                       [(for-syntax specs ...)
+                        (at-phase spec (add-to-level 1))]
+                       [(for-template specs ...)
+                        (at-phase spec (add-to-level -1))]
+                       [(for-label specs ...)
+                        (at-phase spec #f)]
+                       [else
+                        (at-phase (list #f spec) level)]))))]
               
               ; module top level only:
               [(#%provide provide-specs ...)
@@ -410,6 +381,33 @@
                               (syntax-source sexp)))
                  (void))])))
         (add-tail-ht-links tail-ht)))
+    
+    ;; free-identifier=?/phases : id phase-level id phase-level -> boolean
+    ;; Determines whether x has the same binding at phase-level phase-x
+    ;; that y has at phase-level y.
+    ;; At least one of the identifiers MUST have a binding (module or lexical)
+    (define (free-identifier=?/phases x phase-x y phase-y)
+      (cond [(eqv? phase-x phase-y)
+             (free-identifier=? x y phase-x)]
+            [else
+             (let ([bx (identifier-binding x phase-x)]
+                   [by (identifier-binding y phase-y)])
+               (cond [(and (pair? bx) (pair? by))
+                      (let ([mpix (first bx)]
+                            [namex (second bx)]
+                            [defphasex (fifth bx)]
+                            [mpiy (first by)]
+                            [namey (second by)]
+                            [defphasey (fifth by)])
+                        (and (eq? namex namey)
+                             ;; resolved-module-paths are interned
+                             (eq? (module-path-index-resolve mpix)
+                                  (module-path-index-resolve mpiy))
+                             (eqv? defphasex defphasey)))]
+                     [else
+                      ;; Module is only way to get phase-shift; phases differ, so
+                      ;; if not module-bound names, no way can refer to same binding.
+                      #f]))]))
     
     (define (hash-cons! ht k v)
       (hash-set! ht k (cons v (hash-ref ht k '()))))
@@ -459,149 +457,102 @@
     ;; in the various id-sets
     (define (annotate-variables user-namespace
                                 user-directory
-                                low-binders
-                                high-binders
-                                low-varrefs
-                                high-varrefs
-                                low-varsets
-                                high-varsets
-                                low-tops
-                                high-tops
+                                phase-to-binders
+                                phase-to-varrefs
+                                phase-to-varsets
+                                phase-to-tops
                                 templrefs
                                 module-lang-requires
-                                requires
-                                require-for-syntaxes
-                                require-for-templates
-                                require-for-labels)
+                                phase-to-requires)
       
       (let ([unused-requires (make-hash)]
             [unused-require-for-syntaxes (make-hash)]
             [unused-require-for-templates (make-hash)]
             [unused-require-for-labels (make-hash)]
-            [requires/phases (make-hash)]
-            [unused/phases (make-hash)]
-            ;; there is no define-for-template form, thus no for-template binders
-            [template-binders (make-id-set)]
-            [label-binders (make-id-set)]
-            [id-sets (list low-binders high-binders low-varrefs high-varrefs low-tops high-tops)])
+            [unused/phases (make-hash)])
         
-        (hash-set! requires/phases 0 requires)
-        (hash-set! requires/phases 1 require-for-syntaxes)
-        (hash-set! requires/phases -1 require-for-templates)
-        (hash-set! requires/phases #f require-for-labels)
+        (for ([(level hash) (in-hash phase-to-requires)])
+          (define new-hash (make-hash))
+          (hash-set! unused/phases level new-hash)
+          (for ([(k v) (in-hash hash)])
+            (hash-set! new-hash k #t)))
+                
+        (for ([(level binders) (in-hash phase-to-binders)])
+          (for ([vars (in-list (get-idss binders))])
+            (for ([var (in-list vars)])
+              (when (syntax-original? var)
+                (define varset (lookup-phase-to-mapping phase-to-varsets level))
+                (color-variable var 0 varset)
+                (document-variable var 0)))))
+        
+        (for ([(level varrefs) (in-hash phase-to-varrefs)])
+          (define binders (lookup-phase-to-mapping phase-to-binders level))
+          (define varsets (lookup-phase-to-mapping phase-to-varsets level)) 
+          (for ([vars (in-list (get-idss varrefs))])
+            (for ([var (in-list vars)])
+              (color-variable var level varsets)
+              (when (syntax-original? var)
+                (document-variable var level))
+              (connect-identifier var
+                                  binders
+                                  unused/phases
+                                  phase-to-requires
+                                  level
+                                  user-namespace 
+                                  user-directory
+                                  #t))))
+        
+        (for ([vars (in-list (get-idss templrefs))])
+          (for ([var (in-list vars)])
+            
+            ;; build a set of all of the known phases
+            (define phases (set))
+            (for ([phase (in-list (hash-keys phase-to-binders))])
+              (set! phases (set-add phases phase)))
+            (for ([phase (in-list (hash-keys phase-to-requires))])
+              (set! phases (set-add phases phase)))
+            
+            ;; connect every identifier inside a quote-syntax to each binder at any phase
+            (for ([phase (in-set phases)])
+              (connect-identifier var
+                                  (lookup-phase-to-mapping phase-to-binders phase)
+                                  unused/phases
+                                  phase-to-requires
+                                  phase
+                                  user-namespace
+                                  user-directory
+                                  #f))
+            
+            #;
+            (connect-identifier var
+                                (make-id-set) ;; dummy; always empty
+                                unused/phases
+                                phase-to-requires
+                                -1
+                                user-namespace
+                                user-directory
+                                #f)
+            #;
+            (connect-identifier var
+                                (make-id-set) ;; dummy; always empty
+                                unused/phases
+                                phase-to-requires
+                                #f
+                                user-namespace
+                                user-directory
+                                #f)))
+        
+        (for ([(level tops) (in-hash phase-to-tops)])
+          (define binders (lookup-phase-to-mapping phase-to-binders level))
+          (for ([vars (in-list (get-idss tops))])
+            (for ([var (in-list vars)])
+              (color/connect-top user-namespace user-directory binders var))))
+        
+        (for ([(level require-hash) (in-hash phase-to-requires)])
+          (define unused-hash (hash-ref unused/phases level))
+          (color-unused require-hash unused-hash module-lang-requires))
 
-        (hash-set! unused/phases 0 unused-requires)
-        (hash-set! unused/phases 1 unused-require-for-syntaxes)
-        (hash-set! unused/phases -1 unused-require-for-templates)
-        (hash-set! unused/phases #f unused-require-for-labels)
-        
-        (hash-for-each requires
-                       (λ (k v) (hash-set! unused-requires k #t)))
-        (hash-for-each require-for-syntaxes
-                       (λ (k v) (hash-set! unused-require-for-syntaxes k #t)))
-        (hash-for-each require-for-templates
-                       (lambda (k v) (hash-set! unused-require-for-templates k #t)))
-        (hash-for-each require-for-labels
-                       (lambda (k v) (hash-set! unused-require-for-labels k #t)))
-        
-        (let ([handle-var-bind
-               (λ (var varsets)
-                 (when (syntax-original? var)
-                   (color-variable var 0 varsets)
-                   (document-variable var 0)))])
-          (for-each (λ (vars) 
-                      (for-each (λ (var) (handle-var-bind var high-varsets)) 
-                                vars))
-                    (get-idss high-binders))
-          (for-each (λ (vars) 
-                      (for-each (λ (var) (handle-var-bind var low-varsets)) 
-                                vars))
-                    (get-idss low-binders)))
-        
-        
-        (let ([handle-var-ref
-               (λ (var index binders varsets)
-                 (color-variable var index varsets)
-                 (when (syntax-original? var)
-                   (document-variable var index))
-                 (connect-identifier var
-                                     binders
-                                     unused/phases
-                                     requires/phases
-                                     index
-                                     user-namespace 
-                                     user-directory
-                                     #t))])
-          (for-each (λ (vars) (for-each 
-                               (λ (var) (handle-var-ref var 0 low-binders low-varsets))
-                               vars))
-                    (get-idss low-varrefs))
-          
-          (for-each (λ (vars) (for-each 
-                               (λ (var) (handle-var-ref var 1 high-binders high-varsets))
-                               vars))
-                    (get-idss high-varrefs)))
-        
-        (for-each (lambda (vars) (for-each
-                                  (lambda (var)
-                                    ;; no color variable
-                                    (connect-identifier var
-                                                        low-binders
-                                                        unused/phases
-                                                        requires/phases
-                                                        0
-                                                        user-namespace
-                                                        user-directory
-                                                        #f)
-                                    (connect-identifier var
-                                                        high-binders
-                                                        unused/phases
-                                                        requires/phases
-                                                        1
-                                                        user-namespace
-                                                        user-directory
-                                                        #f)
-                                    (connect-identifier var
-                                                        template-binders ;; dummy; always empty
-                                                        unused/phases
-                                                        requires/phases
-                                                        -1
-                                                        user-namespace
-                                                        user-directory
-                                                        #f)
-                                    (connect-identifier var
-                                                        label-binders ;; dummy; always empty
-                                                        unused/phases
-                                                        requires/phases
-                                                        #f
-                                                        user-namespace
-                                                        user-directory
-                                                        #f))
-                                  vars))
-                  (get-idss templrefs))
-        
-        (for-each 
-         (λ (vars) 
-           (for-each
-            (λ (var) 
-              (color/connect-top user-namespace user-directory low-binders var))
-            vars))
-         (get-idss low-tops))
-        
-        (for-each 
-         (λ (vars) 
-           (for-each
-            (λ (var) 
-              (color/connect-top user-namespace user-directory high-binders var))
-            vars))
-         (get-idss high-tops))
-        
-        (color-unused require-for-labels unused-require-for-labels module-lang-requires)
-        (color-unused require-for-templates unused-require-for-templates module-lang-requires)
-        (color-unused require-for-syntaxes unused-require-for-syntaxes module-lang-requires)
-        (color-unused requires unused-requires module-lang-requires)
-        
-        (make-rename-menus id-sets)))
+        (make-rename-menus (list phase-to-binders phase-to-varrefs phase-to-tops))))
     
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] hash-table[syntax -o> #t] -> void
     (define (color-unused requires unused module-lang-requires)
@@ -621,25 +572,9 @@
                            (send defs-text syncheck:add-background-color
                                  source-editor start fin "firebrick")))
                        (color stx unused-require-style-name 'default-mode)))
-                   (hash-ref requires k)))))
-    
-    ;; connect-identifier : syntax
-    ;;                      id-set 
-    ;;                      (union #f hash-table)
-    ;;                      (union #f hash-table)
-    ;;                      integer or 'lexical or #f
-    ;;                      (listof id-set)
-    ;;                      namespace
-    ;;                      directory
-    ;;                      boolean
-    ;;                   -> void
-    ;; adds arrows and rename menus for binders/bindings
-    (define (connect-identifier var all-binders
-                                unused/phases requires/phases
-                                phase-level user-namespace user-directory actual?)
-      (connect-identifier/arrow var all-binders 
-                                unused/phases requires/phases
-                                phase-level user-namespace user-directory actual?))
+                   (hash-ref requires k 
+                             (λ ()
+                               (error 'syncheck/traversals.rkt "requires doesn't have a mapping for ~s" k)))))))
     
     ;; id-level : integer-or-#f-or-'lexical identifier -> symbol
     (define (id-level phase-level id)
@@ -654,15 +589,16 @@
               [(eq? binding 'lexical) 'lexical]
               [else 'top-level])))
     
-    ;; connect-identifier/arrow : syntax
-    ;;                            id-set 
-    ;;                            (union #f hash-table)
-    ;;                            (union #f hash-table)
-    ;;                            (union identifier-binding identifier-transformer-binding)
-    ;;                            boolean
-    ;;                         -> void
+    ;; connect-identifier : syntax
+    ;;                      id-set 
+    ;;                      (union #f hash-table)
+    ;;                      (union #f hash-table)
+    ;;                      (union identifier-binding identifier-transformer-binding)
+    ;;                      boolean
+    ;;                   -> void
     ;; adds the arrows that correspond to binders/bindings
-    (define (connect-identifier/arrow var all-binders unused/phases requires/phases phase-level user-namespace user-directory actual?)
+    (define (connect-identifier var all-binders unused/phases phase-to-requires
+                                phase-level user-namespace user-directory actual?)
       (let ([binders (get-ids all-binders var)])
         (when binders
           (for-each (λ (x)
@@ -670,7 +606,7 @@
                         (connect-syntaxes x var actual? (id-level phase-level x))))
                     binders))
         
-        (when (and unused/phases requires/phases)
+        (when (and unused/phases phase-to-requires)
           (let ([req-path/pr (get-module-req-path (identifier-binding var phase-level)
                                                   phase-level)]
                 [source-req-path/pr (get-module-req-path (identifier-binding var phase-level)
@@ -682,8 +618,8 @@
                      [source-req-path (list-ref source-req-path/pr 3)]
                      [source-id (list-ref source-req-path/pr 1)]
                      [req-phase-level (list-ref req-path/pr 2)]
-                     [unused (hash-ref unused/phases req-phase-level)]
-                     [requires (hash-ref requires/phases req-phase-level)]
+                     [unused (hash-ref! unused/phases req-phase-level (λ () (make-hash)))]
+                     [requires (hash-ref! phase-to-requires req-phase-level (λ () (make-hash)))]
                      [req-stxes (hash-ref requires req-path (λ () #f))])
                 (when req-stxes
                   (hash-remove! unused req-path)
@@ -763,7 +699,7 @@
             (color var free-variable-style-name 'default-mode))
         (connect-identifier var binders #f #f 0 user-namespace user-directory #t)))
     
-    ;; color-variable : syntax phase-level module-identifier-mapping -> void
+    ;; color-variable : syntax phase-level identifier-mapping -> void
     (define (color-variable var phase-level varsets)
       (let* ([b (identifier-binding var phase-level)]
              [lexical? 
@@ -1212,38 +1148,41 @@
     ;                                                     ;;;  
     
     
-    ;; make-rename-menus : (listof id-set) -> void
-    (define (make-rename-menus id-sets)
-      (define id-to-sets (make-module-identifier-mapping))
+    ;; make-rename-menus : (listof phase-to-mapping) -> void
+    (define (make-rename-menus phase-tos)
+      (define id-to-sets (make-free-identifier-mapping))
       (let ([defs-text (current-annotations)])
         (when defs-text
-          (for ([id-set (in-list id-sets)])
-            (for-each-ids 
-             id-set
-             (λ (vars)
-               (for ([var (in-list vars)])
-                 (define ed (find-source-editor var))
-                 (when ed
-                   (define pos (syntax-position var))
-                   (define span (syntax-span var))
-                   (when (and pos span)
-                     (define start (- pos 1))
-                     (define fin (+ start span))
-                     (define loc (list ed start fin))
-                     (module-identifier-mapping-put!
-                      id-to-sets
-                      var
-                      (set-add (module-identifier-mapping-get id-to-sets var set)
-                               loc))))))))
-          (module-identifier-mapping-for-each
+          (for ([phase-to-mapping (in-list phase-tos)])
+            (for ([(level id-set) (in-hash phase-to-mapping)])
+              (for-each-ids 
+               id-set
+               (λ (vars)
+                 (for ([var (in-list vars)])
+                   (define ed (find-source-editor var))
+                   (when ed
+                     (define pos (syntax-position var))
+                     (define span (syntax-span var))
+                     (when (and pos span)
+                       (define start (- pos 1))
+                       (define fin (+ start span))
+                       (define loc (list ed start fin))
+                       (free-identifier-mapping-put!
+                        id-to-sets
+                        var
+                        (set-add (free-identifier-mapping-get id-to-sets var set)
+                                 loc)))))))))
+          (free-identifier-mapping-for-each
            id-to-sets
            (λ (id locs)
              (define (name-dup? new-str) 
-               (and (for/or ([id-set (in-list id-sets)])
-                      (for/or ([id (in-list (or (get-ids id-set id) '()))])
-                        (let ([new-id (datum->syntax id (string->symbol new-str))])
-                          (for/or ([id-set (in-list id-sets)])
-                            (get-ids id-set new-id)))))
+               (and (for/or ([phase-to-map (in-list phase-tos)])
+                      (for/or ([(level id-set) (in-hash phase-to-map)])
+                        (for/or ([id (in-list (or (get-ids id-set id) '()))])
+                          (let ([new-id (datum->syntax id (string->symbol new-str))])
+                            (for/or ([phase-to-map (in-list phase-tos)])
+                              (for/or ([(level id-set) (in-hash phase-to-map)])
+                                (get-ids id-set new-id)))))))
                     #t))
              (define loc-lst (set->list locs))
              (define id-as-sym (syntax-e id))
@@ -1286,33 +1225,33 @@
     ;                                            
     ;                                            
     
+    
+    (define (lookup-phase-to-mapping phase-to n)
+      (hash-ref! phase-to n (λ () (make-id-set))))
+    
     ;; make-id-set : -> id-set
-    (define (make-id-set) (make-module-identifier-mapping))
+    (define (make-id-set) (make-free-identifier-mapping))
     
     ;; add-init-exp : id-set identifier stx -> void
     (define (add-init-exp mapping id init-exp)
-      (let* ([old (module-identifier-mapping-get mapping id (λ () '()))]
+      (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
              [new (cons init-exp old)])
-        (module-identifier-mapping-put! mapping id new)))
+        (free-identifier-mapping-put! mapping id new)))
     
     ;; add-id : id-set identifier -> void
     (define (add-id mapping id)
-      (let* ([old (module-identifier-mapping-get mapping id (λ () '()))]
+      (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
              [new (cons id old)])
-        (module-identifier-mapping-put! mapping id new)))
+        (free-identifier-mapping-put! mapping id new)))
     
     ;; get-idss : id-set -> (listof (listof identifier))
     (define (get-idss mapping)
-      (module-identifier-mapping-map mapping (λ (x y) y)))
+      (free-identifier-mapping-map mapping (λ (x y) y)))
     
     ;; get-ids : id-set identifier -> (union (listof identifier) #f)
     (define (get-ids mapping var)
-      (module-identifier-mapping-get mapping var (λ () #f)))
+      (free-identifier-mapping-get mapping var (λ () #f)))
     
     ;; for-each-ids : id-set ((listof identifier) -> void) -> void
     (define (for-each-ids mapping f)
-      (module-identifier-mapping-for-each mapping (λ (x y) (f y))))
-    
-
-    
-    
+      (free-identifier-mapping-for-each mapping (λ (x y) (f y))))

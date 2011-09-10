@@ -876,6 +876,30 @@ trigger runtime errors in check syntax.
                    ("1))"                  default-color))
                  (list '((27 33) (19 26) (36 49) (53 59) (64 66))))
      
+     (build-test "#lang racket (begin-for-syntax (require (for-syntax racket)) (define x 1) (begin-for-syntax (define x 2) x))"
+                 '(("#lang racket (" default-color)
+                   ("begin-for-syntax" imported)
+                   (" (" default-color)
+                   ("require" imported)
+                   (" (for-syntax " default-color)
+                   ("racket" default-color)
+                   (")) (" default-color)
+                   ("define" imported)
+                   (" " default-color)
+                   ("x" lexically-bound)
+                   (" 1) (" default-color)
+                   ("begin-for-syntax" imported)
+                   (" (" default-color)
+                   ("define" imported)
+                   (" " default-color)
+                   ("x" lexically-bound)
+                   (" 2) " default-color)
+                   ("x" lexically-bound)
+                   ("))" default-color))
+                 (list '((6 12) (14 30) (32 39) (62 68) (75 91))
+                       '((52 58) (93 99))
+                       '((100 101) (105 106))))
+     
      (rename-test "(lambda (x) x)"
                   9
                   "x"
@@ -976,7 +1000,13 @@ trigger runtime errors in check syntax.
     (fire-up-drscheme-and-run-tests
      (λ ()
        (let ([drs (wait-for-drscheme-frame)])
-         (set-language-level! (list "Pretty Big"))
+         ;(set-language-level! (list "Pretty Big"))
+         (begin
+           (set-language-level! (list "Pretty Big") #f)
+           (test:set-radio-box-item! "No debugging or profiling")
+           (let ([f (test:get-active-top-level-window)])
+             (test:button-push "OK")
+             (wait-for-new-frame f)))
          (do-execute drs)
          (let* ([defs (queue-callback/res (λ () (send drs get-definitions-text)))]
                 [filename (make-temporary-file "syncheck-test~a")])
