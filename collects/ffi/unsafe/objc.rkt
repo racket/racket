@@ -35,7 +35,7 @@
                           (lambda (v) (not (eq? v 0)))))
 
 (define _Method (_cpointer/null 'Method))
-(define _IMP (_fun _id _SEL -> _id))
+(define _IMP (_fun #:async-apply (lambda (f) (f)) _id _SEL -> _id))
 
 (define-cstruct _objc_super ([receiver _id][class _Class]))
 
