@@ -1323,10 +1323,13 @@
           
           (define path (new dc-path%))
           (send dc set-brush "black" 'transparent)
-          (send dc set-pen (send the-pen-list find-or-create-pen "red" 
+          (send dc set-pen (send the-pen-list find-or-create-pen "red"
                                  online-compilation-error-pen-width
                                  'solid 'butt 'miter))
-          (send dc set-alpha .25)
+          (send dc set-alpha 
+                (if (preferences:get 'framework:white-on-black?)
+                    .5
+                    .25))
           
           (for ([an-error-range (in-list error-ranges)])
             (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
