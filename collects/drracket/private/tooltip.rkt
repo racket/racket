@@ -9,7 +9,8 @@
     (inherit show reflow-container move get-width get-height)
     (define/override (on-subwindow-event r evt)
       (cond
-        [(send evt button-down?)
+        [(or (send evt entering?)
+             (send evt button-down?))
          (show #f)
          #t]
         [else #f]))
