@@ -204,7 +204,7 @@ static Scheme_Object *resolve_application(Scheme_Object *o, Resolve_Info *orig_i
     }
   }
 
-  devals = sizeof(Scheme_App_Rec) + ((n - 1) * sizeof(Scheme_Object *));
+  devals = sizeof(Scheme_App_Rec) + ((n - mzFLEX_DELTA) * sizeof(Scheme_Object *));
   
   info = resolve_info_extend(orig_info, n - 1, 0, 0);
   

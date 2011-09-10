@@ -78,7 +78,7 @@ static MZ_INLINE Scheme_Object *do_make_native_closure(Scheme_Native_Closure_Dat
   Scheme_Native_Closure *o;
 
   o = (Scheme_Native_Closure *)scheme_malloc_tagged(sizeof(Scheme_Native_Closure)
-						    + ((size - 1) * sizeof(Scheme_Object *)));
+						    + ((size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   o->so.type = scheme_native_closure_type;
   o->code = code;
 
@@ -1123,7 +1123,7 @@ static int generate_closure(Scheme_Closure_Data *data,
     int sz;
     intptr_t init_word;
     sz = (sizeof(Scheme_Native_Closure)
-          + ((data->closure_size - 1) * sizeof(Scheme_Object *)));
+          + ((data->closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 # ifdef CAN_INLINE_ALLOC
     if (immediately_filled) {
       /* Inlined alloc */

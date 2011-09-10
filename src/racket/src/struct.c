@@ -2087,7 +2087,7 @@ scheme_make_struct_instance(Scheme_Object *_stype, int argc, Scheme_Object **arg
   c = stype->num_slots;
   inst = (Scheme_Structure *)
     scheme_malloc_tagged(sizeof(Scheme_Structure) 
-			 + ((c - 1) * sizeof(Scheme_Object *)));
+			 + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   
   inst->so.type = (stype->proc_attr ? scheme_proc_struct_type : scheme_structure_type);
   inst->stype = stype;
@@ -2132,7 +2132,7 @@ Scheme_Object *scheme_make_blank_prefab_struct_instance(Scheme_Struct_Type *styp
   c = stype->num_slots;
   inst = (Scheme_Structure *)
     scheme_malloc_tagged(sizeof(Scheme_Structure) 
-			 + ((c - 1) * sizeof(Scheme_Object *)));
+			 + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   
   inst->so.type = scheme_structure_type;
   inst->stype = stype;
@@ -2147,7 +2147,7 @@ Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *prefab_key,
 
   inst = (Scheme_Serialized_Structure *)
     scheme_malloc_tagged(sizeof(Scheme_Serialized_Structure) 
-			 + ((num_slots - 1) * sizeof(Scheme_Object *)));
+			 + ((num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   
   inst->so.type = scheme_serialized_structure_type;
   inst->num_slots = num_slots;
@@ -2166,7 +2166,7 @@ Scheme_Object *scheme_make_prefab_struct_instance(Scheme_Struct_Type *stype,
   c = stype->num_slots;
   inst = (Scheme_Structure *)
     scheme_malloc_tagged(sizeof(Scheme_Structure) 
-			 + ((c - 1) * sizeof(Scheme_Object *)));
+			 + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   
   inst->so.type = scheme_structure_type;
   inst->stype = stype;
@@ -2192,7 +2192,7 @@ Scheme_Object *scheme_clone_prefab_struct_instance(Scheme_Structure *s)
 
   c = s->stype->num_slots;
   sz = (sizeof(Scheme_Structure) 
-        + ((c - 1) * sizeof(Scheme_Object *)));
+        + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   inst = (Scheme_Structure *)scheme_malloc_tagged(sz);
   memcpy(inst, s, sz);
 
@@ -2223,7 +2223,7 @@ make_simple_struct_instance(int argc, Scheme_Object **args, Scheme_Object *prim)
   c = stype->num_slots;
   inst = (Scheme_Structure *)
     scheme_malloc_tagged(sizeof(Scheme_Structure) 
-			 + ((c - 1) * sizeof(Scheme_Object *)));
+			 + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   
   inst->so.type = scheme_structure_type;
   inst->stype = stype;
@@ -4022,7 +4022,7 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
   parent_type = (Scheme_Struct_Type *)parent;
   depth = parent_type ? (1 + parent_type->name_pos) : 0;
   struct_type = (Scheme_Struct_Type *)scheme_malloc_tagged(sizeof(Scheme_Struct_Type)
-                                                           + (depth 
+                                                           + ((depth + 1 - mzFLEX_DELTA)
                                                               * sizeof(Scheme_Struct_Type *)));
   struct_type->iso.so.type = scheme_struct_type_type;
 
@@ -4086,7 +4086,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
   depth = parent_type ? (1 + parent_type->name_pos) : 0;
 
   struct_type = (Scheme_Struct_Type *)scheme_malloc_tagged(sizeof(Scheme_Struct_Type)
-                                                           + (depth 
+                                                           + ((depth + 1 - mzFLEX_DELTA)
                                                               * sizeof(Scheme_Struct_Type *)));
 
   /* defeats optimizer bug in gcc 2.7.2.3: */

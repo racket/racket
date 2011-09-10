@@ -57,7 +57,7 @@ static Scheme_Object *jit_application(Scheme_Object *o)
     return o;
 
   size = (sizeof(Scheme_App_Rec) 
-	  + ((n - 1) * sizeof(Scheme_Object *))
+	  + ((n - mzFLEX_DELTA) * sizeof(Scheme_Object *))
 	  + n * sizeof(char));
   app2 = (Scheme_App_Rec *)scheme_malloc_tagged(size);
   memcpy(app2, app, size);
@@ -139,7 +139,7 @@ static Scheme_Object *jit_sequence(Scheme_Object *o)
     return o;
 
   size = (sizeof(Scheme_Sequence) 
-	  + ((n - 1) * sizeof(Scheme_Object *)));
+	  + ((n - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   seq2 = (Scheme_Sequence *)scheme_malloc_tagged(size);
   memcpy(seq2, seq, size);
   seq2->array[i] = naya;
@@ -364,7 +364,7 @@ Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
 
     cnt = seqin->count;
     
-    size = sizeof(Scheme_Case_Lambda) + ((cnt - 1) * sizeof(Scheme_Object *));
+    size = sizeof(Scheme_Case_Lambda) + ((cnt - mzFLEX_DELTA) * sizeof(Scheme_Object *));
 
     seqout = (Scheme_Case_Lambda *)scheme_malloc_tagged(size);
     memcpy(seqout, seqin, size);
@@ -461,7 +461,7 @@ static Scheme_Object *begin0_jit(Scheme_Object *data)
     return data;
 
   seq2 = (Scheme_Sequence *)scheme_malloc_tagged(sizeof(Scheme_Sequence)
-						 + (count - 1) 
+						 + (count - mzFLEX_DELTA) 
 						 * sizeof(Scheme_Object *));
   seq2->so.type = scheme_begin0_sequence_type;
   seq2->count = count;

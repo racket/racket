@@ -1456,7 +1456,7 @@ Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int mode)
     Scheme_Case_Lambda *cl2;
 
     cl2 = (Scheme_Case_Lambda *)scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
-						     + ((cl->count - 1) * sizeof(Scheme_Object*)));
+						     + ((cl->count - mzFLEX_DELTA) * sizeof(Scheme_Object*)));
     
     cl2->so.type = scheme_case_lambda_sequence_type;
     cl2->count = cl->count;
@@ -1517,7 +1517,7 @@ case_lambda_syntax (Scheme_Object *form, Scheme_Comp_Env *env,
   if (SCHEME_STX_NULLP(form)) {
     /* Case where there are no cases... */
     form = (Scheme_Object *)scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
-						 - sizeof(Scheme_Object*));
+						 - (mzFLEX_DELTA * sizeof(Scheme_Object*)));
 
     form->type = scheme_case_lambda_sequence_type;
     ((Scheme_Case_Lambda *)form)->count = 0;
@@ -1581,7 +1581,7 @@ case_lambda_syntax (Scheme_Object *form, Scheme_Comp_Env *env,
 
   cl = (Scheme_Case_Lambda *)
     scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
-			 + (count - 1) * sizeof(Scheme_Object *));
+			 + (count - mzFLEX_DELTA) * sizeof(Scheme_Object *));
   cl->so.type = scheme_case_lambda_sequence_type;
   cl->count = count;
   cl->name = SCHEME_TRUEP(name) ? name : NULL;
@@ -2859,7 +2859,7 @@ begin0_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *r
 Scheme_Sequence *scheme_malloc_sequence(int count)
 {
   return (Scheme_Sequence *)scheme_malloc_tagged(sizeof(Scheme_Sequence)
-						 + (count - 1) 
+						 + (count - mzFLEX_DELTA) 
 						 * sizeof(Scheme_Object *));
 }
 
@@ -4097,7 +4097,7 @@ Scheme_App_Rec *scheme_malloc_application(int n)
   int size;
 
   size = (sizeof(Scheme_App_Rec) 
-	  + ((n - 1) * sizeof(Scheme_Object *))
+	  + ((n - mzFLEX_DELTA) * sizeof(Scheme_Object *))
 	  + n * sizeof(char));
   app = (Scheme_App_Rec *)scheme_malloc_tagged(size);
 
@@ -4114,7 +4114,7 @@ void scheme_finish_application(Scheme_App_Rec *app)
 
   n = app->num_args + 1;
 
-  devals = sizeof(Scheme_App_Rec) + (app->num_args * sizeof(Scheme_Object *));
+  devals = sizeof(Scheme_App_Rec) + ((app->num_args + 1 - mzFLEX_DELTA) * sizeof(Scheme_Object *));
 
   for (i = 0; i < n; i++) {
     char etype;

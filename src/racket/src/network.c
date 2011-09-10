@@ -120,7 +120,7 @@ typedef struct {
   Scheme_Object so;
   Scheme_Custodian_Reference *mref;
   int count;
-  tcp_t s[1];
+  tcp_t s[mzFLEX_ARRAY_DECL];
 } listener_t;
 #endif
 
@@ -1935,7 +1935,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 
 	    if (!listen(s, backlog)) {
 	      if (!pos) {
-		l = scheme_malloc_tagged(sizeof(listener_t) + ((count - 1) * sizeof(tcp_t)));
+		l = scheme_malloc_tagged(sizeof(listener_t) + ((count - mzFLEX_DELTA) * sizeof(tcp_t)));
 		l->so.type = scheme_listener_type;
 		l->count = count;
 		{

@@ -3373,7 +3373,9 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
   /* Inlined alloc */
   if (app2)
     (void)jit_movi_p(JIT_R1, NULL); /* needed because R1 is marked during a GC */
-  scheme_inline_alloc(jitter, sizeof(Scheme_Vector) + ((c - 1) * sizeof(Scheme_Object*)), scheme_vector_type, 
+  scheme_inline_alloc(jitter, 
+                      sizeof(Scheme_Vector) + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object*)), 
+                      scheme_vector_type, 
                       imm, app2 || app3, 0, 0);
   CHECK_LIMIT();
 

@@ -687,6 +687,8 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(scheme_rt_runstack, runstack_val);
 
+  GC_REG_TRAV(scheme_free_id_info_type, vector_obj);
+
   GC_REG_TRAV(scheme_rib_delimiter_type, small_object);
   GC_REG_TRAV(scheme_noninline_proc_type, small_object);
   GC_REG_TRAV(scheme_prune_context_type, small_object);

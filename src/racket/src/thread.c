@@ -6304,7 +6304,7 @@ void scheme_set_param(Scheme_Config *c, int pos, Scheme_Object *o)
 static Scheme_Parameterization *malloc_paramz()
 {
   return (Scheme_Parameterization *)scheme_malloc_tagged(sizeof(Scheme_Parameterization) + 
-                                                         (max_configs - 1) * sizeof(Scheme_Object*));
+                                                         (max_configs - mzFLEX_DELTA) * sizeof(Scheme_Object*));
 }
 
 void scheme_flatten_config(Scheme_Config *orig_c)
@@ -6583,8 +6583,7 @@ static void make_initial_config(Scheme_Thread *p)
   cells = scheme_make_bucket_table(5, SCHEME_hash_weak_ptr);
   p->cell_values = cells;
 
-  paramz = (Scheme_Parameterization *)scheme_malloc_tagged(sizeof(Scheme_Parameterization) + 
-							   (max_configs - 1) * sizeof(Scheme_Object*));
+  paramz = malloc_paramz();
 #ifdef MZTAG_REQUIRED
   paramz->type = scheme_rt_parameterization;
 #endif

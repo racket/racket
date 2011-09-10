@@ -253,12 +253,12 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     return 1;
   }
 
-  if ((vtype == scheme_compiled_quote_syntax_type)) {
+  if (vtype == scheme_compiled_quote_syntax_type) {
     note_match(1, vals, warn_info);
     return ((vals == 1) || (vals < 0));
   }
 
-  if ((vtype == scheme_branch_type)) {
+  if (vtype == scheme_branch_type) {
     Scheme_Branch_Rec *b;
     b = (Scheme_Branch_Rec *)o;
     return (scheme_omittable_expr(b->test, 1, fuel - 1, resolved, warn_info, deeper_than)
@@ -269,20 +269,20 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 #if 0
   /* We can't do this because a set! to a lexical is turned into
      a let_value_type! */
-  if ((vtype == scheme_let_value_type)) {
+  if (vtype == scheme_let_value_type) {
     Scheme_Let_Value *lv = (Scheme_Let_Value *)o;
     return (scheme_omittable_expr(lv->value, lv->count, fuel - 1, resolved, warn_info, deeper_than)
 	    && scheme_omittable_expr(lv->body, vals, fuel - 1, resolved, warn_info, deeper_than));
   }
 #endif
 
-  if ((vtype == scheme_let_one_type)) {
+  if (vtype == scheme_let_one_type) {
     Scheme_Let_One *lo = (Scheme_Let_One *)o;
     return (scheme_omittable_expr(lo->value, 1, fuel - 1, resolved, warn_info, deeper_than + 1)
 	    && scheme_omittable_expr(lo->body, vals, fuel - 1, resolved, warn_info, deeper_than + 1));
   }
 
-  if ((vtype == scheme_let_void_type)) {
+  if (vtype == scheme_let_void_type) {
     Scheme_Let_Void *lv = (Scheme_Let_Void *)o;
     /* recognize (letrec ([x <omittable>]) ...): */
     if (SAME_TYPE(SCHEME_TYPE(lv->body), scheme_let_value_type)) {
@@ -301,7 +301,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     goto try_again;
   }
 
-  if ((vtype == scheme_compiled_let_void_type)) {
+  if (vtype == scheme_compiled_let_void_type) {
     /* recognize another (let ([x <omittable>]) ...) pattern: */
     Scheme_Let_Header *lh = (Scheme_Let_Header *)o;
     if ((lh->count == 1) && (lh->num_clauses == 1)) {
@@ -316,12 +316,12 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     }
   }
 
-  if ((vtype == scheme_letrec_type)) {
+  if (vtype == scheme_letrec_type) {
     o = ((Scheme_Letrec *)o)->body;
     goto try_again;
   }
 
-  if ((vtype == scheme_application_type)) {
+  if (vtype == scheme_application_type) {
     /* Look for multiple values, or for `make-struct-type'.
        (The latter is especially useful to Honu.) */
     Scheme_App_Rec *app = (Scheme_App_Rec *)o;
@@ -402,7 +402,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     return 0;
   }
 
-  if ((vtype == scheme_application2_type)) {
+  if (vtype == scheme_application2_type) {
     /* ({values,void,list,list*,vector,vector-immutable,box} <omittable>) */
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
     if (SAME_OBJ(scheme_values_func, app->rator)
@@ -433,7 +433,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     return 0;
   }
 
-  if ((vtype == scheme_application3_type)) {
+  if (vtype == scheme_application3_type) {
     /* (values <omittable> <omittable>) */
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
     if (SAME_OBJ(scheme_values_func, app->rator)) {
@@ -2942,7 +2942,7 @@ case_lambda_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delt
   Scheme_Case_Lambda *seq = (Scheme_Case_Lambda *)data;
   Scheme_Case_Lambda *seq2;
 
-  sz = sizeof(Scheme_Case_Lambda) + ((seq->count - 1) * sizeof(Scheme_Object*));
+  sz = sizeof(Scheme_Case_Lambda) + ((seq->count - mzFLEX_DELTA) * sizeof(Scheme_Object*));
   seq2 = (Scheme_Case_Lambda *)scheme_malloc_tagged(sz);
   memcpy(seq2, seq, sz);
 

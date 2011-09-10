@@ -253,7 +253,7 @@ static int app_rec_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_App_Rec) 
-		    + (r->num_args * sizeof(Scheme_Object *))
+		    + ((r->num_args + 1 - mzFLEX_DELTA) * sizeof(Scheme_Object *))
 		    + ((r->num_args + 1) * sizeof(char))));
 }
 
@@ -266,7 +266,7 @@ static int app_rec_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_App_Rec) 
-		    + (r->num_args * sizeof(Scheme_Object *))
+		    + ((r->num_args + 1 - mzFLEX_DELTA) * sizeof(Scheme_Object *))
 		    + ((r->num_args + 1) * sizeof(char))));
 }
 
@@ -279,7 +279,7 @@ static int app_rec_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_App_Rec) 
-		    + (r->num_args * sizeof(Scheme_Object *))
+		    + ((r->num_args + 1 - mzFLEX_DELTA) * sizeof(Scheme_Object *))
 		    + ((r->num_args + 1) * sizeof(char))));
 }
 
@@ -348,7 +348,7 @@ static int seq_rec_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Sequence)
-		    + ((s->count - 1) * sizeof(Scheme_Object *))));
+		    + ((s->count - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int seq_rec_MARK(void *p, struct NewGC *gc) {
@@ -360,7 +360,7 @@ static int seq_rec_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Sequence)
-		    + ((s->count - 1) * sizeof(Scheme_Object *))));
+		    + ((s->count - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int seq_rec_FIXUP(void *p, struct NewGC *gc) {
@@ -372,7 +372,7 @@ static int seq_rec_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Sequence)
-		    + ((s->count - 1) * sizeof(Scheme_Object *))));
+		    + ((s->count - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 #define seq_rec_IS_ATOMIC 0
@@ -689,7 +689,7 @@ static int prim_proc_SIZE(void *p, struct NewGC *gc) {
   return
   ((prim->pp.flags & SCHEME_PRIM_IS_CLOSURE)
    ? (gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Closure))
-      + ((Scheme_Primitive_Closure *)prim)->count - 1)
+      + ((Scheme_Primitive_Closure *)prim)->count - mzFLEX_DELTA)
    : ((prim->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
       ? gcBYTES_TO_WORDS(sizeof(Scheme_Prim_W_Result_Arity))
       : gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Proc))));
@@ -713,7 +713,7 @@ static int prim_proc_MARK(void *p, struct NewGC *gc) {
   return
   ((prim->pp.flags & SCHEME_PRIM_IS_CLOSURE)
    ? (gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Closure))
-      + ((Scheme_Primitive_Closure *)prim)->count - 1)
+      + ((Scheme_Primitive_Closure *)prim)->count - mzFLEX_DELTA)
    : ((prim->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
       ? gcBYTES_TO_WORDS(sizeof(Scheme_Prim_W_Result_Arity))
       : gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Proc))));
@@ -737,7 +737,7 @@ static int prim_proc_FIXUP(void *p, struct NewGC *gc) {
   return
   ((prim->pp.flags & SCHEME_PRIM_IS_CLOSURE)
    ? (gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Closure))
-      + ((Scheme_Primitive_Closure *)prim)->count - 1)
+      + ((Scheme_Primitive_Closure *)prim)->count - mzFLEX_DELTA)
    : ((prim->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
       ? gcBYTES_TO_WORDS(sizeof(Scheme_Prim_W_Result_Arity))
       : gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Proc))));
@@ -804,7 +804,7 @@ static int scm_closure_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
-		    + (closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 static int scm_closure_MARK(void *p, struct NewGC *gc) {
@@ -830,7 +830,7 @@ static int scm_closure_MARK(void *p, struct NewGC *gc) {
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
-		    + (closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 static int scm_closure_FIXUP(void *p, struct NewGC *gc) {
@@ -851,7 +851,7 @@ static int scm_closure_FIXUP(void *p, struct NewGC *gc) {
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
-		    + (closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 #define scm_closure_IS_ATOMIC 0
@@ -863,7 +863,7 @@ static int case_closure_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Case_Lambda)
-		    + ((c->count - 1) * sizeof(Scheme_Object *))));
+		    + ((c->count - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int case_closure_MARK(void *p, struct NewGC *gc) {
@@ -880,7 +880,7 @@ static int case_closure_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Case_Lambda)
-		    + ((c->count - 1) * sizeof(Scheme_Object *))));
+		    + ((c->count - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int case_closure_FIXUP(void *p, struct NewGC *gc) {
@@ -897,7 +897,7 @@ static int case_closure_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Case_Lambda)
-		    + ((c->count - 1) * sizeof(Scheme_Object *))));
+		    + ((c->count - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 #define case_closure_IS_ATOMIC 0
@@ -1443,7 +1443,7 @@ static int vector_obj_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int vector_obj_MARK(void *p, struct NewGC *gc) {
@@ -1455,7 +1455,7 @@ static int vector_obj_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int vector_obj_FIXUP(void *p, struct NewGC *gc) {
@@ -1467,7 +1467,7 @@ static int vector_obj_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 #define vector_obj_IS_ATOMIC 0
@@ -1479,7 +1479,7 @@ static int fxvector_obj_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int fxvector_obj_MARK(void *p, struct NewGC *gc) {
@@ -1487,7 +1487,7 @@ static int fxvector_obj_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int fxvector_obj_FIXUP(void *p, struct NewGC *gc) {
@@ -1495,7 +1495,7 @@ static int fxvector_obj_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 #define fxvector_obj_IS_ATOMIC 1
@@ -1507,7 +1507,7 @@ static int flvector_obj_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Double_Vector) 
-		    + ((vec->size - 1) * sizeof(double))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(double))));
 }
 
 static int flvector_obj_MARK(void *p, struct NewGC *gc) {
@@ -1515,7 +1515,7 @@ static int flvector_obj_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Double_Vector) 
-		    + ((vec->size - 1) * sizeof(double))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(double))));
 }
 
 static int flvector_obj_FIXUP(void *p, struct NewGC *gc) {
@@ -1523,7 +1523,7 @@ static int flvector_obj_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Double_Vector) 
-		    + ((vec->size - 1) * sizeof(double))));
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(double))));
 }
 
 #define flvector_obj_IS_ATOMIC 1
@@ -2313,7 +2313,7 @@ static int prefix_val_SIZE(void *p, struct NewGC *gc) {
   Scheme_Prefix *pf = (Scheme_Prefix *)p;
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
-		    + ((pf->num_slots-1) * sizeof(Scheme_Object *))
+		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
                     + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
                        * sizeof(int))));
 }
@@ -2325,7 +2325,7 @@ static int prefix_val_MARK(void *p, struct NewGC *gc) {
     gcMARK2(pf->a[i], gc);
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
-		    + ((pf->num_slots-1) * sizeof(Scheme_Object *))
+		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
                     + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
                        * sizeof(int))));
 }
@@ -2337,7 +2337,7 @@ static int prefix_val_FIXUP(void *p, struct NewGC *gc) {
     gcFIXUP2(pf->a[i], gc);
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
-		    + ((pf->num_slots-1) * sizeof(Scheme_Object *))
+		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
                     + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
                        * sizeof(int))));
 }

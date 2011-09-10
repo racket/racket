@@ -10,7 +10,7 @@ static int native_closure_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
-		    + (closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 static int native_closure_MARK(void *p, struct NewGC *gc) {
@@ -39,7 +39,7 @@ static int native_closure_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
-		    + (closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 static int native_closure_FIXUP(void *p, struct NewGC *gc) {
@@ -63,7 +63,7 @@ static int native_closure_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
-		    + (closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 #define native_closure_IS_ATOMIC 0

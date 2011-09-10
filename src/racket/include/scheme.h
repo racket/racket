@@ -120,6 +120,19 @@ typedef long FILE;
 # define MZ_SIGSET(s, f) sigset(s, f)
 #endif
 
+/* C99 allows an array in a struct to be declared
+   with [] to indicate that its actual size can be
+   any number. The old way was to declare the array
+   of size 1. For now, we support going back to the 
+   old way. */
+#ifdef MZ_USE_OLD_ARRAY_STYLE
+# define mzFLEX_ARRAY_DECL 1
+# define mzFLEX_DELTA 1
+#else
+# define mzFLEX_ARRAY_DECL /* empty */
+# define mzFLEX_DELTA 0
+#endif
+
 #ifdef MZ_XFORM
 # define XFORM_NONGCING __xform_nongcing__
 #else
@@ -305,7 +318,7 @@ typedef struct Scheme_Symbol {
 typedef struct Scheme_Vector {
   Scheme_Inclhash_Object iso; /* 1 in low bit of keyex indicates immutable */
   intptr_t size;
-  Scheme_Object *els[1];
+  Scheme_Object *els[mzFLEX_ARRAY_DECL];
 } Scheme_Vector;
 
 # define SHARED_ALLOCATED 0x2
@@ -315,7 +328,7 @@ typedef struct Scheme_Vector {
 typedef struct Scheme_Double_Vector {
   Scheme_Inclhash_Object iso; /* & 0x2 indicates allocated in the MASTERGC */
   intptr_t size;
-  double els[1];
+  double els[mzFLEX_ARRAY_DECL];
 } Scheme_Double_Vector;
 
 typedef struct Scheme_Print_Params Scheme_Print_Params;
@@ -698,7 +711,7 @@ typedef struct Scheme_Primitive_Closure {
 #ifdef MZ_PRECISE_GC
   mzshort count;
 #endif
-  Scheme_Object *val[1];
+  Scheme_Object *val[mzFLEX_ARRAY_DECL];
 } Scheme_Primitive_Closure;
 
 #define SCHEME_PRIM_CLOSURE_ELS(p) ((Scheme_Primitive_Closure *)p)->val

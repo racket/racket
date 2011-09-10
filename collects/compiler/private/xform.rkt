@@ -1192,7 +1192,18 @@
                        (set! line (+ line 3))))]
                   [(threadlocal-decl? v) (void)]
                   [(seq? v)
-                   (display/indent v (tok-n v))
+                   (define skip-parens?
+                     ;; avoid `if ((...))' when "..." is not an assignment, 
+                     ;; because that annoys compilers like clang
+                     (and prev (tok? prev) (memq (tok-n prev) '(if))
+                          (let ([l (seq->list (seq-in v))])
+                            (and (pair? l) 
+                                 (null? (cdr l))
+                                 (parens? (car l))
+                                 (let ([l (seq->list (seq-in (car l)))])
+                                   (not (ormap (lambda (i) (eq? '= (tok-n i))) 
+                                               l)))))))
+                   (display/indent v (if skip-parens? "" (tok-n v)))
                    (let ([subindent (if (braces? v)
                                         (begin
                                           (newline/indent (+ indent 2))
@@ -1214,7 +1225,8 @@
                        (set! sysheader? s?))
                      (when (and next-indent (= next-indent subindent))
                        (set! next-indent indent)))
-                   (display/indent #f (seq-close v))
+                   (unless skip-parens?
+                     (display/indent #f (seq-close v)))
                    (cond
                      [(braces? v)
                       (newline/indent indent)
@@ -1574,7 +1586,7 @@
                  (begin
                    (when pgc?
                      (unless (eq? (tok-n (car e)) 'static)
-                       (let-values ([(pointers non-pointers) (get-vars e "TOPVAR" #f)])
+                       (let-values ([(pointers non-pointers) (get-vars e "TOPVAR" #f #t)])
                          (top-vars (append pointers non-pointers (top-vars))))))
                    e))]
             
@@ -1824,7 +1836,7 @@
               (let ([e (append (prototype-type proto)
                                (list (make-tok name #f #f)
                                      (make-tok semi #f #f)))])
-                (let ([vars (get-pointer-vars e "PROTODEF" #f)])
+                (let ([vars (get-pointer-vars e "PROTODEF" #f #t)])
                   (set-prototype-pointer?! proto (not (null? vars)))
                   (set-prototype-pointer?-determined?! proto #t))))
             (prototype-pointer? proto)))
@@ -1845,7 +1857,7 @@
                                         cddr
                                         cdr)
                                     e)
-                                   "PTRDEF" #t)]
+                                   "PTRDEF" #t #t)]
                         ;; Remove things like HANDLE and HWND, which are not
                         ;; malloced and could overlap with GCed areas:
                         [(pointers non-pointers)
@@ -1861,10 +1873,10 @@
             (set! pointer-types (append pointers pointer-types))
             (set! non-pointer-types (append (map car non-pointers) non-pointer-types))))
         
-        ;; get-vars : tok-list str bool -> (values list-of-(cons sym vtype) list-of-(cons sym vtype))
+        ;; get-vars : tok-list str bool bool -> (values list-of-(cons sym vtype) list-of-(cons sym vtype))
         ;; Parses a declaration  of one line (which may have multiple, comma-separated variables).
         ;; Returns a list of pointer declarations and a list of non-pointer declarations.
-        (define (get-vars e comment union-ok?)
+        (define (get-vars e comment union-ok? empty-array-is-ptr?)
           (let* ([e   (if (or (eq? GC_CAN_IGNORE (tok-n (car e)))
                               (eq? 'XFORM_CAN_IGNORE (tok-n (car e))))
                           (list (make-tok semi #f #f)) ; drop everything
@@ -1915,7 +1927,9 @@
                                 (loop (sub1 l)
                                       (let ([inner (seq->list (seq-in (list-ref e l)))])
                                         (if (null? inner)
-                                            'pointer
+                                            (if empty-array-is-ptr?
+                                                'pointer
+                                                0)
                                             (tok-n (car inner))))
                                       pointers non-pointers)]
                                [(braces? v) 
@@ -2028,9 +2042,9 @@
                                                                                  (make-non-pointer-type non-ptr-base)) 
                                                                            non-pointers)))))]))))))))
         
-        (define (get-pointer-vars e comment union-ok?)
+        (define (get-pointer-vars e comment union-ok? empty-array-is-ptr?)
           (let-values ([(pointers non-pointers)
-                        (get-vars e comment union-ok?)])
+                        (get-vars e comment union-ok? empty-array-is-ptr?)])
             pointers))
         
         (define (get-pointer-vars-from-seq body comment comma-sep?)
@@ -2038,7 +2052,7 @@
             (apply
              append
              (map (lambda (e)
-                    (get-pointer-vars e comment #t))
+                    (get-pointer-vars e comment #t #f))
                   el))))
         
         ;; e is a struct decl; parse it an remember the results
@@ -2338,7 +2352,7 @@
                            (let loop ([l arg-decls][arg-vars null][all-arg-vars null])
                              (if (null? l)
                                  (values arg-vars all-arg-vars) 
-                                 (let-values ([(ptrs non-ptrs) (get-vars (car l) "PTRARG" #f)])
+                                 (let-values ([(ptrs non-ptrs) (get-vars (car l) "PTRARG" #f #t)])
                                    (loop (cdr l) (append arg-vars ptrs) (append all-arg-vars ptrs non-ptrs))))))]
                         [(c++-class) (let ([c++-class (find-c++-class class-name #t)])
                                        (and c++-class
@@ -2484,7 +2498,7 @@
             (let-values ([(pragmas el) (body->lines body-e #f)])
               (let-values ([(decls body) (split-decls el)])
                 (for-each (lambda (e) 
-                            (let-values ([(pointers non-pointers) (get-vars e "CVTLOCAL" #f)])
+                            (let-values ([(pointers non-pointers) (get-vars e "CVTLOCAL" #f #t)])
                               (for-each
                                (lambda (var)
                                  (when (get-c++-class-var (car var) c++-class)
@@ -2733,7 +2747,7 @@
                        (map (lambda (e) 
                               (if (eq? (tok-n (car e)) 'static)
                                   null
-                                  (get-pointer-vars e "PTRLOCAL" #f)))
+                                  (get-pointer-vars e "PTRLOCAL" #f #t)))
                             decls))]
                      [vars (begin
                              (ormap (lambda (var)

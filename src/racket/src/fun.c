@@ -656,7 +656,7 @@ make_prim_closure(Scheme_Prim *fun, int eternal,
 	  ? sizeof(Scheme_Prim_W_Result_Arity) 
 	  : (closed
 	     ? (sizeof(Scheme_Primitive_Closure)
-		+ ((count - 1) * sizeof(Scheme_Object *)))
+		+ ((count - mzFLEX_DELTA) * sizeof(Scheme_Object *)))
 	     : sizeof(Scheme_Primitive_Proc)));
 
   if (eternal && scheme_starting_up && !closed)

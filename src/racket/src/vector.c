@@ -239,8 +239,8 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   scheme_add_global_constant("unsafe-bytes-set!", p, env);
 }
 
-#define VECTOR_BYTES(size) (sizeof(Scheme_Vector) + ((size) - 1) * sizeof(Scheme_Object *))
-#define REV_VECTOR_BYTES(size) (((size) - (sizeof(Scheme_Vector) - sizeof(Scheme_Object *))) / sizeof(Scheme_Object *))
+#define VECTOR_BYTES(size) (sizeof(Scheme_Vector) + ((size) - mzFLEX_DELTA) * sizeof(Scheme_Object *))
+#define REV_VECTOR_BYTES(size) (((size) - (sizeof(Scheme_Vector) - (mzFLEX_DELTA * sizeof(Scheme_Object *)))) / sizeof(Scheme_Object *))
 
 Scheme_Object *
 scheme_make_vector (intptr_t size, Scheme_Object *fill)

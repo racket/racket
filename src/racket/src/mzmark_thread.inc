@@ -3,7 +3,7 @@
 static int mark_parameterization_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Parameterization)
-		    + ((max_configs - 1) * sizeof(Scheme_Object*))));
+		    + ((max_configs - mzFLEX_DELTA) * sizeof(Scheme_Object*))));
 }
 
 static int mark_parameterization_MARK(void *p, struct NewGC *gc) {
@@ -17,7 +17,7 @@ static int mark_parameterization_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Parameterization)
-		    + ((max_configs - 1) * sizeof(Scheme_Object*))));
+		    + ((max_configs - mzFLEX_DELTA) * sizeof(Scheme_Object*))));
 }
 
 static int mark_parameterization_FIXUP(void *p, struct NewGC *gc) {
@@ -31,7 +31,7 @@ static int mark_parameterization_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Parameterization)
-		    + ((max_configs - 1) * sizeof(Scheme_Object*))));
+		    + ((max_configs - mzFLEX_DELTA) * sizeof(Scheme_Object*))));
 }
 
 #define mark_parameterization_IS_ATOMIC 0

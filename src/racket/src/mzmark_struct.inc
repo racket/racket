@@ -7,7 +7,7 @@ static int mark_serialized_struct_val_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Serialized_Structure) 
-		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+		    + ((num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int mark_serialized_struct_val_MARK(void *p, struct NewGC *gc) {
@@ -23,7 +23,7 @@ static int mark_serialized_struct_val_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Serialized_Structure) 
-		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+		    + ((num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int mark_serialized_struct_val_FIXUP(void *p, struct NewGC *gc) {
@@ -39,7 +39,7 @@ static int mark_serialized_struct_val_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Serialized_Structure) 
-		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+		    + ((num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 #define mark_serialized_struct_val_IS_ATOMIC 0
@@ -53,7 +53,7 @@ static int mark_struct_val_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Structure) 
-		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+		    + ((num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int mark_struct_val_MARK(void *p, struct NewGC *gc) {
@@ -69,7 +69,7 @@ static int mark_struct_val_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Structure) 
-		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+		    + ((num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 static int mark_struct_val_FIXUP(void *p, struct NewGC *gc) {
@@ -85,7 +85,7 @@ static int mark_struct_val_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Structure) 
-		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+		    + ((num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
 }
 
 #define mark_struct_val_IS_ATOMIC 0
@@ -97,7 +97,8 @@ static int mark_struct_type_val_SIZE(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Struct_Type)
-		    + (t->name_pos * sizeof(Scheme_Struct_Type *))));
+		    + ((t->name_pos + 1 - mzFLEX_DELTA) 
+                       * sizeof(Scheme_Struct_Type *))));
 }
 
 static int mark_struct_type_val_MARK(void *p, struct NewGC *gc) {
@@ -120,7 +121,8 @@ static int mark_struct_type_val_MARK(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Struct_Type)
-		    + (t->name_pos * sizeof(Scheme_Struct_Type *))));
+		    + ((t->name_pos + 1 - mzFLEX_DELTA) 
+                       * sizeof(Scheme_Struct_Type *))));
 }
 
 static int mark_struct_type_val_FIXUP(void *p, struct NewGC *gc) {
@@ -143,7 +145,8 @@ static int mark_struct_type_val_FIXUP(void *p, struct NewGC *gc) {
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Struct_Type)
-		    + (t->name_pos * sizeof(Scheme_Struct_Type *))));
+		    + ((t->name_pos + 1 - mzFLEX_DELTA) 
+                       * sizeof(Scheme_Struct_Type *))));
 }
 
 #define mark_struct_type_val_IS_ATOMIC 0

@@ -4,7 +4,7 @@ static int mark_listener_SIZE(void *p, struct NewGC *gc) {
   listener_t *l = (listener_t *)p;
 
   return
-  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
+  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
 }
 
 static int mark_listener_MARK(void *p, struct NewGC *gc) {
@@ -14,7 +14,7 @@ static int mark_listener_MARK(void *p, struct NewGC *gc) {
   gcMARK2(l->mref, gc);
 
   return
-  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
+  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
 }
 
 static int mark_listener_FIXUP(void *p, struct NewGC *gc) {
@@ -24,7 +24,7 @@ static int mark_listener_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(l->mref, gc);
 
   return
-  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
+  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
 }
 
 #define mark_listener_IS_ATOMIC 0

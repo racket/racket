@@ -1732,7 +1732,7 @@ void count_tagged(void *p, int size, void *data)
       cnt = NUM_RECORDED_APP_SIZES;
     } else {
       int i, devals, kind;
-      devals = sizeof(Scheme_App_Rec) + (app->num_args * sizeof(Scheme_Object *));
+      devals = sizeof(Scheme_App_Rec) + ((app->num_args + 1 - mzFLEX_DELTA) * sizeof(Scheme_Object *));
       for (i = 0; i <= cnt; i++) {
 	kind = ((char *)app + devals)[i];
 	if ((kind >= 0) && (kind <= 4)) {
@@ -2724,7 +2724,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
       Scheme_App_Rec *app = (Scheme_App_Rec *)root;
       int i;
 
-      s = sizeof(Scheme_App_Rec) + (app->num_args * sizeof(Scheme_Object *))
+      s = sizeof(Scheme_App_Rec) + ((app->num_args + 1 - mzFLEX_DELTA) * sizeof(Scheme_Object *))
 	+ (app->num_args + 1);
       need_align = 1;
 #if FORCE_KNOWN_SUBPARTS
@@ -2742,7 +2742,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
       Scheme_Sequence *seq = (Scheme_Sequence *)root;
       int i;
 
-      s = sizeof(Scheme_Sequence) + (seq->count - 1) * sizeof(Scheme_Object *);
+      s = sizeof(Scheme_Sequence) + (seq->count - mzFLEX_DELTA) * sizeof(Scheme_Object *);
 
 #if FORCE_KNOWN_SUBPARTS
       for (i = e = 0; i < seq->count; i++) {
@@ -3008,7 +3008,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
       Scheme_Object **slots = ((Scheme_Structure *)root)->slots;
       int i, count = SCHEME_STRUCT_NUM_SLOTS(root);
 
-      s = sizeof(Scheme_Structure) + (count - 1) * sizeof(Scheme_Object *);
+      s = sizeof(Scheme_Structure) + (count - mzFLEX_DELTA) * sizeof(Scheme_Object *);
 #if FORCE_KNOWN_SUBPARTS
       for (i = e = 0; i < count; i++) {
 	e += COUNT(slots[i]);
@@ -3024,7 +3024,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
       if (count < 0)
 	count = -count;
 
-      s = sizeof(Small_Bignum) + (count - 1) * sizeof(bigdig);
+      s = sizeof(Scheme_Bignum) + (count * sizeof(bigdig));
     }
     break;
   case scheme_escaping_cont_type:
@@ -3076,7 +3076,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
   case scheme_struct_type_type:
     {
       Scheme_Struct_Type *st = (Scheme_Struct_Type *)root;
-      s = sizeof(Scheme_Struct_Type) + st->name_pos * sizeof(Scheme_Object*);
+      s = sizeof(Scheme_Struct_Type) + (st->name_pos + 1 - mzFLEX_DELTA) * sizeof(Scheme_Object*);
 #if FORCE_KNOWN_SUBPARTS
       e = COUNT(st->name);
       if (st->name_pos)

@@ -98,7 +98,7 @@ static int mark_srcloc_FIXUP(void *p, struct NewGC *gc) {
 static int mark_wrapchunk_SIZE(void *p, struct NewGC *gc) {
   Wrap_Chunk *wc = (Wrap_Chunk *)p;
   return
-  gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - 1) * sizeof(Scheme_Object *)));
+  gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 static int mark_wrapchunk_MARK(void *p, struct NewGC *gc) {
@@ -108,7 +108,7 @@ static int mark_wrapchunk_MARK(void *p, struct NewGC *gc) {
     gcMARK2(wc->a[i], gc);
   }
   return
-  gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - 1) * sizeof(Scheme_Object *)));
+  gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 static int mark_wrapchunk_FIXUP(void *p, struct NewGC *gc) {
@@ -118,7 +118,7 @@ static int mark_wrapchunk_FIXUP(void *p, struct NewGC *gc) {
     gcFIXUP2(wc->a[i], gc);
   }
   return
-  gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - 1) * sizeof(Scheme_Object *)));
+  gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 }
 
 #define mark_wrapchunk_IS_ATOMIC 0
@@ -154,39 +154,5 @@ static int lex_rib_FIXUP(void *p, struct NewGC *gc) {
 
 #define lex_rib_IS_ATOMIC 0
 #define lex_rib_IS_CONST_SIZE 1
-
-
-static int mark_free_id_info_SIZE(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((8 - 1) * sizeof(Scheme_Object *))));
-}
-
-static int mark_free_id_info_MARK(void *p, struct NewGC *gc) {
-  Scheme_Vector *vec = (Scheme_Vector *)p;
-  int i;
-  for (i = 8; i--; )
-    gcMARK2(vec->els[i], gc);
-
-  return
-  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((8 - 1) * sizeof(Scheme_Object *))));
-}
-
-static int mark_free_id_info_FIXUP(void *p, struct NewGC *gc) {
-  Scheme_Vector *vec = (Scheme_Vector *)p;
-  int i;
-  for (i = 8; i--; )
-    gcFIXUP2(vec->els[i], gc);
-
-  return
-  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
-		    + ((8 - 1) * sizeof(Scheme_Object *))));
-}
-
-#define mark_free_id_info_IS_ATOMIC 0
-#define mark_free_id_info_IS_CONST_SIZE 0
-
-
 
 

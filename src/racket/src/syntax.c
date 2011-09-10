@@ -298,10 +298,10 @@ XFORM_NONGCING static int nom_mod_p(Scheme_Object *p)
 typedef struct {
   Scheme_Type type;
   mzshort len;
-  Scheme_Object *a[1];
+  Scheme_Object *a[mzFLEX_ARRAY_DECL];
 } Wrap_Chunk;
 
-#define MALLOC_WRAP_CHUNK(n) (Wrap_Chunk *)scheme_malloc_tagged(sizeof(Wrap_Chunk) + ((n - 1) * sizeof(Scheme_Object *)))
+#define MALLOC_WRAP_CHUNK(n) (Wrap_Chunk *)scheme_malloc_tagged(sizeof(Wrap_Chunk) + ((n - mzFLEX_DELTA) * sizeof(Scheme_Object *)))
 
 /* Macros for iterating over the elements of a wrap. */
 
@@ -4087,8 +4087,9 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
 		WRAP_POS w2;
 		WRAP_POS_INIT(w2, ((Scheme_Stx *)renamed)->wraps);
 		same = same_marks(&w2, &wraps, other_env);
-                if (!same)
+                if (!same) {
                   EXPLAIN(fprintf(stderr, "%d Different marks\n", depth));
+                }
 	      }
 	    }
 	    
@@ -8526,7 +8527,6 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_srcloc, mark_srcloc);
   GC_REG_TRAV(scheme_wrap_chunk_type, mark_wrapchunk);
   GC_REG_TRAV(scheme_lexical_rib_type, lex_rib);
-  GC_REG_TRAV(scheme_free_id_info_type, mark_free_id_info);
 }
 
 END_XFORM_SKIP;

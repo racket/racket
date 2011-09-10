@@ -2609,6 +2609,8 @@ scheme_expt(int argc, Scheme_Object *argv[])
     if ((d == 0.0)
 #ifdef NAN_EQUALS_ANYTHING
 	&& !MZ_IS_NAN(d)
+#else
+        && 1
 #endif
 	) {
       if (SCHEME_REALP(e)) {
@@ -3331,7 +3333,7 @@ Scheme_Double_Vector *scheme_alloc_flvector(intptr_t size)
 
   vec = (Scheme_Double_Vector *)scheme_malloc_fail_ok(scheme_malloc_atomic_tagged, 
                                                       sizeof(Scheme_Double_Vector) 
-                                                      + ((size - 1) * sizeof(double)));
+                                                      + ((size - mzFLEX_DELTA) * sizeof(double)));
   vec->iso.so.type = scheme_flvector_type;
   vec->size = size;
 
@@ -3515,7 +3517,7 @@ Scheme_Vector *scheme_alloc_fxvector(intptr_t size)
 
   vec = (Scheme_Vector *)scheme_malloc_fail_ok(scheme_malloc_atomic_tagged, 
                                                sizeof(Scheme_Vector) 
-                                               + ((size - 1) * sizeof(Scheme_Object*)));
+                                               + ((size - mzFLEX_DELTA) * sizeof(Scheme_Object*)));
   vec->iso.so.type = scheme_fxvector_type;
   vec->size = size;
 

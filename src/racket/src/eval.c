@@ -1926,7 +1926,7 @@ scheme_case_lambda_execute(Scheme_Object *expr)
 
   seqout = (Scheme_Case_Lambda *)
     scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
-			 + (seqin->count - 1) * sizeof(Scheme_Object *));
+			 + (seqin->count - mzFLEX_DELTA) * sizeof(Scheme_Object *));
   seqout->so.type = scheme_case_closure_type;
   seqout->count = seqin->count;
   seqout->name = seqin->name;
@@ -2169,7 +2169,7 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
 
   closure = (Scheme_Closure *)
     scheme_malloc_tagged(sizeof(Scheme_Closure)
-			 + (i - 1) * sizeof(Scheme_Object *));
+			 + (i - mzFLEX_DELTA) * sizeof(Scheme_Object *));
 
   closure->so.type = scheme_closure_type;
   SCHEME_COMPILED_CLOS_CODE(closure) = data;
@@ -2193,7 +2193,7 @@ Scheme_Closure *scheme_malloc_empty_closure()
 {
   Scheme_Closure *cl;
 
-  cl = (Scheme_Closure *)scheme_malloc_tagged(sizeof(Scheme_Closure) - sizeof(Scheme_Object *));
+  cl = (Scheme_Closure *)scheme_malloc_tagged(sizeof(Scheme_Closure) - (mzFLEX_DELTA * sizeof(Scheme_Object *)));
   cl->so.type = scheme_closure_type;
 
   return cl;
@@ -2916,7 +2916,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  app = (Scheme_App_Rec *)obj;
 	  num_rands = app->num_args;
 	  
-	  d_evals = sizeof(Scheme_App_Rec) + (num_rands * sizeof(Scheme_Object *));
+	  d_evals = (sizeof(Scheme_App_Rec) 
+                     + ((num_rands + 1 - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 #ifndef MZ_XFORM
 	  evals = ((char *)obj) + d_evals;
 #endif
@@ -5256,7 +5257,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     tl_map_len = ((rp->num_toplevels + rp->num_lifts) + 31) / 32;
 
     pf = scheme_malloc_tagged(sizeof(Scheme_Prefix) 
-                              + ((i-1) * sizeof(Scheme_Object *))
+                              + ((i-mzFLEX_DELTA) * sizeof(Scheme_Object *))
                               + (tl_map_len * sizeof(int)));
     pf->so.type = scheme_prefix_type;
     pf->num_slots = i;

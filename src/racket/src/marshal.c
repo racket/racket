@@ -343,7 +343,7 @@ static Scheme_Object *read_case_lambda(Scheme_Object *obj)
 
   cl = (Scheme_Case_Lambda *)
     scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
-			 + (count - 1) * sizeof(Scheme_Object *));
+			 + (count - mzFLEX_DELTA) * sizeof(Scheme_Object *));
 
   cl->so.type = scheme_case_lambda_sequence_type;
   cl->count = count;
