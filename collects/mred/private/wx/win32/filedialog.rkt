@@ -181,10 +181,13 @@
                                      (cons
                                       (cast (ptr-add p pos) _pointer _string/utf-16)
                                       (loop (+ end-pos 2))))])))])
-                   (if ((length strs) . < . 2)
-                       #f
-                       (map (lambda (p) (build-path (car strs) p))
-                            (cdr strs))))
+		   (let ([len (length strs)])
+		     (cond
+		      [(len . < . 1) #f]
+		      [(= len 1) (list (string->path (car strs)))]
+		      [else
+		       (map (lambda (p) (build-path (car strs) p))
+			    (cdr strs))])))
                  (string->path (cast (OPENFILENAME-lpstrFile ofn) _pointer _string/utf-16))))
         (when directory
           (free (OPENFILENAME-lpstrInitialDir ofn)))
