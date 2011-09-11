@@ -443,7 +443,9 @@ If a snip class's name is of the form
 
 The second @racket[lib] form in @racket["((lib ...) (lib ...))"]
  supplies a reader for a text-only version of the snip. See
- @racketmodname[wxme] for more information.
+ @secref["snipclassmapping"] for more information on how 
+ such snipclasses work (and generally see the
+ @racketmodname[wxme] library).
 
 A snip class's name can also be just @racket["(lib ...)"], which is
  used like the first part of the two-@racket[lib] form. However, this
