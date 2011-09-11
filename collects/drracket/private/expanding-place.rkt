@@ -13,6 +13,8 @@
 (define module-language-parallel-lock-client
   'uninitialized-module-language-parallel-lock-client)
 
+(define old-registry-chan (make-channel))
+
 (define (start p)
   ;; get the module-language-compile-lock in the initial message
   (set! module-language-parallel-lock-client
@@ -25,22 +27,29 @@
                    (define file (list-ref lst 0))
                    (define id (list-ref lst 1))
                    (handler lst (dynamic-require file id))))
-  (let loop ([current-job #f])
+  (let loop ([current-job #f]
+             ;; the old-registry argument holds on to the namespace-module-registry
+             ;; from a previous run in order to keep entries in the bytecode cache
+             [old-registry #f])
     (sync
+     (handle-evt 
+      old-registry-chan
+      (λ (reg) (loop current-job reg)))
      (handle-evt
       p
       (λ (message)
         (cond
           [(eq? message 'abort)
            (when current-job (abort-job current-job))
-           (loop #f)]
+           (loop #f old-registry)]
           [(vector? message)
            (when current-job (abort-job current-job))
            (define program-as-string (vector-ref message 0))
            (define path (vector-ref message 1))
            (define response-pc (vector-ref message 2))
            (define settings (vector-ref message 3))
-           (loop (new-job program-as-string path response-pc settings))]))))))
+           (loop (new-job program-as-string path response-pc settings)
+                 old-registry)]))))))
 
 (define (abort-job job)
   (custodian-shutdown-all (job-cust job))
@@ -102,6 +111,9 @@
                                raise-hopeless-syntax-error))
            (log-info "expanding-place.rkt: 09 starting expansion")
            (define expanded (expand transformed-stx))
+           (let ([reg (namespace-module-registry (current-namespace))])
+             (parameterize ([current-custodian orig-cust])
+               (thread (λ () (channel-put old-registry-chan reg)))))
            (log-info "expanding-place.rkt: 10 expanded")
            (define handler-results
              (for/list ([handler (in-list handlers)])
