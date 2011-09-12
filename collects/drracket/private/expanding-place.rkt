@@ -4,7 +4,7 @@
          compiler/cm)
 (provide start)
 
-(struct job (cust response-pc))
+(struct job (cust response-pc working-thd))
 
 ;; key : any (used by equal? for comparision, but back in the main place)
 (struct handler (key proc))
@@ -52,8 +52,16 @@
                  old-registry)]))))))
 
 (define (abort-job job)
+  (when (log-level? (current-logger) 'info)
+    (define stack (continuation-mark-set->context
+                   (continuation-marks 
+                    (job-working-thd job))))
+    (log-info (format "expanding-place.rkt: kill; worker-thd stack (size ~a) dead? ~a:" 
+                      (length stack)
+                      (thread-dead? (job-working-thd job))))
+    (for ([x (in-list stack)])
+      (log-info (format "  ~s" x))))
   (custodian-shutdown-all (job-cust job))
-  (log-info "expanding-place.rkt: kill")
   (place-channel-put (job-response-pc job) #f))
 
 (struct exn:access exn:fail ())
@@ -67,7 +75,7 @@
   (define the-source (or path "unsaved editor"))
   (define orig-cust (current-custodian))
   
-  (define thd
+  (define working-thd
     (parameterize ([current-custodian cust])
       (thread
        (λ ()
@@ -121,6 +129,7 @@
                                              path
                                              the-source))))
            (log-info "expanding-place.rkt: 11 handlers finished")
+           
            (parameterize ([current-custodian orig-cust])
              (thread
               (λ ()
@@ -137,7 +146,7 @@
        normal-termination
        (λ (x) (void)))
       (handle-evt 
-       (thread-dead-evt thd)
+       (thread-dead-evt working-thd)
        (λ (x) (channel-put abnormal-termination #t))))))
   
   (thread
@@ -188,7 +197,7 @@
                    <
                    #:key (λ (x) (vector-ref x 0)))
                   '()))])))))))
-  (job cust response-pc))
+  (job cust response-pc working-thd))
 
 (define (raise-hopeless-syntax-error . args)
   (apply raise-syntax-error '|Module Language| args))
