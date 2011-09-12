@@ -4,7 +4,7 @@
          racket/match
          "free-variance.rkt"
          "interning.rkt"
-         unstable/match unstable/struct         
+         unstable/match unstable/struct
          racket/stxparam
          (for-syntax
           racket/match
@@ -12,7 +12,7 @@
           racket/base
           syntax/struct
           racket/contract
-	  racket/syntax
+          racket/syntax
           (rename-in (except-in (utils stxclass-util) bytes byte-regexp regexp byte-pregexp pregexp)
                      [id* id]
                      [keyword* keyword])))
