@@ -367,11 +367,17 @@
               [((Union: l1) (Union: l2))
                (=> unmatch)
                (if (and (eq? ks 'number) (eq? kt 'number))
-                   (if (for/and ([elem1 (in-list l1)])
-                         ;; since the lists are sorted, this could be optimized further
-                         (memq elem1 l2))
-                       A0
-                       (fail! s t))
+                   ;; l1 should be a subset of l2
+                   ;; since union elements are sorted, a linear scan works
+                   (let loop ([l1 l1] [l2 l2])
+                     (cond [(null? l1)
+                            A0]
+                           [(null? l2)
+                            (fail! s t)]
+                           [(eq? (car l1) (car l2))
+                            (loop (cdr l1) (cdr l2))]
+                           [else
+                            (loop l1 (cdr l2))]))
                    (unmatch))]
               [((Union: (list e1 e2)) t)
                (if (and (subtype* A0 e1 t) (subtype* A0 e2 t))
