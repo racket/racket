@@ -1926,7 +1926,7 @@
 
 [random
   (cl->* (->opt -PosInt [-Pseudo-Random-Generator] -Nat)
-         (->opt [-Pseudo-Random-Generator] -InexactReal))]
+         (->opt [-Pseudo-Random-Generator] -Flonum))]
 
 [random-seed (-> -PosInt -Void)]
 [make-pseudo-random-generator (-> -Pseudo-Random-Generator)]
