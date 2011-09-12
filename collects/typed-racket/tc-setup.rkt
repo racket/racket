@@ -13,7 +13,6 @@
          (rep type-rep)
          (except-in (utils utils) infer)
          (only-in (r:infer infer-dummy) infer-param)
-         racket/match
          (for-syntax racket/base)
          (for-template racket/base))
 
@@ -34,13 +33,13 @@
           (do-time "Optimized")))
       body))
 
-(define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx checker result . body)
+(define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx init checker result . body)
   (let ()
     (set-box! typed-context? #t)
     ;(start-timing (syntax-property stx 'enclosing-module-name))
     (with-handlers
-        ([(lambda (e) (and #f (exn:fail? e) (not (exn:fail:syntax? e))))
-          (lambda (e) (tc-error "Internal Typed Racket Error : ~a" e))])
+        ([(λ (e) (and (exn:fail? e) (not (exn:fail:syntax? e))))
+          (λ (e) (tc-error "Internal Typed Racket Error : ~a" e))])
       (parameterize (;; enable fancy printing?
                      [custom-printer #t]
                      ;; a cheat to avoid units
@@ -60,17 +59,18 @@
                                                (cons (syntax-e id) ty)))))]
                      ;; reinitialize disappeared uses
                      [disappeared-use-todo      null]
-                     [disappeared-bindings-todo null])
+                     [disappeared-bindings-todo null])        
+        (define fully-expanded-stx (disarm* (local-expand stx expand-ctxt null)))
+        (when (show-input?)
+          (pretty-print (syntax->datum fully-expanded-stx)))
+        (do-time "Local Expand Done")
+        (init)
         (do-time "Initialized Envs")
-        (let ([fully-expanded-stx (disarm* (local-expand stx expand-ctxt null))])
-          (when (show-input?)
-            (pretty-print (syntax->datum fully-expanded-stx)))
-          (do-time "Local Expand Done")
-          (parameterize ([mutated-vars (find-mutated-vars fully-expanded-stx)]
-                         [orig-module-stx (or (orig-module-stx) orig-stx)]
-                         [expanded-module-stx fully-expanded-stx]
-                         [debugging? #f])
-            (do-time "Starting `checker'")
-            (let ([result (checker fully-expanded-stx)])
-              (do-time "Typechecking Done")
-              (let () . body))))))))
+        (parameterize ([mutated-vars (find-mutated-vars fully-expanded-stx)]
+                       [orig-module-stx (or (orig-module-stx) orig-stx)]
+                       [expanded-module-stx fully-expanded-stx]
+                       [debugging? #f])
+          (do-time "Starting `checker'")
+          (define result (checker fully-expanded-stx))
+          (do-time "Typechecking Done")
+          (let () . body))))))

@@ -15,7 +15,7 @@
 
 (provide mb-core ti-core wt-core)
 
-(define (mb-core stx)
+(define (mb-core stx init)
   (syntax-parse stx
     [(mb (~optional (~or (~and #:optimize    (~bind [opt? #'#t])) ; kept for backward compatibility
                          (~and #:no-optimize (~bind [opt? #'#f]))))
@@ -24,7 +24,7 @@
        (parameterize ([optimize? (or (and (not (attribute opt?)) (optimize?))
                                      (and (attribute opt?) (syntax-e (attribute opt?))))])
          (tc-setup
-          stx pmb-form 'module-begin new-mod tc-module after-code
+          stx pmb-form 'module-begin new-mod init tc-module after-code
           (with-syntax*
            (;; pmb = #%plain-module-begin
             [(pmb . body2) new-mod]
@@ -46,7 +46,7 @@
 
 (define did-I-suggest-:print-type-already? #f)
 (define :print-type-message " ... [Use (:print-type <expr>) to see more.]")
-(define (ti-core stx)
+(define (ti-core stx init)
   (syntax-parse stx
     [(_ . ((~datum module) . rest))
      #'(module . rest)]
@@ -55,14 +55,14 @@
     ;; Prints the _entire_ type. May be quite large.
     [(_ . ((~literal :print-type) e:expr))
      #`(display #,(format "~a\n"
-                          (tc-setup #'stx #'e 'top-level expanded tc-toplevel-form type
+                          (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form type
                                     (match type
                                       [(tc-result1: t f o) t]
                                       [(tc-results: t) (cons 'Values t)]))))]
     ;; given a function and a desired return type, fill in the blanks
     [(_ . ((~literal :query-result-type) op:expr desired-type:expr))
      (let ([expected (parse-type #'desired-type)])
-       (tc-setup #'stx #'op 'top-level expanded tc-toplevel-form type
+       (tc-setup #'stx #'op 'top-level expanded init tc-toplevel-form type
                  (match type
                    [(tc-result1: (and t (Function: _)) f o)
                     (let ([cleaned (cleanup-type t expected)])
@@ -75,7 +75,7 @@
                    [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
     [(_ . form)
      (tc-setup
-      stx #'form 'top-level body2 tc-toplevel-form type
+      stx #'form 'top-level body2 init tc-toplevel-form type
       (with-syntax*
        ([optimized-body (car (maybe-optimize #`(#,body2)))])
        (syntax-parse body2

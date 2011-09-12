@@ -7,7 +7,7 @@
           (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
          "../base-env/extra-procs.rkt" (except-in "../base-env/prims.rkt" with-handlers)
          "../tc-setup.rkt"
-         syntax/parse racket/block racket/match
+         syntax/parse racket/match
          unstable/sequence  "../base-env/base-types-extra.rkt"
          (except-in (path-up "env/type-name-env.rkt"
                              "env/type-alias-env.rkt"
@@ -28,13 +28,14 @@
 
 (provide wt-core)
 
-(define (with-type-helper stx body fvids fvtys exids extys resty expr? ctx)
+(define (with-type-helper stx init body fvids fvtys exids extys resty expr? ctx)
   (define old-context (unbox typed-context?))
   (unless (not old-context)
     (tc-error/stx stx "with-type cannot be used in a typed module."))
   (define ((no-contract t [stx stx]))
     (tc-error/stx stx "Type ~a could not be converted to a contract." t))
   (set-box! typed-context? #t)
+  (init)
   (define fv-types (for/list ([t (in-list (syntax->list fvtys))])
                      (parse-type t)))
   (define fv-cnts (for/list ([t (in-list fv-types)]
@@ -121,7 +122,7 @@
                              ([ex-id ex-cnt] ...)
                              (define-values (ex-id ...) body)))))))
 
-(define (wt-core stx)
+(define (wt-core stx init)
   (define-syntax-class typed-id
     #:description "[id type]"
     [pattern (id ty)])
@@ -143,7 +144,7 @@
     [pattern (~seq #:result ty:expr)])
   (syntax-parse stx
     [(_ :typed-ids fv:free-vars . body)
-     (with-type-helper stx #'body #'(fv.id ...) #'(fv.ty ...) #'(id ...) #'(ty ...) #f #f (syntax-local-context))]
+     (with-type-helper stx init #'body #'(fv.id ...) #'(fv.ty ...) #'(id ...) #'(ty ...) #f #f (syntax-local-context))]
     [(_ :result-ty fv:free-vars . body)
-     (with-type-helper stx #'body #'(fv.id ...) #'(fv.ty ...) #'() #'() #'ty #t (syntax-local-context))]))
+     (with-type-helper stx init #'body #'(fv.id ...) #'(fv.ty ...) #'() #'() #'ty #t (syntax-local-context))]))
 

@@ -34,11 +34,10 @@
 (define-syntax-rule (drivers [name sym] ...)
   (begin
     (define-syntax (name stx)
-      (do-time (format "Calling ~a driver" 'name))
-      (do-standard-inits)
+      (do-time (format "Calling ~a driver" 'name))      
       (define f (dynamic-require 'typed-racket/core 'sym))
       (do-time (format "Loaded core ~a" 'sym))
-      (begin0 (f stx)
+      (begin0 (f stx do-standard-inits)
               (do-time "Finished, returning to Racket")))
     ...))
 
