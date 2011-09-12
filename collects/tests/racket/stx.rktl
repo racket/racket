@@ -1587,5 +1587,30 @@
                     10))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; `syntax-transforming?' and `syntax-transforming-module-expression?'
+
+(test #f syntax-transforming?)
+(test #f syntax-transforming-module-expression?)
+(test #t 'trans (let-syntax ([m (lambda (stx)
+                                  (datum->syntax stx (syntax-transforming?)))])
+                  (m)))
+(test #f 'trans-mod (let-syntax ([m (lambda (stx)
+                                      (datum->syntax stx (syntax-transforming-module-expression?)))])
+                      (m)))
+(let ([o (open-output-string)])
+  (parameterize ([current-output-port o])
+    (eval `(module m racket/base
+             (require (for-syntax racket/base))
+             (define-syntax (m stx)
+               (displayln (syntax-transforming-module-expression?))
+               #'1)
+             (m)))
+    (eval `(module m racket/base
+             (require (for-syntax racket/base))
+             (begin-for-syntax
+              (displayln (syntax-transforming-module-expression?))))))
+  (test "#t\n#f\n" get-output-string o))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

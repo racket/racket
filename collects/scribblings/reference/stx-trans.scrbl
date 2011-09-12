@@ -11,7 +11,8 @@
 
 @(define (transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the
-expander or while a module is @tech{visit}ed, otherwise the
+expander or while a module is @tech{visit}ed (see 
+@racket[syntax-transforming?]), otherwise the
 @exnraise[exn:fail:contract].})
 
 
@@ -516,7 +517,7 @@ transformed is not in the module top-level, then @racket[stx] is
 eventually expanded in an expression context.
 
 @transform-time[] If the current expression being transformed is not
-within a @racket[module] form, or if it is not a run-time expression,
+within a @racket[module] form (see @racket[syntax-transforming-module-expression?]), 
 then the @exnraise[exn:fail:contract].}
 
 
@@ -554,8 +555,8 @@ Lifts a @racket[#%provide] form corresponding to
 expanded or to an enclosing @racket[begin-for-syntax].
 
 @transform-time[] If the current expression being transformed is not
-within a @racket[module] form, or if it is not a run-time expression,
-then the @exnraise[exn:fail:contract]. }
+within a @racket[module] form (see @racket[syntax-transforming-module-expression?]),
+then the @exnraise[exn:fail:contract].}
 
 @defproc[(syntax-local-name) any/c]{
 
@@ -652,6 +653,13 @@ first argument.}
 Returns @racket[#t] during the dynamic extent of a @tech{syntax
 transformer} application by the expander and while a module is being
 @tech{visit}ed, @racket[#f] otherwise.}
+
+
+@defproc[(syntax-transforming-module-expression?) boolean?]{
+
+Returns @racket[#t] during the dynamic extent of a @tech{syntax
+transformer} application by the expander for an expression
+within a @racket[module] form, @racket[#f] otherwise.}
 
 
 @defproc[(syntax-local-introduce [stx syntax?]) syntax?]{

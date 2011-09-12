@@ -2427,6 +2427,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
                                          Scheme_Comp_Env *env);
 Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *local_mark, 
                                          Scheme_Comp_Env *env);
+Scheme_Comp_Env *scheme_get_module_lift_env(Scheme_Comp_Env *env);
 
 void scheme_check_identifier(const char *formname, Scheme_Object *id,
 			     const char *where,

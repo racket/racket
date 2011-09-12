@@ -413,3 +413,13 @@ result is @racket[#f].}
 Returns the @tech{phase} of the variable referenced by @racket[varref].}
 
 
+@defproc[(variable-reference->module-base-phase [varref variable-reference?])
+         exact-nonnegative-integer?]{
+
+Returns the @tech{phase} in which the module is instantiated for the
+variable referenced by @racket[varref], or @racket[0] if the variable
+for @racket[varref] is not within a module.
+
+For a variable with a module, the result is less than the result of
+@racket[(variable-reference->phase varref)] by @math{n} when the
+variable is bound at @tech{phase level} @math{n} within the module.}

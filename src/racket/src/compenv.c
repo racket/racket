@@ -2213,12 +2213,8 @@ scheme_local_lift_context(Scheme_Comp_Env *env)
   return SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[4];
 }
 
-Scheme_Object *
-scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, Scheme_Comp_Env *env)
+Scheme_Comp_Env *scheme_get_module_lift_env(Scheme_Comp_Env *env)
 {
-  Scheme_Object *pr;
-  Scheme_Object *orig_expr;
-
   while (env) {
     if ((COMPILE_DATA(env)->lifts)
         && SCHEME_TRUEP(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]))
@@ -2226,10 +2222,21 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
     env = env->next;
   }
 
+  return env;
+}
+
+Scheme_Object *
+scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, Scheme_Comp_Env *env)
+{
+  Scheme_Object *pr;
+  Scheme_Object *orig_expr;
+
+  env = scheme_get_module_lift_env(env);
+
   if (!env)
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
 		     "syntax-local-lift-module-end-declaration: not currently transforming"
-                     " a run-time expression in a module declaration");
+                     " an expression within a module declaration");
   
   expr = scheme_add_remove_mark(expr, local_mark);
   orig_expr = expr;

@@ -77,8 +77,10 @@ static Scheme_Object *variable_module_source(int, Scheme_Object *[]);
 static Scheme_Object *variable_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_top_level_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_phase(int, Scheme_Object *[]);
+static Scheme_Object *variable_base_phase(int, Scheme_Object *[]);
 static Scheme_Object *variable_const_p(int, Scheme_Object *[]);
 static Scheme_Object *now_transforming(int argc, Scheme_Object *argv[]);
+static Scheme_Object *now_transforming_module(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value_one(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_name(int argc, Scheme_Object *argv[]);
@@ -641,6 +643,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("variable-reference->empty-namespace", variable_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->namespace", variable_top_level_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->phase", variable_phase, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("variable-reference->module-base-phase", variable_base_phase, 1, 1, env);
 
   REGISTER_SO(scheme_varref_const_p_proc);
   scheme_varref_const_p_proc = scheme_make_prim_w_arity(variable_const_p, 
@@ -649,6 +652,7 @@ static void make_kernel_env(void)
   scheme_add_global_constant("variable-reference-constant?", scheme_varref_const_p_proc, env);
 
   GLOBAL_PRIM_W_ARITY("syntax-transforming?", now_transforming, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-transforming-module-expression?", now_transforming_module, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-value", local_exp_time_value, 1, 3, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-value/immediate", local_exp_time_value_one, 1, 3, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-name", local_exp_time_name, 0, 0, env);
@@ -1675,6 +1679,8 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
   ph = env->phase;
   if (tl == 2) {
     return scheme_make_integer(ph);
+  } else if (tl == 3) {
+    return scheme_make_integer(ph - env->mod_phase);
   } else if (tl) {
     /* return env directly; need to set up  */
     if (!env->phase && env->module)
@@ -1703,6 +1709,11 @@ static Scheme_Object *variable_top_level_namespace(int argc, Scheme_Object *argv
 static Scheme_Object *variable_phase(int argc, Scheme_Object *argv[])
 {
   return do_variable_namespace("variable-reference->phase", 2, argc, argv);
+}
+
+static Scheme_Object *variable_base_phase(int argc, Scheme_Object *argv[])
+{
+  return do_variable_namespace("variable-reference->phase", 3, argc, argv);
 }
 
 static Scheme_Object *variable_const_p(int argc, Scheme_Object *argv[])
@@ -1778,6 +1789,14 @@ now_transforming(int argc, Scheme_Object *argv[])
   return (scheme_current_thread->current_local_env
 	  ? scheme_true
 	  : scheme_false);
+}
+
+static Scheme_Object *
+now_transforming_module(int argc, Scheme_Object *argv[])
+{
+  if (scheme_get_module_lift_env(scheme_current_thread->current_local_env))
+    return scheme_true;
+  return scheme_false;
 }
 
 static Scheme_Object *
