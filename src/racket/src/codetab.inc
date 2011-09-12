@@ -22,13 +22,17 @@ extern MZ_DLLIMPORT int GC_is_marked(void *);
 
 THREAD_LOCAL_DECL(static void **codetab_tree);
 THREAD_LOCAL_DECL(static int during_set);
+#ifdef MZ_USE_PLACES
+static void **shared_codetab_tree;
+static mzrt_rwlock *shared_codetab_lock;
+#endif
 
 static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t addr, int clearing);
 
-static void *find_symbol(uintptr_t v)
+static void *do_find_symbol(void **the_tree, uintptr_t v)
 {
   uintptr_t k;
-  void **t = codetab_tree, *val;
+  void **t = the_tree, *val;
   int offset = (JIT_WORD_SIZE * 8);
   
   while (offset) {
@@ -48,11 +52,36 @@ static void *find_symbol(uintptr_t v)
   return NULL;
 }
 
-static void **malloc_node()
+static void *find_symbol(uintptr_t v)
+{
+  void *r;
+
+  r = do_find_symbol(codetab_tree, v);
+
+#ifdef MZ_USE_PLACES
+  if (!r && shared_codetab_tree) {
+    mzrt_rwlock_rdlock(shared_codetab_lock);
+    r = do_find_symbol(shared_codetab_tree, v);
+    mzrt_rwlock_unlock(shared_codetab_lock);
+  }
+#endif
+
+  return r;
+}
+
+static void **malloc_node(int for_gc_able)
 {
   void **v;
-  v = (void **)scheme_malloc((KEY_COUNT + NODE_HEADER_SIZE) * sizeof(void *));
+  long sz = (KEY_COUNT + NODE_HEADER_SIZE) * sizeof(void *);
 
+#ifdef MZ_USE_PLACES
+  if (!for_gc_able) {
+    v = (void **)malloc(sz);
+    memset(v, 0, sz);
+  } else
+#endif
+    v = (void **)scheme_malloc(sz);
+  
   /* Set low bit in each of STARTS and GCABLE so that they're not confused
      for pointers: */
   ((uintptr_t *)v)[NODE_STARTS_OFFSET] = 0x1;
@@ -66,16 +95,33 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
   uintptr_t k1, k2, split_t_start = 0, split_t_end = 0, i;
   int m;
   int offset = (JIT_WORD_SIZE * 8), split_offset = 0;
-  void **t1, **t2, **split_t, *val1, *val2;
+  void **the_tree, **t1, **t2, **split_t, *val1, *val2;
 
-  if (!codetab_tree) {
-    REGISTER_SO(codetab_tree);
-    codetab_tree = malloc_node();
-  }
+#ifdef MZ_USE_PLACES
+  if (!gc_able) {
+    if (!shared_codetab_lock) {
+      /* this function will be called in the main place 
+         before others are started, so a lazy lock creation 
+         is ok */
+      mzrt_rwlock_create(&shared_codetab_lock);      
+    }
+    mzrt_rwlock_wrlock(shared_codetab_lock);
+    if (!shared_codetab_tree)
+      shared_codetab_tree = malloc_node(0);
+    the_tree = shared_codetab_tree;
+  } else
+#endif
+    {
+      if (!codetab_tree) {
+        REGISTER_SO(codetab_tree);
+        codetab_tree = malloc_node(gc_able);
+      }
+      the_tree = codetab_tree;
+    }
 
   during_set++;
   
-  t1 = t2 = codetab_tree;
+  t1 = t2 = the_tree;
   split_t = NULL;
   while (offset) {
     offset -= LOG_KEY_SIZE;
@@ -84,7 +130,7 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
     if (offset) {
       val1 = t1[k1];
       if (!val1) {
-	val1 = malloc_node();
+	val1 = malloc_node(gc_able);
 	t1[k1] = val1;
       }
     } else
@@ -95,7 +141,7 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
       /* Need to go deeper... */
       val2 = t2[k2];
       if (!val2) {
-	val2 = malloc_node();
+	val2 = malloc_node(gc_able);
 	t2[k2] = val2;
       }
     } else
@@ -175,7 +221,13 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
     /* Prune empty branches in the tree. Only do this if this
        object is mapped deeply enough in the tree, otherwise
        we end up scanning the whole tree. */
-    do_clear_symbols(codetab_tree, start, 0, 0, 0);
+    do_clear_symbols(the_tree, start, 0, 0, 0);
+  }
+#endif
+
+#ifdef MZ_USE_PLACES
+  if (!gc_able) {
+    mzrt_rwlock_unlock(shared_codetab_lock);      
   }
 #endif
 }

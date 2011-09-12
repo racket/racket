@@ -458,7 +458,7 @@ void scheme_jit_release_native_code(void *fnlized, void *p)
   scheme_jit_malloced -= SCHEME_INT_VAL(len);
 
   /* Remove name mapping: */
-  scheme_jit_add_symbol((uintptr_t)p, (uintptr_t)p + SCHEME_INT_VAL(len), NULL, 0);
+  scheme_jit_add_symbol((uintptr_t)p, (uintptr_t)p + SCHEME_INT_VAL(len), NULL, 1);
   /* Free memory: */
   scheme_free_code(p);
   jit_notify_freed_code();
