@@ -1269,6 +1269,11 @@
           (test #t eval '(free-identifier=? (f) #'x))
           (test #f eval `(free-identifier=? (f) (quote-syntax ,x-id))))))))
 
+(test #t free-identifier=? #'lambda #'lambda 0 1)
+(test #f free-identifier=? #'lambda #'lambda 0 4)
+(require (for-meta 4 racket/base))
+(test #t free-identifier=? #'lambda #'lambda 0 4)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  certification example from the manual
 

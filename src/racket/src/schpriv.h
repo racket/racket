@@ -1008,6 +1008,9 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
 
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase);
 int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym);
+int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b, 
+                          Scheme_Object *a_phase, Scheme_Object *b_phase,
+                          Scheme_Object *asym);
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase);
 Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *recur,
                                       Scheme_Object **name, Scheme_Object *phase,
@@ -1026,6 +1029,8 @@ int scheme_stx_ribs_matter(Scheme_Object *a, Scheme_Object *skip_ribs);
 
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
 int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, Scheme_Object *phase);
+int scheme_stx_env_bound_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, 
+                             Scheme_Object *a_phase, Scheme_Object *b_phase);
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source);
 

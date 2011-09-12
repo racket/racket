@@ -425,8 +425,8 @@ void scheme_init_stx(Scheme_Env *env)
 
   GLOBAL_IMMED_PRIM("make-syntax-delta-introducer"     , scheme_syntax_make_transfer_intro, 2, 3, env);
 
-  GLOBAL_IMMED_PRIM("bound-identifier=?"               , bound_eq                  , 2, 3, env);
-  GLOBAL_IMMED_PRIM("free-identifier=?"                , module_eq                 , 2, 3, env);
+  GLOBAL_IMMED_PRIM("bound-identifier=?"               , bound_eq                  , 2, 4, env);
+  GLOBAL_IMMED_PRIM("free-identifier=?"                , module_eq                 , 2, 4, env);
   GLOBAL_IMMED_PRIM("free-transformer-identifier=?"    , module_trans_eq           , 2, 2, env);
   GLOBAL_IMMED_PRIM("free-template-identifier=?"       , module_templ_eq           , 2, 2, env);
   GLOBAL_IMMED_PRIM("free-label-identifier=?"          , module_label_eq           , 2, 2, env);
@@ -4485,7 +4485,9 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
   }
 }
 
-int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym)
+int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b, 
+                          Scheme_Object *a_phase, Scheme_Object *b_phase, 
+                          Scheme_Object *asym)
 {
   Scheme_Object *bsym;
   Scheme_Hash_Table *free_id_recur;
@@ -4498,7 +4500,7 @@ int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *pha
       free_id_recur = make_recur_table();
     else
       free_id_recur = NULL;
-    bsym = get_module_src_name(b, phase, free_id_recur);
+    bsym = get_module_src_name(b, b_phase, free_id_recur);
     if (!asym)
       release_recur_table(free_id_recur);
   } else
@@ -4506,7 +4508,7 @@ int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *pha
   if (!asym) {
     if (SCHEME_STXP(a)) {
       free_id_recur = make_recur_table();
-      asym = get_module_src_name(a, phase, free_id_recur);
+      asym = get_module_src_name(a, a_phase, free_id_recur);
       release_recur_table(free_id_recur);
     } else
       asym = a;
@@ -4520,11 +4522,11 @@ int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *pha
     return 1;
 
   free_id_recur = make_recur_table();
-  a = resolve_env(a, phase, 1, NULL, NULL, NULL, NULL, 0, free_id_recur);
+  a = resolve_env(a, a_phase, 1, NULL, NULL, NULL, NULL, 0, free_id_recur);
   release_recur_table(free_id_recur);
 
   free_id_recur = make_recur_table();
-  b = resolve_env(b, phase, 1, NULL, NULL, NULL, NULL, 0, free_id_recur);
+  b = resolve_env(b, b_phase, 1, NULL, NULL, NULL, NULL, 0, free_id_recur);
   release_recur_table(free_id_recur);
 
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_module_index_type))
@@ -4536,9 +4538,14 @@ int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *pha
   return SAME_OBJ(a, b);
 }
 
+int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym)
+{
+  return scheme_stx_module_eq3(a, b, phase, phase, NULL);
+}
+
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase)
 {
-  return scheme_stx_module_eq2(a, b, scheme_make_integer(phase), NULL);
+  return scheme_stx_module_eq3(a, b, scheme_make_integer(phase), scheme_make_integer(phase), NULL);
 }
 
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase)
@@ -4647,7 +4654,8 @@ Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a)
   return scheme_false;
 }
 
-int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, Scheme_Object *phase)
+int scheme_stx_env_bound_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, 
+                             Scheme_Object *a_phase, Scheme_Object *b_phase)
      /* If uid is given, it's the environment for b. */
 {
   Scheme_Object *asym, *bsym, *ae, *be;
@@ -4668,13 +4676,13 @@ int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *u
   if (!SAME_OBJ(asym, bsym))
     return 0;
 
-  ae = resolve_env(a, phase, 0, NULL, NULL, NULL, NULL, 0, NULL);
+  ae = resolve_env(a, a_phase, 0, NULL, NULL, NULL, NULL, 0, NULL);
   /* No need to module_resolve ae, because we ignored module renamings. */
 
   if (uid)
     be = uid;
   else {
-    be = resolve_env(b, phase, 0, NULL, NULL, NULL, NULL, 0, NULL);
+    be = resolve_env(b, b_phase, 0, NULL, NULL, NULL, NULL, 0, NULL);
     /* No need to module_resolve be, because we ignored module renamings. */
   }
 
@@ -4695,9 +4703,14 @@ int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *u
   return 1;
 }
 
+int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, Scheme_Object *phase)
+{
+  return scheme_stx_env_bound_eq2(a, b, uid, phase, phase);
+}
+
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase)
 {
-  return scheme_stx_env_bound_eq(a, b, NULL, phase);
+  return scheme_stx_env_bound_eq2(a, b, NULL, phase, phase);
 }
 
 #if EXPLAIN_RESOLVE
@@ -8116,14 +8129,14 @@ static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
 
   phase = extract_phase("bound-identifier=?", 2, argc, argv, scheme_make_integer(0), 0);
 
-  return (scheme_stx_bound_eq(argv[0], argv[1], phase)
+  return (scheme_stx_env_bound_eq2(argv[0], argv[1], NULL, phase, phase)
 	  ? scheme_true
 	  : scheme_false);
 }
 
 static Scheme_Object *do_module_eq(const char *who, int delta, int argc, Scheme_Object **argv)
 {
-  Scheme_Object *phase;
+  Scheme_Object *phase, *phase2;
 
   if (!SCHEME_STX_IDP(argv[0]))
     scheme_wrong_type(who, "identifier syntax", 0, argc, argv);
@@ -8135,8 +8148,12 @@ static Scheme_Object *do_module_eq(const char *who, int delta, int argc, Scheme_
                          ? scheme_false 
                          : scheme_make_integer(delta)),
                         0);
+  if (argc > 3)
+    phase2 = extract_phase(who, 3, argc, argv, phase, 0);
+  else
+    phase2 = phase;
 
-  return (scheme_stx_module_eq2(argv[0], argv[1], phase, NULL)
+  return (scheme_stx_module_eq3(argv[0], argv[1], phase, phase2, NULL)
 	  ? scheme_true
 	  : scheme_false);
 }

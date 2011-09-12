@@ -32,17 +32,9 @@
                             free-identifier=?]
                            [(and #,(syntax-e #'rel?) (= p 1)) 
                             free-transformer-identifier=?]
-                           [else (let ([id (namespace-module-identifier p)])
-                                   (lambda (a b)
-                                     (free-identifier=? (datum->syntax id 
-                                                                       (let ([s (syntax-e b)])
-                                                                         (case s
-                                                                           [(#%plain-app) '#%app]
-                                                                           [(#%plain-lambda) 'lambda]
-                                                                           [else s])))
-                                                        a
-                                                        p)))]))
-	    clause ...))])))
+                           [else (lambda (a b)
+                                   (free-identifier=? a b p '#,(syntax-local-phase-level)))]))
+            clause ...))])))
   
   (define-syntax kernel-syntax-case
     (lambda (stx)

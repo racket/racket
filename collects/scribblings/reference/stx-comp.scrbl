@@ -33,15 +33,19 @@ suitable expression context at the @tech{phase level} indicated by
 
 
 @defproc[(free-identifier=? [a-id syntax?] [b-id syntax?]
-                            [phase-level (or/c exact-integer? #f)
-                                         (syntax-local-phase-level)])
+                            [a-phase-level (or/c exact-integer? #f)
+                                           (syntax-local-phase-level)]
+                            [b-phase-level (or/c exact-integer? #f)
+                                           a-phase-level])
          boolean?]{
 
 Returns @racket[#t] if @racket[a-id] and @racket[b-id] access the same
 @tech{local binding}, @tech{module binding}, or @tech{top-level
 binding}---perhaps via @tech{rename transformers}---at the @tech{phase
-level} indicated by @racket[phase-level]. A @racket[#f] value for
-@racket[phase-level] corresponds to the @tech{label phase level}.
+levels} indicated by @racket[a-phase-level] and
+@racket[b-phase-level], respectively. A @racket[#f] value for
+@racket[a-phase-level] or @racket[b-phase-level] corresponds to the
+@tech{label phase level}.
 
 ``Same module binding'' means that the identifiers refer to the same
 original definition site, and not necessarily to the same
