@@ -357,6 +357,22 @@
                      (fail! s t)))]
               ;; for unions, we check the cross-product
               ;; some special cases for better performance
+              ;; first, if both types are numeric, they will be built from the same base types
+              ;; so we can check for simple set inclusion of the union components
+              [((Base: _ _ _ _ _) (Union: l2))
+               (=> unmatch)
+               (if (and (eq? ks 'number) (eq? kt 'number))
+                   (if (memq s l2) A0 (fail! s t))
+                   (unmatch))]
+              [((Union: l1) (Union: l2))
+               (=> unmatch)
+               (if (and (eq? ks 'number) (eq? kt 'number))
+                   (if (for/and ([elem1 (in-list l1)])
+                         ;; since the lists are sorted, this could be optimized further
+                         (memq elem1 l2))
+                       A0
+                       (fail! s t))
+                   (unmatch))]
               [((Union: (list e1 e2)) t)
                (if (and (subtype* A0 e1 t) (subtype* A0 e2 t))
                    A0
