@@ -2,7 +2,7 @@
   (require mzlib/port
            mzlib/string
            mzlib/kw
-           mzlib/class
+           racket/class
            racket/contract
            mzlib/list
            scheme/gui/dynamic
@@ -214,41 +214,45 @@
                    (snip-class-manager class)
                    (not (and len
                              (header-skip-content? header))))
-              (let ([style (read-integer who port vers "snip style index")]
-                    [m (snip-class-manager class)]
-                    [cvers (snip-class-version class)])
-                (let ([s (if (procedure? m)
-                             ;; Built-in snip class:
-                             (m who port vers cvers header)
-                             ;; Extension snip class:
-                             (let* ([text? (header-plain-text? header)]
-                                    [s (send m read-snip
-                                             text?
-                                             cvers
-                                             (header-stream header))])
-                               (if (and text?
-                                        (not (bytes? s)))
-                                   (error 'read-snip 
-                                          "reader for ~a in text-only mode produced something other than bytes: ~e"
-                                          (snip-class-name class)
-                                          s)
-                                   s)))])
-                  (read-buffer-data who port vers header)
-                  (if (header-skip-content? header)
-                      #""
-                      (if (bytes? s)
-                          ;; Return bytes for the stream:
-                          s
-                          ;; Filter the non-bytes result, and then wrap it as
-                          ;;  a special stream result:
-                          (let ([s ((header-snip-filter header) s)])
-                            (lambda (src line col pos)
-                              (if (s . is-a? . readable<%>)
-                                  (send s read-special src line col pos)
-                                  s)))))))
+              (let ([style (read-integer who port vers "snip style index")])
+                (read-snip/given-class class who port vers header #f))
               (begin
                 (skip-data port vers len)
                 #""))))))
+  
+  (define (read-snip/given-class class who port vers header skip-buffer-data?)
+    (let ([cvers (snip-class-version class)])
+      (define manager (snip-class-manager class))
+      (define name (snip-class-name class))
+      (let ([s (if (procedure? manager)
+                   ;; Built-in snip class:
+                   (manager who port vers cvers header)
+                   ;; Extension snip class:
+                   (let* ([text? (header-plain-text? header)]
+                          [s (send manager read-snip
+                                   text?
+                                   cvers
+                                   (header-stream header))])
+                     (if (and text?
+                              (not (bytes? s)))
+                         (error 'read-snip 
+                                "reader for ~a in text-only mode produced something other than bytes: ~e"
+                                name
+                                s)
+                         s)))])
+        (unless skip-buffer-data? (read-buffer-data who port vers header))
+        (if (header-skip-content? header)
+            #""
+            (if (bytes? s)
+                ;; Return bytes for the stream:
+                s
+                ;; Filter the non-bytes result, and then wrap it as
+                ;;  a special stream result:
+                (let ([s ((header-snip-filter header) s)])
+                  (lambda (src line col pos)
+                    (if (s . is-a? . readable<%>)
+                        (send s read-special src line col pos)
+                        s))))))))
 
   (define (read-buffer-data who port vers header)
     (let loop ()
@@ -377,6 +381,21 @@
   (define readable<%>
     (interface ()
       read-special))
+  
+  (define (find-class/name name header who port vers used?)
+    (define classes-vec (header-classes header))
+    (define pos 
+      (let loop ([i 0])
+        (cond
+          [(< i (vector-length classes-vec))
+           (if (equal? (bytes->string/latin-1 (snip-class-name (vector-ref classes-vec i)))
+                       name)
+               i
+               (loop (+ i 1)))]
+          [else #f])))
+    (unless pos
+      (read-error who (format "class index for ~s" name) "known class name" port))
+    (find-class pos header who port vers used?))
   
   (define (find-class pos header who port vers used?)
     (define classes (header-classes header))
@@ -507,10 +526,15 @@
                 (error who "cannot load data-class managers, yet"))])))
       data-class))
 
+  (define-local-member-name get-vers get-header get-port)
   (define stream%
     (class object%
       (init-field who port vers header)
 
+      (define/public (get-vers) vers)
+      (define/public (get-header) header)
+      (define/public (get-port) port)
+      
       (public [rfi read-fixed-integer])
       (define (rfi what)
         (read-fixed-integer who port vers what))
@@ -705,12 +729,20 @@
           (decode 'extract-used-classes port (lambda (x) x) #f #t))
         (values null null)))
 
+  (define (read-snip-from-port name who stream)
+    (define vers (send stream get-vers))
+    (define header (send stream get-header))
+    (define port (send stream get-port))
+    (define class (find-class/name name header who port vers #t))
+    (read-snip/given-class class who port vers header #t))
+  
   (provide/contract [is-wxme-stream? (input-port? . -> . any)]
                     [wxme-port->text-port (->* (input-port?) (any/c) input-port?)]
                     [wxme-port->port (->* (input-port?) (any/c (any/c . -> . any)) input-port?)]
                     [register-lib-mapping! (string? string? . -> . void?)]
                     [string->lib-path (string? any/c . -> . any)]
-                    [extract-used-classes (input-port? . -> . any)])
+                    [extract-used-classes (input-port? . -> . any)]
+                    [read-snip-from-port (-> string? any/c (is-a?/c stream<%>) any)])
 
   (provide unknown-extensions-skip-enabled
            broken-wxme-big-endian?

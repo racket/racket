@@ -149,7 +149,8 @@
 
 ;; old snips (from old versions of drscheme) use this snipclass
 (define lib-snip-class (make-object sexp-snipclass%))
-(send lib-snip-class set-classname (format "~s" '(lib "collapsed-snipclass.ss" "framework")))
+(send lib-snip-class set-classname (format "~s" '((lib "collapsed-snipclass.ss" "framework")
+                                                  (lib "collapsed-snipclass-wxme.ss" "framework"))))
 (send lib-snip-class set-version 0)
 (send (get-the-snip-class-list) add lib-snip-class)
 
