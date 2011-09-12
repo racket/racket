@@ -946,7 +946,7 @@ calling @racket[failure-thunk] otherwise.
 Preference settings are cached (weakly) across calls to
 @racket[get-preference], using @racket[(path->complete-path filename)]
 as a cache key. If @racket[flush-mode] is provided as @racket[#f], the
-cache is used instead of the re-consulting the preferences file. If
+cache is used instead of re-consulting the preferences file. If
 @racket[flush-mode] is provided as @racket['timestamp] (the default),
 then the cache is used only if the file has a timestamp that is the
 same as the last time the file was read. Otherwise, the file is
