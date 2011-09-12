@@ -96,6 +96,15 @@ function click(e,pos,item) {
 }
 
 
+// sort chart data based on the order of a[0], b[0]
+function sorter(a,b) {
+    if (a[0] < b[0]) return -1;
+    if (a[0] > b[0]) return 1;
+    return 0;
+}
+
+
+
 function load_data(d) {
     chart_data = [];
     overall_times = [];
@@ -129,10 +138,10 @@ function load_data(d) {
         ya = 2;
 
     // put the data into the chart format
-    chart_data.push({data: overall_times, label: "Overall Time", color: "#804040"});
+    chart_data.push({data: overall_times.sort(sorter), label: "Overall Time", color: "#804040"});
     for(var i = 0; i < sub_times.length; i++) {
         var n = (sub_times[i].length/overall_times.length);
-        chart_data.push({data: sub_times[i], label: "Timer "+ (i+1),
+        chart_data.push({data: sub_times[i].sort(sorter), label: "Timer "+ (i+1),
                          lines: { show: (.9<n) },
                          points: { show: !(.9<n) },
                          yaxis: ya});
