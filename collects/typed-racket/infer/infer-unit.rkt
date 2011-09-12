@@ -411,11 +411,11 @@
                          (cg t t*)))]
           [((Vector: t) (Sequence: (list t*)))
            (cg t t*)]
-          [((Base: 'String _ _ _) (Sequence: (list t*)))
+          [((Base: 'String _ _ _ _) (Sequence: (list t*)))
            (cg -Char t*)]
-          [((Base: 'Bytes _ _ _) (Sequence: (list t*)))
+          [((Base: 'Bytes _ _ _ _) (Sequence: (list t*)))
            (cg -Nat t*)]
-          [((Base: 'Input-Port _ _ _) (Sequence: (list t*)))
+          [((Base: 'Input-Port _ _ _ _) (Sequence: (list t*)))
            (cg -Nat t*)]
           [((Vector: t) (Sequence: (list t*)))
            (cg t t*)]

@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt")
 
-(require (rep type-rep object-rep filter-rep rep-utils)
+(require (rename-in (rep type-rep object-rep filter-rep rep-utils) [make-Base make-Base*])
          "resolve.rkt"
          (utils tc-utils)
          racket/list
@@ -20,9 +20,13 @@
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
-(provide (except-out (all-defined-out) Promise)
+(provide (except-out (all-defined-out) Promise make-Base)
          (rename-out [make-Listof -lst]
                      [make-MListof -mlst]))
+
+;; all the types defined here are not numeric
+(define (make-Base name contract predicate marshaled)
+  (make-Base* name contract predicate marshaled #f))
 
 ;; convenient constructors
 

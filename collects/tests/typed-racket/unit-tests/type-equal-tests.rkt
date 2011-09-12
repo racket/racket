@@ -7,7 +7,7 @@
 
 (provide type-equal-tests)
 
-(define (-base x) (make-Base x #'dummy values #'values))
+(define (-base x) (make-Base x #'dummy values #'values #f))
 
 
 (define-syntax (te-tests stx)

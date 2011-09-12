@@ -161,15 +161,17 @@
 ;; marshaled has to be a syntax object that refers to the base type
 ;; being created. this allows us to avoid reconstructing the base type
 ;; when using it from its marshaled representation
-(def-type Base ([name symbol?] [contract syntax?] [predicate procedure?] [marshaled syntax?])
+(def-type Base ([name symbol?] [contract syntax?] [predicate procedure?] [marshaled syntax?] [numeric? boolean?])
   [#:frees #f] [#:fold-rhs #:base] [#:intern name]
-  [#:key (case name
-           [(Number Integer) 'number]
-           [(Boolean) 'boolean]
-           [(String) 'string]
-           [(Symbol) 'symbol]
-           [(Keyword) 'keyword]
-           [else #f])])
+  [#:key (if numeric?
+             'number
+             (case name
+               [(Number Integer) 'number]
+               [(Boolean) 'boolean]
+               [(String) 'string]
+               [(Symbol) 'symbol]
+               [(Keyword) 'keyword]
+               [else #f]))])
 
 ;; body is a Scope
 (def-type Mu ([body (scope-depth 1)]) #:no-provide [#:frees (λ (f) (f body))]

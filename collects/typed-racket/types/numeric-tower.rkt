@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt")
 
 (require (types abbrev numeric-predicates)
-         (rep type-rep)
+         (rename-in (rep type-rep) [make-Base make-Base*])
          racket/function
          unstable/function
          (for-template racket/base racket/contract racket/flonum (types numeric-predicates)))
@@ -19,6 +19,10 @@
          -RealZero -PosReal -NonNegReal -NegReal -NonPosReal -Real
          -ExactNumber -FloatComplex -SingleFlonumComplex -InexactComplex -Number
          (rename-out (-Int -Integer)))
+
+;; all the types defined here are numeric
+(define (make-Base name contract predicate marshaled)
+  (make-Base* name contract predicate marshaled #t))
 
 
 ;; Numeric hierarchy

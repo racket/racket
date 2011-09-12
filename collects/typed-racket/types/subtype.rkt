@@ -261,7 +261,7 @@
               ;; value types
               [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
               ;; values are subtypes of their "type"
-              [((Value: v) (Base: _ _ pred _)) (if (pred v) A0 (fail! s t))]
+              [((Value: v) (Base: _ _ pred _ _)) (if (pred v) A0 (fail! s t))]
               ;; tvars are equal if they are the same variable
               [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
               ;; Avoid needing to resolve things that refer to different structs.
@@ -274,9 +274,9 @@
                       (fail! s t)]
                      [else (unmatch)])]
               ;; similar case for structs and base types, which are obviously unrelated
-              [((Base: _ _ _ _) (or (? Struct? s1) (NameStruct: s1)))
+              [((Base: _ _ _ _ _) (or (? Struct? s1) (NameStruct: s1)))
                (fail! s t)]
-              [((or (? Struct? s1) (NameStruct: s1)) (Base: _ _ _ _))
+              [((or (? Struct? s1) (NameStruct: s1)) (Base: _ _ _ _ _))
                (fail! s t)]
               ;; same for all values.
               [((Value: (? (negate struct?) _)) (or (? Struct? s1) (NameStruct: s1)))
@@ -284,8 +284,8 @@
               [((or (? Struct? s1) (NameStruct: s1)) (Value: (? (negate struct?) _)))
                (fail! s t)]
               ;; just checking if s/t is a struct misses recursive/union/etc cases
-              [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _)) (fail! s t)]
-              [((Base: _ _ _ _) (? (lambda (_) (eq? kt 'struct)))) (fail! s t)]
+              [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _ _)) (fail! s t)]
+              [((Base: _ _ _ _ _) (? (lambda (_) (eq? kt 'struct)))) (fail! s t)]
               ;; sequences are covariant
               [((Sequence: ts) (Sequence: ts*))
                (subtypes* A0 ts ts*)]
@@ -297,11 +297,11 @@
                (subtypes* A0 ts (map (λ _ t*) ts))]
               [((Vector: t) (Sequence: (list t*)))
                (subtype* A0 t t*)]
-              [((Base: 'String _ _ _) (Sequence: (list t*)))
+              [((Base: 'String _ _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Char t*)]
-              [((Base: 'Bytes _ _ _) (Sequence: (list t*)))
+              [((Base: 'Bytes _ _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Byte t*)]
-              [((Base: 'Input-Port _ _ _) (Sequence: (list t*)))
+              [((Base: 'Input-Port _ _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Nat t*)]
               [((Hashtable: k v) (Sequence: (list k* v*)))
                (subtypes* A0 (list k v) (list k* v*))]
