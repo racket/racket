@@ -521,26 +521,7 @@
                                   phase
                                   user-namespace
                                   user-directory
-                                  #f))
-            
-            #;
-            (connect-identifier var
-                                (make-id-set) ;; dummy; always empty
-                                unused/phases
-                                phase-to-requires
-                                -1
-                                user-namespace
-                                user-directory
-                                #f)
-            #;
-            (connect-identifier var
-                                (make-id-set) ;; dummy; always empty
-                                unused/phases
-                                phase-to-requires
-                                #f
-                                user-namespace
-                                user-directory
-                                #f)))
+                                  #f))))
         
         (for ([(level tops) (in-hash phase-to-tops)])
           (define binders (lookup-phase-to-mapping phase-to-binders level))

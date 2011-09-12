@@ -111,9 +111,8 @@
                                raise-hopeless-syntax-error))
            (log-info "expanding-place.rkt: 09 starting expansion")
            (define expanded (expand transformed-stx))
-           (let ([reg (namespace-module-registry (current-namespace))])
-             (parameterize ([current-custodian orig-cust])
-               (thread (λ () (channel-put old-registry-chan reg)))))
+           (channel-put old-registry-chan 
+                        (namespace-module-registry (current-namespace)))
            (log-info "expanding-place.rkt: 10 expanded")
            (define handler-results
              (for/list ([handler (in-list handlers)])
