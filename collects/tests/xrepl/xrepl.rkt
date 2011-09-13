@@ -113,7 +113,7 @@
   ; *** Initializing a new `typed/racket' namespace with typed/racket ***
   ; *** Switching to the `typed/racket' namespace ***
   typed/racket::-> «^»                  ⇒ works in TR too
-  - : Positive-Byte
+  - : Integer [generalized from Positive-Byte]
   123
   typed/racket::-> «,switch *»
   ; *** Switching to the `*' namespace ***
