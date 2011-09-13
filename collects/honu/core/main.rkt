@@ -13,6 +13,7 @@
          (for-syntax (rename-out [honu-expression expression]))
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-top-interaction #%top-interaction]
+                     [honu-with-input-from-file with_input_from_file]
                      [honu-class class]
                      [honu-new new]
                      [honu-function function]
@@ -42,8 +43,10 @@
                      [honu-not not] [honu-not !]
                      [honu-structure structure]
                      [honu-structure struct]
+                     [literal:honu-prefix prefix]
                      [literal:honu-then then]
                      [literal:colon :]
+                     [literal:honu-in in]
                      [literal:semicolon |;|]
                      [literal:honu-comma |,|]
                      [literal:#%brackets #%brackets]

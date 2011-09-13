@@ -1,0 +1,48 @@
+#lang honu
+
+require prefix xml_ xml;
+require "linq.rkt";
+
+class Xml(data){
+  Descendants(name){
+    [new Xml(element): element <- find_descendants(data, name)]
+  }
+
+  Element(name){
+    new Xml(get_element(data, name));
+  }
+
+  Value(){
+    get_text(data);
+  }
+
+  getData(){ data }
+};
+
+read_xml(){
+  xml_permissive_xexprs(true);
+  xml_xml_to_xexpr(xml_document_element(xml_read_xml()));
+}
+
+loadXml(file){
+  with_input_from_file(file){
+    new Xml(read_xml());
+  }
+}
+
+var xml = loadXml("test.xml");
+printf("xml ~a\n", xml);
+printf("data: ~a\n", xml.getData());
+printf("table1: ~a\n", xml.Descendants("Table1"));
+
+struct test{name, address};
+
+var addresses = linq from add in xml.Descendants("Table1")
+                     select test(add.Element("familyName").Value(),
+                                 add.Element("address").Value());
+
+printf("addresses ~a\n", addresses);
+
+for add in addresses do {
+  printf("name ~a address ~a\n", add.name, add.address);
+}

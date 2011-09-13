@@ -25,7 +25,9 @@
                 honu-? honu-: honu-comma honu-. #%braces #%brackets #%parens colon
                 honu-and
                 ellipses-comma ellipses-comma* ellipses-repeat
+                honu-in
                 honu-for-syntax
-                honu-for-template)
+                honu-for-template
+                honu-prefix)
 
 (define-literal-set cruft (#%parens #%brackets #%braces semicolon colon honu-comma honu-<-))

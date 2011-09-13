@@ -122,7 +122,9 @@
 
 (define parsed-property (gensym 'honu-parsed))
 (define (parsed-syntax syntax)
-  (syntax-property syntax parsed-property #t))
+  (if syntax
+    (syntax-property syntax parsed-property #t)
+    syntax))
 
 (define (parsed-syntax? syntax)
   (syntax-property syntax parsed-property))
@@ -178,7 +180,7 @@
       [pattern x:number])
 
     (debug "parse ~a precedence ~a left ~a current ~a\n" stream precedence left current)
-    (define final (if current current #'(void)))
+    (define final (if current current #f))
     (syntax-parse stream #:literal-sets (cruft)
       [()
        (values (left final) #'())]
@@ -332,10 +334,12 @@
              [code code])
     (define-values (parsed unparsed)
                    (parse (strip-stops code)))
-    (debug "Parsed ~a unparsed ~a\n" (syntax->datum parsed)
-           (syntax->datum unparsed))
+    (debug "Parsed ~a unparsed ~a\n" (if parsed (syntax->datum parsed) parsed)
+           (if unparsed (syntax->datum unparsed) unparsed))
     (if (empty-syntax? unparsed)
-      (with-syntax ([(use ...) (reverse (cons parsed all))])
+      (with-syntax ([(use ...) (reverse (if parsed
+                                          (cons parsed all)
+                                          all))])
         #'(begin use ...))
       (loop (cons parsed all)
             unparsed))))
@@ -372,7 +376,7 @@
     (debug "honu expression syntax class\n")
     (define-values (parsed unparsed)
                    (parse stx))
-    (debug "parsed ~a\n" parsed)
+    (debug "parsed ~a\n" (if parsed (syntax->datum parsed) parsed))
     (list (parsed-things stx unparsed) parsed)))
 
 (provide identifier-comma-list)

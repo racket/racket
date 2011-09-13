@@ -35,8 +35,8 @@
 (define-honu-syntax honu-new
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ name (#%parens arg ...) . rest)
-       (define new #'(make-object name arg ...))
+      [(_ name (#%parens arg:honu-expression ...) . rest)
+       (define new #'(make-object name arg.result ...))
        (values
          new
          #'rest

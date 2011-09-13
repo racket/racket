@@ -24,6 +24,7 @@
          (with-syntax ([(fields.name/accessor ...)
                         (make-accessors #'name (syntax->list #'(fields.name ...)))])
            #'(struct name (fields.name ...)
+                     #:transparent
                      #:property honu-struct (lambda (instance name)
                                               (case name
                                                 [(fields.name) (fields.name/accessor instance)]

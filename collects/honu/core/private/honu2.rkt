@@ -5,8 +5,11 @@
          "struct.rkt"
          "honu-typed-scheme.rkt"
          racket/class
+         racket/require
          (only-in "literals.rkt"
                   honu-then
+                  honu-in
+                  honu-prefix
                   semicolon)
          (for-syntax syntax/parse
                      "literals.rkt"
@@ -50,14 +53,20 @@
 (define-honu-syntax honu-for
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-=)
+                       #:literals (honu-= honu-in)
       [(_ iterator:id honu-= start:honu-expression honu-to end:honu-expression
           honu-do body:honu-expression . rest)
        (values
          #'(for ([iterator (in-range start.result end.result)])
              body.result)
          #'rest
-         #t)])))
+         #t)]
+      [(_ iterator:id honu-in stuff:honu-expression
+          honu-do body:honu-expression . rest)
+       (values #'(for ([iterator stuff.result])
+                   body.result)
+               #'rest
+               #t)])))
 
 (provide honu-if)
 (define-honu-syntax honu-if
@@ -131,7 +140,7 @@
             [(object? left*) (lambda args
                                (send/apply left* right args))]
             ;; possibly handle other types of data
-            [else (error 'dot "don't know how to deal with ~a" 'left)])))))
+            [else (error 'dot "don't know how to deal with ~a (~a)" 'left left*)])))))
 
 (provide honu-flow)
 (define-honu-operator/syntax honu-flow 0.001 'left
@@ -170,12 +179,41 @@
     [(_ rest ...)
      #'(#%top-interaction . (honu-unparsed-begin rest ...))]))
 
+(begin-for-syntax
+  (define-splicing-syntax-class require-form
+                                #:literals (honu-prefix)
+                                #:literal-sets (cruft)
+    [pattern (~seq honu-prefix prefix module)
+             #:with result #'(prefix-in prefix module)]
+    [pattern x:str #:with result #'x]
+    [pattern x:id #:with result #'x
+             #:when (not ((literal-set->predicate cruft) #'x))]))
+
+(define-for-syntax (racket-names->honu name)
+  (regexp-replace* #rx"-" "_"))
+
 (provide honu-require)
 (define-honu-syntax honu-require
   (lambda (code context)
     (syntax-parse code
-      [(_ module . rest)
+      [(_ form:require-form ... . rest)
        (values
-         #'(require module)
+         #'(require (filtered-in (lambda (name)
+                                   (regexp-replace* #rx"-"
+                                                    (regexp-replace* #rx"->" name "_to_")
+                                                    "_"))
+                                 (combine-in form.result ...)))
+
+         #'rest
+         #f)])))
+
+(provide honu-with-input-from-file)
+(define-honu-syntax honu-with-input-from-file
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ (#%parens name:id) something:honu-expression . rest)
+       (define with #'(with-input-from-file name (lambda () something.result)))
+       (values
+         with
          #'rest
          #f)])))
