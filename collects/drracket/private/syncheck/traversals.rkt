@@ -161,7 +161,7 @@
                                                #%plain-app #%top #%plain-module-begin
                                                define-values define-syntaxes begin-for-syntax module
                                                #%require #%provide #%expression)
-              (λ (x y) (free-identifier=?/phases x level y 0))
+              (λ (x y) (free-identifier=? x y level 0))
               [(#%plain-lambda args bodies ...)
                (begin
                  (annotate-raw-keyword sexp varrefs)
@@ -381,33 +381,6 @@
                               (syntax-source sexp)))
                  (void))])))
         (add-tail-ht-links tail-ht)))
-    
-    ;; free-identifier=?/phases : id phase-level id phase-level -> boolean
-    ;; Determines whether x has the same binding at phase-level phase-x
-    ;; that y has at phase-level y.
-    ;; At least one of the identifiers MUST have a binding (module or lexical)
-    (define (free-identifier=?/phases x phase-x y phase-y)
-      (cond [(eqv? phase-x phase-y)
-             (free-identifier=? x y phase-x)]
-            [else
-             (let ([bx (identifier-binding x phase-x)]
-                   [by (identifier-binding y phase-y)])
-               (cond [(and (pair? bx) (pair? by))
-                      (let ([mpix (first bx)]
-                            [namex (second bx)]
-                            [defphasex (fifth bx)]
-                            [mpiy (first by)]
-                            [namey (second by)]
-                            [defphasey (fifth by)])
-                        (and (eq? namex namey)
-                             ;; resolved-module-paths are interned
-                             (eq? (module-path-index-resolve mpix)
-                                  (module-path-index-resolve mpiy))
-                             (eqv? defphasex defphasey)))]
-                     [else
-                      ;; Module is only way to get phase-shift; phases differ, so
-                      ;; if not module-bound names, no way can refer to same binding.
-                      #f]))]))
     
     (define (hash-cons! ht k v)
       (hash-set! ht k (cons v (hash-ref ht k '()))))
