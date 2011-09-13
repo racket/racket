@@ -317,9 +317,7 @@ Conventions:
                 (fail (failure pr (cons (expect:atom 'datum) es)))))]
        [#s(pat:literal attrs literal input-phase lit-phase)
         #`(if (and (identifier? x)
-                   (free-identifier=?/phases
-                    x input-phase
-                    (quote-syntax literal) lit-phase))
+                   (free-identifier=? x (quote-syntax literal) input-phase lit-phase))
               k
               (fail (failure pr (cons (expect:literal (quote-syntax literal)) es))))]
        [#s(pat:action attrs action subpattern)

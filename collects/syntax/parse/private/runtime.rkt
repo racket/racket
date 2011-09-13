@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/list
-         racket/stxparam
+(require racket/stxparam
          unstable/syntax
          "runtime-progress.rkt"
          "runtime-failure.rkt"
@@ -255,8 +254,7 @@
 
 ;; ====
 
-(provide check-literal
-         free-identifier=?/phases)
+(provide check-literal)
 
 ;; (check-literal id phase-level-expr ctx) -> void
 (define-syntax (check-literal stx)
@@ -286,33 +284,6 @@
              used-phase
              (and used-phase (- used-phase mod-phase)))
      ctx id)))
-
-;; free-identifier=?/phases : id phase-level id phase-level -> boolean
-;; Determines whether x has the same binding at phase-level phase-x
-;; that y has at phase-level y.
-;; At least one of the identifiers MUST have a binding (module or lexical)
-(define (free-identifier=?/phases x phase-x y phase-y)
-  (cond [(eqv? phase-x phase-y)
-         (free-identifier=? x y phase-x)]
-        [else
-         (let ([bx (identifier-binding x phase-x)]
-               [by (identifier-binding y phase-y)])
-           (cond [(and (pair? bx) (pair? by))
-                  (let ([mpix (first bx)]
-                        [namex (second bx)]
-                        [defphasex (fifth bx)]
-                        [mpiy (first by)]
-                        [namey (second by)]
-                        [defphasey (fifth by)])
-                    (and (eq? namex namey)
-                         ;; resolved-module-paths are interned
-                         (eq? (module-path-index-resolve mpix)
-                              (module-path-index-resolve mpiy))
-                         (eqv? defphasex defphasey)))]
-                 [else
-                  ;; Module is only way to get phase-shift; phases differ, so
-                  ;; if not module-bound names, no way can refer to same binding.
-                  #f]))]))
 
 ;; ----
 

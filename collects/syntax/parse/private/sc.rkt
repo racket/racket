@@ -1,6 +1,5 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     syntax/stx
                      racket/syntax
                      "rep-data.rkt"
                      "rep.rkt")

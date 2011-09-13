@@ -200,7 +200,7 @@ Use cases, explained:
     (for/or ([lit (in-list lits)])
       (let ([lit-id (car lit)]
             [lit-phase (cadr lit)])
-        (free-identifier=?/phases x phase lit-id lit-phase)))))
+        (free-identifier=? x lit-id phase lit-phase)))))
 
 ;; Literal sets
 
