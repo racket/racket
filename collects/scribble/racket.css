@@ -124,6 +124,10 @@
   width: 100%;
 }
 
+.prototype, .argcontract, .RBoxed {
+  white-space: nowrap;
+}
+
 .prototype td {
   vertical-align: text-top;
 }

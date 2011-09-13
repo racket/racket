@@ -148,6 +148,24 @@
                 a)
           a))))
 
+;; combine a 'class attribute from both cl and al
+;;  if cl starts with one
+(define (combine-class cl al)
+  (cond
+   [(and (pair? cl)
+         (eq? (caar cl) 'class)
+         (for/or ([i (in-list al)])
+           (and (eq? (car i) 'class) (cadr i))))
+    => (lambda (s)
+         (cons
+          `[class ,(string-append (cadar cl) " " s)]
+          (append
+           (cdr cl)
+           (for/list ([i (in-list al)]
+                      #:unless (eq? 'class (car i)))
+             i))))]
+   [else (append cl al)]))
+
 (define (style->tag style)
   (for/or ([s (in-list (style-properties style))])
     (and (alt-tag? s)
@@ -926,12 +944,13 @@
                         (if (memq 'div (style-properties style)) 
                             'div 
                             'p))
-                   [,@attrs
-                    ,@(case (style-name style)
-                        [(author) '([class "author"])]
-                        [(pretitle) '([class "SPretitle"])]
-                        [(wraps) null]
-                        [else null])]
+                   [,@(combine-class
+                       (case (style-name style)
+                         [(author) '([class "author"])]
+                         [(pretitle) '([class "SPretitle"])]
+                         [(wraps) null]
+                         [else null])
+                       attrs)]
                    ,@contents))))))
 
     (define/override (render-paragraph p part ri)
@@ -1180,7 +1199,7 @@
                  ,@content))))))
 
     (define/private (element-style->attribs name style)
-      (append
+      (combine-class
        (cond
         [(symbol? name)
          (case name
@@ -1259,11 +1278,12 @@
                 ,@(if starting-item?
                     '([style "display: inline-table; vertical-align: text-top;"])
                     null)
-                ,@(case (style-name (table-style t))
-                    [(boxed)    '([class "boxed"])]
-                    [(centered) '([align "center"])]
-                    [else '()])
-                ,@(style->attribs (table-style t)))
+                ,@(combine-class
+                   (case (style-name (table-style t))
+                     [(boxed)    '([class "boxed"])]
+                     [(centered) '([align "center"])]
+                     [else '()])
+                   (style->attribs (table-style t))))
           ,@(let ([columns (ormap (lambda (p)
                                     (and (table-columns? p)
                                          (map (lambda (s)
@@ -1286,16 +1306,17 @@
                      (extract-table-cell-styles t))))))
 
     (define/override (render-nested-flow t part ri)
-      `((blockquote [,@(style->attribs (nested-flow-style t))
-                     ,@(cond
-                        [(eq? 'code-inset (style-name (nested-flow-style t)))
-                         `([class "SCodeFlow"])]
-                        [(eq? 'vertical-inset (style-name (nested-flow-style t)))
-                         `([class "SVInsetFlow"])]
-                        [(and (not (string? (style-name (nested-flow-style t))))
-                              (not (eq? 'inset (style-name (nested-flow-style t)))))
-                         `([class "SubFlow"])]
-                        [else null])]
+      `((blockquote [,@(combine-class
+                        (cond
+                         [(eq? 'code-inset (style-name (nested-flow-style t)))
+                          `([class "SCodeFlow"])]
+                         [(eq? 'vertical-inset (style-name (nested-flow-style t)))
+                          `([class "SVInsetFlow"])]
+                         [(and (not (string? (style-name (nested-flow-style t))))
+                               (not (eq? 'inset (style-name (nested-flow-style t)))))
+                          `([class "SubFlow"])]
+                         [else null])
+                        (style->attribs (nested-flow-style t)))]
                     ,@(append-map (lambda (i) (render-block i part ri #f))
                                   (nested-flow-blocks t)))))
 

@@ -5,6 +5,7 @@
          (only-in "../core.rkt" 
                   make-style style-name 
                   nested-flow? nested-flow-blocks nested-flow-style)
+         "../html-properties.rkt"
          scheme/contract
          (for-syntax scheme/base
                      syntax/kerncase
@@ -14,15 +15,19 @@
 
 (define-struct (box-splice splice) ())
 
-(define vertical-inset-style 
-  (make-style 'vertical-inset null))
-
 (provide/contract
  [struct (box-splice splice) ([run list?])]) ; XXX ugly copying
 (provide deftogether *deftogether
          with-racket-variables
          with-togetherable-racket-variables
-         vertical-inset-style)
+         vertical-inset-style
+         boxed-style)
+
+(define vertical-inset-style 
+  (make-style 'vertical-inset null))
+
+(define boxed-style 
+  (make-style 'boxed (list (make-attributes (list (cons 'class "RBoxed"))))))
 
 (begin-for-syntax (define-struct deftogether-tag () #:omit-define-syntaxes))
 
@@ -116,7 +121,7 @@
      vertical-inset-style
      (list
       (make-table
-       'boxed
+       boxed-style
        (map
         (lambda (box)
           (unless (and (box-splice? box)
@@ -126,7 +131,7 @@
                        (let ([l (nested-flow-blocks (car (splice-run box)))])
                          (= 1 (length l))
                          (table? (car l))
-                         (eq? 'boxed (style-name (table-style (car l))))))
+                         (eq? boxed-style (table-style (car l)))))
             (error 'deftogether
                    "element is not a boxing splice containing a single nested-flow with a single table: ~e"
                    box))

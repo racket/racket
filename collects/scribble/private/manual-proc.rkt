@@ -472,7 +472,7 @@
      vertical-inset-style
      (list
       (make-table
-       'boxed
+       boxed-style
        (append-map
         do-one
         stx-ids prototypes all-args arg-contractss arg-valss result-contracts
@@ -579,7 +579,7 @@
                             name-id))]))
   (define main-table
     (make-table
-     'boxed
+     boxed-style
      (cons
       (list (make-flow
              (list
@@ -852,7 +852,7 @@
      vertical-inset-style
      (list
       (make-table
-       'boxed
+       boxed-style
        (map
         (lambda (stx-id name result-contract result-value)
           (list

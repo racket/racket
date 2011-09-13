@@ -149,11 +149,11 @@
                           val-list)))])
               (loop (cdr expr-paras) (cdr val-list+outputs) #f))))])
     (if inset?
-      (let ([p (code-inset (make-table #f lines))])
+      (let ([p (code-inset (make-table block-color lines))])
         (if title
-          (make-table #f (list (list.flow.list title) (list.flow.list p)))
+          (make-table block-color (list (list.flow.list title) (list.flow.list p)))
           p))
-      (make-table #f (if title (cons (list.flow.list title) lines) lines)))))
+      (make-table block-color (if title (cons (list.flow.list title) lines) lines)))))
 
 ;; extracts from a datum or syntax object --- while keeping the
 ;; syntax-objectness of the original intact, instead of always

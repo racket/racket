@@ -350,7 +350,7 @@
        vertical-inset-style
        (list
         (make-table
-         'boxed
+         boxed-style
          (append
           (map
            (lambda (form form-proc)
@@ -387,7 +387,7 @@
        vertical-inset-style
        (list
         (make-table
-         'boxed
+         boxed-style
          (cons
           (list
            (make-flow
