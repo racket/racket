@@ -240,26 +240,24 @@ generated value onto that list.
 @transform-time[]
 
 @examples[#:eval stx-eval
-(define-syntax do-print
-  (syntax-rules ()
-    [(_ x ...) (printf x ...)]))
+(define-syntax-rule (do-print x ...)
+  (printf x ...))
 
-(define-syntax hello
-  (syntax-rules ()
-    [(_ x) (do-print "hello ~a" x)]))
+(define-syntax-rule (hello x)
+  (do-print "hello ~a" x))
 
 (define-syntax (show stx)
   (syntax-case stx ()
     [(_ x)
-     (with-syntax ([partly-expanded (local-expand #'(hello x)
-						  'expression
-						  (list #'do-print))]
-		   [expanded (local-expand #'(hello x)
-					   'expression
-					   #f)])
-       (printf "partly expanded syntax is ~a\n" (syntax->datum #'partly-expanded))
-       (printf "expanded syntax is ~a\n" (syntax->datum #'expanded))
-       #'expanded)]))
+     (let ([partly (local-expand #'(hello x)
+                                 'expression
+                                 (list #'do-print))]
+           [fully (local-expand #'(hello x)
+                                'expression
+                                #f)])
+       (printf "partly expanded: ~s\n" (syntax->datum partly))
+       (printf "fully expanded: ~s\n" (syntax->datum fully))
+       fully)]))
 
 (show 1)
 ]}
