@@ -88,19 +88,27 @@
                             [(tc-result1: t f o)
                              ;; Don't display the whole types at the REPL. Some case-lambda types
                              ;; are just too large to print.
-                             (let ([tc (cleanup-type t)])
-                               (format "- : ~a~a\n"
-                                       tc
-                                       (cond [(equal? tc t) ""]
-                                             [did-I-suggest-:print-type-already? " ..."]
-                                             [else (set! did-I-suggest-:print-type-already? #t)
-                                                   :print-type-message])))]
+                             ;; Also, to avoid showing too precise types, we generalize types
+                             ;; before printing them.
+                             (define tc (cleanup-type t))
+                             (define tg (generalize tc))
+                             (format "- : ~a~a~a\n"
+                                     tg
+                                     (cond [(equal? tc tg) ""]
+                                           [else (format " (generalized from ~a)" tc)])
+                                     (cond [(equal? tc t) ""]
+                                           [did-I-suggest-:print-type-already? " ..."]
+                                           [else (set! did-I-suggest-:print-type-already? #t)
+                                                 :print-type-message]))]
                             [(tc-results: t)
-                             (define new-ts (map cleanup-type t))
-                             (format "- : ~a~a\n"
-                                     (cons 'Values new-ts)
+                             (define tcs (map cleanup-type t))
+                             (define tgs (map generalize tcs))
+                             (format "- : ~a~a~a\n"
+                                     (cons 'Values tgs)
+                                     (cond [(andmap equal? tgs tcs) ""]
+                                           [else (format " (generalized from ~a)" (cons 'Values tcs))])
                                      ;; did any get pruned?
-                                     (cond [(andmap equal? t new-ts) ""]
+                                     (cond [(andmap equal? t tcs) ""]
                                            [did-I-suggest-:print-type-already? " ..."]
                                            [else (set! did-I-suggest-:print-type-already? #t)
                                                  :print-type-message]))]
