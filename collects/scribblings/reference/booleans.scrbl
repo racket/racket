@@ -5,8 +5,9 @@
 
 True and false @deftech{booleans} are represented by the values
 @racket[#t] and @racket[#f], respectively, though operations that
-depend on a boolean value typically treat anything other than @racket[#f]
-as true.
+depend on a boolean value typically treat anything other than
+@racket[#f] as true. The @racket[#t] value is always @racket[eq?] to
+itself, and @racket[#f] is always @racket[eq?] to itself.
 
 See also: @racket[and], @racket[or], @racket[andmap], @racket[ormap].
 

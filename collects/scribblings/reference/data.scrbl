@@ -227,7 +227,10 @@ Sets the content of @racket[box] to @racket[v].}
 The constant @|void-const| is returned by most forms and procedures
 that have a side-effect and no useful result. The constant
 @|undefined-const| is used as the initial value for @racket[letrec]
-bindings.
+bindings. 
+
+The @|void-const| value is always @racket[eq?] to itself, and the
+@|undefined-const| value is also @racket[eq?] to itself.
 
 @defproc[(void? [v any/c]) void?]{Returns @racket[#t] if @racket[v] is the
  constant @|void-const|, @racket[#f] otherwise.}
