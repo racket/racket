@@ -1925,7 +1925,7 @@
 ;3.2.2.7 (Random Numbers)
 
 [random
-  (cl->* (->opt -PosInt [-Pseudo-Random-Generator] -Nat)
+  (cl->* (->opt -Int [-Pseudo-Random-Generator] -Nat)
          (->opt [-Pseudo-Random-Generator] -Flonum))]
 
 [random-seed (-> -PosInt -Void)]
