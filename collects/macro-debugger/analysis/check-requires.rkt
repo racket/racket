@@ -1,11 +1,7 @@
 #lang racket/base
 (require racket/contract
          racket/match
-         racket/dict
          unstable/struct
-         syntax/modresolve
-         syntax/stx
-         syntax/id-table
          macro-debugger/model/deriv
          "private/reftable.rkt"
          "private/nom-use-alg.rkt"

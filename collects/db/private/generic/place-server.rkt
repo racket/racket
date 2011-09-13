@@ -6,9 +6,7 @@
          racket/serialize
          unstable/lazy-require
          "interfaces.rkt"
-         "prepared.rkt"
-         "sql-data.rkt"
-         "place-client.rkt")
+         "prepared.rkt")
 (provide connection-server)
 
 (define (pchan-put chan datum)

@@ -1,7 +1,6 @@
 #lang racket/base
 (require racket/pretty
          unstable/class-iop
-         syntax/stx
          unstable/struct
          "interfaces.rkt"
          "../model/stx-util.rkt")

@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/list
-         racket/class
+(require racket/class
          racket/gui/base
          data/interval-map
          drracket/arrow

@@ -3,12 +3,10 @@
          racket/match
          racket/place
          racket/promise
-         racket/vector
          racket/serialize
          ffi/unsafe/atomic
          "interfaces.rkt"
-         "prepared.rkt"
-         "sql-data.rkt")
+         "prepared.rkt")
 (provide place-connect
          place-proxy-connection%)
 

@@ -3,7 +3,6 @@
          racket/match
          syntax/stx
          "../util/eomap.rkt"
-         "stx-util.rkt"
          "deriv-util.rkt"
          "deriv.rkt"
          "reductions-engine.rkt")

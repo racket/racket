@@ -1,7 +1,6 @@
 #lang racket/base
 (require racket/match
          racket/cmdline
-         syntax/modresolve
          "check-requires.rkt")
 
 #|

@@ -1,7 +1,6 @@
 #lang racket/base
 (require racket/class
          racket/gui/base
-         racket/list
          racket/match
          framework
          syntax/id-table

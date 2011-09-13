@@ -1,13 +1,11 @@
 #lang racket/base
 (require racket/class
-         racket/pretty
          racket/gui/base
          framework
          unstable/class-iop
          "interfaces.rkt"
          "frame.rkt"
-         "prefs.rkt"
-         "../model/trace.rkt")
+         "prefs.rkt")
 (provide macro-stepper-director%
          macro-stepper-frame%)
 

@@ -1,13 +1,10 @@
 #lang racket/base
-(require racket/list
-         racket/unit
-         racket/match
+(require racket/unit
          racket/gui/base
          racket/class
          framework
          drscheme/tool
          mrlib/switchable-button
-         string-constants
          "model/trace.rkt"
          "view/frame.rkt"
          (only-in "view/view.rkt" macro-stepper-director%)

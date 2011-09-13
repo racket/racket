@@ -1,9 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/unit
-         racket/list
          racket/match
-         racket/gui/base
          syntax/stx
          unstable/find
          unstable/class-iop

@@ -1,10 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/unit
-         racket/list
-         racket/file
          racket/path
-         racket/match
          racket/gui/base
          framework
          unstable/class-iop

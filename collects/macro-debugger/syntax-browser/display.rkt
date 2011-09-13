@@ -1,8 +1,6 @@
 #lang racket/base
 (require racket/class
          racket/gui/base
-         racket/list
-         racket/pretty
          racket/promise
          data/interval-map
          framework

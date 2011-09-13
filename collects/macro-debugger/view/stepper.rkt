@@ -1,10 +1,7 @@
 #lang racket/base
 (require racket/class
-         racket/unit
-         racket/list
          racket/match
          racket/gui/base
-         racket/pretty
          unstable/class-iop
          "interfaces.rkt"
          "extensions.rkt"

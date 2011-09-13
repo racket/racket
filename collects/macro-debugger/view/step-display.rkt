@@ -1,7 +1,5 @@
 #lang racket/base
 (require racket/class
-         racket/unit
-         racket/list
          racket/match
          racket/gui/base
          unstable/class-iop
