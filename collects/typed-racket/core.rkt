@@ -95,7 +95,7 @@
                              (format "- : ~a~a~a\n"
                                      tg
                                      (cond [(equal? tc tg) ""]
-                                           [else (format " (generalized from ~a)" tc)])
+                                           [else (format " [generalized from ~a]" tc)])
                                      (cond [(equal? tc t) ""]
                                            [did-I-suggest-:print-type-already? " ..."]
                                            [else (set! did-I-suggest-:print-type-already? #t)
@@ -106,7 +106,7 @@
                              (format "- : ~a~a~a\n"
                                      (cons 'Values tgs)
                                      (cond [(andmap equal? tgs tcs) ""]
-                                           [else (format " (generalized from ~a)" (cons 'Values tcs))])
+                                           [else (format " [generalized from ~a]" (cons 'Values tcs))])
                                      ;; did any get pruned?
                                      (cond [(andmap equal? t tcs) ""]
                                            [did-I-suggest-:print-type-already? " ..."]
