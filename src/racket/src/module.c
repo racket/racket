@@ -4535,10 +4535,15 @@ static void should_run_for_compile(Scheme_Env *menv, int phase)
 {
   if (menv->running[phase]) return;
 
-  while (phase > 1) {
-    scheme_prepare_exp_env(menv);
-    menv = menv->exp_env;
-    phase--;
+  if (!phase) {
+    scheme_prepare_template_env(menv);
+    menv = menv->template_env;
+  } else {
+    while (phase > 1) {
+      scheme_prepare_exp_env(menv);
+      menv = menv->exp_env;
+      phase--;
+    }
   }
 
 #if 0
@@ -4546,14 +4551,9 @@ static void should_run_for_compile(Scheme_Env *menv, int phase)
     scheme_signal_error("internal error: inconsistent instance_env");
 #endif
 
-
   if (!menv->available_next[0]) {
     menv->available_next[0] = MODCHAIN_AVAIL(menv->modchain, 0);
     MODCHAIN_AVAIL(menv->modchain, 0) = (Scheme_Object *)menv;
-  }
-  if (!menv->available_next[1]) {
-    menv->available_next[1] = MODCHAIN_AVAIL(menv->modchain, 1);
-    MODCHAIN_AVAIL(menv->modchain, 1) = (Scheme_Object *)menv;
   }
 }
 
@@ -4704,13 +4704,6 @@ void scheme_prepare_compile_env(Scheme_Env *env)
    that env->phase is visited. */
 {
   do_prepare_compile_env(env, env->phase, 0);
-
-  /* A top-level `require' can introduce in any phase with a
-     `for-syntax' import whose visit triggers an instantiation.
-     So, also check for instances at the next phase. */
-  if (env->exp_env) {
-    do_prepare_compile_env(env->exp_env, env->phase, 1);
-  }
 }
 
 static void *eval_module_body_k(void)
@@ -5743,7 +5736,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(m->modname));
 
   /* phase shift to replace self_modidx of previous expansion (if any): */
-  fm = scheme_stx_phase_shift(fm, 0, empty_self_modidx, self_modidx, NULL, m->insp);
+  fm = scheme_stx_phase_shift(fm, NULL, empty_self_modidx, self_modidx, NULL, m->insp);
 
   fm = scheme_add_rename(fm, rn_set);
 
@@ -5852,7 +5845,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     }
 
     /* for future expansion, shift away from self_modidx: */
-    fm = scheme_stx_phase_shift(fm, 0, self_modidx, empty_self_modidx, NULL, NULL);
+    fm = scheme_stx_phase_shift(fm, NULL, self_modidx, empty_self_modidx, NULL, NULL);
 
     /* make self_modidx like the empty modidx */
     ((Scheme_Modidx *)self_modidx)->resolved = empty_self_modname;
@@ -7069,7 +7062,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
       if (erec) {
 	Scheme_Expand_Info erec1;
-	scheme_init_expand_recs(rec, drec, &erec1, 1);
+	scheme_init_expand_recs(erec, derec, &erec1, 1);
 	erec1.value_name = scheme_false;
 	e = scheme_expand_expr(e, nenv, &erec1, 0);
         expanded_l = scheme_make_pair(e, expanded_l);        
@@ -7306,7 +7299,7 @@ static Scheme_Object *fixup_expanded_provides(Scheme_Object *expanded_l,
                                               Scheme_Object *expanded_provides,
                                               int phase)
 /* mutates `expanded_l' to find `#%provide's (possibly nested in
-   `begin-for-syntax') and elace them with the ones in
+   `begin-for-syntax') and replace them with the ones in
    `expanded_provides'. The provides in `expanded_l' and
    `expanded_provides' are matched up by order. */
 {
@@ -7325,11 +7318,12 @@ static Scheme_Object *fixup_expanded_provides(Scheme_Object *expanded_l,
     e = SCHEME_CAR(p);
     if (SCHEME_STX_PAIRP(e)) {
       fst = SCHEME_STX_CAR(e);
-      if (scheme_stx_module_eq(prov_stx, fst, 0)) {
+      if (scheme_stx_module_eq(prov_stx, fst, phase)) {
         SCHEME_CAR(p) = SCHEME_CAR(expanded_provides);
         expanded_provides = SCHEME_CDR(expanded_provides);
-      } else if (scheme_stx_module_eq(begin_for_syntax_stx, fst, 0)) {
+      } else if (scheme_stx_module_eq(begin_for_syntax_stx, fst, phase)) {
         l = scheme_flatten_syntax_list(e, NULL);
+        l = scheme_copy_list(l);
         expanded_provides = fixup_expanded_provides(SCHEME_CDR(l), expanded_provides, phase + 1);
         e = scheme_datum_to_syntax(l, e, e, 0, 2);
         SCHEME_CAR(p) = e;

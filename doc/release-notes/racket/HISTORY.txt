@@ -1,3 +1,11 @@
+Version 5.1.3.9
+Add syntax-shift-phase-level
+errortrace: with-mark and make-st-mark now take a phase level
+
+Version 5.1.3.8
+Add syntax-transforming-module-expression? and
+ variable-reference->module-base-phase
+
 Version 5.1.3.7
 Generalized begin-with-syntax to allow phase-N definitions,
  both variable and syntax, within a module for all N >= 0;

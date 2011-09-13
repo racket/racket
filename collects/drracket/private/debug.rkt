@@ -533,7 +533,7 @@ profile todo:
   ;; a member of stacktrace-imports^
   ;; guarantees that the continuation marks associated with errortrace-key are
   ;; members of the debug-source type, after unwrapped with st-mark-source
-  (define (with-mark src-stx expr)
+  (define (with-mark src-stx expr phase)
     (let ([source (cond
                     [(path? (syntax-source src-stx))
                      (syntax-source src-stx)]
@@ -557,11 +557,13 @@ profile todo:
       (if source
           (with-syntax ([expr expr]
                         [mark (list 'dummy-thing source line column position span)]
-                        [errortrace-key errortrace-key])
+                        [wcm (syntax-shift-phase-level #'with-continuation-mark phase)]
+                        [errortrace-key (syntax-shift-phase-level errortrace-key phase)]
+                        [qte (syntax-shift-phase-level #'quote phase)])
             (syntax
-             (with-continuation-mark 'errortrace-key
-               'mark
-               expr)))
+             (wcm (qte errortrace-key)
+                  (qte mark)
+                  expr)))
           expr)))
   
   ;; current-backtrace-window : (union #f (instanceof frame:basic<%>))

@@ -3600,7 +3600,7 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
   if (genv->rename_set) {
     form = scheme_add_rename(form, genv->rename_set);
     /* this "phase shift" just attaches the namespace's module registry: */
-    form = scheme_stx_phase_shift(form, 0, NULL, NULL, genv->module_registry->exports, NULL);
+    form = scheme_stx_phase_shift(form, NULL, NULL, NULL, genv->module_registry->exports, NULL);
   }
 
   return form;
@@ -3674,7 +3674,7 @@ static void *compile_k(void)
   if (rename) {
     form = add_renames_unless_module(form, genv);
     if (genv->module) {
-      form = scheme_stx_phase_shift(form, 0, 
+      form = scheme_stx_phase_shift(form, NULL, 
 				    genv->module->me->src_modidx, 
 				    genv->module->self_modidx,
 				    genv->module_registry->exports,
@@ -4110,7 +4110,7 @@ Scheme_Object *scheme_eval_compiled_stx_string(Scheme_Object *expr, Scheme_Env *
     result = scheme_make_vector(len - 1, NULL);
 
     for (i = 0; i < len - 1; i++) {
-      s = scheme_stx_phase_shift(SCHEME_VEC_ELS(expr)[i], shift, orig, modidx, 
+      s = scheme_stx_phase_shift(SCHEME_VEC_ELS(expr)[i], scheme_make_integer(shift), orig, modidx, 
                                  env->module_registry->exports, NULL);
       SCHEME_VEC_ELS(result)[i] = s;
     }
@@ -5278,7 +5278,8 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
       if (insp && SCHEME_FALSEP(insp))
         insp = scheme_get_current_inspector();
       i = rp->num_toplevels;
-      v = scheme_stx_phase_shift_as_rename(now_phase - src_phase, src_modidx, now_modidx, 
+      v = scheme_stx_phase_shift_as_rename(scheme_make_integer(now_phase - src_phase), 
+                                           src_modidx, now_modidx, 
 					   genv ? genv->module_registry->exports : NULL,
                                            insp);
       if (v || (rp->delay_info_rpair && SCHEME_CDR(rp->delay_info_rpair))) {

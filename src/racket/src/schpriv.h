@@ -1038,11 +1038,11 @@ Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 				   Scheme_Object *key,
 				   Scheme_Object *val);
 
-Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, intptr_t shift,
+Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, Scheme_Object *shift,
 				      Scheme_Object *old_midx, Scheme_Object *new_midx,
 				      Scheme_Hash_Table *export_registry,
                                       Scheme_Object *insp);
-Scheme_Object *scheme_stx_phase_shift_as_rename(intptr_t shift,
+Scheme_Object *scheme_stx_phase_shift_as_rename(Scheme_Object *shift,
 						Scheme_Object *old_midx, Scheme_Object *new_midx,
 						Scheme_Hash_Table *export_registry,
                                                 Scheme_Object *insp);
@@ -1990,6 +1990,7 @@ Scheme_Object *scheme_make_polar(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_bitwise_shift(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_bitwise_and(int argc, Scheme_Object *argv[]);
 
+int scheme_exact_p(Scheme_Object *n);
 int scheme_nonneg_exact_p(Scheme_Object *n);
 
 #ifdef TIME_TYPE_IS_UNSIGNED

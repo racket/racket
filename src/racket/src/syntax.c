@@ -77,6 +77,8 @@ static Scheme_Object *syntax_property(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_property_keys(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv);
 
+static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv);
+
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv);
 static Scheme_Object *module_eq(int argc, Scheme_Object **argv);
 static Scheme_Object *module_trans_eq(int argc, Scheme_Object **argv);
@@ -424,6 +426,7 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("syntax-track-origin"              , syntax_track_origin       , 3, 3, env);
 
   GLOBAL_IMMED_PRIM("make-syntax-delta-introducer"     , scheme_syntax_make_transfer_intro, 2, 3, env);
+  GLOBAL_IMMED_PRIM("syntax-shift-phase-level"         , syntax_shift_phase        , 2, 2, env);
 
   GLOBAL_IMMED_PRIM("bound-identifier=?"               , bound_eq                  , 2, 4, env);
   GLOBAL_IMMED_PRIM("free-identifier=?"                , module_eq                 , 2, 4, env);
@@ -437,7 +440,6 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("identifier-label-binding"         , module_label_binding      , 1, 1, env);
   GLOBAL_IMMED_PRIM("identifier-prune-lexical-context" , identifier_prune          , 1, 2, env);
   GLOBAL_IMMED_PRIM("identifier-prune-to-source-module", identifier_prune_to_module, 1, 1, env);
-
 
   GLOBAL_NONCM_PRIM("syntax-source-module"             , syntax_src_module         , 1, 2, env);
 
@@ -2136,15 +2138,18 @@ void scheme_install_free_id_rename(Scheme_Object *id,
   }
 }
 
-Scheme_Object *scheme_stx_phase_shift_as_rename(intptr_t shift, Scheme_Object *old_midx, Scheme_Object *new_midx,
+Scheme_Object *scheme_stx_phase_shift_as_rename(Scheme_Object *shift, Scheme_Object *old_midx, Scheme_Object *new_midx,
 						Scheme_Hash_Table *export_registry, Scheme_Object *insp)
 {
-  if (shift || new_midx || export_registry || insp) {
+  if (!shift)
+    shift = scheme_make_integer(0);
+
+  if (!SCHEME_INTP(shift) || SCHEME_INT_VAL(shift) || new_midx || export_registry || insp) {
     Scheme_Object *vec;
     
     if (last_phase_shift
 	&& ((vec = SCHEME_BOX_VAL(last_phase_shift)))
-	&& (SCHEME_VEC_ELS(vec)[0] == scheme_make_integer(shift))
+	&& (SCHEME_VEC_ELS(vec)[0] == shift)
 	&& (SCHEME_VEC_ELS(vec)[1] == (new_midx ? old_midx : scheme_false))
 	&& (SCHEME_VEC_ELS(vec)[2] == (new_midx ? new_midx : scheme_false))
 	&& (SCHEME_VEC_ELS(vec)[3] == (export_registry ? (Scheme_Object *)export_registry : scheme_false))
@@ -2152,7 +2157,7 @@ Scheme_Object *scheme_stx_phase_shift_as_rename(intptr_t shift, Scheme_Object *o
       /* use the old one */
     } else {
       vec = scheme_make_vector(5, NULL);
-      SCHEME_VEC_ELS(vec)[0] = scheme_make_integer(shift);
+      SCHEME_VEC_ELS(vec)[0] = shift;
       SCHEME_VEC_ELS(vec)[1] = (new_midx ? old_midx : scheme_false);
       SCHEME_VEC_ELS(vec)[2] = (new_midx ? new_midx : scheme_false);
       SCHEME_VEC_ELS(vec)[3] = (export_registry ? (Scheme_Object *)export_registry : scheme_false);
@@ -2166,7 +2171,7 @@ Scheme_Object *scheme_stx_phase_shift_as_rename(intptr_t shift, Scheme_Object *o
     return NULL;
 }
 
-Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, intptr_t shift,
+Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, Scheme_Object *shift,
 				      Scheme_Object *old_midx, Scheme_Object *new_midx,
 				      Scheme_Hash_Table *export_registry,
                                       Scheme_Object *insp)
@@ -2181,6 +2186,19 @@ Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, intptr_t shift,
     return scheme_add_rename(stx, ps);  
   else
     return stx;
+}
+
+static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv)
+{
+  if (!SCHEME_STXP(argv[0]))
+    scheme_wrong_type("syntax-shift-phase-level", "syntax", 0, argc, argv);
+  if (!scheme_exact_p(argv[1]))
+    scheme_wrong_type("syntax-shift-phase-level", "exact integer", 0, argc, argv);
+
+  if (SCHEME_INTP(argv[1]) && !SCHEME_INT_VAL(argv[1]))
+    return argv[0];
+
+  return scheme_stx_phase_shift(argv[0], argv[1], NULL, NULL, NULL, NULL);
 }
 
 void scheme_clear_shift_cache(void)

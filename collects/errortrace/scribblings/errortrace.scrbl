@@ -45,7 +45,7 @@ Then,
          ]
 
 After starting @racketmodname[errortrace] in one of these ways, when an
-exception occurs, the exception handler something like a stack trace
+exception occurs, the exception handler prints something like a stack trace
 with most recent contexts first.
 
 The @racketmodname[errortrace] module is strange: Don't import it
@@ -105,7 +105,7 @@ but instruments the module for debugging in the same way as if
 @racketmodname[errortrace] is required before loading the module from
 source. Using the @racketmodname[errortrace] meta-language is one way
 to ensure that debugging instrumentation is present when the module is
-compiled.}
+compiled.
 
 @; ---------------------------------------------
 
@@ -374,8 +374,8 @@ Imports @racket[stacktrace-imports^] and exports @racket[stacktrace^].}
 @defsignature[stacktrace^ ()]{
 
 @deftogether[(
-  @defproc[(annotate (stx syntax?) (phase-level exact-integer?)) syntax?]
-  @defproc[(annotate-top (stx syntax?) (phase-level exact-integer?)) syntax?])]{
+  @defproc[(annotate (stx syntax?) (phase-level exact-nonnegative-integer?)) syntax?]
+  @defproc[(annotate-top (stx syntax?) (phase-level exact-nonnegative-integer?)) syntax?])]{
 
 Annotate expressions with errortrace information. The
 @racketout[annotate-top] function should be called with a top-level
@@ -386,7 +386,7 @@ expression, typically @racket[(namespace-base-phase)] for a top-level
 expression.}
 
 @deftogether[(
-  @defproc[(make-st-mark (syntax syntax?)) (or/c #f st-mark?)]
+  @defproc[(make-st-mark [stx syntax?] [phase-level exact-nonnegative-integer?]) (or/c #f st-mark?)]
   @defproc[(st-mark-source (st-mark st-mark?)) syntax?]
   @defproc[(st-mark-bindings (st-mark st-mark?)) list?])]{
 
@@ -406,12 +406,15 @@ hardwired to return @racket[null]. }
 
 @defsignature[stacktrace-imports^ ()]{
 
-@defproc[(with-mark (source-stx any/c) (dest-stx any/c)) any/c]{
+@defproc[(with-mark [source-stx any/c]
+                    [dest-stx any/c]
+                    [phase nonnegative-exact-integer?]) 
+         any/c]{
 
 Called by @racketout[annotate] and @racketout[annotate-top] to wrap
 expressions with @racket[with-continuation-mark]. The first argument
-is the source expression and the second argument is the expression to
-be wrapped.}
+is the source expression, the second argument is the expression to
+be wrapped, and the last is the phase level of the expression.}
 
 @defboolparam[test-coverage-enabled on?]{
 

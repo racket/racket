@@ -1,7 +1,9 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/strip-context
-                     "../errortrace-lib.rkt"))
+                     racket/pretty
+                     "../errortrace-lib.rkt"
+                     "../private/utils.rkt"))
 
 (provide (rename-out [module-begin #%module-begin]))
 
@@ -9,13 +11,15 @@
   (syntax-case stx ()
     [(_ lang . body)
      (let ([e (annotate-top
-               (syntax-local-introduce
+               (values ; syntax-local-introduce
                 (local-expand #`(module . #,(strip-context #`(n lang . body)))
                               'top-level
                               null))
                0)])
+       (collect-garbage)
        (syntax-case e ()
          [(mod nm lang (mb . body)) 
           #`(#%plain-module-begin 
-             (require (only-in lang) errortrace/errortrace-key)
+             (require (only-in lang))
+             #,(generate-key-imports ((count-meta-levels 0) #'(begin . body)))
              . body)]))]))

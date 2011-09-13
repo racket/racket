@@ -50,7 +50,7 @@
 (define register-profile-start void)
 (define register-profile-done void)
 ;; no marks
-(define (with-mark mark expr) expr)
+(define (with-mark mark expr phase) expr)
 
 (define-values/invoke-unit/infer stacktrace@)
 

@@ -1110,6 +1110,11 @@ int scheme_get_unsigned_long_long_val(Scheme_Object *o, umzlonglong *v)
     return 0;
 }
 
+int scheme_exact_p(Scheme_Object *n)
+{
+  return (SCHEME_INTP(n) || SCHEME_BIGNUMP(n));
+}
+
 int scheme_nonneg_exact_p(Scheme_Object *n)
 {
   return ((SCHEME_INTP(n) && (SCHEME_INT_VAL(n) >= 0))
