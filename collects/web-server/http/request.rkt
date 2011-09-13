@@ -209,15 +209,14 @@
             [(struct header (_ value))
              (cond
                [(string->number (bytes->string/utf-8 value))
-                => (lambda (len) 
+                => (lambda (len)
                      (let ([raw-bytes (read-bytes len in)])
                        (values (delay (parse-bindings raw-bytes)) raw-bytes)))]
                [else 
                 (network-error 'read-bindings "Post request contained a non-numeric content-length")])]
             [#f
-             (let ([raw-bytes (apply bytes-append (read-to-eof in))])
-               (values (delay (parse-bindings raw-bytes)) raw-bytes))])]))]
-    [(bytes-ci=? #"PUT" meth)
+             (values (delay empty) #f)])]))]
+    [meth
      (local
        [(define content-type (headers-assq* #"Content-Type" headers))
         (define in (connection-i-port conn))]
@@ -228,12 +227,9 @@
                       (let ([raw-bytes (read-bytes len in)])
                         (values (delay empty) raw-bytes)))]
                 [else
-                 (network-error 'read-bindings "Put request contained a non-numeric content-length")])]
+                 (network-error 'read-bindings "Non-GET/POST request contained a non-numeric content-length")])]
          [#f
-          (let ([raw-bytes (apply bytes-append (read-to-eof in))])
-            (values (delay empty) raw-bytes))]))]
-    [meth
-     (values (delay empty) #f)]))
+          (values (delay empty) #f)]))]))
 
 ;; parse-bindings : bytes? -> (listof binding?)
 (define (parse-bindings raw)
