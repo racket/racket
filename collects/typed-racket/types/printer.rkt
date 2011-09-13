@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/require racket/match unstable/sequence
+(require racket/require racket/match unstable/sequence racket/string
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
@@ -167,12 +167,12 @@
     [(Function: arities)
      (let ()
        (match arities
-         [(list) "(case-lambda)"]
+         [(list) "(case->)"]
          [(list a) (format-arr a)]
          [(list a b ...)
-          (format "(case-lambda ~a~a)"
+          (format "(case-> ~a ~a)"
                   (format-arr a)
-                  (apply string-append (map format-arr b)))]))]))
+                  (string-join (map format-arr b) " "))]))]))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
