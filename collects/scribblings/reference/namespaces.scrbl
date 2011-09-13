@@ -414,7 +414,7 @@ Returns the @tech{phase} of the variable referenced by @racket[varref].}
 
 
 @defproc[(variable-reference->module-base-phase [varref variable-reference?])
-         exact-nonnegative-integer?]{
+         exact-integer?]{
 
 Returns the @tech{phase} in which the module is instantiated for the
 variable referenced by @racket[varref], or @racket[0] if the variable
