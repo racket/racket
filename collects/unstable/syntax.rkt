@@ -85,11 +85,6 @@
               (explode-module-path-index y)
               (list y)))))
 
-(define-syntax (phase-of-enclosing-module stx)
-  (syntax-case stx ()
-    [(poem)
-     (let ([phase-within-module (syntax-local-phase-level)])
-       #`(let ([phase-of-this-expression
-                (variable-reference->phase (#%variable-reference))])
-           (- phase-of-this-expression
-              #,(if (zero? phase-within-module) 0 1))))]))
+(define-syntax-rule (phase-of-enclosing-module)
+  (variable-reference->module-base-phase
+   (#%variable-reference)))
