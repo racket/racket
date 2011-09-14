@@ -14,8 +14,7 @@
   (define controller
     (new controller%))
   (define frame
-    (parameterize ((current-eventspace (make-eventspace)))
-      (make-view-frame controller)))
+    (make-view-frame controller))
   (lambda tests
     (for ([test (in-list tests)])
       (run test controller))))

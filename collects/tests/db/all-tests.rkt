@@ -243,10 +243,7 @@ Testing profiles are flattened, not hierarchical.
                [else tests])])
    (cond [gui?
           (let* ([test/gui (dynamic-require 'rackunit/gui 'test/gui)])
-            (apply test/gui (map cdr tests))
-            (eprintf "Press Cntl-C to end.\n") ;; HACK!
-            (with-handlers ([exn:break? (lambda _ (newline) (exit))])
-              (sync never-evt)))]
+            (apply test/gui #:wait? #t (map cdr tests)))]
          [else
           (for ([test tests])
             (printf "Running ~s tests\n" (car test))

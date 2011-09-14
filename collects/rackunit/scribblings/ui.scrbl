@@ -38,12 +38,15 @@ information.
 RackUnit also provides a GUI test runner, available from the
 @racketmodname[rackunit/gui] module.
 
-@defproc[(test/gui [test (or/c test-case? test-suite?)] ...)
-         any]{
+@defproc[(test/gui [test (or/c test-case? test-suite?)] ...
+                   [#:wait? wait? boolean? #f])
+         void?]{
 
 Creates a new RackUnit GUI window and runs each @racket[test]. The
 GUI is updated as tests complete.
 
+When @racket[wait?] is true, @racket[test/gui] does not return until
+the test runner window has been closed.
 }
 
 @defproc[(make-gui-runner)
