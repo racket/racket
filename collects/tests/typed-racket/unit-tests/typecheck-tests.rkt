@@ -1183,16 +1183,19 @@
         (tc-e (subprocess #f #f #f (string->path "/usr/bin/echo") "string" (string->path "path") #"bytes")
               (list
                 -Subprocess
-                (-opt -Input-Port)
-                (-opt -Output-Port)
-                (-opt -Input-Port)))
+                -Input-Port
+                -Output-Port
+                -Input-Port))
 
-        (tc-e (subprocess #f #f #f (string->path "/usr/bin/echo") 'exact "arg")
+
+
+
+        (tc-e (subprocess (current-output-port) (current-input-port) (current-error-port) (string->path "/usr/bin/echo") 'exact "arg")
               (list
                 -Subprocess
-                (-opt -Input-Port)
-                (-opt -Output-Port)
-                (-opt -Input-Port)))
+                (-val #f)
+                (-val #f)
+                (-val #f)))
 
         (tc-e (let ()
                 (: p Subprocess)
@@ -1203,6 +1206,39 @@
                  (subprocess #f #f #f (string->path "/bin/bash")))
                 (subprocess? p))
               #:ret (ret B (-FS -top -bot)))
+
+
+        (tc-e (let ()
+                (: std-out Input-Port)
+                (: std-in  Output-Port)
+                (: std-err Input-Port)
+                (: proc-id Natural)
+                (: f Any)
+                (define-values (std-out std-in proc-id std-err f)
+                 (apply values (process/ports #f #f #f "/bin/bash")))
+                proc-id)
+              -Nat)
+
+
+        (tc-e (let ()
+                (: std-out #f)
+                (: std-in  #f)
+                (: std-err #f)
+                (: proc-id Natural)
+                (: f Any)
+                (define-values (std-out std-in proc-id std-err f)
+                 (apply values (process*/ports (current-output-port)
+                                               (current-input-port)
+                                               (current-error-port)
+                                               "/bin/bash"
+                                               "arg1"
+                                               #"arg2")))
+                proc-id)
+              -Nat)
+
+
+
+
 
         ;Compilation
         (tc-e (compile-syntax #'(+ 1 2)) -Compiled-Expression)

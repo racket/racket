@@ -1523,11 +1523,32 @@
 ;Section 14.4 (Processes)
 
 [subprocess
- (let ((ret-type (-values (list -Subprocess (-opt -Input-Port) (-opt -Output-Port) (-opt -Input-Port)))))
-  (cl->*
-   (->* (list (-opt -Output-Port) (-opt -Input-Port) (-opt -Output-Port) -Pathlike)
-                 (Un -Path -String -Bytes) ret-type)
-   (-> (-opt -Output-Port) (-opt -Input-Port) (-opt -Output-Port) -Pathlike (-val 'exact) -String ret-type)))]
+ (let* ((make-opt-in-port (lambda (port) (if port -Input-Port (-val #f))))
+        (make-opt-out-port (lambda (port) (if port -Output-Port (-val #f))))
+        (ret-type (-values (list -Subprocess (-opt -Input-Port) (-opt -Output-Port) (-opt -Input-Port))))
+        (make-specific-case (lambda (out in err exact)
+                              (let ((arg-out (make-opt-out-port out))
+                                    (arg-in (make-opt-in-port in))
+                                    (arg-err (make-opt-out-port err))
+                                    (result (-values (list -Subprocess
+                                                 (make-opt-in-port (not out))
+                                                 (make-opt-out-port (not in))
+                                                 (make-opt-in-port (not err))))))
+                                (if exact
+                                    (-> arg-out arg-in arg-err -Pathlike (-val 'exact) -String result)
+                                    (->* (list arg-out arg-in arg-err -Pathlike)
+                                         (Un -Path -String -Bytes)
+                                         result)))))
+        (specific-cases
+         (let ((bools '(#t #f)))
+          (for*/list ((out bools) (in bools) (err bools) (exact bools))
+            (make-specific-case out in err exact)))))
+  (apply cl->*
+    (append specific-cases
+     (list
+      (->* (list (-opt -Output-Port) (-opt -Input-Port) (-opt -Output-Port) -Pathlike)
+                    (Un -Path -String -Bytes) ret-type)
+      (-> (-opt -Output-Port) (-opt -Input-Port) (-opt -Output-Port) -Pathlike (-val 'exact) -String ret-type)))))]
 [subprocess-wait (-> -Subprocess -Void)]
 [subprocess-status (-> -Subprocess (Un (-val 'running) -Nat))]
 [subprocess-kill (-> -Subprocess Univ -Void)]
@@ -1576,34 +1597,78 @@
                 (-> (-val 'kill) -Void))))))]
 
 [process/ports
-  (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -String
-             (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
-              (cl->*
-                (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+ (let* ((fun-type
+         (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
                 (-> (-val 'exit-code) (-opt -Byte))
                 (-> (-val 'wait) ManyUniv)
                 (-> (-val 'interrupt) -Void)
-                (-> (-val 'kill) -Void)))))]
+                (-> (-val 'kill) -Void)))
+        (make-opt-in-port (lambda (port) (if port -Input-Port (-val #f))))
+        (make-opt-out-port (lambda (port) (if port -Output-Port (-val #f))))
+        (make-specific-case (lambda (out in err)
+                              (-> (make-opt-out-port out)
+                                  (make-opt-in-port in)
+                                  (case err
+                                   ((stdout) (-val 'stdout))
+                                   (else (make-opt-out-port err)))
+                                  -String
+                                  (-lst* (make-opt-in-port (not out))
+                                         (make-opt-out-port (not in))
+                                         -Nat
+                                         (make-opt-in-port (not err))
+                                         fun-type))))
+        (specific-cases
+         (let ((bools '(#t #f))
+               (err-vals '(#t #f stdout)))
+          (for*/list ((out bools) (in bools) (err err-vals))
+            (make-specific-case out in err)))))
+ (apply cl->*
+  (append
+    specific-cases
+    (list
+     (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -String
+                (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
 
 [process*/ports
- (cl->*
-  (->* (list (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike)
-         (Un -Path -String -Bytes)
-           (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
-            (cl->*
-              (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-              (-> (-val 'exit-code) (-opt -Byte))
-              (-> (-val 'wait) ManyUniv)
-              (-> (-val 'interrupt) -Void)
-              (-> (-val 'kill) -Void)))))
-  (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike (-val 'exact) -String
-           (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
-            (cl->*
-              (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-              (-> (-val 'exit-code) (-opt -Byte))
-              (-> (-val 'wait) ManyUniv)
-              (-> (-val 'interrupt) -Void)
-              (-> (-val 'kill) -Void))))))]
+ (let* ((fun-type
+         (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+                (-> (-val 'exit-code) (-opt -Byte))
+                (-> (-val 'wait) ManyUniv)
+                (-> (-val 'interrupt) -Void)
+                (-> (-val 'kill) -Void)))
+        (make-opt-in-port (lambda (port) (if port -Input-Port (-val #f))))
+        (make-opt-out-port (lambda (port) (if port -Output-Port (-val #f))))
+        (make-specific-case (lambda (out in err exact)
+                              (let ((arg-out (make-opt-out-port out))
+                                    (arg-in (make-opt-in-port in))
+                                    (arg-err
+                                      (case err
+                                        ((stdout) (-val 'stdout))
+                                        (else (make-opt-out-port err))))
+                                    (result
+                                     (-lst* (make-opt-in-port (not out))
+                                            (make-opt-out-port (not in))
+                                            -Nat
+                                            (make-opt-in-port (not err))
+                                            fun-type)))
+                                (if exact
+                                  (-> arg-out arg-in arg-err -Pathlike (-val 'exact) -String result)
+                                  (->* (list arg-out arg-in arg-err -Pathlike)
+                                       (Un -Path -String -Bytes)
+                                       result)))))
+        (specific-cases
+         (let ((bools '(#t #f))
+               (err-vals '(#t #f stdout)))
+          (for*/list ((out bools) (in bools) (err err-vals) (exact bools))
+            (make-specific-case out in err exact)))))
+ (apply cl->*
+  (append specific-cases
+   (list
+     (->* (list (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike)
+            (Un -Path -String -Bytes)
+              (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))
+     (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike (-val 'exact) -String
+              (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
 
 
 
