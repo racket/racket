@@ -1092,13 +1092,15 @@
                           (let ([got (hash-ref ht modname #f)])
                             (unless got
                               ;; Currently loading?
-                              (let ([l (let ([tag (if (continuation-prompt-available? -loading-prompt-tag)
-                                                      -loading-prompt-tag
-                                                      (default-continuation-prompt-tag))])
-                                         (continuation-mark-set->list
-                                          (current-continuation-marks tag)
-                                          -loading-filename
-                                          tag))]
+                              (let ([loading
+                                     (let ([tag (if (continuation-prompt-available? -loading-prompt-tag)
+                                                    -loading-prompt-tag
+                                                    (default-continuation-prompt-tag))])
+                                       (continuation-mark-set-first
+                                        #f
+                                        -loading-filename
+                                        null
+                                        tag))]
                                     [nsr (namespace-module-registry (current-namespace))])
                                 (for-each
                                  (lambda (s)
@@ -1108,19 +1110,20 @@
                                       'standard-module-name-resolver
                                       "cycle in loading at ~.s: ~.s"
                                       filename
-                                      (map cdr (reverse (cons s l))))))
-                                 l))
-                              ((if (continuation-prompt-available? -loading-prompt-tag)
-                                   (lambda (f) (f))
-                                   (lambda (f) (call-with-continuation-prompt f -loading-prompt-tag)))
-                               (lambda ()
-                                 (with-continuation-mark -loading-filename (cons 
-                                                                            (namespace-module-registry (current-namespace))
-                                                                            normal-filename)
-                                   (parameterize ([current-module-declare-name modname])
-                                     ((current-load/use-compiled) 
-                                      filename 
-                                      (string->symbol (path->string no-sfx)))))))
+                                      (map cdr (reverse (cons s loading))))))
+                                 loading)
+                                ((if (continuation-prompt-available? -loading-prompt-tag)
+                                     (lambda (f) (f))
+                                     (lambda (f) (call-with-continuation-prompt f -loading-prompt-tag)))
+                                 (lambda ()
+                                   (with-continuation-mark -loading-filename (cons (cons 
+                                                                                    (namespace-module-registry (current-namespace))
+                                                                                    normal-filename)
+                                                                                   loading)
+                                     (parameterize ([current-module-declare-name modname])
+                                       ((current-load/use-compiled) 
+                                        filename 
+                                        (string->symbol (path->string no-sfx))))))))
                               (hash-set! ht modname #t))))
                         ;; If a `lib' path, cache pathname manipulations
                         (when (and (not (vector? s-parsed))
