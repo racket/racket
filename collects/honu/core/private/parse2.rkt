@@ -187,17 +187,19 @@
       [(head rest ...)
        (cond
          [(honu-macro? #'head)
-          (begin
-            (debug "Honu macro ~a\n" #'head)
-            (let-values ([(parsed unparsed terminate?)
-                          ((syntax-local-value #'head) #'(head rest ...) #f)])
-              (with-syntax ([parsed parsed]
-                            [rest unparsed])
-                (if terminate?
-                  (values (left #'parsed)
-                          #'rest)
-                  (do-parse #'rest precedence
-                            left #'parsed)))))]
+          (if current
+            (values (left current) stream)
+            (begin
+              (debug "Honu macro ~a\n" #'head)
+              (let-values ([(parsed unparsed terminate?)
+                            ((syntax-local-value #'head) #'(head rest ...) #f)])
+                (with-syntax ([parsed parsed]
+                              [rest unparsed])
+                  (if terminate?
+                    (values (left #'parsed)
+                            #'rest)
+                    (do-parse #'rest precedence
+                              left #'parsed))))))]
          [(parsed-syntax? #'head)
           (do-parse #'(rest ...) precedence left #'head)]
          [(honu-operator? #'head)
