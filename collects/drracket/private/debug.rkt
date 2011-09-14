@@ -558,7 +558,7 @@ profile todo:
           (with-syntax ([expr expr]
                         [mark (list 'dummy-thing source line column position span)]
                         [wcm (syntax-shift-phase-level #'with-continuation-mark phase)]
-                        [errortrace-key (syntax-shift-phase-level errortrace-key phase)]
+                        [errortrace-key errortrace-key] ; a symbol
                         [qte (syntax-shift-phase-level #'quote phase)])
             (syntax
              (wcm (qte errortrace-key)
