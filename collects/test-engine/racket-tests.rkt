@@ -377,6 +377,8 @@
 	 
     (define signature-violations '())
 
+    (inherit report-failure)
+
     (define/pubment (signature-failed obj signature message blame)
 
       (let* ((cms
@@ -401,15 +403,18 @@
 	(set! signature-violations
 	      (cons (make-signature-violation obj signature message srcloc blame)
 		    signature-violations)))
+      (report-failure)
       (inner (void) signature-failed obj signature message))
 
     (define/public (failed-signatures) (reverse signature-violations))
     
     (inherit add-check-failure)
     (define/pubment (property-failed result src-info)
+      (report-failure)
       (add-check-failure (make-property-fail src-info (test-format) result) #f))
 
     (define/pubment (property-error exn src-info)
+      (report-failure)
       (add-check-failure (make-property-error src-info (test-format) (exn-message exn) exn) exn))
 
     (super-instantiate ())))

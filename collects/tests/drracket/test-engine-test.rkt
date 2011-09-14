@@ -24,7 +24,9 @@
     (test-expression "(check-expect 1 2)"
 		     ""
 		     #:check-failures-expected
-		     (list (make-check-expect-failure "1" "2" 1 0))))
+		     (list (make-check-expect-failure "1" "2" 1 0))
+		     #:repl-check-failures-expected
+		     (list (make-check-expect-failure "1" "2" 3 2))))
 
 (define (common-signatures-*sl)
   (test-expression "(: foo Integer) (define foo 5)"
@@ -34,7 +36,20 @@
 		   ""
 		   #:repl-expected "foo: this name was defined previously and cannot be re-defined"
 		   #:signature-violations-expected
-		   (list (make-signature-violation "\"bar\"" 1 7))))
+		   (list (make-signature-violation "\"bar\"" 1 7)))
+  (test-expression "(: foo (Integer -> Integer)) (define (foo x) x) (foo \"foo\")"
+		   "\"foo\""
+		   #:repl-expected "foo: this name was defined previously and cannot be re-defined\n\"foo\""
+		   #:signature-violations-expected
+		   (list (make-signature-violation "\"foo\" at line 1, column 48 " 1 8))
+		   #:repl-signature-violations-expected
+		   (list (make-signature-violation "\"foo\" at line 4, column 50 " 1 8)))
+  (test-expression "(: foo (Integer -> Integer)) (define foo (lambda (x) x))"
+		   ""
+		   #:repl-expression "(foo \"foo\")"
+		   #:repl-expected "\"foo\""
+		   #:repl-signature-violations-expected
+		   (list (make-signature-violation "\"foo\" at line 3, column 2 " 1 8))))
 
 (define (common-signatures-DMdA)
   (test-expression "(: foo integer) (define foo 5)"
@@ -44,7 +59,21 @@
 		   ""
 		   #:repl-expected "define: Zweite Definition für denselben Namen"
 		   #:signature-violations-expected
-		   (list (make-signature-violation "\"bar\"" 1 7))))
+		   (list (make-signature-violation "\"bar\"" 1 7)))
+  (test-expression "(: foo (integer -> integer)) (define foo (lambda (x) x)) (foo \"foo\")"
+		   "\"foo\""
+		   #:repl-expected "define: Zweite Definition für denselben Namen\n\"foo\""
+		   #:signature-violations-expected
+		   (list (make-signature-violation "\"foo\" at line 1, column 57 " 1 8))
+		   #:repl-signature-violations-expected
+		   (list (make-signature-violation "\"foo\" at line 4, column 59 " 1 8)))
+  (test-expression "(: foo (integer -> integer)) (define foo (lambda (x) x))"
+		   ""
+		   #:repl-expression "(foo \"foo\")"
+		   #:repl-expected "\"foo\""
+		   #:repl-signature-violations-expected
+		   (list (make-signature-violation "\"foo\" at line 3, column 2 " 1 8))))
+
 
 
 ;                                                             
@@ -315,31 +344,24 @@
     (else '())))
   
 
-;; test-expression : (union string 'xml 'image (listof (union string 'xml 'image)))
-;;                   (union string regexp (string -> boolean)) 
-;;                -> void
 ;; types an expression in the definitions window, executes it and tests the output
 ;; types an expression in the REPL and tests the output from the REPL.
 (define (test-expression expression defs-expected 
+			 #:repl-expression (repl-expression expression)
 			 #:repl-expected (repl-expected defs-expected)
 			 #:check-failures-expected (check-failures-expected '())
-			 #:signature-violations-expected (signature-violations-expected '()))
+			 #:signature-violations-expected (signature-violations-expected '())
+			 #:repl-check-failures-expected (repl-check-failures-expected '())
+			 #:repl-signature-violations-expected (repl-signature-violations-expected '()))
   (let* ([drs (wait-for-drscheme-frame)]
          [interactions-text (queue-callback/res (λ () (send drs get-interactions-text)))]
          [definitions-text (queue-callback/res (λ () (send drs get-definitions-text)))]
-         [handle-insertion
+         [handle-definition-insertion
           (lambda (item)
-            (cond
-              [(eq? item 'image)
-               (use-get/put-dialog 
-                (lambda () (fw:test:menu-select "Insert" "Insert Image..."))
-                (simplify-path (build-path (collection-path "icons") "recycle.png")))]
-              [(string? item)
-               (type-in-definitions drs item)]
-              [(eq? item 'xml)
-               (fw:test:menu-select "Insert" "Insert XML Box")
-               (for-each fw:test:keystroke (string->list "<a><b>"))]
-              [else (error 'handle-insertion "unknown thing to insert ~s" item)]))]
+	    (type-in-definitions drs item))]
+         [handle-interaction-insertion
+          (lambda (item)
+	    (type-in-interactions drs item))]
          [check-expectation
           (lambda (expected got)
             (cond
@@ -349,6 +371,37 @@
                (regexp-match expected got)]
               [(procedure? expected)
                (expected got)]))]
+	 [check-failures
+	  (lambda (signature-violations-expected check-failures-expected)
+	    (let ((text
+		   (cond
+		    ((send (send definitions-text get-tab) get-test-editor)
+		     => (lambda (test-editor)
+			  (let ((text (send test-editor get-text 0 'eof #t)))
+			    (if (string=? text "")
+				#f
+				text))))
+		    (else #f))))
+	   
+	      (cond
+	       ((and (null? signature-violations-expected)
+		     (null? check-failures-expected))
+		(when text
+		  (eprintf "FAILED: ~s ~s expected ~s to produce no check failures or signature violations:\ngot:\n~a\ninstead\n"
+			   'definitions (language) expression text)))
+	       (text
+		(let-values (((test-count test-passed-count signature-violation-count check-failures signature-violations)
+			      (parse-test-failures text)))
+		  (when (not (equal? check-failures check-failures-expected))
+		    (eprintf "FAILED: ~s ~s expected ~s to produce check failures:\n~s\ngot:\n~s\ninstead\n"
+			     'definitions (language) expression check-failures-expected check-failures))
+		  (when (not (equal? signature-violations signature-violations-expected))
+		    (eprintf "FAILED: ~s ~s expected ~s to produce signature violations:\n~s\ngot:\n~s\ninstead\n"
+			     'definitions (language) expression signature-violations-expected signature-violations))))
+	       (else
+		(eprintf "expected ~a check failures and ~a signature violations but got none"
+			 (length check-failures-expected) (length signature-violations-expected))))))]
+
          [make-err-msg
           (lambda (expected)
             (cond
@@ -360,8 +413,8 @@
                "FAILED: ~s ~s expected ~s to pass predicate ~s, got ~s\n"]))])
     (clear-definitions drs)
     (cond
-      [(pair? expression) (for-each handle-insertion expression)]
-      [else (handle-insertion expression)])
+      [(pair? expression) (for-each handle-definition-insertion expression)]
+      [else (handle-definition-insertion expression)])
     (do-execute drs)
 
     (let ([got
@@ -378,44 +431,11 @@
         (eprintf (make-err-msg defs-expected) 
                  'definitions (language) expression defs-expected got)))
 
-    (let ((text
-	   (cond
-	    ((send (send definitions-text get-tab) get-test-editor)
-	     => (lambda (test-editor)
-		  (let ((text (send test-editor get-text 0 'eof #t)))
-		    (if (string=? text "")
-			#f
-			text))))
-	    (else #f))))
-	   
-      (cond
-       ((and (null? signature-violations-expected)
-	     (null? check-failures-expected))
-	(when text
-	  (eprintf "FAILED: ~s ~s expected ~s to produce no check failures or signature violations:\ngot:\n~a\ninstead\n"
-                   'definitions (language) expression text)))
-       (text
-	(let-values (((test-count test-passed-count signature-violation-count check-failures signature-violations)
-		      (parse-test-failures text)))
-	  (when (not (equal? check-failures check-failures-expected))
-	    (eprintf "FAILED: ~s ~s expected ~s to produce check failures:\n~s\ngot:\n~s\ninstead\n"
-                     'definitions (language) expression check-failures-expected check-failures))
-	  (when (not (equal? signature-violations signature-violations-expected))
-	    (eprintf "FAILED: ~s ~s expected ~s to produce signature violations:\n~s\ngot:\n~s\ninstead\n"
-                     'definitions (language) expression signature-violations-expected signature-violations))))
-       (else
-        (eprintf "expected ~a check failures and ~a signature violations but got none"
-                 (length check-failures-expected) (length signature-violations-expected)))))
-    ; #### do same for REPL
+    (check-failures signature-violations-expected check-failures-expected)
     
-    (queue-callback/res
-     (λ ()
-	(send definitions-text select-all)
-	(send definitions-text copy)
-	(send interactions-text set-position
-	      (send interactions-text last-position)
-	      (send interactions-text last-position))
-	(send interactions-text paste)))
+    (cond
+     [(pair? repl-expression) (for-each handle-interaction-insertion repl-expression)]
+     [else (handle-interaction-insertion repl-expression)])
     
     (let ([last-para (queue-callback/res (lambda () (send interactions-text last-paragraph)))])
       (alt-return-in-interactions drs)
@@ -433,7 +453,11 @@
         (when (regexp-match re:out-of-sync got)
           (error 'test-expression "got out of sync message"))
         (unless (check-expectation repl-expected got)
-          (eprintf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got))))))
+          (eprintf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got))))
+    
+    ;; the failures from the definition window stick around
+    (check-failures (append signature-violations-expected repl-signature-violations-expected)
+		    (append check-failures-expected repl-check-failures-expected))))
 
 
 

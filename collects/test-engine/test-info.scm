@@ -58,6 +58,17 @@
     (define failures null)
     (define wishes null)
 
+    (define unreported-failures #f)
+
+    (define/public (clear-unreported-failures)
+      (set! unreported-failures #f))
+
+    (define/public (report-failure)
+      (set! unreported-failures #t))
+
+    (define/public (has-unreported-failures)
+      unreported-failures)
+
     (define/public (test-style) style)
     (define/public (tests-run) total-tsts)
     (define/public (tests-failed) failed-tsts)
@@ -105,10 +116,12 @@
 		 msg
 		 (make-message-error src #f msg))))
 	(add-check-failure fail exn?)
+	(report-failure)
 	(inner (void) check-failed fail src exn?)))
 
     (define/pubment (test-failed failed-info)
       (set! failed-tsts (add1 failed-tsts))
+      (report-failure)
       (inner (void) test-failed failed-info))
 
     (define/public (add-analysis a) (set! analyses (cons a analyses)))
