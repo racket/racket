@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "../gentest-framework.rkt")
 (provide proto:modules)
 

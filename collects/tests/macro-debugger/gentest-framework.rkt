@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (provide (all-defined-out))
 
 (define-struct collection (label contents) #:transparent)

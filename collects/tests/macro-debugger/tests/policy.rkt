@@ -1,13 +1,13 @@
-#lang scheme/base
-(require rackunit)
-(require macro-debugger/model/debug
+#lang racket/base
+(require rackunit
+         macro-debugger/model/debug
          "../test-setup.rkt")
 (provide policy-tests)
 
 (define ns (make-base-namespace))
 (eval '(require (prefix-in k: '#%kernel)) ns)
-(eval '(require (prefix-in base: scheme/base)) ns)
-(eval '(require (prefix-in scheme: scheme)) ns)
+(eval '(require (prefix-in base: racket/base)) ns)
+(eval '(require (prefix-in scheme: racket)) ns)
 
 (define (make-test-id sym)
   (parameterize ((current-namespace ns))
@@ -30,13 +30,13 @@
       (test-base k:lambda #f)
       (test-base k:if #f)
 
-      ;; Scheme/base forms
+      ;; racket/base forms
       (test-base base:define #f)
       (test-base base:lambda #f)
       (test-base base:#%app #f)
       (test-base base:if #f)
 
-      ;; Other Scheme/* forms
+      ;; Other racket/* forms
       (test-base scheme:match #f)
       (test-base scheme:unit #t)
       (test-base scheme:class #f)
@@ -50,13 +50,13 @@
       (test-standard k:lambda #f)
       (test-standard k:if #f)
 
-      ;; Scheme/base forms
+      ;; racket/base forms
       (test-standard base:define #f)
       (test-standard base:lambda #f)
       (test-standard base:#%app #f)
       (test-standard base:if #f)
 
-      ;; Other Scheme/* forms
+      ;; Other racket/* forms
       (test-standard scheme:match #f)
       (test-standard scheme:unit #f)
       (test-standard scheme:class #f)

@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require rackunit)
 (require macro-debugger/model/debug
          macro-debugger/model/steps
@@ -129,8 +129,6 @@
                                (define (g y) c)
                                (define h c)
                                (add1 (g 2))))))])
-          (printf "not a step:\n~s\n"
-                  (for/or ([s rs]) (and (not (step? s)) s)))
           (check-pred list? rs)
           (for ([x (in-list rs)])
             (check-true (not (misstep? x)))))))

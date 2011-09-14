@@ -1,5 +1,4 @@
-
-#lang scheme/base
+#lang racket/base
 (require macro-debugger/model/debug)
 ;; Testing facilities for macro debugger
 

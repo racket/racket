@@ -1534,7 +1534,7 @@ path/s is either such a string or a list of them.
 "collects/tests/jpr/streams.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/jpr/valrose.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/macro-debugger" responsible (ryanc)
-"collects/tests/macro-debugger/all-tests.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/tests/macro-debugger/all-tests.rkt" drdr:command-line (racket * "--text")
 "collects/tests/macro-debugger/gui-tests.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/macro-debugger/tests/collects.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/match" responsible (samth)

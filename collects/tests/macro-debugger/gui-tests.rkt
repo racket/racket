@@ -1,8 +1,8 @@
-#lang scheme/base
-(require scheme/class
-         scheme/list
-         scheme/gui/base
-         framework/framework
+#lang racket/base
+(require racket/class
+         racket/list
+         racket/gui/base
+         framework
          mzlib/etc)
 
 (require macro-debugger/model/trace

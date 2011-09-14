@@ -1,5 +1,7 @@
-#lang scheme/base
-(require rackunit
+#lang racket/base
+(require racket/cmdline
+         rackunit
+         rackunit/text-ui
          macro-debugger/model/debug
          "gentest-framework.rkt"
          "gentests.rkt"
@@ -11,16 +13,8 @@
          "tests/hiding.rkt"
          "tests/regression.rkt"
          "tests/policy.rkt"
-         ;;"tests/collects.rkt"
-         )
+         "tests/collects.rkt")
 (provide all-tests)
-
-#|
-(require rackunit/gui)
-(define (go) (test/gui all-tests))
-(define (collects) (test/gui big-libs-tests))
-(provide go)
-|#
 
 (define protos
   (list proto:kernel-forms
@@ -48,3 +42,28 @@
     specialized-hiding-tests
     regression-tests
     policy-tests))
+
+(define-syntax-rule (with-namespace expr)
+  (parameterize ((current-namespace (make-base-namespace)))
+    expr))
+
+;; ----
+
+(define test-mode #f)
+(define collects-tests? #f)
+
+(command-line
+ #:once-each
+ [("--text") "Run tests in RackUnit text UI" (set! test-mode 'text)]
+ [("--gui") "Run tests in RackUnit GUI" (set! test-mode 'gui)]
+ [("--collects") "Include collects tests" (set! collects-tests? #t)]
+ #:args ()
+ (let* ([tests (cons all-tests (if collects-tests? (list collects-tests) null))])
+   (case test-mode
+     ((text)
+      (with-namespace
+       (for-each run-tests tests)))
+     ((gui)
+      (let ([test/gui (dynamic-require 'rackunit/gui 'test/gui)])
+        (with-namespace
+         (apply test/gui #:wait? #t tests)))))))
