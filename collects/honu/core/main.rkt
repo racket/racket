@@ -37,6 +37,7 @@
                      [honu-map map]
                      [honu-flow \|]
                      [honu-dot |.|]
+                     [honu-string=? string_equal]
                      [honu-cons ::]
                      [honu-and and] [honu-and &&]
                      [honu-or or] [honu-or \|\|]

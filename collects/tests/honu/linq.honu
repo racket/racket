@@ -30,6 +30,10 @@ loadXml(file){
   }
 }
 
+starts_with(start, what){
+  substring(what, 0, string_length(start)) string_equal start
+}
+
 var xml = loadXml("test.xml");
 printf("xml ~a\n", xml);
 printf("data: ~a\n", xml.getData());
@@ -48,3 +52,11 @@ printf("addresses ~a\n", addresses);
 for add in addresses do {
   printf("name ~a address ~a\n", add.name, add.address);
 }
+
+printf("+++\n");
+for xs in linq from foo in xml.Descendants("Table1")
+                where starts_with("x", foo.Element("familyName").Value())
+                select foo.Element("familyName").Value() do {
+  printf("only x: ~a\n", xs)
+}
+// printf("---\n");

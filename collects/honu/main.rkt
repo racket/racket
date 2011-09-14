@@ -22,8 +22,10 @@
          null
          null?
          length
+         substring
          (rename-out [honu-cond cond]
                      [null empty]
+                     [string-length string_length]
                      [racket:empty? empty?]
                      [racket:first first]
                      [racket:rest rest]))
