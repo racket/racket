@@ -932,7 +932,7 @@ END-OF-TESTS
            ;; split the tests
            [ts (regexp-split #px"(?m:^)-+(?:$|\r?\n)" ts)])
       (parameterize ([port-count-lines-enabled #t])
-        (for ([t ts] #:when (not (regexp-match? #px"^\\s*$" t)))
+        (for ([t ts] #:unless (regexp-match? #px"^\\s*$" t))
           (let ([m (or (regexp-match #px"^(.*)\n\\s*(-\\S+->)\\s*\n(.*)$"
                                      t)
                        (regexp-match #px"^(.*\\S)\\s+(-\\S+->)\\s+(\\S.*)$"

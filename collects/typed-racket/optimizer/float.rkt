@@ -116,7 +116,7 @@
                       (log-float-real-missed-opt
                        this-syntax
                        (for/list ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
-                                  #:when (not (subtypeof? x -Flonum)))
+                                  #:unless (subtypeof? x -Flonum))
                          x)))
                     ;; If an optimization was expected (whether it was safe or not doesn't matter),
                     ;; report subexpressions doing expensive exact arithmetic (Exact-Rational and

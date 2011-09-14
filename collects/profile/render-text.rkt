@@ -122,8 +122,8 @@
       (define (sub get-edges get-node get-node-time)
         (for*/list ([edge (in-list (get-edges node))]
                     [sub  (in-list (list (get-node edge)))] ; <-- hack...
-                    #:when (not (or (eq? *-node sub)        ; <-- ...for this
-                                    (memq sub hidden))))
+                    #:unless (or (eq? *-node sub)           ; <-- ...for this
+                                 (memq sub hidden)))
           (define name   (node-> 'sub-label sub))
           (define local% (format-percent (get-node-time edge) total))
           `("" "" "" "" "" "" "" ""

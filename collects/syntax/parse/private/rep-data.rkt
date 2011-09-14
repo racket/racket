@@ -201,7 +201,7 @@ expressions are duplicated, and may be evaluated in different scopes.
   (for ([id (in-list ids)]) (bound-id-table-set! idbm id #t))
   (for/list ([(k v) (in-dict (declenv-table env))]
              #:when (or (den:class? v) (den:magic-class? v) (den:parser? v))
-             #:when (not (bound-id-table-ref idbm k #f)))
+             #:unless (bound-id-table-ref idbm k #f))
     k))
 
 ;; Conventions = (listof (list regexp DeclEntry))

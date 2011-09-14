@@ -41,8 +41,8 @@
     [(env l)
      (mk-env e
              (for/fold ([h l])
-               ([(k v) (in-dict l)]
-                #:when (not (f (cons k v))))
+                       ([(k v) (in-dict l)]
+                        #:unless (f (cons k v)))
                (dict-remove h k)))]))
 
 (r:define/cond-contract (make-empty-env dict)

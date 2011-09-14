@@ -163,10 +163,9 @@
            (let-values ([(atomic not-atomic) (partition atomic-filter? result)])
              (define not-atomic*
                (for/list ([p (in-list not-atomic)]
-                          #:when
-                          (not (for/or ([a (in-list atomic)])
-                                       (implied-atomic? p a))))
-                         p))
+                          #:unless (for/or ([a (in-list atomic)])
+                                     (implied-atomic? p a)))
+                 p))
              ;; `compact' takes care of implications between atomic props
              (apply mk (compact (append not-atomic* atomic) #f)))])
         (match (car fs)

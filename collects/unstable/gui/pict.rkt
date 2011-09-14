@@ -160,7 +160,7 @@
     [(_ [name ...] body ...)
      (let* ([ids (syntax->list #'(name ...))])
 
-       (for ([id (in-list ids)] #:when (not (identifier? id)))
+       (for ([id (in-list ids)] #:unless (identifier? id))
          (raise-syntax-error #f "expected an identifier" stx id))
 
        (with-syntax ([(num ...)

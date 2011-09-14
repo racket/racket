@@ -307,7 +307,7 @@
                                 [else (error 'zo-parse "bad phase ~a body element: ~e" i sb)]))))
                     ;; unexported:
                     (for/list ([l (in-list phase-data)]
-                               #:when (not (void? (list-ref l 1))))
+                               #:unless (void? (list-ref l 1)))
                       (let* ([phase (list-ref l 0)]
                              [indirect-syntax 
                               ;; could check: (list-ref l 2) should be size of vector:

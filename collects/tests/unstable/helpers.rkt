@@ -67,7 +67,7 @@
                     [actuals expecteds]
                     ([actual (in-list actual-sorted)]
                      [expected (in-list actual-sorted)]
-                     #:when (not (== actual expected)))
+                     #:unless (== actual expected))
                   (values actual expected))])
             (unless (and (null? actuals) (null? expecteds))
               (with-check-info*

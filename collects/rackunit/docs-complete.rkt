@@ -74,13 +74,8 @@
   
   (define undocumented-exports
     (for/list ([ex (in-list exports)]
-               #:when
-               (not (xref-binding->definition-tag
-                     xref
-                     (list what ex)
-                     #f))
-               #:when
-               (not (skip-proc ex)))
+               #:unless (xref-binding->definition-tag xref (list what ex) #f)
+               #:unless (skip-proc ex))
       ex))
   
   (unless (null? undocumented-exports)

@@ -79,7 +79,7 @@
   (syntax-case stx []
     [(_ def [name ...] expr)
      (let* ([ids (syntax->list #'(name ...))])
-       (for ([bad (in-list ids)] #:when (not (identifier? bad)))
+       (for ([bad (in-list ids)] #:unless (identifier? bad))
          (wrong-syntax bad "expected an identifier"))
        (let*-values ([(bound unbound) (partition identifier-binding ids)])
          (cond

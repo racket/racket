@@ -123,7 +123,7 @@
 
 (define (vector-filter-not f v)
   (one-arg-check f v 'vector-filter-not)
-  (list->vector (for/list ([i (in-vector v)] #:when (not (f i))) i)))
+  (list->vector (for/list ([i (in-vector v)] #:unless (f i)) i)))
 
 (define (vector-count f v . vs)
   (unless (and (procedure? f) (procedure-arity-includes? f (add1 (length vs))))

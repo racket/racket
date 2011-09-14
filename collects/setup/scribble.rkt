@@ -290,7 +290,7 @@
             (set-info-need-run?! info #t))))
       ;; If any expected dependency changed, then we need a re-run:
       (for ([i infos]
-            #:when (not (or (info-need-run? i) (not (info-build? i)))))
+            #:unless (or (info-need-run? i) (not (info-build? i))))
         (let ([ch (ormap (lambda (i2)
                            (or (and (not (info? i2))
                                     i2)

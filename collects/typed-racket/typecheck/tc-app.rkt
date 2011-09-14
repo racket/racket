@@ -177,7 +177,7 @@
                [pt (in-list pos-tys)])
            (tc-expr/check pa (ret pt)))
          (for ([n names]
-               #:when (not (memq n tnames)))
+               #:unless (memq n tnames))
            (tc-error/delayed
             "unknown named argument ~a for class\nlegal named arguments are ~a"
             n (stringify tnames)))
