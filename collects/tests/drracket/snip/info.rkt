@@ -1,6 +1,5 @@
 #lang setup/infotab
 
-(define compile-omit-paths 
-  (list "collapsed.rkt" 
-        "2htdpimage.rkt" 
-        "image.rkt"))
+;; compiling the wxme files requires `racket/draw' which fails on build
+;; machines without libcairo.  So avoid compiling them.
+(define compile-omit-paths 'all)
