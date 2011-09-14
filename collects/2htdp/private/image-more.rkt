@@ -1079,7 +1079,7 @@
 (define/chk (triangle/ass angle-a side-b side-c mode color)
   (define (triangle-vertices/ass A b c)
     (list (make-posn 0 0) (make-posn c 0) (polar->posn b A)))
-  (polygon (triangle-vertices/ass angle-a side-b side-c) mode color))
+  (polygon (triangle-vertices/ass (radians angle-a) side-b side-c) mode color))
 
 (define/chk (triangle/sas side-a angle-b side-c mode color)
   (define (triangle-vertices/sas a B c)

@@ -1004,6 +1004,12 @@
       =>
       #t)
 
+(test (equal~? (triangle/ass 90 60 60 'solid 'red)
+               (triangle/sss (* 60 (sqrt 2)) 60 60 'solid 'red)
+               0.001)
+      =>
+      #t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; square
