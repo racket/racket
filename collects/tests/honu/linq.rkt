@@ -11,9 +11,11 @@
                      syntax/parse))
 
 (define-literal+set linq-literals
-                    linq-from linq-select linq-where)
+                    linq-from linq-select linq-where
+                    linq-order-by)
 (provide linq (rename-out [linq-from from]
                           [linq-where where]
+                          [linq-order-by orderby]
                           [linq-select select]))
 
 (define-honu-syntax linq
@@ -23,10 +25,20 @@
       [(_ linq-from name:id honu-in
           (~var store honu-expression)
           (~optional (~seq linq-where where:honu-expression))
+          (~optional (~seq linq-order-by order-by:honu-expression))
           linq-select select:honu-expression . rest)
        (define out
-         #'(for/list ([name store.result])
-             select.result))
+         (with-syntax ([(guard ...)
+                        (if (attribute where)
+                          #'(#:when where.result)
+                          #'())]
+                       [order (if (attribute order-by)
+                                #'(sort store.result string<?
+                                        #:key (lambda (name) order-by.result))
+                                #'store.result)])
+           #'(for/list ([name order]
+                        guard ...)
+               select.result)))
        (values out #'rest #f)])))
           
 #|

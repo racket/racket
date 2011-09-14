@@ -38,6 +38,8 @@ printf("table1: ~a\n", xml.Descendants("Table1"));
 struct test{name, address};
 
 var addresses = linq from add in xml.Descendants("Table1")
+                     where true
+                     orderby add.Element("familyName").Value()
                      select test(add.Element("familyName").Value(),
                                  add.Element("address").Value());
 
