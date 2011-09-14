@@ -10,20 +10,23 @@
                      honu/core/private/parse2
                      syntax/parse))
 
-(define-literal linq-from linq-select)
+(define-literal+set linq-literals
+                    linq-from linq-select linq-where)
 (provide linq (rename-out [linq-from from]
+                          [linq-where where]
                           [linq-select select]))
 
 (define-honu-syntax linq
   (lambda (code context)
-    (syntax-parse code #:literal-sets (cruft)
+    (syntax-parse code #:literal-sets (cruft linq-literals)
                        #:literals (honu-in)
       [(_ linq-from name:id honu-in
           (~var store honu-expression)
-          linq-select what:honu-expression . rest)
+          (~optional (~seq linq-where where:honu-expression))
+          linq-select select:honu-expression . rest)
        (define out
          #'(for/list ([name store.result])
-             what.result))
+             select.result))
        (values out #'rest #f)])))
           
 #|
