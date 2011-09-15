@@ -45,13 +45,13 @@
   (syntax-case stx ()
     [(mod name init-import mb)
      (syntax-case (disarm #'mb) (#%plain-module-begin)
-       [(#%plain-module-begin b1 b2 body ...)
+       [(#%plain-module-begin b1 body ...)
         (copy-props
          stx
          #`(#,(namespace-module-identifier) name init-import
             #,(syntax-rearm
                #`(#%plain-module-begin
-                  b1 b2 ;; the two requires that were introduced earlier
+                  b1 ;; the requires that were introduced earlier
                   (#%plain-app init-test-coverage '#,(remove-duplicates test-coverage-state))
                   body ...)
                #'mb)))])]))
