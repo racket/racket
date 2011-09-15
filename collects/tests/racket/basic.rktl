@@ -2521,6 +2521,16 @@
   (list? (list* 1 2 p))
   (test 1 hash-ref ht p #f))
 
+;; Check that hash-table cycles don't lead to an
+;;  explosion in the time to compute a hash code.
+(let ()
+  (define ht (make-hash))
+  (hash-set! ht 'a ht)
+  (hash-set! ht 'b ht)
+  (eq-hash-code ht)
+  (equal-hash-code ht)
+  (equal-secondary-hash-code ht))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc
 

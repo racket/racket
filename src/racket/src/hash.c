@@ -1264,7 +1264,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 #     include "mzhashchk.inc"
 
       k = (k << 1) + 3;
-      hi->depth += 2;
+      hi->depth *= 2; /* mult to counteract potential explosion due to old_depth reset */
       old_depth = hi->depth;
       
       keys = ht->keys;
@@ -1676,7 +1676,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       
 #     include "mzhashchk.inc"
 
-      hi->depth += 2;
+      hi->depth *= 2; /* mult to counteract potential explosion due to old_depth reset */
       old_depth = hi->depth;
 
       keys = ht->keys;
