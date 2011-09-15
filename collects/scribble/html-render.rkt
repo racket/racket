@@ -92,9 +92,6 @@
 (define current-version (make-parameter (version)))
 (define current-part-files (make-parameter #f))
 
-(define (toc-part? d)
-  (part-style? d 'toc))
-
 ;; HTML anchors should be case-insensitively unique. To make them
 ;;  distinct, add a "." in front of capital letters.  Also clean up
 ;;  characters that give browers trouble (i.e., the ones that are not
@@ -698,6 +695,11 @@
     (define/private (part-parent d ri)
       (collected-info-parent (part-collected-info d ri)))
 
+    (define (toc-part? d ri)
+      (and (part-style? d 'toc)
+           ;; topmost part doesn't count as toc, since it
+           (part-parent d ri)))
+
     (define/private (find-siblings d ri)
       (let ([parent (collected-info-parent (part-collected-info d ri))])
         (let loop ([l (cond
@@ -729,17 +731,19 @@
       (define prev
         (if prev0
           (let loop ([p prev0])
-            (if (and (toc-part? p) (pair? (part-parts p)))
+            (if (and (toc-part? p ri) (pair? (part-parts p)))
               (loop (last (part-parts p)))
               p))
-          (and parent (toc-part? parent) parent)))
+          (and parent (toc-part? parent ri) parent)))
       (define next
-        (cond [(and (toc-part? d) (pair? (part-parts d))) (car (part-parts d))]
+        (cond [(and (toc-part? d ri) (pair? (part-parts d))) (car (part-parts d))]
               [(not next0)
                (let loop ([p parent])
-                 (and p (toc-part? p)
+                 (and p 
+                      (toc-part? p ri)
                       (let-values ([(prev next) (find-siblings p ri)])
-                        (or next (loop (part-parent p ri))))))]
+                        (or next
+                            (loop (part-parent p ri))))))]
               [else next0]))
       (define index
         (let loop ([d d])
@@ -779,7 +783,9 @@
         (make-style
          #f
          (list
-          (make-target-url url)
+          (make-target-url (if (equal? url "")
+                               "#"
+                               url))
           (make-attributes
            `([title . ,(if title* (string-append label " to " title*) label)]
              [pltdoc . "x"]
@@ -822,7 +828,7 @@
                 sep-element
                 (make-element
                  (cond
-                   [(and (part? parent) (toc-part? parent)
+                   [(and (part? parent) (toc-part? parent ri)
                          (part-parent parent ri))
                     (titled-url "up" parent)]
                    [parent (titled-url "up" "index.html" #:title-from parent)]
@@ -1472,7 +1478,7 @@
 
     (define/override (collect-part d parent ci number)
       (let ([prev-sub (collecting-sub)])
-        (parameterize ([collecting-sub (if (toc-part? d) 
+        (parameterize ([collecting-sub (if (part-style? d 'toc)
                                            1 
                                            (add1 prev-sub))]
                        [collecting-whole-page (prev-sub . <= . 1)])
