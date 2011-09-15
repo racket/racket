@@ -1558,22 +1558,26 @@ void GC_destroy_orphan_msg_memory(void *param) {
 
   if (msgm->big_pages)
   { 
-    mpage *tmp = msgm->big_pages;
+    mpage *tmp = msgm->big_pages, *next;
+    next = tmp->next;
     free_orphaned_page(gc, tmp);
 
-    while (tmp->next) { 
-      tmp = tmp->next; 
+    while (next) {
+      tmp = next;
+      next = tmp->next;
       free_orphaned_page(gc, tmp);
     }
   }
 
   if (msgm->pages)
   { 
-    mpage *tmp = msgm->pages;
+    mpage *tmp = msgm->pages, *next;
+    next = tmp->next;
     free_orphaned_page(gc, tmp);
 
-    while (tmp->next) { 
-      tmp = tmp->next;
+    while (next) { 
+      tmp = next;
+      next = tmp->next;
       free_orphaned_page(gc, tmp);
     }
 
