@@ -137,6 +137,7 @@
 
 .RktBlk {
   white-space: inherit;
+  text-align: left;
 }
 
 .RktBlk tr {
