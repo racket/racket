@@ -2407,6 +2407,14 @@ static void do_swap_thread()
   swapping = 1;
 #endif
 
+#ifdef MZ_USE_PLACES
+  if (GC_is_using_master()) {
+    scheme_log_abort("attempted thread swap during master GC use");
+    abort();
+  }
+#endif
+
+
   if (!swap_no_setjmp && SETJMP(scheme_current_thread)) {
     /* We're back! */
     /* See also initial swap in in start_child() */

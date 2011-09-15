@@ -69,7 +69,15 @@
 (define (try-message msg-code)
   ;; (printf "trying ~s\n" msg-code) ;; helpful when crashing ...
   (define msg (eval msg-code ns))
-  (equal? msg (place-channel-put/get pch msg)))
+  (unless (place-message-allowed? msg-code)
+    #f)
+  (if (zero? (random 10))
+      ;; put message into a channel to abandon to test finalization:
+      (let-values ([(i o) (place-channel)])
+        (place-channel-put i msg)
+        #t)
+      ;; normal round-trip checking:
+      (equal? msg (place-channel-put/get pch msg))))
 
 (redex-check L legal-message 
              (try-message (term legal-message))

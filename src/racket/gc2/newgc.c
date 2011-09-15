@@ -2790,6 +2790,10 @@ void GC_switch_back_from_master(void *gc) {
   restore_globals_from_gc(gc);
 }
 
+int GC_is_using_master() {
+  return postmaster_and_master_gc(GC_get_GC());
+}
+
 
 #endif
 

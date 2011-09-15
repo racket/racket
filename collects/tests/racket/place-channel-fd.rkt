@@ -51,12 +51,14 @@
   (place-channel-put p (current-output-port))
 
   (define o (open-output-file "test1" #:exists 'replace))
+  (for ([n (in-range 10000)]) (place-message-allowed? o)) ; make sure checking doesn't dup
   (write-string "Hello\n" o)
   (flush-output o)
   (place-channel-put p o)
   (place-channel-get p)
 
   (define i (open-input-file "test2"))
+  (for ([n (in-range 10000)]) (place-message-allowed? i)) ; make sure checking doesn't dup
   (place-channel-put p i)
   (close-input-port i)
 

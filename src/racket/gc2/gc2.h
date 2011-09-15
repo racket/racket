@@ -472,12 +472,18 @@ GC2_EXTERN void GC_destruct_child_gc();
 
 GC2_EXTERN void *GC_switch_to_master_gc();
 /*
-   Switches to the master GC
+   Switches to the master GC.
 */
 
 GC2_EXTERN void GC_switch_back_from_master(void *gc);
 /*
-   Switches to back to gc from the master GC
+   Switches to back to gc from the master GC.
+*/
+
+GC2_EXTERN int GC_is_using_master();
+/*
+   Reports whether the master GC is in use after a non-master GC
+   has been created.
 */
 
 GC2_EXTERN intptr_t GC_alloc_alignment();

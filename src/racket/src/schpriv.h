@@ -3639,7 +3639,6 @@ typedef struct Scheme_Symbol_Parts {
 
 void scheme_spawn_master_place();
 # endif
-Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 # ifdef UNIX_PROCESSES
 # define MZ_PLACES_WAITPID
 void scheme_places_block_child_signal();
