@@ -1064,9 +1064,9 @@
        $ git ci -m "even more stuff"
        [master 18bc0e6] even more stuff}
 @~
-  At this point, instead of blindly pushing these commits, lets around first.
-  One useful tool for inspecting the history is @cmd{gitk} — if you run it now,
-  you will see the simple 3-commit graph, and two of them are marked as
+  At this point, instead of blindly pushing these commits, lets look around
+  first.  One useful tool for inspecting the history is @cmd{gitk} — if you run
+  it now, you will see the simple 3-commit graph, and two of them are marked as
   branches — clearly showing that your local master branch is 2 commits ahead
   of the remote one.  This could be different at this point: someone else might
   have pushed more commits to the remote — remember that your remote master
