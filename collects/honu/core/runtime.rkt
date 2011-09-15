@@ -4,6 +4,8 @@
          "private/honu-typed-scheme.rkt"
          racket/port)
 
+;; at the repl, honu will only read a single line at a time regardless
+;; of how many expressions it contains
 (define (read-one-line name input)
   (define quit? #f)
   (define one-line
@@ -18,8 +20,7 @@
             (display next)
             (loop))))))
   (if quit?
-    ;; this isn't right, somehow communicate to the system that the repl should close
-    #'(exit)
+    eof
     (honu-read-syntax name (open-input-string one-line))))
 
 (provide configure)
