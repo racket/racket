@@ -105,7 +105,7 @@ are simulated using @racket[thread].}
 
 
 @defproc[(dynamic-place [module-path module-path?] 
-                        [start-proc symbol?]
+                        [start-proc symbol?])
                         place?]{
 
  Creates a @tech{place} to run the procedure that is identified by
@@ -138,8 +138,8 @@ are simulated using @racket[thread].}
                          [start-proc symbol?]
                          [#:in in (or/c input-port? #f) #f]
                          [#:out out (or/c output-port? #f) (current-output-port)]
-                         [#:err err (or/c output-port? #f) (current-error-port)]
-                         (values place? (or/c input-port? #f) (or/c output-port? #f) (or/c output-port? #f)]{
+                         [#:err err (or/c output-port? #f) (current-error-port)])
+                         (values place? (or/c input-port? #f) (or/c output-port? #f) (or/c output-port? #f))]{
 
  The @racket[dynamic-place*] function behaves just like the
  @racket[dynamic-place] but allows the user to specify the standard
@@ -153,7 +153,8 @@ are simulated using @racket[thread].}
  same file-stream port or system pipe that is supplied as standard
  output is also used for standard error.  For each port or
  @racket['stdout] that is provided, no pipe is created and the
- corresponding returned value is @racket[#f]
+ corresponding returned value is @racket[#f].  The user is responsible 
+for closing all ports returned by @racket[dynamic-place*].
 
 The @racket[dynamic-place*] procedure returns four values:
 
@@ -170,6 +171,7 @@ The @racket[dynamic-place*] procedure returns four values:
  @item{an input port piped from the place's standard error, or
  @racket[#f] if @racket[err] was a port or @racket['stdout].}
 
+]
 
 }
 
