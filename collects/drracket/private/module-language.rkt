@@ -912,26 +912,33 @@
      
       (define tooltip-frame #f)
       (define/private (show-tooltip)
+        (define tooltip-labels-to-show
+          (if (preferences:get 'drracket:online-compilation-default-off)
+              tooltip-labels
+              (list (string-constant online-expansion-is-disabled))))
         (cond
-          [tooltip-labels
+          [tooltip-labels-to-show
            (unless tooltip-frame
              (set! tooltip-frame (new tooltip-frame%)))
-           (send tooltip-frame set-tooltip tooltip-labels)
+           (send tooltip-frame set-tooltip tooltip-labels-to-show)
            (define-values (rx ry) (send running-canvas client->screen 0 0))
            (define-values (cw ch) (send running-canvas get-client-size))
            (send tooltip-frame show-over rx ry cw ch #:prefer-upper-left? #t)]
           [else
            (when tooltip-frame
              (send tooltip-frame show #f))]))
+      
       (define/private (update-tooltip)
         (when tooltip-frame
           (cond
-            [tooltip-labels
+            [(or tooltip-labels
+                 (not (preferences:get 'drracket:online-compilation-default-off)))
              (when (send tooltip-frame is-shown?)
                ;; just call this, as it updates the tooltip label already
                (show-tooltip))]
             [else
              (send tooltip-frame show #f)])))
+      
       (define/private (hide-tooltip)
         (when tooltip-frame
           (send tooltip-frame show #f)))
@@ -954,7 +961,11 @@
                (inherit get-dc popup-menu refresh get-client-size)
                (define/override (on-paint)
                  (let ([dc (get-dc)])
-                   (when colors
+                   (define colors-to-draw
+                     (if (preferences:get 'drracket:online-compilation-default-off)
+                         colors
+                         (list "red")))
+                   (when colors-to-draw
                      (send dc set-smoothing 'aligned)
                      (send dc set-pen "black" 1 'transparent)
                      (send dc set-text-foreground "darkred")
@@ -962,9 +973,9 @@
                      (define-values (tw th td ta) (send dc get-text-extent parens-mismatch-str))
                      (define-values (cw ch) (get-client-size))
                      (cond
-                       [(list? colors)
-                        (define len (length colors))
-                        (for ([color (in-list colors)]
+                       [(list? colors-to-draw)
+                        (define len (length colors-to-draw))
+                        (for ([color (in-list colors-to-draw)]
                               [i (in-naturals)])
                           (send dc set-brush color 'solid)
                           (send dc draw-arc 
@@ -973,19 +984,19 @@
                                 ball-size ball-size
                                 (* 2 pi (/ i len))
                                 (* 2 pi (/ (+ i 1) len))))]
-                       [(eq? colors 'parens)
+                       [(eq? colors-to-draw 'parens)
                         (send dc draw-text parens-mismatch-str 
                               (- (/ cw 2) (/ tw 2))
                               (- (/ ch 2) (/ th 2)))]))))
                (define cb-proc (λ (sym new-val)
                                  (set! colors #f)
                                  (refresh)))
-               (preferences:add-callback 'drracket:online-compilation cb-proc #t)
+               (preferences:add-callback 'drracket:online-compilation-default-off cb-proc #t)
                (define/override (on-event evt) 
                  (cond
                    [(send evt button-down?)
                     (define menu (new popup-menu%))
-                    (define on? (preferences:get 'drracket:online-compilation))
+                    (define on? (preferences:get 'drracket:online-compilation-default-off))
                     (new menu-item% 
                          [parent menu]
                          [label (if on?
@@ -993,7 +1004,7 @@
                                     "Enable online compilation")]
                          [callback
                           (λ args
-                            (preferences:set 'drracket:online-compilation (not on?)))])
+                            (preferences:set 'drracket:online-compilation-default-off (not on?)))])
                     (popup-menu menu (send evt get-x) (send evt get-y))]
                    [(send evt entering?)
                     (show-tooltip)]
@@ -1080,39 +1091,35 @@
           (send dc draw-text label 2 (+ 2 (* i th)))))
       (super-new [stretchable-width #f] [stretchable-height #f])))
 
-  (define expanding-place
-    (and (>= (processor-count) 1)
-         (dynamic-place expanding-place.rkt 'start)))
-  (define place-initialized? #f)
+  (define expanding-place #f)
   (define pending-thread #f)
   
   (define (send-to-place editor-contents filename prefab-module-settings show-results)
-    (when expanding-place
-      (unless place-initialized?
-        (set! place-initialized? #t)
-        (place-channel-put expanding-place module-language-compile-lock)
-        (place-channel-put
-         expanding-place 
-         (for/list ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
-           (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
-                 (drracket:module-language-tools:online-expansion-handler-id o-e-h)))))
-      (set! pending-thread
-            (thread (λ () 
-                      (define-values (pc-in pc-out) (place-channel))
-                      (define to-send
-                        (vector-immutable editor-contents
-                                          filename
-                                          pc-in 
-                                          prefab-module-settings))
-                      (place-channel-put expanding-place to-send)
-                      (define res (place-channel-get pc-out))
-                      (when res
-                        (let ([t (current-thread)])
-                          (queue-callback
-                           (λ ()
-                             (when (eq? t pending-thread)
-                               (set! pending-thread #f)
-                               (show-results res)))))))))))
+    (unless expanding-place
+      (set! expanding-place (dynamic-place expanding-place.rkt 'start))
+      (place-channel-put expanding-place module-language-compile-lock)
+      (place-channel-put
+       expanding-place 
+       (for/list ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
+         (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
+               (drracket:module-language-tools:online-expansion-handler-id o-e-h)))))
+    (set! pending-thread
+          (thread (λ () 
+                    (define-values (pc-in pc-out) (place-channel))
+                    (define to-send
+                      (vector-immutable editor-contents
+                                        filename
+                                        pc-in 
+                                        prefab-module-settings))
+                    (place-channel-put expanding-place to-send)
+                    (define res (place-channel-get pc-out))
+                    (when res
+                      (let ([t (current-thread)])
+                        (queue-callback
+                         (λ ()
+                           (when (eq? t pending-thread)
+                             (set! pending-thread #f)
+                             (show-results res))))))))))
   
   (define (stop-place-running)
     (when expanding-place
@@ -1140,26 +1147,37 @@
       (define cb-proc (λ (sym new-val) 
                         (when new-val
                           (queue-callback (λ () (buffer-modified))))))
-      (preferences:add-callback 'drracket:online-compilation cb-proc #t)
+      (preferences:add-callback 'drracket:online-compilation-default-off cb-proc #t)
       
+      ;; buffer-modified and restart-place
+      ;; are the two entry points that might
+      ;; trigger a compilation in a separate
+      ;; place (and thus trigger the creation
+      ;; of the separate place)
+      ;; thus, they are where we check the preference
+      ;; before doing anything
+
+        
       (define/private (buffer-modified)
-        (clear-old-error)
-        (reset-frame-expand-error)
-        (let ([tlw (get-top-level-window)])
-          (when expanding-place
+        (when (and (preferences:get 'drracket:online-compilation-default-off)
+                   (> (processor-count) 1))
+          (clear-old-error)
+          (reset-frame-expand-error)
+          (let ([tlw (get-top-level-window)])
             (when (in-module-language tlw)
               (send (get-tab) show-bkg-running 'nothing #f)
               (stop-place-running)
               (set! compilation-out-of-date? #t)
-              (when (preferences:get 'drracket:online-compilation)
-                (when (eq? (send tlw get-current-tab) (get-tab))
-                  (send tmr stop)
-                  (send tmr start 250 #t)))))))
+              (when (eq? (send tlw get-current-tab) (get-tab))
+                (send tmr stop)
+                (send tmr start 250 #t))))))
       
       (define/public (restart-place)
-        (stop-place-running)
-        (when compilation-out-of-date?
-          (send tmr start 250 #t)))
+        (when (and (preferences:get 'drracket:online-compilation-default-off)
+                   (> (processor-count) 1))
+          (stop-place-running)
+          (when compilation-out-of-date?
+            (send tmr start 250 #t))))
       
       (define/private (send-off)
         (define tlw (get-top-level-window))
@@ -1322,7 +1340,7 @@
           (send dc set-smoothing 'smoothed)
           
           (define path (new dc-path%))
-          (send dc set-brush "black" 'transparent)
+          (send dc set-brush "red" 'transparent)
           (send dc set-pen (send the-pen-list find-or-create-pen "red"
                                  online-compilation-error-pen-width
                                  'solid 'butt 'miter))

@@ -223,6 +223,7 @@ please adhere to these guidelines:
  (only-raw-text-files-supported "Only pure text files supported")
  (abnormal-termination "Online expansion terminated abnormally")
  (jump-to-error "Jump to Error")
+ (online-expansion-is-disabled "Online expansion is disabled")
   
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
