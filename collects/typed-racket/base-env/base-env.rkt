@@ -1522,10 +1522,25 @@
 
 ;Section 14.4 (Processes)
 
+;; Subprocces has 3 arguments and 3 return values which are either ports
+;; or false. There is a relation that if a port argument is false, then
+;; the corresponding return value is a port, and if it is a port the return
+;; value is false. process/ports and process*/ports have a similar behavior.
+;; This behavior is encoded in the type system as each possible combination
+;; of port arguments being one case of a case-> type. There is also a
+;; final case where the unions are preserved because TR currently can
+;; not deal with applying a case lambda to union types, and ensure that
+;; while no one branch covers every union, every union is covered by a branch.
+;; There is also twice as many cases to deal with the 'exact behavior for windows.
+
 [subprocess
  (let* ((make-opt-in-port (lambda (port) (if port -Input-Port (-val #f))))
         (make-opt-out-port (lambda (port) (if port -Output-Port (-val #f))))
         (ret-type (-values (list -Subprocess (-opt -Input-Port) (-opt -Output-Port) (-opt -Input-Port))))
+        ;; out, in, err, and exact are all booleans and correspond to
+        ;; whether or not the argument is a port (#t) or #f (#f).
+        ;; The return value is the function type that is one branch
+        ;; of the case lambda.
         (make-specific-case (lambda (out in err exact)
                               (let ((arg-out (make-opt-out-port out))
                                     (arg-in (make-opt-in-port in))
@@ -1605,6 +1620,12 @@
                 (-> (-val 'kill) -Void)))
         (make-opt-in-port (lambda (port) (if port -Input-Port (-val #f))))
         (make-opt-out-port (lambda (port) (if port -Output-Port (-val #f))))
+        ;; out, in, and exact are all booleans and correspond to
+        ;; whether or not the argument is a port (#t) or #f (#f).
+        ;; err is either a boolean or 'stdout where 'stdout corresponds
+        ;; to the input being the value 'stdout.
+        ;; The return value is the function type that is one branch
+        ;; of the case lambda.
         (make-specific-case (lambda (out in err)
                               (-> (make-opt-out-port out)
                                   (make-opt-in-port in)
@@ -1638,6 +1659,12 @@
                 (-> (-val 'kill) -Void)))
         (make-opt-in-port (lambda (port) (if port -Input-Port (-val #f))))
         (make-opt-out-port (lambda (port) (if port -Output-Port (-val #f))))
+        ;; out, in, and exact are all booleans and correspond to
+        ;; whether or not the argument is a port (#t) or #f (#f).
+        ;; err is either a boolean or 'stdout where 'stdout corresponds
+        ;; to the input being the value 'stdout.
+        ;; The return value is the function type that is one branch
+        ;; of the case lambda.
         (make-specific-case (lambda (out in err exact)
                               (let ((arg-out (make-opt-out-port out))
                                     (arg-in (make-opt-in-port in))
