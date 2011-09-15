@@ -346,24 +346,6 @@
       (loop (cons parsed all)
             unparsed))))
 
-(define (parse2 forms)
-  (debug "parse forms ~a\n" forms)
-  (when (stx-pair? forms)
-    (define head (stx-car forms))
-    (if (honu-macro? head)
-      (begin
-        (debug "honu macro ~a\n" head)
-        (let-values ([(parsed rest)
-                      ((syntax-local-value head) forms #f)])
-          (with-syntax ([parsed parsed]
-                        [rest rest])
-          #'(splicing-let-syntax ([more-parsing (lambda (stx)
-                                         (debug "more parsing!!\n")
-                                         (parse stx))])
-              parsed
-              (more-parsing . rest)))))
-      #'(debug "regular parsing\n"))))
-
 ;; rest will be some subset of full
 (define (parsed-things full rest)
   (define full-datum (syntax->datum full))

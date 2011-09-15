@@ -461,7 +461,11 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      (debug "expanded ~a unexpanded ~a\n"
             (if parsed (syntax->datum parsed) parsed)
             (syntax->datum unparsed))
-     (with-syntax ([parsed parsed]
+     ;; if parsed is #f then we don't want to expand to anything that will print
+     ;; so use an empty form, begin, `parsed' could be #f becuase there was no expression
+     ;; in the input such as parsing just ";". hygiene should ensure that this variable
+     ;; will not collide with anything else
+     (with-syntax ([parsed (if (not parsed) #'(begin) parsed)]
                    [(unparsed ...) unparsed])
        (if (null? (syntax->datum #'(unparsed ...)))
          #'parsed
