@@ -10,6 +10,8 @@
          (for-syntax racket/base
                      syntax/parse))
 
+(require "private/debug.rkt")
+
 (define-tokens honu-tokens (number identifier string))
 
 (define-empty-tokens honu-empty-tokens
@@ -152,7 +154,7 @@
 (define (read-tokens port)
   (let loop ([tokens '()])
     (define next (honu-lexer port))
-    ;; (printf "next ~a\n" next)
+    ;; (debug "next token ~a\n" next)
     (match next
       [(struct* position-token ([token (? token-eof?)] [start-pos start] [end-pos end]))
        ; (printf "done lexing ~a\n" tokens)
