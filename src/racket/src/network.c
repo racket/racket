@@ -453,6 +453,7 @@ static intptr_t getaddrinfo_in_thread(void *_data)
   char hn_copy[MZ_MAX_HOSTNAME_LEN], sn_copy[MZ_MAX_SERVNAME_LEN];
 # ifndef USE_WINSOCK_TCP
   int fd = data->ready_fd;
+  int cr;
 # endif
   
   if (data->ghbn_result) {
@@ -467,7 +468,9 @@ static intptr_t getaddrinfo_in_thread(void *_data)
 # ifdef USE_WINSOCK_TCP
   ReleaseSemaphore(data->ready_sema, 1, NULL);  
 # else
-  write(fd, "?", 1);
+  do {
+    cr = write(fd, "?", 1);
+  } while ((cr == -1) && (errno == EINTR));
 # endif
 
   ok = mz_getaddrinfo(hn_copy[0] ? hn_copy : NULL, 
@@ -480,8 +483,12 @@ static intptr_t getaddrinfo_in_thread(void *_data)
 # ifndef USE_WINSOCK_TCP
   {
     long v = 1;
-    write(fd, &v, sizeof(v));
-    close(fd);
+    do {
+      cr = write(fd, &v, sizeof(v));
+    } while ((cr == -1) && (errno == EINTR));
+    do {
+      cr = close(fd);
+    } while ((cr == -1) && (errno == EINTR));
   }
 # endif
 
@@ -521,7 +528,11 @@ static int ghbn_thread_done(Scheme_Object *_rec)
 # else
   {
     long v;
-    if (read(rec->pin, &v, sizeof(long)) > 0) {
+    int cr;
+    do {
+      cr = read(rec->pin, &v, sizeof(long));
+    } while ((cr == -1) && (errno == EINTR));
+    if (cr > 0) {
       rec->result = ghbn_thread_data->ghbn_result;
       ghbn_thread_data->ghbn_result = NULL;
       rec->err = ghbn_thread_data->ghbn_err;
@@ -619,8 +630,11 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
 	ok = 0;
       } else {
 	char buf[1];
+        int cr;
 	pthread_detach(t);
-	read(rec->pin, buf, 1);
+        do {
+          cr = read(rec->pin, buf, 1);
+        } while ((cr == -1) && (errno == EINTR));
 	fcntl(rec->pin, F_SETFL, MZ_NONBLOCKING);
 	ok = 1;
       }
