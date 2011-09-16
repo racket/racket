@@ -313,7 +313,7 @@ typedef struct SOCKADDR_IN mz_unspec_address;
 
 /******************************* hostnames ************************************/
 
-#ifdef OS_X
+#if defined(OS_X) || defined(USE_PTHREAD_THREAD_TIMER)
 # define PTHREADS_OK_FOR_GHBN
 #endif
 
@@ -413,8 +413,6 @@ const char *mz_gai_strerror(int ecode)
 #   define MZ_LPTHREAD_START_ROUTINE void *(*)(void *)
 # endif
 
-static volatile int ghbn_lock;
-
 typedef struct {
 # ifdef USE_WINSOCK_TCP
   HANDLE th;
@@ -426,43 +424,48 @@ typedef struct {
   int done;
 } GHBN_Rec;
 
-static struct mz_addrinfo * volatile ghbn_result;
-static volatile int ghbn_err;
-
 /* For in-thread DNS: */
 #define MZ_MAX_HOSTNAME_LEN 128
 #define MZ_MAX_SERVNAME_LEN 32
 
-static char ghbn_hostname[MZ_MAX_HOSTNAME_LEN];
-static char ghbn_servname[MZ_MAX_SERVNAME_LEN];
-static struct mz_addrinfo ghbn_hints;
+typedef struct GHBN_Thread_Data {
+  int ghbn_lock;
+  char ghbn_hostname[MZ_MAX_HOSTNAME_LEN];
+  char ghbn_servname[MZ_MAX_SERVNAME_LEN];
+  struct mz_addrinfo ghbn_hints;
 # ifdef USE_WINSOCK_TCP
-HANDLE ready_sema;
+  HANDLE ready_sema;
 # else
-int ready_fd;
+  int ready_fd;
 # endif
+  struct mz_addrinfo *ghbn_result;
+  int ghbn_err;
+} GHBN_Thread_Data;
 
-static intptr_t getaddrinfo_in_thread(void *data)
+THREAD_LOCAL_DECL(GHBN_Thread_Data *ghbn_thread_data);
+
+static intptr_t getaddrinfo_in_thread(void *_data)
   XFORM_SKIP_PROC
 {
+  GHBN_Thread_Data *data = (GHBN_Thread_Data *)_data;
   int ok;
   struct mz_addrinfo *res, hints;
   char hn_copy[MZ_MAX_HOSTNAME_LEN], sn_copy[MZ_MAX_SERVNAME_LEN];
 # ifndef USE_WINSOCK_TCP
-  int fd = ready_fd;
+  int fd = data->ready_fd;
 # endif
   
-  if (ghbn_result) {
-    mz_freeaddrinfo(ghbn_result);
-    ghbn_result = NULL;
+  if (data->ghbn_result) {
+    mz_freeaddrinfo(data->ghbn_result);
+    data->ghbn_result = NULL;
   }
 
-  strcpy(hn_copy, ghbn_hostname);
-  strcpy(sn_copy, ghbn_servname);
-  memcpy(&hints, &ghbn_hints, sizeof(hints));
+  strcpy(hn_copy, data->ghbn_hostname);
+  strcpy(sn_copy, data->ghbn_servname);
+  memcpy(&hints, &data->ghbn_hints, sizeof(hints));
 
 # ifdef USE_WINSOCK_TCP
-  ReleaseSemaphore(ready_sema, 1, NULL);  
+  ReleaseSemaphore(data->ready_sema, 1, NULL);  
 # else
   write(fd, "?", 1);
 # endif
@@ -471,8 +474,8 @@ static intptr_t getaddrinfo_in_thread(void *data)
 		      sn_copy[0] ? sn_copy : NULL, 
 		      &hints, &res);
 
-  ghbn_result = res;
-  ghbn_err = ok;
+  data->ghbn_result = res;
+  data->ghbn_err = ok;
 
 # ifndef USE_WINSOCK_TCP
   {
@@ -487,7 +490,7 @@ static intptr_t getaddrinfo_in_thread(void *data)
 
 static void release_ghbn_lock(GHBN_Rec *rec)
 {
-  ghbn_lock = 0;
+  ghbn_thread_data->ghbn_lock = 0;
 # ifdef USE_WINSOCK_TCP
   CloseHandle(rec->th);
 # else
@@ -497,7 +500,7 @@ static void release_ghbn_lock(GHBN_Rec *rec)
 
 static int ghbn_lock_avail(Scheme_Object *_ignored)
 {
-  return !ghbn_lock;
+  return !ghbn_thread_data->ghbn_lock;
 }
 
 static int ghbn_thread_done(Scheme_Object *_rec)
@@ -509,9 +512,9 @@ static int ghbn_thread_done(Scheme_Object *_rec)
 
 # ifdef USE_WINSOCK_TCP
   if (WaitForSingleObject(rec->th, 0) == WAIT_OBJECT_0) {
-    rec->result = ghbn_result;
-    ghbn_result = NULL;
-    rec->err = ghbn_err;
+    rec->result = ghbn_thread_data->ghbn_result;
+    ghbn_thread_data->ghbn_result = NULL;
+    rec->err = ghbn_thread_data->ghbn_err;
     rec->done = 1;
     return 1;
   }
@@ -519,9 +522,9 @@ static int ghbn_thread_done(Scheme_Object *_rec)
   {
     long v;
     if (read(rec->pin, &v, sizeof(long)) > 0) {
-      rec->result = ghbn_result;
-      ghbn_result = NULL;
-      rec->err = ghbn_err;
+      rec->result = ghbn_thread_data->ghbn_result;
+      ghbn_thread_data->ghbn_result = NULL;
+      rec->err = ghbn_thread_data->ghbn_err;
       rec->done = 1;
       return 1;
     }
@@ -560,34 +563,41 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
     return mz_getaddrinfo(name, svc, hints, res);
   }
 
+  if (!ghbn_thread_data) {
+    ghbn_thread_data = (GHBN_Thread_Data *)malloc(sizeof(GHBN_Thread_Data));
+    memset(ghbn_thread_data, 0, sizeof(GHBN_Thread_Data));
+  }
+
   rec = MALLOC_ONE_ATOMIC(GHBN_Rec);
   rec->done = 0;
 
   scheme_block_until(ghbn_lock_avail, NULL, NULL, 0);
 
-  ghbn_lock = 1;
+  ghbn_thread_data->ghbn_lock = 1;
 
   if (name)
-    strcpy(ghbn_hostname, name);
+    strcpy(ghbn_thread_data->ghbn_hostname, name);
   else
-    ghbn_hostname[0] = 0;
+    ghbn_thread_data->ghbn_hostname[0] = 0;
   if (svc)
-    strcpy(ghbn_servname, svc);
+    strcpy(ghbn_thread_data->ghbn_servname, svc);
   else
-    ghbn_servname[0] = 0;
-  memcpy(&ghbn_hints, hints, sizeof(ghbn_hints));
+    ghbn_thread_data->ghbn_servname[0] = 0;
+  memcpy(&ghbn_thread_data->ghbn_hints, hints, sizeof(*hints));
 
 # ifdef USE_WINSOCK_TCP
   {
+    HANDLE ready_sema;
     DWORD id;
     intptr_t th;
     
     ready_sema = CreateSemaphore(NULL, 0, 1, NULL);
+    ghbn_thread_data->ready_sema = ready_sema;
     th = _beginthreadex(NULL, 5000, 
 			(MZ_LPTHREAD_START_ROUTINE)getaddrinfo_in_thread,
-			NULL, 0, &id);
-    WaitForSingleObject(ready_sema, INFINITE);
-    CloseHandle(ready_sema);
+			ghbn_thread_data, 0, &id);
+    WaitForSingleObject(ghbn_thread_data->ready_sema, INFINITE);
+    CloseHandle(ghbn_thread_data->ready_sema);
     
     rec->th = (HANDLE)th;
     ok = 1;
@@ -600,10 +610,10 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
     } else {
       pthread_t t;
       rec->pin = p[0];
-      ready_fd = p[1];
+      ghbn_thread_data->ready_fd = p[1];
       if (pthread_create(&t, NULL, 
 			 (MZ_LPTHREAD_START_ROUTINE)getaddrinfo_in_thread,
-			 NULL)) {
+			 ghbn_thread_data)) {
 	close(p[0]);
 	close(p[1]);
 	ok = 0;
@@ -618,9 +628,9 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
 
     if (!ok) {
       getaddrinfo_in_thread(rec);
-      rec->result = ghbn_result;
-      ghbn_result = NULL;
-      rec->err = ghbn_err;
+      rec->result = ghbn_thread_data->ghbn_result;
+      ghbn_thread_data->ghbn_result = NULL;
+      rec->err = ghbn_thread_data->ghbn_err;
     }
   }
 # endif
@@ -637,14 +647,22 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
 # endif
   }
 
-  ghbn_lock = 0;
+  ghbn_thread_data->ghbn_lock = 0;
 
   *res = rec->result;
 
   return rec->err;
 }
+
+void scheme_free_ghbn_data() {
+  if (ghbn_thread_data) {
+    free(ghbn_thread_data);
+    ghbn_thread_data = NULL;
+  }
+}
 #else
 # define MZ_GETADDRINFO mz_getaddrinfo
+void scheme_free_ghbn_data() { }
 #endif
 
 #ifdef USE_SOCKETS_TCP

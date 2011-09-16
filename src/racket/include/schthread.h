@@ -333,6 +333,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Hash_Table *fullpath_loaded_extensions_;
   Scheme_Sleep_Proc scheme_place_sleep_;
   struct Scheme_Bucket_Table *taint_intern_table_;
+  struct GHBN_Thread_Data *ghbn_thread_data_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -667,6 +668,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define fullpath_loaded_extensions XOA (scheme_get_thread_local_variables()->fullpath_loaded_extensions_)
 #define scheme_place_sleep XOA (scheme_get_thread_local_variables()->scheme_place_sleep_)
 #define taint_intern_table XOA (scheme_get_thread_local_variables()->taint_intern_table_)
+#define ghbn_thread_data XOA (scheme_get_thread_local_variables()->ghbn_thread_data_)
 
 /* **************************************** */
 

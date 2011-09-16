@@ -555,6 +555,7 @@ void scheme_place_instance_destroy(int force)
   GC_destruct_child_gc();
 #endif
   scheme_free_all_code();
+  scheme_free_ghbn_data();
 }
 
 static void make_kernel_env(void)
