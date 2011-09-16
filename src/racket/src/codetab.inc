@@ -22,12 +22,12 @@ extern MZ_DLLIMPORT int GC_is_marked(void *);
 
 THREAD_LOCAL_DECL(static void **codetab_tree);
 THREAD_LOCAL_DECL(static int during_set);
-
 #ifdef MZ_USE_PLACES
-/* This table is shared but not locked; we rely on x86-TSO
-   and the fact that entries are only added (never removed)
-   to skip the lock: */
 static void **shared_codetab_tree;
+/* The table is shared but not locked for read; We rely on x86-TSO
+   and the fact that kentries are only added (never removed)
+   to skip the lock. */
+static mzrt_mutex *shared_codetab_lock;
 #endif
 
 static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t addr, int clearing);
@@ -100,6 +100,13 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
 
 #ifdef MZ_USE_PLACES
   if (!gc_able) {
+    if (!shared_codetab_lock) {
+      /* this function will be called in the main place 
+         before others are started, so a lazy lock creation 
+         is ok */
+      mzrt_mutex_create(&shared_codetab_lock);      
+    }
+    mzrt_mutex_lock(shared_codetab_lock);
     if (!shared_codetab_tree)
       shared_codetab_tree = malloc_node(0);
     the_tree = shared_codetab_tree;
@@ -216,6 +223,12 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
        object is mapped deeply enough in the tree, otherwise
        we end up scanning the whole tree. */
     do_clear_symbols(the_tree, start, 0, 0, 0);
+  }
+#endif
+
+#ifdef MZ_USE_PLACES
+  if (!gc_able) {
+    mzrt_mutex_unlock(shared_codetab_lock);      
   }
 #endif
 }
