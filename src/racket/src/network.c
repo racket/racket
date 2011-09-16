@@ -90,6 +90,9 @@ struct SOCKADDR_IN {
 # define WAS_WSAEMSGSIZE(e) (e == WSAEMSGSIZE)
 # define mz_AFNOSUPPORT WSAEAFNOSUPPORT
 extern int scheme_stupid_windows_machine;
+# ifdef MZ_USE_PLACES
+static HANDLE winsock_sema;
+# endif
 #endif
 
 intptr_t scheme_socket_errno() {
@@ -275,6 +278,14 @@ void scheme_init_network(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY  ( "udp-send-to-evt"           , udp_write_to_evt         , 4 , 6 , netenv ) ;
 
   scheme_finish_primitive_module(netenv);
+
+#ifdef USE_WINSOCK_TCP
+# ifdef MZ_USE_PLACES
+  if (!winsock_sema) {
+    winsock_sema = CreateSemaphore(NULL, 1, 1, NULL);
+  }
+# endif
+#endif
 }
 
 
@@ -749,45 +760,66 @@ static void winsock_remember(tcp_t s)
   int i, new_size;
   tcp_t *naya;
 
+# ifdef MZ_USE_PLACES
+  WaitForSingleObject(winsock_sema, INFINITE);
+# endif
+
   for (i = 0; i < wsr_size; i++) {
     if (!wsr_array[i]) {
       wsr_array[i] = s;
-      return;
+      break;
     }
   }
 
-  if (!wsr_size) {
-    REGISTER_SO(wsr_array);
-    new_size = 32;
-  } else
-    new_size = 2 * wsr_size;
+  if (i >= wsr_size) {
+    if (!wsr_size) {
+      new_size = 32;
+    } else
+      new_size = 2 * wsr_size;
 
-  naya = MALLOC_N_ATOMIC(tcp_t, new_size);
-  for (i = 0; i < wsr_size; i++) {
-    naya[i] = wsr_array[i];
-  }
+    naya = malloc(sizeof(tcp_t) * new_size);
+    for (i = 0; i < wsr_size; i++) {
+      naya[i] = wsr_array[i];
+    }
 
-  naya[wsr_size] = s;
+    naya[wsr_size] = s;
 
-  wsr_array = naya;
-  wsr_size = new_size;  
+    if (wsr_array) free(wsr_array);
+
+    wsr_array = naya;
+    wsr_size = new_size;
+  }  
+
+# ifdef MZ_USE_PLACES
+  ReleaseSemaphore(winsock_sema, 1, NULL);
+# endif
 }
 
 static void winsock_forget(tcp_t s)
 {
   int i;
 
+# ifdef MZ_USE_PLACES
+  WaitForSingleObject(winsock_sema, INFINITE);
+# endif
+
   for (i = 0; i < wsr_size; i++) {
     if (wsr_array[i] == s) {
       wsr_array[i] = (tcp_t)NULL;
-      return;
+      break;
     }
   }
+
+# ifdef MZ_USE_PLACES
+  ReleaseSemaphore(winsock_sema, 1, NULL);
+# endif
 }
 
 static int winsock_done(void)
 {
   int i;
+
+  /* only called in the original place */
 
   for (i = 0; i < wsr_size; i++) {
     if (wsr_array[i]) {
@@ -803,6 +835,10 @@ static void TCP_INIT(char *name)
 {
   static int started = 0;
   
+# ifdef MZ_USE_PLACES
+  WaitForSingleObject(winsock_sema, INFINITE);
+# endif
+
   if (!started) {
     WSADATA data;
     if (!WSAStartup(MAKEWORD(1, 1), &data)) {
@@ -812,15 +848,18 @@ static void TCP_INIT(char *name)
 #else      
       _onexit(winsock_done);
 #endif
-      return;
     }
-  } else
-    return;
+  }
+
+  if (!started)
+    scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
+		     "%s: not supported on this machine"
+		     " (no winsock driver)",
+		     name);
   
-  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "%s: not supported on this machine"
-		   " (no winsock driver)",
-		   name);
+# ifdef MZ_USE_PLACES
+  ReleaseSemaphore(winsock_sema, 1, NULL);
+# endif
 }
 #else
 /* Not Winsock */
