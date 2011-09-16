@@ -879,8 +879,9 @@ added get-regions
                 (send tokens search! (- (if (eq? direction 'backward) (sub1 position) position)
                                         start-pos))
                 (cond
-                 ((or (eq? 'white-space (data-type (send tokens get-root-data)))
-                      (and comments? (eq? 'comment (data-type (send tokens get-root-data)))))
+                 ((and (send tokens get-root-data)
+                       (or (eq? 'white-space (data-type (send tokens get-root-data)))
+                           (and comments? (eq? 'comment (data-type (send tokens get-root-data))))))
                   (skip-whitespace (+ start-pos
                                       (if (eq? direction 'forward)
                                           (send tokens get-root-end-position)
