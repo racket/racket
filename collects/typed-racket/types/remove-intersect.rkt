@@ -1,8 +1,8 @@
 #lang scheme/base
 
 (require "../utils/utils.rkt"
-	 (rep type-rep rep-utils)
-	 (types union subtype resolve convenience utils)
+         (rep type-rep rep-utils)
+         (types union subtype resolve convenience utils)
          racket/match mzlib/trace)
 
 (provide (rename-out [*remove remove]) overlap)
@@ -11,6 +11,7 @@
 (define (overlap t1 t2)
   (let ([ks (Type-key t1)] [kt (Type-key t2)])
     (cond
+      [(type-equal? t1 t2) #t]
       [(and (symbol? ks) (symbol? kt) (not (eq? ks kt))) #f]
       [(and (symbol? ks) (pair? kt) (not (memq ks kt))) #f]
       [(and (symbol? kt) (pair? ks) (not (memq kt ks))) #f]
