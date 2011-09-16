@@ -2948,7 +2948,8 @@ static void read_more_from_regport(Regwork *rw, rxpos need_total)
   Scheme_Object *peekskip;
 
   if (rw->lazy_string) {
-    return read_more_from_lazy_string(rw, need_total);
+    read_more_from_lazy_string(rw, need_total);
+    return;
   }
 
   /* limit reading by rw->input_maxend: */
