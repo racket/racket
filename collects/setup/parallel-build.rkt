@@ -54,7 +54,7 @@
 
 (define collects-queue% 
   (class* object% (work-queue<%>) 
-    (init-field cclst printer append-error)
+    (init-field cclst printer append-error options)
     (field (lock-mgr (new lock-manager%)))
     (field (hash (make-hash)))
     (inspect #f)
@@ -105,7 +105,8 @@
               (list cc file last) 
               (list (->bytes (cc-name cc)) 
                     (->bytes (cc-path cc))
-                    (->bytes file))))
+                    (->bytes file)
+                    options)))
           (match cc
             [(list)
               (hash-remove! hash id) (retry)]
@@ -172,7 +173,7 @@
 
 (define file-list-queue% 
   (class* object% (work-queue<%>) 
-    (init-field filelist handler)
+    (init-field filelist handler options)
     (field (lock-mgr (new lock-manager%)))
     (inspect #f)
 
@@ -219,7 +220,7 @@
 
       (define cmc (make-caching-managed-compile-zo))
       (match-message-loop
-        [(list name _dir _file)
+        [(list name _dir _file options)
           (DEBUG_COMM (eprintf "COMPILING ~a ~a ~a ~a\n" worker-id name _file _dir))
           (define dir (bytes->path _dir))
           (define file (bytes->path _file))
@@ -250,6 +251,11 @@
          (with-handlers ([exn:fail? (lambda (x)
                           (send/resp (list 'ERROR (exn-message x))))])
            (parameterize ([parallel-lock-client lock-client]
+                          [compile-context-preservation-enabled (member 'disable-inlining options )]
+                          [manager-trace-handler
+                            (lambda (p)
+                              (when (member 'very-verbose options)
+                                (printf "  ~a\n" p)))]
                           [current-namespace (make-base-empty-namespace)]
                           [current-directory dir]
                           [current-load-relative-directory dir]
@@ -266,10 +272,11 @@
   
 (define (parallel-compile-files list-of-files
                                 #:worker-count [worker-count (processor-count)]
-                                #:handler [handler void])
-  (parallel-build (make-object file-list-queue% list-of-files handler) worker-count))
+                                #:handler [handler void]
+                                #:options [options '()])
+  (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a processes ---" worker-count)
-  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error))
+  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error '()))
   (parallel-build collects-queue worker-count))
