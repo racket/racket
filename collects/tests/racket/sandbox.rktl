@@ -500,4 +500,11 @@
 
    ))
 
+(parameterize ([current-module-declare-name (make-resolved-module-path 'junk)])
+  (define (avoid-module-declare-name)
+    (with-handlers ([exn? (lambda (_) #f)])
+      (kill-evaluator (make-evaluator 'racket/base))
+      #t))
+  (test #t avoid-module-declare-name))
+
 (report-errs)
