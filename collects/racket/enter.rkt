@@ -33,11 +33,15 @@
 (define (do-enter! mod flags)
   (let ([flags (check-flags flags)])
     (if mod
-      (begin (enter-require mod flags)
-             (let ([ns (module->namespace mod)])
-               (current-namespace ns)
-               (unless (memq '#:dont-re-require-enter flags)
-                 (namespace-require 'racket/enter))))
+      (let* ([none "none"]
+             [exn (with-handlers ([void values])
+                    (enter-require mod flags)
+                    none)]
+             [ns (module->namespace mod)])
+        (current-namespace ns)
+        (unless (memq '#:dont-re-require-enter flags)
+          (namespace-require 'racket/enter))
+        (unless (eq? none exn) (raise exn)))
       (current-namespace orig-namespace))))
 
 (struct mod (name timestamp depends))

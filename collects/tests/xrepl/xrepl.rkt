@@ -147,5 +147,11 @@
   ;   located at scribble/html.rkt
   ;   imports: racket/base.rkt, scribble/html/main.rkt.
   ;   no direct exports.
+  -> «(module broken racket/base (define foo 123) (error "bleh!"))»
+  -> «,en broken»
+  bleh!                                 ⇒ threw an error...
+  'broken> «foo»
+  123                                   ⇒ ...but we still got in
+  'broken> «,top»
   -> «,ex»
   @||})
