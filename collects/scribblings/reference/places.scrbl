@@ -131,7 +131,15 @@ are simulated using @racket[thread].}
 
  If the function indicated by @racket[module-path] and
  @racket[start-proc] returns, then the place terminates with the
- @tech{completion value} @racket[0].}
+ @tech{completion value} @racket[0].
+
+ In the created place, the values of the @racket[current-input-port],
+ @racket[current-output-port], and @racket[current-error-port]
+ parameters are connected to the current ports in the creating
+ place. If the ports are @tech{file-stream ports}, then the connected
+ ports in the places share the underlying stream, otherwise a
+ @tech{thread} in the creating place pumps bytes to and from the
+ current ports in the creating place.}
 
 
 @defproc[(dynamic-place* [module-path module-path?] 
@@ -139,22 +147,25 @@ are simulated using @racket[thread].}
                          [#:in in (or/c input-port? #f) #f]
                          [#:out out (or/c output-port? #f) (current-output-port)]
                          [#:err err (or/c output-port? #f) (current-error-port)])
-                         (values place? (or/c input-port? #f) (or/c output-port? #f) (or/c output-port? #f))]{
+                         (values place? (or/c output-port? #f) (or/c input-port? #f) (or/c input-port? #f))]{
 
- The @racket[dynamic-place*] function behaves just like the
- @racket[dynamic-place] but allows the user to specify the standard
- in, out, and error ports for the new place. Upon execution of
- @racket[dynamic-place*], the @racket[in], @racket[out], and
- @racket[err] ports become the @racket[current-input-port],
- @racket[current-output-port], and @racket[current-error-port] for the
+ Like @racket[dynamic-place], but accepts specific ports to the new
+ place's ports, and returns a created port when @racket[#f] is
+ supplied for a port. The @racket[in], @racket[out], and
+ @racket[err] ports are connected to the @racket[current-input-port],
+ @racket[current-output-port], and @racket[current-error-port] ports,
+ respectively, for the
  @tech{place}.  Any of the ports can be @racket[#f], in which case a
- system pipe is created and returned by @racket[dynamic-place*]. The
- @racket[stderr] argument can be @racket['stdout], in which case the
- same file-stream port or system pipe that is supplied as standard
+ @tech{file-stream port} (for an operating-system pipe)
+ is created and returned by @racket[dynamic-place*]. The
+ @racket[err] argument can be @racket['stdout], in which case the
+ same @tech{file-stream port} or that is supplied as standard
  output is also used for standard error.  For each port or
  @racket['stdout] that is provided, no pipe is created and the
- corresponding returned value is @racket[#f].  The user is responsible 
-for closing all ports returned by @racket[dynamic-place*].
+ corresponding returned value is @racket[#f].
+
+ The caller of @racket[dynamic-place*] is responsible for closing all
+ returned ports; none are closed automatically.
 
 The @racket[dynamic-place*] procedure returns four values:
 
@@ -185,28 +196,40 @@ The @racket[dynamic-place*] procedure returns four values:
   like the result of @racket[dynamic-place].
 }
 
-@defform[(place* [#:in in #f] 
-                 [#:out out (current-output-port)]
-                 [#:err err (current-error-port)]
-                 id 
-                 body ...+)]{
- Behaves like @racket[place] and allows the user to set
- the @racket[current-input-port], @racket[current-output-port], and 
- @racket[current-error-port] for the @tech{place}. The result of a 
- @racket[place*] form is analogous to the result of @racket[dynamic-place*].
+@defform/subs[(place* maybe-port ...
+                      id 
+                      body ...+)
+              ([maybe-port code:blank
+                           (code:line #:in in-expr)
+                           (code:line #:out out-expr)
+                           (code:line #:err err-expr)])]{
+ Like @racket[place], but supports optional @racket[#:in], @racket[#:out],
+ and @racket[#:err] expressions (at most one of each) to specify ports in the same way and
+ with the same defaults as @racket[dynamic-place*]. The result of
+ a @racket[place*] form is also the same as for  @racket[dynamic-place*].
  }
 
 
 @defproc[(place-wait [p place?]) exact-integer?]{
   Returns the @tech{completion value} of the place indicated by @racket[p],
   blocking until the place has terminated.
-}
+
+  If any pumping threads were created to connect a
+  non-@tech{file-stream port} to the ports in the place for @racket[p]
+  (see @racket[dynamic-place]), @racket[place-wait] returns only when
+  the pumping threads have completed.  }
 
 
 @defproc[(place-dead-evt [p place?]) evt?]{
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that is
-ready if and only if @racket[p] has terminated.}
+ready if and only if @racket[p] has terminated.
+
+If any pumping threads were created to connect a non-@tech{file-stream
+  port} to the ports in the place for @racket[p] (see
+  @racket[dynamic-place]), the event returned by
+  @racket[place-dead-evt] may become ready even if a pumping thread is
+  still running.}
 
 
 @defproc[(place-kill [p place?]) void?]{
