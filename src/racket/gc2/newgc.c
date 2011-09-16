@@ -511,10 +511,10 @@ inline static mpage *pagemap_find_page(PageMap page_maps1, const void *p) {
   page_maps3 = page_maps2[PAGEMAP64_LEVEL2_BITS(p)];
   if (!page_maps3) goto done;
   result = page_maps3[PAGEMAP64_LEVEL3_BITS(p)];
+ done:
 #else
   result = page_maps1[PAGEMAP32_BITS(p)];
 #endif
-done:
   mzrt_mutex_unlock(gc->pagetable_lock);
   return result;
 #else
@@ -2523,7 +2523,7 @@ static intptr_t NewGCMasterInfo_find_free_id() {
     MASTERGCINFO->size++;
     MASTERGCINFO->alive++;
     MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
-#ifdef POINTER_OWERSHIP_CHECK
+#ifdef POINTER_OWNERSHIP_CHECK
     MASTERGCINFO->places_gcs= realloc(MASTERGCINFO->places_gcs, sizeof(NewGC*) * MASTERGCINFO->size);
 #endif
     return MASTERGCINFO->size - 1;
@@ -2701,7 +2701,7 @@ void GC_destruct_child_gc() {
     waiting = MASTERGC->major_places_gc;
     if (!waiting) {
       MASTERGCINFO->signal_fds[gc->place_id] = (void *) REAPED_SLOT_AVAILABLE;
-#ifdef POINTER_OWERSHIP_CHECK
+#ifdef POINTER_OWNERSHIP_CHECK
       MASTERGCINFO->places_gcs[gc->place_id] = NULL;
 #endif
       gc->place_id = -1;
@@ -2922,21 +2922,24 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
     if (!MASTERGC || !MASTERGC->major_places_gc || !(page = pagemap_find_page(MASTERGC->page_maps, p)))
 #endif
     {
-#ifdef POINTER_OWERSHIP_CHECK
-  mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
-  {
-    int i;
-    int size = MASTERGCINFO->size;
-    for (i = 0; i < size; i++) {
-      if (gc->place_id != i && MASTERGCINFO->signal_fds[i] != (void*) REAPED_SLOT_AVAILABLE) {
-        if((page = pagemap_find_page(MASTERGCINFO->places_gcs[i]->page_maps, p))) {
-          printf("%p is owned by place %i not the current place %i\n", p, i, gc->place_id);  
-          asm("int3");
+#ifdef POINTER_OWNERSHIP_CHECK
+      mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
+      {
+        int i;
+        int size = MASTERGCINFO->size;
+        for (i = 1; i < size; i++) {
+          if (gc->place_id != i 
+              && MASTERGCINFO->signal_fds[i] != (void*) REAPED_SLOT_AVAILABLE
+              && MASTERGCINFO->signal_fds[i] != (void*) CREATED_BUT_NOT_REGISTERED
+              && MASTERGCINFO->signal_fds[i] != (void*) SIGNALED_BUT_NOT_REGISTERED) {
+            if((page = pagemap_find_page(MASTERGCINFO->places_gcs[i]->page_maps, p))) {
+              printf("%p is owned by place %i not the current place %i\n", p, i, gc->place_id);  
+              asm("int3");
+            }
+          }
         }
       }
-    }
-  }
-  mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+      mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 #endif
       GCDEBUG((DEBUGOUTF,"Not marking %p (no page)\n",p));
       return;
