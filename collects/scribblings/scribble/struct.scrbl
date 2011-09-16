@@ -207,7 +207,7 @@ formats to the current one.}
                                        [alt-path path-string?] [alt-anchor string?]) redirect-target-element?]
 @defproc[(make-link-element [style any/c] [content list?] [tag tag?]) link-element?]
 @defproc[(make-index-element [style any/c] [content list?] [tag tag?]
-                             [tag tag?] [plain-seq (and/c pair? (listof string?))]
+                             [plain-seq (and/c pair? (listof string?))]
                              [entry-seq list?] [desc any/c]) index-element?]
 )]{
 

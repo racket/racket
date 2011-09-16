@@ -467,7 +467,7 @@ making @filepath{.plt} archives.}
   @litchar{[.]plt$}.}
 
 @defproc[(mztar (path path-string?)
-                [#:as-path path path-string? path]
+                [#:as-path as-path path-string? path]
                 (output output-port?)
                 (filter (path-string? . -> . boolean?))
                 (file-mode (symbols 'file 'file-replace))) void?]{
@@ -478,4 +478,3 @@ making @filepath{.plt} archives.}
    path should be different from the original path. The
    @racket[file-mode] argument specifies the default mode for packing a file,
    either @racket['file] or @racket['file-replace].}
-

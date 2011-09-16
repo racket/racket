@@ -1237,16 +1237,15 @@ more expensive than with the other shapes.
                     3 1))]
   
   }
-                
 
 @defproc*[([(freeze [image image?]) image?]
            [(freeze [width (and/c real? (not/c negative?))]
-                    [width (and/c real? (not/c negative?))]
+                    [height (and/c real? (not/c negative?))]
                     [image image?]) image?]
            [(freeze [x real?]
                     [y real?]
                     [width (and/c real? (not/c negative?))]
-                    [width (and/c real? (not/c negative?))]
+                    [height (and/c real? (not/c negative?))]
                     [image image?]) image?])]{
   Freezing an image internally builds a bitmap, crops the image, draws the cropped image
   into the bitmap and then

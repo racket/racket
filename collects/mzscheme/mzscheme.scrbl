@@ -336,21 +336,21 @@ Equivalent to @racket[(namespace-require `(for-syntax ,req))].}
 Raises @racket[exn:fail], because the operations are not supported.}
 
 
-@defproc*[([(hash-table? [v any/c]) 
+@defproc*[([(hash-table? [v any/c])
             hash-table?]
            [(hash-table? [v any/c] [flag (one-of/c 'weak 'equal 'eqv)]) 
             hash-table?]
-           [(hash-table? [v any/c] 
+           [(hash-table? [v any/c]
                          [flag (one-of/c 'weak 'equal 'eqv)]
-                         [flag (one-of/c 'weak 'equal 'eqv)]) 
+                         [flag2 (one-of/c 'weak 'equal 'eqv)]) 
             hash-table?])]{
 
-Returns @racket[#t] if @racket[v] like a hash table created by
-@racket[make-hash-table] or @racket[make-immutable-hash-table] with
-the given @racket[flag]s (or more), @racket[#f] otherwise. Each
-provided @racket[flag] must be distinct and @racket['equal] cannot be
-used with @racket['eqv], otherwise the @racket[exn:fail:contract]
-exception is raised.}
+Returns @racket[#t] if @racket[v] is a hash table created by
+@racket[make-hash-table] or @racket[make-immutable-hash-table] with the
+given @racket[flag]s (or more), @racket[#f] otherwise. If @racket[flag2]
+is provided, it must be distinct from @racket[flag] and @racket['equal]
+cannot be used with @racket['eqv], otherwise the
+@racket[exn:fail:contract] exception is raised.}
 
 
 @defproc*[([(make-hash-table) 
@@ -358,7 +358,7 @@ exception is raised.}
            [(make-hash-table [flag (one-of/c 'weak 'equal 'eqv)]) 
             hash-table?]
            [(make-hash-table [flag (one-of/c 'weak 'equal 'eqv)]
-                             [flag (one-of/c 'weak 'equal 'eqv)]) 
+                             [flag2 (one-of/c 'weak 'equal 'eqv)]) 
             hash-table?])]{
 
 Creates and returns a new hash table. If provided, each @racket[flag]
@@ -381,7 +381,7 @@ must one of the following:
  ]
 
 By default, key comparisons use @racket[eq?] (i.e., the hash table is
-created with @racket[make-hasheq]). If the second @racket[flag] is
+created with @racket[make-hasheq]). If @racket[flag2] is
 redundant or @racket['equal] is provided with @racket['eqv], the
 @racket[exn:fail:contract] exception is raised.}
 

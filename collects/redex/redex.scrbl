@@ -1809,7 +1809,7 @@ exploring reduction sequences.
                  [#:x-spacing x-spacing number? 15]
                  [#:y-spacing y-spacing number? 15]
                  [#:layout layout (-> (listof term-node?) void) void]
-                 [#:edge-labels? edge-label-font boolean? #t]
+                 [#:edge-labels? edge-labels? boolean? #t]
                  [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
                  [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values])
          void?]{
@@ -1926,7 +1926,7 @@ inserted into the editor by this library have a
                     [#:layout layout (-> (listof term-node?) void) void]
                     [#:x-spacing x-spacing number? 15]
                     [#:y-spacing y-spacing number? 15]
-                    [#:edge-labels? edge-label-font boolean? #t]
+                    [#:edge-labels? edge-labels? boolean? #t]
                     [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
                     [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values]
                     [#:post-process post-process (-> (is-a?/c graph-pasteboard<%>) any/c)])

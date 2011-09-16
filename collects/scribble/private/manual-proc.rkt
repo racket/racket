@@ -238,6 +238,10 @@
       (if (symbol? (car p)) (car p) (loop (car p)))))
   (define (do-one stx-id prototype args arg-contracts arg-vals result-contract
                   first?)
+    (let ([names (remq* '(... ...+) (map arg-id args))])
+      (unless (= (length names) (length (remove-duplicates names eq?)))
+        (error 'defproc "duplicate argument names in prototype for ~s: ~s"
+               (syntax->datum stx-id) names)))
     (define tagged
       (cond
         [(eq? mode 'new)
