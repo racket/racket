@@ -330,6 +330,10 @@ scheme_init_port_fun(Scheme_Env *env)
   scheme_add_global_constant("print",   scheme_print_proc,    env);
 
   GLOBAL_IMMED_PRIM("pipe-content-length",              pipe_length,                1, 1, env);
+
+  REGISTER_SO(scheme_default_global_print_handler);
+  scheme_default_global_print_handler
+    = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 3);
 }
 
 
@@ -350,9 +354,6 @@ void scheme_init_port_fun_config(void)
     scheme_set_root_param(MZCONFIG_LOAD_HANDLER, dlh);
   }
 
-  REGISTER_SO(scheme_default_global_print_handler);
-  scheme_default_global_print_handler
-    = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 3);
   scheme_set_root_param(MZCONFIG_PORT_PRINT_HANDLER, scheme_default_global_print_handler);
 
   /* Use dummy port: */

@@ -135,14 +135,7 @@ void scheme_init_place(Scheme_Env *env)
   PLACE_PRIM_W_ARITY("place-message-allowed?", place_allowed_p, 1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-dead-evt",        make_place_dead, 1, 1, plenv);
 
-#ifdef MZ_USE_PLACES
-  REGISTER_SO(scheme_def_place_exit_proc);
-  scheme_def_place_exit_proc = scheme_make_prim_w_arity(def_place_exit_handler_proc, "default-place-exit-handler", 1, 1);
-#endif
   scheme_finish_primitive_module(plenv);
-
- REGISTER_SO(quote_symbol);
- quote_symbol = scheme_intern_symbol("quote");
 }
 
 static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]) {
@@ -159,7 +152,12 @@ void scheme_init_places_once() {
   scheme_add_evt(scheme_place_bi_channel_type, (Scheme_Ready_Fun)place_channel_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_place_dead_type,       (Scheme_Ready_Fun)place_dead_ready, NULL, NULL, 1);
   mzrt_mutex_create(&id_counter_mutex);
+  REGISTER_SO(scheme_def_place_exit_proc);
+  scheme_def_place_exit_proc = scheme_make_prim_w_arity(def_place_exit_handler_proc, "default-place-exit-handler", 1, 1);
 #endif
+
+ REGISTER_SO(quote_symbol);
+ quote_symbol = scheme_intern_symbol("quote");
 }
 
 int scheme_get_place_id(void)
