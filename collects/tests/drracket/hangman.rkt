@@ -1,9 +1,9 @@
 #lang racket/base
 (require "private/drracket-test-util.rkt"
-         racket/class)
+         racket/class
+         racket/gui/base)
 
 (fire-up-drscheme-and-run-tests 
- #:use-focus-table? #f
  (λ ()
    (define drs (wait-for-drscheme-frame))
    (define defs (send drs get-definitions-text))
@@ -15,10 +15,9 @@
    (do-execute drs)
    (insert-in-interactions drs "(hangman make-word reveal symbol?)")
    (alt-return-in-interactions drs)
-   (define hangman-frame (wait-for-new-frame drs (list (send rep get-user-eventspace))))
-   (cond
-     [(equal? (send hangman-frame get-label) "Hangman")
-      (printf "Hangman test passed.\n")]
-     [else
-      (error 'hangman.rkt "expected a hangman frame to appear, but got one with the label ~s" 
-             (send hangman-frame get-label))])))
+   (define (user-hangman-frame?)
+     (define windows (parameterize ([current-eventspace (send rep get-user-eventspace)])
+                       (get-top-level-windows)))
+     (define labels (map (λ (x) (send x get-label)) windows))
+     (member "Hangman" labels))
+   (poll-until user-hangman-frame?)))
