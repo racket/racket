@@ -7,6 +7,16 @@
 
 (define (main)
 
+  (test-exn
+    "using a closed port with place*"
+    (lambda (x) (void))
+    (let ()
+    (define op (open-output-bytes))
+    (call-with-output-file "foo.foo" #:exists 'replace (lambda (op)
+      (close-output-port op)
+      (let-values ([(p pin pout perr) (place* #:out op ch (printf "Hello3\n"))])
+        (place-wait p))))))
+
   (place-wait (place ch (printf "Hello1\n")))
   (place-wait (place ch (eprintf "Hello2\n")))
   (place-wait (place ch (printf "~a\n" (read))))  ; #<eof>

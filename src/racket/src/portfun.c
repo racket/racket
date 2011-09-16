@@ -2182,6 +2182,10 @@ static Scheme_Object *port_closed_p (int argc, Scheme_Object *argv[])
   }
 }
 
+intptr_t scheme_port_closed_p (Scheme_Object *port) {
+  return (port_closed_p(1, &port) == scheme_false) ? 0 : 1;
+}
+
 static Scheme_Object *current_input_port(int argc, Scheme_Object *argv[])
 {
   return scheme_param_config("current-input-port", scheme_make_integer(MZCONFIG_INPUT_PORT),

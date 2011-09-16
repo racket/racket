@@ -3495,6 +3495,7 @@ int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info 
 int scheme_pipe_char_count(Scheme_Object *p);
 void scheme_alloc_global_fdset();
 Scheme_Object *scheme_port_name(Scheme_Object *p);
+intptr_t scheme_port_closed_p (Scheme_Object *port);
 
 #define CURRENT_INPUT_PORT(config) scheme_get_param(config, MZCONFIG_INPUT_PORT)
 #define CURRENT_OUTPUT_PORT(config) scheme_get_param(config, MZCONFIG_OUTPUT_PORT)
