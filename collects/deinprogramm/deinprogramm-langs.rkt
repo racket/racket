@@ -1226,11 +1226,11 @@
                      ;; and still running here?
                      (send rep highlight-errors to-highlight #f))))))))
       
-      ;; with-mark : syntax syntax -> syntax
+      ;; with-mark : syntax syntax exact-nonnegative-integer -> syntax
       ;; a member of stacktrace-imports^
       ;; guarantees that the continuation marks associated with teaching-languages-continuation-mark-key are
       ;; members of the debug-source type
-      (define (with-mark source-stx expr)
+      (define (with-mark source-stx expr phase)
         (let ([source (syntax-source source-stx)]
               [line (syntax-line source-stx)]
               [col (syntax-column source-stx)]
