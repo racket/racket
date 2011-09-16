@@ -897,6 +897,9 @@
        ,@(sandbox-path-permissions))]
     ;; general info
     [current-command-line-arguments '#()]
+    ;; prevent a potential value here from messing up creating the sandboxed
+    ;; module
+    [current-module-declare-name #f]
     ;; restrict the sandbox context from this point
     [current-security-guard
      (let ([g (sandbox-security-guard)]) (if (security-guard? g) g (g)))]
