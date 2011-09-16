@@ -432,21 +432,21 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     Scheme_Object *tmpport;
     a[0] = (Scheme_Object *) place;
     if (rw[1] >= 0) {
-      tmpport = scheme_make_fd_output_port(rw[1], scheme_intern_symbol("place-in"),  1, 1, 0);
+      tmpport = scheme_make_fd_output_port(rw[1], scheme_intern_symbol("place-in"),  0, 0, 0);
       a[1] = tmpport;
     }
     else
       a[1] = scheme_false;
 
     if (rw[2] >= 0) {
-      tmpport = scheme_make_fd_input_port(rw[2],  scheme_intern_symbol("place-out"), 1, 1);
+      tmpport = scheme_make_fd_input_port(rw[2],  scheme_intern_symbol("place-out"), 0, 0);
       a[2] = tmpport;
     }
     else
       a[2] = scheme_false;
 
     if (rw[4] >= 0) {
-      tmpport = scheme_make_fd_input_port(rw[4],  scheme_intern_symbol("place-err"), 1, 1);
+      tmpport = scheme_make_fd_input_port(rw[4],  scheme_intern_symbol("place-err"), 0, 0);
       a[3] = tmpport;
     }
     else
@@ -2157,21 +2157,21 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   {
     Scheme_Object *tmp;
     if (place_data->in >= 0) {
-      tmp = scheme_make_fd_input_port (place_data->in,  scheme_intern_symbol("place-in"),  1, 1);
+      tmp = scheme_make_fd_input_port (place_data->in,  scheme_intern_symbol("place-in"),  0, 0);
       if (scheme_orig_stdin_port) {
         scheme_close_input_port(scheme_orig_stdin_port);
       }
       scheme_orig_stdin_port = tmp;
     }
     if (place_data->out >= 0) {
-      tmp = scheme_make_fd_output_port(place_data->out, scheme_intern_symbol("place-out"), 1, 1, 0);
+      tmp = scheme_make_fd_output_port(place_data->out, scheme_intern_symbol("place-out"), 0, 0, 0);
       if (scheme_orig_stdout_port) {
         scheme_close_output_port(scheme_orig_stdout_port);
       }
       scheme_orig_stdout_port = tmp;
     }
     if (place_data->err >= 0) {
-      tmp = scheme_make_fd_output_port(place_data->err, scheme_intern_symbol("place-err"), 1, 1, 0);
+      tmp = scheme_make_fd_output_port(place_data->err, scheme_intern_symbol("place-err"), 0, 0, 0);
       if (scheme_orig_stderr_port) {
         scheme_close_output_port(scheme_orig_stderr_port);
       }
