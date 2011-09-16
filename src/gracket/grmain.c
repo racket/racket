@@ -180,12 +180,12 @@ static void MrEdSchemeMessages(char *msg, ...)
 
   if (!msg) {
     char *s;
-    long l, d;
+    intptr_t l, d;
     DWORD wrote;
 
     s = va_arg(args, char*);
-    d = va_arg(args, long);
-    l = va_arg(args, long);
+    d = va_arg(args, intptr_t);
+    l = va_arg(args, intptr_t);
 
     WriteConsole(console_out, s XFORM_OK_PLUS d, l, &wrote, NULL);
   } else {
@@ -205,7 +205,7 @@ static void MrEdSchemeMessages(char *msg, ...)
   XFORM_HIDE_EXPR(va_end(args));
 }
 
-static void MrEdSchemeMessagesOutput(char *s, long l)
+static void MrEdSchemeMessagesOutput(char *s, intptr_t l)
 {
   if (l)
     MrEdSchemeMessages(NULL, s, 0, l);
@@ -262,12 +262,14 @@ static void break_console_reading_threads()
   }
 }
 
-static long mrconsole_get_string(Scheme_Input_Port *ip,
-				 char *buffer, long offset, long size,
-				 int nonblock, Scheme_Object *unless)
+static intptr_t mrconsole_get_string(Scheme_Input_Port *ip,
+				     char *buffer, intptr_t offset, intptr_t size,
+				     int nonblock, Scheme_Object *unless)
 {
-  long result;
+  intptr_t result;
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
+
+  if (!pipe) return 0;
   MrEdSchemeMessages("");
 
   init_console_in();
@@ -285,6 +287,8 @@ static long mrconsole_get_string(Scheme_Input_Port *ip,
 static Scheme_Object *mrconsole_progress_evt(Scheme_Input_Port *ip)
 {
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
+
+  if (!pipe) return NULL;
   MrEdSchemeMessages("");
 
   init_console_in();
@@ -294,11 +298,13 @@ static Scheme_Object *mrconsole_progress_evt(Scheme_Input_Port *ip)
 }
 
 static int mrconsole_peeked_read(Scheme_Input_Port *ip,
-					    long amount,
-					    Scheme_Object *unless,
-					    Scheme_Object *target_ch)
+				 intptr_t amount,
+				 Scheme_Object *unless,
+				 Scheme_Object *target_ch)
 {
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
+
+  if (!pipe) return 0;
   MrEdSchemeMessages("");
 
   init_console_in();
@@ -310,6 +316,8 @@ static int mrconsole_peeked_read(Scheme_Input_Port *ip,
 static int mrconsole_char_ready(Scheme_Input_Port *ip)
 {
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
+
+  if (!pipe) return 0;
   MrEdSchemeMessages("");
 
   init_console_in();
@@ -322,6 +330,8 @@ static void mrconsole_close(Scheme_Input_Port *ip)
 {
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
 
+  if (!pipe) return;
+
   init_console_in();
   pipe = console_inport;
 
@@ -333,9 +343,14 @@ static Scheme_Object *MrEdMakeStdIn(void)
   Scheme_Object *readp;
   Scheme_Input_Port *ip;
 
-  MZ_REGISTER_STATIC(stdin_pipe);
+  if (scheme_get_place_id() == 0) {
+    MZ_REGISTER_STATIC(stdin_pipe);
 
-  scheme_pipe(&readp, &stdin_pipe);
+    scheme_pipe(&readp, &stdin_pipe);
+  } else {
+    /* for a non-main place, the port will be replaced anyway */
+    readp = NULL;
+  }
 
   ip = scheme_make_input_port(scheme_make_port_type("mred-console-input-port"),
 			      readp,
@@ -352,7 +367,7 @@ static Scheme_Object *MrEdMakeStdIn(void)
   return (Scheme_Object *)ip;
 }
 
-static long stdout_write(Scheme_Output_Port*op, const char *s, long d, long l, 
+static intptr_t stdout_write(Scheme_Output_Port*op, const char *s, intptr_t d, intptr_t l, 
 			 int rarely_block, int enable_break)
 {
   if (l)
@@ -373,7 +388,7 @@ static Scheme_Object *MrEdMakeStdOut(void)
 						  NULL, NULL, NULL, NULL, NULL, 0);
 }
 
-static long stderr_write(Scheme_Output_Port*op, const char *s, long d, long l, 
+static intptr_t stderr_write(Scheme_Output_Port*op, const char *s, intptr_t d, intptr_t l, 
 			 int rarely_block, int enable_break)
 {
   if (l)
@@ -655,7 +670,7 @@ static int CheckSingleInstance(char *normalized_path, char **argv)
 
 static void pre_filter_cmdline_arguments(int *argc, char ***argv)
 {
-  scheme_register_process_global("PLT_WM_IS_GRACKET", (void *)(long)wm_is_gracket);
+  scheme_register_process_global("PLT_WM_IS_GRACKET", (void *)(intptr_t)wm_is_gracket);
   scheme_register_process_global("PLT_GRACKET_GUID", GRACKET_GUID);
 }
 
@@ -818,7 +833,7 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv)
 
   pos = filter_x_readable(*argv, *argc);
   if (pos > 1) {
-    scheme_register_process_global("PLT_X11_ARGUMENT_COUNT", (void *)(long)pos);
+    scheme_register_process_global("PLT_X11_ARGUMENT_COUNT", (void *)(intptr_t)pos);
     scheme_register_process_global("PLT_X11_ARGUMENTS", *argv);
     naya = malloc((*argc - (pos - 1)) * sizeof(char *));
     memcpy(naya, *argv + (pos - 1), (*argc - (pos - 1)) * sizeof(char *));

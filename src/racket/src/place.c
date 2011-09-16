@@ -162,6 +162,15 @@ void scheme_init_places_once() {
 #endif
 }
 
+int scheme_get_place_id(void)
+{
+#ifdef MZ_USE_PLACES
+  return scheme_current_place_id;
+#else
+  return 0;
+#endif
+}
+
 #ifdef MZ_USE_PLACES
 
 /************************************************************************/
@@ -2225,10 +2234,6 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   }
 
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
-
-  scheme_close_input_port(scheme_orig_stdin_port);
-  scheme_close_output_port(scheme_orig_stdout_port);
-  scheme_close_output_port(scheme_orig_stderr_port);
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
   scheme_place_instance_destroy(place_obj->die);
