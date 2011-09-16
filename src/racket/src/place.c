@@ -349,8 +349,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     int errorno;
 
     if (SCHEME_TRUEP(in_arg)) {
-      if (scheme_port_closed_p(in_arg))
+      if (scheme_port_closed_p(in_arg)) {
+        close_six_fds(rw);
         scheme_arg_mismatch("dynamic-place", "port is closed: ", in_arg);
+      }
       scheme_get_port_file_descriptor(in_arg, &tmpfd);
       tmpfd = scheme_dup_file(tmpfd);
       if (tmpfd == -1) {
@@ -367,8 +369,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     }
 
     if (SCHEME_TRUEP(out_arg)) {
-      if (scheme_port_closed_p(out_arg))
+      if (scheme_port_closed_p(out_arg)) {
+        close_six_fds(rw);
         scheme_arg_mismatch("dynamic-place", "port is closed: ", out_arg);
+      }
       scheme_get_port_file_descriptor(out_arg, &tmpfd);
       tmpfd = scheme_dup_file(tmpfd);
       if (tmpfd == -1) {
@@ -385,8 +389,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     }
 
     if (SCHEME_TRUEP(err_arg)) {
-      if (scheme_port_closed_p(err_arg))
+      if (scheme_port_closed_p(err_arg)) {
+        close_six_fds(rw);
         scheme_arg_mismatch("dynamic-place", "port is closed: ", err_arg);
+      }
       scheme_get_port_file_descriptor(err_arg, &tmpfd);
       tmpfd = scheme_dup_file(tmpfd);
       if (tmpfd == -1) {
