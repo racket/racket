@@ -3727,6 +3727,7 @@ intptr_t scheme_dup_socket(intptr_t fd);
 intptr_t scheme_dup_file(intptr_t fd);
 void scheme_close_socket_fd(intptr_t fd);
 void scheme_close_file_fd(intptr_t fd);
+int scheme_os_pipe(intptr_t *fds, int near_index);
 void scheme_tcp_abandon_port(Scheme_Object *port);
 intptr_t scheme_socket_errno();
 intptr_t scheme_errno();

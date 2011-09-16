@@ -7298,14 +7298,14 @@ scheme_make_fd_output_port(int fd, Scheme_Object *name, int regfile, int textmod
 
 #define MZ_FAILURE_STATUS -1
 
-#ifdef PROCESS_FUNCTION
+#if defined(PROCESS_FUNCTION) || defined(MZ_USE_PLACES)
 
 # define USE_CREATE_PIPE
 
 #ifdef WINDOWS_PROCESSES
 # ifdef USE_CREATE_PIPE
 #  define _EXTRA_PIPE_ARGS
-static int MyPipe(int *ph, int near_index) {
+static int MyPipe(intptr_t *ph, int near_index) {
   HANDLE r, w;
   SECURITY_ATTRIBUTES saAttr;
 
@@ -7320,18 +7320,20 @@ static int MyPipe(int *ph, int near_index) {
     a[0] = r;
     a[1] = w;
 
-    /* Change the near end to make it non-inheritable, then
-       close the inheritable one: */
-    if (!DuplicateHandle(GetCurrentProcess(), a[near_index],
-			 GetCurrentProcess(), &naya, 0,
-			 0, /* not inherited */
-			 DUPLICATE_SAME_ACCESS)) {
-      CloseHandle(a[0]);
-      CloseHandle(a[1]);
-      return 1;
-    } else {
-      CloseHandle(a[near_index]);
-      a[near_index] = naya;
+    if (near_index != -1) {
+      /* Change the near end to make it non-inheritable, then
+         close the inheritable one: */
+      if (!DuplicateHandle(GetCurrentProcess(), a[near_index],
+                           GetCurrentProcess(), &naya, 0,
+                           0, /* not inherited */
+                           DUPLICATE_SAME_ACCESS)) {
+        CloseHandle(a[0]);
+        CloseHandle(a[1]);
+        return 1;
+      } else {
+        CloseHandle(a[near_index]);
+        a[near_index] = naya;
+      }
     }
 
     ph[0] = (long)a[0];
@@ -7342,16 +7344,33 @@ static int MyPipe(int *ph, int near_index) {
     return 1;
 }
 #  define PIPE_FUNC MyPipe
+#  define PIPE_HANDLE_t intptr_t
 # else
 #  include <Process.h>
 #  include <fcntl.h>
-# define PIPE_FUNC(pa, nearh) MSC_IZE(pipe)(pa)
+#  define PIPE_FUNC(pa, nearh) MSC_IZE(pipe)(pa)
+#  define PIPE_HANDLE_t int
 #  define _EXTRA_PIPE_ARGS , 256, _O_BINARY
 # endif
 #else
 # define _EXTRA_PIPE_ARGS
 # define PIPE_FUNC(pa, nearh) MSC_IZE(pipe)(pa)
+# define PIPE_HANDLE_t int
 #endif
+
+int scheme_os_pipe(intptr_t *a, int nearh)
+/* If nearh != -1, then the handle at the index
+   other than nearh is made inheritable so that
+   a subprocess can use it. */
+{
+  PIPE_HANDLE_t la[2];
+
+  if (PIPE_FUNC(la, nearh _EXTRA_PIPE_ARGS))
+    return 1;
+  a[0] = la[0];
+  a[1] = la[1];
+  return 0;
+}
 
 #endif
 
@@ -8080,8 +8099,8 @@ static char *cmdline_protect(char *s)
 }
 
 static intptr_t mz_spawnv(char *command, const char * const *argv,
-		      int exact_cmdline, int sin, int sout, int serr, int *pid,
-                      int new_process_group)
+			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
+			  int new_process_group)
 {
   int i, l, len = 0;
   intptr_t cr_flag;
@@ -8190,8 +8209,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   const char *name = "subprocess";
 #if defined(PROCESS_FUNCTION) && !defined(MAC_CLASSIC_PROCESS_CONTROL)
   char *command;
-  int to_subprocess[2], from_subprocess[2], err_subprocess[2];
-  int i, pid;
+  intptr_t to_subprocess[2], from_subprocess[2], err_subprocess[2];
+  int i, pid, errid;
   char **argv;
   Scheme_Object *in, *out, *err;
 #if defined(UNIX_PROCESSES)
@@ -8370,38 +8389,41 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*          Create needed pipes         */
   /*--------------------------------------*/
 
-  if (!inport && PIPE_FUNC(to_subprocess, 1 _EXTRA_PIPE_ARGS)) {
+  if (!inport && scheme_os_pipe(to_subprocess, 1)) {
+    errid = scheme_errno();
     if (outport) { mzCLOSE_FILE_HANDLE(from_subprocess, 1); }
     if (errport) { mzCLOSE_FILE_HANDLE(err_subprocess, 1); }
-    scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errno);
+    scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errid);
   }
-  if (!outport && PIPE_FUNC(from_subprocess, 0 _EXTRA_PIPE_ARGS)) {
+  if (!outport && scheme_os_pipe(from_subprocess, 0)) {
+    errid = scheme_errno();
     if (!inport) {
-      MSC_IZE(close)(to_subprocess[0]);
-      MSC_IZE(close)(to_subprocess[1]);
+      scheme_close_file_fd(to_subprocess[0]);
+      scheme_close_file_fd(to_subprocess[1]);
     } else {
       mzCLOSE_FILE_HANDLE(to_subprocess, 0);
     }
     if (errport) { mzCLOSE_FILE_HANDLE(err_subprocess, 1); }
-    scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errno);
+    scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errid);
   }
   if (!errport && stderr_is_stdout) {
     err_subprocess[0] = from_subprocess[0];
     err_subprocess[1] = from_subprocess[1];
-  } else if (!errport && PIPE_FUNC(err_subprocess, 0 _EXTRA_PIPE_ARGS)) {
+  } else if (!errport && scheme_os_pipe(err_subprocess, 0)) {
+    errid = scheme_errno();
     if (!inport) {
-      MSC_IZE(close)(to_subprocess[0]);
-      MSC_IZE(close)(to_subprocess[1]);
+      scheme_close_file_fd(to_subprocess[0]);
+      scheme_close_file_fd(to_subprocess[1]);
     } else {
       mzCLOSE_FILE_HANDLE(to_subprocess, 0);
     }
     if (!outport) {
-      MSC_IZE(close)(from_subprocess[0]);
-      MSC_IZE(close)(from_subprocess[1]);
+      scheme_close_file_fd(from_subprocess[0]);
+      scheme_close_file_fd(from_subprocess[1]);
     } else {
       mzCLOSE_FILE_HANDLE(from_subprocess, 1);
     }
-    scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errno);
+    scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errid);
   }
 
 #if defined(WINDOWS_PROCESSES)
@@ -8443,7 +8465,6 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       sc = (void *)spawn_status;
   }
 
-# define mzCLOSE_PIPE_END(x) CloseHandle((HANDLE)(x))
 #else
 
 
@@ -8540,21 +8561,21 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     case -1:
       /* Close unused descriptors. */
       if (!inport) {
-	MSC_IZE(close)(to_subprocess[0]);
-	MSC_IZE(close)(to_subprocess[1]);
+	scheme_close_file_fd(to_subprocess[0]);
+	scheme_close_file_fd(to_subprocess[1]);
       } else {
 	mzCLOSE_FILE_HANDLE(to_subprocess, 0);
       }
       if (!outport) {
-	MSC_IZE(close)(from_subprocess[0]);
-	MSC_IZE(close)(from_subprocess[1]);
+	scheme_close_file_fd(from_subprocess[0]);
+	scheme_close_file_fd(from_subprocess[1]);
       } else {
 	mzCLOSE_FILE_HANDLE(from_subprocess, 1);
       }
       if (!errport) {
         if (!stderr_is_stdout) {
-          MSC_IZE(close)(err_subprocess[0]);
-          MSC_IZE(close)(err_subprocess[1]);
+          scheme_close_file_fd(err_subprocess[0]);
+          scheme_close_file_fd(err_subprocess[1]);
         }
       } else {
 	mzCLOSE_FILE_HANDLE(err_subprocess, 1);
@@ -8566,23 +8587,29 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
       {
 	/* Copy pipe descriptors to stdin and stdout */
-	MSC_IZE(dup2)(to_subprocess[0], 0);
-	MSC_IZE(dup2)(from_subprocess[1], 1);
-	MSC_IZE(dup2)(err_subprocess[1], 2);
+	do {
+	  errid = MSC_IZE(dup2)(to_subprocess[0], 0);
+	} while (errid == -1 && errno == EINTR);
+	do {
+	  errid = MSC_IZE(dup2)(from_subprocess[1], 1);
+	} while (errid == -1 && errno == EINTR);
+	do {
+	  errid = MSC_IZE(dup2)(err_subprocess[1], 2);
+	} while (errid == -1 && errno == EINTR);
 
 	/* Close unwanted descriptors. */
 	if (!inport) {
-	  MSC_IZE(close)(to_subprocess[0]);
-	  MSC_IZE(close)(to_subprocess[1]);
+	  scheme_close_file_fd(to_subprocess[0]);
+	  scheme_close_file_fd(to_subprocess[1]);
 	}
 	if (!outport) {
-	  MSC_IZE(close)(from_subprocess[0]);
-	  MSC_IZE(close)(from_subprocess[1]);
+	  scheme_close_file_fd(from_subprocess[0]);
+	  scheme_close_file_fd(from_subprocess[1]);
 	}
 	if (!errport) {
           if (!stderr_is_stdout) {
-            MSC_IZE(close)(err_subprocess[0]);
-            MSC_IZE(close)(err_subprocess[1]);
+            scheme_close_file_fd(err_subprocess[0]);
+            scheme_close_file_fd(err_subprocess[1]);
           }
 	}
 
@@ -8649,7 +8676,6 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
       break;
     }
-# define mzCLOSE_PIPE_END(x) MSC_IZE(close)(x)
 #endif
 
   /*--------------------------------------*/
@@ -8657,14 +8683,14 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*--------------------------------------*/
 
   if (!inport) {
-    mzCLOSE_PIPE_END(to_subprocess[0]);
+    scheme_close_file_fd(to_subprocess[0]);
     out = NULL;
   } else {
     mzCLOSE_FILE_HANDLE(to_subprocess, 0);
     out = scheme_false;
   }
   if (!outport) {
-    mzCLOSE_PIPE_END(from_subprocess[1]);
+    scheme_close_file_fd(from_subprocess[1]);
     in = NULL;
   } else {
     mzCLOSE_FILE_HANDLE(from_subprocess, 1);
@@ -8672,7 +8698,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   }
   if (!errport) {
     if (!stderr_is_stdout)
-      mzCLOSE_PIPE_END(err_subprocess[1]);
+      scheme_close_file_fd(err_subprocess[1]);
     err = NULL;
   } else {
     mzCLOSE_FILE_HANDLE(err_subprocess, 1);

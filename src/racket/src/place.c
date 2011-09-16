@@ -211,7 +211,7 @@ Scheme_Object *scheme_make_place_object() {
   return (Scheme_Object *)place_obj;
 }
 
-static void close_six_fds(int *rw) {
+static void close_six_fds(intptr_t *rw) {
   int i;
   for (i=0; i<6; i++) { if (rw[i] >= 0) scheme_close_file_fd(rw[i]); }
 }
@@ -246,7 +246,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   Scheme_Object         *in_arg;
   Scheme_Object         *out_arg;
   Scheme_Object         *err_arg;
-  int rw[6] = {-1, -1, -1, -1, -1, -1};
+  intptr_t rw[6] = {-1, -1, -1, -1, -1, -1};
 
   /* To avoid runaway place creation, check for termination before continuing. */
   scheme_thread_block(0.0);
@@ -306,7 +306,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     }
 
     if (SCHEME_PAIRP(args[0]) && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)) {
-      scheme_arg_mismatch("dynamic-place", "dynamic-place works on only on filesystem  module-paths", args[0]);
+      scheme_arg_mismatch("dynamic-place", "not only a filesystem module-path: ", args[0]);
     }
 
     so = places_deep_copy_to_master(args[0]);
@@ -345,11 +345,11 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
       if (tmpfd == -1) {
         errorno = scheme_errno();
         close_six_fds(rw);
-        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor(%e)", errorno);
+        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor (%e)", errorno);
       }
       rw[0] = tmpfd;
     }
-    else if (pipe(rw)) {
+    else if (scheme_os_pipe(rw, -1)) {
       errorno = scheme_errno();
       close_six_fds(rw);
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard input streams (%e)", errorno);
@@ -361,11 +361,11 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
       if (tmpfd == -1) {
         errorno = scheme_errno();
         close_six_fds(rw);
-        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor(%e)", errorno);
+        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor (%e)", errorno);
       }
       rw[3] = tmpfd;
     }
-    else if (pipe(rw + 2)) {
+    else if (scheme_os_pipe(rw + 2, -1)) {
       errorno = scheme_errno();
       close_six_fds(rw);
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard output streams (%e)", errorno);
@@ -377,11 +377,11 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
       if (tmpfd == -1) {
         errorno = scheme_errno();
         close_six_fds(rw);
-        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor(%e)", errorno);
+        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor (%e)", errorno);
       }
       rw[5] = tmpfd;
     }
-    else if (pipe(rw + 4)) {
+    else if (scheme_os_pipe(rw + 4, -1)) {
       errorno = scheme_errno();
       close_six_fds(rw);
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard error streams (%e)", errorno);
@@ -1269,7 +1269,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             dupfd = scheme_dup_socket(fd);
             if (dupfd == -1) {
               if (can_raise_exn)
-                scheme_raise_exn(MZEXN_FAIL_NETWORK, "dup: error duplicating socket(%e)", scheme_socket_errno());
+                scheme_raise_exn(MZEXN_FAIL_NETWORK, "dup: error duplicating socket (%e)", scheme_socket_errno());
               if (delayed_errno) {
                 intptr_t tmp;
                 tmp = scheme_socket_errno();
@@ -1302,7 +1302,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
               dupfd = scheme_dup_file(fd);
               if (dupfd == -1) {
                 if (can_raise_exn)
-                  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "dup: error duplicating file descriptor(%e)", scheme_errno());
+                  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "dup: error duplicating file descriptor (%e)", scheme_errno());
                 if (delayed_errno) {
                   intptr_t tmp;
                   tmp = scheme_errno();
