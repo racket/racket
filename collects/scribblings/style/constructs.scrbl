@@ -14,7 +14,10 @@ and readability.
 
 Following Lisp and Scheme tradition, we use a single semicolon for in-line
 comments (to the end of a line) and two semicolons for comments that start
-a line. Think of the second semicolon as making an emphatic point.
+a line. @margin-note*{This request does not contradict the programs in this
+document. They use two semicolons for full-line comments in source but
+scribble renders only one.} Think of the second semicolon as making an
+emphatic point.
 
 Seasoned Schemers, not necessarily Racketeers, also use triple and
 quadruple semicolons. This is considered a courtesy to distinguish file
