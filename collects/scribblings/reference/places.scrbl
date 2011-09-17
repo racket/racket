@@ -104,7 +104,7 @@ are simulated using @racket[thread].}
 }
 
 
-@defproc[(dynamic-place [module-path module-path?] 
+@defproc[(dynamic-place [module-path (or/c module-path? path?)]
                         [start-proc symbol?])
                         place?]{
 
@@ -133,16 +133,17 @@ are simulated using @racket[thread].}
  @racket[start-proc] returns, then the place terminates with the
  @tech{completion value} @racket[0].
 
- In the created place, the values of the @racket[current-input-port],
- @racket[current-output-port], and @racket[current-error-port]
+ In the created place, the @racket[current-input-port] parameter 
+ is set to an empty input port, while the values of the
+ @racket[current-output-port] and @racket[current-error-port]
  parameters are connected to the current ports in the creating
- place. If the ports are @tech{file-stream ports}, then the connected
- ports in the places share the underlying stream, otherwise a
- @tech{thread} in the creating place pumps bytes to and from the
- current ports in the creating place.}
+ place. If the output ports are @tech{file-stream ports}, then the
+ connected ports in the places share the underlying stream, otherwise
+ a @tech{thread} in the creating place pumps bytes to the current
+ ports in the creating place.}
 
 
-@defproc[(dynamic-place* [module-path module-path?] 
+@defproc[(dynamic-place* [module-path (or/c module-path? path?)]
                          [start-proc symbol?]
                          [#:in in (or/c input-port? #f) #f]
                          [#:out out (or/c output-port? #f) (current-output-port)]

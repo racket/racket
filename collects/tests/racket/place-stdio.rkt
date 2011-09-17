@@ -14,11 +14,31 @@
 	       (equal? #f (port-closed? (current-error-port))))
     (error "sub-place port-close test failed"))
   
-  ;; Closing only stdin should lead to closed stdin in
-  ;; a sub-place:
+  ;; Closing only stdin shouldn't matter; the new place
+  ;;  gets a finished stdin:
   (close-input-port (current-input-port))
   (define p (place ch
-		   (place-channel-put ch (port-closed? (current-input-port)))))
+		   (place-channel-put ch (eof-object? (read-byte (current-input-port))))))
   (unless (equal? (place-channel-get p) #t)
-    (error "closed-stdin test failed")))
+    (error "closed-stdin test failed"))
+
+  ;; Cosed current output port => fail creating place
+  (define (try-closed mk)
+    (with-handlers ([exn:fail:contract? (lambda (exn)
+                                          (unless (regexp-match? #rx"port is closed"
+                                                                 (exn-message exn))
+                                            (raise exn)))])
+      (let ([p (mk)])
+        (close-output-port p)
+        (parameterize ([current-output-port p])
+          (place ch (void)))
+        (error (format "closed-stdout test failed on ~e" mk)))))
+  (let ([f (make-temporary-file)])
+    (dynamic-wind
+        void
+        (lambda ()
+          (try-closed (lambda () (open-output-file f #:exists 'truncate))))
+        (lambda ()
+          (delete-file f))))
+  (try-closed open-output-bytes))
 

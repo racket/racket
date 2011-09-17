@@ -7,7 +7,7 @@
          racket/fixnum
          racket/flonum
          racket/vector
-         "../mzlib/private/streams.rkt"
+         mzlib/private/streams
 
          (for-syntax racket/base
                      racket/syntax))
@@ -148,27 +148,56 @@
     [else (void)]))
 
 (define (dynamic-place module-path function)
-  (define-values (p i o e) (dynamic-place* module-path 
-                                           function 
-                                           #:in #f 
-                                           #:out (current-output-port) 
-                                           #:err (current-error-port)))
+  (start-place 'dynamic-place module-path function 
+               #f (current-output-port) (current-error-port)))
+
+(define (dynamic-place* module-path
+                        function
+                        #:in [in #f]
+                        #:out [out (current-output-port)]
+                        #:err [err (current-error-port)])
+  (start-place* 'dynamic-place* module-path function in out err))
+
+(define (start-place who module-path function in out err)
+  (define-values (p i o e) (start-place* who
+                                         module-path 
+                                         function 
+                                         in
+                                         out
+                                         err))
   (close-output-port i)
   p)
 
-(define (dynamic-place* module-path
-                       function
-                       #:in [in #f]
-                       #:out [out (current-output-port)]
-                       #:err [err (current-error-port)])
+(define (start-place* who module-path function in out err)
+  ;; Duplicate checks in that are in the primitive `pl-dynamic-place', 
+  ;; unfortunately, but we want these checks before we start making
+  ;; stream-pumping threads, etc.
+  (unless (or (module-path? module-path) (path? module-path))
+    (raise-type-error who "module-path or path" module-path))
+  (unless (symbol? function)
+    (raise-type-error who "symbol" module-path))
+  (unless (or (not in) (input-port? in))
+    (raise-type-error who "input-port or #f" in))
+  (unless (or (not out) (output-port? out))
+    (raise-type-error who "output-port or #f" out))
+  (unless (or (not err) (output-port? err) (eq? err 'stdout))
+    (raise-type-error who "output-port, #f, or 'stdout" err))
+  (when (and (pair? module-path) (eq? (car module-path) 'quote))
+    (raise-mismatch-error who "not a filesystem module-path: " module-path))
+  (when (and (input-port? in) (port-closed? in))
+    (raise-mismatch-error who "input port is closed: " in))
+  (when (and (output-port? out) (port-closed? out))
+    (raise-mismatch-error who "output port is closed: " out))
+  (when (and (output-port? err) (port-closed? err))
+    (raise-mismatch-error who "error port is closed: " err))
   (cond
     [(pl-place-enabled?)
       (define-values (p pin pout perr)
         (pl-dynamic-place module-path
                           function
-                          (if-stream-in  'dynamic-place in)
-                          (if-stream-out 'dynamic-place out)
-                          (if-stream-out 'dynamic-place err)))
+                          (if-stream-in  who in)
+                          (if-stream-out who out)
+                          (if-stream-out who err)))
 
       (pump-place p pin pout perr in out err)
       (values p 
@@ -189,53 +218,49 @@
                 (and (not out) outr)
                 (and (not err) errr)))]))
 
-(define-for-syntax (place-form _in _out _err _dynamic-place-func stx)
+(define-for-syntax (place-form _in _out _err _start-place-func stx orig-stx)
   (syntax-case stx ()
-    [(_ ch body1 body ...)
-     (begin
-       (unless (syntax-transforming-module-expression?)
-         (raise-syntax-error #f "can only be used in a module" stx))
-       (unless (identifier? #'ch)
-         (raise-syntax-error #f "expected an identifier" stx #'ch))
-       (with-syntax ([internal-def-name
-                      (syntax-local-lift-expression #'(lambda (ch) body1 body ...))]
-                     [func-name (generate-temporary #'place/anon)]
-                     [in _in]
-                     [out _out]
-                     [err _err]
-                     [dynamic-place-func _dynamic-place-func])
-         (syntax-local-lift-provide #'(rename internal-def-name func-name))
-         #'(place/proc (#%variable-reference) 'func-name dynamic-place-func #:in in #:out out #:err err)))]
-    [(_ ch)
-     (raise-syntax-error #f "expected at least one body expression" stx)]))
+    [(who ch body1 body ...)
+     (if (eq? (syntax-local-context) 'module-begin)
+         ;; when a `place' form is the only thing in a module mody:
+         #`(begin #,stx)
+         ;; normal case:
+         (begin
+           (unless (syntax-transforming-module-expression?)
+             (raise-syntax-error #f "can only be used in a module" stx))
+           (unless (identifier? #'ch)
+             (raise-syntax-error #f "expected an identifier" stx #'ch))
+           (with-syntax ([internal-def-name
+                          (syntax-local-lift-expression #'(lambda (ch) body1 body ...))]
+                         [func-name (generate-temporary #'place/anon)]
+                         [in _in]
+                         [out _out]
+                         [err _err]
+                         [start-place-func _start-place-func])
+             (syntax-local-lift-provide #'(rename internal-def-name func-name))
+             #'(place/proc (#%variable-reference) 'func-name 'who start-place-func in out err))))]
+     [(_ ch)
+      (raise-syntax-error #f "expected at least one body expression" orig-stx)]))
 
 (define-syntax (place stx)
-  (place-form #'#f #'(current-output-port) #'(current-error-port) #'dynamic-place stx))
+  (place-form #'#f #'(current-output-port) #'(current-error-port) #'start-place stx stx))
 
 (define-syntax (place* stx)
   (syntax-case stx ()
-    [(_ #:in in #:out out #:err err ch body ...) (place-form #'in #'out #'err  #'dynamic-place* #'('place* ch body ...))]
-    [(_ #:in in #:out out ch body ...)           (place-form #'in #'out #'#f   #'dynamic-place* #'('place* ch body ...))]
-    [(_ #:out out #:err err ch body ...)         (place-form #'#f #'out #'err  #'dynamic-place* #'('place* ch body ...))]
-    [(_ #:in in #:err err ch body ...)           (place-form #'in #'#f  #'err  #'dynamic-place* #'('place* ch body ...))]
-    [(_ #:in in ch body ...)                     (place-form #'in #'#f  #'#f   #'dynamic-place* #'('place* ch body ...))]
-    [(_ #:out out ch body ...)                   (place-form #'#f #'out #'#f   #'dynamic-place* #'('place* ch body ...))]
-    [(_ #:err err ch body ...)                   (place-form #'#f #'#f  #'err  #'dynamic-place* #'('place* ch body ...))]
-    [(_ ch body ...)                             (place-form #'#f #'#f  #'#f   #'dynamic-place* #'('place* ch body ...))]
-))
+    [(pf #:in in #:out out #:err err ch body ...) (place-form #'in #'out #'err  #'start-place* #'(pf ch body ...) stx)]
+    [(pf #:in in #:out out ch body ...)           (place-form #'in #'out #'#f   #'start-place* #'(pf ch body ...) stx)]
+    [(pf #:out out #:err err ch body ...)         (place-form #'#f #'out #'err  #'start-place* #'(pf ch body ...) stx)]
+    [(pf #:in in #:err err ch body ...)           (place-form #'in #'#f  #'err  #'start-place* #'(pf ch body ...) stx)]
+    [(pf #:in in ch body ...)                     (place-form #'in #'#f  #'#f   #'start-place* #'(pf ch body ...) stx)]
+    [(pf #:out out ch body ...)                   (place-form #'#f #'out #'#f   #'start-place* #'(pf ch body ...) stx)]
+    [(pf #:err err ch body ...)                   (place-form #'#f #'#f  #'err  #'start-place* #'(pf ch body ...) stx)]
+    [(pf ch body ...)                             (place-form #'#f #'#f  #'#f   #'start-place* #'(pf ch body ...) stx)]))
 
-(define (place/proc vr 
-                    func-name 
-                    [dynamic-place-func dynamic-place] 
-                    #:in [in #f]  
-                    #:out [out (current-output-port)] 
-                    #:err [err (current-error-port)])
+(define (place/proc vr func-name who start-place-func in out err)
   (define name
     (resolved-module-path-name
      (variable-reference->resolved-module-path
       vr)))
   (when (symbol? name)
-     (error 'place "the current module-path-name is not a file path"))
-  (if (eq? dynamic-place-func dynamic-place)
-    (dynamic-place-func name func-name)
-    (dynamic-place-func name func-name #:in in #:out out #:err err)))
+     (error who "the current module-path-name is not a file path"))
+  (start-place-func who name func-name in out err))
