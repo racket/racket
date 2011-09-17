@@ -63,7 +63,8 @@
 (err/rt-test (resolve-module-path-index "apple.ss" #f))
 (err/rt-test (resolve-module-path-index (module-path-index-join #f #f) #f) exn:fail?)
 
-(test (expand-user-path "~/x.rkt") resolve-module-path '(file "~/x.rkt") #f)
+(when (eq? (system-path-convention-type) 'unix)
+  (test (expand-user-path "~/x.rkt") resolve-module-path '(file "~/x.rkt") #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; collapse-module-path[-index]
