@@ -1,6 +1,8 @@
 Version 5.1.3.9
 Add syntax-shift-phase-level
 errortrace: with-mark and make-st-mark now take a phase level
+place:place* and dynamic place* forms now take in, out, and err named
+ arguments which become the standard io ports for the new place
 
 Version 5.1.3.8
 Add syntax-transforming-module-expression? and
@@ -16,6 +18,11 @@ Changed syntax-local-module-defined-identifiers to return
 compiler/zo-structs: removed def-for-syntax, added
  seq-for-syntax, changed some mod fields, added field to
  def-syntaxes
+
+Version 5.1.3.6
+unsafe/ffi:Changed cstructs to not be generative. 
+place:cpointers and file descriptors can now be sent across
+ place channels.
 
 Version 5.1.3.4
 Add support for the collection links file, including
