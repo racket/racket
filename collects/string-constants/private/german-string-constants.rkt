@@ -128,7 +128,8 @@
  (only-raw-text-files-supported "Nur reine Textdateien werden unterstützt")
  (abnormal-termination "Online-Expansion vorzeitig abgebrochen")
  (jump-to-error "Zum Fehler springen")
-
+ (online-expansion-is-disabled "Online-Expansion ist deaktiviert")
+ 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
  (read-only "Lese Modus")
