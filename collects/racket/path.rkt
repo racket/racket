@@ -144,7 +144,9 @@
         (let loop ([dir (cdr dir)]
                    [file (cdr file)])
           (cond [(null? dir) (if (null? file) filename (apply build-path file))]
-                [(null? file) (apply build-path (map (lambda (x) 'up) dir))]
+                [(null? file) (apply build-path/convention-type 
+				     (path-convention-type filename)
+				     (map (lambda (x) 'up) dir))]
                 [(equal? (car dir) (car file))
                  (loop (cdr dir) (cdr file))]
                 [else
