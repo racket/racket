@@ -317,10 +317,31 @@ either it is released with @racket[port-file-unlock] or the port is closed
 Depending on the platform, locks may be merely advisory (i.e., locks
 affect only the ability of processes to acquire locks) or they may
 correspond to mandatory locks that prevent reads and writes to the
-locked file. Specifically, locks are mandatory on Windows and
-advisory on other platforms.
+locked file. Specifically, locks are mandatory on Windows and advisory
+on other platforms. Multiple tries for a @racket['shared] lock on a
+single port can succeed; on Unix and Mac OS X, a single
+@racket[port-file-unlock] release the lock, while on other Windows, a
+@racket[port-file-unlock] is needed for each successful
+@racket[port-try-file-lock?]. On Unix and Mac OS X, multiple tries for
+a @racket['exclusive] lock can succeed and a single
+@racket[port-file-unlock] releases the lock, while on Windows, a try
+for an @racket['exclusive] lock fails for a given port if the port
+already holds the lock.
 
-Typically, locking is supported only for file ports, and attempting to
+A lock acquired for an input port from @racket[open-input-output-file]
+can be released through @racket[port-file-unlock] on the corresponding
+output port, and vice versa. If the output port from
+@racket[open-input-output-file] holds an @racket['exclusive] lock, the
+corresponding input port can still acquire a @racket['shared] lock,
+even multiple times; on Windows, a @racket[port-file-unlock] is needed
+for each successful lock try, while a single @racket[port-file-unlock]
+balances the lock tries on Unix and Mac OS X. A @racket['shared] lock on
+an input port can be upgraded to an @racket['exclusive] lock through the
+corresponding output port on Unix and Mac OS X, in which case a single
+@racket[port-file-unlock] (on either port) releases the lock, while
+such upgrades are not allowed on Windows.
+
+Locking is normally supported only for file ports, and attempting to
 acquire a lock with other kinds of file-stream ports raises an
 @racket[exn:fail:filesystem] exception.}
 

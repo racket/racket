@@ -696,6 +696,7 @@
 
 (let-values ([(p p-out) (open-input-output-file "tmp2" #:exists 'update)])
   (test #t port-try-file-lock? p 'shared)
+  (test #t port-try-file-lock? p 'shared)
   (let ([p2 (open-input-file "tmp2")])
     (test #t port-try-file-lock? p2 'shared)
     (test #t port-try-file-lock? p2 'shared)
@@ -704,8 +705,12 @@
   (let ([p3 (open-output-file "tmp2" #:exists 'update)])
     (test #f port-try-file-lock? p3 'exclusive)
     (test (void) port-file-unlock p)
+    (when (eq? (system-type) 'windows)
+      ;; need another unlock, since we got a 'shared lock twice
+      (test #f port-try-file-lock? p3 'exclusive)
+      (test (void) port-file-unlock p))
     (test #t port-try-file-lock? p3 'exclusive)
-    (test #t port-try-file-lock? p3 'exclusive)
+    (test (not (eq? 'windows (system-type))) port-try-file-lock? p3 'exclusive)
     (test #f port-try-file-lock? p 'shared)
     (close-output-port p3))
   (err/rt-test (port-try-file-lock? p 'exclusive))
