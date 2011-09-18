@@ -58,6 +58,8 @@
           (list #rx"procedure application: expected procedure, given: (.*); arguments were:.*"
                 (lambda (all one)  
                   (format "function call: expected a function after the open parenthesis, but received ~a" one)))
+          (list #rx"reference to an identifier before its definition: (.*)"
+                (lambda (all one) (format "~a is used here before its definition" one)))
           (list #rx"expects argument of type (<([^>]+)>)"
                 (lambda (all one two) (format "expects a ~a" two)))
           (list #rx"expected argument of type (<([^>]+)>)"
