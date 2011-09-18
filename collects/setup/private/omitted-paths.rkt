@@ -21,7 +21,8 @@
 (define roots
   (delay
     (map (lambda (p)
-           (list (explode-path (car p)) (make-hash)
+           (list (explode-path (simplify-path (car p)))
+		 (make-hash)
                  ;; don't omit "doc" in the main tree
                  (not (equal? (find-collects-dir) (car p)))))
          library-roots)))
