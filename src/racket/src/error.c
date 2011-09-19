@@ -215,13 +215,15 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %- = skip int
 
   %L = line number as intptr_t, -1 means no line
-  %e = error number for strerror()/FormatMessage()
+  %e = error number for strerror()
   %E = error number for platform-specific error string
   %Z = potential platform-specific error number; additional char*
        is either NULL or a specific error message
   %N = boolean then error number like %E (if boolean is 0)
        or error number for scheme_hostname_error()
   %m = boolean then error number like %e, which
+       is used only if the boolean is 1
+  %M = boolean then error number like %E, which
        is used only if the boolean is 1
 */
 
@@ -275,6 +277,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	break;
       case 'N':
       case 'm':
+      case 'M':
 	ints[ip++] = mzVA_ARG(args, int);
 	ints[ip++] = mzVA_ARG(args, int);
 	break;
@@ -407,6 +410,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	case 'e':
         case 'm':
 	case 'E':
+        case 'M':
 	case 'Z':
 	case 'N':
 	  {
@@ -416,6 +420,10 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    if (type == 'm') {
               none = !ints[ip++];
 	      type = 'e';
+              he = 0;
+	    } else if (type == 'M') {
+              none = !ints[ip++];
+	      type = 'E';
               he = 0;
 	    } else if (type == 'N') {
 	      he = ints[ip++];

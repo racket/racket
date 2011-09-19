@@ -3967,7 +3967,7 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 #endif
 
   scheme_raise_exn(pre_exists ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
-		   "copy-file: %s; cannot copy: %q to: %q%s%m%s",
+		   "copy-file: %s; cannot copy: %q to: %q%s%M%s",
 		   reason,
 		   filename_for_error(argv[0]),
 		   filename_for_error(argv[1]),

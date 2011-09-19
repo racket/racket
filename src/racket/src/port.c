@@ -4125,8 +4125,10 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 
   if (fd == INVALID_HANDLE_VALUE) {
     if (err) {
+      int errv;
+      errv = GetLastError();
       *err = "cannot open source file";
-      *eerrno = GetLastError();
+      *eerrno = errv;
     } else
       filename_exn(name, "cannot open input file", filename, GetLastError());
     return NULL;
@@ -4397,9 +4399,9 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 		   NULL);
 
   if (fd == INVALID_HANDLE_VALUE) {
-    int err;
-    err = GetLastError();
-    if ((err == ERROR_ACCESS_DENIED) && (existsok < -1)) {
+    int errv;
+    errv = GetLastError();
+    if ((errv == ERROR_ACCESS_DENIED) && (existsok < -1)) {
       /* Delete and try again... */
       if (DeleteFileW(WIDE_PATH(filename))) {
 	fd = CreateFileW(WIDE_PATH(filename),
@@ -4410,17 +4412,17 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                          0,
                          NULL);
 	if (fd == INVALID_HANDLE_VALUE)
-	  err = GetLastError();
+	  errv = GetLastError();
       } else {
 	scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
 			 "%s: error deleting \"%q\" (%E)",
 			 name, filename, GetLastError());
 	return NULL;
       }
-    } else if (err == ERROR_FILE_EXISTS) {
+    } else if (errv == ERROR_FILE_EXISTS) {
       if (err) {
         *err = "destination already exists";
-        *eerrno = err;
+        *eerrno = errv;
       } else
         scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_EXISTS,
                          "%s: file \"%q\" exists", name, filename);
@@ -4430,9 +4432,9 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
     if (fd == INVALID_HANDLE_VALUE) {
       if (err) {
         *err = "cannot open destination";
-        *eerrno = err;
+        *eerrno = errv;
       } else
-        filename_exn(name, "cannot open output file", filename, err);
+        filename_exn(name, "cannot open output file", filename, errv);
       return NULL;
     }
   }
