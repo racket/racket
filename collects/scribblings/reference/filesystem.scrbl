@@ -360,14 +360,18 @@ OS X, this size excludes the resource-fork size. On error (e.g., if no
 such file exists), the @exnraise[exn:fail:filesystem].}
 
 
-@defproc[(copy-file [src path-string?] [dest path-string?]) void?]{
+@defproc[(copy-file [src path-string?] [dest path-string?] [exists-ok? any/c #f]) void?]{
 
-Creates the file @racket[dest] as a copy of @racket[src]. If the file
-is not successfully copied, the @exnraise[exn:fail:filesystem]. If
-@racket[dest] already exists, the copy will fail. File permissions are
-preserved in the copy. On Mac OS X, the resource fork is also
-preserved in the copy. If @racket[src] refers to a link, the target of
-the link is copied, rather than the link itself.}
+Creates the file @racket[dest] as a copy of @racket[src], if
+@racket[dest] does not already exist. If @racket[dest] already exists
+and @racket[exists-ok?] is @racket[#f], the copy fails with
+@exnraise[exn:fail:filesystem:exists?]; otherwise, if @racket[dest]
+exists, its content is replaced with the content of @racket[src]. File
+permissions are transferred from @racket[src] to @racket[dest]. If
+@racket[src] refers to a link, the target of the link is copied,
+rather than the link itself; if @racket[dest] refers to a link and
+@racket[exists-ok?] is true, the target of the link is updated.}
+
 
 @defproc[(make-file-or-directory-link [to path-string?] [path path-string?]) 
          void?]{

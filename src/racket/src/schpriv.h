@@ -3460,8 +3460,10 @@ THREAD_LOCAL_DECL(extern int scheme_force_port_closed);
 void scheme_flush_orig_outputs(void);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
-Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], int internal);
-Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read);
+Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
+                                         int internal, char **err, int *eerrno);
+Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 
+                                          int internal, char **err, int *eerrno);
 Scheme_Object *scheme_file_position(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_buffer(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[]);

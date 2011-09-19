@@ -405,7 +405,7 @@ void scheme_init_file(Scheme_Env *env)
   scheme_add_global_constant("copy-file", 
 			     scheme_make_prim_w_arity(copy_file, 
 						      "copy-file", 
-						      2, 2), 
+						      2, 3), 
 			     env);
   scheme_add_global_constant("build-path", 
 			     scheme_make_prim_w_arity(scheme_build_path,
@@ -3849,7 +3849,7 @@ failed:
 static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 {
   char *src, *dest, *reason = NULL;
-  int pre_exists = 0, has_err_val = 0, err_val = 0;
+  int pre_exists = 0, has_err_val = 0, err_val = 0, exists_ok = 0;
   Scheme_Object *bss, *bsd;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
@@ -3859,6 +3859,7 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 
   bss = argv[0];
   bsd = argv[1];
+  exists_ok = ((argc > 2) && SCHEME_TRUEP(argv[2]));
 
   src = scheme_expand_string_filename(bss,
 				      "copy-file",
@@ -3872,79 +3873,89 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 #ifdef UNIX_FILE_SYSTEM
   {
 # define COPY_BUFFER_SIZE 2048
-    FILE *s, *d;
     char b[COPY_BUFFER_SIZE];
     intptr_t len;
     int ok;
     struct stat buf;
+    mz_jmp_buf newbuf, * volatile savebuf;
+    int a_cnt;
+    Scheme_Object *a[2], * volatile in, * volatile out;
 
+    reason = NULL;
+    in = scheme_do_open_input_file("copy-file", 0, 1, argv, 1, &reason, &err_val);
+    if (!in) {
+      has_err_val = !!err_val;
+      goto failed;
+    }
 
     do {
-      ok = stat(src, &buf);
+      ok = fstat(scheme_get_port_fd(in), &buf);
     } while ((ok == -1) && (errno == EINTR));
-
     if (ok || S_ISDIR(buf.st_mode)) {
-      reason = "source file does not exist";
-      goto failed;
-    }
-
-    do {
-      ok = stat(dest, &buf);
-    } while ((ok == -1) && (errno == EINTR));
-
-    if (!ok) {
-      reason = "destination already exists";
-      pre_exists = 1;
-      goto failed;
-    }
-
-    s = fopen(src, "rb");
-    if (!s) {
+      reason = "error getting mode";
       err_val = errno;
       has_err_val = 1;
-      reason = "cannot open source file";
       goto failed;
     }
 
-    d = fopen(dest, "wb");
-    if (!d) {
-      err_val = errno;
-      has_err_val = 1;
-      fclose(s);
-      reason = "cannot open destination file";
+    a[0] = argv[1];
+    if (exists_ok) {
+      a_cnt = 2;
+      a[1] = scheme_intern_symbol("truncate");
+    } else
+      a_cnt = 1;
+    out = scheme_do_open_output_file("copy-file", 0, a_cnt, a, 0, 1, &reason, &err_val);
+    if (!out) {
+      scheme_close_input_port(in);
+      has_err_val = !!err_val;
       goto failed;
     }
-    
-    ok = 1;
-    while ((len = fread(b, 1, COPY_BUFFER_SIZE, s))) {
-      if (fwrite(b, 1, len, d) != len) {
-	ok = 0;
-	break;
+
+    /* catch errors or breaks during read and write to close ports: */
+    savebuf = scheme_current_thread->error_buf;
+    scheme_current_thread->error_buf = &newbuf;
+    if (scheme_setjmp(newbuf)) {
+      scheme_close_input_port(in);
+      scheme_close_output_port(out);
+      scheme_current_thread->error_buf = savebuf;
+      scheme_longjmp(*savebuf, 1);
+      return NULL;
+    } else {
+      ok = 1;
+      while ((len = scheme_get_byte_string("copy-file", in, b, 0, COPY_BUFFER_SIZE, 0, 0, NULL))) {
+        if (len == -1)
+          break;
+        if (scheme_put_byte_string("copy-file", out, b, 0, len, 0) != len) {
+          ok = 0;
+          break;
+        }
       }
     }
-    if (!feof(s))
-      ok = 0;
-
-    fclose(s);
-    fclose(d);
+    scheme_current_thread->error_buf = savebuf;
 
     if (ok) {
-      while (1) {
-	if (!chmod(dest, buf.st_mode))
-	  return scheme_void;
-	else if (errno != EINTR)
-	  break;
+      do {
+        err_val = fchmod(scheme_get_port_fd(out), buf.st_mode);
+      } while ((err_val == -1) && (errno != EINTR));
+      if (err_val) {
+        err_val = errno;
+        has_err_val = 0;
+        reason = "cannot set destination's mode";
+        ok = 0;
       }
-      err_val = errno;
-      has_err_val = 0;
-      reason = "cannot set destination's mode";
     } else
       reason = "read or write failed";
+
+    scheme_close_input_port(in);
+    scheme_close_output_port(out);
+
+    if (ok)
+      return scheme_void;
   }
  failed:
 #endif
 #ifdef DOS_FILE_SYSTEM
-  if (CopyFileW(WIDE_PATH_COPY(src), WIDE_PATH(dest), TRUE))
+  if (CopyFileW(WIDE_PATH_COPY(src), WIDE_PATH(dest), !exists_ok))
     return scheme_void;
   
   reason = "copy failed";

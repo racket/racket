@@ -2436,7 +2436,7 @@ make_output_port (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 open_input_file (int argc, Scheme_Object *argv[])
 {
-  return scheme_do_open_input_file("open-input-file", 0, argc, argv, 0);
+  return scheme_do_open_input_file("open-input-file", 0, argc, argv, 0, NULL, NULL);
 }
 
 static Scheme_Object *
@@ -2477,13 +2477,13 @@ open_input_char_string (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 open_output_file (int argc, Scheme_Object *argv[])
 {
-  return scheme_do_open_output_file("open-output-file", 0, argc, argv, 0);
+  return scheme_do_open_output_file("open-output-file", 0, argc, argv, 0, 0, NULL, NULL);
 }
 
 static Scheme_Object *
 open_input_output_file (int argc, Scheme_Object *argv[])
 {
-  return scheme_do_open_output_file("open-input-output-file", 0, argc, argv, 1);
+  return scheme_do_open_output_file("open-input-output-file", 0, argc, argv, 1, 0, NULL, NULL);
 }
 
 static Scheme_Object *
@@ -2603,7 +2603,7 @@ call_with_output_file (int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("call-with-output-file", 1, 1, argc, argv);
 
-  port = scheme_do_open_output_file("call-with-output-file", 1, argc, argv, 0);
+  port = scheme_do_open_output_file("call-with-output-file", 1, argc, argv, 0, 0, NULL, NULL);
 
   v = _scheme_apply_multi(argv[1], 1, &port);
 
@@ -2628,7 +2628,7 @@ call_with_input_file(int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("call-with-input-file", 1, 1, argc, argv);
 
-  port = scheme_do_open_input_file("call-with-input-file", 1, argc, argv, 0);
+  port = scheme_do_open_input_file("call-with-input-file", 1, argc, argv, 0, NULL, NULL);
 
   v = _scheme_apply_multi(argv[1], 1, &port);
 
@@ -2665,7 +2665,7 @@ with_output_to_file (int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("with-output-to-file", 0, 1, argc, argv);
 
-  port = scheme_do_open_output_file("with-output-to-file", 1, argc, argv, 0);
+  port = scheme_do_open_output_file("with-output-to-file", 1, argc, argv, 0, 0, NULL, NULL);
 
   config = scheme_extend_config(scheme_current_config(),
 				MZCONFIG_OUTPUT_PORT,
@@ -2699,7 +2699,7 @@ with_input_from_file(int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("with-input-from-file", 0, 1, argc, argv);
 
-  port = scheme_do_open_input_file("with-input-from-file", 1, argc, argv, 0);
+  port = scheme_do_open_input_file("with-input-from-file", 1, argc, argv, 0, NULL, NULL);
 
   config = scheme_extend_config(scheme_current_config(),
 				MZCONFIG_INPUT_PORT,
@@ -4364,7 +4364,7 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
   if (!SCHEME_FALSEP(expected_module) && !SCHEME_SYMBOLP(expected_module))
     scheme_wrong_type("default-load-handler", "symbol or #f", 1, argc, argv);
 
-  port = scheme_do_open_input_file("default-load-handler", 0, 1, argv, 0);
+  port = scheme_do_open_input_file("default-load-handler", 0, 1, argv, 0, NULL, NULL);
 
   /* Turn on line/column counting, unless it's a .zo file: */
   if (SCHEME_PATHP(argv[0])) {
