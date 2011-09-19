@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/unit racket/file mred net/sendurl
+(require racket/class racket/unit racket/file racket/gui/base net/sendurl
          mrlib/switchable-button mrlib/bitmap-label drracket/tool framework
          "info.rkt" "client.rkt" "this-collection.rkt")
 
@@ -300,11 +300,11 @@
       (parameterize ([current-custodian comm-cust])
         (thread
          (lambda ()
-           (let/ec escape
+           (let/ec break
              (with-handlers ([void
                               (lambda (exn)
                                 (report-error "Connection failed." exn)
-                                (escape))])
+                                (break))])
                (semaphore-wait go-sema)
                (let* ([h (connect)]
                       [l (retrieve-active-assignments h)]
@@ -342,14 +342,122 @@
 (provide manage-handin-dialog%)
 (define manage-handin-dialog%
   (class dialog% (init [parent #f])
-
     (inherit show is-shown? center)
     (super-new [label manage-dialog-name]
                [alignment '(left center)]
                [parent parent])
-
     (define user-fields (get-user-fields parent))
 
+    ;; === utilities ===
+    (define (mk-txt label parent activate-ok)
+      (new text-field%
+           [label label]
+           [parent parent]
+           [callback (lambda (t e) (activate-ok))]
+           [stretchable-width #t]))
+    (define (mk-passwd label parent activate-ok)
+      (new text-field%
+           [label label]
+           [parent parent]
+           [callback (lambda (t e) (activate-ok))]
+           [style '(single password)]
+           [stretchable-width #t]))
+    (define (non-empty? . ts)
+      (andmap (lambda (t) (not (string=? "" (send t get-value)))) ts))
+    (define (same-value t1 t2)
+      (string=? (send t1 get-value) (send t2 get-value)))
+    (define (report-error tag exn)
+      (queue-callback
+       (lambda ()
+         (custodian-shutdown-all comm-cust)
+         (send status set-label tag)
+         (when (is-shown?)
+           (message-box
+            "Server Error"
+            (if (exn? exn)
+              (let ([s (exn-message exn)]) (if (string? s) s (format "~.s" s)))
+              (format "~.s" exn))
+            this)
+           (set! comm-cust (make-custodian))))))
+    (define comm-cust (make-custodian))
+    (define/augment (on-close)
+      (inner (void) on-close)
+      (custodian-shutdown-all comm-cust))
+    ;; Too-long fields can't damage the server, but they might result in
+    ;;  confusing errors due to safety cut-offs on the server side.
+    (define (check-length field size name k)
+      (when ((string-length (send field get-value)) . > . size)
+        (message-box "Error"
+                     (format "The ~a must be no longer than ~a characters."
+                             name size))
+        (k (void))))
+    (define (do-change/add new? username)
+      (let/ec break
+        (check-length username 50 "Username" break)
+        (let* ([pw1 (if new? new-passwd  add-passwd)]
+               [pw2 (if new? new-passwd2 add-passwd2)]
+               [l1 (regexp-replace #rx" *:$" (send pw1 get-label) "")]
+               [l2 (regexp-replace #rx" *:$" (send pw2 get-label) "")])
+          (check-length pw1 50 l1 break)
+          ;; not really needed, but leave just in case
+          (unless (string=? (send pw1 get-value) (send pw2 get-value))
+            (message-box
+             "Password Error"
+             (format "The \"~a\" and \"~a\" passwords are not the same." l1 l2))
+            (break (void))))
+        (for ([t (in-list (if new? add-user-fields change-user-fields))]
+              [f (in-list (or user-fields '()))])
+          (check-length t 100 f break))
+        (send tabs enable #f)
+        (parameterize ([current-custodian comm-cust])
+          (thread
+           (lambda ()
+             (with-handlers ([void (lambda (exn)
+                                     (send tabs enable #t)
+                                     (report-error
+                                      (format "~a failed."
+                                              (if new? "Creation" "Update"))
+                                      exn))])
+               (remember-user (send username get-value))
+               (send status set-label "Making secure connection...")
+               (let ([h (connect)])
+                 (define (run proc . fields)
+                   (apply proc h
+                          (let loop ([x fields])
+                            (if (list? x) (map loop x) (send x get-value)))))
+                 (send status set-label
+                       (if new? "Creating user..." "Updating server..."))
+                 (if new?
+                   (run submit-addition username add-passwd add-user-fields)
+                   (run submit-info-change username old-passwd new-passwd
+                        change-user-fields)))
+               (send status set-label "Success.")
+               (send cancel set-label "Close")))))))
+    (define (do-retrieve username)
+      (send tabs enable #f)
+      (parameterize ([current-custodian comm-cust])
+        (thread
+         (lambda ()
+           (with-handlers ([void (lambda (exn)
+                                   (send tabs enable #t)
+                                   (report-error "Retrieve failed." exn))])
+             (remember-user (send username get-value))
+             (send status set-label "Making secure connection...")
+             (let ([h (connect)])
+               (define (run proc . fields)
+                 (apply proc h
+                        (let loop ([x fields])
+                          (if (list? x) (map loop x) (send x get-value)))))
+               (send status set-label "Retrieving information...")
+               (let ([vals (run retrieve-user-info username old-passwd)])
+                 (send status set-label "Success, you can now edit fields.")
+                 (send tabs enable #t)
+                 (for ([f change-user-fields]
+                       [val vals])
+                   (send f set-value val))
+                 (activate-change))))))))
+
+    ;; === toplevel gadgets ===
     (define status
       (new message%
            [label (if user-fields
@@ -358,45 +466,36 @@
                     "No connection to server!")]
            [parent this]
            [stretchable-width #t]))
-
+    (define (set-active-tab n)
+      (send new-user-box show #f)
+      (send old-user-box show #f)
+      (send un/install-box show #f)
+      (send (if user-fields
+              (case n
+                [(0) new-user-box]
+                [(1) old-user-box]
+                [(2) un/install-box]
+                [else (error "internal error")])
+              un/install-box)
+            show #t))
     (define tabs
       (let* ([names (list (if multifile? "Un/Install" "Uninstall"))]
              [names (if user-fields
                       `("New User" "Change Info" ,@names) names)]
-             [callback (lambda _
-                         (send single active-child
-                               (if user-fields
-                                 (case (send tabs get-selection)
-                                   [(0) new-user-box]
-                                   [(1) old-user-box]
-                                   [(2) un/install-box]
-                                   [else (error "internal error")])
-                                 un/install-box)))])
+             [callback (lambda _ (set-active-tab (send tabs get-selection)))])
         (new tab-panel% [parent this] [choices names] [callback callback])))
-
     (define single (new panel:single% [parent tabs]))
+    (define button-panel
+      (new horizontal-pane% [parent this] [stretchable-height #f]))
+    (make-object vertical-pane% button-panel) ; spacer
+    (define cancel
+      (new button%
+           [label "Cancel"] [parent button-panel]
+           [callback (lambda (b e)
+                       (custodian-shutdown-all comm-cust)
+                       (show #f))]))
 
-    (define (mk-txt label parent activate-ok)
-      (new text-field%
-           [label label]
-           [parent parent]
-           [callback (lambda (t e) (activate-ok))]
-           [stretchable-width #t]))
-
-    (define (mk-passwd label parent activate-ok)
-      (new text-field%
-           [label label]
-           [parent parent]
-           [callback (lambda (t e) (activate-ok))]
-           [style '(single password)]
-           [stretchable-width #t]))
-
-    (define (non-empty? . ts)
-      (andmap (lambda (t) (not (string=? "" (send t get-value)))) ts))
-
-    (define (same-value t1 t2)
-      (string=? (send t1 get-value) (send t2 get-value)))
-
+    ;; === change existing info tab ===
     (define (activate-change)
       (define an-extra-non-empty? (ormap non-empty? change-user-fields))
       (send retrieve-old-info-button enable
@@ -407,12 +506,10 @@
                  (or (non-empty? new-passwd) an-extra-non-empty?)))
       (send change-button set-label
             (if an-extra-non-empty? "Change Info" "Set Password")))
-
     (define old-user-box (new vertical-panel%
                               [parent single] [alignment '(center center)]))
     (define old-username (mk-txt "Username:" old-user-box activate-change))
     (send old-username set-value (remembered-user))
-
     (define old-passwd
       (new cached-passwd%
            [label "Old Password:"]
@@ -427,7 +524,6 @@
       (mk-passwd "New Password:" old-user-box activate-change))
     (define new-passwd2
       (mk-passwd "New Password again:" old-user-box activate-change))
-
     (define-values (retrieve-old-info-button change-button)
       (let ([p (new horizontal-pane%
                     [parent old-user-box]
@@ -445,6 +541,7 @@
                                   (do-change/add #f old-username))])
            (make-object vertical-pane% p)))))
 
+    ;; === register new user tab ===
     (define (activate-new)
       (send new-button enable
             (and (apply non-empty? new-username add-passwd add-passwd2
@@ -468,6 +565,7 @@
                                         (do-change/add #t new-username))]
                             [style '(border)]))
 
+    ;; === uninstall client, install standalone client ===
     (define un/install-box
       (new vertical-panel% [parent single] [alignment '(center center)]))
     (define uninstall-button
@@ -490,7 +588,6 @@
                  this)
                 (send this show #f)))]))
     (send uninstall-button enable (not uninstalled?))
-
     (define install-standalone-button
       (and multifile?
            (new button%
@@ -530,124 +627,17 @@
                                         this)
                            (send this show #f))))))])))
 
-    (define (report-error tag exn)
-      (queue-callback
-       (lambda ()
-         (custodian-shutdown-all comm-cust)
-         (send status set-label tag)
-         (when (is-shown?)
-           (message-box
-            "Server Error"
-            (if (exn? exn)
-              (let ([s (exn-message exn)]) (if (string? s) s (format "~.s" s)))
-              (format "~.s" exn))
-            this)
-           (set! comm-cust (make-custodian))))))
-
-    (define comm-cust (make-custodian))
-    (define/augment (on-close)
-      (inner (void) on-close)
-      (custodian-shutdown-all comm-cust))
-
-    (define button-panel
-      (new horizontal-pane% [parent this] [stretchable-height #f]))
-    (make-object vertical-pane% button-panel) ; spacer
-    (define cancel
-      (new button%
-           [label "Cancel"] [parent button-panel]
-           [callback (lambda (b e)
-                       (custodian-shutdown-all comm-cust)
-                       (show #f))]))
-
-    ;; Too-long fields can't damage the server, but they might result in
-    ;;  confusing errors due to safety cut-offs on the server side.
-    (define (check-length field size name k)
-      (when ((string-length (send field get-value)) . > . size)
-        (message-box "Error"
-                     (format "The ~a must be no longer than ~a characters."
-                             name size))
-        (k (void))))
-
-    (define (do-change/add new? username)
-      (let/ec k
-        (check-length username 50 "Username" k)
-        (let* ([pw1 (if new? new-passwd  add-passwd)]
-               [pw2 (if new? new-passwd2 add-passwd2)]
-               [l1 (regexp-replace #rx" *:$" (send pw1 get-label) "")]
-               [l2 (regexp-replace #rx" *:$" (send pw2 get-label) "")])
-          (check-length pw1 50 l1 k)
-          ;; not really needed, but leave just in case
-          (unless (string=? (send pw1 get-value) (send pw2 get-value))
-            (message-box
-             "Password Error"
-             (format "The \"~a\" and \"~a\" passwords are not the same." l1 l2))
-            (k (void))))
-        (for ([t (in-list (if new? add-user-fields change-user-fields))]
-              [f (in-list (or user-fields '()))])
-          (check-length t 100 f k))
-        (send tabs enable #f)
-        (parameterize ([current-custodian comm-cust])
-          (thread
-           (lambda ()
-             (with-handlers ([void (lambda (exn)
-                                     (send tabs enable #t)
-                                     (report-error
-                                      (format "~a failed."
-                                              (if new? "Creation" "Update"))
-                                      exn))])
-               (remember-user (send username get-value))
-               (send status set-label "Making secure connection...")
-               (let ([h (connect)])
-                 (define (run proc . fields)
-                   (apply proc h
-                          (let loop ([x fields])
-                            (if (list? x) (map loop x) (send x get-value)))))
-                 (send status set-label
-                       (if new? "Creating user..." "Updating server..."))
-                 (if new?
-                   (run submit-addition username add-passwd add-user-fields)
-                   (run submit-info-change username old-passwd new-passwd
-                        change-user-fields)))
-               (send status set-label "Success.")
-               (send cancel set-label "Close")))))))
-
-    (define (do-retrieve username)
-      (let/ec k
-        (send tabs enable #f)
-        (parameterize ([current-custodian comm-cust])
-          (thread
-           (lambda ()
-             (with-handlers ([void (lambda (exn)
-                                     (send tabs enable #t)
-                                     (report-error "Retrieve failed." exn))])
-               (remember-user (send username get-value))
-               (send status set-label "Making secure connection...")
-               (let ([h (connect)])
-                 (define (run proc . fields)
-                   (apply proc h
-                          (let loop ([x fields])
-                            (if (list? x) (map loop x) (send x get-value)))))
-                 (send status set-label "Retrieving information...")
-                 (let ([vals (run retrieve-user-info username old-passwd)])
-                   (send status set-label "Success, you can now edit fields.")
-                   (send tabs enable #t)
-                   (for ([f change-user-fields]
-                         [val vals])
-                     (send f set-value val))
-                   (activate-change)))))))))
-
-    (send new-user-box show #f)
-    (send old-user-box show #f)
-    (send un/install-box show #f)
-    (let ([new? (equal? "" (remembered-user))])
-      (if user-fields
-        (send* single (active-child (if new? old-user-box new-user-box))
-                      (active-child (if new? new-user-box old-user-box)))
-        (send single active-child un/install-box))
-      (send tabs set-selection (if user-fields (if new? 0 1) 0)))
+    ;; === initialize the whole thing ===
     (activate-new)
     (activate-change)
     (center)
+    (queue-callback
+     (lambda ()
+       (define n (cond [(not user-fields) 0]
+                       [(equal? "" (remembered-user)) 0]
+                       [else 1]))
+       (set-active-tab n)
+       (send tabs set-selection n)))
     (show #t)))
 
 ;; A simple dialog during connection, with an option to cancel (used

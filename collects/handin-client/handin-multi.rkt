@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/port mred framework browser/external
+(require racket/class racket/port racket/gui/base framework browser/external
          "info.rkt" "client-gui.rkt" "this-collection.rkt")
 
 (define handin-name (#%info-lookup 'name))

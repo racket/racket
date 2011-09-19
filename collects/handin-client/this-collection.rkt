@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 (define-syntax (this-name-stx stx)
   (let* ([p (syntax-source stx)]
