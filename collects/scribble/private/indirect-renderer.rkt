@@ -40,11 +40,8 @@
             (convert (file-name-from-path tmp)))
           (when (super report-output?) ; use the original
             (printf " [Output to ~a]\n" dst))
-          (call-with-output-file dst
-            (λ (out-port)
-              (call-with-input-file (build-path tmp-dir (file-name-from-path dst))
-                (λ (in-port)
-                  (copy-port in-port out-port))))
-            #:exists 'truncate))
+          (copy-file (build-path tmp-dir (file-name-from-path dst))
+                     dst
+                     #t))
         (cleanup)))
     (super-new)))
