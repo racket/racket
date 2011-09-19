@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require scheme/class scheme/file scheme/path)
+(require scheme/class scheme/file scheme/path
+         racket/port)
 
 (provide make-indirect-renderer-mixin)
 
@@ -40,7 +41,11 @@
             (convert (file-name-from-path tmp)))
           (when (super report-output?) ; use the original
             (printf " [Output to ~a]\n" dst))
-          (when (file-exists? dst) (delete-file dst))
-          (copy-file (build-path tmp-dir (file-name-from-path dst)) dst))
+          (call-with-output-file dst
+            (λ (out-port)
+              (call-with-input-file (build-path tmp-dir (file-name-from-path dst))
+                (λ (in-port)
+                  (copy-port in-port out-port))))
+            #:exists 'truncate))
         (cleanup)))
     (super-new)))
