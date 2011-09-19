@@ -7,6 +7,9 @@ to demonstrate various different uses of PLT Redex:
   beginner.rkt: a PLT Redex implementation of (much of) the
   beginning student teaching language.
 
+  cbn-letrec.rkt: the definition of evaluation contexts in Ariola and
+  Felleisen's call-by-need letrec calculus
+
   church.rkt: Church numerals with call by name
   normal order evaluation
 

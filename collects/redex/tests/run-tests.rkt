@@ -31,7 +31,8 @@
      "test-docs-complete.rkt")
    (if test-bitmaps? '("bitmap-test.rkt") '())
    (if test-examples?
-       '("../examples/stlc.rkt"
+       '("../examples/cbn-letrec.rkt"
+         "../examples/stlc.rkt"
          "../examples/pi-calculus.rkt"
          ("../examples/beginner.rkt" main)
          "../examples/racket-machine/reduction-test.rkt"
