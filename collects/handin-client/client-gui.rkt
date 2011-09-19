@@ -133,7 +133,7 @@
            [stretchable-width #t]))
     (define assignment
       (new choice%
-           [label "Assignment:"]
+           [label "Submit to:"]
            [choices null]
            [parent this]
            [callback (lambda (c e)
