@@ -2346,6 +2346,11 @@ mark_jit_state {
   mz_jit_state *j = (mz_jit_state *)p;
   gcMARK2(j->mappings, gc);
   gcMARK2(j->self_data, gc);
+  gcMARK2(j->example_argv, gc);
+  gcMARK2(j->nc, gc);
+  gcMARK2(j->retaining_data, gc);
+  gcMARK2(j->patch_depth, gc);
+  
  size:
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }

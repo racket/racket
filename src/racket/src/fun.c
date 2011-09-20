@@ -959,6 +959,24 @@ void scheme_really_create_overflow(void *stack_base)
 
       reply = f();
       scheme_overflow_reply = reply;
+
+      /* At the time of writing, there appear to be no GCs on the 
+         longjmp return from stack overflow. Just in case, though,
+         it seems better to protect multiple-value and tail-call 
+         results from any GC that might be introduced one day. */
+      if (reply == SCHEME_MULTIPLE_VALUES) {
+        p = scheme_current_thread;
+        if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+          p->values_buffer = NULL;
+      } else if (reply == SCHEME_TAIL_CALL_WAITING) {
+        p = scheme_current_thread;
+        if (p->ku.apply.tail_rands == p->tail_buffer) {
+          GC_CAN_IGNORE Scheme_Object **tb;
+          p->tail_buffer = NULL; /* so args aren't zeroed */
+          tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
+          p->tail_buffer = tb;
+        }
+      }
     }
 
     p = scheme_current_thread;

@@ -79,6 +79,11 @@ static int mark_jit_state_MARK(void *p, struct NewGC *gc) {
   mz_jit_state *j = (mz_jit_state *)p;
   gcMARK2(j->mappings, gc);
   gcMARK2(j->self_data, gc);
+  gcMARK2(j->example_argv, gc);
+  gcMARK2(j->nc, gc);
+  gcMARK2(j->retaining_data, gc);
+  gcMARK2(j->patch_depth, gc);
+  
   return
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }
@@ -87,6 +92,11 @@ static int mark_jit_state_FIXUP(void *p, struct NewGC *gc) {
   mz_jit_state *j = (mz_jit_state *)p;
   gcFIXUP2(j->mappings, gc);
   gcFIXUP2(j->self_data, gc);
+  gcFIXUP2(j->example_argv, gc);
+  gcFIXUP2(j->nc, gc);
+  gcFIXUP2(j->retaining_data, gc);
+  gcFIXUP2(j->patch_depth, gc);
+  
   return
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }

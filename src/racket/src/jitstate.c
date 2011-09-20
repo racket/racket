@@ -51,6 +51,15 @@ int scheme_mz_retain_it(mz_jit_state *jitter, void *v)
 {
   if (jitter->retain_start) {
     jitter->retain_start[jitter->retained] = v;
+#ifdef JIT_PRECISE_GC
+    /* We just change an array that is marked indirectly for GC
+       via a Scheme_Native_Closure_Data. Write to that record
+       so that a minor GC will trace it and therefore trace
+       the reatined array: */
+    if (jitter->retaining_data) {
+      jitter->retaining_data->retained = jitter->retain_start;
+    }
+#endif
   }
   jitter->retained++;
   return jitter->retained;
@@ -183,7 +192,11 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 #ifdef MZ_PRECISE_GC
       if (ndata) {
 	memset(jitter->retain_start, 0, num_retained * sizeof(void*));
-	ndata->retained = (num_retained ? jitter->retain_start : NULL);
+        if (num_retained) {
+          jitter->retaining_data = ndata;
+          ndata->retained = jitter->retain_start;
+        } else
+          ndata->retained = NULL;
 	SCHEME_BOX_VAL(fnl_obj) = scheme_make_integer(size_pre_retained_double);
 	GC_set_finalizer(fnl_obj, 1, 3,
 			 scheme_jit_release_native_code, buffer,
@@ -279,6 +292,24 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
       old_jitter = NULL;
     }
   }
+}
+
+
+mz_jit_state *scheme_clone_jitter(mz_jit_state *jitter) {
+  mz_jit_state *jitter_copy;
+
+  jitter_copy = MALLOC_ONE_RT(mz_jit_state);
+  memcpy(jitter_copy, jitter, sizeof(mz_jit_state));
+#ifdef MZTAG_REQUIRED
+  jitter_copy->type = scheme_rt_jitter_data;
+#endif
+
+  return jitter_copy;
+}
+
+
+void scheme_unclone_jitter(mz_jit_state *jitter, mz_jit_state *jitter_copy) {
+  memcpy(jitter, jitter_copy, sizeof(mz_jit_state));
 }
 
 /*========================================================================*/

@@ -4148,10 +4148,51 @@ static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase,
 }
 
 static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, int eval_run, 
+                               intptr_t base_phase, Scheme_Object *cycle_list, Scheme_Object *syntax_idx);
+
+static Scheme_Object *chain_start_module_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Env *menv = (Scheme_Env *)p->ku.k.p1;
+  Scheme_Env *env = (Scheme_Env *)p->ku.k.p2;
+  Scheme_Object *cycle_list = (Scheme_Object *)p->ku.k.p3;
+  Scheme_Object *syntax_idx = (Scheme_Object *)p->ku.k.p4;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
+
+  chain_start_module(menv, env,
+                     p->ku.k.i1, p->ku.k.i2,
+                     p->ku.k.i3, cycle_list, syntax_idx);
+
+  return scheme_true;
+}
+
+static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, int eval_run, 
                                intptr_t base_phase, Scheme_Object *cycle_list, Scheme_Object *syntax_idx)
 {
   Scheme_Object *new_cycle_list, *midx, *l;
   Scheme_Module *im;
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      p->ku.k.p1 = (void *)menv;
+      p->ku.k.p2 = (void *)env;
+      p->ku.k.i1 = eval_exp;
+      p->ku.k.i2 = eval_run;
+      p->ku.k.i3 = base_phase;
+      p->ku.k.p3 = (void *)cycle_list;
+      p->ku.k.p4 = (void *)syntax_idx;
+      (void)scheme_handle_stack_overflow(chain_start_module_k);
+      return;
+    }
+  }
+#endif
 
   new_cycle_list = scheme_make_pair(menv->module->modname, cycle_list);
   
@@ -6440,6 +6481,25 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   }
 }
 
+static Scheme_Object *do_module_begin_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  void **args = p->ku.k.p1;
+  Scheme_Object *form = (Scheme_Object *)args[0];
+  Scheme_Comp_Env *env = (Scheme_Comp_Env *)args[1];
+  Scheme_Compile_Expand_Info *rec = (Scheme_Compile_Expand_Info *)args[2];
+  Scheme_Compile_Expand_Info *erec = (Scheme_Compile_Expand_Info *)args[3];
+  int phase = SCHEME_INT_VAL((Scheme_Object *)args[4]);
+  Scheme_Object *body_lists = (Scheme_Object *)args[5];
+  Module_Begin_Expand_State *bxs = (Module_Begin_Expand_State *)args[6];
+
+  p->ku.k.p1 = NULL;
+  
+  return do_module_begin_at_phase(form, env, rec, 0, erec, 0,
+                                  phase, body_lists, bxs);
+}
+
+
 #define DONE_MODFORM_KIND 0
 #define EXPR_MODFORM_KIND 1
 #define DEFN_MODFORM_KIND 2
@@ -6474,6 +6534,54 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   int maybe_has_lifts = 0;
   Scheme_Object *observer, *vec;
   Scheme_Object *define_values_stx, *begin_stx, *define_syntaxes_stx, *begin_for_syntax_stx, *req_stx, *prov_stx, *sv[6];
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *pt = scheme_current_thread;
+    Scheme_Compile_Expand_Info *recx, *erecx;
+    void **args;
+
+    if (rec) {
+      recx = MALLOC_ONE_RT(Scheme_Compile_Expand_Info);
+      memcpy(recx, rec + drec, sizeof(Scheme_Compile_Expand_Info));
+#ifdef MZTAG_REQUIRED
+      recx->type = scheme_rt_compile_info;
+#endif
+    } else
+      recx = NULL;
+    
+    if (erec) {
+      erecx = MALLOC_ONE_RT(Scheme_Compile_Expand_Info);
+      memcpy(erecx, erec + derec, sizeof(Scheme_Compile_Expand_Info));
+#ifdef MZTAG_REQUIRED
+      erecx->type = scheme_rt_compile_info;
+#endif
+    } else
+      erecx = NULL;
+
+    args = MALLOC_N(void*, 7);
+
+    args[0] = form;
+    args[1] = env;
+    args[2] = recx;
+    args[3] = erecx;
+    args[4] = scheme_make_integer(phase);
+    args[5] = body_lists;
+    args[6] = bxs;
+
+    pt->ku.k.p1 = (void *)args;
+    
+    fm = scheme_handle_stack_overflow(do_module_begin_k);
+
+    if (recx)
+      memcpy(rec + drec, recx, sizeof(Scheme_Compile_Expand_Info));
+    if (erecx)
+      memcpy(erec + derec, erecx, sizeof(Scheme_Compile_Expand_Info));
+
+    return fm;
+  }
+#endif
   
   if (*bxs->_num_phases < phase + 1)
     *bxs->_num_phases = phase + 1;

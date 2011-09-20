@@ -298,6 +298,7 @@ typedef struct {
   int need_set_rs;
   void **retain_start;
   double *retain_double_start;
+  Scheme_Native_Closure_Data *retaining_data; /* poke when setting retain_start for generational GC */
   int local1_busy, pushed_marks;
   int log_depth;
   int self_pos, self_closure_size, self_toplevel_pos;
@@ -318,6 +319,9 @@ typedef struct {
   int self_restart_offset, self_restart_space;
 } mz_jit_state;
 
+mz_jit_state *scheme_clone_jitter(mz_jit_state *j);
+void scheme_unclone_jitter(mz_jit_state *j, mz_jit_state *j_copy);
+
 typedef int (*Generate_Proc)(mz_jit_state *j, void *data);
 
 typedef struct {
@@ -335,7 +339,7 @@ typedef struct {
 typedef struct {
   int include_slow;
   int non_tail, restore_depth, flostack, flostack_pos;
-  int need_sync, branch_short, true_needs_jump;
+  int branch_short, true_needs_jump;
   int addrs_count, addrs_size;
   Branch_Info_Addr *addrs;
 } Branch_Info;

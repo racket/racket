@@ -1535,16 +1535,27 @@ static Scheme_Object *generate_k(void)
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *obj = (Scheme_Object *)p->ku.k.p1;
   mz_jit_state *jitter = (mz_jit_state *)p->ku.k.p2;
-  Branch_Info *for_branch = (Branch_Info *)p->ku.k.p3;
+  Branch_Info *for_branch = (Branch_Info *)p->ku.k.p3, for_branch_copy;
+  Branch_Info_Addr *for_branch_addrs = (Branch_Info_Addr *)p->ku.k.p4;
   int v;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  v = scheme_generate(obj, jitter, p->ku.k.i1, p->ku.k.i4, p->ku.k.i2, p->ku.k.i3, for_branch);
+  if (for_branch) {
+    memcpy(&for_branch_copy, for_branch, sizeof(Branch_Info));
+    for_branch_copy.addrs = for_branch_addrs;
+  }
 
-  return scheme_make_integer(v);
+  v = scheme_generate(obj, jitter, p->ku.k.i1, p->ku.k.i4, p->ku.k.i2, p->ku.k.i3, 
+                      (for_branch ? &for_branch_copy : NULL));
+
+  if (for_branch) {
+    memcpy(for_branch, &for_branch_copy, sizeof(Branch_Info));
+    return scheme_make_raw_pair(scheme_make_integer(v), (Scheme_Object *)for_branch->addrs);
+  } else
+    return scheme_make_integer(v);
 }
 
 #define NUM_QUICK_INFO_ADDRS 6
@@ -1781,12 +1792,22 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     Scheme_Object *ok;
     Scheme_Thread *p = scheme_current_thread;
     mz_jit_state *jitter_copy;
+    Branch_Info *for_branch_copy;
+    Branch_Info_Addr *addrs;
+    int *copy_mappings;
 
-    jitter_copy = MALLOC_ONE_RT(mz_jit_state);
-    memcpy(jitter_copy, jitter, sizeof(mz_jit_state));
-#ifdef MZTAG_REQUIRED
-    jitter_copy->type = scheme_rt_jitter_data;
-#endif
+    copy_mappings = (int *)scheme_malloc_atomic(jitter->mappings_size * sizeof(int));
+    memcpy(copy_mappings, jitter->mappings, jitter->mappings_size * sizeof(int));
+    jitter->mappings = copy_mappings;
+
+    jitter_copy = scheme_clone_jitter(jitter);
+    if (for_branch) {
+      for_branch_copy = scheme_malloc_atomic(sizeof(Branch_Info));
+      memcpy(for_branch_copy, for_branch, sizeof(Branch_Info));
+      addrs = scheme_malloc_atomic(sizeof(Branch_Info_Addr) * for_branch->addrs_size);
+      memcpy(addrs, for_branch->addrs, sizeof(Branch_Info_Addr) * for_branch->addrs_count);
+    } else
+      for_branch_copy = NULL;
 
     p->ku.k.p1 = (void *)obj;
     p->ku.k.p2 = (void *)jitter_copy;
@@ -1794,11 +1815,18 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     p->ku.k.i4 = wcm_may_replace;
     p->ku.k.i2 = multi_ok;
     p->ku.k.i3 = target;
-    p->ku.k.p3 = (void *)for_branch;
+    p->ku.k.p3 = (void *)for_branch_copy;
+    p->ku.k.p4 = (void *)addrs;
 
     ok = scheme_handle_stack_overflow(generate_k);
 
-    memcpy(jitter, jitter_copy, sizeof(mz_jit_state));
+    scheme_unclone_jitter(jitter, jitter_copy);
+
+    if (for_branch) {
+      memcpy(for_branch, for_branch_copy, sizeof(Branch_Info));
+      for_branch->addrs = (Branch_Info_Addr *)SCHEME_CDR(ok);
+      ok = SCHEME_CAR(ok);
+    }
 
     return SCHEME_INT_VAL(ok);
   }
