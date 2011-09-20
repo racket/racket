@@ -2,12 +2,16 @@ Version 5.1.3.10
 Added variable-reference->module-declare-inspector, which allows
  a macro or other syntax tool to get the enclosing module's
  declaration-time inspector for taint operations
-
+Removed the Racket-to-C compiler: raco ctool -e/-c, mzc -e/-c,
+ compile-extensions, compile-extensions-to-c, compile-c-extensions,
+ compiler/cffi, compiler/comp-unit,  compiler:inner^, and most 
+ options in compiler/option
+ 
 Version 5.1.3.9
 Add syntax-shift-phase-level
 errortrace: with-mark and make-st-mark now take a phase level
-racket/place: added place* and dynamic-place* to specify the input, 
- output, and error ports to use for a new place
+place:place* and dynamic place* forms now take in, out, and err named
+ arguments which become the standard io ports for the new place
 
 Version 5.1.3.8
 Add syntax-transforming-module-expression? and
@@ -25,10 +29,9 @@ compiler/zo-structs: removed def-for-syntax, added
  def-syntaxes
 
 Version 5.1.3.6
-ffi/unsafe: changed define-cstruct to use an interned symbol tag,
- which means that it is not generative
-racket/place: cpointers, file-stream ports, and TCP ports can be
- sent across place channels
+unsafe/ffi:Changed cstructs to not be generative. 
+place:cpointers and file descriptors can now be sent across
+ place channels.
 
 Version 5.1.3.4
 Add support for the collection links file, including

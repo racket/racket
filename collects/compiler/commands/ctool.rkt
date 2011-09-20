@@ -18,7 +18,6 @@
          setup/dirs)
 
 (define dest-dir (make-parameter #f))
-(define auto-dest-dir (make-parameter #f))
 
 (define ld-output (make-parameter #f))
 
@@ -33,8 +32,6 @@
 (define exe-dir-output (make-parameter #f))
 
 (define mods-output (make-parameter #f))
-
-(define module-mode (make-parameter #f))
 
 (define default-plt-name "archive")
 
@@ -88,13 +85,7 @@
       [("--c-mods")
        ,(lambda (f name) (mods-output name) 'c-mods)
        ((,(format "Write C-embeddable module bytecode to <file>") "")
-        "file")]
-      [("-e" "--extension")
-       ,(lambda (f) 'compile)
-       (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-extension-suffix)))]
-      [("-c" "--c-source")
-       ,(lambda (f) 'compile-c)
-       (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-c-suffix)))]]
+        "file")]]
      [help-labels ""]
      [once-any
       [("--3m")
@@ -106,15 +97,6 @@
        (,(format "Compile/link for CGC~a"
                  (if (eq? 'cgc (system-type 'gc)) " [current default]" "")))]]
      [once-each
-      [("-m" "--module")
-       ,(lambda (f) (module-mode #t))
-       ("Skip eval of top-level syntax, etc. for -e/-c")]
-      [("--embedded")
-       ,(lambda (f) (compiler:option:compile-for-embedded #t))
-       ("Compile for embedded run-time engine, with -c")]
-      [("-p" "--prefix")
-       ,(lambda (f v) v)
-       ("Add elaboration-time prefix file for -e/-c/-z" "file")]
       [("-n" "--name")
        ,(lambda (f name) (compiler:option:setup-prefix name))
        ("Use <name> as extra part of public low-level names" "name")]]
@@ -124,12 +106,7 @@
           (unless (directory-exists? d)
             (error mzc-symbol "the destination directory does not exist: ~s" d))
           (dest-dir d))
-       ("Output -e/-c/-x file(s) to <dir>" "dir")]
-      [("--auto-dir")
-       ,(lambda (f) (auto-dest-dir #t))
-       (,(format "Output -e to ~s"
-                 (path->string (build-path "compiled" "native"
-                                           (system-library-subpath #f)))))]]
+       ("Output --cc/--ld/-x file(s) to <dir>" "dir")]]
      [help-labels
       "------------------- compiler/linker configuration flags ---------------------"]
      [once-each
@@ -218,37 +195,6 @@
           (exe-embedded-libraries (append (exe-embedded-libraries) (list l))))
        ("Embed <lib> in --c-mods output" "lib")]]
      [help-labels
-      "-------------------- -c/-e compiler optimization flags ----------------------"]
-     [once-each
-      [("--no-prop")
-       ,(lambda (f) (compiler:option:propagate-constants #f))
-       ("Don't propagate constants")]
-      [("--inline")
-       ,(lambda (f d)
-          (compiler:option:max-inline-size
-           (with-handlers ([void (lambda (x)
-                                   (error mzc-symbol "bad size for --inline: ~a" d))])
-             (let ([v (string->number d)])
-               (unless (and (not (negative? v)) (exact? v) (real? v))
-                 (error 'bad))
-               v))))
-       ("Set the maximum inlining size" "size")]
-      [("--no-prim")
-       ,(lambda (f) (compiler:option:assume-primitives #f))
-       ("Do not assume `scheme' bindings at top level")]
-      [("--stupid")
-       ,(lambda (f) (compiler:option:stupid #t))
-       ("Compile despite obvious non-syntactic errors")]
-      [("--unsafe-disable-interrupts")
-       ,(lambda (f) (compiler:option:disable-interrupts #t))
-       ("Ignore threads, breaks, and stack overflow")]
-      [("--unsafe-skip-tests")
-       ,(lambda (f) (compiler:option:unsafe #t))
-       ("Skip run-time tests for some primitive operations")]
-      [("--unsafe-fixnum-arithmetic")
-       ,(lambda (f) (compiler:option:fixnum-arithmetic #t))
-       ("Assume fixnum arithmetic yields a fixnum")]]
-     [help-labels
       "-------------------------- miscellaneous flags ------------------------------"]
      [once-each
       [("-v")
@@ -256,13 +202,7 @@
        ("Slightly verbose mode, including version banner and output files")]
       [("--vv")
        ,(lambda (f) (compiler:option:somewhat-verbose #t) (compiler:option:verbose #t))
-       ("Very verbose mode")]
-      [("--save-temps")
-       ,(lambda (f) (compiler:option:clean-intermediate-files #f))
-       ("Keep intermediate files")]
-      [("--debug")
-       ,(lambda (f) (compiler:option:debug #t))
-       ("Write debugging output to dump.txt")]])
+       ("Very verbose mode")]])
    (lambda (accum . files)
      (let ([mode (let ([l (filter symbol? accum)])
                    (if (null? l) 
@@ -271,24 +211,7 @@
        (values
         mode
         files
-        (let ([prefixes (filter string? accum)])
-          (unless (or (memq mode '(compile compile-c)) (null? prefixes))
-            (error mzc-symbol "prefix files are not useful in ~a mode" mode))
-          (if (module-mode)
-            (begin
-              (unless (compiler:option:assume-primitives)
-                (error mzc-symbol "--no-prim is not useful with -m or --module"))
-              (unless (null? prefixes)
-                (error mzc-symbol "prefix files not allowed with -m or --module"))
-              #f)
-            `(begin
-               (require scheme)
-               ,(if (compiler:option:assume-primitives)
-                    '(void)
-                    '(namespace-require/copy 'scheme))
-               (require compiler/cffi)
-               ,@(map (lambda (s) `(load ,s)) prefixes)
-               (void)))))))
+        #f)))
    (list "file")))
 
 (when (compiler:option:somewhat-verbose)
@@ -296,13 +219,6 @@
           (short-program+command-name)
           (version)
           (system-type 'gc)))
-
-(when (and (auto-dest-dir) (not (memq mode '(zo compile))))
-  (error mzc-symbol "--auto-dir works only with -z, --zo, -e, or --extension (or default mode)"))
-
-(define (never-embedded action)
-  (when (compiler:option:compile-for-embedded)
-    (error mzc-symbol "cannot ~a an extension for an embedded Racket" action)))
 
 (if (compiler:option:3m)
   (begin (link-variant '3m)  (compile-variant '3m))
@@ -315,14 +231,6 @@
            "than relying on the bytecode just-in-time compiler."))
 
 (case mode
-  [(compile)
-   (compiler-warning)
-   (never-embedded "compile")
-   ((compile-extensions prefix)
-    source-files
-    (if (auto-dest-dir) 'auto (dest-dir)))]
-  [(compile-c)
-   ((compile-extensions-to-c prefix) source-files (dest-dir))]
   [(cc)
    (for ([file source-files])
      (let* ([base (extract-base-filename/c file mzc-symbol)]

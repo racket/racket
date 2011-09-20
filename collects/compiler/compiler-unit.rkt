@@ -55,49 +55,6 @@
     ((current-compiler-dynamic-require-wrapper)
      (lambda () (get-info/full cp))))
 
-  (define (make-extension-compiler mode prefix)
-    (let ([u (c-dynamic-require 'compiler/private/base 'base@)]
-          [init (unit (import compiler:inner^) (export)
-		  (eval-compile-prefix prefix)
-                  (case mode
-                    [(compile-extension) compile-extension]
-                    [(compile-extension-to-c) compile-extension-to-c]
-                    [(compile-c-extension) compile-c-extension]))])
-      (invoke-unit
-       (compound-unit
-        (import (COMPILE : dynext:compile^)
-                (LINK : dynext:link^)
-                (DFILE : dynext:file^)
-                (OPTION : compiler:option^))
-        (export)
-        (link [((COMPILER : compiler:inner^)) u COMPILE LINK DFILE OPTION]
-              [() init COMPILER]))
-       (import dynext:compile^
-               dynext:link^
-               dynext:file^
-               compiler:option^))))
-
-  (define (make-compiler mode)
-    (lambda (prefix)
-      (let ([c (make-extension-compiler mode prefix)])
-        (lambda (source-files destination-directory)
-          (for ([source-file source-files])
-            (c source-file (or destination-directory 'same)))))))
-
-  (define (make-unprefixed-compiler mode)
-    (let ([f #f])
-      (lambda (source-files destination-directory)
-        (unless f
-          (set! f ((make-compiler mode) '(void))))
-        (f source-files destination-directory))))
-
-  (define compile-extensions
-    (make-compiler 'compile-extension))
-  (define compile-extensions-to-c
-    (make-compiler 'compile-extension-to-c))
-  (define compile-c-extensions
-    (make-unprefixed-compiler 'compile-c-extension))
-
   (define (compile-to-zo src dest namespace eval? verbose? mod?)
     ((if eval? 
          (lambda (t) (parameterize ([read-accept-reader #t])

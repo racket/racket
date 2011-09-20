@@ -8,7 +8,6 @@
                      compiler/sig
                      compiler/compiler-unit
                      compiler/option-unit
-                     compiler/comp-unit
                      compiler/distribute
                      compiler/bundle-dist
                      compiler/embed

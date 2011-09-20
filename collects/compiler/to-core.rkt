@@ -334,8 +334,7 @@
                                   (syntax-e new-s)
                                   old-s
                                   old-s))]))
-  (define code-insp (variable-reference->module-declaration-inspector
-                     (#%variable-reference)))
+  (define code-insp (current-code-inspector))
 
   (define (convert stx trans? lookup-stx set-stx safe-vector-ref-stx id li in-module? 
 		   simple-constant? stop-properties)

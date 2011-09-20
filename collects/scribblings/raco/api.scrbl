@@ -8,7 +8,6 @@
                      compiler/compiler-unit
                      compiler/option
                      compiler/option-unit
-                     compiler/comp-unit
                      compiler/cm
                      dynext/compile-sig
                      dynext/link-sig
@@ -20,7 +19,7 @@
 @defmodule[compiler/compiler]{
 
 The @racketmodname[compiler/compiler] library provides the
-functionality of @exec{mzc} for compilation to bytecode and via C, but
+functionality of @exec{raco make} for compilation to bytecode, but
 through a Racket API.}
 
 @; ----------------------------------------------------------------------
@@ -145,43 +144,7 @@ instead of using an @filepath{info.rkt} file (if any) in the directory.}
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "api:ext"]{Compilation via C}
-
-@defproc[((compile-extensions [expr any/c]) 
-          [racket-files (listof path-string?)]
-          [dest-dir (or/c path-string? false/c (one-of/c 'auto))])
-         void?]{
-
-Like @racket[compile-zos], but the @racket[racket-files] are compiled
-to native-code extensions via C. If @racket[dest-dir] is
-@racket['auto], each extension file (@filepath{.dll}, @filepath{.so},
-or @filepath{.dylib}) is placed in a subdirectory relative to the
-source produced by @racket[(build-path "compiled" "native"
-(system-library-subpath))]; the directory is created if necessary.}
-
-
-@defproc[((compile-extensions-to-c [expr any/c]) 
-          [racket-files (listof path-string?)]
-          [dest-dir (or/c path-string? false/c (one-of/c 'auto))])
-         void?]{
-
-Like @racket[compile-extensions], but only @filepath{.c} files are
-produced, not extensions.}
-
-
-@defproc[(compile-c-extensions
-          [c-files (listof path-string?)]
-          [dest-dir (or/c path-string? false/c (one-of/c 'auto))])
-         void?]{
-
-Compiles each @filepath{.c} file (usually produced with
-@racket[compile-extensions-to-c]) in @racket[c-files] to an
-extension. The @racket[dest-dir] argument is handled as in
-@racket[compile-extensions]. }
-
-@; ----------------------------------------------------------------------
-
-@section[#:tag "api:loading"]{Loading compiler support}
+@section[#:tag "api:loading"]{Loading Compiler Support}
 
 The compiler unit loads certain tools on demand via @racket[dynamic-require]
 and @racket[get-info]. If the namespace used during compilation is different
@@ -222,99 +185,11 @@ the files that it compiles and produces. The default is @racket[#f].}
 A @racket[#t] value for the parameter causes the compiler to print
 verbose messages about its operations. The default is @racket[#f].}
 
-@defparam[setup-prefix str string?]{
-
-A parameter that specifies a string to embed in public function names
-when compiling via C.  This is used mainly for compiling extensions
-with the collection name so that cross-extension conflicts are less
-likely in architectures that expose the public names of loaded
-extensions. The default is @racket[""].}
-
-@defboolparam[clean-intermediate-files clean?]{
-
-A @racket[#f] value for the parameter keeps intermediate @filepath{.c}
-and @filepath{.o} files generated during compilation via C. The
-default is @racket[#t].}
-
 @defparam[compile-subcollections cols (one-of/c #t #f)]{
 
 A parameter that specifies whether sub-collections are compiled by
 @racket[compile-collection-zos].  The default is @racket[#t].}
 
-
-@defboolparam[compile-for-embedded embed?]{
-
-A @racket[#t] values for this parameter creates @filepath{.c} files
-and object files to be linked directly with an embedded Racket
-run-time system, instead of @filepath{.c} files and object files to be
-dynamically loaded into Racket as an extension. The default is
-@racket[#f].}
-
-
-@defboolparam[propagate-constants prop?]{
-
-A parameter to control the compiler's constant propagating when
-compiling via C. The default is @racket[#t].}
-
-
-@defboolparam[assume-primitives assume?]{
-
-A @racket[#t] parameter value effectively adds @racket[(require
-mzscheme)] to the beginning of the program. This parameter is useful
-only when compiling non-@racket[module] code.  The default is
-@racket[#f].}
-
-@defboolparam[stupid allow?]{
-
-A parameter that allow obvious non-syntactic errors, such as
-@racket[((lambda () 0) 1 2 3)], when compiling via C. The default is
-@racket[#f].}
-
-@defparam[vehicles mode symbol?]{
-
-A parameter that controls how closures are compiled via C.  The
-possible values are: 
-
-@itemize[
-
- @item{@racket['vehicles:automatic] : automatic grouping}
-
- @item{@racket['vehicles:functions] : groups within a procedure}
-
- @item{@racket['vehicles:monolithic] : groups randomly}
-
-]}
-
-@defparam[vehicles:monoliths count exact-nonnegative-integer?]{
-
-A parameter that determines the number of random
-groups for @racket['vehicles:monolithic] mode.}
-
-@defparam[seed val exact-nonnegative-integer?]{
-
-Sets the randomizer seed for @racket['vehicles:monolithic] mode.}
-
-@defparam[max-exprs-per-top-level-set n exact-nonnegative-integer?]{
-
-A parameter that determines the number of top-level Racket expressions
-crammed into one C function when compiling via C.  The default is
-@racket[25].}
-
-@defboolparam[unpack-environments unpack?]{
-
-Setting this parameter to @racket[#f] might help compilation via C
-for register-poor architectures.  The default is @racket[#t].}
-
-@defboolparam[debug on?]{
-
-A @racket[#t] creates a @filepath{debug.txt} debugging file when
-compiling via C.  The default is @racket[#f].}
-
-@defboolparam[test on?]{
-
-A @racket[#t] value for this parameter causes compilation via C to
-ignore top-level expressions with syntax errors. The default is
-@racket[#f].}
 
 @; ----------------------------------------------------------------------
 
@@ -337,39 +212,6 @@ Includes all of the names exported by
 @racketmodname[compiler/option].}
 
 
-@defsignature[compiler:inner^ ()]{
-
-@signature-desc{The high-level @racketmodname[compiler/compiler]
-interface relies on a low-level implementation of the extension
-compiler, which is available from @racketmodname[compiler/comp-unit]
-as implementing the @racket[compiler:inner^] signature.}
-
-@defproc[(eval-compile-prefix [expr any/c]) void?]{
-
-Evaluates @racket[expr]. Future calls to @sigelem[compiler:inner^
-compile-extension] or @sigelem[compiler:inner^ compile-extension-to-c]
-see the effects of the evaluation.}
-
-@defproc[(compile-extension [racket-source path-string?] 
-                            [dest-dir path-string?])
-         void?]{
-
-Compiles a single Racket file to an extension.}
-
-@defproc[(compile-extension-to-c [racket-source path-string?] 
-                                 [dest-dir path-string?])
-         void?]{
-
-Compiles a single Racket file to a @filepath{.c} file.}
-
-@defproc[(compile-c-extension [c-source path-string?] 
-                              [dest-dir path-string?])
-         void?]{
-
-Compiles a single @filepath{.c} file to an extension.}
-
-}
-
 @; ----------------------------------------
 
 @subsection{Main Compiler Unit}
@@ -379,7 +221,8 @@ Compiles a single @filepath{.c} file to an extension.}
 @defthing[compiler@ unit?]{
 
 Provides the exports of @racketmodname[compiler/compiler] in unit
-form, where C-compiler operations are imports to the unit.
+form, where C-compiler operations are imports to the unit, although 
+they are not used.
 
 The unit imports @racket[compiler:option^], @racket[dynext:compile^],
 @racket[dynext:link^], and @racket[dynext:file^]. It exports
@@ -396,16 +239,3 @@ The unit imports @racket[compiler:option^], @racket[dynext:compile^],
 Provides the exports of @racketmodname[compiler/option] in unit
 form. It imports no signatures, and exports
 @racket[compiler:option^].}
-
-@; ----------------------------------------
-
-@subsection{Compiler Inner Unit}
-
-@defmodule[compiler/comp-unit]
-
-@defthing[comp@ unit?]{
-
-The unit imports @racket[compiler:option^], @racket[dynext:compile^],
-@racket[dynext:link^], and @racket[dynext:file^]. It exports
-@racket[compiler:inner^].}
-
