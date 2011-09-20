@@ -560,13 +560,13 @@
 
 ;; We need a powerful enough code inspector to invoke the errortrace library
 ;; (indirectly through private/sandbox-coverage).  But there is a small problem
-;; here -- errortrace/stacktrace.rkt will grab the global code inspector value
-;; at the time it is invoked.  So we grab it here too, and use it to wrap the
-;; code that invokes errortrace.  If errortrace/stacktrace.rkt is changed to
-;; grab the current inspector, then it would be better to avoid this here, and
-;; pass `evaluate-program' the inspector that was in effect when the sandbox
-;; was created.
-(define orig-code-inspector (current-code-inspector))
+;; here -- errortrace/stacktrace.rkt will grab the declaration-tme code inspector.
+;; So we grab it here too, and use it to wrap the code that invokes errortrace. 
+;; If errortrace/stacktrace.rkt is changed to grab the current inspector, then 
+;; it would be better to avoid this here, and pass `evaluate-program' the
+;; inspector that was in effect when the sandbox was created.
+(define orig-code-inspector (variable-reference->module-declaration-inspector
+                             (#%variable-reference)))
 
 (define (evaluate-program program limit-thunk uncovered!)
   (when uncovered!
