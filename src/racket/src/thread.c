@@ -4118,10 +4118,12 @@ void scheme_thread_block(float sleep_time)
   check_scheduled_kills();
 
 #ifdef MZ_USE_FUTURES
-  scheme_check_future_work();
+  if (!do_atomic)
+    scheme_check_future_work();
 #endif
 #if defined(MZ_USE_MZRT) && !defined(DONT_USE_FOREIGN)
-  scheme_check_foreign_work();
+  if (!do_atomic)
+    scheme_check_foreign_work();
 #endif
 
   if (!do_atomic && (sleep_end >= 0.0)) {
