@@ -28,6 +28,7 @@ TODO
          framework
          browser/external
          "drsig.rkt"
+         "local-member-names.rkt"
          
          ;; the dynamic-require below loads this module, 
          ;; so we make the dependency explicit here, even
@@ -250,7 +251,18 @@ TODO
     (add-drs-function "next-tab" (λ (frame) (send frame next-tab)))
     (add-drs-function "prev-tab" (λ (frame) (send frame prev-tab)))
     (add-drs-function "collapse" (λ (frame) (send frame collapse)))
-    (add-drs-function "split"    (λ (frame) (send frame split))))
+    (add-drs-function "split"    (λ (frame) (send frame split)))
+    
+    (add-drs-function "jump-to-previous-error-loc"
+                      (λ (frame) (send frame jump-to-previous-error-loc)))
+    (add-drs-function "jump-to-next-error-loc"
+                      (λ (frame) (send frame jump-to-next-error-loc))))
+  
+  (send drs-bindings-keymap map-function "m:p" "jump-to-previous-error-loc")
+  (send drs-bindings-keymap map-function "m:n" "jump-to-next-error-loc")
+  (send drs-bindings-keymap map-function "esc;p" "jump-to-previous-error-loc")
+  (send drs-bindings-keymap map-function "esc;n" "jump-to-next-error-loc")
+  (send drs-bindings-keymap map-function "c:x;`" "jump-to-next-error-loc")
   
   (send drs-bindings-keymap map-function "f5" "execute")
   (send drs-bindings-keymap map-function "f1" "search-help-desk")
@@ -591,6 +603,10 @@ TODO
       ;; error-ranges : (union false? (cons (list file number number) (listof (list file number number))))
       (define error-ranges #f)
       (define/public (get-error-ranges) error-ranges)
+      (define/public (set-error-ranges ranges)
+        (set! error-ranges (and ranges 
+                                (not (null? ranges))
+                                (cleanup-locs ranges))))
       (define internal-reset-callback void)
       (define internal-reset-error-arrows-callback void)
       (define/public (reset-error-ranges) 
@@ -615,105 +631,104 @@ TODO
       ;;                       (union #f (listof srcloc))
       ;;                    -> (void)
       (define/public (highlight-errors raw-locs [raw-error-arrows #f])
-        (let* ([cleanup-locs
-                (λ (locs)
-                  (let ([ht (make-hasheq)])
-                    (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
-                                          (number? (srcloc-position loc))
-                                          (number? (srcloc-span loc))))
-                            (map (λ (srcloc)
-                                   (cond
-                                     [(hash-ref ht (srcloc-source srcloc) #f)
-                                      =>
-                                      (λ (e) 
-                                        (make-srcloc e
-                                                     (srcloc-line srcloc)
-                                                     (srcloc-column srcloc)
-                                                     (srcloc-position srcloc)
-                                                     (srcloc-span srcloc)))]
-                                     [(send definitions-text port-name-matches? (srcloc-source srcloc))
-                                      (hash-set! ht (srcloc-source srcloc) definitions-text)
-                                      (make-srcloc definitions-text
-                                                   (srcloc-line srcloc)
-                                                   (srcloc-column srcloc)
-                                                   (srcloc-position srcloc)
-                                                   (srcloc-span srcloc))]
-                                     [(port-name-matches? (srcloc-source srcloc))
-                                      (hash-set! ht (srcloc-source srcloc) this)
-                                      (make-srcloc this
-                                                   (srcloc-line srcloc)
-                                                   (srcloc-column srcloc)
-                                                   (srcloc-position srcloc)
-                                                   (srcloc-span srcloc))]
-                                     [(and (symbol? (srcloc-source srcloc))
-                                           (text:lookup-port-name (srcloc-source srcloc)))
-                                      =>
-                                      (lambda (editor)
-                                        (make-srcloc editor
-                                                     (srcloc-line srcloc)
-                                                     (srcloc-column srcloc)
-                                                     (srcloc-position srcloc)
-                                                     (srcloc-span srcloc)))]
-                                     [else srcloc]))
-                                 locs))))]
-               [locs (cleanup-locs raw-locs)]
-               [error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows))])
-          
-          (reset-highlighting)
-          
-          (set! error-ranges locs)
-
-          (for-each (λ (loc) (send (srcloc-source loc) begin-edit-sequence)) locs)
-          
-          (when color?
-            (let ([resets
-                   (map (λ (loc)
-                          (let* ([file (srcloc-source loc)]
-                                 [start (- (srcloc-position loc) 1)]
-                                 [span (srcloc-span loc)]
-                                 [finish (+ start span)])
-                            (send file highlight-range start finish (drracket:debug:get-error-color) #f 'high)))
-                        locs)])
-              
-              (when (and definitions-text error-arrows)
-                (let ([filtered-arrows
-                       (remove-duplicate-error-arrows
-                        (filter
-                         (λ (arr) (embedded-in? (srcloc-source arr) definitions-text))
-                         error-arrows))])
-                  (send definitions-text set-error-arrows filtered-arrows)))
-              
-              (set! internal-reset-callback
-                    (λ ()
-                      (set! error-ranges #f)
-                      (when definitions-text
-                        (send definitions-text set-error-arrows #f))
-                      (set! internal-reset-callback void)
-                      (for-each (λ (x) (x)) resets)))))
-          
-          (let* ([first-loc (and (pair? locs) (car locs))]
-                 [first-file (and first-loc (srcloc-source first-loc))]
-                 [first-start (and first-loc (- (srcloc-position first-loc) 1))]
-                 [first-span (and first-loc (srcloc-span first-loc))])
+        (set-error-ranges raw-locs)
+        (define locs (get-error-ranges)) ;; calling set-error-range cleans up the locs
+        (define error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows)))
+        
+        (reset-highlighting)
+        
+        (for-each (λ (loc) (send (srcloc-source loc) begin-edit-sequence)) locs)
+        
+        (when color?
+          (let ([resets
+                 (map (λ (loc)
+                        (let* ([file (srcloc-source loc)]
+                               [start (- (srcloc-position loc) 1)]
+                               [span (srcloc-span loc)]
+                               [finish (+ start span)])
+                          (send file highlight-range start finish (drracket:debug:get-error-color) #f 'high)))
+                      locs)])
             
-            (when (and first-loc first-start first-span)
-              (let ([first-finish (+ first-start first-span)])
-                (when (eq? first-file definitions-text) ;; only move set the cursor in the defs window
-                  (send first-file set-position first-start first-start))
-                (send first-file scroll-to-position first-start #f first-finish)))
+            (when (and definitions-text error-arrows)
+              (let ([filtered-arrows
+                     (remove-duplicate-error-arrows
+                      (filter
+                       (λ (arr) (embedded-in? (srcloc-source arr) definitions-text))
+                       error-arrows))])
+                (send definitions-text set-error-arrows filtered-arrows)))
             
-            (for-each (λ (loc) (send (srcloc-source loc) end-edit-sequence)) locs)
+            (set! internal-reset-callback
+                  (λ ()
+                    (set-error-ranges #f)
+                    (when definitions-text
+                      (send definitions-text set-error-arrows #f))
+                    (set! internal-reset-callback void)
+                    (for-each (λ (x) (x)) resets)))))
+        
+        (let* ([first-loc (and (pair? locs) (car locs))]
+               [first-file (and first-loc (srcloc-source first-loc))]
+               [first-start (and first-loc (- (srcloc-position first-loc) 1))]
+               [first-span (and first-loc (srcloc-span first-loc))])
+          
+          (when (and first-loc first-start first-span)
+            (let ([first-finish (+ first-start first-span)])
+              (when (eq? first-file definitions-text) ;; only move set the cursor in the defs window
+                (send first-file set-position first-start first-start))
+              (send first-file scroll-to-position first-start #f first-finish)))
+          
+          (for-each (λ (loc) (send (srcloc-source loc) end-edit-sequence)) locs)
+          
+          (when first-loc
             
-            (when first-loc
-              
-              (when (eq? first-file definitions-text)
-                ;; when we're highlighting something in the defs window,
-                ;; make sure it is visible
-                (let ([tlw (send first-file get-top-level-window)]) 
-                  (when (is-a? tlw drracket:unit:frame<%>)
-                    (send tlw ensure-defs-shown))))
-              
-              (send first-file set-caret-owner (get-focus-snip) 'global)))))
+            (when (eq? first-file definitions-text)
+              ;; when we're highlighting something in the defs window,
+              ;; make sure it is visible
+              (let ([tlw (send first-file get-top-level-window)]) 
+                (when (is-a? tlw drracket:unit:frame<%>)
+                  (send tlw ensure-defs-shown))))
+            
+            (send first-file set-caret-owner (get-focus-snip) 'global))))
+      
+      (define/private (cleanup-locs locs)
+        (let ([ht (make-hasheq)])
+          (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
+                                (number? (srcloc-position loc))
+                                (number? (srcloc-span loc))))
+                  (map (λ (srcloc)
+                         (cond
+                           [(hash-ref ht (srcloc-source srcloc) #f)
+                            =>
+                            (λ (e) 
+                              (make-srcloc e
+                                           (srcloc-line srcloc)
+                                           (srcloc-column srcloc)
+                                           (srcloc-position srcloc)
+                                           (srcloc-span srcloc)))]
+                           [(send definitions-text port-name-matches? (srcloc-source srcloc))
+                            (hash-set! ht (srcloc-source srcloc) definitions-text)
+                            (make-srcloc definitions-text
+                                         (srcloc-line srcloc)
+                                         (srcloc-column srcloc)
+                                         (srcloc-position srcloc)
+                                         (srcloc-span srcloc))]
+                           [(port-name-matches? (srcloc-source srcloc))
+                            (hash-set! ht (srcloc-source srcloc) this)
+                            (make-srcloc this
+                                         (srcloc-line srcloc)
+                                         (srcloc-column srcloc)
+                                         (srcloc-position srcloc)
+                                         (srcloc-span srcloc))]
+                           [(and (symbol? (srcloc-source srcloc))
+                                 (text:lookup-port-name (srcloc-source srcloc)))
+                            =>
+                            (lambda (editor)
+                              (make-srcloc editor
+                                           (srcloc-line srcloc)
+                                           (srcloc-column srcloc)
+                                           (srcloc-position srcloc)
+                                           (srcloc-span srcloc)))]
+                           [else srcloc]))
+                       locs))))
       
       (define highlights-can-be-reset (make-parameter #t))
       (define/public (reset-highlighting)

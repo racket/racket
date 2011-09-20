@@ -932,6 +932,8 @@ please adhere to these guidelines:
  (limit-memory-megabytes "Megabytes")
  (clear-error-highlight-menu-item-label "Clear Error Highlight")
  (clear-error-highlight-item-help-string "Removes the pink error highlighting")
+ (jump-to-next-error-highlight-menu-item-label "Jump to Next Error Highlight")
+ (jump-to-prev-error-highlight-menu-item-label "Jump to Previous Error Highlight")
  (reindent-menu-item-label "&Reindent")
  (reindent-all-menu-item-label "Reindent &All")
  (semicolon-comment-out-menu-item-label "&Comment Out with Semicolons")

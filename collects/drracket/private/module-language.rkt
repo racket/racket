@@ -1271,12 +1271,12 @@
            (send (get-tab) show-bkg-running 'nothing #f)
            (set! error-message-str (vector-ref res 1))
            (set! error-message-srclocs (vector-ref res 2))
-           (set! error-ranges 
-                 (for/list ([range (in-list (vector-ref res 2))])
-                   (define pos (vector-ref range 0))
-                   (define span (vector-ref range 1))
-                   (error-range (- pos 1) (+ pos span -1) #f)))
-           ;; should really only invalidate the appropriate region here (and in clear-error-ranges)
+           (set-online-error-ranges 
+            (for/list ([range (in-list (vector-ref res 2))])
+              (define pos (vector-ref range 0))
+              (define span (vector-ref range 1))
+              (error-range (- pos 1) (+ pos span -1) #f)))
+           ;; should really only invalidate the appropriate region here (and in clear-online-error-ranges)
            (invalidate-bitmap-cache 0 0 'display-end 'display-end)
            (update-frame-expand-error)]
           [(access-violation)
@@ -1313,13 +1313,23 @@
            (error 'module-language.rkt "unknown response from the expanding place: ~s\n" res)]))
       
       
-      (define error-ranges '())
+      (define online-error-ranges '())
+      (define/private (set-online-error-ranges rngs)
+        (set! online-error-ranges rngs)
+        (send (send (get-tab) get-ints) set-error-ranges
+              (map (λ (x) (srcloc this
+                                  #f
+                                  #f
+                                  (+ (error-range-start x) 1)
+                                  (- (error-range-end x)
+                                     (error-range-start x))))
+                   rngs)))
       (define/private (clear-old-error)
-        (for ([an-error-range (in-list error-ranges)])
+        (for ([an-error-range (in-list online-error-ranges)])
           (when (error-range-clear-highlight an-error-range)
             ((error-range-clear-highlight an-error-range))
             (set-error-range-clear-highlight! an-error-range #f)))
-        (set! error-ranges '())
+        (set-online-error-ranges '())
         (invalidate-bitmap-cache 0 0 'display-end 'display-end))
       
       (define byt (box 0.0))
@@ -1349,7 +1359,7 @@
                     .5
                     .25))
           
-          (for ([an-error-range (in-list error-ranges)])
+          (for ([an-error-range (in-list online-error-ranges)])
             (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
             
             (send path move-to (+ dx x2) (+ dy y2))
@@ -1373,7 +1383,7 @@
         (cond
           [(or (send evt moving?)
                (send evt entering?))
-           (for ([an-error-range (in-list error-ranges)])
+           (for ([an-error-range (in-list online-error-ranges)])
              (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
              (cond
                [(and (<= x1 mx x2)
@@ -1390,14 +1400,14 @@
                   (set-error-range-clear-highlight! an-error-range #f))]))
            (super on-event evt)]
           [(send evt leaving?)
-           (for ([an-error-range (in-list error-ranges)])
+           (for ([an-error-range (in-list online-error-ranges)])
              (when (error-range-clear-highlight an-error-range)
                ((error-range-clear-highlight an-error-range))
                (set-error-range-clear-highlight! an-error-range #f)))
            (super on-event evt)]
           [(send evt button-down? 'left)
            (define used-click? #f)
-           (for ([an-error-range (in-list error-ranges)])
+           (for ([an-error-range (in-list online-error-ranges)])
              (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
              (when (and (<= x1 mx x2)
                         (<= y2 my y3))
@@ -1526,7 +1536,7 @@
     (compile-lock->parallel-lock-client
      module-language-compile-lock
      (current-custodian)))
-
+  
   ;; in-module-language : top-level-window<%> -> module-language-settings or #f
   (define (in-module-language tlw)
     (and tlw

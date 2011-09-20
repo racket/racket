@@ -1433,7 +1433,9 @@ module browser threading seems wrong.
                         (remq logger-panel l)])))]
             [else
              (when show? ;; if we want to hide and it isn't built yet, do nothing
-               (define logger-gui-tab-panel-parent (new horizontal-panel% [parent logger-panel] [stretchable-height #f]))
+               (define logger-gui-tab-panel-parent (new horizontal-panel% 
+                                                        [parent logger-panel]
+                                                        [stretchable-height #f]))
                (set! logger-gui-tab-panel
                      (new tab-panel% 
                           [choices (list (string-constant logging-all)
@@ -1443,7 +1445,8 @@ module browser threading seems wrong.
                           [style '(no-border)]
                           [callback
                            (λ (tp evt)
-                             (preferences:set 'drracket:logger-gui-tab-panel-level (send logger-gui-tab-panel get-selection))
+                             (preferences:set 'drracket:logger-gui-tab-panel-level
+                                              (send logger-gui-tab-panel get-selection))
                              (update-logger-window #f))]))
                (new button% [label (string-constant hide-log)]
                     [callback (λ (x y) (send current-tab hide-log))]
@@ -1554,7 +1557,10 @@ module browser threading seems wrong.
                (new message% 
                     [parent planet-status-panel]
                     [label drracket:debug:small-planet-bitmap])
-               (set! planet-message (new message% [parent planet-status-panel] [label ""] [stretchable-width #t]))
+               (set! planet-message (new message% 
+                                         [parent planet-status-panel] 
+                                         [label ""]
+                                         [stretchable-width #t]))
                (set! planet-logger-button
                      (new button%
                           [font small-control-font]
@@ -1688,10 +1694,11 @@ module browser threading seems wrong.
                                     (λ (exn)
                                       (message-box 
                                        (string-constant drscheme)
-                                       (gui-utils:format-literal-label (string-constant error-erasing-log-directory)
-                                                                       (if (exn? exn)
-                                                                           (format "~a" (exn-message exn))
-                                                                           (format "~s" exn)))
+                                       (gui-utils:format-literal-label 
+                                        (string-constant error-erasing-log-directory)
+                                        (if (exn? exn)
+                                            (format "~a" (exn-message exn))
+                                            (format "~s" exn)))
                                        this
                                        #:dialog-mixin frame:focus-table-mixin)
                                       #f)])
@@ -1762,7 +1769,8 @@ module browser threading seems wrong.
         (preferences:set 'drracket:toolbar-state new-state)
         (update-toolbar-visibility))
       
-      (define/override (on-toolbar-button-click) (change-toolbar-state (cons (not (car toolbar-state)) (cdr toolbar-state))))
+      (define/override (on-toolbar-button-click) 
+        (change-toolbar-state (cons (not (car toolbar-state)) (cdr toolbar-state))))
       (define/private (set-toolbar-left) (change-toolbar-state (cons #f 'left)))
       (define/private (set-toolbar-right) (change-toolbar-state (cons #f 'right)))
       (define/private (set-toolbar-top) (change-toolbar-state (cons #f 'top)))
@@ -1872,7 +1880,8 @@ module browser threading seems wrong.
              (for-each loop (send obj get-children))]
             [(is-a? obj switchable-button%)
              (unless (memq obj toolbar-buttons)
-               (error 'register-toolbar-button "found a switchable-button% that is not registered, label ~s"
+               (error 'register-toolbar-button 
+                      "found a switchable-button% that is not registered, label ~s"
                       (send obj get-label)))]
             [else (void)])))
       
@@ -1961,12 +1970,14 @@ module browser threading seems wrong.
       (define/public (language-changed)
         (let* ([settings (send definitions-text get-next-settings)]
                [language (drracket:language-configuration:language-settings-language settings)])
-          (send func-defs-canvas language-changed language (or (toolbar-is-left?) (toolbar-is-right?)))
+          (send func-defs-canvas language-changed language (or (toolbar-is-left?)
+                                                               (toolbar-is-right?)))
           (send language-message set-yellow/lang
                 (not (send definitions-text this-and-next-language-the-same?))
                 (string-append (send language get-language-name)
                                (if (send language default-settings? 
-                                         (drracket:language-configuration:language-settings-settings settings))
+                                         (drracket:language-configuration:language-settings-settings
+                                          settings))
                                    ""
                                    (string-append " " (string-constant custom)))))
           (when (is-a? language-specific-menu menu%)
@@ -2216,7 +2227,8 @@ module browser threading seems wrong.
                                          (label (drracket:modes:mode-name mode))
                                          (parent menu)
                                          (callback 
-                                          (λ (_1 _2) (send definitions-text set-current-mode mode))))])
+                                          (λ (_1 _2) (send definitions-text set-current-mode
+                                                           mode))))])
                               (when (send definitions-text is-current-mode? mode)
                                 (send item check #t))))
                           (drracket:modes:get-modes))))))
@@ -2928,7 +2940,8 @@ module browser threading seems wrong.
           (set! interactions-shown? is?)
           (set! definitions-shown? ds?)
           (update-shown)
-          (reflow-container) ;; without this one, the percentages in the resizable-panel are not up to date with the children
+          (reflow-container) ;; without this one, the percentages in the
+                             ;; resizable-panel are not up to date with the children
           (fix-up-canvas-numbers definitions-text vd #f)
           (fix-up-canvas-numbers interactions-text vi #t)
           (reflow-container)
@@ -3211,7 +3224,8 @@ module browser threading seems wrong.
                     (if (send cb get-value)
                         (send module-browser-pb show-visible-paths key)
                         (send module-browser-pb remove-visible-paths key))
-                    (preferences:set 'drracket:module-browser:hide-paths (send module-browser-pb get-hidden-paths)))]
+                    (preferences:set 'drracket:module-browser:hide-paths 
+                                     (send module-browser-pb get-hidden-paths)))]
                  [mk-checkbox
                   (λ (key label)
                     (new check-box%
@@ -3558,13 +3572,17 @@ module browser threading seems wrong.
                            [parent language-menu]
                            [callback
                             (λ (_1 _2)
-                              (update-settings ((teachpack-callbacks-add tp-callbacks) settings this)))])
+                              (update-settings ((teachpack-callbacks-add tp-callbacks)
+                                                settings
+                                                this)))])
                       (let ([mi (new menu:can-restore-menu-item% 
                                      [label (string-constant clear-all-teachpacks-menu-item-label)]
                                      [parent language-menu]
                                      [callback
                                       (λ (_1 _2) 
-                                        (update-settings ((teachpack-callbacks-remove-all tp-callbacks) settings)))])])
+                                        (update-settings 
+                                         ((teachpack-callbacks-remove-all tp-callbacks)
+                                          settings)))])])
                         
                         (send mi enable (not (null? tp-names)))
                         mi)
@@ -3574,7 +3592,9 @@ module browser threading seems wrong.
                                   [parent language-menu]
                                   [callback
                                    (λ (item evt)
-                                     (update-settings ((teachpack-callbacks-remove tp-callbacks) settings name)))]))
+                                     (update-settings 
+                                      ((teachpack-callbacks-remove tp-callbacks)
+                                       settings name)))]))
                            tp-names))))]
             [else 
              (set! teachpack-items 
@@ -3584,20 +3604,22 @@ module browser threading seems wrong.
                          [parent language-menu]
                          [callback
                           (λ (_1 _2)
-                            (message-box (string-constant drscheme)
-                                         (gui-utils:format-literal-label (string-constant teachpacks-only-in-languages)
-                                                                         (apply 
-                                                                          string-append
-                                                                          (reverse
-                                                                           (filter
-                                                                            values
-                                                                            (map (λ (l) 
-                                                                                   (and 
-                                                                                    (send l capability-value 'drscheme:teachpack-menu-items)
-                                                                                    (format "\n  ~a" (send l get-language-name))))
-                                                                                 (drracket:language-configuration:get-languages))))))
-                                         this
-                                         #:dialog-mixin frame:focus-table-mixin))])))])))
+                            (message-box 
+                             (string-constant drscheme)
+                             (gui-utils:format-literal-label 
+                              (string-constant teachpacks-only-in-languages)
+                              (apply 
+                               string-append
+                               (reverse
+                                (filter
+                                 values
+                                 (map (λ (l) 
+                                        (and 
+                                         (send l capability-value 'drscheme:teachpack-menu-items)
+                                         (format "\n  ~a" (send l get-language-name))))
+                                      (drracket:language-configuration:get-languages))))))
+                             this
+                             #:dialog-mixin frame:focus-table-mixin))])))])))
       
       (define/private (initialize-menus)
         (let* ([mb (get-menu-bar)]
@@ -3667,6 +3689,7 @@ module browser threading seems wrong.
                                             (* 1024 1024 num))
                            (send interactions-text set-custodian-limit
                                  (* 1024 1024 num))]))))]))
+            
           (new menu:can-restore-menu-item%
                (label (string-constant clear-error-highlight-menu-item-label))
                (parent language-specific-menu)
@@ -3684,6 +3707,67 @@ module browser threading seems wrong.
                          [ints (send tab get-ints)])
                     (send item enable (or (send ints get-error-ranges)
                                           (send tab get-test-coverage-info-visible?)))))))
+          
+          ;; find-before-and-after : nat -> (values (or/c srcloc #f) (or/c srcloc #f) (listof srcloc))
+          ;;
+          ;; returns the source locations from the error ranges that are before and
+          ;; after get-start-position, or #f if the insertion point is before 
+          ;; all of them or after all of them, respectively
+          ;; also returns the sorted list of all srclocs
+          ;;
+          ;; this doesn't work properly when the positions are in embedded editor
+          ;;  (but it doesn't crash; it just has a strange notion of before and after)
+          (define (find-before-and-after)
+            (define tab (get-current-tab))
+            (define pos (send (send tab get-defs) get-start-position))
+            (define ranges (send (send tab get-ints) get-error-ranges))
+            (define sorted (sort ranges < #:key srcloc-position))
+            (let loop ([before #f]
+                       [lst sorted])
+              (cond
+                [(null? lst)
+                 (values before #f sorted)]
+                [else
+                 (define fst (car lst))
+                 (cond 
+                   [(= pos (- (srcloc-position fst) 1))
+                    (values before 
+                            (if (null? (cdr lst))
+                                #f
+                                (cadr lst))
+                            sorted)]
+                   [(< pos (- (srcloc-position fst) 1))
+                    (values before fst sorted)]
+                   [else (loop (car lst) (cdr lst))])])))
+          
+          (define (jump-to-source-loc srcloc)
+            (define ed (srcloc-source srcloc))
+            (send ed set-position (- (srcloc-position srcloc) 1))
+            (send ed set-caret-owner #f 'global))
+                  
+          (new menu:can-restore-menu-item%
+               (label (string-constant jump-to-next-error-highlight-menu-item-label))
+               (parent language-specific-menu)
+               (shortcut #\.)
+               (callback (λ (_1 _2) (jump-to-next-error-loc)))
+               (demand-callback
+                (λ (item)
+                  (let* ([tab (get-current-tab)]
+                         [ints (send tab get-ints)])
+                    (send item enable (send ints get-error-ranges))))))
+          (new menu:can-restore-menu-item%
+               (label (string-constant jump-to-prev-error-highlight-menu-item-label))
+               (parent language-specific-menu)
+               (shortcut (if (eq? (system-type) 'macosx) #\. #\,))
+               (shortcut-prefix (if (eq? (system-type) 'macosx)
+                                    (cons 'shift (get-default-shortcut-prefix))
+                                    (get-default-shortcut-prefix)))
+               (callback (λ (_1 _2) (jump-to-previous-error-loc)))
+               (demand-callback
+                (λ (item)
+                  (let* ([tab (get-current-tab)]
+                         [ints (send tab get-ints)])
+                    (send item enable (send ints get-error-ranges))))))
           (make-object separator-menu-item% language-specific-menu)
           (make-object menu:can-restore-menu-item%
             (string-constant create-executable-menu-item-label)
@@ -3816,14 +3900,14 @@ module browser threading seems wrong.
                  (λ ()
                    (let ([edit (get-edit-target-object)])
                      (when edit
-                       (let ([language-settings (send definitions-text get-next-settings)])
-                         (let-values ([(comment-prefix comment-character)
-                                       (if language-settings
-                                           (send (drracket:language-configuration:language-settings-language
-                                                  language-settings)
-                                                 get-comment-character)
-                                           (values ";" #\;))])
-                           (insert-large-letters comment-prefix comment-character edit this))))))]
+                       (define language-settings (send definitions-text get-next-settings))
+                       (define-values(comment-prefix comment-character)
+                         (if language-settings
+                             (send (drracket:language-configuration:language-settings-language
+                                    language-settings)
+                                   get-comment-character)
+                             (values ";" #\;)))
+                       (insert-large-letters comment-prefix comment-character edit this))))]
                 [c% (get-menu-item%)])
             
             (frame:add-snip-menu-items 
@@ -3891,6 +3975,45 @@ module browser threading seems wrong.
                (demand-callback (λ (item) (collapse-demand item))))
           
           (frame:reorder-menus this)))
+      
+      (define/public (jump-to-previous-error-loc)
+        (define-values (before after sorted) (find-before-and-after))
+        (unless (null? sorted)
+          (jump-to-source-loc (or before (last sorted)))))
+      
+      (define/public (jump-to-next-error-loc)
+        (define-values (before after sorted) (find-before-and-after))
+        (unless (null? sorted)
+          (jump-to-source-loc (or after (car sorted)))))
+      
+      (define/private (find-before-and-after)
+        (define tab (get-current-tab))
+        (define pos (send (send tab get-defs) get-start-position))
+        (define ranges (or (send (send tab get-ints) get-error-ranges) '()))
+        (define sorted (sort ranges < #:key srcloc-position))
+        (let loop ([before #f]
+                   [lst sorted])
+          (cond
+            [(null? lst)
+             (values before #f sorted)]
+            [else
+             (define fst (car lst))
+             (cond 
+               [(= pos (- (srcloc-position fst) 1))
+                (values before 
+                        (if (null? (cdr lst))
+                            #f
+                            (cadr lst))
+                        sorted)]
+               [(< pos (- (srcloc-position fst) 1))
+                (values before fst sorted)]
+               [else (loop (car lst) (cdr lst))])])))
+      
+      (define/private (jump-to-source-loc srcloc)
+        (define ed (srcloc-source srcloc))
+        (send ed set-position (- (srcloc-position srcloc) 1))
+        (send ed set-caret-owner #f 'global))
+
       
       ;                          
       ;                          
@@ -4052,7 +4175,9 @@ module browser threading seems wrong.
                              (let-values ([(cw ch) (send c get-client-size)])
                                (send dc set-font small-control-font)
                                (send dc draw-text on-string 0 (- (/ ch 2) (/ th 2)))))))]))
-               (define-values (tw th ta td) (send (send color-status-canvas get-dc) get-text-extent on-string small-control-font))
+               (define-values (tw th ta td) 
+                 (send (send color-status-canvas get-dc) get-text-extent
+                       on-string small-control-font))
                (send color-status-canvas min-width (inexact->exact (ceiling tw)))
                color-status-canvas)))
       (define color-valid? #t)
@@ -4164,7 +4289,9 @@ module browser threading seems wrong.
       (set-color-status! (send definitions-text is-lexer-valid?))
       (send definitions-canvas focus)))
   
-  ;; get-define-popup-name : (or/c #f (cons/c string? string?) (list/c string? string? string)) boolean -> (or/c #f string?)
+  ;; get-define-popup-name : (or/c #f (cons/c string? string?) (list/c string? string? string))
+  ;;                         boolean 
+  ;;                      -> (or/c #f string?)
   (define (get-define-popup-name info vertical?)
     (and info
          (if vertical?
@@ -4308,7 +4435,8 @@ module browser threading seems wrong.
     (define outer-hp (new horizontal-panel% [parent d] [alignment '(center bottom)]))
     (define rb (new radio-box%
                     [label #f]
-                    [choices (list (string-constant limit-memory-unlimited) (string-constant limit-memory-limited))]
+                    [choices (list (string-constant limit-memory-unlimited)
+                                   (string-constant limit-memory-limited))]
                     [callback (λ (a b) (grayizie))]
                     [parent outer-hp]))
     
@@ -4597,7 +4725,9 @@ module browser threading seems wrong.
                        [label (read-line (open-input-string desc))]
                        [parent vp]
                        [stretchable-width #t]
-                       [font (send (send (editor:get-standard-style-list) find-named-style "Standard") get-font)]))))
+                       [font (send (send (editor:get-standard-style-list) find-named-style 
+                                         "Standard")
+                                   get-font)]))))
          (define msg (new message% 
                           [stretchable-width #t]
                           [label (string-append (lookup 'component "<<unknown component>>")
@@ -4624,7 +4754,8 @@ module browser threading seems wrong.
     (send saved-bug-reports-window end-container-sequence))
   
   (define (forget-saved-bug-report item)
-    (preferences:set 'drracket:saved-bug-reports (remove item (preferences:get 'drracket:saved-bug-reports))))
+    (preferences:set 'drracket:saved-bug-reports 
+                     (remove item (preferences:get 'drracket:saved-bug-reports))))
   
   (define (show-saved-bug-reports-window)
     (init-saved-bug-reports-window)
