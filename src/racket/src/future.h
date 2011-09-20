@@ -180,7 +180,7 @@ void scheme_wrong_type_from_ft(const char *who, const char *expected_type, int w
 
 extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 
-//Helper macros for argument marshaling
+/* Helper macros for argument marshaling */
 #ifdef MZ_USE_FUTURES
 
 #define IS_WORKER_THREAD (g_rt_threadid != 0 && pthread_self() != g_rt_threadid)
@@ -211,8 +211,8 @@ void scheme_future_gc_pause();
 void scheme_future_check_custodians();
 
 #ifdef UNIT_TEST
-//These forwarding decls only need to be here to make 
-//primitives visible to test cases written in C
+/* These forwarding decls only need to be here to make 
+   primitives visible to test cases written in C */
 extern int future_begin_invoke(void *code);
 extern Scheme_Object *touch(int argc, Scheme_Object **argv);
 extern Scheme_Object *future_touch(int futureid);

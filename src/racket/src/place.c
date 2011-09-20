@@ -1365,15 +1365,15 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           int fd   = ((Scheme_Serialized_Socket_FD *) so)->fd;
           name = ((Scheme_Serialized_Socket_FD *) so)->name;
 
-          //scheme_socket_to_ports(fd, "tcp-accepted", 1, &in, &out);
+          /* scheme_socket_to_ports(fd, "tcp-accepted", 1, &in, &out); */
           if (type == scheme_input_port_type) {
             scheme_socket_to_input_port(fd, name, 1, &in);
-            //scheme_tcp_abandon_port(out);
+            /* scheme_tcp_abandon_port(out); */
             new_so = in;
           }
           else {
             scheme_socket_to_output_port(fd, name, 1, &out);
-            //scheme_tcp_abandon_port(in);
+            /* scheme_tcp_abandon_port(in); */
             new_so = out;
           }
         } else if (mode == mzPDC_CLEAN) {

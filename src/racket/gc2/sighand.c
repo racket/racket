@@ -31,19 +31,19 @@ void launchgdb() {
   }
 
   pid_t fpid = fork();
-  if (fpid == 0)                // child
+  if (fpid == 0)                /* child */
   {
     char _pidstr[20];
     char *pidstr = (char*) _pidstr;
     snprintf(pidstr, 20, "%i", getpid());
     execl("/usr/bin/bash", "rgdb", pidstr);
   }
-  else if (fpid < 0)            // failed to fork
+  else if (fpid < 0)            /* failed to fork */
   {
     printf("Failed to fork\n");
     exit(1);
   }
-  else                                   // parent
+  else                                   /* parent */
   {
     kill(getpid(), SIGSTOP);
   }

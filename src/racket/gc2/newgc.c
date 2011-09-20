@@ -2774,7 +2774,7 @@ void *GC_switch_to_master_gc() {
 
   /*obtain exclusive access to MASTERGC*/
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
-  //GC_LOCK_DEBUG("MGCLOCK GC_switch_to_master_gc\n");
+  /* GC_LOCK_DEBUG("MGCLOCK GC_switch_to_master_gc\n"); */
 
   GC_set_GC(MASTERGC);
   restore_globals_from_gc(MASTERGC);
@@ -2787,7 +2787,7 @@ void GC_switch_back_from_master(void *gc) {
   save_globals_to_gc(MASTERGC);
 
   /*release exclusive access to MASTERGC*/
-  //GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
+  /* GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n"); */
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 
   GC_set_GC(gc);

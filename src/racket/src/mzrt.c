@@ -139,10 +139,10 @@ void mzrt_sleep(int seconds)
   rem.tv_sec  = 0;
   rem.tv_nsec = 0;
   while ((-1 == nanosleep(&set, &rem))) {
-    //fprintf(stderr, "%i %i INITIAL\n", set.tv_sec, set.tv_nsec);
-    //fprintf(stderr, "%i %i LEFT\n", rem.tv_sec, rem.tv_nsec);
+    /* fprintf(stderr, "%i %i INITIAL\n", set.tv_sec, set.tv_nsec); */
+    /* fprintf(stderr, "%i %i LEFT\n", rem.tv_sec, rem.tv_nsec); */
     set = rem;
-    //fprintf(stderr, "%i %i NOW\n", set.tv_sec, set.tv_nsec);
+    /* fprintf(stderr, "%i %i NOW\n", set.tv_sec, set.tv_nsec); */
   }
 #endif
 }

@@ -4747,7 +4747,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       RANGE_CHECK(l, < port->symtab_size);
       v = port->symtab[l];
       if (v == (Scheme_Object *)-1) {
-        // there is a cycle
+        /* there is a cycle */
         scheme_ill_formed_code(port);
       };
       if (!v) {

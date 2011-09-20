@@ -129,7 +129,7 @@ static void *mmu_alloc_page(MMU* mmu, size_t len, size_t alignment, int dirty, i
 #ifdef USE_BLOCK_CACHE
   return block_cache_alloc_page(mmu->block_cache, len, alignment, dirty, type, expect_mprotect, src_block, &mmu->memory_allocated);
 #elif !( defined(_WIN32) || defined(OSKIT) )
-  //len = mmu_round_up_to_os_page_size(mmu, len); 
+  /* len = mmu_round_up_to_os_page_size(mmu, len); */
   {
     AllocCacheBlock *alloc_cache = mmu->alloc_caches[!!expect_mprotect];
     return alloc_cache_alloc_page(alloc_cache, len, alignment, dirty, &mmu->memory_allocated);
@@ -148,7 +148,7 @@ static void mmu_free_page(MMU* mmu, void *p, size_t len, int type, int expect_mp
   mmu->memory_allocated += block_cache_free_page(mmu->block_cache, p, len, type, expect_mprotect, src_block,
                                                  originated_here);
 #elif !( defined(_WIN32) || defined(OSKIT) )
-  //len = mmu_round_up_to_os_page_size(mmu, len); 
+  /* len = mmu_round_up_to_os_page_size(mmu, len); */
   {
     AllocCacheBlock *alloc_cache = mmu->alloc_caches[!!expect_mprotect];
     mmu->memory_allocated += alloc_cache_free_page(alloc_cache, p, len, MMU_DIRTY, originated_here);

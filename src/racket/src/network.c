@@ -2908,7 +2908,7 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
         int ok;
 #ifdef USE_NULL_TO_DISCONNECT_UDP
         ok = !connect(udp->s, NULL, 0);
-#else  //#ifndef USE_NULL_TO_DISCONNECT_UDP
+#else
         GC_CAN_IGNORE mz_unspec_address ua;
         ua.sin_family = AF_UNSPEC;
         ua.sin_port = 0;
