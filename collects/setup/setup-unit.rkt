@@ -866,7 +866,8 @@
                                                           (simplify-path (apply build-path p (for/list ([i (cddr c)]) 'up)) #f)
                                                           ;; relative path => no root needed for checking omits:
                                                           #f)])
-                                                (not (eq? 'all (omitted-paths dir getinfo omit-root))))
+                                                (and (directory-exists? dir)
+                                                     (not (eq? 'all (omitted-paths dir getinfo omit-root)))))
                                               (or (file-exists? (build-path dir "info.rkt"))
                                                   (file-exists? (build-path dir "info.ss"))))
                                          (hash-set! t a (list b c d e))
