@@ -36,7 +36,8 @@
   ;;  install functions that can be used later.
   (define (non-valueable-prims) (procedure-calling-prims))
 
-  (define code-insp (current-code-inspector))
+  (define code-insp (variable-reference->module-declaration-inspector
+                     (#%variable-reference)))
 
   (define (keep-mzc-property stx-out stx)
     (let ([v (syntax-property stx 'mzc-cffi)]

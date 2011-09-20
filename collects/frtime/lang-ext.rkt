@@ -707,7 +707,8 @@
           free ...)
          (lambda forms body ...))]))
 
-(define-for-syntax code-insp (current-code-inspector))
+(define-for-syntax code-insp (variable-reference->module-declaration-inspector
+                              (#%variable-reference)))
 
 (define-syntax (command-lambda stx)
   

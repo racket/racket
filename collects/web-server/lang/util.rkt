@@ -16,7 +16,9 @@
 
 (define transformer? (make-parameter #f))
 
-(define code-insp (current-code-inspector))
+(define code-insp
+  (variable-reference->module-declaration-inspector
+   (#%variable-reference)))
 
 (define (disarm expr)
   (syntax-disarm expr code-insp))

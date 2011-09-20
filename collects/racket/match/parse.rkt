@@ -17,7 +17,8 @@
     [(a b) #'(list a b)]
     [x (identifier? #'x) #'x]))
 
-(define orig-insp (current-code-inspector))
+(define orig-insp (variable-reference->module-declaration-inspector
+                   (#%variable-reference)))
 
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax

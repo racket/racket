@@ -37,7 +37,8 @@
     (hash-for-each hash (lambda (x y) (unless (eq? x 'base) (set! covered (cons x covered)))))
     (values all covered)))
 
-(define code-insp (current-code-inspector))
+(define code-insp (variable-reference->module-declaration-inspector
+                   (#%variable-reference)))
 (define (disarm stx)
   (syntax-disarm stx code-insp))
     

@@ -1056,6 +1056,7 @@
 [variable-reference->empty-namespace (-> -Variable-Reference -Namespace)]
 [variable-reference->namespace (-> -Variable-Reference -Namespace)]
 [variable-reference->resolved-module-path (-> -Variable-Reference (-opt -Resolved-Module-Path))]
+[variable-reference->module-declaration-inspector (-> -Variable-Reference -Inspector)]
 [variable-reference->module-source (-> -Variable-Reference (Un Sym (-val #f) -Path))]
 [variable-reference->phase (-> -Variable-Reference -Nat)]
 [variable-reference-constant? (-> -Variable-Reference -Boolean)]

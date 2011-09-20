@@ -633,9 +633,10 @@
       (syntax-property l 'method-arity-error #t))
 
     ;; `class' wants to be priviledged with respect to
-    ;; syntax taints: save the load-time inspector and use it 
+    ;; syntax taints: save the declaration-time inspector and use it 
     ;; to disarm syntax taints
-    (define method-insp (current-code-inspector))
+    (define method-insp (variable-reference->module-declaration-inspector
+                         (#%variable-reference)))
     (define (disarm stx)
       (syntax-disarm stx method-insp))
     (define (rearm new old)

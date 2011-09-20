@@ -22,5 +22,7 @@
                       (cons a d)))]
      [else v])))
 
-(define orig-insp (current-code-inspector))
+(define orig-insp (variable-reference->module-declaration-inspector
+                   (#%variable-reference)))
+
 

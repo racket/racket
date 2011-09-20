@@ -28,7 +28,8 @@
               ((char-range-arg #'#\1 #'here) (char->integer #\1))
               ((char-range-arg #'"1" #'here) (char->integer #\1)))
   
-  (define orig-insp (current-code-inspector))
+  (define orig-insp (variable-reference->module-declaration-inspector
+                     (#%variable-reference)))
   (define (disarm stx)
     (syntax-disarm stx orig-insp))
 

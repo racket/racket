@@ -2,7 +2,9 @@
 (require (for-syntax syntax/parse racket/base syntax/id-table racket/dict
                      unstable/debug))
 
-(define-for-syntax code-insp (current-code-inspector))
+(define-for-syntax code-insp
+  (variable-reference->module-declaration-inspector
+   (#%variable-reference)))
 
 (define-for-syntax (rewrite stx tbl from)
   (define (rw stx)

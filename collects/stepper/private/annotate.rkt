@@ -1371,9 +1371,6 @@
   ; body of local
   (annotate/top-level main-exp))
 
-
-(define saved-code-inspector (current-code-inspector))
-
 (define (stepper-recertify new-stx old-stx)
   (syntax-rearm new-stx old-stx #t))
 

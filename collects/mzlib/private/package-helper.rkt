@@ -46,7 +46,8 @@
      ((bound-identifier=? id (caar renames)) (car renames))
      (else (stx-assoc id (cdr renames)))))
   
-  (define insp (current-code-inspector))
+  (define insp (variable-reference->module-declaration-inspector
+                (#%variable-reference)))
 
   (define (rebuild ctxt val)
     (if (syntax? ctxt)

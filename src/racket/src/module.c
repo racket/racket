@@ -4869,7 +4869,6 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
       config = scheme_extend_config(scheme_current_config(),
                                     MZCONFIG_ENV,
                                     (Scheme_Object *)env);
-      
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
     }

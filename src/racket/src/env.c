@@ -78,6 +78,7 @@ static Scheme_Object *variable_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_top_level_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_phase(int, Scheme_Object *[]);
 static Scheme_Object *variable_base_phase(int, Scheme_Object *[]);
+static Scheme_Object *variable_inspector(int, Scheme_Object *[]);
 static Scheme_Object *variable_const_p(int, Scheme_Object *[]);
 static Scheme_Object *now_transforming(int argc, Scheme_Object *argv[]);
 static Scheme_Object *now_transforming_module(int argc, Scheme_Object *argv[]);
@@ -645,6 +646,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("variable-reference->namespace", variable_top_level_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->phase", variable_phase, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->module-base-phase", variable_base_phase, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("variable-reference->module-declaration-inspector", variable_inspector, 1, 1, env);
 
   REGISTER_SO(scheme_varref_const_p_proc);
   scheme_varref_const_p_proc = scheme_make_prim_w_arity(variable_const_p, 
@@ -1682,6 +1684,14 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
     return scheme_make_integer(ph);
   } else if (tl == 3) {
     return scheme_make_integer(ph - env->mod_phase);
+  } else if (tl == 4) {
+    if (((Scheme_Object *)((Scheme_Bucket *)v)->key != scheme_stack_dump_key)
+        || !env->module) {
+      scheme_arg_mismatch(who, 
+                          "variable reference does not refer to an anonymous module variable: ",
+                          v);
+    }
+    return env->module->insp;
   } else if (tl) {
     /* return env directly; need to set up  */
     if (!env->phase && env->module)
@@ -1715,6 +1725,11 @@ static Scheme_Object *variable_phase(int argc, Scheme_Object *argv[])
 static Scheme_Object *variable_base_phase(int argc, Scheme_Object *argv[])
 {
   return do_variable_namespace("variable-reference->phase", 3, argc, argv);
+}
+
+static Scheme_Object *variable_inspector(int argc, Scheme_Object *argv[])
+{
+  return do_variable_namespace("variable-reference->module-declaration-inspector", 4, argc, argv);
 }
 
 static Scheme_Object *variable_const_p(int argc, Scheme_Object *argv[])

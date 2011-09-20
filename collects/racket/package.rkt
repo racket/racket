@@ -102,7 +102,8 @@
                  orig
                  orig))
 
-(define-for-syntax code-insp (current-code-inspector))
+(define-for-syntax code-insp (variable-reference->module-declaration-inspector
+                              (#%variable-reference)))
 (define-for-syntax (disarm* stx)
   (cond
    [(and (syntax? stx)

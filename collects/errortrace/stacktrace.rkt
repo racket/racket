@@ -254,7 +254,8 @@
            [bodyl (map (lambda (b) (annotate b phase)) bodys)])
       (rebuild expr (map cons bodys bodyl))))
   
-  (define orig-inspector (current-code-inspector))
+  (define orig-inspector (variable-reference->module-declaration-inspector
+                          (#%variable-reference)))
   
   (define (rearm orig new)
     (syntax-rearm new orig))

@@ -12,9 +12,12 @@
 (define-syntax-rule (define-re-transformer id lam)
   (define-syntax id (re-transformer lam)))
 
+(define-for-syntax code-insp (variable-reference->module-declaration-inspector
+                              (#%variable-reference)))
+
 (define-for-syntax (re-expand stx)
   (syntax-parse
-   (syntax-disarm stx (current-code-inspector))
+   (syntax-disarm stx code-insp)
    #:literals (complement seq union star epsilon nullset dseq rec unquote)
    [((~and op complement) lhs:expr)
     (quasisyntax/loc stx

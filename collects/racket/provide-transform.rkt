@@ -42,7 +42,8 @@
      [(v) v]
      [(v mark) v]))
 
-  (define orig-insp (current-code-inspector))
+  (define orig-insp (variable-reference->module-declaration-inspector
+                     (#%variable-reference)))
 
   ;; expand-export : stx -> (listof export)
   (define (expand-export stx modes)

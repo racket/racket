@@ -32,7 +32,8 @@ pict snip :
            get-snp/poss
            build-lib-pict-stx)
 
-  (define orig-inspector (current-code-inspector))
+  (define orig-inspector (variable-reference->module-declaration-inspector
+                          (#%variable-reference)))
   (define orig-lcp (current-library-collection-paths))
 
   (define tool@

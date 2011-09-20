@@ -72,7 +72,8 @@
 (define %true
   (lambda (fk) fk))
 
-(define-for-syntax orig-insp (current-code-inspector))
+(define-for-syntax orig-insp (variable-reference->module-declaration-inspector
+                              (#%variable-reference)))
 
 (define-syntax (%is stx)
   (syntax-case stx ()

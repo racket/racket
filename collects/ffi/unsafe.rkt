@@ -252,7 +252,8 @@
   ;; new syntax transformer be an object that carries extra information, later
   ;; used by `expand-fun-syntax/fun'.
 
-  (define orig-inspector (current-code-inspector))
+  (define orig-inspector (variable-reference->module-declaration-inspector
+                          (#%variable-reference)))
 
   (define (disarm stx)
     (syntax-disarm stx orig-inspector))

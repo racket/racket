@@ -179,6 +179,10 @@
       (eval '(begin-for-syntax 10))))
   (test "1\n0\n2\n1\n" get-output-string s))
 
+(err/rt-test (variable-reference->module-declaration-inspector (#%variable-reference)))
+(err/rt-test (variable-reference->module-declaration-inspector (#%variable-reference car)))
+(test (void) eval `(module m racket/base (variable-reference->module-declaration-inspector (#%variable-reference))))
+
 ;; ----------------------------------------
 
 (parameterize ([current-namespace (make-base-namespace)])

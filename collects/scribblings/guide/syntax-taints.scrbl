@@ -201,10 +201,11 @@ With this arrangement, macro-generating macros require some care,
 since the generating macro may embed syntax objects in the generated
 macro that need to have the generating module's protection level,
 rather than the protection level of the module that contains the
-generated macro. To avoid this problem, capture the value of
-@racket[(current-code-inspector)] as part of the generating macro's
-expand-time code and used it to define a variant of
-@racket[syntax-protect] that uses the captured inspector.
+generated macro. To avoid this problem, use the module's
+declaration-time inspector, which is accessible as
+@racket[(variable-reference->module-declaration-inspector
+(#%variable-reference))], and use it to define a variant of
+@racket[syntax-protect].
 
 For example, suppose that the @racket[go] macro is implemented through
 a macro:
@@ -243,7 +244,8 @@ racket
   (+ n 17))
 
 (define-for-syntax go-syntax-protect
-  (let ([insp (current-code-inspector)])
+  (let ([insp (variable-reference->module-declaration-inspector
+               (#%variable-reference))])
     (lambda (stx) (syntax-arm stx insp))))
 
 (define-syntax (def-go stx)
@@ -269,7 +271,7 @@ prevent access from untrusted modules. Such exports should use the
 Code inspectors, again, provide the mechanism for determining which
 modules are trusted and which are untrusted. When a module is
 declared, the value of @racket[current-code-inspector] is associated
-to the module instance. When a module is instantiated (i.e., when the
+to the module declaration. When a module is instantiated (i.e., when the
 body of the declaration is actually executed), a sub-inspector is
 created to guard the module's exports. Access to the module's
 @tech{protected} exports requires a code inspector higher in the

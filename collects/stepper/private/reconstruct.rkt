@@ -358,7 +358,7 @@
          [stepper-safe-expanded (skipto/auto expanded-application 'discard (lambda (x) x))]
          [just-the-fn 
           (kernel:kernel-syntax-case 
-           (syntax-disarm stepper-safe-expanded (current-code-inspector)) #f
+           (syntax-disarm stepper-safe-expanded saved-code-inspector) #f
            ; STC: lazy racket case
            ;      Must change this case if lazy language changes!
            [(#%plain-app 

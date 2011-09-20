@@ -5,7 +5,8 @@
 (require (for-syntax racket/base
                      "require-transform.rkt"))
 
-(define-for-syntax orig-insp (current-code-inspector))
+(define-for-syntax orig-insp (variable-reference->module-declaration-inspector
+                              (#%variable-reference)))
 
 (define-for-syntax (make-require-macro proc)
   (make-require-transformer

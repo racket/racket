@@ -82,7 +82,7 @@
  re-intern-identifier
  finished-xml-box-table
  language-level->name
- 
+ saved-code-inspector
  stepper-syntax-property
  with-stepper-syntax-properties
  
@@ -421,7 +421,8 @@
   (define (queue-length queue)
     (length (unbox queue)))
 
-  (define saved-code-inspector (current-code-inspector))
+  (define saved-code-inspector (variable-reference->module-declaration-inspector
+                                (#%variable-reference)))
   
   (define (rebuild-stx new old)
     (datum->syntax old new old old))

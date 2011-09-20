@@ -37,6 +37,9 @@
        stx]
       [else-stx
        (general-top-level-expr-iterator stx)]))
+
+  (define code-insp (variable-reference->module-declaration-inspector
+                     (#%variable-reference)))
   
   (define (general-top-level-expr-iterator stx)
     (kernel-syntax-case stx #f
@@ -45,17 +48,17 @@
          (cond [(= (length var-list) 1) #`(define-values (var ...) 
                                             #,(expr-iterator #'expr 
                                                              (car var-list)
-                                                             (current-code-inspector)
+                                                             code-insp
                                                              #f))]
-               [else #`(define-values (var ...) #,(expr-iterator #'expr #f (current-code-inspector) #f))]))]
+               [else #`(define-values (var ...) #,(expr-iterator #'expr #f code-insp #f))]))]
       [(define-syntaxes (var ...) expr)
-       #`(define-syntaxes (var ...) #,(expr-iterator #'expr #f (current-code-inspector) #t))]
+       #`(define-syntaxes (var ...) #,(expr-iterator #'expr #f code-insp #t))]
       [(begin . top-level-exprs)
        #`(begin #,@(map top-level-expr-iterator (syntax->list #'top-level-exprs)))]
       [(#%require . require-specs)
        stx]
       [else
-       (expr-iterator stx #f (current-code-inspector) #f)]))
+       (expr-iterator stx #f code-insp #f)]))
   
   (define (expr-iterator stx potential-name insp trans?-expr)
     (let* ([name-guess (or (syntax-property stx 'inferred-name) potential-name)]

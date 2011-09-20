@@ -397,4 +397,5 @@
   (define (disarm stx) (syntax-disarm stx code-insp))
   (define (rearm old new) (syntax-rearm new old))
 
-  (define code-insp (current-code-inspector)))
+  (define code-insp (variable-reference->module-declaration-inspector
+                     (#%variable-reference))))

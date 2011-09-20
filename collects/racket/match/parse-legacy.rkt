@@ -11,7 +11,8 @@
 
 (provide parse/legacy)
 
-(define orig-insp (current-code-inspector))
+(define orig-insp (variable-reference->module-declaration-inspector
+                   (#%variable-reference)))
 
 (define (parse/legacy stx)
   (define (rearm new-stx) (syntax-rearm new-stx stx))

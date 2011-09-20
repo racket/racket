@@ -423,3 +423,12 @@ for @racket[varref] is not within a module.
 For a variable with a module, the result is less than the result of
 @racket[(variable-reference->phase varref)] by @math{n} when the
 variable is bound at @tech{phase level} @math{n} within the module.}
+
+
+@defproc[(variable-reference->module-declaration-inspector [varref variable-reference?])
+         inspector?]{
+
+Returns the declaration @tech{inspector} (see @secref["modprotect"])
+for the module of @racket[varref], where @racket[varref] must refer to
+an anonymous module variable as produced by
+@racket[(#%variable-reference)].}

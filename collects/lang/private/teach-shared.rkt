@@ -12,7 +12,8 @@
           scheme/base
           (only-in "teachprims.rkt" [advanced-cons the-cons])))
 
-(define code-insp (current-code-inspector))
+(define code-insp (variable-reference->module-declaration-inspector
+                   (#%variable-reference)))
 
 (define shared/proc
   (lambda (stx make-check-cdr undefined-expr)

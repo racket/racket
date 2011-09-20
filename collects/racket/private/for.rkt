@@ -159,7 +159,8 @@
          ;; ill-formed clause...
          clause]))
 
-    (define orig-insp (current-code-inspector))
+    (define orig-insp (variable-reference->module-declaration-inspector
+                       (#%variable-reference)))
 
     (define (for-clause-syntax-protect clause)
       ;; This is slightly painful. The expansion into `:do-in' involves a lot

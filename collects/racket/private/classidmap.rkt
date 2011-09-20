@@ -5,7 +5,8 @@
          (for-template scheme/base "class-events.rkt")
          "define-struct.rkt")
 
-(define insp (current-code-inspector))
+(define insp (variable-reference->module-declaration-inspector
+              (#%variable-reference)))
 (define (class-syntax-protect stx)
   (syntax-arm stx insp #t))
 
