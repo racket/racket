@@ -1126,6 +1126,8 @@
                          (λ ()
                            (when (eq? t pending-thread)
                              (set! pending-thread #f)
+                             (when (getenv "PLTDRPLACEPRINT")
+                               (printf "PLTDRPLACEPRINT: got results back from the place\n"))
                              (show-results res))))))))))
   
   (define (stop-place-running)

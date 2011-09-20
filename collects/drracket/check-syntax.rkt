@@ -2,7 +2,8 @@
 (require racket/contract
          racket/class
          "private/syncheck/traversals.rkt"
-         "private/syncheck/intf.rkt")
+         "private/syncheck/intf.rkt"
+         "private/syncheck/local-member-names.rkt")
 
 (provide/contract
  [make-traversal 

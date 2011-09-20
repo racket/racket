@@ -48,6 +48,7 @@ If the namespace does not, they are colored the unbound color.
          (only-in ffi/unsafe register-finalizer)
          "../../syncheck-drracket-button.rkt"
          "intf.rkt"
+         "local-member-names.rkt"
          "colors.rkt"
          "traversals.rkt"
          "annotate.rkt"
@@ -321,7 +322,7 @@ If the namespace does not, they are colored the unbound color.
             ;;   - tail-link
             ;;   - arrow
             ;;   - string
-            (define (get-arrow-record table text)
+            (define/private (get-arrow-record table text)
               (hash-ref! table text (lambda () (make-interval-map))))
 
             (define arrow-records #f)

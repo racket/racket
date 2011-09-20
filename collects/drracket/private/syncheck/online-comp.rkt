@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/class
          racket/place
-         "traversals.rkt" 
+         "traversals.rkt"
+         "local-member-names.rkt"
          "intf.rkt")
 (provide go)
 

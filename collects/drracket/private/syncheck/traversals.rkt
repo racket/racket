@@ -2,6 +2,7 @@
 
 (require "colors.rkt"
          "intf.rkt"
+         "local-member-names.rkt"
          "annotate.rkt"
          "contract-traversal.rkt"
          string-constants
