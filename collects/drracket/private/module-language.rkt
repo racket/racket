@@ -1356,25 +1356,22 @@
           (define smoothing (send dc get-smoothing))
           (send dc set-smoothing 'smoothed)
           
-          (define path (new dc-path%))
-          (send dc set-brush "red" 'transparent)
-          (send dc set-pen (send the-pen-list find-or-create-pen "red"
-                                 online-compilation-error-pen-width
-                                 'solid 'butt 'miter))
+          (send dc set-brush "red" 'solid)
+          (send dc set-pen (send the-pen-list find-or-create-pen "red" 1 'transparent))
           (send dc set-alpha 
                 (if (preferences:get 'framework:white-on-black?)
                     .5
                     .25))
-          
+          (define path (new dc-path%))
+            
           (for ([an-error-range (in-list online-error-ranges)])
-            (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
+            (define-values (x y w h) (get-box an-error-range))
             
-            (send path move-to (+ dx x2) (+ dy y2))
-            (send path line-to (+ dx x3) (+ dy y3))
-            (send path close)
-            
-            (send path ellipse (+ dx (- x2 4)) (+ dy y2) 4 4)
-            (send path ellipse (+ dx (- x2 4)) (+ dy y3) 4 4))
+            (send path move-to (+ dx x) (+ dy y))
+            (send path line-to (+ dx x w) (+ dy y))
+            (send path line-to (+ dx x w) (+ dy y h))
+            (send path arc (+ dx x) (+ dy y) (* w 2/3) h (* pi 3/2) (* pi 1/2))
+            (send path close))
           
           (send dc draw-path path)
           (send dc set-alpha 1)
@@ -1391,10 +1388,10 @@
           [(or (send evt moving?)
                (send evt entering?))
            (for ([an-error-range (in-list online-error-ranges)])
-             (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
+             (define-values (x y w h) (get-box an-error-range))
              (cond
-               [(and (<= x1 mx x2)
-                     (<= y2 my y3))
+               [(and (<= x mx (+ x w))
+                     (<= y my (+ y h)))
                 (unless (error-range-clear-highlight an-error-range)
                   (set-error-range-clear-highlight! 
                    an-error-range
@@ -1415,9 +1412,9 @@
           [(send evt button-down? 'left)
            (define used-click? #f)
            (for ([an-error-range (in-list online-error-ranges)])
-             (define-values (x1 y1 x2 y2 x3 y3 x4 y4) (get-box an-error-range))
-             (when (and (<= x1 mx x2)
-                        (<= y2 my y3))
+             (define-values (x y w h) (get-box an-error-range))
+             (when (and (<= x mx (+ x w))
+                        (<= y my (+ y h)))
                (set! used-click? #t)
                (set-position (error-range-start an-error-range))))
            (unless used-click?
@@ -1432,21 +1429,15 @@
         (position-location end-pos #f byb #f)
         (send (get-admin) get-view vbx vby vbw vbh)
         
-        (define x2 (+ (unbox vbx) (unbox vbw) 
-                      (- (/ online-compilation-error-pen-width 2))
-                      (- (/ online-compilation-error-pen-width 1))))
-        (define y2 (+ (unbox byt)))
+        (define x (+ (unbox vbx)
+                     (unbox vbw)
+                     (- online-compilation-error-pen-width)
+                     (- online-compilation-error-pen-width)))
+        (define y (unbox byt))
+        (define w (* online-compilation-error-pen-width 2))
+        (define h (- (unbox byb) (unbox byt)))
         
-        (define x1 (+ x2 (- (/ online-compilation-error-pen-width 1))))
-        (define y1 y2)
-        
-        (define x3 x2)
-        (define y3 (unbox byb))
-        
-        (define x4 x1)
-        (define y4 y3)
-        
-        (values x1 y1 x2 y2 x3 y3 x4 y4))
+        (values x y w h))
         
       (define/override (move-to-new-language)
         ;; this is here to get things running for the initital tab in a new frame
