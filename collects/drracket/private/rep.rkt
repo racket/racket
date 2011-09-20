@@ -292,7 +292,7 @@ TODO
     (mixin (editor:keymap<%>) (editor:keymap<%>)
       (define/override (get-keymaps)
         (editor:add-after-user-keymap drs-bindings-keymap (super get-keymaps)))
-      (super-instantiate ())))
+      (super-new)))
   
   ;; Max length of output queue (user's thread blocks if the
   ;; queue is full):
@@ -2032,8 +2032,14 @@ TODO
         (super-new))))
   
   (define -text% 
-    (drs-bindings-keymap-mixin
-     (text-mixin 
+    (text-mixin 
+     ;; drs-bindings-keymap-mixin has to come
+     ;; before text-mixin so that the keymaps 
+     ;; get added in the right order (specifically
+     ;; so that esc;n and esc;p work right in the
+     ;; repl (prev and next interaction) and in the defs
+     ;; (previous and next error))
+     (drs-bindings-keymap-mixin
       (text:ports-mixin
        (scheme:text-mixin
         (color:text-mixin
