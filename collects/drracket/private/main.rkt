@@ -526,7 +526,16 @@
                   (or settings (send lang default-settings)))))))))
 
   (preferences:set-default 'drracket:online-compilation-default-off #f boolean?)
-
+  (preferences:set-default 'drracket:online-expansion:read-in-defs-errors 
+                           'corner
+                           (or/c 'margin 'gold 'corner))
+  (preferences:set-default 'drracket:online-expansion:variable-errors 
+                           'margin
+                           (or/c 'margin 'gold))
+  (preferences:set-default 'drracket:online-expansion:other-errors
+                           'margin
+                           (or/c 'margin 'gold))
+  
   (drr:set-default 'drracket:multi-file-search:recur? #t boolean?)
   (drr:set-default 'drracket:multi-file-search:filter? #t boolean?)
   (drr:set-default 'drracket:multi-file-search:filter-regexp "\\.(rkt.?|scrbl|ss|scm)$" string?)
@@ -652,7 +661,7 @@
                                             drracket:debug:test-coverage-off-style-name
                                             (string-constant test-coverage-off))))
 
-
+(drracket:module-language:initialize-prefs-panel)
 
 (let* ([find-frame
         (λ (item)

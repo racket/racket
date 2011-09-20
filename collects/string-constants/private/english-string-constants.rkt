@@ -225,6 +225,16 @@ please adhere to these guidelines:
  (jump-to-error "Jump to Error")
  (online-expansion-is-disabled "Online expansion is disabled")
   
+ ;; the online expansion preferences pane
+ (online-expansion "Online expansion") ;; title of prefs pane
+ ; the different kinds of errors
+ (online-expansion-show-read-errors-as "Show read-level errors")
+ (online-expansion-show-variable-errors-as "Show unbound identifier errors")
+ (online-expansion-show-other-errors-as "Show other errors")
+ ; locations the errors can be shown
+ (online-expansion-error-in-corner "in the corner of the window")
+ (online-expansion-error-gold-highlight "with gold highlighting")
+ (online-expansion-error-margin "in the margin")
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
   (read-only "Read only")

@@ -1276,25 +1276,20 @@
         (set! compilation-out-of-date? #f)
         (case (vector-ref res 0)
           [(exn)
-           (define tlw (send (get-tab) get-frame))
-           (send (get-tab) show-bkg-running 'nothing #f)
-           (set! error-message-str (vector-ref res 1))
-           (set! error-message-srclocs (vector-ref res 2))
-           (set-online-error-ranges 
-            (for/list ([range (in-list (vector-ref res 2))])
-              (define pos (vector-ref range 0))
-              (define span (vector-ref range 1))
-              (error-range (- pos 1) (+ pos span -1) #f)))
-           ;; should really only invalidate the appropriate region here (and in clear-online-error-ranges)
-           (invalidate-bitmap-cache 0 0 'display-end 'display-end)
-           (update-frame-expand-error)]
+           (case (preferences:get 'drracket:online-expansion:other-errors)
+             [(margin) (show-error-in-margin res)]
+             [(gold) (show-error-as-highlighted-regions res)])]
+          [(exn:variable)
+           (case (preferences:get 'drracket:online-expansion:variable-errors)
+             [(margin) (show-error-in-margin res)]
+             [(gold) (show-error-as-highlighted-regions res)])]
+          [(reader-in-defs-error)
+           (case (preferences:get 'drracket:online-expansion:read-in-defs-errors)
+             [(margin) (show-error-in-margin res)]
+             [(gold) (show-error-as-highlighted-regions res)]
+             [(corner) (show-error-as-parens-in-corner res)])]
           [(access-violation)
            (send (get-tab) show-bkg-running 'failed (gui-utils:format-literal-label "~a" (vector-ref res 1)))
-           (clear-old-error)
-           (reset-frame-expand-error)]
-          [(reader-in-defs-error)
-           (send (get-tab) show-bkg-running 'reader-in-defs-error
-                 (gui-utils:format-literal-label "~a" (vector-ref res 1)))
            (clear-old-error)
            (reset-frame-expand-error)]
           [(abnormal-termination)
@@ -1321,25 +1316,71 @@
           [else
            (error 'module-language.rkt "unknown response from the expanding place: ~s\n" res)]))
       
+      (define/private (show-error-as-parens-in-corner res)
+        (send (get-tab) show-bkg-running 'reader-in-defs-error
+              (gui-utils:format-literal-label "~a" (vector-ref res 1)))
+        (clear-old-error)
+        (reset-frame-expand-error))
+      
+      (define/private (show-error-in-margin res)
+        (define tlw (send (get-tab) get-frame))
+        (send (get-tab) show-bkg-running 'nothing #f)
+        (set! error-message-str (vector-ref res 1))
+        (set! error-message-srclocs (vector-ref res 2))
+        (clear-old-error)
+        (set-online-error-ranges
+         (for/list ([range (in-list (vector-ref res 2))])
+           (define pos (vector-ref range 0))
+           (define span (vector-ref range 1))
+           (error-range (- pos 1) (+ pos span -1) #f)))
+        (set-error-ranges-from-online-error-ranges (vector-ref res 2))
+        (invalidate-online-error-ranges)
+        (update-frame-expand-error))
+      
+      (define/private (show-error-as-highlighted-regions res)
+        (define tlw (send (get-tab) get-frame))
+        (send (get-tab) show-bkg-running 'nothing #f)
+        (set! error-message-str (vector-ref res 1))
+        (set! error-message-srclocs (vector-ref res 2))
+        (clear-old-error)
+        (set! online-highlighted-errors 
+              (for/list ([range (in-list (vector-ref res 2))]) 
+                (define pos (vector-ref range 0))
+                (define span (vector-ref range 1))
+                (highlight-range (- pos 1) (+ pos span -1) "gold")))
+        (set-error-ranges-from-online-error-ranges (vector-ref res 2))
+        (update-frame-expand-error))
       
       (define online-error-ranges '())
+      (define online-highlighted-errors '())
+      
       (define/private (set-online-error-ranges rngs)
-        (set! online-error-ranges rngs)
-        (send (send (get-tab) get-ints) set-error-ranges
-              (map (λ (x) (srcloc this
-                                  #f
-                                  #f
-                                  (+ (error-range-start x) 1)
-                                  (- (error-range-end x)
-                                     (error-range-start x))))
-                   rngs)))
+        (unless (equal? online-error-ranges rngs)
+          (invalidate-online-error-ranges)
+          (set! online-error-ranges rngs)
+          (invalidate-online-error-ranges)))
+      
+      (define/private (set-error-ranges-from-online-error-ranges rngs)
+        (define srclocs (for/list ([range (in-list rngs)])
+                          (define pos (vector-ref range 0))
+                          (define span (vector-ref range 1))
+                          (srcloc this #f #f pos span)))
+        (send (send (get-tab) get-ints) set-error-ranges srclocs))
+      
       (define/private (clear-old-error)
+        (for ([cleanup-thunk (in-list online-highlighted-errors)])
+          (cleanup-thunk))
         (for ([an-error-range (in-list online-error-ranges)])
           (when (error-range-clear-highlight an-error-range)
             ((error-range-clear-highlight an-error-range))
             (set-error-range-clear-highlight! an-error-range #f)))
-        (set-online-error-ranges '())
-        (invalidate-bitmap-cache 0 0 'display-end 'display-end))
+        (invalidate-online-error-ranges)
+        (set-online-error-ranges '()))
+      
+      (define/private (invalidate-online-error-ranges)
+        (for ([an-error-range (in-list online-error-ranges)])
+          (define-values (x y w h) (get-box an-error-range))
+          (invalidate-bitmap-cache x y 'display-end h)))
       
       (define byt (box 0.0))
       (define byb (box 0.0))
@@ -1544,4 +1585,62 @@
          (let ([settings (send (send tlw get-definitions-text) get-next-settings)])
            (and (is-a? (drracket:language-configuration:language-settings-language settings)
                        module-language<%>)
-                (drracket:language-configuration:language-settings-settings settings))))))
+                (drracket:language-configuration:language-settings-settings settings)))))
+  
+  
+  (define (initialize-prefs-panel)
+    (preferences:add-panel
+     (string-constant online-expansion)
+     (λ (parent)
+       (define parent-vp (new vertical-panel% 
+                              [parent parent]
+                              [alignment '(center top)]))
+       (define vp (new vertical-panel% 
+                       [parent parent-vp]
+                       [stretchable-width #f]
+                       [stretchable-height #f]
+                       [alignment '(left center)]))
+       
+       (define ((make-callback pref-sym) choice evt)
+         (preferences:set pref-sym (index->pref (send choice get-selection))))
+       (define read-choice
+         (new choice% 
+              [parent vp]
+              [label (string-constant online-expansion-show-read-errors-as)]
+              [callback (make-callback 'drracket:online-expansion:read-in-defs-errors)]
+              [choices (list (string-constant online-expansion-error-margin)
+                             (string-constant online-expansion-error-gold-highlight)
+                             (string-constant online-expansion-error-in-corner))]))
+       (define var-choice
+         (new choice% 
+              [parent vp]
+              [label (string-constant online-expansion-show-variable-errors-as)]
+              [callback (make-callback 'drracket:online-expansion:variable-errors)]
+              [choices (list (string-constant online-expansion-error-margin)
+                             (string-constant online-expansion-error-gold-highlight))]))
+       (define other-choice
+         (new choice% 
+              [parent vp]
+              [label (string-constant online-expansion-show-other-errors-as)]
+              [callback (make-callback 'drracket:online-expansion:other-errors)]
+              [choices (list (string-constant online-expansion-error-margin)
+                             (string-constant online-expansion-error-gold-highlight))]))
+       (define (connect-to-prefs choice pref-sym)
+         (preferences:add-callback 
+          pref-sym
+          (λ (pref-sym nv) (send choice set-selection (pref->index nv))))
+         (send choice set-selection (pref->index (preferences:get pref-sym))))
+       (define (index->pref n)
+         (case n
+           [(0) 'margin]
+           [(1) 'gold]
+           [(2) 'corner]))
+       (define (pref->index p)
+         (case p
+           [(margin) 0]
+           [(gold) 1]
+           [(corner) 2]))
+       (connect-to-prefs read-choice 'drracket:online-expansion:read-in-defs-errors)
+       (connect-to-prefs var-choice 'drracket:online-expansion:variable-errors)
+       (connect-to-prefs other-choice 'drracket:online-expansion:other-errors)
+       parent-vp))))

@@ -95,7 +95,8 @@
 (define-signature drracket:module-language/int^ extends drracket:module-language^
   (module-language-online-expand-text-mixin
    module-language-online-expand-frame-mixin
-   module-language-online-expand-tab-mixin))
+   module-language-online-expand-tab-mixin
+   initialize-prefs-panel))
 
 (define-signature drracket:module-language-tools-cm^
   (frame-mixin
