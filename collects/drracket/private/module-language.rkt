@@ -18,6 +18,7 @@
          planet/config
          setup/dirs
          racket/place
+         mrlib/close-icon
          "tooltip.rkt"
          "drsig.rkt"
          "rep.rkt"
@@ -817,7 +818,8 @@
       (define expand-error-button-parent-panel #f)
       (define expand-error-single-child #f)
       (define expand-error-multiple-child #f)
-
+      (define expand-error-zero-child #f)
+      
       ;; colors : (or/c #f (listof string?) 'parens)
       (define colors #f)
       (define tooltip-labels #f)
@@ -837,7 +839,7 @@
                                         [stretchable-width #t]
                                         [msg "hi"]))
         (set! expand-error-button-parent-panel
-              (new vertical-panel% 
+              (new panel:single% 
                    [stretchable-width #f]
                    [stretchable-height #f]
                    [parent expand-error-panel]))
@@ -849,6 +851,8 @@
                    [font small-control-font]
                    [callback (λ (b evt) (send (send (get-current-tab) get-defs) expand-error-next))]))
         (set! expand-error-multiple-child
+              (new horizontal-panel% [parent expand-error-button-parent-panel]))
+        (set! expand-error-zero-child
               (new horizontal-panel% [parent expand-error-button-parent-panel]))
         (new button% 
              [label "<"]
@@ -863,7 +867,12 @@
              [font small-control-font]
              [callback (λ (b evt) (send (send (get-current-tab) get-defs) expand-error-next))]
              [parent expand-error-multiple-child])
-        (send expand-error-button-parent-panel change-children (λ (l) (list expand-error-single-child)))
+        (new close-icon% 
+             [parent expand-error-panel]
+             [callback
+              (λ ()
+                (send expand-error-parent-panel change-children
+                      (λ (l) (remq expand-error-panel l))))])
         (send expand-error-parent-panel change-children (λ (l) (remq expand-error-panel l)))
         root)
       
@@ -880,16 +889,14 @@
              (send expand-error-message set-msg expand-error-msg)
              (send expand-error-parent-panel change-children
                    (λ (l) (append (remq expand-error-panel l) (list expand-error-panel))))
-             (send expand-error-button-parent-panel change-children
-                   (λ (l) (cond
-                            [(= srcloc-count 0) '()]
-                            [(= srcloc-count 1)
-                             (list expand-error-single-child)]
-                            [else
-                             (list expand-error-multiple-child)])))]
+             (send expand-error-button-parent-panel active-child
+                   (cond
+                     [(= srcloc-count 0) expand-error-zero-child]
+                     [(= srcloc-count 1) expand-error-single-child]
+                     [else expand-error-multiple-child]))]
             [else
-             (send expand-error-parent-panel change-children
-                   (λ (l) (remq expand-error-panel l)))])))
+             (send expand-error-message set-msg "")
+             (send expand-error-button-parent-panel active-child expand-error-zero-child)])))
       
       (define/augment (on-tab-change from-tab to-tab)
         (send (send to-tab get-defs) restart-place)
