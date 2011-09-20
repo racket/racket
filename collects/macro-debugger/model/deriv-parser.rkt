@@ -30,7 +30,7 @@
             (src-pos)
             (tokens basic-empty-tokens basic-tokens prim-tokens renames-tokens)
             (end EOF)
-            (debug "/tmp/ryan/DEBUG-PARSER.txt")
+            #|(debug "/tmp/ryan/DEBUG-PARSER.txt")|#
             (error deriv-error))
 
    ;; tokens
