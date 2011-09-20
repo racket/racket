@@ -4705,6 +4705,9 @@ static Scheme_Object *read_compact_k(void)
   return read_compact(port, p->ku.k.i1);
 }
 
+/* never a valid symtab value: */
+#define SYMTAB_IN_PROGRESS SCHEME_MULTIPLE_VALUES
+
 static Scheme_Object *read_compact(CPort *port, int use_stack)
 {
 #define BLK_BUF_SIZE 32
@@ -4746,13 +4749,13 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       l = read_compact_number(port);
       RANGE_CHECK(l, < port->symtab_size);
       v = port->symtab[l];
-      if (v == (Scheme_Object *)-1) {
+      if (v == SYMTAB_IN_PROGRESS) {
         /* there is a cycle */
         scheme_ill_formed_code(port);
-      };
+      }
       if (!v) {
         intptr_t save_pos = port->pos;
-        port->symtab[l] = (Scheme_Object *)-1; /* avoid cycles if marshaled form is broken: */
+        port->symtab[l] = SYMTAB_IN_PROGRESS; /* avoid cycles if marshaled form is broken: */
         port->pos = port->shared_offsets[l - 1];
         v = read_compact(port, 0);
         port->pos = save_pos;
@@ -5116,7 +5119,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
                                      (Scheme_Object *)port->delay_info);
           } else {
             intptr_t save_pos = port->pos;
-            port->symtab[l] = scheme_false; /* avoid cycles if marshaled form is broken: */
+            port->symtab[l] = SYMTAB_IN_PROGRESS; /* avoid cycles if marshaled form is broken: */
             port->pos = port->shared_offsets[l - 1];
             v = read_compact(port, 0);
             port->pos = save_pos;
