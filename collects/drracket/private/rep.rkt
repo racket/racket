@@ -632,7 +632,7 @@ TODO
       ;;                    -> (void)
       (define/public (highlight-errors raw-locs [raw-error-arrows #f])
         (set-error-ranges raw-locs)
-        (define locs (get-error-ranges)) ;; calling set-error-range cleans up the locs
+        (define locs (or (get-error-ranges) '())) ;; calling set-error-range cleans up the locs
         (define error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows)))
         
         (reset-highlighting)
