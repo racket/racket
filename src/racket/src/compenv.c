@@ -649,7 +649,7 @@ void scheme_register_unbound_toplevel(Scheme_Comp_Env *env, Scheme_Object *id)
 
 void scheme_merge_undefineds(Scheme_Comp_Env *exp_env, Scheme_Comp_Env *env)
 {
-  if (exp_env->prefix->unbound) {
+  if (exp_env->prefix->unbound && (env->genv->disallow_unbound < 0)) {
     /* adding a list to env->prefix->unbound indicates a
        phase-1 shift for the identifiers in the list: */
     scheme_register_unbound_toplevel(env, exp_env->prefix->unbound);

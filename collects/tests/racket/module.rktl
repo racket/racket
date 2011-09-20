@@ -561,5 +561,13 @@
         (eval (datum->syntax #'here '(#%variable-reference)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check handling of unbound names in local-expand:
+
+(err/rt-test (expand '(module m racket
+                        (require racket/require)
+                        (require (filtered-in (lambda (n) foo) scheme))))
+             exn:fail:contract:variable?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
