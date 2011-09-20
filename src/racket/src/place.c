@@ -68,6 +68,7 @@ static Scheme_Object *places_deep_copy_to_master(Scheme_Object *so);
 static Scheme_Object *make_place_dead(int argc, Scheme_Object *argv[]);
 static int place_dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static void* GC_master_malloc_tagged(size_t size);
+static void destroy_place_object_locks(Scheme_Place_Object *place_obj);
 
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, 
@@ -213,6 +214,7 @@ Scheme_Object *scheme_make_place_object() {
   place_obj->so.type = scheme_place_object_type;
   mzrt_mutex_create(&place_obj->lock);
   place_obj->die = 0;
+  place_obj->refcount = 1;
   place_obj->pbreak = 0;
   place_obj->result = 1;
   return (Scheme_Object *)place_obj;
@@ -477,6 +479,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 static void do_place_kill(Scheme_Place *place) 
 {
   Scheme_Place_Object *place_obj;
+  intptr_t refcount;
+
   place_obj = place->place_obj;
 
   if (!place_obj) return;
@@ -485,6 +489,8 @@ static void do_place_kill(Scheme_Place *place)
     mzrt_mutex_lock(place_obj->lock);
 
     place_obj->die = 1;
+    place_obj->refcount--;
+    refcount = place_obj->refcount;
 
     if (place_obj->signal_handle) { scheme_signal_received_at(place_obj->signal_handle); }
 
@@ -496,6 +502,9 @@ static void do_place_kill(Scheme_Place *place)
   scheme_resume_one_place(place);
 
   scheme_remove_managed(place->mref, (Scheme_Object *)place);
+  if (!refcount) {
+    destroy_place_object_locks(place_obj);
+  }
   place->place_obj = NULL;
 }
 
@@ -2008,6 +2017,12 @@ void scheme_resume_one_place(Scheme_Place *p)
   }
 }
 
+void destroy_place_object_locks(Scheme_Place_Object *place_obj) {
+  mzrt_mutex_destroy(place_obj->lock);
+  if (place_obj->pause)
+    mzrt_sema_destroy(place_obj->pause);
+}
+
 void scheme_place_check_for_interruption() 
 {
   Scheme_Place_Object *place_obj;
@@ -2028,7 +2043,7 @@ void scheme_place_check_for_interruption()
     place_obj->pbreak = 0;
     if (local_pause)
       place_obj->pausing = 1;
-    
+
     mzrt_mutex_unlock(place_obj->lock);
     
     if (local_pause) {
@@ -2166,6 +2181,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   }
   place_obj = place_data->place_obj;
   place_object = place_obj;
+  place_obj->refcount++;
   
   {
     void *signal_handle;
@@ -2245,8 +2261,26 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
 
-  /*printf("Leavin place: proc thread id%u\n", ptid);*/
-  scheme_place_instance_destroy(place_obj->die);
+  {
+    intptr_t place_obj_die;
+    intptr_t refcount;
+
+    mzrt_mutex_lock(place_obj->lock);
+
+    place_obj_die = place_obj->die;
+    place_obj->refcount--;
+    refcount = place_obj->refcount;
+
+    mzrt_mutex_unlock(place_obj->lock);
+
+    if(!refcount) {
+      destroy_place_object_locks(place_obj);
+      place_object = NULL;
+    }
+
+    /*printf("Leavin place: proc thread id%u\n", ptid);*/
+    scheme_place_instance_destroy(place_obj_die);
+  }
 
   return NULL;
 }
