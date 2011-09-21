@@ -589,6 +589,7 @@
                                                                   (and (integer? i)
                                                                        (<= 1 i 255))))
                                                            (not x))))
+  (drr:set-default 'drracket:module-language:auto-text "#lang racket" string?)
 
 (let ([drs-handler-recent-items-super%
        (class (drracket:frame:basics-mixin

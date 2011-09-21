@@ -77,7 +77,7 @@
   
   (define default-compilation-on? #t)
   (define default-full-trace? #t)
-  (define default-auto-text "#lang racket\n")  
+  (define (get-default-auto-text) (preferences:get 'drracket:module-language:auto-text))  
   
   ;; module-mixin : (implements drracket:language:language<%>)
   ;;             -> (implements drracket:language:language<%>)
@@ -178,7 +178,7 @@
            
            '(default)
            #()
-           default-auto-text
+           (get-default-auto-text)
            default-compilation-on?
            default-full-trace?)))
       
@@ -217,7 +217,7 @@
                     (let ([collection-paths (list-ref marshalled 1)]
                           [command-line-args (list-ref marshalled 2)]
                           [auto-text (if (<= marshalled-len 3)
-                                         default-auto-text
+                                         (get-default-auto-text)
                                          (list-ref marshalled 3))]
                           [compilation-on? (if (<= marshalled-len 4)
                                                default-compilation-on?
@@ -581,7 +581,11 @@
                                     [parent auto-text-panel]
                                     [label #f]
                                     [init-value ""]
-                                    [callback void]))
+                                    [callback 
+                                     (λ (tf evt)
+                                       (define t (send tf get-editor))
+                                       (preferences:set 'drracket:module-language:auto-text
+                                                        (send t get-text)))]))
     
     ;; data associated with each item in listbox : boolean
     ;; indicates if the entry is the default paths.
@@ -708,7 +712,7 @@
     
     (install-collection-paths '(default))
     (update-buttons)
-    (install-auto-text default-auto-text)
+    (install-auto-text (get-default-auto-text))
     (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
     
     (case-lambda
