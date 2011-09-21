@@ -415,13 +415,13 @@ Conventions:
        [#s(pat:integrated _attrs name argu predicate description)
         (with-syntax ([(name-attr ...)
                        (if (identifier? #'name)
-                           #'([#s(attr name 0 #t) x])
+                           #'([#s(attr name 0 #t) x*])
                            #'())])
-          ;; NOTE: predicate must not assume x (ie, this-syntax) is stx
-          #'(if (app-argu predicate x argu)
-                (let-attributes (name-attr ...) k)
-                (let ([es (cons (expect:thing 'description #t) es)])
-                  (fail (failure pr es)))))])]))
+          #'(let ([x* (datum->syntax cx x cx)])
+              (if (app-argu predicate x* argu)
+                  (let-attributes (name-attr ...) k)
+                  (let ([es (cons (expect:thing 'description #t) es)])
+                    (fail (failure pr es))))))])]))
 
 ;; (disjunct ???-pattern success (pre:expr ...) (id:id ...)) : expr[Ans]
 (define-syntax (disjunct stx)

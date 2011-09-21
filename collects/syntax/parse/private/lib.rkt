@@ -29,11 +29,11 @@
 
 (define-syntax-class keyword
   #:description (quote "keyword")
-  (pattern (~fail #:unless (and (syntax? this-syntax) (keyword? (syntax-e this-syntax))))))
+  (pattern (~fail #:unless (keyword? (syntax-e this-syntax)))))
 
 (define-syntax-class expr
   #:description (quote "expression")
-  (pattern (~fail #:when (and (syntax? this-syntax) (keyword? (syntax-e this-syntax))))))
+  (pattern (~fail #:when (keyword? (syntax-e this-syntax)))))
 
 ;; == Normal syntax classes ==
 

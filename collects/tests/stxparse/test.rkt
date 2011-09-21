@@ -387,3 +387,11 @@
      #:declare b (nat> (syntax-e #'a))
      (void)]))
 
+;; ---- Regression tests
+
+(test-case "pvar is syntax"
+  ;; from clklein 9/21/2011
+  (check-true (syntax-parse #'(m 1 1 2 1 2 3)
+                [(_ 1 ... . after-ones:expr)
+                 (syntax? #'after-ones)]))
+  (void))

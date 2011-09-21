@@ -1603,7 +1603,8 @@
     (syntax-parse body #:context full-stx
       [((~or (~seq #:mode ~! mode:mode-spec)
              (~seq #:contract ~! contract:contract-spec))
-        ... . rules:expr)
+        ...
+        rule:expr ...)
        (let-values ([(name/mode mode)
                      (syntax-parse #'(mode ...)
                        [((name . mode)) (values #'name (syntax->list #'mode))]
@@ -1618,7 +1619,8 @@
                         (raise-syntax-error 
                          syn-err-name "expected at most one contract specification"
                          #f #f (syntax->list #'dups))])])
-         (values name/mode mode name/ctc ctc (parse-rules #'rules)))]))
+         (values name/mode mode name/ctc ctc
+                 (parse-rules (syntax->list #'(rule ...)))))]))
   (check-clauses full-stx syn-err-name rules #t)
   (check-arity-consistency mode contract full-stx)
   (define-values (form-name dup-names)
