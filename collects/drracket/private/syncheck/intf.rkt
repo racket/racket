@@ -1,7 +1,5 @@
 #lang racket/base
 (require racket/class
-         racket/promise
-         setup/xref
          "local-member-names.rkt")
 
 (define syncheck-annotations<%>
@@ -33,17 +31,6 @@
 ;; parameters to all of the functions
 (define current-annotations (make-parameter #f))
 
-(define xref (if (getenv "PLTDRXREFDELAY")
-                 (begin
-                   (printf "PLTDRXREFDELAY: using plain delay\n")
-                   (delay (begin
-                            (printf "PLTDRXREFDELAY: loading xref\n")
-                            (begin0
-                              (load-collections-xref)
-                              (printf "PLTDRXREFDELAY: loaded xref\n")))))
-                 (delay/idle (load-collections-xref))))
-(define (get-xref) (force xref))
-
 (define annotations-mixin
   (mixin () (syncheck-annotations<%>)
     (define/public (syncheck:find-source-object stx) #f)
@@ -64,5 +51,4 @@
 (provide syncheck-text<%>
          syncheck-annotations<%>
          current-annotations
-         annotations-mixin
-         get-xref)
+         annotations-mixin)

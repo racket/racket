@@ -5,15 +5,15 @@
          "local-member-names.rkt"
          "annotate.rkt"
          "contract-traversal.rkt"
+         "xref.rkt"
          string-constants
          racket/unit
          racket/set
          racket/class
          racket/list
          syntax/boundmap
-         scribble/xref
-         scribble/manual-struct
-         framework/preferences)
+         framework/preferences
+         scribble/manual-struct)
 
 (provide make-traversal)
     
@@ -1038,51 +1038,46 @@
     
     ;; document-variable : stx[identifier,original] phase-level -> void
     (define (document-variable stx phase-level)
-      (let ([defs-text (current-annotations)])
-        (when defs-text
-          (let ([binding-info (identifier-binding stx phase-level)])
-            (when (and (pair? binding-info)
-                       (syntax-position stx)
-                       (syntax-span stx))
-              (let* ([start (- (syntax-position stx) 1)]
-                     [fin (+ start (syntax-span stx))]
-                     [source-editor (find-source-editor stx)])
-                (when source-editor
-                  (let ([xref (get-xref)])
-                    (when xref
-                      (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
-                        (when definition-tag
-                          (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
-                            (when path
-                              (let ([index-entry (xref-tag->index-entry xref definition-tag)])
-                                (when index-entry
-                                  (send defs-text syncheck:add-background-color
-                                        source-editor start fin 
-                                        (if (preferences:get 'framework:white-on-black?)
-                                            "darkgreen"
-                                            "palegreen"))
-                                  (send defs-text syncheck:add-docs-menu
-                                        source-editor
-                                        start 
-                                        fin 
-                                        (syntax-e stx)
-                                        (build-docs-label (entry-desc index-entry))
-                                        path
-                                        tag))))))))))))))))
+      (define defs-text (current-annotations))
+      (when defs-text
+        (define binding-info (identifier-binding stx phase-level))
+        (when (and (pair? binding-info)
+                   (syntax-position stx)
+                   (syntax-span stx))
+          (define start (- (syntax-position stx) 1))
+          (define fin (+ start (syntax-span stx)))
+          (define source-editor (find-source-editor stx))
+          (when source-editor
+            (define info (get-index-entry-info binding-info))
+            (when info
+              (define-values (entry-desc path tag) (apply values info))
+              (send defs-text syncheck:add-background-color
+                    source-editor start fin 
+                    (if (preferences:get 'framework:white-on-black?)
+                        "darkgreen"
+                        "palegreen"))
+              (send defs-text syncheck:add-docs-menu
+                    source-editor
+                    start 
+                    fin 
+                    (syntax-e stx)
+                    (build-docs-label entry-desc)
+                    path
+                    tag))))))
     
-    (define (build-docs-label desc)
-      (let ([libs (exported-index-desc-from-libs desc)])
+    (define (build-docs-label entry-desc)
+      (let ([libs (exported-index-desc-from-libs entry-desc)])
         (cond
           [(null? libs)
            (format
             (string-constant cs-view-docs)
-            (exported-index-desc-name desc))]
+            (exported-index-desc-name entry-desc))]
           [else
            (format
             (string-constant cs-view-docs-from)
             (format 
              (string-constant cs-view-docs)
-             (exported-index-desc-name desc))
+             (exported-index-desc-name entry-desc))
             (apply string-append 
                    (add-between 
                     (map (λ (x) (format "~s" x)) libs) 

@@ -4,6 +4,7 @@
          "traversals.rkt"
          "local-member-names.rkt"
          "intf.rkt"
+         "xref.rkt"
          framework/preferences)
 
 (preferences:set-default 'framework:white-on-black? #f boolean?)
@@ -52,10 +53,9 @@
     (define/public (get-trace) (reverse trace))
     (super-new)))
 
-(void (get-xref)) ;; do this now so that it doesn't get killed during a call to 'go'
-
 (define (go expanded path the-source)
-  (with-handlers ((exn:fail? (λ (x) 
+  (time
+   (with-handlers ((exn:fail? (λ (x) 
                                (printf "~a\n" (exn-message x))
                                (printf "---\n")
                                (for ([x (in-list 
@@ -75,4 +75,4 @@
     (parameterize ([current-annotations obj])
       (expanded-expression expanded)
       (expansion-completed))
-    (send obj get-trace)))
+    (send obj get-trace))))
