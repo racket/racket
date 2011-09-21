@@ -166,6 +166,7 @@ static void ts_allocate_values(int count, Scheme_Thread *p) XFORM_SKIP_PROC
 #ifdef MZ_USE_FUTURES
 static Scheme_Object **ts_scheme_on_demand(Scheme_Object **rs) XFORM_SKIP_PROC
 {
+  int eq = MZ_RUNSTACK + 2 == rs;
   if (scheme_use_rtcall) {
     return scheme_rtcall_on_demand("[jit_on_demand]", FSRC_OTHER, scheme_on_demand_with_args, rs);
   } else

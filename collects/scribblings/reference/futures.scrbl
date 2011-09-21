@@ -79,7 +79,6 @@ execute through a call to @racket[touch], however.
   the most immediately executing future is returned.  If the current
   continuation is not a future-thunk execution, the result is
   @racket[#f].
-
 }
 
 
@@ -88,6 +87,29 @@ execute through a call to @racket[touch], however.
   Returns @racket[#t] if @racket[v] is a future value, @racket[#f]
   otherwise.
 
+}
+
+@defproc[(would-be-future [thunk (-> any)]) future?]{
+  Returns a special future which is bound to the runtime thread 
+  and logs all potentially blocking primitive invocations made during its lifetime. 
+  With a standard future, certain circumstances might prevent 
+  all primitive invocations that would have caused blocking behavior to 
+  be logged.  @racket[would-be-future] guarantees that all blocks will be 
+  shown.
+  
+  @racketblock[
+    (touch (future (lambda () 
+                      (printf "hello1") 
+                      (printf "hello2") 
+                      (printf "hello3"))))] 
+
+  The preceding code, when executed with logging output enabled, 
+  may log three messages for blocks (one for each @racket[printf] 
+  invocation).  However, if the @racket[touch] occurs before a worker 
+  OS-level thread has started executing the future, the thunk will 
+  be executed in the same manner as any ordinary thunk and no blocks 
+  will be logged.  Replacing @racket[future] with @racket[would-be-future] 
+  ensures the logging of all three. 
 }
 
 @defproc[(processor-count) exact-positive-integer?]{

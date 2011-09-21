@@ -11,4 +11,5 @@
           fsemaphore-count 	
           fsemaphore-post 
           fsemaphore-wait 
-          fsemaphore-try-wait?)
+          fsemaphore-try-wait?
+          would-be-future)

@@ -983,7 +983,7 @@ void scheme_new_mark_segment(Scheme_Thread *p)
 #ifdef MZ_USE_FUTURES
 static void ts_scheme_new_mark_segment(Scheme_Thread *p) XFORM_SKIP_PROC
 {
-  if (scheme_use_rtcall)
+  if (scheme_use_rtcall && !(scheme_future_thread_state)->is_runtime_thread)
     scheme_rtcall_new_mark_segment(p);
   else
     scheme_new_mark_segment(p);

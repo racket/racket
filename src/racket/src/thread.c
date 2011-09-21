@@ -2528,6 +2528,11 @@ static void do_swap_thread()
     scheme_current_thread->cont_mark_stack = MZ_CONT_MARK_STACK;
     scheme_current_thread->cont_mark_pos = MZ_CONT_MARK_POS;
 #endif
+
+#ifdef MZ_USE_FUTURES
+    scheme_use_rtcall = new_thread->futures_slow_path_tracing;
+#endif
+
     scheme_current_thread = new_thread;
 
     /* Fixup current pointers in thread sets */

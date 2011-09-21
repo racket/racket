@@ -1,4 +1,4 @@
- Scheme_Object* scheme_rtcall_siS_s(const char *who, int src_type, prim_siS_s f, Scheme_Object* g59, int g60, Scheme_Object** g61)
+ Scheme_Object* scheme_rtcall_siS_s(const char *who, int src_type, prim_siS_s f, Scheme_Object* g60, int g61, Scheme_Object** g62)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -13,18 +13,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g59;
-    future->arg_i1 = g60;
-    future->arg_S2 = g61;
+      future->arg_s0 = g60;
+    future->arg_i1 = g61;
+    future->arg_S2 = g62;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_iSs_s(const char *who, int src_type, prim_iSs_s f, int g62, Scheme_Object** g63, Scheme_Object* g64)
+ Scheme_Object* scheme_rtcall_iSs_s(const char *who, int src_type, prim_iSs_s f, int g63, Scheme_Object** g64, Scheme_Object* g65)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -39,18 +40,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_i0 = g62;
-    future->arg_S1 = g63;
-    future->arg_s2 = g64;
+      future->arg_i0 = g63;
+    future->arg_S1 = g64;
+    future->arg_s2 = g65;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_s_s(const char *who, int src_type, prim_s_s f, Scheme_Object* g65)
+ Scheme_Object* scheme_rtcall_s_s(const char *who, int src_type, prim_s_s f, Scheme_Object* g66)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -65,16 +67,17 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g65;
-  send_special_result(future, g65);
+      future->arg_s0 = g66;
+  send_special_result(future, g66);
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_n_s(const char *who, int src_type, prim_n_s f, Scheme_Native_Closure_Data* g66)
+ Scheme_Object* scheme_rtcall_n_s(const char *who, int src_type, prim_n_s f, Scheme_Native_Closure_Data* g67)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -89,9 +92,10 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_n0 = g66;
+      future->arg_n0 = g67;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
@@ -116,13 +120,14 @@
   
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_ss_s(const char *who, int src_type, prim_ss_s f, Scheme_Object* g67, Scheme_Object* g68)
+ Scheme_Object* scheme_rtcall_ss_s(const char *who, int src_type, prim_ss_s f, Scheme_Object* g68, Scheme_Object* g69)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -137,17 +142,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g67;
-    future->arg_s1 = g68;
+      future->arg_s0 = g68;
+    future->arg_s1 = g69;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_ssi_s(const char *who, int src_type, prim_ssi_s f, Scheme_Object* g69, Scheme_Object* g70, int g71)
+ Scheme_Object* scheme_rtcall_ssi_s(const char *who, int src_type, prim_ssi_s f, Scheme_Object* g70, Scheme_Object* g71, int g72)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -162,18 +168,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g69;
-    future->arg_s1 = g70;
-    future->arg_i2 = g71;
+      future->arg_s0 = g70;
+    future->arg_s1 = g71;
+    future->arg_i2 = g72;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_tt_s(const char *who, int src_type, prim_tt_s f, const Scheme_Object* g72, const Scheme_Object* g73)
+ Scheme_Object* scheme_rtcall_tt_s(const char *who, int src_type, prim_tt_s f, const Scheme_Object* g73, const Scheme_Object* g74)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -188,17 +195,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_t0 = g72;
-    future->arg_t1 = g73;
+      future->arg_t0 = g73;
+    future->arg_t1 = g74;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- MZ_MARK_STACK_TYPE scheme_rtcall_ss_m(const char *who, int src_type, prim_ss_m f, Scheme_Object* g74, Scheme_Object* g75)
+ MZ_MARK_STACK_TYPE scheme_rtcall_ss_m(const char *who, int src_type, prim_ss_m f, Scheme_Object* g75, Scheme_Object* g76)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -213,17 +221,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g74;
-    future->arg_s1 = g75;
+      future->arg_s0 = g75;
+    future->arg_s1 = g76;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_m;
   future->retval_m = 0;
   
   return retval;
 }
- Scheme_Object* scheme_rtcall_Sl_s(const char *who, int src_type, prim_Sl_s f, Scheme_Object** g76, intptr_t g77)
+ Scheme_Object* scheme_rtcall_Sl_s(const char *who, int src_type, prim_Sl_s f, Scheme_Object** g77, intptr_t g78)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -238,17 +247,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_S0 = g76;
-    future->arg_l1 = g77;
+      future->arg_S0 = g77;
+    future->arg_l1 = g78;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_l_s(const char *who, int src_type, prim_l_s f, intptr_t g78)
+ Scheme_Object* scheme_rtcall_l_s(const char *who, int src_type, prim_l_s f, intptr_t g79)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -263,16 +273,17 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_l0 = g78;
+      future->arg_l0 = g79;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- void scheme_rtcall_bsi_v(const char *who, int src_type, prim_bsi_v f, Scheme_Bucket* g79, Scheme_Object* g80, int g81)
+ void scheme_rtcall_bsi_v(const char *who, int src_type, prim_bsi_v f, Scheme_Bucket* g80, Scheme_Object* g81, int g82)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -287,18 +298,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_b0 = g79;
-    future->arg_s1 = g80;
-    future->arg_i2 = g81;
+      future->arg_b0 = g80;
+    future->arg_s1 = g81;
+    future->arg_i2 = g82;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   
   
   
   
 }
- void scheme_rtcall_iiS_v(const char *who, int src_type, prim_iiS_v f, int g82, int g83, Scheme_Object** g84)
+ void scheme_rtcall_iiS_v(const char *who, int src_type, prim_iiS_v f, int g83, int g84, Scheme_Object** g85)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -313,18 +325,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_i0 = g82;
-    future->arg_i1 = g83;
-    future->arg_S2 = g84;
+      future->arg_i0 = g83;
+    future->arg_i1 = g84;
+    future->arg_S2 = g85;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   
   
   
   
 }
- void scheme_rtcall_ss_v(const char *who, int src_type, prim_ss_v f, Scheme_Object* g85, Scheme_Object* g86)
+ void scheme_rtcall_ss_v(const char *who, int src_type, prim_ss_v f, Scheme_Object* g86, Scheme_Object* g87)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -339,17 +352,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g85;
-    future->arg_s1 = g86;
+      future->arg_s0 = g86;
+    future->arg_s1 = g87;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   
   
   
   
 }
- void scheme_rtcall_b_v(const char *who, int src_type, prim_b_v f, Scheme_Bucket* g87)
+ void scheme_rtcall_b_v(const char *who, int src_type, prim_b_v f, Scheme_Bucket* g88)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -364,16 +378,17 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_b0 = g87;
+      future->arg_b0 = g88;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   
   
   
   
 }
- Scheme_Object* scheme_rtcall_sl_s(const char *who, int src_type, prim_sl_s f, Scheme_Object* g88, intptr_t g89)
+ Scheme_Object* scheme_rtcall_sl_s(const char *who, int src_type, prim_sl_s f, Scheme_Object* g89, intptr_t g90)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -388,17 +403,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g88;
-    future->arg_l1 = g89;
+      future->arg_s0 = g89;
+    future->arg_l1 = g90;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_iS_s(const char *who, int src_type, prim_iS_s f, int g90, Scheme_Object** g91)
+ Scheme_Object* scheme_rtcall_iS_s(const char *who, int src_type, prim_iS_s f, int g91, Scheme_Object** g92)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -413,17 +429,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_i0 = g90;
-    future->arg_S1 = g91;
+      future->arg_i0 = g91;
+    future->arg_S1 = g92;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- Scheme_Object* scheme_rtcall_S_s(const char *who, int src_type, prim_S_s f, Scheme_Object** g92)
+ Scheme_Object* scheme_rtcall_S_s(const char *who, int src_type, prim_S_s f, Scheme_Object** g93)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -438,16 +455,17 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_S0 = g92;
+      future->arg_S0 = g93;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- void scheme_rtcall_s_v(const char *who, int src_type, prim_s_v f, Scheme_Object* g93)
+ void scheme_rtcall_s_v(const char *who, int src_type, prim_s_v f, Scheme_Object* g94)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -462,16 +480,17 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g93;
-  send_special_result(future, g93);
+      future->arg_s0 = g94;
+  send_special_result(future, g94);
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   
   
   
   
 }
- Scheme_Object* scheme_rtcall_iSi_s(const char *who, int src_type, prim_iSi_s f, int g94, Scheme_Object** g95, int g96)
+ Scheme_Object* scheme_rtcall_iSi_s(const char *who, int src_type, prim_iSi_s f, int g95, Scheme_Object** g96, int g97)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -486,18 +505,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_i0 = g94;
-    future->arg_S1 = g95;
-    future->arg_i2 = g96;
+      future->arg_i0 = g95;
+    future->arg_S1 = g96;
+    future->arg_i2 = g97;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- void scheme_rtcall_siS_v(const char *who, int src_type, prim_siS_v f, Scheme_Object* g97, int g98, Scheme_Object** g99)
+ void scheme_rtcall_siS_v(const char *who, int src_type, prim_siS_v f, Scheme_Object* g98, int g99, Scheme_Object** g100)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -512,18 +532,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g97;
-    future->arg_i1 = g98;
-    future->arg_S2 = g99;
+      future->arg_s0 = g98;
+    future->arg_i1 = g99;
+    future->arg_S2 = g100;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   
   
   
   
 }
- void* scheme_rtcall_z_p(const char *who, int src_type, prim_z_p f, size_t g100)
+ void* scheme_rtcall_z_p(const char *who, int src_type, prim_z_p f, size_t g101)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -538,16 +559,17 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_z0 = g100;
+      future->arg_z0 = g101;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_p;
   future->retval_p = 0;
   
   return retval;
 }
- Scheme_Object* scheme_rtcall_si_s(const char *who, int src_type, prim_si_s f, Scheme_Object* g101, int g102)
+ Scheme_Object* scheme_rtcall_si_s(const char *who, int src_type, prim_si_s f, Scheme_Object* g102, int g103)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -562,17 +584,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g101;
-    future->arg_i1 = g102;
+      future->arg_s0 = g102;
+    future->arg_i1 = g103;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
   return retval;
 }
- void scheme_rtcall_sis_v(const char *who, int src_type, prim_sis_v f, Scheme_Object* g103, int g104, Scheme_Object* g105)
+ void scheme_rtcall_sis_v(const char *who, int src_type, prim_sis_v f, Scheme_Object* g104, int g105, Scheme_Object* g106)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -587,18 +610,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g103;
-    future->arg_i1 = g104;
-    future->arg_s2 = g105;
+      future->arg_s0 = g104;
+    future->arg_i1 = g105;
+    future->arg_s2 = g106;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   
   
   
   
 }
- int scheme_rtcall_ss_i(const char *who, int src_type, prim_ss_i f, Scheme_Object* g106, Scheme_Object* g107)
+ int scheme_rtcall_ss_i(const char *who, int src_type, prim_ss_i f, Scheme_Object* g107, Scheme_Object* g108)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -613,17 +637,18 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g106;
-    future->arg_s1 = g107;
+      future->arg_s0 = g107;
+    future->arg_s1 = g108;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_i;
   future->retval_i = 0;
   
   return retval;
 }
- void scheme_rtcall_iSp_v(const char *who, int src_type, prim_iSp_v f, int g108, Scheme_Object** g109, void* g110)
+ void scheme_rtcall_iSp_v(const char *who, int src_type, prim_iSp_v f, int g109, Scheme_Object** g110, void* g111)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -638,18 +663,19 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_i0 = g108;
-    future->arg_S1 = g109;
-    future->arg_p2 = g110;
+      future->arg_i0 = g109;
+    future->arg_S1 = g110;
+    future->arg_p2 = g111;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   
   
   
   
 }
- Scheme_Object* scheme_rtcall_sss_s(const char *who, int src_type, prim_sss_s f, Scheme_Object* g111, Scheme_Object* g112, Scheme_Object* g113)
+ Scheme_Object* scheme_rtcall_sss_s(const char *who, int src_type, prim_sss_s f, Scheme_Object* g112, Scheme_Object* g113, Scheme_Object* g114)
    XFORM_SKIP_PROC
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -664,11 +690,12 @@
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
-      future->arg_s0 = g111;
-    future->arg_s1 = g112;
-    future->arg_s2 = g113;
+      future->arg_s0 = g112;
+    future->arg_s1 = g113;
+    future->arg_s2 = g114;
   
   future_do_runtimecall(fts, (void*)f, 0, 1);
+  fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;

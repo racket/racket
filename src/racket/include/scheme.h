@@ -1144,6 +1144,8 @@ typedef struct Scheme_Thread {
 
   long saved_errno;
 
+  int futures_slow_path_tracing;
+
 #ifdef MZ_PRECISE_GC
   struct GC_Thread_Info *gc_info; /* managed by the GC */
 #endif

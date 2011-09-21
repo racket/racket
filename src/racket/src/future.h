@@ -32,6 +32,46 @@ typedef void (*prim_allocate_values_t)(int, Scheme_Thread *);
    called function may need to lookup continuation marks. */
 #define FSRC_MARKS 3
 
+typedef struct Fevent {
+  double timestamp;
+  int what, fid;
+} Fevent;
+
+typedef struct Fevent_Buffer {
+  Fevent *a;
+  int pos, overflow;
+  int i, count; /* used during flush */
+} Fevent_Buffer;
+
+typedef struct Scheme_Future_Thread_State {
+  int is_runtime_thread;
+  mz_proc_thread *t;
+  int id;
+  int worker_gc_counter;
+  mzrt_sema *worker_can_continue_sema;
+  intptr_t runstack_size;
+
+  /* After a future thread starts, only the runtime thread
+     modifies the values at these pointers. Future threads
+     read them without any locks; assembly-level instructions,
+     such as mfence, ensure that future threads eventually see 
+     changes made by the runtime thread, and the runtime thread 
+     waits as needed. */
+  volatile int *fuel_pointer;
+  volatile uintptr_t *stack_boundary_pointer;
+  volatile int *need_gc_pointer;
+
+  Scheme_Thread *thread;
+
+  uintptr_t gen0_start;
+  uintptr_t gen0_size;
+  uintptr_t gen0_initial_offset;
+
+  int use_fevents1;
+  Fevent_Buffer fevents1;
+  Fevent_Buffer fevents2;
+} Scheme_Future_Thread_State;
+
 typedef struct future_t {
   Scheme_Object so;
 
@@ -164,6 +204,8 @@ typedef struct future_t {
 
   struct future_t *prev_in_fsema_queue;
   struct future_t *next_in_fsema_queue;
+
+  int in_tracing_mode;
 
   Scheme_Object *touching; /* a list of weak pointers to futures touching this one */
 } future_t;

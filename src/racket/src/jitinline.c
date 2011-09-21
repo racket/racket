@@ -66,7 +66,7 @@ static Scheme_Object *cont_mark_set_first_try_fast(Scheme_Object *cms, Scheme_Ob
 {
   Scheme_Object *nullableCms;
   Scheme_Object *prompt_tag; 
-  
+ 
   prompt_tag = SCHEME_PTR_VAL(scheme_default_prompt_tag);
   if (key == scheme_parameterization_key || key == scheme_break_enabled_key) 
     prompt_tag = NULL;
@@ -74,6 +74,7 @@ static Scheme_Object *cont_mark_set_first_try_fast(Scheme_Object *cms, Scheme_Ob
   nullableCms = SCHEME_FALSEP(cms) ? NULL : cms;
   
   /*Fast path here */
+  
   if (!nullableCms) { 
     intptr_t findpos, bottom, startpos, minbottom; 
     intptr_t pos; 
@@ -108,6 +109,7 @@ static Scheme_Object *cont_mark_set_first_try_fast(Scheme_Object *cms, Scheme_Ob
     }
   }
 
+  
   /* Otherwise, slow path. This must be a "tail call", because the
      calling context may be captured as a lightweight continuation. */
   return ts_extract_one_cc_mark_to_tag(nullableCms, key, prompt_tag);
