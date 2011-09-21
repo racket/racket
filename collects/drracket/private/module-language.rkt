@@ -763,7 +763,7 @@
     show-bkg-running
     frame-show-bkg-running
     restart-place
-    set-expand-error
+    set-expand-error/status
     update-frame-expand-error
     expand-error-next
     expand-error-prev)
@@ -839,9 +839,11 @@
                    [stretchable-height #f]
                    [parent expand-error-parent-panel]))
         
-        (set! expand-error-message (new error-message% [parent expand-error-panel]
+        (set! expand-error-message (new error-message%
+                                        [parent expand-error-panel]
                                         [stretchable-width #t]
-                                        [msg "hi"]))
+                                        [msg "hi"]
+                                        [err? #f]))
         (set! expand-error-button-parent-panel
               (new panel:single% 
                    [stretchable-width #f]
@@ -883,24 +885,25 @@
       (define expand-error-msg #f)
       (define expand-error-srcloc-count 0)
       
-      (define/public (set-expand-error msg srcloc-count)
+      (define/public (set-expand-error/status msg err? srcloc-count)
         (unless (and (equal? expand-error-msg msg)
                      (equal? expand-error-srcloc-count srcloc-count))
           (set! expand-error-msg msg)
           (set! expand-error-srcloc-count srcloc-count)
-          (cond
-            [expand-error-msg
-             (send expand-error-message set-msg expand-error-msg)
-             (send expand-error-parent-panel change-children
-                   (λ (l) (append (remq expand-error-panel l) (list expand-error-panel))))
-             (send expand-error-button-parent-panel active-child
-                   (cond
-                     [(= srcloc-count 0) expand-error-zero-child]
-                     [(= srcloc-count 1) expand-error-single-child]
-                     [else expand-error-multiple-child]))]
-            [else
-             (send expand-error-message set-msg "")
-             (send expand-error-button-parent-panel active-child expand-error-zero-child)])))
+          (when expand-error-message
+            (cond
+              [err?
+               (send expand-error-message set-msg expand-error-msg err?)
+               (send expand-error-parent-panel change-children
+                     (λ (l) (append (remq expand-error-panel l) (list expand-error-panel))))
+               (send expand-error-button-parent-panel active-child
+                     (cond
+                       [(= srcloc-count 0) expand-error-zero-child]
+                       [(= srcloc-count 1) expand-error-single-child]
+                       [else expand-error-multiple-child]))]
+              [else
+               (send expand-error-message set-msg expand-error-msg err?)
+               (send expand-error-button-parent-panel active-child expand-error-zero-child)]))))
       
       (define/augment (on-tab-change from-tab to-tab)
         (send (send to-tab get-defs) restart-place)
@@ -1037,23 +1040,24 @@
   
   (define error-message%
     (class canvas%
-      (init-field msg)
+      (init-field msg err?)
       (inherit refresh get-dc get-client-size)
-      (define/public (set-msg m) 
-        (set! msg m)
+      (define/public (set-msg _msg _err?) 
+        (set! msg _msg)
+        (set! err? _err?)
         (refresh))
       (define/override (on-paint)
         (define dc (get-dc))
         (define-values (cw ch) (get-client-size))
-        (send dc set-font error-font)
+        (send dc set-font (if err? error-font normal-control-font))
         (define-values (tw th td ta) (send dc get-text-extent msg))
-        (send dc set-text-foreground "firebrick")
+        (send dc set-text-foreground (if err? "firebrick" "black"))
         (send dc draw-text msg 2 (- (/ ch 2) (/ th 2))))
       (super-new [style '(transparent)])
       
       (inherit min-height)
       (let ()
-        (send (get-dc) set-font error-font)
+        (send (get-dc) set-font (if err? error-font normal-control-font))
         (define-values (tw th td ta) (send (get-dc) get-text-extent msg))
         (min-height (inexact->exact (ceiling th))))))
   
@@ -1175,7 +1179,7 @@
         (when (and (preferences:get 'drracket:online-compilation-default-off)
                    (> (processor-count) 1))
           (clear-old-error)
-          (reset-frame-expand-error)
+          (reset-frame-expand-error #t)
           (let ([tlw (get-top-level-window)])
             (when (in-module-language tlw)
               (send (get-tab) show-bkg-running 'nothing #f)
@@ -1207,7 +1211,7 @@
                              (λ (res) (show-results res)))
               (when status-line-open?
                 (clear-old-error)
-                (reset-frame-expand-error))
+                (reset-frame-expand-error #t))
               (send (get-tab) show-bkg-running 'running sc-online-expansion-running)))))
       
       (define/private (fetch-data-to-send)
@@ -1232,19 +1236,27 @@
       
       (define status-line-open? #f)
       
-      (define error-message-str #f)
+      (define error/status-message-str #f)
+      (define error/status-message-err? #f)
       (define error-message-srclocs '())
-      (define/private (reset-frame-expand-error)
-        (unless (and (eq? error-message-str #f)
-                     (eq? error-message-srclocs '()))
-          (set! error-message-str #f)
+      (define/private (reset-frame-expand-error pending?)
+        (define new-error/status-message-str
+          (if pending?
+              (string-constant online-expansion-pending)
+              (string-constant online-expansion-finished)))
+        (unless (and (equal? error/status-message-str new-error/status-message-str)
+                     (eq? error-message-srclocs '())
+                     (eq? error/status-message-err? #f))
+          (set! error/status-message-str new-error/status-message-str)
           (set! error-message-srclocs '())
+          (set! error/status-message-err? #f)
           (update-frame-expand-error)))
       (define/public (update-frame-expand-error)
-        (send (send (get-tab) get-frame) set-expand-error
-              error-message-str 
+        (send (send (get-tab) get-frame) set-expand-error/status
+              error/status-message-str 
+              error/status-message-err?
               (length error-message-srclocs)))
-      
+
       (define/public (expand-error-next) 
         (define candidates (filter (λ (error-message-srcloc) 
                                      (> (- (vector-ref error-message-srcloc 0) 1) 
@@ -1295,18 +1307,18 @@
           [(access-violation)
            (send (get-tab) show-bkg-running 'failed (gui-utils:format-literal-label "~a" (vector-ref res 1)))
            (clear-old-error)
-           (reset-frame-expand-error)]
+           (reset-frame-expand-error #f)]
           [(abnormal-termination)
            (send (get-tab) show-bkg-running 'failed sc-abnormal-termination)
            (clear-old-error)
-           (reset-frame-expand-error)]
+           (reset-frame-expand-error #f)]
           [(no-errors)
            (send (get-tab) show-bkg-running 'nothing #f)
            (clear-old-error)
-           (reset-frame-expand-error)]
+           (reset-frame-expand-error #f)]
           [(handler-results)
            (clear-old-error)
-           (reset-frame-expand-error)
+           (reset-frame-expand-error #f)
            ;; inform the installed handlers that something has come back
            (for ([key-val (in-list (vector-ref res 1))])
              (define that-key (list-ref key-val 0))
@@ -1324,13 +1336,14 @@
         (send (get-tab) show-bkg-running 'reader-in-defs-error
               (gui-utils:format-literal-label "~a" (vector-ref res 1)))
         (clear-old-error)
-        (reset-frame-expand-error))
+        (reset-frame-expand-error #f))
       
       (define/private (show-error-in-margin res)
         (define tlw (send (get-tab) get-frame))
         (send (get-tab) show-bkg-running 'nothing #f)
-        (set! error-message-str (vector-ref res 1))
+        (set! error/status-message-str (vector-ref res 1))
         (set! error-message-srclocs (vector-ref res 2))
+        (set! error/status-message-err? #t)
         (clear-old-error)
         (set-online-error-ranges
          (for/list ([range (in-list (vector-ref res 2))])
@@ -1344,8 +1357,9 @@
       (define/private (show-error-as-highlighted-regions res)
         (define tlw (send (get-tab) get-frame))
         (send (get-tab) show-bkg-running 'nothing #f)
-        (set! error-message-str (vector-ref res 1))
+        (set! error/status-message-str (vector-ref res 1))
         (set! error-message-srclocs (vector-ref res 2))
+        (set! error/status-message-err? #t)
         (clear-old-error)
         (set! online-highlighted-errors 
               (for/list ([range (in-list (vector-ref res 2))]) 

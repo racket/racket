@@ -54,8 +54,7 @@
     (super-new)))
 
 (define (go expanded path the-source)
-  (time
-   (with-handlers ((exn:fail? (λ (x) 
+  (with-handlers ((exn:fail? (λ (x) 
                                (printf "~a\n" (exn-message x))
                                (printf "---\n")
                                (for ([x (in-list 
@@ -75,4 +74,4 @@
     (parameterize ([current-annotations obj])
       (expanded-expression expanded)
       (expansion-completed))
-    (send obj get-trace))))
+    (send obj get-trace)))
