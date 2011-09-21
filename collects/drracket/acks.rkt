@@ -53,7 +53,7 @@
    "Dorai Sitaram, "
    "Francisco Solsona, "
    "Mike Sperber, "
-   "Vincent St-Amour"
+   "Vincent St-Amour, "
    "Paul Steckler, "
    "Stevie Strickland, "
    "Jens Axel Søgaard, "
