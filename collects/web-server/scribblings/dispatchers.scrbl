@@ -85,7 +85,7 @@ URLs to paths on the filesystem.
 
 @defproc[(make-url->path (base path-string?))
          url->path/c]{
- The @racket[url-path/c] returned by this procedure considers the root
+ The @racket[url->path/c] returned by this procedure considers the root
  URL to be @racket[base]. It ensures that @racket[".."]s in the URL
  do not escape the @racket[base] and removes them silently otherwise.}
 
