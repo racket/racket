@@ -3,7 +3,11 @@
          racket/place
          "traversals.rkt"
          "local-member-names.rkt"
-         "intf.rkt")
+         "intf.rkt"
+         framework/preferences)
+
+(preferences:set-default 'framework:white-on-black? #f boolean?)
+
 (provide go)
 
 (define obj%

@@ -12,7 +12,8 @@
          racket/list
          syntax/boundmap
          scribble/xref
-         scribble/manual-struct)
+         scribble/manual-struct
+         framework/preferences)
 
 (provide make-traversal)
     
@@ -1056,7 +1057,10 @@
                               (let ([index-entry (xref-tag->index-entry xref definition-tag)])
                                 (when index-entry
                                   (send defs-text syncheck:add-background-color
-                                        source-editor start fin "navajowhite")
+                                        source-editor start fin 
+                                        (if (preferences:get 'framework:white-on-black?)
+                                            "darkgreen"
+                                            "palegreen"))
                                   (send defs-text syncheck:add-docs-menu
                                         source-editor
                                         start 
