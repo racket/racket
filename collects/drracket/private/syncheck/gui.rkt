@@ -24,7 +24,6 @@ If the namespace does not, they are colored the unbound color.
          racket/class
          racket/list
          racket/promise
-         racket/pretty
          racket/dict
          racket/set
          racket/runtime-path
@@ -32,17 +31,12 @@ If the namespace does not, they are colored the unbound color.
          data/interval-map
          drracket/tool
          syntax/toplevel
-         syntax/boundmap
          mrlib/switchable-button
          (prefix-in drracket:arrow: drracket/arrow)
          (prefix-in fw: framework/framework)
          mred
          framework
-         setup/xref
-         scribble/xref
-         scribble/manual-struct
          net/url
-         net/uri-codec
          browser/external
          (for-syntax racket/base)
          (only-in ffi/unsafe register-finalizer)
@@ -769,6 +763,7 @@ If the namespace does not, they are colored the unbound color.
             
             (define/override (on-paint before dc left top right bottom dx dy draw-caret)
               (when (and arrow-records (not before))
+                (syncheck:update-drawn-arrows)
                 (let ([draw-arrow2
                        (λ (arrow)
                          (unless (arrow-start-x arrow)
