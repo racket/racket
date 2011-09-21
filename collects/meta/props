@@ -1513,7 +1513,7 @@ path/s is either such a string or a list of them.
 "collects/tests/htdp-lang/beg-intm.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/beg-intml.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/bega-adv.rktl" drdr:command-line #f
-"collects/tests/htdp-lang/beginner-abbr.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/htdp-lang/beginner-abbr.rktl" drdr:command-line (racket "-f" *) drdr:timeout 300
 "collects/tests/htdp-lang/beginner.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/htdp-lang/htdp-image.rktl" responsible (robby) drdr:command-line (gracket "-f" *)
 "collects/tests/htdp-lang/htdp-test.rktl" drdr:command-line (racket "-f" *)
