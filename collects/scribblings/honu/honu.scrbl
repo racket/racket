@@ -42,6 +42,16 @@ the following regular expressions.
   :: := : ; ` ' . ,  ( ) { } [ ]}
 ]
 
+Comments can be written for a single line or in block form. Use @bold{#} or
+@bold{//} for a line comment and @bold{/* */} for block comments. Block comments
+can be nested.
+
+@verbatim{
+# i am a comment
+// i am also a comment
+/* start of a comment /* with an inner comment */ end of first comment */
+}
+
 @subsection{Structure}
 
 After tokenization a Honu program will be converted into a tree with minimal
@@ -177,5 +187,92 @@ An @deftech{expression} can be one of the following
 ]
 
 @section{Macros}
+
+@subsection{Honu syntax}
+A good concrete syntax for honu macros is still under development.
+
+@subsection{Low Level Racket Interface}
+
+A Honu macro can be defined in Racket using @racket[define-honu-syntax].
+
+@defform[(define-honu-syntax name function)]{
+Defines @racket[name] to be a honu macro that uses @racket[function] as the
+syntax transformer. @racket[function] should accept two parameters, the first is
+the syntax tree that follows the macro name in the current input and the second
+related to the current context but for now is not used.
+
+@racket[function] should return 3 values using @racket[values].
+@itemlist[
+ @item{a new syntax object that corresponds to the computation performed by the
+ macro}
+ @item{the rest of the input syntax that is to be parsed}
+ @item{a boolean, @racket[#t] or @racket[#f], that tells the parser whether or not
+ to immediately return the current expression or to continue parsing.}
+]
+
+Macro's should use @racket[syntax-parse] to pattern match on their input
+although this is not strictly necessary. Honu provides the syntax class
+@racket[honu-expression] from @racket[honu/core/parse2] that will re-invoke the
+honu parser and return a single expression. The result of using
+@racket[honu-expression] can be accessed with the @racket[result] attribute.
+
+The definition of the @racket[for] form for Honu.
+@codeblock|{
+(define-honu-syntax honu-for
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+#:literals (honu-= honu-in)
+      [(_ iterator:id honu-= start:honu-expression
+          honu-to end:honu-expression
+          honu-do body:honu-expression .
+          rest)
+       (values
+       #'(for ([iterator
+                (in-range
+                 start.result
+                 end.result)])
+        body.result)
+        #'rest
+        #t)]
+      [(_ iterator:id honu-in
+          stuff:honu-expression
+          honu-do
+          body:honu-expression
+          .
+          rest)
+        (values
+       #'(for ([iterator stuff.result])
+           body.result)
+       #'rest
+       #t)])))
+}|
+}
+
 @section{Language}
+
+@racket[var] is a macro that defines a new variable.
+@codeblock|{var x = 1}|
+
+@racket[for] is a macro that is similar to Racket's @racket[for].
+@codeblock|{for id = expression to expression do expression}|
+@codeblock|{for id in expression do expression}|
+
 @section{Examples}
+
+@codeblock|{
+// A for loop that iterates between two bounds.
+for x = 1 + 5 to 10 do
+  printf("x is ~a\n" x)
+
+// Similar to above but shows a block of expressions in the body
+for x = 1 to 10 do {
+ var y = x + 1;
+ printf("x ~a y ~a\n", x, y)
+}
+
+// A for loop that iterates over a list of numbers
+for x in [1, 2, 3] do {
+ printf("x ~a\n", x);
+}
+
+}|
