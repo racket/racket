@@ -67,13 +67,15 @@
     (thread
      (lambda ()
        (let loop ()
-         (let* ([new-result (async-channel-get view-channel)]
-                [new-step (format-result new-result)])
-           (set! view-history (append view-history (list new-step)))
-           (set! num-steps-available (length view-history))
-           ;; this is only necessary the first time, but it's cheap:
-           (semaphore-post first-step-sema))
-         (update-status-bar)
+         (define new-result (async-channel-get view-channel))
+         (define new-step (format-result new-result))
+         (queue-callback
+          (lambda ()
+            (set! view-history (append view-history (list new-step)))
+            (set! num-steps-available (length view-history))
+            ;; this is only necessary the first time, but it's cheap:
+            (semaphore-post first-step-sema)
+            (update-status-bar)))
          (loop)))))
     
   
@@ -263,17 +265,13 @@
       (send e begin-edit-sequence)
       (send canvas set-editor e)
       (send e reset-width canvas)
+      ;; why set the position within the step? I'm confused by this.--JBC
       (send e set-position (send e last-position))
       (send e end-edit-sequence))
     (update-status-bar))
   
-  
-  ;; update the X/Y display in the upper right corner of the stepper;
-  ;; this should be one-at-a-time.
+  ;; set the status bar to the correct m/n text.
   (define (update-status-bar)
-    (call-with-semaphore update-status-bar-semaphore update-status-bar/inner))
-    
-  (define (update-status-bar/inner)
     (send status-text begin-edit-sequence)
     (send status-text lock #f)
     (send status-text delete 0 (send status-text last-position))
