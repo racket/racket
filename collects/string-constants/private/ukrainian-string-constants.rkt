@@ -609,7 +609,6 @@ please adhere to these guidelines:
 
  (open-info "Відкрити файл з диску")
  (open-menu-item "&Відкрити...")
- (open-here-menu-item "&Відкрити тут...")
 
  (open-recent-info "Список останніх відкритих файлів")
  (open-recent-menu-item "Відкрити о&станні")

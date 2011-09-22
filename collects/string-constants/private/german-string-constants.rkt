@@ -556,7 +556,6 @@
 
  (open-info "Datei öffnen")
  (open-menu-item "&Öffnen...")
- (open-here-menu-item "Hier &öffnen...")
 
  (open-recent-info "Liste kürzlich bearbeiteter Dateien")
  (open-recent-menu-item "Noch einmal öffnen")

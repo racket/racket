@@ -196,7 +196,6 @@
                          (λ (x) (or (eq? x 'age) (eq? x 'name))))
 (preferences:set-default 'framework:recent-items-window-w 400 number?)
 (preferences:set-default 'framework:recent-items-window-h 600 number?)
-(preferences:set-default 'framework:open-here? #f boolean?)
 (preferences:set-default 'framework:show-delegate? #f boolean?)
 (preferences:set-default 'framework:windows-mdi #f boolean?)
 (preferences:set-default 'framework:menu-bindings #t boolean?)

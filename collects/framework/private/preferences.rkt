@@ -464,10 +464,6 @@ the state transitions / contracts are:
                                'framework:auto-set-wrap?
                                (string-constant wrap-words-in-editor-buffers)
                                values values)
-                   (make-check editor-panel 
-                               'framework:open-here?
-                               (string-constant reuse-existing-frames)
-                               values values)
                    
                    (make-check editor-panel 
                                'framework:menu-bindings

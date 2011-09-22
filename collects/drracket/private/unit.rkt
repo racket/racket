@@ -1298,7 +1298,7 @@ module browser threading seems wrong.
     show-planet-status)
   
   (define frame-mixin
-    (mixin (drracket:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
+    (mixin (drracket:frame:<%> frame:searchable-text<%> frame:delegate<%>)
       (drracket:unit:frame<%>)
       (init filename)
       (inherit set-label-prefix get-show-menu
@@ -2717,7 +2717,6 @@ module browser threading seems wrong.
           (set! definitions-canvas (create-definitions-canvas))))
       
       (define/override (get-delegated-text) definitions-text)
-      (define/override (get-open-here-editor) definitions-text)
       
       ;; wire the definitions text to the interactions text and initialize it.
       (define/private (init-definitions-text tab)
@@ -4797,13 +4796,12 @@ module browser threading seems wrong.
              (frame:status-line-mixin
               (frame:info-mixin
                (frame:text-mixin
-                (frame:open-here-mixin
-                 (frame:editor-mixin
-                  (frame:standard-menus-mixin
-                   (frame:register-group-mixin
-                    (frame:focus-table-mixin
-                     (frame:basic-mixin
-                      frame%)))))))))))))))))))
+                (frame:editor-mixin
+                 (frame:standard-menus-mixin
+                  (frame:register-group-mixin
+                   (frame:focus-table-mixin
+                    (frame:basic-mixin
+                     frame%))))))))))))))))))
   
   (define-local-member-name enable-two-way-prefs)
   (define (make-two-way-prefs-dragable-panel% % pref-key)

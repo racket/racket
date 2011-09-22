@@ -556,7 +556,6 @@ please adhere to these guidelines:
   
   (open-info "Åbn en fil fra disk")
   (open-menu-item "&Åbn...")
-  (open-here-menu-item "&Åbn her...")
   
   (open-recent-info "En liste af filer brugt for nylig")
   (open-recent-menu-item "Åbn gammel")

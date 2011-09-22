@@ -353,7 +353,6 @@
 
  (open-info "Open bestand van schijf")
  (open-menu-item "&Open...")
- (open-here-menu-item "&Open Hier...")
 
  (open-recent-info "Onlangs geopende bestanden")
  (open-recent-menu-item "Open opnieuw")

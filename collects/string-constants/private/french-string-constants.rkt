@@ -628,7 +628,6 @@
   
   (open-info "Ouvrir un fichier à partir du disque dur.")
   (open-menu-item "&Ouvrir")
-  (open-here-menu-item "&Ouvrir ici...")
   
   (open-recent-info "Une liste des fichiers ouverts récemment.")
   (open-recent-menu-item "Ouvrir récen&t")

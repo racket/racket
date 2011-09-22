@@ -557,7 +557,6 @@ please adhere to these guidelines:
 
  (open-info "Abrir ficheiro do disco")
  (open-menu-item "&Abrir...")
- (open-here-menu-item "&Abrir aqui...")
 
  (open-recent-info "A lista dos ficheiros abertos mais recentes")
  (open-recent-menu-item "Abrir Recente")

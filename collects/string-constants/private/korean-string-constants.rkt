@@ -534,7 +534,6 @@
 
  (open-info "디스크에서 파일 가져와서 열기")
  (open-menu-item "열기 (&O)")
- (open-here-menu-item "여기에 열기 (&O)")
 
  (open-recent-info "최근 열어본 파일 목록")
  (open-recent-menu-item "최근 파일 열기 (&T)")

@@ -604,7 +604,6 @@ please adhere to these guidelines:
 
  (open-info "ディスクからファイルを開きます")
  (open-menu-item "開く(&O)...")
- (open-here-menu-item "ここに開く(&O)...")
 
  (open-recent-info "最近開いたファイルの一覧を表示します")
  (open-recent-menu-item "最近開いたファイル")

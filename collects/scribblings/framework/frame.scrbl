@@ -683,61 +683,6 @@
   }
 }
 
-@definterface[frame:open-here<%> (frame:editor<%>)]{
-  Frames implementing this mixin can change the file they are displaying.
-
-  The frame is only re-used when the @racket['framework:open-here?] preference
-  is set (see @racket[preferences:get] and @racket[preferences:set] for details
-  on preferences).
-
-  The @racket[frame:open-here-mixin] implements this interface.
-
-  @defmethod*[(((get-open-here-editor) (is-a?/c editor<%>)))]{
-    When the user switches the visible file in this frame, the of this method
-    is the editor that gets switched.
-
-    By Default, returns the result of @method[frame:editor<%> get-editor].
-  }
-
-  @defmethod*[(((open-here (filename string)) void?))]{
-    Opens @racket[filename] in the current frame, possibly prompting the user
-    about saving a file (in which case the frame might not get switched).
-  }
-
-}
-@defmixin[frame:open-here-mixin (frame:editor<%>) (frame:open-here<%>)]{
-  Provides an implementation of @racket[frame:open-here<%>]
-
-  @defmethod*[#:mode override (((file-menu:new-on-demand (item (is-a?/c menu-item%))) void?))]{
-    Sets the label of @racket[item] to @racket["New..."] if the preference
-    @racket['framework:open-here?] is set.
-  }
-
-  @defmethod*[#:mode override (((file-menu:new-callback (item (is-a?/c menu-item%))
-                                                        (evt (is-a?/c control-event%))) 
-                                void?))]{
-    When the preference @racket['framework:open-here?]  preference is set, this
-    method prompts the user, asking if they would like to create a new frame,
-    or just clear out this one. If they clear it out and the file hasn't been
-    saved, they are asked about saving.
-  }
-
-  @defmethod*[#:mode override (((file-menu:open-on-demand (item (is-a?/c menu-item%))) void?))]{
-    Sets the label of @racket[item] to "Open Here..." if the preference
-    @racket['framework:open-here?] is set.
-  }
-
-  @defmethod*[#:mode augment (((on-close) void?))]{
-    Calls @method[group:% set-open-here-frame] with @racket[#f] if the result
-    of @method[group:% get-open-here-frame] is @racket[eq?] to @racket[this].
-  }
-
-  @defmethod*[#:mode override (((on-activate (on? boolean?)) void?))]{
-    When @racket[on?] is @racket[#t], calls @method[group:%
-    set-open-here-frame] with @racket[this].
-  }
-}
-
 @definterface[frame:text<%> (frame:editor<%>)]{
   Frames matching this interface provide support for @racket[text%]s.
 }
@@ -995,10 +940,9 @@
 @defclass[frame:status-line% (frame:status-line-mixin frame:text-info%) ()]{}
 @defclass[frame:standard-menus% (frame:standard-menus-mixin frame:status-line%) ()]{}
 @defclass[frame:editor% (frame:editor-mixin frame:standard-menus%) ()]{}
-@defclass[frame:open-here% (frame:open-here-mixin frame:editor%) ()]{}
-@defclass[frame:text% (frame:text-mixin frame:open-here%) ()]{}
+@defclass[frame:text% (frame:text-mixin frame:editor%) ()]{}
 @defclass[frame:searchable% (frame:searchable-text-mixin (frame:searchable-mixin frame:text%)) ()]{}
 @defclass[frame:delegate% (frame:delegate-mixin frame:searchable%) ()]{}
-@defclass[frame:pasteboard% (frame:pasteboard-mixin frame:open-here%) ()]{}
+@defclass[frame:pasteboard% (frame:pasteboard-mixin frame:editor%) ()]{}
 
 @(include-previously-extracted "main-extracts.rkt" #rx"^frame:")

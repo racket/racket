@@ -262,7 +262,6 @@
      status-line<%>
      standard-menus<%>
      editor<%>
-     open-here<%>
      text<%>
      pasteboard<%>
      delegate<%>
@@ -280,7 +279,6 @@
      pasteboard-info%
      standard-menus%
      editor%
-     open-here%
      text%
      searchable%
      delegate%
@@ -293,7 +291,6 @@
      status-line-mixin
      standard-menus-mixin
      editor-mixin
-     open-here-mixin
      text-mixin
      pasteboard-mixin
      delegate-mixin

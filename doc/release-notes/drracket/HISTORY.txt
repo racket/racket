@@ -12,6 +12,9 @@
 
   . added online expansion and check syntax
 
+  . removed the "open here" functionality (both from
+    the DrRacket app and from the framework library)
+
   . 2htdp/image: 
      - shrunk the size of saved files that contain 2htdp/image bitmaps
        (you can get these by copying and pasting from the REPL; using

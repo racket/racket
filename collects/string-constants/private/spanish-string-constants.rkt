@@ -448,7 +448,6 @@
  
  (open-info "Abre un nuevo archivo del disco")
  (open-menu-item "&Abrir...")
- (open-here-menu-item "&Abrir aquí...")
  (open-recent-info "Una lista de archivos abiertos recientemente")
  (open-recent-menu-item "Abrir reciente")
 

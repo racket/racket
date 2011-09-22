@@ -667,7 +667,6 @@ please adhere to these guidelines:
 
  (open-info "Open a file from disk")
  (open-menu-item "&Open...")
- (open-here-menu-item "&Open Here...")
 
  (open-recent-info "A list of the recently opened files")
  (open-recent-menu-item "Open Recen&t")

@@ -101,14 +101,6 @@
               (send already-open make-visible filename)
               (send already-open show #t)
               already-open]
-             [(and (preferences:get 'framework:open-here?)
-                   (send (group:get-the-frame-group) get-open-here-frame))
-              =>
-              (λ (fr)
-                (add-to-recent filename)
-                (send fr open-here filename)
-                (send fr show #t)
-                fr)]
              [else
               (let ([handler (and (path? filename)
                                   (find-format-handler filename))])
@@ -228,11 +220,7 @@
          [end (caddr recent-list-item)])
     (cond
       [(file-exists? filename)
-       (let ([fr (edit-file filename)])
-         (when (is-a? fr frame:open-here<%>)
-           (let ([ed (send fr get-open-here-editor)])
-             (when (equal? (send ed get-filename) filename)
-               (send ed set-position start end)))))]
+       (edit-file filename)]
       [else
        (preferences:set 'framework:recently-opened-files/pos
                         (remove* (list recent-list-item)
@@ -355,8 +343,7 @@
       (super-instantiate ()))))
 
 (define (open-file [directory #f])
-  (let* ([parent (and (or (not (eq? 'macosx (system-type)))
-                          (preferences:get 'framework:open-here?))
+  (let* ([parent (and (not (eq? 'macosx (system-type)))
                       (get-top-level-focus-window))]
          [file
           (parameterize ([finder:dialog-parent-parameter parent])

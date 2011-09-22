@@ -11,15 +11,6 @@
   constructed with @racket[frame:basic-mixin] adds itself to the result of
   @racket[group:get-the-frame-group].
 
-  @defmethod*[(((set-open-here-frame (frame (is-a?/c frame:editor%))) void?))]{
-    Sets the frame to load new files into.  See also
-    @racket[frame:open-here<%>].
-  }
-
-  @defmethod*[(((get-open-here-frame) (or/c false/c (is-a?/c frame:editor<%>))))]{
-    Returns the currently saved frame to load new files into.
-  }
-
   @defmethod*[(((get-mdi-parent) (or/c false/c (is-a?/c frame%))))]{
     The result of this method must be used as the parent frame for each frame
     in the group.

@@ -838,14 +838,7 @@
   ((filename)
    ((make-default
      (λ () ((handler:current-create-new-window) filename)))))
-  @{This function creates a frame or re-uses an existing frame to edit a file.
-    
-    If the preference @racket['framework:open-here] is set to @racket[#t], and
-    @racket[(send (group:get-the-frame-group) get-open-here-frame)] returns a
-    frame, the @method[frame:open-here<%> open-here] method of that frame is
-    used to load the file in the existing frame.
-    
-    Otherwise, it invokes the appropriate format handler to open the file (see
+  @{This function invokes the appropriate format handler to open the file (see
     @racket[handler:insert-format-handler]).
     
     @itemize[

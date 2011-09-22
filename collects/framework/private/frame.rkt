@@ -1453,128 +1453,6 @@
         ;; it might not yet be implemented
         (send canvas focus)))))
 
-(define open-here<%>
-  (interface (-editor<%>)
-    get-open-here-editor
-    open-here))
-
-(define open-here-mixin
-  (mixin (-editor<%>) (open-here<%>)
-    
-    (define/override (file-menu:new-on-demand item)
-      (super file-menu:new-on-demand item)
-      (send item set-label (if (preferences:get 'framework:open-here?)
-                               (string-constant new-...-menu-item)
-                               (string-constant new-menu-item))))
-    
-    (define/override (file-menu:new-callback item event)
-      (cond
-        [(preferences:get 'framework:open-here?)
-         (let ([clear-current (ask-about-new-here)])
-           (cond
-             [(eq? clear-current 'cancel) (void)]
-             [clear-current
-              (let* ([editor (get-editor)]
-                     [canceled? (cancel-due-to-unsaved-changes editor)])
-                (unless canceled?
-                  (send editor begin-edit-sequence)
-                  (send editor lock #f)
-                  (send editor set-filename #f)
-                  (send editor erase)
-                  (send editor set-modified #f)
-                  (send editor clear-undos)
-                  (send editor end-edit-sequence)))]
-             [else ((handler:current-create-new-window) #f)]))]
-        [else ((handler:current-create-new-window) #f)]))
-    
-    ;; cancel-due-to-unsaved-changes : -> boolean
-    ;; returns #t if the action should be cancelled
-    (define/private (cancel-due-to-unsaved-changes editor)
-      (and (send editor is-modified?)
-           (let ([save (gui-utils:unsaved-warning
-                        (let ([fn (send editor get-filename)])
-                          (if fn 
-                              (path->string fn)
-                              (get-label)))
-                        (string-constant clear-anyway)
-                        #t
-                        this)])
-             (case save
-               [(continue) #f]
-               [(save) (not (send editor save-file/gui-error))]
-               [(cancel) #t]))))
-    
-    ;; ask-about-new-here : -> (union 'cancel boolean?)
-    ;; prompts the user about creating a new window
-    ;; or "reusing" the current one.
-    (define/private (ask-about-new-here)
-      (gui-utils:get-choice
-       (string-constant create-new-window-or-clear-current)
-       (string-constant clear-current)
-       (string-constant new-window)
-       (string-constant warning)
-       'cancel
-       this))
-    
-    (define/override (file-menu:open-on-demand item)
-      (super file-menu:open-on-demand item)
-      (send item set-label (if (preferences:get 'framework:open-here?)
-                               (string-constant open-here-menu-item)
-                               (string-constant open-menu-item))))
-    
-    (define/augment (on-close)
-      (let ([group (group:get-the-frame-group)])
-        (when (eq? this (send group get-open-here-frame))
-          (send group set-open-here-frame #f)))
-      (inner (void) on-close))
-    
-    (define/override (on-activate on?)
-      (super on-activate on?)
-      (when on?
-        (send (group:get-the-frame-group) set-open-here-frame this)))
-    
-    (inherit get-editor)
-    (define/public (get-open-here-editor) (get-editor))
-    (define/public (open-here filename)
-      (let* ([editor (get-open-here-editor)]
-             [okay-to-switch? (user-okays-switch? editor)])
-        (when okay-to-switch?
-          (when (is-a? editor text%)
-            (let* ([b (box #f)]
-                   [filename (send editor get-filename b)])
-              (unless (unbox b)
-                (when filename
-                  (handler:set-recent-position 
-                   filename 
-                   (send editor get-start-position)
-                   (send editor get-end-position))))))
-          (send editor begin-edit-sequence)
-          (send editor lock #f)
-          (send editor load-file/gui-error filename)
-          (send editor end-edit-sequence)
-          (void))))
-    
-    (inherit get-label)
-    (define/private (user-okays-switch? ed)
-      (or (not (send ed is-modified?))
-          (let ([answer
-                 (gui-utils:unsaved-warning
-                  (let ([fn (send ed get-filename)])
-                    (if fn
-                        (path->string fn)
-                        (get-label)))
-                  (string-constant switch-anyway)
-                  #t)])
-            (case answer
-              [(continue)
-               #t]
-              [(save) 
-               (send ed save-file/gui-error)]
-              [(cancel)
-               #f]))))
-    
-    (super-new)))
-
 (define text<%> (interface (-editor<%>)))
 (define text-mixin
   (mixin (-editor<%>) (text<%>)
@@ -2738,10 +2616,9 @@
 (define status-line% (status-line-mixin text-info%))
 (define standard-menus% (standard-menus-mixin status-line%))
 (define editor% (editor-mixin standard-menus%))
-(define open-here% (open-here-mixin editor%))
 
-(define -text% (text-mixin open-here%))
+(define -text% (text-mixin editor%))
 (define searchable% (searchable-text-mixin (searchable-mixin -text%)))
 (define delegate% (delegate-mixin searchable%))
 
-(define -pasteboard% (pasteboard-mixin open-here%))
+(define -pasteboard% (pasteboard-mixin editor%))

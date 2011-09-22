@@ -521,7 +521,6 @@
   
   (open-info "打开现有文件")
   (open-menu-item "打开(&O)...")
-  (open-here-menu-item "从这里打开(&O)...")
   
   (open-recent-info "最近使用过文件的列表")
   (open-recent-menu-item "最近使用过的文件(&T)")
