@@ -500,7 +500,7 @@
      (set! edition (+ edition 1))
      (inner (void) after-delete start len))
     
-    (define/public (move/copy-to-edit dest-edit start end dest-position)
+    (define/public (move/copy-to-edit dest-edit start end dest-position #:try-to-move? [try-to-move? #t])
       (split-snip start)
       (split-snip end)
       (let loop ([snip (find-snip end 'before)])
@@ -509,13 +509,16 @@
            (void)]
           [else
            (let ([prev (send snip previous)]
-                 [released/copied (if (send snip release-from-owner)
-                                      snip
-                                      (let* ([copy (send snip copy)]
-                                             [snip-start (get-snip-position snip)]
-                                             [snip-end (+ snip-start (send snip get-count))])
-                                        (delete snip-start snip-end)
-                                        snip))])
+                 [released/copied 
+                  (if try-to-move?
+                      (if (send snip release-from-owner)
+                          snip
+                          (let* ([copy (send snip copy)]
+                                 [snip-start (get-snip-position snip)]
+                                 [snip-end (+ snip-start (send snip get-count))])
+                            (delete snip-start snip-end)
+                            snip))
+                      (send snip copy))])
              (send dest-edit insert released/copied dest-position dest-position)
              (loop prev))])))
     
@@ -2108,22 +2111,25 @@
                 (= start end)
                 (submit-to-port? key))
            (insert "\n" (last-position) (last-position))
-           (set-position (last-position) (last-position))
-           (for-each/snips-chars
-            unread-start-point
-            (last-position)
-            (λ (s/c line-col-pos) 
-              (cond
-                [(is-a? s/c snip%)
-                 (channel-put read-chan (cons s/c line-col-pos))]
-                [(char? s/c)
-                 (for-each (λ (b) (channel-put read-chan (cons b line-col-pos)))
-                           (bytes->list (string->bytes/utf-8 (string s/c))))])))
-           (set! unread-start-point (last-position))
-           (set! insertion-point (last-position))
-           (on-submit)]
+           (do-submission)]
           [else
            (super on-local-char key)])))
+    
+    (define/public-final (do-submission)
+      (set-position (last-position) (last-position))
+      (for-each/snips-chars
+       unread-start-point
+       (last-position)
+       (λ (s/c line-col-pos) 
+         (cond
+           [(is-a? s/c snip%)
+            (channel-put read-chan (cons s/c line-col-pos))]
+           [(char? s/c)
+            (for-each (λ (b) (channel-put read-chan (cons b line-col-pos)))
+                      (bytes->list (string->bytes/utf-8 (string s/c))))])))
+      (set! unread-start-point (last-position))
+      (set! insertion-point (last-position))
+      (on-submit))
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;;
