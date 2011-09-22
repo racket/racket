@@ -54,7 +54,8 @@
              [tl-module-lang-requires (make-hash)]
              [expanded-expression
               (λ (sexp [visit-id void])
-                (parameterize ([current-load-relative-directory user-directory])
+                (parameterize ([current-directory (or user-directory (current-directory))]
+                               [current-load-relative-directory user-directory])
                   (let ([is-module? (syntax-case sexp (module)
                                       [(module . rest) #t]
                                       [else #f])])
@@ -107,7 +108,8 @@
                                        tl-phase-to-requires)]))))]
              [expansion-completed
               (λ ()
-                (parameterize ([current-load-relative-directory user-directory])
+                (parameterize ([current-directory (or user-directory (current-directory))]
+                               [current-load-relative-directory user-directory])
                   (annotate-variables user-namespace
                                       user-directory
                                       tl-phase-to-binders
