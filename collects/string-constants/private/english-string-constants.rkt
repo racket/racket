@@ -225,7 +225,7 @@ please adhere to these guidelines:
  (jump-to-error "Jump to Error")
  (online-expansion-is-disabled "Online expansion is disabled")
  (online-expansion-pending "Online expansion pending ...")
- (online-expansion-finished "Online expansion finished without errors")
+ (online-expansion-finished "Online expansion finished") ;; note: there may still be errors in this case
   
  ;; the online expansion preferences pane
  (online-expansion "Online expansion") ;; title of prefs pane
