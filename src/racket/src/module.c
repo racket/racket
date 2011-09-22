@@ -8679,7 +8679,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
           l = scheme_append(a, l);
           mode_cnt = scheme_list_length(a);
           if (protect_cnt)
-            protect_cnt += mode_cnt;
+            protect_cnt += (mode_cnt - 1);;
           a = SCHEME_STX_CAR(l);
         } else
           break;
