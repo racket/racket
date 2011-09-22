@@ -7,8 +7,6 @@
          "xref.rkt"
          framework/preferences)
 
-(preferences:set-default 'framework:white-on-black? #f boolean?)
-
 (provide go)
 
 (define obj%

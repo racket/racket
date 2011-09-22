@@ -1053,9 +1053,7 @@
               (define-values (entry-desc path tag) (apply values info))
               (send defs-text syncheck:add-background-color
                     source-editor start fin 
-                    (if (preferences:get 'framework:white-on-black?)
-                        "darkgreen"
-                        "palegreen"))
+                    "palegreen")
               (send defs-text syncheck:add-docs-menu
                     source-editor
                     start 

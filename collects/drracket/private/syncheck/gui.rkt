@@ -663,9 +663,18 @@ If the namespace does not, they are colored the unbound color.
                 (when (<= 0 start-pos end-pos (last-position))
                   (add-to-range/key text start-pos end-pos make-menu key (and key #t)))))
             
-            (define/public (syncheck:add-background-color text start fin color)
+            (define/public (syncheck:add-background-color text start fin raw-color)
               (when arrow-records
                 (when (is-a? text text:basic<%>)
+                  ;; we adjust the colors over here based on the white-on-black
+                  ;; preference so we don't have to have the preference set up
+                  ;; in the other place when running check syntax in online mode.
+                  (define color 
+                    (if (preferences:get 'framework:white-on-black?)
+                        (cond
+                          [(equal? raw-color "palegreen") "darkgreen"]
+                          [else raw-color])
+                        raw-color))
                   (add-to-range/key text start fin (make-colored-region color text start fin) #f #f))))
             
             ;; syncheck:add-arrow : symbol text number number text number number boolean -> void
