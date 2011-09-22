@@ -263,10 +263,20 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
                  (isosceles-triangle 60 330 "solid" "lightseagreen")]
 }
 
-To create a general triangle given known sides and angles the following
-family of functions are useful: @racket[triangle/sss], 
-@racket[triangle/ass], @racket[triangle/sas], @racket[triangle/ssa], 
-@racket[triangle/sss], @racket[triangle/sss], and, @racket[triangle/sss].
+                     
+To create a triangle given known sides and angles, the following
+family of functions are useful:
+@itemlist[@item{@racket[triangle/sss], if all three sides are known}
+          @item{@racket[triangle/ass], 
+                @racket[triangle/sas], or
+                @racket[triangle/ssa], 
+                if two sides and their included angle are known}
+          @item{@racket[triangle/aas], 
+                @racket[triangle/asa], or 
+                @racket[triangle/saa], 
+                if two angles and their shared side are known.}]
+                     
+
 They all construct a triangle oriented as follows:
 
 @image["triangle-xxx.png"]
@@ -307,6 +317,7 @@ They all construct a triangle oriented as follows:
             image?])]{
  Creates a triangle where the angle A and side length a and b, are given by @racket[angle-a],
  @racket[side-length-b], and, @racket[side-length-c] respectively.
+ See above for a diagram showing where which sides and which angles are which.
  
  @mode/color-text
  
@@ -329,6 +340,7 @@ They all construct a triangle oriented as follows:
             image?])]{
  Creates a triangle where the side length a, angle B, and, side length c given by @racket[side-length-a],
  @racket[angle-b], and, @racket[side-length-c] respectively.
+ See above for a diagram showing where which sides and which angles are which.
  
  @mode/color-text
  
@@ -351,6 +363,7 @@ They all construct a triangle oriented as follows:
             image?])]{
  Creates a triangle where the side length a, side length b, and, angle c given by @racket[side-length-a],
  @racket[side-length-b], and, @racket[angle-c] respectively.
+ See above for a diagram showing where which sides and which angles are which.
  
  @mode/color-text
  
@@ -372,6 +385,7 @@ They all construct a triangle oriented as follows:
             image?])]{
  Creates a triangle where the angle A, angle B, and, side length c given by @racket[angle-a],
  @racket[angle-b], and, @racket[side-length-c] respectively.
+ See above for a diagram showing where which sides and which angles are which.
  
  @mode/color-text
  
@@ -394,6 +408,7 @@ They all construct a triangle oriented as follows:
             image?])]{
  Creates a triangle where the angle A, side length b, and, angle C given by @racket[angle-a],
  @racket[side-length-b], and, @racket[angle-c] respectively.
+ See above for a diagram showing where which sides and which angles are which.
  
  @mode/color-text
  
@@ -416,6 +431,7 @@ They all construct a triangle oriented as follows:
             image?])]{
  Creates a triangle where the side length a, angle B, and, angle C given by @racket[side-length-a],
  @racket[angle-b], and, @racket[angle-c] respectively.
+ See above for a diagram showing where which sides and which angles are which.
  
  @mode/color-text
  
