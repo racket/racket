@@ -4012,6 +4012,49 @@ module browser threading seems wrong.
         (define ed (srcloc-source srcloc))
         (send ed set-position (- (srcloc-position srcloc) 1))
         (send ed set-caret-owner #f 'global))
+      
+      
+      (define/public (send-toplevel-form-to-repl shift-focus?) 
+        (define defs (get-definitions-text))
+        (when (= (send defs get-start-position)
+                 (send defs get-end-position))
+          (let loop ([pos (send defs get-start-position)])
+            (define next-up (send defs find-up-sexp pos)) 
+            (cond
+              [next-up (loop next-up)]
+              [else
+               (send-range-to-repl pos
+                                   (send defs get-forward-sexp pos)
+                                   shift-focus?)]))))
+      (define/public (send-selection-to-repl shift-focus?) 
+        (define defs (get-definitions-text))
+        (send-range-to-repl (send defs get-start-position) (send defs get-end-position) shift-focus?))
+      (define/public (move-to-interactions) 
+        (ensure-rep-shown (get-interactions-text))
+        (send (get-interactions-canvas) focus))
+      
+      (define/private (send-range-to-repl start end shift-focus?)
+        (unless (= start end)
+          (define defs (get-definitions-text))
+          (define ints (get-interactions-text))
+          (send defs move/copy-to-edit ints start end (send ints last-position) #:try-to-move? #f)
+          
+          
+          ;; clear out the whitespace after the copied down thing
+          (let loop ()
+            (define last-pos (- (send ints last-position) 1))
+            (when (last-pos . > . 0)
+              (define last-char (send ints get-character last-pos))
+              (when (char-whitespace? last-char)
+                (send ints delete last-pos (+ last-pos 1))
+                (loop))))
+          
+          ;; insert a newline
+          (send ints insert "\n" (send ints last-position) (send ints last-position))
+          
+          (ensure-rep-shown ints)
+          (when shift-focus? (send (get-interactions-canvas) focus))
+          (send ints do-submission)))
 
       
       ;                          
@@ -4131,9 +4174,8 @@ module browser threading seems wrong.
             interactions-canvases
             null))
       
-      (public get-definitions-canvas get-interactions-canvas)
-      [define get-definitions-canvas (λ () definitions-canvas)]
-      [define get-interactions-canvas (λ () interactions-canvas)]
+      (define/public (get-definitions-canvas) definitions-canvas)
+      (define/public (get-interactions-canvas) interactions-canvas)
       
       (set! save-button
             (new switchable-button%

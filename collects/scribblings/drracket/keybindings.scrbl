@@ -51,10 +51,11 @@ items.  Those keybindings will behave according to the menus, unless
 the @onscreen{Enable keybindings in menus} preference is unchecked.
 
 @index['("Emacs keybindings")]{If} you are most familiar with
-Emacs-style key bindings, you should uncheck the @onscreen{Enable
+Emacs-style key bindings (especially on windows or some linux installations
+where the control key is, by default, for the menu shortcuts), 
+you should uncheck the @onscreen{Enable
 keybindings in menus} preference. Many of the keybindings below are
-inspired by Emacs.}
-
+inspired by Emacs.
 
 @section{Moving Around}
 
@@ -89,6 +90,7 @@ inspired by Emacs.}
 @keybinding["M-C-down"]{move down into an embedded editor}
 @keybinding["A-C-down"]{move down into an embedded editor}
 
+@keybinding["C-C C-Z"]{move the cursor to the interactions window}
 @keybinding["C-F6"]{move the cursor from the definitions
 window to the interactions window (or the search window, if it is open).}
 ]
@@ -150,10 +152,22 @@ window to the interactions window (or the search window, if it is open).}
 @keybinding["C-r"]{search for string backward}
 ]
 
-@section{Miscellaneous}
+@section{Evaluation}
 
 @itemize[
 @keybinding["F5"]{Run}
+@keybinding["M-C-x"]{Copy the top-level form surrounding the insertion point to the interactions window
+                     and submit it for evaluation}
+@keybinding["C-c C-e"]{Copy the top-level form surrounding the insertion point to the interactions window
+                       and submit it for evaluation}
+@keybinding["C-c M-e"]{Copy the top-level form surrounding the insertion point to the interactions window, 
+                       submit it for evaluation, and move the focus to the interations window}
+@keybinding["C-c C-r"]{Copy the selection to the interactions window
+                       and submit it for evaluation}
+@keybinding["C-c C-r"]{Copy the selection to the interactions window
+                       and submit it for evaluation}
+@keybinding["C-c M-r"]{Copy the selection to the interactions window,
+                       submit it for evaluation, and move the focus to the interactions window}
 ]
 
 

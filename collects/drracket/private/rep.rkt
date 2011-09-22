@@ -247,7 +247,8 @@ TODO
                          [name (and l (send l get-language-name))])
                     (drracket:help-desk:help-desk
                      str (and ctxt (list ctxt name)))))))))
-    (add-drs-function "execute"  (λ (frame) (send frame execute-callback)))
+    (add-drs-function "execute"  (λ (frame) (send frame execute-callback))) ;; keep this in case people use it in their keymaps
+    (add-drs-function "run"  (λ (frame) (send frame execute-callback)))
     (add-drs-function "next-tab" (λ (frame) (send frame next-tab)))
     (add-drs-function "prev-tab" (λ (frame) (send frame prev-tab)))
     (add-drs-function "collapse" (λ (frame) (send frame collapse)))
@@ -256,7 +257,13 @@ TODO
     (add-drs-function "jump-to-previous-error-loc"
                       (λ (frame) (send frame jump-to-previous-error-loc)))
     (add-drs-function "jump-to-next-error-loc"
-                      (λ (frame) (send frame jump-to-next-error-loc))))
+                      (λ (frame) (send frame jump-to-next-error-loc)))
+    
+    (add-drs-function "send-toplevel-form-to-repl" (λ (frame) (send frame send-toplevel-form-to-repl #f)))
+    (add-drs-function "send-selection-to-repl" (λ (frame) (send frame send-selection-to-repl #f)))
+    (add-drs-function "send-toplevel-form-to-repl-and-go" (λ (frame) (send frame send-toplevel-form-to-repl #t)))
+    (add-drs-function "send-selection-to-repl-and-go" (λ (frame) (send frame send-selection-to-repl #t)))
+    (add-drs-function "move-to-interactions" (λ (frame) (send frame move-to-interactions))))
   
   (send drs-bindings-keymap map-function "m:p" "jump-to-previous-error-loc")
   (send drs-bindings-keymap map-function "m:n" "jump-to-next-error-loc")
@@ -264,7 +271,7 @@ TODO
   (send drs-bindings-keymap map-function "esc;n" "jump-to-next-error-loc")
   (send drs-bindings-keymap map-function "c:x;`" "jump-to-next-error-loc")
   
-  (send drs-bindings-keymap map-function "f5" "execute")
+  (send drs-bindings-keymap map-function "f5" "run")
   (send drs-bindings-keymap map-function "f1" "search-help-desk")
   (send drs-bindings-keymap map-function "c:tab" "next-tab")
   (send drs-bindings-keymap map-function "c:s:tab" "prev-tab")
@@ -274,6 +281,15 @@ TODO
   (send drs-bindings-keymap map-function "c:x;0" "collapse")
   (send drs-bindings-keymap map-function "c:x;2" "split")
 
+  (send drs-bindings-keymap map-function "esc;c:x" "send-toplevel-form-to-repl")
+  (send drs-bindings-keymap map-function "m:c:x" "send-toplevel-form-to-repl")
+  (send drs-bindings-keymap map-function "c:c;c:e" "send-toplevel-form-to-repl")
+  (send drs-bindings-keymap map-function "c:c;c:r" "send-selection-to-repl")
+  (send drs-bindings-keymap map-function "c:c;m:e" "send-toplevel-form-to-repl-and-go")
+  (send drs-bindings-keymap map-function "c:c;m:r" "send-selection-to-repl-and-go")
+  
+  (send drs-bindings-keymap map-function "c:c;c:z" "move-to-interactions")
+  
   (for ([i (in-range 1 10)])
     (send drs-bindings-keymap map-function 
           (format "a:~a" i) 
@@ -1144,7 +1160,7 @@ TODO
       
       (define/private shutdown-user-custodian ; =Kernel=, =Handler=
         ; Use this procedure to shutdown when in the middle of other cleanup
-        ;  operations, such as when the user clicks "Execute".
+        ;  operations, such as when the user clicks "Run".
         ; Don't use it to kill a thread where other, external cleanup
         ;  actions must occur (e.g., the exit handler for the user's
         ;  thread). In that case, shut down user-custodian directly.
