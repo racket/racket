@@ -200,10 +200,19 @@
               [tvar (make-F var)])
          (add-disappeared-use #'kw)
          (extend-tvars (list var)
-           (let ([t (parse-type #'t)])
-             (if (memq var (fv t))
-                 (make-Mu var t)
-                 t))))]
+           (let ([t* (parse-type #'t)])
+             ;; is t in a productive position?
+             (unless (match t*
+                       [(Union: es)
+                        (define seq-tvar (Type-seq tvar))
+                        (not (memf (λ (e) (eq? (Type-seq e) seq-tvar)) es))]
+                       [_ #t]) ; it's fine
+               (tc-error/stx
+                stx
+                "Recursive types are not allowed as members of unions directly inside their definition"))
+             (if (memq var (fv t*))
+                 (make-Mu var t*)
+                 t*))))]
       [((~and kw t:U) ts ...)
        (add-disappeared-use #'kw)
        (apply Un (map parse-type (syntax->list #'(ts ...))))]
