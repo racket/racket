@@ -245,15 +245,18 @@ and sends the entire contents of the definitions window, ensuring that
 the state in the REPL matches what you would expect by reading
 the source code of the program.
 
-That said, it is difficult for some people to switch to this new mode and,
-in some cases (for example when most of the interesting state is not
-in the program but in an external database or in the filesystem), using
-the contentional keystrokes may make sense.
+Based on years of experience with Emacs modes, some of the authors 
+consider this mode of interaction also appropriate for experienced 
+programmers. Indeed, they go through great effort to mimic this 
+behavior in Emacs. 
 
-So, the remainder of this section is an example keybindings file that
-adds the ability to send expressions piecemeal to the interactions
-window. It also demonstrates how to pull together a bunch of pieces
-of DrRacket's implementation and its libraries to implement keystrokes.
+That said, some people may wish to use such incremental keystroke modes
+anyway. Therefore the remainder of this section illustrates how to add such
+an incremental mode for your personal use with an example keybindings
+file. Specifically, the file shows how to add the ability to send
+expressions piecemeal to the interactions window. It also demonstrates how
+to pull together a bunch of pieces of DrRacket's implementation and its
+libraries to implement keystrokes. 
 
 @(define-runtime-path incremental-keybindings.rkt "incremental-keybindings.rkt")
 @(let ([sp (open-output-string)])
@@ -261,3 +264,6 @@ of DrRacket's implementation and its libraries to implement keystrokes.
      (λ (port)
        (copy-port port sp)))
    (codeblock (get-output-string sp)))
+
+Others may wish to use the above example to invent other keystrokes for
+making work in DrRacket convenient. 
