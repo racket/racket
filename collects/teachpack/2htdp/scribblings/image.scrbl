@@ -795,9 +795,9 @@ the @racket[point-count] argument determines how many points the star has.
 
 
 @defproc[(underlay/offset [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
-  Just like @racket[overlay], this function lines up its image arguments on top of
-  each other. Unlike @racket[overlay], it moves @racket[i2] by @racket[x] pixels to
-  the right and @racket[y] down before overlaying them.
+  Just like @racket[underlay], this function lines up its first image argument
+  underneath the second. Unlike @racket[underlay], it moves @racket[i2] by
+  @racket[x] pixels to the right and @racket[y] down before underlaying them.
   
   @image-examples[(underlay/offset (circle 40 "solid" "red")
                                   10 10
