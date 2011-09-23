@@ -1,7 +1,9 @@
 #lang scribble/doc
 @(require "common.rkt"
-          scribble/struct scribble/bnf racket/list mrlib/tex-table
-          (for-label racket/gui/base))
+          scribble/struct scribble/bnf
+          racket/list racket/runtime-path racket/port
+          mrlib/tex-table
+          (for-label drracket/tool-lib))
 
 @(define (keybinding key . desc)
    (let* ([keys (if (string? key) (list key) key)]
@@ -91,8 +93,6 @@ inspired by Emacs.
 @keybinding["A-C-down"]{move down into an embedded editor}
 
 @keybinding["C-C C-Z"]{move the cursor to the interactions window}
-@keybinding["C-F6"]{move the cursor from the definitions
-window to the interactions window (or the search window, if it is open).}
 ]
 
 @section{Editing Operations}
@@ -156,18 +156,6 @@ window to the interactions window (or the search window, if it is open).}
 
 @itemize[
 @keybinding["F5"]{Run}
-@keybinding["M-C-x"]{Copy the top-level form surrounding the insertion point to the interactions window
-                     and submit it for evaluation}
-@keybinding["C-c C-e"]{Copy the top-level form surrounding the insertion point to the interactions window
-                       and submit it for evaluation}
-@keybinding["C-c M-e"]{Copy the top-level form surrounding the insertion point to the interactions window, 
-                       submit it for evaluation, and move the focus to the interations window}
-@keybinding["C-c C-r"]{Copy the selection to the interactions window
-                       and submit it for evaluation}
-@keybinding["C-c C-r"]{Copy the selection to the interactions window
-                       and submit it for evaluation}
-@keybinding["C-c M-r"]{Copy the selection to the interactions window,
-                       submit it for evaluation, and move the focus to the interactions window}
 ]
 
 
@@ -244,3 +232,32 @@ s-exp framework/keybinding-lang
 Note that DrRacket does not reload this file automatically when you
 make a change, so you'll need to restart DrRacket to see changes to
 the file.
+
+@section{Sending Program Fragments to the REPL}
+
+@index['("Emacs keybindings")]Users comfortable with Emacs and the conventional Lisp/Scheme-style
+of interaction with an ``inferior process'' commonly request
+keybindings in DrRacket that send program fragments to be evaluated
+at the prompt. This style of interaction is fraught with difficulty, 
+especially for beginners, and so DrRacket, by default, does not support
+it. Instead, clicking DrRacket's ``Run'' button starts with a clean slate
+and sends the entire contents of the definitions window, ensuring that
+the state in the REPL matches what you would expect by reading
+the source code of the program.
+
+That said, it is difficult for some people to switch to this new mode and,
+in some cases (for example when most of the interesting state is not
+in the program but in an external database or in the filesystem), using
+the contentional keystrokes may make sense.
+
+So, the remainder of this section is an example keybindings file that
+adds the ability to send expressions piecemeal to the interactions
+window. It also demonstrates how to pull together a bunch of pieces
+of DrRacket's implementation and its libraries to implement keystrokes.
+
+@(define-runtime-path incremental-keybindings.rkt "incremental-keybindings.rkt")
+@(let ([sp (open-output-string)])
+   (call-with-input-file incremental-keybindings.rkt
+     (λ (port)
+       (copy-port port sp)))
+   (codeblock (get-output-string sp)))

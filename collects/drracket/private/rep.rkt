@@ -281,13 +281,6 @@ TODO
   (send drs-bindings-keymap map-function "c:x;0" "collapse")
   (send drs-bindings-keymap map-function "c:x;2" "split")
 
-  (send drs-bindings-keymap map-function "esc;c:x" "send-toplevel-form-to-repl")
-  (send drs-bindings-keymap map-function "m:c:x" "send-toplevel-form-to-repl")
-  (send drs-bindings-keymap map-function "c:c;c:e" "send-toplevel-form-to-repl")
-  (send drs-bindings-keymap map-function "c:c;c:r" "send-selection-to-repl")
-  (send drs-bindings-keymap map-function "c:c;m:e" "send-toplevel-form-to-repl-and-go")
-  (send drs-bindings-keymap map-function "c:c;m:r" "send-selection-to-repl-and-go")
-  
   (send drs-bindings-keymap map-function "c:c;c:z" "move-to-interactions")
   
   (for ([i (in-range 1 10)])

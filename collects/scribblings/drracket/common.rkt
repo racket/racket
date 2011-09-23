@@ -1,12 +1,14 @@
-#lang scheme/base
+#lang racket/base
 
 (require scribble/manual
-         (for-label scheme))
+         (for-label racket 
+                    racket/gui/base))
 
 (provide HtDP
          drlang
          (all-from-out scribble/manual)
-         (for-label (all-from-out scheme)))
+         (for-label (all-from-out racket 
+                                  racket/gui/base)))
 
 (define HtDP
   (italic "How to Design Programs"))

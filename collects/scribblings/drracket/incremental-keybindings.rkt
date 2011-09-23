@@ -1,0 +1,61 @@
+#lang s-exp framework/keybinding-lang
+
+(require drracket/tool-lib)
+
+(keybinding "c:c;c:e" (lambda (ed evt) (send-toplevel-form ed #f)))
+(keybinding "c:c;c:r" (lambda (ed evt) (send-selection ed #f)))
+(keybinding "c:c;m:e" (lambda (ed evt) (send-toplevel-form ed #t)))
+(keybinding "c:c;m:r" (lambda (ed evt) (send-selection ed #t)))
+
+(define/contract (send-toplevel-form defs shift-focus?)
+  (-> any/c boolean? any)
+  (when (is-a? defs drracket:unit:definitions-text<%>)
+    (when (= (send defs get-start-position)
+             (send defs get-end-position))
+      (let loop ([pos (send defs get-start-position)])
+        (define next-up (send defs find-up-sexp pos)) 
+        (cond
+          [next-up (loop next-up)]
+          [else
+           (send-range-to-repl defs 
+                               pos
+                               (send defs get-forward-sexp pos)
+                               shift-focus?)])))))
+
+(define/contract (send-selection defs shift-focus?)
+  (-> any/c boolean? any)
+  (when (is-a? defs drracket:unit:definitions-text<%>)
+    (send-range-to-repl defs
+                        (send defs get-start-position) 
+                        (send defs get-end-position) 
+                        shift-focus?)))
+
+(define/contract (send-range-to-repl defs start end shift-focus?)
+  (-> (is-a?/c drracket:unit:definitions-text<%>)
+      exact-positive-integer?
+      exact-positive-integer?
+      boolean?
+      any)
+  (unless (= start end)
+    (define ints (send (send defs get-tab) get-ints))
+    (define frame (send (send defs get-tab) get-frame))
+    (send defs move/copy-to-edit 
+          ints start end
+          (send ints last-position)
+          #:try-to-move? #f)
+
+    (let loop ()
+      (define last-pos (- (send ints last-position) 1))
+      (when (last-pos . > . 0)
+        (define last-char (send ints get-character last-pos))
+        (when (char-whitespace? last-char)
+          (send ints delete last-pos (+ last-pos 1))
+          (loop))))
+    (send ints insert
+          "\n"
+          (send ints last-position)
+          (send ints last-position))
+    
+    (send frame ensure-rep-shown ints)
+    (when shift-focus? (send (send ints get-canvas) focus))
+    (send ints do-submission)))

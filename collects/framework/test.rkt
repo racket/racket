@@ -950,16 +950,15 @@
   
   If conflicting modifiers are provided, the ones later in the list are used.})
  
- (proc-doc/names
+ (proc-doc
   test:menu-select
-  (string? string? . -> . void?)
-  (menu item)
-  @{Selects the menu-item named @racket[item] in the menu named @racket[menu].
+  (->i ([menu string?]) () #:rest [items (listof string?)] [res void?])
+  @{Selects the menu-item named by the @racket[item]s in the menu named @racket[menu].
   
   @italic{Note:}
   The string for the menu item does not include its keyboard equivalent.
   For example, to select ``New'' from the ``File'' menu, 
-  use ``New'', not ``New Ctrl+m n''.})
+  use ``New'', not ``New Ctrl+N''.})
  
  (proc-doc/names
   test:mouse-click
