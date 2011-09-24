@@ -51,7 +51,7 @@
       get-language-info))
   
   ;; add-module-language : -> void
-  ;; adds the special module-only language to drscheme
+  ;; adds the special module-only language to drracket
   (define (add-module-language)
     (define module-language%
       (module-mixin
@@ -249,7 +249,7 @@
                                                 command-line-args
                                                 auto-text
                                                 
-                                                ;; current versions of drscheme do not allow this combination
+                                                ;; current versions of drracket do not allow this combination
                                                 ;; in the first place (compilation is only allowed in 'none
                                                 ;; and 'debug mode), but older versions might.
                                                 (and (memq (drracket:language:simple-settings-annotations super) 
@@ -486,7 +486,7 @@
   ;; but keep the highlighting of a previous error)
   (define (raise-hopeless-exception exn [prefix #f] [suffix #f])
     (define rep (drracket:rep:current-rep))
-    ;; Throw an error as usual if we don't have the drscheme rep, then we just
+    ;; Throw an error as usual if we don't have the drracket rep, then we just
     ;; raise the exception as normal.  (It can happen in some rare cases like
     ;; having a single empty scheme box in the definitions.)
     (unless rep (if exn (raise exn) (error "\nInteractions disabled")))
@@ -495,7 +495,7 @@
     ;; these are needed, otherwise the warning can appear before the output
     (flush-output (current-output-port))
     (flush-output (current-error-port))
-    ;; do the rep-related work carefully -- using drscheme's eventspace, and
+    ;; do the rep-related work carefully -- using drracket's eventspace, and
     ;; wait for it to finish before we continue.
     (let ([s (make-semaphore 0)]
           [msg (string-append "\nInteractions disabled"
