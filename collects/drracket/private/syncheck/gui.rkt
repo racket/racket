@@ -1470,6 +1470,12 @@ If the namespace does not, they are colored the unbound color.
         (define/public (replay-compile-comp-trace defs-text val)
           (define bx (box #t))
           (when (set-syncheck-running-mode bx)
+            
+            ;; reset any previous check syntax information
+            (let ([tab (get-current-tab)])
+              (send tab syncheck:clear-error-message)
+              (send tab syncheck:clear-highlighting))
+            
             (send (send defs-text get-tab) add-bkg-running-color 'syncheck "forestgreen" cs-syncheck-running)
             (send defs-text syncheck:init-arrows)
             (let loop ([val val]
@@ -1483,7 +1489,7 @@ If the namespace does not, they are colored the unbound color.
                  (queue-callback
                   (λ ()
                     (when (unbox bx)
-                      (loop (cdr val) 0)))
+                      (loop val 0)))
                   #f)]
                 [else
                  (process-trace-element defs-text (car val))
