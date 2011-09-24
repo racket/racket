@@ -113,6 +113,7 @@ typedef struct Module_Begin_Expand_State {
   Scheme_Object *saved_provides; /* list of (cons form phase) */
   Scheme_Hash_Table *modidx_cache;
   Scheme_Object *redef_modname;
+  Scheme_Object *end_statementss; /* list of lists */
 } Module_Begin_Expand_State;
 
 static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -4511,9 +4512,15 @@ void *scheme_module_exprun_finish(Scheme_Env *menv, int at_phase)
     return NULL;
 
   for (i = 1; i < at_phase; i++) {
+    scheme_prepare_exp_env(menv);
+    if (!menv->exp_env->link_midx)
+      menv->exp_env->link_midx = menv->link_midx;
     menv = menv->exp_env;
   }
+  scheme_prepare_exp_env(menv);
   exp_env = menv->exp_env;
+  if (!exp_env->link_midx)
+      exp_env->link_midx = menv->link_midx;
 
   if (!exp_env)
     return NULL;
@@ -6300,6 +6307,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   bxs->saved_provides = scheme_null;
   bxs->modidx_cache = modidx_cache;
   bxs->redef_modname = redef_modname;
+  bxs->end_statementss = scheme_null;
 
   body_lists = do_module_begin_at_phase(form, env, 
                                         rec, drec, 
@@ -6480,6 +6488,41 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   }
 }
 
+static Scheme_Object *get_higher_phase_lifts(Module_Begin_Expand_State *bxs,
+                                             Scheme_Object *begin_for_syntax_stx)
+{
+  Scheme_Object *p, *e, *fm = scheme_null;
+
+  if (SCHEME_PAIRP(bxs->end_statementss)) {
+    /* No other ends, so start shitfing higher-phase ends into `b-f-s': */
+    int depth = 1;
+    for (p = bxs->end_statementss; SCHEME_PAIRP(p); p = SCHEME_CDR(p), depth++) {
+      if (SCHEME_PAIRP(SCHEME_CAR(p)))
+        break;
+    }
+    if (SCHEME_PAIRP(p)) {
+      /* wrap `depth' `begin-for-syntaxes' around SCHEME_CAR(p): */
+      int di;
+      e = scheme_reverse(SCHEME_CAR(p));
+      e = scheme_make_pair(begin_for_syntax_stx, e);
+      for (di = 1; di < depth; di++) {
+        e = scheme_make_pair(begin_for_syntax_stx, scheme_make_pair(e, scheme_null));
+      }
+      fm = scheme_make_pair(scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0),
+                            scheme_null);
+      /* first `depth' end-statement lists are now empty: */
+      p = SCHEME_CDR(p);
+      for (di = 0; di < depth; di++) {
+        p = scheme_make_pair(scheme_null, p);
+      }
+      bxs->end_statementss = p;
+    } else
+      bxs->end_statementss = scheme_null;
+  }
+
+  return fm;
+}
+
 static Scheme_Object *do_module_begin_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -6530,8 +6573,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   Scheme_Object *lift_data;
   Scheme_Object *lift_ctx;
   Scheme_Object *lifted_reqs = scheme_null, *req_data, *unbounds = scheme_null;
-  int maybe_has_lifts = 0;
-  Scheme_Object *observer, *vec;
+  int maybe_has_lifts = 0, expand_ends = (phase == 0);
+  Scheme_Object *observer, *vec, *end_statements;
   Scheme_Object *define_values_stx, *begin_stx, *define_syntaxes_stx, *begin_for_syntax_stx, *req_stx, *prov_stx, *sv[6];
 
 #ifdef DO_STACK_CHECK
@@ -6684,6 +6727,12 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                                   bxs->redef_modname, 
                                   bxs->all_simple_renames);
 
+  if (SCHEME_PAIRP(bxs->end_statementss)) {
+    end_statements = SCHEME_CAR(bxs->end_statementss);
+    bxs->end_statementss = SCHEME_CDR(bxs->end_statementss);
+  } else
+    end_statements = scheme_null;
+
   /* Pass 1 */
 
   /* Partially expand all expressions, and process definitions, requires,
@@ -6701,7 +6750,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
       p = (maybe_has_lifts 
            ? scheme_frame_get_end_statement_lifts(xenv) 
-           : scheme_null);
+           : end_statements);
       prev_p = (maybe_has_lifts 
                 ? scheme_frame_get_provide_lifts(xenv) 
                 : scheme_null);
@@ -6751,12 +6800,17 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  if (SCHEME_STX_NULLP(fm)) {
             e = scheme_frame_get_provide_lifts(xenv);
             e = scheme_reverse(e);
-            fm = scheme_frame_get_end_statement_lifts(xenv);
-            fm = scheme_reverse(fm);
-            if (!SCHEME_NULLP(e))
-              fm = scheme_append(fm, e);
+            if (expand_ends) {
+              fm = scheme_frame_get_end_statement_lifts(xenv);
+              fm = scheme_reverse(fm);
+              if (!SCHEME_NULLP(e))
+                fm = scheme_append(fm, e);
+              maybe_has_lifts = 0;
+            } else
+              fm = e;
+            if (SCHEME_NULLP(fm) && expand_ends)
+              fm = get_higher_phase_lifts(bxs, begin_for_syntax_stx);
             SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer, fm);
-            maybe_has_lifts = 0;
             if (SCHEME_NULLP(fm)) {
               e = NULL;
               break;
@@ -7091,15 +7145,25 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     if (SCHEME_STX_NULLP(fm) && maybe_has_lifts) {
       e = scheme_frame_get_provide_lifts(xenv);
       e = scheme_reverse(e);
-      fm = scheme_frame_get_end_statement_lifts(xenv);
-      fm = scheme_reverse(fm);
-      if (!SCHEME_NULLP(e))
-        fm = scheme_append(fm, e);
+      if (expand_ends) {
+        fm = scheme_frame_get_end_statement_lifts(xenv);
+        fm = scheme_reverse(fm);
+        if (!SCHEME_NULLP(e))
+          fm = scheme_append(fm, e);
+        maybe_has_lifts = 0;
+        if (SCHEME_NULLP(fm))
+          fm = get_higher_phase_lifts(bxs, begin_for_syntax_stx);
+      } else
+        fm = e;
       SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer, fm);
-      maybe_has_lifts = 0;
     }
   }
   /* first =  a list of (cons semi-expanded-expression kind) */
+
+  if (!expand_ends) {
+    if (maybe_has_lifts)
+      end_statements = scheme_frame_get_end_statement_lifts(xenv);
+  }
 
   if (!phase) {
     /* Bound names will not be re-bound at this point: */
@@ -7163,7 +7227,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
       l = (maybe_has_lifts 
            ? scheme_frame_get_end_statement_lifts(cenv) 
-           : scheme_null);
+           : end_statements);
       ll = (maybe_has_lifts 
             ? scheme_frame_get_provide_lifts(cenv) 
             : scheme_null);
@@ -7235,11 +7299,16 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       Scheme_Object *sp;
       e = scheme_frame_get_provide_lifts(cenv);
       e = scheme_reverse(e);
-      p = scheme_frame_get_end_statement_lifts(cenv);
-      p = scheme_reverse(p);
-      expr_cnt = scheme_list_length(p);
-      if (!SCHEME_NULLP(e))
-        p = scheme_append(p, e);
+      if (expand_ends) {
+        p = scheme_frame_get_end_statement_lifts(cenv);
+        p = scheme_reverse(p);
+        expr_cnt = scheme_list_length(p);
+        if (!SCHEME_NULLP(e))
+          p = scheme_append(p, e);
+      } else {
+        p = e;
+        expr_cnt = 0;
+      }
       SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer, p);
       for (ll = p; SCHEME_PAIRP(ll); ll = SCHEME_CDR(ll)) {
         e = SCHEME_CAR(ll);
@@ -7264,9 +7333,19 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   }
   if (erec) expanded_l = scheme_reverse(expanded_l);
 
+  /* If not phase 0, save end statements */
+  if (!expand_ends) {
+    if (maybe_has_lifts)
+      end_statements = scheme_frame_get_end_statement_lifts(cenv);
+    if (!SCHEME_NULLP(end_statements) || !SCHEME_NULLP(bxs->end_statementss)) {
+      p = scheme_make_pair(end_statements, bxs->end_statementss);
+      bxs->end_statementss = p;
+    }
+  }
+
   adt = scheme_hash_tree_set(bxs->all_defs, scheme_make_integer(phase), all_rt_defs);
   bxs->all_defs = adt;
-  
+
   /* Pass 3 */
   /* if at phase 0, expand provides for all phases */
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);

@@ -3084,7 +3084,7 @@ static Scheme_Object *check_floating_id(Scheme_Object *stx)
 
 #define EXPLAIN_RESOLVE 0
 #if EXPLAIN_RESOLVE
-int scheme_explain_resolves = 0;
+int scheme_explain_resolves = 1;
 # define EXPLAIN(x) if (scheme_explain_resolves) { x; }
 #else
 # define EXPLAIN(x) /* empty */
@@ -3629,7 +3629,8 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
   int mresult_skipped = -1;
   int depends_on_unsealed_rib = 0, mresult_depends_unsealed = 0;
 
-  EXPLAIN(fprintf(stderr, "%d Resolving %s [skips: %s]:\n", depth, SCHEME_SYM_VAL(SCHEME_STX_VAL(a)),
+  EXPLAIN(fprintf(stderr, "%d Resolving %s@%d [skips: %s]: -------------\n", 
+                  depth, SCHEME_SYM_VAL(SCHEME_STX_VAL(a)), SCHEME_INT_VAL(orig_phase),
                   scheme_write_to_string(skip_ribs ? skip_ribs : scheme_false, NULL)));
 
   WRAP_POS_INIT(wraps, ((Scheme_Stx *)a)->wraps);
@@ -3757,7 +3758,13 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
       if (_depends_on_unsealed_rib)
         *_depends_on_unsealed_rib = depends_on_unsealed_rib;
 
-      EXPLAIN(fprintf(stderr, "%d Result: %s\n", depth, scheme_write_to_string(result, 0)));
+      if (SCHEME_MODIDXP(result)) {
+        EXPLAIN(fprintf(stderr, "%d Result: <%s,%s>\n", depth, 
+                        scheme_write_to_string(((Scheme_Modidx *)result)->path, NULL),
+                        scheme_write_to_string(((Scheme_Modidx *)result)->base, NULL)));
+      } else {
+        EXPLAIN(fprintf(stderr, "%d Result: %s\n", depth, scheme_write_to_string(result, NULL)));
+      }
 
       return result;
     } else if ((SCHEME_RENAMESP(WRAP_POS_FIRST(wraps)) 
@@ -3892,10 +3899,15 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
               } else
                 mresult = rename;
 	    
-              if (modidx_shift_from)
+              if (modidx_shift_from) {
+                EXPLAIN(fprintf(stderr, "%d  shift %p->%p: %p\n",
+                                depth, modidx_shift_from, modidx_shift_to,
+                                mresult));
                 mresult = scheme_modidx_shift(mresult,
                                               modidx_shift_from,
                                               modidx_shift_to);
+                EXPLAIN(fprintf(stderr, "%d  = %p\n", depth, mresult));
+              }
 
               if (get_names) {
                 int no_shift = 0;
@@ -3987,10 +3999,11 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
       /* Phase shift */
       Scheme_Object *vec, *n, *dest, *src, *insp;
       
-      EXPLAIN(fprintf(stderr, "%d phase shift\n", depth));
-
       vec = SCHEME_PTR_VAL(WRAP_POS_FIRST(wraps));
       n = SCHEME_VEC_ELS(vec)[0];
+
+      EXPLAIN(fprintf(stderr, "%d phase shift by %d\n", depth, SCHEME_INT_VAL(n)));
+
       if (SCHEME_TRUEP(phase))
         phase = scheme_bin_minus(phase, n);
      
@@ -4004,11 +4017,15 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
 
       if (!SCHEME_FALSEP(src)) {
 	if (!modidx_shift_to) {
+          EXPLAIN(fprintf(stderr, "%d  shift to %p\n", depth, dest));
 	  modidx_shift_to = dest;
 	} else if (!SAME_OBJ(modidx_shift_from, dest)) {
 	  modidx_shift_to = scheme_modidx_shift(dest,
 						modidx_shift_from,
 						modidx_shift_to);
+          EXPLAIN(fprintf(stderr, "%d  shift %p->%p; %d\n", 
+                          depth, modidx_shift_from,
+                          modidx_shift_to, SAME_OBJ(dest, modidx_shift_to)));
 	}
 	modidx_shift_from = src;
       }

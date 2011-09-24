@@ -511,8 +511,13 @@ for caching lift information to avoid redundant lifts.
 Cooperates with the @racket[module] form to insert @racket[stx] as
 a top-level declaration at the end of the module currently being
 expanded. If the current expression being
-transformed is not in the module top-level, then @racket[stx] is
-eventually expanded in an expression context.
+transformed is in @tech{phase level} 0 and not in the module top-level, then @racket[stx] is
+eventually expanded in an expression context. If the current expression being
+transformed is in a higher @tech{phase level} (i.e., nested within some
+number of @racket[begin-for-syntax]es within a module top-level), then the lifted declaration
+is placed at the very end of the module (under a suitable number of
+@racket[begin-for-syntax]es), instead of merely the end of the
+enclosing @racket[begin-for-syntax].
 
 @transform-time[] If the current expression being transformed is not
 within a @racket[module] form (see @racket[syntax-transforming-module-expression?]), 
