@@ -11,15 +11,16 @@
         '(3 oranges)
         r)) ;; yet another bug 
   
-  (provide/contract
-   [argmax
-    (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
-         (r (f lov)
-            (lambda (r)
-              (define f@r (f r))
-              (and (for/and ((v lov)) (>= f@r (f v)))		   
-                   (eq? (first (memf (lambda (v) (= (f v) f@r)) lov)) 
-                        r)))))]))
+  (provide
+   (contract-out
+    [argmax
+     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
+          (r (f lov)
+             (lambda (r)
+               (define f@r (f r))
+               (and (for/and ((v lov)) (>= f@r (f v)))		   
+                    (eq? (first (memf (lambda (v) (= (f v) f@r)) lov)) 
+                         r)))))])))
 
 (module b racket/base
   (require 'a)

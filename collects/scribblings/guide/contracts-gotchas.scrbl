@@ -30,7 +30,8 @@ racket
   (if (= 1 x)
       add1
       (lambda (y) (+ x y))))
-(provide/contract [make-adder (-> number? (-> number? number?))])
+(provide (contract-out 
+          [make-adder (-> number? (-> number? number?))]))
 ]
 
 It exports the @racket[make-adder] function that is the usual curried
@@ -107,10 +108,10 @@ checked, long enough to ensure that @racket[stream/c] is defined.
 
 See also @ctc-link["lazy-contracts"].
 
-@ctc-section{Mixing @racket[set!] and @racket[provide/contract]}
+@ctc-section{Mixing @racket[set!] and @racket[contract-out]}
 
 The contract library assumes that variables exported via
-@racket[provide/contract] are not assigned to, but does not enforce
+@racket[contract-out] are not assigned to, but does not enforce
 it. Accordingly, if you try to @racket[set!] those variables, you 
 may be surprised. Consider the following example:
 
@@ -118,8 +119,8 @@ may be surprised. Consider the following example:
 (module server racket
   (define (inc-x!) (set! x (+ x 1)))
   (define x 0)
-  (provide/contract [inc-x! (-> void?)]
-                    [x integer?]))
+  (provide (contract-out [inc-x! (-> void?)]
+                         [x integer?])))
 
 (module client racket
   (require 'server)
@@ -146,8 +147,8 @@ racket
 (define (get-x) x)
 (define (inc-x!) (set! x (+ x 1)))
 (define x 0)
-(provide/contract [inc-x! (-> void?)]
-                  [get-x (-> integer?)])
+(provide (contract-out [inc-x! (-> void?)]
+                       [get-x (-> integer?)]))
 ]
 
 Moral: This is a bug that we will address in a future release.

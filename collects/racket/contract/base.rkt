@@ -12,7 +12,8 @@
          "private/guts.rkt"
          "private/prop.rkt"
          "private/opters.rkt" ;; required for effect to install the opters
-         "private/opt.rkt")
+         "private/opt.rkt"
+         "private/out.rkt")
 
 (provide
  (except-out (all-from-out "private/arrow.rkt")
@@ -36,7 +37,9 @@
  (except-out (all-from-out "private/misc.rkt")
              check-between/c
              check-unary-between/c)
- (all-from-out "private/provide.rkt")
+ provide/contract
+ (for-syntax make-provide/contract-transformer) ;; not documented!
+ contract-out
  
  ;; from private/opt.rkt:
  opt/c define-opt/c

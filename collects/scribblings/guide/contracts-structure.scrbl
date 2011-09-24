@@ -26,8 +26,8 @@ racket
   
 (define origin (make-posn 0 0))
 
-(provide/contract 
- [origin (struct/c posn zero? zero?)])
+(provide (contract-out
+          [origin (struct/c posn zero? zero?)]))
 ]
 
 In this example, the module imports a library for representing positions, which
@@ -48,10 +48,10 @@ informal data definition as follows:
 racket
 (struct posn (x y))
   
-(provide/contract 
- [struct posn ((x number?) (y number?))]
- [p-okay posn?]
- [p-sick posn?])
+(provide (contract-out
+          [struct posn ((x number?) (y number?))]
+          [p-okay posn?]
+          [p-sick posn?]))
 
 (define p-okay (posn 10 20))
 (define p-sick (posn 'a 'b))
@@ -110,9 +110,10 @@ If we want to fix the contract for @racket[p-sick] so that the error
 is caught when @racket[sick] is exported, a single change suffices:
 
 @racketblock[
-(provide/contract 
- ...
- [p-sick (struct/c posn number? number?)])
+(provide
+ (contract-out
+  ...
+  [p-sick (struct/c posn number? number?)]))
 ]
 
 That is, instead of exporting @racket[p-sick] as a plain
@@ -166,9 +167,9 @@ racket
 (define (bst? b) (bst-between? b -inf.0 +inf.0))
   
 (provide (struct node (val left right)))
-(provide/contract
- [bst? (any/c . -> . boolean?)]
- [in? (number? bst? . -> . boolean?)])
+(provide (contract-out
+          [bst? (any/c . -> . boolean?)]
+          [in? (number? bst? . -> . boolean?)]))
 ]
 
 In a full binary search tree, this means that
@@ -231,9 +232,9 @@ racket
 (define bst/c (bst-between/c -inf.0 +inf.0))
 
 (provide make-node node-left node-right node-val node?)
-(provide/contract
- [bst/c contract?]
- [in? (number? bst/c . -> . boolean?)])
+(provide (contract-out
+          [bst/c contract?]
+          [in? (number? bst/c . -> . boolean?)]))
 ]
 
 In general, each use of @racket[node/dc] must name the

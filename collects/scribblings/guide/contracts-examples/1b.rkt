@@ -35,25 +35,26 @@
 (define c0 0)
 ;; end of implementation
 
-(provide/contract
- ;; how many customers are in the db?
- [count    natural-number/c]
- ;; is the customer with this id active?
- [active?  (-> id? boolean?)]
- ;; what is the name of the customer with this id?
- [name     (-> (and/c id? active?) string?)]
- ;; change the name of the customer with this id
- [set-name (->d ([id id?] [nn string?])
-                ()
-                [result any/c] ;; result contract
-                #:post-cond
-                (string=? (name id) nn))]
+(provide
+ (contract-out
+  ;; how many customers are in the db?
+  [count    natural-number/c]
+  ;; is the customer with this id active?
+  [active?  (-> id? boolean?)]
+  ;; what is the name of the customer with this id?
+  [name     (-> (and/c id? active?) string?)]
+  ;; change the name of the customer with this id
+  [set-name (->d ([id id?] [nn string?])
+                 ()
+                 [result any/c] ;; result contract
+                 #:post-cond
+                 (string=? (name id) nn))]
 
- [add      (->d ([bc (and/c basic-customer? not-active?)])
-                ()
-                ;; A pre-post condition contract must use
-                ;; a side-effect to express this contract
-                ;; via post-conditions
-                #:pre-cond (set! c0 count)
-                [result any/c] ;; result contract
-                #:post-cond (> count c0))])
+  [add      (->d ([bc (and/c basic-customer? not-active?)])
+                 ()
+                 ;; A pre-post condition contract must use
+                 ;; a side-effect to express this contract
+                 ;; via post-conditions
+                 #:pre-cond (set! c0 count)
+                 [result any/c] ;; result contract
+                 #:post-cond (> count c0))]))

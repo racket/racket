@@ -28,9 +28,9 @@ Here is a module that might represent a bank account:
 @racketmod[
 racket
 
-(provide/contract 
-  [deposit (-> number? any)]
-  [balance (-> number?)])
+(provide (contract-out
+          [deposit (-> number? any)]
+          [balance (-> number?)]))
 
 (define amount 0)
 (define (deposit a) (set! amount (+ amount a)))
@@ -79,8 +79,8 @@ If you are used to mathematical function, you may prefer a contract
   people's code:
 
 @racketblock[
-(provide/contract
-  [deposit (number? . -> . any)])
+(provide (contract-out
+          [deposit (number? . -> . any)]))
 ]
 
 If a Racket S-expression contains two dots with a symbol in the middle,
@@ -159,12 +159,12 @@ racket
 (define (amount? a)
   (and (number? a) (integer? a) (exact? a) (>= a 0)))
 
-(provide/contract
-  (code:comment "an amount is a natural number of cents")
-  (code:comment "is the given number an amount?")
-  [deposit (-> amount? any)]
-  [amount? (-> any/c boolean?)]
-  [balance (-> amount?)])
+(provide (contract-out
+          (code:comment "an amount is a natural number of cents")
+          (code:comment "is the given number an amount?")
+          [deposit (-> amount? any)]
+          [amount? (-> any/c boolean?)]
+          [balance (-> amount?)]))
   
 (define amount 0)
 (define (deposit a) (set! amount (+ amount a)))
@@ -190,9 +190,9 @@ In this case, we could also have used @racket[natural-number/c] in
 place of @racket[amount?], since it implies exactly the same check:
 
 @racketblock[
-(provide/contract
-  [deposit (-> natural-number/c any)]
-  [balance (-> natural-number/c)])
+(provide (contract-out
+          [deposit (-> natural-number/c any)]
+          [balance (-> natural-number/c)]))
 ]
 
 Every function that accepts one argument can be treated as a predicate
@@ -205,9 +205,9 @@ to write the contracts above:
 (define amount/c 
   (and/c number? integer? exact? (or/c positive? zero?)))
 
-(provide/contract
-  [deposit (-> amount/c any)]
-  [balance (-> amount/c)])
+(provide (contract-out
+          [deposit (-> amount/c any)]
+          [balance (-> amount/c)]))
 ]
 
 Other values also serve double duty as contracts.  For example, if a
@@ -229,14 +229,14 @@ racket
   (and (>= L 3)
        (char=? #\. (string-ref str (- L 3)))))
 
-(provide/contract
-  (code:comment "convert a random number to a string")
-  [format-number (-> number? string?)]
+(provide (contract-out
+          (code:comment "convert a random number to a string")
+          [format-number (-> number? string?)]
 
-  (code:comment "convert an amount into a string with a decimal")
-  (code:comment "point, as in an amount of US currency")
-  [format-nat (-> natural-number/c
-                  (and/c string? has-decimal?))])
+          (code:comment "convert an amount into a string with a decimal")
+          (code:comment "point, as in an amount of US currency")
+          [format-nat (-> natural-number/c
+                          (and/c string? has-decimal?))]))
 ]
 The contract of the exported function @racket[format-number] specifies
 that the function consumes a number and produces a string. The
@@ -270,13 +270,13 @@ racket
 
 ....
 
-(provide/contract
-  ....
-  (code:comment "convert an  amount (natural number) of cents")
-  (code:comment "into a dollar based string")
-  [format-nat (-> natural-number/c 
-                  (and/c string? 
-                         is-decimal-string?))])
+(provide (contract-out
+          ....
+          (code:comment "convert an  amount (natural number) of cents")
+          (code:comment "into a dollar-based string")
+          [format-nat (-> natural-number/c 
+                          (and/c string? 
+                                 is-decimal-string?))]))
 ]
 
 Alternately, in this case, we could use a regular expression as a
@@ -285,12 +285,13 @@ contract:
 @racketmod[
 racket
 
-(provide/contract
+(provide 
+ (contract-out
   ....
   (code:comment "convert an  amount (natural number) of cents")
-  (code:comment "into a dollar based string")
+  (code:comment "into a dollar-based string")
   [format-nat (-> natural-number/c
-                  (and/c string? #rx"[0-9]*\\.[0-9][0-9]"))])
+                  (and/c string? #rx"[0-9]*\\.[0-9][0-9]"))]))
 ]
 
 @; ------------------------------------------------------------------------
@@ -337,10 +338,11 @@ piece of art:
 @racketmod[
 racket
 
-(provide/contract
- [deposit (-> (lambda (x)
-                (and (number? x) (integer? x) (>= x 0)))
-              any)])
+(provide
+ (contract-out
+  [deposit (-> (lambda (x)
+                 (and (number? x) (integer? x) (>= x 0)))
+               any)]))
   
 (define this 0)
 (define (deposit a) ...)
@@ -372,8 +374,7 @@ racket
 (define (amount? x) (and (number? x) (integer? x) (>= x 0)))
 (define amount (flat-named-contract 'amount amount?))
   
-(provide/contract
- [deposit (amount . -> . any)])
+(provide (contract-out [deposit (amount . -> . any)]))
   
 (define this 0)
 (define (deposit a) ...)

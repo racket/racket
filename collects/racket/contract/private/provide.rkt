@@ -1,7 +1,8 @@
 #lang racket/base
 
 (provide provide/contract
-         (for-syntax make-provide/contract-transformer))
+         (protect-out (for-syntax true-provide/contract
+                                  make-provide/contract-transformer)))
 
 (require (for-syntax racket/base
                      racket/list
@@ -102,7 +103,7 @@
          ;; expressions:
          (quasisyntax/loc stx (#%expression #,stx)))))))
 
-(define-for-syntax (true-provide/contract provide-stx)
+(define-for-syntax (true-provide/contract provide-stx lift-end-declaration)
   (syntax-case provide-stx ()
     [(_ p/c-ele ...)
      (let ()
@@ -723,7 +724,7 @@
                                'provide/contract-original-contract
                                (vector #'external-name #'ctrct))])
                  
-                 (syntax-local-lift-module-end-declaration
+                 (lift-end-declaration
                   #`(begin 
                       (unless extra-test
                         (contract contract-id id pos-module-source 'ignored 'id 
@@ -783,7 +784,7 @@
     #`(begin (define-values () (values))  ;; force us into the 'module' local context
              #,stx)]
    [(module) ;; the good case
-    (true-provide/contract stx)]
+    (true-provide/contract stx syntax-local-lift-module-end-declaration)]
    [else ;; expression or internal definition
     (raise-syntax-error 'provide/contract 
                         (format "not allowed in a ~a context"

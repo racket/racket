@@ -20,8 +20,8 @@ of exported values. For example, the export specification
 @racketmod[
 racket
 
-(provide/contract 
-  [amount positive?])
+(provide (contract-out [amount positive?]))
+
 (define amount ...)
 ]
 
@@ -39,8 +39,8 @@ require the contracts library like this:
 racket/base
 (require racket/contract) (code:comment "now we can write contracts")
 
-(provide/contract 
-  [amount positive?])
+(provide (contract-out [amount positive?]))
+
 (define amount ...)
 ]
 
@@ -51,8 +51,8 @@ If we bind @racket[amount] to a number that is not positive,
 @racketmod[
 racket
 
-(provide/contract 
-  [amount positive?])  
+(provide (contract-out [amount positive?]))
+
 (define amount 0)]
 
 then, when the module is required, the monitoring
@@ -67,8 +67,8 @@ to a non-number value:
 @racketmod[
 racket
 
-(provide/contract 
-  [amount positive?])  
+(provide (contract-out [amount positive?]))
+
 (define amount 'amount)
 ]
 
@@ -80,8 +80,7 @@ values, we can ensure that the value is both a number and is
 positive, combining the two contracts with @racket[and/c]:
 
 @racketblock[
-(provide/contract 
-  [amount (and/c number? positive?)])
+(provide (contract-out [amount (and/c number? positive?)]))
 ]
 
 @;{
@@ -215,7 +214,7 @@ this section as follows:
 racket/load
 
 (module m racket
-  (provide/contract [amount (and/c number? positive?)])
+  (provide (contract-out [amount (and/c number? positive?)]))
   (define amount 150))
 
 (module n racket

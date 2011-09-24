@@ -11,14 +11,15 @@
         '(3 oranges)
         r)) ;; yet another bug 
   
-  (provide/contract
-   [argmax
-    (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
-         (r (f lov)
-            (lambda (r)
-              (define f@r (f r))
-              (and (is-first-max? r f@r f lov)
-                   (dominates-all f@r f lov)))))])
+  (provide
+   (contract-out
+    [argmax
+     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
+          (r (f lov)
+             (lambda (r)
+               (define f@r (f r))
+               (and (is-first-max? r f@r f lov)
+                    (dominates-all f@r f lov)))))]))
   
   ;; @code:comment{where}
   

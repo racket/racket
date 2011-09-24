@@ -11,18 +11,19 @@
                 '(3 oranges) ;; a bug
                 r)]))
   
-  (provide/contract
-   [argmax
-    (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
-         (r (f lov)
-            (lambda (r)
-              (cond
+  (provide
+   (contract-out
+    [argmax
+     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
+          (r (f lov)
+             (lambda (r)
+               (cond
                 [(empty? (rest lov)) (eq? (first lov) r)]
                 [else
                  (define f@r (f r))
                  (define flov (map f lov))
                  (and (is-first-max? r f@r (map list lov flov))
-                      (dominates-all f@r flov))]))))])
+                      (dominates-all f@r flov))]))))]))
   
   ; f@r is greater or equal to all f@v in flov
   (define (dominates-all f@r flov)

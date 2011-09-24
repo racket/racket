@@ -6,8 +6,9 @@
   (define (argmax f lov)
     (old:argmax f lov))
   
-  (provide/contract 
-    [argmax (-> (-> any/c real?) (and/c pair? list?) any/c)]))
+  (provide
+   (contract-out
+    [argmax (-> (-> any/c real?) (and/c pair? list?) any/c)])))
 
 (module b racket/base
   (require 'a)

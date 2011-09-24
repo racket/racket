@@ -9,13 +9,14 @@
     (define r (old:argmax f lov))
     (if (and (number? r) (= r 1/4)) 1/5 r)) ;; a bug 
   
-  (provide/contract
+  (provide
+   (contract-out
     [argmax
       (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) () 
 	(r (f lov)
            (lambda (r)
              (define f@r (f r))
-             (for/and ((v lov)) (>= f@r (f v))))))]))
+             (for/and ((v lov)) (>= f@r (f v))))))])))
 
 (module b racket/base
   (require 'a)

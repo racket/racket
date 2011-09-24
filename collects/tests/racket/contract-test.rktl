@@ -54,11 +54,19 @@
   ;; tests a passing specification
   (define (test/spec-passed name expression)
     (printf "testing: ~s\n" name)
-    (contract-eval
-     `(,test 
-        (void)
-        (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
-        (list ',expression '(void))))
+    (parameterize ([compile-enforce-module-constants #f])
+      (contract-eval
+       `(,test 
+         (void)
+         (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
+         (list ',expression '(void))))
+      (let ([new-expression (rewrite-out expression)])
+        (unless (equal? new-expression expression)
+          (contract-eval
+           `(,test 
+             (void)
+             (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
+             (list ',new-expression '(void)))))))
     (let/ec k
       (contract-eval
        `(,test (void)
@@ -76,6 +84,19 @@
           eval
           ',(rewrite expression k)))))
   
+  ;; rewrites `provide/contract' to use `contract-out'
+  (define (rewrite-out exp)
+    (let loop ([exp exp])
+      (cond
+        [(null? exp) null]
+        [(list? exp)
+         (case (car exp)
+           [(provide/contract) `(provide (contract-out . ,(cdr exp)))]
+           [else (map loop exp)])]
+        [(pair? exp) (cons (loop (car exp))
+                           (loop (cdr exp)))]
+        [else exp])))
+
   ;; rewrites `contract' to use opt/c. If there is a module definition in there, we skip that test.
   (define (rewrite exp k)
     (let loop ([exp exp])
@@ -11579,7 +11600,20 @@ so that propagation occurs.
      (compose blame-positive exn:fail:contract:blame-object)
      (with-handlers ((void values)) (contract not #t 'pos 'neg))))
 
-  
+
+  ;; check that `contract-out' contracts can use contracts
+  ;; defined later in the module
+  (test/spec-passed/result
+   'contract-out1
+   '(begin
+      (eval '(module contract-out1-m racket/base
+               (require racket/contract)
+               (provide (contract-out [f (-> ok? ok?)]))
+               (define (f x) (+ x 1))
+               (define (ok? v) (exact-integer? v))))
+      (eval '(require 'contract-out1-m))
+      (eval '(f 10)))
+   11)
   
 ;                                                            
 ;                                                            

@@ -31,8 +31,9 @@ racket
 
 (define (argmax f lov) ...)
 
-(provide/contract 
-  [argmax (-> (-> any/c real?) (and/c pair? list?) any/c)])
+(provide
+ (contract-out
+  [argmax (-> (-> any/c real?) (and/c pair? list?) any/c)]))
 ]
  This contract captures two essential conditions of the informal
  description of @racket[argmax]: 
@@ -56,13 +57,14 @@ racket
 
 (define (argmax f lov) ...)
 
-(provide/contract
+(provide
+ (contract-out
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) () 
          (r (f lov)
             (lambda (r)
               (define f@r (f r))
-              (for/and ([v lov]) (>= f@r (f v))))))])
+              (for/and ([v lov]) (>= f@r (f v))))))]))
 ]
  It is a @emph{dependent} contract that names the two arguments and uses
  the names to impose a predicate on the result. This predicate computes
@@ -78,14 +80,15 @@ racket
 
 (define (argmax f lov) ...)
 
-(provide/contract
+(provide
+ (contract-out
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) () 
          (r (f lov)
             (lambda (r)
               (define f@r (f r))
               (and (memq r lov)
-                   (for/and ([v lov]) (>= f@r (f v)))))))])
+                   (for/and ([v lov]) (>= f@r (f v)))))))]))
 ]
  The @racket[memq] function ensures that @racket[r] is @emph{intensionally equal}
  @margin-note*{That is, "pointer equality" for those who prefer to think at
@@ -106,7 +109,8 @@ racket
 
 (define (argmax f lov) ...)
 
-(provide/contract
+(provide
+ (contract-out
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
          (r (f lov)
@@ -114,7 +118,7 @@ racket
               (define f@r (f r))
               (and (for/and ([v lov]) (>= f@r (f v)))
                    (eq? (first (memf (lambda (v) (= (f v) f@r)) lov)) 
-                        r)))))])
+                        r)))))]))
 ]
  That is, the @racket[memf] function determines the first element of
  @racket[lov] whose value under @racket[f] is equal to @racket[r]'s value
@@ -143,14 +147,15 @@ racket
 
 (define (argmax f lov) ...)
 
-(provide/contract
+(provide
+ (contract-out
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
          (r (f lov)
             (lambda (r)
               (define f@r (f r))
               (and (is-first-max? r f@r f lov)
-                   (dominates-all f@r f lov)))))])
+                   (dominates-all f@r f lov)))))]))
 
 @code:comment{where}
 
@@ -184,7 +189,8 @@ racket
 
 (define (argmax f lov) ...)
 
-(provide/contract
+(provide
+ (contract-out
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
          (r (f lov)
@@ -192,7 +198,7 @@ racket
               (define f@r (f r))
               (define flov (map f lov))
               (and (is-first-max? r f@r (map list lov flov))
-                   (dominates-all f@r flov)))))])
+                   (dominates-all f@r flov)))))]))
 
 @code:comment{where}
 
@@ -237,7 +243,8 @@ racket
       (first lov)
       ...))
 
-(provide/contract
+(provide
+ (contract-out
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
          (r (f lov)
@@ -248,7 +255,7 @@ racket
                  (define f@r (f r))
                  (define flov (map f lov))
                  (and (is-first-max? r f@r (map list lov flov))
-                      (dominates-all f@r flov))]))))])
+                      (dominates-all f@r flov))]))))]))
 
 @code:comment{where}
 

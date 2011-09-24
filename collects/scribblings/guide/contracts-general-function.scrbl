@@ -18,12 +18,13 @@ Take a look at this excerpt from a string-processing module, inspired by the
 @racketmod[
 racket
 
-(provide/contract
- (code:comment @#,t{pad the given str left and right with})
- (code:comment @#,t{the (optional) char so that it is centered})
- [string-pad-center (->* (string? natural-number/c)
-                         (char?) 
-                         string?)])
+(provide
+ (contract-out
+  (code:comment @#,t{pad the given str left and right with})
+  (code:comment @#,t{the (optional) char so that it is centered})
+  [string-pad-center (->* (string? natural-number/c)
+                          (char?) 
+                          string?)]))
 
 (define (string-pad-center str width [pad #\space])
   (define field-width (min width (string-length str)))
@@ -86,8 +87,9 @@ contract on a list of arguments after the required and optional
 arguments:
 
 @racketblock[
-(provide/contract 
- [max-abs (->* (real?) () #:rest (listof real?) real?)])
+(provide
+ (contract-out
+  [max-abs (->* (real?) () #:rest (listof real?) real?)]))
 ]
 
 As always for @racket[->*], the contracts for the required arguments
@@ -131,14 +133,14 @@ racket/gui
   (send d show #t)
   answer)
 
-(provide/contract
- [ask-yes-or-no-question
-  (-> string?
-      #:default boolean?
-      #:title string?
-      #:width exact-integer?
-      #:height exact-integer?
-      boolean?)])
+(provide (contract-out
+          [ask-yes-or-no-question
+           (-> string?
+               #:default boolean?
+               #:title string?
+               #:width exact-integer?
+               #:height exact-integer?
+               boolean?)]))
 ]
 
 @margin-note{If you really want to ask a yes-or-no question
@@ -187,16 +189,15 @@ sections. In this case, we have the mandatory keyword
 @racket[#:height]. So, we write the contract like this:
 
 @racketblock[
-(provide/contract
- [ask-yes-or-no-question
-  (->* (string?
-        #:default boolean?)
+(provide (contract-out
+          [ask-yes-or-no-question
+           (->* (string?
+                 #:default boolean?)
+                (#:title string?
+                 #:width exact-integer?
+                 #:height exact-integer?)
 
-       (#:title string?
-        #:width exact-integer?
-        #:height exact-integer?)
-
-       boolean?)])
+                boolean?)]))
 ]
 
 That is, we put the mandatory keywords in the first section, and we
@@ -225,11 +226,11 @@ of numbers or a string into a new string:
 The contract for such a function is formed with the @racket[case->]
  combinator, which combines as many functional contracts as needed: 
 @racketblock[
-(provide/contract
-  [report-cost
-   (case->
-    (integer? integer? . -> . string?)
-    (string? . -> . string?))])
+(provide (contract-out
+          [report-cost
+           (case->
+            (integer? integer? . -> . string?)
+            (string? . -> . string?))]))
 ]
  As you can see, the contract for @racket[report-cost] combines two
  function contracts, which is just as many clauses as the explanation
@@ -244,7 +245,8 @@ In the case of @racket[substring1], we also know that the indices
   adding such constraints is just a matter of strengthening the individual
   contracts: 
 <racket>
-(provide/contract 
+(provide
+ (contract-out
   [substring1 (case->
                (string? . -> . string?)
                (->r ([s string?]
@@ -255,7 +257,7 @@ In the case of @racket[substring1], we also know that the indices
                      [o (and/c natural-number/c
                                (>=/c a)
                                (</c (string-length s)))])
-                  string?))])
+                  string?))]))
 </racket>
   Here we used @racket[->r] to name the parameters and express the
   numeric constraints on them. 
@@ -266,9 +268,10 @@ In the case of @racket[substring1], we also know that the indices
 The following is an excerpt from an imaginary numerics module:
 
 @racketblock[
-(provide/contract 
- [real-sqrt (->i ([argument (>=/c 1)])
-                 [result (argument) (<=/c argument)])])
+(provide
+ (contract-out
+  [real-sqrt (->i ([argument (>=/c 1)])
+                  [result (argument) (<=/c argument)])]))
 ]
 
 The contract for the exported function @racket[real-sqrt] uses the
@@ -298,10 +301,10 @@ withdrawal operation. The improved bank-account module includes a
 @racket[account] structure type and the following functions:
 
 @racketblock[
-(provide/contract
- [balance (-> account? amount/c)]
- [withdraw (-> account? amount/c account?)]
- [deposit (-> account? amount/c account?)])
+(provide (contract-out
+          [balance (-> account? amount/c)]
+          [withdraw (-> account? amount/c account?)]
+          [deposit (-> account? amount/c account?)]))
 ]
 
 Besides requiring that a client provide a valid amount for a
@@ -320,23 +323,24 @@ racket
 (define amount/c natural-number/c)
 
 (code:comment "section 2: the exports")
-(provide/contract
- [create   (amount/c . -> . account?)]
- [balance  (account? . -> . amount/c)]
- [withdraw (->i ([acc account?]
-                 [amt (acc) (and/c amount/c (<=/c (balance acc)))])
-                [result (acc amt)
-                        (and/c account? 
-                               (lambda (res)
-                                 (>= (balance res) 
-                                     (- (balance acc) amt))))])]
- [deposit  (->i ([acc account?]
-                 [amt amount/c])
-                [result (acc amt)
-                        (and/c account? 
-                               (lambda (res)
-                                 (>= (balance res) 
-                                     (+ (balance acc) amt))))])])
+(provide
+ (contract-out
+  [create   (amount/c . -> . account?)]
+  [balance  (account? . -> . amount/c)]
+  [withdraw (->i ([acc account?]
+                  [amt (acc) (and/c amount/c (<=/c (balance acc)))])
+                 [result (acc amt)
+                         (and/c account? 
+                                (lambda (res)
+                                  (>= (balance res) 
+                                      (- (balance acc) amt))))])]
+  [deposit  (->i ([acc account?]
+                  [amt amount/c])
+                 [result (acc amt)
+                         (and/c account? 
+                                (lambda (res)
+                                  (>= (balance res) 
+                                      (+ (balance acc) amt))))])]))
 
 (code:comment "section 3: the function definitions")
 (define balance account-balance)
@@ -386,16 +390,17 @@ racket
   (flat-named-contract (format msg balance0) ctr))
 
 (code:comment "section 2: the exports")
-(provide/contract
- [create   (amount/c . -> . account?)]
- [balance  (account? . -> . amount/c)]
- [withdraw (->i ([acc account?]
-                 [amt (acc) (and/c amount/c (<=/c (balance acc)))])
-                [result (acc amt) (mk-account-contract acc amt >= msg>)])]
- [deposit  (->i ([acc account?]
-                 [amt amount/c])
-                [result (acc amt) 
-                        (mk-account-contract acc amt <= msg<)])])
+(provide
+ (contract-out
+  [create   (amount/c . -> . account?)]
+  [balance  (account? . -> . amount/c)]
+  [withdraw (->i ([acc account?]
+                  [amt (acc) (and/c amount/c (<=/c (balance acc)))])
+                 [result (acc amt) (mk-account-contract acc amt >= msg>)])]
+  [deposit  (->i ([acc account?]
+                  [amt amount/c])
+                 [result (acc amt) 
+                         (mk-account-contract acc amt <= msg<)])]))
 
 (code:comment "section 3: the function definitions")
 (define balance account-balance)
@@ -452,9 +457,10 @@ racket
 (define x '())
 (define (get-x) x)
 (define (f) (set! x (cons 'f x)))
-(provide/contract 
- [f (->i () [_ (begin (set! x (cons 'ctc x)) any/c)])]
- [get-x (-> (listof symbol?))])
+(provide
+ (contract-out
+  [f (->i () [_ (begin (set! x (cons 'ctc x)) any/c)])]
+  [get-x (-> (listof symbol?))]))
 ]
 If you were to require this module, call @racket[f], then
 the result of @racket[get-x] would be @racket['(f ctc)]. In
@@ -486,18 +492,18 @@ function arrow @racket[->], since @racket[->]
 treats @racket[values] specially when it appears as the
 last result:
 @racketblock[
-(provide/contract 
- [split (-> (listof char?)
-            (values string? (listof char?)))])
+(provide (contract-out
+          [split (-> (listof char?)
+                     (values string? (listof char?)))]))
 ]
 
 The contract for such a function can also be written
 using @racket[->*]:
 @racketblock[
-(provide/contract 
- [split (->* ((listof char?))
-             ()
-             (values string? (listof char?)))])
+(provide (contract-out
+          [split (->* ((listof char?))
+                      ()
+                      (values string? (listof char?)))]))
 ]
  As before, the contract for the argument with @racket[->*] is wrapped in an
  extra pair of parentheses (and must always be wrapped like
@@ -518,10 +524,11 @@ Now, suppose that we also want to ensure that the first result of
            (<= (string-length s2) s)
            (equal? (substring s 0 (string-length s2)) s2)))))
 
-(provide/contract 
- [split (->i ([fl (listof char?)])
-             (values [s (fl) (substring-of (list->string fl))]
-                     [c (listof char?)]))])
+(provide
+ (contract-out
+  [split (->i ([fl (listof char?)])
+              (values [s (fl) (substring-of (list->string fl))]
+                      [c (listof char?)]))]))
 ]
  Like @racket[->*], the @racket[->i] combinator uses a function over the
  argument to create the range contracts. Yes, it doesn't just return one
@@ -534,10 +541,11 @@ Now, suppose that we also want to ensure that the first result of
 This contract is expensive to check, of course. Here is a slightly
   cheaper version: 
 @racketblock[
-(provide/contract 
- [split (->i ([fl (listof char?)])
-             (values [s (fl) (string-len/c (length fl))]
-                     [c (listof char?)]))])
+(provide
+ (contract-out
+  [split (->i ([fl (listof char?)])
+              (values [s (fl) (string-len/c (length fl))]
+                      [c (listof char?)]))]))
 ]
 
 
@@ -603,16 +611,17 @@ because the given function accepts only one argument.
  domain. It is then possible to combine this contract with an arity test to
  specify the correct @racket[n-step]'s contract:
 @racketblock[
-(provide/contract
- [n-step
-  (->i ([proc (inits)
-         (and/c (unconstrained-domain-> 
-                 (or/c false/c number?))
-                (λ (f) (procedure-arity-includes? 
-                        f 
-                        (length inits))))]
-        [inits (listof number?)])
-       ()
-       any)])
+(provide
+ (contract-out
+  [n-step
+   (->i ([proc (inits)
+          (and/c (unconstrained-domain-> 
+                  (or/c false/c number?))
+                 (λ (f) (procedure-arity-includes? 
+                         f 
+                         (length inits))))]
+         [inits (listof number?)])
+        ()
+        any)]))
 ]
 
