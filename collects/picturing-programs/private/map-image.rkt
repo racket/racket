@@ -255,10 +255,10 @@
 ; where each of rfunc, gfunc, bfunc, afunc is (nat(x) nat(y) -> nat)
 (define (build4-image w h rfunc gfunc bfunc afunc)
   (unless (natural? w)
-    (error 'build-image
+    (error 'build4-image
 	(format "Expected a natural number as first argument, but received ~v" w)))
   (unless (natural? h)
-    (error 'build-image
+    (error 'build4-image
 	(format "Expected a natural number as second argument, but received ~v" h)))
   (check-procedure-arity rfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as third argument")
   (check-procedure-arity gfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as fourth argument")
