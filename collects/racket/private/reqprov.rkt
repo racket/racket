@@ -127,14 +127,15 @@
                                  (import-source-mode source))))
                       sources)))]))
 
-  (define-for-syntax (make-require+provide-transformer r p)
+  (define-for-syntax (make-require+provide-transformer r p pp)
     (let-values ([(s: mk s? s-ref s-set!)
                   (make-struct-type 'req+prov
                                     #f
                                     0 0 #f
                                     (list 
                                      (cons prop:require-transformer (lambda (a) r))
-                                     (cons prop:provide-transformer (lambda (a) p))))])
+                                     (cons prop:provide-transformer (lambda (a) p))
+                                     (cons prop:provide-pre-transformer (lambda (a) pp))))])
       (mk)))
 
   (define-for-syntax (exports-at-phase stx modes mode)
@@ -155,48 +156,65 @@
      (lambda (stx)
        (shift-subs stx 1))
      (lambda (stx modes)
-       (exports-at-phase stx modes 1))))
+       (exports-at-phase stx modes 1))
+     (lambda (stx modes)
+       (recur-pre stx (if (null? modes) '(1) (map add1 modes))))))
   
   (define-syntax for-template
     (make-require+provide-transformer
      (lambda (stx)
        (shift-subs stx -1))
      (lambda (stx modes)
-       (exports-at-phase stx modes -1))))
+       (exports-at-phase stx modes -1))
+     (lambda (stx modes)
+       (recur-pre stx (if (null? modes) '(-1) (map sub1 modes))))))
   
   (define-syntax for-label
     (make-require+provide-transformer
      (lambda (stx)
        (shift-subs stx #f))
      (lambda (stx modes)
-       (exports-at-phase stx modes #f))))
-  
-  (define-syntax for-meta
-    (make-require+provide-transformer
-     (lambda (stx)
-       (syntax-case stx ()
-         [(_ mode in ...)
-          (let ([base-mode (syntax-e #'mode)])
-            (unless (or (not base-mode)
-                        (exact-integer? base-mode))
-              (raise-syntax-error
-               #f
-               "phase level must be #f or an exact integer"
-               stx
-               #'mode))
-            (shift-subs #'(for-meta in ...) base-mode))]))
+       (exports-at-phase stx modes #f))
      (lambda (stx modes)
-       (syntax-case stx ()
-         [(_ mode out ...)
-          (let ([base-mode (syntax-e #'mode)])
-            (unless (or (not base-mode)
-                        (exact-integer? base-mode))
-              (raise-syntax-error
-               #f
-               "phase level must be #f or an exact integer"
-               stx
-               #'mode))
-            (exports-at-phase #'(for-meta out ...) modes base-mode))]))))
+       (recur-pre stx '(#f)))))
+
+  (define-syntax for-meta
+    (let ([extract-phase
+           (lambda (stx mode)
+             (let ([base-mode (syntax-e mode)])
+               (unless (or (not base-mode)
+                           (exact-integer? base-mode))
+                 (raise-syntax-error
+                  #f
+                  "phase level must be #f or an exact integer"
+                  stx
+                  mode))
+               base-mode))])
+      (make-require+provide-transformer
+       (lambda (stx)
+         (syntax-case stx ()
+           [(_ mode in ...)
+            (let ([base-mode (extract-phase stx #'mode)])
+              (shift-subs #'(for-meta in ...) base-mode))]))
+       (lambda (stx modes)
+         (syntax-case stx ()
+           [(_ mode out ...)
+            (let ([base-mode (extract-phase stx #'mode)])
+              (exports-at-phase #'(for-meta out ...) modes base-mode))]))
+       (lambda (stx modes)
+         (syntax-case stx ()
+           [(_ mode out ...)
+            (let* ([base-mode (extract-phase stx #'mode)]
+                   [modes (if (null? modes)
+                              (list base-mode)
+                              (if (null? base-mode)
+                                  (list base-mode)
+                                  (map (lambda (v) (+ v base-mode)) modes)))])
+              (with-syntax ([(out ...) (map (lambda (o)
+                                              (pre-expand-export o modes))
+                                            (syntax->list #'(out ...)))])
+                (syntax/loc stx
+                  (for-meta mode out ...))))])))))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; require
@@ -591,12 +609,15 @@
     
     (syntax-case stx ()
       [(_ out ...)
-       (syntax-property
-        (quasisyntax/loc stx 
-          (#%provide #,(syntax-property
-                        #`(expand (provide-trampoline out ...))
-                        'certify-mode 'transparent)))
-        'certify-mode 'transparent)]))
+       (with-syntax ([(out ...)
+                      (map (lambda (o) (pre-expand-export o null))
+                           (syntax->list #'(out ...)))])
+         (syntax-property
+          (quasisyntax/loc stx 
+            (#%provide #,(syntax-property
+                          #`(expand (provide-trampoline out ...))
+                          'certify-mode 'transparent)))
+          'certify-mode 'transparent))]))
   
   (define-syntax (provide-trampoline stx)
     (syntax-case stx ()
@@ -630,6 +651,15 @@
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; provide transformers
+
+  (define-for-syntax (recur-pre stx modes)
+    (syntax-case stx ()
+      [(fm out ...)
+       (with-syntax ([(out ...) (map (lambda (o)
+                                       (pre-expand-export o modes))
+                                     (syntax->list #'(out ...)))])
+         (syntax/loc stx
+           (fm out ...)))]))
 
   (define-syntax all-defined-out
     (make-provide-transformer
@@ -743,24 +773,25 @@
             (apply
              append
              (map (lambda (mode)
-                    (map (lambda (orig-id bind-id)
-                           (unless (list? (identifier-binding orig-id mode))
-                             (raise-syntax-error
-                              #f
-                              (format "no binding~a for identifier"
-                                      (cond
-                                       [(eq? mode 0) ""]
-                                       [(not mode) " in the label phase level"]
-                                       [(not mode) (format " at phase level ~a" mode)]
-                                       [else ""]))
-                              stx
-                              orig-id))
-                           (make-export orig-id
-                                        (syntax-e bind-id)
-                                        mode
-                                        #f
-                                        bind-id))
-                         orig-ids bind-ids))
+                    (let ([abs-mode (and mode (+ mode (syntax-local-phase-level)))])
+                      (map (lambda (orig-id bind-id)
+                             (unless (list? (identifier-binding orig-id abs-mode))
+                               (raise-syntax-error
+                                #f
+                                (format "no binding~a for identifier"
+                                        (cond
+                                         [(eq? mode 0) ""]
+                                         [(not mode) " in the label phase level"]
+                                         [(not mode) (format " at phase level ~a" mode)]
+                                         [else ""]))
+                                stx
+                                orig-id))
+                             (make-export orig-id
+                                          (syntax-e bind-id)
+                                          mode
+                                          #f
+                                          bind-id))
+                           orig-ids bind-ids)))
                   (if (null? modes)
                       '(0)
                       modes))))]))))
@@ -799,7 +830,9 @@
                                                             (export-local-id export)
                                                             (export-mode export))))
                                   exceptions)))
-                    exports))]))))
+                    exports))]))
+     (lambda (stx modes)
+       (recur-pre stx modes))))
 
   (define-for-syntax (build-name id . parts)
     (datum->syntax
@@ -925,7 +958,9 @@
            append
            (map (lambda (out)
                   (expand-export out modes))
-                (syntax->list #'(out ...))))]))))
+                (syntax->list #'(out ...))))]))
+     (lambda (stx modes)
+       (recur-pre stx modes))))
 
   (define-syntax protect-out
     (make-provide-transformer
@@ -944,30 +979,42 @@
                     (export-mode e)
                     #t
                     (export-orig-stx e)))
-                 exports))]))))
+                 exports))]))
+     (lambda (stx modes)
+       (recur-pre stx modes))))
 
   (define-syntax prefix-out
-    (make-provide-transformer
-     (lambda (stx modes)
-       (syntax-case stx ()
-         [(_ pfx out)
-          (let ([exports (expand-export #'out modes)])
-            (unless (identifier? #'pfx)
-              (raise-syntax-error
-               #f
-               "expected an <id> for prefix, found something else"
-               stx
-               #'pfx))
-            (map (lambda (e)
-                   (make-export
-                    (export-local-id e)
-                    (string->symbol (format "~s~s"
-                                            (syntax-e #'pfx)
-                                            (export-out-sym e)))
-                    (export-mode e)
-                    (export-protect? e)
-                    (export-orig-stx e)))
-                 exports))]))))
+    (let ([check-prefix
+           (lambda (stx pfx)
+             (unless (identifier? pfx)
+               (raise-syntax-error
+                #f
+                "expected an <id> for prefix, found something else"
+                stx
+                pfx)))])
+      (make-provide-transformer
+       (lambda (stx modes)
+         (syntax-case stx ()
+           [(_ pfx out)
+            (check-prefix stx #'pfx)
+            (let ([exports (expand-export #'out modes)])
+              (map (lambda (e)
+                     (make-export
+                      (export-local-id e)
+                      (string->symbol (format "~s~s"
+                                              (syntax-e #'pfx)
+                                              (export-out-sym e)))
+                      (export-mode e)
+                      (export-protect? e)
+                      (export-orig-stx e)))
+                   exports))]))
+       (lambda (stx modes)
+         (syntax-case stx ()
+           [(_ pfx out)
+            (check-prefix stx #'pfx)
+            (with-syntax ([out (pre-expand-export #'out modes)])
+              (syntax/loc stx (prefix-out pfx out)))])))))
+           
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

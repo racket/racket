@@ -814,9 +814,10 @@ The @racket[liberal-define-context?] predicate returns @racket[#t] if
 
 A @tech{transformer binding} whose value is a structure with the
 @racket[prop:require-transformer] property implements a derived
-@racket[_require-spec] for @racket[require].
+@racket[_require-spec] for @racket[require] as a @deftech{require
+transformer}.
 
-The transformer is called with the syntax object representing its use
+A @tech{require transformer} is called with the syntax object representing its use
 as a @racket[_require-spec] within a @racket[require] form, and the
 result must be two lists: a list of @racket[import]s and a list of
 @racket[import-source]s.
@@ -847,14 +848,13 @@ former list).}
                                                           (listof import-source?)))])
          require-transformer?]{
 
-Creates a @deftech{require transformer} (i.e., a structure with the
-@racket[prop:require-transformer] property) using the given procedure
-as the transformer.}
+Creates a @tech{require transformer} using the given procedure as the
+transformer.}
 
 
 @defthing[prop:require-transformer struct-type-property?]{
 
-A property to identify @racket[require] transformers. The property
+A property to identify @tech{require transformers}. The property
 value must be a procedure that takes a syntax object and returns
 import and import-source lists.}
 
@@ -935,20 +935,41 @@ first argument.}
 
 A @tech{transformer binding} whose value is a structure with the
 @racket[prop:provide-transformer] property implements a derived
-@racket[_provide-spec] for @racket[provide].
+@racket[_provide-spec] for @racket[provide] as a @deftech{provide transformer}.
+A @tech{provide transformer} is applied as part of the last phase of
+a module's expansion, after all other declarations and expressions within
+the module are expanded.
 
-The transformer is called with the syntax object representing its use
-as a @racket[_provide-spec] within a @racket[provide] form and a list
-of symbols representing the export modes specified by enclosing
-@racket[_provide-spec]s. The result must be a list of
-@racket[export]s.
+A @tech{transformer binding} whose value is a structure with the
+@racket[prop:provide-pre-transformer] property implements a derived
+@racket[_provide-spec] for @racket[provide] as a @deftech{provide
+pre-transformer}.  A @tech{provide pre-transformer} is applied as part
+of the first phase of a module's expansion. Since it is used in the
+first phase, a @tech{provide pre-transformer} can use functions such
+as @racket[syntax-local-lift-expression] to introduce expressions and
+definitions in the enclosing module.
 
-If the derived form contains a sub-form that is a
-@racket[_provide-spec], then it can call @racket[expand-export] to
-transform the sub-@racket[_provide-spec] to a list of exports.
+An identifier can have a @tech{transformer binding} to a value that
+acts both as a @tech{provide transformer} and @tech{provide
+pre-transformer}. The result of a @tech{provide
+pre-transformer} is @emph{not} automatically re-expanded, so a
+@tech{provide pre-transformer} can usefully expand to itself in that case.
+
+A transformer is called with the syntax object representing its use as
+a @racket[_provide-spec] within a @racket[provide] form and a list of
+symbols representing the export modes specified by enclosing
+@racket[_provide-spec]s. The result of a @tech{provide transformer}
+must be a list of @racket[export]s, while the result of a
+@tech{provide pre-transformer} is a syntax object to be used as a
+@racket[_provide-spec] in the last phase of module expansion.
+
+If a derived form contains a sub-form that is a
+@racket[_provide-spec], then it can call @racket[expand-export] or
+@racket[pre-expand-export] to transform the sub-@racket[_provide-spec]
+sub-form.
 
 See also @racket[define-provide-syntax], which supports macro-style
-@racket[provide] transformers.
+@tech{provide transformers}.
 
 
 @defproc[(expand-export [stx syntax?] [modes (listof (or/c exact-integer? #f))])
@@ -957,31 +978,66 @@ See also @racket[define-provide-syntax], which supports macro-style
 Expands the given @racket[_provide-spec] to a list of exports. The
 @racket[modes] list controls the expansion of
 sub-@racket[_provide-specs]; for example, an identifier refers to a
-@tech{phase level} 0 binding unless the @racket[modes] list specifies
-otherwise. Normally, @racket[modes] is either empty or contains a
-single element.}
+binding in the @tech{phase level} of the enclosing @racket[provide]
+form, unless the @racket[modes] list specifies otherwise. Normally,
+@racket[modes] is either empty or contains a single element.}
 
 
-@defproc[(make-provide-transformer [proc (syntax? (listof (or/c exact-integer? #f))
-                                          . -> . (listof export?))])
-         provide-transformer?]{
+@defproc[(pre-expand-export [stx syntax?] [modes (listof (or/c exact-integer? #f))])
+         syntax?]{
 
-Creates a @deftech{provide transformer} (i.e., a structure with the
+Expands the given @racket[_provide-spec] at the level of @tech{provide
+pre-transformers}. The @racket[modes] argument is the same as for
+@racket[expand-export].}
+
+
+@defproc*[([(make-provide-transformer [proc (syntax? (listof (or/c exact-integer? #f))
+                                             . -> . (listof export?))])
+            provide-transformer?]
+           [(make-provide-transformer [proc (syntax? (listof (or/c exact-integer? #f))
+                                             . -> . (listof export?))]
+                                      [pre-proc (syntax? (listof (or/c exact-integer? #f))
+                                                 . -> . syntax?)])
+            (and/c provide-transformer? provide-pre-transformer?)])]{
+
+Creates a @tech{provide transformer} (i.e., a structure with the
 @racket[prop:provide-transformer] property) using the given procedure
-as the transformer.}
+as the transformer. If a @racket[pre-proc] is provided, then the result is also a
+@tech{provide pre-transformer}.}
+
+
+@defproc[(make-provide-pre-transformer [pre-proc (syntax? (listof (or/c exact-integer? #f))
+                                                  . -> . syntax?)])
+         provide-pre-transformer?]{
+
+Like @racket[make-provide-transformer], but for a value that is a
+@tech{provide pre-transformer}, only.}
 
 
 @defthing[prop:provide-transformer struct-type-property?]{
 
-A property to identify @racket[provide] transformers. The property
+A property to identify @tech{provide transformers}. The property
 value must be a procedure that takes a syntax object and mode list and
 returns an export list.}
+
+
+@defthing[prop:provide-pre-transformer struct-type-property?]{
+
+A property to identify @tech{provide pre-transformers}. The property
+value must be a procedure that takes a syntax object and mode list and
+returns a syntax object.}
 
 
 @defproc[(provide-transformer? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] has the
 @racket[prop:provide-transformer] property, @racket[#f] otherwise.}
+
+
+@defproc[(provide-pre-transformer? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] has the
+@racket[prop:provide-pre-transformer] property, @racket[#f] otherwise.}
 
 
 @defstruct[export ([local-id identifier?]

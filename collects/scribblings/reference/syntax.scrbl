@@ -722,9 +722,10 @@ default, the relevant phase level is the number of
 @racket[begin-for-syntax] forms that enclose the @racket[provide]
 form.
 
-The syntax of @racket[provide-spec] can be extended via
-@racket[define-provide-syntax], but the pre-defined forms are as
-follows.
+The syntax of @racket[provide-spec] can be extended by bindings to
+@tech{provide transformers} or @tech{provide pre-transformers}, such
+as via @racket[define-provide-syntax], but the pre-defined forms are
+as follows.
 
  @specsubform[id]{ Exports @racket[id], which must be @tech{bound}
  within the module (i.e., either defined or imported) at the relevant
