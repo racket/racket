@@ -148,6 +148,9 @@ Base connections are made using the following functions.
                   [#:server server string? "localhost"]
                   [#:port port exact-positive-integer? 3306]
                   [#:socket socket (or/c path-string? #f) #f]
+                  [#:ssl ssl (or/c 'yes 'optional 'no) 'no]
+                  [#:ssl-context ssl-context ssl-client-context?
+                   (ssl-make-client-context 'tls)]
                   [#:password password (or/c string? #f) #f]
                   [#:notice-handler notice-handler
                    (or/c 'output 'error output-port?
@@ -624,6 +627,7 @@ ODBC's DSNs.
            [#:server server string? @#,absent]
            [#:port port exact-positive-integer? @#,absent]
            [#:socket socket (or/c path-string? 'guess #f) @#,absent]
+           [#:ssl ssl (or/c 'yes 'optional 'no) @#,absent]
            [#:password password (or/c string? #f) @#,absent]
            [#:notice-handler notice-handler (or/c 'output 'error) @#,absent])
          data-source?]

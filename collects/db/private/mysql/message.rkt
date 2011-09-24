@@ -15,6 +15,7 @@ Based on protocol documentation here:
          packet?
          (struct-out handshake-packet)
          (struct-out client-authentication-packet)
+         (struct-out abbrev-client-authentication-packet)
          (struct-out command-packet)
          (struct-out command:statement-packet)
          (struct-out command:change-user-packet)
@@ -209,6 +210,10 @@ Based on protocol documentation here:
    database)
   #:transparent)
 
+(define-struct (abbrev-client-authentication-packet packet)
+  (client-flags)
+  #:transparent)
+
 (define-struct (command-packet packet)
   (command
    argument)
@@ -311,6 +316,8 @@ Based on protocol documentation here:
 
 (define (write-packet* out p)
   (match p
+    [(struct abbrev-client-authentication-packet (client-flags))
+     (io:write-le-int32 out (encode-server-flags client-flags))]
     [(struct client-authentication-packet
              (client-flags max-length charset user scramble database))
      (io:write-le-int32 out (encode-server-flags client-flags))

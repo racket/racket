@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/tcp
+         openssl
          file/sha1
          "../generic/interfaces.rkt"
          "../generic/socket.rkt"
@@ -15,6 +16,11 @@
                        #:server [server #f]
                        #:port [port #f]
                        #:socket [socket #f]
+                       #:ssl [ssl 'no]
+                       #:ssl-context [ssl-context
+                                      (case ssl
+                                        ((no) #f)
+                                        (else (ssl-make-client-context 'tls)))]
                        #:notice-handler [notice-handler void])
   (let ([connection-options
          (+ (if (or server port) 1 0)
@@ -36,7 +42,7 @@
                  [port (or port 3306)])
              (let-values ([(in out) (tcp-connect server port)])
                (send c attach-to-ports in out)))])
-    (send c start-connection-protocol database user password)
+    (send c start-connection-protocol database user password ssl ssl-context)
     c))
 
 ;; make-print-notification : output-port -> number string -> void

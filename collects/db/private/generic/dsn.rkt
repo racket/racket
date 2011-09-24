@@ -190,7 +190,7 @@ considered important.
 
 (define mysql-data-source
   (mk-specialized 'mysql-data-source 'mysql 0
-                  '(#:user #:database #:password #:server #:port #:socket
+                  '(#:user #:database #:password #:server #:port #:socket #:ssl
                     #:notice-handler)))
 
 (define sqlite3-data-source

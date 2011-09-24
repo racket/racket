@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/match
+         openssl
          openssl/sha1
          "../generic/interfaces.rkt"
          "../generic/prepared.rkt"
@@ -180,7 +181,7 @@
       (set! outport out))
 
     ;; start-connection-protocol : string string string/#f -> void
-    (define/public (start-connection-protocol dbname username password)
+    (define/public (start-connection-protocol dbname username password ssl ssl-context)
       (with-disconnect-on-error
         (fresh-exchange)
         (let ([r (recv 'mysql-connect 'handshake)])
@@ -189,9 +190,24 @@
              (check-required-flags capabilities)
              (unless (equal? auth "mysql_native_password")
                (uerror 'mysql-connect "unsupported authentication plugin: ~s" auth))
+             (define do-ssl?
+               (and (case ssl ((yes optional) #t) ((no) #f))
+                    (memq 'ssl capabilities)))
+             (when (and (eq? ssl 'yes) (not do-ssl?))
+               (uerror 'mysql-connect "server refused SSL connection"))
+             (when do-ssl?
+               (send-message
+                (make-abbrev-client-authentication-packet
+                 (desired-capabilities capabilities #t)))
+               (let-values ([(sin sout)
+                             (ports->ssl-ports inport outport
+                                               #:mode 'connect
+                                               #:context ssl-context
+                                               #:close-original? #t)])
+                 (attach-to-ports sin sout)))
              (send-message
               (make-client-authentication-packet
-               (desired-capabilities capabilities)
+               (desired-capabilities capabilities do-ssl?)
                MAX-PACKET-LENGTH
                'utf8-general-ci ;; charset
                username
@@ -208,10 +224,13 @@
                             rf)))
                 REQUIRED-CAPABILITIES))
 
-    (define/private (desired-capabilities capabilities)
-      (cons 'interactive
-            (filter (lambda (c) (memq c DESIRED-CAPABILITIES))
-                    capabilities)))
+    (define/private (desired-capabilities capabilities ssl?)
+      (let ([base
+             (cons 'interactive
+                   (filter (lambda (c) (memq c DESIRED-CAPABILITIES))
+                           capabilities))])
+        (cond [ssl? (cons 'ssl base)]
+              [else base])))
 
     ;; expect-auth-confirmation : -> void
     (define/private (expect-auth-confirmation)

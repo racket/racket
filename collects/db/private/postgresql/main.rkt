@@ -17,7 +17,10 @@
                             #:socket [socket #f]
                             #:allow-cleartext-password? [allow-cleartext-password? #f]
                             #:ssl [ssl 'no]
-                            #:ssl-context [ssl-context (ssl-make-client-context 'sslv3)]
+                            #:ssl-context [ssl-context
+                                           (case ssl
+                                             ((no) #f)
+                                             (else (ssl-make-client-context 'sslv3)))]
                             #:notice-handler [notice-handler void]
                             #:notification-handler [notification-handler void])
   (let ([connection-options

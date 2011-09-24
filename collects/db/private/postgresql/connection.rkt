@@ -3,7 +3,7 @@
          racket/match
          racket/vector
          file/md5
-         openssl/mzssl
+         openssl
          "../generic/interfaces.rkt"
          "../generic/sql-data.rkt"
          "../generic/prepared.rkt"
@@ -127,7 +127,7 @@
                   (disconnect* #f)
                   (uerror fsym
                           (string-append
-                           "backend attempted to change the client character encoding "
+                           "server attempted to change the client character encoding "
                            "from UTF8 to ~a, disconnecting")
                           value))]
                [else (void)])]))
@@ -509,7 +509,7 @@
                 ;; Backend gracefully declined
                 (void (read-byte in))
                 (unless (eq? ssl 'optional)
-                  (error 'postgresql-connect "backend refused SSL connection"))
+                  (error 'postgresql-connect "server refused SSL connection"))
                 (super attach-to-ports in out))
                ((#\E)
                 (let ([r (parse-server-message in)])
