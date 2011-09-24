@@ -129,10 +129,22 @@
  (abnormal-termination "Online-Expansion vorzeitig abgebrochen")
  (jump-to-error "Zum Fehler springen")
  (online-expansion-is-disabled "Online-Expansion ist deaktiviert")
+ (online-expansion-pending "Online-Expansion läuft ...")
+ (online-expansion-finished "Online-Expansion fertig") ;; note: there may still be errors in this case
  
+ ;; the online expansion preferences pane
+ (online-expansion "Online-Expansion") ;; title of prefs pane
+ ; the different kinds of errors
+ (online-expansion-show-read-errors-as "Reader-Fehler anzeigen")
+ (online-expansion-show-variable-errors-as "Ungebundene Bezeichner anzeigen")
+ (online-expansion-show-other-errors-as "Andere Fehler anzeigen")
+ ; locations the errors can be shown
+ (online-expansion-error-in-corner "in der Ecke des Fensters")
+ (online-expansion-error-gold-highlight "mit goldener Markierung")
+ (online-expansion-error-margin "am Rand")
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
- (read-only "Lese Modus")
+ (read-only "Nur Lesen")
  (auto-extend-selection "Automatisch erweitern")
  (overwrite "Überschreiben")
  (running "Programm läuft")
@@ -831,6 +843,8 @@
 
  (clear-error-highlight-menu-item-label "Fehlermarkierung entfernen")
  (clear-error-highlight-item-help-string "Entfernt die rosa Fehlermarkierung")
+ (jump-to-next-error-highlight-menu-item-label "Zur nächsten Fehlermarkierung springen")
+ (jump-to-prev-error-highlight-menu-item-label "Zur vorigen Fehlermarkierung springen")
  (reindent-menu-item-label "&Einrücken")
  (reindent-all-menu-item-label "&Alles einrücken")
  (semicolon-comment-out-menu-item-label "Mit &Semikolon auskommentieren")
