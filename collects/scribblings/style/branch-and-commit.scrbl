@@ -30,9 +30,19 @@ Working with the code base also requires style rules for actions on the
 Write meaningful commit messages. The first line (say 72 chars) should
  provide a concise summary of the commit. If the message must be longer,
  edit the rest of the message in your text editor and leave a blank line
- between the summary line and the rest of the message. The message for bug
- report fixes should contain ``Close PR NNNNN'' so that bug reports are
- automatically closed.
+ between the summary line and the rest of the message, like this:
+@verbatim[#:indent 2]{
+ some quick description
+
+ more blah blah blah, with more
+ details about the actual change
+}
+ The advantage of a blank line is that ``git log'' and other tools display
+ the commit messages properly. If you prefer the ``-m'' command line flag
+ over an editor, you can use several of them in a row.
+
+The message for bug report fixes should contain ``Close PR NNNNN'' so that
+ bug reports are automatically closed.
 
 To avoid 'merge commits', update your repository with @tt{git --rebase pull}.
 

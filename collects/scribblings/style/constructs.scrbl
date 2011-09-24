@@ -188,6 +188,9 @@ Use @racket[struct]s when you represent a combination of a small and fixed
 number of values.  For fixed length (long) lists, add a comment or even a
 contract that states the constraints.
 
+If a function returns several results via @racket[values], consider using
+@racket[struct]s or lists when you are dealing with four or more values.
+
 @; -----------------------------------------------------------------------------
 @section{Lambda vs Define}
 
