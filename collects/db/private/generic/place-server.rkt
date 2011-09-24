@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/class
-         racket/match
+         syntax/parse/private/minimatch
          racket/place
          racket/serialize
          unstable/lazy-require

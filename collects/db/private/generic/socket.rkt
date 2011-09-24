@@ -1,17 +1,15 @@
 #lang racket/base
 (require ffi/unsafe
-         ffi/file
-         (rename-in racket/contract [-> c->]))
-(provide/contract
- [unix-socket-connect
-  (c-> path-string?
-       (values input-port? output-port?))])
+         ffi/file)
+(provide unix-socket-connect)
 
 ;; The solaris code is untested (and thus disabled).
 
 ;; unix-socket-connect : pathlike -> input-port output-port
 ;; Connects to the unix domain socket associated with the given path.
 (define (unix-socket-connect path0)
+  (unless (path-string? path0)
+    (raise-type-error 'unix-socket-connect "path or string" path0))
   (security-guard-check-file 'unix-socket-connect path0 '(read write))
   (let* ([path* (cleanse-path (path->complete-path path0))]
          [path-b (path->bytes path*)])

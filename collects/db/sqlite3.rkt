@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          "base.rkt"
          "private/sqlite3/main.rkt")
 

@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/match
+         syntax/parse/private/minimatch
          racket/place
          racket/promise
          racket/serialize

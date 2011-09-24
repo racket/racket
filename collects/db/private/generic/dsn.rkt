@@ -1,6 +1,6 @@
 #lang racket/base
 (require unstable/lazy-require
-         racket/match
+         syntax/parse/private/minimatch
          racket/file
          racket/list)
 (provide dsn-connect
