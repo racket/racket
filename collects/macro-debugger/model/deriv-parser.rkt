@@ -43,7 +43,7 @@
     enter-check exit-check
     local-post exit-local exit-local/expr
     local-bind enter-bind exit-bind
-    local-value-result
+    local-value-result local-value-binding
     phase-up module-body
     renames-lambda
     renames-case-lambda
@@ -209,8 +209,8 @@
       (make local-bind $1 #f $2 $3)]
      [(track-origin)
       (make track-origin (car $1) (cdr $1))]
-     [(local-value ! Resolves local-value-result)
-      (make local-value $1 $2 $3 $4)]
+     [(local-value ! Resolves local-value-result local-value-binding)
+      (make local-value $1 $2 $3 $4 $5)]
      [(local-remark)
       (make local-remark $1)]
      [(local-artificial-step)

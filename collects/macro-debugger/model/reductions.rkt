@@ -488,8 +488,9 @@
         [#:pattern ?form]
         [#:rename ?form after 'track-origin]]
      |#]
-    [(struct local-value (name ?1 resolves bound?))
+    [(struct local-value (name ?1 resolves bound? binding))
      [R [! ?1]
+        ;; FIXME: notify if binding != current (identifier-binding name)???
         ;; [#:learn (list name)]
         ;; Add remark step?
         ]]

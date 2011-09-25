@@ -3,6 +3,9 @@
          "deriv.rkt")
 (provide (all-defined-out))
 
+;; NOTE: trace.rkt also depends on some token numbers
+;; eg for enter-macro, local-value, etc
+
 (define-tokens basic-empty-tokens
   (start                ; .
    next                 ; .
@@ -69,6 +72,7 @@
    track-origin         ; (cons stx stx)
    local-value          ; identifier
    local-value-result   ; boolean
+   local-value-binding  ; result of identifier-binding; added by trace.rkt, not expander
    ))
 
 (define-tokens renames-tokens
@@ -107,6 +111,7 @@
     (#f  top-non-begin           ,token-top-non-begin)
     (#f  local-remark            ,token-local-remark)
     (#f  local-artificial-step   ,token-local-artificial-step)
+    (#f  local-value-binding     ,token-local-value-binding)
 
     ;; Standard signals
     (0   visit                   ,token-visit)

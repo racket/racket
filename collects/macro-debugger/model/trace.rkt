@@ -70,26 +70,32 @@
         (set! pos (add1 pos))
         t))))
 
-(define trace-macro-limit (make-parameter #f))
+(define trace-macro-limit (make-parameter +inf.0))
 (define trace-limit-handler (make-parameter #f))
 
 ;; expand/events : stx (stx -> stx) -> stx/exn (list-of event)
 (define (expand/events sexpr expander)
   (define events null)
-  (define counter 0)
   (define (add! x y)
     (set! events (cons (cons (signal->symbol x) y) events)))
   (define add!/check
     (let ([limit (trace-macro-limit)]
-          [handler (trace-limit-handler)])
-      (if (and limit handler (exact-positive-integer? limit))
-          (lambda (x y)
-            (add! x y)
-            (when (eqv? x 8) ;; enter-macro
-              (set! counter (add1 counter))
-              (when (= counter limit)
-                (set! limit (handler counter)))))
-          add!)))
+          [handler (trace-limit-handler)]
+          [counter 0]
+          [last-local-value-id #f])
+      (lambda (x y)
+        (add! x y)
+        (case x
+          ((8) ;; enter-macro
+           (set! counter (add1 counter))
+           (when (>= counter limit)
+             (set! limit (handler counter))))
+          ((153) ;; local-value
+           (set! last-local-value-id y))
+          ((154) ;; local-value-result
+           (add! 'local-value-binding
+                 (and y (identifier-binding last-local-value-id)))
+           (set! last-local-value-id #f))))))
   (parameterize ((current-expand-observe add!/check))
     (let ([result
            (with-handlers ([(lambda (exn) #t)

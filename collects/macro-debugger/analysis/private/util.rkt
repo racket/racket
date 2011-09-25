@@ -1,7 +1,35 @@
 #lang racket/base
-(require syntax/modcode
+(require racket/path
+         syntax/modcode
          syntax/modresolve
          macro-debugger/model/trace)
+
+;; --------
+
+(provide (struct-out ref)
+         mode->nat
+         (struct-out imp))
+
+;; A Ref is (ref phase id/#f identifier-binding Mode)
+;; the def-mod, def-sym, etc parts of identifier-binding may be #f (eg, provide)
+(struct ref (phase id mode binding))
+
+;; A Mode is one of '(reference syntax-local-value quote-syntax disappeared-use provide)
+(define (mode->nat mode)
+  (case mode
+    ((reference) 0)
+    ((provide) 1)
+    ((syntax-local-value) 2)
+    ((quote-syntax) 3)
+    ((disappeared-use) 4)
+    (else (error 'mode->nat "bad mode: ~s" mode))))
+
+;; An Imp is (imp mpi phase symbol phase Ref)
+(struct imp (mod reqphase sym exp-phase ref))
+;; interpretation: reference ref could be satisfied by
+;;   (require (only (for-meta reqphase (just-meta exp-phase mod)) sym))
+
+;; --------
 
 (provide get-module-code/trace
          here-mpi?
@@ -44,22 +72,33 @@
 (provide get-module-imports
          get-module-exports
          get-module-var-exports
-         get-module-stx-exports)
+         get-module-stx-exports
+         get-module-all-exports)
 
 (struct modinfo (imports var-exports stx-exports) #:prefab)
 
 ;; cache : hash[path/symbol => modinfo]
 (define cache (make-hash))
 
+;; get-module-info/no-cache : path -> modinfo
 (define (get-module-info/no-cache resolved)
   (let ([compiled (get-module-code resolved)])
     (let-values ([(imports) (module-compiled-imports compiled)]
                  [(var-exports stx-exports) (module-compiled-exports compiled)])
+      (parameterize ((current-directory (path-only resolved)))
+        (force-all-mpis (cons var-exports stx-exports)))
       (modinfo imports var-exports stx-exports))))
 
-(define (get-module-info path)
-  (let ([resolved (resolve-module-path path #f)])
+;; get-module-info : (or module-path module-path-index) -> modinfo
+(define (get-module-info mod)
+  (let ([resolved (resolve mod)])
     (hash-ref! cache resolved (lambda () (get-module-info/no-cache resolved)))))
+
+;; resolve : (or module-path module-path-index) -> path
+(define (resolve mod)
+  (cond [(module-path-index? mod)
+         (resolved-module-path-name (module-path-index-resolve mod))]
+        [else (resolve-module-path mod #f)]))
 
 (define (get-module-imports path)
   (modinfo-imports (get-module-info path)))
@@ -70,4 +109,16 @@
 (define (get-module-exports path)
   (let ([info (get-module-info path)])
     (values (modinfo-var-exports info) (modinfo-stx-exports info))))
+(define (get-module-all-exports path)
+  (append (get-module-var-exports path)
+          (get-module-stx-exports path)))
 
+(define (force-all-mpis x)
+  (let loop ([x x])
+    (cond [(pair? x)
+           (loop (car x))
+           (loop (cdr x))]
+          [(module-path-index? x)
+           ;; uses current-directory, hopefully
+           (module-path-index-resolve x)]
+          [else (void)])))

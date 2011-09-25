@@ -1,60 +1,31 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
+         racket/cmdline
          racket/match
+         syntax/modcollapse
          unstable/struct
-         macro-debugger/model/deriv
-         "private/reftable.rkt"
+         "private/get-references.rkt"
          "private/nom-use-alg.rkt"
          "private/util.rkt")
 (provide/contract
- [check-requires (-> module-path? list?)]
- [show-requires  (-> module-path? list?)]
- [add-disappeared-uses? (parameter/c boolean?)]
+ [check-requires
+  (->* (module-path?)
+       (#:show-keep? any/c
+        #:show-bypass? any/c
+        #:show-drop? any/c
+        #:show-uses? any/c)
+       void?)]
+ [show-requires (-> module-path? list?)]
  [mpi->key (-> module-path-index? any/c)])
 
 #|
+==========
 
-The purpose of this script is to estimate a module's useless requires.
-
-Usage:
-
-  (check-requires <module-name>)
-
-Examples:
-
-  (check-requires 'typed-scheme)
-  (check-requires 'unstable/markparam)
-  (check-requires 'macro-debugger/syntax-browser/widget)
-
-The procedure prints one line per (non-label) require in the following
-format:
-
-  KEEP <module> at <phase> <optional-comment>
-    - The require must be kept because bindings defined within it are used.
-    - The optional comment indicates if the require must be kept
-      - only because its bindings are re-exported
-      - only because the whitelist DB says so
-
-  BYPASS <module> at <phase>
-    - The require is used, but only for bindings that could be more directly
-      obtained via another module. For example, 'racket' can be bypassed in favor
-      of some subset of 'racket/base', 'racket/contract', etc.
-
-  DROP <module> at <phase>
-    - The require appears to be unused. Unless it must be kept for side
-      effects or for bindings of a very unusual macro, it can be dropped
-      entirely.
-
-Notes:
-
-  BYPASS recommendations should often be disregarded, because the
-  required module is expressly intended as an aggregation module and the
-  only way to bypass it would be to require private modules
-  directly. See TODO for plans to improve BYPASS recommendations.
+Notes
 
   Ignore recommendations to DROP or BYPASS modules with side
-  effects. Read the section below (How it works) and also see the docs
-  for 'module-db' for whitelisting side-effectful modules.
+  effects. Read the section below (How it works) and also see
+  util/moduledb.rkt for whitelisting side-effectful modules.
 
   The script is not intelligent about the language, which causes
   certain spurious recommendations to appear frequently. For example,
@@ -66,7 +37,7 @@ Notes:
   remove it except by rewriting the module in scheme/base or
   racket/base.
 
-========
+==========
 
 How it works
 
@@ -87,277 +58,201 @@ The limitations:
  - misses identifiers recognized via 'free-identifier=?'
    (But those should be recorded as 'disappeared-use anyway.)
 
-|#
+==========
 
-;; ========
-
-(define add-disappeared-uses? (make-parameter #t))
-
-;; ========
-
-;; phase : (parameterof nat)
-(define phase (make-parameter 0))
-
-;; ========
-
-;; analyze : *Deriv* RefTable -> void
-;; *Deriv* = Deriv | LDeriv | BRule | ModRule | ... (anything from deriv.rkt)
-(define (analyze deriv refs)
-  (define (recur . args)
-    (let check ([arg args])
-      (cond [(syntax? arg) (error 'whoops "arg = ~s" arg)]
-            [(list? arg) (for-each check arg)]
-            [else (void)]))
-    (for ([arg (in-list args)])
-      (if (list? arg)
-          (apply recur arg)
-          (analyze arg refs))))
-  (define (recur/phase-up . args)
-    (parameterize ((phase (add1 (phase))))
-      (apply recur args)))
-  (define (add! ids)
-    (reftable-add-all! refs (phase) ids))
-
-  ;; (printf "analyze ~.s\n" deriv)
-
-  ;; Handle common base (ie, resolves) part of derivs, if applicable
-  (match deriv
-    [(base z1 z2 resolves ?1)
-     (add! resolves)
-     (when (and (syntax? z2) (add-disappeared-uses?))
-       (let ([uses (syntax-property z2 'disappeared-use)])
-         (add! (let loop ([x uses] [onto null])
-                 (cond [(identifier? x) (cons x onto)]
-                       [(pair? x) (loop (car x) (loop (cdr x) onto))]
-                       [else onto])))))]
-    [_
-     (void)])
-  ;; Handle individual variants
-  (match deriv
-    [(lift-deriv z1 z2 first lift-stx second)
-     (recur first second)]
-    [(tagrule z1 z2 tagged-stx next)
-     (recur next)]
-    [(lift/let-deriv z1 z2 first lift-stx second)
-     (recur first second)]
-
-    [(mrule z1 z2 rs ?1 me1 locals me2 ?2 etx next)
-     (recur locals next)]
-    [(local-exn exn)
-     (void)]
-    [(local-expansion z1 z2 for-stx? me1 inner lifted me2 opaque)
-     ((if for-stx? recur/phase-up recur) inner)]
-    [(local-lift expr ids)
-     (void)]
-    [(local-lift-end decl)
-     (void)]
-    [(local-lift-require req expr mexpr)
-     (void)]
-    [(local-lift-provide prov)
-     (void)]
-    [(local-bind names ?1 renames bindrhs)
-     (recur bindrhs)]
-    [(local-value name ?1 resolves bound?)
-     (when (and bound? resolves)
-       (add! (cons name resolves)))]
-    [(track-origin before after)
-     (void)]
-    [(local-remark contents)
-     (void)]
-
-    [(p:variable z1 z2 rs ?1)
-     (void)]
-    [(p:module z1 z2 rs ?1 locals tag rename check tag2 ?3 body shift)
-     (recur locals check body)]
-    [(p:#%module-begin z1 z2 rs ?1 me body ?2)
-     (recur body)]
-    [(p:define-syntaxes z1 z2 rs ?1 prep rhs locals)
-     (recur prep locals)
-     (recur/phase-up rhs)]
-    [(p:define-values z1 z2 rs ?1 rhs)
-     (recur rhs)]
-    [(p:begin-for-syntax z1 z2 rs ?1 prep body)
-     (recur prep)
-     (recur/phase-up body)]
-
-    [(p:#%expression z1 z2 rs ?1 inner untag)
-     (recur inner)]
-    [(p:if z1 z2 rs ?1 test then else)
-     (recur test then else)]
-    [(p:wcm z1 z2 rs ?1 key mark body)
-     (recur key mark body)]
-    [(p:set! _ _ _ _ id-resolves ?2 rhs)
-     (add! id-resolves)
-     (recur rhs)]
-    [(p:set!-macro _ _ _ _ deriv)
-     (recur deriv)]
-    [(p:#%app _ _ _ _ lderiv)
-     (recur lderiv)]
-    [(p:begin _ _ _ _ lderiv)
-     (recur lderiv)]
-    [(p:begin0 _ _ _ _ first lderiv)
-     (recur first lderiv)]
-
-    [(p:lambda _ _ _ _ renames body)
-     (recur body)]
-    [(p:case-lambda _ _ _ _ renames+bodies)
-     (recur renames+bodies)]
-    [(p:let-values _ _ _ _ renames rhss body)
-     (recur rhss body)]
-    [(p:letrec-values _ _ _ _ renames rhss body)
-     (recur rhss body)]
-    [(p:letrec-syntaxes+values _ _ _ _ srenames prep sbindrhss vrenames vrhss body tag)
-     (recur prep sbindrhss vrhss body)]
-
-    [(p:provide _ _ _ _ inners ?2)
-     (recur inners)]
-
-    [(p:require _ _ _ _ locals)
-     (recur locals)]
-
-    [(p:#%stratified-body _ _ _ _ bderiv)
-     (recur bderiv)]
-
-    [(p:stop _ _ _ _) (void)]
-    [(p:unknown _ _ _ _) (void)]
-    [(p:#%top _ _ _ _)
-     (void)]
-    [(p:#%datum _ _ _ _) (void)]
-    [(p:quote _ _ _ _) (void)]
-    [(p:quote-syntax z1 z2 _ _)
-     (when z2 (analyze/quote-syntax z2 refs))]
-    [(p:#%variable-reference _ _ _ _)
-     (void)]
-
-    [(lderiv _ _ ?1 derivs)
-     (recur derivs)]
-
-    [(bderiv _ _ pass1 trans pass2)
-     (recur pass1 pass2)]
-
-    [(b:error ?1)
-     (void)]
-    [(b:expr _ head)
-     (recur head)]
-    [(b:splice _ head ?1 tail ?2)
-     (recur head)]
-    [(b:defvals _ head ?1 rename ?2)
-     (recur head)]
-    [(b:defstx _ head ?1 rename ?2 prep bindrhs)
-     (recur head prep bindrhs)]
-
-    [(bind-syntaxes rhs locals)
-     (recur/phase-up rhs)
-     (recur locals)]
-
-    [(clc ?1 renames body)
-     (recur body)]
-
-    [(module-begin/phase pass1 pass2 pass3)
-     (recur pass1 pass2 pass3)]
-
-    [(mod:prim head rename prim)
-     (recur head prim)]
-    [(mod:splice head rename ?1 tail)
-     (recur head)]
-    [(mod:lift head renames tail)
-     (recur head)]
-    [(mod:lift-end tail)
-     (void)]
-    [(mod:cons head)
-     (recur head)]
-    [(mod:skip)
-     (void)]
-
-    ;; Shouldn't occur in module expansion.
-    ;; (Unless code calls 'expand' at compile-time; weird, but possible.)
-    [(ecte _ _ locals first second locals2)
-     (recur locals first second locals2)]
-    [(bfs:lift lderiv lifts)
-     (recur lderiv)]
-
-    [#f
-     (void)]))
-
-;; analyze/quote-syntax : stx RefTable -> void
-;; Current approach: estimate that an identifier in a syntax template
-;; may be used at (sub1 (phase)) or (phase).
-;; FIXME: Allow for more conservative choices, too.
-;; FIXME: #%top, #%app, #%datum, etc?
-;; FIXME: Track tentative (in quote-syntax) references separately?
-(define (analyze/quote-syntax qs-stx refs)
-  (let ([phases (list (phase) (sub1 (phase)))]
-        [stx (syntax-case qs-stx ()
-               [(_quote-syntax x) #'x])])
-    (define (add! id)
-      (for ([phase (in-list phases)])
-        (reftable-add! refs phase id)))
-    (let loop ([stx stx])
-      (let ([d (if (syntax? stx) (syntax-e stx) stx)])
-        (cond [(identifier? stx) (add! stx)]
-              [(pair? d)
-               (loop (car d))
-               (loop (cdr d))]
-              [(vector? d)
-               (map loop (vector->list d))]
-              [(prefab-struct-key d)
-               (map loop (struct->list d))]
-              [(box? d)
-               (loop (unbox d))]
-              [else
-               (void)])))))
-
-;; ========
-
-#|
-A recommendation is one of
-  (list 'keep   module-path-index phase string/#f)
-  (list 'bypass module-path-index phase)
-  (list 'drop   module-path-index phase)
-|#
-
-;; check-requires : module-path -> (listof recommendation)
-(define (check-requires mod-path)
-  (let-values ([(compiled deriv) (get-module-code/trace mod-path)])
-    (let ([refs (new-reftable)])
-      (analyze deriv refs)
-      (nom-use-alg refs compiled))))
-
-#|
-A displayed-recommendation is one of
-  (list 'keep   string phase string/#f)
-  (list 'bypass string phase)
-  (list 'drop   string phase)
-A displayed-recommendation is similar to a recommendation, but prints
-out the module-path-index for easier user consumption.
-|#
-
-;; show-requires: module-path -> (listof displayed-recommendation)
-(define (show-requires mod-path)
-  (map (match-lambda [(list-rest key mpi rest)
-                      (list* key (mpi->key mpi) rest)])
-       (check-requires mod-path)))
-
-#|
 TODO
-====
 
-Elaborate on BYPASS recommendations by finding the necessary modules
-further up the require chain to require directly.
-  - don't recommend private modules, though... heuristic
+Indicate when renaming is necessary.
+
+Handle for-label.
 
 Let user provide database of modules that should never be dropped, eg
 because they have side effects.
   - wouldn't it be awesome if this db could be a datalog program?
   - start simpler, though
 
-Verbose mode should show identifiers used by a module (for KEEP).
-For example, if only one used, good candidate to split out, if possible.
-
 Ambitious mode could analyze module and recommend ways to split module
 into independent submodules.
-
-More options for quote-syntax handling & explain current heuristic better.
-
-Handle for-label.
 |#
+
+;; ========================================
+
+#|
+A recommendation is one of
+  (list 'keep   module-path-index phase list)
+  (list 'bypass module-path-index phase list)
+  (list 'drop   module-path-index phase)
+|#
+
+;; analyze-requires : module-path -> (listof recommendation)
+(define (analyze-requires mod-path)
+  (let-values ([(compiled deriv) (get-module-code/trace mod-path)])
+    (nom-use-alg (deriv->refs deriv) compiled)))
+
+;; ========================================
+
+#|
+A displayed-recommendation is one of
+  (list 'keep   module-path phase)
+  (list 'bypass module-path phase (listof (list module-path phase)))
+  (list 'drop   module-path phase)
+
+A displayed-recommendation is similar to a recommendation, but
+converts the module-path-indexes to module paths, omits the use-lists,
+and simplifies the replacements lists.
+|#
+
+;; show-requires: module-path -> (listof displayed-recommendation)
+(define (show-requires mod-path)
+  (for/list ([entry (in-list (analyze-requires mod-path))])
+    (match entry
+      [(list 'keep mpi phase uses)
+       (list 'keep (mpi->key mpi) phase)]
+      [(list 'bypass mpi phase replacements)
+       (list 'bypass (mpi->key mpi) phase
+             (for/list ([r (in-list replacements)])
+               (match r
+                 [(list rmpis rphase uses)
+                  (list (mpi-list->module-path rmpis) rphase)])))]
+      [(list 'drop mpi phase)
+       (list 'drop (mpi->key mpi) phase)])))
+
+;; ========================================
+
+(define (check-requires mod
+                        #:show-keep? [show-keep? #t]
+                        #:show-bypass? [show-bypass? #t]
+                        #:show-drop? [show-drop? #t]
+                        #:show-uses? [show-uses? #f])
+
+  (define (show-bypass mpi replacements)
+    (for ([replacement (in-list replacements)])
+      (match replacement
+        [(list repl-mod-list phase uses)
+         (printf "  TO ~s at ~a\n"
+                 (mpi-list->module-path (append repl-mod-list (list mpi)))
+                 phase)
+         (show-uses uses 4)])))
+
+  (define (show-uses uses indent)
+    (when show-uses?
+      (for ([use (in-list uses)])
+        (match use
+          [(list sym phase modes)
+           (printf "~a~a ~a ~a\n" (make-string indent #\space) sym phase modes)]))))
+
+  (let ([recs (analyze-requires mod)])
+    (for ([rec (in-list recs)])
+      (match rec
+        [(list 'keep mpi phase uses)
+         (when show-keep?
+           (printf "KEEP ~s at ~a\n"
+                   (mpi->key mpi) phase)
+           (show-uses uses 2))]
+        [(list 'bypass mpi phase replacements)
+         (when show-bypass?
+           (printf "BYPASS ~s at ~a\n" (mpi->key mpi) phase)
+           (show-bypass mpi replacements))]
+        [(list 'drop mpi phase)
+         (when show-drop?
+           (printf "DROP ~s at ~a\n" (mpi->key mpi) phase))]))))
+
+(define (mpi-list->module-path mpi-list)
+  (let* ([mpi*
+          (let loop ([mpi #f] [mpi-list mpi-list])
+            (cond [mpi
+                   (let-values ([(mod base) (module-path-index-split mpi)])
+                     (cond [mod (module-path-index-join mod (loop base mpi-list))]
+                           [else (loop #f mpi-list)]))]
+                  [(pair? mpi-list)
+                   (loop (car mpi-list) (cdr mpi-list))]
+                  [else #f]))]
+         [collapsed
+          (let loop ([mpi mpi*])
+            (cond [mpi 
+                   (let-values ([(mod base) (module-path-index-split mpi)])
+                     (cond [mod
+                            (collapse-module-path mod (lambda () (loop base)))]
+                           [else (build-path 'same)]))]
+                  [else (build-path 'same)]))])
+    (match collapsed
+      [(list 'lib str)
+       (cond [(regexp-match? #rx"\\.rkt$" str)
+              (let* ([no-suffix (path->string (path-replace-suffix str ""))]
+                     [no-main
+                      (cond [(regexp-match #rx"^([^/]+)/main$" no-suffix)
+                             => cadr]
+                            [else no-suffix])])
+                (string->symbol no-main))]
+             [else collapsed])]
+      [(? path?)
+       (path->string (simplify-path collapsed #f))] ;; to get rid of "./" at beginning
+      [_ collapsed])))
+
+;; ========================================
+
+(require racket/cmdline)
+(provide main)
+
+#|
+Example (from racket root directory):
+
+  racket -lm macro-debugger/analysis/check-requires \
+    collects/syntax/*.rkt
+
+  racket -lm macro-debugger/analysis/check-requires -- -bu \
+    collects/syntax/*.rkt
+
+|#
+
+(define (main . args)
+
+  ;; show-keep? : boolean
+  ;; Show KEEP messages in output.
+  (define show-keep? #f)
+
+  ;; show-bypass? : boolean
+  ;; Show BYPASS messages in output.
+  (define show-bypass? #f)
+
+  ;; show-uses? : boolean
+  (define show-uses? #f)
+
+  ;; ========
+
+  (define (go mod)
+    (printf "~s:\n" mod)
+    (with-handlers ([exn:fail?
+                     (lambda (exn)
+                       (printf "ERROR in ~s\n" mod)
+                       ((error-display-handler) (exn-message exn) exn))])
+      (check-requires mod
+                      #:show-keep? show-keep?
+                      #:show-bypass? show-bypass?
+                      #:show-uses? show-uses?))
+    (newline))
+
+  ;; Command-line args are interpreted as files if the file exists,
+  ;; module names otherwise.
+  (command-line
+   #:argv args
+   #:once-each
+   [("-k" "--show-keep")
+    "Show KEEP recommendations"
+    (set! show-keep? #t)]
+   [("-b" "--show-bypass")
+    "Show BYPASS recommendations"
+    (set! show-bypass? #t)]
+   [("-u" "--show-uses")
+    "Show uses for each module"
+    (set! show-uses? #t)]
+   #:args args
+   (for ([arg (in-list args)])
+     (cond [(file-exists? arg)
+            (go `(file ,arg))]
+           [else
+            (let* ([inport (open-input-string arg)]
+                   [mod (read inport)])
+              (unless (eof-object? (peek-char inport))
+                (error "bad module name:" arg))
+              (go mod))]))))

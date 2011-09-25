@@ -41,7 +41,9 @@
 (define-struct local-lift-require (req expr mexpr) #:transparent)
 (define-struct local-lift-provide (prov) #:transparent)
 (define-struct local-bind (names ?1 renames bindrhs) #:transparent)
-(define-struct local-value (name ?1 resolves bound?) #:transparent)
+(define-struct local-value (name ?1 resolves bound? binding) #:transparent)
+  ;; binding is saved (identifier-binding name) at time of lookup, since it may change
+  ;; if name is rebound in definition context
 (define-struct track-origin (before after) #:transparent)
 (define-struct local-remark (contents) #:transparent)
   ;; contents : (listof (U string syntax))
