@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/function
-         scheme/path
-         scheme/file
+#lang racket/base
+(require racket/function
+         racket/path
+         racket/file
          unstable/file)
 (provide compile-file)
 

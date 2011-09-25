@@ -7,7 +7,6 @@
          "contract-arr-checks.rkt")
 
 (require (for-syntax racket/base
-                     racket/contract/private/helpers
                      "contract-arr-obj-helpers.rkt"))
 
 (provide object-contract)

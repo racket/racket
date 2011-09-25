@@ -1,6 +1,5 @@
 #lang scheme/base
-
-(require scheme/contract
+(require racket/contract/base
          (for-syntax scheme/base)
          "provide-doc-transform.rkt")
 

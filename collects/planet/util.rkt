@@ -12,11 +12,10 @@
          net/url
          xml/xml
          
-         mzlib/file
-         mzlib/list
-         mzlib/etc
+         racket/file
+         racket/list
          
-         racket/contract
+         racket/contract/base
          racket/port
          racket/path
          racket/class
@@ -27,9 +26,7 @@
          setup/getinfo
          setup/unpack
 
-         racket/syntax
-         unstable/syntax
-         (for-syntax racket/base syntax/parse)
+         (for-syntax racket/base)
          (prefix-in srfi1: srfi/1)
          )
 

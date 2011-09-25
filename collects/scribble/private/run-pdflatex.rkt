@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/system scheme/port scheme/promise)
+(require scheme/system scheme/port)
 
 (provide run-pdflatex)
 

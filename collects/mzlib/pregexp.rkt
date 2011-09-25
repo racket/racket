@@ -7,7 +7,7 @@
 ;; this is mostly a wrapper module.
 
 (module pregexp mzscheme
-  (require mzlib/string
+  (require (only racket/base regexp-quote regexp-split)
 	   mzlib/kw)
   (provide pregexp
 	   pregexp-match-positions

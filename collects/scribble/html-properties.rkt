@@ -1,6 +1,6 @@
 #lang scheme/base
 (require "private/provide-structs.rkt"
-         scheme/contract)
+         racket/contract/base)
 
 (provide-structs
  [body-id ([value string?])]

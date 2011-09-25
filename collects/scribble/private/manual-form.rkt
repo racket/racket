@@ -2,22 +2,16 @@
 (require "../decode.rkt"
          "../struct.rkt"
          "../scheme.rkt"
-         "../search.rkt"
          "../basic.rkt"
          "../manual-struct.rkt"
          "qsloc.rkt"
          "manual-utils.rkt"
          "manual-vars.rkt"
-         "manual-style.rkt"
          "manual-scheme.rkt"
          "manual-bind.rkt"
-         "manual-method.rkt"
-         "manual-ex.rkt"
-         scheme/string
          scheme/list
          (for-syntax scheme/base)
          (for-label scheme/base))
-
 
 (provide defform defform* defform/subs defform*/subs defform/none
          defidform defidform/inline

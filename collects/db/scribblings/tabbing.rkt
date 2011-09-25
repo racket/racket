@@ -1,6 +1,6 @@
 #lang racket/base
 (require scribble/struct
-         scribble/basic)
+         scribble/base)
 (provide & // tabbing)
 
 (define-struct tabbing-marker (kind) #:transparent)

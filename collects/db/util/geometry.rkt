@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          "private/geometry.rkt")
 
 (provide/contract

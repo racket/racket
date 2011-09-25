@@ -2,11 +2,9 @@
 
 (require (for-template scheme/base)
          syntax/boundmap
-         syntax/stx
          scheme/struct-info
          ;macro-debugger/emit
-         "patterns.rkt"
-         "compiler.rkt")
+         "patterns.rkt")
 
 (provide ddk? parse-literal all-vars pattern-var? match:syntax-err
          match-expander-transform trans-match parse-struct

@@ -4,8 +4,7 @@
          unstable/gui/notify
          "../base.rkt"
          "interfaces.rkt"
-         "model.rkt"
-         "view.rkt")
+         "model.rkt")
 (provide controller%)
 
 (define controller%

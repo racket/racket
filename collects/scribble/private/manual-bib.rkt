@@ -1,5 +1,5 @@
 #lang scheme/base
-(require scheme/contract
+(require racket/contract/base
          "../decode.rkt"
          "../struct.rkt"
          "../basic.rkt"

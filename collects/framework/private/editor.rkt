@@ -7,7 +7,7 @@
            "../gui-utils.rkt"
            mzlib/etc
            mred/mred-sig
-           scheme/path)
+           racket/path)
   
   (import mred^
           [prefix autosave: framework:autosave^]

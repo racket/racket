@@ -1,9 +1,6 @@
 (module serialize mzscheme
   (require-for-syntax syntax/struct)
-  (require syntax/modcollapse
-	   mzlib/etc
-	   mzlib/list
-           ;; core [de]serializer:
+  (require ;; core [de]serializer:
            racket/private/serialize)
 
   (provide define-serializable-struct

@@ -1,5 +1,5 @@
 (module modread mzscheme
-  (require racket/contract)
+  (require racket/contract/base)
   
   (provide with-module-reading-parameterization)
   (provide/contract

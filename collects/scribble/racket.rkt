@@ -4,10 +4,6 @@
            "search.rkt"
            "private/manual-sprop.rkt"
            "private/on-demand.rkt"
-           mzlib/class
-           mzlib/for
-           syntax/modresolve
-           syntax/modcode
            file/convertible
            (for-syntax racket/base))
   

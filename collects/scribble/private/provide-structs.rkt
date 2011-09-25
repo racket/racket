@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/serialize
-         scheme/contract
+         racket/contract/base
          (for-syntax scheme/base))
 
 (provide provide-structs)

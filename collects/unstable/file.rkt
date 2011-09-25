@@ -1,6 +1,6 @@
 #lang racket/base
 ; Responsible: Jay McCarthy
-(require racket/contract)
+(require racket/contract/base)
 
 (define (exn:fail:filesystem:exists? x)
   (and (exn:fail:filesystem? x)

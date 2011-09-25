@@ -1,7 +1,6 @@
 #lang racket/base
 ;; owner: ryanc
-(require racket/list
-         racket/class
+(require racket/class
          racket/gui/base
          "../private/notify.rkt")
 (provide (all-from-out "../private/notify.rkt")

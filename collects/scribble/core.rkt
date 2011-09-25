@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "private/provide-structs.rkt"
          scheme/serialize
-         scheme/contract
+         racket/contract/base
          file/convertible)
 
 ;; ----------------------------------------

@@ -1,6 +1,5 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         (for-syntax syntax/context)
          (for-syntax syntax/kerncase))
 (provide (for-syntax do-local))
 

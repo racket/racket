@@ -1,8 +1,7 @@
 #lang scheme/base
 
 (require scheme/gui/base
-         scheme/class)
-
+         racket/class)
 
 (provide editor-snip:decorated%
          editor-snip:decorated-snipclass%

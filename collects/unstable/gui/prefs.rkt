@@ -1,7 +1,6 @@
 #lang racket/base
 ;; owner: ryanc
-(require (for-syntax racket/base syntax/parse)
-         framework/framework)
+(require framework/preferences)
 (provide pref:get/set)
 
 (define (pref:get/set sym)

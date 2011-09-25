@@ -7,9 +7,7 @@
                     [module-identifier-mapping-get free-identifier-mapping-get]
                     [module-identifier-mapping-put! free-identifier-mapping-put!])
          (for-template racket/base
-                       "misc.rkt"
-                       "prop.rkt"
-                       "guts.rkt"))
+                       "misc.rkt"))
 
 #|
 

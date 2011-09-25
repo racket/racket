@@ -9,7 +9,6 @@
   (require "private/sigmatch.rkt")
 
   (require-for-syntax "private/sigutil.rkt")
-  (require-for-syntax "private/sigmatch.rkt")
   (require-for-syntax syntax/kerncase)
 
   (define-struct signed-unit (unit imports exports))

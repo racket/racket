@@ -2,8 +2,6 @@
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
-         ffi/unsafe/atomic
-         setup/dirs
          "glib.rkt"
          "cairo.rkt"
          "../private/utils.rkt"

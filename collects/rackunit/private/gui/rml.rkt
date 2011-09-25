@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/class
-         unstable/class-iop
          racket/gui/base
          framework
          "interfaces.rkt")

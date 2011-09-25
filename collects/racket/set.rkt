@@ -2,7 +2,8 @@
 (require (for-syntax racket/base)
          racket/serialize
          racket/pretty
-         racket/contract)
+         racket/contract/base
+         racket/contract/combinator)
 
 (provide set seteq seteqv
          set? set-eq? set-eqv? set-equal?

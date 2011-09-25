@@ -1,9 +1,8 @@
-
-(module stxparam scheme/base
-  (require scheme/stxparam)
+(module stxparam racket/base
+  (require racket/stxparam)
   (provide define-syntax-parameter
 	   syntax-parameterize)
 
-  (require scheme/stxparam-exptime)
+  (require racket/stxparam-exptime)
   (provide syntax-parameter-value
            make-parameter-rename-transformer))

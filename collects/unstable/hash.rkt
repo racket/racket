@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract)
+(require racket/contract/base)
 
 ;; Eli: See comment for `dict-union' and `dict-union!' -- these two do
 ;; make sense, but if they're in, then generalizing them to dictionaries

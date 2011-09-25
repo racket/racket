@@ -1,5 +1,5 @@
 #lang racket/base
-(require framework
+(require framework/preferences
          unstable/gui/prefs)
 (provide (all-defined-out))
 

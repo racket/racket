@@ -7,7 +7,6 @@
          ffi/unsafe/atomic
          racket/math
          racket/class
-         "hold.rkt"
          "local.rkt"
          "../unsafe/cairo.rkt"
          "../unsafe/pango.rkt"
@@ -22,8 +21,7 @@
          "dc-path.rkt"
          "point.rkt"
          "transform.rkt"
-         "local.rkt"
-         "../unsafe/bstr.rkt")
+         "local.rkt")
 
 (provide dc-mixin
          dc-backend<%>

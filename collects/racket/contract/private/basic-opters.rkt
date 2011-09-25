@@ -3,7 +3,6 @@
 (require "guts.rkt"
          "blame.rkt"
          "opt.rkt"
-         "base.rkt"
          "misc.rkt")
 (require (for-syntax racket/base
                      "opt-guts.rkt"))

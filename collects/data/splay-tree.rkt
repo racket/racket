@@ -3,7 +3,7 @@
                      racket/syntax)
          racket/match
          racket/dict
-         racket/contract
+         racket/contract/base
          "order.rkt")
 
 #|

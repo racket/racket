@@ -1,11 +1,10 @@
 #lang at-exp racket/base
 
-(require racket/contract
+(require racket/contract/base
          racket/unit
          racket/class
          racket/gui/base
          mred/mred-unit
-         mred/mred-sig
          framework/framework-unit
          framework/private/sig
          (for-syntax scheme/base)

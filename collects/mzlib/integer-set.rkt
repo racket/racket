@@ -1,6 +1,6 @@
 (module integer-set mzscheme
-  (require (all-except mzlib/list merge)
-           racket/contract)
+  (require (only racket/base foldr)
+           racket/contract/base)
   
   #;(define-syntax test-block
     (syntax-rules ()

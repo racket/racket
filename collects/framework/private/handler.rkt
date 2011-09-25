@@ -1,13 +1,12 @@
 #lang scheme/unit
 
 (require mzlib/class
-         mzlib/list
          mrlib/hierlist
          "sig.rkt"
          "../preferences.rkt"
          "../gui-utils.rkt"
          mred/mred-sig
-         scheme/path
+         racket/path
          string-constants)
 
 (import mred^

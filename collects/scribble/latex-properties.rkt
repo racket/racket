@@ -1,6 +1,6 @@
 #lang scheme/base
 (require "private/provide-structs.rkt"
-         scheme/contract)
+         racket/contract/base)
 
 (provide-structs
  [tex-addition ([path (or/c path-string? (cons/c 'collects (listof bytes?)))])]

@@ -2,7 +2,6 @@
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
-         setup/dirs
          "../private/libs.rkt"
          "../private/utils.rkt")
 

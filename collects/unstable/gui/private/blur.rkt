@@ -1,11 +1,9 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/unsafe/ops
-         racket/contract
+         racket/contract/base
          racket/class
          racket/draw
-         racket/pretty
-         racket/math
          unstable/future
          slideshow/pict)
 

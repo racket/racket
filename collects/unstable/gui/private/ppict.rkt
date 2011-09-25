@@ -3,7 +3,7 @@
          racket/list
          racket/class
          racket/stxparam
-         racket/contract
+         racket/contract/base
          slideshow/pict
          "tag-pict.rkt")
 

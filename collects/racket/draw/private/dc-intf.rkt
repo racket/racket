@@ -1,6 +1,5 @@
 #lang scheme/base
-(require scheme/class
-         "font.rkt")
+(require scheme/class)
 
 (provide dc<%>)
 

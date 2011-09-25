@@ -1,9 +1,6 @@
 #lang racket/base
-
 (require (for-syntax racket/base)
-         "base.rkt"
          "format.rkt"
-         "check-info.rkt"
          "check.rkt")
 
 (provide current-test-name

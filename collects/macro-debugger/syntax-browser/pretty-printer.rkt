@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/list
-         racket/class
+(require racket/class
          racket/pretty
          racket/gui/base
          racket/promise

@@ -11,7 +11,7 @@
          "on-demand.rkt"
          "manual-sprop.rkt"
          racket/list
-         racket/contract
+         racket/contract/base
          racket/string)
 
 (provide (rename-out [hyperlink link])

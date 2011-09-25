@@ -9,14 +9,11 @@
          scheme/serialize
          scheme/stxparam
          "manual-utils.rkt"
-         "manual-vars.rkt"
          "manual-style.rkt"
          "manual-scheme.rkt"
          "manual-bind.rkt"
          "manual-method.rkt"
          "manual-proc.rkt"
-         "manual-ex.rkt"
-         scheme/string
          scheme/list
          (for-syntax scheme/base)
          (for-label scheme/base

@@ -1,5 +1,7 @@
-#lang racket
-(require (for-syntax syntax/parse)
+#lang racket/base
+(require (for-syntax racket/base syntax/parse)
+         racket/path
+         racket/match
          unstable/syntax
          racket/syntax
          mzlib/etc

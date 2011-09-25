@@ -7,7 +7,6 @@
                   define-match-expander)
          "define-forms.rkt"
          (for-syntax "parse-legacy.rkt"
-                     "gen-match.rkt"
                      (only-in "patterns.rkt" match-...-nesting)))
 
 (provide (for-syntax match-...-nesting)

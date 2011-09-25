@@ -1,7 +1,5 @@
 #lang racket/base
-(require ffi/unsafe
-         ffi/unsafe/alloc
-         "../unsafe/cairo.rkt"
+(require "../unsafe/cairo.rkt"
          "../unsafe/bstr.rkt")
 
 (provide make-port-writer

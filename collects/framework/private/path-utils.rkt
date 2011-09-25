@@ -1,5 +1,5 @@
 #lang scheme/unit
-  (require "sig.rkt" mred/mred-sig)
+  (require "sig.rkt")
   
   (import)
   (export framework:path-utils^)

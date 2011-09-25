@@ -2,10 +2,8 @@
 
   (require mzlib/class
            "sig.rkt"
-           mred/mred-sig
-           mzlib/list
-           mzlib/etc)
-  
+           mred/mred-sig)
+
   (import [prefix icon: framework:icon^]
           mred^)
   (export framework:panel^)

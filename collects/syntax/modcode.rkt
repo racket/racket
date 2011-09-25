@@ -1,6 +1,5 @@
 #lang racket/base
-  (require mzlib/port
-           racket/contract
+  (require racket/contract/base
            "modread.rkt")
 
   (provide moddep-current-open-input-file

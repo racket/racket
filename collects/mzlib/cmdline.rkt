@@ -1,6 +1,6 @@
 #lang mzscheme
 
-(require (only scheme/cmdline parse-command-line))
+(require (only racket/cmdline parse-command-line))
 
 (provide command-line
          parse-command-line)

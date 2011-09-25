@@ -1,7 +1,7 @@
-#lang at-exp scheme/base
+#lang at-exp racket/base
 
-(require string-constants scheme/gui/base
-         scheme/contract scheme/class)
+(require string-constants racket/gui/base
+         racket/contract/base racket/class)
 (require scribble/srcdoc)
 (require/doc scheme/base scribble/manual)
 

@@ -7,7 +7,7 @@
          "html-properties.rkt"
          scheme/provide-syntax
          scheme/struct-info
-         scheme/contract
+         racket/contract/base
          (for-syntax scheme/base))
 
 (define-provide-syntax (compat**-out stx)

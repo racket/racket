@@ -34,8 +34,7 @@ the state transitions / contracts are:
            "sig.rkt"
            "../gui-utils.rkt"
            "../preferences.rkt"
-	   mred/mred-sig
-	   mzlib/list)
+	   mred/mred-sig)
   
   (import mred^
           [prefix exit: framework:exit^]

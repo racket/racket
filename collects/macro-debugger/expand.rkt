@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          "model/trace.rkt"
          "model/reductions-config.rkt"
          "model/reductions.rkt")

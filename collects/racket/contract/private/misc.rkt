@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require (for-syntax racket/base
-                     "helpers.rkt")
+(require (for-syntax racket/base)
          racket/promise
          "prop.rkt"
          "blame.rkt"

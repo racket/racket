@@ -1,15 +1,10 @@
 (module block '#%kernel
   (#%require "private/define.rkt"
-             "private/small-scheme.rkt"
-             "private/more-scheme.rkt"
              (for-syntax '#%kernel
                          "private/stx.rkt"
                          "private/small-scheme.rkt"
                          "private/stxcase-scheme.rkt"
-                         "private/name.rkt"
-                         "private/norm-define.rkt"
-                         "private/qqstx.rkt"
-                         "private/sort.rkt"))
+                         "private/qqstx.rkt"))
 
 (#%provide block)
 

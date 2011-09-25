@@ -2,7 +2,7 @@
 (require (for-syntax racket/base
                      syntax/parse
                      syntax/parse/experimental/contract)
-         racket/contract
+         racket/contract/base
          syntax/stx
          "deriv-util.rkt"
          "stx-util.rkt"

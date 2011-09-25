@@ -1,6 +1,5 @@
 #lang racket/base
-(require "syntax.rkt"
-         racket/class
+(require racket/class
          ffi/unsafe/atomic
          "dc.rkt"
          "bitmap.rkt"
@@ -10,8 +9,7 @@
          "pen.rkt"
          "brush.rkt"
          "region.rkt"
-         "dc-path.rkt"
-         "local.rkt")
+         "dc-path.rkt")
 
 (provide record-dc-mixin
          get-recorded-command

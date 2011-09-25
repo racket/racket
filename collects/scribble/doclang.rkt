@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require "struct.rkt"
-         "decode.rkt"
+(require "decode.rkt"
          (for-syntax racket/base
                      syntax/kerncase))
 

@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         framework
+         framework/preferences
          "interfaces.rkt"
          unstable/gui/notify
          unstable/gui/prefs)

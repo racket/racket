@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          (for-syntax racket/base))
 
 ;; network-error: symbol string . values -> void

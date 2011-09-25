@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/contract
+         racket/contract/base
          unstable/class-iop
          "model/trace.rkt"
          "view/interfaces.rkt"

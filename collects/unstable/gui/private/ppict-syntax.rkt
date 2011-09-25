@@ -1,7 +1,7 @@
 #lang racket/base
 (require syntax/parse syntax/parse/experimental/contract
          (for-template racket/base
-                       racket/contract
+                       racket/contract/base
                        racket/stxparam
                        slideshow/pict
                        "ppict.rkt"))

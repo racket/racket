@@ -1,6 +1,6 @@
 #lang racket/base
 ;; owned by ryanc
-(require racket/contract
+(require racket/contract/base
          racket/promise
          racket/dict
          data/splay-tree)

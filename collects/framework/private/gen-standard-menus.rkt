@@ -1,8 +1,9 @@
 #reader scribble/reader
-#lang scheme
+#lang racket/base
 (provide main)
-(require scheme/pretty
-         scheme/runtime-path)
+(require racket/pretty
+         racket/match
+         racket/runtime-path)
 (require "standard-menus-items.rkt")
 
 (define-runtime-path here ".")

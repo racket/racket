@@ -1,3 +1,3 @@
-(module pretty scheme/base
-  (require scheme/pretty)
-  (provide (all-from-out scheme/pretty)))
+(module pretty racket/base
+  (require racket/pretty)
+  (provide (all-from-out racket/pretty)))

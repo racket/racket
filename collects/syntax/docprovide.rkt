@@ -1,5 +1,5 @@
-(module docprovide scheme/base
-  (require (for-syntax scheme/base
+(module docprovide racket/base
+  (require (for-syntax racket/base
                        "private/doctable.rkt"))
 
   (define-syntaxes (provide-and-document provide-and-document/wrap)

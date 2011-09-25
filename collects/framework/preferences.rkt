@@ -26,8 +26,8 @@ the state transitions / contracts are:
 
 |#
 
-(require scribble/srcdoc racket/class
-         racket/contract racket/file)
+(require scribble/srcdoc
+         racket/contract/base racket/file)
 (require/doc racket/base scribble/manual (for-label racket/serialize))
 
 (define-struct (exn:unknown-preference exn) ())

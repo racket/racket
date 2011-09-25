@@ -6,16 +6,15 @@
          (prefix-in s/b: scribble/base)
          scribble/decode
          "../private/defaults.rkt"
-         (for-syntax racket/base racket/list)
          setup/main-collects
          scribble/html-properties
          scribble/latex-properties
          racket/stxparam
          net/ftp
          file/gunzip
-         (for-syntax racket/stxparam-exptime 
-                     racket/base
-                     setup/dirs))
+         (for-syntax racket/base
+                     racket/list
+                     racket/stxparam-exptime))
 
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/base)

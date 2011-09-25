@@ -2,7 +2,6 @@
 (require (for-syntax scheme/base
                      syntax/kerncase
                      racket/syntax)
-         "stxparam.rkt"
          "private/stxparam.rkt"
          "private/local.rkt")
 

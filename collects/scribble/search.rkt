@@ -1,7 +1,6 @@
 (module search racket/base
   (require "struct.rkt"
            "basic.rkt"
-           setup/main-collects
            syntax/modcode)
 
   (provide find-racket-tag

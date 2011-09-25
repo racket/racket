@@ -1,6 +1,6 @@
 
 (module stxparamkey '#%kernel
-  (#%require "more-scheme.rkt" "small-scheme.rkt" "define.rkt" 
+  (#%require "small-scheme.rkt" "define.rkt" 
              "stxcase.rkt" "stxloc.rkt" "with-stx.rkt")
 
   (-define-struct wrapped-renamer (renamer))

@@ -3,7 +3,7 @@
          racket/match
          racket/list
          racket/function
-         racket/contract)
+         racket/contract/base)
 
 (provide/contract
  [current-date (-> date?)]

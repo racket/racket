@@ -3,7 +3,6 @@
          racket/cmdline
          racket/match
          syntax/modcollapse
-         unstable/struct
          "private/get-references.rkt"
          "private/nom-use-alg.rkt"
          "private/util.rkt")

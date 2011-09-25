@@ -1,9 +1,8 @@
-(module struct scheme/base
-  (require (for-syntax scheme/base)
-           mzlib/etc
-           scheme/contract
+(module struct racket/base
+  (require (for-syntax racket/base)
+           racket/contract/base
            "stx.rkt"
-           scheme/struct-info)
+           racket/struct-info)
   (require (for-template mzscheme))
   
   (provide parse-define-struct

@@ -1,10 +1,8 @@
 #lang scheme/base
-
 (require "../html-properties.rkt"
          "../latex-properties.rkt"
          "on-demand.rkt"
-         setup/main-collects
-         scheme/promise)
+         setup/main-collects)
 
 (provide scheme-properties)
 

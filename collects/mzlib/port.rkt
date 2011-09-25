@@ -2,7 +2,6 @@
 
 (require (for-syntax racket/base)
          racket/contract/base
-         mzlib/list
          "private/port.rkt")
 
 (define (input-port-with-progress-evts? ip)

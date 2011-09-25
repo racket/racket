@@ -8,8 +8,7 @@
          system/exit-code
          system*/exit-code)
 
-(require mzlib/port
-         "private/streams.rkt")
+(require "private/streams.rkt")
 
 ;; Helpers: ----------------------------------------
 

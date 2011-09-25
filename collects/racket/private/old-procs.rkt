@@ -2,8 +2,6 @@
 (module old-procs '#%kernel
   (#%require "small-scheme.rkt"
              "more-scheme.rkt"
-             "misc.rkt"
-             "stxmz-body.rkt"
              "define.rkt")
 
   (#%provide make-namespace

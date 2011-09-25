@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/dict racket/match
+(require racket/match
          (for-syntax racket/base racket/list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

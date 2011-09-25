@@ -1,24 +1,14 @@
 #lang scheme/base
-(require "../decode.rkt"
-         "../struct.rkt"
+(require "../struct.rkt"
          "../scheme.rkt"
          "../search.rkt"
          "../basic.rkt"
          "../manual-struct.rkt"
          "manual-ex.rkt"
-         scheme/string
-         scheme/contract
-         scheme/list
-         scheme/class
-         scheme/stxparam
-         scheme/serialize
-         setup/main-collects
-         (for-syntax scheme/base
-                     syntax/boundmap
-                     syntax/kerncase)
+         racket/contract/base
+         (for-syntax scheme/base)
          (for-label scheme/base
                     scheme/class))
-
 
 (provide definition-site
          libs->taglet

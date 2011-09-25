@@ -2,8 +2,7 @@
 (require "core.rkt"
          "private/provide-structs.rkt"
          "decode-struct.rkt"
-         scheme/contract
-         scheme/class
+         racket/contract/base
          scheme/list)
 
 (define (pre-content? i)

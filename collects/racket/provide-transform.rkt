@@ -1,9 +1,7 @@
 (module provide-transform '#%kernel
   (#%require "private/stxcase-scheme.rkt"
-             "private/qqstx.rkt"
              "private/stx.rkt"
              "private/define-struct.rkt"
-             "private/more-scheme.rkt"
              "private/small-scheme.rkt"
              "private/define.rkt")
   

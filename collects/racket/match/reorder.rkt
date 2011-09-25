@@ -1,7 +1,6 @@
 #lang scheme/base
 
 (require "patterns.rkt"
-         scheme/list
          (for-syntax scheme/base))
 
 (provide reorder-columns)

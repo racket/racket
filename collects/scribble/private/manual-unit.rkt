@@ -1,17 +1,11 @@
 #lang scheme/base
 (require "../decode.rkt"
          "../struct.rkt"
-         "../scheme.rkt"
-         "../search.rkt"
-         "../basic.rkt"
-         "manual-utils.rkt"
          "manual-vars.rkt"
-         "manual-style.rkt"
-         "manual-scheme.rkt"
          "manual-bind.rkt"
          "manual-ex.rkt"
          "manual-proc.rkt"
-         scheme/contract
+         racket/contract/base
          (for-syntax scheme/base)
          (for-label scheme/base))
 

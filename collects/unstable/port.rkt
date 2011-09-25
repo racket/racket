@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/match
-         racket/contract
+         racket/contract/base
          syntax/srcloc)
 
 (define (port->srcloc port [source (object-name port)] [span 0])

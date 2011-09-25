@@ -4,15 +4,14 @@
 ;; 6/30/95
 
 (require string-constants
-         scheme/class
+         racket/class
          mred/mred-sig
          syntax-color/module-lexer
          "collapsed-snipclass-helpers.rkt"
          "sig.rkt"
          "../gui-utils.rkt"
          "../preferences.rkt"
-         scheme/match)
-
+         racket/match)
 
 (import mred^
         [prefix preferences: framework:preferences^]

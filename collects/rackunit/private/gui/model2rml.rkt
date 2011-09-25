@@ -1,10 +1,8 @@
 #lang racket/base
 (require racket/class
          unstable/class-iop
-         racket/list
          racket/gui/base
          racket/match
-         racket/file
          racket/path
          mrlib/include-bitmap
          (prefix-in drlink: "drracket-ui.rkt")

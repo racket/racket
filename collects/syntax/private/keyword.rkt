@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
 ;; No-contract version...
 
 (require syntax/stx
-         scheme/dict)
+         racket/private/dict) ;; no contracts
 (provide parse-keyword-options
          parse-keyword-options/eol
          options-select

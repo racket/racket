@@ -3,7 +3,7 @@
          racket/gui/base
          data/interval-map
          drracket/arrow
-         framework/framework
+         framework
          data/interval-map
          "interfaces.rkt")
 

@@ -5,17 +5,14 @@
          racket/contract/base
          racket/contract/combinator
          (only-in racket/contract/private/arrow making-a-method)
-         racket/list
          racket/stxparam
          racket/unsafe/ops
          "class-events.rkt"
          "serialize-structs.rkt"
-         "define-struct.rkt"
          (for-syntax racket/stxparam
                      syntax/kerncase
                      syntax/stx
                      syntax/name
-                     syntax/context
                      syntax/define
                      syntax/flatten-begin
                      syntax/private/boundmap

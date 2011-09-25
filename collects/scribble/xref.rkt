@@ -1,15 +1,11 @@
 #lang scheme/base
 
 (require scribble/struct
-         scribble/manual-struct
-         scribble/decode-struct
          scribble/base-render
          scribble/search
          (prefix-in html: scribble/html-render)
          scheme/class
-         mzlib/serialize
-         scheme/path
-         setup/main-collects)
+         scheme/path)
 
 (provide load-xref
          xref?

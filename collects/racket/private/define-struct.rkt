@@ -2,7 +2,7 @@
 ;;  (planet "struct.ss" ("ryanc" "macros.plt" 1 0)))
 
 (module define-struct '#%kernel
-  (#%require "more-scheme.rkt" "small-scheme.rkt" "define.rkt" "../stxparam.rkt"
+  (#%require "small-scheme.rkt" "define.rkt" "../stxparam.rkt"
              (for-syntax '#%kernel "define.rkt"
                          "stx.rkt" "stxcase-scheme.rkt" "small-scheme.rkt" 
                          "stxloc.rkt" "qqstx.rkt"

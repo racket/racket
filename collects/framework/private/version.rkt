@@ -1,7 +1,6 @@
 #lang scheme/unit
 
   (require "sig.rkt"
-           mred/mred-sig
            mzlib/string
            mzlib/list)
   (import)

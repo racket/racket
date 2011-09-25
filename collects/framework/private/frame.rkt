@@ -2,7 +2,7 @@
 
 (require string-constants
          racket/class
-         racket/contract
+         racket/contract/base
          mzlib/include
          "search.rkt"
          "sig.rkt"
@@ -12,7 +12,7 @@
          framework/private/focus-table
          mrlib/close-icon
          mred/mred-sig
-         scheme/path)
+         racket/path)
 
 (import mred^
         [prefix group: framework:group^]

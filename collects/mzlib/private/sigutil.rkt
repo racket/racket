@@ -9,7 +9,7 @@
 
   (require "sigmatch.rkt")
   (require "../unit200.rkt")
-  (require "../list.rkt")
+  (require (only racket/base filter sort))
 
   (define-struct signature (name      ; sym
 			    src       ; sym

@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/class
-         unstable/class-iop
+(require unstable/class-iop
          (for-syntax racket/base))
 (provide (all-defined-out))
 

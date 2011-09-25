@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require (for-syntax racket/base
-                     syntax/stx
                      syntax/path-spec
                      mzlib/private/increader
                      compiler/cm-accomplice))

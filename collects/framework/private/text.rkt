@@ -1,7 +1,6 @@
 #lang racket/unit
 
 (require string-constants
-         racket/unit
          racket/class
          racket/match
          racket/path
@@ -10,7 +9,6 @@
          "../preferences.rkt"
          mred/mred-sig
          mrlib/interactive-value-port
-         setup/dirs
          racket/list)
 (require setup/xref
          scribble/xref

@@ -1,4 +1,3 @@
-#lang scheme/base
-
-(require scheme/async-channel)
-(provide (all-from-out scheme/async-channel))
+#lang racket/base
+(require racket/async-channel)
+(provide (all-from-out racket/async-channel))

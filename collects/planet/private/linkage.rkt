@@ -1,11 +1,4 @@
 #lang racket/base
-
-
-(require "planet-shared.rkt"
-         "../config.rkt"
-         racket/match
-         racket/file)
-
 (provide get/linkage
          get-linkage 
          add-linkage!
@@ -58,6 +51,10 @@
 ;; causes ugliness in add-linkage! where we have the actual package but have to break it down
 ;; so the arguments needed to reconstitute it can be stored.
 
+(require "planet-shared.rkt"
+         "../config.rkt"
+         racket/match
+         racket/file)
 
 ; LINKAGE-TABLE ::= hash-table[LINKAGE-KEY -> PKG-LOCATION]
 (define LT #f) 

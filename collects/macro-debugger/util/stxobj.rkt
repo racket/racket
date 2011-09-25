@@ -1,5 +1,5 @@
 #lang racket/base
-(require (rename-in racket/contract [-> c:->])
+(require (rename-in racket/contract/base [-> c:->])
          ffi/unsafe)
 
 (define lib (ffi-lib #f))

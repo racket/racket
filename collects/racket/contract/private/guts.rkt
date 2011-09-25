@@ -1,12 +1,8 @@
 #lang racket/base
 
-(require "helpers.rkt"
-         "blame.rkt"
-         "prop.rkt"
-         racket/pretty)
+(require "prop.rkt")
 
-(require (for-syntax racket/base
-                     "helpers.rkt"))
+(require (for-syntax racket/base))
 
 (provide coerce-contract
          coerce-contracts

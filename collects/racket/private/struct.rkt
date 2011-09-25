@@ -1,11 +1,10 @@
 
 (module struct '#%kernel
-  (#%require "more-scheme.rkt" "small-scheme.rkt" "define.rkt" "../stxparam.rkt"
+  (#%require "define.rkt"
              "define-struct.rkt"
              (for-syntax '#%kernel "define.rkt"
                          "stx.rkt" "stxcase-scheme.rkt" "small-scheme.rkt" 
-                         "stxloc.rkt" "qqstx.rkt"
-                         "struct-info.rkt"))
+                         "stxloc.rkt"))
 
   (#%provide struct)
 

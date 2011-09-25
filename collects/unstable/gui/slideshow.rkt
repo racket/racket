@@ -1,8 +1,6 @@
 #lang racket/base
 (require slideshow/base slideshow/pict
-         racket/contract racket/list racket/match
-         racket/splicing racket/stxparam racket/gui/base
-         racket/block racket/class
+         racket/contract/base racket/list racket/match
          unstable/define
          (for-syntax racket/base)
          "pict.rkt")

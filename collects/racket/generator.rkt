@@ -1,12 +1,13 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
-         racket/control
-         racket/stxparam racket/splicing)
+         racket/control)
 
 (provide yield generator generator-state in-generator infinite-generator
          sequence->generator sequence->repeated-generator
          generator?)
+
+;; (require racket/stxparam racket/splicing)
 
 ;; (define-syntax-parameter yield
 ;;   (lambda (stx)

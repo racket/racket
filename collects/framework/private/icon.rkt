@@ -2,9 +2,9 @@
 
 (require (for-syntax scheme/base)
          scheme/unit
-         scheme/promise
-         scheme/class
-         scheme/runtime-path
+         racket/promise
+         racket/class
+         racket/runtime-path
          "bday.rkt"
          "sig.rkt"
          mred/mred-sig)

@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 (require syntax/stx 
          syntax/name)
 
-(require (for-syntax scheme/base))
-(require (for-template scheme/base)
+(require (for-syntax racket/base))
+(require (for-template racket/base)
          (for-template racket/contract/private/guts
                        racket/contract/private/misc
                        racket/contract/private/prop

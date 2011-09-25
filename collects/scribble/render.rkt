@@ -5,7 +5,7 @@
          "xref.rkt"
          racket/file
          racket/class
-         racket/contract
+         racket/contract/base
          (prefix-in html:  "html-render.rkt"))
 
 (provide/contract 

@@ -1,6 +1,6 @@
-(module file scheme/base
-  (require scheme/file
-           scheme/path
+(module file racket/base
+  (require racket/file
+           racket/path
            (prefix-in mz: (only-in mzscheme 
                                    open-input-file
                                    open-output-file)))

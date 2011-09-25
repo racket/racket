@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract)
+(require racket/contract/base)
 
   (define (spawn thunk)
     (thread/suspend-to-kill thunk))

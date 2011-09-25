@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         framework
+         framework/preferences
          "interfaces.rkt"
          "../syntax-browser/prefs.rkt"
          unstable/gui/notify

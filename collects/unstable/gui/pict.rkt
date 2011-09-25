@@ -1,9 +1,8 @@
 #lang racket/base
 (require slideshow/pict
-         racket/contract racket/list racket/match
+         racket/contract/base racket/match
          racket/splicing racket/stxparam racket/draw
          racket/block racket/class
-         unstable/define
          (for-syntax racket/base)
          "private/blur.rkt")
 (provide (all-from-out "private/blur.rkt"))

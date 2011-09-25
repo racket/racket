@@ -3,7 +3,7 @@
 (provide (except-out (all-from-out scheme/base) #%module-begin)
          (rename-out [module-begin #%module-begin]))
 
-(require (for-syntax scheme/base syntax/boundmap scheme/list syntax/kerncase
+(require (for-syntax scheme/base syntax/boundmap scheme/list
                      syntax/strip-context))
 
 ;; --- MF: bad hack for getting rid of comments

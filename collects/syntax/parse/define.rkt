@@ -1,8 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/parse
-                     "private/rep.rkt"
-                     "private/rep-data.rkt"
                      "private/sc.rkt"))
 (provide define-simple-macro
          (for-syntax (all-from-out syntax/parse)))

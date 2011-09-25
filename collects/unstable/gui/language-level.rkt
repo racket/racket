@@ -1,5 +1,10 @@
-#lang racket/gui
-(require drracket/tool
+#lang racket/base
+(require racket/class
+         racket/file
+         racket/dict
+         racket/unit
+         racket/gui/base
+         drracket/tool
          string-constants
          (only-in test-engine/scheme-gui make-formatter)
          (only-in test-engine/scheme-tests

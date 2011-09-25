@@ -1,6 +1,5 @@
 #lang racket/base
-(require "guts.rkt"
-         "prop.rkt"
+(require "prop.rkt"
          "blame.rkt"
          "misc.rkt"
          (for-syntax racket/base))

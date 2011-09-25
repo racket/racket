@@ -7,7 +7,7 @@
 		      syntax/name
 		      syntax/context
                       racket/syntax
-		      "list.rkt"
+		      (only racket/base filter)
 		      "private/unitidmap.rkt")
 
   ;; ----------------------------------------------------------------------

@@ -1,6 +1,5 @@
 #lang scheme/unit
   (require mzlib/class
-           mzlib/etc
            mred
            string-constants
            "../preferences.rkt"

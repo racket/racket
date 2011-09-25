@@ -1,12 +1,10 @@
 #lang scheme/base
-
 (require "core.rkt"
          "latex-properties.rkt"
          "private/render-utils.rkt"
          scheme/class
          scheme/runtime-path
          scheme/port
-         scheme/path
          scheme/string
          scheme/list
          setup/main-collects

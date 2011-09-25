@@ -1,11 +1,7 @@
 #lang scheme/base
 
 (require (for-template scheme/base)
-         syntax/boundmap
-         syntax/stx
-         scheme/struct-info
          "patterns.rkt"
-         "compiler.rkt"
          "parse-helper.rkt")
 
 (provide parse-quasi)

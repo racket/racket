@@ -1,6 +1,5 @@
 (module package-helper mzscheme
-  (require syntax/stx
-	   syntax/boundmap)
+  (require syntax/boundmap)
 
   (provide str str? str-renames str-all-renames make-str 
 	   check-defn-context

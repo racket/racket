@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 (require "stx.rkt"
          unstable/struct
-         (for-template scheme/base
+         (for-template racket/base
                        "private/template-runtime.rkt"))
 
 (provide transform-template)

@@ -1,10 +1,9 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     racket/syntax
                      syntax/parse
                      syntax/parse/experimental/contract
                      "private/ppict-syntax.rkt")
-         racket/contract
+         racket/contract/base
          slideshow/pict
          "private/ppict.rkt"
          "private/tag-pict.rkt")

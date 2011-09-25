@@ -6,9 +6,8 @@
 (require "stacktrace.rkt"
          "errortrace-key.rkt"
          "private/utils.rkt"
-         racket/contract
+         racket/contract/base
          racket/unit
-         racket/runtime-path
          (for-template racket/base)
          (for-syntax racket/base))
 

@@ -1,8 +1,6 @@
 #lang scheme/base
 (require scribble/doclang
-         scribble/core
          (except-in scribble/base author)
-         scribble/decode
          scribble/jfp
          setup/main-collects
          "../private/defaults.rkt"

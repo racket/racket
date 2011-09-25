@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          racket/gui/base
          "private/base.rkt"
          "private/gui/gui.rkt")

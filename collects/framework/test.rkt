@@ -1,6 +1,10 @@
-#lang at-exp scheme/gui
+#lang at-exp racket/base
 
-(require scribble/srcdoc
+(require racket/class
+         racket/contract/base
+         racket/gui/base
+         scribble/srcdoc
+         (for-syntax racket/base)
          (prefix-in :: framework/private/focus-table))
 (require/doc scheme/base scribble/manual
              (for-label framework))

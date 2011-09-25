@@ -5,9 +5,7 @@
     racket/base
     racket/list
     racket/match
-    racket/block
     syntax/parse
-    syntax/kerncase
     racket/syntax
     unstable/syntax
     (for-syntax ;; phase 2!
@@ -39,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-syntax define-syntax-block
-  (block
+  (let ()
 
     (define-syntax-class declaration
       #:attributes [internal external]
@@ -55,7 +53,7 @@
                      (syntax-list decl.external ...))
        "duplicate defined name"
        #'(define-syntaxes [decl.external ...]
-           (block body ... (values decl.internal ...)))])))
+           (let () body ... (values decl.internal ...)))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

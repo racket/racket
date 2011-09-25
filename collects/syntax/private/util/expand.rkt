@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require syntax/kerncase
          syntax/stx)
 (provide head-local-expand-and-categorize-syntaxes

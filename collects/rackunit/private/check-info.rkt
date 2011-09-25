@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          "location.rkt"
          (for-syntax racket/base
                      racket/syntax))

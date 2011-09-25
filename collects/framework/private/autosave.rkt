@@ -1,12 +1,11 @@
 #lang scheme/unit
 
-  (require mzlib/class
-           scheme/file
+  (require racket/class
+           racket/file
            "sig.rkt"
            "../gui-utils.rkt"
            "../preferences.rkt"
            mred/mred-sig
-           mzlib/list
            string-constants)
   
   (import mred^

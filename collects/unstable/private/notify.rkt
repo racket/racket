@@ -1,7 +1,6 @@
 #lang racket/base
 ;; owner: ryanc
 (require (for-syntax racket/base syntax/parse racket/syntax)
-         racket/list
          racket/class)
 (provide define-notify
          notify-box%

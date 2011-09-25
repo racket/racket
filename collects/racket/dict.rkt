@@ -1,6 +1,5 @@
 #lang racket/base
-(require (for-syntax racket/base)
-         racket/contract/base
+(require racket/contract/base
          unstable/prop-contract
          "private/dict.rkt")
 

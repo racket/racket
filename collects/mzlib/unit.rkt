@@ -1,25 +1,23 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base
-                     scheme/list
+(require (for-syntax racket/base
                      syntax/boundmap
                      syntax/context
                      syntax/kerncase
                      syntax/name
                      syntax/parse
                      syntax/struct
-                     scheme/struct-info
+                     racket/struct-info
                      syntax/stx
                      syntax/location
                      "private/unit-contract-syntax.rkt"
                      "private/unit-compiletime.rkt"
                      "private/unit-syntax.rkt"))
-  
-(require mzlib/etc
+
+(require racket/block
          racket/contract/base
          racket/contract/region
-         racket/contract/combinator
-         scheme/stxparam
+         racket/stxparam
          syntax/location
          "private/unit-contract.rkt"
          "private/unit-keywords.rkt"
@@ -1154,7 +1152,7 @@
                                                    (apply append (map do-one ids tmps))))]
                                           [else (list defn-or-expr)]))
                                       expanded-body))])
-             #'(begin-with-definitions defn-or-expr ...))))))))
+             #'(block defn-or-expr ...))))))))
 
 (define-for-syntax (redirect-imports/exports import?)
   (lambda (table-stx

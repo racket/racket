@@ -1,8 +1,8 @@
 
 (module pconvert mzscheme
   
-  (require (only "list.rkt" sort)
-           scheme/mpair
+  (require (only racket/base sort)
+           racket/mpair
 	   "pconvert-prop.rkt"
            "class.rkt")
   

@@ -1,5 +1,5 @@
 #lang racket/base
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 (define-syntax-rule (provide-except-unsafe (ulib ...) u! id ...)
   (begin

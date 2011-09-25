@@ -26,7 +26,7 @@
 ;; rendering; they will also be rendered in turn until no more resources are
 ;; created.
 
-(require racket/list racket/string scribble/text "xml.rkt")
+(require scribble/text)
 
 ;; default file, urls to it will point to its directory instead, and a
 ;; /-suffixed path will render to this file

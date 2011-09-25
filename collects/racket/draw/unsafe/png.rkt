@@ -2,8 +2,6 @@
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
-         ffi/unsafe/atomic
-         setup/dirs
          "bstr.rkt"
          "../private/utils.rkt"
          "../private/libs.rkt")

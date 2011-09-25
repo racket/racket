@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "private/unit-syntax.rkt"
          "private/unit-compiletime.rkt")

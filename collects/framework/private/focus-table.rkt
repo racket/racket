@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/gui/base racket/class)
+(require racket/gui/base)
 (provide frame:lookup-focus-table
          frame:set-focus-table)
 

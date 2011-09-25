@@ -1,13 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/list
-         syntax/boundmap
+(require syntax/boundmap
          "unit-syntax.rkt")
-(require (for-syntax scheme/base))
-(require (for-template scheme/base
+(require (for-syntax racket/base))
+(require (for-template racket/base
                        "unit-keywords.rkt"
                        "unit-runtime.rkt"))
-(require racket/private/define-struct)
 
 (provide (struct-out var-info)
          (struct-out signature)

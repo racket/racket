@@ -1,11 +1,7 @@
 #lang racket/base
 
 (require (for-template racket/base)
-         syntax/boundmap
-         syntax/stx
-         racket/struct-info
          "patterns.rkt"
-         "compiler.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt")
 

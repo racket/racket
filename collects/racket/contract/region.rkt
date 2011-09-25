@@ -6,7 +6,6 @@
          current-contract-region)
 
 (require (for-syntax racket/base
-                     racket/list
                      racket/struct-info
                      syntax/define
                      syntax/kerncase

@@ -5,7 +5,7 @@ Various common pieces of code that both the client and server need to access
 ==========================================================================================
 |#
   
-  (require (only-in mzlib/file path-only)
+  (require (only-in racket/path path-only)
            mzlib/port
            racket/file
            setup/getinfo

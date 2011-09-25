@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/serialize
          racket/function
-         racket/contract
+         racket/contract/base
          (for-syntax racket/base))
 
 (define mark-parameter-first

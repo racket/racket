@@ -1,8 +1,9 @@
 #lang racket/base
 
 (require "manual.rkt" "struct.rkt" "scheme.rkt" "decode.rkt"
-         racket/string racket/list racket/file
-         racket/sandbox racket/promise racket/port file/convertible
+         racket/list
+         file/convertible ;; attached into new namespace via anchor
+         racket/sandbox racket/promise racket/port
          racket/gui/dynamic
          (for-syntax racket/base))
 

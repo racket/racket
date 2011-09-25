@@ -7,7 +7,7 @@
 
 (require "private/contract-arrow.rkt")
 (provide (all-from-out "private/contract-arrow.rkt"))
-(require (only-in racket/contract unconstrained-domain->))
+(require (only-in racket/contract/base unconstrained-domain->))
 (provide unconstrained-domain->)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -2,8 +2,7 @@
 
 (require syntax/stx
          (for-syntax scheme/base)
-         (for-template scheme/base "class-events.rkt")
-         "define-struct.rkt")
+         (for-template scheme/base "class-events.rkt"))
 
 (define insp (variable-reference->module-declaration-inspector
               (#%variable-reference)))

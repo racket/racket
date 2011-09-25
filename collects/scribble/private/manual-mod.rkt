@@ -6,8 +6,6 @@
          "manual-ex.rkt"
          "manual-style.rkt"
          "manual-scheme.rkt"
-         scheme/string
-         scheme/list
          (for-syntax scheme/base)
          (for-label scheme/base))
 

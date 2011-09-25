@@ -1,10 +1,7 @@
 
 (module stxparam '#%kernel
-  (#%require "more-scheme.rkt"
-             "letstx-scheme.rkt"
-             "define.rkt"
+  (#%require "define.rkt"
              (for-syntax '#%kernel 
-                         "../stxparam-exptime.rkt"
                          "stx.rkt" "stxcase-scheme.rkt" 
                          "small-scheme.rkt" 
                          "stxloc.rkt" "stxparamkey.rkt"))

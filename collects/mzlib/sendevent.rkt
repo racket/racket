@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/gui/dynamic)
+#lang racket/base
+(require racket/gui/dynamic)
 
 (provide send-event)
   

@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/match
-         racket/contract
+         racket/contract/base
          racket/dict
          "order.rkt")
 ;; owned by ryanc

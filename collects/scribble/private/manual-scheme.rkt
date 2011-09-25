@@ -4,10 +4,8 @@
          "../scheme.rkt"
          "../search.rkt"
          "../basic.rkt"
-         (only-in "../core.rkt" make-style box-mode)
-         racket/list
-         "manual-utils.rkt"
          "manual-style.rkt"
+         "manual-utils.rkt" ;; used via datum->syntax
          (for-syntax racket/base)
          (for-label racket/base))
 

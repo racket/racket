@@ -2,9 +2,9 @@
 
 (require (for-syntax scheme/base)
          scheme/unit
-         scheme/class
+         racket/class
          scheme/gui/base
-         scheme/runtime-path
+         racket/runtime-path
          "sig.rkt"
          "../decorated-editor-snip.rkt"
          string-constants)

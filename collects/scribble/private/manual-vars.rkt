@@ -6,7 +6,7 @@
                   make-style style-name 
                   nested-flow? nested-flow-blocks nested-flow-style)
          "../html-properties.rkt"
-         scheme/contract
+         racket/contract/base
          (for-syntax scheme/base
                      syntax/kerncase
                      syntax/boundmap)

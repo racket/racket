@@ -1,9 +1,6 @@
 
 (module unit racket/base
-  (require mzlib/unit
-           racket/contract/base
-           (for-syntax racket/base
-                       syntax/struct))
+  (require mzlib/unit)
   (provide (except-out (all-from-out mzlib/unit)
                         struct struct/ctc
                         struct~r struct~r/ctc

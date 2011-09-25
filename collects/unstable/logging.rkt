@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract)
+(require racket/contract/base)
 
 (define level/c (or/c 'fatal 'error 'warning 'info 'debug))
 (define log-message/c (vector/c level/c string? any/c))

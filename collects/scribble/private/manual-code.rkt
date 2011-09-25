@@ -2,7 +2,6 @@
 (require syntax/strip-context
          syntax-color/module-lexer
          "../racket.rkt"
-         "../core.rkt"
          "../base.rkt"
          "manual-scheme.rkt"
          "manual-style.rkt"

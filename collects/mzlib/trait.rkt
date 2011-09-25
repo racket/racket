@@ -1,3 +1,3 @@
-(module trait scheme/base
-  (require scheme/trait)
-  (provide (all-from-out scheme/trait)))
+(module trait racket/base
+  (require racket/trait)
+  (provide (all-from-out racket/trait)))

@@ -8,7 +8,6 @@
          "define-forms.rkt"
          "struct.rkt"
          (for-syntax "parse.rkt"
-                     "gen-match.rkt"
                      (only-in "patterns.rkt" match-...-nesting)))
 
 (provide (for-syntax match-...-nesting)

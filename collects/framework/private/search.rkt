@@ -1,6 +1,6 @@
 #lang scheme/base
-(require scheme/contract
-         scheme/class
+(require racket/contract/base
+         racket/class
          scheme/gui/base)
 
 (provide/contract

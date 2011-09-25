@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/class
-         racket/snip
          wxme)
 
 (provide reader)

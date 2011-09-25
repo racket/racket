@@ -2,7 +2,6 @@
 (require scribble/doclang
          scribble/core
          scribble/base
-         scribble/decode
          scribble/sigplan
          racket/list
          "../private/defaults.rkt"

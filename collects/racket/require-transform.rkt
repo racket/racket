@@ -1,13 +1,11 @@
 (module require-transform '#%kernel
   (#%require "private/stxcase-scheme.rkt"
-             "private/qqstx.rkt"
              "private/stx.rkt"
              "private/define-struct.rkt"
-             "private/more-scheme.rkt"
              "private/small-scheme.rkt"
              "private/define.rkt"
              (for-template (only '#%kernel quote))
-             (for-syntax '#%kernel "private/stxcase-scheme.rkt"))
+             (for-syntax '#%kernel))
   
   (#%provide expand-import 
              syntax-local-require-certifier 

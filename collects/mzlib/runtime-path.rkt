@@ -1,12 +1,9 @@
-
-(module runtime-path scheme/base
+(module runtime-path racket/base
   (require mzlib/etc
-           syntax/modcollapse
 	   setup/dirs
-           scheme/list
-           scheme/string
+           racket/list
            (only-in "private/runtime-path-table.rkt" table)
-           (for-syntax scheme/base))
+           (for-syntax racket/base))
 
   (provide define-runtime-path
            define-runtime-paths

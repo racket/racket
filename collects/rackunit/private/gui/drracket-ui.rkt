@@ -1,7 +1,5 @@
 #lang racket/base
-(require racket/list
-         racket/string
-         mzlib/etc
+(require mzlib/etc
          "drracket-link.rkt")
 
 ;; Procedures which *may* be overridden by DrRacket to do useful things.

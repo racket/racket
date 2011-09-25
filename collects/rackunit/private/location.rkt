@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/list
-         racket/contract)
+         racket/contract/base)
 
 ;; type location = (list any number/#f number/#f number/#f number/#f)
 ;; location : source line column position span

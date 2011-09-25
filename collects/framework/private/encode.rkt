@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/cmdline racket/string file/gzip file/gunzip net/base64)
+(require racket/cmdline file/gzip file/gunzip net/base64)
 
 (define do-lang? #f)
 

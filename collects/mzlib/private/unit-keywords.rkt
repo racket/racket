@@ -1,5 +1,5 @@
-#lang scheme/base
-(require (for-syntax scheme/base))
+#lang racket/base
+(require (for-syntax racket/base))
 
 (provide only except prefix rename tag
          import export init-depend link

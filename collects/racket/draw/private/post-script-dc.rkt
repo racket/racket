@@ -5,10 +5,8 @@
          racket/math
          "syntax.rkt"
          racket/gui/dynamic
-         ffi/unsafe
          "../unsafe/cairo.rkt"
          "dc.rkt"
-         "font.rkt"
          "local.rkt"
          "ps-setup.rkt"
          "page-dc.rkt"

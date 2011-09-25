@@ -6,7 +6,6 @@
          "patterns.rkt"
          "split-rows.rkt"
          "reorder.rkt"
-         scheme/struct-info
          scheme/stxparam
          scheme/nest
          racket/syntax)

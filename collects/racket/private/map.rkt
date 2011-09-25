@@ -4,7 +4,7 @@
 
 (module map '#%kernel
   (#%require '#%utils ; built into mzscheme
-             "more-scheme.rkt" "small-scheme.rkt" "define.rkt")
+             "small-scheme.rkt" "define.rkt")
 
   (#%provide (rename map2 map)
              (rename for-each2 for-each)

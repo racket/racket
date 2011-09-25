@@ -1,8 +1,7 @@
 #lang scheme/base
-
 (require "core.rkt"
          "private/provide-structs.rkt"
-         scheme/contract)
+         racket/contract/base)
 
 (provide-structs
  [module-path-index-desc ()]

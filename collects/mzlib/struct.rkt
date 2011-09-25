@@ -6,7 +6,7 @@
 	   define-struct/properties
 	   make-->vector)
   (require-for-syntax syntax/struct
-		      "list.rkt"
+		      (only racket/base filter)
                       syntax/stx)
 
   ;; ------------------------------------------------------------

@@ -5,8 +5,6 @@
                      (only-in racket/list append* remove-duplicates)
                      unstable/sequence
                      syntax/parse
-                     "parse.rkt"
-                     "parse-helper.rkt"
                      "patterns.rkt"
                      "gen-match.rkt"))
 

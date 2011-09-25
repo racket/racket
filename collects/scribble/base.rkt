@@ -7,9 +7,8 @@
          "html-properties.rkt"
          scheme/list
          scheme/class
-         scheme/contract
+         racket/contract/base
          setup/main-collects
-         syntax/modresolve
          (for-syntax scheme/base))
 
 ;; ----------------------------------------

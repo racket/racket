@@ -1,4 +1,6 @@
-#lang scheme
+#lang racket/base
+(require racket/promise
+         (for-syntax racket/base))
 (provide define-on-demand)
 
 (define-syntax-rule (define-on-demand id rhs)

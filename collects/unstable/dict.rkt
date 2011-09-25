@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/dict
-         racket/contract)
+         racket/contract/base)
 
 (define (dict-empty? dict)
   (not (dict-iterate-first dict)))

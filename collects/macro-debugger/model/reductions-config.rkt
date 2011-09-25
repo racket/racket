@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         racket/contract
+         racket/contract/base
          racket/match
          "../util/eomap.rkt"
          "deriv-util.rkt"

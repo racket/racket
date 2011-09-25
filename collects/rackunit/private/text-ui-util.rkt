@@ -27,14 +27,9 @@
 ;; Commentary:
 
 #lang racket/base
-
-(require (only-in srfi/13 string-contains string-drop))
-         
-
 (provide trim-current-directory)
 
 ;; trim-current-directory : string -> string
 (define (trim-current-directory path)
   (let ((cd (path->string (current-directory))))
     (regexp-replace (regexp-quote cd) path "")))
-

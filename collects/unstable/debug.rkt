@@ -19,13 +19,12 @@
          with-syntax*/debug
          parameterize/debug)
 
-(require racket/block
-         racket/match
+(require racket/match
          unstable/pretty
          syntax/srcloc
          syntax/location
          racket/syntax
-         (for-syntax racket/base racket/match syntax/parse racket/syntax))
+         (for-syntax racket/base syntax/parse racket/syntax))
 
 (define-syntax (let/debug stx)
   (syntax-parse stx

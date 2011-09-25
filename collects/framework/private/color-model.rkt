@@ -1,9 +1,6 @@
 #lang scheme/unit
-  (require mzlib/class
-           "sig.rkt"
-           mred/mred-sig
-           mzlib/list)
-  
+(require "sig.rkt")
+
   (import)
   (export framework:color-model^)
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

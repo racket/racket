@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          racket/match
          (prefix-in srfi: srfi/19)
          "../private/generic/sql-data.rkt")

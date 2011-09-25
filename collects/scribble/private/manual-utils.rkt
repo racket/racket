@@ -1,10 +1,9 @@
 #lang scheme/base
 (require "../struct.rkt"
-         "../decode.rkt"
          "../base.rkt"
          (only-in "../core.rkt"
                    content?)
-         scheme/contract
+         racket/contract/base
          scheme/list)
 
 (provide doc-prefix)

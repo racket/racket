@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (let ([load (current-load)]
       [load-extension (current-load-extension)]

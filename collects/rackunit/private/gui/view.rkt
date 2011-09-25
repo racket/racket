@@ -2,7 +2,6 @@
 (require racket/class
          unstable/class-iop
          unstable/gui/notify
-         racket/list
          racket/gui/base
          framework
          mrlib/hierlist

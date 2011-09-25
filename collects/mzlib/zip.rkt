@@ -1,7 +1,7 @@
 ;; A modification of Dave Herman's zip module
 
 (module zip mzscheme
-  (require mzlib/deflate mzlib/file mzlib/kw)
+  (require mzlib/deflate racket/file mzlib/kw)
 
   ;; ===========================================================================
   ;; DATA DEFINITIONS

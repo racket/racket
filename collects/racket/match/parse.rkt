@@ -1,10 +1,7 @@
 #lang scheme/base
 
-(require syntax/boundmap
-         syntax/stx
-         scheme/struct-info
+(require scheme/struct-info
          "patterns.rkt"
-         "compiler.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
          (for-template (only-in "runtime.rkt" matchable?)

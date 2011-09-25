@@ -30,9 +30,6 @@
 
 (require racket/match
          racket/pretty
-         srfi/13
-         srfi/26
-         "main.rkt"
          "private/base.rkt"
          "private/counter.rkt"
          "private/format.rkt"
@@ -241,6 +238,5 @@
         test))
       ((normal) (std-test/text-ui display-context test))
       ((verbose) (std-test/text-ui
-                  (cut display-context <> #t)
+                  (lambda (x) (display-context x #t))
                   test))))))
-

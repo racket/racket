@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/surrogate)
-(provide (all-from-out scheme/surrogate))
+(require racket/surrogate)
+(provide (all-from-out racket/surrogate))

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/file racket/path racket/port)
+(require racket/class racket/file racket/path)
 
 (provide make-indirect-renderer-mixin)
 

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/contract)
+(require racket/contract/base)
 
 ;; This library implements buffered channels with
 ;; and optional buffer limit (so that puts block

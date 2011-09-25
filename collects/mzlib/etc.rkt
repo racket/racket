@@ -1,22 +1,18 @@
 #lang mzscheme
-
 (require setup/main-collects
          racket/local
          racket/bool
          racket/block
          (only racket/function
                identity)
-         (only scheme/base
+         (only racket/base
                build-string
                build-list
                build-vector
                compose)
-         (rename scheme/base base-else else)
-         "kw.rkt")
+         (rename racket/base base-else else))
 
-(require-for-syntax syntax/kerncase
-                    syntax/stx
-                    syntax/name
+(require-for-syntax syntax/name
                     setup/main-collects
                     "private/stxset.rkt")
 

@@ -4,7 +4,7 @@
 
 (module misc '#%kernel
   (#%require '#%utils ; built into racket
-             "more-scheme.rkt" "small-scheme.rkt" "define.rkt"
+             "small-scheme.rkt" "define.rkt"
              (for-syntax '#%kernel "stx.rkt" "stxcase-scheme.rkt" "stxcase.rkt"))
   
   ;; -------------------------------------------------------------------------

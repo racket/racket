@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require "guts.rkt"
-         "prop.rkt"
+(require "prop.rkt"
          "blame.rkt")
 
 (provide new-∃/c

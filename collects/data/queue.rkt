@@ -1,6 +1,6 @@
 #lang racket/base
-
-(require (for-syntax racket/base
+(require racket/contract/base
+         (for-syntax racket/base
                      unstable/wrapc))
 
 ;; A Queue contains a linked list with mutable cdrs, holding two pointers
@@ -81,8 +81,6 @@
         #f))))
 
 ;; --- contracts ---
-
-(require racket/contract)
 
 (define queue/c
   (flat-named-contract "queue" queue?))

@@ -2,8 +2,8 @@
 
 (require (for-syntax scheme/base)
          scheme/unit
-         scheme/class
-         scheme/surrogate
+         racket/class
+         racket/surrogate
          "sig.rkt")
 
 (provide mode@ surrogate-methods)

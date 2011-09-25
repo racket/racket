@@ -1,8 +1,7 @@
 (module bnf mzscheme
   (require "struct.rkt"
            "decode.rkt"
-           mzlib/kw
-           mzlib/class)
+           mzlib/kw)
 
   (provide BNF 
            nonterm

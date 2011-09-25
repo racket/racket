@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
 ;; The `first', etc. operations in this library
 ;;  work on pairs, not lists.
 
-(require (only-in scheme/list
+(require (only-in racket/list
                   cons?
                   empty?
                   empty

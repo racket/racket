@@ -6,8 +6,7 @@
          "local.rkt"
          "bitmap.rkt"
          "gradient.rkt"
-         "transform.rkt"
-         "dc-intf.rkt")
+         "transform.rkt")
 
 (provide brush%
          brush-list% the-brush-list

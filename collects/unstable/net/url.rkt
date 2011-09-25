@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/list
-         racket/contract
-         net/url)
+         racket/contract/base
+         net/url-structs)
 
 (provide/contract
  [url-replace-path (((listof path/param?) . -> . (listof path/param?)) url? . -> . url?)]

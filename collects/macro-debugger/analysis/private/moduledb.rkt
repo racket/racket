@@ -1,7 +1,6 @@
 #lang racket/base
 (require syntax/modresolve
          setup/path-to-relative
-         "util.rkt"
          racket/match)
 (provide allow-bypass?
          allow-drop?

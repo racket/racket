@@ -1,6 +1,5 @@
 #lang scheme/base
 (require scheme/class
-         ffi/unsafe
          ffi/unsafe/atomic
          "syntax.rkt"
          "../unsafe/pango.rkt"

@@ -2,7 +2,7 @@
 ;; mzscheme's `#%module-begin'
 
 (module stxmz-body '#%kernel
-  (#%require "stxcase-scheme.rkt" "define.rkt"
+  (#%require "define.rkt"
              (for-syntax '#%kernel "stx.rkt"))
 
   ;; So that expansions print the way the Racket programmer expects:

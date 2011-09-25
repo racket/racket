@@ -1,15 +1,9 @@
 #lang racket/base
 (require racket/class
-         racket/file
-         racket/path
-         racket/math
          "syntax.rkt"
-         ffi/unsafe
          "../unsafe/cairo.rkt"
          "dc.rkt"
-         "font.rkt"
          "local.rkt"
-         "ps-setup.rkt"
          "page-dc.rkt"
          "write-bytes.rkt")
 

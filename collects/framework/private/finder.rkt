@@ -1,11 +1,10 @@
 #lang scheme/unit
 
   (require string-constants
-           (prefix-in r: racket/gui/base)
            "sig.rkt"
            "../preferences.rkt"
            mred/mred-sig
-           scheme/path)
+           racket/path)
   
   (import mred^
           [prefix keymap: framework:keymap^]

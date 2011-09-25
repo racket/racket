@@ -1,6 +1,6 @@
 #lang scheme/base
 (require setup/main-collects
-         scheme/contract
+         racket/contract/base
          scribble/core
          scribble/base
          scribble/decode
