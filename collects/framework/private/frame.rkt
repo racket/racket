@@ -1168,13 +1168,13 @@
   (mixin (basic<%>) (pasteboard-info<%>)
     (super-new)))
 
-(include "standard-menus.rkt")
+(include "standard-menus.rktl")
 
 (define -editor<%> (interface (standard-menus<%>)
                      get-entire-label
                      get-label-prefix
                      set-label-prefix
-                     
+
                      get-canvas%
                      get-canvas<%>
                      get-editor%
