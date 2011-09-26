@@ -18,8 +18,10 @@
        
        (set-language-level! (list #rx"How to Design Programs" #rx"Beginning Student$"))
        (clear-definitions drr-frame)
-       (send definitions-text set-filename fn)
-       (send definitions-text insert "(define (f x) x)\n(f 1)\n")
+       (queue-callback/res
+        (λ () 
+          (send definitions-text set-filename fn)
+          (send definitions-text insert "(define (f x) x)\n(f 1)\n")))
        (test:menu-select "File" "Save Definitions")
        (unless (call-with-input-file fn
                  (λ (p) (regexp-match #rx";;[^\n]*metadata" p)))
