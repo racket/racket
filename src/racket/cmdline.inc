@@ -590,6 +590,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifdef CMDLINE_STDIO_FLAG
   int alternate_rep = 0;
   int no_front = 0;
+  char *wm_class = NULL;
 #endif
   char *init_lib = INITIAL_NAMESPACE_MODULE;
   int was_config_flag = 0, saw_nc_flag = 0;
@@ -823,6 +824,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-z";
     else if (!strcmp("--back", argv[0]))
       argv[0] = "-K";
+    else if (!strcmp("--wm-class", argv[0]))
+      argv[0] = "-J";
 # endif
 # ifndef NO_YIELD_BEFORE_EXIT
     else if (!strcmp("--no-yield", argv[0]))
@@ -1067,6 +1070,18 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  no_front = 1;
           was_config_flag = 1;
 	  break;
+        case 'J':
+          if (argc < 2) {
+	    PRINTF("%s: missing name after %s switch\n", 
+		   prog, 
+		   real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+          wm_class = argv[0];
+          was_config_flag = 1;
+          break;
 #endif
 #ifdef USE_OSKIT_CONSOLE
 	case 'S':
@@ -1302,6 +1317,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
   fa->a->no_front = no_front;
   if (no_front)
     scheme_register_process_global("Racket-GUI-no-front", (void *)0x1);
+  if (wm_class)
+    scheme_register_process_global("Racket-GUI-wm-class", (void *)wm_class);
 #endif
   fa->init_lib = init_lib;
   fa->global_env = global_env;
@@ -1353,9 +1370,12 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -X <dir>, --collects <dir> : Main collects at <dir> (or \"\" disables all)\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> (after main collects)\n"
 	 "  -A <dir>, --addon <dir> : Addon directory at <dir>\n"
-	 "  -K <file>, --links <file> : User-specific collection links at <file>\n"
+	 "  -C <file>, --links <file> : User-specific collection links at <file>\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
+# ifdef CMDLINE_STDIO_FLAG
+         "  -J <name>, ---wm-class <name> : Set WM_CLASS class to <name> (Unix)\n"
+# endif
 # ifdef MZ_USE_JIT
 	 "  -j, --no-jit : Disable the just-in-time compiler\n"
 # else

@@ -275,6 +275,12 @@ flags:
         by @racket[(find-system-path 'run-file)] to
         @nonterm{file}.}
 
+  @item{@FlagFirst{J} @nonterm{name} or @DFlagFirst{wm-class}
+        @nonterm{name} : GRacket, Unix only; sets the @tt{WM_CLASS}
+        program class to @nonterm{name} (while the @tt{WM_CLASS}
+        program name is derived from the executable name or a
+        @Flag{N}/@DFlag{name} argument).}
+
   @item{@FlagFirst{j} or @DFlagFirst{no-jit} : Disables the
         native-code just-in-time compiler by setting the
         @racket[eval-jit-enabled] parameter to @racket[#f].}
