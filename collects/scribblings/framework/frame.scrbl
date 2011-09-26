@@ -659,7 +659,8 @@
   }
 
   @defmethod*[#:mode override (((file-menu:between-save-as-and-print (file-menu (is-a?/c menu%))) void?))]{
-    Creates a Print Setup menu item.
+    Creates a Print Setup menu item if @racket[can-get-page-setup-from-user?]
+    and @racket[file-menu:create-print?] both return true.
   }
 
   @defmethod*[#:mode override (((edit-menu:between-select-all-and-find (edit-menu (is-a?/c menu%))) void?))]{

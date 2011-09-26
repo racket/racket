@@ -1371,7 +1371,7 @@
     
     (inherit get-top-level-window)
     (define/override (file-menu:between-save-as-and-print file-menu)
-      (when (can-get-page-setup-from-user?)
+      (when (and (can-get-page-setup-from-user?) (file-menu:create-print?))
         (new menu-item% 
              [parent file-menu]
              [label (string-constant page-setup-menu-item)]
