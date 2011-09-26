@@ -38,9 +38,7 @@
   (command-line
    #:program (short-program+command-name)
    #:once-any
-   [("--text") "generate text-format output (the default)"
-    (current-render-mixin text:render-mixin)]
-   [("--html") "generate HTML-format output file"
+   [("--html") "generate HTML-format output file (the default)"
     (current-render-mixin html:render-mixin)]
    [("--htmls") "generate HTML-format output directory"
     (current-render-mixin multi-html:render-mixin)]
@@ -53,6 +51,8 @@
       (unless (exact-nonnegative-integer? v)
         (raise-user-error 'scribble (format "bad section depth: ~a" n)))
       (current-render-mixin (latex:make-render-part-mixin v)))]
+   [("--text") "generate text-format output"
+    (current-render-mixin text:render-mixin)]
    #:once-each
    [("--dest") dir "write output in <dir>"
     (current-dest-directory dir)]
