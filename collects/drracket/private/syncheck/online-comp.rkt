@@ -4,8 +4,7 @@
          "traversals.rkt"
          "local-member-names.rkt"
          "intf.rkt"
-         "xref.rkt"
-         framework/preferences)
+         "xref.rkt")
 
 (provide go)
 

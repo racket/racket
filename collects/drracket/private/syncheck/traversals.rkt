@@ -1104,7 +1104,36 @@
     
     ;; make-rename-menus : (listof phase-to-mapping) -> void
     (define (make-rename-menus phase-tos)
-      (define id-to-sets (make-free-identifier-mapping))
+      
+      ;; table : symbol -o> (listof (pair (non-empty-listof identifier?)
+      ;;                                  (non-empty-setof (list ed start fin))))
+      ;; this table maps the names of identifiers to information that tells how to build
+      ;; the rename menus.
+      ;;
+      ;; In the simple case that every identifier in the file has a different
+      ;; name, then each of the symbols in the table will map to a singleton list where the
+      ;; listof identifiers is also a singleton list and each of the '(list ed start fin)'
+      ;; corresponds to the locations of that identifier in the file.
+      ;;
+      ;; In the more common case, there will be multiple, distinct uses of an identifier that
+      ;; is spelled the same way in the file, eg (+ (let ([x 1]) x) (let ([x 2]) x)). In
+      ;; this case, the 'x' entry in the table will point to a list of length two,
+      ;; with each of the corresponding list of identifiers in the pair still being a 
+      ;; singleton list.
+      ;;
+      ;; In the bizarro case, some macro will have taken an identifier from its input and
+      ;; put it into two distinct binding locations, eg:
+      ;; (define-syntax-rule (m x) (begin (define x 1) (lambda (x) x)))
+      ;; In this case, there is only one 'x' in the original program, but there are two
+      ;; distinct identifiers (according to free-identifier=?) in the program. To cope
+      ;; with this, the code below recognizes that two distinct identifiers come from the
+      ;; same source location and then puts those two identifiers into the first list into
+      ;; the same 'pair' in the table, unioning the corresponding sets of source locations
+      ;; 
+      
+      (define table (make-hash))
+      (struct pair (ids locs) #:transparent)
+      
       (let ([defs-text (current-annotations)])
         (when defs-text
           (for ([phase-to-mapping (in-list phase-tos)])
@@ -1121,29 +1150,68 @@
                        (define start (- pos 1))
                        (define fin (+ start span))
                        (define loc (list ed start fin))
-                       (free-identifier-mapping-put!
-                        id-to-sets
-                        var
-                        (set-add (free-identifier-mapping-get id-to-sets var set)
-                                 loc)))))))))
-          (free-identifier-mapping-for-each
-           id-to-sets
-           (λ (id locs)
-             (define (name-dup? new-str) 
-               (and (for/or ([phase-to-map (in-list phase-tos)])
-                      (for/or ([(level id-set) (in-hash phase-to-map)])
-                        (for/or ([id (in-list (or (get-ids id-set id) '()))])
-                          (let ([new-id (datum->syntax id (string->symbol new-str))])
-                            (for/or ([phase-to-map (in-list phase-tos)])
-                              (for/or ([(level id-set) (in-hash phase-to-map)])
-                                (get-ids id-set new-id)))))))
-                    #t))
-             (define loc-lst (set->list locs))
-             (define id-as-sym (syntax-e id))
-             (send defs-text syncheck:add-rename-menu
-                   id-as-sym
-                   loc-lst
-                   name-dup?))))))
+                       (define var-sym (syntax-e var))
+                       
+                       (define current-pairs (hash-ref table var-sym '()))
+                       (define free-id-matching-pair #f)
+                       (define added-source-loc-sets '())
+                       (define new-pairs
+                         (for/list ([a-pair (in-list current-pairs)])
+                           (define ids (pair-ids a-pair))
+                           (define loc-set (pair-locs a-pair))
+                           (cond
+                             [(ormap (λ (this-id) (free-identifier=? this-id var)) ids)
+                              (define new-pair (pair ids (set-add loc-set loc)))
+                              (set! free-id-matching-pair new-pair)
+                              new-pair]
+                             [(set-member? loc-set loc)
+                              ;; here we are in the biazarro case;
+                              ;; we found this source location in a set that corresponds to
+                              ;; some other identifier. so, we know we need to do some kind of a merger
+                              ;; just keep track of the set for now, the merger happens after this loop
+                              (set! added-source-loc-sets (cons a-pair added-source-loc-sets))
+                              a-pair]
+                             [else
+                              a-pair])))
+                       
+                       ;; first step in updating the table; put the new set in.
+                       (cond
+                         [free-id-matching-pair
+                          (hash-set! table var-sym new-pairs)]
+                         [else
+                          (set! free-id-matching-pair (pair (list var) (set loc)))
+                          (hash-set! table var-sym (cons free-id-matching-pair new-pairs))])
+                       
+                       (unless (null? added-source-loc-sets)
+                         ;; here we are in the bizarro case; we need to union the sets
+                         ;; in the added-source-loc-sets list.
+                         (define pairs-to-merge (cons free-id-matching-pair added-source-loc-sets))
+                         (define removed-sets (filter (λ (x) (not (memq x pairs-to-merge))) 
+                                                      (hash-ref table var-sym)))
+                         (define new-pair (pair (apply append (map pair-ids pairs-to-merge))
+                                                (apply set-union (map pair-locs pairs-to-merge))))
+                         (hash-set! table var-sym (cons new-pair removed-sets))))))))))
+          
+          (hash-for-each
+           table
+           (λ (id-as-sym pairs)
+             (for ([a-pair (in-list pairs)])
+               (define loc-lst (set->list (pair-locs a-pair)))
+               (define ids (pair-ids a-pair))
+               (define (name-dup? new-str) 
+                 (and (for/or ([phase-to-map (in-list phase-tos)])
+                        (for/or ([(level id-set) (in-hash phase-to-map)])
+                          (for/or ([id (in-list ids)])
+                            (for/or ([corresponding-id (in-list (or (get-ids id-set id) '()))])
+                              (let ([new-id (datum->syntax corresponding-id (string->symbol new-str))])
+                                (for/or ([phase-to-map (in-list phase-tos)])
+                                  (for/or ([(level id-set) (in-hash phase-to-map)])
+                                    (get-ids id-set new-id))))))))
+                      #t))
+               (send defs-text syncheck:add-rename-menu
+                     id-as-sym
+                     loc-lst
+                     name-dup?)))))))
     
     ;; remove-duplicates-stx : (listof syntax[original]) -> (listof syntax[original])
     ;; removes duplicates, based on the source locations of the identifiers

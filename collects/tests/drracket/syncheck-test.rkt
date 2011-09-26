@@ -941,6 +941,24 @@ trigger runtime errors in check syntax.
                   "(define-syntax-rule (m x) (λ (x) x))(m qq)")
      
      (rename-test (string-append
+                   "#lang racket/base\n"
+                   "(require (for-syntax racket/base))\n"
+                   "(define-syntax-rule (m x)\n"
+                   "  (begin (λ (x) x) (define x 1) (λ (x) x)))\n"
+                   "(m x)\n"
+                   "x\n")
+                  126
+                  "x"
+                  "y"
+                  (string-append
+                   "#lang racket/base\n"
+                   "(require (for-syntax racket/base))\n"
+                   "(define-syntax-rule (m x)\n"
+                   "  (begin (λ (x) x) (define x 1) (λ (x) x)))\n"
+                   "(m y)\n"
+                   "y\n"))
+     
+     (rename-test (string-append
                    "#lang racket"
                    "\n"
                    "(define player%\n"
