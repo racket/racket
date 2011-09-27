@@ -1806,8 +1806,10 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       memcpy(for_branch_copy, for_branch, sizeof(Branch_Info));
       addrs = scheme_malloc_atomic(sizeof(Branch_Info_Addr) * for_branch->addrs_size);
       memcpy(addrs, for_branch->addrs, sizeof(Branch_Info_Addr) * for_branch->addrs_count);
-    } else
+    } else {
       for_branch_copy = NULL;
+      addrs = NULL;
+    }
 
     p->ku.k.p1 = (void *)obj;
     p->ku.k.p2 = (void *)jitter_copy;

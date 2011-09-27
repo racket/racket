@@ -1667,8 +1667,10 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
   Scheme_Env *env;
   intptr_t ph;
 
-  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type)) {
+    v = NULL;
     env = NULL;
+  }
   else {
     v = SCHEME_PTR1_VAL(argv[0]);
     env = scheme_get_bucket_home((Scheme_Bucket *)v);
