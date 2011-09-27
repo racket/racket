@@ -569,5 +569,35 @@
              exn:fail:contract:variable?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `quote' can be renamed for use in
+;; require specs
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (map 
+   eval
+   '((module service racket
+       (#%module-begin))
+     
+     (module good-client racket
+       (#%module-begin
+        (require (quote service))))
+     
+     (module another-good-client racket
+       (#%module-begin
+        (require
+         (rename-in racket/base
+                    [quote dynamic-in]))
+        (require
+         (dynamic-in service))))
+     
+     (module also-good-client racket
+       (#%module-begin
+        (require
+         (rename-in racket/base
+                    [quote dynamic-in]))
+        (require
+         (rename-in (dynamic-in service))))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

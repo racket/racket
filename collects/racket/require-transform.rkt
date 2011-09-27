@@ -93,7 +93,7 @@
               #f
               "invalid module-path form"
               stx))
-           (let ([namess (syntax-local-module-exports stx)])
+           (let ([namess (syntax-local-module-exports mod-path)])
              (values
               (apply
                append
@@ -112,7 +112,7 @@
                                             stx))
                              (cdr names))))
                     namess))
-              (list (make-import-source #'simple 0)))))]
+              (list (make-import-source (datum->syntax #'simple mod-path) 0)))))]
         [(id . rest)
          (identifier? #'id)
          (let ([t (syntax-local-value #'id (lambda () #f))])
