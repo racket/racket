@@ -1095,14 +1095,18 @@ the mask bitmap and the original bitmap are all together in a single bytes!
            (text-family text)
            (text-style text) 
            (text-weight text)
-           (text-underline text))]
+           (text-underline text)
+           'default
+           #t)]
     [else
      (send the-font-list find-or-create-font
            adjusted-size
            (text-family text)
            (text-style text) 
            (text-weight text)
-           (text-underline text))]))
+           (text-underline text)
+           'default
+           #t)]))
 
 (define (ellipse-rotated-size ew eh θ)
   (cond
