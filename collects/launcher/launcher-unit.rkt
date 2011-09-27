@@ -310,6 +310,10 @@
          [x-flags? (and (eq? kind 'mred)
                         (eq? (system-type) 'unix)
                         (not (script-variant? variant)))]
+         [flags (let ([m (assq 'wm-class aux)])
+                  (if m
+                      (list* "-J" (cdr m) flags)
+                      flags))]
          [post-flags (cond
                       [x-flags? (skip-x-flags flags)]
                       [alt-exe null]
@@ -556,7 +560,15 @@
            (with-input-from-file (cdar l)
              (lambda ()
                (let ([d (read)])
-                 (list (cons 'uti-exports d))))))))))
+                 (list (cons 'uti-exports d))))))))
+   (let ([l (try 'wm-class #".wmclass")])
+     (if (null? l)
+         l
+         (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
+           (list (cons 'wm-class 
+                       (regexp-replace #rx"(?:\r\n|\r|\n)$"
+                                       (file->string (cdar l))
+                                       ""))))))))
 
 (define (build-aux-from-path aux-root)
   (let ([aux-root (if (string? aux-root) (string->path aux-root) aux-root)])
@@ -571,7 +583,8 @@
      (try #".lch")
      (try #".creator")
      (try #".filetypes")
-     (try #".utiexports"))))
+     (try #".utiexports")
+     (try #".wmclass"))))
 
 (define (make-gracket-program-launcher file collection dest)
   (make-mred-launcher (list "-l-" (string-append collection "/" file))

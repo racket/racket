@@ -252,13 +252,16 @@ currently supported keys are as follows:
         executable, instead of a wrapper binary that execs the
         original; the default is @racket[#f].}
 
-  @item{@racket['relative?] (Unix, Windows, Mac OS X): A boolean;
+  @item{@racket['relative?] (Unix, Windows, Mac OS X) : A boolean;
         @racket[#t] means that, to the degree that the generated
         executable must refer to another, it can use a relative path
         (so the executables can be moved together, but not
         separately); a @racket[#f] value (the default) means that
         absolute paths should be used (so the generated executable can
         be moved).}
+
+  @item{@racket['wm-class] (Unix) : A string; used as the default
+        @tt{WM_CLASS} program class for the program's windows.}
 
 ]
 

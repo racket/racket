@@ -340,6 +340,9 @@ are as follows:
        @racket[read] content (a single S-expression); for use on
        Mac OS X}
 
+ @item{@filepath{.wmclass} @'rarr @racket['wm-class] as the literal
+       content, removing a trailing newline if any; for use on Unix}
+
 ]}
 
 @defparam[current-launcher-variant variant symbol?]{
