@@ -3,7 +3,7 @@
          "../private/lib.rkt"
          "provide.rkt"
          unstable/wrapc
-         (only-in "../private/runtime.rkt"
+         (only-in syntax/parse/private/residual ;; keep abs. path
                   this-context-syntax)
          racket/contract/base)
 

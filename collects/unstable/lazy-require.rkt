@@ -2,8 +2,7 @@
 (require (for-syntax racket/base)
          racket/runtime-path
          racket/promise)
-(provide lazy-require
-         (for-syntax #%datum))
+(provide lazy-require)
 
 (define-syntax (lazy-require stx)
   (syntax-case stx ()
@@ -20,7 +19,9 @@
                       (unless (identifier? name)
                         (raise-syntax-error #f "expected identifier" #'orig-stx name))
                       #`(define #,name (make-lazy-function '#,name get-sym)))])
-       #'(begin (define-runtime-module-path-index mpi-var modpath)
+       ;; implicit quasiquote, so can use normal module-path syntax'
+       ;; or escape to compute a the module-path via expression
+       #'(begin (define-runtime-module-path-index mpi-var (quasiquote modpath))
                 (define (get-sym sym)
                   (parameterize ((current-namespace (namespace-anchor->namespace anchor)))
                     (dynamic-require mpi-var sym)))

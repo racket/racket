@@ -4,18 +4,170 @@
                      syntax/id-table
                      syntax/keyword
                      racket/syntax
+                     "minimatch.rkt"
+                     "rep-attrs.rkt"
                      "rep-data.rkt"
+                     "rep-patterns.rkt"
                      "rep.rkt"
                      "kws.rkt"
                      "txlift.rkt")
+         "keywords.rkt"
          racket/syntax
          racket/stxparam
          syntax/stx
          unstable/struct
-         "runtime.rkt"
-         "runtime-report.rkt"
-         "runtime-reflect.rkt")
-(provide (all-defined-out))
+         syntax/parse/private/residual ;; keep abs. path
+         syntax/parse/private/runtime  ;; keep abs.path 
+         syntax/parse/private/runtime-reflect) ;; keep abs. path
+
+;; ============================================================
+
+(provide define-syntax-class
+         define-splicing-syntax-class
+         syntax-parse
+         syntax-parser
+         define/syntax-parse
+         syntax-parser/template
+         parser/rhs
+         define-eh-alternative-set)
+
+(begin-for-syntax
+ (define (tx:define-*-syntax-class stx splicing?)
+   (syntax-case stx ()
+     [(_ header . rhss)
+      (parameterize ((current-syntax-context stx))
+        (let-values ([(name formals arity)
+                      (let ([p (check-stxclass-header #'header stx)])
+                        (values (car p) (cadr p) (caddr p)))])
+          (let* ([the-rhs (parse-rhs #'rhss #f splicing? #:context stx)]
+                 [opt-rhs+def
+                  (and (andmap identifier? (syntax->list formals))
+                       (optimize-rhs the-rhs (syntax->list formals)))]
+                 [the-rhs (if opt-rhs+def (car opt-rhs+def) the-rhs)])
+            (with-syntax ([name name]
+                          [formals formals]
+                          [parser (generate-temporary (format-symbol "parse-~a" name))]
+                          [arity arity]
+                          [attrs (rhs-attrs the-rhs)]
+                          [(opt-def ...)
+                           (if opt-rhs+def
+                               (list (cadr opt-rhs+def))
+                               '())]
+                          [options (rhs-options the-rhs)]
+                          [integrate-expr
+                           (syntax-case (rhs-integrate the-rhs) ()
+                             [#s(integrate predicate description)
+                                #'(integrate (quote-syntax predicate)
+                                             'description)]
+                             [#f
+                              #''#f])])
+              #`(begin (define-syntax name
+                         (stxclass 'name 'arity
+                                   'attrs
+                                   (quote-syntax parser)
+                                   '#,splicing?
+                                   options
+                                   integrate-expr))
+                       opt-def ...
+                       (define-values (parser)
+                         ;; If opt-rhs, do not reparse:
+                         ;; need to keep same generated predicate name
+                         #,(if opt-rhs+def
+                               (begin
+                                 #`(parser/rhs/parsed
+                                    name formals attrs #,the-rhs
+                                    #,(and (rhs-description the-rhs) #t)
+                                    #,splicing? #,stx))
+                               #`(parser/rhs
+                                  name formals attrs rhss #,splicing? #,stx))))))))])))
+
+(define-syntax define-syntax-class
+  (lambda (stx) (tx:define-*-syntax-class stx #f)))
+(define-syntax define-splicing-syntax-class
+  (lambda (stx) (tx:define-*-syntax-class stx #t)))
+
+(define-syntax (parser/rhs stx)
+  (syntax-case stx ()
+    [(parser/rhs name formals attrs rhss splicing? ctx)
+     (with-disappeared-uses
+      (let ([rhs
+             (parameterize ((current-syntax-context #'ctx))
+               (parse-rhs #'rhss (syntax->datum #'attrs) (syntax-e #'splicing?)
+                          #:context #'ctx))])
+        #`(parser/rhs/parsed name formals attrs
+                             #,rhs #,(and (rhs-description rhs) #t)
+                             splicing? ctx)))]))
+
+(define-syntax (parser/rhs/parsed stx)
+  (syntax-case stx ()
+    [(prp name formals attrs rhs rhs-has-description? splicing? ctx)
+     #`(let ([get-description
+              (lambda formals
+                (if 'rhs-has-description?
+                    #,(rhs-description (syntax-e #'rhs))
+                    (symbol->string 'name)))])
+         (parse:rhs rhs attrs formals splicing?
+                    (if 'rhs-has-description?
+                        #,(rhs-description (syntax-e #'rhs))
+                        (symbol->string 'name))))]))
+
+(define-syntax (syntax-parse stx)
+  (syntax-case stx ()
+    [(syntax-parse stx-expr . clauses)
+     (quasisyntax/loc stx
+       (let ([x (datum->syntax #f stx-expr)])
+         (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx))))]))
+
+(define-syntax (syntax-parser stx)
+  (syntax-case stx ()
+    [(syntax-parser . clauses)
+     (quasisyntax/loc stx
+       (lambda (x)
+         (let ([x (datum->syntax #f x)])
+           (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx)))))]))
+
+(define-syntax (syntax-parser/template stx)
+  (syntax-case stx ()
+    [(syntax-parser/template ctx . clauses)
+     (quasisyntax/loc stx
+       (lambda (x)
+         (let ([x (datum->syntax #f x)])
+           (parse:clauses x clauses one-template ctx))))]))
+
+(define-syntax (define/syntax-parse stx)
+  (syntax-case stx ()
+    [(define/syntax-parse pattern . rest)
+     (let-values ([(rest pattern defs)
+                   (parse-pattern+sides #'pattern
+                                        #'rest
+                                        #:splicing? #f
+                                        #:decls (new-declenv null)
+                                        #:context stx)])
+       (let ([expr
+              (syntax-case rest ()
+                [( expr ) #'expr]
+                [_ (raise-syntax-error #f "bad syntax" stx)])]
+             [attrs (pattern-attrs pattern)])
+         (with-syntax ([(a ...) attrs]
+                       [(#s(attr name _ _) ...) attrs]
+                       [pattern pattern]
+                       [(def ...) defs]
+                       [expr expr])
+           #'(defattrs/unpack (a ...)
+               (let* ([x (datum->syntax #f expr)]
+                      [cx x]
+                      [pr (ps-empty x x)]
+                      [es null]
+                      [fh0 (syntax-patterns-fail x)])
+                 (parameterize ((current-syntax-context x))
+                   def ...
+                   (#%expression
+                    (with ([fail-handler fh0]
+                           [cut-prompt fh0])
+                          (parse:S x cx pattern pr es
+                                   (list (attribute name) ...))))))))))]))
+
+;; ============================================================
 
 #|
 Parsing protocol:
@@ -807,11 +959,72 @@ Conventions:
     [(_ rep #s(rep:bounds min max name too-few-msg too-many-msg))
      (expect:message (or too-many-msg (name->too-many name)))]))
 
-(define (name->too-few/once name)
-  (and name (format "missing required occurrence of ~a" name)))
+;; ====
 
-(define (name->too-few name)
-  (and name (format "too few occurrences of ~a" name)))
-
-(define (name->too-many name)
-  (and name (format "too many occurrences of ~a" name)))
+(define-syntax (define-eh-alternative-set stx)
+  (define (parse-alt x)
+    (syntax-case x (pattern)
+      [(pattern alt)
+       #'alt]
+      [else
+       (wrong-syntax x "expected eh-alternative-set alternative")]))
+  (parameterize ((current-syntax-context stx))
+    (syntax-case stx ()
+      [(_ name a ...)
+       (unless (identifier? #'name)
+         (wrong-syntax #'name "expected identifier"))
+       (let* ([alts (map parse-alt (syntax->list #'(a ...)))]
+              [decls (new-declenv null #:conventions null)]
+              [ehpat+hstx-list
+               (apply append
+                      (for/list ([alt (in-list alts)])
+                        (parse*-ellipsis-head-pattern alt decls #t #:context stx)))]
+              [eh-alt+defs-list
+               (for/list ([ehpat+hstx (in-list ehpat+hstx-list)])
+                 (let ([ehpat (car ehpat+hstx)]
+                       [hstx (cadr ehpat+hstx)])
+                   (cond [(syntax? hstx)
+                          (with-syntax ([(parser) (generate-temporaries '(eh-alt-parser))])
+                            (let ([attrs (iattrs->sattrs (pattern-attrs (ehpat-head ehpat)))])
+                              (list (eh-alternative (ehpat-repc ehpat) attrs #'parser)
+                                    (list #`(define parser
+                                              (parser/rhs parser () #,attrs
+                                                          [#:description #f (pattern #,hstx)]
+                                                          #t
+                                                          #,stx))))))]
+                         [(eh-alternative? hstx)
+                          (list hstx null)]
+                         [else
+                          (error 'define-eh-alternative-set "internal error: unexpected ~e"
+                                 hstx)])))]
+              [eh-alts (map car eh-alt+defs-list)]
+              [defs (apply append (map cadr eh-alt+defs-list))])
+         (with-syntax ([(def ...) defs]
+                       [(alt-expr ...)
+                        (for/list ([alt (in-list eh-alts)])
+                          (with-syntax ([repc-expr
+                                         (match (eh-alternative-repc alt)
+                                           ['#f
+                                            #'(quote #f)]
+                                           [(rep:once n u o)
+                                            #`(rep:once (quote-syntax #,n)
+                                                        (quote-syntax #,u)
+                                                        (quote-syntax #,o))]
+                                           [(rep:optional n o d)
+                                            #`(rep:optional (quote-syntax #,n)
+                                                            (quote-syntax #,o)
+                                                            (quote-syntax #,d))]
+                                           [(rep:bounds min max n u o)
+                                            #`(rep:bounds (quote #,min)
+                                                          (quote #,max)
+                                                          (quote-syntax #,n)
+                                                          (quote-syntax #,u)
+                                                          (quote-syntax #,o))])]
+                                        [attrs-expr
+                                         #`(quote #,(eh-alternative-attrs alt))]
+                                        [parser-expr
+                                         #`(quote-syntax #,(eh-alternative-parser alt))])
+                            #'(eh-alternative repc-expr attrs-expr parser-expr)))])
+           #'(begin def ...
+                    (define-syntax name
+                      (eh-alternative-set (list alt-expr ...))))))])))

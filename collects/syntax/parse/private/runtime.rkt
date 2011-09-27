@@ -1,50 +1,45 @@
 #lang racket/base
 (require racket/stxparam
          unstable/syntax
-         "runtime-progress.rkt"
-         "runtime-failure.rkt"
+         syntax/parse/private/residual ;; keep abs. path
          (for-syntax racket/base
                      racket/list
                      syntax/kerncase
                      racket/private/sc
                      racket/syntax
-                     "rep-data.rkt"
-                     "rep-attrs.rkt"))
+                     "rep-attrs.rkt"
+                     "rep-data.rkt"))
 
-(provide (all-from-out "runtime-progress.rkt")
-         (all-from-out "runtime-failure.rkt")
+(provide with
+         fail-handler
+         cut-prompt
+         wrap-user-code
 
-         this-syntax
-         this-context-syntax
-
-         stx-list-take
-         stx-list-drop/cx
+         fail
+         try
 
          let-attributes
          let-attributes*
          let/unpack
+
          defattrs/unpack
-         attribute
-         attribute-binding
-         check-list^depth)
+         check-list^depth
 
-;; == Syntax Parameters
+         check-literal
+         no-shadow
+         curried-stxclass-parser
+         app-argu)
 
-;; this-syntax
-;; Bound to syntax being matched inside of syntax class
-(define-syntax-parameter this-syntax
-  (lambda (stx)
-    (wrong-syntax stx "used out of context: not within a syntax class")))
+#|
+TODO: rename file
 
-;; this-context-syntax
-;; Bound to (expression that extracts) context syntax (bottom frame in progress)
-(define-syntax-parameter this-context-syntax
-  (lambda (stx)
-    (wrong-syntax stx "used out of context: not within a syntax class")))
+This file contains "runtime" (ie, phase 0) auxiliary *macros* used in
+expansion of syntax-parse etc. This file must not contain any
+reference that persists in a compiled program; those must go in
+residual.rkt.
+|#
 
 ;; == with ==
-
-(provide with)
 
 (define-syntax (with stx)
   (syntax-case stx ()
@@ -57,13 +52,6 @@
              . body))))]))
 
 ;; == Control information ==
-
-(provide fail-handler
-         cut-prompt
-         wrap-user-code
-
-         fail
-         try)
 
 (define-syntax-parameter fail-handler
   (lambda (stx)
@@ -96,56 +84,7 @@
                (with ([fail-handler last-fh])
                  e0)))))]))
 
-;; -----
-
-(require syntax/stx)
-(define (stx-list-take stx n)
-  (datum->syntax #f
-                 (let loop ([stx stx] [n n])
-                   (if (zero? n)
-                       null
-                       (cons (stx-car stx)
-                             (loop (stx-cdr stx) (sub1 n)))))))
-
-;; stx-list-drop/cx : stxish stx nat -> (values stxish stx)
-(define (stx-list-drop/cx x cx n)
-  (let loop ([x x] [cx cx] [n n])
-    (if (zero? n)
-        (values x
-                (if (syntax? x) x cx))
-        (loop (stx-cdr x)
-              (if (syntax? x) x cx)
-              (sub1 n)))))
-
 ;; == Attributes
-
-(begin-for-syntax
- (define-struct attribute-mapping (var name depth syntax?)
-   #:omit-define-syntaxes
-   #:property prop:procedure
-   (lambda (self stx)
-     (if (attribute-mapping-syntax? self)
-         #`(#%expression #,(attribute-mapping-var self))
-         #`(let ([value #,(attribute-mapping-var self)])
-             (if (check-syntax '#,(attribute-mapping-depth self) value)
-                 value
-                 (raise-syntax-error
-                  #f
-                  (format "attribute is bound to non-syntax value: ~e" value)
-                  (quote-syntax #,(or (let loop ([p (syntax-property stx 'disappeared-use)])
-                                        (cond [(identifier? p) p]
-                                              [(pair? p) (or (loop (car p)) (loop (cdr p)))]
-                                              [else #f]))
-                                      (attribute-mapping-name self))))))))))
-
-;; check-syntax : nat any -> boolean
-;; Returns #t if value is a (listof^depth syntax)
-(define (check-syntax depth value)
-  (if (zero? depth)
-      (syntax? value)
-      (and (list? value)
-           (for/and ([part (in-list value)])
-             (check-syntax (sub1 depth) part)))))
 
 (define-for-syntax (parse-attr x)
   (syntax-case x ()
@@ -202,38 +141,6 @@
                   (define-syntax name (make-syntax-mapping 'depth (quote-syntax stmp)))
                   ...)))]))
 
-(define-syntax (attribute stx)
-  (parameterize ((current-syntax-context stx))
-    (syntax-case stx ()
-      [(attribute name)
-       (identifier? #'name)
-       (let ([mapping (syntax-local-value #'name (lambda () #f))])
-         (unless (syntax-pattern-variable? mapping)
-           (wrong-syntax #'name "not bound as a pattern variable"))
-         (let ([var (syntax-mapping-valvar mapping)])
-           (let ([attr (syntax-local-value var (lambda () #f))])
-             (unless (attribute-mapping? attr)
-               (wrong-syntax #'name "not bound as an attribute"))
-             (syntax-property (attribute-mapping-var attr)
-                              'disappeared-use
-                              #'name))))])))
-
-;; (attribute-binding id)
-;; mostly for debugging/testing
-(define-syntax (attribute-binding stx)
-  (syntax-case stx ()
-    [(attribute-bound? name)
-     (identifier? #'name)
-     (let ([value (syntax-local-value #'name (lambda () #f))])
-       (if (syntax-pattern-variable? value)
-           (let ([value (syntax-local-value (syntax-mapping-valvar value) (lambda () #f))])
-             (if (attribute-mapping? value)
-                 #`(quote #,(make-attr (attribute-mapping-name value)
-                                       (attribute-mapping-depth value)
-                                       (attribute-mapping-syntax? value)))
-                 #'(quote #f)))
-           #'(quote #f)))]))
-
 ;; (check-list^depth attr expr)
 (define-syntax (check-list^depth stx)
   (syntax-case stx ()
@@ -241,20 +148,6 @@
      (with-syntax ([#s(attr name depth syntax?) #'a])
        (quasisyntax/loc #'expr
          (check-list^depth* 'name 'depth expr)))]))
-
-(define (check-list^depth* aname n0 v0)
-  (define (loop n v)
-    (when (positive? n)
-      (unless (list? v)
-        (raise-type-error aname (format "lists nested ~s deep" n0) v))
-      (for ([x (in-list v)]) (loop (sub1 n) x))))
-  (loop n0 v0)
-  v0)
-
-
-;; ====
-
-(provide check-literal)
 
 ;; (check-literal id phase-level-expr ctx) -> void
 (define-syntax (check-literal stx)
@@ -274,37 +167,7 @@
                            'ok-phases/ct-rel
                            (quote-syntax ctx))))]))
 
-(define (check-literal* id used-phase mod-phase ok-phases/ct-rel ctx)
-  (unless (or (memv (and used-phase (- used-phase mod-phase))
-                    ok-phases/ct-rel)
-              (identifier-binding id used-phase))
-    (raise-syntax-error
-     #f
-     (format "literal is unbound in phase ~a (phase ~a relative to the enclosing module)"
-             used-phase
-             (and used-phase (- used-phase mod-phase)))
-     ctx id)))
-
-;; ----
-
-(provide begin-for-syntax/once)
-
-;; (begin-for-syntax/once expr/phase1 ...)
-;; evaluates in pass 2 of module/intdefs expansion
-(define-syntax (begin-for-syntax/once stx)
-  (syntax-case stx ()
-    [(bfs/o e ...)
-     (cond [(list? (syntax-local-context))
-            #`(define-values ()
-                (begin (begin-for-syntax/once e ...)
-                       (values)))]
-           [else
-            #'(let-syntax ([m (lambda _ (begin e ...) #'(void))])
-                (m))])]))
-
 ;; ====
-
-(provide no-shadow)
 
 (begin-for-syntax
  (define (check-shadow def)
@@ -335,11 +198,6 @@
                  ee)]
          [_
           ee]))]))
-
-;; ----
-
-(provide curried-stxclass-parser
-         app-argu)
 
 (define-syntax (curried-stxclass-parser stx)
   (syntax-case stx ()

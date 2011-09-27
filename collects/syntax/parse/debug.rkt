@@ -6,10 +6,14 @@
                      "private/rep.rkt"
                      "private/kws.rkt")
          "../parse.rkt"
+         syntax/parse/private/residual
          "private/runtime.rkt"
          "private/runtime-progress.rkt"
-         "private/runtime-report.rkt"
+         (except-in "private/runtime-report.rkt"
+                    syntax-patterns-fail)
          "private/kws.rkt")
+
+;; No lazy loading for this module's dependencies.
 
 (provide syntax-class-parse
          syntax-class-attributes

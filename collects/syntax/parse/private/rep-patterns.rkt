@@ -1,5 +1,6 @@
 #lang racket/base
-(require "rep-attrs.rkt"
+(require syntax/parse/private/residual-ct ;; keep abs. path
+         "rep-attrs.rkt"
          "kws.rkt"
          unstable/struct
          (for-syntax racket/base

@@ -1,8 +1,9 @@
 #lang racket/base
 (require (for-template racket/base
                        racket/stxparam
-                       "keywords.rkt"
-                       "runtime.rkt")
+                       syntax/parse/private/keywords
+                       syntax/parse/private/residual ;; keep abs. path
+                       syntax/parse/private/runtime)
          racket/contract/base
          "minimatch.rkt"
          syntax/id-table
@@ -11,7 +12,10 @@
          racket/syntax
          unstable/struct
          "txlift.rkt"
+         "rep-attrs.rkt"
          "rep-data.rkt"
+         "rep-patterns.rkt"
+         syntax/parse/private/residual-ct ;; keep abs. path
          "kws.rkt")
 
 ;; Error reporting
@@ -188,7 +192,7 @@
   (define attributes (options-select-value chunks '#:attributes #:default #f))
   (define-values (decls defs) (get-decls+defs chunks strict?))
   (values rest description transparent? attributes auto-nested? colon-notation?
-          decls defs (make options commit? delimit-cut?)))
+          decls defs (options commit? delimit-cut?)))
 
 ;; ----
 

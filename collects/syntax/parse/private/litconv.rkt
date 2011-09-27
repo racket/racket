@@ -1,14 +1,20 @@
 #lang racket/base
 (require (for-syntax racket/base
+                     unstable/lazy-require
                      "sc.rkt"
                      "lib.rkt"
+                     "kws.rkt"
                      racket/syntax
-                     syntax/keyword
-                     "rep-data.rkt"
-                     "rep.rkt"
-                     "kws.rkt")
-         "runtime.rkt"
+                     syntax/keyword)
+         syntax/parse/private/residual-ct ;; keep abs. path
+         syntax/parse/private/residual    ;; keep abs. path
          (only-in unstable/syntax phase-of-enclosing-module))
+(begin-for-syntax
+ (lazy-require
+  [syntax/parse/private/rep ;; keep abs. path
+   (parse-kw-formals
+    check-conventions-rules
+    create-aux-def)]))
 (provide define-conventions
          define-literal-set
          literal-set->predicate
@@ -44,6 +50,8 @@
        (define/with-syntax (class-name ...)
          (map den:delayed-class dens))
 
+       ;; FIXME: could move make-den:delayed to user of conventions
+       ;; and eliminate from residual.rkt
        #'(begin
            (define-syntax h.name
              (make-conventions

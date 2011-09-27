@@ -3,12 +3,13 @@
 
 ;; == Keywords
 
+(define-for-syntax (bad-keyword-use stx)
+  (raise-syntax-error #f "keyword used out of context" stx))
+
 (define-syntax-rule (define-keyword name)
   (begin
     (provide name)
-    (define-syntax name
-      (lambda (stx)
-        (raise-syntax-error #f "keyword used out of context" stx)))))
+    (define-syntax name bad-keyword-use)))
 
 (define-keyword pattern)
 (define-keyword ~var)

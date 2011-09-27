@@ -11,14 +11,20 @@
 
 @unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
-@defform[(lazy-require [mod-expr (imported-fun-id ...)] ...)
-         #:contracts ([mod-expr module-path?])]{
+@defform/subs[#:literals (unquote)
+              (lazy-require [mod (imported-fun-id ...)] ...)
+              ([mod module-path
+                   (unquote module-path-expr)])
+              #:contracts ([module-path-expr module-path?])]{
 
 Defines each @racket[imported-fun-id] as a function that, when called,
 dynamically requires the export named @racket['imported-fun-id] from
-the module specified by @racket[mod-expr] and calls it with the same
+the module specified by @racket[mod] and calls it with the same
 arguments.
-                                                
-As with @racket[define-runtime-module-path-index], @racket[mod-expr]
+
+The module @racket[mod] can be specified as a @racket[_module-path]
+(see @racket[require]) or as an @racket[unquote]-escaped expression
+that computes a module path. As with
+@racket[define-runtime-module-path-index], a @racket[module-path-expr]
 is evaluated both in phase 0 and phase 1.
 }

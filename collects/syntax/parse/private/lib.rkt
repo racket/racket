@@ -73,11 +73,3 @@
            #:attr value (syntax-local-value #'x (lambda () notfound))
            #:fail-when (eq? (attribute value) notfound) #f
            #:fail-unless (pred (attribute value)) #f))
-
-#|
-(define-syntax-class expr
-  #:attributes ()
-  #:description "expression"
-  #:commit
-  (pattern (~and x (~fail #:when (keyword? (syntax-e #'x))))))
-|#

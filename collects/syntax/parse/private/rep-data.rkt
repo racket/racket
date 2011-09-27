@@ -4,45 +4,30 @@
          racket/list
          syntax/id-table
          racket/syntax
+         syntax/parse/private/residual-ct ;; keep abs. path
          "minimatch.rkt"
          "kws.rkt"
          "rep-attrs.rkt"
          "rep-patterns.rkt")
-(provide (all-from-out "rep-attrs.rkt")
-         (all-from-out "rep-patterns.rkt")
-         (struct-out stxclass)
+;; from residual.rkt
+(provide (struct-out stxclass)
          (struct-out options)
          (struct-out integrate)
-         stxclass/s?
+         (struct-out conventions)
+         (struct-out literalset)
+         (struct-out eh-alternative-set)
+         (struct-out eh-alternative))
+;; from here
+(provide stxclass/s?
          stxclass/h?
          stxclass-commit?
          stxclass-delimit-cut?
-         (struct-out attr)
          (struct-out rhs)
          (struct-out variant)
          (struct-out clause:fail)
          (struct-out clause:with)
          (struct-out clause:attr)
-         (struct-out clause:do)
-         (struct-out conventions)
-         (struct-out literalset)
-         (struct-out eh-alternative-set)
-         (struct-out eh-alternative))
-
-#|
-A stxclass is
-  #s(stxclass symbol (listof symbol) (list-of SAttr) identifier bool Options Integrate/#f)
-where Options = #s(options boolean boolean)
-      Integrate = #s(integrate id string)
-Arity is defined in kws.rkt
-|#
-(define-struct stxclass (name arity attrs parser splicing? options integrate)
-  #:prefab)
-
-(define-struct options (commit? delimit-cut?)
-  #:prefab)
-(define-struct integrate (predicate description)
-  #:prefab)
+         (struct-out clause:do))
 
 (define (stxclass/s? x)
   (and (stxclass? x) (not (stxclass-splicing? x))))
@@ -72,32 +57,10 @@ A Variant is
 SideClause is defined in rep-patterns
 |#
 
-#|
-A Conventions is
-  (make-conventions id (-> (listof ConventionRule)))
-A ConventionRule is (list regexp DeclEntry)
-|#
-(define-struct conventions (get-procedures get-rules) #:transparent)
-
-#|
-A LiteralSet is
-  (make-literalset (listof (list symbol id phase-var-id)))
-|#
-(define-struct literalset (literals) #:transparent)
-
 ;; make-dummy-stxclass : identifier -> SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
 (define (make-dummy-stxclass name)
   (make stxclass (syntax-e name) #f null #f #f #s(options #f #t) #f))
-
-#|
-An EH-alternative-set is
-  (eh-alternative-set (listof EH-alternative)
-An EH-alternative is
-  (eh-alternative RepetitionConstraint (listof SAttr) id)
-|#
-(define-struct eh-alternative-set (alts))
-(define-struct eh-alternative (repc attrs parser))
 
 ;; Environments
 
@@ -130,7 +93,7 @@ expressions are duplicated, and may be evaluated in different scopes.
 (define-struct den:class (name class argu))
 (define-struct den:magic-class (name class argu))
 (define-struct den:parser (parser attrs splicing? commit? delimit-cut?))
-(define-struct den:delayed (parser class))
+;; and from residual.rkt: (define-struct den:delayed (parser class))
 
 (define (new-declenv literals #:conventions [conventions null])
   (make-declenv
@@ -229,6 +192,7 @@ expressions are duplicated, and may be evaluated in different scopes.
          (struct-out den:class)
          (struct-out den:magic-class)
          (struct-out den:parser)
+         ;; from residual.rkt:
          (struct-out den:delayed))
 
 (provide/contract

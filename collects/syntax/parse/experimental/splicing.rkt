@@ -1,10 +1,15 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     "../../parse.rkt"
-                     "../private/rep-data.rkt"
+                     syntax/parse
+                     unstable/lazy-require
                      "../private/kws.rkt")
-         "../private/runtime.rkt")
+         syntax/parse/private/residual) ;; keep abs. path
 (provide define-primitive-splicing-syntax-class)
+
+(begin-for-syntax
+ (lazy-require
+  [syntax/parse/private/rep-attrs
+   (sort-sattrs)]))
 
 (define-syntax (define-primitive-splicing-syntax-class stx)
 

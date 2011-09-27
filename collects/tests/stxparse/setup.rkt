@@ -1,8 +1,9 @@
 #lang racket/base
 (require rackunit
          syntax/parse
-         syntax/parse/private/rep-attrs
-         (only-in syntax/parse/private/runtime attribute-binding)
+         (only-in syntax/parse/private/residual
+                  attribute-binding)
+         syntax/parse/private/residual-ct  ;; for attr functions
          (for-syntax racket/base))
 
 (provide tok

@@ -1,9 +1,9 @@
 #lang racket/base
-(require racket/contract/base
+(require syntax/parse/private/residual-ct ;; keep abs. path
+         racket/contract/base
          syntax/id-table
          racket/syntax
          unstable/struct)
-(provide (struct-out attr))
 
 #|
 An IAttr is (make-attr identifier number boolean)
@@ -18,8 +18,6 @@ a list^depth of syntax objects).
 SAttr lists are always stored in sorted order, to make comparison
 of signatures easier for reified syntax-classes.
 |#
-
-(define-struct attr (name depth syntax?) #:prefab)
 
 (define (iattr? a)
   (and (attr? a) (identifier? (attr-name a))))

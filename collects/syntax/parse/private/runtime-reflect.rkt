@@ -1,15 +1,12 @@
 #lang racket/base
-(require (for-syntax racket/base
-                     "rep-data.rkt")
-         "rep-attrs.rkt"
+(require syntax/parse/private/residual ;; keep abs. path
+         (only-in syntax/parse/private/residual-ct ;; keep abs. path
+                  attr-name attr-depth)
          "kws.rkt")
-(provide (struct-out reified)
+(provide reflect-parser
+         (struct-out reified)
          (struct-out reified-syntax-class)
-         (struct-out reified-splicing-syntax-class)
-         reify-syntax-class
-         reified-syntax-class?
-         reified-splicing-syntax-class?
-         reflect-parser)
+         (struct-out reified-splicing-syntax-class))
 
 #|
 A Reified is
@@ -20,32 +17,8 @@ A Reified is
 (define-struct (reified-syntax-class reified) ())
 (define-struct (reified-splicing-syntax-class reified) ())
 
-;; ----
-
-(define-syntax (reify-syntax-class stx)
-  (if (eq? (syntax-local-context) 'expression)
-      (syntax-case stx ()
-        [(rsc sc)
-         (let* ([stxclass (get-stxclass #'sc)]
-                [splicing? (stxclass-splicing? stxclass)])
-           (unless (stxclass-delimit-cut? stxclass)
-             (raise-syntax-error #f "cannot reify syntax class with #:no-delimit-cut option"
-                                 stx #'sc))
-           (with-syntax ([name (stxclass-name stxclass)]
-                         [parser (stxclass-parser stxclass)]
-                         [arity (stxclass-arity stxclass)]
-                         [(#s(attr aname adepth _) ...) (stxclass-attrs stxclass)]
-                         [ctor
-                          (if splicing?
-                              #'reified-splicing-syntax-class
-                              #'reified-syntax-class)])
-             #'(ctor 'name parser 'arity '((aname adepth) ...))))])
-      #`(#%expression #,stx)))
-
-;; ----
-
-;; e-arity represents single call; min and max are same
 (define (reflect-parser obj e-arity e-attrs splicing?)
+  ;; e-arity represents single call; min and max are same
   (define who (if splicing? 'reflect-splicing-syntax-class 'reflect-syntax-class))
   (if splicing?
       (unless (reified-splicing-syntax-class? obj)

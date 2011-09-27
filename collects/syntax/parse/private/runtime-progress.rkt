@@ -1,5 +1,6 @@
 #lang racket/base
-(require unstable/struct
+(require racket/list
+         unstable/struct
          syntax/stx
          "minimatch.rkt")
 (provide ps-empty
@@ -12,14 +13,18 @@
          ps-add-unpstruct
          ps-add-opaque
 
+         invert-ps
          ps->stx+index
          ps-context-syntax
          ps-difference
 
-         invert-ps
-         maximal/progress
-
-         progress->sexpr)
+         (struct-out failure)
+         expect?
+         (struct-out expect:thing)
+         (struct-out expect:atom)
+         (struct-out expect:literal)
+         (struct-out expect:message)
+         (struct-out expect:disj))
 
 #|
 Progress (PS) is a non-empty list of Progress Frames (PF).
@@ -140,20 +145,6 @@ Interpretation: Inner PS structures are applied first.
              (loop (cdr ps))
              ps]))))
 
-#|
-Progress ordering
------------------
-
-Lexicographic generalization of partial order on frames
-  CAR < CDR < POST, stx incomparable except to self
-
-Progress equality
------------------
-
-If ps1 = ps2 then both must "blame" the same term,
-ie (ps->stx+index ps1) = (ps->stx+index ps2).
-|#
-
 ;; An Inverted PS (IPS) is a PS inverted for easy comparison.
 ;; An IPS may not contain any 'opaque frames.
 
@@ -161,100 +152,72 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
 (define (invert-ps ps)
   (reverse (ps-truncate-opaque ps)))
 
-;; maximal/progress : (listof (cons A IPS)) -> (listof (listof A))
-;; Returns a list of equivalence sets.
-(define (maximal/progress items)
-  (cond [(null? items)
-         null]
-        [(null? (cdr items))
-         (list (list (car (car items))))]
-        [else
-         (let-values ([(rNULL rCAR rCDR rPOST rSTX leastCDR)
-                       (partition/pf items)])
-           (append (maximal/pf rNULL rCAR rCDR rPOST leastCDR)
-                   (if (pair? rSTX)
-                       (maximal/stx rSTX)
-                       null)))]))
 
-;; partition/pf : (listof (cons A IPS)) -> (listof (cons A IPS))^5 & nat/+inf.0
-(define (partition/pf items)
-  (let ([rNULL null]
-        [rCAR null]
-        [rCDR null]
-        [rPOST null]
-        [rSTX null]
-        [leastCDR #f])
-    (for ([a+ips (in-list items)])
-      (let ([ips (cdr a+ips)])
-        (cond [(null? ips)
-               (set! rNULL (cons a+ips rNULL))]
-              [(eq? (car ips) 'car)
-               (set! rCAR (cons a+ips rCAR))]
-              [(exact-positive-integer? (car ips))
-               (set! rCDR (cons a+ips rCDR))
-               (set! leastCDR
-                     (if leastCDR
-                         (min leastCDR (car ips))
-                         (car ips)))]
-              [(eq? (car ips) 'post)
-               (set! rPOST (cons a+ips rPOST))]
-              [(syntax? (car ips))
-               (set! rSTX (cons a+ips rSTX))]
-              [else
-               (error 'syntax-parse "INTERNAL ERROR in partition/pf: ~e" ips)])))
-    (values rNULL rCAR rCDR rPOST rSTX leastCDR)))
+;; ==== Failure ====
 
-;; maximal/pf : (listof (cons A IPS))^4 & nat/+inf.0-> (listof (listof A))
-(define (maximal/pf rNULL rCAR rCDR rPOST leastCDR)
-  (cond [(pair? rPOST)
-         (maximal/progress (rmap pop-item-ips rPOST))]
-        [(pair? rCDR)
-         (maximal/progress
-          (rmap (lambda (a+ips)
-                  (let ([a (car a+ips)] [ips (cdr a+ips)])
-                    (cond [(= (car ips) leastCDR)
-                           (cons a (cdr ips))]
-                          [else
-                           (cons a (cons (- (car ips) leastCDR) (cdr ips)))])))
-                rCDR))]
-        [(pair? rCAR)
-         (maximal/progress (rmap pop-item-ips rCAR))]
-        [(pair? rNULL)
-         (list (map car rNULL))]
-        [else
-         null]))
+;; A Failure is (make-failure PS ExpectStack)
+;; A FailureSet is one of
+;;   - Failure
+;;   - (cons FailureSet FailureSet)
 
-;; maximal/stx : (listof (cons A IPS)) -> (listof (listof A))
-(define (maximal/stx rSTX)
-  (let ([stxs null]
-        [table (make-hasheq)])
-    (for ([a+ips (in-list rSTX)])
-      (let* ([ips (cdr a+ips)]
-             [entry (hash-ref table (car ips) null)])
-        (when (null? entry)
-          (set! stxs (cons (car ips) stxs)))
-        (hash-set! table (car ips) (cons a+ips entry))))
-    (apply append
-           (map (lambda (key)
-                  (maximal/progress (map pop-item-ips (hash-ref table key))))
-                stxs))))
+;; FailFunction = (FailureSet -> Answer)
 
-;; pop-item-ips : (cons A IPS) -> (cons A IPS)
-(define (pop-item-ips a+ips)
-  (let ([a (car a+ips)]
-        [ips (cdr a+ips)])
-    (cons a (cdr ips))))
+(define-struct failure (progress expectstack) #:prefab)
 
-(define (rmap f xs)
-  (let rmaploop ([xs xs] [accum null])
-    (cond [(pair? xs)
-           (rmaploop (cdr xs) (cons (f (car xs)) accum))]
-          [else
-           accum])))
+;; == Expectations
 
-;; == Debugging ==
+;; FIXME: add phase to expect:literal
 
-(provide progress->sexpr)
+#|
+An ExpectStack is (listof Expect)
+
+An Expect is one of
+  - (make-expect:thing string boolean)
+  * (make-expect:message string)
+  * (make-expect:atom atom)
+  * (make-expect:literal identifier)
+  * (make-expect:disj (non-empty-listof Expect))
+
+The *-marked variants can only occur at the top of the stack.
+|#
+(define-struct expect:thing (description transparent?) #:prefab)
+(define-struct expect:message (message) #:prefab)
+(define-struct expect:atom (atom) #:prefab)
+(define-struct expect:literal (literal) #:prefab)
+(define-struct expect:disj (expects) #:prefab)
+
+(define (expect? x)
+  (or (expect:thing? x)
+      (expect:message? x)
+      (expect:atom? x)
+      (expect:literal? x)
+      (expect:disj? x)))
+
+
+;; ==== Debugging
+
+(provide failureset->sexpr
+         failure->sexpr
+         expectstack->sexpr
+         expect->sexpr)
+
+(define (failureset->sexpr fs)
+  (let ([fs (flatten fs null)])
+    (case (length fs)
+      ((1) (failure->sexpr (car fs)))
+      (else `(union ,@(map failure->sexpr fs))))))
+
+(define (failure->sexpr f)
+  (match f
+    [(failure progress expectstack)
+     `(failure ,(progress->sexpr progress)
+               #:expected ,(expectstack->sexpr expectstack))]))
+
+(define (expectstack->sexpr es)
+  (map expect->sexpr es))
+
+(define (expect->sexpr e)
+  e)
 
 (define (progress->sexpr ps)
   (for/list ([pf (in-list (invert-ps ps))])
