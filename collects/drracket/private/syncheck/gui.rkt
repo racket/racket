@@ -476,19 +476,17 @@ If the namespace does not, they are colored the unbound color.
             ;; syncheck:clear-arrows : -> void
             (define/public (syncheck:clear-arrows)
               (when (or arrow-records cursor-location cursor-text)
+                (set! last-known-mouse-x #f)
+                (set! last-known-mouse-y #f)
                 (set! tacked-hash-table #f)
                 (set! arrow-records #f)
-                (set! cursor-location #f)
-                (set! cursor-text #f)
-                (set! cursor-eles #f)
                 (when cleanup-texts
                   (for-each (λ (text) (send text thaw-colorer))
                             cleanup-texts))
                 (set! cleanup-texts #f)
                 (set! style-mapping #f)
-                (invalidate-bitmap-cache)
-                (update-docs-background #f)
-                (clear-tooltips)))
+                (syncheck:update-drawn-arrows)
+                (invalidate-bitmap-cache)))
             
             ;; syncheck:apply-style/remember : (is-a?/c text%) number number style% symbol -> void
             (define/public (syncheck:apply-style/remember txt start finish style mode)
@@ -896,13 +894,7 @@ If the namespace does not, they are colored the unbound color.
               (if arrow-records
                   (cond
                     [(send event leaving?)
-                     (update-docs-background #f)
-                     (when (and cursor-location cursor-text)
-                       (set! cursor-location #f)
-                       (set! cursor-text #f)
-                       (set! cursor-eles #f)
-                       (clear-tooltips)
-                       (invalidate-bitmap-cache))
+                     (syncheck:update-drawn-arrows)
                      (super on-event event)]
                     [(or (send event moving?)
                          (send event entering?))
@@ -923,36 +915,34 @@ If the namespace does not, they are colored the unbound color.
                   (super on-event event)))
             
             (define/public (syncheck:update-drawn-arrows)
-              (let-values ([(pos text) (if (and last-known-mouse-x last-known-mouse-y)
-                                           (get-pos/text-dc-location last-known-mouse-x last-known-mouse-y)
-                                           (values #f #f))])
-                (cond
-                  [(and pos (is-a? text text%))
-                   (unless (and (equal? pos cursor-location)
-                                (eq? cursor-text text))
-                     (set! cursor-location pos)
-                     (set! cursor-text text)
-                     
-                     (let* ([arrow-record (hash-ref arrow-records cursor-text #f)]
-                            [eles (and arrow-record (interval-map-ref arrow-record cursor-location null))])
-                       
-                       (unless (equal? cursor-eles eles)
-                         (set! cursor-eles eles)
-                         (update-docs-background eles)
-                         (when eles
-                           (update-tooltips eles)
-                           (for ([ele (in-list eles)])
-                             (cond [(arrow? ele)
-                                    (update-arrow-poss ele)]))
-                           (invalidate-bitmap-cache)))))]
-                  [else
-                   (update-docs-background #f)
-                   (when (or cursor-location cursor-text)
-                     (set! cursor-location #f)
-                     (set! cursor-text #f)
-                     (set! cursor-eles #f)
-                     (clear-tooltips)
-                     (invalidate-bitmap-cache))])))
+              (define-values (pos text)
+                (if (and last-known-mouse-x last-known-mouse-y arrow-records)
+                    (get-pos/text-dc-location last-known-mouse-x last-known-mouse-y)
+                    (values #f #f)))
+              (define eles 
+                (let ([arrow-record (and text
+                                         pos
+                                         (hash-ref arrow-records text #f))])
+                  (and arrow-record 
+                       (interval-map-ref arrow-record pos null))))
+              (unless (and (equal? cursor-location pos)
+                           (eq? cursor-text text))
+                (set! cursor-location pos)
+                (set! cursor-text text)
+                
+                (unless (equal? cursor-eles eles)
+                  (set! cursor-eles eles)
+                  (update-tooltips cursor-eles)
+                  (update-docs-background cursor-eles)
+                  (when cursor-eles
+                    (for ([ele (in-list cursor-eles)])
+                      (when (arrow? ele)
+                        (update-arrow-poss ele))))
+                  (invalidate-bitmap-cache)))
+              
+              (unless tooltips-in-sync-with-cursor-eles?
+                ;; must be called before cursor-eles is set!'d to be eles
+                (update-tooltips cursor-eles)))
 
             (define/public (syncheck:build-popup-menu pos text)
               (and pos
@@ -1037,40 +1027,57 @@ If the namespace does not, they are colored the unbound color.
                                  menu)]))))))
             
             (define tooltip-frame #f)
+            (define tooltips-in-sync-with-cursor-eles? #f)
             (define/private (update-tooltips eles)
-              (unless tooltip-frame (set! tooltip-frame (new tooltip-frame%)))
-              (define tooltip-infos (filter tooltip-info? eles))
+              ;; update-tooltips has to do its own check to compare 'eles'
+              ;; with 'cursor-eles' because sometimes when it is called,
+              ;; the calls to 'tooltip-info->ltrb' fail and we get
+              ;; no information back. when that happens, we set 
+              ;; tooltips-in-sync-with-cursor-eles? to #f and hope that there
+              ;; will be another callback in good time to update us
+              ;; (generally there is because this is called from on-paint
+              ;;  and on-paint gets called each time the cursor blinks...)
               (cond
-                [(null? tooltip-infos)
-                 (send tooltip-frame show #f)]
+                [(not eles)
+                 (when tooltip-frame (send tooltip-frame show #f))
+                 (set! tooltips-in-sync-with-cursor-eles? #t)]
                 [else
-                 (let loop ([tooltip-infos tooltip-infos]
-                            [l #f]
-                            [t #f]
-                            [r #f]
-                            [b #f]
-                            [strings (set)])
-                   (cond
-                     [(null? tooltip-infos)
-                      (send tooltip-frame set-tooltip 
-                            (sort (set->list strings) string<=?))
-                      (if (and l t r b)
-                          (send tooltip-frame show-over l t (- r l) (- b t))
-                          (send tooltip-frame show #f))]
-                     [else
-                      (define-values (tl tt tr tb) (tooltip-info->ltrb (car tooltip-infos)))
-                      (define (min/f x y) (cond [(and x y) (min x y)] [x x] [y y] [else #f]))
-                      (define (max/f x y) (cond [(and x y) (max x y)] [x x] [y y] [else #f]))
-                      (loop (cdr tooltip-infos)
-                            (min/f tl l)
-                            (min/f tt t)
-                            (max/f tr r)
-                            (max/f tb b)
-                            (set-add strings (tooltip-info-msg (car tooltip-infos))))]))]))
+                 (define tooltip-infos (filter tooltip-info? eles))
+                 (cond
+                   [(null? tooltip-infos)
+                    (when tooltip-frame (send tooltip-frame show #f))
+                    (set! tooltips-in-sync-with-cursor-eles? #t)]
+                   [else
+                    (unless tooltip-frame (set! tooltip-frame (new tooltip-frame%)))
+                    (let/ec k
+                      (let loop ([tooltip-infos tooltip-infos]
+                                 [l #f]
+                                 [t #f]
+                                 [r #f]
+                                 [b #f]
+                                 [strings (set)])
+                        (cond
+                          [(null? tooltip-infos)
+                           (send tooltip-frame set-tooltip 
+                                 (sort (set->list strings) string<=?))
+                           (set! tooltips-in-sync-with-cursor-eles? #t)
+                           (if (and l t r b)
+                               (send tooltip-frame show-over l t (- r l) (- b t))
+                               (send tooltip-frame show #f))]
+                          [else
+                           (define-values (tl tt tr tb) (tooltip-info->ltrb (car tooltip-infos)))
+                           (unless (and tl tt tr tb)
+                             (set! tooltips-in-sync-with-cursor-eles? #f)
+                             (k (void)))
+                           (define (min/f x y) (cond [(and x y) (min x y)] [x x] [y y] [else #f]))
+                           (define (max/f x y) (cond [(and x y) (max x y)] [x x] [y y] [else #f]))
+                           (loop (cdr tooltip-infos)
+                                 (min/f tl l)
+                                 (min/f tt t)
+                                 (max/f tr r)
+                                 (max/f tb b)
+                                 (set-add strings (tooltip-info-msg (car tooltip-infos))))])))])]))
             
-            (define/private (clear-tooltips)
-              (when tooltip-frame (send tooltip-frame show #f)))
-
             (define/private (tooltip-info->ltrb tooltip)
               (define xlb (box 0))
               (define ylb (box 0))
@@ -1411,6 +1418,8 @@ If the namespace does not, they are colored the unbound color.
         
         (define/augment (on-tab-change old-tab new-tab)
           (inner (void) on-tab-change old-tab new-tab)
+          (send (send old-tab get-defs) syncheck:update-drawn-arrows)
+          (send (send new-tab get-defs) syncheck:update-drawn-arrows)
           (if (send new-tab get-error-report-visible?)
               (show-error-report)
               (hide-error-report))
