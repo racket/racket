@@ -229,8 +229,27 @@ s-exp framework/keybinding-lang
 (keybinding "c:a" (λ (editor evt) (send editor insert "!")))
 ]
 
-Note that DrRacket does not reload this file automatically when you
-make a change, so you'll need to restart DrRacket to see changes to
+Another example, this file rebinds ``control-w'' to delete the word
+behind the insertion point, but it does it by setting a new key to 
+be an existing keyboard shortcut. If you see a key in the 
+@onscreen{Show Active Keybindings} dialog (in the @onscreen{Keybindings}
+submenu of the @onscreen{Edit} menu), then you can use its
+name with the new keystroke you want, like this:
+
+@racketmod[
+s-exp framework/keybinding-lang
+
+(define (rebind name new)
+  (keybinding 
+   new
+   (lambda (ed evt)
+     (send (send ed get-keymap) call-function name ed evt #t))))
+
+(rebind "backward-kill-word" "c:w")
+]
+
+Note that DrRacket does not reload keybindings files automatically when you
+make changes, so you'll need to restart DrRacket to see changes to
 the file.
 
 @section{Sending Program Fragments to the REPL}
