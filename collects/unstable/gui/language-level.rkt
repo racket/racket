@@ -2,7 +2,7 @@
 (require drracket/tool
          string-constants
          (only-in test-engine/scheme-gui make-formatter)
-         (only-in test-engine/racket-tests
+         (only-in test-engine/scheme-tests
                   scheme-test-data test-format test-execute)
          (lib "test-display.scm" "test-engine"))
 
