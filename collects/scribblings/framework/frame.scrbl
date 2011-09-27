@@ -1,8 +1,7 @@
 #lang scribble/doc 
-@(require scribble/manual scribble/extract scheme/include)
-@(require (for-label framework))
-@(require (for-label scheme/gui))
-@(require (for-syntax (prefix-in s: scribble/reader)))
+@(require scribble/manual scribble/extract
+          (for-label framework scheme/gui)
+          framework/private/gen-standard-menus)
 
 @title{Frame}
 
@@ -445,7 +444,7 @@
 
 }
 
-@(include/reader "standard-menus.scrbl" s:read-syntax)
+@(generate-standard-menus-docs)
 
 @defmixin[frame:standard-menus-mixin (frame:basic<%>) (frame:standard-menus<%>)]{
   The result of this mixin implements @racket[frame:standard-menus<%>].

@@ -1,29 +1,28 @@
-#reader scribble/reader
-#lang scheme/base
+#lang at-exp racket/base
 
 (provide
  (struct-out generic)
- 
+
  (struct-out generic/docs)
- 
+
  (struct-out generic-override)
  (struct-out generic-augment)
  (struct-out generic-method)
  (struct-out generic-private-field)
- 
+
  (struct-out menu-item)
  menu-name->get-menu-name ;; : menu-item -> symbol
- 
+
  (struct-out before/after)
  (struct-out before)
  (struct-out after)
- 
+
  (struct-out between)
- 
+
  (struct-out an-item)
  (struct-out a-checkable-item)
- (struct-out a-submenu-item) 
- 
+ (struct-out a-submenu-item)
+
  ;; an-item -> symbol
  ;; calcualates the names of various identifiers associated with the item.
  an-item->callback-name
@@ -33,10 +32,10 @@
  an-item->on-demand-name
  an-item->string-name
  an-item->help-string-name
- 
+
  before/after->name
  between->name
- 
+
  items)
 
 (define-struct generic (name initializer))
@@ -138,17 +137,17 @@
           '@defmethod[(on-close) void?]{
              Removes the preferences callbacks for the menu items
            }))
-        (make-generic-method 
+        (make-generic-method
          'get-menu% '(λ () menu:can-restore-underscore-menu%)
          (list
-          '@defmethod[(get-menu%) 
+          '@defmethod[(get-menu%)
                       (is-a?/c menu:can-restore-underscore-menu%)]{
              The result of this method is used as the class
-                 for creating the result of these methods:
-                 @method[frame:standard-menus get-file-menu],
-                 @method[frame:standard-menus get-edit-menu], and
-                 @method[frame:standard-menus get-help-menu].}))
-        (make-generic-method 
+             for creating the result of these methods:
+             @method[frame:standard-menus get-file-menu],
+             @method[frame:standard-menus get-edit-menu], and
+             @method[frame:standard-menus get-help-menu].}))
+        (make-generic-method
          'get-menu-item% '(λ () menu:can-restore-menu-item%)
          (list
           '@defmethod[(get-menu-item%) (is-a?/c menu:can-restore-menu-item%)]{
@@ -164,16 +163,16 @@
              checkable menu items in this class.
 
              returns @racket[menu:can-restore-checkable-menu-item] by default.}))
-        
-        (make-generic-method 
+
+        (make-generic-method
          'get-file-menu
          '(λ () file-menu)
          (list
           '@defmethod[(get-file-menu) (is-a?/c menu%)]{
              Returns the file menu.
              See also @method[frame:standard-menus<%> get-menu%].}))
-        
-        (make-generic-private-field 
+
+        (make-generic-private-field
          'file-menu
          '(make-object (get-menu%)
             (string-constant file-menu-label)
@@ -185,7 +184,7 @@
           '@defmethod[(get-edit-menu) (is-a?/c menu%)]{
              Returns the edit menu.
              See also @method[frame:standard-menus<%> get-menu%].}))
-        (make-generic-private-field 
+        (make-generic-private-field
          'edit-menu
          '(make-object (get-menu%) (string-constant edit-menu-label) (get-menu-bar)))
         (make-generic-method
@@ -198,8 +197,8 @@
         (make-generic-private-field
          'help-menu
          '(make-object (get-menu%) (string-constant help-menu-label) (get-menu-bar)))
-        
-        (make-an-item 'file-menu 'new 
+
+        (make-an-item 'file-menu 'new
                       '(string-constant new-info)
                       '(λ (item control) (handler:edit-file #f) #t)
                       #\n
@@ -215,7 +214,7 @@
                       '(string-constant open-menu-item)
                       on-demand-do-nothing
                       #t)
-        (make-a-submenu-item 'file-menu 'open-recent 
+        (make-a-submenu-item 'file-menu 'open-recent
                              '(string-constant open-recent-info)
                              '(λ (x y) (void))
                              #f
@@ -225,7 +224,7 @@
                                 (handler:install-recent-items menu))
                              #t)
         (make-between 'file-menu 'open 'revert 'nothing)
-        (make-an-item 'file-menu 'revert 
+        (make-an-item 'file-menu 'revert
                       '(string-constant revert-info)
                       '(λ (item control) (void))
                       #f
@@ -273,19 +272,19 @@
         (make-between 'file-menu 'close 'quit 'nothing)
         (make-an-item 'file-menu 'quit
                       '(string-constant quit-info)
-                      '(λ (item control) 
+                      '(λ (item control)
                          (when (exit:user-oks-exit)
                            (exit:exit)))
                       #\q
                       '(get-default-shortcut-prefix)
-                      '(if (eq? (system-type) 'windows) 
+                      '(if (eq? (system-type) 'windows)
                            (string-constant quit-menu-item-windows)
                            (string-constant quit-menu-item-others))
                       on-demand-do-nothing
                       '(not (eq? (system-type) 'macosx)))
         (make-after 'file-menu 'quit 'nothing)
-        
-        (make-an-item 'edit-menu 'undo 
+
+        (make-an-item 'edit-menu 'undo
                       '(string-constant undo-info)
                       (edit-menu:do  'undo)
                       #\z
@@ -293,7 +292,7 @@
                       '(string-constant undo-menu-item)
                       (edit-menu:can-do-on-demand 'undo)
                       #t)
-        (make-an-item 'edit-menu 'redo 
+        (make-an-item 'edit-menu 'redo
                       '(string-constant redo-info)
                       (edit-menu:do 'redo)
                       '(if (eq? (system-type) 'windows)
@@ -314,7 +313,7 @@
                       (edit-menu:can-do-on-demand 'cut)
                       #t)
         (make-between 'edit-menu 'cut 'copy 'nothing)
-        (make-an-item 'edit-menu 'copy 
+        (make-an-item 'edit-menu 'copy
                       '(string-constant copy-info)
                       (edit-menu:do 'copy)
                       #\c
@@ -323,7 +322,7 @@
                       (edit-menu:can-do-on-demand 'copy)
                       #t)
         (make-between 'edit-menu 'copy 'paste 'nothing)
-        (make-an-item 'edit-menu 'paste 
+        (make-an-item 'edit-menu 'paste
                       '(string-constant paste-info)
                       (edit-menu:do 'paste)
                       #\v
@@ -332,7 +331,7 @@
                       (edit-menu:can-do-on-demand 'paste)
                       #t)
         (make-between 'edit-menu 'paste 'clear 'nothing)
-        (make-an-item 'edit-menu 'clear 
+        (make-an-item 'edit-menu 'clear
                       '(string-constant clear-info)
                       (edit-menu:do 'clear)
                       #f
@@ -352,8 +351,8 @@
                       (edit-menu:can-do-on-demand 'select-all)
                       #t)
         (make-between 'edit-menu 'select-all 'find 'separator)
-        
-        (make-an-item 'edit-menu 'find  
+
+        (make-an-item 'edit-menu 'find
                       '(string-constant find-info)
                       '(λ (item control) (void))
                       #\f
@@ -361,7 +360,7 @@
                       '(string-constant find-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
-        
+
         (make-an-item 'edit-menu 'find-next
                       '(string-constant find-next-info)
                       '(λ (item control) (void))
@@ -394,7 +393,7 @@
                       '(string-constant replace-menu-item)
                       on-demand-do-nothing
                       #f)
-        (make-an-item 'edit-menu 'replace-all 
+        (make-an-item 'edit-menu 'replace-all
                       '(string-constant replace-all-info)
                       '(λ (item control) (void))
                       #f
@@ -411,9 +410,9 @@
                                '(string-constant find-case-sensitive-menu-item)
                                edit-menu:edit-target-on-demand
                                #f)
-        
+
         (make-between 'edit-menu 'find 'preferences 'nothing-with-standard-menus)
-        (make-an-item 'edit-menu 'preferences 
+        (make-an-item 'edit-menu 'preferences
                       '(string-constant preferences-info)
                       '(λ (item control) (preferences:show-dialog) #t)
                       '(case (system-type)
@@ -424,9 +423,9 @@
                       on-demand-do-nothing
                       '(not (current-eventspace-has-standard-menus?)))
         (make-after 'edit-menu 'preferences 'nothing)
-        
+
         (make-before 'help-menu 'about 'nothing)
-        (make-an-item 'help-menu 'about 
+        (make-an-item 'help-menu 'about
                       '(string-constant about-info)
                       '(λ (item control) (void))
                       #f

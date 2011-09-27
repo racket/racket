@@ -3,16 +3,16 @@
 (require string-constants
          racket/class
          racket/contract/base
-         mzlib/include
+         racket/path
          "search.rkt"
          "sig.rkt"
          "../preferences.rkt"
          "../gui-utils.rkt"
          "bday.rkt"
+         "gen-standard-menus.rkt"
          framework/private/focus-table
          mrlib/close-icon
-         mred/mred-sig
-         racket/path)
+         mred/mred-sig)
 
 (import mred^
         [prefix group: framework:group^]
@@ -1168,7 +1168,7 @@
   (mixin (basic<%>) (pasteboard-info<%>)
     (super-new)))
 
-(include "standard-menus.rktl")
+(generate-standard-menus-code)
 
 (define -editor<%> (interface (standard-menus<%>)
                      get-entire-label
