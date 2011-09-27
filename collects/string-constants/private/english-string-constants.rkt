@@ -328,6 +328,7 @@ please adhere to these guidelines:
  
  ;; Help Desk
  (help "Help")
+ (racket-documentation "Racket Documentation")
  (help-desk "Help Desk")
  (plt:hd:search "Search")
  (plt:hd:feeling-lucky "Feeling Lucky")

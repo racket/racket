@@ -653,9 +653,11 @@
       (make-help-desk-menu-item help-menu)))
   
   (define (make-help-desk-menu-item help-menu)
-    (make-object menu-item%
-      (string-constant help-desk)
-      help-menu
-      (λ (item evt)
-        (help:help-desk)
-        #t)))
+    (define (docs-menu-item label)
+      (new menu-item%
+           [label label]
+           [parent help-menu]
+           [callback (λ (item evt) (help:help-desk) #t)]))
+    (docs-menu-item (string-constant racket-documentation))
+    (new separator-menu-item% [parent help-menu])
+    (docs-menu-item (string-constant help-desk)))
