@@ -548,5 +548,24 @@
   (test 'ok 'ok (foo)))
 
 ;; ----------------------------------------
+;; Check `#%variable-reference' expansion to make sure
+;;  a lexically bound identifier is made consistent with
+;;  its binding
+
+(module m-check-varref-expand racket
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ e) 
+       ;; use `local-expand' to trigger re-expansion:
+       (local-expand #'e 'expression null)]))
+  
+  (m
+   (let ([x 10])
+     (define-syntax-rule (q) (#%variable-reference x))
+     ;; `q' introduces a marked `x' under `#%variable-reference':
+     (q))))
+(require 'm-check-varref-expand)
+
+;; ----------------------------------------
 
 (report-errs)

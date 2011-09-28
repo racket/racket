@@ -1326,7 +1326,7 @@ static Scheme_Object *
 ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   Scheme_Env *menv = NULL;
-  Scheme_Object *var, *name, *rest, *dummy;
+  Scheme_Object *var, *name, *rest, *dummy, *lex_id = NULL;
   int l, ok;
 
   form = scheme_stx_taint_disarm(form, NULL);
@@ -1378,6 +1378,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
       else
         var = scheme_expand_expr(name, env, rec, drec);
     } else {
+      lex_id = NULL;
       var = scheme_lookup_binding(name, env, 
                                   SCHEME_REFERENCING 
                                   + SCHEME_GLOB_ALWAYS_REFERENCE
@@ -1388,7 +1389,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
                                      ? SCHEME_RESOLVE_MODIDS
                                      : 0),
                                   env->in_modidx, 
-                                  &menv, NULL, NULL);
+                                  &menv, NULL, &lex_id);
 
       if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
           || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
@@ -1418,20 +1419,30 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
     SCHEME_PTR1_VAL(o) = (Scheme_Object *)var;
     SCHEME_PTR2_VAL(o) = (Scheme_Object *)dummy;
     return o;
-  } else
-    return scheme_void;
+  } else {
+    if (lex_id) {
+      form = SCHEME_STX_CAR(form);
+      return scheme_make_pair(form, scheme_make_pair(lex_id, scheme_null));
+    }
+    return NULL;
+  }
 }
 
 static Scheme_Object *
 ref_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  Scheme_Object *naya;
+
   SCHEME_EXPAND_OBSERVE_PRIM_VARREF(erec[drec].observer);
 
-  /* Error checking: */
-  ref_syntax(form, env, erec, drec);
+  /* Error checking, and lexical variable update: */
+  naya = ref_syntax(form, env, erec, drec);
 
-  /* No change: */
-  return form;
+  if (!naya)
+    /* No change: */
+    return form;
+
+  return scheme_datum_to_syntax(naya, form, form, 0, 2);
 }
 
 /**********************************************************************/
