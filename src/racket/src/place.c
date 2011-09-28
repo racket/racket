@@ -2021,6 +2021,8 @@ void destroy_place_object_locks(Scheme_Place_Object *place_obj) {
   mzrt_mutex_destroy(place_obj->lock);
   if (place_obj->pause)
     mzrt_sema_destroy(place_obj->pause);
+  place_obj->lock = NULL;
+  place_obj->pause = NULL;
 }
 
 void scheme_place_check_for_interruption() 
@@ -2455,6 +2457,43 @@ static void async_channel_finalize(void *p, void* data) {
   ch->in = 0;
   ch->out = 0;
   ch->count = 0;
+
+  /*release single receiver */  
+  if (SCHEME_PLACE_OBJECTP(ch->wakeup_signal)) {
+    int refcount = 0;
+    Scheme_Place_Object *place_obj;
+    place_obj = ((Scheme_Place_Object *) ch->wakeup_signal);
+
+    mzrt_mutex_lock(place_obj->lock);
+      place_obj->refcount--;
+      refcount = place_obj->refcount;
+    mzrt_mutex_unlock(place_obj->lock);
+    if (!refcount) {
+      destroy_place_object_locks(place_obj);
+    }
+  }
+  /*release multiple receiver */  
+  else if (SCHEME_VECTORP(ch->wakeup_signal)) {
+    Scheme_Object *v = ch->wakeup_signal;
+    int i;
+    int size = SCHEME_VEC_SIZE(v);
+    for (i = 0; i < size; i++) {
+      Scheme_Place_Object *o3;
+      o3 = (Scheme_Place_Object *)SCHEME_VEC_ELS(v)[i];
+      if (o3) {
+        int refcount = 0;
+        mzrt_mutex_lock(o3->lock);
+          SCHEME_VEC_ELS(v)[i] = NULL;
+          o3->refcount--;
+          refcount = o3->refcount;
+        mzrt_mutex_unlock(o3->lock);
+
+        if (!refcount) {
+          destroy_place_object_locks(o3);
+        }
+      }
+    }
+  }
 }
 
 Scheme_Place_Async_Channel *place_async_channel_create() {
@@ -2608,14 +2647,22 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
         Scheme_Place_Object *o3;
         o3 = (Scheme_Place_Object *)SCHEME_VEC_ELS(v)[i];
         if (o3) {
+          int refcount = 0;
           mzrt_mutex_lock(o3->lock);
           if (o3->signal_handle != NULL) {
             scheme_signal_received_at(o3->signal_handle);
             alive++;
           }
-          else
+          else {
             SCHEME_VEC_ELS(v)[i] = NULL;
+            o3->refcount--;
+          }
+          refcount = o3->refcount;
           mzrt_mutex_unlock(o3->lock);
+
+          if (!refcount) {
+            destroy_place_object_locks(o3);
+          }
         }
       }
       /* shrink if more than half are unused */
@@ -2653,15 +2700,44 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
   mzrt_mutex_unlock(ch->lock);
 }
 
+static void place_object_inc_refcount(Scheme_Object *o) {
+  Scheme_Place_Object *place_obj;
+  place_obj = (Scheme_Place_Object *) o;
+
+  mzrt_mutex_lock(place_obj->lock);
+  place_obj->refcount++;
+  mzrt_mutex_unlock(place_obj->lock);
+}
+
+static void place_object_dec_refcount(Scheme_Object *o) {
+  int refcount;
+  Scheme_Place_Object *place_obj;
+  place_obj = (Scheme_Place_Object *) o;
+
+  mzrt_mutex_lock(place_obj->lock);
+  place_obj->refcount--;
+  refcount = place_obj->refcount;
+  mzrt_mutex_unlock(place_obj->lock);
+
+  if (!refcount) {
+    destroy_place_object_locks(place_obj);
+  }
+}
+
 static void register_place_object_with_channel(Scheme_Place_Async_Channel *ch, Scheme_Object *o) {
   if (ch->wakeup_signal == o) {
     return;
   }
-  else if (!ch->wakeup_signal)
+  else if (!ch->wakeup_signal) {
+    place_object_inc_refcount(o);
     ch->wakeup_signal = o;
+  }
   else if (SCHEME_PLACE_OBJECTP(ch->wakeup_signal) 
-           && ( (Scheme_Place_Object *) ch->wakeup_signal)->signal_handle == NULL)
+           && ( (Scheme_Place_Object *) ch->wakeup_signal)->signal_handle == NULL) {
+    place_object_dec_refcount(ch->wakeup_signal);
+    place_object_inc_refcount(o);
     ch->wakeup_signal = o;
+  }
   else if (SCHEME_VECTORP(ch->wakeup_signal)) {
     int i = 0;
     Scheme_Object *v = ch->wakeup_signal;
@@ -2673,11 +2749,14 @@ static void register_place_object_with_channel(Scheme_Place_Async_Channel *ch, S
         return;
       }
       else if (!vo) {
+        place_object_inc_refcount(o);
         SCHEME_VEC_ELS(v)[i] = o;
         return;
       }
       else if (SCHEME_PLACE_OBJECTP(vo) &&
           ((Scheme_Place_Object *)vo)->signal_handle == NULL) {
+        place_object_dec_refcount(vo);
+        place_object_inc_refcount(o);
         SCHEME_VEC_ELS(v)[i] = o; 
         return;
       }
@@ -2689,6 +2768,7 @@ static void register_place_object_with_channel(Scheme_Place_Async_Channel *ch, S
       for (i = 0; i < size; i++) {
         SCHEME_VEC_ELS(nv)[i] = SCHEME_VEC_ELS(v)[i];
       }
+      place_object_inc_refcount(o);
       SCHEME_VEC_ELS(nv)[size+1] = o;
       ch->wakeup_signal = nv;
     }
@@ -2698,6 +2778,7 @@ static void register_place_object_with_channel(Scheme_Place_Async_Channel *ch, S
     Scheme_Object *v;
     v = GC_master_make_vector(2);
     SCHEME_VEC_ELS(v)[0] = ch->wakeup_signal;
+    place_object_inc_refcount(o);
     SCHEME_VEC_ELS(v)[1] = o;
     ch->wakeup_signal = v;
   }
