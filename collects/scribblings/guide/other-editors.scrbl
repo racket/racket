@@ -193,6 +193,12 @@ plugin has a paredit mode that works like paredit in Emacs. However, the plugin
 is not aware of Racket. You can either set vim to treat Racket as Scheme files
 or you can modify the paredit script to load on @filepath{.rkt} files.
 
+@subsection{Scribble}
+
+Vim support for writing scribble documents is provided by the
+@hyperlink["http://www.vim.org/scripts/script.php?script_id=3756"]{scribble.vim}
+plugin.
+
 @subsection{Miscellaneous}
 
 If you are installing many vim plugins (not necessary specific to Racket), we
