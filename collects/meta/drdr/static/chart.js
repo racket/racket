@@ -25,13 +25,26 @@ var options = { selection: { mode: "xy" },
                 grid: { clickable: true, hoverable : true }
               };
 
+function addCommas(nStr) {
+    var rgx = /(\d+)(\d{3})/;
+    while (rgx.test(nStr)) {
+        nStr = nStr.replace(rgx, '$1' + ',' + '$2');
+    }
+    return nStr;
+}
+
+// Number -> String
+function format_ms(ms) {
+    return addCommas(String(ms)) + " ms"
+}
+
 // Number -> String
 function format_time(ms) {
     if (ms >= 300000)
-        return Number(ms/60000).toFixed(2) + " m"
+        return Number(ms/60000).toFixed(2) + " m " + "("+ format_ms(ms)+")";
     if (ms >= 10000)
-        return Number(ms/1000).toFixed(2) + " s"
-    return String(ms) + " ms";
+        return Number(ms/1000).toFixed(2) + " s" + "("+ format_ms(ms)+")";
+    return format_ms(ms);
 }
 
 function legend_click(l) {
