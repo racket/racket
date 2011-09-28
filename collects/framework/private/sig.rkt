@@ -97,7 +97,8 @@
   (define-signature autosave-class^
     (autosavable<%>))
   (define-signature autosave^ extends autosave-class^
-    (register
+    (toc-path
+     register
      restore-autosave-files/gui))
   
   (define-signature exit-class^

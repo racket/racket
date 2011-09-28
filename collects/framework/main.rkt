@@ -367,6 +367,11 @@
     ``weak'' pointer to the object; i.e., the autosaver does not keep an object
     from garbage collection.})
 
+ (thing-doc
+  autosave:toc-path
+  path?
+  @{The path to the a table-of-contents file for the autosave files that DrRacket has created.})
+ 
  (proc-doc/names
   autosave:restore-autosave-files/gui
   (-> void?)

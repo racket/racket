@@ -25,17 +25,17 @@
   
   (define objects null)
   
-  (define autosave-toc-filename
+  (define toc-path
     (build-path (find-system-path 'pref-dir)
                 (case (system-type)
-                  [(unix) ".plt-autosave-toc"]
-                  [else "PLT-autosave-toc"])))
+                  [(unix) ".plt-autosave-toc.rktd"]
+                  [else "PLT-autosave-toc.rktd"])))
   
   (define autosave-toc-save-filename
     (build-path (find-system-path 'pref-dir)
                 (case (system-type)
-                  [(unix) ".plt-autosave-toc-save"]
-                  [else "PLT-autosave-toc-save"])))
+                  [(unix) ".plt-autosave-toc-save.rktd"]
+                  [else "PLT-autosave-toc-save.rktd"])))
   
   (define autosave-timer%
     (class timer%
@@ -49,9 +49,9 @@
               (set! last-name-mapping new-name-mapping)
               (when (file-exists? autosave-toc-save-filename)
                 (delete-file autosave-toc-save-filename))
-              (when (file-exists? autosave-toc-filename)
-                (copy-file autosave-toc-filename autosave-toc-save-filename))
-              (call-with-output-file autosave-toc-filename
+              (when (file-exists? toc-path)
+                (copy-file toc-path autosave-toc-save-filename))
+              (call-with-output-file toc-path
                 (λ (port)
                   (write new-name-mapping port))
                 #:exists 'truncate
@@ -78,8 +78,11 @@
                        [filename (send object get-filename tmp-box)])
                   (loop (cdr orig-objects)
                         (if new-filename
-                            (cons (list (and (not (unbox tmp-box)) filename)
-                                        new-filename)
+                            (cons (list (and (not (unbox tmp-box)) 
+                                             filename
+                                             (path->bytes filename))
+                                        (and new-filename 
+                                             (path->bytes new-filename)))
                                   name-mapping)
                             name-mapping)
                         (cons object-wb new-objects)))
@@ -88,6 +91,17 @@
                       new-objects))))))
   
   (define timer #f)
+  ;; when the autosave delay is changed then we
+  ;; trigger an autosave right away and let the
+  ;; callback trigger the next one at the right interval
+  (preferences:add-callback
+   'framework:autosave-delay
+   (λ (k v)
+     (when timer
+       (send timer stop)
+       (send timer start 0 #t))))
+  
+
   
   (define (register b)
     (unless timer
@@ -108,22 +122,23 @@
     ;; main : -> void
     ;; start everything going
     (define (main)
-      (when (file-exists? autosave-toc-filename)
+      (when (file-exists? toc-path)
         ;; Load table from file, and check that the file was not corrupted
         (let* ([table (let ([v (with-handlers ([exn:fail? (λ (x) null)])
-                                 (call-with-input-file autosave-toc-filename read))]
-                            [path? (λ (x)
-                                     (and (string? x)
-                                          (absolute-path? x)))])
+                                 (call-with-input-file toc-path read))])
                         (if (and (list? v)
                                  (andmap (λ (i)
                                            (and (list? i) 
                                                 (= 2 (length i))
                                                 (or (not (car i))
-                                                    (path? (car i)))
-                                                (path? (cadr i))))
+                                                    (bytes? (car i)))
+                                                (bytes? (cadr i))))
                                          v))
-                            v
+                            (map (λ (ent) (list (if (bytes? (list-ref ent 0))
+                                                    (bytes->path (list-ref ent 0))
+                                                    #f)
+                                                (bytes->path (list-ref ent 1))))
+                                 v)
                             null))]
                ;; assume that the autosave file was deleted due to the file being saved
                [filtered-table
@@ -191,7 +206,7 @@
                                   (parent msg1-panel)
                                   (label (string-constant autosave-original-label:)))]
                  [msg1 (new message%
-                            (label (or orig-file (string-constant autosave-unknown-filename)))
+                            (label (if orig-file (path->string orig-file) (string-constant autosave-unknown-filename)))
                             (stretchable-width #t)
                             (parent msg1-panel))]
                  [msg2-panel (new horizontal-panel%
@@ -200,7 +215,7 @@
                                   (parent msg2-panel)
                                   (label (string-constant autosave-autosave-label:)))]
                  [msg2 (new message%
-                            (label backup-file)
+                            (label (path->string backup-file))
                             (stretchable-width #t)
                             (parent msg2-panel))]
                  [details
@@ -261,8 +276,8 @@
     
     ;; show-files : (list (union #f string[filename]) string) -> void
     (define (show-files table-entry)
-      (let ([file1 (car table-entry)]
-            [file2 (cadr table-entry)])
+      (let ([file1 (list-ref table-entry 0)]
+            [file2 (list-ref table-entry 1)])
         (define frame (make-object show-files-frame% 
                         (if file1
                             (string-constant autosave-compare-files)
@@ -277,12 +292,12 @@
         (add-file-viewer file2 hp (string-constant autosave-autosave-label))
         (send frame show #t)))
     
-    ;; add-file-viewer : string[filename] -> void
+    ;; add-file-viewer : path? -> void
     (define (add-file-viewer filename parent label)
       (define vp (make-object vertical-panel% parent))
       (define t (make-object show-files-text%))
       (define msg1 (make-object message% label vp))
-      (define msg2 (make-object message% filename vp))
+      (define msg2 (make-object message% (path->string filename) vp))
       (define ec (make-object editor-canvas% vp t))
       (send t load-file filename)
       (send t hide-caret #t)
