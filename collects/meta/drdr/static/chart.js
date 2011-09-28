@@ -25,6 +25,15 @@ var options = { selection: { mode: "xy" },
                 grid: { clickable: true, hoverable : true }
               };
 
+// Number -> String
+function format_time(ms) {
+    if (ms >= 300000)
+        return Number(ms/60000).toFixed(2) + " m"
+    if (ms >= 10000)
+        return Number(ms/1000).toFixed(2) + " s"
+    return String(ms) + " ms";
+}
+
 function legend_click(l) {
     show_hide[l] = !show_hide[l];
     show();
@@ -53,7 +62,7 @@ function makeTooltip(item,path) {
     showTooltip(item.pageX, item.pageY,
                 item.series.label + ' at <a href="http://drdr.racket-lang.org/'
                 + x + path + '">push ' + x + "</a>: "
-                + y + " ms");
+                + format_time(y));
 }
 placeholder.bind("plotselected", handle_selection);
 
