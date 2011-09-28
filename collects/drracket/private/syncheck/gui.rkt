@@ -72,6 +72,12 @@ If the namespace does not, they are colored the unbound color.
                          (λ (x) (memq x '(default-mode 
                                            my-obligations-mode 
                                            client-obligations-mode))))
+(let ([number-between-zero-and-one?
+       (λ (x) (and (number? x) (<= 0 x 1)))])
+  (preferences:set-default 
+   'drracket:check-syntax-error-report-window-percentage 
+   1/10
+   number-between-zero-and-one?))
 
 (define (syncheck-add-to-preferences-panel parent)
   (color-prefs:build-color-selection-panel parent
@@ -1552,8 +1558,18 @@ If the namespace does not, they are colored the unbound color.
         (define report-error-canvas 'uninitialized-report-error-editor-canvas)
         (define/override (get-definitions/interactions-panel-parent)
           (set! report-error-parent-panel
-                (make-object vertical-panel%
-                  (super get-definitions/interactions-panel-parent)))
+                (new (class panel:vertical-dragable%
+                       (inherit get-percentages)
+                       (define record-prefs? #f)
+                       (define/public (stop-recording-prefs) (set! record-prefs? #f))
+                       (define/public (start-recording-prefs) (set! record-prefs? #t))
+                       (define/augment (after-percentage-change)
+                         (define ps (get-percentages))
+                         (when (and record-prefs? (= 2 (length ps)))
+                           (preferences:set 'drracket:check-syntax-error-report-window-percentage (list-ref ps 0)))
+                         (inner (void) after-percentage-change))
+                       (super-new))
+                     [parent (super get-definitions/interactions-panel-parent)]))
           (set! report-error-panel (instantiate horizontal-panel% ()
                                      (parent report-error-parent-panel)
                                      (stretchable-height #f)
@@ -1577,7 +1593,8 @@ If the namespace does not, they are colored the unbound color.
             (parent report-error-panel)
             (callback (λ (x y) (hide-error-report)))
             (stretchable-height #t))
-          (make-object vertical-panel% report-error-parent-panel))
+          (define res (make-object vertical-panel% report-error-parent-panel))
+          res)
         
         (define/public-final (syncheck:error-report-visible?)
           (and (is-a? report-error-parent-panel area-container<%>)
@@ -1595,8 +1612,13 @@ If the namespace does not, they are colored the unbound color.
         
         (define/private (show-error-report)
           (unless (syncheck:error-report-visible?)
+            (send report-error-parent-panel stop-recording-prefs)
             (send report-error-parent-panel change-children
-                  (λ (l) (cons report-error-panel l)))))
+                  (λ (l) (cons report-error-panel l)))
+            (let ([p (preferences:get 'drracket:check-syntax-error-report-window-percentage)])
+              (send report-error-parent-panel set-percentages 
+                    (list p (- 1 p))))
+            (send report-error-parent-panel start-recording-prefs)))
         
         (define rest-panel 'uninitialized-root)
         (define super-root 'uninitialized-super-root)
