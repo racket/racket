@@ -937,11 +937,13 @@ read an @elemref["old-prefs"]{old preferences file}, and then a
 collection, instead. If none of those files exists, the preference set
 is empty.
 
-The preference file should contain a symbol-keyed association list
-(written to the file with the default parameter settings).  Keys
+The preference file should contain a list of symbol--value lists
+written with the default parameter settings.  Keys
 starting with @racket[racket:], @racket[mzscheme:], @racket[mred:],
 and @racket[plt:] in any letter case are reserved for use by Racket
-implementers.
+implementers. If the preference file does not contain a list
+of symbol--value lists, an error is logged via @racket[log-error]
+and @racket[failure-thunk] is called.
 
 The result of @racket[get-preference] is the value associated with
 @racket[name] if it exists in the association list, or the result of

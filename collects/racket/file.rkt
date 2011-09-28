@@ -354,23 +354,33 @@
                                      #f))))))])
         (let ([prefs (with-pref-params
                       (lambda ()
-                        (if use-lock? 
-                            (call-with-preference-file-lock
-                             'get-preference
-                             'shared
-                             (lambda ()
-                               (make-lock-file-name pref-file))
-                             (lambda ()
-                               (with-input-from-file pref-file read))
-                             lock-there)
-                            (with-input-from-file pref-file read))))])
+                        (with-handlers ([exn:fail:read? (lambda (exn)
+                                                          (log-error 
+                                                           (format "error reading preferences: ~a"
+                                                                   (exn-message exn)))
+                                                          null)])
+                          (if use-lock? 
+                              (call-with-preference-file-lock
+                               'get-preference
+                               'shared
+                               (lambda ()
+                                 (make-lock-file-name pref-file))
+                               (lambda ()
+                                 (with-input-from-file pref-file read))
+                               lock-there)
+                              (with-input-from-file pref-file read)))))])
           ;; Make sure file content had the right shape:
           (if (and (list? prefs)
                    (andmap (lambda (x)
-                             (and (pair? x) (pair? (cdr x)) (null? (cddr x))))
+                             (and (pair? x) 
+                                  (symbol? (car x))
+                                  (pair? (cdr x)) 
+                                  (null? (cddr x))))
                            prefs))
               prefs
-              null)))))
+              (begin
+                (log-error "preference file content is not a list of symbol--value lists")
+                null))))))
   (let* ([fn (path->complete-path
               (or filename
                   (find-system-path 'pref-file)))]
