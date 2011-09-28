@@ -94,7 +94,6 @@ the state transitions / contracts are:
     
     (define failed #f)
     (define (record-actual-failure)
-      (printf "recording a failure\n")
       (set! number-of-consecutive-failures (+ number-of-consecutive-failures 1))
       (set! past-failure-ps ps)
       (set! past-failure-vs vs)
