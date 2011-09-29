@@ -61,8 +61,6 @@ The limitations:
 
 TODO
 
-Indicate when renaming is necessary.
-
 Handle for-label.
 
 Let user provide database of modules that should never be dropped, eg
@@ -78,8 +76,8 @@ into independent submodules.
 
 #|
 A recommendation is one of
-  (list 'keep   module-path-index phase list)
-  (list 'bypass module-path-index phase list)
+  (list 'keep   module-path-index phase Refs)
+  (list 'bypass module-path-index phase RefineTable)
   (list 'drop   module-path-index phase)
 |#
 
@@ -107,12 +105,13 @@ and simplifies the replacements lists.
     (match entry
       [(list 'keep mpi phase uses)
        (list 'keep (mpi->key mpi) phase)]
-      [(list 'bypass mpi phase replacements)
+      [(list 'bypass mpi phase bypass)
        (list 'bypass (mpi->key mpi) phase
-             (for/list ([r (in-list replacements)])
-               (match r
-                 [(list rmpis rphase uses)
-                  (list (mpi-list->module-path rmpis) rphase)])))]
+             (let ([bypass (flatten-bypass bypass)])
+               (for/list ([(modpath+reqphase inner) (in-hash bypass)])
+                 (list (car modpath+reqphase)
+                       (cdr modpath+reqphase)
+                       (any-renames? (imps->use-table inner))))))]
       [(list 'drop mpi phase)
        (list 'drop (mpi->key mpi) phase)])))
 
@@ -124,69 +123,107 @@ and simplifies the replacements lists.
                         #:show-drop? [show-drop? #t]
                         #:show-uses? [show-uses? #f])
 
-  (define (show-bypass mpi replacements)
-    (for ([replacement (in-list replacements)])
-      (match replacement
-        [(list repl-mod-list phase uses)
-         (printf "  TO ~s at ~a\n"
-                 (mpi-list->module-path (append repl-mod-list (list mpi)))
-                 phase)
-         (show-uses uses 4)])))
-
-  (define (show-uses uses indent)
-    (when show-uses?
-      (for ([use (in-list uses)])
-        (match use
-          [(list sym phase modes)
-           (printf "~a~a ~a ~a\n" (make-string indent #\space) sym phase modes)]))))
+  (define (show-bypass mpi bypass)
+    (for ([(modname+reqphase inner) (flatten-bypass bypass)])
+      (let ([modname (car modname+reqphase)]
+            [reqphase (cdr modname+reqphase)]
+            [use-table (imps->use-table inner)])
+        (printf "  TO ~s at ~s~a\n" modname reqphase
+                (cond [(any-renames? use-table)
+                       " WITH RENAMING"]
+                      [else ""]))
+        (when show-uses?
+          (show-uses use-table 4)))))
 
   (let ([recs (analyze-requires mod)])
     (for ([rec (in-list recs)])
       (match rec
         [(list 'keep mpi phase uses)
          (when show-keep?
-           (printf "KEEP ~s at ~a\n"
+           (printf "KEEP ~s at ~s\n"
                    (mpi->key mpi) phase)
-           (show-uses uses 2))]
-        [(list 'bypass mpi phase replacements)
+           (when show-uses?
+             (show-uses (imps->use-table uses) 2)))]
+        [(list 'bypass mpi phase bypass)
          (when show-bypass?
-           (printf "BYPASS ~s at ~a\n" (mpi->key mpi) phase)
-           (show-bypass mpi replacements))]
+           (printf "BYPASS ~s at ~s\n" (mpi->key mpi) phase)
+           (show-bypass mpi bypass))]
         [(list 'drop mpi phase)
          (when show-drop?
-           (printf "DROP ~s at ~a\n" (mpi->key mpi) phase))]))))
+           (printf "DROP ~s at ~s\n" (mpi->key mpi) phase))]))))
 
-(define (mpi-list->module-path mpi-list)
-  (let* ([mpi*
-          (let loop ([mpi #f] [mpi-list mpi-list])
-            (cond [mpi
-                   (let-values ([(mod base) (module-path-index-split mpi)])
-                     (cond [mod (module-path-index-join mod (loop base mpi-list))]
-                           [else (loop #f mpi-list)]))]
-                  [(pair? mpi-list)
-                   (loop (car mpi-list) (cdr mpi-list))]
-                  [else #f]))]
-         [collapsed
-          (let loop ([mpi mpi*])
-            (cond [mpi 
-                   (let-values ([(mod base) (module-path-index-split mpi)])
-                     (cond [mod
-                            (collapse-module-path mod (lambda () (loop base)))]
-                           [else (build-path 'same)]))]
-                  [else (build-path 'same)]))])
-    (match collapsed
-      [(list 'lib str)
-       (cond [(regexp-match? #rx"\\.rkt$" str)
-              (let* ([no-suffix (path->string (path-replace-suffix str ""))]
-                     [no-main
-                      (cond [(regexp-match #rx"^([^/]+)/main$" no-suffix)
-                             => cadr]
-                            [else no-suffix])])
-                (string->symbol no-main))]
-             [else collapsed])]
-      [(? path?)
-       (path->string (simplify-path collapsed #f))] ;; to get rid of "./" at beginning
-      [_ collapsed])))
+;; ----
+
+;; flatten-bypass : RefineTable -> hash[(cons module-path int) => Imps]
+(define (flatten-bypass table)
+  (let ([flat-table (make-hash)]) ;; hash[(cons module-path int) => Imps]
+    (let loop ([table table] [mpi-ctx null])
+      (for ([(mod+reqphase inner) (in-hash table)])
+        (let* ([mod (car mod+reqphase)]
+               [reqphase (cdr mod+reqphase)]
+               [mpis (cons mod mpi-ctx)])
+          (cond [(hash? inner)
+                 (loop inner mpis)]
+                [else
+                 ;; key may already exist, eg with import diamonds; so append
+                 (let* ([modpath (mpi-list->module-path mpis)]
+                        [key (cons modpath reqphase)])
+                   (hash-set! flat-table key
+                              (append inner (hash-ref flat-table key null))))]))))
+    flat-table))
+
+(define (ref->symbol r)
+  (match r
+    [(ref phase id mode (list dm ds nm ns dp ips np))
+     (cond [id (syntax-e id)]
+           [else ns])]))
+
+;; imps->use-table : Imps -> hash[(list phase prov-sym ref-sym) => (listof mode)]
+(define (imps->use-table imps)
+  (let ([table (make-hash)])
+    (for ([i (in-list imps)])
+      (match i
+        [(imp _m _p prov-sym _prov-phase r)
+         (let* ([phase (ref-phase r)]
+                [ref-sym (ref->symbol r)]
+                [mode (ref-mode r)]
+                [key (list phase prov-sym ref-sym)]
+                [modes (hash-ref table key null)])
+           (unless (memq mode modes)
+             (hash-set! table key (cons mode modes))))]))
+    table))
+
+;; any-renames? : use-table -> boolean
+(define (any-renames? use-table)
+  (for/or ([key (in-hash-keys use-table)])
+    (match key
+      [(list phase prov-sym ref-sym)
+       (not (eq? prov-sym ref-sym))])))
+
+;; show-uses : use-table nat -> void
+(define (show-uses use-table indent)
+  (let* ([unsorted
+          (for/list ([(key modes) (in-hash use-table)])
+            (cons key (sort modes < #:key mode->nat)))]
+         [sorted
+          (sort unsorted
+                (lambda (A B)
+                  (let ([pA (car A)]
+                        [pB (car B)])
+                    (or (< pA pB)
+                        (and (= pA pB)
+                             (let ([strA (symbol->string (cadr A))]
+                                   [strB (symbol->string (cadr B))])
+                               (string<? strA strB))))))
+                #:key car)]
+         [spacer (make-string indent #\space)])
+    (for ([elem (in-list sorted)])
+      (match elem
+        [(cons (list phase prov-sym ref-sym) modes)
+         (printf "~a~a at ~a ~a~a\n"
+                 spacer prov-sym phase modes
+                 (cond [(eq? ref-sym prov-sym) ""]
+                       [else (format " RENAMED TO ~a" ref-sym)]))]))))
 
 ;; ========================================
 

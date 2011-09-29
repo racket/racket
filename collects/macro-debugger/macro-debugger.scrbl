@@ -370,7 +370,7 @@ Modules required @racket[for-label] are not analyzed.
   @racket[module-to-analyze] on @racket[_req-module] are enumerated,
   one per line, in the following format:
 
-  @defoutput[@tt{@racket[_exp-name] @racket[_use-phase] (@racket[_mode ...])}]{
+  @defoutput[@tt{@racket[_exp-name] at @racket[_use-phase] (@racket[_mode ...]) [RENAMED TO @racket[_ref-name]]}]{
 
     Indicates an export named @racket[_exp-name] is used at phase
     @racket[_use-phase] (not necessarily the phase it was provided at,
@@ -379,6 +379,12 @@ Modules required @racket[for-label] are not analyzed.
     The @racket[_modes] indicate what kind(s) of dependencies were
     observed: used as a @tt{reference}, appeared in a syntax template
     (@tt{quote-syntax}), etc.
+
+    If the @tt{RENAMED TO} clause is present, it indicates that the
+    binding is renamed on import into the module, and
+    @racket[_ref-name] gives the local name used (@racket[_exp-name]
+    is the name under which @racket[_req-module] provides the
+    binding).
   }
 }
 
@@ -393,7 +399,7 @@ Modules required @racket[for-label] are not analyzed.
   A list of replacement requires is given, one per line, in the
   following format:
 
-  @defoutput[@tt{TO @racket[_repl-module] at @racket[_repl-phase]}]{
+  @defoutput[@tt{TO @racket[_repl-module] at @racket[_repl-phase] [WITH RENAMING]}]{
 
     Add a require of @racket[_repl-module] at phase
     @racket[_repl-phase]. If @racket[show-uses?] is true, then
@@ -401,10 +407,11 @@ Modules required @racket[for-label] are not analyzed.
     that would be satisfied by @racket[_repl-module] in the same
     format as described under @tt{KEEP} below.
 
-    Note: @racket[_repl-module] may provide an export under a
-    different name than @racket[_req-module]; you must use
-    @racket[rename-in] or adjust the references for the replacement to
-    work.
+    If the @tt{WITH RENAMING} clause is present, it indicates that at
+    least one of the replacement modules provides a binding under a
+    different name from the one used locally in the module. Either the
+    references should be changed or @racket[rename-in] should be used
+    with the replacement modules as necessary.
   }
 
   Bypass recommendations are restricted by the following rules:
@@ -457,7 +464,7 @@ typical reasons for such bad suggestions:
 
 @defproc[(show-requires [module-name module-path?])
          (listof (list/c 'keep   module-path? number?)
-	         (list/c 'bypass module-path? number?)
+	         (list/c 'bypass module-path? number? list?)
 		 (list/c 'drop   module-path? number?))]{
 
 Like @racket[check-requires], but returns the analysis as a list

@@ -99,13 +99,6 @@
   (let* ([imps (map ref->imp refs)])
     (refine-imps/one-require mod reqphase imps)))
 
-;; ref->imp : ref -> imp
-;; Assumes id gotten from nom-mod, etc.
-(define (ref->imp r)
-  (match (ref-binding r)
-    [(list _dm _ds nom-mod nom-sym _dp imp-shift nom-orig-phase)
-     (imp nom-mod imp-shift nom-sym nom-orig-phase r)]))
-
 ;; refine-imps/one-require : mod phase Imps -> RefineTable or #f
 ;; where all imps come from mod at phase
 ;; the result table contains new (refined) imps
@@ -181,59 +174,18 @@
            [def-refs (hash-ref DEF-USES key null)])
       (cond [(and (pair? nom-refs) (pair? def-refs))
              ;; We use refs defined in the module (and we got them from the module)
-             (list 'keep mod phase (process-refs nom-refs))]
+             (list 'keep mod phase (map ref->imp nom-refs))]
             [(pair? nom-refs)
              ;; We use refs gotten from the module (but defined elsewhere)
              (let ([bypass
                     (and (allow-bypass? mod)
                          (try-bypass mod phase nom-refs))])
                (if bypass
-                   (list 'bypass mod phase (process-bypass bypass))
-                   (list 'keep mod phase (process-refs nom-refs))))]
+                   (list 'bypass mod phase bypass)
+                   (list 'keep mod phase (map ref->imp nom-refs))))]
             [else
              ;; We don't have any refs gotten from the module
              ;; (although we may---possibly---have refs defined in it, but gotten elsewhere)
              (if (allow-drop? mod)
                  (list 'drop mod phase)
                  (list 'keep mod phase null))]))))
-
-;; process-refs : Refs phase -> (listof (list symbol int (listof mode)))
-(define (process-refs refs)
-  ;; table : hash[(cons phase symbol) => (listof mode)]
-  (define table (make-hash))
-  (for ([r (in-list refs)])
-    (match r
-      [(ref phase _id mode
-            (list def-mod def-sym nom-mod nom-sym def-phase imp-phase-shift nom-phase))
-       (let* ([key (cons nom-sym phase)] ;; was nom-phase
-              [modes (hash-ref table key null)])
-         (unless (memq mode modes)
-           (hash-set! table key (cons mode modes))))]))
-  (let* ([unsorted
-          (for/list ([(key modes) (in-hash table)])
-            (cons key (sort modes < #:key mode->nat)))]
-         [sorted
-          (sort unsorted
-                (lambda (A B)
-                  (let ([strA (symbol->string (car A))]
-                        [strB (symbol->string (car B))])
-                    (or (string<? strA strB)
-                        (and (string=? strA strB)
-                             (< (cdr A) (cdr B))))))
-                #:key car)])
-    (for/list ([elem (in-list sorted)])
-      (list (caar elem) (cdar elem) (cdr elem)))))
-
-;; process-bypass : RefineTable
-;;               -> (listof (list (listof mpi) int (listof (list symbol int (listof mode)))))
-(define (process-bypass bypass [mpi-ctx null])
-  (apply append
-         (for/list ([(mod+reqphase inner) (in-hash bypass)])
-           (let ([mod (car mod+reqphase)]
-                 [reqphase (cdr mod+reqphase)])
-             (cond [(hash? inner)
-                    (process-bypass inner (cons mod mpi-ctx))]
-                   [else
-                    (list (list (cons mod mpi-ctx)
-                                reqphase
-                                (process-refs (map imp-ref inner))))])))))
