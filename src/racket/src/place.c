@@ -57,6 +57,7 @@ static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *args[
 static Scheme_Object *place_channel(int argc, Scheme_Object *args[]);
 static Scheme_Object* place_allowed_p(int argc, Scheme_Object *args[]);
 static void cust_kill_place(Scheme_Object *pl, void *notused);
+static void resume_one_place_with_lock(Scheme_Place_Object *place_obj);
 
 static Scheme_Place_Async_Channel *place_async_channel_create();
 static Scheme_Place_Bi_Channel *place_bi_channel_create();
@@ -496,10 +497,11 @@ static void do_place_kill(Scheme_Place *place)
 
     place->result = place_obj->result;
 
+    if (refcount)
+      resume_one_place_with_lock(place_obj);
+
     mzrt_mutex_unlock(place_obj->lock);
   }
-
-  scheme_resume_one_place(place);
 
   scheme_remove_managed(place->mref, (Scheme_Object *)place);
   if (!refcount) {
@@ -1998,21 +2000,26 @@ void scheme_pause_one_place(Scheme_Place *p)
   }
 }
 
+static void resume_one_place_with_lock(Scheme_Place_Object *place_obj)
+{
+  if (place_obj->pause) {
+    mzrt_sema *s = place_obj->pause;
+    place_obj->pause = NULL;
+    if (!place_obj->pausing) {
+      mzrt_sema_destroy(s);
+    } else {
+      mzrt_sema_post(s);
+    }
+  }
+}
+
 void scheme_resume_one_place(Scheme_Place *p)
 {
   Scheme_Place_Object *place_obj = p->place_obj;
 
   if (place_obj) {
     mzrt_mutex_lock(place_obj->lock);
-    if (place_obj->pause) {
-      mzrt_sema *s = place_obj->pause;
-      place_obj->pause = NULL;
-      if (!place_obj->pausing) {
-        mzrt_sema_destroy(s);
-      } else {
-        mzrt_sema_post(s);
-      }
-    }
+    resume_one_place_with_lock(place_obj);
     mzrt_mutex_unlock(place_obj->lock);
   }
 }
