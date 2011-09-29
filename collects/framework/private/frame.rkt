@@ -296,7 +296,9 @@
       (for ([m (in-range 1 (get-display-count))])
         (define-values (new-delta-x new-delta-y new-dist) 
           (find-distance x y m))
-        (when (and (new-delta-x . >= . 0)
+        (when (and new-delta-x
+                   new-delta-y
+                   (new-delta-x . >= . 0)
                    (new-delta-y . >= . 0))
           (when (< new-dist dist)
             (set! closest m)
@@ -322,10 +324,12 @@
            (define-values (monitor delta-x delta-y) (apply values (preferences:get position-preferences-key)))
            (define-values (l t) (get-display-left-top-inset #:monitor monitor))
            (define-values (mw mh) (get-display-size #:monitor monitor))
-           (values (- delta-x l) 
-                   (- delta-y t)
-                   (and (<= 0 l mw)
-                        (<= 0 t mh)))]
+           (if (and l t mw mh)
+               (values (- delta-x l) 
+                       (- delta-y t)
+                       (and (<= 0 l mw)
+                            (<= 0 t mh)))
+               (values #f #f #f))]
           [else
            (values #f #f #f)]))
       (define (already-one-there? x y w h)
