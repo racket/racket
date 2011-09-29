@@ -209,8 +209,7 @@
 
 ;; borders may be of slightly uneven width, sadly
 (define-values (ellipse/border
-                rectangle/border
-                rounded-rectangle/border)
+                rectangle/border)
   (let ()
     (define ((mk shape) w h
              #:color (color "white")
@@ -222,8 +221,22 @@
                         (- h (* 2 border-width)))
                  color)))
     (values (mk filled-ellipse)
-            (mk filled-rectangle)
-            (mk filled-rounded-rectangle))))
+            (mk filled-rectangle))))
+
+(define (rounded-rectangle/border
+             w h
+             #:color (color "white")
+             #:border-color (border-color "black")
+             #:border-width (border-width 2)
+             #:corner-radius (radius -0.25)
+             #:angle (angle 0))
+  (cc-superimpose
+    (colorize (filled-rounded-rectangle w h radius #:angle angle) border-color)
+    (colorize (filled-rounded-rectangle 
+                (- w (* 2 border-width))
+                (- h (* 2 border-width)) radius #:angle angle)
+              color)))
+
 (define (circle/border d
                        #:color (color "white")
                        #:border-color (border-color "black")
@@ -240,7 +253,10 @@
 (provide/contract
  [ellipse/border shape/border-contract]
  [rectangle/border shape/border-contract]
- [rounded-rectangle/border shape/border-contract]
+ [rounded-rectangle/border
+  (->* [real? real?]
+       [#:color color/c #:border-color color/c #:border-width real? #:corner-radius real? #:angle real?]
+       pict?)]
  [circle/border
   (->* [real?]
        [#:color color/c #:border-color color/c #:border-width real?]

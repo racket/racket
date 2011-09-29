@@ -289,7 +289,9 @@ Sets @racket[pict-combine] to refer to @racket[combine-id] within each of the
 @defproc[(rounded-rectangle/border [w real?] [h real?]
                                    [#:color color color/c "white"]
                                    [#:border-color border-color color/c "black"]
-                                   [#:border-width border-width real? 2])
+                                   [#:border-width border-width real? 2]
+                                   [#:corner-radius corner-radius real? -0.25]
+                                   [#:angle angle real? 0])
          pict?]
 )]{
 These functions create shapes with border of the given color and width.
