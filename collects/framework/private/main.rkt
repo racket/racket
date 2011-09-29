@@ -257,6 +257,12 @@
                lambda: λ:
                plambda: opt-lambda: popt-lambda:
 
+               splicing-let splicing-letrec splicing-let-values
+               splicing-letrec-values splicing-let-syntax
+               splicing-letrec-syntax splicing-let-syntaxes
+               splicing-letrec-syntaxes splicing-letrec-syntaxes+values
+               splicing-local               
+               
                for for/list for/hash for/hasheq for/hasheqv for/and for/or 
                for/lists for/first for/last for/fold for/vector for/flvector
                for* for*/list for*/hash for*/hasheq for*/hasheqv for*/and for*/or 
