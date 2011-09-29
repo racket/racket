@@ -194,6 +194,8 @@ ROSYM Scheme_Object *scheme_break_enabled_key;
 THREAD_LOCAL_DECL(intptr_t scheme_total_gc_time);
 THREAD_LOCAL_DECL(static intptr_t start_this_gc_time);
 THREAD_LOCAL_DECL(static intptr_t end_this_gc_time);
+THREAD_LOCAL_DECL(static double start_this_gc_real_time);
+THREAD_LOCAL_DECL(static double end_this_gc_real_time);
 static void get_ready_for_GC(void);
 static void done_with_GC(void);
 #ifdef MZ_PRECISE_GC
@@ -240,6 +242,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_out_callbacks);
 THREAD_LOCAL_DECL(static Scheme_Object *recycle_cell);
 THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
 THREAD_LOCAL_DECL(static int recycle_cc_count);
+THREAD_LOCAL_DECL(static Scheme_Struct_Type *gc_info_prefab);
 
 THREAD_LOCAL_DECL(struct Scheme_Hash_Table *place_local_misc_table);
 
@@ -563,6 +566,8 @@ void scheme_init_thread_places(void) {
   REGISTER_SO(maybe_recycle_cell);
   REGISTER_SO(gc_prepost_callback_descs);
   REGISTER_SO(place_local_misc_table);
+  REGISTER_SO(gc_info_prefab);
+  gc_info_prefab = scheme_lookup_prefab_type(scheme_intern_symbol("gc-info"), 10);
 }
 
 void scheme_init_memtrace(Scheme_Env *env)
@@ -7613,6 +7618,7 @@ void scheme_prepare_this_thread_for_GC(Scheme_Thread *p)
 
 static void get_ready_for_GC()
 {
+  start_this_gc_real_time = scheme_get_inexact_milliseconds();
   start_this_gc_time = scheme_get_process_milliseconds();
 
 #ifdef MZ_USE_FUTURES
@@ -7687,6 +7693,7 @@ static void done_with_GC()
 #endif
 
   end_this_gc_time = scheme_get_process_milliseconds();
+  end_this_gc_real_time = scheme_get_inexact_milliseconds();
   scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
 
   run_gc_callbacks(0);
@@ -7744,18 +7751,24 @@ static char *gc_num(char *nums, int v)
   return nums + i;
 }
 
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
+
 static void inform_GC(int master_gc, int major_gc, 
                       intptr_t pre_used, intptr_t post_used,
                       intptr_t pre_admin, intptr_t post_admin,
                       intptr_t post_child_places_used)
 {
-  Scheme_Logger *logger = scheme_get_main_logger();
-  if (logger) {
+  Scheme_Logger *logger;
+  logger = scheme_get_main_logger();
+  if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
     /* Don't use scheme_log(), because it wants to allocate a buffer
        based on the max value-print width, and we may not be at a
        point where parameters are available. */
-    char buf[128], nums[128];
+    char buf[256], nums[128];
     intptr_t buflen, delta, admin_delta;
+    Scheme_Object *vec, *v;
 
 #ifdef MZ_USE_PLACES
 # define PLACE_ID_FORMAT "%d:"
@@ -7763,24 +7776,49 @@ static void inform_GC(int master_gc, int major_gc,
 # define PLACE_ID_FORMAT ""
 #endif
 
+    vec = scheme_false;
+    if (!master_gc && gc_info_prefab) {
+      vec = scheme_make_vector(11, scheme_false);
+      SCHEME_VEC_ELS(vec)[1] = (major_gc ? scheme_true : scheme_false);
+      SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(pre_used);
+      SCHEME_VEC_ELS(vec)[3] = scheme_make_integer((pre_admin - pre_used));
+      SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(scheme_code_page_total);
+      SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(pre_used - delta);
+      SCHEME_VEC_ELS(vec)[6] = scheme_make_integer(pre_admin - admin_delta);
+      v = scheme_make_integer_value(start_this_gc_time);
+      SCHEME_VEC_ELS(vec)[7] = v;
+      v = scheme_make_integer_value(end_this_gc_time);
+      SCHEME_VEC_ELS(vec)[8] = v;
+      v = scheme_make_double(start_this_gc_real_time);
+      SCHEME_VEC_ELS(vec)[9] = v;
+      v = scheme_make_double(end_this_gc_real_time);
+      SCHEME_VEC_ELS(vec)[10] = v;
+      vec = scheme_make_prefab_struct_instance(gc_info_prefab, vec);
+    }
+
+    START_XFORM_SKIP;
+
     memset(nums, 0, sizeof(nums));
 
     delta = pre_used - post_used;
     admin_delta = (pre_admin - post_admin) - delta;
     sprintf(buf,
-            "GC [" PLACE_ID_FORMAT "%s] at %sK(+%sK)[+%sK];"
-            " freed %sK(%s%sK) in %" PRIdPTR " msec",
+            "GC[" PLACE_ID_FORMAT "%s] @ %sK(+%sK)[+%sK];"
+            " free %sK(%s%sK) %" PRIdPTR "ms @ %" PRIdPTR,
 #ifdef MZ_USE_PLACES
             scheme_current_place_id,
 #endif
-            (master_gc ? "MASTER" : (major_gc ? "MAJOR" : "minor")),
+            (master_gc ? "MST" : (major_gc ? "MAJ" : "min")),
             gc_num(nums, pre_used), gc_num(nums, pre_admin - pre_used),
             gc_num(nums, scheme_code_page_total),
             gc_num(nums, delta), ((admin_delta < 0) ? "" : "+"),  gc_num(nums, admin_delta),
-            (master_gc ? 0 : (end_this_gc_time - start_this_gc_time)));
+            (master_gc ? 0 : (end_this_gc_time - start_this_gc_time)),
+            start_this_gc_time);
     buflen = strlen(buf);
 
-    scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, NULL);
+    END_XFORM_SKIP;
+
+    scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, vec);
   }
 
 #ifdef MZ_USE_PLACES
@@ -7789,11 +7827,6 @@ static void inform_GC(int master_gc, int major_gc,
   }
 #endif
 }
-#endif
-
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
 #endif
 
 /*========================================================================*/

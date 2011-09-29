@@ -173,6 +173,45 @@ execution. Otherwise, @racket[#f] is returned.}
 Set the @as-index{@envvar{PLTDISABLEGC}} environment variable (to any
 value) before Racket starts to disable @tech{garbage collection}.
 
+In Racket 3m (the main variant of Racket), each garbage collection
+logs a message (see @secref["logging"]) at the @racket['debug] level.
+The data portion of the message is an instance of a @racket[gc-info]
+@tech{prefab} structure type with 10 fields as follows, but future
+versions of Racket may use a @racket[gc-info] @tech{prefab} structure
+with additional fields:
+
+@racketblock[
+(struct gc-info (major? pre-amount pre-admin-amount code-amount
+                        post-amount post-admin-amount
+                        start-process-time end-process-time
+                        start-time end-time)
+  #:prefab)
+]
+
+The @racket[major?] field indicates whether the collection was a
+``major'' collection that inspects all memory or a ``minor''
+collection that mostly inspects just recent allocations. The
+@racket[pre-amount] field reports place-local memory use (i.e., not
+counting the memory use of child places) in bytes at the time that the
+@tech{garbage collection} started. The @racket[pre-admin-amount] is a
+larger number that includes memory use for the garbage collector's
+overhead (such as space on memory pages that is not yet used). The
+@racket[code-amount] field reports additional memory use for generated
+native code (which is the same just before and after a garbage
+collection, since it is released via finalization). The
+@racket[post-amount] and @racket[post-admin-amount] fields correspond
+to @racket[pre-amount] and @racket[pre-admin-amount], but after garbage
+collection. The @racket[start-process-time] and
+@racket[end-process-time] fields report processor time (in the sense
+of @racket[current-process-milliseconds]) at the start and end of
+garbage collection; the difference is the processor time consumed by
+collection. The @racket[start-time] and @racket[end-time] fields
+report real time (in the sense of
+@racket[current-inexact-milliseconds]) at the start and end of garbage
+collection; the difference is the real time consumed by garbage
+collection.
+
+
 @defproc[(collect-garbage) void?]{
 
 Forces an immediate @tech{garbage collection} (unless garbage
