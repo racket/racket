@@ -37,6 +37,6 @@
    (define new-frame (wait-for-new-frame drs))
    (define new-label (send new-frame get-label))
    (queue-callback/res (λ () (send defs undo)))
-   (unless (equal? "Recover Autosaved FilesX" new-label)
+   (unless (equal? "Recover Autosaved Files" new-label)
      (error 'autosave-recovery-gui.rkt
             "didn't get autosave file frame, title was ~s" new-label))))
