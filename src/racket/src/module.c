@@ -3601,12 +3601,15 @@ Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, intptr_t 
 
   if (!menv) {
     Scheme_Object *chain;
+    int ph;
 
     chain = env->modchain;
-    if (rev_mod_phase && chain) {
+    ph = rev_mod_phase;
+    while (ph && chain) {
       chain = (SCHEME_VEC_ELS(chain))[2];
       if (SCHEME_FALSEP(chain))
 	return NULL;
+      ph--;
     }
 
     if (!chain) {
@@ -3616,8 +3619,10 @@ Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, intptr_t 
 
     menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(chain), name);
     
-    if (rev_mod_phase && menv)
+    while ((ph < rev_mod_phase) && menv) {
       menv = menv->exp_env;
+      ph++;
+    }
   }
 
   return menv;
@@ -3951,6 +3956,7 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env,
     int i;
 
     for (i = 0; i < mod_phase; i++) {
+      scheme_prepare_template_env(env);
       env = env->template_env;
       if (!env) return NULL;
     }
@@ -3961,6 +3967,7 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env,
       return NULL;
 
     for (i = 0; i < mod_phase; i++) {
+      scheme_prepare_exp_env(menv);
       menv = menv->exp_env;
       if (!menv) return NULL;
     }
@@ -8451,6 +8458,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
               noms = adjust_for_rename(exs[count], SCHEME_VEC_ELS(v)[4], SCHEME_VEC_ELS(v)[0]);
               exsnoms[count] = noms;
               exps[count] = protected;
+              exets[count] = SCHEME_INT_VAL(SCHEME_VEC_ELS(v)[8]);
               count++;
             }
           }

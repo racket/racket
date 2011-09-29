@@ -599,5 +599,25 @@
          (rename-in (dynamic-in service))))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check phase-1 syntax used via for-template
+;; and other indirections
+
+(module there-and-back-x racket/base
+  (require (for-syntax racket/base))
+  (begin-for-syntax
+   (provide s s?)
+   (struct s (x y))))
+
+(module there-and-back-y racket/base
+  (require (for-template 'there-and-back-x))
+  (s 1 2)
+  (provide s s?))
+
+(module there-and-back-z racket/base
+  (require 'there-and-back-y)
+  (provide f)
+  (define (f) (s 1 2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

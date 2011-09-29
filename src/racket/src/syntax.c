@@ -3387,6 +3387,7 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
               phase = 0;
 
             EXPLAIN(fprintf(stderr, "%d     srcname %s\n", depth, SCHEME_SYM_VAL(pt->provide_src_names[i])));
+            EXPLAIN(fprintf(stderr, "%d     mod phase %d\n", depth, phase));
             get_names[0] = pt->provide_src_names[i];
             get_names[1] = idx;
             get_names[2] = glob_id;
@@ -3765,6 +3766,10 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
       } else {
         EXPLAIN(fprintf(stderr, "%d Result: %s\n", depth, scheme_write_to_string(result, NULL)));
       }
+      if (get_names) {
+        EXPLAIN(fprintf(stderr, "%d  phase %s\n", depth, scheme_write_to_string(get_names[3], NULL)));
+      }
+        
 
       return result;
     } else if ((SCHEME_RENAMESP(WRAP_POS_FIRST(wraps)) 
