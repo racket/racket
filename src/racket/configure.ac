@@ -625,6 +625,9 @@ case "$host_os" in
       PREFLAGS="$PREFLAGS -DXONX "
     fi
     ;;
+  nto-qnx*)
+    LIBS="$LIBS -lsocket"
+    ;;
   *)
     ;;
 esac
@@ -837,7 +840,7 @@ if test "${enable_backtrace}" = "yes" ; then
 fi
 
 LFS_CFLAGS=`getconf LFS_CFLAGS 2> /dev/null`
-if test "${LFS_CFLAGS}" != "" ; then
+if test "${LFS_CFLAGS}" != "" && test "${LFS_CFLAGS}" != "undefined"; then
   echo "Large-file support: ${LFS_CFLAGS}"
   MZOPTIONS="${MZOPTIONS} ${LFS_CFLAGS}"  
 fi

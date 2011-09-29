@@ -4925,6 +4925,8 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
   while ((e = readdir(dir))) {
 #  ifdef DIRENT_NO_NAMLEN
     nlen = strlen(e->d_name);
+#  elif defined(__QNX__) || defined(__QNXNTO__)
+    nlen = e->d_namelen;
 #  else
     nlen = e->d_namlen;
 #  endif

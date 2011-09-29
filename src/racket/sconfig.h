@@ -937,6 +937,11 @@
 
 #endif /* end not OSKit */
 
+#if defined(__QNX__)
+# define USE_FCNTL_O_NONBLOCK
+# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-QNX"
+#endif
+
 /************** (END KNOWN ARCHITECTURE/SYSTEMS) ****************/
 
 
