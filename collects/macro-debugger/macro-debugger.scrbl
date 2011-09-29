@@ -114,8 +114,15 @@ result as the original syntax.
 Macros can explicitly send information to a listening macro stepper by
 using the procedures in this module.
 
-@defproc[(emit-remark [fragment (or/c syntax? string?)] ...
-                      [#:unmark? unmark? boolean? #t])
+@defproc[(emit-remark [fragment
+                       (letrec ([emit-arg/c
+                                 (recursive-contract
+                                  (or/c string?
+                                        syntax?
+                                        (listof emit-arg/c)
+                                        (-> emit-arg/c)))])
+                         emit-arg/c)] ...
+                      [#:unmark? unmark? boolean? (syntax-transforming?)])
          void?]{
 
 Emits an event to the macro stepper (if one is listening) containing
