@@ -77,7 +77,7 @@
   
   (define default-compilation-on? #t)
   (define default-full-trace? #t)
-  (define (get-default-auto-text) (preferences:get 'drracket:module-language:auto-text))  
+  (define (get-default-auto-text) (preferences:get 'drracket:module-language:auto-text))
   
   ;; module-mixin : (implements drracket:language:language<%>)
   ;;             -> (implements drracket:language:language<%>)
@@ -583,9 +583,8 @@
                                     [init-value ""]
                                     [callback 
                                      (λ (tf evt)
-                                       (define t (send tf get-editor))
                                        (preferences:set 'drracket:module-language:auto-text
-                                                        (send t get-text)))]))
+                                                        (get-auto-text)))]))
     
     ;; data associated with each item in listbox : boolean
     ;; indicates if the entry is the default paths.
