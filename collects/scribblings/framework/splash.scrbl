@@ -24,7 +24,14 @@ that number to control the gauge along the bottom of the splash screen.
                                                   exact-nonnegative-integer?))]
                        [splash-title string?]
                        [width-default exact-nonnegative-integer?]
-                       [#:allow-funny? allow-funny? boolean? #f])
+                       [#:allow-funny? allow-funny? boolean? #f]
+                       [#:frame-icon 	
+                        frame-icon
+                        (or/c #f
+                              (is-a?/c bitmap%)
+                              (cons/c (is-a?/c bitmap%)
+                                      (is-a?/c bitmap%)))
+                        #f])
          void?]{
   Starts a new splash screen. The splash screen is created in its own, new 
   @tech[#:doc '(lib "scribblings/gui/gui.scrbl") #:key "eventspace"]{eventspace}.
@@ -51,8 +58,11 @@ that number to control the gauge along the bottom of the splash screen.
   of the area to draw.
 
   The @racket[allow-funny?] argument determines if a special gauge is used on Christmas day.  
-  
-  }
+
+  The @racket[frame-icon] is used just like the value of the parameter @racket[frame:current-icon] is used,
+  but for the splash screen.
+}
+
 @defproc[(shutdown-splash) void?]{
   Stops the splash window's gauge from advancing. Call this after all of the files have been loaded.
 }

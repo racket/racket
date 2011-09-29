@@ -7,6 +7,7 @@
          framework/private/bday
          framework/splash
          racket/file
+         "frame-icon.rkt"
          "eb.rkt")
 
 (define files-to-open (command-line #:args filenames filenames))
@@ -127,7 +128,8 @@
 (start-splash normal-bitmap-spec
               "DrRacket"
               700
-              #:allow-funny? #t)
+              #:allow-funny? #t
+              #:frame-icon todays-icon)
 
 (when (getenv "PLTDRBREAK")
   (printf "PLTDRBREAK: creating break frame\n") (flush-output)
