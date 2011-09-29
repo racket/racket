@@ -466,6 +466,8 @@ Scheme_Object *(*scheme_alloc_char_string)(intptr_t size, mzchar fill);
 Scheme_Object *(*scheme_append_char_string)(Scheme_Object *, Scheme_Object *);
 mzchar *(*scheme_string_recase)(mzchar *s, int d, int len, int mode, int inplace, int *_len);
 Scheme_Object *(*scheme_make_vector)(intptr_t size, Scheme_Object *fill);
+Scheme_Double_Vector *(*scheme_alloc_flvector)(intptr_t size);
+Scheme_Vector *(*scheme_alloc_fxvector)(intptr_t size);
 Scheme_Object *(*scheme_make_integer_value)(intptr_t i);
 Scheme_Object *(*scheme_make_integer_value_from_unsigned)(uintptr_t i);
 Scheme_Object *(*scheme_make_integer_value_from_long_long)(mzlonglong i);

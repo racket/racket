@@ -162,6 +162,17 @@ types:
  modified); test for this type with @cppdef{SCHEME_VECTORP}; 3m: see
  @secref["im:3m"] for a caution about @cppi{SCHEME_VEC_ELS}}
 
+ @item{@cppdef{scheme_flvector_type} --- @cppdef{SCHEME_FLVEC_SIZE}
+ extracts the length and @cppdef{SCHEME_FLVEC_ELS} extracts the array of
+ @cpp{double}s; test for this type with @cppdef{SCHEME_FLVECTORP}; 3m: see
+ @secref["im:3m"] for a caution about @cppi{SCHEME_FLVEC_ELS}}
+
+ @item{@cppdef{scheme_fxvector_type} --- uses the same representation
+ as @cpp{scheme_vector_type}, so use @cpp{SCHEME_VEC_SIZE}
+ for the length and @cpp{SCHEME_VEC_ELS} for the array of
+ Racket fixnum values; test for this type with @cppdef{SCHEME_FXVECTORP}; 3m: see
+ @secref["im:3m"] for a caution about @cppi{SCHEME_VEC_ELS}}
+
  @item{@cppdef{scheme_structure_type} --- structure instances; test
  for this type with @cppdef{SCHEME_STRUCTP}}
 
@@ -640,6 +651,18 @@ Like @cpp{scheme_intern_exact_keyword}, but given a character array
            [Scheme_Object* fill])]{
 
 Allocates a new vector.}
+
+@function[(Scheme_Double_Vector* scheme_alloc_flvector
+           [intptr_t size])]{
+
+Allocates an uninitialized flvector.
+The result type is effectively an alias for @cpp{Scheme_Object*}.}
+
+@function[(Scheme_Vector* scheme_alloc_fxvector
+           [intptr_t size])]{
+
+Allocates an uninitialized fxvector. 
+The result type is effectively an alias for @cpp{Scheme_Object*}.}
 
 @function[(Scheme_Object* scheme_box
            [Scheme_Object* v])]{

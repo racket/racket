@@ -586,6 +586,8 @@ MZ_EXTERN Scheme_Object *scheme_append_char_string(Scheme_Object *, Scheme_Objec
 MZ_EXTERN mzchar *scheme_string_recase(mzchar *s, int d, int len, int mode, int inplace, int *_len);
 
 MZ_EXTERN Scheme_Object *scheme_make_vector(intptr_t size, Scheme_Object *fill);
+MZ_EXTERN Scheme_Double_Vector *scheme_alloc_flvector(intptr_t size);
+MZ_EXTERN Scheme_Vector *scheme_alloc_fxvector(intptr_t size);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value(intptr_t i);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned(uintptr_t i);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_long_long(mzlonglong i);

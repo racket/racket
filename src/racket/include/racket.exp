@@ -305,6 +305,8 @@ scheme_alloc_char_string
 scheme_append_char_string
 scheme_string_recase
 scheme_make_vector
+scheme_alloc_flvector
+scheme_alloc_fxvector
 scheme_make_integer_value
 scheme_make_integer_value_from_unsigned
 scheme_make_integer_value_from_long_long
@@ -616,6 +618,7 @@ scheme_signal_received_at
 scheme_get_signal_handle
 scheme_char_strlen
 scheme_stx_extract_marks
+scheme_get_place_id
 scheme_get_place_table
 scheme_register_process_global
 scheme_malloc_key
