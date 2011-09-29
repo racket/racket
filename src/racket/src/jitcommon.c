@@ -1943,6 +1943,25 @@ static int common5(mz_jit_state *jitter, void *_data)
     mz_epilog(JIT_R2);
   }
 
+  /* *** box_flonum_from_reg_code *** */
+  /* JIT_FPR2 (reg-based) or JIT_FPR0 (stack-based) has value */
+  {
+    sjc.box_flonum_from_reg_code = jit_get_ip().ptr;
+
+    mz_prolog(JIT_R2);
+
+    JIT_UPDATE_THREAD_RSPTR();
+
+#ifdef DIRECT_FPR_ACCESS
+    jit_movr_d(JIT_FP0, JIT_FP2);
+#endif
+
+    scheme_generate_alloc_double(jitter, 1);
+    CHECK_LIMIT();
+    
+    mz_epilog(JIT_R2);
+  }
+
   /* *** fl1_code *** */
   /* R0 has argument, V1 has primitive proc */
   {

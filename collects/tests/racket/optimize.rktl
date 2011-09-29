@@ -1628,6 +1628,21 @@
                (lambda () (apply values (make-list (add1 (random 1)) '(99))))
              (chaperone-procedure car (lambda (v) v)))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check `fl->fx' on unboxed argument:
+
+(test 1 (lambda (x) (fl->fx (fl/ (fl- x 0.0) 1.0))) 1.0)
+(test 1 (lambda (x) (inexact->exact (fl/ (fl- x 0.0) 1.0))) 1.0)
+(err/rt-test (let ([f (lambda (x) (fl->fx (fl/ (fl- x 0.0) 1.0)))])
+               (set! f f)
+               (f 1e100))
+             ;; make sure that exception reports actual bad argument, and
+             ;; not some bad argument due to the fact that the original
+             ;; was unboxed:
+             (lambda (exn)
+               (regexp-match #rx"1e[+]?100" (exn-message exn))))
+(test (inexact->exact 1e100) (lambda (x) (inexact->exact (fl/ (fl- x 0.0) 1.0))) 1e100)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
