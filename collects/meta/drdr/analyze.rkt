@@ -277,6 +277,8 @@
        (lambda ()
          #;(notify! "Analyzing log: ~S" log-pth)
          (match (read-cache log-pth)
+           [(? eof-object?)
+            #f]
            [(and log (struct status (start end command-line output-log)))
             (define dur (status-duration log))
             (define any-stderr? (ormap stderr? output-log))
@@ -324,8 +326,11 @@
                         (dir-rendering pth)
                         (log-rendering pth)))
                   (match (next-rendering)
-                    [(struct rendering (pth-start pth-end pth-dur pth-timeouts pth-unclean-exits pth-stderrs _pth-responsible pth-changed))
+                    [#f
+                     acc]
+                    [(and n (struct rendering (pth-start pth-end pth-dur pth-timeouts pth-unclean-exits pth-stderrs _pth-responsible pth-changed)))
                      (match acc
+                       [#f n]
                        [(struct rendering (acc-start acc-end acc-dur acc-timeouts acc-unclean-exits acc-stderrs acc-responsible acc-changed))
                         (make-rendering (min pth-start acc-start)
                                         (max pth-end acc-end)
