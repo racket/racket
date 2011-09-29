@@ -158,6 +158,7 @@ Scheme_Object *special_comment_p(int argc, Scheme_Object **argv);
 
 static Scheme_Object *check_arity_at_least_fields(int argc, Scheme_Object **argv);
 static Scheme_Object *check_date_fields(int argc, Scheme_Object **argv);
+static Scheme_Object *check_date_star_fields(int argc, Scheme_Object **argv);
 static Scheme_Object *check_location_fields(int argc, Scheme_Object **argv);
 
 static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -227,6 +228,7 @@ scheme_init_struct (Scheme_Env *env)
   READ_ONLY static const char *date_fields[10] = { "second", "minute", "hour",
                                                    "day", "month", "year",
                                                    "week-day", "year-day", "dst?", "time-zone-offset" };
+  READ_ONLY static const char *date_star_fields[2] = { "nanosecond", "time-zone-name" };
 #endif
   READ_ONLY static const char *location_fields[10] = { "source", "line", "column", "position", "span" };
   
@@ -267,6 +269,22 @@ scheme_init_struct (Scheme_Env *env)
     scheme_add_global_constant(scheme_symbol_val(ts_names[i]), ts_values[i], 
 			       env);
   }
+
+  scheme_date = scheme_make_struct_type_from_string("date*", scheme_date, 2, NULL,
+                                                    scheme_make_prim(check_date_star_fields), 1);
+  
+  ts_names = scheme_make_struct_names_from_array("date*",
+						 2, date_star_fields,
+						 BUILTIN_STRUCT_FLAGS, &ts_count);
+
+  ts_values = scheme_make_struct_values(scheme_date, ts_names, ts_count, 
+					BUILTIN_STRUCT_FLAGS);
+  
+  for (i = 0; i < ts_count - 1; i++) {
+    scheme_add_global_constant(scheme_symbol_val(ts_names[i]), ts_values[i], 
+			       env);
+  }
+  
 
 #endif
 
@@ -5015,37 +5033,62 @@ static Scheme_Object *check_date_fields(int argc, Scheme_Object **argv)
 
   a = argv[0];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 61))
-    scheme_wrong_field_type(argv[10], "integer in [0, 61]", a);
+    scheme_wrong_field_type(argv[10], "exact integer in [0, 61]", a);
   a = argv[1];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 59))
-    scheme_wrong_field_type(argv[10], "integer in [0, 59]", a);
+    scheme_wrong_field_type(argv[10], "exact integer in [0, 59]", a);
   a = argv[2];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 23))
-    scheme_wrong_field_type(argv[10], "integer in [0, 23]", a);
+    scheme_wrong_field_type(argv[10], "exact integer in [0, 23]", a);
   a = argv[3];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 1) || (SCHEME_INT_VAL(a) > 31))
-    scheme_wrong_field_type(argv[10], "integer in [1, 31]", a);
+    scheme_wrong_field_type(argv[10], "exact integer in [1, 31]", a);
   a = argv[4];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 1) || (SCHEME_INT_VAL(a) > 12))
-    scheme_wrong_field_type(argv[10], "integer in [1, 12]", a);
+    scheme_wrong_field_type(argv[10], "exact integer in [1, 12]", a);
   a = argv[5];
   if (!SCHEME_INTP(a) && !SCHEME_BIGNUMP(a))
     scheme_wrong_field_type(argv[10], "exact integer", a);
   a = argv[6];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 6))
-    scheme_wrong_field_type(argv[10], "integer in [0, 6]", a);
+    scheme_wrong_field_type(argv[10], "exact integer in [0, 6]", a);
   a = argv[7];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 365))
-    scheme_wrong_field_type(argv[10], "integer in [0, 365]", a);
+    scheme_wrong_field_type(argv[10], "exact integer in [0, 365]", a);
   a = argv[9];
   if (!SCHEME_INTP(a) && !SCHEME_BIGNUMP(a))
     scheme_wrong_field_type(argv[10], "exact integer", a);
 
-  /* Normalize dst? boolean: */  
+  /* Normalize dst? boolean: */
   memcpy(args, argv, sizeof(Scheme_Object *) * 10);
   args[8] = (SCHEME_TRUEP(argv[8]) ? scheme_true : scheme_false);
-
+  
   return scheme_values(10, args);
+}
+
+static Scheme_Object *check_date_star_fields(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *args[12], *a;
+
+  a = argv[10];
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0)
+      || (SCHEME_INT_VAL(a) > 999999999))
+    scheme_wrong_field_type(argv[12], "exact integer in [0, 999999999]", a);
+  
+  a = argv[11];
+  if (!SCHEME_CHAR_STRINGP(a)) 
+    scheme_wrong_field_type(argv[12], "string", a);
+
+  memcpy(args, argv, sizeof(Scheme_Object *) * 12);
+  if (!SCHEME_IMMUTABLEP(argv[11])) {
+    a = argv[11];
+    a = scheme_make_immutable_sized_char_string(SCHEME_CHAR_STR_VAL(a),
+                                                SCHEME_CHAR_STRLEN_VAL(a),
+                                                1);
+    args[11] = a;
+  }
+   
+  return scheme_values(12, args);
 }
 
 /*========================================================================*/

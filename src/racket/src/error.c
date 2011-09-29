@@ -1619,7 +1619,8 @@ static void do_wrong_syntax(const char *where,
                             Scheme_Object *detail_form,
                             Scheme_Object *form,
                             char *s, intptr_t slen,
-                            Scheme_Object *extra_sources)
+                            Scheme_Object *extra_sources,
+                            int exn_kind)
 {
   intptr_t len, vlen, dvlen, blen, plen;
   char *buffer;
@@ -1775,7 +1776,7 @@ static void do_wrong_syntax(const char *where,
     form = scheme_make_pair(form, extra_sources);
   }
 
-  scheme_raise_exn(MZEXN_FAIL_SYNTAX, 
+  scheme_raise_exn(exn_kind, 
 		   form,
 		   "%t", buffer, blen);
 }
@@ -1799,7 +1800,23 @@ void scheme_wrong_syntax(const char *where,
     HIDE_FROM_XFORM(va_end(args));
   }
 
-  do_wrong_syntax(where, detail_form, form, s, slen, scheme_null);
+  do_wrong_syntax(where, detail_form, form, s, slen, scheme_null, MZEXN_FAIL_SYNTAX);
+}
+
+void scheme_unbound_syntax(const char *where,
+                           Scheme_Object *detail_form,
+                           Scheme_Object *form,
+                           const char *detail, ...)
+{
+  char *s;
+  intptr_t slen;
+  GC_CAN_IGNORE va_list args;
+
+  HIDE_FROM_XFORM(va_start(args, detail));
+  slen = sch_vsprintf(NULL, 0, detail, args, &s);
+  HIDE_FROM_XFORM(va_end(args));
+
+  do_wrong_syntax(where, detail_form, form, s, slen, scheme_null, MZEXN_FAIL_SYNTAX_UNBOUND);
 }
 
 void scheme_wrong_syntax_with_more_sources(const char *where,
@@ -1822,7 +1839,7 @@ void scheme_wrong_syntax_with_more_sources(const char *where,
     HIDE_FROM_XFORM(va_end(args));
   }
 
-  do_wrong_syntax(where, detail_form, form, s, slen, extra_sources);
+  do_wrong_syntax(where, detail_form, form, s, slen, extra_sources, MZEXN_FAIL_SYNTAX);
 }
 
 void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv)

@@ -77,7 +77,6 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[]);
 static Scheme_Object *integer_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gcd (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lcm (int argc, Scheme_Object *argv[]);
-static Scheme_Object *floor_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *ceiling (int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_truncate (int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_round (int argc, Scheme_Object *argv[]);
@@ -452,7 +451,7 @@ scheme_init_number (Scheme_Env *env)
 						      0, -1, 1),
 			     env);
   scheme_add_global_constant("floor", 
-			     scheme_make_folding_prim(floor_prim,
+			     scheme_make_folding_prim(scheme_floor,
 						      "floor",
 						      1, 1, 1),
 			     env);
@@ -1626,8 +1625,8 @@ bin_lcm (Scheme_Object *n1, Scheme_Object *n2)
   return scheme_abs(1, &ret);
 }
 
-static Scheme_Object *
-floor_prim (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_floor (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
   Scheme_Type t;
@@ -2402,10 +2401,10 @@ Scheme_Object *do_int_sqrt (const char *name, int argc, Scheme_Object *argv[], i
     v = scheme_sqrt(1, &v);
     if (SCHEME_COMPLEXP(v)) {
       v = scheme_complex_imaginary_part(v);
-      v = floor_prim(1, &v);
+      v = scheme_floor(1, &v);
       v = scheme_make_complex(scheme_make_integer(0), v);
     } else
-      v = floor_prim(1, &v);
+      v = scheme_floor(1, &v);
     
     if (w_rem) {
       rem = scheme_bin_minus(rem, scheme_bin_mult(v, v));

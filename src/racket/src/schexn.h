@@ -11,6 +11,7 @@ enum {
   MZEXN_FAIL_CONTRACT_CONTINUATION,
   MZEXN_FAIL_CONTRACT_VARIABLE,
   MZEXN_FAIL_SYNTAX,
+  MZEXN_FAIL_SYNTAX_UNBOUND,
   MZEXN_FAIL_READ,
   MZEXN_FAIL_READ_EOF,
   MZEXN_FAIL_READ_NON_CHAR,
@@ -31,7 +32,7 @@ enum {
 #define MZEXN_MAXARGS 3
 
 #ifdef GLOBAL_EXN_ARRAY
-READ_ONLY static exn_rec exn_table[] = {
+static exn_rec exn_table[] = {
   { 2, NULL, NULL, 0, NULL, -1 },
   { 2, NULL, NULL, 0, NULL, 0 },
   { 2, NULL, NULL, 0, NULL, 1 },
@@ -41,12 +42,13 @@ READ_ONLY static exn_rec exn_table[] = {
   { 2, NULL, NULL, 0, NULL, 2 },
   { 3, NULL, NULL, 0, NULL, 2 },
   { 3, NULL, NULL, 0, NULL, 1 },
+  { 3, NULL, NULL, 0, NULL, 8 },
   { 3, NULL, NULL, 0, NULL, 1 },
-  { 3, NULL, NULL, 0, NULL, 9 },
-  { 3, NULL, NULL, 0, NULL, 9 },
+  { 3, NULL, NULL, 0, NULL, 10 },
+  { 3, NULL, NULL, 0, NULL, 10 },
   { 2, NULL, NULL, 0, NULL, 1 },
-  { 2, NULL, NULL, 0, NULL, 12 },
-  { 2, NULL, NULL, 0, NULL, 12 },
+  { 2, NULL, NULL, 0, NULL, 13 },
+  { 2, NULL, NULL, 0, NULL, 13 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
@@ -54,7 +56,7 @@ READ_ONLY static exn_rec exn_table[] = {
   { 3, NULL, NULL, 0, NULL, 0 }
 };
 #else
-READ_ONLY static exn_rec *exn_table;
+static exn_rec *exn_table;
 #endif
 
 #endif
@@ -72,6 +74,7 @@ READ_ONLY static exn_rec *exn_table;
   exn_table[MZEXN_FAIL_CONTRACT_CONTINUATION].args = 2;
   exn_table[MZEXN_FAIL_CONTRACT_VARIABLE].args = 3;
   exn_table[MZEXN_FAIL_SYNTAX].args = 3;
+  exn_table[MZEXN_FAIL_SYNTAX_UNBOUND].args = 3;
   exn_table[MZEXN_FAIL_READ].args = 3;
   exn_table[MZEXN_FAIL_READ_EOF].args = 3;
   exn_table[MZEXN_FAIL_READ_NON_CHAR].args = 3;
@@ -88,11 +91,11 @@ READ_ONLY static exn_rec *exn_table;
 #endif
 
 #ifdef _MZEXN_DECL_FIELDS
-  READ_ONLY static const char *MZEXN_FIELDS[2] = { "message", "continuation-marks" };
-  READ_ONLY static const char *MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS[1] = { "id" };
-  READ_ONLY static const char *MZEXN_FAIL_SYNTAX_FIELDS[1] = { "exprs" };
-  READ_ONLY static const char *MZEXN_FAIL_READ_FIELDS[1] = { "srclocs" };
-  READ_ONLY static const char *MZEXN_BREAK_FIELDS[1] = { "continuation" };
+  static const char *MZEXN_FIELDS[2] = { "message", "continuation-marks" };
+  static const char *MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS[1] = { "id" };
+  static const char *MZEXN_FAIL_SYNTAX_FIELDS[1] = { "exprs" };
+  static const char *MZEXN_FAIL_READ_FIELDS[1] = { "srclocs" };
+  static const char *MZEXN_BREAK_FIELDS[1] = { "continuation" };
 #endif
 
 #ifdef _MZEXN_DECL_PROPS
@@ -110,6 +113,7 @@ READ_ONLY static exn_rec *exn_table;
   SETUP_STRUCT(MZEXN_FAIL_CONTRACT_CONTINUATION, EXN_PARENT(MZEXN_FAIL_CONTRACT), "exn:fail:contract:continuation", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_CONTRACT_VARIABLE, EXN_PARENT(MZEXN_FAIL_CONTRACT), "exn:fail:contract:variable", 1, MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS, scheme_null, scheme_make_prim(variable_field_check))
   SETUP_STRUCT(MZEXN_FAIL_SYNTAX, EXN_PARENT(MZEXN_FAIL), "exn:fail:syntax", 1, MZEXN_FAIL_SYNTAX_FIELDS, MZEXN_FAIL_SYNTAX_PROPS, scheme_make_prim(syntax_field_check))
+  SETUP_STRUCT(MZEXN_FAIL_SYNTAX_UNBOUND, EXN_PARENT(MZEXN_FAIL_SYNTAX), "exn:fail:syntax:unbound", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_READ, EXN_PARENT(MZEXN_FAIL), "exn:fail:read", 1, MZEXN_FAIL_READ_FIELDS, MZEXN_FAIL_READ_PROPS, scheme_make_prim(read_field_check))
   SETUP_STRUCT(MZEXN_FAIL_READ_EOF, EXN_PARENT(MZEXN_FAIL_READ), "exn:fail:read:eof", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_READ_NON_CHAR, EXN_PARENT(MZEXN_FAIL_READ), "exn:fail:read:non-char", 0, NULL, scheme_null, NULL)

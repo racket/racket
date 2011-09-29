@@ -123,6 +123,7 @@
 (test-ser null)
 (test-ser (current-directory))
 (test-ser (seconds->date (current-seconds)))
+(test-ser (struct-copy date (seconds->date (current-seconds)))) ; not date*
 (test-ser (procedure-arity (lambda (x . y) 10)))
 (test-ser (make-immutable-hasheq '((1 . a) (2 . b))))
 (test-ser (make-immutable-hasheqv '((1 . a) (2 . b))))

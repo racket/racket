@@ -215,7 +215,7 @@ starter: mzstart.exe
 
 exn:
 	$(MAKE) $(srcdir)/src/schexn.h
-	$(MAKE) $(collectsdir)/scheme/private/kernstruct.rkt
+	$(MAKE) $(collectsdir)/racket/private/kernstruct.rkt
 
 STARTUPDEST = startup.inc
 CSTARTUPDEST = cstartup.inc
@@ -240,8 +240,8 @@ headers:
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
 	$(RACKET) -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
-$(collectsdir)/scheme/private/kernstruct.rkt: $(srcdir)/src/makeexn
-	$(RACKET) -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.rkt
+$(collectsdir)/racket/private/kernstruct.rkt: $(srcdir)/src/makeexn
+	$(RACKET) -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/racket/private/kernstruct.rkt
 
 $(srcdir)/src/$(STARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/sstoinct.rkt
 	$(RACKET) -cu $(srcdir)/src/sstoinct.rkt < $(srcdir)/src/startup.rktl > $(srcdir)/src/$(STARTUPDEST) 

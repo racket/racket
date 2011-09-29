@@ -1,6 +1,7 @@
 (module serialize racket/base
   (require syntax/modcollapse
            unstable/struct
+           racket/list
            "serialize-structs.rkt")
 
   ;; This module implements the core serializer. The syntactic
@@ -229,8 +230,10 @@
 	    (loop (mcdr v))]
 	   [(box? v)
 	    (loop (unbox v))]
+	   [(date*? v)
+	    (for-each loop (take (struct->list v) 12))]
 	   [(date? v)
-	    (for-each loop (struct->list v))]
+	    (for-each loop (take (struct->list v) 10))]
 	   [(hash? v)
 	    (hash-for-each v (lambda (k v)
                                (loop k)
@@ -316,9 +319,12 @@
 		 (hash-map v (lambda (k v)
                                (cons (loop k)
                                      (loop v))))))]
+       [(date*? v)
+	(cons 'date*
+	      (map (serial #t) (take (struct->list v) 12)))]
        [(date? v)
 	(cons 'date
-	      (map (serial #t) (struct->list v)))]
+	      (map (serial #t) (take (struct->list v) 10)))]
        [(arity-at-least? v)
 	(cons 'arity-at-least
 	      ((serial #t) (arity-at-least-value v)))]
@@ -381,7 +387,7 @@
 	      [main-serialized (serialize-one v share #t mod-map mod-map-cache)]
 	      [mod-map-l (map car (sort (hash-map mod-map cons)
                                         (lambda (a b) (< (cdr a) (cdr b)))))])
-	  (list '(2) ;; serialization-format version
+	  (list '(3) ;; serialization-format version
                 (hash-count mod-map)
 		(map (lambda (v) (if (symbol-interned? (cdr v))
                                      v 
@@ -482,6 +488,7 @@
                              (make-immutable-hash al)
                              (make-immutable-hasheqv al)))))]
 	  [(date) (apply make-date (map loop (cdr v)))]
+	  [(date*) (apply make-date* (map loop (cdr v)))]
 	  [(arity-at-least) (make-arity-at-least (loop (cdr v)))]
 	  [(mpi) (module-path-index-join (loop (cadr v))
                                          (loop (cddr v)))]

@@ -69,6 +69,7 @@
 # define UNISTD_INCLUDE
 
 # define USE_TM_GMTOFF_FIELD
+# define USE_TM_ZONE_FIELD
 
 # define FLAGS_ALREADY_SET
 
@@ -102,12 +103,14 @@
 #  undef USE_FLOCK_FOR_FILE_LOCKS
 #  define USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 #  define USE_TIMEZONE_AND_ALTZONE_VAR
+#  define USE_TZNAME_VAR
 #  define USE_NULL_TO_DISCONNECT_UDP
 # else
 /* SunOS4 */
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-sunos4"
 # define SIGSET_IS_SIGNAL
 # define USE_TM_GMTOFF_FIELD
+# define USE_TM_ZONE_FIELD
 # define NO_STRERROR_AVAILABLE
 # define USE_ON_EXIT_FOR_ATEXIT
 # endif
@@ -146,6 +149,7 @@
 # define USE_FCNTL_O_NONBLOCK
 
 # define USE_TIMEZONE_VAR_W_DLS
+# define USE_TZNAME_VAR
 
 # define FLAGS_ALREADY_SET
 
@@ -208,6 +212,7 @@
 # define USE_DYNAMIC_FDSET_SIZE
 
 # define USE_TIMEZONE_VAR_W_DLS
+# define USE_TZNAME_VAR
 
 # define MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
 
@@ -257,6 +262,7 @@
 # define SIGSET_IS_SIGNAL
 
 # define USE_TM_GMTOFF_FIELD
+# define USE_TM_ZONE_FIELD
 
 #if defined(__alpha__)
 # define USE_DIVIDE_MAKE_INFINITY
@@ -308,6 +314,7 @@
 # define REGISTER_POOR_MACHINE
 
 # define USE_TM_GMTOFF_FIELD
+# define USE_TM_ZONE_FIELD
 
 #if defined(__x86_64__)
 # define MZ_USE_JIT_X86_64
@@ -374,6 +381,7 @@
 # define SIGSET_IS_SIGNAL
 
 # define USE_TM_GMTOFF_FIELD
+# define USE_TM_ZONE_FIELD
 
 # define MZ_JIT_USE_MPROTECT
 
@@ -401,6 +409,7 @@
 # define USE_FCNTL_O_NONBLOCK
 
 # define USE_TIMEZONE_AND_ALTZONE_VAR
+# define USE_TZNAME_VAR
 
 # define FLAGS_ALREADY_SET
 
@@ -464,6 +473,7 @@
 # define USE_ULIMIT
 
 # define USE_TIMEZONE_VAR_W_DLS
+# define USE_TZNAME_VAR
 
 # define FLAGS_ALREADY_SET
 
@@ -526,6 +536,7 @@
 # define TIME_SYNTAX
 # define USE_FTIME
 # define USE_TIMEZONE_VAR_W_DLS
+# define USE_TZNAME_VAR
 # define WINDOWS_GET_PROCESS_TIMES
 # define GETENV_FUNCTION
 # define DIR_FUNCTION
@@ -720,6 +731,7 @@
 # define SIGSET_IS_SIGNAL
 
 # define USE_TM_GMTOFF_FIELD
+# define USE_TM_ZONE_FIELD
 
 # define USE_UNDERSCORE_SETJMP
 
@@ -762,6 +774,7 @@
 # define SIGSET_IS_SIGNAL
 
 # define USE_TM_GMTOFF_FIELD
+# define USE_TM_ZONE_FIELD
 
 # define USE_UNDERSCORE_SETJMP
 
@@ -984,6 +997,10 @@
     USE_TIMEZONE_AND_ALTZONE_VAR is similar, but uses altzone when
      daylight savings is in effect.
     USE_TM_GMTOFF_FIELD gets timezone offset from the tm_gmtoff field
+     of the tm struct. */
+
+ /* USE_TZNAME_VAR gets the timezone name from a tzname global.
+    USE_TM_ZONE_FIELD gets the timezone name from a tm_zone field
      of the tm struct. */
  
 

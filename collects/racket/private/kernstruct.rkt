@@ -194,6 +194,24 @@
           (quote-syntax exn:fail)))
        (λ () (quote-syntax kernel:exn:fail:syntax)))))
   (begin
+    (#%require
+     (rename '#%kernel kernel:exn:fail:syntax:unbound exn:fail:syntax:unbound))
+    (define make-exn:fail:syntax:unbound kernel:exn:fail:syntax:unbound)
+    (define-syntax exn:fail:syntax:unbound
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:syntax:unbound)
+          (quote-syntax make-exn:fail:syntax:unbound)
+          (quote-syntax exn:fail:syntax:unbound?)
+          (list
+           (quote-syntax exn:fail:syntax-exprs)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail:syntax)))
+       (λ () (quote-syntax kernel:exn:fail:syntax:unbound)))))
+  (begin
     (#%require (rename '#%kernel kernel:exn:fail:read exn:fail:read))
     (define make-exn:fail:read kernel:exn:fail:read)
     (define-syntax exn:fail:read
@@ -422,6 +440,32 @@
           '(#f #f #f #f #f #f #f #f #f #f)
           #t))
        (λ () (quote-syntax kernel:date)))))
+  (begin
+    (#%require (rename '#%kernel kernel:date* date*))
+    (define make-date* kernel:date*)
+    (define-syntax date*
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:date*)
+          (quote-syntax make-date*)
+          (quote-syntax date*?)
+          (list
+           (quote-syntax date*-time-zone-name)
+           (quote-syntax date*-nanosecond)
+           (quote-syntax date-time-zone-offset)
+           (quote-syntax date-dst?)
+           (quote-syntax date-year-day)
+           (quote-syntax date-week-day)
+           (quote-syntax date-year)
+           (quote-syntax date-month)
+           (quote-syntax date-day)
+           (quote-syntax date-hour)
+           (quote-syntax date-minute)
+           (quote-syntax date-second))
+          '(#f #f #f #f #f #f #f #f #f #f #f #f)
+          #t))
+       (λ () (quote-syntax kernel:date*)))))
   (begin
     (#%require (rename '#%kernel kernel:srcloc srcloc))
     (define make-srcloc kernel:srcloc)

@@ -7,10 +7,10 @@
 
 (let* ([now (seconds->date (current-seconds))]
        [v (modulo (add1 (date-second now)) 60)])
-  (test #t equal? now (copy-struct date now))
-  (test #f equal? now (copy-struct date now (date-second v)))
-  (test v date-second (copy-struct date now (date-second v)))
-  (test (date-year now) date-year (copy-struct date now (date-second v))))
+  (test #t equal? now (copy-struct date* now))
+  (test #f equal? now (copy-struct date* now (date-second v)))
+  (test v date-second (copy-struct date* now (date-second v)))
+  (test (date-year now) date-year (copy-struct date* now (date-second v))))
 
 (err/rt-test (copy-struct date 10))
 (err/rt-test (copy-struct date 10 (date-second 0)))

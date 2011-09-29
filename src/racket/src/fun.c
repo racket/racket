@@ -8224,12 +8224,13 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 # endif
 #endif
   CHECK_TIME_T now;
-  Scheme_Object *p[10], *secs;
+  char *tzn;
+  Scheme_Object *p[12], *secs, *nsecs, *zname;
 
   secs = argv[0];
 
-  if (!SCHEME_INTP(secs) && !SCHEME_BIGNUMP(secs)) {
-    scheme_wrong_type("seconds->date", "exact integer", 0, argc, argv);
+  if (!SCHEME_REALP(secs)) {
+    scheme_wrong_type("seconds->date", "real", 0, argc, argv);
     return NULL;
   }
   
@@ -8237,6 +8238,22 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
     get_gmt = SCHEME_FALSEP(argv[1]);
   else
     get_gmt = 0;
+
+  if (SCHEME_INTP(secs) || SCHEME_BIGNUMP(secs)) {
+    nsecs = scheme_make_integer(0);
+  } else {
+    nsecs = secs;
+    p[0] = secs;
+    secs = scheme_floor(1, p);
+    nsecs = scheme_bin_minus(nsecs, secs);
+    nsecs = scheme_bin_mult(nsecs, scheme_make_integer(1000000000));
+    p[0] = nsecs;
+    nsecs = scheme_floor(1, p);
+    p[0] = nsecs;
+    nsecs = scheme_inexact_to_exact(1, p);
+    p[0] = secs;
+    secs = scheme_inexact_to_exact(1, p);
+  }
 
   if (scheme_get_time_val(secs, &lnow)
       && ((UNBUNDLE_TIME_TYPE)(now = (CHECK_TIME_T)lnow)) == lnow) {
@@ -8359,9 +8376,22 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 # ifdef USE_TM_GMTOFF_FIELD
         tzoffset = localTime->tm_gmtoff;
 # endif
-      }
+# ifdef USE_TZNAME_VAR
+        tzn = MSC_IZE(tzname)[localTime->tm_isdst];
+# elif defined(USE_TM_ZONE_FIELD)
+        tzn = localTime->tm_zone;
+# else
+        tzn = NULL;
+# endif
+      } else
+        tzn = "UTC";
 
 #endif
+
+      if (!tzn)
+        tzn = "?";
+      zname = scheme_make_utf8_string(tzn);
+      SCHEME_SET_IMMUTABLE(zname);
 
       p[0] = scheme_make_integer(sec);
       p[1] = scheme_make_integer(min);
@@ -8373,8 +8403,10 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
       p[7] = scheme_make_integer(yday);
       p[8] = dst ? scheme_true : scheme_false;
       p[9] = scheme_make_integer(tzoffset);
+      p[10] = nsecs;
+      p[11] = zname;
 
-      return scheme_make_struct_instance(scheme_date, 10, p);
+      return scheme_make_struct_instance(scheme_date, 12, p);
     }
   }
 

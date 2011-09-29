@@ -1995,6 +1995,8 @@ Scheme_Object *scheme_bitwise_and(int argc, Scheme_Object *argv[]);
 int scheme_exact_p(Scheme_Object *n);
 int scheme_nonneg_exact_p(Scheme_Object *n);
 
+Scheme_Object *scheme_floor(int argc, Scheme_Object *argv[]);
+
 #ifdef TIME_TYPE_IS_UNSIGNED
 # define scheme_make_integer_value_from_time(t) scheme_make_integer_value_from_unsigned((uintptr_t)t)
 # define scheme_get_time_val(o, v) scheme_get_unsigned_int_val(o, v)
@@ -3218,6 +3220,10 @@ void scheme_wrong_syntax(const char *where,
 			 Scheme_Object *local_form,
 			 Scheme_Object *form,
 			 const char *detail, ...);
+void scheme_unbound_syntax(const char *where,
+                           Scheme_Object *local_form,
+                           Scheme_Object *form,
+                           const char *detail, ...);
 void scheme_wrong_syntax_with_more_sources(const char *where,
                                            Scheme_Object *detail_form,
                                            Scheme_Object *form,

@@ -1862,10 +1862,10 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     if (genv->module && (genv->disallow_unbound > 0)) {
       /* Free identifier. Maybe don't continue. */
       if (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) {
-        scheme_wrong_syntax(((flags & SCHEME_SETTING) 
-			     ? scheme_set_stx_string
-			     : scheme_var_ref_string),
-			    NULL, src_find_id, "unbound identifier in module");
+        scheme_unbound_syntax(((flags & SCHEME_SETTING) 
+                               ? scheme_set_stx_string
+                               : scheme_var_ref_string),
+                              NULL, src_find_id, "unbound identifier in module");
 	return NULL;
       }
       if (flags & SCHEME_NULL_FOR_UNBOUND)
@@ -1928,10 +1928,10 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       && (genv->module && (genv->disallow_unbound > 0))) {
     /* Check for set! of unbound identifier: */    
     if (!scheme_lookup_in_table(genv->toplevel, (const char *)find_global_id)) {
-      scheme_wrong_syntax(((flags & SCHEME_SETTING) 
+      scheme_unbound_syntax(((flags & SCHEME_SETTING) 
 			     ? scheme_set_stx_string
 			     : scheme_var_ref_string), 
-			  NULL, src_find_id, "unbound identifier in module");
+                            NULL, src_find_id, "unbound identifier in module");
       return NULL;
     }
   }

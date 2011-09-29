@@ -494,6 +494,12 @@ Raised for a syntax error that is not a @racket[read] error. The
 @racket[exprs] indicate the relevant source expressions,
 least-specific to most-specific.}
 
+@defstruct[(exn:fail:syntax:unbound exn:fail:syntax) ()
+           #:inspector #f]{
+
+Raised by @racket[#%top] or @racket[set!] for an
+unbound identifier within a module.}
+
 
 @defstruct[(exn:fail:read exn:fail) ([srclocs (listof srcloc?)])
            #:inspector #f]{

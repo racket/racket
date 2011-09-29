@@ -23,6 +23,14 @@
 (test 0 find-seconds 0 0 0 1 1 1970 #f)
 (test 32416215 find-seconds 15 30 4 11 1 1971 #f)
 
+(let* ([s (current-seconds)]
+       [d1 (seconds->date s)]
+       [d2 (seconds->date (+ s 1/100000000))])
+  (test 0 date*-nanosecond d1)
+  (test 10 date*-nanosecond d2)
+  (test (date*-time-zone-name d1) date*-time-zone-name d2)
+  (test (struct-copy date d1) values (struct-copy date d2)))
+
 ; date->string
 (let* ([secs (find-seconds 1 2 3 4 5 2006)]
        [d-some-tz (seconds->date secs)]
@@ -64,15 +72,25 @@
   (err/rt-test (find-seconds 0 0 0 1 1 1490) exn:fail?)
   (err/rt-test (find-seconds 0 0 0 1 1 2890) exn:fail?))
 
-;; 1990 April 1 was start of daylight savings:
-(test-find 0 0 1 1 4 1990) ; ok
-(let ([s (find-seconds 1 0 3 1 4 1990)]) ; ok
-  (when (date-dst? (seconds->date s))
-    ;; We have daylight savings here; 2:01 AM doesn't exist
-    (err/rt-test (find-seconds 0 1 2 1 4 1990) exn:fail?)
-    ;; This date is ambiguous; find-seconds should find
-    ;;  one of the two possible values, though:
-    (test-find 0 30 1 27 10 1996)))
+;; Daylight saving checks:
+
+;; March 13 was start of daylight saving in most of the US for 2011.
+;; Check whether we seem to be in a US time zone with daylight saving:
+(let ([d1 (seconds->date (find-seconds 0 0 1 13 1 2011))]
+      [d2 (seconds->date (find-seconds 0 0 1 13 5 2011))])
+  (when (and (not (date-dst? d1))
+             (>= -10800 (date-time-zone-offset d1) -28800)
+             (date-dst? d2)
+             (>= -14400 (date-time-zone-offset d2) -25200))
+    ;; It looks like we have US daylight saving:
+    (test-find 0 0 1 13 3 2011) ; ok
+    (let ([s (find-seconds 1 0 3 13 3 2011)]) ; ok
+      ;; Since we have daylight savings here; 2:01 AM doesn't exist
+      (err/rt-test (find-seconds 0 1 2 13 3 2011) exn:fail?)
+      ;; During the end of DST in 2010,
+      ;;  this date is ambiguous; find-seconds should find
+      ;;  one of the two possible values, though:
+      (test-find 0 30 1 7 11 2010))))
 
 ;; bug fixes
 (test "JD 12" julian/scalinger->string 12)
