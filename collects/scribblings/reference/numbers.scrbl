@@ -378,35 +378,40 @@ Returns the @as-index{least common multiple} (a non-negative number)
 @mz-examples[(lcm 10) (lcm 3 4.0)]}
 
 
-@defproc[(round [x real?]) integer?]{
+@defproc[(round [x real?]) (or/c integer? +inf.0 -inf.0 +nan.0)]{
 
 Returns the integer closest to @racket[x], resolving ties in favor of
- an even number.
+ an even number, but @racket[+inf.0], @racket[-inf.0], and @racket[+nan.0]
+ round to themselves.
 
-@mz-examples[(round 17/4) (round -17/4) (round 2.5) (round -2.5)]}
-
-
-@defproc[(floor [x real?]) integer?]{
-
-Returns the largest integer that is no more than @racket[x].
-
-@mz-examples[(floor 17/4) (floor -17/4) (floor 2.5) (floor -2.5)]}
+@mz-examples[(round 17/4) (round -17/4) (round 2.5) (round -2.5) (round +inf.0)]}
 
 
-@defproc[(ceiling [x real?]) integer?]{
+@defproc[(floor [x real?]) (or/c integer? +inf.0 -inf.0 +nan.0)]{
 
-Returns the smallest integer that is at least as large as
- @racket[x].
+Returns the largest integer that is no more than @racket[x], but
+ @racket[+inf.0], @racket[-inf.0], and @racket[+nan.0] floor to
+ themselves.
 
-@mz-examples[(ceiling 17/4) (ceiling -17/4) (ceiling 2.5) (ceiling -2.5)]}
+@mz-examples[(floor 17/4) (floor -17/4) (floor 2.5) (floor -2.5) (floor +inf.0)]}
 
 
-@defproc[(truncate [x real?]) integer?]{
+@defproc[(ceiling [x real?]) (or/c integer? +inf.0 -inf.0 +nan.0)]{
+
+Returns the smallest integer that is at least as large as @racket[x],
+ but @racket[+inf.0], @racket[-inf.0], and @racket[+nan.0] ceiling to
+ themselves.
+
+@mz-examples[(ceiling 17/4) (ceiling -17/4) (ceiling 2.5) (ceiling -2.5) (ceiling +inf.0)]}
+
+
+@defproc[(truncate [x real?]) (or/c integer? +inf.0 -inf.0 +nan.0)]{
 
 Returns the integer farthest from @racket[0] that is not farther from
- @racket[0] than @racket[x].
+ @racket[0] than @racket[x], but @racket[+inf.0], @racket[-inf.0], and
+ @racket[+nan.0] truncate to themselves.
 
-@mz-examples[(truncate 17/4) (truncate -17/4) (truncate 2.5) (truncate -2.5)]}
+@mz-examples[(truncate 17/4) (truncate -17/4) (truncate 2.5) (truncate -2.5) (truncate +inf.0)]}
 
 
 @defproc[(numerator [q rational?]) integer?]{
