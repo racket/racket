@@ -15,6 +15,9 @@
 (check-equal? (find-tag/end "<a>") "a")
 (check-equal? (find-tag/end "<abcdef>") "abcdef")
 (check-equal? (find-tag/end "<abcdef x=\"3\">") "abcdef")
+(check-equal? (find-tag/end "<abcdef >") "abcdef")
+(check-equal? (find-tag/end "<a><b>") "b")
+(check-equal? (find-tag/end "<a x=\"z\"><b>") "b")
 
 (check-equal? (find-tag/end "<a></a>") #f)
 
@@ -24,3 +27,11 @@
 (check-equal? (find-tag/end "<!-->") #f)
 
 (check-equal? (find-tag/end "<>") #f)
+
+;; would be nice to make these two tests work, but 
+;; it isn't clear what the right predicate is when
+;; searching backwards to get thse right but
+;; not also get this one wrong:
+;;   "<a x="z"><b>
+; (check-equal? (find-tag/end "<a y=\"<b>") #f)
+; (check-equal? (find-tag/end "<a y=\"<b><c>") #f)
