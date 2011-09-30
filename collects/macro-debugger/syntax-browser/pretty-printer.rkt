@@ -70,7 +70,10 @@
         [else #f]))
 
 (define (pp-remap-stylable obj)
-  (and (id-syntax-dummy? obj) (id-syntax-dummy-remap obj)))
+  (and (id-syntax-dummy? obj)
+       (let ([remap (id-syntax-dummy-remap obj)])
+         (and (not (memq remap special-expression-keywords))
+              remap))))
 
 (define (pp-better-style-table styles)
   (define style-list (for/list ([(k v) (in-hash styles)]) (cons k v)))
