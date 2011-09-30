@@ -1953,7 +1953,7 @@ static int common5(mz_jit_state *jitter, void *_data)
     JIT_UPDATE_THREAD_RSPTR();
 
 #ifdef DIRECT_FPR_ACCESS
-    jit_movr_d(JIT_FP0, JIT_FP2);
+    jit_movr_d(JIT_FPR0, JIT_FPR2);
 #endif
 
     scheme_generate_alloc_double(jitter, 1);
