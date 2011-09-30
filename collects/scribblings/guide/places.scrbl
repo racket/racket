@@ -37,9 +37,8 @@ the list:
       (place-channel-put ch l-double?)))
 
   (place-channel-put p (list 1 2 4 8))
-  (begin0
-   (place-channel-get p))
-   (place-wait p))
+  
+  (place-channel-get p))
 }
 
 The identifier @racket[ch] after @racket[place] is bound to a @deftech{place
@@ -73,7 +72,7 @@ must be available in the module's top level. Second, the
 @racket[place] form @racket[dynamic-require]s the enclosing module in
 a newly created place. As part of the @racket[dynamic-require], the
 current module body is evaluated in the new place.  The consequence of
-this second feature is that @racket[place] should appear immediately
+this second feature is that @racket[place] should not appear immediately
 in a module or in a function that is called in a module's top level;
 otherwise, invoking the module will invoke the same module in a new
 place, and so on, triggering a cascade of place creations that will
