@@ -22,6 +22,10 @@
     id:syntax-parser/template
     id:parser/rhs
     id:define-eh-alternative-set)]))
+;; FIXME: workaround for phase>0 bug in racket/runtime-path (and thus lazy-require)
+;; Without this, dependencies don't get collected.
+(require racket/runtime-path (for-meta 2 '#%kernel))
+(define-runtime-module-path-index _unused_ 'syntax/parse/private/parse-aux)
 
 (provide define-syntax-class
          define-splicing-syntax-class

@@ -10,6 +10,10 @@
  (lazy-require
   [syntax/parse/private/rep-attrs
    (sort-sattrs)]))
+;; FIXME: workaround for phase>0 bug in racket/runtime-path (and thus lazy-require)
+;; Without this, dependencies don't get collected.
+(require racket/runtime-path (for-meta 2 '#%kernel))
+(define-runtime-module-path-index _unused_ 'syntax/parse/private/rep-attrs)
 
 (define-syntax (define-primitive-splicing-syntax-class stx)
 
