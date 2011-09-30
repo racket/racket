@@ -129,6 +129,7 @@
     (let-values ([(imports) (module-compiled-imports compiled)]
                  [(var-exports stx-exports) (module-compiled-exports compiled)])
       (parameterize ((current-directory (path-only resolved)))
+        (force-all-mpis imports)
         (force-all-mpis (cons var-exports stx-exports)))
       (modinfo imports var-exports stx-exports))))
 
