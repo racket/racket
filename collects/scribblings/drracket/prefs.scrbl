@@ -86,6 +86,9 @@ The @onscreen{Editing} panel consists of several sub-panels:
       @item{@PrefItem{Enable overwrite mode keybindings} --- If checked,
             DrRacket enables the insert keybinding to swap into
             overwrite mode}
+      @item{@PrefItem{Enable automatic parentheses} --- If checked,
+             typing an open parenthesis, curley brace, square bracket, or a double quote
+             character automatically inserts a matching one.}
       @item{@PrefItem{Show line numbers} --- If checked, DrRacket shows
             line numbers for the file being edited in the left-hand
             column}]}
