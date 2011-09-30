@@ -12,6 +12,7 @@
   (test #f place? 1)
   (test #f place? void)
   (test #t place? p)
+  (test #t place-channel? p)
 
   (err/rt-test (place-wait 1))
   (err/rt-test (place-wait void))

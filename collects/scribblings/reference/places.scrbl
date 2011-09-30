@@ -257,7 +257,8 @@ If any pumping threads were created to connect a non-@tech{file-stream
 }
 
 @defproc[(place-channel-put [pch place-channel?] [v place-message-allowed?]) void]{
-  Sends a message @racket[v] on channel @racket[pch].
+  Sends a message @racket[v] on channel @racket[pch]. Since place channels 
+  are asynchronous, @racket[place-channel-put] calls are non-blocking.
 
  See @racket[place-message-allowed?] form information on automatic
  coercions in @racket[v], such as converting a mutable string to an

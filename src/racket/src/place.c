@@ -2572,7 +2572,8 @@ static Scheme_Object *place_channel(int argc, Scheme_Object *args[]) {
 
 static Scheme_Object *place_channel_p(int argc, Scheme_Object *args[])
 {
-  return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_bi_channel_type) ? scheme_true : scheme_false;
+  return (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_bi_channel_type) ||
+          SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) ? scheme_true : scheme_false;
 }
 
 static Scheme_Object *GC_master_make_vector(int size) {
