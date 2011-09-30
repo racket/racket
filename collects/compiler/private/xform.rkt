@@ -870,6 +870,9 @@
                ;; they either take one argument or no pointer arguments.
                ;; So we can ignore them:
                
+               
+               __get_errno_ptr ; QNX preprocesses errno to __get_errno_ptr
+
                strlen cos sin exp pow log sqrt atan2 
                isnan isinf fpclass _fpclass _isnan __isfinited __isnanl __isnan
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf

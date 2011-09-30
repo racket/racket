@@ -626,6 +626,7 @@ case "$host_os" in
     fi
     ;;
   nto-qnx*)
+    enable_sgc=yes
     LIBS="$LIBS -lsocket"
     ;;
   *)

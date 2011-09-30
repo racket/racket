@@ -1,8 +1,8 @@
 /* 
    Provides:
-      static ssize_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t len, int dirty, int originated_here)
-      static ssize_t void alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
-      static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, ssize_t *size_diff)
+      static intptr_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t len, int dirty, int originated_here)
+      static intptr_t void alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
+      static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, intptr_t *size_diff)
    Requires (defined earlier):
       my_qsort --- possibly from my_qsort.c
       static void os_vm_free_pages(void *p, size_t len);
@@ -22,10 +22,10 @@ static AllocCacheBlock *alloc_cache_create() {
   return ofm_malloc_zero(sizeof(AllocCacheBlock) * BLOCKFREE_CACHE_SIZE); 
 }
 
-static ssize_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree);
-static ssize_t alloc_cache_free(AllocCacheBlock *ac) {
+static intptr_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree);
+static intptr_t alloc_cache_free(AllocCacheBlock *ac) {
   if (ac) {
-    ssize_t s = alloc_cache_free_all_pages(ac);
+    intptr_t s = alloc_cache_free_all_pages(ac);
     free(ac);
     return s;
   }
@@ -112,7 +112,7 @@ inline static void *alloc_cache_find_pages(AllocCacheBlock *blockfree, size_t le
   return NULL;
 }
 
-static ssize_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t len, int dirty, int originated_here)
+static intptr_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t len, int dirty, int originated_here)
 {
   int i;
 
@@ -152,10 +152,10 @@ static ssize_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t
   return (originated_here ? -len : 0);
 }
 
-static ssize_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
+static intptr_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
 {
   int i;
-  ssize_t freed = 0;
+  intptr_t freed = 0;
   alloc_cache_collapse_pages(blockfree);
 
   for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
@@ -172,10 +172,10 @@ static ssize_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
   return freed;
 }
 
-static ssize_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree)
+static intptr_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree)
 {
   int i;
-  ssize_t freed = 0;
+  intptr_t freed = 0;
   alloc_cache_collapse_pages(blockfree);
 
   for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
@@ -199,7 +199,7 @@ static ssize_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree)
    mechanism, but we do a bit of work to collapse adjacent pages in
    the cache. */
 
-static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, ssize_t *size_diff)
+static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, intptr_t *size_diff)
 {
   char *r;
 
