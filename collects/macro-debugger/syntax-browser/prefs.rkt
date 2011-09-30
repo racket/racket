@@ -30,6 +30,9 @@
     ;; suffix-option : SuffixOption
     (define-notify suffix-option (new notify-box% (value 'over-limit)))
 
+    ;; pretty-abbrev? : boolean
+    (define-notify pretty-abbrev? (new notify-box% (value #t)))
+
     ;; pretty-styles : ImmutableHash[symbol -> symbol]
     (define-notify pretty-styles
       (new notify-box% (value (make-immutable-hasheq null))))

@@ -41,7 +41,8 @@
                          (length (send/i config config<%> get-colors))
                          (send/i config config<%> get-suffix-option)
                          (send config get-pretty-styles)
-                         columns))
+                         columns
+                         (send config get-pretty-abbrev?)))
   (define output-string (get-output-string output-port))
   (define output-length (sub1 (string-length output-string))) ;; skip final newline
   (fixup-parentheses output-string range)

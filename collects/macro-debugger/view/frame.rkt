@@ -210,6 +210,9 @@
                               "Draw binding arrows"
                               (get-field draw-arrows? config))
       (menu-option/notify-box extras-menu
+                              "Enable reader abbreviations"
+                              (get-field pretty-abbrev? config))
+      (menu-option/notify-box extras-menu
                               "Extra navigation"
                               (get-field extra-navigation? config)))
 
