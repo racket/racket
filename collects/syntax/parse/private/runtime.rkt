@@ -5,6 +5,7 @@
          (for-syntax racket/base
                      racket/list
                      syntax/kerncase
+                     syntax/strip-context
                      racket/private/sc
                      racket/syntax
                      "rep-attrs.rkt"
@@ -161,11 +162,14 @@ residual.rkt.
        ;; so we can avoid run-time call to identifier-binding if
        ;;   (+ (phase-of-enclosing-module) ok-phase/ct-rel) = used-phase
        (with-syntax ([ok-phases/ct-rel ok-phases/ct-rel])
-         #'(check-literal* (quote-syntax id)
+         #`(check-literal* (quote-syntax id)
                            used-phase-expr
                            (phase-of-enclosing-module)
                            'ok-phases/ct-rel
-                           (quote-syntax ctx))))]))
+                           ;; If context is not stripped, racket complains about
+                           ;; being unable to restore bindings for compiled code;
+                           ;; and all we want is the srcloc, etc.
+                           (quote-syntax #,(strip-context #'ctx)))))]))
 
 ;; ====
 
