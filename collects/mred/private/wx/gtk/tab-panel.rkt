@@ -9,6 +9,7 @@
          "types.rkt"
          "widget.rkt"
          "message.rkt"
+         "../../lock.rkt"
          "../common/event.rkt")
 
 (provide 
@@ -21,6 +22,7 @@
 (define-gtk gtk_notebook_set_scrollable (_fun _GtkWidget _gboolean -> _void))
 (define-gtk gtk_notebook_get_current_page (_fun _GtkWidget -> _int))
 (define-gtk gtk_notebook_set_current_page (_fun _GtkWidget _int -> _void))
+(define-gtk gtk_notebook_get_tab_label  (_fun _GtkWidget _GtkWidget -> _GtkWidget))
 
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 
@@ -110,11 +112,14 @@
       (select-bin bin-gtk)
       (gtk_widget_unref client-gtk))
 
+    (define callback-ok? #t)
+
     (define/public (page-changed i)
       ; range check works around spurious callbacks:
       (when (< -1 i (length pages))
         (swap-in (page-bin-gtk (list-ref pages i)))
-        (queue-window-event this (lambda () (do-callback)))))
+        (when callback-ok?
+          (queue-window-event this (lambda () (do-callback))))))
     (connect-changed gtk)
     
     (define/override (get-client-gtk) client-gtk)
@@ -159,7 +164,22 @@
       (gtk_label_set_text_with_mnemonic (page-label-gtk (list-ref pages i)) 
                                         (mnemonic-string str)))
 
-    (define/public (set-selection i)
+    (define/public (number) (length pages))
+    (define/public (button-focus n)
+      (if (= n -1)
+          (get-selection)
+          (direct-set-selection n)))
+
+    (define/override (gets-focus?) #t)
+    (define/override (set-focus)
+      (gtk_widget_grab_focus gtk))
+
+    (define/private (direct-set-selection i)
       (gtk_notebook_set_current_page gtk i))
+    (define/public (set-selection i)
+      (atomically
+       (set! callback-ok? #f)
+       (direct-set-selection i)
+       (set! callback-ok? #t)))
     (define/public (get-selection)
       (gtk_notebook_get_current_page gtk))))

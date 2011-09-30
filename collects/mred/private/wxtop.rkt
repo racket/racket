@@ -496,12 +496,14 @@
 						(memq code '(right down)))]
 				  [normal-move
 				   (lambda ()
-				     (let* ([o (if (or (is-a? o wx:canvas%) (is-a? o wx:item%)) 
+				     (let* ([o (if (or (is-a? o wx:canvas%) 
+                                                       (is-a? o wx:item%)
+                                                       (is-a? o wx:tab-panel%))
 						   (if (is-a? o wx-group-box<%>)
 						       #f
 						       o)
 						   #f)]
-					    [candidates 
+                                            [candidates 
 					     (map object->position (container->children panel o #t))]
                                             [dests (filter-overlapping candidates)]
 					    [pos (if o (object->position o) (list 'x 0 0 1 1))]
@@ -528,7 +530,7 @@
 						     (as-exit (lambda () (send o on-tab-in))))))))))])
 			     (if (and (not (eqv? code #\tab))
 				      (or (is-a? o wx:radio-box%)
-					  (is-a? o wx-tab-group<%>)))
+					  (is-a? o wx:tab-panel%)))
 				 (let ([n (send o number)]
 				       [s (send o button-focus -1)]
 				       [v-move? (memq code '(up down))]

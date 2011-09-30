@@ -128,6 +128,8 @@
     
     (define/override (get-client-gtk) client-gtk)
 
+    (define/override (gets-focus?) #f)
+
     (super-new [parent parent]
                [gtk gtk]
                [extra-gtks (list client-gtk)]

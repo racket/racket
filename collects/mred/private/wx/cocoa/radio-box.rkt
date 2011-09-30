@@ -115,8 +115,16 @@
 
   (define/public (button-focus i)
     (if (= i -1)
-        0
-        (set-focus)))
+        (if horiz?
+            (tell #:type _NSInteger (get-cocoa) selectedColumn)
+            (tell #:type _NSInteger (get-cocoa) selectedRow))
+        (let ([which (get-selection)])
+          (set-focus)
+          (tellv (get-cocoa) 
+                 selectCellAtRow: #:type _NSInteger (if horiz? 0 i) 
+                 column: #:type _NSInteger (if horiz? i 0))
+          (unless (equal? which (get-selection))
+            (queue-window-event this (lambda () (clicked)))))))
 
   (define/private (get-button i)
     (tell (get-cocoa)

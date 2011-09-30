@@ -482,6 +482,7 @@
 
     (define/public (get-cocoa) cocoa)
     (define/public (get-cocoa-content) cocoa)
+    (define/public (get-cocoa-focus) (get-cocoa-content))
     (define/public (get-cocoa-cursor-content) (get-cocoa-content))
     (define/public (get-cocoa-window) (send parent get-cocoa-window))
     (define/public (get-wx-window) (send parent get-wx-window))
@@ -674,7 +675,7 @@
                  (is-enabled-to-root?))
         (let ([w (tell cocoa window)])
           (when w
-            (tellv w makeFirstResponder: (get-cocoa-content))))))
+            (tellv w makeFirstResponder: (get-cocoa-focus))))))
     (define/public (on-set-focus) (void))
     (define/public (on-kill-focus) (void))
 

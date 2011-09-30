@@ -77,4 +77,6 @@
     (set-auto-size)
     #t)
 
+  (define/override (gets-focus?) #f)
+
   (def/public-unimplemented get-font))

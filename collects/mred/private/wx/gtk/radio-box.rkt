@@ -103,7 +103,7 @@
             0)
         (gtk_widget_grab_focus (list-ref radio-gtks i))))
   (define/override (set-focus)
-    (button-focus (max 0 (set-selection))))
+    (button-focus (max 0 (get-selection))))
   (define/public (set-selection i)
     (atomically
      (set! no-clicked? #t)

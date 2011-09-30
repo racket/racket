@@ -286,17 +286,18 @@
      append
      (map
       (lambda (i)
-	(cond
-	 [(send i has-tabbing-children?)
-	  (if (send i is-shown-to-root?)
-	      (container->children i except must-focus?)
-	      null)]
-	 [(or (eq? i except) 
-	      (and must-focus? (not (send i gets-focus?)))
-	      (not (send i is-enabled-to-root?))
-	      (not (send i is-shown-to-root?)))
-	  null]
-	 [else (list i)]))
+        (append
+         (if (and (send i has-tabbing-children?)
+                  (send i is-shown-to-root?))
+             (container->children i except must-focus?)
+             null)
+         (cond
+          [(or (eq? i except) 
+               (and must-focus? (not (send i gets-focus?)))
+               (not (send i is-enabled-to-root?))
+               (not (send i is-shown-to-root?)))
+           null]
+          [else (list i)])))
       (send f get-children))))
 
   (define (filter-overlapping l)

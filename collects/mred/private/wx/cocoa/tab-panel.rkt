@@ -11,6 +11,7 @@
          "queue.rkt"
          "../common/event.rkt"
          "../common/procs.rkt"
+         "../../lock.rkt"
          (for-syntax racket/base))
 
 (provide 
@@ -44,7 +45,9 @@
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (tabView: [_id cocoa] didSelectTabViewItem: [_id item-cocoa])
-      (queue-window*-event wxb (lambda (wx) (send wx do-callback)))))
+      (let ([wx (->wx wxb)])
+        (when (and wx (send wx callbacks-enabled?))
+          (queue-window*-event wxb (lambda (wx) (send wx do-callback)))))))
 
 (define-objc-class MyPSMTabBarControl PSMTabBarControl
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
@@ -125,9 +128,17 @@
 
   (define/public (set-label i str)
     (tellv (list-ref item-cocoas i) setLabel: #:type _NSString (label->plain-label str)))
+
+  (define callbacks-ok? #t)
+  (define/public (callbacks-enabled?) callbacks-ok?)
   
-  (define/public (set-selection i)
+  (define/private (direct-set-selection i)
     (tellv tabv-cocoa selectTabViewItem: (list-ref item-cocoas i)))
+  (define/public (set-selection i)
+    (atomically
+     (set! callbacks-ok? #f)
+     (direct-set-selection i)
+     (set! callbacks-ok? #t)))
   (define/public (get-selection)
     (item->index (tell tabv-cocoa selectedTabViewItem)))
 
@@ -182,6 +193,20 @@
              (if on? NSDefaultControlTint NSClearControlTint))
       (when control-cocoa
         (tellv control-cocoa setEnabled: #:type _BOOL on?))))
+
+  (define/override (gets-focus?)
+    (and (not control-cocoa)
+         (tell #:type _BOOL tabv-cocoa canBecomeKeyView)))
+  (define/override (get-cocoa-focus)
+    (if control-cocoa
+        content-cocoa
+        tabv-cocoa))
+
+  (define/public (number) (length item-cocoas))
+  (define/public (button-focus n)
+    (if (= n -1)
+        (get-selection)
+        (direct-set-selection n)))
 
   (define/override (maybe-register-as-child parent on?)
     (register-as-child parent on?)))

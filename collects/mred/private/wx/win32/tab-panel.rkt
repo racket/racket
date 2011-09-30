@@ -25,6 +25,8 @@
 (define TCM_GETITEMCOUNT (+ TCM_FIRST 4))
 (define TCM_DELETEITEM   (+ TCM_FIRST 8))
 (define TCM_DELETEALLITEMS (+ TCM_FIRST 9))
+(define TCM_GETCURFOCUS (+ TCM_FIRST 47))
+(define TCM_SETCURFOCUS (+ TCM_FIRST 48))
 
 (define-cstruct _TCITEMW
   ([mask _UINT]
@@ -168,6 +170,13 @@
              (done-str))))
         (let ([sel (max 0 (min (length choices) sel))])
           (set-selection sel))))
+
+    (define/override (gets-focus?) #t)
+    
+    (define/public (button-focus i)
+      (if (= i -1)
+	  (SendMessageW hwnd TCM_GETCURFOCUS 0 0)
+	  (SendMessageW hwnd TCM_SETCURFOCUS i 0)))
 
     (define/public (set-callback cb)
       (set! callback cb))))

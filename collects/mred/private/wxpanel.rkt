@@ -37,6 +37,7 @@
 	[on-set-focus (lambda () (void))]
 	[on-kill-focus (lambda () (void))]
 	[set-focus (lambda () (void))]
+        [gets-focus? (lambda () #f)]
 	[enable (lambda () (void))]
 	[show (lambda (on?) (void))]
         [is-shown? (lambda () #f)]
@@ -110,9 +111,11 @@
 
 		 [set-focus ; dispatch focus to a child panel
 		  (lambda ()
-		    (if (null? children)
-			(super-set-focus)
-			(send (car children) set-focus)))]
+                    (if (focus-on-self?)
+                        (super-set-focus)
+                        (if (null? children)
+                            (super-set-focus)
+                            (send (car children) set-focus))))]
 
 		 [ext-dx (lambda () (if hidden-child
 					tab-h-border
@@ -131,6 +134,7 @@
 	       
 	       (public
 		 [need-move-children (lambda () (set! move-children? #t))]
+                 [focus-on-self? (lambda () #f)]
 
 		 [get-children (lambda () children)]
 		 [get-hidden-child (lambda () hidden-child)]
@@ -806,19 +810,28 @@
   ;; "horizontal" and "vertical."
   (define (wx-make-vertical-panel% wx-linear-panel%) (wx-make-horizontal/vertical-panel% wx-linear-panel% #f))
 
+  (define (wx-make-tab% %)
+    (class %
+      (inherit gets-focus?)
+      (super-new)
+      (define/override (tabbing-position x y w h)
+        ;; claim that the panel is short:
+        (list this x y w 16))
+      (define/override (focus-on-self?) (gets-focus?))))
+
   (define wx-panel% (wx-make-panel% wx:panel%))
   (define wx-control-panel% (wx-make-panel% wx:panel% const-default-x-margin const-default-y-margin))
   (define wx-canvas-panel% (wx-make-panel% wx:canvas-panel%))
-  (define wx-tab-panel% (wx-make-panel% wx:tab-panel%))
+  (define wx-tab-panel% (wx-make-tab% (wx-make-panel% wx:tab-panel%)))
   (define wx-group-panel% (wx-make-panel% wx:group-panel%))
   (define wx-linear-panel% (wx-make-linear-panel% wx-panel%))
   (define wx-linear-canvas-panel% (wx-make-linear-panel% wx-canvas-panel%))
   (define wx-control-linear-panel% (wx-make-linear-panel% wx-control-panel%))
-  (define wx-linear-tab-panel% (wx-make-linear-panel% wx-tab-panel%))
+  (define wx-linear-tab-panel% (wx-make-tab% (wx-make-linear-panel% wx-tab-panel%)))
   (define wx-linear-group-panel% (wx-make-linear-panel% wx-group-panel%))
   (define wx-horizontal-panel% (wx-make-horizontal-panel% wx-linear-panel%))
   (define wx-vertical-panel% (wx-make-vertical-panel% wx-linear-panel%))
-  (define wx-vertical-tab-panel% (wx-make-vertical-panel% wx-linear-tab-panel%))
+  (define wx-vertical-tab-panel% (wx-make-tab% (wx-make-vertical-panel% wx-linear-tab-panel%)))
   (define wx-vertical-group-panel% (wx-make-vertical-panel% wx-linear-group-panel%))
   (define wx-control-horizontal-panel% (wx-make-horizontal-panel% wx-control-linear-panel%))
   (define wx-horizontal-canvas-panel% (wx-make-horizontal-panel% wx-linear-canvas-panel%))
