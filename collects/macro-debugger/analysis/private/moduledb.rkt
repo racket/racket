@@ -59,6 +59,7 @@
      scheme/gui/base
      slideshow/base
      string-constants
+     syntax/parse
      wxme)))
 
 (define no-bypass-rxs

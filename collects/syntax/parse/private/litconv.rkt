@@ -5,7 +5,7 @@
                      "lib.rkt"
                      "kws.rkt"
                      racket/syntax
-                     syntax/keyword)
+                     syntax/private/keyword)
          syntax/parse/private/residual-ct ;; keep abs. path
          syntax/parse/private/residual    ;; keep abs. path
          (only-in unstable/syntax phase-of-enclosing-module))
