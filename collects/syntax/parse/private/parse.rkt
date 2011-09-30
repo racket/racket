@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/stx
-                     syntax/id-table
+                     syntax/private/id-table
                      syntax/keyword
                      racket/syntax
                      "minimatch.rkt"

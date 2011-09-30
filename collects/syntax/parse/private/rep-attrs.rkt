@@ -1,7 +1,7 @@
 #lang racket/base
 (require syntax/parse/private/residual-ct ;; keep abs. path
          racket/contract/base
-         syntax/id-table
+         syntax/private/id-table
          racket/syntax
          unstable/struct)
 

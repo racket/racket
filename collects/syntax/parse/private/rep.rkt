@@ -6,7 +6,7 @@
                        syntax/parse/private/runtime)
          racket/contract/base
          "minimatch.rkt"
-         syntax/id-table
+         syntax/private/id-table
          syntax/stx
          syntax/keyword
          racket/syntax

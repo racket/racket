@@ -2,7 +2,7 @@
 (require racket/contract/base
          racket/dict
          racket/list
-         syntax/id-table
+         syntax/private/id-table
          racket/syntax
          syntax/parse/private/residual-ct ;; keep abs. path
          "minimatch.rkt"
