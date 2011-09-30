@@ -8,16 +8,16 @@
          (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
                       racket/unsafe/ops))
 
-(define-syntax-rule (**leaf? v) (fx= 1 (vector-length v)))
-(define-syntax-rule (**node? v) (fx= 3 (vector-length v)))
+(define-syntax-rule (**leaf? v) (fx= 1 (vector*-length v)))
+(define-syntax-rule (**node? v) (fx= 3 (vector*-length v)))
 
 (define-syntax leaf  (make-rename-transformer #'vector))
 (define-syntax leaf? (make-rename-transformer #'**leaf?))
 (define-syntax node  (make-rename-transformer #'vector))
 (define-syntax node? (make-rename-transformer #'**node?))
-(define-syntax-rule (leaf-val l)   (vector-ref l 0))
-(define-syntax-rule (node-left n)  (vector-ref n 1))
-(define-syntax-rule (node-right n) (vector-ref n 2))
+(define-syntax-rule (leaf-val l)   (vector*-ref l 0))
+(define-syntax-rule (node-left n)  (vector*-ref n 1))
+(define-syntax-rule (node-right n) (vector*-ref n 2))
 
 (define (make item d)
   (if (fx= d 0)

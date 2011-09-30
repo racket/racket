@@ -2,23 +2,22 @@
 
 ;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
+(require racket/require (for-syntax racket/base)
+         (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+                      racket/unsafe/ops))
 
 (define translation (make-vector 128))
 
 (for ([from (in-string "ACGTUMRWSYKVHDBN")]
       [to   (in-string "TGCAAKYWSRMBDHVN")])
   (let ([to (char->integer to)])
-    (vector-set! translation (char->integer from) to)
-    (vector-set! translation (char->integer (char-downcase from)) to)))
+    (vector*-set! translation (char->integer from) to)
+    (vector*-set! translation (char->integer (char-downcase from)) to)))
 
 (define I (current-input-port))
 (define O (current-output-port))
 
 (define marker (char->integer #\>))
-
-(require racket/require (for-syntax racket/base)
-         (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
-                      racket/unsafe/ops))
 
 (define line-length 60)
 (define buf-size (* 64 1024))
@@ -36,15 +35,15 @@ before dumping it out.
   (let loop ([chunks chunks] [col line-length])
     (when (pair? chunks)
       (let ([chunk (car chunks)])
-        (let ([start  (vector-ref chunk 0)]
-              [end    (vector-ref chunk 1)]
-              [in-buf (vector-ref chunk 2)])
+        (let ([start  (vector*-ref chunk 0)]
+              [end    (vector*-ref chunk 1)]
+              [in-buf (vector*-ref chunk 2)])
           (let chunk-loop ([i end] [j 0] [col col])
             (if (fx> i start)
               (let* ([i (fx- i 1)] [b (bytes-ref in-buf i)])
                 (if (fx= b LF)
                   (chunk-loop i j col)
-                  (let ([b (vector-ref translation b)])
+                  (let ([b (vector*-ref translation b)])
                     (if (fx= 0 col)
                       (begin (bytes-set! out-buf j LF)
                              (bytes-set! out-buf (fx+ j 1) b)
