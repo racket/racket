@@ -181,6 +181,7 @@
      info<%>
      file<%>
      clever-file-format<%>
+     crlf-line-endings<%>
      ports<%>
      input-box<%>
      autocomplete<%>
@@ -218,6 +219,7 @@
      info-mixin
      file-mixin
      clever-file-format-mixin
+     crlf-line-endings-mixin
      ports-mixin
      input-box-mixin
      autocomplete-mixin))

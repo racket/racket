@@ -1632,4 +1632,6 @@ please adhere to these guidelines:
   (normalize-string-preference "Normalize pasted strings")
   (ask-about-normalizing-strings "Ask about normalizing strings")
   
+  (always-use-platform-specific-linefeed-convention "Always use the platform-specific linefeed convention")
+  
   )

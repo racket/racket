@@ -56,10 +56,6 @@ The @onscreen{Editing} panel consists of several sub-panels:
       @item{@PrefItem{Wrap words in editor buffers} --- If checked,
             DrRacket editors auto-wrap text lines by default.  Changing
             this preference affects new windows only.}
-      @item{@PrefItem{Reuse existing frames when opening new files} ---
-            If checked, new files are opened in the same DrRacket
-            window, rather than creating a new DrRacket window for each
-            new file.}
       @item{@PrefItem{Enable keybindings in menus} --- If checked, some
             DrRacket menu items have keybindings.  Otherwise, no menu
             items have key bindings.  This preference is designed for
@@ -68,7 +64,7 @@ The @onscreen{Editing} panel consists of several sub-panels:
             keybindings.}
       @item{@PrefItem{Treat command key as meta} --- If checked,
             DrRacket will use the command key for some Emacs-like
-            keybindings, instead of using it for menu shortcuts.  This
+            keybindings, instead of using it for menu shortcuts. This
             option is only available on Mac OS X.}
       @item{@PrefItem{Color syntax interactively} --- If checked,
             DrRacket colors your syntax as you type.}
@@ -89,6 +85,18 @@ The @onscreen{Editing} panel consists of several sub-panels:
       @item{@PrefItem{Enable automatic parentheses} --- If checked,
              typing an open parenthesis, curley brace, square bracket, or a double quote
              character automatically inserts a matching one.}
+      @item{@PrefItem{Always use the platform-specific linefeed convention} ---
+             If checked, DrRacket always saves files with CRLF line terminators. 
+             If unchecked, DrRacket looks at each file as it is opened and if every
+             line is terminated with CRLF (and there is at least one line), 
+             then it saves the file with CRLF terminators
+             and otherwise it is saved with LF terminators (following the
+             Mac OS X and Linux convention). When a file is going to be saved
+             with CRLF terminators, then the status line at the bottom of the
+             DrRacket window shows ``CRLF''.
+             
+             This option is only available under Windows. On other operating
+             systems, all files are always saved with LF line terminators.}
       @item{@PrefItem{Show line numbers} --- If checked, DrRacket shows
             line numbers for the file being edited in the left-hand
             column}]}

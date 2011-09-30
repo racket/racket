@@ -921,6 +921,7 @@
                        overwrite-status-changed
                        anchor-status-changed
                        editor-position-changed
+                       use-file-text-mode-changed
                        add-line-number-menu-items))
 (define text-info-mixin
   (mixin (info<%>) (text-info<%>)
@@ -1077,12 +1078,24 @@
     (define/public (add-line-number-menu-items menu)
       (void))
     
+    (define/public (use-file-text-mode-changed)
+      (when (object? file-text-mode-msg)
+        (define ed (get-info-editor))
+        (send file-text-mode-msg-parent change-children
+              (λ (l)
+                (if (and (is-a? ed text:info<%>)
+                         (eq? (system-type) 'windows)
+                         (send ed use-file-text-mode))
+                  (list file-text-mode-msg)
+                  '())))))
+    
     (define/override (update-info)
       (super update-info)
       (update-macro-recording-icon)
       (overwrite-status-changed)
       (anchor-status-changed)
-      (editor-position-changed))
+      (editor-position-changed)
+      (use-file-text-mode-changed))
     (super-new)
     
     (inherit get-info-panel)
@@ -1093,14 +1106,25 @@
                                  [stretchable-width #f]
                                  [stretchable-height #f]
                                  [extra-menu-items (λ (menu) (add-line-number-menu-items menu))]))
-    (define position-canvas (new position-canvas% [parent position-parent] [init-width "000:00-000:00"]))
+    (define position-canvas (new position-canvas% 
+                                 [parent position-parent] 
+                                 [init-width "000:00-000:00"]))
     (define/private (change-position-edit-contents str)
       (send position-canvas set-str str))
     
     (send (get-info-panel) change-children
           (λ (l)
             (cons position-parent (remq position-parent l))))
-    
+
+    (define file-text-mode-msg-parent (new horizontal-panel%
+                                           [stretchable-width #f]
+                                           [stretchable-height #f]
+                                           [parent (get-info-panel)]))
+    (define file-text-mode-msg (new file-text-mode-msg% [parent file-text-mode-msg-parent]))
+    (send file-text-mode-msg-parent change-children (λ (l) '()))
+    (send (get-info-panel) change-children
+          (λ (l)
+            (cons file-text-mode-msg-parent (remq file-text-mode-msg-parent l))))
     
     (define-values (anchor-message
                     overwrite-message 
@@ -1133,7 +1157,28 @@
     (send macro-recording-message show #f)
     (send anchor-message show #f)
     (send overwrite-message show #f)
-    (editor-position-changed)))
+    (editor-position-changed)
+    (use-file-text-mode-changed)))
+
+(define crlf-string "CRLF")
+(define file-text-mode-msg%
+  (class canvas%
+    (inherit min-width min-height get-dc refresh)
+    (define/override (on-paint)
+      (define dc (get-dc))
+      (send dc set-pen "black" 1 'transparent)
+      (send dc set-brush "orange" 'solid)
+      (define-values (w h d a) (send dc get-text-extent crlf-string))
+      (send dc draw-rectangle 0 0 (+ w 4) h)
+      (send dc draw-text crlf-string 2 0))
+    (super-new)
+    (inherit stretchable-width)
+    (stretchable-width #f)
+    (send (get-dc) set-font small-control-font)
+    (let ()
+      (define-values (w h d a) (send (get-dc) get-text-extent crlf-string))
+      (min-width (inexact->exact (ceiling (+ w 4))))
+      (min-height (inexact->exact (ceiling h))))))         
 
 (define click-pref-panel%
   (class horizontal-panel%

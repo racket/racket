@@ -494,6 +494,11 @@ the state transitions / contracts are:
                                'framework:automatic-parens
                                (string-constant enable-automatic-parens)
                                values values)
+                   (when (eq? (system-type) 'windows)
+                     (make-check editor-panel
+                                 'framework:always-use-platform-specific-linefeed-convention
+                                 (string-constant always-use-platform-specific-linefeed-convention)
+                                 values values))
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
   

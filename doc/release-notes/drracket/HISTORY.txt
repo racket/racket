@@ -10,6 +10,17 @@
     The preferences dialog (general tab) has a checkbox to
     restore the old behavior.
 
+  . Under Windows, DrRacket now saves files, in some situations,
+    with LF terminators. Previously, under windows, all files
+    were saved with CRLF terminators. Now, a file is saved with
+    CRLF terminators when every line in the file ends with CRLF.
+    In there is any one line that ends with just LF, then the
+    file is saved with LF's for each line. Also, newly created
+    files are also saved with LFs instead of CRLFs.
+
+    There is a preference in the Edit|General preferences panel
+    to go back to the behavior of previous versions of DrRacket.
+
   . added online expansion and check syntax
 
   . removed the "open here" functionality (both from

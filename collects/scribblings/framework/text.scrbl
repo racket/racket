@@ -699,6 +699,25 @@
   }
 }
 
+@definterface[text:crlf-line-endings<%> (text%)]{
+  Objects supporting this interface use 
+  @method[editor<%> use-file-text-mode] to
+  change the line ending style under windows. See 
+  @method[text:crlf-line-endings-mixin after-load-file] for more information.
+}
+
+
+@defmixin[text:crlf-line-endings-mixin (text%) (text:crlf-line-endings<%>)]{
+  @defmethod[#:mode override (after-load-file [success? any/c]) void?]{
+    Checks to see if the newly loaded file has any lines terminated with 
+    @racket["\n"] (i.e., not @racket["\r\n"]) or if the file is empty. 
+    If so, and if the @racket[system-type] returns @racket['windows], then
+    this method calls @method[editor<%> use-file-text-mode], passing @racket[#f]. 
+    
+    Otherwise, calls @method[editor<%> use-file-text-mode] with @racket[#t].
+  }
+}
+
 @definterface[text:file<%> (editor:file<%> text:basic<%>)]{
   Mixins that implement this interface lock themselves when the file they are
   editing is read only.
