@@ -537,9 +537,22 @@ contract describes the mandatory arguments, and is similar to the
 argument description of a @racket[->] contract. The second clause
 describes the optional arguments. The range of description can either
 be @racket[any] or a sequence of contracts, indicating that the
-function must return multiple values. If present, the
+function must return multiple values. 
+
+If present, the
 @racket[rest-expr] contract governs the arguments in the rest
-parameter.  The @racket[pre-cond-expr] and @racket[post-cond-expr]
+parameter. Note that the @racket[rest-expr] contract governs only
+the arguments in the rest parameter, not those in mandatory arguments.
+For example, this contract:
+@racketblock[(->* () #:rest (cons/c integer? (listof integer?)) any)]
+does not match the function
+@racketblock[(λ (x . rest) x)]
+because the contract insists that the function accept zero arguments 
+(because there are no mandatory arguments listed in the contract). The
+@racket[->i] contract does not know that the contract on the rest argument is
+going to end up disallowing empty argument lists.
+
+The @racket[pre-cond-expr] and @racket[post-cond-expr]
 expressions are checked as the function is called and returns,
 respectively, and allow checking of the environment without an
 explicit connection to an argument (or a result).
