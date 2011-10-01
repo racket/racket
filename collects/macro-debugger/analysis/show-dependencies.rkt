@@ -1,9 +1,11 @@
 #lang racket/base
 (require racket/cmdline
          "private/util.rkt")
-(provide main)
+(provide get-dependencies
+         show-dependencies
+         main)
 
-(define (get-dependencies-table #:include? include? . ms)
+(define (get-dependencies-table #:include? include? ms)
   (define visited (make-hash)) ;; resolved-module-path => (listof mpi-list)
   (define (loop m ctx)
     (let* ([resolved (module-path-index-resolve m)]
@@ -23,6 +25,7 @@
     (loop (module-path-index-join m #f) null))
   visited)
 
+;; table->dependencies : table -> (listof (list module-path (listof module-path)))
 (define (table->dependencies visited)
   (let* ([unsorted
           (for/list ([(key mpi-lists) (in-hash visited)])
@@ -47,6 +50,31 @@
          ;; obviously, we don't care that much about performance in this case
          (string<? (format "~s" A) (format "~s" B))]))
 
+;; get-dependencies : module-path ... #:excludse (listof module-path)
+;;                 -> (listof (list module-path (listof module-path)))
+(define (get-dependencies #:exclude [exclusions null]
+                          . module-paths)
+  (let* ([table
+          (get-dependencies-table #:include? #f module-paths)]
+         [exclude-table
+          (get-dependencies-table #:include? #t exclusions)])
+    (for ([key (in-hash-keys exclude-table)])
+      (hash-remove! table key))
+    (table->dependencies table)))
+
+(define (show-dependencies #:exclude [exclusions null]
+                           #:show-context? [context? #f]
+                           . module-paths)
+  (for ([dep (in-list (apply get-dependencies #:exclude exclusions module-paths))])
+    (let ([mod (car dep)]
+          [direct-requirers (cadr dep)])
+      (printf "~s" mod)
+      (when context?
+        (printf " <- ~s" direct-requirers))
+      (newline))))
+
+;; ====
+
 (define (main . argv)
   (define mode 'auto)
   (define context? #f)
@@ -60,9 +88,9 @@
     (set! mode 'file)]
    [("-m" "--module-path") "Interpret arguments as module-paths"
     (set! mode 'module-path)]
-   [("--minus") exclude "Exclude modules reachable from <exclude>"
+   [("-x" "--exclude") exclude "Exclude modules reachable from <exclude>"
     (set! exclusions (cons exclude exclusions))]
-   [("-b") "Same as --minus racket/base"
+   [("-b") "Same as --exclude racket/base"
     (set! exclusions (cons 'racket/base exclusions))]
    #:args module-path
    (let ()
@@ -77,23 +105,10 @@
                 ((module-path)
                  (read (open-input-string x))))]
              [else x]))
-     (let* ([table
-             (apply get-dependencies-table
-                    #:include? #f
-                    (map ->modpath module-path))]
-            [exclude-table
-             (apply get-dependencies-table
-                    #:include? #t
-                    (map ->modpath exclusions))])
-       (for ([key (in-hash-keys exclude-table)])
-         (hash-remove! table key))
-       (for ([dep (in-list (table->dependencies table))])
-         (let ([mod (car dep)]
-               [direct-requirers (cadr dep)])
-           (printf "~s" mod)
-           (when context?
-             (printf " <- ~s" direct-requirers))
-           (newline)))))))
+     (apply show-dependencies
+            #:exclude (map ->modpath exclusions)
+            #:show-context? context?
+            (map ->modpath module-path)))))
 
 #|
 

@@ -3,20 +3,25 @@
           scribble/struct
           scribble/decode
           scribble/eval
-          (for-label scheme/base
+          (for-label racket/base
+                     racket/contract/base
+                     racket/runtime-path
                      macro-debugger/expand
                      macro-debugger/emit
                      macro-debugger/stepper
                      macro-debugger/stepper-text
                      macro-debugger/syntax-browser
-                     macro-debugger/analysis/check-requires
-                     (rename-in scheme (free-identifier=? module-identifier=?))))
+                     (except-in macro-debugger/analysis/check-requires main)
+                     (except-in macro-debugger/analysis/show-dependencies main)))
 
 @(define the-eval
    (let ([the-eval (make-base-eval)])
-     (the-eval '(require macro-debugger/expand
+     (the-eval '(require racket/pretty
+                         macro-debugger/expand
                          macro-debugger/stepper-text
-                         macro-debugger/analysis/check-requires))
+                         (except-in macro-debugger/analysis/check-requires main)
+                         (except-in macro-debugger/analysis/show-dependencies main)))
+     (the-eval '(current-print pretty-print-handler))
      the-eval))
 
 @(define (defoutput proto . text)
@@ -344,15 +349,17 @@ racket -lm macro-debugger/analysis/check-requires \
   collects/syntax/*.rkt
 
 racket -lm macro-debugger/analysis/check-requires -- -kbu \
-  collects/syntax/*.rkt
+  openssl
 }
 
-See @racket[check-requires] for a description of the output format,
-known limitations in the script's recommendations, etc.
+Each argument is interpreted as a file path if it exists; otherwise,
+it is interpreted as a module path. See @racket[check-requires] for a
+description of the output format, known limitations in the script's
+recommendations, etc.
 
 @defproc[(check-requires [module-to-analyze module-path?]
-                         [#:show-keep? show-keep? boolean? #f]
-                         [#:show-bypass? show-bypass? boolean? #f]
+                         [#:show-keep? show-keep? boolean? #t]
+                         [#:show-bypass? show-bypass? boolean? #t]
                          [#:show-drop? show-drop? boolean? #t]
                          [#:show-uses? show-uses? boolean? #f])
          void?]{
@@ -465,7 +472,7 @@ typical reasons for such bad suggestions:
 
 @examples[#:eval the-eval
 (check-requires 'framework)
-(check-requires 'syntax/stx #:show-uses? #t)
+(check-requires 'openssl #:show-uses? #t)
 ]
 }
 
@@ -485,5 +492,78 @@ returns one element per (non-label) require in the following format:
 
 @examples[#:eval the-eval
 (show-requires 'framework)
+]
+}
+
+
+@section{Showing Module Dependencies}
+@section-index["show-dependencies"]
+
+@defmodule[macro-debugger/analysis/show-dependencies]
+
+The @racketmodname[macro-debugger/analysis/show-dependencies] module
+can be run as a command-line script. For example (from racket root
+directory):
+
+@verbatim{
+racket -lm macro-debugger/analysis/show-dependencies -- -bc \
+  collects/openssl/main.rkt
+
+racket -lm macro-debugger/analysis/show-dependencies -- -c \
+  --exclude racket \
+  openssl
+}
+
+Each argument is interpreted as a file path if it exists; otherwise it
+is interpreted as a module path. See @racket[show-dependencies] for a
+description of the output format.
+
+@defproc[(show-dependencies [root module-path?] ...
+                            [#:exclude exclusions
+                             (listof module-path?) null]
+                            [#:show-context? show-context? boolean? #f])
+         void?]{
+
+Computes the set of modules transitively required by the @racket[root]
+module(s). A @racket[root] module is included in the output
+only if it is a dependency of another @racket[root] module. The
+computed dependencies do not include modules reached through
+@racket[dynamic-require] or referenced by
+@racket[define-runtime-module-path-index] but do include modules
+referenced by @racket[define-runtime-module-path] (since that
+implicitly creates a @racket[for-label] dependency).
+
+Dependencies are printed, one per line, in the following format:
+
+@defoutput[@tt{@racket[_dep-module] [<- @racket[(_direct-dependent ...)]]}]{
+
+Indicates that @racket[_dep-module] is transitively required by one or
+more @racket[root] modules. If @racket[show-context?] is true, then
+the @racket[_direct-dependent]s are shown; they are the modules
+reachable from (and including) the @racket[root] modules that directly
+require @racket[_dep-module].
+}
+
+The dependencies are trimmed by removing any module reachable from (or
+equal to) a module in @racket[exclusions].
+
+@examples[#:eval the-eval
+(show-dependencies 'openssl
+                   #:show-context? #t
+                   #:exclude (list 'racket))
+]
+}
+
+@defproc[(get-dependencies [root module-path?] ...
+                           [#:exclude exclusions
+                            (listof module-path?) null])
+         (listof (list module-path? (listof module-path?)))]{
+
+Like @racket[show-dependencies], but returns a list instead of
+producing output. Each element of the list is a list containing a
+module path and the module paths of its immediate dependents.
+
+@examples[#:eval the-eval
+(get-dependencies 'openssl #:exclude (list 'racket))
 ]
 }
