@@ -2160,13 +2160,13 @@
   (test/spec-passed/result
    '->i22
    '(send (contract (object-contract
-					[m (->i ([x any/c] #:y [y any/c]) ([z any/c]) any)])
-				   (new (class object%
-							   (define/public (m x #:y y [z 1]) x)
-							   (super-new)))
-				   'pos
-				   'neg)
-		 m 1 #:y 2)
+                     [m (->i ([x any/c] #:y [y any/c]) ([z any/c]) any)])
+                    (new (class object%
+                           (define/public (m x #:y y [z 1]) x)
+                           (super-new)))
+                    'pos
+                    'neg)
+          m 1 #:y 2)
    1)
 
   (test/spec-passed/result
@@ -2809,6 +2809,16 @@
       1)
      x)
    '(res-check body res-eval arg-eval))
+  
+  (test/spec-passed/result
+   '->i52
+   '((contract (->i ()
+                    ([x integer?])
+                    any)
+               (λ ([x 'qq]) x)
+               'pos
+               'neg))
+   'qq)
 
   (test/pos-blame
    '->i-arity1
