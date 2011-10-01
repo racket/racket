@@ -1818,6 +1818,8 @@
     (define/augment (after-load-file success?)
       (cond
         [(preferences:get 'framework:always-use-platform-specific-linefeed-convention)
+         (use-file-text-mode #t)]
+        [else
          (define unix-endings?
            (with-handlers ((exn:fail:filesystem? (λ (x) #t)))
              (call-with-input-file (get-filename)
@@ -1825,12 +1827,16 @@
                  (regexp-match? unix-line-endings-regexp port)))))
          (use-file-text-mode
           (and (eq? (system-type) 'windows) 
-               unix-endings?))]
-        [else (use-file-text-mode #t)])
+               (not unix-endings?)))])
       (inner (void) after-load-file success?))
 
-    (super-new)))
-
+    (super-new)
+    
+    ;; for empty files we want to use LF mode so
+    ;; set it this way until a file is loaded in the editor
+    (when (eq? (system-type) 'windows)
+      (unless (preferences:get 'framework:always-use-platform-specific-linefeed-convention)
+        (use-file-text-mode #f)))))
 
 (define file<%>
   (interface (editor:file<%> basic<%>)
