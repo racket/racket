@@ -85,6 +85,10 @@
 	[can-exit? (lambda () (can-close?))]
 	[on-exit (lambda () (on-close) (show #f))]
 	[on-activate (lambda (x) (void))]
+        [set-icon (case-lambda 
+		   [(i) (send wx set-icon i)]
+		   [(i b) (send wx set-icon i b)]
+		   [(i b l?) (send wx set-icon i b l?)])]
 	[center (entry-point
 		 (case-lambda
 		  [() (send wx center 'both)]
@@ -185,11 +189,7 @@
 	[set-status-text (lambda (s) (do-set-status-text s))]
 	[has-status-line? (lambda () status-line?)]
 	[iconize (entry-point (lambda (on?) (send wx iconize on?)))]
-	[is-iconized? (entry-point (lambda () (send wx iconized?)))]
-	[set-icon (case-lambda 
-		   [(i) (send wx set-icon i)]
-		   [(i b) (send wx set-icon i b)]
-		   [(i b l?) (send wx set-icon i b l?)])]
+	[is-iconized? (entry-point (lambda () (send wx iconized?)))]	
 	[maximize (entry-point (lambda (on?) (send wx position-for-initial-show) (send wx maximize on?)))]
         [is-maximized? (entry-point (lambda () (send wx is-maximized?)))]
 	[get-menu-bar (entry-point (lambda () (let ([mb (send wx get-the-menu-bar)])
