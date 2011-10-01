@@ -7781,10 +7781,10 @@ static void inform_GC(int master_gc, int major_gc,
       vec = scheme_make_vector(11, scheme_false);
       SCHEME_VEC_ELS(vec)[1] = (major_gc ? scheme_true : scheme_false);
       SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(pre_used);
-      SCHEME_VEC_ELS(vec)[3] = scheme_make_integer((pre_admin - pre_used));
+      SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(pre_admin);
       SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(scheme_code_page_total);
-      SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(pre_used - delta);
-      SCHEME_VEC_ELS(vec)[6] = scheme_make_integer(pre_admin - admin_delta);
+      SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(post_used);
+      SCHEME_VEC_ELS(vec)[6] = scheme_make_integer(post_admin);
       v = scheme_make_integer_value(start_this_gc_time);
       SCHEME_VEC_ELS(vec)[7] = v;
       v = scheme_make_integer_value(end_this_gc_time);
