@@ -155,14 +155,13 @@
      (send (get-gauge) set-range splash-max-width)
      (send splash-tlw set-label splash-title)
      
-     #; ;; commented out because dialogs don't accept set-icon
      (when frame-icon
        (if (pair? frame-icon)
-         (let ([small (car icon)]
-               [large (cdr icon)])
+         (let ([small (car frame-icon)]
+               [large (cdr frame-icon)])
            (send splash-tlw set-icon small (send small get-loaded-mask) 'small)
            (send splash-tlw set-icon large (send large get-loaded-mask) 'large))
-         (send splash-tlw set-icon frame-icon (send icon get-loaded-mask) 'both)))
+         (send splash-tlw set-icon frame-icon (send frame-icon get-loaded-mask) 'both)))
      
      (cond
        [(or (path? splash-draw-spec)
