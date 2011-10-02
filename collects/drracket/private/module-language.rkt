@@ -1235,7 +1235,7 @@
       
       (define status-line-open? #f)
       
-      (define error/status-message-str #f)
+      (define error/status-message-str "")
       (define error/status-message-err? #f)
       (define error-message-srclocs '())
       (define/private (reset-frame-expand-error pending?)
