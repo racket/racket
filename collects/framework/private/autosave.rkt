@@ -239,7 +239,9 @@
                         (when filename-result
                           (disable-line)
                           (send msg2 set-label (string-constant autosave-recovered!))
-                          (send msg1 set-label filename-result)))))]
+                          (send msg1 set-label (gui-utils:quote-literal-label
+                                                (path->string filename-result)
+                                                #:quote-amp #f))))))]
                  [disable-line
                   (λ ()
                     (send recover enable #f)
@@ -249,7 +251,7 @@
             (send msg1-label min-width w)
             (send msg2-label min-width w))
           (void))))
-    
+
     ;; delete-autosave : (list (union #f string[filename]) string[filename]) -> boolean
     ;; result indicates if delete occurred
     (define (delete-autosave table-entry)
@@ -297,7 +299,11 @@
       (define vp (make-object vertical-panel% parent))
       (define t (make-object show-files-text%))
       (define msg1 (make-object message% label vp))
-      (define msg2 (make-object message% (path->string filename) vp))
+      (define msg2 (new message% 
+                        [label (gui-utils:quote-literal-label
+                                (path->string filename)
+                                #:quote-amp #f)]
+                        [parent vp]))
       (define ec (make-object editor-canvas% vp t))
       (send t load-file filename)
       (send t hide-caret #t)

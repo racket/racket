@@ -37,9 +37,11 @@
   (quote-literal-label (apply format format-str args)))
 
 ;; quote-literal-label: string -> string
-(define (quote-literal-label a-str)
-  (trim-string (regexp-replace* #rx"(&)" a-str "\\1\\1")
-               maximum-string-label-length))
+(define (quote-literal-label a-str #:quote-amp? [quote-amp? #t])
+  (define quoted (if quote-amp?
+                     (regexp-replace* #rx"(&)" a-str "\\1\\1")
+                     a-str))
+  (trim-string quoted maximum-string-label-length))
 
 ;; selected-text-color : color
 (define selected-text-color (send the-color-database find-color "black"))
@@ -303,17 +305,18 @@
     than @racket[size] by trimming the @racket[str]
     and inserting an ellispses into it.})
 
- (proc-doc
+ (proc-doc/names
   gui-utils:quote-literal-label
-  (->i ([str string?])
-       ()
-       [res (str)
-            (and/c string?
-                   (lambda (str)
-                     ((string-length str) . <= . 200)))])
-  @{Constructs a string whose ampersand characters are
-    escaped; the label is also trimmed to <= 200
-    characters.})
+  (->* (string?)
+       (#:quote-amp? any/c)
+       (and/c string?
+              (λ (str) ((string-length str) . <= . 200))))
+  ((string)
+   ((quote-amp? #t)))
+  @{Constructs a string whose length is less than @racket[200] and,
+    if @racket[quote-amp?] is not @racket[#f], then it also quotes
+    the ampersand in the result (making the string suitable for use in
+    @racket[menu-item%] label, for example).})
 
  (proc-doc
   gui-utils:format-literal-label
