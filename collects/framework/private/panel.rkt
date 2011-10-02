@@ -1,6 +1,7 @@
 #lang racket/unit
 
-  (require mzlib/class
+  (require racket/class
+           racket/list
            "sig.rkt"
            mred/mred-sig)
 
@@ -169,7 +170,8 @@
       after-percentage-change
       set-percentages
       get-percentages
-      get-vertical?))
+      get-vertical?
+      get-default-percentages))
   
   (define vertical-dragable<%>
     (interface (dragable<%>)))
@@ -244,11 +246,22 @@
           (unless (= len-children (length percentages))
             (cond
               [(zero? len-children)
-               '()]
+               (set! percentages '())]
               [else
-               (let ([rat (/ 1 len-children)])
-                 (set! percentages (build-list len-children (λ (i) (make-percentage rat)))))])
+               (set! percentages (map make-percentage (get-default-percentages len-children)))])
             (after-percentage-change))))
+      
+      (define/pubment (get-default-percentages i) 
+        (define res (inner (if (zero? i) '() (make-list i (/ i)))
+                           get-default-percentages i))
+        (unless (and (list? res)
+                     (andmap (λ (x) (and (real? x) (<= 0 x 1))) res)
+                     (= 1 (apply + res))
+                     (= (length res) i))
+          (error 'get-default-percentages 
+                 "expected inner call to return a list of real numbers that sum to 1 and has length ~a"
+                 i))
+        res)
       
       (define/override (after-new-child child)
         (update-percentages))
