@@ -5,6 +5,7 @@
 (define-local-member-name
   syncheck:init-arrows
   syncheck:clear-arrows
+  syncheck:clear-coloring
   syncheck:arrows-visible?
 
   syncheck:find-source-object

@@ -486,13 +486,16 @@ If the namespace does not, they are colored the unbound color.
                 (set! last-known-mouse-y #f)
                 (set! tacked-hash-table #f)
                 (set! arrow-records #f)
-                (when cleanup-texts
-                  (for-each (λ (text) (send text thaw-colorer))
-                            cleanup-texts))
-                (set! cleanup-texts #f)
+                (syncheck:clear-coloring)
                 (set! style-mapping #f)
                 (syncheck:update-drawn-arrows)
                 (invalidate-bitmap-cache)))
+            
+            (define/public (syncheck:clear-coloring)
+              (when cleanup-texts
+                (for-each (λ (text) (send text thaw-colorer))
+                          cleanup-texts))
+              (set! cleanup-texts #f))
             
             ;; syncheck:apply-style/remember : (is-a?/c text%) number number style% symbol -> void
             (define/public (syncheck:apply-style/remember txt start finish style mode)
@@ -1377,7 +1380,12 @@ If the namespace does not, they are colored the unbound color.
         (define/augment (clear-annotations)
           (inner (void) clear-annotations)
           (syncheck:clear-error-message)
-          (syncheck:clear-highlighting))
+          ;; we only clear out the highlighting that check syntax 
+          ;; may have introduced here; we don't reset the arrows 
+          ;; (or other mouse-over stuff)
+          ;; this code is also run by syncheck:clear-arrows, which
+          ;; used to be called here (indirectly by syncheck:clear-highlighting)
+          (send (get-defs) syncheck:clear-coloring))
         
         (define/public (syncheck:clear-error-message)
           (send report-error-text clear-output-ports)
@@ -1804,6 +1812,7 @@ If the namespace does not, they are colored the unbound color.
              (λ ()
                (send the-tab clear-annotations)
                (send the-tab reset-offer-kill)
+               (send the-tab syncheck:clear-highlighting)
                (send (send the-tab get-defs) syncheck:init-arrows)
                (drracket:eval:expand-program
                 #:gui-modules? #f

@@ -168,7 +168,8 @@ The base class that implements the tab's functionality.
 @defmethod[#:mode override 
            (clear-annotations)
            void?]{
- Clears any error highlighting.
+ Clears any error highlighting; calls
+ @method[drracket:rep:context<%> clear-annotations].
  }
 }
 
