@@ -231,7 +231,7 @@
                         (disable-line)
                         (send msg2 set-label (string-constant autosave-deleted)))))]
                  [recover
-                  (make-object button%
+                  (make-object button% 
                     (string-constant autosave-recover)
                     hp
                     (λ (recover y)
@@ -241,7 +241,7 @@
                           (send msg2 set-label (string-constant autosave-recovered!))
                           (send msg1 set-label (gui-utils:quote-literal-label
                                                 (path->string filename-result)
-                                                #:quote-amp #f))))))]
+                                                #:quote-amp? #f))))))]
                  [disable-line
                   (λ ()
                     (send recover enable #f)
@@ -302,7 +302,7 @@
       (define msg2 (new message% 
                         [label (gui-utils:quote-literal-label
                                 (path->string filename)
-                                #:quote-amp #f)]
+                                #:quote-amp? #f)]
                         [parent vp]))
       (define ec (make-object editor-canvas% vp t))
       (send t load-file filename)
