@@ -228,6 +228,7 @@
  
  ;; Help Desk
  (help "Hilfe")
+ (racket-documentation "Dokumentation für Racket")
  (help-desk "Hilfezentrum")
  (plt:hd:search "Suchen")
  (plt:hd:feeling-lucky "Auf gut Glück")
@@ -1528,5 +1529,7 @@
  (normalize-string-preference "Eingefügten Text normalisieren")
  (ask-about-normalizing-strings "Bei Normalisierung nachfragen")
  
+  (always-use-platform-specific-linefeed-convention "Immer die plattformspezifische Linefeed-Konvention verwenden")
+  
 
  )
