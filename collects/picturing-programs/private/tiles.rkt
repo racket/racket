@@ -81,18 +81,28 @@
     (rotate 45 (flip-vertical (rotate -45 picture))))
   
   ; synonyms
-  (define (flip-main picture) (reflect-main-diag picture))
-  (define (flip-other picture) (reflect-other-diag picture))
+  (define (flip-main picture) 
+    (check-image 'flip-main picture "first")
+    (reflect-main-diag picture))
+  (define (flip-other picture)
+    (check-image 'flip-other picture "first")
+    (reflect-other-diag picture))
 
   ; natural-number? anything -> boolean
   (define (natural-number? x)
     (and (integer? x) (>= x 0)))
   
+  ; natural-bounded? natural anything -> boolean
+  (define (natural-bounded? max x)
+    (and (natural-number? x) (<= x max)))
+
   ; crop-left : image natural-number -> image
   ; deletes that many pixels from left edge of image
   (define (crop-left picture pixels)
     (check-image 'crop-left picture "first")
-    (check-arg 'crop-left (natural-number? pixels) "natural number" "second" pixels)
+    (check-arg 'crop-left (natural-bounded? (image-width picture) pixels)
+	(format "natural number <= ~a" (image-width picture))
+	 "second" pixels)
     (crop pixels 0
           (- (image-width picture) pixels) (image-height picture)
           picture))
@@ -101,7 +111,9 @@
   ; deletes that many pixels from top edge of image
   (define (crop-top picture pixels)
     (check-image 'crop-top picture "first")
-    (check-arg 'crop-top (natural-number? pixels) "natural number" "second" pixels)
+    (check-arg 'crop-top (natural-bounded? (image-height picture) pixels)
+	(format "natural number <= ~a" (image-height picture))
+	 "second" pixels)
     (crop 0 pixels 
           (image-width picture) (- (image-height picture) pixels)
           picture))
@@ -110,7 +122,9 @@
   ; deletes that many pixels from right edge of image
   (define (crop-right picture pixels)
     (check-image 'crop-right picture "first")
-    (check-arg 'crop-right (natural-number? pixels) "natural number" "second" pixels)
+    (check-arg 'crop-right (natural-bounded? (image-width picture) pixels)
+	(format "natural number <= ~a" (image-width picture))
+	 "second" pixels)
     (crop 0 0
           (- (image-width picture) pixels)
           (image-height picture)
@@ -120,7 +134,9 @@
   ; deletes that many pixels from bottom edge of image
   (define (crop-bottom picture pixels)
     (check-image 'crop-bottom picture "first")
-    (check-arg 'crop-bottom (natural-number? pixels) "natural number" "second" pixels)
+    (check-arg 'crop-bottom (natural-bounded? (image-height picture) pixels)
+	(format "natural number <= ~a" (image-height picture))
+	 "second" pixels)
     (crop 0 0
           (image-width picture)
           (- (image-height picture) pixels)
