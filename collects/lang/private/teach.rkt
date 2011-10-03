@@ -477,7 +477,7 @@
              #'id 
              "expected a function after the open parenthesis, but found ~a"
              (syntax-e #'id))]
-           [_ (datum->syntax stx val)]))))
+           [_ (datum->syntax stx val stx)]))))
     
     (define beginner-true/proc (make-constant-expander #t))
     (define beginner-false/proc (make-constant-expander #f))
