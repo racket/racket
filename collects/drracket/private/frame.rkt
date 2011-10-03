@@ -463,14 +463,18 @@
                                         (format "~a" (exn-message exn))
                                         (format "~s" exn))
                                     #:dialog-mixin frame:focus-table-mixin))])
-      (let* ([url (string->url s-url)]
-             [tmp-filename (make-temporary-file "tmp~a.plt")]
-             [port (get-impure-port url)]
+      (define-values (port size)
+        (let-values ([(port header)
+                      (get-pure-port/headers (string->url s-url)
+                                             #:redirections 5)])
+          (define size
+            (let* ([content-header (extract-field "content-length" header)]
+                   [m (and content-header
+                           (regexp-match "[0-9]+" content-header))])
+              (and m (string->number (car m)))))
+          (values port size)))
+      (let* ([tmp-filename (make-temporary-file "tmp~a.plt")]
              [header (purify-port port)]
-             [size (let* ([content-header (extract-field "content-length" header)]
-                          [m (and content-header
-                                  (regexp-match "[0-9]+" content-header))])
-                     (and m (string->number (car m))))]
              [d (make-object dialog% (string-constant downloading) parent)] 
              [message (make-object message% (string-constant downloading-file...) d)] 
              [gauge (if size 
