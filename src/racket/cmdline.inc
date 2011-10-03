@@ -6,7 +6,7 @@
 
 #define SDESC "Set! works on undefined identifiers"
 
-char *cmdline_exe_hack = (char *)
+char * volatile scheme_cmdline_exe_hack = (char *)
   ("[Replace me for EXE hack                                       "
    "                                                              ]");
 
@@ -15,7 +15,7 @@ char *cmdline_exe_hack = (char *)
 #else
 # define GC_PRECISION_TYPE "c"
 #endif
-char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRECISION_TYPE;
+char * volatile scheme_binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRECISION_TYPE;
 /* The format of bINARy tYPe is e?[zr]i[3c].
    e indicates a starter executable
    z/r indicates Racket or GRacket
@@ -30,7 +30,7 @@ char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRECISION_TYPE;
 # endif
 #endif
 
-static char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
+char * volatile scheme_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
                        INITIAL_COLLECTS_DIRECTORY 
                        "\0\0" /* <- 1st nul terminates path, 2nd terminates path list */
                        /* Pad with at least 1024 bytes: */
@@ -641,9 +641,9 @@ static int run_from_cmd_line(int argc, char *_argv[],
   }
 #endif
   
-  /* If cmdline_exe_hack is changed, then we extract built-in
+  /* If scheme_cmdline_exe_hack is changed, then we extract built-in
      arguments. */
-  if (cmdline_exe_hack[0] != '[') {
+  if (scheme_cmdline_exe_hack[0] != '[') {
     int n, i;
     long d;
     GC_CAN_IGNORE unsigned char *p;
@@ -651,12 +651,12 @@ static int run_from_cmd_line(int argc, char *_argv[],
     char **argv2;
 
 #ifdef DOS_FILE_SYSTEM
-    if ((cmdline_exe_hack[0] == '?')
-	|| (cmdline_exe_hack[0] == '*')) {
+    if ((scheme_cmdline_exe_hack[0] == '?')
+	|| (scheme_cmdline_exe_hack[0] == '*')) {
       /* This is how we make launchers in Windows.
 	 The cmdline is appended to the end of the binary.
-	 The long integer at cmdline_exe_hack[4] says
-	 where the old end was, and cmdline_exe_hack[8]
+	 The long integer at scheme_cmdline_exe_hack[4] says
+	 where the old end was, and scheme_cmdline_exe_hack[8]
 	 says how long the cmdline string is. It might
 	 be relative to the executable. */
       wchar_t *path;
@@ -675,15 +675,15 @@ static int run_from_cmd_line(int argc, char *_argv[],
       else {
 	long start, len;
 	DWORD got;
-	start = *(long *)&cmdline_exe_hack[4];
-	len = *(long *)&cmdline_exe_hack[8];
+	start = *(long *)&scheme_cmdline_exe_hack[4];
+	len = *(long *)&scheme_cmdline_exe_hack[8];
 	p = (unsigned char *)malloc(len);
 	SetFilePointer(fd, start, 0, FILE_BEGIN);
 	ReadFile(fd, p, len, &got, NULL);
 	CloseHandle(fd);
 	if (got != len)
 	  p = (unsigned char *)"\0\0\0";
-	else if (cmdline_exe_hack[0] == '*') {
+	else if (scheme_cmdline_exe_hack[0] == '*') {
 	  /* "*" means that the first item is argv[0] replacement: */
 	  sprog = prog;
 	  prog = (char *)p + 4;
@@ -727,7 +727,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
       }
     } else
 #endif
-      p = (unsigned char *)cmdline_exe_hack + 1;
+      p = (unsigned char *)scheme_cmdline_exe_hack + 1;
 
     /* Command line is encoded as a sequence of pascal-style strings;
        we use four whole bytes for the length, though, little-endian. */
@@ -1194,10 +1194,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
   if (!collects_path) {
-    if (!_coldir[_coldir_offset])
+    if (!scheme_coldir[_coldir_offset])
       collects_path = scheme_make_false();
     else
-      collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
+      collects_path = scheme_make_path(scheme_coldir XFORM_OK_PLUS _coldir_offset);
   } else if (!SAME_OBJ(collects_path, scheme_make_false()))
     collects_path = scheme_path_to_complete_path(collects_path, NULL);
   if (SAME_OBJ(collects_path, scheme_make_false())) {
@@ -1220,11 +1220,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
     collects_paths_l = scheme_make_null();
     offset = _coldir_offset;
     while (1) {
-      len = strlen(_coldir XFORM_OK_PLUS offset);
+      len = strlen(scheme_coldir XFORM_OK_PLUS offset);
       offset += len + 1;
-      if (!_coldir[offset])
+      if (!scheme_coldir[offset])
         break;
-      collects_paths_l = scheme_make_pair(scheme_make_path(_coldir XFORM_OK_PLUS offset), 
+      collects_paths_l = scheme_make_pair(scheme_make_path(scheme_coldir XFORM_OK_PLUS offset), 
                                           collects_paths_l);
     }
     collects_paths_l = reverse_path_list(collects_paths_l, 0);
