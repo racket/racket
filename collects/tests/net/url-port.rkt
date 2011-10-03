@@ -47,6 +47,11 @@
    =>
    "This is the data in the first chunk and this is the second one"
    
+   (get-pure
+    "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n")
+   =>
+   "This is the data in the first chand this is the second oneXXXXXXX"
+
    (get-impure
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n23\r\nThis is the data in the first chunk\r\n1A\r\nand this is the second one\r\n0\r\n")
    =>

@@ -66,6 +66,10 @@ backward compatibility.}
 
 @section{Quoted-Printable Unit}
 
+@margin-note{@racket[qp@] and @racket[qp^] are deprecated.
+They exist for backward-compatibility and will likely be removed in
+the future. New code should use the @racketmodname[net/qp] module.}
+
 @defmodule[net/qp-unit]
 
 @defthing[qp@ unit?]{
