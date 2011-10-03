@@ -2679,7 +2679,7 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
           ch->wakeup_signal = NULL;
           for (i = 0; i < size; i++) {
             Scheme_Place_Object *o2 = (Scheme_Place_Object *)SCHEME_VEC_ELS(v)[i];
-            if (o2 && o2->signal_handle != NULL) {
+            if (o2) {
               ch->wakeup_signal = (Scheme_Object *)o2;
               break;
             }
@@ -2691,7 +2691,7 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
           nv = GC_master_make_vector(size/2);
           for (i = 0; i < size; i++) {
             Scheme_Place_Object *o2 = (Scheme_Place_Object *)SCHEME_VEC_ELS(v)[i];
-            if (o2 && o2->signal_handle != NULL) {
+            if (o2) {
               SCHEME_VEC_ELS(nv)[ncnt] = (Scheme_Object *)o2;
               ncnt++;
             }
