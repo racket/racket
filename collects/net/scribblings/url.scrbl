@@ -188,7 +188,8 @@ Determines the default conversion to and from strings for
 
 @deftogether[(
 @defproc[(get-pure-port [URL url?]
-                        [header (listof string?) null])
+                        [header (listof string?) null]
+                        [#:redirections redirections exact-nonnegative-integer? 0])
          input-port?]
 @defproc[(head-pure-port [URL url?]
                          [header (listof string?) null])
@@ -204,7 +205,9 @@ optional list of strings can be used to send header lines to the
 server.
 
 The GET method is used to retrieve whatever information is identified
-by @racket[URL].
+by @racket[URL]. If @racket[redirections] is not @racket[0], then 
+@racket[get-pure-port] will follow redirections from the server, 
+up to the limit given by @racket[redirections].
 
 The HEAD method is identical to GET, except the server must not return
 a message body. The meta-information returned in a response to a HEAD
@@ -304,6 +307,18 @@ empty string, or it will be a string matching the following regexp:
 #rx"^HTTP/.*?(\r\n\r\n|\n\n|\r\r)"
 ]}
 
+@defproc[(get-pure-port/headers
+          [url url?]
+          [headers (listof string?) '()]
+          [#:redirections redirections exact-nonnegative-integer? 0])
+         (values input-port? string?)]{
+  This function is an alternative to calling @racket[get-impure-port] and
+  @racket[purify-port] when needing to follow redirections.
+  
+  That is, it does a GET request on @racket[url], follows up to
+  @racket[redirections] redirections and returns a port containing
+  the data as well as the headers for the final connection.
+}
 
 @defproc*[([(call/input-url [URL url?]
                             [connect (url? . -> . input-port?)]
