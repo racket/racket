@@ -3703,7 +3703,7 @@ typedef struct Scheme_Place_Object {
   char die;
   char pbreak;
   char pausing;
-  char refcount;
+  intptr_t refcount;
   void *signal_handle;
   void *parent_signal_handle; /* set to NULL when the place terminates */
   intptr_t result; /* initialized to 1, reset when parent_signal_handle becomes NULL */
