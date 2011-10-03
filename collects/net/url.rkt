@@ -185,26 +185,33 @@
   (getpost-impure-port #f url post-data strings))
 
 ;; getpost-pure-port : bool x url x list (str) -> in-port
-(define (getpost-pure-port get? url post-data strings)
+(define (getpost-pure-port get? url post-data strings redirections)
   (let ([scheme (url-scheme url)])
     (cond [(not scheme)
            (schemeless-url url)]
           [(or (string=? scheme "http")
                (string=? scheme "https"))
-           (let ([port (http://getpost-impure-port
-                        get? url post-data strings)])
-             (purify-http-port port))]
+           (let loop ([redirections redirections])
+             (cond
+               [(zero? redirections)
+                (let ([port (http://getpost-impure-port
+                             get? url post-data strings)])
+                  (purify-http-port port))]
+               [else
+                (let ([port (http://getpost-impure-port
+                             get? url post-data strings)])
+                  (purify-http-port port))]))]
           [(string=? scheme "file")
            (file://get-pure-port url)]
           [else (url-error "Scheme ~a unsupported" scheme)])))
 
 ;; get-pure-port : url [x list (str)] -> in-port
-(define (get-pure-port url [strings '()])
-  (getpost-pure-port #t url #f strings))
+(define (get-pure-port url [strings '()] #:redirections [redirections 0])
+  (getpost-pure-port #t url #f strings redirections))
 
 ;; post-pure-port : url bytes [x list (str)] -> in-port
 (define (post-pure-port url post-data [strings '()])
-  (getpost-pure-port #f url post-data strings))
+  (getpost-pure-port #f url post-data strings 0))
 
 ;; display-pure-port : in-port -> ()
 (define (display-pure-port server->client)
@@ -349,17 +356,25 @@
         (close-output-port op))))
 
 (define (http-pipe-chunk ip op)
-  (define size-str (read-line ip 'return-linefeed))
-  (define chunk-size (string->number size-str 16))
-  (unless chunk-size
-    (error 'http-pipe-chunk "Could not parse ~S as hexadecimal number" size-str))
-  (if (zero? chunk-size)
-      (begin (flush-output op)
-             (close-output-port op))
-      (let* ([bs (read-bytes chunk-size ip)]
-             [crlf (read-bytes 2 ip)])
-        (write-bytes bs op)
-        (http-pipe-chunk ip op))))
+  (define crlf-bytes (make-bytes 2))
+  (let loop ([last-bytes #f])
+    (define size-str (read-line ip 'return-linefeed))
+    (define chunk-size (string->number size-str 16))
+    (unless chunk-size
+      (error 'http-pipe-chunk "Could not parse ~S as hexadecimal number" size-str))
+    (define use-last-bytes?
+      (and last-bytes (<= chunk-size (bytes-length last-bytes))))
+    (if (zero? chunk-size)
+        (begin (flush-output op)
+               (close-output-port op))
+        (let* ([bs (if use-last-bytes?
+                       (begin
+                         (read-bytes! last-bytes ip 0 chunk-size)
+                         last-bytes)
+                       (read-bytes chunk-size ip))]
+               [crlf (read-bytes! crlf-bytes ip 0 2)])
+          (write-bytes bs op 0 chunk-size)
+          (loop bs)))))
 
 (define character-set-size 256)
 
