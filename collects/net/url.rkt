@@ -191,19 +191,57 @@
            (schemeless-url url)]
           [(or (string=? scheme "http")
                (string=? scheme "https"))
-           (let loop ([redirections redirections])
-             (cond
-               [(zero? redirections)
-                (let ([port (http://getpost-impure-port
-                             get? url post-data strings)])
-                  (purify-http-port port))]
-               [else
-                (let ([port (http://getpost-impure-port
-                             get? url post-data strings)])
-                  (purify-http-port port))]))]
+           (cond
+             [(or (not get?) 
+                  ;; do not follow redirections for POST
+                  (zero? redirections))
+              (let ([port (http://getpost-impure-port
+                           get? url post-data strings)])
+                (purify-http-port port))]
+             [else
+              (define-values (port header) 
+                (get-pure-port/headers url strings #:redirections redirections))
+              port])]
           [(string=? scheme "file")
            (file://get-pure-port url)]
           [else (url-error "Scheme ~a unsupported" scheme)])))
+
+(define (get-pure-port/headers url [strings '()] #:redirections [redirections 0])
+  (let redirection-loop ([redirections redirections] [url url])
+    (define ip
+      (http://getpost-impure-port #t url #f '()))
+    (define status (read-line ip 'return-linefeed))
+    (define-values (new-url chunked? headers)
+      (let loop ([new-url #f] [chunked? #f] [headers '()])
+        (define line (read-line ip 'return-linefeed))
+        (when (eof-object? line)
+          (error 'getpost-pure-port 
+                 "connection ended before headers ended (when trying to follow a redirection)"))
+        (cond
+          [(equal? line "") (values new-url chunked? headers)]
+          [(equal? chunked-header-line line) (loop new-url #t (cons line headers))]
+          [(regexp-match #rx"^Location: (.*)$" line)
+           =>
+           (λ (m) 
+             (define m1 (list-ref m 1))
+             (define url (with-handlers ((exn:fail? (λ (x) #f)))
+                           (string->url m1)))
+             (loop (or url new-url) chunked? (cons line headers)))]
+          [else (loop new-url chunked? (cons line headers))])))
+    (define redirection-status-line?
+      (regexp-match #rx"^HTTP/[0-9]+[.][0-9]+ 3[0-9][0-9]" status))
+    (cond
+      [(and redirection-status-line? new-url (not (zero? redirections))) 
+       (redirection-loop (- redirections 1) new-url)]
+      [else
+       (define-values (in-pipe out-pipe) (make-pipe))
+       (thread
+        (λ ()
+          (http-pipe-data chunked? ip out-pipe)
+          (close-input-port ip)))
+       (values in-pipe
+               (apply string-append (map (λ (x) (string-append x "\r\n"))
+                                         (reverse headers))))])))
 
 ;; get-pure-port : url [x list (str)] -> in-port
 (define (get-pure-port url [strings '()] #:redirections [redirections 0])
@@ -342,10 +380,12 @@
     (error 'purify-http-port "Connection ended before headers ended"))
   (if (string=? l "")
       #f
-      (if (string=? l "Transfer-Encoding: chunked")
+      (if (string=? l chunked-header-line)
           (begin (http-read-headers ip)
                  #t)
           (http-read-headers ip))))
+
+(define chunked-header-line "Transfer-Encoding: chunked")
 
 (define (http-pipe-data chunked? ip op)
   (if chunked?
@@ -626,7 +666,7 @@
  (url->string (url? . -> . string?))
  (url->path (->* (url?) ((one-of/c 'unix 'windows)) path-for-some-system?))
 
- (get-pure-port (->* (url?) ((listof string?)) input-port?))
+ (get-pure-port (->* (url?) ((listof string?) #:redirections exact-nonnegative-integer?) input-port?))
  (get-impure-port (->* (url?) ((listof string?)) input-port?))
  (post-pure-port (->* (url? (or/c false/c bytes?)) ((listof string?)) input-port?))
  (post-impure-port (->* (url? bytes?) ((listof string?)) input-port?))
@@ -638,6 +678,8 @@
  (put-impure-port (->* (url? bytes?) ((listof string?)) input-port?))
  (display-pure-port (input-port? . -> . void?))
  (purify-port (input-port? . -> . string?))
+ (get-pure-port/headers (->* (url?) ((listof string?) #:redirections exact-nonnegative-integer?) 
+                             (values input-port? string?)))
  (netscape/string->url (string? . -> . url?))
  (call/input-url (case-> (-> url?
                              (-> url? input-port?)

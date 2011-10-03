@@ -3,6 +3,7 @@ Added exn:fail:syntax:unbound
 Added date*, which extends date to include nanoseconds and a 
  time zone name
 Changed seconds->date to accept a real number return a date*
+Added support for redirections to get-pure-port
 
 Version 5.1.3.10
 Added variable-reference->module-declare-inspector, which allows
