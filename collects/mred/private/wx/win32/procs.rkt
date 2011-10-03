@@ -57,7 +57,8 @@
  special-control-key
  special-option-key
  get-color-from-user
- key-symbol-to-menu-key)
+ key-symbol-to-menu-key
+ needs-grow-box-spacer?)
 
 (define (find-graphical-system-path what)
   #f)
@@ -113,3 +114,5 @@
   (make-object win32-bitmap% w h #f c))
 
 (define (check-for-break) #f)
+
+(define (needs-grow-box-spacer?) #f)

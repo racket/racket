@@ -22,7 +22,8 @@
               ->wxb
               ->wx
               old-cocoa?
-              version-10.6-or-later?)
+              version-10.6-or-later?
+              version-10.7-or-later?)
  define-mz)
 
 (define cocoa-lib (ffi-lib (format "/System/Library/Frameworks/Cocoa.framework/Cocoa")))
@@ -87,3 +88,5 @@
   (NSAppKitVersionNumber . < . 949))
 (define (version-10.6-or-later?)
   (NSAppKitVersionNumber . >= . 1038))
+(define (version-10.7-or-later?)
+  (NSAppKitVersionNumber . >= . 1138))

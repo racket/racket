@@ -89,4 +89,5 @@
    make-screen-bitmap
    make-gl-bitmap
    check-for-break
-   key-symbol-to-menu-key))
+   key-symbol-to-menu-key
+   needs-grow-box-spacer?))

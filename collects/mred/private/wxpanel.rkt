@@ -841,8 +841,7 @@
   (define wx-grow-box-pane%
     (class100 (wx-make-pane% wx:windowless-panel% #f) (mred proxy parent style label)
       (override
-	[init-min (lambda (x) (if (or (eq? (system-type) 'macos)
-				      (eq? (system-type) 'macosx))
+	[init-min (lambda (x) (if (wx:needs-grow-box-spacer?)
 				  15
 				  0))])
       (sequence

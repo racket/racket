@@ -62,7 +62,8 @@
  play-sound
  file-creator-and-type
  file-selector
- key-symbol-to-menu-key)
+ key-symbol-to-menu-key
+ needs-grow-box-spacer?)
 
 (import-class NSScreen NSCursor NSMenu)
 
@@ -188,3 +189,6 @@
 
 (define (get-highlight-text-color)
   #f)
+
+(define (needs-grow-box-spacer?)
+  (not (version-10.7-or-later?)))

@@ -58,7 +58,8 @@
  get-panel-background
  fill-private-color
  get-color-from-user
- key-symbol-to-menu-key)
+ key-symbol-to-menu-key
+ needs-grow-box-spacer?)
 
 (define (find-graphical-system-path what)
   (case what
@@ -155,3 +156,5 @@
     bm))
 
 (define (check-for-break) #f)
+
+(define (needs-grow-box-spacer?) #f)
