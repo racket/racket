@@ -480,6 +480,77 @@ static uintptr_t adjust_stack_base(uintptr_t bnd) {
 }
 #endif
 
+#ifdef WINDOWS_FIND_STACK_BOUNDS
+intptr_t find_exe_stack_size()
+{
+  intptr_t sz = WINDOWS_DEFAULT_STACK_SIZE;
+  wchar_t *fn;
+  DWORD len = 1024;
+
+  /* Try to read the executable to find out the initial
+     stack size. */
+
+  fn = (wchar_t *)malloc(sizeof(wchar_t) * len);
+  if (GetModuleFileNameW(NULL, fn, len) < len) {
+    HANDLE fd;
+    fd = CreateFileW(fn,
+		     GENERIC_READ,
+		     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		     NULL,
+		     OPEN_EXISTING,
+		     0,
+		     NULL);
+    if (fd != INVALID_HANDLE_VALUE) {
+      int pos;
+      short kind;
+      DWORD got;
+      /* Skip DOS stub */
+      if (SetFilePointer(fd, 0x3C, NULL, FILE_BEGIN)
+	  != INVALID_SET_FILE_POINTER) {
+	if (ReadFile(fd, &pos, sizeof(int), &got, NULL)
+	    && (got == sizeof(int))) {
+	  /* Read offset to header */
+	  if (SetFilePointer(fd, pos + 20 + 4, NULL, FILE_BEGIN)
+	      != INVALID_SET_FILE_POINTER) {
+	    /* Check magic number */
+	    if (ReadFile(fd, &kind, sizeof(short), &got, NULL)
+		&& (got == sizeof(short))) {
+	      /* Two possible magic numbers: PE32 or PE32+: */
+	      if ((kind == 0x10b) || (kind == 0x20b)) {
+		/* Skip to PE32[+] header's stack reservation value: */
+		if (SetFilePointer(fd, pos + 20 + 4 + 72, NULL, FILE_BEGIN)
+		    != INVALID_SET_FILE_POINTER) {
+		  mzlonglong lsz;
+		  if (kind == 0x10b) {
+		    /* PE32: 32-bit stack size: */
+		    int ssz;
+		    if (ReadFile(fd, &ssz, sizeof(int), &got, NULL)
+			&& (got == sizeof(int))) {
+		      sz = ssz;
+		    }
+		  } else {
+		    /* PE32+: 64-bit stack size: */
+		    mzlonglong lsz;
+		    if (ReadFile(fd, &lsz, sizeof(mzlonglong), &got, NULL)
+			&& (got == sizeof(mzlonglong))) {
+		      sz = lsz;
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+      }
+      CloseHandle(fd);
+    }
+  }
+  free(fn);
+
+  return sz;
+}
+#endif
+
 void scheme_init_stack_check()
      /* Finds the C stack limit --- platform-specific. */
 {
@@ -523,7 +594,11 @@ void scheme_init_stack_check()
 
 # ifdef WINDOWS_FIND_STACK_BOUNDS
     scheme_stack_boundary = scheme_get_current_os_thread_stack_base();
-    scheme_stack_boundary += (STACK_SAFETY_MARGIN - WINDOWS_DEFAULT_STACK_SIZE);
+    {
+      intptr_t sz;
+      sz = find_exe_stack_size();
+      scheme_stack_boundary += (STACK_SAFETY_MARGIN - sz);
+    }
 # endif
 
 # ifdef MACOS_FIND_STACK_BOUNDS

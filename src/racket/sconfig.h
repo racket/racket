@@ -546,9 +546,9 @@
 
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
-/* This value needs to be consistent with the
-   stack size specified at link time: */
-# define WINDOWS_DEFAULT_STACK_SIZE 8388608
+/* Default stack size is 1MB, but we try to read
+   the actual size from the executable on startup: */
+# define WINDOWS_DEFAULT_STACK_SIZE 1048576
 # ifdef _WIN64
 #  define STACK_SAFETY_MARGIN 100000
 # endif
