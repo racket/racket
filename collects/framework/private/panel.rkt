@@ -171,7 +171,9 @@
       set-percentages
       get-percentages
       get-vertical?
-      get-default-percentages))
+      get-default-percentages
+      right-click-in-gap
+      set-orientation))
   
   (define vertical-dragable<%>
     (interface (dragable<%>)))
@@ -184,7 +186,6 @@
       (init parent)
 
       (init-field vertical?)
-
       (define/public-final (get-vertical?) vertical?)
       (define/public-final (set-orientation h?) 
         (define v? (not h?))
@@ -204,6 +205,8 @@
         (if (get-vertical?)
             (icon:get-up/down-cursor)
             (icon:get-left/right-cursor)))
+      
+      (define/public (right-click-in-gap evt before after) (void))
       
       (inherit get-client-size container-flow-modified)
       
@@ -285,6 +288,8 @@
                                  (and (send c ok?)
                                       c))))
               (cond
+                [(and gap (send evt button-down? 'right))
+                 (right-click-in-gap evt (gap-before gap) (gap-after gap))]
                 [(and gap (send evt button-down? 'left))
                  (set! resizing-dim (event-get-dim evt))
                  (set! resizing-gap gap)]

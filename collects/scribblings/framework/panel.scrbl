@@ -81,6 +81,16 @@
      The numbers in the result list must sum to @racket[1].
   }
 
+  @defmethod[(right-click-in-gap [evt (is-a?/c mouse-event%)]
+                                 [before (is-a?/c subarea<%>)]
+                                 [after (is-a?/c subarea<%>)])
+             void?]{
+    This method is called when the user right-clicks in the space
+    between two children. It receives the mouse event and the
+    child before and after the gap where the user clicked.
+  }
+
+                                                    
   @defmethod*[(((set-percentages (new-percentages (listof number?))) void?))]{
     Call this method to set the percentages that each window takes up of the
     panel.

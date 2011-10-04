@@ -1100,7 +1100,8 @@ module browser threading seems wrong.
   (define dragable/def-int-mixin
     (mixin (panel:dragable<%>) ()
       (init-field unit-frame)
-      (inherit get-percentages)
+      (inherit get-percentages popup-menu 
+               set-orientation get-vertical?)
       (define/augment (after-percentage-change)
         (let ([percentages (get-percentages)])
           (when (and (= 1
@@ -1109,6 +1110,21 @@ module browser threading seems wrong.
                      (= 2 (length percentages)))
             (preferences:set 'drracket:unit-window-size-percentage (car percentages))))
         (inner (void) after-percentage-change))
+      (define/override (right-click-in-gap evt before after)
+        (define menu (new popup-menu%))
+        (define vertical? (get-vertical?))
+        (new menu-item%
+             [parent menu]
+             [label 
+              ;; something seems to be wrong with the get-vertical? method...
+              (if vertical?
+                  (string-constant change-to-vertical-alignment)
+                  (string-constant change-to-horizontal-alignment))]
+             [callback
+              (λ (a b) 
+                (preferences:set 'drracket:defs/ints-horizontal vertical?)
+                (set-orientation vertical?))])
+        (popup-menu menu (send evt get-x) (send evt get-y)))
       (super-new)))
   
   (define vertical-dragable/def-int% (dragable/def-int-mixin panel:vertical-dragable%))
@@ -4112,8 +4128,6 @@ module browser threading seems wrong.
                                        vertical-dragable/def-int%)
                                    (unit-frame this)
                                    (parent panel-with-tabs))]
-      [define orientation-callback (λ (p v) (send resizable-panel set-orientation v))]
-      (preferences:add-callback 'drracket:defs/ints-horizontal orientation-callback #t)
       
       [define definitions-canvas #f]
       (initialize-definitions-canvas)

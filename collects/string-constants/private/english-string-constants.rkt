@@ -807,6 +807,11 @@ please adhere to these guidelines:
   "Would you like to create a new window, or clear out the current one?")
  (clear-current "Clear Current")
  (new-window "New Window")
+  
+  ;; popup menu when right-clicking in the gap between
+  ;; the definitions and interactions window
+  (change-to-vertical-alignment "Change to vertical")
+  (change-to-horizontal-alignment "Change to horizontal")
 
  ;;; exiting and quitting ``are you sure'' dialog
  ;;; exit is used on windows, quit on macos, in English. Other
