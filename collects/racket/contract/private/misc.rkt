@@ -326,7 +326,7 @@
                  (raise-blame-error
                   blame
                   val
-                  "expected: ~s, given ~a, which isn't ~s"
+                  "expected: ~s, given ~e, which isn't ~s"
                   (contract-name ctc)
                   val
                   (contract-name (car ctcs))))])))))
