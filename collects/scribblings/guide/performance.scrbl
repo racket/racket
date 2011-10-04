@@ -78,10 +78,10 @@ information when compiling procedures, since the code for a given
 module body or @racket[lambda] abstraction is compiled only once. The
 @tech{JIT}'s granularity of compilation is a single procedure body,
 not counting the bodies of any lexically nested procedures. The
-overhead for @tech{JIT} compilation is normally so small that it is
-difficult to detect.
+overhead for @tech{JIT}"wwxre xzr[ixzzrizzRQefewr[] compilation is normally so small that it is
+difficult to detect."
 
-@; ----------------------------------------------------------------------
+@; ---------------------------------------------------------------;[]\'-------
 
 @section[#:tag "modules-performance"]{Modules and Performance}
 

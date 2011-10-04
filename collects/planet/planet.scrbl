@@ -8,7 +8,8 @@
      planet/util
      planet/version
      planet/syntax
-     planet/scribble))
+     planet/scribble)
+   scribble/bnf)
 
 @(define-syntax-rule (eg (code resl) ...)
    (interaction
@@ -597,13 +598,23 @@ categorized as "Miscellaneous."}
 If present, the can-be-loaded-with field should be a quoted datum of
 one of the following forms:
 
-@racketgrammar[
-can-be-loaded-with 'all
-     	           'none
-		   (list 'all-except VER-SPEC ...)
-		   (list 'only VER-SPEC ...)]
+@BNF[(list @racket[can-be-loaded-with]
+           @racket['all]
+           @racket['none]
+           @racket[(list 'all-except 'VER-SPEC ...)]
+           @racket[(list 'only 'VER-SPEC ...)])
+     (list @racket[VER-SPEC]
+           @racket[Nat] 
+           @racket[(Nat MINOR)])
+     (list @racket[MINOR]
+           @racket[Nat]
+           @racket[(Nat Nat)]
+           @racket[(= Nat)]
+           @racket[(+ Nat)]
+           @racket[(- Nat)])] 
 
-where VER-SPEC is a PLaneT package version specification.
+where @racket[VER-SPEC] is a PLaneT package version specification
+in a manner like using @racket[planet] in @racket[require].
 
 Depending on your package's behavior, it may or may not be okay for
 multiple versions of the same package to be loaded at one time on the
@@ -616,9 +627,9 @@ of itself. If its value is @indexed-racket['all], then the package may be
 loaded with any older version. If it is @indexed-racket['none], then it
 may not be loaded with older versions at all. If it is @racket[(list
 'all-except VER-SPEC ...)] then any package except those that match
-one of the given VER-SPEC forms may be loaded with this package; if it
+one of the given @racket[VER-SPEC] forms may be loaded with this package; if it
 is @racket[(list 'only VER-SPEC ...)]  then only packages that match
-one of the given VER-SPEC forms may be loaded with this package.
+one of the given @racket[VER-SPEC] forms may be loaded with this package.
 
 When checking to see if a package may be loaded, PLaneT compares it to
 all other currently-loaded instances of the same package with any
@@ -629,7 +640,7 @@ PLaneT signals an error.
 
 The default for this field is @indexed-racket['none] as a conservative
 protection measure. For many packages it is safe to set this field to
-@indexed-racket['any].}
+@indexed-racket['all].}
 
 @item{The @indexed-racket['homepage] field:
 If present, the URL field should be a string corresponding to a URL
@@ -656,8 +667,8 @@ indicates that PLaneT should only allow users of a version of Racket
 equal to or more recent than the version specified by this field. This
 allows you finer-grained control of your package's core-language
 requirements than its inclusion in a particular repository; for
-instance, setting this field to @racket["300.2"] would cause the PLaneT server
-not to serve it to Racket v300.1 or older clients.}
+instance, setting this field to @racket["5.1.3"] would cause the PLaneT server
+not to serve it to Racket v5.1.2 or older clients.}
 
 @item{The @indexed-racket['version] field:
 If present, the version field should be a string that describes the 
@@ -671,7 +682,7 @@ field should be a list consisting of some subset of the strings
 @racket["4.x"] and @racket["3xx"]. The string @racket["4.x"] indicates
 that this package should be included in the v4.x repository (which
 contains packages that are intended to run in Racket and PLT Scheme versions at
-or above version 4.0), and the string @racket["3xx"] indicates that
+or above version 4.0, including the 5.0 series), and the string @racket["3xx"] indicates that
 the package should be included in the v3xx repository (containing
 packages intended to run in PLT Scheme versions in the 3xx series). A
 single package (and a single version of a package) may be included in
@@ -703,7 +714,7 @@ for more information on @filepath{info.rkt} files.
 Use the planet command-line tool in its archive-creation mode to
 create a planet archive:
 
-@commandline{raco planet create /home/jacob/my-app/}
+@commandline{raco planet create /home/jacobm/my-app/}
 
 This will create a planet archive named @filepath{my-app.plt} in the current
 directory whose contents are the contents of @filepath{/home/jacobm/my-app} and
@@ -712,7 +723,7 @@ all its subdirectories.
 Alternately, you can run @racket[make-planet-archive] with the name of the directory
 you've prepared as its argument:
 
-@racket[(make-planet-archive "/home/jacob/my-app/")]
+@racket[(make-planet-archive "/home/jacobm/my-app/")]
 
 This function will build a packaged version of your directory and
 return the path to that package. The path will always be a file named

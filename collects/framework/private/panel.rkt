@@ -347,7 +347,7 @@
         (update-percentages)
         (dragable-container-size children-info bar-thickness (get-vertical?)))
       
-      (super-instantiate (parent))))
+      (super-new [parent parent])))
 
   ;; this function repeatedly checks to see if the current set of percentages and children
   ;; would violate any minimum size constraints. If not, the percentages are used and the
