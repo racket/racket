@@ -189,7 +189,7 @@
       (lambda (elf sections programs str-section strs)
         (let ([new-sec-pos (+ (elf-sh-offset elf)
                               (* (elf-sh-esize elf) (elf-sh-ecount elf)))]
-              [new-sec-delta (round-up (elf-sh-ecount elf) SECTION-ALIGN)]
+              [new-sec-delta (round-up (elf-sh-esize elf) SECTION-ALIGN)]
               [new-str-pos (+ (section-offset str-section)
                               (section-size str-section))]
               [new-str-delta (round-up (add1 (bytes-length section-name))
