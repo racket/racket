@@ -6,7 +6,7 @@
 ;; without using bytecode.
 
 (define url-host "download.racket-lang.org")
-(define url-path "/libs/3/")
+(define url-path "/libs/4/")
 (define url-base (string-append "http://" url-host url-path))
 
 (provide all-files+sizes)
@@ -22,9 +22,9 @@
       ["libeay32.dll" 1089536]
       ["ssleay32.dll" 237568]]
      [win32/x86_64
-     ["libiconv-2.dll" 1378028]
-     ["libeay32.dll" 1293824]
-     ["ssleay32.dll" 260608]]]
+      ["libiconv-2.dll" 1378028]
+      ["libeay32.dll" 1410560]
+      ["ssleay32.dll" 247808]]]
     ;; GUI Libraries
     [gui
      [i386-macosx
@@ -94,7 +94,7 @@
             ["gtkrc" 1181])
           '())]
      [win32/x86_64
-      ["libjpeg-7.dll" 224768]
+      ["libjpeg-8.dll" 214016]
       ["libcairo-2.dll" 1266147]
       ["libpango-1.0-0.dll" 423199]
       ["libexpat-1.dll" 263006]
