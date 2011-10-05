@@ -1,2 +1,0 @@
-#define PLD_null
-

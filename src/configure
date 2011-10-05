@@ -721,7 +721,6 @@ ICP
 MRLIBINSTALL
 LIBFINISH
 MAKE_GRACKET
-MAKE_PLOT
 MAKE_COPYTREE
 MAKE_FINISH
 WXPRECOMP
@@ -1333,7 +1332,6 @@ Optional Features:
   --enable-foreign        support foreign calls (enabled by default)
   --enable-places         support places (3m only; usually enabled by default)
   --enable-futures        support futures (usually enabled by default)
-  --enable-plot           support plot libraries (enabled by default)
   --enable-float          support single-precision floats (enabled by default)
   --enable-floatinstead   use single-precision by default
   --enable-racket=<path>  use <path> as Racket executable to build Racket
@@ -1986,13 +1984,6 @@ if test "${enable_futures+set}" = set; then
   enableval=$enable_futures;
 fi
 
-# Check whether --enable-plot was given.
-if test "${enable_plot+set}" = set; then
-  enableval=$enable_plot;
-else
-  enable_plot=yes
-fi
-
 # Check whether --enable-float was given.
 if test "${enable_float+set}" = set; then
   enableval=$enable_float;
@@ -2312,7 +2303,6 @@ show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
-show_explicitly_disabled "${enable_plot}" Plot
 
 if test "$LIBTOOLPROG" != "" ; then
   echo "=== Libtool program: $LIBTOOLPROG"
@@ -8802,14 +8792,6 @@ fi
 makefiles="$makefiles foreign/Makefile"
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
 
-if test -d "${srcdir}/plot" && test "${enable_plot}" = "yes" ; then
-  makefiles="$makefiles
-             plot/Makefile"
-  MAKE_PLOT=plot
-else
-  MAKE_PLOT=no
-fi
-
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles
              gracket/Makefile
@@ -9581,7 +9563,6 @@ ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
 LIBFINISH!$LIBFINISH$ac_delim
 MAKE_GRACKET!$MAKE_GRACKET$ac_delim
-MAKE_PLOT!$MAKE_PLOT$ac_delim
 MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 MAKE_FINISH!$MAKE_FINISH$ac_delim
 WXPRECOMP!$WXPRECOMP$ac_delim

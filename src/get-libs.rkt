@@ -84,8 +84,6 @@
       ["libpangocairo-1.0-0.dll" 94625]
       ["libpangowin32-1.0-0.dll" 102210]
       ["libpangoft2-1.0-0.dll" 679322]
-      ["libplplot.dll" 245760]
-      ["libfit.dll" 73728]
       ,@(if (getenv "PLT_WIN_GTK")
           '(["libatk-1.0-0.dll" 153763]
             ["libgtk-win32-2.0-0.dll" 4740156]
@@ -111,9 +109,7 @@
       ["libgthread-2.0-0.dll" 126615]
       ["libpangocairo-1.0-0.dll" 185168]
       ["libpangowin32-1.0-0.dll" 192656]
-      ["libpangoft2-1.0-0.dll" 1188615]
-      ["libplplot.dll" 248832]
-      ["libfit.dll" 69120]]]))
+      ["libpangoft2-1.0-0.dll" 1188615]]]))
 
 (define-values [package dest-dir]
   (command-line #:args [package [dest-dir (current-directory)]]

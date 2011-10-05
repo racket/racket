@@ -150,7 +150,7 @@
 	  "expected a parenthesized sequence of property--value pairings after fields"
 	  stx)]))
 
-    ;; Finally, parse optional inspector expr, again exploting
+    ;; Finally, parse optional inspector expr, again exploiting
     ;;  `parse-define-struct'.
     (define (parse-at-inspector id sup-id fields props rest)
       (let-values ([(_ __ ___ inspector-stx)
