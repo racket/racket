@@ -91,61 +91,62 @@
 
 (provide (protect-out (rename-out [get-ffi-lib ffi-lib]))
          ffi-lib? ffi-lib-name)
-(define get-ffi-lib
-  (case-lambda
-   [(name) (get-ffi-lib name "")]
-   [(name version/s)
-    (cond
-      [(not name) (ffi-lib name)] ; #f => NULL => open this executable
-      [(not (or (string? name) (path? name)))
-       (raise-type-error 'ffi-lib "library-name" name)]
-      [else
-       ;; A possible way that this might be misleading: say that there is a
-       ;; "foo.so" file in the current directory, which refers to some
-       ;; undefined symbol, trying to use this function with "foo.so" will try
-       ;; a dlopen with "foo.so" which isn't found, then it tries a dlopen with
-       ;; "/<curpath>/foo.so" which fails because of the undefined symbol, and
-       ;; since all fails, it will use (ffi-lib "foo.so") to raise the original
-       ;; file-not-found error.  This is because the dlopen doesn't provide a
-       ;; way to distinguish different errors (only dlerror, but that's
-       ;; unreliable).
-       (let* ([versions (if (list? version/s) version/s (list version/s))]
-              [versions (map (lambda (v)
-                               (if (or (not v) (zero? (string-length v)))
-                                 "" (string-append "." v)))
-                             versions)]
-              [fullpath (lambda (p) (path->complete-path (cleanse-path p)))]
-              [absolute? (absolute-path? name)]
-              [name0 (path->string (cleanse-path name))]     ; orig name
-              [names (map (if (regexp-match lib-suffix-re name0) ; name+suffix
-                            (lambda (v) (string-append name0 v))
-                            (lambda (v) 
-                              (if suffix-before-version?
-                                  (string-append name0 "." lib-suffix v)
-                                  (string-append name0 v "." lib-suffix))))
-                          versions)]
-              [ffi-lib*  (lambda (name) (ffi-lib name #t))])
-         (or ;; try to look in our library paths first
-             (and (not absolute?)
-                  (ormap (lambda (dir)
-                           ;; try good names first, then original
-                           (or (ormap (lambda (name)
-                                        (ffi-lib* (build-path dir name)))
-                                      names)
-                               (ffi-lib* (build-path dir name0))))
-                         (get-lib-search-dirs)))
-             ;; try a system search
-             (ormap ffi-lib* names)    ; try good names first
-             (ffi-lib* name0)          ; try original
-             (ormap (lambda (name)     ; try relative paths
-                      (and (file-exists? name) (ffi-lib* (fullpath name))))
-                    names)
-             (and (file-exists? name0) ; relative with original
-                  (ffi-lib* (fullpath name0)))
-             ;; give up: call ffi-lib so it will raise an error
-             (if (pair? names)
-                 (ffi-lib (car names))
-                 (ffi-lib name0))))])]))
+(define (get-ffi-lib name [version/s ""]
+		     #:fail [fail #f]
+		     #:get-lib-dirs [get-lib-dirs get-lib-search-dirs])
+  (cond
+   [(not name) (ffi-lib name)] ; #f => NULL => open this executable
+   [(not (or (string? name) (path? name)))
+    (raise-type-error 'ffi-lib "library-name" name)]
+   [else
+    ;; A possible way that this might be misleading: say that there is a
+    ;; "foo.so" file in the current directory, which refers to some
+    ;; undefined symbol, trying to use this function with "foo.so" will try
+    ;; a dlopen with "foo.so" which isn't found, then it tries a dlopen with
+    ;; "/<curpath>/foo.so" which fails because of the undefined symbol, and
+    ;; since all fails, it will use (ffi-lib "foo.so") to raise the original
+    ;; file-not-found error.  This is because the dlopen doesn't provide a
+    ;; way to distinguish different errors (only dlerror, but that's
+    ;; unreliable).
+    (let* ([versions (if (list? version/s) version/s (list version/s))]
+	   [versions (map (lambda (v)
+			    (if (or (not v) (zero? (string-length v)))
+				"" (string-append "." v)))
+			  versions)]
+	   [fullpath (lambda (p) (path->complete-path (cleanse-path p)))]
+	   [absolute? (absolute-path? name)]
+	   [name0 (path->string (cleanse-path name))]     ; orig name
+	   [names (map (if (regexp-match lib-suffix-re name0) ; name+suffix
+			   (lambda (v) (string-append name0 v))
+			   (lambda (v) 
+			     (if suffix-before-version?
+				 (string-append name0 "." lib-suffix v)
+				 (string-append name0 v "." lib-suffix))))
+		       versions)]
+	   [ffi-lib*  (lambda (name) (ffi-lib name #t))])
+      (or ;; try to look in our library paths first
+       (and (not absolute?)
+	    (ormap (lambda (dir)
+		     ;; try good names first, then original
+		     (or (ormap (lambda (name)
+				  (ffi-lib* (build-path dir name)))
+				names)
+			 (ffi-lib* (build-path dir name0))))
+		   (get-lib-dirs)))
+       ;; try a system search
+       (ormap ffi-lib* names)    ; try good names first
+       (ffi-lib* name0)          ; try original
+       (ormap (lambda (name)     ; try relative paths
+		(and (file-exists? name) (ffi-lib* (fullpath name))))
+	      names)
+       (and (file-exists? name0) ; relative with original
+	    (ffi-lib* (fullpath name0)))
+       ;; give up: by default, call ffi-lib so it will raise an error
+       (if fail
+	   (fail)
+	   (if (pair? names)
+	       (ffi-lib (car names))
+	       (ffi-lib name0)))))]))
 
 (define (get-ffi-lib-internal x)
   (if (ffi-lib? x) x (get-ffi-lib x)))

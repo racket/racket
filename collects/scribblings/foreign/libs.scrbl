@@ -10,14 +10,18 @@ libraries}} or @defterm{@as-index{dynamically loaded libraries}}). The
 
 @defproc[(ffi-lib? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is the result of @racket[ffi-lib],
+Returns @racket[#t] if @racket[v] is a @deftech{foreign-library value},
 @racket[#f] otherwise.}
 
 
 @defproc[(ffi-lib [path (or/c path-string? #f)]
-                  [version (or/c string? (listof (or/c string? #f)) #f) #f]) any]{
+                  [version (or/c string? (listof (or/c string? #f)) #f) #f]
+		  [#:get-lib-dirs get-lib-dirs (-> (listof path?)) get-lib-search-dirs]
+		  [#:fail fail (or/c #f (-> any)) #f])
+         any]{
 
-Returns a foreign-library value. Normally, 
+Returns a @tech{foreign-library value} or the result of @racket[fail]. 
+Normally,
 
 @itemlist[
 
@@ -49,7 +53,7 @@ process:
 @itemlist[
 
  @item{If @racket[path] is not an absolute path, look in each
-       directory reported by @racket[get-lib-search-dirs]. In each
+       directory reported by @racket[get-lib-dirs]. In each
        directory, try @racket[path] with the first version in
        @racket[version], adding a suitable suffix if @racket[path]
        does not already end in the suffix, then try the second version
@@ -74,7 +78,9 @@ process:
 
 ]
 
-If none of the paths succeed, the error is reported from trying the
+If none of the paths succeed and @racket[fail] is a function, then
+@racket[fail] is called in tail position. If @racket[fail] is
+@racket[#f], an error is reported from trying the
 first path from the second bullet above or (if @racket[version] is an
 empty list) from the third bullet above. A library file may exist but
 fail to load for some reason; the eventual error message will
@@ -103,9 +109,9 @@ corresponding library.}
          any]{
 
 Looks for the given object name @racket[objname] in the given
-@racket[lib] library.  If @racket[lib] is not a foreign-library value
-produced by @racket[ffi-lib], it is converted to one by calling
-@racket[ffi-lib]. If @racket[objname] is found in @racket[lib], it is
+@racket[lib] library.  If @racket[lib] is not a @tech{foreign-library value}
+it is converted to one by calling @racket[ffi-lib]. If @racket[objname] 
+is found in @racket[lib], it is
 converted to Racket using the given @racket[type]. Types are described
 in @secref["types"]; in particular the @racket[get-ffi-obj] procedure
 is most often used with function types created with @racket[_fun].
