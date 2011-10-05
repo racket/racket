@@ -1152,6 +1152,7 @@ path/s is either such a string or a list of them.
 "collects/plai/private/gc-gui.rkt" drdr:command-line (gracket "-t" *)
 "collects/planet" responsible (robby)
 "collects/plot" responsible (ntoronto)
+"collects/plot/tests/slideshow-test.rkt" drdr:command-line #f
 "collects/preprocessor" responsible (eli)
 "collects/profile" responsible (eli)
 "collects/r5rs" responsible (mflatt)
@@ -1599,8 +1600,8 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line (racket "-t" * "--" "racket" "simple") drdr:timeout 600
 "collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/auto.rkt" drdr:command-line (racket "-qt" * "--" "hello")
-"collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/binarytrees-places.rkt" drdr:command-line (racket "-tm" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/chameneos.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/cheapconcurrency.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/fannkuch-redux.rkt" drdr:command-line (racket "-t" * "--" "4")
@@ -1608,9 +1609,9 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/fasta.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/hash.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/hash2.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/mandelbrot-futures.rkt" drdr:command-line (racket "-t" * "--" "15")
 "collects/tests/racket/benchmarks/shootout/mandelbrot-generic.rkt" drdr:command-line (racket "-t" * "--" "15")
 "collects/tests/racket/benchmarks/shootout/mandelbrot.rkt" drdr:command-line (racket "-t" * "--" "15")
-"collects/tests/racket/benchmarks/shootout/mandelbrot-futures.rkt" drdr:command-line (racket "-t" * "--" "15")
 "collects/tests/racket/benchmarks/shootout/meteor.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/nbody-generic.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/nbody-vec-generic.rkt" drdr:command-line (racket "-t" * "--" "10")
