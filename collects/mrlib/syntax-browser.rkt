@@ -1,3 +1,4 @@
+#lang racket/base
 #|
 
 needed to really make this work:
@@ -6,13 +7,10 @@ needed to really make this work:
 
 |#
 
-(module syntax-browser scheme/base
-  (require mzlib/pretty
-           mzlib/list
-           mzlib/class
-           mred
-           mzlib/match
-           mzlib/string
+  (require racket/pretty
+           racket/class
+           racket/gui/base
+           racket/match
            "include-bitmap.rkt")
 
   (define orig-output-port (current-output-port))
@@ -20,16 +18,27 @@ needed to really make this work:
   
   (provide render-syntax/snip render-syntax/window snip-class)
   
+  ;; this is doing the same thing as the class in
+  ;; the framework by the same name, but we don't
+  ;; use the framework here because it would 
+  ;; introduce a cyclic dependency
+  (define text:hide-caret/selection% 
+    (class text%
+      (inherit get-start-position get-end-position hide-caret)
+      (define/augment (after-set-position)
+        (hide-caret (= (get-start-position) (get-end-position))))
+      (super-new)))
+  
   (define (render-syntax/window syntax)
-    (let ([es (render-syntax/snip syntax)])
-      (define f (make-object frame% "frame" #f 850 500))
-      (define mb (make-object menu-bar% f))
-      (define edit-menu (make-object menu% "Edit" mb))
-      (define t (make-object text%))
-      (define ec (make-object editor-canvas% f t))
-      (append-editor-operation-menu-items edit-menu)
-      (send t insert es)
-      (send f show #t)))
+    (define es (render-syntax/snip syntax))
+    (define f (new frame% [label "frame"] [width 850] [height 500]))
+    (define mb (new menu-bar% [parent f]))
+    (define edit-menu (new menu% [label "Edit"] [parent mb]))
+    (define t (new text%))
+    (define ec (new editor-canvas% [parent f] [editor t]))
+    (append-editor-operation-menu-items edit-menu)
+    (send t insert es)
+    (send f show #t))
 
   (define (render-syntax/snip stx) (make-object syntax-snip% stx))
   
@@ -37,10 +46,10 @@ needed to really make this work:
     (class snip-class%
       (define/override (read stream)
         (make-object syntax-snip%
-          (unmarshall-syntax (read-from-string (send stream get-bytes)))))
-      (super-instantiate ())))
+          (unmarshall-syntax (read (open-input-string (send stream get-bytes))))))
+      (super-new)))
   
-  (define snip-class (make-object syntax-snipclass%))
+  (define snip-class (new syntax-snipclass%))
   (send snip-class set-version 1)
   (send snip-class set-classname (format "~s" '(lib "syntax-browser.ss" "mrlib")))
   (send (get-the-snip-class-list) add snip-class)
@@ -62,9 +71,9 @@ needed to really make this work:
       
       (define-values (datum paths-ht) (syntax-object->datum/record-paths main-stx))
       
-      (define output-text (make-object text%))
+      (define output-text (new text:hide-caret/selection%))
       (define output-port (make-text-port output-text))
-      (define info-text (make-object text%))
+      (define info-text (new text:hide-caret/selection%))
       (define info-port (make-text-port info-text))
       
       ;; range-start-ht : hash-table[obj -o> number]
@@ -233,7 +242,7 @@ needed to really make this work:
       
       (define/private (replace-syntaxes obj)
         (cond
-          [(cons? obj) (cons (replace-syntaxes (car obj))
+          [(pair? obj) (cons (replace-syntaxes (car obj))
                              (replace-syntaxes (cdr obj)))]
           [(syntax? obj) (make-object syntax-snip% obj)]
           [else obj]))
@@ -282,7 +291,7 @@ needed to really make this work:
         (send info-text lock #t)
         (send info-text end-edit-sequence))
       
-      (define outer-t (make-object text%))
+      (define outer-t (new text:hide-caret/selection%))
       
       (super-instantiate ()
         (editor outer-t)
@@ -296,7 +305,7 @@ needed to really make this work:
         (right-inset 0)
         (bottom-inset 0))
       
-      (define inner-t (make-object text%))
+      (define inner-t (new text:hide-caret/selection%))
       (define inner-es (instantiate editor-snip% ()
                          (editor inner-t)
                          (with-border? #f)
@@ -385,10 +394,6 @@ needed to really make this work:
           (let ([rng (car ranges)])
             (show-range (range-stx rng) (range-start rng) (range-end rng)))))
       
-      (send output-text hide-caret #t)
-      (send info-text hide-caret #t)
-      (send inner-t hide-caret #t)
-      (send outer-t hide-caret #t)
       (send output-text lock #t)
       (send info-text lock #t)
       (send inner-t lock #t)
@@ -588,7 +593,7 @@ needed to really make this work:
          (column ,col)
          (span ,span)
          (original? ,original?)
-         (properties ,@(properties ...))
+         (properties ,properties ...)
          (contents ,contents))
        (foldl
         add-properties
@@ -630,4 +635,4 @@ needed to really make this work:
                  (unknown))]
             [(syntax) (unmarshall-syntax obj)]
             [else (unknown)])
-          (unknown)))))
+          (unknown))))
