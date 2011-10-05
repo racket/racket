@@ -14,7 +14,7 @@ exit 0
 |#
 
 ;; When autoconf produces `configure', it includes many
-;;  options that do not apply to PLT software. We want to
+;;  options that do not apply to Racket.  We want to
 ;;  get rid of them, so that `configure --help' produces
 ;;  valid information.
 ;; In addition, we want none of the feature-selection flags
