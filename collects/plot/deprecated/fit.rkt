@@ -1,6 +1,5 @@
 (module fit mzscheme
   (require "math.rkt")
-  (require "fit-low-level.rkt")
 
   ; a structure contain a the results of a curve-fit
   (define-struct fit-result (
@@ -15,6 +14,8 @@
 
   ; fit-int : (number* -> number) (list-of (symbol number)) (list-of (vector number [number] number number)) -> fit-result
   (define (fit-int function guesses data)
+    ;; Require dynamically so the rest of 'plot' still works without libfit:
+    (define fit-internal (dynamic-require 'plot/deprecated/fit-low-level 'fit-internal))
     (let* ((independent-vars (- (procedure-arity function) (length guesses)))
            (f-of-x-y (cond
                        [(= 1 independent-vars)
