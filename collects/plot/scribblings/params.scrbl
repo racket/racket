@@ -16,7 +16,7 @@ When @(racket #t), prints a deprecation warning to @(racket current-error-port) 
 
 @subsection{Output}
 
-@doc-apply[plot-new-window?]{When @(racket #t), @(racket plot) and @(racket plot3d) open a new window for each plot instead of returning a snip.
+@doc-apply[plot-new-window?]{When @(racket #t), @(racket plot) and @(racket plot3d) open a new window for each plot instead of returning an @(racket image-snip%).
 
 Users of command-line Racket, which cannot display image snips, should enter
 

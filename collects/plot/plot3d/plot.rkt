@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/draw racket/snip racket/match racket/list racket/class racket/contract
+         unstable/lazy-require
          (for-syntax racket/base)
          "../common/math.rkt"
          "../common/file-type.rkt"
@@ -11,6 +12,11 @@
          "area.rkt"
          "renderer.rkt"
          "bounds.rkt")
+
+;; Require lazily: without this, Racket complains while generating documentation:
+;;   cannot instantiate `racket/gui/base' a second time in the same process
+(lazy-require ["snip.rkt" (make-3d-plot-snip)]
+              ["../common/gui.rkt" (make-snip-frame)])
 
 (provide plot3d/dc plot3d plot3d-bitmap plot3d-snip plot3d-frame plot3d-file)
 
@@ -131,17 +137,16 @@
                       [#:y-label y-label (or/c string? #f) (plot-y-label)]
                       [#:z-label z-label (or/c string? #f) (plot-z-label)]
                       [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
-                      ) (is-a?/c snip%)
-  (define 3d-plot-snip% (dynamic-require 'plot/plot3d/snip '3d-plot-snip%))
-  (make-object 3d-plot-snip%
-    (λ (angle altitude anim?)
-      (parameterize ([plot3d-animating?  (if anim? #t (plot3d-animating?))])
-        (plot3d-bitmap
-         renderer-tree
-         #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
-         #:width width #:height height #:angle angle #:altitude altitude #:title title
-         #:x-label x-label #:y-label y-label #:z-label z-label #:legend-anchor legend-anchor)))
-    angle altitude))
+                      ) (is-a?/c image-snip%)
+  (make-3d-plot-snip
+   (λ (angle altitude anim?)
+     (parameterize ([plot3d-animating?  (if anim? #t (plot3d-animating?))])
+       (plot3d-bitmap
+        renderer-tree
+        #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
+        #:width width #:height height #:angle angle #:altitude altitude #:title title
+        #:x-label x-label #:y-label y-label #:z-label z-label #:legend-anchor legend-anchor)))
+   angle altitude))
 
 ;; Plot to a frame
 (defproc (plot3d-frame [renderer-tree (treeof renderer3d?)]
@@ -158,7 +163,6 @@
                        [#:z-label z-label (or/c string? #f) (plot-z-label)]
                        [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                        ) (is-a?/c object%)
-  (define make-snip-frame (dynamic-require 'plot/common/gui 'make-snip-frame))
   (define snip
     (plot3d-snip
      renderer-tree

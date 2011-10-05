@@ -23,12 +23,12 @@ Each 3D plot procedure corresponds with a @(secref "plot2d") procedure. Each beh
                  [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                  [#:out-file out-file (or/c path-string? output-port? #f) #f]
                  [#:out-kind out-kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
-                 ) (or/c (is-a?/c snip%) void?)]{
+                 ) (or/c (is-a?/c image-snip%) void?)]{
 This procedure corresponds with @(racket plot). It plots a 3D renderer or list of renderers (or more generally, a tree of renderers), as returned by @(racket points3d), @(racket parametric3d), @(racket surface3d), @(racket isosurface3d), and others.
 
 When the parameter @(racket plot-new-window?) is @(racket #t), @(racket plot3d) opens a new window to display the plot and returns @(racket (void)).
 
-When @(racket #:out-file) is given, @(racket plot3d) writes the plot to a file using @(racket plot3d-file) as well as returning a @(racket snip%) or opening a new window.
+When @(racket #:out-file) is given, @(racket plot3d) writes the plot to a file using @(racket plot3d-file) as well as returning a @(racket image-snip%) or opening a new window.
 
 When given, the @(racket x-min), @(racket x-max), @(racket y-min), @(racket y-max), @(racket z-min) and @(racket z-max) arguments determine the bounds of the plot, but not the bounds of the renderers.
 
@@ -45,7 +45,7 @@ The @(racket #:az) and @(racket #:alt) keyword arguments are backward-compatible
                        [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
                        [#:<plot-keyword> <plot-keyword> <plot-keyword-contract>] ...) void?]
  @defproc[(plot3d-bitmap [renderer-tree (treeof renderer3d?)] ...) (is-a?/c bitmap%)]
- @defproc[(plot3d-snip [renderer-tree (treeof renderer3d?)] ...) (is-a?/c snip%)]
+ @defproc[(plot3d-snip [renderer-tree (treeof renderer3d?)] ...) (is-a?/c image-snip%)]
  @defproc[(plot3d-frame [renderer-tree (treeof renderer3d?)] ...) (is-a?/c frame%)])]{
 Plot to different backends. Each of these procedures has the same keyword arguments as @(racket plot3d).
 

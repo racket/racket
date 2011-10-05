@@ -3,7 +3,10 @@
 ;; Procedures that plot 2D renderers.
 
 (require racket/draw racket/snip racket/contract racket/list racket/class racket/match
-         (for-syntax racket/base syntax/strip-context racket/syntax)
+         unstable/lazy-require
+         (for-syntax racket/base
+                     syntax/strip-context
+                     racket/syntax)
          "../common/math.rkt"
          "../common/contract.rkt" "../common/contract-doc.rkt"
          "../common/legend.rkt"
@@ -14,6 +17,10 @@
          "area.rkt"
          "renderer.rkt"
          "bounds.rkt")
+
+;; Require lazily: without this, Racket complains while generating documentation:
+;;   cannot instantiate `racket/gui/base' a second time in the same process
+(lazy-require ["../common/gui.rkt" (make-snip-frame)])
 
 (provide plot/dc plot plot-bitmap plot-snip plot-frame plot-file)
 
@@ -109,7 +116,7 @@
                     [#:x-label x-label (or/c string? #f) (plot-x-label)]
                     [#:y-label y-label (or/c string? #f) (plot-y-label)]
                     [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
-                    ) (is-a?/c snip%)
+                    ) (is-a?/c image-snip%)
   (define bm
     (plot-bitmap
      renderer-tree
@@ -128,7 +135,6 @@
                      [#:y-label y-label (or/c string? #f) (plot-y-label)]
                      [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                      ) (is-a?/c object%)
-  (define make-snip-frame (dynamic-require 'plot/common/gui 'make-snip-frame))
   (define snip
     (plot-snip
      renderer-tree

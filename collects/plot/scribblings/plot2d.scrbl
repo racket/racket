@@ -18,7 +18,7 @@
                [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                [#:out-file out-file (or/c path-string? output-port? #f) #f]
                [#:out-kind out-kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
-               ) (or/c (is-a?/c snip%) void?)]{
+               ) (or/c (is-a?/c image-snip%) void?)]{
 Plots a 2D renderer or list of renderers (or more generally, a tree of renderers), as returned by @(racket points), @(racket function), @(racket contours), @(racket discrete-histogram), and others.
 
 By default, @(racket plot) produces a Racket value that is displayed as an image and can be manipulated like any other value.
@@ -34,7 +34,7 @@ For example, they may be put in lists:
 
 When the parameter @(racket plot-new-window?) is @(racket #t), @(racket plot) opens a new window to display the plot and returns @(racket (void)).
 
-When @(racket #:out-file) is given, @(racket plot) writes the plot to a file using @(racket plot-file) as well as returning a @(racket snip%) or opening a new window.
+When @(racket #:out-file) is given, @(racket plot) writes the plot to a file using @(racket plot-file) as well as returning an @(racket image-snip%) or opening a new window.
 
 When given, the @(racket x-min), @(racket x-max), @(racket y-min) and @(racket y-max) arguments determine the bounds of the plot, but not the bounds of the renderers. For example,
 
@@ -70,7 +70,7 @@ The @(racket #:lncolor) keyword argument is also accepted for backward compatibi
                      [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
                      [#:<plot-keyword> <plot-keyword> <plot-keyword-contract>] ...) void?]
  @defproc[(plot-bitmap [renderer-tree (treeof renderer2d?)] ...) (is-a?/c bitmap%)]
- @defproc[(plot-snip [renderer-tree (treeof renderer2d?)] ...) (is-a?/c snip%)]
+ @defproc[(plot-snip [renderer-tree (treeof renderer2d?)] ...) (is-a?/c image-snip%)]
  @defproc[(plot-frame [renderer-tree (treeof renderer2d?)] ...) (is-a?/c frame%)])]{
 Plot to different backends. Each of these procedures has the same keyword arguments as @(racket plot).
 
@@ -84,7 +84,7 @@ Use @(racket plot-bitmap) to create a bitmap.
 
 Use @(racket plot-frame) to create a frame regardless of the value of @(racket plot-new-window?). The frame is initially hidden.
 
-Use @(racket plot-snip) to create a snip regardless of the value of @(racket plot-new-window?).
+Use @(racket plot-snip) to create an image snip regardless of the value of @(racket plot-new-window?).
 }
 
 @doc-apply[plot/dc]{

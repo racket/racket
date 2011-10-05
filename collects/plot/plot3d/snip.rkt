@@ -5,7 +5,7 @@
          "../common/math.rkt"
          "area.rkt")
 
-(provide 3d-plot-snip%)
+(provide 3d-plot-snip% make-3d-plot-snip)
 
 (struct render-thread (state command-channel response-channel thread) #:mutable #:transparent)
 
@@ -140,3 +140,7 @@
     (define/override (adjust-cursor dc x y editorx editory evt) cross-cursor)
     
     (send this set-flags (list* 'handles-events (send this get-flags)))))
+
+;; make-3d-plot-snip : (real real real -> bitmap) real real -> 3d-plot-snip%
+(define (make-3d-plot-snip make-bm angle altitude)
+  (make-object 3d-plot-snip% make-bm angle altitude))
