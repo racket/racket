@@ -377,23 +377,7 @@
              "--gui-exe"
              (path->string (mk-dest #t))
              (path->string (build-path (collection-path "tests" "racket") "embed-me5.rkt")))
-    (try-exe (mk-dest #t) "This is 5: #<class:button%>\n" #t))
-
-  ;; Another GRacket-specific: try embedding plot, which has extra DLLs and font files:
-  (parameterize ([current-directory (find-system-path 'temp-dir)])
-    (define direct (build-path (find-system-path 'temp-dir) "direct.ps"))
-
-    (test #t
-          system* (build-path (find-console-bin-dir) "mred")
-          "-qu"
-          (path->string (build-path (collection-path "tests" "racket") "embed-me7.rkt"))
-          (path->string direct))
-
-    (system* mzc 
-             "--gui-exe"
-             (path->string (mk-dest #t))
-             (path->string (build-path (collection-path "tests" "racket") "embed-me7.rkt")))
-    (try-exe (mk-dest #t) "plotted\n" #t)))
+    (try-exe (mk-dest #t) "This is 5: #<class:button%>\n" #t)))
 
 ;; Try including source that needs a reader extension
 

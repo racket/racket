@@ -1766,7 +1766,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/embed-in-c.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/embed-me4.rktl" drdr:command-line #f
 "collects/tests/racket/embed-me5.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/tests/racket/embed-me7.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/racket/embed-me9.rkt" drdr:command-line #f
 "collects/tests/racket/embed-planet-1/alt.rkt" drdr:command-line #f
 "collects/tests/racket/embed-planet-1/main.rkt" drdr:command-line #f
