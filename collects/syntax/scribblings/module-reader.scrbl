@@ -93,17 +93,6 @@ identifiers used by the @racket[reader-option]s.
        repeatedly to the module source until @racket[eof] is produced,
        but see also @racket[#:whole-body-readers?].
 
-       For example, a language built on the @secref[#:doc '(lib
-       "scribblings/honu/honu.scrbl")]{Honu} reader could be
-       implemented with:
-
-        @racketblock[
-          (module reader syntax/module-reader
-            module-path
-            #:read read-honu
-            #:read-syntax read-honu-syntax)
-        ]
-
         See also @racket[#:wrapper1] and @racket[#:wrapper2], which
         support simple parameterization of readers rather than
         wholesale replacement.}

@@ -83,7 +83,6 @@ typedef struct Scheme_Print_Params {
   char print_long_bools;
   char can_read_pipe_quote;
   char case_sens;
-  char honu_mode;
   Scheme_Object *inspector;
 
   char printing_quoted;
@@ -106,13 +105,13 @@ static void register_traversers(void);
 #endif
 
 static void print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, 
-			  int notdisplay, intptr_t maxl, int check_honu, Scheme_Object *qq_depth);
+			  int notdisplay, intptr_t maxl, Scheme_Object *qq_depth);
 static int print(Scheme_Object *obj, int notdisplay, int compact, 
 		 Scheme_Hash_Table *ht,
                  Scheme_Marshal_Tables *mt,
 		 PrintParams *p);
 static void print_char_string(const char *s, int l, const mzchar *us, int delta, int ul, 
-			      int notdisplay, int honu_char, PrintParams *pp);
+			      int notdisplay, PrintParams *pp);
 static void print_byte_string(const char *s, int delta, int l, int notdisplay, PrintParams *pp);
 static void print_pair(Scheme_Object *pair, int notdisplay, int compact, 
 		       Scheme_Hash_Table *ht, 
@@ -126,7 +125,7 @@ static void print_vector(Scheme_Object *vec, int notdisplay, int compact,
                          int as_prefab);
 static void print_char(Scheme_Object *chobj, int notdisplay, PrintParams *pp);
 static char *print_to_string(Scheme_Object *obj, intptr_t * volatile len, int write,
-			     Scheme_Object *port, intptr_t maxl, int check_honu,
+			     Scheme_Object *port, intptr_t maxl, 
                              Scheme_Object *qq_depth);
 
 static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht, 
@@ -262,7 +261,7 @@ static void *print_to_port_k(void)
                     : "write")
                  : "display"), 
 		obj, port,
-		p->ku.k.i2, p->ku.k.i1, p->ku.k.i3,
+		p->ku.k.i2, p->ku.k.i1,
                 depth);
 
   return NULL;
@@ -305,7 +304,6 @@ void scheme_write_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
     p->ku.k.p2 = obj;
     p->ku.k.i1 = maxl;
     p->ku.k.i2 = 1;
-    p->ku.k.i3 = 0;
     p->ku.k.p3 = NULL;
     
     (void)scheme_top_level_do(print_to_port_k, 0);
@@ -328,7 +326,6 @@ void scheme_display_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl
     p->ku.k.p2 = obj;
     p->ku.k.i1 = maxl;
     p->ku.k.i2 = 0;
-    p->ku.k.i3 = 0;
     p->ku.k.p3 = NULL;
     
     (void)scheme_top_level_do(print_to_port_k, 0);
@@ -351,7 +348,6 @@ void scheme_print_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
     p->ku.k.p2 = obj;
     p->ku.k.i1 = maxl;
     p->ku.k.i2 = 2;
-    p->ku.k.i3 = 1;
     p->ku.k.p3 = NULL;
     
     (void)scheme_top_level_do(print_to_port_k, 0);
@@ -368,20 +364,19 @@ static void *print_to_string_k(void)
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *obj, *qq_depth;
   intptr_t *len, maxl;
-  int iswrite, check_honu;
+  int iswrite;
 
   obj = (Scheme_Object *)p->ku.k.p1;
   len = (intptr_t *) mzALIAS p->ku.k.p2;
   maxl = p->ku.k.i1;
   iswrite = p->ku.k.i2;
-  check_honu = p->ku.k.i3;
   qq_depth = (Scheme_Object *)p->ku.k.p3;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  return (void *)print_to_string(obj, len, iswrite, NULL, maxl, check_honu, qq_depth);
+  return (void *)print_to_string(obj, len, iswrite, NULL, maxl, qq_depth);
 }
 
 char *scheme_write_to_string_w_max(Scheme_Object *obj, intptr_t *len, intptr_t maxl)
@@ -444,19 +439,19 @@ char *scheme_print_to_string(Scheme_Object *obj, intptr_t *len)
 void
 scheme_internal_write(Scheme_Object *obj, Scheme_Object *port)
 {
-  print_to_port("write", obj, port, 1, -1, 0, NULL);
+  print_to_port("write", obj, port, 1, -1, NULL);
 }
 
 void
 scheme_internal_display(Scheme_Object *obj, Scheme_Object *port)
 {
-  print_to_port("display", obj, port, 0, -1, 0, NULL);
+  print_to_port("display", obj, port, 0, -1, NULL);
 }
 
 void
 scheme_internal_print(Scheme_Object *obj, Scheme_Object *port, Scheme_Object *depth)
 {
-  print_to_port("print", obj, port, 2, -1, 1, depth);
+  print_to_port("print", obj, port, 2, -1, depth);
 }
 
 #ifdef DO_STACK_CHECK
@@ -953,7 +948,6 @@ static char *
 print_to_string(Scheme_Object *obj, 
 		intptr_t * volatile len, int write,
 		Scheme_Object *port, intptr_t maxl,
-		int check_honu,
                 Scheme_Object *qq_depth)
 {
   Scheme_Hash_Table * volatile ht;
@@ -995,7 +989,6 @@ print_to_string(Scheme_Object *obj,
     params.print_mpair_curly = 1;
     params.can_read_pipe_quote = 1;
     params.case_sens = 1;
-    params.honu_mode = 0;
     params.inspector = scheme_false;
     params.print_syntax = -1;
   } else {
@@ -1057,11 +1050,6 @@ print_to_string(Scheme_Object *obj,
     params.case_sens = SCHEME_TRUEP(v);
     v = scheme_get_param(config, MZCONFIG_PRINT_LONG_BOOLEAN);
     params.print_long_bools = SCHEME_TRUEP(v);
-    if (check_honu) {
-      v = scheme_get_param(config, MZCONFIG_HONU_MODE);
-      params.honu_mode = SCHEME_TRUEP(v);
-    } else
-      params.honu_mode = 0;
     v = scheme_get_param(config, MZCONFIG_INSPECTOR);
     params.inspector = v;
   }
@@ -1112,7 +1100,7 @@ print_to_string(Scheme_Object *obj,
 
 static void 
 print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdisplay, 
-              intptr_t maxl, int check_honu, Scheme_Object *qq_depth)
+              intptr_t maxl, Scheme_Object *qq_depth)
 {
   Scheme_Output_Port *op;
   char *str;
@@ -1122,7 +1110,7 @@ print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdispla
   if (op->closed)
     scheme_raise_exn(MZEXN_FAIL, "%s: output port is closed", name);
 
-  str = print_to_string(obj, &len, notdisplay, port, maxl, check_honu, qq_depth);
+  str = print_to_string(obj, &len, notdisplay, port, maxl, qq_depth);
 
   scheme_write_byte_string(str, len, port);
 }
@@ -1301,7 +1289,7 @@ static void do_print_string(int compact, int notdisplay,
     print_compact_number(pp, l);
     print_this_string(pp, buf, 0, el);
   } else {
-    print_char_string(buf, el, s, offset, l, notdisplay, 0, pp);
+    print_char_string(buf, el, s, offset, l, notdisplay, pp);
   }
 
   if (reset)
@@ -1722,15 +1710,6 @@ static void print_named(Scheme_Object *obj, const char *kind,
   print_utf8_string(pp, ">", 0, 1);
 }
 
-static void always_scheme(PrintParams *pp, int reset)
-{
-  if (pp->honu_mode) {
-    print_utf8_string(pp, "#sx", 0, 3);
-    if (reset)
-      pp->honu_mode = 0;
-  }
-}
-
 static int to_quoted(Scheme_Object *obj, PrintParams *pp, int notdisplay)
 {
   if (notdisplay == 3) {
@@ -1768,7 +1747,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   /* notdisplay >= 3 => print at qq depth notdisplay - 3 */
 {
   int closed = 0;
-  int save_honu_mode;
 
 #if NO_COMPACT
   compact = 0;
@@ -1823,8 +1801,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   }
 
-  save_honu_mode = pp->honu_mode;
-
   if (ht && HAS_SUBSTRUCT(obj, ssQUICK)) {
     intptr_t val;
     
@@ -1837,12 +1813,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  return 1;
 	} else {
 	  if (val > 0) {
-	    always_scheme(pp, 1);
 	    sprintf(quick_buffer, "#%" PRIdPTR "=", (val - 3) >> 1);
 	    print_utf8_string(pp, quick_buffer, 0, -1);
 	    scheme_hash_set(ht, obj, (Scheme_Object *)(-val));
 	  } else {
-	    always_scheme(pp, 0);
 	    sprintf(quick_buffer, "#%" PRIdPTR "#", ((-val) - 3) >> 1);
 	    print_utf8_string(pp, quick_buffer, 0, -1);
 	    return 0;
@@ -1899,57 +1873,28 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
         symtab_set(pp, mt, obj);
       } else if (notdisplay) {
-	if (pp->honu_mode) {
-	  /* Honu symbol... */
-	  if (is_kw)
-	    print_utf8_string(pp, "key(", 0, 4);
-	  else
-	    print_utf8_string(pp, "sym(", 0, 4);
-	  {
-	    int i;
-	    /* Check for fast case: */
-	    for (i = SCHEME_SYM_LEN(obj); i--; ) {
-	      if (((unsigned char *)SCHEME_SYM_VAL(obj))[i] > 127)
-		break;
-	    }
-	    if (i < 0) {
-	      /* Fits as byte string (fast case) */
-	      print_byte_string((char *)obj, SCHEME_SYMSTR_OFFSET(obj), SCHEME_SYM_LEN(obj),
-				notdisplay, pp);
-	    } else {
-	      /* Coerce to string (slower) */
-	      Scheme_Object *s;
-	      s = scheme_make_sized_offset_utf8_string((char *)obj,
-						       SCHEME_SYMSTR_OFFSET(obj),
-						       SCHEME_SYM_LEN(obj));
-	      do_print_string(0, notdisplay, pp, SCHEME_CHAR_STR_VAL(s), 0, SCHEME_CHAR_STRLEN_VAL(s));
-	    }
-	  }
-	  print_utf8_string(pp, ")", 0, 1);
-	} else {
-	  const char *s;
+        const char *s;
 
-          if (notdisplay >= 3) {
-            if (SAME_OBJ(qq_ellipses, obj)) {
-              /* no quoting */
-            } else
-              notdisplay = to_quoted(NULL, pp, notdisplay);
-          }
+        if (notdisplay >= 3) {
+          if (SAME_OBJ(qq_ellipses, obj)) {
+            /* no quoting */
+          } else
+            notdisplay = to_quoted(NULL, pp, notdisplay);
+        }
 	  
-	  if (is_kw)
-	    print_utf8_string(pp, "#:", 0, 2);
-	  s = scheme_symbol_name_and_size(obj, (uintptr_t *)&l, 
-					  ((pp->can_read_pipe_quote 
-					    ? SCHEME_SNF_PIPE_QUOTE
-					    : SCHEME_SNF_NO_PIPE_QUOTE)
-					   | (pp->case_sens
-					      ? 0
-					      : SCHEME_SNF_NEED_CASE)
-					   | (is_kw
-					      ? SCHEME_SNF_KEYWORD
-					      : 0)));
-	  print_utf8_string(pp, s, 0, l);
-	}
+        if (is_kw)
+          print_utf8_string(pp, "#:", 0, 2);
+        s = scheme_symbol_name_and_size(obj, (uintptr_t *)&l, 
+                                        ((pp->can_read_pipe_quote 
+                                          ? SCHEME_SNF_PIPE_QUOTE
+                                          : SCHEME_SNF_NO_PIPE_QUOTE)
+                                         | (pp->case_sens
+                                            ? 0
+                                            : SCHEME_SNF_NEED_CASE)
+                                         | (is_kw
+                                            ? SCHEME_SNF_KEYWORD
+                                            : 0)));
+        print_utf8_string(pp, s, 0, l);
       } else {
 	if (is_kw)
 	  print_utf8_string(pp, "#:", 0, 2);
@@ -1976,7 +1921,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         }
       } else {
 	if (notdisplay) {
-	  always_scheme(pp, 0);
 	  print_utf8_string(pp, "#", 0, 1);
 	}
 	print_byte_string(SCHEME_BYTE_STR_VAL(obj), 
@@ -2012,14 +1956,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact(pp, CPT_CHAR);
 	cv = SCHEME_CHAR_VAL(obj);
 	print_compact_number(pp, cv);
-      } else if (notdisplay && pp->honu_mode) {
-	/* Honu char */
-	char s[MAX_UTF8_CHAR_BYTES];
-	mzchar us[1];
-	int l;
-	us[0] = SCHEME_CHAR_VAL(obj);
-	l = scheme_utf8_encode(us, 0, 1, (unsigned char *)s, 0, 0);
-	print_char_string(s, l, us, 0, 1, notdisplay, 1, pp);
       } else
 	print_char(obj, notdisplay, pp);
     }
@@ -2051,8 +1987,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_escaped(pp, notdisplay, obj, ht, mt, 1);
 	closed = 1;
       } else {
-	if (SCHEME_COMPLEXP(obj))
-	  always_scheme(pp, 0);
 	print_utf8_string(pp, scheme_number_to_string(10, obj), 0, -1);
       }
     }
@@ -2062,10 +1996,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact(pp, CPT_NULL);
       } else {
         notdisplay = to_quoted(NULL, pp, notdisplay);
-	if (pp->honu_mode)
-	  print_utf8_string(pp, "null", 0, 4);
-	else
-	  print_utf8_string(pp, "()", 0, 2);
+	print_utf8_string(pp, "()", 0, 2);
 	closed = 1;
       }
     }
@@ -2097,7 +2028,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	if (compact)
 	  print_compact(pp, CPT_BOX);
 	else {
-	  always_scheme(pp, 1);
           notdisplay = to_quoted(obj, pp, notdisplay);
           if (notdisplay == 3)
             print_utf8_string(pp, "(box ", 0, 5);
@@ -2136,7 +2066,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	else
 	  print_compact_number(pp, 0);
       } else {
-	always_scheme(pp, 1);
         notdisplay = to_quoted(obj, pp, notdisplay);
         if (notdisplay == 3)
           print_utf8_string(pp, "(hash ", 0, 6);
@@ -2236,8 +2165,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       if (compact)
 	print_compact(pp, CPT_TRUE);
-      else if (pp->honu_mode)
-	print_utf8_string(pp, "true", 0, 4);
       else if (pp->print_long_bools)
 	print_utf8_string(pp, "#true", 0, 5);
       else
@@ -2247,8 +2174,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       if (compact)
 	print_compact(pp, CPT_FALSE);
-      else if (pp->honu_mode)
-	print_utf8_string(pp, "false", 0, 5);
       else if (pp->print_long_bools)
 	print_utf8_string(pp, "#false", 0, 6);
       else
@@ -2716,7 +2641,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           char *str;
           print_utf8_string(pp, " ", 0, 1);
           str = print_to_string(scheme_syntax_to_datum((Scheme_Object *)stx, 0, NULL),
-                                &slen, 1, NULL, pp->print_syntax, 0, NULL);
+                                &slen, 1, NULL, pp->print_syntax, NULL);
           print_utf8_string(pp, str, 0, slen);
         }
         print_utf8_string(pp, ">", 0, 1);
@@ -3189,22 +3114,19 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       closed = 1;
     }
 
-  if (save_honu_mode != pp->honu_mode)
-    pp->honu_mode = save_honu_mode;
-
   return (closed || compact);
 }
 
 static void
 print_char_string(const char *str, int len, 
 		  const mzchar *ustr, int delta, int ulen,
-		  int notdisplay, int honu_char, PrintParams *pp)
+		  int notdisplay, PrintParams *pp)
 {
   char minibuf[12], *esc;
   int a, i, v, ui, cont_utf8 = 0, isize;
 
   if (notdisplay) {
-    print_utf8_string(pp, honu_char ? "'" : "\"", 0, 1);
+    print_utf8_string(pp, "\"", 0, 1);
 
     for (a = i = ui = 0; i < len; i += isize, ui++) {
       v = ((unsigned char *)str)[i];
@@ -3212,16 +3134,7 @@ print_char_string(const char *str, int len,
 
       switch (v) {
       case '\"': 
-	if (honu_char)
-	  esc = NULL;
-	else
-	  esc = "\\\""; 
-	break;
-      case '\'': 
-	if (honu_char)
-	  esc = "\\'"; 
-	else
-	  esc = NULL;
+	esc = "\\\""; 
 	break;
       case '\\': esc = "\\\\"; break;
       case '\a': esc = "\\a";  break;
@@ -3276,7 +3189,7 @@ print_char_string(const char *str, int len,
     if (a < i)
       print_utf8_string(pp, str, a, i-a);
 
-    print_utf8_string(pp, honu_char ? "'" : "\"", 0, 1);
+    print_utf8_string(pp, "\"", 0, 1);
   } else if (len) {
     print_utf8_string(pp, str, 0, len);
   }
@@ -3440,57 +3353,6 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 	super_compact = -1;
       }
     }
-  } else if (pp->honu_mode) {
-    /* Honu list printing */
-    cdr = SCHEME_CDR(pair);
-    while (SAME_TYPE(SCHEME_TYPE(cdr), pair_type)) {
-      if (ht) {
-	if (is_graph_point(ht, cdr)) {
-	  /* This needs a tag */
-	  break;
-	}
-      }
-      cdr = SCHEME_CDR(cdr);
-    }
-    if (SCHEME_NULLP(cdr)) {
-      /* Proper list without sharing. */
-      print_utf8_string(pp, "list(", 0, 5);
-      (void)print(SCHEME_CAR(pair), notdisplay, compact, ht, mt, pp);
-      cdr = SCHEME_CDR(pair);
-      while (SAME_TYPE(SCHEME_TYPE(cdr), pair_type)) {
-	print_utf8_string(pp, ", ", 0, 2);
-	(void)print(SCHEME_CAR(cdr), notdisplay, compact, ht, mt, pp);
-	cdr = SCHEME_CDR(cdr);
-      }
-      print_utf8_string(pp, ")", 0, 1);
-    } else {
-      /* Use cons cells. */
-      int cnt = 1;
-      print_utf8_string(pp, "cons(", 0, 5);
-      (void)print(SCHEME_CAR(pair), notdisplay, compact, ht, mt, pp);
-      cdr = SCHEME_CDR(pair);
-      while (SAME_TYPE(SCHEME_TYPE(cdr), pair_type)) {
-	print_utf8_string(pp, ", ", 0, 2);
-	if (ht) {
-	  if (is_graph_point(ht, cdr)) {
-	    /* This needs a tag */
-	    (void)print(cdr, notdisplay, compact, ht, mt, pp);
-	    break;
-	  }
-	}
-	 
-	print_utf8_string(pp, "cons(", 0, 5);
-	(void)print(SCHEME_CAR(cdr), notdisplay, compact, ht, mt, pp);
-	cnt++;
-	cdr = SCHEME_CDR(cdr);
-      }
-      print_utf8_string(pp, ", ", 0, 2);
-      (void)print(cdr, notdisplay, compact, ht, mt, pp);
-      while (cnt--) {
-	print_utf8_string(pp, ")", 0, 1);
-      }
-    }
-    return;
   }
 
   if (compact) {
@@ -3607,19 +3469,14 @@ print_vector(Scheme_Object *vec, int notdisplay, int compact,
       print_utf8_string(pp, "#s(", 0, 3);
     } else if (notdisplay && pp->print_vec_shorthand && (notdisplay != 3)) {
       if (size == 0) {
-	if (pp->honu_mode)
-	  print_utf8_string(pp, "vectorN(0", 0, 7);
-	else
-	  print_utf8_string(pp, "#0(", 0, 3);
+	print_utf8_string(pp, "#0(", 0, 3);
       } else {
 	char buffer[100];
-	sprintf(buffer, pp->honu_mode ? "vectorN(%d, " : "#%d(", size);
+	sprintf(buffer, "#%d(", size);
 	print_utf8_string(pp, buffer, 0, -1);
 	size -= common;
       }
-    } else if (pp->honu_mode)
-      print_utf8_string(pp, "vector(", 0, 7);
-    else if (notdisplay == 3)
+    } else if (notdisplay == 3)
       print_utf8_string(pp, "(vector ", 0, 8);
     else
       print_utf8_string(pp, "#(", 0, 2);
@@ -3632,12 +3489,8 @@ print_vector(Scheme_Object *vec, int notdisplay, int compact,
       elem = scheme_chaperone_vector_ref(vec, i);
     print(elem, notdisplay, compact, ht, mt, pp);
     if (i < (size - 1)) {
-      if (!compact) {
-	if (pp->honu_mode)
-	  print_utf8_string(pp, ", ", 0, 2);
-	else
-	  print_utf8_string(pp, " ", 0, 1);
-      }
+      if (!compact)
+	print_utf8_string(pp, " ", 0, 1);
     }
   }
 

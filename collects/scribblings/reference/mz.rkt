@@ -91,7 +91,6 @@
   
   (provide margin-note/ref
            refalso moreref Guide guideintro guidealso guidesecref
-           HonuManual
            raco-doc)
   
   (define (margin-note/ref . s)
@@ -125,9 +124,6 @@
   
   (define Guide
     (other-manual '(lib "scribblings/guide/guide.scrbl")))
-  
-  (define HonuManual
-    (other-manual '(lib "scribblings/honu/honu.scrbl")))
 
   (define raco-doc
     '(lib "scribblings/raco/raco.scrbl"))

@@ -70,7 +70,7 @@ marshaling compiled @tech{syntax object}s.}
 @defproc[(syntax-original? [stx syntax?]) boolean?]{
 
 Returns @racket[#t] if @racket[stx] has the property that
-@racket[read-syntax] and @racket[read-honu-syntax] attach to the
+@racket[read-syntax] attaches to the
 @tech{syntax object}s that they generate (see @secref["stxprops"]), and if
 @racket[stx]'s @tech{lexical information} does not indicate that the
 object was introduced by a syntax transformer (see

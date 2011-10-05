@@ -324,34 +324,3 @@ except that special-comment values (see
 
 The default port read handler itself can be customized through a
 readtable; see @secref["readtables"] for more information.}
-
-
-@defproc[(read-honu [in input-port? (current-input-port)]) any]{
-
-Like @racket[read], but for Honu mode (see @secref["parse-honu"]).}
-
-@defproc[(read-honu-syntax [source-name any/c (object-name in)]
-                           [in input-port? (current-input-port)])
-         (or/c syntax? eof-object?)]{
-
-Like @racket[read-syntax], but for Honu mode (see
-@secref["parse-honu"]).}
-
-@defproc[(read-honu/recursive [in input-port? (current-input-port)]
-                              [start (or/c char? #f) #f]
-                              [readtable (or/c readtable? #f) (current-readtable)]
-                              [graph? any/c #t])
-          any]{
-
-Like @racket[read/recursive], but for Honu mode (see
-@secref["parse-honu"]).}
-
-@defproc[(read-honu-syntax/recursive [source-name any/c (object-name in)]
-                                     [in input-port? (current-input-port)]
-                                     [start (or/c char? #f) #f]
-                                     [readtable (or/c readtable? #f) (current-readtable)]
-                                     [graph? any/c #f])
-          any]{
-
-Like @racket[read-syntax/recursive], but for Honu mode (see
-@secref["parse-honu"]).}

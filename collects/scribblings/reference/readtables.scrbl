@@ -326,11 +326,9 @@ character and the @racket[#f] readtable.}
 @section[#:tag "reader-procs"]{Reader-Extension Procedures}
 
 Calls to @techlink{reader extension procedures} can be triggered
-through @racket[read], @racket[read/recursive], @racket[read-syntax],
-or @racket[read-honu-syntax]. In addition, a special-read procedure
-can be triggered by calls to @racket[read-honu],
-@racket[read-honu/recursive], @racket[read-honu-syntax],
-@racket[read-honu-syntax/recursive], @racket[read-char-or-special], or
+through @racket[read], @racket[read/recursive], or @racket[read-syntax].
+In addition, a special-read procedure
+can be triggered by calls to @racket[read-char-or-special], or
 by the context of @racket[read-bytes-avail!],
 @racket[peek-bytes-avail!*], @racket[read-bytes-avail!], and
 @racket[peek-bytes-avail!*].

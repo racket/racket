@@ -137,10 +137,6 @@ on the next character or characters in the input stream as follows:
   @dispatch[@cilitchar{#ci}]{switches case sensitivity; see @secref["parse-symbol"]}
   @dispatch[@cilitchar{#cs}]{switches case sensitivity; see @secref["parse-symbol"]}
 
-  @dispatch[@cilitchar["#sx"]]{starts a Racket expression; see @secref["parse-honu"]}
-
-  @dispatch[@litchar{#hx}]{starts a Honu expression; see @secref["parse-honu"]}
-
   @dispatch[@litchar{#hash}]{starts a @tech{hash table}; see @secref["parse-hashtable"]}
 
   @dispatch[@litchar{#reader}]{starts a reader extension use; see @secref["parse-reader"]}
@@ -879,9 +875,3 @@ effectively takes the place of @racketmodname[reader]. In other words,
 the @racketmodname[reader] meta-language generalizes the syntax of the
 module specified after @hash-lang[] to be a module path, and without
 the implicit addition of @litchar{/lang/reader} to the path.
-
-
-@section[#:tag "parse-honu"]{Honu Parsing}
-
-See @|HonuManual| for information on @litchar{#hx} and
-@litchar{#sx}.

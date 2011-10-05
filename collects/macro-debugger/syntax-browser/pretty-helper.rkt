@@ -28,8 +28,7 @@
      [print-struct #t]
      [print-box #t]
      [print-vector-length #f]
-     [print-hash-table #t]
-     [print-honu #f])
+     [print-hash-table #t])
     (pretty-write datum port)))
 
 (define-struct syntax-dummy (val))

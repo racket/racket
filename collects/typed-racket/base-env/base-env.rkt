@@ -2385,11 +2385,6 @@
  (cl->* (-> -Input-Port (->opt -Input-Port [Univ] Univ))
         (-> -Input-Port (->opt -Input-Port [Univ] Univ) -Void))]
 
-[read-honu (->opt [-Input-Port] Univ)]
-[read-honu-syntax (->opt [Univ -Input-Port] (Un (-Syntax Univ) (-val eof)))]
-[read-honu/recursive (->opt [-Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
-[read-honu-syntax/recursive (->opt [Univ -Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
-
 ; Section 12.5
 ; Writing
 [write   (Univ [-Output-Port] . ->opt . -Void)]
@@ -2412,7 +2407,6 @@
 [print-boolean-long-form (-Param Univ B)]
 [print-reader-abbreviations (-Param Univ B)]
 [print-as-expression (-Param Univ B)]
-[print-honu (-Param Univ B)]
 [print-syntax-width (-Param (Un (-val +inf.0) -Nat) (Un (-val +inf.0) -Nat))]
 
 [current-write-relative-directory (-Param (-opt -Path) (-opt -Path))]

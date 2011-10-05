@@ -16,8 +16,8 @@ bytes, and it can track @deftech{line locations} and @deftech{column
 locations}; this optional tracking must be specifically enabled for a
 port via @racket[port-count-lines!] or the
 @racket[port-count-lines-enabled] parameter. Position, line, and
-column locations for a port are used by @racket[read-syntax] and
-@racket[read-honu-syntax]. Position and line locations are numbered
+column locations for a port are used by @racket[read-syntax]. 
+Position and line locations are numbered
 from @math{1}; column locations are numbered from @math{0}.
 
 When counting lines, Racket treats linefeed, return, and

@@ -80,7 +80,7 @@ Racket adds properties to expanded syntax (often using
  a module is discovered, the @indexed-racket['protected] property is
  added to the identifier with a @racket[#t] value.}
 
- @item{When @racket[read-syntax] or @racket[read-honu-syntax]
+ @item{When @racket[read-syntax]
  generates a syntax object, it attaches a property to the object
  (using a private key) to mark the object as originating from a
  read. The @racket[syntax-original?]  predicate looks for the property

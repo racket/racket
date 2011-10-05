@@ -316,8 +316,7 @@ The arguments implement the port as follows:
     This procedure is called to implement @racket[port-next-location],
     but only if line counting is enabled for the port via
     @racket[port-count-lines!] (in which case @racket[count-lines!] is
-    called). The @racket[read], @racket[read-syntax],
-    @racket[read-honu], and @racket[read-honu-syntax] procedures
+    called). The @racket[read] and @racket[read-syntax] procedures
     assume that reading a non-whitespace character increments the
     column and position by one.}
 
@@ -354,13 +353,13 @@ The arguments implement the port as follows:
 
  @itemize[
 
-  @item{When the special read is triggered by @racket[read-syntax],
-  @racket[read-honu-syntax], or @racket[read-syntax/recursive], the
+  @item{When the special read is triggered by @racket[read-syntax]
+  or @racket[read-syntax/recursive], the
   procedure is passed four arguments that represent a source
   location.}
 
   @item{When the special read is triggered by @racket[read],
-  @racket[read-honu], @racket[read-byte-or-special],
+  @racket[read-byte-or-special],
   @racket[read-char-or-special], @racket[peek-byte-or-special], or
   @racket[peek-char-or-special], the procedure is passed no arguments
   if it accepts zero arguments, otherwise it is passed four arguments
@@ -375,8 +374,7 @@ The arguments implement the port as follows:
 
  If @racket[read-in] or @racket[peek] returns a special
  procedure when called by any reading procedure other than
- @racket[read], @racket[read-syntax], @racket[read-honu],
- @racket[read-honu-syntax], @racket[read-char-or-special],
+ @racket[read], @racket[read-syntax], @racket[read-char-or-special],
  @racket[peek-char-or-special], @racket[read-byte-or-special], or
  @racket[peek-byte-or-special], then the @exnraise[exn:fail:contract].}
 

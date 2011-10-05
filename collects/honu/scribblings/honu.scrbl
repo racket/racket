@@ -54,6 +54,8 @@ can be nested.
 
 @subsection{Structure}
 
+@defmodule[honu/core/read]
+
 After tokenization a Honu program will be converted into a tree with minimal
 structure. Enclosing tokens will be grouped into a single object represented as
 an s-expression. Enclosing tokens are pairs of (), {}, and [].

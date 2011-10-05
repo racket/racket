@@ -2082,7 +2082,7 @@ Scheme_Object *_scheme_apply_to_list (Scheme_Object *rator, Scheme_Object *rands
 Scheme_Object *_scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands);
 
 Scheme_Object *scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cantfail, 
-				    int honu_mode, int recur, int expose_comment, int pre_char, Scheme_Object *readtable,
+				    int recur, int expose_comment, int pre_char, Scheme_Object *readtable,
 				    Scheme_Object *magic_sym, Scheme_Object *magic_val,
                                     Scheme_Object *delay_load_info);
 void scheme_internal_display(Scheme_Object *obj, Scheme_Object *port);
