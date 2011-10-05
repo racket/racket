@@ -1,0 +1,37 @@
+
+srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+libpltdir = @libpltdir@
+collectsdir = @collectsdir@
+builddir = @builddir@
+
+ICP=@ICP@
+
+CC = @CC@
+
+# See ../Makefile about RUN_RACKET_<X>, which 
+# typically redirects to RUN_THIS_RACKET_<X>:
+RUN_THIS_RACKET_CGC = ../racket/racket@CGC@
+
+WITH_ENV = env CC="@PLAIN_CC@" CFLAGS="@CFLAGS@ @COMPFLAGS@ @PREFLAGS@" LDFLAGS="@LDFLAGS@"
+
+FIT_SRCS = $(srcdir)/fit.c $(srcdir)/matrix.c
+
+XCOLLECTS = # -X ../racket/gc2/xform-collects 
+
+fit-lib: libfit@SO_SUFFIX@
+
+3m:
+	$(MAKE) fit-lib
+cgc:
+	$(MAKE) fit-lib
+
+libfit@SO_SUFFIX@:
+	$(WITH_ENV) @RUN_RACKET_CGC@ -c $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
+
+install:
+	cd ..; $(ICP) fit/libfit@SO_SUFFIX@ "$(DESTDIR)$(libpltdir)/libfit@SO_SUFFIX@"
+

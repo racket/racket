@@ -84,6 +84,7 @@
       ["libpangocairo-1.0-0.dll" 94625]
       ["libpangowin32-1.0-0.dll" 102210]
       ["libpangoft2-1.0-0.dll" 679322]
+      ["libfit.dll" 73728]
       ,@(if (getenv "PLT_WIN_GTK")
           '(["libatk-1.0-0.dll" 153763]
             ["libgtk-win32-2.0-0.dll" 4740156]
@@ -109,7 +110,8 @@
       ["libgthread-2.0-0.dll" 126615]
       ["libpangocairo-1.0-0.dll" 185168]
       ["libpangowin32-1.0-0.dll" 192656]
-      ["libpangoft2-1.0-0.dll" 1188615]]]))
+      ["libpangoft2-1.0-0.dll" 1188615]
+      ["libfit.dll" 69120]]]))
 
 (define-values [package dest-dir]
   (command-line #:args [package [dest-dir (current-directory)]]

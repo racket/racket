@@ -39,9 +39,13 @@ all:
 3m:
 	cd racket; $(MAKE) 3m
 	$(MAKE) @MAKE_GRACKET@-3m
+	$(MAKE) @MAKE_FIT@-3m
 
 gracket-3m:
 	cd gracket; $(MAKE) 3m
+
+fit-3m:
+	cd fit; $(MAKE) 3m
 
 no-3m:
 	$(NOOP)
@@ -49,9 +53,13 @@ no-3m:
 cgc:
 	cd racket; $(MAKE) cgc
 	$(MAKE) @MAKE_GRACKET@-cgc
+	$(MAKE) @MAKE_FIT@-cgc
 
 gracket-cgc:
 	cd gracket; $(MAKE) cgc
+
+fit-cgc:
+	cd fit; $(MAKE) cgc
 
 no-cgc:
 	$(NOOP)
@@ -65,8 +73,8 @@ both:
 SETUP_ARGS = -X "$(DESTDIR)$(collectsdir)" -N "raco setup" -l- setup $(PLT_SETUP_OPTIONS) $(PLT_ISO) @INSTALL_SETUP_FLAGS@
 
 # Pass compile and link flags to `make install' for use by any
-#  collection-setup actions (none currently, was used in "plot") that
-#  compile and link C code:
+#  collection-setup actions (currently in "plot") that compile
+#  and link C code:
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@
 LDFLAGS = @LDFLAGS@
 WITH_ENV_VARS = env CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" 
@@ -84,12 +92,16 @@ install-common-first:
 	mkdir -p $(ALLDIRINFO)
 
 install-common-middle:
+	$(MAKE) install-@MAKE_FIT@
 	$(MAKE) @MAKE_COPYTREE@-run
 	$(MAKE) install-@MAKE_GRACKET@-post-collects
 	$(MAKE) lib-finish
 
 install-common-last:
 	$(MAKE) fix-paths
+
+install-fit:
+	cd fit; $(MAKE) install
 
 install-no:
 	$(NOOP)
