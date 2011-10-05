@@ -210,7 +210,16 @@
 
 (define (compute-permissions paths+require-perms)
   (define-values [paths require-perms] (partition path? paths+require-perms))
-  (append (map (lambda (p) `(read ,(path->bytes p))) paths)
+  (define cpaths (map path->complete-path paths))
+  (append (map (lambda (p) `(read ,(path->bytes p))) cpaths)
+          ;; when reading a file from "/foo/bar/baz.rkt" racket will try to see
+          ;; if "/foo/bar" exists, so allow these paths too; it might be needed
+          ;; to allow 'exists on any parent path, but I'm not sure that this is
+          ;; safe in terms of security, so put just the immediate parent dir in
+          (filter-map (lambda (p)
+                        (let ([p (and (file-exists? p) (path-only p))])
+                          (and p `(exists ,(path->bytes p)))))
+                      cpaths)
           (module-specs->path-permissions require-perms)))
 
 ;; computes permissions that are needed for require specs (`read-bytecode' for

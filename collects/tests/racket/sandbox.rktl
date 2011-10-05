@@ -312,6 +312,15 @@
           (lambda ()
             (printf "~s\n" '(module sandbox-test racket/base
                               (define x 123) (provide x)))))
+        ;; run it
+        (make-module-evaluator! (string->path test-lib))
+        --eval--
+        x => 123
+        (length (with-input-from-file ,test-lib read)) => 5
+        ;; the directory is still not kosher
+        (directory-list ,tmp) =err> "`read' access denied"
+        --top--
+        ;; require it
         (make-base-evaluator/reqs! `(,test-lib))
         --eval--
         x => 123
