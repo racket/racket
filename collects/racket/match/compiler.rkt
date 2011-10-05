@@ -447,7 +447,8 @@
     ;; and compile each block with a reference to its continuation
    [else
     (let*-values
-        ([(rows vars) (reorder-columns rows vars)]
+        (;; XXX This is broken.
+         #;[(rows vars) (reorder-columns rows vars)]
          [(fns)
           (let loop ([blocks (reverse (split-rows rows))] [esc esc] [acc null])
             (if (null? blocks)
