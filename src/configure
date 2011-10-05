@@ -2312,7 +2312,7 @@ show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
-show_explicitly_disabled "${enable_plot}" Plot
+show_explicitly_disabled "${enable_plot}" Plot fit library
 
 if test "$LIBTOOLPROG" != "" ; then
   echo "=== Libtool program: $LIBTOOLPROG"
@@ -4094,6 +4094,7 @@ case "$host_os" in
     fi
     ;;
   nto-qnx*)
+    enable_sgc=yes
     LIBS="$LIBS -lsocket"
     ;;
   *)
@@ -9975,7 +9976,7 @@ do
     cat >>$CONFIG_STATUS <<_ACEOF
     # First, check the format of the line:
     cat >"\$tmp/defines.sed" <<\\CEOF
-/^[	 ]*#[	 ]*undef[	 ][	 ]*$ac_word_re[	 ]*\$/b def
+/^[	 ]*#[	 ]*undef[	 ][	 ]*$ac_word_re[	 ]*/b def
 /^[	 ]*#[	 ]*define[	 ][	 ]*$ac_word_re[(	 ]/b def
 b
 :def
