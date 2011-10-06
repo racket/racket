@@ -19,7 +19,7 @@
     (define next-number 0)
 
     (define/public (get-partition stx)
-      (let ([marks (simplify-marks (get-marks stx))])
+      (let ([marks (get-marks stx)])
         (or (hash-ref simplified marks #f)
             (let ([n next-number])
               (hash-set! simplified marks n)

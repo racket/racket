@@ -8,6 +8,7 @@
   (get-ffi-obj "scheme_stx_extract_marks" lib
                (_fun _scheme -> _scheme)))
 
+#|
 (define (simplify-marks marklist)
   (simplify* (sort marklist <)))
 
@@ -22,9 +23,10 @@
                marklist
                (cons (car marklist) result)))]))
 
+(provide simplify-marks)
+|#
+
 (provide/contract
  [get-marks
   ;; syntax? check needed for safety!
   (c:-> syntax? any)])
-
-(provide simplify-marks)

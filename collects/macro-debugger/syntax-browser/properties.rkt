@@ -248,7 +248,7 @@
     ;; display-marks : syntax -> void
     (define/private (display-marks stx)
       (display "Marks: " key-sd)
-      (display (format "~s\n" (simplify-marks (get-marks stx))) #f)
+      (display (format "~s\n" (get-marks stx)) #f)
       (display "\n" #f))
 
     ;; display-taint : syntax -> void
