@@ -88,8 +88,8 @@ Use @(racket plot-snip) to create an @(racket image-snip%) regardless of the val
 }
 
 @doc-apply[plot/dc]{
-Plots to an arbitrary device context.
-The width and height of the plot are the device context's width and height.
+Plots to an arbitrary device context, in the rectangle with width @(racket width), height @(racket height), and upper-left corner @(racket x),@(racket y).
+
 Every @secref{plot2d} procedure is defined in terms of @(racket plot/dc).
 
 Use this if you need to continually update a plot on a @(racket canvas%), or to create other @(racket plot)-like functions with different backends.

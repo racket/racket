@@ -11,9 +11,9 @@ Returns @racket[#t] if @racket[value] is a 2D @tech{renderer}; that is, if @rack
 The following functions create such renderers.
 }
 
-@section[#:tag "renderer-function-arguments"]{2D Renderer Function Arguments}
+@section[#:tag "renderer2d-function-arguments"]{2D Renderer Function Arguments}
 
-Functions that return renderers always have these kinds of arguments:
+Functions that return 2D renderers always have these kinds of arguments:
 @itemlist[
           @item{Required (and possibly optional) arguments representing the graph to plot.}
           @item{Optional keyword arguments for overriding calculated bounds, with the default value @(racket #f).}

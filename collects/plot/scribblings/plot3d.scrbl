@@ -54,7 +54,8 @@ These procedures correspond with  @(racket plot-file), @(racket plot-pict), @(ra
 }
 
 @doc-apply[plot3d/dc]{
-Plots to an arbitrary device context. The width and height of the plot are the device context's width and height.
+Plots to an arbitrary device context, in the rectangle with width @(racket width), height @(racket height), and upper-left corner @(racket x),@(racket y).
+
 Every @secref{plot3d} procedure is defined in terms of @(racket plot3d/dc).
 
 Use this if you need to continually update a plot on a @(racket canvas%), or to create other @(racket plot3d)-like functions with different backends.
