@@ -171,22 +171,6 @@
                                  [_ #f])))
    (test-case "app pattern"
               (check = 4 (match 3 [(app add1 y) y])))
-   (test-case "app pattern (step 1)"
-              (check = 2 (match (list 1 3)
-                           [(list 0 (app add1 y)) y]
-                           [(list 1 (app sub1 y)) y])))   
-   (test-case "app pattern (step 2a)"
-              (check = 2 (match (cons 1 3)
-                           [(cons 0 (app error y)) y]
-                           [(cons 1 (app sub1 y)) y])))   
-   (test-case "app pattern (step 2a)"
-              (check = 2 (match (vector 1 3)
-                           [(vector 0 (app error y)) y]
-                           [(vector 1 (app sub1 y)) y])))   
-   (test-case "app pattern (step 2)"
-              (check = 2 (match (list 1 3)
-                           [(list 0 (app error y)) y]
-                           [(list 1 (app sub1 y)) y])))
    (test-case "struct patterns"
               (let ()
                 (define-struct point (x y))
