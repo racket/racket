@@ -126,7 +126,8 @@
       (set-pen (plot-foreground) (plot-line-width) 'solid)
       (set-brush (plot-background) 'solid)
       (set-background (plot-background))
-      (set-alpha 1))
+      (set-background-alpha (plot-background-alpha))
+      (set-alpha (plot-foreground-alpha)))
     
     ;; -----------------------------------------------------------------------------------------------
     ;; Pen, brush, alpha parameters
@@ -170,6 +171,12 @@
     ;; Sets the background color.
     (define/public (set-background color)
       (send dc set-background (color->color% (->brush-color color))))
+    
+    (define background-alpha 1)
+    
+    ;; Sets the background opacity.
+    (define/public (set-background-alpha alpha)
+      (set! background-alpha alpha))
     
     ;; -----------------------------------------------------------------------------------------------
     ;; Text parameters
@@ -237,7 +244,10 @@
     ;; Drawing primitives
     
     (define/public (clear)
-      (send dc clear))
+      (define old-alpha (send dc get-alpha))
+      (send dc set-alpha background-alpha)
+      (send dc clear)
+      (send dc set-alpha old-alpha))
     
     (define/public (draw-point v)
       (match-define (vector x y) v)

@@ -121,6 +121,8 @@
                     ) pict?
   (define foreground (plot-foreground))
   (define background (plot-background))
+  (define foreground-alpha (plot-foreground-alpha))
+  (define background-alpha (plot-background-alpha))
   (define font-size (plot-font-size))
   (define font-family (plot-font-family))
   (define line-width (plot-line-width))
@@ -133,6 +135,8 @@
   (dc (λ (dc x y)
         (parameterize ([plot-foreground        foreground]
                        [plot-background        background]
+                       [plot-foreground-alpha  foreground-alpha]
+                       [plot-background-alpha  background-alpha]
                        [plot-font-size         font-size]
                        [plot-font-family       font-family]
                        [plot-line-width        line-width]

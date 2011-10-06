@@ -185,6 +185,7 @@
     
     (define (draw-borders)
       (set-minor-pen)
+      (set-brush (plot-background) 'transparent)
       (draw-rectangle (vector area-x-min area-y-min)
                       (vector area-x-max area-y-max)))
     

@@ -85,6 +85,9 @@ The @(racket #:lncolor) keyword argument now does nothing; change the renderer i
 For example, if you have @(racket (plot (function sin -5 5) #:lncolor '(0 0 128))), change it to
 @interaction[#:eval plot-eval (plot (function sin -5 5 #:color '(0 0 128)))]
 
+Change @(racket #:az) in calls to @(racket plot3d) to @(racket #:angle), and @(racket #:alt) to @(racket #:altitude).
+Alternatively, parameterize multiple plots by setting the @(racket plot3d-angle) and @(racket plot3d-altitude) parameters.
+
 
 @section{Fixing Broken Calls to @(racket points)}
 

@@ -27,6 +27,8 @@
 
 (defparam plot-foreground color plot-color/c 0)
 (defparam plot-background color plot-color/c 0)
+(defparam plot-foreground-alpha alpha (real-in 0 1) 1)
+(defparam plot-background-alpha alpha (real-in 0 1) 1)
 (defparam plot-font-size size (real>=/c 0) 11)
 (defparam plot-font-family family font-family/c 'roman)
 (defparam plot-line-width width (real>=/c 0) 1)

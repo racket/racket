@@ -66,26 +66,25 @@ When creating a PostScript or PDF file, the parameters @(racket plot-ps-interact
 (See @(racket post-script-dc%) and @(racket pdf-dc%).)
 When @(racket kind) is @(racket 'auto), @(racket plot-file) tries to determine the kind of file to write from the file name extension.
 
-Use @(racket plot-pict) to create plots in slideshows. For example,
-
+Use @(racket plot-pict) to plot to a slideshow @(racket pict). For example,
 @racketmod[slideshow
 (require plot)
 
 (plot-font-size (current-font-size))
 (plot-width (current-para-width))
 (plot-height 600)
+(plot-background-alpha 1/2)
 
 (slide
  #:title "A 2D Parabola"
  (plot-pict (function sqr -1 1 #:label "y = x^2")))]
-
 creates a slide containing a 2D plot of a parabola.
 
-Use @(racket plot-bitmap) to create a bitmap.
+Use @(racket plot-bitmap) to create a @(racket bitmap%).
 
-Use @(racket plot-frame) to create a frame regardless of the value of @(racket plot-new-window?). The frame is initially hidden.
+Use @(racket plot-frame) to create a @(racket frame%) regardless of the value of @(racket plot-new-window?). The frame is initially hidden.
 
-Use @(racket plot-snip) to create an image snip regardless of the value of @(racket plot-new-window?).
+Use @(racket plot-snip) to create an @(racket image-snip%) regardless of the value of @(racket plot-new-window?).
 }
 
 @doc-apply[plot/dc]{

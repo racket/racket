@@ -20,6 +20,7 @@
 (slide
  #:title "A 2D Parabola"
  (parameterize ([plot-background  1]
+                [plot-background-alpha 1/2]
                 [plot-foreground  1])
    (plot-pict (function sqr -1 1 #:label "y = x^2")
               #:legend-anchor 'center)))
@@ -37,6 +38,7 @@
 (slide
  #:title "A 3D Parabola"
  (parameterize ([plot-background  1]
+                [plot-background-alpha 1/2]
                 [plot-foreground  1])
    (plot3d-pict (list (surface3d parabola2d -1 1 -1 1
                                  #:label "z = x^2 + y^2" #:color 3)

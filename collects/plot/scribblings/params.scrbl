@@ -69,6 +69,8 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 
 @doc-apply[plot-foreground]
 @doc-apply[plot-background]{The plot foreground and background color. That both are @(racket 0) by default is not a mistake: for foreground colors, @(racket 0) is interpreted as black; for background colors, @(racket 0) is interpreted as white. See @(racket plot-color/c) for details on integer-indexed colors.}
+@doc-apply[plot-foreground-alpha]
+@doc-apply[plot-background-alpha]{The opacity of the background and foreground colors.}
 @doc-apply[plot-font-size]{The font size of the title, axis labels, tick labels, and other labels, in drawing units.}
 @doc-apply[plot-font-family]{The font family used for the title and labels.}
 @doc-apply[plot-line-width]{The width of axis lines and major tick lines. (Minor tick lines are half this width.)}
