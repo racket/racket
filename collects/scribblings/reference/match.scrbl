@@ -349,7 +349,14 @@ In more detail, patterns match as follows:
  @item{@racket[_derived-pattern] --- matches a pattern defined by a
        macro extension via @racket[define-match-expander].}
 
-]}
+]
+
+Note that the matching process may destructure the input multiple times, and
+may evaluate expressions embedded in patterns such as @racket[(#,(racketidfont
+"app") expr pat)] in arbitrary order, or multiple times.  Therefore, such
+expressions must be safe to call multiple times, or in an order other than they
+appear in the original program.
+}
 
 @; ----------------------------------------------------------------------
 
