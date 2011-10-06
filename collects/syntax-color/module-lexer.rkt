@@ -22,7 +22,6 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
 
 |#
 
-
 (define (module-lexer in offset mode)
   (cond
     [(or (not mode) (eq? mode 'before-lang-line))
@@ -43,9 +42,9 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
         (define p (peeking-input-port in))
         (port-count-lines! p)
         (define get-info (with-handlers ([exn:fail? values]) (read-language p (λ () 'fail))))
+        (define end-pos (file-position p))
         (cond
           [(procedure? get-info)
-           (define end-pos (file-position p))
            ;; sync ports
            (for ([i (in-range 0 end-pos)])
              (read-char-or-special in))
@@ -63,16 +62,19 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
                            (cons v #f)
                            v)))
                 scheme-lexer))]
-          [else
+         
+          [(and (eq? type 'other)
+                (string? lexeme)
+                ;; the read-language docs say that this is all it takes to commit to a #lang
+                (regexp-match #rx"^#[!l]" lexeme))
            ;; sync ports
+           (for ([i (in-range 0 end-pos)])
+             (read-char-or-special in))
+           (values lexeme 'error data 1 (+ end-pos 1) 0 'no-lang-line)]
+          [else 
            (for ([i (in-range 0 (file-position lexer-port))])
              (read-char-or-special in))
-           (if (and (eq? type 'other)
-                    (string? lexeme)
-                    ;; the read-language docs say that this is all it takes to commit to a #lang
-                    (regexp-match #rx"^#[!l]" lexeme))
-               (values lexeme 'error data new-token-start new-token-end 0 'no-lang-line)
-               (values lexeme type data new-token-start new-token-end 0 'no-lang-line))])])]
+           (values lexeme type data new-token-start new-token-end 0 'no-lang-line)])])]
     [(eq? mode 'no-lang-line)
      (let-values ([(lexeme type data new-token-start new-token-end) 
                    (scheme-lexer in)])
