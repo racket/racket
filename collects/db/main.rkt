@@ -21,7 +21,7 @@
    odbc-driver-connect
    odbc-data-sources
    odbc-drivers)]
- ['openssl
+ [openssl
   (ssl-client-context?)])
 
 (provide/contract
