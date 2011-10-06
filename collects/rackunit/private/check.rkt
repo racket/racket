@@ -119,7 +119,9 @@
                                   (if message
                                       (list (make-check-message message))
                                       null))
-                             (lambda () (begin expr ...)))))))]
+                             (lambda () (begin expr ...)))))
+                       ;; All checks should return (void).
+                       (void)))]
                    [check-secret-name (datum->syntax stx (gensym (syntax->datum (syntax name))))])
        (syntax/loc stx
          (begin
