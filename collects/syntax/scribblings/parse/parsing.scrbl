@@ -34,7 +34,7 @@ Two parsing forms are provided: @racket[syntax-parse] and
                             (literal-set-id literal-set-option ...)]
                [literal-set-option (code:line #:at context-id)
                                    (code:line #:phase phase-expr)]
-               [clause (syntax-pattern pattern-directive ... expr ...+)])
+               [clause (syntax-pattern pattern-directive ... body ...+)])
               #:contracts ([stx-expr syntax?]
                            [context-expr syntax?]
                            [phase-expr (or/c exact-integer? #f)])]{
@@ -47,7 +47,7 @@ subterms of the syntax object and that clause's side conditions and
 
 Each clause consists of a @tech{syntax pattern}, an optional sequence
 of @tech{pattern directives}, and a non-empty sequence of body
-expressions.
+forms.
 
 If the syntax object fails to match any of the patterns (or all
 matches fail the corresponding clauses' side conditions), a syntax
