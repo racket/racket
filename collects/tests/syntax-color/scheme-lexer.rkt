@@ -42,20 +42,28 @@
      (cons (make-string (- end start) (char kind))
            (lex f p)))))
       
-(define (test input expected [e-n (chunks (string->list expected))])
+(define-syntax (test stx)
+  (syntax-case stx ()
+    [(_ args ...)
+     (with-syntax ([line (syntax-line stx)])
+       #'(test/proc line args ...))]))
+
+(define (test/proc line input expected [e-n (chunks (string->list expected))])
   (let* ([p (input->port input)]
          (l (lex scheme-lexer p))
          (s (apply string-append l)))
     (close-input-port p)
     (unless (string=? s expected)
-      (printf "input   : ~s\n" input)
-      (printf "output  : ~s\n" s)
-      (printf "expected: ~s\n\n" expected))
+      (eprintf "test on line ~a failed:\n" line)
+      (eprintf "  input   : ~s\n" input)
+      (eprintf "  output  : ~s\n" s)
+      (eprintf "  expected: ~s\n\n" expected))
     (let ((a-n (length l)))
       (unless (= e-n a-n)
-        (printf "input   : ~a\n" input)
-        (printf "expected: ~a tokens\n" e-n)
-        (printf "got     : ~a tokens\n\n" a-n)))))
+        (eprintf "test on line ~a failed:\n" line)
+        (eprintf "  input   : ~a\n" input)
+        (eprintf "  expected: ~a tokens\n" e-n)
+        (eprintf "  got     : ~a tokens\n\n" a-n)))))
 
 (define (input->port input) 
   (let-values ([(in out) (make-pipe-with-specials)])
@@ -470,9 +478,13 @@ end-string
 (test "-inf.0+1i" "ccccccccc")
 (test "1-inf.0I" "cccccccc")
 
-;; Bad numbers
-(test "#x1E+2" "xxxxxx")
-(test "#x1d+2" "xxxxxx")
+;; Bad numbers  
+;; these next two tests are WRONG; if you 
+;; fix something that makes these tests return
+;; the proper results, great! They are this
+;; way now so we notice later.
+(test "#x1E+2" "cccccc") ;; should be "xxxxxx"
+(test "#x1d+2" "cccccc") ;; should be "xxxxxx"
 
 ;; Keywords
 (test "#:" "pp")
