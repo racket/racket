@@ -88,16 +88,22 @@ times). Beware that static or global variables that are not
 thread-specific (in the OS sense of ``thread'') generally do not
 work with multiple @|tech-place|s.
 
-With conservative collection, no registration is needed for the global
-or static variables of an embedding program, unless it calls
-@cpp{scheme_main_setup} or @cppi{scheme_set_stack_base} with a non-zero
-first or second (respectively) argument. In that case, global and
-static variables containing collectable pointers must be registered
-with @cppi{scheme_register_static}. The @cppi{MZ_REGISTER_STATIC}
-macro takes any variable name and registers it with
+Registration is needed for the global and static variables of an
+embedding program on most platforms, and registration is needed on all
+platforms if the program calls @cpp{scheme_main_setup} or
+@cppi{scheme_set_stack_base} with a non-zero first or second
+(respectively) argument. Global and static variables containing
+collectable pointers must be registered with
+@cppi{scheme_register_static}. The @cppi{MZ_REGISTER_STATIC} macro
+takes any variable name and registers it with
 @cppi{scheme_register_static}. The @cppi{scheme_register_static}
 function can be safely called even when it's not needed, but it must
-not be called multiple times for a single memory address.
+not be called multiple times for a single memory address.  When using
+@cppi{scheme_set_stack_base} and when @|tech-place|s are enabled, then
+@cppi{scheme_register_static} or @cppi{MZ_REGISTER_STATIC} normally
+should be used only after @cpp{scheme_basic_env}, since
+@cpp{scheme_basic_env} changes the allocation space as explained in
+@secref["im:3m:places"].
 
 Collectable memory can be temporarily locked from collection by using
 the reference-counting function @cppi{scheme_dont_gc_ptr}. On 3m,
@@ -615,6 +621,35 @@ The following macros can be used (with care!) to navigate
 
 ]
 
+@; - -  - -  - -  - -  - -  - -  - -  - -  - -  - -  - -  - - 
+
+@subsection[#:tag "im:3m:places"]{Places and Garbage Collector Instances}
+
+When @|tech-place|s are enabled, then a single process can have
+multiple instances of the garbage collector in the same process. Each
+@|tech-place| allocates using its own collector, and no place is
+allowed to hold a reference to memory that is allocated by another
+place. In addition, a @deftech{master} garbage collector instance
+holds values that are shared among places; different places can refer
+to memory that is allocated by the @tech{master} garbage collector,
+but the @tech{master} still cannot reference memory allocated by
+place-specific garbage collectors.
+
+Calling @cpp{scheme_main_stack_setup} creates the @tech{master}
+garbage collector, and allocation uses that collector until
+@cpp{scheme_basic_env} returns, at which point the initial place's
+garbage collector is in effect. Using @cppi{scheme_register_static} or
+@cppi{MZ_REGISTER_STATIC} before calling @cpp{scheme_basic_env}
+registers an address that should be used to hold only values allocated
+before @cpp{scheme_basic_env} is called. More typically,
+@cpp{scheme_register_static} and @cppi{MZ_REGISTER_STATIC} are used
+only after @cpp{scheme_basic_env} returns. Using
+@cpp{scheme_main_setup} calls @cpp{scheme_basic_env} automatically, in
+which case there is no opportunity to use @cpp{scheme_register_static}
+or @cppi{MZ_REGISTER_STATIC} too early.
+
+@; --------------------------------------------------
+
 @section{Memory Functions}
 
 @function[(void* scheme_malloc
@@ -789,14 +824,14 @@ typedef int (*Scheme_Nested_Main)(void *data);
 
 Overrides the GC's auto-determined stack base, and/or disables the
  GC's automatic traversal of global and static variables. If
- @var{stack_addr} is @cpp{NULL}, the stack base determined by the GC is
- used. Otherwise, it should be the ``deepest'' memory address on the
- stack where a collectable pointer might be stored. This function
+ @var{stack_addr} is @cpp{NULL}, the stack base determined by the GC
+ is used. Otherwise, it should be the ``deepest'' memory address on
+ the stack where a collectable pointer might be stored. This function
  should be called only once, and before any other @cpp{scheme_}
- function is called. It never triggers a garbage collection.
+ function is called, but only with CGC and when future and places are
+ disabled. The function never triggers a garbage collection.
 
-The following example shows a typical use for setting the stack base
-for CGC:
+Example:
 
 @verbatim[#:indent 4]{
     int main(int argc, char **argv) {
@@ -811,7 +846,12 @@ must be the beginning or end of a local-frame registration. Worse, in
 CGC or 3m, if @cpp{real_main} is declared @cpp{static}, the compiler
 may inline it and place variables containing collectable values deeper
 in the stack than @cpp{dummy}. To avoid these problems, use
-@cpp{scheme_main_setup} or @cpp{scheme_main_stack_setup}, instead.}
+@cpp{scheme_main_setup} or @cpp{scheme_main_stack_setup}, instead.
+
+The above code also may not work when future and/or places are enabled
+in Racket, because @cpp{scheme_set_stack_base} does not initialize
+Racket's thread-local variables. Again, use @cpp{scheme_main_setup} or
+@cpp{scheme_main_stack_setup} to avoid the problem.}
 
 @function[(void scheme_set_stack_bounds
            [void* stack_addr]
@@ -828,9 +868,11 @@ requires a few frames.
 
 If @var{stack_end} is @cpp{NULL}, then the stack end is computed
 automatically: the stack size assumed to be the limit reported by
-@cpp{getrlimit} on Unix and Mac OS X, or it is assumed to be 1 MB
-on Windows; if this size is greater than 8 MB, then 8 MB is
-assumed, instead; the size is decremented by 50000 bytes to cover a
+@cpp{getrlimit} on Unix and Mac OS X, or it is assumed to be the
+stack reservation of the executable (or 1 MB if parsing the
+executable fails) on Windows; if this size is greater than 8 MB, then 8 MB is
+assumed, instead; the size is decremented by 50000 bytes
+(64-bit Windows: 100000 bytes) to cover a
 large margin of error; finally, the size is subtracted from (for
 stacks that grow down) or added to (for stacks that grow up) the stack
 base in @var{stack_addr} or the automatically computed stack
@@ -843,7 +885,7 @@ overflow.}
            [void* ptr]
            [int   tls_index])]{
 
-Only available on Windows; registers @var{ptr} as the address of a
+Only available on 32-bit Windows; registers @var{ptr} as the address of a
  thread-local pointer variable that is declared in the main
  executable. The variable's storage will be used to implement
  thread-local storage within the Racket run-time. See
