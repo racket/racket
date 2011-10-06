@@ -3,7 +3,8 @@
 (require racket/class racket/gui/base racket/match racket/port racket/list
          unstable/syntax racket/sandbox
          typed-racket/optimizer/logging
-         (prefix-in tr: typed-racket/typed-reader))
+         (prefix-in tr: typed-racket/typed-reader)
+         "logging.rkt")
 
 (provide (struct-out report-entry)
          (struct-out sub-report-entry)
@@ -61,10 +62,9 @@
   (define log '())
   (call-with-trusted-sandbox-configuration
    (lambda ()
-     (with-intercepted-tr-logging
+     (with-intercepted-opt-logging
       (lambda (l)
-        (define data (cdr (vector-ref l 2))) ; get the log-entry part
-        (set! log (cons data log)))
+        (set! log (cons l log)))
       (lambda ()
         (define port-name (send this get-port-name))
         (parameterize
@@ -75,7 +75,7 @@
                     base)
                   (current-load-relative-directory))]
              [read-accept-reader #t])
-          (void (expand (tr:read-syntax portname input))))))))
+          (void (compile (tr:read-syntax portname input))))))))
   (filter right-file? (reverse log)))
 
 ;; converts log-entry structs to report-entry structs for further
