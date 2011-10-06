@@ -253,7 +253,9 @@ The @racket[angle] determines how much the rectangle is
 rotated, in radians.
 }
 
-@defproc[(bitmap [img (or/c path-string? (is-a?/c bitmap%))])
+@defproc[(bitmap [img (or/c path-string? 
+                            (is-a?/c bitmap%)
+                            (is-a?/c image-snip%))])
          pict]{
 
 A pict that display a bitmap. When a path is provided, the image is
