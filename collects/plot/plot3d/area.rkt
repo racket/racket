@@ -19,16 +19,16 @@
 (define 3d-plot-area%
   (class plot-area%
     (init-field x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max)
-    (init dc)
+    (init dc dc-x-min dc-y-min dc-x-size dc-y-size)
     (inherit
       set-alpha set-pen set-major-pen set-minor-pen set-brush set-background set-text-foreground
       set-font reset-drawing-params
-      get-size get-text-width get-text-extent get-char-height get-char-baseline
+      get-text-width get-text-extent get-char-height get-char-baseline
       set-clipping-rect clear-clipping-rect 
       clear draw-polygon draw-rectangle draw-line draw-lines draw-text draw-glyphs draw-arrow-glyph
       draw-tick draw-legend)
     
-    (super-make-object dc)
+    (super-make-object dc dc-x-min dc-y-min dc-x-size dc-y-size)
     
     (reset-drawing-params)
     
@@ -130,8 +130,6 @@
     (define plot-right-dir (m3-apply invtransform-matrix (vector 1 0 0)))
     (define plot-up-dir (m3-apply invtransform-matrix (vector 0 0 1)))
     
-    (define-values (dc-x-size dc-y-size) (get-size))
-    
     (define view->dc* #f)
     (define (plot->dc v) (view->dc* (plot->view v)))
     
@@ -143,13 +141,16 @@
     
     (define/public (view->dc v) (view->dc* v))
     
+    (define dc-x-max (+ dc-x-min dc-x-size))
+    (define dc-y-max (+ dc-y-min dc-y-size))
+    
     ;; Initial plot area margins leave enough room for the ticks
     (define init-left-margin (* 1/2 (plot-tick-size)))
     (define init-right-margin (* 1/2 (plot-tick-size)))
     (define init-top-margin (if (plot-title) (* 3/2 (get-char-height)) 0))
     (define init-bottom-margin (* 1/2 (plot-tick-size)))
     
-    (define (make-view->dc area-x-min right area-y-min bottom)
+    (define (make-view->dc left right top bottom)
       (define corners (list (vector x-min y-min z-min) (vector x-min y-min z-max)
                             (vector x-min y-max z-min) (vector x-min y-max z-max)
                             (vector x-max y-min z-min) (vector x-max y-min z-max)
@@ -162,8 +163,10 @@
       (define view-z-min (apply min zs))
       (define view-z-max (apply max zs))
       
-      (define area-x-max (- dc-x-size right))
-      (define area-y-max (- dc-y-size bottom))
+      (define area-x-min (+ dc-x-min left))
+      (define area-x-max (- dc-x-max right))
+      (define area-y-min (+ dc-y-min top))
+      (define area-y-max (- dc-y-max bottom))
       (define area-x-mid (* 1/2 (+ area-x-min area-x-max)))
       (define area-x-size (- area-x-max area-x-min))
       (define area-y-mid (* 1/2 (+ area-y-min area-y-max)))
@@ -302,15 +305,15 @@
       (match-define (list (vector label-xs label-ys) ...)
         (append* (map (λ (params) (send/apply this get-text-corners params)) axis-label-params)))
       
-      (define label-x-min (apply min 0 label-xs))
-      (define label-x-max (apply max (sub1 dc-x-size) label-xs))
-      (define label-y-min (apply min 0 label-ys))
-      (define label-y-max (apply max (sub1 dc-y-size) label-ys))
+      (define label-x-min (apply min dc-x-min label-xs))
+      (define label-x-max (apply max (sub1 dc-x-max) label-xs))
+      (define label-y-min (apply min dc-y-min label-ys))
+      (define label-y-max (apply max (sub1 dc-y-max) label-ys))
       
-      (values (+ left (- label-x-min))
-              (+ right (- label-x-max (sub1 dc-x-size)))
-              (+ top (- label-y-min))
-              (+ bottom (- label-y-max (sub1 dc-y-size)))))
+      (values (+ left (- dc-x-min label-x-min))
+              (- right (- (sub1 dc-x-max) label-x-max))
+              (+ top (- dc-y-min label-y-min))
+              (- bottom (- (sub1 dc-y-max) label-y-max))))
     
     (define-values (area-x-min right area-y-min bottom)
       (for/fold ([left init-left-margin]
@@ -386,7 +389,7 @@
     
     (define (draw-title)
       (define title-x-size (get-text-width (plot-title)))
-      (draw-text (plot-title) (vector (* 1/2 dc-x-size) 0) 'top))
+      (draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top))
     
     (define/public (start-plot)
       (clear)
@@ -397,6 +400,10 @@
       (put-z-ticks)
       (set! do-axis-transforms? #t))
     
+    (define/public (start-renderer rx-min rx-max ry-min ry-max rz-min rz-max)
+      (reset-drawing-params)
+      (clip-to-bounds rx-min rx-max ry-min ry-max rz-min rz-max))
+    
     (define/public (end-plot)
       (set! do-axis-transforms? #f)
       (draw-render-list)
@@ -405,7 +412,7 @@
       (when (plot-title) (draw-title))
       (draw-labels))
     
-    (define/public (put-angles)
+    (define (put-angles*)
       (define angle-str (format " angle = ~a " (number->string (round angle))))
       (define alt-str (format " altitude = ~a " (number->string (round altitude))))
       (define-values (angle-width angle-height baseline _angle2) (get-text-extent angle-str))
@@ -413,8 +420,8 @@
       
       (define box-x-size (max angle-width alt-width))
       (define box-y-size (+ angle-height alt-height (* 3 baseline)))
-      (define box-x-min (* 1/2 (- dc-x-size box-x-size)))
-      (define box-y-min (* 1/2 (- dc-y-size box-y-size)))
+      (define box-x-min (+ dc-x-min (* 1/2 (- dc-x-size box-x-size))))
+      (define box-y-min (+ dc-y-min (* 1/2 (- dc-y-size box-y-size))))
       (define box-x-max (+ box-x-min box-x-size))
       (define box-y-max (+ box-y-min box-y-size))
       
@@ -429,9 +436,15 @@
       (draw-text alt-str (vector box-x-min (+ box-y-min baseline char-height))
                  'top-left #:outline? #t))
     
-    (define/public (put-legend legend-entries)
+    (define/public (put-angles) (put-angles*))
+    
+    (define (put-legend* legend-entries)
       (define gap (plot-line-width))
-      (draw-legend legend-entries (+ 0 gap) (- dc-x-size gap) (+ area-y-min gap) (- dc-y-size gap)))
+      (draw-legend legend-entries
+                   (+ dc-x-min gap) (- dc-x-max gap)
+                   (+ area-y-min gap) (- dc-y-max gap)))
+    
+    (define/public (put-legend legend-entries) (put-legend* legend-entries))
     
     (define light (plot->view (vector x-mid y-mid (+ z-max (* 5 z-size)))))
     (define view-dir (vector 0 -50 0))

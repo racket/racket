@@ -18,16 +18,16 @@
 (define 2d-plot-area%
   (class plot-area%
     (init-field x-ticks y-ticks x-min x-max y-min y-max)
-    (init dc)
+    (init dc dc-x-min dc-y-min dc-x-size dc-y-size)
     (inherit
       set-alpha set-pen set-major-pen set-minor-pen set-brush set-background set-text-foreground
-      set-font reset-drawing-params
-      get-size get-text-width get-text-extent get-char-height get-char-baseline
+      set-font restore-drawing-params reset-drawing-params
+      get-text-width get-text-extent get-char-height get-char-baseline
       set-clipping-rect clear-clipping-rect
       clear draw-polygon draw-rectangle draw-line draw-lines draw-text draw-glyphs draw-arrow
       draw-tick draw-legend)
     
-    (super-make-object dc)
+    (super-make-object dc dc-x-min dc-y-min dc-x-size dc-y-size)
     
     (reset-drawing-params)
     
@@ -51,37 +51,38 @@
                                                w]
                    [else  0])]))
     
-    (define-values (dc-x-size dc-y-size) (get-size))
+    (define dc-x-max (+ dc-x-min dc-x-size))
+    (define dc-y-max (+ dc-y-min dc-y-size))
     
-    (define x-margin
-      (+ (* 1/2 (plot-tick-size))                   ; y ticks
+    (define area-x-min
+      (+ dc-x-min
+         (* 1/2 (plot-tick-size))                   ; y ticks
          (pen-gap) max-y-tick-label-width           ; y tick labels
          (if (plot-y-label) (* 3/2 char-height) 0)  ; y label
          ))
     
-    (define area-x-size
-      (- dc-x-size x-margin
+    (define area-x-max
+      (- dc-x-max
          (max (* 1/2 last-x-tick-label-width)  ; protruding x tick label
               (* 1/2 (plot-tick-size)))        ; y ticks
          ))
     
-    (define y-margin
-      (+ (* 1/2 (plot-tick-size))                   ; x ticks
+    (define area-y-min
+      (+ dc-y-min
+         (if (plot-title) (* 3/2 char-height) 0)  ; title
+         (max (* 1/2 char-height)                 ; protruding y tick label
+              (* 1/2 (plot-tick-size)))           ; x ticks
+         ))
+    
+    (define area-y-max
+      (- dc-y-max
+         (* 1/2 (plot-tick-size))                   ; x ticks
          (pen-gap) char-height                      ; x tick labels
          (if (plot-x-label) (* 3/2 char-height) 0)  ; x label
          ))
     
-    (define area-y-size
-      (- dc-y-size y-margin
-         (max (* 1/2 char-height)                 ; protruding y tick label
-              (* 1/2 (plot-tick-size)))           ; x ticks
-         (if (plot-title) (* 3/2 char-height) 0)  ; title
-         ))
-    
-    (define area-x-min x-margin)
-    (define area-x-max (+ x-margin area-x-size))
-    (define area-y-max (- dc-y-size y-margin))
-    (define area-y-min (- area-y-max area-y-size))
+    (define area-x-size (- area-x-max area-x-min))
+    (define area-y-size (- area-y-max area-y-min))
     (define area-x-mid (* 1/2 (+ area-x-min area-x-max)))
     (define area-y-mid (* 1/2 (+ area-y-min area-y-max)))
     
@@ -182,12 +183,12 @@
     ;; -------------------------------------------------------------------------
     ;; Plot decoration
     
-    (define/private (draw-borders)
+    (define (draw-borders)
       (set-minor-pen)
       (draw-rectangle (vector area-x-min area-y-min)
                       (vector area-x-max area-y-max)))
     
-    (define/private (draw-x-ticks)
+    (define (draw-x-ticks)
       (define half (* 1/2 (plot-tick-size)))
       (for ([t  (in-list x-ticks)])
         (match-define (tick x x-str major?) t)
@@ -195,7 +196,7 @@
         (put-tick (vector x y-min) half 1/2pi)
         (put-tick (vector x y-max) half 1/2pi)))
     
-    (define/private (draw-y-ticks)
+    (define (draw-y-ticks)
       (define half (* 1/2 (plot-tick-size)))
       (for ([t  (in-list y-ticks)])
         (match-define (tick y y-str major?) t)
@@ -203,47 +204,52 @@
         (put-tick (vector x-min y) half 0)
         (put-tick (vector x-max y) half 0)))
     
-    (define/private (draw-x-tick-labels)
+    (define (draw-x-tick-labels)
       (define offset (vector 0 (+ (pen-gap) (* 1/2 (plot-tick-size)))))
       (for ([t  (in-list (filter tick-major? x-ticks))])
         (match-define (tick x x-str major?) t)
         (draw-text x-str (v+ (plot->dc (vector x y-min)) offset) 'top)))
     
-    (define/private (draw-y-tick-labels)
+    (define (draw-y-tick-labels)
       (define offset (vector (+ (pen-gap) (* 1/2 (plot-tick-size))) 0))
       (for ([t  (in-list (filter tick-major? y-ticks))])
         (match-define (tick y y-str major?) t)
         (draw-text y-str (v- (plot->dc (vector x-min y)) offset) 'right)))
     
-    (define/private (draw-title)
+    (define (draw-title)
       (define-values (title-x-size _1 _2 _3)
         (get-text-extent (plot-title)))
-      (draw-text (plot-title) (vector (/ dc-x-size 2) 0) 'top))
+      (draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top))
     
-    (define/private (draw-x-label)
+    (define (draw-x-label)
       (match-define (vector x _)
         (view->dc (vector (* 1/2 (+ x-min x-max)) 0)))
-      (draw-text (plot-x-label) (vector x dc-y-size) 'bottom))
+      (draw-text (plot-x-label) (vector x dc-y-max) 'bottom))
     
-    (define/private (draw-y-label)
+    (define (draw-y-label)
       (match-define (vector _ y)
         (view->dc (vector 0 (* 1/2 (+ y-min y-max)))))
-      (draw-text (plot-y-label) (vector 0 y) 'bottom (/ pi -2)))
+      (draw-text (plot-y-label) (vector dc-x-min y) 'bottom (/ pi -2)))
     
     ;; -------------------------------------------------------------------------
     ;; Drawing
     
     (define/public (start-plot)
+      (reset-drawing-params)
       (clear)
       (draw-borders)
       (draw-x-ticks)
       (draw-y-ticks)
       (draw-x-tick-labels)
-      (draw-y-tick-labels)
+      (draw-y-tick-labels))
+    
+    (define/public (start-renderer rx-min rx-max ry-min ry-max)
+      (reset-drawing-params)
       (set-clipping-rect (vector (- area-x-min (plot-line-width))
                                  (- area-y-min (plot-line-width)))
                          (vector (+ area-x-max (plot-line-width))
-                                 (+ area-y-max (plot-line-width)))))
+                                 (+ area-y-max (plot-line-width))))
+      (clip-to-bounds rx-min rx-max ry-min ry-max))
     
     (define/public (end-plot)
       (clear-clipping-rect)

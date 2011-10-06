@@ -44,12 +44,13 @@ The @(racket #:az) and @(racket #:alt) keyword arguments are backward-compatible
                        [output (or/c path-string? output-port?)]
                        [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
                        [#:<plot-keyword> <plot-keyword> <plot-keyword-contract>] ...) void?]
+ @defproc[(plot3d-pict [renderer-tree (treeof renderer3d?)] ...) pict?]
  @defproc[(plot3d-bitmap [renderer-tree (treeof renderer3d?)] ...) (is-a?/c bitmap%)]
  @defproc[(plot3d-snip [renderer-tree (treeof renderer3d?)] ...) (is-a?/c image-snip%)]
  @defproc[(plot3d-frame [renderer-tree (treeof renderer3d?)] ...) (is-a?/c frame%)])]{
-Plot to different backends. Each of these procedures has the same keyword arguments as @(racket plot3d).
+Plot to different backends. Each of these procedures has the same keyword arguments as @(racket plot3d), except for deprecated keywords.
 
-These procedures correspond with  @(racket plot-file), @(racket plot-bitmap), @(racket plot-snip) and @(racket plot-frame).
+These procedures correspond with  @(racket plot-file), @(racket plot-pict), @(racket plot-bitmap), @(racket plot-snip) and @(racket plot-frame).
 }
 
 @doc-apply[plot3d/dc]{

@@ -89,21 +89,38 @@
 
 (define plot-area%
   (class object%
-    (init-field dc)
+    (init-field dc dc-x-min dc-y-min dc-x-size dc-y-size)
     
     (super-new)
-    
-    ;; Like the dc's get-size, but ensures the result is exact (for plotting exact rational functions)
-    (define/public (get-size)
-      (define-values (x-size y-size) (send dc get-size))
-      (values (inexact->exact x-size) (inexact->exact y-size)))
     
     ;; ===============================================================================================
     ;; Drawing parameters
     
+    (define old-smoothing (send dc get-smoothing))
+    (define old-text-mode (send dc get-text-mode))
+    (define old-clipping-region (send dc get-clipping-region))
+    (define old-font (send dc get-font))
+    (define old-text-foreground (send dc get-text-foreground))
+    (define old-pen (send dc get-pen))
+    (define old-brush (send dc get-brush))
+    (define old-background (send dc get-background))
+    (define old-alpha (send dc get-alpha))
+    
+    (define/public (restore-drawing-params)
+      (send dc set-smoothing old-smoothing)
+      (send dc set-text-mode old-text-mode)
+      (send dc set-clipping-region old-clipping-region)
+      (send dc set-font old-font)
+      (send dc set-text-foreground old-text-foreground)
+      (send dc set-pen old-pen)
+      (send dc set-brush old-brush)
+      (send dc set-background old-background)
+      (send dc set-alpha old-alpha))
+    
     (define/public (reset-drawing-params)
       (send dc set-smoothing 'smoothed)
       (send dc set-text-mode 'transparent)
+      (send dc set-clipping-rect dc-x-min dc-y-min dc-x-size dc-y-size)
       (set-font (plot-font-size) (plot-font-family))
       (set-text-foreground (plot-foreground))
       (set-pen (plot-foreground) (plot-line-width) 'solid)
@@ -219,7 +236,8 @@
     ;; ===============================================================================================
     ;; Drawing primitives
     
-    (define/public (clear) (send dc clear))
+    (define/public (clear)
+      (send dc clear))
     
     (define/public (draw-point v)
       (match-define (vector x y) v)

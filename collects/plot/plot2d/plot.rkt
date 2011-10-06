@@ -3,6 +3,7 @@
 ;; Procedures that plot 2D renderers.
 
 (require racket/draw racket/snip racket/contract racket/list racket/class racket/match
+         slideshow/pict
          unstable/lazy-require
          (for-syntax racket/base
                      syntax/strip-context
@@ -22,13 +23,14 @@
 ;;   cannot instantiate `racket/gui/base' a second time in the same process
 (lazy-require ["../common/gui.rkt" (make-snip-frame)])
 
-(provide plot/dc plot plot-bitmap plot-snip plot-frame plot-file)
+(provide plot/dc plot plot-bitmap plot-pict plot-snip plot-frame plot-file)
 
 ;; ===================================================================================================
 ;; Plot to a given device context
 
 (defproc (plot/dc [renderer-tree (treeof renderer2d?)]
                   [dc (is-a?/c dc<%>)]
+                  [x real?] [y real?] [width (real>=/c 0)] [height (real>=/c 0)]
                   [#:x-min x-min (or/c real? #f) #f]
                   [#:x-max x-max (or/c real? #f) #f]
                   [#:y-min y-min (or/c real? #f) #f]
@@ -68,7 +70,7 @@
                      [plot-y-label        y-label]
                      [plot-legend-anchor  legend-anchor])
         (define area (make-object 2d-plot-area%
-                       x-ticks y-ticks x-min x-max y-min y-max dc))
+                       x-ticks y-ticks x-min x-max y-min y-max dc x y width height))
         (send area start-plot)
         
         (define legend-entries
@@ -76,14 +78,15 @@
                      (match-define (renderer2d render-proc ticks-fun bounds-fun
                                                rx-min rx-max ry-min ry-max)
                        renderer)
-                     (send area reset-drawing-params)
-                     (send area clip-to-bounds rx-min rx-max ry-min ry-max)
+                     (send area start-renderer rx-min rx-max ry-min ry-max)
                      (render-proc area))))
         
         (send area end-plot)
         
         (when (not (empty? legend-entries))
-          (send area put-legend legend-entries))))))
+          (send area put-legend legend-entries))
+        
+        (send area restore-drawing-params)))))
 
 ;; ===================================================================================================
 ;; Plot to various other backends
@@ -101,10 +104,47 @@
                       ) (is-a?/c bitmap%)
   (define bm (make-bitmap width height))
   (define dc (make-object bitmap-dc% bm))
-  (plot/dc renderer-tree dc
+  (plot/dc renderer-tree dc 0 0 width height
            #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
            #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)
   bm)
+
+(defproc (plot-pict [renderer-tree (treeof renderer2d?)]
+                    [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
+                    [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+                    [#:width width (integer>=/c 1) (plot-width)]
+                    [#:height height (integer>=/c 1) (plot-height)]
+                    [#:title title (or/c string? #f) (plot-title)]
+                    [#:x-label x-label (or/c string? #f) (plot-x-label)]
+                    [#:y-label y-label (or/c string? #f) (plot-y-label)]
+                    [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
+                    ) pict?
+  (define foreground (plot-foreground))
+  (define background (plot-background))
+  (define font-size (plot-font-size))
+  (define font-family (plot-font-family))
+  (define line-width (plot-line-width))
+  (define legend-box-alpha (plot-legend-box-alpha))
+  (define tick-size (plot-tick-size))
+  (define tick-skip (plot-tick-skip))
+  (define x-transform (plot-x-transform))
+  (define y-transform (plot-y-transform))
+  
+  (dc (λ (dc x y)
+        (parameterize ([plot-foreground        foreground]
+                       [plot-background        background]
+                       [plot-font-size         font-size]
+                       [plot-font-family       font-family]
+                       [plot-line-width        line-width]
+                       [plot-legend-box-alpha  legend-box-alpha]
+                       [plot-tick-size         tick-size]
+                       [plot-tick-skip         tick-skip]
+                       [plot-x-transform       x-transform]
+                       [plot-y-transform       y-transform])
+          (plot/dc renderer-tree dc x y width height
+                   #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
+                   #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)))
+      width height))
 
 ;; Plot to a snip
 (defproc (plot-snip [renderer-tree (treeof renderer2d?)]
@@ -174,9 +214,12 @@
                       [width width] [height height] [output output])]
          [(svg)  (new svg-dc%
                       [width width] [height height] [output output] [exists 'truncate/replace])]))
+     (define-values (x-scale y-scale) (send dc get-device-scale))
      (send dc start-doc "Rendering plot")
      (send dc start-page)
-     (plot/dc renderer-tree dc #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
+     (plot/dc renderer-tree dc 0 0
+              (inexact->exact (/ width x-scale)) (inexact->exact (/ height y-scale))
+              #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
               #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)
      (send dc end-page)
      (send dc end-doc)])

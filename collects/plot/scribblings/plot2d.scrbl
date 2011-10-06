@@ -44,21 +44,6 @@ When given, the @(racket x-min), @(racket x-max), @(racket y-min) and @(racket y
 
 Here, the renderer draws in [-1,1] × [-1,1], but the plot area is [-1.5,1.5] × [-1.5,1.5].
 
-The @(racket plot) function easily generates plots for slideshows. For example,
-
-@racketmod[slideshow
-(require plot)
-
-(plot-font-size (current-font-size))
-(plot-width (current-para-width))
-(plot-height 600)
-
-(slide
- #:title "A 2D Parabola"
- (bitmap (plot (function sqr -1 1 #:label "y = x^2"))))]
-
-creates a slide containing a 2D plot of a parabola.
-
 @bold{Deprecated keywords.} The @(racket #:fgcolor) and @(racket #:bgcolor) keyword arguments are currently supported for backward compatibility, but may not be in the future.
 Please set the @(racket plot-foreground) and @(racket plot-background) parameters instead of using these keyword arguments.
 The @(racket #:lncolor) keyword argument is also accepted for backward compatibility but deprecated. It does nothing.
@@ -69,16 +54,32 @@ The @(racket #:lncolor) keyword argument is also accepted for backward compatibi
                      [output (or/c path-string? output-port?)]
                      [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
                      [#:<plot-keyword> <plot-keyword> <plot-keyword-contract>] ...) void?]
+ @defproc[(plot-pict [renderer-tree (treeof renderer2d?)] ...) pict?]
  @defproc[(plot-bitmap [renderer-tree (treeof renderer2d?)] ...) (is-a?/c bitmap%)]
  @defproc[(plot-snip [renderer-tree (treeof renderer2d?)] ...) (is-a?/c image-snip%)]
  @defproc[(plot-frame [renderer-tree (treeof renderer2d?)] ...) (is-a?/c frame%)])]{
-Plot to different backends. Each of these procedures has the same keyword arguments as @(racket plot).
+Plot to different backends. Each of these procedures has the same keyword arguments as @(racket plot), except for deprecated keywords.
 
 Use @(racket plot-file) to save a plot to a file.
 When creating a JPEG file, the parameter @(racket plot-jpeg-quality) determines its quality.
 When creating a PostScript or PDF file, the parameters @(racket plot-ps-interactive?) and @(racket plot-pdf-interactive?) determine whether the user is given a dialog for setting printing parameters.
 (See @(racket post-script-dc%) and @(racket pdf-dc%).)
 When @(racket kind) is @(racket 'auto), @(racket plot-file) tries to determine the kind of file to write from the file name extension.
+
+Use @(racket plot-pict) to create plots in slideshows. For example,
+
+@racketmod[slideshow
+(require plot)
+
+(plot-font-size (current-font-size))
+(plot-width (current-para-width))
+(plot-height 600)
+
+(slide
+ #:title "A 2D Parabola"
+ (plot-pict (function sqr -1 1 #:label "y = x^2")))]
+
+creates a slide containing a 2D plot of a parabola.
 
 Use @(racket plot-bitmap) to create a bitmap.
 

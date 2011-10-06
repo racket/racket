@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/draw racket/snip racket/match racket/list racket/class racket/contract
+         slideshow/pict
          unstable/lazy-require
          (for-syntax racket/base)
          "../common/math.rkt"
@@ -18,13 +19,14 @@
 (lazy-require ["snip.rkt" (make-3d-plot-snip)]
               ["../common/gui.rkt" (make-snip-frame)])
 
-(provide plot3d/dc plot3d plot3d-bitmap plot3d-snip plot3d-frame plot3d-file)
+(provide plot3d/dc plot3d plot3d-bitmap plot3d-pict plot3d-snip plot3d-frame plot3d-file)
 
 ;; ===================================================================================================
 ;; Plot to a given device context
 
 (defproc (plot3d/dc [renderer-tree  (treeof renderer3d?)]
                     [dc  (is-a?/c dc<%>)]
+                    [x real?] [y real?] [width (real>=/c 0)] [height (real>=/c 0)]
                     [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                     [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                     [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
@@ -76,7 +78,8 @@
                      [plot-z-label        z-label]
                      [plot-legend-anchor  legend-anchor])
         (define area (make-object 3d-plot-area%
-                       x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max dc))
+                       x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max
+                       dc x y width height))
         (send area start-plot)
         
         (define legend-entries
@@ -84,8 +87,7 @@
                      (match-define (renderer3d render-proc ticks-fun bounds-fun
                                                rx-min rx-max ry-min ry-max rz-min rz-max)
                        renderer)
-                     (send area reset-drawing-params)
-                     (send area clip-to-bounds rx-min rx-max ry-min ry-max rz-min rz-max)
+                     (send area start-renderer rx-min rx-max ry-min ry-max rz-min rz-max)
                      (render-proc area))))
         
         (send area end-plot)
@@ -95,7 +97,9 @@
                        (not (equal? (plot-legend-anchor) 'center))))
           (send area put-legend legend-entries))
         
-        (when (plot3d-animating?) (send area put-angles))))))
+        (when (plot3d-animating?) (send area put-angles))
+        
+        (send area restore-drawing-params)))))
 
 ;; ===================================================================================================
 ;; Plot to various other backends
@@ -117,11 +121,66 @@
                         ) (is-a?/c bitmap%)
   (define bm (make-bitmap width height))
   (define dc (make-object bitmap-dc% bm))
-  (plot3d/dc renderer-tree dc
+  (plot3d/dc renderer-tree dc 0 0 width height
              #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
              #:angle angle #:altitude altitude #:title title #:x-label x-label #:y-label y-label
              #:z-label z-label #:legend-anchor legend-anchor)
   bm)
+
+(defproc (plot3d-pict [renderer-tree (treeof renderer3d?)]
+                      [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
+                      [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+                      [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+                      [#:width width (integer>=/c 1) (plot-width)]
+                      [#:height height (integer>=/c 1) (plot-height)]
+                      [#:angle angle real? (plot3d-angle)]
+                      [#:altitude altitude real? (plot3d-altitude)]
+                      [#:title title (or/c string? #f) (plot-title)]
+                      [#:x-label x-label (or/c string? #f) (plot-x-label)]
+                      [#:y-label y-label (or/c string? #f) (plot-y-label)]
+                      [#:z-label z-label (or/c string? #f) (plot-z-label)]
+                      [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
+                      ) pict?
+  (define foreground (plot-foreground))
+  (define background (plot-background))
+  (define font-size (plot-font-size))
+  (define font-family (plot-font-family))
+  (define line-width (plot-line-width))
+  (define legend-box-alpha (plot-legend-box-alpha))
+  (define tick-size (plot-tick-size))
+  (define tick-skip (plot-tick-skip))
+  (define x-transform (plot-x-transform))
+  (define y-transform (plot-y-transform))
+  (define z-transform (plot-z-transform))
+  (define samples (plot3d-samples))
+  (define animating? (plot3d-animating?))
+  (define ambient-light-value (plot3d-ambient-light-value))
+  (define diffuse-light? (plot3d-diffuse-light?))
+  (define specular-light? (plot3d-specular-light?))
+  
+  (dc (λ (dc x y)
+        (parameterize ([plot-foreground             foreground]
+                       [plot-background             background]
+                       [plot-font-size              font-size]
+                       [plot-font-family            font-family]
+                       [plot-line-width             line-width]
+                       [plot-legend-box-alpha       legend-box-alpha]
+                       [plot-tick-size              tick-size]
+                       [plot-tick-skip              tick-skip]
+                       [plot-x-transform            x-transform]
+                       [plot-y-transform            y-transform]
+                       [plot-z-transform            z-transform]
+                       [plot3d-samples              samples]
+                       [plot3d-animating?           animating?]
+                       [plot3d-ambient-light-value  ambient-light-value]
+                       [plot3d-diffuse-light?       diffuse-light?]
+                       [plot3d-specular-light?      specular-light?])
+          (plot3d/dc
+           renderer-tree dc x y width height
+           #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
+           #:angle angle #:altitude altitude #:title title #:x-label x-label #:y-label y-label
+           #:z-label z-label #:legend-anchor legend-anchor)))
+      width height))
 
 ;; Plot to a snip
 (defproc (plot3d-snip [renderer-tree (treeof renderer3d?)]
@@ -208,9 +267,11 @@
                       [width width] [height height] [output output])]
          [(svg)  (new svg-dc%
                       [width width] [height height] [output output] [exists 'truncate/replace])]))
+     (define-values (x-scale y-scale) (send dc get-device-scale))
      (send dc start-doc "Rendering plot")
      (send dc start-page)
-     (plot3d/dc renderer-tree dc
+     (plot3d/dc renderer-tree dc 0 0
+                (inexact->exact (/ width x-scale)) (inexact->exact (/ height y-scale))
                 #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
                 #:angle angle #:altitude altitude #:title title #:x-label x-label #:y-label y-label
                 #:z-label z-label #:legend-anchor legend-anchor)

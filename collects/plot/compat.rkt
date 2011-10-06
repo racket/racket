@@ -38,9 +38,7 @@
 (define (mix . data)
   (for/fold ([f  (λ (area) (void))]) ([d  (in-list data)])
     (λ (area)
-      (send area reset-drawing-params)
       (f area)
-      (send area reset-drawing-params)
       (d area)
       (void))))
 
@@ -84,13 +82,12 @@
                  [new.plot-background  bgcolor])
     (define bm (make-bitmap (ceiling width) (ceiling height)))
     (define dc (make-object bitmap-dc% bm))
-    (define area (make-object 2d-plot-area% x-ticks y-ticks x-min x-max y-min y-max dc))
+    (define area (make-object 2d-plot-area% x-ticks y-ticks x-min x-max y-min y-max
+                   dc 0 0 width height))
     
     (send area start-plot)
-    (send area clip-to-bounds x-min x-max y-min y-max)
-    (x-axis-data area)
-    (y-axis-data area)
-    (data area)
+    (send area start-renderer x-min x-max y-min y-max)
+    ((mix x-axis-data y-axis-data data) area)
     (send area end-plot)
     
     (when out-file (send bm save-file out-file 'png))
@@ -128,10 +125,11 @@
     (define bm (make-bitmap (ceiling width) (ceiling height)))
     (define dc (make-object bitmap-dc% bm))
     (define area
-      (make-object 3d-plot-area% x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max dc))
+      (make-object 3d-plot-area% x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max
+        dc 0 0 width height))
     
     (send area start-plot)
-    (send area clip-to-bounds x-min x-max y-min y-max z-min z-max)
+    (send area start-renderer x-min x-max y-min y-max z-min z-max)
     (data area)
     (send area end-plot)
     
