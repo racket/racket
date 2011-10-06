@@ -129,7 +129,7 @@
                        last-ps)))))
         (make-mapped-function/bounds fmap x-min x-max))))
 
-(defproc (density [xs (listof real?)] [#:h-adjust h-adjust real? 1]
+(defproc (density [xs (listof real?)] [bw-adjust real? 1]
                   [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                   [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                   [#:samples samples (integer>=/c 2) (line-samples)]
@@ -141,7 +141,7 @@
                   ) renderer2d?
   (define n (length xs))
   (define sd (sqrt (- (/ (sum sqr xs) n) (sqr (/ (sum values xs) n)))))
-  (define h (* h-adjust 1.06 sd (expt n -0.2)))
+  (define h (* bw-adjust 1.06 sd (expt n -0.2)))
   (define f (make-kde xs h))
   (let ([x-min  (if x-min x-min (mapped-function/bounds-x-min f))]
         [x-max  (if x-max x-max (mapped-function/bounds-x-max f))])

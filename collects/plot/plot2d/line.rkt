@@ -67,7 +67,7 @@
          #:label label))
 
 (defproc (polar [f (real? . -> . real?)]
-                [θ-min real? 0] [θ-max real? 2pi]
+                [θ-min real? 0] [θ-max real? (* 2 pi)]
                 [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                 [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                 [#:samples samples (integer>=/c 2) (line-samples)]

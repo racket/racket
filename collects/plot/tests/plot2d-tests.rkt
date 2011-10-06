@@ -7,7 +7,7 @@
 
 (time
  (define xs (build-list 10000 (λ _ (random))))
- (plot (density xs #:h-adjust 1/2)))
+ (plot (density xs 1/2)))
 
 (plot empty #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1)
 

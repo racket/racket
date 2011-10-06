@@ -11,6 +11,43 @@ Returns @racket[#t] if @racket[value] is a 2D @tech{renderer}; that is, if @rack
 The following functions create such renderers.
 }
 
+@section[#:tag "renderer-function-arguments"]{2D Renderer Function Arguments}
+
+Functions that return renderers always have these kinds of arguments:
+@itemlist[
+          @item{Required (and possibly optional) arguments representing the graph to plot.}
+          @item{Optional keyword arguments for overriding calculated bounds, with the default value @(racket #f).}
+          @item{Optional keyword arguments that determine the appearance of the plot.}
+          @item{The optional keyword argument @(racket #:label), which specifies the name of the renderer in the legend.}]
+
+We will take @(racket function), perhaps the most commonly used renderer-producing function, as an example.
+
+@bold{Graph arguments.} The first argument to @(racket function) is the required @(racket f), the function to plot.
+It is followed by two optional arguments @(racket x-min) and @(racket x-max), which specify the renderer's @italic{x} bounds.
+(If not given, the @italic{x} bounds will be the plot area @italic{x} bounds, as requested by another renderer or specified to @(racket plot) using @(racket #:x-min) and @(racket #:x-max).)
+
+These three arguments define the @deftech{graph} of the function @(racket f), a possibly infinite set of pairs of points @(racket x),@(racket (f x)).
+An infinite graph cannot be plotted directly, so the renderer must approximately plot the points in it.
+The renderer returned by @(racket function) does this by drawing lines connected end-to-end.
+
+@bold{Overriding bounds arguments.} Next in @(racket function)'s argument list are the keyword arguments @(racket #:y-min) and @(racket #:y-max), which override the renderer's calculated @italic{y} bounds if given.
+
+@bold{Appearance arguments.} The next keyword argument is @(racket #:samples), which determines the quality of the renderer's approximate plot (higher is better).
+Following @(racket #:samples) are @(racket #:color), @(racket #:width), @(racket #:style) and @(racket #:alpha), which determine the color, width, style and opacity of the lines comprising the plot.
+
+In general, the keyword arguments that determine the appearance of plots follow consistent naming conventions.
+The most common keywords are @(racket #:color) (for fill and line colors), @(racket #:width) (for line widths), @(racket #:style) (for fill and line styles) and @(racket #:alpha).
+When a function needs both a fill color and a line color, the fill color is given using @(racket #:color), and the line color is given using @(racket #:line-color) (or some variation, such as @(racket #:line1-color)). Styles follow the same rule.
+
+Every appearance keyword argument defaults to the value of a parameter.
+This allows whole families of plots to be altered with little work.
+For example, setting @(racket (line-color 3)) causes every subsequent renderer that draws connected lines to draw its lines in blue.
+
+@bold{Label argument.} Lastly, there is @(racket #:label). If given, the @(racket function) renderer will generate a label entry that @(racket plot) puts in the legend.
+
+Not every renderer-producing function has a @(racket #:label) argument; for example, @(racket error-bars).
+
+
 @section{2D Point Renderers}
 
 @doc-apply[points]{
@@ -18,7 +55,6 @@ Returns a @tech{renderer} that draws points. Use it, for example, to draw 2D sca
 
 The renderer sets its bounds to the smallest rectangle that contains the points.
 Still, it is often necessary to override these bounds, especially with randomized data. For example,
-
 @interaction[#:eval plot-eval
                     (parameterize ([plot-width    150]
                                    [plot-height   150]
@@ -30,55 +66,55 @@ Still, it is often necessary to override these bounds, especially with randomize
                             (plot (points (map vector xs ys)
                                           #:x-min 0 #:x-max 1
                                           #:y-min 0 #:y-max 1))))]
-
 Readers of the first plot could only guess that the random points were generated in [0,1] × [0,1].
 
-The @(racket #:label) argument may be any Unicode string or a symbol in @(racket known-point-symbols).
-}
-
-@defthing[known-point-symbols (listof symbol?)]{
-A list containing the symbols that are valid @(racket points) labels.
-
-@interaction[#:eval plot-eval known-point-symbols]
+The @(racket #:sym) argument may be any integer, a Unicode character or string, or a symbol in @(racket known-point-symbols).
+Use an integer when you need different points but don't care exactly what they are.
 }
 
 @doc-apply[vector-field]{
 Returns a renderer that draws a vector field.
 
+If @(racket scale) is a real number, arrow lengths are multiplied by @(racket scale).
+If @(racket 'auto), the scale is calculated in a way that keeps arrows from overlapping.
+If @(racket 'normalized), each arrow is made the same length: the maximum length that would have been allowed by @(racket 'auto).
+
+An example of automatic scaling:
 @interaction[#:eval plot-eval
                     (plot (vector-field (λ (x y) (vector (+ x y) (- x y)))
                                         -2 2 -2 2))]
 }
 
 @doc-apply[error-bars]{
+Returns a renderer that draws error bars.
+The first and second element in each vector in @(racket bars) comprise the coordinate; the third is the height.
 @interaction[#:eval plot-eval
-                    (let* ([xs  (linear-seq 1 7 20 #:start? #f #:end? #f)]
-                           [ys  (map sqr xs)]
-                           [errors  (map (λ (x) (+ x (* 2 (random)))) xs)])
-                      (plot (list (function sqr 1 7)
-                                  (error-bars (map vector xs ys errors))
-                                  (points (map vector xs ys)))))]
+                    (plot (list (function sqr 1 7)
+                                (error-bars (list (vector 2 4 12)
+                                                  (vector 4 16 20)
+                                                  (vector 6 36 10)))))]
 }
 
 @section{2D Line Renderers}
 
 @doc-apply[function]{
-Returns a renderer that plots a function of @italic{x}.
-
+Returns a renderer that plots a function of @italic{x}. For example, a parabola:
 @interaction[#:eval plot-eval (plot (function sqr -2 2))]
 }
 
 @doc-apply[inverse]{
 Like @(racket function), but regards @(racket f) as a function of @italic{y}.
-
+For example, a parabola, an inverse parabola, and the reflection line:
 @interaction[#:eval plot-eval
                     (plot (list (axes)
-                                (function sqr -2 2)
-                                (function (λ (x) x) #:color 0 #:style 'dot)
-                                (inverse sqr -2 2 #:color 3)))]
+                                (function sqr -2 2 #:label "y = x^2")
+                                (function (λ (x) x) #:color 0 #:style 'dot #:label "y = x")
+                                (inverse sqr -2 2 #:color 3 #:label "x = y^2")))]
 }
 
 @doc-apply[lines]{
+Returns a renderer that draws lines.
+This is directly useful for plotting a time series, such as a random walk:
 @interaction[#:eval plot-eval
                     (plot (lines
                            (reverse
@@ -86,24 +122,31 @@ Like @(racket function), but regards @(racket f) as a function of @italic{y}.
                               (match-define (vector x y) (first lst))
                               (cons (vector i (+ y (* 1/100 (- (random) 1/2)))) lst)))
                            #:color 6 #:label "Random walk"))]
+
+The @(racket parametric) and @(racket polar) functions are defined using @(racket lines).
 }
 
 @doc-apply[parametric]{
+Returns a renderer that plots vector-valued functions of time.
+For example, the circle as a function of time can be plotted using
 @interaction[#:eval plot-eval
-                    (plot (parametric (λ (t) (vector (cos t) (sin t)))
-                                      0 (* 2 pi)))]
+                    (plot (parametric (λ (t) (vector (cos t) (sin t))) 0 (* 2 pi)))]
 }
 
 @doc-apply[polar]{
-@interaction[#:eval plot-eval
-                    (plot (polar (λ (θ) 1)))
-                    (plot (polar (λ (θ) (+ 1/2 (* 1/6 (cos (* 5 θ)))))))]
+Returns a renderer that plots functions from angle to radius.
+Note that the angle parameters @(racket θ-min) and @(racket θ-max) default to @(racket 0) and @(racket (* 2 pi)).
+
+For example, drawing a full circle:
+@interaction[#:eval plot-eval (plot (polar (λ (θ) 1)))]
 }
 
 @doc-apply[density]{
 Returns a renderer that plots an estimated density for the given points.
+The bandwidth for the kernel is calculated as @(racket (* bw-adjust 1.06 sd (expt n -0.2))), where @(racket sd) is the standard deviation of the data and @(racket n) is the number of points.
+Currently, the only supported kernel is the Gaussian.
 
-For example, to plot an estimated density of a triangle distribution:
+For example, to plot an estimated density of the triangle distribution:
 @interaction[#:eval plot-eval
                     (plot (list (function (λ (x) (cond [(or (x . < . -1) (x . > . 1))  0]
                                                        [(x . < . 0)   (+ 1 x)]
@@ -114,7 +157,7 @@ For example, to plot an estimated density of a triangle distribution:
                                          #:color 0 #:width 2 #:style 'dot
                                          #:label "Est. density")))]
 }
- 
+
 @section{2D Interval Renderers}
 
 These renderers each correspond with a line renderer, and graph the area between two lines.
@@ -170,12 +213,32 @@ Corresponds with @(racket polar).
 @section{2D Contour Renderers}
 
 @doc-apply[contours]{
-@interaction[#:eval plot-eval
-                    (plot (contours (λ (x y) (- (sqr x) (sqr y)))
-                                    -2 2 -2 2 #:label "z"))]
+Returns a renderer that plots contour lines, or lines of constant height.
+
+When @(racket levels) is @(racket 'auto), the number of contour lines and their values are chosen the same way as axis tick positions; i.e. they are chosen to be simple.
+When @(racket levels) is a number, @(racket contours) chooses that number of values, evenly spaced, within the output range of @(racket f).
+When @(racket levels) is a list, @(racket contours) plots contours at the values in @(racket levels).
+
+For example, a saddle:
+@interaction[#:eval plot-eval (plot (contours (λ (x y) (- (sqr x) (sqr y)))
+                                              -2 2 -2 2 #:label "z"))]
+
+The appearance keyword arguments assign a color, width, style and opacity @italic{to each contour line}.
+Each can be given as a list or as a function from a list of output values of @(racket f) to a list of appearance values.
+In both cases, when there are more contour lines than list elements, the colors, widths, styles and alphas in the list repeat.
+
+For example,
+@interaction[#:eval plot-eval (plot (contours (λ (x y) (- (sqr x) (sqr y)))
+                                              -2 2 -2 2 #:levels 4
+                                              #:colors '("blue" "red")
+                                              #:widths '(4 1)
+                                              #:styles '(solid dot)))]
 }
 
 @doc-apply[contour-intervals]{
+Returns a renderer that fills the area between contour lines, and additionally draws contour lines.
+
+For example, the canonical saddle, with its gradient field superimposed:
 @interaction[#:eval plot-eval
                     (plot (list (contour-intervals (λ (x y) (- (sqr x) (sqr y)))
                                                    -2 2 -2 2 #:label "z")
@@ -190,11 +253,15 @@ Represents a closed interval. Used to give bounds to rectangles in @(racket rect
 }
 
 @doc-apply[rectangles]{
+Returns a renderer that draws rectangles.
+The rectanges are given as a list of vectors of intervals---each vector defines the bounds of a rectangle. For example,
 @interaction[#:eval plot-eval (plot (rectangles (list (vector (ivl -1 1) (ivl -1 1))
                                                       (vector (ivl 1 2) (ivl 1 2)))))]
 }
 
 @doc-apply[area-histogram]{
+Returns a renderer that draws a histogram approximating the area under a curve.
+The @(racket #:samples) argument determines the accuracy of the calculated areas.
 @interaction[#:eval plot-eval
                     (let ()
                       (define (f x) (exp (* -1/2 (sqr x))))
@@ -203,6 +270,10 @@ Represents a closed interval. Used to give bounds to rectangles in @(racket rect
 }
 
 @doc-apply[discrete-histogram]{
+Returns a renderer that draws a discrete histogram.
+
+Each bar takes up exactly one plot unit; e.g. the first bar in a histogram uses the space between @(racket 0) and @(racket 1).
+To plot histograms side-by-side, pass the appropriate @(racket #:x-min) value to the second renderer. For example,
 @interaction[#:eval plot-eval
                     (plot (list (discrete-histogram (list #(a 1) #(b 2) #(c 3) #(d 2)
                                                           #(e 4) #(f 2.5) #(g 1))

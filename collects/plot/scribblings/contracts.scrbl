@@ -25,6 +25,12 @@
 @doc-apply[font-family/c]
 @doc-apply[point-sym/c]
 
+@defthing[known-point-symbols (listof symbol?)]{
+A list containing the symbols that are valid @(racket points) labels.
+
+@interaction[#:eval plot-eval known-point-symbols]
+}
+
 @section[#:tag "contracts.sequence"]{Color, Width and Style Sequences}
 
 @doc-apply[plot-colors/c]
