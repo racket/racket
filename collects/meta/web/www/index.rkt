@@ -195,8 +195,8 @@
            (define ((deriv f) x)
              (/ (- (f x) (f (- x 0.001))) 0.001))
            (define (thrice f) (lambda (x) (f (f (f x)))))
-           (plot (mix (line ((thrice deriv) sin) #:color 'red)
-                      (line cos #:color 'blue)))}
+           (plot (list (function ((thrice deriv) sin) -5 5)
+                       (function cos -5 5 #:color 'blue)))}
      @desc{This program uses the @elemcode{plot} library to draw plots of
        functions.  Note that the plots are actual value, which DrRacket shows
        in graphical form.})

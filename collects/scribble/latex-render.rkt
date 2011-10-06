@@ -544,7 +544,7 @@
              [center? (and (not bottom?)
                            (not top?))]
              [as-box? (and can-box? (boxable? p))])
-        (when (style-name vstyle)
+        (when (string? (style-name vstyle))
           (printf "\\~a{" (style-name vstyle)))
         (let ([minipage? (and can-box? (not as-box?))])
           (when minipage?
@@ -569,7 +569,7 @@
             (render-block p part ri #f)])
           (when minipage?
             (printf " \\end{minipage}\n")))
-        (when (style-name vstyle)
+        (when (string? (style-name vstyle))
           (printf "}"))
         null))
 

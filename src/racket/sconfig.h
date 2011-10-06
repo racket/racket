@@ -940,6 +940,8 @@
 #if defined(__QNX__)
 # define USE_FCNTL_O_NONBLOCK
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-QNX"
+# define ASSUME_FIXED_STACK_SIZE
+# define FIXED_STACK_SIZE 524288
 #endif
 
 /************** (END KNOWN ARCHITECTURE/SYSTEMS) ****************/
