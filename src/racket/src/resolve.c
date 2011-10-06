@@ -1927,6 +1927,13 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     offset++;
   }
 
+  if (!convert && !just_compute_lift && (offset < data->closure_size) && expanded_already) {
+    /* shift boxmap down, since we're dropping closure elements */
+    int bsz;
+    bsz = boxmap_size(data->num_params + offset);
+    memmove(closure_map + offset, closure_map + data->closure_size, sizeof(mzshort) * bsz);
+  }
+
   /* Reset closure_size, in case a lifted variable was removed: */
   closure_size = offset;
   if (!just_compute_lift) {
@@ -1949,7 +1956,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       data->num_params = 0;
   } else {
     new_info = resolve_info_extend(info, data->num_params, data->num_params,
-					  cl->base_closure_size + data->num_params);
+                                   cl->base_closure_size + data->num_params);
     for (i = 0; i < data->num_params; i++) {
       resolve_info_add_mapping(new_info, i, i + closure_size + convert_size,
                                (((cl->local_flags[i] & SCHEME_WAS_SET_BANGED)
@@ -1959,7 +1966,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
                                    ? SCHEME_INFO_FLONUM_ARG
                                    : 0)),
                                NULL);
-      if (cl->flonum_map && cl->flonum_map[i])
+      if (cl->flonum_map && cl->flonum_map[i] && !just_compute_lift)
         boxmap_set(closure_map, i + convert_size, 2, closure_size);
     }
     if (expanded_already && !just_compute_lift)
