@@ -25,7 +25,7 @@
 
 (define plot-eval
   (let ([eval  (make-base-eval)])
-    (eval #'(require racket/math racket/match racket/list
+    (eval #'(require racket/math racket/match racket/list racket/draw racket/class
                      (rename-in (except-in plot plot plot3d)
                                 [plot-bitmap  plot]
                                 [plot3d-bitmap  plot3d])

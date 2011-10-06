@@ -21,8 +21,8 @@
 (provide (struct-out invertible-function))
 
 (require "common/sample.rkt")
-(provide (struct-out mapped-function)
-         (struct-out mapped-function/bounds))
+(provide nonlinear-seq
+         (struct-out mapped-function))
 
 (require "plot2d/kde.rkt")
-(provide make-kde)
+(provide kde)

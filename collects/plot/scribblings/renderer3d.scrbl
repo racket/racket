@@ -11,7 +11,7 @@ Returns @racket[#t] if @racket[value] is a 3D @tech{renderer}; that is, if @rack
 The following functions create such renderers.
 }
 
-@section[#:tag "renderer3d-function-arguments"]{3D Renderer Function Arguments}
+@section{3D Renderer Function Arguments}
 
 As with functions that return 2D renderers, functions that return 3D renderers always have these kinds of arguments:
 @itemlist[

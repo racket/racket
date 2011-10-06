@@ -9,7 +9,7 @@
          "renderer.rkt"
          "line.rkt")
 
-(provide make-kde density)
+(provide kde density)
 
 ;; make-kde/windowed : (vectorof flonum) flonum flonum flonum -> (listof flonum) -> (listof flonum)
 ;; (can assume that xs is sorted)
@@ -81,9 +81,11 @@
 ;; Making this odd ensures fast-gauss doesn't return negatives (the series partial sums alternate +/-)
 (define series-terms 9)
 
-(defproc (make-kde [xs (listof real?)] [h real?]) mapped-function/bounds?
+(defproc (kde [xs (listof real?)] [h real?]) (values mapped-function?
+                                                     (or/c real? #f)
+                                                     (or/c real? #f))
   (if (empty? xs)
-      (mapped-function/bounds (λ (y) 0) (λ (ys) (map (λ _ 0.0) ys)) #f #f)
+      (values (mapped-function (λ (y) 0) (λ (ys) (map (λ _ 0.0) ys))) #f #f)
       (let* ([xs  (list->vector (sort (map exact->inexact xs) fl<))]
              [h   (exact->inexact h)])
         (define N (vector-length xs))
@@ -127,7 +129,7 @@
                (append first-ps
                        (map (λ (p) (fl* p c)) mid-ps)
                        last-ps)))))
-        (make-mapped-function/bounds fmap x-min x-max))))
+        (values (mapped-function (λ (x) (first (fmap (list x)))) fmap) x-min x-max))))
 
 (defproc (density [xs (listof real?)] [bw-adjust real? 1]
                   [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
@@ -142,8 +144,8 @@
   (define n (length xs))
   (define sd (sqrt (- (/ (sum sqr xs) n) (sqr (/ (sum values xs) n)))))
   (define h (* bw-adjust 1.06 sd (expt n -0.2)))
-  (define f (make-kde xs h))
-  (let ([x-min  (if x-min x-min (mapped-function/bounds-x-min f))]
-        [x-max  (if x-max x-max (mapped-function/bounds-x-max f))])
+  (define-values (f fx-min fx-max) (kde xs h))
+  (let ([x-min  (if x-min x-min fx-min)]
+        [x-max  (if x-max x-max fx-max)])
     (function f x-min x-max #:y-min y-min #:y-max y-max #:samples samples
               #:color color #:width width #:style style #:alpha alpha #:label label)))

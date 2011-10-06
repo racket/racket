@@ -49,8 +49,7 @@
                        null-2d-bounds-fun
                        x-min x-max y-min y-max))]))
 
-(defproc (parametric [f (or/c (real? . -> . (vector/c real? real?))
-                              mapped-function?)]
+(defproc (parametric [f (real? . -> . (vector/c real? real?))]
                      [t-min real?] [t-max real?]
                      [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                      [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]

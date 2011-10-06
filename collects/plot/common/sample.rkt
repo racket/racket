@@ -3,6 +3,7 @@
 ;; Functions that sample from functions, and functions that create memoized samplers.
 
 (require racket/match racket/flonum racket/math racket/contract racket/list
+         "contract.rkt" "contract-doc.rkt"
          "math.rkt"
          "axis-transform.rkt"
          "parameters.rkt"
@@ -14,14 +15,6 @@
   #:property prop:procedure
   (λ (g x) ((mapped-function-f g) x)))
 
-(struct mapped-function/bounds mapped-function (x-min x-max) #:transparent)
-
-(define (make-mapped-function fmap)
-  (mapped-function (λ (x) (first (fmap (list x)))) fmap))
-
-(define (make-mapped-function/bounds fmap x-min x-max)
-  (mapped-function/bounds (λ (x) (first (fmap (list x)))) fmap x-min x-max))
-
 (define (map* f xs)
   (match f
     #;; gives obviously wrong chaperone error (tries to apply a hash?):
@@ -29,9 +22,12 @@
     [(? mapped-function?)  ((mapped-function-fmap f) xs)]
     [_  (map f xs)]))
 
-(define (nonlinear-seq x-min x-max samples transform #:start? [start? #t] #:end? [end? #t])
-  (match-define (invertible-function _ finv) (transform x-min x-max))
-  (map finv (linear-seq x-min x-max samples #:start? start? #:end? end?)))
+(defproc (nonlinear-seq [start real?] [end real?] [num (integer>=/c 0)]
+                        [transform (real? real? . -> . invertible-function?)]
+                        [#:start? start? boolean? #t]
+                        [#:end? end? boolean? #t]) (listof real?)
+  (match-define (invertible-function _ finv) (transform start end))
+  (map finv (linear-seq start end num #:start? start? #:end? end?)))
 
 (define ((2d-polar->3d-function f) x y z)
   (let ([x  (exact->inexact x)]
