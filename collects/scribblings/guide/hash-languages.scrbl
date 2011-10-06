@@ -108,7 +108,7 @@ treats its entire body as literal text and exports the text as a
 
 The @filepath{literal.rkt} language uses @racket[strip-context] on the
 generated @racket[module] expression, because a
-@racketidfont{read-syntax} function should return a syntax obejct with
+@racketidfont{read-syntax} function should return a syntax object with
 no lexical context. Also, the @filepath{literal.rkt} language creates
 a module named @racketidfont{anything}, which is an arbitrary choice;
 the language is intended to be used in a file, and the longhand module
