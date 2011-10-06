@@ -111,12 +111,15 @@
                                       (case (check-bit i)
                                         [(0) 'val]
                                         [(1) 'ref]
-                                        [(2) 'flonum])))]
+                                        [(2) 'flonum]
+                                        [else (error "both 'ref and 'flonum argument?")])))]
                      [(closure-types) (for/list ([i (in-range closure-size)]
                                                  [j (in-naturals num-params)])
                                         (case (check-bit j)
                                           [(0) 'val/ref]
-                                          [(2) 'flonum]))])
+                                          [(1) (error "invalid 'ref closure variable")]
+                                          [(2) 'flonum]
+                                          [else (error "both 'ref and 'flonum closure var?")]))])
          (make-lam name
                    (append
                     (if (zero? (bitwise-and flags flags CLOS_PRESERVES_MARKS)) null '(preserves-marks))
