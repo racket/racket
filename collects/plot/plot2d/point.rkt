@@ -25,7 +25,7 @@
   
   (if label (point-legend-entry label sym color size line-width) empty))
 
-(defproc (points [vs  (listof (vectorof real?))]
+(defproc (points [vs  (listof (vector/c real? real?))]
                  [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                  [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                  [#:sym sym point-sym/c (point-sym)]
@@ -35,7 +35,7 @@
                  [#:alpha alpha (real-in 0 1) (point-alpha)]
                  [#:label label (or/c string? #f) #f]
                  ) renderer2d?
-  (let ([vs  (filter vregular? (map vector-take-2 vs))])
+  (let ([vs  (filter vregular? vs)])
     (cond
       [(empty? vs)  null-renderer2d]
       [else  (match-define (list (vector xs ys) ...) vs)

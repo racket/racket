@@ -32,7 +32,7 @@
           [#:alpha alpha (real-in 0 1) (point-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (let ([vs  (filter vregular? (map vector-take-3 vs))])
+  (let ([vs  (filter vregular? vs)])
     (cond [(empty? vs)  null-renderer3d]
           [else
            (match-define (list (vector xs ys zs) ...) vs)

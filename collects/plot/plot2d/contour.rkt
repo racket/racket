@@ -2,7 +2,7 @@
 
 ;; Renderers for contour lines and contour intervals
 
-(require racket/contract racket/class racket/match racket/list racket/flonum
+(require racket/contract racket/class racket/match racket/list racket/flonum racket/vector
          "../common/math.rkt"
          "../common/draw.rkt"
          "../common/marching-squares.rkt"
@@ -135,7 +135,8 @@
                                                           (exact->inexact z3) (exact->inexact z4)))])
              (cond [(equal? poly 'full)  (list (vector xa ya) (vector xa yb)
                                                (vector xb yb) (vector xb ya))]
-                   [else  (map vector-take-2 (scale-normalized-poly poly xa xb ya yb))])))))
+                   [else  (map (λ (v) (vector-take v 2))
+                               (scale-normalized-poly poly xa xb ya yb))])))))
       
       (define (draw-polys)
         (for ([poly  (in-list polys)])

@@ -2,7 +2,7 @@
 
 ;; A compatibility module for the old 'plot'.
 
-(require racket/contract racket/class racket/snip racket/draw
+(require racket/contract racket/class racket/snip racket/draw racket/vector
          ;; Plotting
          "common/contract.rkt"
          "common/contract-doc.rkt"
@@ -144,7 +144,8 @@
                  [#:sym sym (or/c char? string? integer? symbol?) 'square]
                  [#:color color plot-color? 'black]
                  ) ((is-a?/c 2d-plot-area%) . -> . void?)
-  (renderer2d->plot-data (new.points vecs #:sym sym #:size 6 #:color color)))
+  (renderer2d->plot-data (new.points (map (λ (v) (vector-take v 2)) vecs)
+                                     #:sym sym #:size 6 #:color color)))
 
 (defproc (vector-field [f ((vector/c real? real?) . -> . (vector/c real? real?))]
                        [#:samples samples (integer>=/c 2) 20]

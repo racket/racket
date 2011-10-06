@@ -7,9 +7,6 @@
 
 (provide (all-defined-out))
 
-(define (vector-take-2 v) (vector-take v 2))
-(define (vector-take-3 v) (vector-take v 3))
-
 (define (vcross v1 v2)
   (match-define (vector x1 y1 z1) v1)
   (match-define (vector x2 y2 z2) v2)
