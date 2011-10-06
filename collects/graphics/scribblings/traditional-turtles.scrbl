@@ -203,7 +203,7 @@ initial values @racket[a], @racket[b], and @racket[c].}
 
 @defproc[(lorenz1) void?]{
 
-Calls @racket[lorenze] with good initial values.}
+Calls @racket[lorenz] with good initial values.}
 
 @defproc[(peano [peano-size real?]) void?]{
   Draws the @as-index{Peano space-filling curve}.
