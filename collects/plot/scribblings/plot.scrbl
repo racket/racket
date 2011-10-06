@@ -14,11 +14,10 @@ It includes many common kinds already, such as scatter plots, line plots, contou
 Thanks to Racket's excellent multiple-backend drawing library, @(plot-name) can render plots as manipulatable images in DrRacket, as bitmaps in slideshows, as PNG, PDF, PS and SVG files, or on any device context.
 
 @bold{A note on backward compatibility.} @(plot-name) has undergone a major rewrite between versions 5.1.3 and 5.2.
-Many programs written using @(plot-name) 5.1.3 and earlier will still compile, run and generate plots.
-For code that does not, see the @(racketmodname plot/compat) module.
-
-Some functions, like @(racket mix), @(racket line) and @(racket surface), still exist for backward compatibility, but are deprecated and may be removed in the future.
-Set @(racket (plot-deprecation-warnings? #t)) to be alerted to uses of deprecated features.
+Many programs written using PLoT 5.1.3 and earlier will still compile, run and generate plots.
+Some programs will not.
+Most programs use deprecated functions such as @(racket mix), @(racket line) and @(racket surface). These functions still exist for backward compatibility, but are deprecated and may be removed in the future.
+If you have code written for PLoT 5.1.3 or earlier, please see @secref["porting"] (and possibly @secref["compat"]).
 
 @table-of-contents[]
 
@@ -39,6 +38,8 @@ Set @(racket (plot-deprecation-warnings? #t)) to be alerted to uses of deprecate
 @include-section["contracts.scrbl"]
 
 @include-section["custom.scrbl"]
+
+@include-section["porting.scrbl"]
 
 @include-section["compat.scrbl"]
 

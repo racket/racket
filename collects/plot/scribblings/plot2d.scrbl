@@ -95,25 +95,3 @@ Every @secref{plot2d} procedure is defined in terms of @(racket plot/dc).
 
 Use this if you need to continually update a plot on a @(racket canvas%), or to create other @(racket plot)-like functions with different backends.
 }
-
-@section{Deprecated 2D Functions}
-
-The following functions exist for backward compatibility, but may be removed in the future.
-Set @(racket (plot-deprecation-warnings? #t)) to be alerted the first time one is used.
-
-@defproc[(mix [plot-data (any/c . -> . void?)] ...)
-         (any/c . -> . void?)]{
-See @(secref "compat").
-}
-
-@doc-apply[line]{
-See @(secref "compat").
-}
-
-@doc-apply[contour]{
-See @(secref "compat").
-}
-
-@doc-apply[shade]{
-See @(secref "compat").
-}

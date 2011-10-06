@@ -61,12 +61,3 @@ Use this if you need to continually update a plot on a @(racket canvas%), or to 
 
 This procedure corresponds with @(racket plot/dc). 
 }
-
-@section{Deprecated 3D Functions}
-
-The following functions exist for backward compatibility, but may be removed in the future.
-Set @(racket (plot-deprecation-warnings? #t)) to be alerted the first time one is used.
-
-@doc-apply[surface]{
-See @(secref "compat").
-}

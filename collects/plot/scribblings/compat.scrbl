@@ -14,22 +14,6 @@
 
 This module provides an interface compatible with PLoT 5.1.3 and earlier.
 
-The update from PLoT version 5.1.3 to 5.2 introduces a few incompatibilities:
-@itemlist[
-          @item{PLoT now allows plot elements to request plot area bounds, and finds bounds large enough to fit all plot elements.
-                The old default plot area bounds of [-5,5] × [-5,5] cannot be made consistent with the improved behavior; the default bounds are now "no bounds".
-                This causes code such as @(racket (plot (line sin))), which does not state bounds, to fail.}
-          @item{The @(racket #:width) and @(racket #:style) keyword arguments to @(racket vector-field) have been replaced by @(racket #:line-width) and @(racket #:scale) to be consistent with other functions.}
-          @item{The @(racket plot) function no longer takes a @(racket ((is-a?/c 2d-view%) . -> . void?)) as an argument, but a @(racket (treeof renderer2d?)).
-                The argument change in @(racket plot3d) is similar.
-                This should not affect most code because PLoT encourages regarding these data types as black boxes.}
-          @item{The @(racket plot-extend) module no longer exists.}
-          ]
-
-Many programs written using PLoT 5.1.3 and earlier will still compile, run and generate plots.
-For those that do not, replacing @(racket (require plot)) with @(racket (require plot/compat)) should fix most errors.
-(This will unfortunately not fix programs that use @(racket plot-extend).)
-
 @; ----------------------------------------
 
 @section[#:tag "plot"]{Plotting}
