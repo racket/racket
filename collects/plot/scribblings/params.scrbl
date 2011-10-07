@@ -6,22 +6,18 @@
 
 @title[#:tag "params"]{Plot and Renderer Parameters}
 
-@section{Shared 2D/3D Parameters}
-
-@subsection{Compatibility}
+@section{Compatibility}
 
 @doc-apply[plot-deprecation-warnings?]{
 When @(racket #t), prints a deprecation warning to @(racket current-error-port) on the first use of @(racket mix), @(racket line), @(racket contour), @(racket shade), @(racket surface), or a keyword argument of @(racket plot) or @(racket plot3d) that exists solely for backward compatibility.
 }
 
-@subsection{Output}
+@section{Output}
 
 @doc-apply[plot-new-window?]{When @(racket #t), @(racket plot) and @(racket plot3d) open a new window for each plot instead of returning an @(racket image-snip%).
 
 Users of command-line Racket, which cannot display image snips, should enter
-
 @racketblock[(plot-new-window? #t)]
-
 before using @(racket plot) or @(racket plot3d).}
 
 @doc-apply[plot-width]
@@ -31,11 +27,13 @@ before using @(racket plot) or @(racket plot3d).}
 @doc-apply[plot-ps-interactive?]
 @doc-apply[plot-pdf-interactive?]
 
-@subsection{Axis Transforms}
+@section{Axis Transforms}
 
 @doc-apply[plot-x-transform]
 @doc-apply[plot-y-transform]
-@doc-apply[plot-z-transform]
+@doc-apply[plot-z-transform]{
+Per-axis, nonlinear transforms. Set these, for example, to plot with log-scale axes.
+}
 
 @doc-apply[id-transform]{
 The default transform for all axes.
@@ -44,11 +42,11 @@ The default transform for all axes.
 @doc-apply[log-transform]{
 A log transform. Use this to generate plots with log-scale axes. Any log-scaled axis must be on a positive interval.
 
-@interaction[#:eval plot-eval
-                    (parameterize ([plot-y-transform  log-transform])
-                      (plot (function (λ (x) x) 1 2)))
-                    (parameterize ([plot-x-transform  log-transform])
-                      (plot (function (λ (x) x) -1 1)))]
+@examples[#:eval plot-eval
+                 (parameterize ([plot-y-transform  log-transform])
+                   (plot (function (λ (x) x) 1 2)))
+                 (parameterize ([plot-x-transform  log-transform])
+                   (plot (function (λ (x) x) -1 1)))]
 }
 
 @doc-apply[cbrt-transform]{
@@ -65,7 +63,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
                                 (plot (function sqr -1 1)))]
 }
 
-@subsection{General Appearance}
+@section{General Appearance}
 
 @doc-apply[plot-foreground]
 @doc-apply[plot-background]{The plot foreground and background color. That both are @(racket 0) by default is not a mistake: for foreground colors, @(racket 0) is interpreted as black; for background colors, @(racket 0) is interpreted as white. See @(racket plot-color/c) for details on integer-indexed colors.}
@@ -87,7 +85,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 @doc-apply[plot-z-label]{The title and axis labels. A @(racket #f) value means the label is not drawn and takes no space. A @(racket "") value effectively means the label is not drawn, but it takes space.
 }
 
-@subsection{Lines}
+@section{Lines}
 
 @doc-apply[line-samples]
 @doc-apply[line-color]
@@ -95,7 +93,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 @doc-apply[line-style]
 @doc-apply[line-alpha]
 
-@subsection{Intervals}
+@section{Intervals}
 
 @doc-apply[interval-color]
 @doc-apply[interval-style]
@@ -107,7 +105,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 @doc-apply[interval-line2-style]
 @doc-apply[interval-alpha]
 
-@subsection{Points}
+@section{Points}
 
 @doc-apply[point-sym]
 @doc-apply[point-color]
@@ -115,7 +113,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 @doc-apply[point-line-width]
 @doc-apply[point-alpha]
 
-@subsection{Vector Fields}
+@section{Vector Fields}
 
 @doc-apply[vector-field-samples]
 @doc-apply[vector-field-color]
@@ -124,7 +122,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 @doc-apply[vector-field-scale]
 @doc-apply[vector-field-alpha]
 
-@subsection{Error Bars}
+@section{Error Bars}
 
 @doc-apply[error-bar-width]
 @doc-apply[error-bar-color]
@@ -132,7 +130,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 @doc-apply[error-bar-line-style]
 @doc-apply[error-bar-alpha]
 
-@subsection{Contours and Contour Intervals}
+@section{Contours and Contour Intervals}
 
 @doc-apply[default-contour-colors]
 @doc-apply[default-contour-fill-colors]
@@ -148,7 +146,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 @doc-apply[contour-interval-styles]
 @doc-apply[contour-interval-alphas]
 
-@subsection{Rectangles}
+@section{Rectangles}
 
 @doc-apply[rectangle-color]
 @doc-apply[rectangle-style]
@@ -161,7 +159,7 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 
 @doc-apply[discrete-histogram-gap]
 
-@subsection{Decorations}
+@section{Decorations}
 
 These parameters do not control the @italic{typical} appearance of plots. Instead, they control the look of renderers that add specific decorations, such as labeled points.
 
@@ -177,9 +175,7 @@ These parameters do not control the @italic{typical} appearance of plots. Instea
 @doc-apply[label-alpha]
 @doc-apply[label-point-size]
 
-@section{3D-Specific Parameters}
-
-@subsection{3D General Appearance}
+@section{3D General Appearance}
 
 @doc-apply[plot3d-samples]
 @doc-apply[plot3d-animating?]
@@ -189,7 +185,7 @@ These parameters do not control the @italic{typical} appearance of plots. Instea
 @doc-apply[plot3d-diffuse-light?]
 @doc-apply[plot3d-specular-light?]
 
-@subsection{Surfaces}
+@section{Surfaces}
 
 @doc-apply[surface-color]
 @doc-apply[surface-style]
@@ -198,7 +194,7 @@ These parameters do not control the @italic{typical} appearance of plots. Instea
 @doc-apply[surface-line-style]
 @doc-apply[surface-alpha]
 
-@subsection{Contour Surfaces}
+@section{Contour Surfaces}
 
 Contour surface renderers use shared contour parameters except for the following three.
 
@@ -206,7 +202,7 @@ Contour surface renderers use shared contour parameters except for the following
 @doc-apply[contour-interval-line-widths]
 @doc-apply[contour-interval-line-styles]
 
-@subsection{Isosurfaces}
+@section{Isosurfaces}
 
 Single isosurfaces (@(racket isosurface3d)) use surface parameters. Nested isosurfaces (@(racket isosurfaces3d)) use the following.
 
