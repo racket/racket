@@ -247,7 +247,10 @@ TODO
                          [name (and l (send l get-language-name))])
                     (drracket:help-desk:help-desk
                      str (and ctxt (list ctxt name)))))))))
-    (add-drs-function "execute"  (λ (frame) (send frame execute-callback))) ;; keep this in case people use it in their keymaps
+    
+    ;; keep this in case people use it in their keymaps
+    (add-drs-function "execute"  (λ (frame) (send frame execute-callback)))
+    
     (add-drs-function "run"  (λ (frame) (send frame execute-callback)))
     (add-drs-function "next-tab" (λ (frame) (send frame next-tab)))
     (add-drs-function "prev-tab" (λ (frame) (send frame prev-tab)))
@@ -958,7 +961,8 @@ TODO
                                      (and only-whitespace-afterwards?
                                           (submit-predicate this prompt-position))))])
                         (pred 
-                         ;; no good! giving away the farm here. need to hand over a proxy that is limited to just read access
+                         ;; no good! giving away the farm here. need to hand
+                         ;; over a proxy that is limited to just read access
                          (open-input-text-editor this prompt-position)
                          (only-whitespace-after-insertion-point)))]
                      [else
@@ -1321,7 +1325,9 @@ TODO
               (when raised-exn?
                 (fprintf 
                  (current-error-port)
-                 "copied exn raised when setting up snip values (thunk passed as third argume to drracket:language:add-snip-value)\n")
+                 (string-append
+                  "copied exn raised when setting up snip values"
+                  " (thunk passed as third argume to drracket:language:add-snip-value)\n"))
                 (raise exn)))
             
             ;; allow extensions to this class to do some setup work
