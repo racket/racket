@@ -127,25 +127,30 @@ Polling a URL can result in one of four options:
 ;; need to mimic HEAD requests too.
 
 (define (verify-http url)
-  (call/input-url (string->url url) head-impure-port
-    (lambda (inp)
-      (define status (read-line inp))
-      (define status* (regexp-match #rx"^HTTP/[0-9.]+ ([0-9]+)" status))
-      (cond
-        [(not status*)
-         (eprintf "WARNING: bad status line for ~a:\n  ~s\n" url status)
-         #f]
-        [(not (regexp-match #rx"^2..$" (cadr status*)))
-         (eprintf "WARNING: bad status code for ~a: ~s\n" url (cadr status*))
-         #f]
-        [else
-         (or (for/or ([line (in-lines inp)])
-               (cond [(regexp-match #rx"^(?i:content-length: *([0-9]+) *)$"
-                                    line)
-                      => (compose string->number cadr)]
-                     [else #f]))
-             (begin (eprintf "WARNING: no `content-length' for ~a" url)
-                    #t))]))))
+  (define (check-contents inp)
+    (define status (read-line inp))
+    (define status* (regexp-match #rx"^HTTP/[0-9.]+ ([0-9]+)" status))
+    (cond [(not status*)
+           (eprintf "WARNING: bad status line for ~a:\n  ~s\n" url status)
+           #f]
+          [(not (regexp-match #rx"^2..$" (cadr status*)))
+           (eprintf "WARNING: bad status code for ~a: ~s\n" url (cadr status*))
+           #f]
+          [else
+           (or (for/or ([line (in-lines inp)])
+                 (cond [(regexp-match #rx"^(?i:content-length: *([0-9]+) *)$"
+                                      line)
+                        => (compose string->number cadr)]
+                       [else #f]))
+               (begin (eprintf "WARNING: no `content-length' for ~a" url)
+                      #t))]))
+  (define r
+    (with-handlers ([exn:fail? exn-message])
+      (call/input-url (string->url url) head-impure-port check-contents)))
+  (if (boolean? r)
+    r
+    (begin (eprintf "WARNING: failure getting http info for ~a (~a)\n" url r)
+           #f)))
 
 (define (verify-ftp url)
   (define-values [host port? path]
