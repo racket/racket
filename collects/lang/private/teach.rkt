@@ -1550,29 +1550,39 @@
                       'stepper-black-box-expr
                       stx)]))]
         [(_ (planet . rest))
-         (syntax-case stx (planet)
-           [(_ (planet s1 (s2 s3 n1 n2)))
-            (and (string? (syntax-e #'s1))
-                 (string? (syntax-e #'s2))
-                 (string? (syntax-e #'s3))
-                 (version-number? (syntax-e #'n1))
-                 (version-number? (syntax-e #'n2)))
-            (begin
-              (check-string-form stx #'s1)
-              (check-string-form stx #'s2)
-              (check-string-form stx #'s3)
-              ;; use the original `planet', so that it binds correctly:
-              (syntax-case stx ()
-                [(_ ms) (stepper-syntax-property
-                         #'(require ms)
-                         'stepper-black-box-expr
-                         stx)]))]
-           [_else
-            (teach-syntax-error
-             'require
-             stx
-             #f
-             "not a valid planet path; should be: (require (planet STRING (STRING STRING NUMBER NUMBER)))")])]
+         (let ([go
+                (λ ()
+                  ;; use the original `planet', so that it binds correctly:
+                  (syntax-case stx ()
+                    [(_ ms) (stepper-syntax-property
+                             #'(require ms)
+                             'stepper-black-box-expr
+                             stx)]))])
+           (syntax-case stx (planet)
+             [(_ (planet s1 (s2 s3 n1 n2)))
+              (and (string? (syntax-e #'s1))
+                   (string? (syntax-e #'s2))
+                   (string? (syntax-e #'s3))
+                   (version-number? (syntax-e #'n1))
+                   (version-number? (syntax-e #'n2)))
+              (begin
+                (check-string-form stx #'s1)
+                (check-string-form stx #'s2)
+                (check-string-form stx #'s3)
+                (go))]
+             [(_ (planet a))
+              (or (string? (syntax-e #'a))
+                  (symbol? (syntax-e #'a)))
+              (go)]
+             [_else
+              (teach-syntax-error
+               'require
+               stx
+               #f
+               (string-append
+                "not a valid planet path; should be:"
+                " (require (planet STRING (STRING STRING NUMBER NUMBER)))"
+                " (require (planet STRING)) or (require (planet SYMBOL))"))]))]
         [(_ thing)
          (teach-syntax-error
           'require

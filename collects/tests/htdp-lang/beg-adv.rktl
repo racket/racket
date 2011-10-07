@@ -247,6 +247,8 @@
 (htdp-syntax-test #'(require (lib "a" "b/")) #rx"end with a slash")
 (htdp-syntax-test #'(require (lib "a" 2)) #rx"string for a lib path")
 (htdp-syntax-test #'(require (planet "a" 2)) #rx"not a valid planet path")
+(htdp-syntax-test #'(require (planet "test-connectionλ.ss" ("planet" "test-connection.plt" 1 0)))
+                  #rx"string can contain only")
 
 (define rx:dots-error "found a template")
 
