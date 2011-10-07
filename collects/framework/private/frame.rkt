@@ -1507,6 +1507,41 @@
   (mixin (-editor<%>) (text<%>)
     (define/override (get-editor<%>) (class->interface text%))
     (init (filename #f) (editor% text:keymap%))
+    
+    (inherit get-editor)
+    (define/override (edit-menu:between-find-and-preferences edit-menu)
+      (when (add-find-longest-line-menu-item?)
+        (new menu-item%
+             [parent edit-menu] 
+             [label (string-constant find-longest-line)]
+             [callback 
+              (λ (x y)
+                (define ed (get-editor))
+                (define (line-len p)
+                  (define ans 
+                    (- (send ed paragraph-end-position p)
+                       (send ed paragraph-start-position p)))
+                  ans)
+                (when ed
+                  (let loop ([p (- (send ed last-paragraph) 1)]
+                             [longest-size (line-len (send ed last-paragraph))]
+                             [longest (send ed last-paragraph)])
+                    (cond
+                      [(= p -1)
+                       (send ed set-position 
+                             (send ed paragraph-start-position longest)
+                             (send ed paragraph-end-position longest))]
+                      [else
+                       (define this-size (line-len p))
+                       (cond
+                         [(<= longest-size this-size)
+                          (loop (- p 1) this-size p)]
+                         [else
+                          (loop (- p 1) longest-size longest)])]))))]))
+      (super edit-menu:between-find-and-preferences edit-menu))
+      
+    (define/public (add-find-longest-line-menu-item?) #t)
+    
     (super-new (filename filename) (editor% editor%))))
 
 (define pasteboard<%> (interface (-editor<%>)))

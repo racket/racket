@@ -929,7 +929,8 @@ please adhere to these guidelines:
  ;;; edit menu
  (split-menu-item-label "&Split")
  (collapse-menu-item-label "C&ollapse")
- 
+ (find-longest-line "Find Longest Line")
+  
  ;;; language menu
  (language-menu-name "&Language")
  

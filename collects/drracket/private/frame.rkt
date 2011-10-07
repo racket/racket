@@ -243,6 +243,7 @@
         (new separator-menu-item% (parent menu)))
       
       (define/override (edit-menu:between-find-and-preferences menu)
+        (super edit-menu:between-find-and-preferences menu)
         (make-object separator-menu-item% menu)
         (let ([keybindings-on-demand
                (λ (menu-item)
