@@ -78,7 +78,8 @@
       (queue-file-event (string->path filename))]
   [-a _void (applicationDidFinishLaunching: [_id notification])
       (unless got-file?
-        (queue-start-empty-event))]
+        (queue-start-empty-event))
+      (tellv app stop: self)]
   [-a _BOOL (applicationShouldHandleReopen: [_id app] hasVisibleWindows: [_BOOL has-visible?])
       ;; If we have any visible windows, return #t to do the default thing.
       ;; Otherwise return #f, because we don't want any invisible windows resurrected.
@@ -132,7 +133,11 @@
   (unless (zero? v)
     (log-error (format "error from CGDisplayRegisterReconfigurationCallback: ~a" v))))
 
-(tellv app finishLaunching)
+;; To make sure that `finishLaunching' is called, call `run'
+;; and have `applicationDidFinishLaunching' quit the run loop,
+;; which seems to work better than calling `finishLaunching'
+;; directly.
+(tellv app run)
 
 ;; ------------------------------------------------------------
 ;; Create an event to post when MzScheme has been sleeping but is
