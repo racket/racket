@@ -1519,8 +1519,8 @@
                 (define ed (get-editor))
                 (define (line-len p)
                   (define ans 
-                    (- (send ed paragraph-end-position p)
-                       (send ed paragraph-start-position p)))
+                    (- (send ed paragraph-end-position p #f)
+                       (send ed paragraph-start-position p #f)))
                   ans)
                 (when ed
                   (let loop ([p (- (send ed last-paragraph) 1)]
@@ -1529,8 +1529,8 @@
                     (cond
                       [(= p -1)
                        (send ed set-position 
-                             (send ed paragraph-start-position longest)
-                             (send ed paragraph-end-position longest))]
+                             (send ed paragraph-start-position longest #f)
+                             (send ed paragraph-end-position longest #f))]
                       [else
                        (define this-size (line-len p))
                        (cond
