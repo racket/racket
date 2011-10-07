@@ -14,6 +14,11 @@
 
 This module provides an interface compatible with PLoT 5.1.3 and earlier.
 
+@bold{Do not use both @racketmodname[plot] and @racketmodname[plot/compat] in the same module.}
+It is tempting to try it, to get both the new features and comprehensive backward compatibility.
+But to enable the new features, the objects plotted in @racketmodname[plot] have to be a different data type than the objects plotted in @racketmodname[plot/compat].
+They do not coexist easily, and trying to make them do so will result in contract violations.
+
 @; ----------------------------------------
 
 @section[#:tag "plot"]{Plotting}
