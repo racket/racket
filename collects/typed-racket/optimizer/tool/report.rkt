@@ -4,7 +4,7 @@
          unstable/syntax racket/sandbox
          typed-racket/optimizer/logging
          (prefix-in tr: typed-racket/typed-reader)
-         "logging.rkt")
+         "logging.rkt" "utilities.rkt")
 
 (provide (struct-out report-entry)
          (struct-out sub-report-entry)
@@ -25,7 +25,10 @@
 (struct missed-opt-report-entry sub-report-entry (badness irritants))
 
 (define (generate-report this)
-  (collapse-report (log->report (generate-log this))))
+  (collapse-report
+   (log->report
+    (post-process-inline-log
+     (generate-log this)))))
 
 
 (define (generate-log this)
@@ -77,6 +80,58 @@
              [read-accept-reader #t])
           (void (compile (tr:read-syntax portname input))))))))
   (filter right-file? (reverse log)))
+
+
+;; We aggregate results for each function.
+;; Log messages produced by the inliner are very raw, unlike the TR logs,
+;; which have gone through some aggregation. We do the aggregation here.
+(define (post-process-inline-log log)
+  (define-values (inliner-logs tr-logs)
+    (partition (lambda (x) (regexp-match "[iI]nlining" (log-entry-kind x)))
+               log))
+  (define grouped-events
+    (group-by (lambda (x y)
+                (equal? (log-entry-pos x) ; right file, so that's enough
+                        (log-entry-pos y)))
+              inliner-logs))
+  (define (success? l) (equal? "Inlining"        (log-entry-kind l)))
+  (define (failure? l) (equal? "Failed Inlining" (log-entry-kind l)))
+  (define new-inline-log-entries
+    (for/list ([group (in-list grouped-events)])
+      (define head (car group))
+      (match head ; events are grouped, first element is representative
+        [(log-entry kind msg stx located-stx pos)
+         (define n-successes   (length (filter success? group)))
+         (define n-failures    (length (filter failure? group)))
+         ;; If we have any failures at all, we consider it a missed opt.
+         (define aggregation-string
+           (format "(~a~a~a~a~a)"
+                   (if (> n-successes 0)
+                       (format "~a success~a"
+                               n-successes
+                               (if (> n-successes 1) "es" ""))
+                       "")
+                   (if (and (> n-successes 0)
+                            (> n-failures  0))
+                       ", " "")
+                   (if (> n-failures 0)
+                       (format "~a failure~a"
+                               n-failures
+                               (if (> n-failures 1) "s" ""))
+                       "")))
+         (if (> n-failures 0)
+             (missed-opt-log-entry
+              kind
+              (format "Missed Inlining ~a" aggregation-string)
+              stx located-stx pos
+              (missed-opt-log-entry-irritants        head)
+              (missed-opt-log-entry-merged-irritants head)
+              n-failures) ; badness
+             (opt-log-entry
+              kind
+              (format "Inlining ~a" aggregation-string)
+              stx located-stx pos))])))
+  (append tr-logs new-inline-log-entries))
 
 ;; converts log-entry structs to report-entry structs for further
 ;; processing
