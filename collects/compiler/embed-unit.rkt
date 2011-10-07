@@ -175,14 +175,7 @@
                              creator
                              
                              "CFBundleIdentifier" 
-                             (format "org.racket-lang.~a~a" 
-                                     (path->string name)
-                                     (if (fixnum? (expt 2 32))
-                                         ;; Add a "-64" suffix for 64-bit, because Lion seems
-                                         ;; to get confused by 32-bit and 64-bit apps with the same
-                                         ;; id (see PR 12135)
-                                         "-64"
-                                         "")))]
+                             (format "org.racket-lang.~a" (path->string name)))]
                  [new-plist (if uti-exports
                                 (plist-replace
                                  new-plist
