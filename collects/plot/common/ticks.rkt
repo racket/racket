@@ -37,7 +37,7 @@
     (define num (+ 1 (round (/ (- stop start) step))))
     (define ps (linear-seq start stop num))
     (define digits (digits-for-range x-min x-max))
-    (define labels (map (λ (p) (real->string/trunc p digits)) ps))
+    (define labels (map (λ (p) (real->plot-label p digits)) ps))
     (define majors (tick-ps->majors ps major-skip))
     (map tick ps labels majors)))
 

@@ -155,12 +155,12 @@
 (define (format-x-coordinate x area)
   (define x-min (send area get-x-min))
   (define x-max (send area get-x-max))
-  (format "~a" (real->string/trunc x (digits-for-range x-min x-max))))
+  (format "~a" (real->plot-label x (digits-for-range x-min x-max))))
 
 (define (format-y-coordinate y area)
   (define y-min (send area get-y-min))
   (define y-max (send area get-y-max))
-  (format "~a" (real->string/trunc y (digits-for-range y-min y-max))))
+  (format "~a" (real->plot-label y (digits-for-range y-min y-max))))
 
 (define (format-coordinate v area)
   (match-define (vector x y) v)

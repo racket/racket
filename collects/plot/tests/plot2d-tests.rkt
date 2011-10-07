@@ -88,9 +88,13 @@
 ;; an exact rational function and a floating-point function
 ;; the plot of the exact rational function's graph should be smooth
 (time
- (plot (list (function (λ (x) (+ x 1)) #:label "Exact")
-             (function (λ (x) (+ x 1.0)) #:color 2 #:label "Inexact"))
+ (plot (list (function (λ (x) x) #:label "Exact")
+             (function (λ (x) (exact->inexact x)) #:color 2 #:label "Inexact"))
        #:x-min #e100000000000000.0 #:x-max #e100000000000000.1
+       #:width 450))
+
+(time
+ (plot (function cos 0 0.0000001)
        #:width 500))
 
 (time
@@ -248,19 +252,21 @@
 
 (time (plot (list (tick-grid)
                   (contour-intervals f1 -5 2 -5 2
+                                     #:levels 5
                                      #:contour-styles '(transparent)
                                      #:label "")
-                  (contours f1 -2 5 -2 5 #:label ""))
+                  (contours f1 -2 5 -2 5 #:levels 5 #:label ""))
             #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5
             #:legend-anchor 'center))
 
 (time (plot (list (tick-grid)
                   (contour-intervals f1 -5 2 -5 2
+                                     #:levels '(0.25 0.5 0.75 1.0 1.25 1.5 1.75)
                                      #:colors default-contour-colors
                                      #:styles '(0 1 2 3 4 5 6)
                                      #:contour-styles '(transparent)
                                      #:label "z")
-                  (contours f1 -2 5 -2 5))
+                  (contours f1 -2 5 -2 5 #:levels '(0.25 0.5 0.75 1.0 1.25 1.5 1.75)))
             #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5
             #:legend-anchor 'top-left))
 

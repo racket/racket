@@ -29,7 +29,7 @@
                                [color  (in-cycle (maybe-apply/list colors zs))]
                                [width  (in-cycle (maybe-apply/list widths zs))]
                                [style  (in-cycle (maybe-apply/list styles zs))])
-      (define entry-label (real->string/trunc z digits))
+      (define entry-label (real->plot-label z digits))
       (assoc-cons hash (list color width style) entry-label)))
   
   (reverse
@@ -62,7 +62,7 @@
                                [line-color  (in-cycle (maybe-apply/list line-colors zs))]
                                [line-width  (in-cycle (maybe-apply/list line-widths zs))]
                                [line-style  (in-cycle (maybe-apply/list line-styles zs))])
-      (define entry-label (real->string/trunc z digits))
+      (define entry-label (real->plot-label z digits))
       (assoc-cons hash (list fill-color fill-style line-color line-width line-style) entry-label)))
   
   (reverse
@@ -113,7 +113,7 @@
                                [line2-width  (in-cycle (maybe-apply/list line2-widths zs))]
                                [line2-style  (in-cycle (maybe-apply/list line2-styles zs))])
       (define entry-label
-        (format "[~a,~a]" (real->string/trunc za digits) (real->string/trunc zb digits)))
+        (format "[~a,~a]" (real->plot-label za digits) (real->plot-label zb digits)))
       (assoc-cons hash
                   (list fill-color fill-style line-color line-width line-style
                         line1-color line1-width line1-style

@@ -14,17 +14,31 @@ Converts degrees to radians.
 Converts radians to degrees.
 }
 
-@doc-apply[real->string/trunc]{
-Like @(racket real->decimal-string), but removes trailing zeros and a trailing decimal point.
-Used to format numbers for plots.
+@doc-apply[digits-for-range]{
+Given a range, returns the number of decimal places necessary to distinguish numbers in the range. This may return negative numbers for large ranges.
+
+@examples[#:eval plot-eval
+                 (digits-for-range 0.01 0.02)
+                 (digits-for-range 0 100000)]
 }
 
-@doc-apply[digits-for-range]{
-Given a range, returns the number of decimal places necessary to distinguish numbers in the range.
+@doc-apply[real->plot-label]{
+Converts a real number to a plot label. Used to format axis tick labels, @(racket point-label)s, and numbers in legend entries.
+
+@examples[#:eval plot-eval
+                 (let ([d  (digits-for-range 0.01 0.03)])
+                   (real->plot-label 0.02555555 d))
+                 (real->plot-label 2352343 -2)
+                 (real->plot-label 1000000000. 4)
+                 (real->plot-label 1000000000.1234 4)]
 }
 
 @doc-apply[->plot-label]{
 Converts a Racket value to a label. Used by @(racket discrete-histogram) and @(racket discrete-histogram3d).
+}
+
+@doc-apply[real->string/trunc]{
+Like @(racket real->decimal-string), but removes trailing zeros and a trailing decimal point.
 }
 
 @doc-apply[linear-seq]{
@@ -151,7 +165,8 @@ Integer brush styles repeat starting at @(racket 7).
 
 @examples[#:eval plot-eval
                  (eq? (->brush-style 0) (->brush-style 7))
-                 (map ->brush-style '(0 1 2 3 4 5 6))]
+                 (map ->brush-style '(0 1 2 3))
+                 (map ->brush-style '(4 5 6))]
 }
 
 @defstruct[invertible-function ([f (real? . -> . real?)] [finv (real? . -> . real?)])]{

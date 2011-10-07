@@ -7,9 +7,10 @@
          radians->degrees)
 
 (require "common/format.rkt")
-(provide real->string/trunc
-         digits-for-range
-         ->plot-label)
+(provide digits-for-range
+         real->plot-label
+         ->plot-label
+         real->string/trunc)
 
 (require "common/draw.rkt")
 (provide color-seq color-seq*

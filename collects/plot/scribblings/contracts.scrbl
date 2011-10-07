@@ -6,16 +6,15 @@
 
 @title[#:tag "contracts"]{Plot Contracts}
 
-@section[#:tag "contracts.convenience"]{Conveniences}
+@section{Convenience Contracts}
 
 @doc-apply[real>=/c]
 @doc-apply[integer>=/c]
 @doc-apply[treeof]
 
-@section[#:tag "contracts.drawing"]{Drawing Parameters}
+@section{Appearance Argument Contracts}
 
 @doc-apply[anchor/c]
-@doc-apply[rgb/c]
 @doc-apply[color/c]
 @doc-apply[plot-color/c]
 @doc-apply[pen-style/c]
@@ -28,21 +27,19 @@
 @defthing[known-point-symbols (listof symbol?)]{
 A list containing the symbols that are valid @(racket points) labels.
 
-@interaction[#:eval plot-eval known-point-symbols]
+@interaction[#:eval plot-eval
+                    (require (only-in srfi/13 string-pad-right))
+                    (for ([sym  (in-list known-point-symbols)]
+                          [n    (in-cycle (in-range 3))])
+                      (display (string-pad-right (format "~v" sym) 22))
+                      (when (= n 2) (newline)))
+                    (length known-point-symbols)]
 }
 
-@section[#:tag "contracts.sequence"]{Color, Width and Style Sequences}
+@section{Appearance Argument Sequence Contracts}
 
 @doc-apply[plot-colors/c]
 @doc-apply[plot-pen-styles/c]
 @doc-apply[pen-widths/c]
 @doc-apply[plot-brush-styles/c]
 @doc-apply[alphas/c]
-
-@section[#:tag "contracts.function"]{Color, Width and Style Functions}
-
-@doc-apply[plot-color-function/c]
-@doc-apply[plot-pen-style-function/c]
-@doc-apply[pen-width-function/c]
-@doc-apply[plot-brush-style-function/c]
-@doc-apply[alpha-function/c]

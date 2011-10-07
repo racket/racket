@@ -57,7 +57,7 @@
 
 (define (color%? c) (is-a? c color%))
 
-(defproc (->color [c color/c]) rgb/c
+(defproc (->color [c color/c]) (list/c real? real? real?)
   (match c
     [(? color%?)  (list (send c red) (send c green) (send c blue))]
     [(? string?)  (define color (send the-color-database find-color c))
@@ -81,7 +81,7 @@
      (160 32 240)     ; magenta
      (160 160 160)))  ; gray
 
-(defproc (->pen-color [c plot-color/c]) rgb/c
+(defproc (->pen-color [c plot-color/c]) (list/c real? real? real?)
   (cond [(integer? c)  (vector-ref pen-colors (remainder (abs c) 8))]
         [else          (->color c)]))
 
@@ -95,7 +95,7 @@
      (240 224 255)    ; magenta
      (212 212 212)))  ; gray
 
-(defproc (->brush-color [c plot-color/c]) rgb/c
+(defproc (->brush-color [c plot-color/c]) (list/c real? real? real?)
   (cond [(integer? c)  (vector-ref brush-colors (remainder (abs c) 8))]
         [else          (->color c)]))
 
@@ -126,7 +126,7 @@
 
 (defproc (color-seq [c1 color/c] [c2 color/c] [num (integer>=/c 0)]
                     [#:start? start? boolean? #t]
-                    [#:end? end? boolean? #t]) (listof rgb/c)
+                    [#:end? end? boolean? #t]) (listof (list/c real? real? real?))
   (match-define (list r1 g1 b1) (->color c1))
   (match-define (list r2 g2 b2) (->color c2))
   (define rs (linear-seq r1 r2 num #:start? start? #:end? end?))
@@ -136,7 +136,7 @@
 
 (defproc (color-seq* [colors (listof color/c)] [num (integer>=/c 0)]
                      [#:start? start? boolean? #t]
-                     [#:end? end? boolean? #t]) (listof rgb/c)
+                     [#:end? end? boolean? #t]) (listof (list/c real? real? real?))
   (when (empty? colors) (raise-type-error 'color-seq* "nonempty (listof plot-color/c)" colors))
   (match-define (list (list rs gs bs) ...) (map ->color colors))
   (let ([rs  (linear-seq* rs num #:start? start? #:end? end?)]
