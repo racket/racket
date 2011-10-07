@@ -425,7 +425,7 @@
  (hc-append
   (* 3 gap-size)
   (face 'happy "yellow")
-  (face 'badly-embarassed)))
+  (face 'badly-embarrassed)))
 
 
 (slide

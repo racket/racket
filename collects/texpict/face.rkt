@@ -368,9 +368,9 @@
 	 (face* 'none 'plain #f face-color 6)]
 	[(happier)
 	 (face* 'none 'large #f face-color 3)]
-	[(embarassed)
+	[(embarrassed embarassed) ; keep older misspelled name
 	 (face* 'worried 'medium #f face-color 3)]
-	[(badly-embarassed)
+	[(badly-embarrassed badly-embarassed) ; here too
 	 (face* 'worried 'medium #t face-color 3)]
 	[(unhappier)
 	 (face* 'normal 'large #t face-color 3)]

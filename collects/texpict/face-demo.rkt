@@ -35,8 +35,8 @@
       happy
       happier
       happiest
-      embarassed
-      badly-embarassed
+      embarrassed
+      badly-embarrassed
       mad
       mean
       surprised))
