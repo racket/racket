@@ -216,6 +216,8 @@
   (one-mz-test "embed-me1d.rkt" "This is 1d\n" #f)
   (one-mz-test "embed-me1e.rkt" "This is 1e\n" #f)
   (one-mz-test "embed-me2.rkt" "This is 1\nThis is 2: #t\n" #t)
+  (one-mz-test "embed-me13.rkt" "This is 14\n" #f)
+  (one-mz-test "embed-me14.rkt" "This is 14\n" #f)
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")
@@ -304,7 +306,7 @@
     (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
     (delete-directory/files "cts")
     (test #f system* (mk-dest mred?))
-
+  
     (void)))
 
 (define (try-mzc)

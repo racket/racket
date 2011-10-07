@@ -358,8 +358,16 @@
           ;; First use of the module. Get code and then get code for imports.
           (when verbose?
             (fprintf (current-error-port) "Getting ~s\n" filename))
-          (let ([actual-filename filename]) ; `set!'ed below to adjust file suffix
-            (hash-set! working filename #t)
+          (let* ([actual-filename filename] ; `set!'ed below to adjust file suffix
+                 [name (let-values ([(base name dir?) (split-path filename)])
+                         (path->string (path-replace-suffix name #"")))]
+                 [prefix (let ([a (assoc filename prefixes)])
+                           (if a
+                               (cdr a)
+                               (generate-prefix)))]
+                 [full-name (string->symbol
+                             (format "~a~a" prefix name))])
+            (hash-set! working filename full-name)
             (let ([code (get-module-code filename
                                          "compiled"
                                          compiler
@@ -376,19 +384,13 @@
                                          #:choose
                                          ;; Prefer extensions, if we're handling them:
                                          (lambda (src zo so)
-                                           (set! actual-filename src) ; remember convert soure name
+                                           (set! actual-filename src) ; remember convert source name
                                            (if on-extension
                                                #f
                                                (if (and (file-exists? so)
                                                         ((file-date so) . >= . (file-date zo)))
                                                    'so
-                                                   #f))))]
-                  [name (let-values ([(base name dir?) (split-path filename)])
-                          (path->string (path-replace-suffix name #"")))]
-                  [prefix (let ([a (assoc filename prefixes)])
-                            (if a
-                                (cdr a)
-                                (generate-prefix)))])
+                                                   #f))))])
               (cond
                [(extension? code)
                 (when verbose?
@@ -480,7 +482,13 @@
                                               (unbox codes))))
                             ;; Build up relative module resolutions, relative to this one,
                             ;; that will be requested at run-time.
-                            (let ([mappings (map (lambda (sub-i sub-filename sub-path)
+                            (let* ([lookup-full-name (lambda (sub-filename)
+                                                       (let ([m (assoc sub-filename (unbox codes))])
+                                                         (if m
+                                                             (mod-full-name m)
+                                                             ;; must have been a cycle...
+                                                             (hash-ref working sub-filename))))]
+                                   [mappings (map (lambda (sub-i sub-filename sub-path)
                                                    (and (not (and collects-dest
                                                                   (is-lib-path? sub-path)))
                                                         (let-values ([(path base) (module-path-index-split sub-i)])
@@ -490,14 +498,12 @@
                                                                  (let-values ([(path2 base2) (module-path-index-split base)])
                                                                    (when (or path2 base2)
                                                                      (error 'embed "unexpected nested module path index")))
-                                                                 (let ([m (assoc sub-filename (unbox codes))])
-                                                                   (cons path (mod-full-name m))))))))
-                                                 all-file-imports sub-files sub-paths)])
+                                                                 (cons path (lookup-full-name sub-filename)))))))
+                                                  all-file-imports sub-files sub-paths)])
                               ;; Record the module
                               (set-box! codes
                                         (cons (make-mod filename module-path code 
-                                                        name prefix (string->symbol
-                                                                     (format "~a~a" prefix name))
+                                                        name prefix full-name
                                                         (filter (lambda (p)
                                                                   (and p (cdr p)))
                                                                 mappings)
@@ -509,7 +515,7 @@
                                                            [(null? runtime-paths) null]
                                                            [(let ([p (car runtime-paths)])
                                                               (and (pair? p) (eq? (car p) 'module)))
-                                                            (cons (mod-full-name (assoc (car extra-files) (unbox codes)))
+                                                            (cons (lookup-full-name (car extra-files))
                                                                   (loop (cdr runtime-paths) (cdr extra-files)))]
                                                            [else
                                                             (cons #f (loop (cdr runtime-paths) extra-files))]))
