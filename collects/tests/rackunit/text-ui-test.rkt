@@ -220,5 +220,19 @@
                (check = foo 2)))
              'verbose)
             (check = foo 3)))))
-   ))
 
+   (test-case
+    "cannot kill current thread in test case"
+    (check-equal? (call-in-nested-thread
+                   (lambda ()
+                     (with-silent-output
+                      (lambda ()
+                        (run-tests
+                         (test-suite "tests"
+                           (test-case "kill-thread"
+                             (kill-thread (current-thread)))))))))
+                  ;; If the kill-thread were successful, call-in-nested-thread
+                  ;; would raise error. We expect kill-thread to raise error,
+                  ;; caught by run-tests.
+                  1))
+   ))

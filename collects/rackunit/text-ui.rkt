@@ -216,27 +216,28 @@
 
 ;; run-tests : test [(U 'quiet 'normal 'verbose)] -> integer
 (define (run-tests test [mode 'normal])
-  (monad-value
-   ((compose
-     (sequence*
+  (parameterize ((current-custodian (make-custodian)))
+    (monad-value
+     ((compose
+       (sequence*
+        (case mode
+          [(normal verbose)
+           (display-counter*)]
+          [(quiet)
+           (lambda (a) a)])
+        (counter->vector))
+       (match-lambda
+        ((vector s f e)
+         (return-hash (+ f e)))))
       (case mode
-        [(normal verbose)
-         (display-counter*)]
-        [(quiet)
-         (lambda (a) a)])
-      (counter->vector))
-     (match-lambda
-       ((vector s f e)
-        (return-hash (+ f e)))))
-    (case mode
-      ((quiet)
-       (fold-test-results
-        (lambda (result seed)
-          ((update-counter! result) seed))
-        ((put-initial-counter)
-         (make-empty-hash))
-        test))
-      ((normal) (std-test/text-ui display-context test))
-      ((verbose) (std-test/text-ui
-                  (lambda (x) (display-context x #t))
-                  test))))))
+        ((quiet)
+         (fold-test-results
+          (lambda (result seed)
+            ((update-counter! result) seed))
+          ((put-initial-counter)
+           (make-empty-hash))
+          test))
+        ((normal) (std-test/text-ui display-context test))
+        ((verbose) (std-test/text-ui
+                    (lambda (x) (display-context x #t))
+                    test)))))))
