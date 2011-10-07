@@ -1745,7 +1745,6 @@ static Scheme_Object *shift_compiled_expression(Scheme_Object *v, int delta, int
   switch (SCHEME_TYPE(v)) {
   case scheme_compiled_toplevel_type:
   case scheme_compiled_quote_syntax_type:
-  case scheme_varref_form_type:
     return v;
   case scheme_local_type:
     {
@@ -1904,6 +1903,18 @@ static Scheme_Object *shift_compiled_expression(Scheme_Object *v, int delta, int
       }
 
       return (Scheme_Object *)lh;
+    }
+  case scheme_varref_form_type:
+    {
+      Scheme_Object *sv;
+
+      sv = shift_compiled_expression(SCHEME_PTR1_VAL(v), delta, skip);
+      SCHEME_PTR1_VAL(v) = sv;
+      
+      sv = shift_compiled_expression(SCHEME_PTR2_VAL(v), delta, skip);
+      SCHEME_PTR2_VAL(v) = sv;
+      
+      return v;
     }
   default:
     scheme_signal_error("internal error: compile-time shift failed: %d", SCHEME_TYPE(v));

@@ -1643,6 +1643,17 @@
                (regexp-match #rx"1e[+]?100" (exn-message exn))))
 (test (inexact->exact 1e100) (lambda (x) (inexact->exact (fl/ (fl- x 0.0) 1.0))) 1e100)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that compiler handles shifting `#%variable-reference'
+
+(test #f
+      'varref-shift
+      (let ()
+        (define (f #:x [x #f]) #f)
+        (define (g #:y [y #f])
+          (begin (f) #f))
+        #f))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
