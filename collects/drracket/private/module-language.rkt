@@ -1395,9 +1395,14 @@
         (set-online-error-ranges '()))
       
       (define/private (invalidate-online-error-ranges)
-        (for ([an-error-range (in-list online-error-ranges)])
-          (define-values (x y w h) (get-box an-error-range))
-          (invalidate-bitmap-cache x y 'display-end h)))
+        (when (get-admin)
+          ;; invalidate-online-error-ranges can be called at strange times
+          ;; because it is invoked via a queue-callback thunk; specifically
+          ;; the tab may have changed in drracket, which means that there is
+          ;; no admin and thus there is no reason to invalidate any drawing
+          (for ([an-error-range (in-list online-error-ranges)])
+            (define-values (x y w h) (get-box an-error-range))
+            (invalidate-bitmap-cache x y 'display-end h))))
       
       (define byt (box 0.0))
       (define byb (box 0.0))
@@ -1482,6 +1487,7 @@
           [else
            (super on-event evt)]))
       
+      ;; pre: get-admin does not return #f
       (define/private (get-box an-error-range)
         (define start-pos (error-range-start an-error-range))
         (define end-pos (error-range-end an-error-range))
