@@ -1400,4 +1400,20 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define t (new text%))
+  (send t insert "1\n12\n123\n")
+  (expect (send t paragraph-start-position 3) 9)
+  (expect (send t paragraph-end-position 3) 9)
+  (expect (send t line-end-position 3) 9))
+
+(let ()
+  (define t (new text%))
+  (send t insert "1\n12\n123\n\n")
+  (expect (send t paragraph-start-position 3) 9)
+  (expect (send t paragraph-end-position 3) 9)
+  (expect (send t line-end-position 3) 9))
+
+;; ----------------------------------------
+
 (done)
