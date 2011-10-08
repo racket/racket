@@ -314,5 +314,12 @@
       (parameterize ([current-check-around (lambda (t) (set! x 'foo))])
                  (check-eq? 'a 'b))
       (check-eq? x
-                 'foo)))))
+                 'foo)))
 
+   (test-case
+    "current-check-handler is used by checks"
+    (check-eq? (let/ec escape
+                 (parameterize ([current-check-handler (lambda (e) (escape 'foo))])
+                   (check-eq? 'a 'b)))
+               'foo))
+   ))
