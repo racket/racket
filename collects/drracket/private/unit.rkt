@@ -609,12 +609,18 @@ module browser threading seems wrong.
                                (drracket:language-configuration:get-languages)
                                module-language
                                module-language-settings)])
-                  (when matching-language
-                    (set-next-settings
-                     (drracket:language-configuration:language-settings 
-                      matching-language
-                      settings)
-                     #f))))
+                  (cond
+                    [matching-language
+                     (set-next-settings
+                      (drracket:language-configuration:language-settings 
+                       matching-language
+                       settings)
+                      #f)]
+                    [else
+                     (when (send (drracket:language-configuration:language-settings-language (get-next-settings)) get-reader-module)
+                       (set-next-settings
+                        (drracket:language-configuration:get-default-language-settings)
+                        #f))])))
               (set-modified #f))
             
             (end-edit-sequence)
