@@ -1654,6 +1654,16 @@
           (begin (f) #f))
         #f))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the compiler doesn't end up in an infinite inling loop:
+
+(module unc-small-self-call racket/base
+  (define unc1
+    (let ([x 1])
+      (lambda ()
+        (unc1))))
+  (unc1))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
