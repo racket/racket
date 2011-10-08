@@ -295,10 +295,11 @@
     
     (define/augment (after-load-file success?)
       (inner (void) after-load-file success?)
-      (set! ranges (make-hash))
-      (set! ranges-low 0) 
-      (set! ranges-high 0)
-      (set! ranges-list #f))
+      (when success?
+        (set! ranges (make-hash))
+        (set! ranges-low 0) 
+        (set! ranges-high 0)
+        (set! ranges-list #f)))
     
     (define/public (highlight-range start end color [caret-space? #f] [priority 'low] [style 'rectangle])
       (unless (let ([exact-pos-int?
@@ -1816,18 +1817,19 @@
   (mixin ((class->interface text%)) (crlf-line-endings<%>)
     (inherit get-filename use-file-text-mode)
     (define/augment (after-load-file success?)
-      (cond
-        [(preferences:get 'framework:always-use-platform-specific-linefeed-convention)
-         (use-file-text-mode #t)]
-        [else
-         (define unix-endings?
-           (with-handlers ((exn:fail:filesystem? (λ (x) #t)))
-             (call-with-input-file (get-filename)
-               (λ (port)
-                 (regexp-match? unix-line-endings-regexp port)))))
-         (use-file-text-mode
-          (and (eq? (system-type) 'windows) 
-               (not unix-endings?)))])
+      (when success?
+        (cond
+          [(preferences:get 'framework:always-use-platform-specific-linefeed-convention)
+           (use-file-text-mode #t)]
+          [else
+           (define unix-endings?
+             (with-handlers ((exn:fail:filesystem? (λ (x) #t)))
+               (call-with-input-file (get-filename)
+                 (λ (port)
+                   (regexp-match? unix-line-endings-regexp port)))))
+           (use-file-text-mode
+            (and (eq? (system-type) 'windows) 
+                 (not unix-endings?)))]))
       (inner (void) after-load-file success?))
 
     (super-new)
