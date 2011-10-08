@@ -44,6 +44,7 @@
     (define print-target #f)
     (define smoothing? #t)
     (define screen-number 0)
+    (define half-screen? #f)
     
     (define init-page 0)
 
@@ -121,6 +122,10 @@
          (set! use-prefetch-in-preview? #t))
         (("--keep-titlebar") "give the slide window a title bar and resize border"
          (set! keep-titlebar? #t))
+        (("--half-screen") "display slides on right half of the screen"
+         (set! half-screen? #t)
+         (set! keep-titlebar? #t)
+         (set! actual-screen-w (/ actual-screen-w 2)))
         (("--comment") "display commentary in window"
          (set! commentary? #t))
         (("--comment-on-slide") "display commentary on slide"

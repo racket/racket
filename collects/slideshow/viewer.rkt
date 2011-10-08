@@ -414,6 +414,9 @@
 	    (values 0 0)
 	    (get-display-left-top-inset #:monitor config:screen-number)))
 
+      (when config:half-screen?
+        (set! screen-left-inset (- screen-left-inset config:actual-screen-w)))
+
       (define fullscreen?
         (and (not config:keep-titlebar?)
              (let-values ([(w h) (get-display-size #t #:monitor config:screen-number)])
