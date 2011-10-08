@@ -914,9 +914,9 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
   intptr_t prev_offset = 0;
-  int nested_count = 0, outside_nested = 0, already_opt = optimized_rator;
+  int nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf;
 
-  if (info->inline_fuel < 0)
+  if ((info->inline_fuel < 0) && info->has_nonleaf)
     return NULL;
 
   /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
@@ -996,7 +996,9 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       bad_app = le;
   }
 
-  if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
+  nonleaf = 1;
+
+  if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type) && (info->inline_fuel >= 0)) {
     Scheme_Closure_Data *data = (Scheme_Closure_Data *)le;
     int sz;
 
@@ -1048,25 +1050,28 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
           return le;
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL)));
-          info->has_nonleaf = 1;
         }
       } else {
         LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
                            sz, is_leaf, threshold,
                            info->inline_fuel, info->use_psize));
-        info->has_nonleaf = 1;
       }
     } else {
       /* Issue warning below */
       bad_app = (Scheme_Object *)data;
+      nonleaf = 0;
     }
   }
 
   if (le && SCHEME_PRIMP(le)) {
     int opt;
     opt = ((Scheme_Prim_Proc_Header *)le)->flags & SCHEME_PRIM_OPT_MASK;
-    if (opt >= SCHEME_PRIM_OPT_NONCM)
+    if (opt >= SCHEME_PRIM_OPT_NONCM) {
       *_flags = (CLOS_PRESERVES_MARKS | CLOS_SINGLE_RESULT);
+      if (opt >= SCHEME_PRIM_OPT_IMMEDIATE) {
+        nonleaf = 0;
+      }
+    }
   }
 
   if (le && SCHEME_PROCP(le) && (app || app2 || app3)) {
@@ -1074,6 +1079,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     a[0] = le;
     if (!scheme_check_proc_arity(NULL, argc, 0, 1, a))  {
       bad_app = le;
+      nonleaf = 0;
     }
   }
 
@@ -1083,7 +1089,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       info->psize += psize;
   }
 
-  if (!le)
+  if (nonleaf)
     info->has_nonleaf = 1;
 
   if (bad_app) {
