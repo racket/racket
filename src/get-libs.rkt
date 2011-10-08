@@ -111,7 +111,13 @@
       ["libpangocairo-1.0-0.dll" 185168]
       ["libpangowin32-1.0-0.dll" 192656]
       ["libpangoft2-1.0-0.dll" 1188615]
-      ["libfit.dll" 69120]]]))
+      ["libfit.dll" 69120]]]
+    ;; Databse libraries
+    [db
+     [win32/i386
+      ["sqlite3.dll" 570947]]
+     [win32/x86_64
+      ["sqlite3.dll" 617472]]]))
 
 (define-values [package dest-dir]
   (command-line #:args [package [dest-dir (current-directory)]]
