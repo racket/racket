@@ -2132,8 +2132,16 @@
         -> ,def (+ 1 {1})
         :: ,def {(+ 1 1)} -> ,def {2}))
    
-         
-    
+   ; application in function position -- checks bug fix
+   (let* ([lxx '(lambda (x) x)]
+          [def `(define I ,lxx)])
+     (t 'lazy-fn-app m:lazy
+        ,def ((I I) I)
+        :: ,def (({I} I) I)       -> ,def (({,lxx} I) I)
+        :: ,def ((,lxx {I}) I)    -> ,def ((,lxx {,lxx}) I)
+        :: ,def ({(,lxx ,lxx)} I) -> ,def ({,lxx} I)
+        :: ,def (,lxx {I})        -> ,def (,lxx {,lxx})
+        :: ,def {(,lxx ,lxx)}     -> ,def {,lxx}))
     
    
   #;

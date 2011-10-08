@@ -78,7 +78,10 @@
   
   (define-syntax (mark-as-lazy-op stx)
     (syntax-case stx ()
-      [(_ arg) (stepper-add-lazy-op-prop (syntax/loc stx arg))]))
+      [(_ arg) 
+       (identifier? #'arg)
+       (stepper-add-lazy-op-prop (syntax/loc stx arg))]
+      [(_ arg) #'arg]))
     
   (define-syntax (hidden-~ stx)
     (syntax-case stx ()
