@@ -1048,13 +1048,17 @@ If the namespace does not, they are colored the unbound color.
               ;;  and on-paint gets called each time the cursor blinks...)
               (cond
                 [(not eles)
-                 (when tooltip-frame (send tooltip-frame show #f))
+                 (when tooltip-frame 
+                   (when (send tooltip-frame is-shown?)
+                     (send tooltip-frame show #f)))
                  (set! tooltips-in-sync-with-cursor-eles? #t)]
                 [else
                  (define tooltip-infos (filter tooltip-info? eles))
                  (cond
                    [(null? tooltip-infos)
-                    (when tooltip-frame (send tooltip-frame show #f))
+                    (when tooltip-frame 
+                      (when (send tooltip-frame is-shown?)
+                        (send tooltip-frame show #f)))
                     (set! tooltips-in-sync-with-cursor-eles? #t)]
                    [else
                     (unless tooltip-frame (set! tooltip-frame (new tooltip-frame%)))

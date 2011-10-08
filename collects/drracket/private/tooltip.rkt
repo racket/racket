@@ -6,14 +6,16 @@
 
 (define tooltip-frame%
   (class frame%
-    (inherit show reflow-container move get-width get-height)
+    (inherit show reflow-container move get-width get-height is-shown?)
+    
     (define/override (on-subwindow-event r evt)
-      (cond
-        [(or (send evt entering?)
-             (send evt button-down?))
-         (show #f)
-         #t]
-        [else #f]))
+      (and (is-shown?)
+           (cond
+             [(or (send evt entering?)
+                  (send evt button-down?))
+              (show #f)
+              #t]
+             [else #f])))
     (define/public (set-tooltip ls) 
       (send yellow-message set-lab ls))
     
