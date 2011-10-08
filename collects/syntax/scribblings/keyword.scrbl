@@ -10,15 +10,13 @@
                      syntax/keyword))
 
 @(begin
-   (define the-eval
-     (parameterize ([sandbox-output 'string]
-                    [sandbox-error-output 'string])
-       (make-evaluator 'racket/base #:requires '(syntax/keyword))))
-   ;;(void (the-eval '(error-print-source-location #f)))
-   (define-syntax-rule (myexamples e ...)
-     (parameterize (#|(error-print-source-location #f)|#)
-       (examples #:eval the-eval e ...))))
-
+  (define the-eval (make-base-eval))
+  (the-eval '(begin (require syntax/keyword racket/pretty)
+                    (current-print pretty-print-handler)
+                    (error-print-source-location #f)))
+  (define-syntax-rule (myexamples e ...)
+    (parameterize (#|(error-print-source-location #f)|#)
+      (examples #:eval the-eval e ...))))
 
 @title[#:tag "stxkeyword"]{Helpers for Processing Keyword Syntax}
 
