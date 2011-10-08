@@ -147,10 +147,10 @@ Polling a URL can result in one of four options:
   (define r
     (with-handlers ([exn:fail? exn-message])
       (call/input-url (string->url url) head-impure-port check-contents)))
-  (if (boolean? r)
-    r
+  (if (string? r)
     (begin (eprintf "WARNING: failure getting http info for ~a (~a)\n" url r)
-           #f)))
+           #f)
+    r))
 
 (define (verify-ftp url)
   (define-values [host port? path]
