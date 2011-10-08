@@ -1519,7 +1519,7 @@
         (inner (void) after-delete start end))
       
       (define/augment (after-load-file success?)
-        (buffer-modified)
+        (when success? (buffer-modified))
         (inner (void) after-load-file success?))
       
       (super-new)))
