@@ -2465,38 +2465,40 @@ static void async_channel_finalize(void *p, void* data) {
   ch->out = 0;
   ch->count = 0;
 
-  /*release single receiver */  
-  if (SCHEME_PLACE_OBJECTP(ch->wakeup_signal)) {
-    int refcount = 0;
-    Scheme_Place_Object *place_obj;
-    place_obj = ((Scheme_Place_Object *) ch->wakeup_signal);
+  if (ch->wakeup_signal) {
+    /*release single receiver */  
+    if (SCHEME_PLACE_OBJECTP(ch->wakeup_signal)) {
+      int refcount = 0;
+      Scheme_Place_Object *place_obj;
+      place_obj = ((Scheme_Place_Object *) ch->wakeup_signal);
 
-    mzrt_mutex_lock(place_obj->lock);
-      place_obj->refcount--;
-      refcount = place_obj->refcount;
-    mzrt_mutex_unlock(place_obj->lock);
-    if (!refcount) {
-      destroy_place_object_locks(place_obj);
+      mzrt_mutex_lock(place_obj->lock);
+        place_obj->refcount--;
+        refcount = place_obj->refcount;
+      mzrt_mutex_unlock(place_obj->lock);
+      if (!refcount) {
+        destroy_place_object_locks(place_obj);
+      }
     }
-  }
-  /*release multiple receiver */  
-  else if (SCHEME_VECTORP(ch->wakeup_signal)) {
-    Scheme_Object *v = ch->wakeup_signal;
-    int i;
-    int size = SCHEME_VEC_SIZE(v);
-    for (i = 0; i < size; i++) {
-      Scheme_Place_Object *o3;
-      o3 = (Scheme_Place_Object *)SCHEME_VEC_ELS(v)[i];
-      if (o3) {
-        int refcount = 0;
-        mzrt_mutex_lock(o3->lock);
-          SCHEME_VEC_ELS(v)[i] = NULL;
-          o3->refcount--;
-          refcount = o3->refcount;
-        mzrt_mutex_unlock(o3->lock);
+    /*release multiple receiver */  
+    else if (SCHEME_VECTORP(ch->wakeup_signal)) {
+      Scheme_Object *v = ch->wakeup_signal;
+      int i;
+      int size = SCHEME_VEC_SIZE(v);
+      for (i = 0; i < size; i++) {
+        Scheme_Place_Object *o3;
+        o3 = (Scheme_Place_Object *)SCHEME_VEC_ELS(v)[i];
+        if (o3) {
+          int refcount = 0;
+          mzrt_mutex_lock(o3->lock);
+            SCHEME_VEC_ELS(v)[i] = NULL;
+            o3->refcount--;
+            refcount = o3->refcount;
+          mzrt_mutex_unlock(o3->lock);
 
-        if (!refcount) {
-          destroy_place_object_locks(o3);
+          if (!refcount) {
+            destroy_place_object_locks(o3);
+          }
         }
       }
     }
