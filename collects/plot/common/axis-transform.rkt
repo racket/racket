@@ -79,7 +79,7 @@
 (defproc (cbrt-transform [x-min real?] [x-max real?]) invertible-function?
   (cbrt-trans x-min x-max))
 
-(defproc (hand-drawn-transform [freq (and/c real? (>/c 0))]) (real? real? . -> . invertible-function?)
+(defproc (hand-drawn-transform [freq (>/c 0)]) (real? real? . -> . invertible-function?)
   (λ (mn mx)
     (define d (/ freq (- mx mn)))
     ((make-axis-transform (sine-diag d) (sine-diag-inv d)) mn mx)))

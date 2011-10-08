@@ -56,8 +56,8 @@
 (defcontract plot-colors/c (or/c (listof plot-color/c)
                                  ((listof real?) . -> . (listof plot-color/c))))
 
-(defcontract pen-widths/c (or/c (listof (and/c real? (>=/c 0)))
-                                ((listof real?) . -> . (listof (and/c real? (>=/c 0))))))
+(defcontract pen-widths/c (or/c (listof (>=/c 0))
+                                ((listof real?) . -> . (listof (>=/c 0)))))
 
 (defcontract plot-pen-styles/c (or/c (listof plot-pen-style/c)
                                      ((listof real?) . -> . (listof plot-pen-style/c))))

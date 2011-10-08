@@ -29,16 +29,16 @@
 (defparam plot-background color plot-color/c 0)
 (defparam plot-foreground-alpha alpha (real-in 0 1) 1)
 (defparam plot-background-alpha alpha (real-in 0 1) 1)
-(defparam plot-font-size size (and/c real? (>=/c 0)) 11)
+(defparam plot-font-size size (>=/c 0) 11)
 (defparam plot-font-family family font-family/c 'roman)
-(defparam plot-line-width width (and/c real? (>=/c 0)) 1)
+(defparam plot-line-width width (>=/c 0) 1)
 
 (define (pen-gap) (* 2 (plot-line-width)))
 
 (defparam plot-legend-anchor anchor anchor/c 'top-right)
 (defparam plot-legend-box-alpha alpha (real-in 0 1) 2/3)
 
-(defparam plot-tick-size (and/c real? (>=/c 0)) 10)
+(defparam plot-tick-size (>=/c 0) 10)
 (defparam plot-tick-skip exact-positive-integer? 2)
 
 (defparam plot-title (or/c string? #f) #f)
@@ -50,7 +50,7 @@
 
 (defparam line-samples (and/c exact-integer? (>=/c 2)) 500)
 (defparam line-color plot-color/c 1)
-(defparam line-width (and/c real? (>=/c 0)) 1)
+(defparam line-width (>=/c 0) 1)
 (defparam line-style plot-pen-style/c 'solid)
 (defparam line-alpha (real-in 0 1) 1)
 
@@ -59,10 +59,10 @@
 (defparam interval-color plot-color/c 3)
 (defparam interval-style plot-brush-style/c 'solid)
 (defparam interval-line1-color plot-color/c 3)
-(defparam interval-line1-width (and/c real? (>=/c 0)) 1)
+(defparam interval-line1-width (>=/c 0) 1)
 (defparam interval-line1-style plot-pen-style/c 'solid)
 (defparam interval-line2-color plot-color/c 3)
-(defparam interval-line2-width (and/c real? (>=/c 0)) 1)
+(defparam interval-line2-width (>=/c 0) 1)
 (defparam interval-line2-style plot-pen-style/c 'solid)
 (defparam interval-alpha (real-in 0 1) 3/4)
 
@@ -70,24 +70,24 @@
 
 (defparam point-sym point-sym/c 'circle)
 (defparam point-color plot-color/c 0)
-(defparam point-size (and/c real? (>=/c 0)) 6)
-(defparam point-line-width (and/c real? (>=/c 0)) 1)
+(defparam point-size (>=/c 0) 6)
+(defparam point-line-width (>=/c 0) 1)
 (defparam point-alpha (real-in 0 1) 1)
 
 ;; Vector fields
 
 (defparam vector-field-samples exact-positive-integer? 20)
 (defparam vector-field-color plot-color/c 1)
-(defparam vector-field-line-width (and/c real? (>=/c 0)) 2/3)
+(defparam vector-field-line-width (>=/c 0) 2/3)
 (defparam vector-field-line-style plot-pen-style/c 'solid)
 (defparam vector-field-scale (or/c real? (one-of/c 'auto 'normalized)) 'auto)
 (defparam vector-field-alpha (real-in 0 1) 1)
 
 ;; Error bars
 
-(defparam error-bar-width (and/c real? (>=/c 0)) 6)
+(defparam error-bar-width (>=/c 0) 6)
 (defparam error-bar-color plot-color/c 0)
-(defparam error-bar-line-width (and/c real? (>=/c 0)) 1)
+(defparam error-bar-line-width (>=/c 0) 1)
 (defparam error-bar-line-style plot-pen-style/c 'solid)
 (defparam error-bar-alpha (real-in 0 1) 2/3)
 
@@ -117,7 +117,7 @@
 (defparam rectangle-color plot-color/c 3)
 (defparam rectangle-style plot-brush-style/c 'solid)
 (defparam rectangle-line-color plot-color/c 3)
-(defparam rectangle-line-width (and/c real? (>=/c 0)) 1)
+(defparam rectangle-line-width (>=/c 0) 1)
 (defparam rectangle-line-style plot-pen-style/c 'solid)
 (defparam rectangle-alpha (real-in 0 1) 1)
 (defparam discrete-histogram-gap (real-in 0 1) 1/8)
@@ -134,7 +134,7 @@
 (defparam label-anchor anchor/c 'left)
 (defparam label-angle real? 0)
 (defparam label-alpha (real-in 0 1) 1)
-(defparam label-point-size (and/c real? (>=/c 0)) 4)
+(defparam label-point-size (>=/c 0) 4)
 
 ;; Sampling
 
@@ -165,7 +165,7 @@
 (defparam surface-color plot-color/c 0)
 (defparam surface-style plot-brush-style/c 'solid)
 (defparam surface-line-color plot-color/c 0)
-(defparam surface-line-width (and/c real? (>=/c 0)) 1/3)
+(defparam surface-line-width (>=/c 0) 1/3)
 (defparam surface-line-style plot-pen-style/c 'solid)
 (defparam surface-alpha (real-in 0 1) 1)
 
@@ -194,4 +194,4 @@
 
 ;; Histograms
 
-(defparam rectangle3d-line-width (and/c real? (>=/c 0)) 1/3)
+(defparam rectangle3d-line-width (>=/c 0) 1/3)

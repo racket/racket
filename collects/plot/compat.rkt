@@ -167,7 +167,7 @@
 
 (defproc (line [f (real? . -> . (or/c real? (vector/c real? real?)))]
                [#:samples samples (and/c exact-integer? (>=/c 2)) 150]
-               [#:width width (and/c real? (>=/c 0)) 1]
+               [#:width width (>=/c 0) 1]
                [#:color color plot-color/c 'red]
                [#:mode mode (one-of/c 'standard 'parametric) 'standard]
                [#:mapping mapping (one-of/c 'cartesian 'polar) 'cartesian]
@@ -177,7 +177,7 @@
 
 (defproc (contour [f (real? real? . -> . real?)]
                   [#:samples samples exact-nonnegative-integer? 50]
-                  [#:width width (and/c real? (>=/c 0)) 1]
+                  [#:width width (>=/c 0) 1]
                   [#:color color plot-color/c 'black]
                   [#:levels levels (or/c (and/c exact-integer? (>=/c 2)) (listof real?)) 10]
                   ) ((is-a?/c 2d-plot-area%) . -> . void?)
@@ -191,7 +191,7 @@
 
 (defproc (surface [f (real? real? . -> . real?)]
                   [#:samples samples (and/c exact-integer? (>=/c 2)) 50]
-                  [#:width width (and/c real? (>=/c 0)) 1]
+                  [#:width width (>=/c 0) 1]
                   [#:color color plot-color/c 'black]
                   ) ((is-a?/c 3d-plot-area%) . -> . void?)
   (renderer3d->plot-data (surface-renderer f samples width color)))

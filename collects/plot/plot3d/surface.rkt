@@ -55,7 +55,7 @@
           [#:color color plot-color/c (surface-color)]
           [#:style style plot-brush-style/c (surface-style)]
           [#:line-color line-color plot-color/c (surface-line-color)]
-          [#:line-width line-width (and/c real? (>=/c 0)) (surface-line-width)]
+          [#:line-width line-width (>=/c 0) (surface-line-width)]
           [#:line-style line-style plot-pen-style/c (surface-line-style)]
           [#:alpha alpha (real-in 0 1) (surface-alpha)]
           [#:label label (or/c string? #f) #f]

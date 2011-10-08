@@ -136,7 +136,7 @@
                   [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                   [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                   [#:color color plot-color/c (line-color)]
-                  [#:width width (and/c real? (>=/c 0)) (line-width)]
+                  [#:width width (>=/c 0) (line-width)]
                   [#:style style plot-pen-style/c (line-style)]
                   [#:alpha alpha (real-in 0 1) (line-alpha)]
                   [#:label label (or/c string? #f) #f]

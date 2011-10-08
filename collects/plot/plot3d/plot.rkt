@@ -26,7 +26,7 @@
 
 (defproc (plot3d/dc [renderer-tree  (treeof renderer3d?)]
                     [dc  (is-a?/c dc<%>)]
-                    [x real?] [y real?] [width (and/c real? (>=/c 0))] [height (and/c real? (>=/c 0))]
+                    [x real?] [y real?] [width (>=/c 0)] [height (>=/c 0)]
                     [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                     [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                     [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
