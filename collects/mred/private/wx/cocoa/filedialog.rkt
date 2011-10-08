@@ -91,14 +91,16 @@
             (let ([front (get-front)]
                   [parent (and (version-10.6-or-later?)
                                parent)])
-              (when parent
-                (tellv ns beginSheetModalForWindow: (send parent get-cocoa-window)
-                       completionHandler: #f))
-              (begin0
-               (tell #:type _NSInteger ns runModal)
-               (when parent (tell app endSheet: ns))
-               (when front (tellv (send front get-cocoa-window)
-                                  makeKeyAndOrderFront: #f)))))])
+              (call-in-run-loop
+               (lambda ()
+                 (when parent
+                   (tellv ns beginSheetModalForWindow: (send parent get-cocoa-window)
+                          completionHandler: #f))
+                 (begin0
+                  (tell #:type _NSInteger ns runModal)
+                  (when parent (tell app endSheet: ns))
+                  (when front (tellv (send front get-cocoa-window)
+                                     makeKeyAndOrderFront: #f)))))))])
       (begin0
        (if (zero? result)
            #f

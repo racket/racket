@@ -16,7 +16,8 @@
          "bitmap.rkt"
          "cg.rkt"
          "utils.rkt"
-         "types.rkt")
+         "types.rkt"
+         "queue.rkt")
 
 (provide 
  (protect-out printer-dc%
@@ -105,8 +106,10 @@
     (if (atomically
          (let ([front (get-front)])
            (begin0
-            (= (tell #:type _NSInteger (tell NSPageLayout pageLayout) runModalWithPrintInfo: print-info)
-               NSOkButton)
+            (call-in-run-loop
+             (lambda ()
+               (= (tell #:type _NSInteger (tell NSPageLayout pageLayout) runModalWithPrintInfo: print-info)
+                  NSOkButton)))
             (when front
               (tellv (send front get-cocoa-window) makeKeyAndOrderFront: #f)))))
         (begin
