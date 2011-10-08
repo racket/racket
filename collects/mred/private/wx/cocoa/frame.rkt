@@ -324,8 +324,9 @@
                   (send p set-sheet #f)
                   (tell (tell NSApplication sharedApplication)
                         endSheet: cocoa))))
-            (tellv cocoa deminiaturize: #f)
-            (tellv cocoa orderOut: #f)
+            (when (is-shown?) ; otherwise, `deminiaturize' can show the window
+              (tellv cocoa deminiaturize: #f)
+              (tellv cocoa orderOut: #f))
             (force-window-focus)))
       (register-frame-shown this on?)
       (let ([num (tell #:type _NSInteger cocoa windowNumber)])
