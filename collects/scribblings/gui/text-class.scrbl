@@ -163,7 +163,7 @@ Called after the editor's maximum or minimum height or width is
  after-set-size-constraint] modifies the editor).
 
 (This callback method is provided because setting an editor's maximum
- width may cause lines to be re-flowed with soft carriage returns.)
+ width may cause lines to be re-flowed with soft newlines.)
 
 See also @method[text% can-set-size-constraint?] and @method[editor<%>
  on-edit-sequence].
@@ -299,7 +299,7 @@ is changed. If the return value is @racket[#f], then the
 change will be aborted.
 
 (This callback method is provided because setting an editor's maximum
-width may cause lines to be re-flowed with soft carriage returns.)
+width may cause lines to be re-flowed with soft newlines.)
 
 See also @method[text% on-set-size-constraint], @method[text%
  after-set-size-constraint], and @method[editor<%> on-edit-sequence].
@@ -996,8 +996,8 @@ If @racket[flattened?] is not @racket[#f], then flattened text is returned.
  text.
 
 If @racket[force-cr?] is not @racket[#f] and @racket[flattened?] is not
- @racket[#f], then automatic carriage returns (from word-wrapping) are
- written into the return string as real carriage returns.
+ @racket[#f], then automatic newlines (from word-wrapping) are
+ written into the return string as real newlines.
 
 }
 
@@ -1214,9 +1214,9 @@ If there are fewer than @math{@racket[line]-1} lines, the end of the
  last line is returned. If @racket[line] is less than 0, then the end
  of the first line is returned.
 
-If the line ends with invisible @techlink{item}s (such as a carriage
- return) and @racket[visible?] is not @racket[#f], the first
- @techlink{position} before the invisible @techlink{item}s is
+If the line ends with @tech{invisible} @techlink{item}s (such as a
+ newline) and @racket[visible?] is not @racket[#f], the first
+ @techlink{position} before the @tech{invisible} @techlink{item}s is
  returned.
 
 @LineToPara[@racket[paragraph-end-position]]
@@ -1273,8 +1273,8 @@ If there are fewer than @math{@racket[line]-1} lines, the start of the
 last line is returned. If @racket[line] is less than 0, then
 the start of the first line is returned.
 
-If the line starts with invisible @techlink{item}s and @racket[visible?] is not
- @racket[#f], the first @techlink{position} past the invisible @techlink{item}s is
+If the line starts with @tech{invisible} @techlink{item}s and @racket[visible?] is not
+ @racket[#f], the first @techlink{position} past the @tech{invisible} @techlink{item}s is
  returned.
 
 @LineToPara[@racket[paragraph-start-position]]
@@ -1537,7 +1537,7 @@ Called before the editor's maximum or minimum height or width is
  the change has completed.
 
 (This callback method is provided because setting an editor's maximum
- width may cause lines to be re-flowed with soft carriage returns.)
+ width may cause lines to be re-flowed with soft newlines.)
 
 See also @method[editor<%> on-edit-sequence].
 
@@ -1560,7 +1560,7 @@ Returns the ending line of a given paragraph. @|ParagraphNumbering| @|LineNumber
 
 
 @defmethod[(paragraph-end-position [paragraph exact-nonnegative-integer?]
-                                   [visible? any/c #f])
+                                   [visible? any/c #t])
            exact-nonnegative-integer?]{
 
 Returns the ending @techlink{position} of a given paragraph. @|ParagraphNumbering|
@@ -1569,9 +1569,9 @@ If there are fewer than @math{@racket[paragraph]-1} paragraphs, the
  end of the last paragraph is returned. If @racket[paragraph] is less
  than 0, then the end of the first paragraph is returned.
 
-If the paragraph ends with invisible @techlink{item}s (such as a carriage
- return) and @racket[visible?] is not @racket[#f], the first @techlink{position}
- before the invisible @techlink{item}s is returned.
+If the paragraph ends with @tech{invisible} @techlink{item}s (such as a newline)
+ and @racket[visible?] is not @racket[#f], the first @techlink{position}
+ before the @tech{invisible} @techlink{item}s is returned.
 
 }
 
@@ -1589,7 +1589,7 @@ is greater than the highest-numbered paragraph, then the editor's end
 
 
 @defmethod[(paragraph-start-position [paragraph exact-nonnegative-integer?]
-                                     [visible? any/c #f])
+                                     [visible? any/c #t])
            exact-nonnegative-integer?]{
 
 Returns the starting @techlink{position} of a given paragraph. @|ParagraphNumbering|
@@ -1597,8 +1597,8 @@ Returns the starting @techlink{position} of a given paragraph. @|ParagraphNumber
 If there are fewer than @math{@racket[paragraph]-1} paragraphs, the
  start of the last paragraph is returned.
 
-If the paragraph starts with invisible @techlink{item}s and @racket[visible?] is
- not @racket[#f], the first @techlink{position} past the invisible @techlink{item}s is
+If the paragraph starts with @tech{invisible} @techlink{item}s and @racket[visible?] is
+ not @racket[#f], the first @techlink{position} past the @tech{invisible} @techlink{item}s is
  returned.
 
 }
@@ -1887,7 +1887,8 @@ The legal formats are:
 @itemize[
 @item{@racket['standard] ---  a standard editor  file}
 @item{@racket['text] --- a text file}
-@item{@racket['text-force-cr] --- a text file; when writing, change automatic newlines (from word-wrapping) into real carriage returns}
+@item{@racket['text-force-cr] --- a text file; when writing, change 
+automatic newlines (from word-wrapping) into real newlines}
 ]
 
 @MonitorMethod[@elem{The file format of an editor} @elem{the

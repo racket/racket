@@ -362,8 +362,8 @@ following symbols:
  @item{@indexed-racket['can-append] --- this snip can be merged with
        another snip of the same type}
 
- @item{@indexed-racket['invisible] --- the user doesn't ``see'' this snip; 
-       e.g.: a carriage return}
+ @item{@indexed-racket['invisible] --- an @deftech{invisible} snip
+       that the user doesn't see, such as a newline}
 
  @item{@indexed-racket['hard-newline] --- a newline must follow the snip}
 

@@ -3343,25 +3343,27 @@
                                       [any? [visible-only? #t]])
     (if (not (check-recalc #f #f #t))
         0
-        (let* ([i (max 0 i)]
-               [l (mline-find-paragraph (unbox line-root-box) i)]
-               [l (if l
-                      (let loop ([l l])
-                        (if (and (mline-next l)
-                                 (zero? (mline-starts-paragraph (mline-next l))))
-                            (loop (mline-next l))
-                            l))
-                      (if extra-line?
-                          len
-                          last-line))])
-          (if (mline? l)
-              (let ([p (+ (mline-get-position l) (mline-len l))])
-                (if visible-only?
-                    (let-boxes ([p p])
-                        (find-last-visible-position l p)
-                      p)
-                    p))
-              l))))
+        (if (i . > . (+ (last-paragraph) (if extra-line? -1 0)))
+            len
+            (let* ([i (max 0 i)]
+                   [l (mline-find-paragraph (unbox line-root-box) i)]
+                   [l (if l
+                          (let loop ([l l])
+                            (if (and (mline-next l)
+                                     (zero? (mline-starts-paragraph (mline-next l))))
+                                (loop (mline-next l))
+                                l))
+                          (if extra-line?
+                              len
+                              last-line))])
+              (if (mline? l)
+                  (let ([p (+ (mline-get-position l) (mline-len l))])
+                    (if visible-only?
+                        (let-boxes ([p p])
+                            (find-last-visible-position l p)
+                          p)
+                        p))
+                  l)))))
 
   (def/public (line-paragraph [exact-nonnegative-integer? i])
     (cond
