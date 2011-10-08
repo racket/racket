@@ -31,14 +31,14 @@
                                  #:samples samples #:width width #:color color)])]))
 
 (define (contour-renderer f samples width color levels)
-  (contours f #:samples samples #:levels (if (integer? levels) (sub1 levels) levels)
+  (contours f #:samples samples #:levels (if (exact-integer? levels) (sub1 levels) levels)
             #:colors (list color) #:widths (list width) #:styles '(solid)))
 
 (define (shade-fill-colors zs)
   (color-seq* '((0 0 255) (255 255 255) (255 0 0)) (sub1 (length zs))))
 
 (define (shade-renderer f samples levels)
-  (contour-intervals f #:samples samples #:levels (if (integer? levels) (sub1 levels) levels)
+  (contour-intervals f #:samples samples #:levels (if (exact-integer? levels) (sub1 levels) levels)
                      #:colors shade-fill-colors #:contour-styles '(transparent)))
 
 (define (surface-renderer f samples width color)

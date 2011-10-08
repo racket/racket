@@ -8,8 +8,6 @@
 
 @section{Convenience Contracts}
 
-@doc-apply[real>=/c]
-@doc-apply[integer>=/c]
 @doc-apply[treeof]
 
 @section{Appearance Argument Contracts}
@@ -17,8 +15,6 @@
 @doc-apply[anchor/c]
 @doc-apply[color/c]
 @doc-apply[plot-color/c]
-@doc-apply[pen-style/c]
-@doc-apply[brush-style/c]
 @doc-apply[plot-pen-style/c]
 @doc-apply[plot-brush-style/c]
 @doc-apply[font-family/c]

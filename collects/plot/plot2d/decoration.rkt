@@ -107,7 +107,7 @@
   
   empty)
 
-(defproc (polar-axes [#:number num (integer>=/c 1) (polar-axes-number)]
+(defproc (polar-axes [#:number num exact-positive-integer? (polar-axes-number)]
                      [#:ticks? ticks? boolean? (polar-axes-ticks?)]
                      ) renderer2d?
   (renderer2d (polar-axes-render-proc num ticks?)
@@ -182,10 +182,10 @@
 (defproc (point-label
           [v (vector/c real? real?)] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
-          [#:size size (real>=/c 0) (plot-font-size)]
+          [#:size size (and/c real? (>=/c 0)) (plot-font-size)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
-          [#:point-size point-size (real>=/c 0) (label-point-size)]
+          [#:point-size point-size (and/c real? (>=/c 0)) (label-point-size)]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (match-define (vector x y) v)
@@ -198,10 +198,10 @@
           [f (real? . -> . (vector/c real? real?))]
           [t real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
-          [#:size size (real>=/c 0) (plot-font-size)]
+          [#:size size (and/c real? (>=/c 0)) (plot-font-size)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
-          [#:point-size point-size (real>=/c 0) (label-point-size)]
+          [#:point-size point-size (and/c real? (>=/c 0)) (label-point-size)]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (match f
@@ -213,10 +213,10 @@
 (defproc (polar-label
           [f (real? . -> . real?)] [θ real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
-          [#:size size (real>=/c 0) (plot-font-size)]
+          [#:size size (and/c real? (>=/c 0)) (plot-font-size)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
-          [#:point-size point-size (real>=/c 0) (label-point-size)]
+          [#:point-size point-size (and/c real? (>=/c 0)) (label-point-size)]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (polar->cartesian θ (f θ)) label
@@ -226,10 +226,10 @@
 (defproc (function-label
           [f  (real? . -> . real?)] [x real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
-          [#:size size (real>=/c 0) (plot-font-size)]
+          [#:size size (and/c real? (>=/c 0)) (plot-font-size)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
-          [#:point-size point-size (real>=/c 0) (label-point-size)]
+          [#:point-size point-size (and/c real? (>=/c 0)) (label-point-size)]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (vector x (f x)) label
@@ -239,10 +239,10 @@
 (defproc (inverse-label
           [f  (real? . -> . real?)] [y real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
-          [#:size size (real>=/c 0) (plot-font-size)]
+          [#:size size (and/c real? (>=/c 0)) (plot-font-size)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
-          [#:point-size point-size (real>=/c 0) (label-point-size)]
+          [#:point-size point-size (and/c real? (>=/c 0)) (label-point-size)]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (vector (f y) y) label

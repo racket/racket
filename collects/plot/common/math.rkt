@@ -58,7 +58,7 @@
   (for/list ([n  (in-range num)])
     (+ start (* n step))))
 
-(defproc (linear-seq [start real?] [end real?] [num (integer>=/c 0)]
+(defproc (linear-seq [start real?] [end real?] [num exact-nonnegative-integer?]
                      [#:start? start? boolean? #t]
                      [#:end? end? boolean? #t]) (listof real?)
   (cond
@@ -76,7 +76,7 @@
      
      (build-linear-seq real-start step num)]))
 
-(defproc (linear-seq* [points (listof real?)] [num (integer>=/c 0)]
+(defproc (linear-seq* [points (listof real?)] [num exact-nonnegative-integer?]
                       [#:start? start? boolean? #t]
                       [#:end? end? boolean? #t]) (listof real?)
   (let/ec return

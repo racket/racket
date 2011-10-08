@@ -103,7 +103,7 @@
        ;; Return the shortest possible output string
        (argmin string-length strs))]))
 
-(defproc (->plot-label [a any/c] [digits exact-nonnegative-integer? 7]) string?
+(defproc (->plot-label [a any/c] [digits exact-integer? 7]) string?
   (let loop ([a a])
     (cond [(string? a)   a]
           [(symbol? a)   (symbol->string a)]

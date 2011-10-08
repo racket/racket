@@ -82,8 +82,8 @@
      (160 160 160)))  ; gray
 
 (defproc (->pen-color [c plot-color/c]) (list/c real? real? real?)
-  (cond [(integer? c)  (vector-ref pen-colors (remainder (abs c) 8))]
-        [else          (->color c)]))
+  (cond [(exact-integer? c)  (vector-ref pen-colors (remainder (abs c) 8))]
+        [else                (->color c)]))
 
 (define brush-colors
   '#((255 255 255)    ; white
@@ -96,35 +96,35 @@
      (212 212 212)))  ; gray
 
 (defproc (->brush-color [c plot-color/c]) (list/c real? real? real?)
-  (cond [(integer? c)  (vector-ref brush-colors (remainder (abs c) 8))]
-        [else          (->color c)]))
+  (cond [(exact-integer? c)  (vector-ref brush-colors (remainder (abs c) 8))]
+        [else                (->color c)]))
 
-(defproc (->pen-style [s plot-pen-style/c]) pen-style/c
-  (cond [(integer? s)  (case (remainder (abs s) 5)
-                         [(0)  'solid]
-                         [(1)  'dot]
-                         [(2)  'long-dash]
-                         [(3)  'short-dash]
-                         [(4)  'dot-dash])]
-        [(symbol? s)   s]
+(defproc (->pen-style [s plot-pen-style/c]) symbol?
+  (cond [(exact-integer? s)  (case (remainder (abs s) 5)
+                               [(0)  'solid]
+                               [(1)  'dot]
+                               [(2)  'long-dash]
+                               [(3)  'short-dash]
+                               [(4)  'dot-dash])]
+        [(symbol? s)  s]
         [else  (raise-type-error '->pen-style "symbol or integer" s)]))
 
-(defproc (->brush-style [s plot-brush-style/c]) brush-style/c
-  (cond [(integer? s)  (case (remainder (abs s) 7)
-                         [(0)  'solid]
-                         [(1)  'bdiagonal-hatch]
-                         [(2)  'fdiagonal-hatch]
-                         [(3)  'crossdiag-hatch]
-                         [(4)  'horizontal-hatch]
-                         [(5)  'vertical-hatch]
-                         [(6)  'cross-hatch])]
-        [(symbol? s)   s]
+(defproc (->brush-style [s plot-brush-style/c]) symbol?
+  (cond [(exact-integer? s)  (case (remainder (abs s) 7)
+                               [(0)  'solid]
+                               [(1)  'bdiagonal-hatch]
+                               [(2)  'fdiagonal-hatch]
+                               [(3)  'crossdiag-hatch]
+                               [(4)  'horizontal-hatch]
+                               [(5)  'vertical-hatch]
+                               [(6)  'cross-hatch])]
+        [(symbol? s)  s]
         [else  (raise-type-error '->brush-style "symbol or integer" s)]))
 
 ;; ===================================================================================================
 ;; Color functions
 
-(defproc (color-seq [c1 color/c] [c2 color/c] [num (integer>=/c 0)]
+(defproc (color-seq [c1 color/c] [c2 color/c] [num exact-nonnegative-integer?]
                     [#:start? start? boolean? #t]
                     [#:end? end? boolean? #t]) (listof (list/c real? real? real?))
   (match-define (list r1 g1 b1) (->color c1))
@@ -134,7 +134,7 @@
   (define bs (linear-seq b1 b2 num #:start? start? #:end? end?))
   (map list rs gs bs))
 
-(defproc (color-seq* [colors (listof color/c)] [num (integer>=/c 0)]
+(defproc (color-seq* [colors (listof color/c)] [num exact-nonnegative-integer?]
                      [#:start? start? boolean? #t]
                      [#:end? end? boolean? #t]) (listof (list/c real? real? real?))
   (when (empty? colors) (raise-type-error 'color-seq* "nonempty (listof plot-color/c)" colors))

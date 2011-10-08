@@ -27,8 +27,8 @@
           [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
           [#:sym sym point-sym/c (point-sym)]
           [#:color color plot-color/c (point-color)]
-          [#:size size (real>=/c 0) (point-size)]
-          [#:line-width line-width (real>=/c 0) (point-line-width)]
+          [#:size size (and/c real? (>=/c 0)) (point-size)]
+          [#:line-width line-width (and/c real? (>=/c 0)) (point-line-width)]
           [#:alpha alpha (real-in 0 1) (point-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?

@@ -141,14 +141,14 @@
 ;; Functions that generate "plot data"
 
 (defproc (points [vecs (listof (vectorof real?))]
-                 [#:sym sym (or/c char? string? integer? symbol?) 'square]
+                 [#:sym sym (or/c char? string? exact-integer? symbol?) 'square]
                  [#:color color plot-color? 'black]
                  ) ((is-a?/c 2d-plot-area%) . -> . void?)
   (renderer2d->plot-data (new.points (map (λ (v) (vector-take v 2)) vecs)
                                      #:sym sym #:size 6 #:color color)))
 
 (defproc (vector-field [f ((vector/c real? real?) . -> . (vector/c real? real?))]
-                       [#:samples samples (integer>=/c 2) 20]
+                       [#:samples samples (and/c exact-integer? (>=/c 2)) 20]
                        [#:width width exact-positive-integer? 1]
                        [#:color color plot-color? 'red]
                        [#:style style (one-of/c 'scaled 'normalized 'real) 'scaled]
@@ -166,8 +166,8 @@
   (renderer2d->plot-data (new.error-bars vecs #:color color #:alpha 1 #:width 4)))
 
 (defproc (line [f (real? . -> . (or/c real? (vector/c real? real?)))]
-               [#:samples samples (integer>=/c 2) 150]
-               [#:width width (real>=/c 0) 1]
+               [#:samples samples (and/c exact-integer? (>=/c 2)) 150]
+               [#:width width (and/c real? (>=/c 0)) 1]
                [#:color color plot-color/c 'red]
                [#:mode mode (one-of/c 'standard 'parametric) 'standard]
                [#:mapping mapping (one-of/c 'cartesian 'polar) 'cartesian]
@@ -177,21 +177,21 @@
 
 (defproc (contour [f (real? real? . -> . real?)]
                   [#:samples samples exact-nonnegative-integer? 50]
-                  [#:width width (real>=/c 0) 1]
+                  [#:width width (and/c real? (>=/c 0)) 1]
                   [#:color color plot-color/c 'black]
-                  [#:levels levels (or/c (integer>=/c 2) (listof real?)) 10]
+                  [#:levels levels (or/c (and/c exact-integer? (>=/c 2)) (listof real?)) 10]
                   ) ((is-a?/c 2d-plot-area%) . -> . void?)
   (renderer2d->plot-data (contour-renderer f samples width color levels)))
 
 (defproc (shade [f (real? real? . -> . real?)]
-                [#:samples samples (integer>=/c 2) 50]
-                [#:levels levels (or/c (integer>=/c 2) (listof real?)) 10]
+                [#:samples samples (and/c exact-integer? (>=/c 2)) 50]
+                [#:levels levels (or/c (and/c exact-integer? (>=/c 2)) (listof real?)) 10]
                 ) ((is-a?/c 2d-plot-area%) . -> . void?)
   (renderer2d->plot-data (shade-renderer f samples levels)))
 
 (defproc (surface [f (real? real? . -> . real?)]
-                  [#:samples samples (integer>=/c 2) 50]
-                  [#:width width (real>=/c 0) 1]
+                  [#:samples samples (and/c exact-integer? (>=/c 2)) 50]
+                  [#:width width (and/c real? (>=/c 0)) 1]
                   [#:color color plot-color/c 'black]
                   ) ((is-a?/c 3d-plot-area%) . -> . void?)
   (renderer3d->plot-data (surface-renderer f samples width color)))

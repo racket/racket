@@ -22,7 +22,7 @@
     [(? mapped-function?)  ((mapped-function-fmap f) xs)]
     [_  (map f xs)]))
 
-(defproc (nonlinear-seq [start real?] [end real?] [num (integer>=/c 0)]
+(defproc (nonlinear-seq [start real?] [end real?] [num exact-nonnegative-integer?]
                         [transform (real? real? . -> . invertible-function?)]
                         [#:start? start? boolean? #t]
                         [#:end? end? boolean? #t]) (listof real?)
