@@ -222,7 +222,8 @@ Use cases, explained:
    begin0
    define-values
    define-syntaxes
-   define-values-for-syntax
+   define-values-for-syntax ;; kept for compat.
+   begin-for-syntax
    set!
    let-values
    letrec-values
