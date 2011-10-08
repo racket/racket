@@ -23,16 +23,24 @@ before using @(racket plot) or @(racket plot3d).}
 @doc-apply[plot-width]
 @doc-apply[plot-height]{The width and height of a plot, in logical drawing units (e.g. pixels for bitmap plots).}
 
-@doc-apply[plot-jpeg-quality]
-@doc-apply[plot-ps-interactive?]
-@doc-apply[plot-pdf-interactive?]
+@doc-apply[plot-jpeg-quality]{
+The quality of JPEG images written by @(racket plot-file) and @(racket plot3d-file). See @(method bitmap% save-file).
+}
+
+@doc-apply[plot-ps-interactive?]{
+If @(racket #t), @(racket plot-file) and @(racket plot3d-file) open a dialog when writing PostScript files. See @(racket post-script-dc%).
+}
+
+@doc-apply[plot-pdf-interactive?]{
+If @(racket #t), @(racket plot-file) and @(racket plot3d-file) open a dialog when writing PDF files. See @(racket pdf-dc%).
+}
 
 @section{Axis Transforms}
 
 @doc-apply[plot-x-transform]
 @doc-apply[plot-y-transform]
 @doc-apply[plot-z-transform]{
-Per-axis, nonlinear transforms. Set these, for example, to plot with log-scale axes.
+Per-axis, nonlinear transforms. Set these, for example, to plot with log-scale axes. See @(racket log-transform).
 }
 
 @doc-apply[id-transform]{
@@ -44,7 +52,7 @@ A log transform. Use this to generate plots with log-scale axes. Any log-scaled 
 
 @examples[#:eval plot-eval
                  (parameterize ([plot-y-transform  log-transform])
-                   (plot (function (λ (x) x) 1 2)))
+                   (plot (function (λ (x) x) 0.01 1)))
                  (parameterize ([plot-x-transform  log-transform])
                    (plot (function (λ (x) x) -1 1)))]
 }
@@ -66,7 +74,10 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
 @section{General Appearance}
 
 @doc-apply[plot-foreground]
-@doc-apply[plot-background]{The plot foreground and background color. That both are @(racket 0) by default is not a mistake: for foreground colors, @(racket 0) is interpreted as black; for background colors, @(racket 0) is interpreted as white. See @(racket plot-color/c) for details on integer-indexed colors.}
+@doc-apply[plot-background]{
+The plot foreground and background color.
+That both are @(racket 0) by default is not a mistake: for foreground colors, @(racket 0) is interpreted as black; for background colors, @(racket 0) is interpreted as white.
+See @(racket ->pen-color) and @(racket ->brush-color) for details on how PLoT interprets integer colors.}
 @doc-apply[plot-foreground-alpha]
 @doc-apply[plot-background-alpha]{The opacity of the background and foreground colors.}
 @doc-apply[plot-font-size]{The font size of the title, axis labels, tick labels, and other labels, in drawing units.}

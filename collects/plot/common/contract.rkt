@@ -33,8 +33,6 @@
                                                 'bdiagonal-hatch 'fdiagonal-hatch 'crossdiag-hatch
                                                 'horizontal-hatch 'vertical-hatch 'cross-hatch)))
 
-(defcontract plot-font-size/c (and/c real? (>=/c 0)))
-
 (defcontract font-family/c (one-of/c 'default 'decorative 'roman 'script 'swiss
                                      'modern 'symbol 'system))
 
