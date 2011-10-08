@@ -121,11 +121,9 @@ Does nothing.
 
 @methspec{
 
-Called just after the editor is loaded from a file. 
-
-The argument to the method originally specified whether the save was
-successful, but failures now trigger exceptions such that the method is
-not even called. Consequently, the argument is always @racket[#t].
+Called just after the editor is loaded from a file or during the
+exception escape when an attempt to load fails. The @racket[success?]
+argument indicates whether the load succeeded.
 
 See also
 @method[editor<%> can-load-file?] and
@@ -146,11 +144,9 @@ Does nothing.
 
 @methspec{
 
-Called just after the editor is saved to a file.
-
-The argument to the method originally specified whether the save was
-successful, but failures now trigger exceptions such that the method is
-not even called. Consequently, the argument is always @racket[#t].
+Called just after the editor is saved to a file or during the
+exception escape when a save fails. The @racket[success?] argument
+indicates whether the save succeeded.
 
 See also
 @method[editor<%> can-save-file?] and
