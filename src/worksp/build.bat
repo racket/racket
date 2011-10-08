@@ -21,6 +21,8 @@ cd ..
 if errorlevel 1 exit /B 1
 ..\..\racket -cu ..\get-libs.rkt gui  ..\..\lib
 if errorlevel 1 exit /B 1
+..\..\racket -cu ..\get-libs.rkt db  ..\..\lib
+if errorlevel 1 exit /B 1
 
 cd mzstart
 devenv mzstart.sln /Build "Release|%BUILDMODE%"
