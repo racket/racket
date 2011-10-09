@@ -709,6 +709,11 @@
  (clear-current "Dieses löschen")
  (new-window "Neues Fenster")
 
+ ;; popup menu when right-clicking in the gap between
+ ;; the definitions and interactions window
+ (change-to-vertical-alignment "Auf vertikal umschalten")
+ (change-to-horizontal-alignment "Auf horizontal umschalten")
+
  ;;; exiting and quitting ``are you sure'' dialog
  ;;; exit is used on windows, quit on macos, in English. Other
  ;;; languages probably use the same word on both platforms.
@@ -822,6 +827,7 @@
  ;;; edit menu
  (split-menu-item-label "&Splitten")
  (collapse-menu-item-label "Einfalten")
+ (find-longest-line "Längste Zeile finden")
  
  ;;; language menu
  (language-menu-name "&Sprache")
