@@ -933,16 +933,28 @@
 
 #endif
 
+  /************ QNX *************/
+
+#if defined(__QNX__)
+
+# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-qnx"
+
+# include "uconfig.h"
+# define SIGSET_IS_SIGNAL
+# define SIGSET_NEEDS_REINSTALL
+
+# define USE_FCNTL_O_NONBLOCK
+
+# define ASSUME_FIXED_STACK_SIZE
+# define FIXED_STACK_SIZE 524288
+
+# define FLAGS_ALREADY_SET
+
+#endif
+
   /***************************************************/
 
 #endif /* end not OSKit */
-
-#if defined(__QNX__)
-# define USE_FCNTL_O_NONBLOCK
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-QNX"
-# define ASSUME_FIXED_STACK_SIZE
-# define FIXED_STACK_SIZE 524288
-#endif
 
 /************** (END KNOWN ARCHITECTURE/SYSTEMS) ****************/
 
