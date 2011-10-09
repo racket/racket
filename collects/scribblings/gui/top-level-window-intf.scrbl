@@ -312,6 +312,44 @@ Sets the size of the window (in pixels), but only if the given size is
 
 }
 
+
+@defmethod[(set-icon [icon (is-a?/c bitmap%)]
+                     [mask (is-a?/c bitmap%) #f]
+                     [which (one-of/c 'small 'large 'both) 'both])
+           void?]{
+
+Sets the large or small icon bitmap for the window.  Future changes to
+ the bitmap do not affect the window's icon.
+
+The icon is used in a platform-specific way:
+
+@itemize[
+
+ @item{Windows --- the small icon is used for the window's icon (in the
+       top-left) and in the task bar, and the large icon is used for
+       the Alt-Tab task switcher.}
+
+ @item{Mac OS X --- both icons are ignored.}
+
+ @item{Unix --- many window managers use the small icon in the same way
+       as Windows, and others use the small icon when iconifying the
+       frame; the large icon is ignored.}
+
+]
+
+The bitmap for either icon can be any size, but most platforms scale
+ the small bitmap to 16 by 16 pixels and the large bitmap to 32 by 32
+ pixels.
+
+If a mask bitmap is not provided, then the entire (rectangular) bitmap
+ is used as an icon.
+
+If a mask bitmap is provided, the mask must be monochrome. In the mask
+ bitmap, use black pixels to indicate the icon's region and use white
+ pixels outside the icon's region. In the icon bitmap, use black
+ pixels for the region outside the icon.}
+
+
 @defmethod[(show [show any/c])
            void?]{
 
