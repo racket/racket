@@ -1219,9 +1219,13 @@ please adhere to these guidelines:
   (exited-successfully "Exited successfully.")
   (exited-with-error-code "Exited with error code ~a.") ;; ~a is filled in with a number between 1 and 255
   (program-ran-out-of-memory "The program ran out of memory.")
- (last-stack-frame "show the last stack frame")
- (last-stack-frames "show the last ~a stack frames")
- (next-stack-frames "show the next ~a stack frames")
+  
+  (show-evaluation-terminated-dialog "Show the ‘evaluation terminated’ dialog")
+  (evaluation-terminated-ask "Show this dialog next time?")
+  
+  (last-stack-frame "show the last stack frame")
+  (last-stack-frames "show the last ~a stack frames")
+  (next-stack-frames "show the next ~a stack frames")
  
  ;;; welcoming message in repl
  (language "Language")

@@ -905,37 +905,43 @@ TODO
       (field (need-interaction-cleanup? #f))
       
       (define/private (no-user-evaluation-message frame exit-code memory-killed?)
-        (let* ([new-limit (and custodian-limit (+ custodian-limit custodian-limit))]
-               [ans (message-box/custom
-                     (string-constant evaluation-terminated)
-                     (string-append
-                      (string-constant evaluation-terminated-explanation)
-                      (if exit-code
-                          (string-append
-                           "\n\n"
-                           (if (zero? exit-code)
-                               (string-constant exited-successfully)
-                               (format (string-constant exited-with-error-code) exit-code)))
-                          "")
-                      (if memory-killed?
-                          (string-append 
-                           "\n\n"
-                           (string-constant program-ran-out-of-memory))
-                          ""))
-                     (string-constant ok)
-                     #f
-                     (and memory-killed?
-                          new-limit
-                          (format "Increase memory limit to ~a megabytes" 
-                                  (floor (/ new-limit 1024 1024))))
-                     frame
-                     '(default=1 stop)
-                     #:dialog-mixin frame:focus-table-mixin)])
-          (when (equal? ans 3)
-            (set-custodian-limit new-limit)
-            (preferences:set 'drracket:child-only-memory-limit new-limit))
-          (set-insertion-point (last-position))
-          (insert-warning "\nInteractions disabled")))
+        (define new-limit (and custodian-limit (+ custodian-limit custodian-limit)))
+        (define-values (ans checked?)
+          (if (preferences:get 'drracket:show-killed-dialog)
+              (message+check-box/custom
+               (string-constant evaluation-terminated)
+               (string-append
+                (string-constant evaluation-terminated-explanation)
+                (if exit-code
+                    (string-append
+                     "\n\n"
+                     (if (zero? exit-code)
+                         (string-constant exited-successfully)
+                         (format (string-constant exited-with-error-code) exit-code)))
+                    "")
+                (if memory-killed?
+                    (string-append 
+                     "\n\n"
+                     (string-constant program-ran-out-of-memory))
+                    ""))
+               (string-constant evaluation-terminated-ask)
+               (string-constant ok)
+               #f
+               (and memory-killed?
+                    new-limit
+                    (format "Increase memory limit to ~a megabytes" 
+                            (floor (/ new-limit 1024 1024))))
+               frame
+               '(default=1 stop checked)
+               #:dialog-mixin frame:focus-table-mixin)
+              (values 1 #t)))
+        (unless checked?
+          (preferences:set 'drracket:show-killed-dialog #f))
+        (when (equal? ans 3)
+          (set-custodian-limit new-limit)
+          (preferences:set 'drracket:child-only-memory-limit new-limit))
+        (set-insertion-point (last-position))
+        (insert-warning "\nInteractions disabled"))
       
       (define/private (cleanup-interaction) ; =Kernel=, =Handler=
         (set! need-interaction-cleanup? #f)
