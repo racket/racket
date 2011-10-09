@@ -446,7 +446,7 @@
       (lambda (x)
         (and x
              (let ([cb (ffi-callback (wrap x) itypes otype abi atomic? async-apply)])
-               (cond [(eq? keep #t) (hash-set! held-callbacks x cb)]
+               (cond [(eq? keep #t) (hash-set! held-callbacks x (make-ephemeron x cb))]
                      [(box? keep)
                       (let ([x (unbox keep)])
                         (set-box! keep
