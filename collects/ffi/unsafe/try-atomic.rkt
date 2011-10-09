@@ -67,7 +67,7 @@
 (define (can-try-atomic?) (and (freezer-box) (not (in-try-atomic?))))
 
 ;; prevent GC of handler while it's installed:
-(define saved-ptrs (make-hash))
+(define saved-ptrs (make-hasheq))
 
 (define (try-atomic thunk default 
                     #:should-give-up? [should-give-up?
