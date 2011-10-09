@@ -181,6 +181,25 @@ typedef struct FSSpec mzFSSpec;
 # endif
 #endif
 
+#ifdef MZ_PRECISE_GC
+# ifndef MZ_XFORM
+#  define XFORM_SKIP_PROC /* empty */
+#  define XFORM_CAN_IGNORE /**/
+# endif
+#else
+# define XFORM_HIDE_EXPR(x) x
+# define XFORM_START_SKIP /**/
+# define XFORM_END_SKIP /**/
+# define XFORM_START_SUSPEND /**/
+# define XFORM_END_SUSPEND /**/
+# define XFORM_SKIP_PROC /**/
+# define XFORM_START_TRUST_ARITH /**/
+# define XFORM_END_TRUST_ARITH /**/
+# define XFORM_CAN_IGNORE /**/
+# define XFORM_TRUST_PLUS +
+# define XFORM_TRUST_MINUS -
+#endif
+
 /* PPC Linux plays a slimy trick: it defines strcpy() as a macro that
    uses __extension__. This breaks the 3m xform. */
 #if defined(MZ_XFORM) && defined(strcpy)
@@ -875,7 +894,7 @@ typedef mz_one_jit_jmp_buf mz_jit_jmp_buf[1];
 
 #ifdef MZ_PRECISE_GC
 typedef struct {
-  mz_jit_jmp_buf jb;
+  XFORM_CAN_IGNORE mz_jit_jmp_buf jb;
   intptr_t gcvs; /* declared as `intptr_t' to hide pointer from 3m xform */
   intptr_t gcvs_cnt;
 } mz_jmp_buf;
@@ -1696,9 +1715,6 @@ extern void *scheme_malloc_envunbox(size_t);
 # define MZ_GC_REG()  (__gc_var_stack__[0] = GC_variable_stack, \
                        GC_variable_stack = __gc_var_stack__)
 # define MZ_GC_UNREG() (GC_variable_stack = (void **)__gc_var_stack__[0])
-# ifndef MZ_XFORM
-#  define XFORM_SKIP_PROC /* empty */
-# endif
 #else
 # define MZ_GC_DECL_REG(size)            /* empty */
 # define MZ_GC_VAR_IN_REG(x, v)          /* empty */
@@ -1706,17 +1722,6 @@ extern void *scheme_malloc_envunbox(size_t);
 # define MZ_GC_NO_VAR_IN_REG(x)          /* empty */
 # define MZ_GC_REG()                     /* empty */
 # define MZ_GC_UNREG()                   /* empty */
-# define XFORM_HIDE_EXPR(x) x
-# define XFORM_START_SKIP /**/
-# define XFORM_END_SKIP /**/
-# define XFORM_START_SUSPEND /**/
-# define XFORM_END_SUSPEND /**/
-# define XFORM_SKIP_PROC /**/
-# define XFORM_START_TRUST_ARITH /**/
-# define XFORM_END_TRUST_ARITH /**/
-# define XFORM_CAN_IGNORE /**/
-# define XFORM_TRUST_PLUS +
-# define XFORM_TRUST_MINUS -
 #endif
 
 /*========================================================================*/
