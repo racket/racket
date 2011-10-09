@@ -719,6 +719,7 @@
           (printf "#define NULL_OUT_ARRAY(a) memset(a, 0, sizeof(a))\n")
           ;; Annotation that normally disappears:
           (printf "#define GC_CAN_IGNORE /**/\n")
+          (printf "#define XFORM_CAN_IGNORE /**/\n")
           (printf "#define __xform_nongcing__ /**/\n")
           ;; Another annotation to protect against GC conversion:
           (printf "#define HIDE_FROM_XFORM(x) x\n")
