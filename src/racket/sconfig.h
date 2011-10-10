@@ -937,7 +937,10 @@
 
 #if defined(__QNX__)
 
+#if defined(i386)
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-qnx"
+#endif
+# define ASSUME_FIXED_STACK_SIZE
 
 # include "uconfig.h"
 # define SIGSET_IS_SIGNAL
@@ -945,10 +948,19 @@
 
 # define USE_FCNTL_O_NONBLOCK
 
-# define ASSUME_FIXED_STACK_SIZE
 # define FIXED_STACK_SIZE 524288
 
 # define FLAGS_ALREADY_SET
+
+#if defined(i386)
+# define MZ_USE_JIT_I386
+# define MZ_JIT_USE_MPROTECT
+#endif
+#if defined(__x86_64__)
+# define MZ_USE_JIT_X86_64
+# define MZ_JIT_USE_MPROTECT
+# define MZ_USE_DWARF_LIBUNWIND
+#endif
 
 #endif
 
