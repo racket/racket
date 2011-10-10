@@ -1156,7 +1156,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
 
   v = scheme_make_folding_prim_closure(prop_pred, 1, a, name, 1, 1, 0);
   ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= (SCHEME_PRIM_IS_STRUCT_OTHER
-                                                    | SCHEME_PRIM_TYPE_STRUCT_PROP_PRED);
+                                                    | SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED);
   *predout = v;
 
   name = MALLOC_N_ATOMIC(char, len + 10);
@@ -3035,8 +3035,10 @@ struct_getter_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return ((STRUCT_PROCP(v, SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER)
-	   || STRUCT_mPROCP(v, 
+  return ((STRUCT_mPROCP(v, 
+                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
+                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
+           || STRUCT_mPROCP(v, 
 			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
 			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
 	  ? scheme_true : scheme_false);
@@ -3047,7 +3049,9 @@ struct_pred_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return (STRUCT_PROCP(v, SCHEME_PRIM_IS_STRUCT_PRED)
+  return (STRUCT_mPROCP(v, 
+                        SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
+                        SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_PRED)
 	  ? scheme_true : scheme_false);
 }
 
@@ -3783,7 +3787,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					 1, a,
 					 func_name,
 					 1, 1, 1);
-    flags |= SCHEME_PRIM_IS_STRUCT_PRED;
+    flags |= SCHEME_PRIM_STRUCT_TYPE_PRED | SCHEME_PRIM_IS_STRUCT_OTHER;
   } else {
     Struct_Proc_Info *i;
     int need_pos;
@@ -3812,7 +3816,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
       if (need_pos)
 	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
       else
-	flags |= SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER;
+	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
       /* Cache the accessor only if `struct_info' is used.
 	 This avoids keep lots of useless accessors.
 	 if (need_pos) struct_type->accessor = p; */
@@ -3838,20 +3842,23 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym)
 {
   if (SCHEME_PRIMP(p)) {
-    int is_getter = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER);
-    int is_setter = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER);
-    
-    if (is_getter || is_setter) {
-      const char *func_name;
-      Struct_Proc_Info *i;
-
-      func_name = scheme_symbol_name(sym);
+    unsigned short flags = ((Scheme_Primitive_Proc *)p)->pp.flags;
+    if (flags & SCHEME_PRIM_IS_STRUCT_OTHER) {
+      int is_getter = ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER);
+      int is_setter = ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER);
       
-      i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
-      
-      return make_struct_proc(i->struct_type, (char *)func_name, 
-                              is_getter ? SCHEME_GETTER : SCHEME_SETTER,
-                              i->field);
+      if (is_getter || is_setter) {
+        const char *func_name;
+        Struct_Proc_Info *i;
+        
+        func_name = scheme_symbol_name(sym);
+        
+        i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
+        
+        return make_struct_proc(i->struct_type, (char *)func_name, 
+                                is_getter ? SCHEME_GETTER : SCHEME_SETTER,
+                                i->field);
+      }
     }
   }
 

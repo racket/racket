@@ -1372,6 +1372,67 @@
               (require racket/bool)
               (list #t)))
 
+;; check omit & reorder possibilities for unsafe
+;; operations on mutable values:
+(let ()
+  (define (check-omit-ok expr [yes? #t])
+    ;; can omit:
+    (test-comp `(module m racket/base
+                  (require racket/unsafe/ops)
+                  (define (f x)
+                    (f x)))
+               `(module m racket/base
+                  (require racket/unsafe/ops)
+                  (define (f x)
+                    ,expr
+                    (f x)))
+               yes?)
+    ;; cannot reorder:
+    (test-comp `(module m racket/base
+                  (require racket/unsafe/ops)
+                  (define (f x)
+                    (let ([y ,expr])
+                      (vector-ref x x)
+                      (f x y))))
+               `(module m racket/base
+                  (require racket/unsafe/ops)
+                  (define (f x)
+                    (vector-ref x x)
+                    (f x ,expr)))
+               #f))
+  (map check-omit-ok
+       '((unsafe-vector-ref x x)
+         (unsafe-vector*-ref x x)
+         (unsafe-struct-ref x x)
+         (unsafe-struct*-ref x x)
+         (unsafe-mcar x)
+         (unsafe-mcdr x)
+         (unsafe-unbox x)
+         (unsafe-unbox* x)
+         (unsafe-bytes-ref x x)
+         (unsafe-string-ref x x)
+         (unsafe-flvector-ref x x)
+         (unsafe-fxvector-ref x x)
+         (unsafe-f64vector-ref x x)
+         (unsafe-s16vector-ref x x)
+         (unsafe-u16vector-ref x x)))
+  (map (lambda (x) (check-omit-ok x #f))
+       '((unsafe-vector-set! x x x)
+         (unsafe-vector*-set! x x x)
+         (unsafe-struct-set! x x x)
+         (unsafe-struct*-set! x x x)
+         (unsafe-set-mcar! x x)
+         (unsafe-set-mcdr! x x)
+         (unsafe-set-box! x x)
+         (unsafe-set-box*! x x)
+         (unsafe-bytes-set! x x x)
+         (unsafe-string-set! x x x)
+         (unsafe-flvector-set! x x x)
+         (unsafe-fxvector-set! x x x)
+         (unsafe-f64vector-set! x x x)
+         (unsafe-s16vector-set! x x x)
+         (unsafe-u16vector-set! x x x))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

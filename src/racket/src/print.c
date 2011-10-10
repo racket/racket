@@ -2382,7 +2382,17 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (compact || !pp->print_unreadable)
 	cannot_print(pp, notdisplay, obj, ht, compact);
       else {
-	if (SCHEME_STRUCT_PROCP(obj)) {
+        int kind;
+        if (((Scheme_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER)
+          kind = (((Scheme_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+        else
+          kind = -1;
+	if ((kind == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER)
+            || (kind == SCHEME_PRIM_STRUCT_TYPE_CONSTR)
+            || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
+            || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+            || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
+            || (kind == SCHEME_PRIM_STRUCT_TYPE_PRED)) {
 	  print_named(obj, "struct-procedure", 
 		      ((Scheme_Closed_Primitive_Proc *)obj)->name, 
 		      -1, pp);

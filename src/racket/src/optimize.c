@@ -42,6 +42,8 @@
 
 #define MAX_PROC_INLINE_SIZE 256
 
+#define SCHEME_PRIM_IS_UNSAFE_NONMUTATING (SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL | SCHEME_PRIM_IS_UNSAFE_OMITABLE)
+
 struct Optimize_Info
 {
   MZTAG_IF_REQUIRED
@@ -385,7 +387,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       }
     }
     if (SCHEME_PRIMP(app->args[0])
-        && (SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)
+        && (SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
         && (app->num_args >= ((Scheme_Primitive_Proc *)app->args[0])->mina)
         && (app->num_args <= ((Scheme_Primitive_Proc *)app->args[0])->mu.maxa)) {
       note_match(1, vals, warn_info);
@@ -421,7 +423,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       }
     }
     if (SCHEME_PRIMP(app->rator)
-        && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)
+        && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
         && (1 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
         && (1 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
       note_match(1, vals, warn_info);
@@ -465,7 +467,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       }
     }
     if (SCHEME_PRIMP(app->rator)
-        && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)
+        && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
         && (2 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
         && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
       note_match(1, vals, warn_info);
@@ -1337,10 +1339,10 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
   return NULL;
 }
 
-static int purely_functional_primitive(Scheme_Object *rator, int n)
+static int is_nonmutating_primitive(Scheme_Object *rator, int n)
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)
+      && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
       && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
     return 1;
@@ -1363,7 +1365,7 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
 /* In rotate mode, we really want to know whether any argument wants to be lifted out. */
 {
   if (SCHEME_PRIMP(rator)) {
-    if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
+    if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING) {
       if (IS_NAMED_PRIM(rator, "unsafe-flabs")
           || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
           || IS_NAMED_PRIM(rator, "unsafe-fl+")
@@ -1424,7 +1426,7 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
 static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, int for_args)
 {
   if (SCHEME_PRIMP(rator)) {
-    if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
+    if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING) {
       if (((argc == 1)
            && (IS_NAMED_PRIM(rator, "unsafe-flabs")
                || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
@@ -1880,7 +1882,7 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
   }
 
   info->size += 1;
-  if (!purely_functional_primitive(app->args[0], app->num_args))
+  if (!is_nonmutating_primitive(app->args[0], app->num_args))
     info->vclock += 1;
 
   if (all_vals) {
@@ -2027,7 +2029,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     return app->rand;
   }
 
-  if (!purely_functional_primitive(app->rator, 1))
+  if (!is_nonmutating_primitive(app->rator, 1))
     info->vclock += 1;
 
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
@@ -2196,7 +2198,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       return le;
   }
 
-  if (!purely_functional_primitive(app->rator, 2))
+  if (!is_nonmutating_primitive(app->rator, 2))
     info->vclock += 1;
 
   /* Check for (call-with-values (lambda () M) N): */
@@ -2272,7 +2274,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
   /* Ad hoc optimization of (unsafe-fx+ <x> 0), etc. */
   if (SCHEME_PRIMP(app->rator)
-      && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)) {
+      && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)) {
     int z1, z2;
 
     z1 = SAME_OBJ(app->rand1, scheme_make_integer(0));
