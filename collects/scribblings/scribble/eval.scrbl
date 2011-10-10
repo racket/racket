@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual "utils.rkt" (for-label racket/sandbox))
+@(require scribble/manual "utils.rkt" (for-label racket/sandbox racket/pretty))
 
 @title[#:tag "eval"]{Evaluation and Examples}
 
@@ -123,14 +123,20 @@ Like @racket[examples], but each definition using @racket[define] or
 prompt, and with line of space after it.}
 
 
-@defproc[(make-base-eval) (any/c . -> . any)]{
+@defproc[(make-base-eval [#:pretty-print? pretty-print? any/c #t])
+         (any/c . -> . any)]{
 
 Creates an evaluator using @racket[(make-evaluator 'racket/base)],
 setting sandbox parameters to disable limits, setting the outputs to
-@racket['string], and not adding extra security guards.}
+@racket['string], and not adding extra security guards.
+
+If @racket[pretty-print?] is true, the sandbox's printer is set to
+@racket[pretty-print-handler].}
 
 
-@defproc[(make-base-eval-factory [mod-paths (listof module-path?)]) (-> (any/c . -> . any))]{
+@defproc[(make-base-eval-factory [mod-paths (listof module-path?)]
+                                 [#:pretty-print? pretty-print? any/c #t])
+         (-> (any/c . -> . any))]{
 
 Produces a function that is like @racket[make-base-eval], except that
 each module in @racket[mod-paths] is attached to the evaluator's
@@ -139,7 +145,9 @@ returned @racket[make-base-eval]-like function is called the first
 time) and then attached to each evaluator that is created.}
 
 
-@defproc[(make-eval-factory [mod-paths (listof module-path?)]) (-> (any/c . -> . any))]{
+@defproc[(make-eval-factory [mod-paths (listof module-path?)]
+                            [#:pretty-print? pretty-print? any/c #t])
+         (-> (any/c . -> . any))]{
 
 Like @racket[make-base-eval-factory], but each module in @racket[mod-paths] is
 also required into the top-level environment for each generated evaluator.}

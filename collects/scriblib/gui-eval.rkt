@@ -35,7 +35,7 @@
                                                                       (λ () (gui-eval 'pict-height)))])
                 (orig #:eval gui-eval x (... ...)))])))]))
 
-(define gui-eval (make-base-eval))
+(define gui-eval (make-base-eval #:pretty-print? #f))
 
 (define mred? (getenv "MREVAL"))
 (define-namespace-anchor anchor)

@@ -3,6 +3,7 @@
 (require "manual.rkt" "struct.rkt" "scheme.rkt" "decode.rkt"
          racket/list
          file/convertible ;; attached into new namespace via anchor
+         racket/pretty ;; attached into new namespace via anchor
          racket/sandbox racket/promise racket/port
          racket/gui/dynamic
          (for-syntax racket/base))
@@ -191,19 +192,31 @@
                what "without a `sandbox-output' configured to 'string")))
     (list (get get-output "output") (get get-error-output "error output")))
   (define (render-value v)
-    (if (call-in-sandbox-context
-         ev (let ([cp (current-print)])
-              (lambda () (and (eq? (current-print) cp) (print-as-expression)))))
-      ;; default printer => get result as S-expression
-      (make-reader-graph (copy-value v (make-hasheq)))
-      ;; other printer => go through a string
-      (box (call-in-sandbox-context
-            ev
-            (lambda ()
-              (define-values [in out] (make-pipe-with-specials))
-              (parameterize ([current-output-port out]) (map (current-print) v))
-              (close-output-port out)
-              in)))))
+    (let-values ([(eval-print eval-print-as-expr?)
+                  (call-in-sandbox-context ev
+                    (lambda () (values (current-print) (print-as-expression))))])
+      (cond [(and (eq? eval-print (current-print))
+                  eval-print-as-expr?)
+             ;; default printer => get result as S-expression
+             (make-reader-graph (copy-value v (make-hasheq)))]
+            [else
+             ;; other printer => go through a pipe
+             ;; If it happens to be the pretty printer, tell it to retain
+             ;; convertible objects (via write-special)
+             (box (call-in-sandbox-context
+                   ev
+                   (lambda ()
+                     (define-values [in out] (make-pipe-with-specials))
+                     (parameterize ((current-output-port out)
+                                    (pretty-print-size-hook
+                                     (lambda (obj _mode _out)
+                                       (and (convertible? obj) 1)))
+                                    (pretty-print-print-hook
+                                     (lambda (obj _mode out)
+                                       (write-special obj out))))
+                       (map (current-print) v))
+                     (close-output-port out)
+                     in)))])))
   (define (do-ev s)
     (with-handlers ([(lambda (x) (not (exn:break? x)))
                      (lambda (e)
@@ -287,7 +300,13 @@
     [(eq? stx 'code:blank) (void)]
     [else stx]))
 
-(define (make-base-eval)
+(define (install-pretty-printer! e ns)
+  (call-in-sandbox-context e
+    (lambda ()
+      (namespace-attach-module ns 'racket/pretty)
+      (current-print (dynamic-require 'racket/pretty 'pretty-print-handler)))))
+
+(define (make-base-eval #:pretty-print? [pretty-print? #t])
   (call-with-trusted-sandbox-configuration
    (lambda ()
      (parameterize ([sandbox-output 'string]
@@ -297,10 +316,12 @@
          (let ([ns (namespace-anchor->namespace anchor)])
            (call-in-sandbox-context
             e
-            (lambda () (namespace-attach-module ns 'file/convertible))))
+            (lambda () (namespace-attach-module ns 'file/convertible)))
+           (when pretty-print? (install-pretty-printer! e ns)))
          e)))))
 
-(define (make-base-eval-factory mod-paths)
+(define (make-base-eval-factory mod-paths
+                                #:pretty-print? [pretty-print? #t])
   (let ([ns (delay (let ([ns 
                           ;; This namespace-creation choice needs to be consistent
                           ;; with the sandbox (i.e., with `make-base-eval')
@@ -309,11 +330,13 @@
                               (make-base-empty-namespace))])
                      (parameterize ([current-namespace ns])
                        (for ([mod-path (in-list mod-paths)])
-                         (dynamic-require mod-path #f)))
+                         (dynamic-require mod-path #f))
+                       (when pretty-print? (dynamic-require 'racket/pretty #f)))
                      ns))])
     (lambda ()
-      (let ([ev (make-base-eval)]
+      (let ([ev (make-base-eval #:pretty-print? #f)]
             [ns (force ns)])
+        (when pretty-print? (install-pretty-printer! ev ns))
         (call-in-sandbox-context
          ev
          (lambda ()
@@ -321,8 +344,9 @@
              (namespace-attach-module ns mod-path))))
         ev))))
 
-(define (make-eval-factory mod-paths)
-  (let ([base-factory (make-base-eval-factory mod-paths)])
+(define (make-eval-factory mod-paths
+                           #:pretty-print? [pretty-print? #t])
+  (let ([base-factory (make-base-eval-factory mod-paths #:pretty-print? pretty-print?)])
     (lambda ()
       (let ([ev (base-factory)])
         (call-in-sandbox-context
