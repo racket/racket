@@ -169,6 +169,9 @@
          escape-table
          escape-attribute-table
          lowercase-symbol
+         write-xml-cdata
+         write-xml-comment
+         write-xml-p-i
          write-xml-element)
 
 ;; incr : Nat -> Nat
