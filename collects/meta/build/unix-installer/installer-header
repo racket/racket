@@ -147,12 +147,12 @@ if test "$unixstyle" = "N"; then
   fi
 fi
 
-# WHERE1 can be used with "$WHERE1/$TARGET" to avoid a double slash
+# BASE can be used with "$BASE/$TARGET" to avoid a double slash
 case "$where" in
   "" )   failwith "internal error (empty \$where)" ;;
-  "/" )  WHERE1="" ;;
+  "/" )  BASE="" ;;
   *"/" ) failwith "internal error (\$where ends in a slash)" ;;
-  "/"* ) WHERE1="$where" ;;
+  "/"* ) BASE="$where" ;;
   * )    failwith "internal error (\$where is not absolute)" ;;
 esac
 
@@ -169,20 +169,20 @@ fi
 set_prefix() {
   where="$1"
   # default dirs -- mimic configure behavior
-  bindir="$WHERE1/bin"
-  collectsdir="$WHERE1/lib/racket/collects"
-  if   test -d "$WHERE1/share"; then docdir="$WHERE1/share/racket/doc"
-  elif test -d "$WHERE1/doc";   then docdir="$WHERE1/doc/racket"
-  else                               docdir="$WHERE1/share/racket/doc"
+  bindir="$BASE/bin"
+  collectsdir="$BASE/lib/racket/collects"
+  if   test -d "$BASE/share"; then docdir="$BASE/share/racket/doc"
+  elif test -d "$BASE/doc";   then docdir="$BASE/doc/racket"
+  else                             docdir="$BASE/share/racket/doc"
   fi
-  libdir="$WHERE1/lib"
-  includerktdir="$WHERE1/include/racket"
-  librktdir="$WHERE1/lib/racket"
-  mandir="$WHERE1/man"
+  libdir="$BASE/lib"
+  includerktdir="$BASE/include/racket"
+  librktdir="$BASE/lib/racket"
+  mandir="$BASE/man"
   # The source tree is always removed -- no point keeping it if it won't work
-  # if   test -d "$WHERE1/share"; then srcdir="$WHERE1/share/racket/src"
-  # elif test -d "$WHERE1/src";   then srcdir="$WHERE1/src/racket"
-  # else                               srcdir="$WHERE1/share/racket/src"
+  # if   test -d "$BASE/share"; then srcdir="$BASE/share/racket/src"
+  # elif test -d "$BASE/src";   then srcdir="$BASE/src/racket"
+  # else                             srcdir="$BASE/share/racket/src"
   # fi
 }
 
@@ -208,7 +208,7 @@ read_dir() {
   read new_dir
   case "$new_dir" in
     "/"* ) echo "$new_dir" ;;
-    * )    echo "$WHERE1/$new_dir" ;;
+    * )    echo "$BASE/$new_dir" ;;
   esac
 }
 
@@ -272,30 +272,30 @@ echo "ok."
 
 unpack_installation() {
   # test that no TARGET exists
-  if test -d "$WHERE1/$TARGET" || test -f "$WHERE1/$TARGET"; then
-    echon "\"$WHERE1/$TARGET\" exists, delete? "
+  if test -d "$BASE/$TARGET" || test -f "$BASE/$TARGET"; then
+    echon "\"$BASE/$TARGET\" exists, delete? "
     read yesno
     case "$yesno" in
       [yY]*)
-        echon "Deleting old \"$WHERE1/$TARGET\"... "
-        "$rm" -rf "$WHERE1/$TARGET" \
-        || failwith "could not delete \"$WHERE1/$TARGET\"."
+        echon "Deleting old \"$BASE/$TARGET\"... "
+        "$rm" -rf "$BASE/$TARGET" \
+        || failwith "could not delete \"$BASE/$TARGET\"."
         echo "done."
         ;;
-      *) failwith "aborting because \"$WHERE1/$TARGET\" exists." ;;
+      *) failwith "aborting because \"$BASE/$TARGET\" exists." ;;
     esac
   fi
   # unpack
-  echon "Unpacking into \"$WHERE1/$TARGET\"... "
-  rm_on_abort="$WHERE1/$TARGET"
-  "$mkdir" "$WHERE1/$TARGET"
+  echon "Unpacking into \"$BASE/$TARGET\"... "
+  rm_on_abort="$BASE/$TARGET"
+  "$mkdir" "$BASE/$TARGET"
   "$tail" +"$BINSTARTLINE" "$0" | "$gunzip" -c \
-  | { cd "$WHERE1/$TARGET"
+  | { cd "$BASE/$TARGET"
       "$tar" xf - || failwith "problems during unpacking of binary archive."
     }
-  cd "$WHERE1/$TARGET"
+  cd "$BASE/$TARGET"
   test -d "collects" \
-    || failwith "unpack failed (could not find \"$WHERE1/$TARGET/collects\")."
+    || failwith "unpack failed (could not find \"$BASE/$TARGET/collects\")."
   echo "done."
 }
 
@@ -346,15 +346,15 @@ if test ! "x$sysdir" = "x"; then
     echo "Installing links in \"$sysdir/bin\"..."
     printsep="  "
     cd "bin"
-    for x in `cd "$WHERE1/$TARGET/bin"; ls`; do
-      if test -x "$WHERE1/$TARGET/bin/$x"; then
+    for x in `cd "$BASE/$TARGET/bin"; ls`; do
+      if test -x "$BASE/$TARGET/bin/$x"; then
         echon "${printsep}$x"
         printsep=", "
-        link "$WHERE1/$TARGET/bin/$x" "$x" "$sysdir/bin"
+        link "$BASE/$TARGET/bin/$x" "$x" "$sysdir/bin"
       fi
     done
     echo ""
-    echo "Done. (see \"$WHERE1/$TARGET/bin\" for other executables)"
+    echo "Done. (see \"$BASE/$TARGET/bin\" for other executables)"
   else
     echo "Skipping \"$sysdir/bin\" (does not exist or not writable)."
   fi
@@ -374,10 +374,10 @@ if test ! "x$sysdir" = "x"; then
     cd "$mandir"
     echo "Installing links in \"$sysdir/$mandir\"..."
     printsep="  "
-    for x in `cd "$WHERE1/$TARGET/man/man1/"; "$ls"`; do
+    for x in `cd "$BASE/$TARGET/man/man1/"; "$ls"`; do
       echon "${printsep}$x"
       printsep=", "
-      link "$WHERE1/$TARGET/man/man1/$x" "$x" "$sysdir/$mandir"
+      link "$BASE/$TARGET/man/man1/$x" "$x" "$sysdir/$mandir"
     done
     echo ""
     echo "Done"
@@ -396,7 +396,7 @@ if test ! "x$sysdir" = "x"; then
   else
     cd "$libdir"
     echo "Installing \"$sysdir/$libdir/$TARGET\"."
-    link "$WHERE1/$TARGET/lib" "$TARGET" "$sysdir/$libdir"
+    link "$BASE/$TARGET/lib" "$TARGET" "$sysdir/$libdir"
   fi
   # include link
   cd "$sysdir"
@@ -413,7 +413,7 @@ if test ! "x$sysdir" = "x"; then
   else
     cd "$incdir"
     echo "Installing \"$sysdir/$incdir/$TARGET\"."
-    link "$WHERE1/$TARGET/include" "$TARGET" "$sysdir/$incdir"
+    link "$BASE/$TARGET/include" "$TARGET" "$sysdir/$incdir"
   fi
   # doc link
   cd "$sysdir"
@@ -429,7 +429,7 @@ if test ! "x$sysdir" = "x"; then
   else
     cd "$docdir"
     echo "Installing \"$sysdir/$docdir/$TARGET\"."
-    link "$WHERE1/$TARGET/notes" "$TARGET" "$sysdir/$docdir"
+    link "$BASE/$TARGET/notes" "$TARGET" "$sysdir/$docdir"
   fi
 fi
 
@@ -441,12 +441,12 @@ fi
 unixstyle_install() {
 
 TARGET="$TARGET-tmp-install"
-if test -e "$WHERE1/$TARGET"; then
-  echo "\"$WHERE1/$TARGET\" already exists (needed for the installation),"
+if test -e "$BASE/$TARGET"; then
+  echo "\"$BASE/$TARGET\" already exists (needed for the installation),"
   echon "  ok to remove? "
   read R
   case "$R" in
-    [yY]* ) "$rm" -rf "$WHERE1/$TARGET" ;;
+    [yY]* ) "$rm" -rf "$BASE/$TARGET" ;;
     * ) failwith "abort..." ;;
   esac
 fi
@@ -468,7 +468,7 @@ unpack_installation
 
 cd "$where"
 "$TARGET/bin/racket" "$TARGET/collects/setup/unixstyle-install.rkt" \
-  "move" "$WHERE1/$TARGET" "$bindir" "$collectsdir" "$docdir" "$libdir" \
+  "move" "$BASE/$TARGET" "$bindir" "$collectsdir" "$docdir" "$libdir" \
   "$includerktdir" "$librktdir" "$mandir" \
 || failwith "installation failed"
 
