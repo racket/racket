@@ -312,6 +312,8 @@
                                (custodian-shutdown-all c)))))))
       (set! was-menu-bar #f)))
 
+(define NSAnyEventMask (sub1 (arithmetic-shift 1 (* 8 (ctype-sizeof _NSUInteger)))))
+
 ;; Call this function only in atomic mode:
 (define (check-one-event wait? dequeue?)
   (pre-event-sync wait?)
