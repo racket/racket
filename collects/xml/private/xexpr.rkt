@@ -299,5 +299,9 @@
     [(valid-char? x)
      (fprintf out "&#~a;" x)]
     ; Embedded XML
-    [(source? x)
-     (write-xml-element x 0 void out)]))
+    [(cdata? x)
+     (write-xml-cdata x 0 void out)]
+    [(comment? x)
+     (write-xml-comment x 0 void out)]
+    [(p-i? x)
+     (write-xml-p-i x 0 void out)]))
