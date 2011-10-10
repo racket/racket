@@ -22,20 +22,21 @@ to Racket, and accept only such tagged pointers when going to C.  An
 optional @racket[ptr-type] can be given to be used as the base pointer
 type, instead of @racket[_pointer].
 
-By convention, tags are symbols named after the
-type they point to.  For example, the cpointer @racket[_car] would
-be created using @racket['car] as the key. However, any symbol can be
-used as the tag.
-Pointer tags are checked with @racket[cpointer-has-tag?] and changed
-with @racket[cpointer-push-tag!] which means that other tags are
-preserved.  Specifically, if a base @racket[ptr-type] is given and is
-itself a @racket[_cpointer], then the new type will handle pointers
-that have the new tag in addition to @racket[ptr-type]'s tag(s).  When
-the tag is a pair, its first value is used for printing, so the most
-recently pushed tag which corresponds to the inheriting type will be
-displayed.
+Although any value can be used as a tag, by convention the symbol form
+of a type name---without a leading underscore---is used as the
+tag. For example, a pointer type @racketidfont{_animal}
+would normally use @racket['animal] as the key.
 
-@racket[_cpointer/null] is similar to @racket[_cpointer] except that
+Pointer tags are checked with @racket[cpointer-has-tag?] and changed
+with @racket[cpointer-push-tag!], which means that other tags are
+preserved on an existing pointer value.  Specifically, if a base
+@racket[ptr-type] is given and is itself a @racket[_cpointer], then
+the new type will handle pointers that have the new tag in addition to
+@racket[ptr-type]'s tag(s).  When the tag is a pair, its first value
+is used for printing, so the most recently pushed tag which
+corresponds to the inheriting type is displayed.
+
+The @racket[_cpointer/null] function is similar to @racket[_cpointer], except that
 it tolerates @cpp{NULL} pointers both going to C and back.  Note that
 @cpp{NULL} pointers are represented as @racket[#f] in Racket, so they
 are not tagged.}
