@@ -99,7 +99,7 @@
      trust-me?
      quad-view?
      keep-titlebar?
-     half-screen? 
+     right-half-screen? 
      two-frames?
      use-prefetch?
      use-prefetch-in-preview?

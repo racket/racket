@@ -408,13 +408,13 @@
 			      #f))))
 
 	  (super-new)))
-      
+
       (define-values (screen-left-inset screen-top-inset)
 	(if config:keep-titlebar?
 	    (values 0 0)
 	    (get-display-left-top-inset #:monitor config:screen-number)))
 
-      (when config:half-screen?
+      (when config:right-half-screen?
         (set! screen-left-inset (- screen-left-inset config:actual-screen-w)))
 
       (define fullscreen?
