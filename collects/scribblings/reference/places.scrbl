@@ -267,12 +267,13 @@ If any pumping threads were created to connect a non-@tech{file-stream
 }
 
 @defproc[(place-channel-get [pch place-channel?]) place-message-allowed?]{
-  Returns a message received on channel @racket[pch].
+  Returns a message received on channel @racket[pch], blocking until a 
+ message is available.
 }
 
-@defproc[(place-channel-put/get [pch place-channel?] [v any/c]) void]{
+@defproc[(place-channel-put/get [pch place-channel?] [v any/c]) any/c]{
   Sends an immutable message @racket[v] on channel @racket[pch] and then 
-  waits for a reply message on the same channel.
+  waits for a message (perhaps a reply) on the same channel.
 }
 
 @defproc[(place-message-allowed? [v any/c]) boolean?]{
