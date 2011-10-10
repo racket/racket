@@ -109,15 +109,15 @@ static int check_val_struct_prim(Scheme_Object *p, int arity)
 {
   if (p && SCHEME_PRIMP(p)) {
     if (arity == 1) {
-      if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_PRED)
-        return 1;
-      else if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER)
-        return 2;
-      else if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER) {
+      if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER) {
         int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
-        if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+        if (t == SCHEME_PRIM_STRUCT_TYPE_PRED)
+          return 1;
+        if (t == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
+          return 2;
+        else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
           return 4;
-        else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_PRED)
+        else if (t == SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
           return 6;
       }
     } else if (arity == 2) {

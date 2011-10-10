@@ -1552,14 +1552,12 @@ static int common4(mz_jit_state *jitter, void *_data)
       mz_patch_branch(ref);
       (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
-      if (kind == 3) {
-        jit_andi_i(JIT_R2, JIT_R2, SCHEME_PRIM_OTHER_TYPE_MASK);
-        (void)jit_bnei_i(refslow, JIT_R2, SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER);
-      } else {
-        (void)jit_bmci_i(refslow, JIT_R2, ((kind == 1) 
-                                           ? SCHEME_PRIM_IS_STRUCT_PRED
-                                           : SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER));
-      }
+      jit_andi_i(JIT_R2, JIT_R2, SCHEME_PRIM_OTHER_TYPE_MASK);
+      (void)jit_bnei_i(refslow, JIT_R2, ((kind == 3)
+                                         ? SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER
+                                         : ((kind == 1) 
+                                            ? SCHEME_PRIM_STRUCT_TYPE_PRED
+                                            : SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)));
       CHECK_LIMIT();
       /* Check argument: */
       if (kind == 1) {

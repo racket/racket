@@ -657,10 +657,9 @@ typedef struct Scheme_Offset_Cptr
    Do not use them directly. */
 #define SCHEME_PRIM_OPT_MASK (1 | 2)
 #define SCHEME_PRIM_IS_PRIMITIVE 4
-#define SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER 8
-#define SCHEME_PRIM_IS_STRUCT_PRED 16
-#define SCHEME_PRIM_IS_STRUCT_OTHER 32
-#define SCHEME_PRIM_OTHER_TYPE_MASK (64 | 128 | 256)
+#define SCHEME_PRIM_IS_UNSAFE_OMITABLE 8
+#define SCHEME_PRIM_IS_STRUCT_OTHER 16
+#define SCHEME_PRIM_OTHER_TYPE_MASK (32 | 64 | 128 | 256)
 #define SCHEME_PRIM_IS_MULTI_RESULT 512
 #define SCHEME_PRIM_IS_BINARY_INLINED 1024
 #define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL 2048
@@ -682,9 +681,9 @@ typedef struct Scheme_Offset_Cptr
 #define SCHEME_PRIM_TYPE_PARAMETER               64
 #define SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER      (64 | 128)
 #define SCHEME_PRIM_SOMETIMES_INLINED            (64 | 256)
-#define SCHEME_PRIM_TYPE_STRUCT_PROP_PRED        (64 | 128 | 256)
-
-#define SCHEME_PRIM_IS_STRUCT_PROC (SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER | SCHEME_PRIM_IS_STRUCT_PRED | SCHEME_PRIM_IS_STRUCT_OTHER)
+#define SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED        (64 | 128 | 256)
+#define SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER   32
+#define SCHEME_PRIM_STRUCT_TYPE_PRED             (32 | 64)
 
 #define SCHEME_PRIM_PROC_FLAGS(x) (((Scheme_Prim_Proc_Header *)x)->flags)
 
@@ -811,7 +810,6 @@ typedef struct {
 #define SCHEME_ECONTP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_escaping_cont_type)
 #define SCHEME_CONT_MARK_SETP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_cont_mark_set_type)
 #define SCHEME_PROC_STRUCTP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_struct_type)
-#define SCHEME_STRUCT_PROCP(obj) (SCHEME_PRIMP(obj) && (((Scheme_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_IS_STRUCT_PROC))
 #define SCHEME_CLOSUREP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_closure_type) || SAME_TYPE(SCHEME_TYPE(obj), scheme_case_closure_type))
 
 #define SCHEME_PRIM(obj)     (((Scheme_Primitive_Proc *)(obj))->prim_val)

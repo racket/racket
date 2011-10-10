@@ -746,11 +746,13 @@ scheme_init_unsafe_list (Scheme_Env *env)
   scheme_add_global_constant ("unsafe-list-tail", p, env);
 
   p = scheme_make_immed_prim(unsafe_mcar, "unsafe-mcar", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mcar", p, env);
 
   p = scheme_make_immed_prim(unsafe_mcdr, "unsafe-mcdr", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mcdr", p, env);
 
   p = scheme_make_immed_prim(unsafe_set_mcar, "unsafe-set-mcar!", 2, 2);
@@ -762,11 +764,13 @@ scheme_init_unsafe_list (Scheme_Env *env)
   scheme_add_global_constant ("unsafe-set-mcdr!", p, env);
   
   p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant("unsafe-unbox", p, env);
 
   p = scheme_make_immed_prim(unsafe_unbox_star, "unsafe-unbox*", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant("unsafe-unbox*", p, env);
 
   p = scheme_make_immed_prim(unsafe_set_box, "unsafe-set-box!", 2, 2);

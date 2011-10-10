@@ -864,7 +864,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   else
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_OMITABLE;
   scheme_add_global_constant("unsafe-f64vector-ref", p, env);
   
   p = scheme_make_immed_prim(fl_set, "unsafe-f64vector-set!",
@@ -887,7 +887,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   else
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_OMITABLE;
   scheme_add_global_constant("unsafe-flvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_flvector_set, "unsafe-flvector-set!",
@@ -904,7 +904,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   p = scheme_make_immed_prim(unsafe_fxvector_ref, "unsafe-fxvector-ref",
                              2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant("unsafe-fxvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_fxvector_set, "unsafe-fxvector-set!",
@@ -915,7 +915,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   p = scheme_make_immed_prim(s16_ref, "unsafe-s16vector-ref",
                              2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_OMITABLE;
   scheme_add_global_constant("unsafe-s16vector-ref", p, env);
   
   p = scheme_make_immed_prim(s16_set, "unsafe-s16vector-set!",
@@ -926,7 +926,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   p = scheme_make_immed_prim(u16_ref, "unsafe-u16vector-ref",
                              2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_OMITABLE;
   scheme_add_global_constant("unsafe-u16vector-ref", p, env);
   
   p = scheme_make_immed_prim(u16_set, "unsafe-u16vector-set!",
