@@ -29,9 +29,9 @@
     (define e (floor-log10 (- x-max x-min)))
     (define mag (expt 10 e))
     (define step (let ([y  (/ (- x-max x-min) mag)])
-                   (cond [(y . < . 2)   (* 1/5 mag)]
-                         [(y . < . 5)   (* 1/2 mag)]
-                         [(y . < . 10)  mag])))
+                   (cond [(y . < . 2)  (* 1/5 mag)]
+                         [(y . < . 5)  (* 1/2 mag)]
+                         [else         mag])))
     (define start (* (ceiling (/ x-min step)) step))
     (define stop (* (floor (/ x-max step)) step))
     (define num (+ 1 (round (/ (- stop start) step))))
