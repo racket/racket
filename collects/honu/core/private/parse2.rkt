@@ -278,7 +278,8 @@
                         (values (left current) stream)
                         (let ()
                           (define body (parse-all #'(stuff ...)))
-                          (do-parse #'(rest ...) precedence left body)))]
+                          (with-syntax ([body body])
+                            (do-parse #'(rest ...) precedence left #'(let () body)))))]
                      ;; expression or function application
                      [(#%parens args ...)
                       (if current

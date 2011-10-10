@@ -12,11 +12,11 @@
 Honu's main goal is to support syntactic abstraction mechanisms similar to
 Racket. Currently, Honu is a prototype and may change without notice.
 
+@defmodulelang[honu]
+
 @table-of-contents[]
 
 @; ----------------------------------------------------------------------
-
-@defmodulelang[honu]
 
 @section{Get started}
 To use Honu in a module, write the following line at the top of the file.
