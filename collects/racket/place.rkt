@@ -175,7 +175,7 @@
   (unless (or (module-path? module-path) (path? module-path))
     (raise-type-error who "module-path or path" module-path))
   (unless (symbol? function)
-    (raise-type-error who "symbol" module-path))
+    (raise-type-error who "symbol" function))
   (unless (or (not in) (input-port? in))
     (raise-type-error who "input-port or #f" in))
   (unless (or (not out) (output-port? out))
