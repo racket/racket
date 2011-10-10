@@ -132,7 +132,7 @@
     ;;                  id-set (8 of them)
     ;;                  hash-table[require-spec -> syntax] (three of them)
     ;;               -> void
-    (define (annotate-basic sexp 
+    (define (annotate-basic stx-obj 
                             user-namespace user-directory visit-id
                             phase-to-binders 
                             phase-to-varrefs 
@@ -143,12 +143,30 @@
                             module-lang-requires
                             phase-to-requires)
       
-      (let ([tail-ht (make-hasheq)]
-            [maybe-jump (λ (vars) (visit-id vars))])
+      (let ([maybe-jump (λ (vars) (visit-id vars))])
 
-        (let level-loop ([sexp sexp]
-                         [level 0])
-          (let* ([loop (λ (sexp) (level-loop sexp level))]
+        (let level+tail-loop ([stx-obj stx-obj]
+                              [level 0]
+                              [tail-parent-src #f]
+                              [tail-parent-pos #f])
+          (define-values (next-tail-parent-src next-tail-parent-pos) 
+            (let ([child-src (find-source-editor stx-obj)]
+                  [child-pos (syntax-position stx-obj)]
+                  [defs-text (current-annotations)])
+              (cond
+                [(and child-src child-pos defs-text)
+                 (when (and tail-parent-src tail-parent-pos)
+                   (unless (and (eq? tail-parent-src child-src)
+                                (equal? tail-parent-pos child-pos)) 
+                     (send defs-text syncheck:add-tail-arrow
+                           tail-parent-src (- tail-parent-pos 1)
+                           child-src (- child-pos 1))))
+                 (values child-src child-pos)]
+                [else 
+                 (values tail-parent-src tail-parent-pos)])))
+          (let* ([level-loop (λ (sexp level) (level+tail-loop sexp level #f #f))]
+                 [tail-loop (λ (sexp) (level+tail-loop sexp level next-tail-parent-src next-tail-parent-pos))]
+                 [loop (λ (sexp) (level+tail-loop sexp level #f #f))]
                  [varrefs (lookup-phase-to-mapping phase-to-varrefs level)]
                  [varsets (lookup-phase-to-mapping phase-to-varsets level)]
                  [binders (lookup-phase-to-mapping phase-to-binders level)]
@@ -159,84 +177,85 @@
                     (add-origins stx varrefs)
                     (add-disappeared-bindings stx binders varrefs)
                     (add-disappeared-uses stx varrefs))])
-            (collect-general-info sexp)
-            (syntax-case* sexp (#%plain-lambda case-lambda if begin begin0 let-values letrec-values set!
-                                               quote quote-syntax with-continuation-mark 
-                                               #%plain-app #%top #%plain-module-begin
-                                               define-values define-syntaxes begin-for-syntax module
-                                               #%require #%provide #%expression)
+            (collect-general-info stx-obj)
+            
+            (define (list-loop/tail-last bodies)
+              (unless (null? bodies)
+                (let body-loop ([fst (car bodies)]
+                                [bodies (cdr bodies)])
+                  (cond
+                    [(null? bodies)
+                     (tail-loop fst)]
+                    [else
+                     (loop fst)
+                     (body-loop (car bodies) (cdr bodies))]))))
+            
+            (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values set!
+                                                  quote quote-syntax with-continuation-mark 
+                                                  #%plain-app #%top #%plain-module-begin
+                                                  define-values define-syntaxes begin-for-syntax module
+                                                  #%require #%provide #%expression)
               (λ (x y) (free-identifier=? x y level 0))
               [(#%plain-lambda args bodies ...)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
-                 (annotate-tail-position/last sexp (syntax->list (syntax (bodies ...))) tail-ht)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (add-binders (syntax args) binders #f #f)
-                 (for-each loop (syntax->list (syntax (bodies ...)))))]
+                 (list-loop/tail-last (syntax->list (syntax (bodies ...)))))]
               [(case-lambda [argss bodiess ...]...)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
-                 (for-each (λ (bodies/stx) (annotate-tail-position/last sexp 
-                                                                        (syntax->list bodies/stx)
-                                                                        tail-ht))
-                           (syntax->list (syntax ((bodiess ...) ...))))
+                 (annotate-raw-keyword stx-obj varrefs)
                  (for-each
                   (λ (args bodies)
                     (add-binders args binders #f #f)
-                    (for-each loop (syntax->list bodies)))
+                    (list-loop/tail-last (syntax->list bodies)))
                   (syntax->list (syntax (argss ...)))
                   (syntax->list (syntax ((bodiess ...) ...)))))]
               [(if test then else)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
-                 (annotate-tail-position sexp (syntax then) tail-ht)
-                 (annotate-tail-position sexp (syntax else) tail-ht)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (loop (syntax test))
-                 (loop (syntax else))
-                 (loop (syntax then)))]
+                 (tail-loop (syntax then))
+                 (tail-loop (syntax else)))]
               [(begin bodies ...)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
-                 (annotate-tail-position/last sexp (syntax->list (syntax (bodies ...))) tail-ht)
-                 (for-each loop (syntax->list (syntax (bodies ...)))))]
+                 (annotate-raw-keyword stx-obj varrefs)
+                 (list-loop/tail-last (syntax->list (syntax (bodies ...)))))]
               
               ;; treat a single body expression specially, since this has
               ;; different tail behavior.
               [(begin0 body)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
-                 (annotate-tail-position sexp (syntax body) tail-ht)
-                 (loop (syntax body)))]
+                 (annotate-raw-keyword stx-obj varrefs)
+                 (tail-loop (syntax body)))]
               
               [(begin0 bodies ...)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (for-each loop (syntax->list (syntax (bodies ...)))))]
               
               [(let-values (bindings ...) bs ...)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (for-each collect-general-info (syntax->list (syntax (bindings ...))))
-                 (annotate-tail-position/last sexp (syntax->list (syntax (bs ...))) tail-ht)
                  (with-syntax ([(((xss ...) es) ...) (syntax (bindings ...))])
                    (for-each (λ (x es) (add-binders x binders binding-inits es))
                              (syntax->list (syntax ((xss ...) ...)))
                              (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (es ...))))
-                   (for-each loop (syntax->list (syntax (bs ...))))))]
+                   (list-loop/tail-last (syntax->list (syntax (bs ...))))))]
               [(letrec-values (bindings ...) bs ...)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (for-each collect-general-info (syntax->list (syntax (bindings ...))))
-                 (annotate-tail-position/last sexp (syntax->list (syntax (bs ...))) tail-ht)
                  (with-syntax ([(((xss ...) es) ...) (syntax (bindings ...))])
                    (for-each (λ (x es) (add-binders x binders binding-inits es))
                              (syntax->list (syntax ((xss ...) ...)))
                              (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (es ...))))
-                   (for-each loop (syntax->list (syntax (bs ...))))))]
+                   (list-loop/tail-last (syntax->list (syntax (bs ...))))))]
               [(set! var e)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  
                  ;; tops are used here because a binding free use of a set!'d variable
                  ;; is treated just the same as (#%top . x).
@@ -248,60 +267,58 @@
                  
                  (loop (syntax e)))]
               [(quote datum)
-               ;(color-internal-structure (syntax datum) constant-style-name 'default-mode)
-               (annotate-raw-keyword sexp varrefs)]
+               (annotate-raw-keyword stx-obj varrefs)]
               [(quote-syntax datum)
-               ;(color-internal-structure (syntax datum) constant-style-name 'default-mode)
-               (annotate-raw-keyword sexp varrefs)
-               (let loop ([stx #'datum])
-                 (cond [(identifier? stx)
-                        (when (syntax-original? stx)
-                          (add-id templrefs stx))]
-                       [(syntax? stx)
-                        (loop (syntax-e stx))]
-                       [(pair? stx)
-                        (loop (car stx))
-                        (loop (cdr stx))]
-                       [(vector? stx)
-                        (for-each loop (vector->list stx))]
-                       [(box? stx)
-                        (loop (unbox stx))]
-                       [else (void)]))]
+               (begin
+                 (annotate-raw-keyword stx-obj varrefs)
+                 (let loop ([stx #'datum])
+                   (cond [(identifier? stx)
+                          (when (syntax-original? stx)
+                            (add-id templrefs stx))]
+                         [(syntax? stx)
+                          (loop (syntax-e stx))]
+                         [(pair? stx)
+                          (loop (car stx))
+                          (loop (cdr stx))]
+                         [(vector? stx)
+                          (for-each loop (vector->list stx))]
+                         [(box? stx)
+                          (loop (unbox stx))]
+                         [else (void)])))]
               [(with-continuation-mark a b c)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
-                 (annotate-tail-position sexp (syntax c) tail-ht)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (loop (syntax a))
                  (loop (syntax b))
-                 (loop (syntax c)))]
+                 (tail-loop (syntax c)))]
               [(#%plain-app pieces ...)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (for-each loop (syntax->list (syntax (pieces ...)))))]
               [(#%top . var)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (when (syntax-original? (syntax var))
                    (add-id tops (syntax var))))]
               [(define-values vars b)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (add-binders (syntax vars) binders binding-inits #'b)
                  (maybe-jump (syntax vars))
                  (loop (syntax b)))]
               [(define-syntaxes names exp)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (add-binders (syntax names) binders binding-inits #'exp)
                  (maybe-jump (syntax names))
                  (level-loop (syntax exp) (+ level 1)))]
               [(begin-for-syntax exp ...)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (for-each (lambda (e) (level-loop e (+ level 1))) (syntax->list (syntax (exp ...)))))]
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (hash-set! module-lang-requires (syntax lang) #t)
                  ((annotate-require-open user-namespace user-directory) (syntax lang))
                  
@@ -324,7 +341,7 @@
                                                (syntax->list #'(require-specs ...)))])
                              (let ([new-specs (map trim-require-prefix
                                                    (syntax->list (syntax (require-specs ... ...))))])
-                               (annotate-raw-keyword sexp varrefs)
+                               (annotate-raw-keyword stx-obj varrefs)
                                (for-each (annotate-require-open user-namespace
                                                                 user-directory)
                                          new-specs)
@@ -357,7 +374,7 @@
               [(#%provide provide-specs ...)
                (let ([provided-varss (map extract-provided-vars
                                           (syntax->list (syntax (provide-specs ...))))])
-                 (annotate-raw-keyword sexp varrefs)
+                 (annotate-raw-keyword stx-obj varrefs)
                  (for-each (λ (provided-vars)
                              (for-each
                               (λ (provided-var)
@@ -368,12 +385,12 @@
               
               [(#%expression arg)
                (begin
-                 (annotate-raw-keyword sexp varrefs)
-                 (loop #'arg))]
+                 (annotate-raw-keyword stx-obj varrefs)
+                 (tail-loop #'arg))]
               [id
                (identifier? (syntax id))
-               (when (syntax-original? sexp)
-                 (add-id varrefs sexp))]
+               (when (syntax-original? stx-obj)
+                 (add-id varrefs stx-obj))]
               [_
                (begin
                  #;
@@ -383,8 +400,7 @@
                               (syntax->datum sexp))
                          (and (syntax? sexp)
                               (syntax-source sexp)))
-                 (void))])))
-        (add-tail-ht-links tail-ht)))
+                 (void))])))))
     
     (define (hash-cons! ht k v)
       (hash-set! ht k (cons v (hash-ref ht k '()))))
@@ -740,25 +756,6 @@
                   id
                   filename)))))
     
-    ;; annotate-tail-position/last : (listof syntax) -> void
-    (define (annotate-tail-position/last orig-stx stxs tail-ht)
-      (unless (null? stxs)
-        (annotate-tail-position orig-stx (car (last-pair stxs)) tail-ht)))
-    
-    ;; annotate-tail-position : syntax -> void
-    ;; colors the parens (if any) around the argument
-    ;; to indicate this is a tail call.
-    (define (annotate-tail-position orig-stx tail-stx tail-ht)
-      (hash-set!
-       tail-ht 
-       orig-stx 
-       (cons
-        tail-stx
-        (hash-ref 
-         tail-ht
-         orig-stx
-         (λ () null)))))
-    
     ;; annotate-require-open : namespace string -> (stx -> void)
     ;; relies on current-module-name-resolver, which in turn depends on
     ;; current-directory and current-namespace
@@ -918,108 +915,6 @@
             (when (and (syntax-original? f-stx)
                        (identifier? f-stx))
               (add-id id-map f-stx))))))
-    
-    ;; color-internal-structure : syntax str -> void
-    (define (color-internal-structure stx style-name mode)
-      (let ([ht (make-hasheq)]) 
-        ;; ht : stx -o> true
-        ;; indicates if we've seen this syntax object before
-        
-        (let loop ([stx stx]
-                   [datum (syntax->datum stx)])
-          (unless (hash-ref ht datum (λ () #f))
-            (hash-set! ht datum #t)
-            (cond
-              [(pair? stx) 
-               (loop (car stx) (car datum))
-               (loop (cdr stx) (cdr datum))]
-              [(syntax? stx)
-               (when (syntax-original? stx)
-                 (color stx style-name mode))
-               (let ([stx-e (syntax-e stx)]) 
-                 (cond
-                   [(cons? stx-e)
-                    (loop (car stx-e) (car datum))
-                    (loop (cdr stx-e) (cdr datum))]
-                   [(null? stx-e)
-                    (void)]
-                   [(vector? stx-e)
-                    (for-each loop
-                              (vector->list stx-e)
-                              (vector->list datum))]
-                   [(box? stx-e)
-                    (loop (unbox stx-e) (unbox datum))]
-                   [else (void)]))])))))
-
-    ;; hash-table[syntax -o> (listof syntax)] -> void
-    (define (add-tail-ht-links tail-ht)
-      (begin
-        (collapse-tail-links tail-ht)
-        (hash-for-each
-         tail-ht
-         (λ (stx-from stx-tos)
-           (for-each (λ (stx-to) (add-tail-ht-link stx-from stx-to))
-                     stx-tos)))))
-    
-    ;; hash-table[syntax -o> (listof syntax)] -> void
-    ;; take something like a transitive closure, except
-    ;; only when there are non-original links in between
-    
-    (define (collapse-tail-links tail-ht)
-      (let loop ()
-        (let ([found-one? #f])
-          (hash-for-each
-           tail-ht
-           (λ (stx-from stx-tos)
-             (for-each
-              (λ (stx-to)
-                (let ([stx-to-tos (hash-ref tail-ht stx-to '())])
-                  (for-each
-                   (λ (stx-to-to)
-                     (unless (and (add-tail-link? stx-from stx-to) 
-                                  (add-tail-link? stx-to stx-to-to))
-                       (unless (memq stx-to-to (hash-ref tail-ht stx-from '()))
-                         (set! found-one? #t)
-                         (hash-cons! tail-ht stx-from stx-to-to))))
-                   stx-to-tos)))
-              stx-tos)))
-          
-          ;; this takes O(n^3) in general, so we just do
-          ;; one iteration. This doesn't work for case 
-          ;; expressions but it seems to for most others.
-          ;; turning this on makes this function go from about
-          ;; 55 msec to about 2400 msec on my laptop, 
-          ;; (a 43x slowdown) when checking the syntax of this file.
-        
-          #;
-          (when found-one?
-            (loop)))))
-    
-    ;; add-tail-ht-link : syntax syntax -> void
-    (define (add-tail-ht-link from-stx to-stx)
-      (let* ([to-src (find-source-editor to-stx)]
-             [from-src (find-source-editor from-stx)]
-             [defs-text (current-annotations)])
-        (when (and to-src from-src defs-text)
-	  (let ([from-pos (syntax-position from-stx)]
-		[to-pos (syntax-position to-stx)])
-	    (when (and from-pos to-pos)
-	      (send defs-text syncheck:add-tail-arrow
-		    from-src (- from-pos 1)
-		    to-src (- to-pos 1)))))))
-    
-    ;; add-tail-link? : syntax syntax -> boolean
-    (define (add-tail-link? from-stx to-stx)
-      (let* ([to-src (find-source-editor to-stx)]
-             [from-src (find-source-editor from-stx)]
-             [defs-text (current-annotations)])
-        (and to-src from-src defs-text
-             (let ([from-pos (syntax-position from-stx)]
-                   [to-pos (syntax-position to-stx)])
-               (and from-pos to-pos)))))
-    
-
- 
     
 ;                                                                                             
 ;                                                                                             
