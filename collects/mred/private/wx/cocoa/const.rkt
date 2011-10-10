@@ -16,8 +16,6 @@
 (define NSRoundedBezelStyle 1)
 (define NSRegularSquareBezelStyle 2)
 
-(define NSAnyEventMask #xffffffff)
-
 (define NSLeftMouseDown 1)
 (define NSLeftMouseUp 2)
 (define NSRightMouseDown 3)
