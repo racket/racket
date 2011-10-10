@@ -404,7 +404,7 @@ triggered via the @DFlag{condense} command-line flag.}
 
 @defparam[current-font-size n exact-nonnegative-integer?]{
 
-Parameter that determines he font size used by @racket[t],
+Parameter that determines the font size used by @racket[t],
 @racket[para], etc. The default size is @racket[32].}
 
 
