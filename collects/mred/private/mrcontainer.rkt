@@ -87,7 +87,7 @@
 			    (unless (and (procedure? f)
 					 (procedure-arity-includes? f 1))
 			      (raise-type-error (who->name '(method container<%> change-children))
-						"procedure or arity 1"
+						"procedure of arity 1"
 						f))
 			    (send (get-wx-panel) change-children
 				  (lambda (kids)
