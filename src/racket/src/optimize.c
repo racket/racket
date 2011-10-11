@@ -960,7 +960,11 @@ int scheme_check_leaf_rator(Scheme_Object *le, int *_flags)
 Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
 				   Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
                                    int *_flags, int context, int optimized_rator)
-/* If not app, app2, or app3, just return a known procedure, if any,
+/* Zero or one of app, app2 and app3 should be non-NULL.
+   If app, we're inlining a general application. If app2, we're inlining an
+   application with a single argument and if app3, we're inlining an
+   application with two arguments.
+   If not app, app2, or app3, just return a known procedure, if any,
    and do not check arity. */
 {
   int offset = 0, single_use = 0, psize = 0;
@@ -1092,6 +1096,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       }
       threshold = info->inline_fuel * (2 + argc);
 
+      /* Do we have enough fuel? */
       if ((sz >= 0) && (single_use || (sz <= threshold))) {
         Optimize_Info *sub_info;
         if (nested_count) {
@@ -1102,6 +1107,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
              optimized. */
         } else
           sub_info = info;
+
+	/* If scheme_optimize_clone succeeds, inlining succeeds. */
         le = scheme_optimize_clone(0, data->code, sub_info,
                                    offset + (outside_nested ? nested_count : 0),
                                    data->num_params);
@@ -1143,6 +1150,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (psize) {
     LOG_INLINE(fprintf(stderr, "Potential inline %d %d\n", psize, info->inline_fuel * (argc + 2)));
+    /* If we inline, the enclosing function will get larger, so we increase
+       its potential size. */
     if (psize <= (info->inline_fuel * (argc + 2)))
       info->psize += psize;
   }
