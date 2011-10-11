@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/class racket/port racket/list racket/match
-         racket/gui/base racket/unit drracket/tool
+         racket/gui/base racket/unit drracket/tool mrlib/switchable-button
          images/compile-time
          (for-syntax racket/base images/icons/misc images/icons/style))
 
@@ -81,7 +81,24 @@
   (export drracket:tool-exports^)
   (define (phase1) (void))
   (define (phase2) (void))
-  (drracket:get/extend:extend-definitions-text highlights-mixin))
+  (drracket:get/extend:extend-definitions-text highlights-mixin)
+  (define button-mixin
+      (mixin (drracket:unit:frame<%>) ()
+        (super-new)
+        (inherit get-button-panel get-definitions-text)
+        (inherit register-toolbar-button)
+        (let ((btn
+               (new switchable-button%
+                    (label "Performance Report")
+                    (callback (lambda (btn)
+                                (performance-report-callback this)))
+                    (parent (get-button-panel))
+                    (bitmap performance-report-bitmap))))
+          (register-toolbar-button btn)
+          (send (get-button-panel) change-children
+                (λ (l)
+                  (cons btn (remq btn l)))))))
+  (drracket:get/extend:extend-unit-frame button-mixin))
 
 (define performance-report-drracket-button
   (list
