@@ -37,17 +37,20 @@
 (define inlining-event-regexp
   ;; Last bit is `generated?'. We don't care about that.
   ;; The middle elements of the vector are numbers of #f.
-  "involving: #\\(([^ ]+) #<path:(.+)> ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)")
+  #rx"involving: (#\\(([^ ]+) #<path:(.+)> ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)|([^ ]+))")
 
 (define (inlining-event->forged-stx l)
   (match (regexp-match inlining-event-regexp l)
-    [`(,all ,name ,path ,line ,col ,pos ,span)
+    [`(,all ,vec ,name ,path ,line ,col ,pos ,span #f)
      (datum->syntax #'here (string->symbol name)
                     (list path
                           (string->number line)
                           (string->number col)
                           (string->number pos)
                           (string->number span)))]
+    [`(,all ,name #f #f #f #f #f #f,name)
+     ;; We only know the name. there's not much we can do with that.
+     (datum->syntax #'here (string->symbol name) #f)]
     [_ (error "ill-formed inlining log entry" l)]))
 
 (define success-kind     "Inlining")
