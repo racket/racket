@@ -4,7 +4,7 @@
 
 (require "utilities.rkt"
          typed-racket/optimizer/logging
-         unstable/syntax racket/match racket/list)
+         unstable/syntax racket/match racket/list racket/string)
 
 (provide log-message-from-mzc-opt?
          mzc-opt-log-message->log-entry
@@ -14,10 +14,17 @@
 ;;; Low-level log parsing. Goes from strings to log-entry structs.
 
 (define mzc-optimizer-regexp "^mzc optimizer: ")
-(define success-regexp (string-append mzc-optimizer-regexp "inlining: "))
-(define failure-regexp (string-append mzc-optimizer-regexp "no inlining: "))
-(define out-of-fuel-regexp (string-append mzc-optimizer-regexp
-                                          "no inlining, out of fuel: "))
+(define success-regexp       "inlining: ")
+(define failure-regexp       "no inlining: ")
+(define out-of-fuel-regexp   "no inlining, out of fuel: ")
+(define any-inlining-event-regexp
+  (string-append mzc-optimizer-regexp
+                 "("
+                 (string-join (list success-regexp
+                                    failure-regexp
+                                    out-of-fuel-regexp)
+                              "|")
+                 ")"))
 
 (define (log-message-from-mzc-opt? l)
   (regexp-match mzc-optimizer-regexp l))
@@ -25,11 +32,14 @@
 ;; String (message from the mzc optimizer) -> log-entry
 (define (mzc-opt-log-message->log-entry l)
   (define forged-stx (inlining-event->forged-stx l))
-  (cond [(regexp-match success-regexp l)
+  (cond [(regexp-match (string-append mzc-optimizer-regexp success-regexp)
+                       l)
          (inlining-success->log-entry forged-stx)]
-        [(regexp-match failure-regexp l)
+        [(regexp-match (string-append mzc-optimizer-regexp failure-regexp)
+                       l)
          (inlining-failure->log-entry forged-stx)]
-        [(regexp-match out-of-fuel-regexp l)
+        [(regexp-match (string-append mzc-optimizer-regexp out-of-fuel-regexp)
+                       l)
          (inlining-out-of-fuel->log-entry forged-stx)]
         [else
          (error "Unknown log message type" l)]))
@@ -37,18 +47,27 @@
 (define inlining-event-regexp
   ;; Last bit is `generated?'. We don't care about that.
   ;; The middle elements of the vector are numbers of #f.
-  #rx"involving: (#\\(([^ ]+) #<path:(.+)> ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)|([^ ]+))")
+  (string-append
+   ;; Attempt at making this thing readable.
+   any-inlining-event-regexp
+   "involving: "
+   (string-append ; either a vector with name and source info, or just name
+    "("
+    "#\\(([^ ]+) #<path:(.+)> ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)"
+    "|"
+    "([^ ]+)"
+    ")")))
 
 (define (inlining-event->forged-stx l)
   (match (regexp-match inlining-event-regexp l)
-    [`(,all ,vec ,name ,path ,line ,col ,pos ,span #f)
+    [`(,all ,pre ,vec ,name ,path ,line ,col ,pos ,span #f)
      (datum->syntax #'here (string->symbol name)
                     (list path
                           (string->number line)
                           (string->number col)
                           (string->number pos)
                           (string->number span)))]
-    [`(,all ,name #f #f #f #f #f #f,name)
+    [`(,all ,pre ,name #f #f #f #f #f #f ,name)
      ;; We only know the name. there's not much we can do with that.
      (datum->syntax #'here (string->symbol name) #f)]
     [_ (error "ill-formed inlining log entry" l)]))
