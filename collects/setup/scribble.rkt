@@ -159,13 +159,14 @@
                          (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
                       (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
                                                           auto-main? auto-user?) 
-                        (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user?) 
+                        (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? send/report) 
                                  doc)
                           (define (setup-printf subpart formatstr . rest)
                             (let ([task (if subpart
                                             (format "~a: " subpart)
                                             "")])
-                              (printf "~a: ~a~a\n" program-name task (apply format formatstr rest))))
+                              (send/report
+                               (format "~a: ~a~a\n" program-name task (apply format formatstr rest)))))
                           (define (with-record-error cc go fail-k)
                             (with-handlers ([exn:fail?
                                              (lambda (exn)
@@ -180,7 +181,7 @@
                         (verbose verbosev)
                         (match-message-loop
                          [doc (send/success 
-                               ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user?) 
+                               ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? send/report) 
                                 doc))])))))))
 
   (define (make-loop first? iter)

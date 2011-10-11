@@ -19,6 +19,7 @@
          match-message-loop
          send/success
          send/error
+         send/report
          send/msg
          recv/req
          worker/die
@@ -310,15 +311,20 @@
   
 (define list-queue% 
   (class* object% (work-queue<%>)
-    (init-field queue create-job-thunk success-thunk failure-thunk)
+    (init-field queue create-job-thunk success-thunk failure-thunk [report-proc display])
     (field [results null])
 
     (define/public (work-done work workerid msg)
       (match msg
+        [(list (list 'REPORT msg) stdout stderr)
+         (report-proc msg)
+         #f]
         [(list (list 'DONE result) stdout stderr)
-          (set! results (cons (success-thunk work result stdout stderr) results))]
+         (set! results (cons (success-thunk work result stdout stderr) results))
+         #t]
         [(list (list 'ERROR errmsg) stdout stderr)
-          (failure-thunk work errmsg stdout stderr)]))
+         (failure-thunk work errmsg stdout stderr)
+         #t]))
     (define/public (get-job workerid)
       (match queue
         [(cons h t)
@@ -340,6 +346,7 @@
 (define-syntax-parameter-error send/msg)
 (define-syntax-parameter-error send/success)
 (define-syntax-parameter-error send/error)
+(define-syntax-parameter-error send/report)
 (define-syntax-parameter-error recv/req)
 (define-syntax-parameter-error worker/die)
 
@@ -362,9 +369,10 @@
                                      [recv/req (make-rename-transformer #'recv/reqp)]
                                      [worker/die (make-rename-transformer #'die-k)])
                  ;; message handler:
-                 (lambda (msg send/successp send/errorp)
+                 (lambda (msg send/successp send/errorp send/reportp)
                    (syntax-parameterize ([send/success (make-rename-transformer #'send/successp)]
-                                         [send/error (make-rename-transformer #'send/errorp)])
+                                         [send/error (make-rename-transformer #'send/errorp)]
+                                         [send/report (make-rename-transformer #'send/reportp)])
                      (match msg
                        [work work-body ...]
                        ...))))))])))))
@@ -415,6 +423,8 @@
                           (send/resp (list 'DONE result)))
                         (define (send/errorp message)
                           (send/resp (list 'ERROR message)))
+                        (define (send/reportp message)
+                          (send/resp (list 'REPORT message)))
                         (with-handlers* ([exn:fail? (lambda (x) 
                                                       (send/errorp (exn-message x))
                                                       (loop (add1 i)))])
@@ -423,7 +433,7 @@
                             (let ([msg (pdo-recv)])
                               (match msg
                                 [(list 'DIE) (void)]
-                                [_ (msg-proc msg send/successp send/errorp)
+                                [_ (msg-proc msg send/successp send/errorp send/reportp)
                                    (loop (add1 i))])))))))))))
 
 (define-syntax (lambda-worker stx)
