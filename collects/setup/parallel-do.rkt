@@ -288,16 +288,26 @@
       ;; Finish normally:
       (set! normal-finish? #t))
     (lambda () 
-      (unless normal-finish?
-        ;; There was an exception, so tell workers to stop:
+      (define (break-all)
         (for ([p workers]) 
           (with-handlers ([exn? log-exn])
             (wrkr/break p))))
-      ;; Wait for workers to complete:
-      (for ([p workers]) 
-        (with-handlers ([exn? log-exn])
-          (wrkr/wait p))))))
-
+      (unless normal-finish?
+        ;; There was an exception, so tell workers to stop:
+        (break-all))
+      ;; Wait for workers to complete; pass any break request on
+      ;; to the worker places, in case they ignored an earlier
+      ;; break for some reason:
+      (let loop ()
+        (with-handlers* ([exn:break? (lambda (exn)
+                                       (break-all)
+                                       (loop))])
+          (parameterize-break
+           #t
+           (for ([p workers]) 
+             (with-handlers ([exn:fail? log-exn])
+               (wrkr/wait p)))))))))
+  
 (define list-queue% 
   (class* object% (work-queue<%>)
     (init-field queue create-job-thunk success-thunk failure-thunk)
@@ -405,7 +415,9 @@
                           (send/resp (list 'DONE result)))
                         (define (send/errorp message)
                           (send/resp (list 'ERROR message)))
-                        (with-handlers ([exn:fail? (lambda (x) (send/errorp (exn-message x)) (loop (add1 i)))])
+                        (with-handlers* ([exn:fail? (lambda (x) 
+                                                      (send/errorp (exn-message x))
+                                                      (loop (add1 i)))])
                           (parameterize ([current-output-port out-str-port]
                                          [current-error-port err-str-port])
                             (let ([msg (pdo-recv)])
