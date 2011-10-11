@@ -2189,6 +2189,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     channel = place_data->channel;
   }
   place_obj = place_data->place_obj;
+  REGISTER_SO(place_object);
   place_object = place_obj;
   place_obj->refcount++;
   

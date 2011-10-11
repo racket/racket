@@ -292,6 +292,7 @@ Scheme_Env *scheme_engine_instance_init()
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   {
     void *signal_handle;
+    REGISTER_SO(place_object);
     place_object = (Scheme_Place_Object*) scheme_make_place_object();
     signal_handle = scheme_get_signal_handle();
     GC_set_put_external_event_fd(signal_handle);
