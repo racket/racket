@@ -230,17 +230,21 @@ has been moved out).
                        (get-output-bytes s))]
                     [else default]))])))
 
-(define (to-bitmap img)  
-  (let* ([bb (send img get-bb)]
-         [bm (make-bitmap
-              (inexact->exact (ceiling (bb-right bb)))
-              (inexact->exact (ceiling (bb-bottom bb))))]
-         [bdc (new bitmap-dc% [bitmap bm])])
-    (send bdc erase)
-    (render-image img bdc 0 0)
-    (begin0
-        (send bdc get-bitmap)
-      (send bdc set-bitmap #f))))
+;; these are used when building a bitmap to render the final image
+;; they are probably smaller than the allowed maximum, but they are
+;; still huge
+(define maximum-width 5000)
+(define maximum-height 5000)
+
+(define (to-bitmap img)
+  (define bb (send img get-bb))
+  (define w (min (inexact->exact (ceiling (bb-right bb))) maximum-width))
+  (define h (min (inexact->exact (ceiling (bb-bottom bb))) maximum-height)) 
+  (define bm (make-bitmap w h))
+  (define bdc (new bitmap-dc% [bitmap bm]))
+  (render-image img bdc 0 0)
+  (send bdc set-bitmap #f)
+  bm)
 
 (define-local-member-name 
   set-use-bitmap-cache?!
@@ -350,8 +354,8 @@ has been moved out).
     (define/public (compute-cached-bitmap)
       (when use-cached-bitmap?
         (unless cached-bitmap
-          (set! cached-bitmap (make-bitmap (+ (inexact->exact (round (bb-right bb))) 1) 
-                                           (+ (inexact->exact (round (bb-bottom bb))) 1)))
+          (set! cached-bitmap (make-bitmap (min (+ (inexact->exact (round (bb-right bb))) 1) maximum-width) 
+                                           (min (+ (inexact->exact (round (bb-bottom bb))) 1) maximum-height)))
           (define bdc (make-object bitmap-dc% cached-bitmap))
           (send bdc erase)
           (render-image this bdc 0 0)
@@ -1032,7 +1036,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
      (define sth  (apply max latitudes))
      (define new-w (ceiling (inexact->exact (- east west))))
      (define new-h (ceiling (inexact->exact (- sth nrth))))
-                            
+
      (define new-bm (make-bitmap new-w new-h))
      (define bdc (make-object bitmap-dc% new-bm))
      (send bdc set-smoothing 'smoothed)
