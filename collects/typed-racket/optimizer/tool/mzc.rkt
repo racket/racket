@@ -37,7 +37,7 @@
 (define inlining-event-regexp
   ;; Last bit is `generated?'. We don't care about that.
   ;; The middle elements of the vector are numbers of #f.
-  "#\\(([^ ]+) #<path:(.+)> ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)")
+  "involving: #\\(([^ ]+) #<path:(.+)> ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)")
 
 (define (inlining-event->forged-stx l)
   (match (regexp-match inlining-event-regexp l)

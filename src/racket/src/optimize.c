@@ -1092,7 +1092,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	  scheme_log(NULL,
 		     SCHEME_LOG_WARNING,
 		     0,
-		     "mzc optimizer: inlining: %s%s",
+		     "mzc optimizer: inlining: involving: %s%s",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
 		     scheme_optimize_context_to_string(info->context));
           le = apply_inlined(le, data, sub_info, argc, app, app2, app3, context,
@@ -1105,7 +1105,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	  scheme_log(NULL,
 		     SCHEME_LOG_WARNING,
 		     0,
-		     "mzc optimizer: no inlining: %s%s",
+		     "mzc optimizer: no inlining: involving: %s%s",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
 		     scheme_optimize_context_to_string(info->context));
         }
@@ -1116,7 +1116,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	scheme_log(NULL,
 		   SCHEME_LOG_WARNING,
 		   0,
-		   "mzc optimizer: no inlining, out of fuel: %s%s",
+		   "mzc optimizer: no inlining, out of fuel: involving: %s%s",
 		   scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
 		   scheme_optimize_context_to_string(info->context));
       }
