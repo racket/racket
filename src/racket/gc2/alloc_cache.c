@@ -13,7 +13,7 @@
 #define BLOCKFREE_UNMAP_AGE 3
 
 /* Controls size of the cache */
-#define BLOCKFREE_CACHE_SIZE 3000
+#define BLOCKFREE_CACHE_SIZE 96
 
 /* Controls how many extra pages are requested from OS at a time: */
 #define CACHE_SEED_PAGES 16
