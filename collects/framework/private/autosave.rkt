@@ -144,16 +144,22 @@
                [filtered-table
                 (filter (λ (x) (file-exists? (cadr x))) table)])
           (unless (null? filtered-table)
-            (let* ([f (new final-frame%
-                           (label (string-constant recover-autosave-files-frame-title)))]
+            (let* ([dlg (new dialog%
+                             (label (string-constant recover-autosave-files-frame-title)))]
                    [t (new text% (auto-wrap #t))]
                    [ec (new editor-canvas%
-                            (parent (send f get-area-container))
+                            (parent dlg)
                             (editor t)
                             (line-count 2)
+                            (stretchable-height #f)
                             (style '(no-hscroll)))]
-                   [hp (make-object horizontal-panel% (send f get-area-container))]
-                   [vp (make-object vertical-panel% hp)])
+                   [hp (new horizontal-panel% 
+                            [parent dlg]
+                            [stretchable-height #f])]
+                   [vp (new vertical-panel%
+                            [parent hp]
+                            [stretchable-height #f])]
+                   [details-parent (new horizontal-panel% [parent dlg])])
               (send vp set-alignment 'right 'center)
               (make-object grow-box-spacer-pane% hp)
               (send t insert (string-constant autosave-explanation))
@@ -161,36 +167,24 @@
               (send t set-position 0 0)
               (send t lock #t)
               
-              (for-each (add-table-line vp f) filtered-table)
+              (for-each (add-table-line vp dlg details-parent) filtered-table)
               (make-object button%
                 (string-constant autosave-done)
                 vp
                 (λ (x y)
-                  (when (send f can-close?)
-                    (send f on-close)
-                    (send f show #f))))
-              (send f show #t)
-              (yield done-semaphore)
+                  (when (send dlg can-close?)
+                    (send dlg on-close)
+                    (send dlg show #f))))
+              (send dlg show #t)
               (void))))))
     
-    (define done-semaphore (make-semaphore 0))
-    
-    (define final-frame%
-      (class frame:basic%
-        (define/augment (can-close?) #t)
-        (define/augment (on-close)
-          (inner (void) on-close)
-          (send (group:get-the-frame-group)
-                remove-frame
-                this)
-          (semaphore-post done-semaphore))
-        (super-new)))
-    
-    ;; add-table-line : (is-a? area-container<%>)  (union #f (is-a?/c top-level-window<%>))
-    ;;               -> (list (union #f string[filename]) string[filename-file-exists?])
-    ;;               -> void
+    ;; add-table-line : (is-a? area-container<%>)
+    ;;                  (or/c #f (is-a?/c top-level-window<%>))
+    ;;                  (is-a? area-container<%>)
+    ;;               -> (list/c (or/c #f path?) path?)
+    ;;               -> void?
     ;; adds in a line to the overview table showing this pair of files.
-    (define (add-table-line area-container parent)
+    (define (add-table-line area-container dlg show-details-parent)
       (λ (table-entry)
         (letrec ([orig-file (car table-entry)]
                  [backup-file (cadr table-entry)]
@@ -221,7 +215,7 @@
                  [details
                   (make-object button% (string-constant autosave-details) hp
                     (λ (x y)
-                      (show-files table-entry)))]
+                      (show-files table-entry show-details-parent dlg)))]
                  [delete
                   (make-object button%
                     (string-constant autosave-delete-button)
@@ -235,7 +229,7 @@
                     (string-constant autosave-recover)
                     hp
                     (λ (recover y)
-                      (let ([filename-result (recover-file parent table-entry)])
+                      (let ([filename-result (recover-file dlg table-entry)])
                         (when filename-result
                           (disable-line)
                           (send msg2 set-label (string-constant autosave-recovered!))
@@ -276,23 +270,21 @@
                (delete-file autosave-file)
                #t))))
     
-    ;; show-files : (list (union #f string[filename]) string) -> void
-    (define (show-files table-entry)
+    ;; show-files : (list (or/c #f path?) path?) (is-a?/c area-container<%>) (is-a?/c dialog%) -> void
+    (define (show-files table-entry show-details-parent dlg)
       (let ([file1 (list-ref table-entry 0)]
             [file2 (list-ref table-entry 1)])
-        (define frame (make-object show-files-frame% 
-                        (if file1
-                            (string-constant autosave-compare-files)
-                            (string-constant autosave-show-autosave))
-                        #f
-                        (if file1 600 300)
-                        600))
-        (define hp (new horizontal-panel%
-                        (parent (send frame get-area-container))))
+        (send dlg begin-container-sequence)
+        (define had-children? #f)
+        (send show-details-parent change-children (λ (x) 
+                                                    (set! had-children? (not (null? x)))
+                                                    '()))
         (when file1
-          (add-file-viewer file1 hp (string-constant autosave-original-label)))
-        (add-file-viewer file2 hp (string-constant autosave-autosave-label))
-        (send frame show #t)))
+          (add-file-viewer file1 show-details-parent (string-constant autosave-original-label)))
+        (add-file-viewer file2 show-details-parent (string-constant autosave-autosave-label))
+        (send dlg end-container-sequence)
+        (unless had-children?
+          (send dlg center))))
     
     ;; add-file-viewer : path? -> void
     (define (add-file-viewer filename parent label)
@@ -305,6 +297,7 @@
                                 #:quote-amp? #f)]
                         [parent vp]))
       (define ec (make-object editor-canvas% vp t))
+      (send ec min-height 400)
       (send t load-file filename)
       (send t hide-caret #t)
       (send t lock #t))
