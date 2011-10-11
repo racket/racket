@@ -3829,6 +3829,11 @@ void scheme_set_break_main_target(Scheme_Thread *p)
 
 static void check_ready_break()
 {
+#if defined(MZ_USE_PLACES)
+  if (!do_atomic)
+    scheme_place_check_for_interruption();
+#endif
+
   if (delayed_break_ready) {
     if (scheme_main_thread) {
       delayed_break_ready = 0;
@@ -4241,10 +4246,6 @@ void scheme_thread_block(float sleep_time)
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   if (!do_atomic)
     GC_check_master_gc_request(); 
-#endif
-#if defined(MZ_USE_PLACES)
-  if (!do_atomic)
-    scheme_place_check_for_interruption();
 #endif
 
   /* Propagate memory-use information and check for custodian-based
