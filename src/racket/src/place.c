@@ -515,7 +515,7 @@ static int do_place_break(Scheme_Place *place)
   Scheme_Place_Object *place_obj;
   place_obj = place->place_obj;
 
-  {
+  if (place_obj) {
     mzrt_mutex_lock(place_obj->lock);
 
     place_obj->pbreak = 1;
