@@ -133,9 +133,8 @@
               kind
               (format "Missed Inlining ~a" aggregation-string)
               stx located-stx pos
-              (missed-opt-log-entry-irritants        head)
-              (missed-opt-log-entry-merged-irritants head)
-              n-failures) ; badness
+              '() '()
+              (+ n-failures (- n-out-of-fuels n-successes))) ; badness
              (opt-log-entry
               kind
               (format "Inlining ~a" aggregation-string)
