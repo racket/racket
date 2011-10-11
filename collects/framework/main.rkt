@@ -707,10 +707,10 @@
     @racket[frame:basic-mixin].
     @itemize[
       @item{If it is @racket[#f], then its value is ignored.}
-      @item{If it is a @racket[bitmap%], then the @method[frame% set-icon] is
+      @item{If it is a @racket[bitmap%], then the @method[top-level-window<%> set-icon] is
             called with the bitmap, the result of invoking the
             @racket[bitmap% get-loaded-mask] method, and @racket['both].}
-      @item{If it is a pair of bitmaps, then the @method[frame% set-icon]
+      @item{If it is a pair of bitmaps, then the @method[top-level-window<%> set-icon]
             method is invoked twice, once with each bitmap in the pair. The
             first bitmap is passed (along with the result of its
             @racket[bitmap% get-loaded-mask]) and @racket['small], and then the

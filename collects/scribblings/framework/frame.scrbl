@@ -113,7 +113,7 @@
 
   This mixin calls its @method[window<%> accept-drop-files] with @racket[#t].
 
-  It also calls its @method[frame% set-icon] method according to the current
+  It also calls its @method[top-level-window<%> set-icon] method according to the current
   value of @racket[frame:current-icon].
 
   See also @racket[frame:reorder-menus].
