@@ -1448,7 +1448,12 @@ static Scheme_Object* create_infinite_stack(int gcable) {
     /* If a GC is not possible, then we prefer to malloc() the stack
        space so that the space doesn't show up as part of the
        message allocation. */
-    v = GC_malloc(IFS_SIZE * sizeof(Scheme_Object*));
+    if (reusable_ifs_stack) {
+      v = reusable_ifs_stack;
+      reusable_ifs_stack = NULL;
+    } else {
+      v = GC_malloc(IFS_SIZE * sizeof(Scheme_Object*));
+    }
   } else {
     v = malloc(IFS_SIZE * sizeof(Scheme_Object*));
     v[IFS_PREV_SEG_SLOT] = NULL;
@@ -1457,7 +1462,7 @@ static Scheme_Object* create_infinite_stack(int gcable) {
 
   return (Scheme_Object *) v;
 }
-static void  free_infinite_stack(Scheme_Object** st, int gcable) {
+static void  free_infinite_stack(Scheme_Object** st, intptr_t max_depth, int gcable) {
   Scheme_Object **prev;
   if (st[IFS_CACHE_SLOT]) {
     if (!gcable) free(st[IFS_CACHE_SLOT]);
@@ -1468,9 +1473,21 @@ static void  free_infinite_stack(Scheme_Object** st, int gcable) {
     prev[IFS_CACHE_SLOT] = NULL;
   }
   if (!gcable) free(st);
+  else if (!reusable_ifs_stack && (max_depth >= 0)) {
+    if (max_depth > IFS_SIZE)
+      max_depth = IFS_SIZE;
+    memset(st, 0, max_depth * sizeof(Scheme_Object*));
+    reusable_ifs_stack = st;
+  }
 }
 
-static MZ_INLINE void inf_push(Scheme_Object **instack, Scheme_Object *item, uintptr_t *indepth, int gcable) {
+void scheme_clear_place_ifs_stack()
+{
+  reusable_ifs_stack = NULL;
+}
+
+static MZ_INLINE void inf_push(Scheme_Object **instack, Scheme_Object *item, uintptr_t *indepth, 
+                               uintptr_t *maxdepth, int gcable) {
   Scheme_Object **stack = (Scheme_Object **) *instack;
   if (*indepth == IFS_CACHE_SLOT) {
     if (stack[IFS_CACHE_SLOT]) { /* cached */
@@ -1489,6 +1506,8 @@ static MZ_INLINE void inf_push(Scheme_Object **instack, Scheme_Object *item, uin
 
   /* printf("PUSH %p %li %p\n", stack, *indepth, item); */
   stack[((*indepth)++)] = item;
+  if (*indepth > *maxdepth)
+    *maxdepth = *indepth;
   return;
 }
 
@@ -1498,7 +1517,7 @@ static MZ_INLINE Scheme_Object *inf_pop(Scheme_Object **instack, uintptr_t *inde
   if (*indepth == IFS_SEGMENT_BOTTOM) {
     Scheme_Object *item;
     if (stack[IFS_CACHE_SLOT]) { /* already have cached segment, free it*/
-      free_infinite_stack((Scheme_Object **) stack[IFS_CACHE_SLOT], gcable);
+      free_infinite_stack((Scheme_Object **) stack[IFS_CACHE_SLOT], -1, gcable);
       stack[IFS_CACHE_SLOT] = NULL;
     }
     if (stack[IFS_PREV_SEG_SLOT]) {
@@ -1574,7 +1593,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
                                               int mode, int gcable, int can_raise_exn) {
   Scheme_Object *inf_stack = NULL;
   Scheme_Object *reg0 = NULL;
-  uintptr_t inf_stack_depth = 0;
+  uintptr_t inf_stack_depth = 0, inf_max_depth = 0;
 
   Scheme_Object *fd_accumulators = NULL;
   intptr_t delayed_errno = 0;
@@ -1603,7 +1622,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 #define DEEP_DONE 9 
 #define RETURN do { goto DEEP_RETURN_L; } while(0);
 #define ABORT do { goto DEEP_DONE_L; } while(0);
-#define IFS_PUSH(x) inf_push(&inf_stack, x, &inf_stack_depth, gcable)
+#define IFS_PUSH(x) inf_push(&inf_stack, x, &inf_stack_depth, &inf_max_depth, gcable)
 #define IFS_POP inf_pop(&inf_stack, &inf_stack_depth, gcable)
 #define IFS_POPN(n) do { int N = (n); while (N > 0) { IFS_POP; N--;} } while(0);
 #define IFS_GET(n) inf_get(&inf_stack, (n), &inf_stack_depth)
@@ -1634,6 +1653,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 
   inf_stack = create_infinite_stack(gcable);
   inf_stack_depth = 1;
+  inf_max_depth = 1;
 
   IFS_PUSH(scheme_make_integer(DEEP_DONE));
   SET_R0(so);
@@ -1921,7 +1941,7 @@ DEEP_RETURN_L:
   }
 
 DEEP_DONE_L:
-  free_infinite_stack((Scheme_Object **) inf_stack, gcable);
+  free_infinite_stack((Scheme_Object **) inf_stack, inf_max_depth, gcable);
   return new_so;
 
 #undef DEEP_DO_CDR

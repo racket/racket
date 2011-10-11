@@ -7633,6 +7633,9 @@ static void get_ready_for_GC()
   scheme_clear_rx_buffers();
   scheme_clear_bignum_cache();
   scheme_clear_delayed_load_cache();
+#ifdef MZ_USE_PLACES
+  scheme_clear_place_ifs_stack();
+#endif
 
 #ifdef RUNSTACK_IS_GLOBAL
   if (scheme_current_thread->running) {
