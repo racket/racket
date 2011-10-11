@@ -545,9 +545,14 @@ GC2_EXTERN intptr_t GC_is_place();
    Otherwise returns 0;
 */
 
-GC2_EXTERN uintptr_t GC_message_allocator_size(void *msg_memory);
+GC2_EXTERN intptr_t GC_message_objects_size(void *msg_memory);
 /*
- Returns the total size of all memory allocated by the message allocator
+ Returns the total size of all objects allocated by the message allocator
+ */
+
+GC2_EXTERN intptr_t GC_message_allocator_size(void *msg_memory);
+/*
+ Returns the total size of all memory pages allocated by the message allocator
  */
 
 GC2_EXTERN void GC_dispose_short_message_allocator(void *msg_memory);
@@ -559,6 +564,15 @@ GC2_EXTERN void GC_destroy_orphan_msg_memory(void *msg_memory);
 /*
  Used to destroys a message allocators that is still in the place channel queue when
  the place channels finalizer is called.
+ */
+
+GC2_EXTERN void GC_report_unsent_message_delta(intptr_t amt);
+/* 
+ Report message-in-flight size changes to the GC. This functionality is exposed,
+ rather than built into GC_finish_message_allocator(), GC_adpot_message_allocator(),
+ GC_dispose_short_message_allocator(), and GC_destroy_orphan_msg_memory(), so that
+ meesages to the master GC can be limited as long as the unsent message tracking
+ is within a factor of 2 or so.
  */
 
 

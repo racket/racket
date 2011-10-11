@@ -1377,6 +1377,14 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       o = SCHEME_PTR_VAL(o);
     }
     break;
+  case scheme_place_bi_channel_type:
+    {
+      k += 7;
+      /* a bi channel has sendch and recvch, but
+         sends are the same iff recvs are the same: */
+      o = (Scheme_Object *)((Scheme_Place_Bi_Channel *)o)->sendch;
+    }
+    break;
   default:    
     {
       Scheme_Primary_Hash_Proc h1 = scheme_type_hash1s[t];
@@ -1751,6 +1759,11 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
   case scheme_resolved_module_path_type:
     /* Needed for interning */
     o = SCHEME_PTR_VAL(o);
+    goto top;
+  case scheme_place_bi_channel_type:
+    /* a bi channel has sendch and recvch, but
+       sends are the same iff recvs are the same: */
+    o = (Scheme_Object *)((Scheme_Place_Bi_Channel *)o)->sendch;
     goto top;
   default:
     {

@@ -11,8 +11,9 @@ static const int btc_redirect_thread    = 511;
 static const int btc_redirect_custodian = 510;
 static const int btc_redirect_ephemeron = 509;
 static const int btc_redirect_cust_box  = 508;
+static const int btc_redirect_bi_chan   = 507;
 
-inline static void account_memory(NewGC *gc, int set, intptr_t amount);
+inline static void account_memory(NewGC *gc, int set, intptr_t amount, int to_master);
 
 /*****************************************************************************/
 /* thread list                                                               */
@@ -73,7 +74,7 @@ inline static void mark_threads(NewGC *gc, int owner)
           mzrt_mutex_lock(place_obj->lock);
           sz = place_obj->memory_use;
           mzrt_mutex_unlock(place_obj->lock);
-          account_memory(gc, owner, gcBYTES_TO_WORDS(sz));
+          account_memory(gc, owner, gcBYTES_TO_WORDS(sz), 0);
         }
 #endif
       }
@@ -138,7 +139,7 @@ inline static int create_blank_owner_set(NewGC *gc)
   memcpy(naya, owner_table, old_size*sizeof(OTEntry*));
   gc->owner_table = owner_table = naya;
   bzero(((char*)owner_table) + (sizeof(OTEntry*) * old_size),
-      (curr_size - old_size) * sizeof(OTEntry*));
+        (curr_size - old_size) * sizeof(OTEntry*));
 
   return create_blank_owner_set(gc);
 }
@@ -201,9 +202,12 @@ inline static int custodian_member_owner_set(NewGC *gc, void *cust, int set)
   return 0;
 }
 
-inline static void account_memory(NewGC *gc, int set, intptr_t amount)
+inline static void account_memory(NewGC *gc, int set, intptr_t amount, int to_master)
 {
-  gc->owner_table[set]->memory_use += amount;
+  if (to_master)
+    gc->owner_table[set]->master_memory_use += amount;
+  else
+    gc->owner_table[set]->memory_use += amount;
 }
 
 inline static void free_owner_set(NewGC *gc, int set)
@@ -256,16 +260,23 @@ inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
 
   owner_table = gc->owner_table;
   if (owner_table[i])
-    retval = owner_table[i]->memory_use;
+    retval = (owner_table[i]->memory_use + owner_table[i]->master_memory_use);
   else
     retval = 0;
 
   return gcWORDS_TO_BYTES(retval);
 }
 
-inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr)
+inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr, int is_a_master_page)
 {
   GCDEBUG((DEBUGOUTF, "BTC_memory_account_mark: %p/%p\n", page, ptr));
+
+  /* In the case of is_a_master_page, whether this place is charged is
+     a little random: there's no guarantee that the btc_mark values are
+     in sync, and there are races among places. Approximations are ok for
+     accounting, though, as long as the probably for completely wrong
+     accounting is very low. */
+
   if(page->size_class) {
     if(page->size_class > 1) {
       /* big page */
@@ -273,7 +284,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr)
       
       if(info->btc_mark == gc->old_btc_mark) {
         info->btc_mark = gc->new_btc_mark;
-        account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(page->size));
+        account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(page->size), is_a_master_page);
         push_ptr(gc, TAG_AS_BIG_PAGE_PTR(ptr));
       }
     } else {
@@ -282,7 +293,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr)
 
       if(info->btc_mark == gc->old_btc_mark) {
         info->btc_mark = gc->new_btc_mark;
-        account_memory(gc, gc->current_mark_owner, info->size);
+        account_memory(gc, gc->current_mark_owner, info->size, is_a_master_page);
         ptr = OBJHEAD_TO_OBJPTR(info);
         push_ptr(gc, ptr);
       }
@@ -292,7 +303,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr)
 
     if(info->btc_mark == gc->old_btc_mark) {
       info->btc_mark = gc->new_btc_mark;
-      account_memory(gc, gc->current_mark_owner, info->size);
+      account_memory(gc, gc->current_mark_owner, info->size, 0);
       push_ptr(gc, ptr);
     }
   }
@@ -352,6 +363,19 @@ int BTC_cust_box_mark(void *p, struct NewGC *gc)
   return gc->mark_table[btc_redirect_cust_box](p, gc);
 }
 
+int BTC_bi_chan_mark(void *p, struct NewGC *gc)
+{
+  if (gc->doing_memory_accounting) {
+    Scheme_Place_Bi_Channel *bc = (Scheme_Place_Bi_Channel *)p;
+    /* Race conditions here on `mem_size', and likely double counting
+       when the same async channels are accessible from paired bi
+       channels --- but those approximations are ok for accounting. */
+    account_memory(gc, gc->current_mark_owner, bc->sendch->mem_size, 0);
+    account_memory(gc, gc->current_mark_owner, bc->recvch->mem_size, 0);
+  }
+  return gc->mark_table[btc_redirect_bi_chan](p, gc);
+}
+
 static void btc_overmem_abort(NewGC *gc)
 {
   gc->kill_propagation_loop = 1;
@@ -377,6 +401,7 @@ inline static void BTC_initialize_mark_table(NewGC *gc) {
   gc->mark_table[scheme_custodian_type] = BTC_custodian_mark;
   gc->mark_table[gc->ephemeron_tag]     = BTC_ephemeron_mark;
   gc->mark_table[gc->cust_box_tag]      = BTC_cust_box_mark;
+  gc->mark_table[scheme_place_bi_channel_type] = BTC_bi_chan_mark;
 }
 
 inline static int BTC_get_redirect_tag(NewGC *gc, int tag) {
@@ -384,6 +409,7 @@ inline static int BTC_get_redirect_tag(NewGC *gc, int tag) {
   else if (tag == scheme_custodian_type) { tag = btc_redirect_custodian; }
   else if (tag == gc->ephemeron_tag)     { tag = btc_redirect_ephemeron; }
   else if (tag == gc->cust_box_tag)      { tag = btc_redirect_cust_box; }
+  else if (tag == scheme_place_bi_channel_type) { tag = btc_redirect_bi_chan; }
   return tag;
 }
 
@@ -404,8 +430,13 @@ static void BTC_do_accounting(NewGC *gc)
 
     /* clear the memory use numbers out */
     for(i = 1; i < table_size; i++)
-      if(owner_table[i])
+      if(owner_table[i]) {
         owner_table[i]->memory_use = 0;
+#ifdef MZ_USE_PLACES
+        if (MASTERGC && MASTERGC->major_places_gc)
+          owner_table[i]->master_memory_use = 0;
+#endif
+      }
     
     /* start with root: */
     while (cur->parent && SCHEME_PTR1_VAL(cur->parent)) {
@@ -440,6 +471,7 @@ static void BTC_do_accounting(NewGC *gc)
 
         owner_table = gc->owner_table;
         owner_table[powner]->memory_use += owner_table[owner]->memory_use;
+        owner_table[powner]->master_memory_use += owner_table[owner]->master_memory_use;
       }
 
       box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;

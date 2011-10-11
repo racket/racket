@@ -3673,6 +3673,8 @@ typedef struct Scheme_Place_Async_Channel {
 #endif
   Scheme_Object **msgs;
   void **msg_memory;
+  intptr_t mem_size;
+  intptr_t reported_size; /* size reported to master GC; avoid reporting too often */
   void *wakeup_signal;
 } Scheme_Place_Async_Channel;
 

@@ -50,11 +50,17 @@ A @tech{place channel} can be used as a @tech{synchronizable event}
 can also receive messages with @racket[place-channel-get], and
 messages can be sent with @racket[place-channel-put].
 
+Two @tech{place channels} are @racket[equal?] if they are endpoints
+for the same underlying channels while both or neither is a
+@tech{place descriptor}. @tech{Place channels} can be @racket[equal?]
+without being @racket[eq?] after being sent messages through a
+@tech{place channel}.
+
 Constraints on messages across a place channel---and therefore on the
 kinds of data that places share---enable greater parallelism than
 @racket[future], even including separate @tech{garbage collection} of
 separate places. At the same time, the setup and communication costs
-for places can be higher than for futures.
+for places can be higher than for @tech{futures}.
 
 For example, the following expression launches two places, echoes a
 message to each, and then waits for the places to terminate:

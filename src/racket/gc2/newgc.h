@@ -86,6 +86,7 @@ typedef struct OTEntry {
   void *originator;
   void **members;
   uintptr_t memory_use;
+  uintptr_t master_memory_use;
   uintptr_t single_time_limit;
   uintptr_t super_required;
   char limit_set;
@@ -163,6 +164,7 @@ typedef struct NewGC {
   uintptr_t actual_pages_size;
   void (*unsafe_allocation_abort)(struct NewGC *);
   uintptr_t memory_in_use; /* the amount of memory in use */
+  uintptr_t pending_msg_size; /* set in master, only */
 
   /* blame the child thread infos */
   GC_Thread_Info *thread_infos;
