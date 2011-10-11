@@ -2238,6 +2238,8 @@ void scheme_check_future_work()
 
   check_future_thread_creation(fs);
 
+  if (!fs->future_threads_created) return;
+
   more = 1;
   while (more) {
     /* Try to get a future waiting on a atomic operation */
