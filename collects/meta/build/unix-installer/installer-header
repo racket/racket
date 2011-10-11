@@ -454,13 +454,13 @@ fi
 if test -x "$bindir/racket-uninstall"; then
   echo "A previous Racket uninstaller is found at"
   echo "  \"$bindir/racket-uninstall\","
-  echon "  should I run it? (default: no) "
+  echon "  should I run it? (default: yes) "
   read R
   case "$R" in
-    [yY]* ) echon "  running uninstaller..."
-            "$bindir/racket-uninstall" || failwith "problems during uninstall"
-            echo " done." ;;
-    * ) failwith "abort..." ;;
+    [nN]* ) failwith "abort..." ;;
+    * ) echon "  running uninstaller..."
+        "$bindir/racket-uninstall" || failwith "problems during uninstall"
+        echo " done." ;;
   esac
 fi
 
