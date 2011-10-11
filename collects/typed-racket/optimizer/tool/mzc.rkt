@@ -51,25 +51,35 @@
    ;; Attempt at making this thing readable.
    any-inlining-event-regexp
    "involving: "
+   ;; _What_ gets inlined (or not).
    (string-append ; either a vector with name and source info, or just name
     "("
     "#\\(([^ ]+) #<path:(.+)> ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)"
     "|"
-    "([^ ]+)"
-    ")")))
+    "([^ ]+)" ; just name, we won't be able to do much with it
+    ")")
+   ;; _Where_ this happens (in which function, can't get more precise info).
+   (string-append
+    ;; maybe full path info: path, line, col, name
+    "( in: (([^ :]+):([^ :]+):([^ :]+): )?([^ ]+))?"
+    ;; module info, useless to us (at least for now)
+    " in module: [^ ]+")
+   "$"))
 
 (define (inlining-event->forged-stx l)
   (match (regexp-match inlining-event-regexp l)
-    [`(,all ,pre ,vec ,name ,path ,line ,col ,pos ,span #f)
-     (datum->syntax #'here (string->symbol name)
-                    (list path
-                          (string->number line)
-                          (string->number col)
-                          (string->number pos)
-                          (string->number span)))]
-    [`(,all ,pre ,name #f #f #f #f #f #f ,name)
-     ;; We only know the name. there's not much we can do with that.
-     (datum->syntax #'here (string->symbol name) #f)]
+    [`(,all ,kind
+            ,what ,name ,path ,line ,col ,pos ,span
+                  ,only-name
+            ,where ,where-loc ,where-path ,where-line ,where-col ,where-name)
+     (datum->syntax #'here (string->symbol (or name only-name))
+                    (if only-name
+                        #f ; no source location
+                        (list path
+                              (string->number line)
+                              (string->number col)
+                              (string->number pos)
+                              (string->number span))))]
     [_ (error "ill-formed inlining log entry" l)]))
 
 (define success-kind     "Inlining")
