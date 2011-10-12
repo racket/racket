@@ -442,10 +442,16 @@ All @tech{MouseEvent}s are represented via strings:
  coordinates may be negative or larger than the (implicitly) specified
  width and height.
 
- Note: the computer's software doesn't really notice every single movement
+ @bold{Note 1}: the operating system doesn't really notice every single movement
  of the mouse (across the mouse pad). Instead it samples the movements and
  signals most of them.}
-}
+
+ @bold{Note 2}: while mouse events are usually reported in the expected
+ manner, the operating system doesn't necessarily report them in the
+ expected order. For example, the Windows operating system insists on
+ signaling a @racket["move"] event immediately after a @racket["button-up"]
+ event is discovered.  Programmers must design the @racket[on-mouse]
+ handler to handle any possible mouse event at any moment.  }
 
 @item{
 
