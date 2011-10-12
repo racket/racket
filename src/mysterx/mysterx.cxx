@@ -1,8 +1,8 @@
-// mysterx.cxx : COM/ActiveX/DHTML extension for PLT Scheme
+// mysterx.cxx : COM/ActiveX/DHTML extension for Racket
 // Author: Paul Steckler
 
 #ifdef MYSTERX_3M
-// Created by xform.ss:
+// Created by xform.rkt:
 # define i64 /* ??? why does expansion produce i64? */
 # include "xsrc/mysterx3m.cxx"
 #else
@@ -2630,7 +2630,7 @@ BOOL schemeValueFitsVarType(Scheme_Object *val, VARTYPE vt)
     return MX_DATEP(val);
 
   case VT_BOOL :
-    return TRUE; // ain't Scheme great
+    return TRUE; // ain't Racket great
 
   case VT_ERROR :
     return MX_SCODEP(val);
@@ -2863,7 +2863,7 @@ void marshalSchemeValueToVariant(Scheme_Object *val, VARIANTARG *pVariantArg)
   }
 
   else
-    scheme_signal_error("Unable to inject Scheme value %V into VARIANT", val);
+    scheme_signal_error("Unable to inject Racket value %V into VARIANT", val);
 
   return;
 }
@@ -3110,7 +3110,7 @@ void marshalSchemeValue(Scheme_Object *val, VARIANTARG *pVariantArg)
     break;
 
   default :
-    sprintf(errBuff, "Unable to marshal Scheme value into VARIANT: 0x%X",
+    sprintf(errBuff, "Unable to marshal Racket value into VARIANT: 0x%X",
             pVariantArg->vt);
     scheme_signal_error(errBuff);
   }
@@ -3191,7 +3191,7 @@ Scheme_Object *variantToSchemeObject(VARIANTARG *pVariantArg)
     return mx_make_iunknown(pVariantArg->punkVal);
 
   default :
-    sprintf(errBuff, "Can't make Scheme value from VARIANT 0x%X",
+    sprintf(errBuff, "Can't make Racket value from VARIANT 0x%X",
             pVariantArg->vt);
     scheme_signal_error(errBuff);
 
@@ -3202,7 +3202,7 @@ Scheme_Object *variantToSchemeObject(VARIANTARG *pVariantArg)
 
 // different than the above function.
 // *here* we're coercing VARIANTARG's to be arguments to
-// Scheme procedures; *there*, we're coercing a VARIANT
+// Racket procedures; *there*, we're coercing a VARIANT
 // return value to be the value of a method call, and
 // VARIANT's, unlike VARIANTARG's, cannot have VT_BYREF bit
 
@@ -3333,7 +3333,7 @@ Scheme_Object *variantArgToSchemeObject(VARIANTARG *pVariantArg) {
     return scheme_box(variantArgToSchemeObject(pVariantArg->pvarVal));
 
   default :
-    wsprintf(errBuff, "Can't make Scheme value from VARIANT 0x%X",
+    wsprintf(errBuff, "Can't make Racket value from VARIANT 0x%X",
              pVariantArg->vt);
     scheme_signal_error(errBuff);
   }
@@ -3427,7 +3427,7 @@ void unmarshalArgSchemeObject(Scheme_Object *obj,VARIANTARG *pVariantArg) {
 
   case VT_BSTR :
 
-    // string passed to Scheme can be updated in-place
+    // string passed to Racket can be updated in-place
 
     BSTR bstr;
 
@@ -3725,7 +3725,7 @@ void unmarshalVariant(Scheme_Object *val, VARIANTARG *pVariantArg)
 }
 
 // Build the DISPPARAMS by filling out the fields
-// according to the Scheme type of object.
+// according to the Racket type of object.
 // No optional or named args, no type checking.
 short int buildMethodArgumentsUsingDefaults(INVOKEKIND invKind,
                                             int argc, Scheme_Object **argv,
@@ -3774,7 +3774,7 @@ short int buildMethodArgumentsUsingDefaults(INVOKEKIND invKind,
     methodArguments->rgvarg = va;
   }
 
-  // marshal Scheme argument list into COM argument list
+  // marshal Racket argument list into COM argument list
   // arguments are in reverse order in rgvarg
 
   for (i = 0, j = numParamsPassed - 1, k = 2; i < argc - 2; i++, j--, k++) {
@@ -3955,7 +3955,7 @@ short int buildMethodArgumentsUsingFuncDesc(FUNCDESC *pFuncDesc,
     methodArguments->rgvarg = va;
   }
 
-  // marshal Scheme argument list into COM argument list
+  // marshal Racket argument list into COM argument list
   // arguments are in reverse order in rgvarg
 
   for (i = 0, j = numParamsPassed - 1, k = 2; i < argc - 2; i++, j--, k++) {
@@ -4069,7 +4069,7 @@ short int buildMethodArgumentsUsingVarDesc(VARDESC *pVarDesc,
     methodArguments->rgvarg = va;
   }
 
-  // marshal Scheme argument list into COM argument list
+  // marshal Racket argument list into COM argument list
 
   for (i = 0, j = numParamsPassed - 1, k = 2; i < numParamsPassed; i++, j--, k++) {
 
@@ -5342,7 +5342,7 @@ Scheme_Object *scheme_reload(Scheme_Env *env)
 
   if (0 && isatty(fileno(stdin))) {
     fprintf(stderr,
-            "MysterX extension for PLT Scheme, "
+            "MysterX extension for Racket, "
             "Copyright (c) 1999-2003 PLT (Paul Steckler)\n");
   }
 

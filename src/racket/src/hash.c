@@ -1791,7 +1791,7 @@ intptr_t scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data)
 /*========================================================================*/
 
 /* Direct port of red-black trees in Jens Axel Soegaard's "galore" package,
-   which implemented in Scheme (5th may 2006 version) and says:
+   which implemented in Racket (5th may 2006 version) and says:
    
    ; This is direct port of Jean-Christophe Filliatre's implementation
    ; of red-black trees in Ocaml. */
@@ -2158,7 +2158,7 @@ static RBNode *remove_min(RBNode *s, RBNode **_m, int *_bh_dec)
     *_m = s;
     return s->right;
   }
-  /* covers last two cases of Scheme code: */
+  /* covers last two cases of Racket code: */
   {
     int left_bh_dec;
     RBNode *l1, *t;

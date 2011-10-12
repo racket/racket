@@ -11,7 +11,7 @@
 ;; can't see them. If "stypes.h" changes, then "mz-gdbinit" needs
 ;; to be re-built.
 
-(require scheme/runtime-path)
+(require racket/runtime-path)
 
 (define-runtime-path stypes-path "src/stypes.h")
 

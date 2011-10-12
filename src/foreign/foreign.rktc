@@ -5,7 +5,7 @@ exec racket "$0" > `echo "$0" | sed 's/rktc$/c/'` "$0"
 
 #lang scribble/text
 
-@(require "rktc-utils.ss")
+@(require "rktc-utils.rkt")
 
 @header{foreign.rktc}
 
@@ -496,7 +496,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
                (cadr args))]
             [else (loop (cddr args))])))
   (let* ([stype (symbol->string type)]
-         [cname (scheme-id->c-name stype)]
+         [cname (racket-id->c-name stype)]
          [ftype (prop 'ftype cname)]
          [ctype (prop 'ctype
                       (regexp-replace
@@ -911,7 +911,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 /* (make-cstruct-type types [abi alignment]) -> ctype */
 /* This creates a new primitive type that is a struct.  This type can be used
  * with cpointer objects, except that the contents is used rather than the
- * pointer value.  Marshaling to lists or whatever should be done in Scheme. */
+ * pointer value.  Marshaling to lists or whatever should be done in Racket. */
 @cdefine[make-cstruct-type 1 3]{
   Scheme_Object *p, *base;
   /* since ffi_type objects can be used in callbacks, they are allocated using
@@ -983,7 +983,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 /* This creates a new primitive type that is an array. An array is the
  * same as a cpointer as an argument, but it behave differently within
  * a struct or for allocation. Marshaling to lists or whatever should 
- * be done in Scheme. */
+ * be done in Racket. */
 @cdefine[make-array-type 2 2]{
   Scheme_Object *base, *basetype;
   GC_CAN_IGNORE ffi_type *libffi_type, **elements;
@@ -1046,7 +1046,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 /* (make-union-type type ...+) -> ctype */
 /* This creates a new primitive type that is a union. All unions
  * behave like structs. Marshaling to lists or whatever should 
- * be done in Scheme. */
+ * be done in Racket. */
 @cdefine[make-union-type 1 -1]{
   Scheme_Object *base, *basetype;
   GC_CAN_IGNORE ffi_type *libffi_type, **elements;
@@ -1913,8 +1913,8 @@ static Scheme_Object *do_memop(const char *who, int mode,
                                        len, 0);
 }
 
-/* *** Calling Scheme code while the GC is working leads to subtle bugs, so
-   *** this is implemented now in Scheme using will executors. */
+/* *** Calling Racket code while the GC is working leads to subtle bugs, so
+   *** this is implemented now in Racket using will executors. */
 
 /* internal: apply Scheme finalizer */
 void do_scm_finalizer(void *p, void *finalizer)
@@ -2049,7 +2049,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
    * overwritten, but from that point on it is all C code so there is no
    * problem.  Hopefully.
    * (Things get complicated if the C call can involve GC (usually due to a
-   * Scheme callback), but then the programmer need to arrange for pointers
+   * Racket callback), but then the programmer need to arrange for pointers
    * that cannot move.  Because of all this, the *only* array that should not
    * be ignored by the GC is avalues.)
    */
@@ -2239,7 +2239,7 @@ static Scheme_Object *ffi_name_prefix = NULL;
 }
 
 /*****************************************************************************/
-/* Scheme callbacks */
+/* Racket callbacks */
 
 typedef void (*ffi_callback_t)(ffi_cif* cif, void* resultp, void** args, void *userdata);
 
@@ -2295,7 +2295,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
 #ifdef MZ_USE_MZRT
 
 /* When OS-level thread support is avaiable, support callbacks
-   in foreign threads that are executed on the main Scheme thread. */
+   in foreign threads that are executed on the main Racket thread. */
 
 typedef struct Queued_Callback {
   ffi_cif* cif;
@@ -2487,7 +2487,7 @@ void free_cl_cif_queue_args(void *ignored, void *p)
    * problem is that memory that is GC-visible can move at any time.  The
    * solution is to use an immobile-box, which an immobile pointer (in a simple
    * malloced block), which points to the ffi_callback_struct that contains the
-   * relevant Scheme call details.  Another minor complexity is that an
+   * relevant Racket call details.  Another minor complexity is that an
    * immobile box serves as a reference for the GC, which means that nothing
    * will ever get collected: and the solution for this is to stick a weak-box
    * in the chain.  Users need to be aware of GC issues, and need to keep a
@@ -2508,7 +2508,7 @@ void free_cl_cif_queue_args(void *ignored, void *p)
    *      |                 :     |          |
    *      |                 :     \--> ffi_callback_struct
    *      |                 :               |  |
-   *      V                 :               |  \-----> Scheme Closure
+   *      V                 :               |  \-----> Racket Closure
    *     cif ---> atypes    :               |
    *                        :               \--------> input/output types
    */

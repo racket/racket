@@ -7839,7 +7839,7 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
                           continuation was composed */
   p->next_meta += delta;
 
-  /* Don't run Scheme-based dyn-winds when we're killing a nested thread. */
+  /* Don't run Racket-based dyn-winds when we're killing a nested thread. */
   if (err && p->cjs.is_kill && (post == post_dyn_wind))
     post = NULL;
 

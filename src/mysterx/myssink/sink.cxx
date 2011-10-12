@@ -242,7 +242,7 @@ HRESULT CSink::Invoke(DISPID dispId, REFIID, LCID, WORD,
     ---------------------------------
 
      these are in reverse order from the order
-     given to Scheme
+     given to Racket
 
   */
 

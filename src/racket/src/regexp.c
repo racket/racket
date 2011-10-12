@@ -5015,7 +5015,7 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 }
 
 /************************************************************/
-/*                   Scheme front end                       */
+/*                   Racket front end                       */
 /************************************************************/
 
 int scheme_is_pregexp(Scheme_Object *o)

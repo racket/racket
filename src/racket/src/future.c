@@ -105,7 +105,7 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[])
       mz_jmp_buf newbuf, * volatile savebuf;
       Scheme_Thread *p = scheme_current_thread;
       
-      /* In case another Scheme thread touches the future. */
+      /* In case another Racket thread touches the future. */
       sema = scheme_make_sema(0);
       ft->running_sema = sema;
 
@@ -1545,7 +1545,7 @@ Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object **argv)
 }
 
 static int fsemaphore_ready(Scheme_Object *obj) 
-/* Called in runtime thread by Scheme scheduler */
+/* Called in runtime thread by Racket scheduler */
 {
   int ret = 0;
   fsemaphore_t *fsema = (fsemaphore_t*)obj;
@@ -1557,7 +1557,7 @@ static int fsemaphore_ready(Scheme_Object *obj)
 
 
 int future_ready(Scheme_Object *obj)
-/* Called in runtime thread by Scheme scheduler */
+/* Called in runtime thread by Racket scheduler */
 {
   Scheme_Future_State *fs = scheme_future_state;
   int ret = 0;
@@ -2226,7 +2226,7 @@ void scheme_check_future_work()
 /* Called in the runtime thread by the scheduler */
 {
   /* Check for work that future threads need from the runtime thread
-     and that can be done in any Scheme thread (e.g., get a new page
+     and that can be done in any Racket thread (e.g., get a new page
      for allocation). */
   future_t *ft, *other_ft;
   Scheme_Future_State *fs = scheme_future_state;

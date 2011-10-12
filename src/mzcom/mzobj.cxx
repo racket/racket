@@ -1,7 +1,7 @@
 // mzobj.cxx : Implementation of CMzObj
 
 #ifdef MZCOM_3M
-/* xform.ss converts this file to mzobj3m.cxx: */
+/* xform.rkt converts this file to mzobj3m.cxx: */
 # define i64 /* ??? why does expansion produce i64? */
 # include "mzobj3m.cxx"
 #else
@@ -145,7 +145,7 @@ void setupSchemeEnv(Scheme_Env *in_env)
   env = in_env;
 
   if (env == NULL) {
-    ErrorBox("Can't create Scheme environment");
+    ErrorBox("Can't create Racket environment");
     _endthreadex(0);
   }
 
@@ -481,7 +481,7 @@ STDMETHODIMP CMzObj::Eval(BSTR input, BSTR *output) {
   // wait until evaluator done or eval thread terminated
   if (WaitForMultipleObjects(2,evalDoneSems,FALSE,INFINITE) ==
       WAIT_OBJECT_0 + 1) {
-    RaiseError(L"Scheme terminated evaluator");
+    RaiseError(L"Racket terminated evaluator");
     return E_FAIL;
   }
 

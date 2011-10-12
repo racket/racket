@@ -7606,7 +7606,7 @@ void scheme_simplify_stx(Scheme_Object *stx, Scheme_Object *cache)
 }
 
 /*========================================================================*/
-/*                    Scheme functions and helpers                        */
+/*                    Racket functions and helpers                        */
 /*========================================================================*/
 
 static Scheme_Object *syntax_p(int argc, Scheme_Object **argv)

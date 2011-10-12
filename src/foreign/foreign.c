@@ -1078,7 +1078,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 /* (make-cstruct-type types [abi alignment]) -> ctype */
 /* This creates a new primitive type that is a struct.  This type can be used
  * with cpointer objects, except that the contents is used rather than the
- * pointer value.  Marshaling to lists or whatever should be done in Scheme. */
+ * pointer value.  Marshaling to lists or whatever should be done in Racket. */
 #define MYNAME "make-cstruct-type"
 static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
 {
@@ -1155,7 +1155,7 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
 /* This creates a new primitive type that is an array. An array is the
  * same as a cpointer as an argument, but it behave differently within
  * a struct or for allocation. Marshaling to lists or whatever should
- * be done in Scheme. */
+ * be done in Racket. */
 #define MYNAME "make-array-type"
 static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
 {
@@ -1223,7 +1223,7 @@ static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
 /* (make-union-type type ...+) -> ctype */
 /* This creates a new primitive type that is a union. All unions
  * behave like structs. Marshaling to lists or whatever should
- * be done in Scheme. */
+ * be done in Racket. */
 #define MYNAME "make-union-type"
 static Scheme_Object *foreign_make_union_type(int argc, Scheme_Object *argv[])
 {
@@ -2559,8 +2559,8 @@ static Scheme_Object *foreign_make_sized_byte_string(int argc, Scheme_Object *ar
 }
 #undef MYNAME
 
-/* *** Calling Scheme code while the GC is working leads to subtle bugs, so
-   *** this is implemented now in Scheme using will executors. */
+/* *** Calling Racket code while the GC is working leads to subtle bugs, so
+   *** this is implemented now in Racket using will executors. */
 
 /* internal: apply Scheme finalizer */
 void do_scm_finalizer(void *p, void *finalizer)
@@ -2694,7 +2694,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
    * overwritten, but from that point on it is all C code so there is no
    * problem.  Hopefully.
    * (Things get complicated if the C call can involve GC (usually due to a
-   * Scheme callback), but then the programmer need to arrange for pointers
+   * Racket callback), but then the programmer need to arrange for pointers
    * that cannot move.  Because of all this, the *only* array that should not
    * be ignored by the GC is avalues.)
    */
@@ -2887,7 +2887,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
 #undef MYNAME
 
 /*****************************************************************************/
-/* Scheme callbacks */
+/* Racket callbacks */
 
 typedef void (*ffi_callback_t)(ffi_cif* cif, void* resultp, void** args, void *userdata);
 
@@ -2943,7 +2943,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
 #ifdef MZ_USE_MZRT
 
 /* When OS-level thread support is avaiable, support callbacks
-   in foreign threads that are executed on the main Scheme thread. */
+   in foreign threads that are executed on the main Racket thread. */
 
 typedef struct Queued_Callback {
   ffi_cif* cif;
@@ -3137,7 +3137,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
      * problem is that memory that is GC-visible can move at any time.  The
      * solution is to use an immobile-box, which an immobile pointer (in a simple
      * malloced block), which points to the ffi_callback_struct that contains the
-     * relevant Scheme call details.  Another minor complexity is that an
+     * relevant Racket call details.  Another minor complexity is that an
      * immobile box serves as a reference for the GC, which means that nothing
      * will ever get collected: and the solution for this is to stick a weak-box
      * in the chain.  Users need to be aware of GC issues, and need to keep a
@@ -3158,7 +3158,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
      *      |                 :     |          |
      *      |                 :     \--> ffi_callback_struct
      *      |                 :               |  |
-     *      V                 :               |  \-----> Scheme Closure
+     *      V                 :               |  \-----> Racket Closure
      *     cif ---> atypes    :               |
      *                        :               \--------> input/output types
      */

@@ -1421,7 +1421,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 }
 
 /*========================================================================*/
-/*                           scheme functions                             */
+/*                           Racket functions                             */
 /*========================================================================*/
 
 static Scheme_Object *

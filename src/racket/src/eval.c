@@ -103,7 +103,7 @@
    The fourth pass, "sfs", performs another liveness analysis on stack
    slots and inserts operations to clear stack slots as necessary to
    make execution safe for space. In particular, dead slots need to be
-   cleared before a non-tail call into arbitrary Scheme code. This pass
+   cleared before a non-tail call into arbitrary Racket code. This pass
    can mutate the result of the "resolve" pass. See "sfs.c".
 
    Bytecode marshaling and validation:
@@ -1469,7 +1469,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     MZ_RUNSTACK = old_runstack;
     return scheme_compose_continuation(c, num_rands, value);
   } else {
-    /* Aborting (Scheme-style) continuation. */
+    /* Aborting (Racket-style) continuation. */
     int orig_cac = scheme_continuation_application_count;
 
     scheme_about_to_move_C_stack();

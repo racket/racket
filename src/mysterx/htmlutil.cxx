@@ -1,7 +1,7 @@
 // htmlutil.cxx
 
 #ifdef MYSTERX_3M
-// Created by xform.ss:
+// Created by xform.rkt:
 # include "xsrc/htmlutil3m.cxx"
 #else
 

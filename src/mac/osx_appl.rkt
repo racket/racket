@@ -10,7 +10,7 @@
 
 (module osx_appl mzscheme
 
-  (require (lib "plist.ss" "xml")
+  (require (lib "plist.rkt" "xml")
 	   mzlib/process
 	   mzlib/file)
 

@@ -1,7 +1,7 @@
 // bstr.cxx -- BSTR utility functions
 
 #ifdef MYSTERX_3M
-// Created by xform.ss:
+// Created by xform.rkt:
 # include "xsrc/bstr3m.cxx"
 #else
 

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(printf "/* Generated from gc-trav.ss */\n\n")
+(printf "/* Generated from gc-trav.rkt */\n\n")
 
 (define types
   '([mx_com_object_type MX_COM_Object (types)]

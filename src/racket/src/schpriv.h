@@ -593,7 +593,7 @@ typedef struct Scheme_Security_Guard {
 
 /* Always allocated on the stack: */
 typedef struct {
-  Scheme_Thread *false_positive_ok;  /* non-zero => return 1 to swap in thread rather than running Scheme code */
+  Scheme_Thread *false_positive_ok;  /* non-zero => return 1 to swap in thread rather than running Racket code */
   int potentially_false_positive; /* => returning 1 to swap thread in, but truth may be 0 */
   Scheme_Object *current_syncing;
   double sleep_end;
@@ -653,7 +653,7 @@ Scheme_Custodian* scheme_custodian_extract_reference(Scheme_Custodian_Reference 
 #define GLOB_HAS_REF_ID 16
 /* can cast to Scheme_Bucket_With_Home: */
 #define GLOB_HAS_HOME_PTR 32
-/* Scheme-level constant (cannot be changed further): */
+/* Racket-level constant (cannot be changed further): */
 #define GLOB_IS_IMMUTATED 64
 /* Linked from other (cannot be undefined): */
 #define GLOB_IS_LINKED 128

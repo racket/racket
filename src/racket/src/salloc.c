@@ -1393,7 +1393,7 @@ static void do_next_finalization(void *o, void *_data)
 
   if (fns->scheme_first) {
     if (fns->scheme_first->next || fns->ext_f || fns->prim_first) {
-      /* Re-install low-level finalizer and run a scheme finalizer */
+      /* Re-install low-level finalizer and run a Racket finalizer */
       GC_register_eager_finalizer(o, fns->scheme_first->next ? 1 : 2, 
 				  do_next_finalization, _data, NULL, NULL);
     }

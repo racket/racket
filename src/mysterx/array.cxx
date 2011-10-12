@@ -1,7 +1,7 @@
 // array.cxx
 
 #ifdef MYSTERX_3M
-// Created by xform.ss:
+// Created by xform.rkt:
 # include "xsrc/array3m.cxx"
 #else
 
@@ -135,7 +135,7 @@ Scheme_Object *safeArrayElementToSchemeObject(SAFEARRAY *theArray,
 
   default :
     sprintf(errBuff,
-            "Can't make Scheme value from array element with type 0x%X",
+            "Can't make Racket value from array element with type 0x%X",
             vt);
     scheme_signal_error(errBuff);
 
@@ -312,7 +312,7 @@ void* variantDataPointer(VARTYPE vt,VARIANTARG *pVariantArg)
     scheme_signal_error("unable to marshal VT_PTR");
     break;
   default :
-    sprintf(errBuff, "Unable to marshal Scheme value into VARIANT: 0x%X",
+    sprintf(errBuff, "Unable to marshal Racket value into VARIANT: 0x%X",
             pVariantArg->vt);
     scheme_signal_error(errBuff);
   }
@@ -339,7 +339,7 @@ VARTYPE schemeValueToCOMType(Scheme_Object* val)
   else if (MX_IUNKNOWNP(val))          return VT_UNKNOWN;
   else if (SCHEME_VECTORP(val)) return getSchemeVectorType(val);
   else
-    scheme_signal_error("Unable to inject Scheme value %V into VARIANT", val);
+    scheme_signal_error("Unable to inject Racket value %V into VARIANT", val);
 
   return VT_VARIANT;
 }

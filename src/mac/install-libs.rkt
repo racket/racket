@@ -2,7 +2,10 @@
 (require racket/system)
 
 (define from (vector-ref (current-command-line-arguments) 0))
-(define to (path->string (simplify-path (build-path (collection-path "scheme") 'up 'up "lib/") #f)))
+(define to
+  (path->string (simplify-path (build-path (collection-path "racket")
+                                           'up 'up "lib/")
+                               #f)))
 
 (define libs
   '("libgio-2.0.0"

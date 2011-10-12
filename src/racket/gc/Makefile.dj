@@ -123,7 +123,7 @@ CFLAGS= -gstabs+ -O2 -I$(srcdir)/include -DATOMIC_UNCOLLECTABLE -DALL_INTERIOR_P
 #   the headers to minimize object size, at the expense of checking for
 #   writes past the end of an object.  This is intended for environments
 #   in which most client code is written in a "safe" language, such as
-#   Scheme or Java.  Assumes that all client allocation is done using
+#   Racket or Java.  Assumes that all client allocation is done using
 #   the GC_debug_ functions (or through the macros that expand to these.
 #   (Also eliminates the field for the requested object size.)
 #   occasionally be useful for debugging of client code.  Slows down the

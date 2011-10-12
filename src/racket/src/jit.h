@@ -624,7 +624,7 @@ int check_location;
    circumstances:
 
    * They can only be used within a function (normally corresponding
-     to a Scheme lambda) where mz_push_locals() has been called after
+     to a Racket lambda) where mz_push_locals() has been called after
      jit_prolog(), and where mz_pop_locals() is called before
      jit_ret().
 

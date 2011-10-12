@@ -35,8 +35,8 @@
 (define (DEFINE . t) @list{@disable-prefix{#}define @t})
 (define (UNDEF  . t) @list{@disable-prefix{#}undef @t})
 
-(provide scheme-id->c-name)
-(define (scheme-id->c-name str)
+(provide racket-id->c-name)
+(define (racket-id->c-name str)
   (set! str (format "~a" str))
   (for ([subst '([#rx"->" "_to_"] [#rx"[-/]" "_"] [#rx"\\*" "S"]
                  [#rx"\\?$" "_p"] [#rx"!$" "_bang"])])
@@ -51,7 +51,7 @@
 (provide cfunctions)
 (define cfunctions (make-parameter '()))
 (define (_cdefine name minargs maxargs . body)
-  (define cname @list{foreign_@(scheme-id->c-name name)})
+  (define cname @list{foreign_@(racket-id->c-name name)})
   (cfunctions (cons (list name cname minargs maxargs) (cfunctions)))
   @list{@disable-prefix{#define MYNAME "@name"}
         static Scheme_Object *@|cname|(int argc, Scheme_Object *argv[])

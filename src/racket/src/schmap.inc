@@ -3,7 +3,7 @@
 
 /*
  DO_MAP = C function name
- MAP_NAME = Scheme function name as string
+ MAP_NAME = Racket function name as string
  MAP_MODE => map
  FOR_EACH_MODE => for-each
  AND_MODE => and mode

@@ -725,7 +725,7 @@ scheme_get_string_output(Scheme_Object *port)
 }
 
 /*========================================================================*/
-/*                 "user" input ports (created from Scheme)               */
+/*                 "user" input ports (created from Racket)               */
 /*========================================================================*/
 
 typedef struct User_Input_Port {
@@ -1223,7 +1223,7 @@ user_input_buffer_mode(Scheme_Port *p, int mode)
 }
 
 /*========================================================================*/
-/*                 "user" output ports (created from Scheme)              */
+/*                 "user" output ports (created from Racket)              */
 /*========================================================================*/
 
 typedef struct User_Output_Port {
@@ -2143,7 +2143,7 @@ static int pipe_output_p(Scheme_Object *o)
 }
 
 /*========================================================================*/
-/*                    Scheme functions and helpers                        */
+/*                    Racket functions and helpers                        */
 /*========================================================================*/
 
 static Scheme_Object *

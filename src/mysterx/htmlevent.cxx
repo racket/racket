@@ -1,7 +1,7 @@
 // event.cpp -- event-related functions
 
 #ifdef MYSTERX_3M
-// Created by xform.ss:
+// Created by xform.rkt:
 # include "xsrc/htmlevent3m.cxx"
 #else
 

@@ -1546,7 +1546,7 @@ static int output_ready(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
     return 1;
 
   if (SAME_OBJ(scheme_user_output_port_type, op->sub_type)) {
-    /* We can't call the normal ready because that might run Scheme
+    /* We can't call the normal ready because that might run Racket
        code, and this function is called by the scheduler when
        false_pos_ok is true. So, in that case, we assume that if the
        port's evt is ready, then the port is ready. (After
@@ -1589,7 +1589,7 @@ int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info 
     return 1;
 
   if (SAME_OBJ(scheme_user_input_port_type, ip->sub_type)) {
-    /* We can't call the normal byte_ready because that runs Scheme
+    /* We can't call the normal byte_ready because that runs Racket
        code, and this function is called by the scheduler when
        false_pos_ok is true. So, in that case, we assume that if the
        port's evt is ready, then the port is ready. (After

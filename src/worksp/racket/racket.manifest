@@ -2,7 +2,7 @@
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity version="5.2.0.1"
                     processorArchitecture="X86"
-                    name="Org.PLT-Scheme.Racket"
+                    name="Org.Racket-Lang.Racket"
                     type="win32" />
   <description>Racket.</description>
   <!-- Avoid UAC -->

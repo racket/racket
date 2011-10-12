@@ -1574,7 +1574,7 @@ make_tcp_output_port(void *data, const char *name, Scheme_Object *cust)
 #endif /* USE_TCP */
 
 /*========================================================================*/
-/*                         TCP Scheme interface                           */
+/*                         TCP Racket interface                           */
 /*========================================================================*/
 
 #ifdef USE_SOCKETS_TCP
@@ -2451,7 +2451,7 @@ static Scheme_Object *tcp_abandon_port(int argc, Scheme_Object *argv[])
       return scheme_void;
     }
   } else if (SCHEME_INPUT_PORTP(argv[0])) {
-    /* Abandon is not really useful on input ports from the Schemer's
+    /* Abandon is not really useful on input ports from the Racketeer's
        perspective, but it's here for completeness. */
     Scheme_Input_Port *ip;
     ip = scheme_input_port_record(argv[0]);

@@ -1433,7 +1433,7 @@ const char *scheme_look_for_primitive(void *code)
 }
 
 /*========================================================================*/
-/*             run-time and expansion-time Scheme interface               */
+/*             run-time and expansion-time Racket interface               */
 /*========================================================================*/
 
 static Scheme_Object *

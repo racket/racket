@@ -1306,7 +1306,7 @@ if test "${inplacebuild}" = "yes" ; then
 else
   echo ">>> Installation targets:"
   echo " executables  : ${bindir}/..."
-  echo " Scheme code  : ${collectsdir}/..."
+  echo " Racket code  : ${collectsdir}/..."
   echo " core docs    : ${docdir}/..."
   echo " C libraries  : ${libdir}/..."
   echo " C headers    : ${includepltdir}/..."

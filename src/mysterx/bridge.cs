@@ -23,7 +23,7 @@ namespace SchemeBridge
   // .NET methods like GetType() or ToString() won't work.
 
   // The BridgeWrapper object, being a bona fide .NET object
-  // will have those methods.  The Scheme interface knows about
+  // will have those methods.  The Racket interface knows about
   // BridgeWrappers specially and presents the illusion that
   // they aren't there.
 
@@ -1961,8 +1961,8 @@ public class GUIHelper {
 //
 // In order to behave like an official .NET GUI object, you have to
 // inherit from the .NET GUI hierarchy.  I can't create one of these
-// objects from Scheme, so I have to create it here and use this as a
-// proxy object back to Scheme.
+// objects from Racket, so I have to create it here and use this as a
+// proxy object back to Racket.
 /////////////////////////////////////
 
   public unsafe class ControlProxy : System.Windows.Forms.Control
@@ -1980,7 +1980,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2011,7 +2011,7 @@ public class GUIHelper {
           Marshal.WriteIntPtr (buffer, 12, scheme_control.MarshalManagedToNative (e.Delta));
           Marshal.WriteIntPtr (buffer, 16, scheme_control.MarshalManagedToNative (e.X));
           Marshal.WriteIntPtr (buffer, 20, scheme_control.MarshalManagedToNative (e.Y));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
 
           Scheme.scheme_apply (scheme_control, 6, buffer);
           }
@@ -2027,7 +2027,7 @@ public class GUIHelper {
           buffer = Marshal.AllocCoTaskMem (8);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
           Marshal.WriteIntPtr (buffer, 4, scheme_control.MarshalManagedToNative (e.Cancel));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
 
           Scheme.scheme_apply (scheme_control, 2, buffer);
           }
@@ -2042,7 +2042,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2059,7 +2059,7 @@ public class GUIHelper {
           // other things go here
           Marshal.WriteIntPtr (buffer, 8, scheme_control.MarshalManagedToNative (e.X));
           Marshal.WriteIntPtr (buffer, 12, scheme_control.MarshalManagedToNative (e.Y));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 3, buffer);
           }
       finally {
@@ -2073,7 +2073,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2087,7 +2087,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2101,7 +2101,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2115,7 +2115,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2129,7 +2129,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2143,7 +2143,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2157,7 +2157,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2171,7 +2171,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2188,7 +2188,7 @@ public class GUIHelper {
           Marshal.WriteIntPtr (buffer, 4, scheme_control.MarshalManagedToNative (e.HelpKeyword));
           Marshal.WriteIntPtr (buffer, 8, scheme_control.MarshalManagedToNative (e.HelpNamespace));
           Marshal.WriteIntPtr (buffer, 12, scheme_control.MarshalManagedToNative (e.HelpString));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 4, buffer);
           }
       finally {
@@ -2202,7 +2202,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2216,7 +2216,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2230,7 +2230,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_control.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_control, 1, buffer);
           }
       finally {
@@ -2661,7 +2661,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2692,7 +2692,7 @@ public class GUIHelper {
           Marshal.WriteIntPtr (buffer, 12, scheme_form.MarshalManagedToNative (e.Delta));
           Marshal.WriteIntPtr (buffer, 16, scheme_form.MarshalManagedToNative (e.X));
           Marshal.WriteIntPtr (buffer, 20, scheme_form.MarshalManagedToNative (e.Y));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 6, buffer);
           }
       finally {
@@ -2707,7 +2707,7 @@ public class GUIHelper {
           buffer = Marshal.AllocCoTaskMem (8);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
           Marshal.WriteIntPtr (buffer, 4, scheme_form.MarshalManagedToNative (e.Cancel));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 2, buffer);
           }
       finally {
@@ -2721,7 +2721,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2738,7 +2738,7 @@ public class GUIHelper {
           // other things go here
           Marshal.WriteIntPtr (buffer, 4, scheme_form.MarshalManagedToNative (e.X));
           Marshal.WriteIntPtr (buffer, 8, scheme_form.MarshalManagedToNative (e.Y));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 3, buffer);
           }
       finally {
@@ -2752,7 +2752,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2766,7 +2766,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2780,7 +2780,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2794,7 +2794,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2808,7 +2808,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2822,7 +2822,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2836,7 +2836,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2850,7 +2850,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2864,7 +2864,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2878,7 +2878,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -2892,7 +2892,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3318,7 +3318,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3349,7 +3349,7 @@ public class GUIHelper {
           Marshal.WriteIntPtr (buffer, 12, scheme_form.MarshalManagedToNative (e.Delta));
           Marshal.WriteIntPtr (buffer, 16, scheme_form.MarshalManagedToNative (e.X));
           Marshal.WriteIntPtr (buffer, 20, scheme_form.MarshalManagedToNative (e.Y));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 6, buffer);
           }
       finally {
@@ -3364,7 +3364,7 @@ public class GUIHelper {
           buffer = Marshal.AllocCoTaskMem (8);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
           Marshal.WriteIntPtr (buffer, 4, scheme_form.MarshalManagedToNative (e.Cancel));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 2, buffer);
           }
       finally {
@@ -3378,7 +3378,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3395,7 +3395,7 @@ public class GUIHelper {
           // other things go here
           Marshal.WriteIntPtr (buffer, 4, scheme_form.MarshalManagedToNative (e.X));
           Marshal.WriteIntPtr (buffer, 8, scheme_form.MarshalManagedToNative (e.Y));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 3, buffer);
           }
       finally {
@@ -3409,7 +3409,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3423,7 +3423,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3437,7 +3437,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3451,7 +3451,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3465,7 +3465,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3479,7 +3479,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3493,7 +3493,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3507,7 +3507,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3521,7 +3521,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3535,7 +3535,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -3549,7 +3549,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4058,7 +4058,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4097,7 +4097,7 @@ public class GUIHelper {
           Marshal.WriteIntPtr (buffer, 12, scheme_form.MarshalManagedToNative (e.Delta));
           Marshal.WriteIntPtr (buffer, 16, scheme_form.MarshalManagedToNative (e.X));
           Marshal.WriteIntPtr (buffer, 20, scheme_form.MarshalManagedToNative (e.Y));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 6, buffer);
           }
       finally {
@@ -4116,7 +4116,7 @@ public class GUIHelper {
           buffer = Marshal.AllocCoTaskMem (8);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
           Marshal.WriteIntPtr (buffer, 4, scheme_form.MarshalManagedToNative (e.Cancel));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 2, buffer);
           }
       finally {
@@ -4134,7 +4134,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4152,7 +4152,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4173,7 +4173,7 @@ public class GUIHelper {
           // other things go here
           Marshal.WriteIntPtr (buffer, 4, scheme_form.MarshalManagedToNative (e.X));
           Marshal.WriteIntPtr (buffer, 8, scheme_form.MarshalManagedToNative (e.Y));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 3, buffer);
           }
       finally {
@@ -4191,7 +4191,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4209,7 +4209,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4227,7 +4227,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4245,7 +4245,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4263,7 +4263,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4281,7 +4281,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4299,7 +4299,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4317,7 +4317,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4336,7 +4336,7 @@ public class GUIHelper {
           buffer = Marshal.AllocCoTaskMem (8);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
           Marshal.WriteIntPtr (buffer, 4, scheme_form.MarshalManagedToNative (e.LinkText));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 2, buffer);
           }
       finally {
@@ -4354,7 +4354,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4372,7 +4372,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {
@@ -4390,7 +4390,7 @@ public class GUIHelper {
       try {
           buffer = Marshal.AllocCoTaskMem (4);
           Marshal.WriteIntPtr (buffer, 0, scheme_form.MarshalManagedToNative (event_name));
-          // Console.WriteLine ("Notify scheme of " + event_name);
+          // Console.WriteLine ("Notify racket of " + event_name);
           Scheme.scheme_apply (scheme_form, 1, buffer);
           }
       finally {

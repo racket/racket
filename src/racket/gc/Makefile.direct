@@ -216,7 +216,7 @@ HOSTCFLAGS=$(CFLAGS)
 #   the headers to minimize object size, at the expense of checking for
 #   writes past the end of an object.  This is intended for environments
 #   in which most client code is written in a "safe" language, such as
-#   Scheme or Java.  Assumes that all client allocation is done using
+#   Racket or Java.  Assumes that all client allocation is done using
 #   the GC_debug_ functions, or through the macros that expand to these,
 #   or by redirecting malloc to GC_debug_malloc_replacement.
 #   (Also eliminates the field for the requested object size.)

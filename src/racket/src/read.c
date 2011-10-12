@@ -147,7 +147,7 @@ typedef struct Readtable {
   Scheme_Object so;
   Scheme_Hash_Table *mapping; /* pos int -> (cons int proc-or-char); neg int -> proc */
   char *fast_mapping;
-  Scheme_Object *symbol_parser; /* NULL or a Scheme function */
+  Scheme_Object *symbol_parser; /* NULL or a Racket function */
   char **names; /* error-message names */
 } Readtable;
 

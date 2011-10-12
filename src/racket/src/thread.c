@@ -100,7 +100,7 @@ THREAD_LOCAL_DECL(extern void *scheme_break_semaphore;)
 # define SENORA_GC_NO_FREE
 #endif
 
-/* If a finalization callback invokes Scheme code,
+/* If a finalization callback invokes Racket code,
    we can end up with a thread swap in the middle of a thread
    swap (where the outer swap was interrupted by GC). The
    following is a debugging flag to help detect and fix
@@ -592,7 +592,7 @@ void scheme_init_memtrace(Scheme_Env *env)
 void scheme_init_inspector() {
   REGISTER_SO(initial_inspector);
   initial_inspector = scheme_make_initial_inspectors();
-  /* Keep the initial inspector in case someone resets Scheme (by
+  /* Keep the initial inspector in case someone resets Racket (by
      calling scheme_basic_env() a second time. Using the same
      inspector after a reset lets us use the same initial module
      instances. */
@@ -6402,7 +6402,7 @@ static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
 static Scheme_Object *reparameterize(int argc, Scheme_Object **argv)
 {
   /* Clones values of all built-in parameters in a new parameterization.
-     This could be implemented in Scheme by enumerating all built-in parameters,
+     This could be implemented in Racket by enumerating all built-in parameters,
      but it's easier and faster here. We need this for the Planet resolver. */
   Scheme_Config *c, *naya;
   Scheme_Parameterization *pz, *npz;

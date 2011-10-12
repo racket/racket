@@ -26,7 +26,7 @@
 #include "schpriv.h"
 #include "schminc.h"
 
-/* On the Mac, 68K, store the built-in Scheme code as pc-relative */
+/* On the Mac, 68K, store the built-in Racket code as pc-relative */
 #if defined(__MWERKS__)
 #if !defined(__POWERPC__)
 #pragma pcrelstrings on
