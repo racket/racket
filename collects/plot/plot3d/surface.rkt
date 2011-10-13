@@ -23,8 +23,8 @@
 (define ((surface3d-render-proc f samples color style line-color line-width line-style alpha label)
          area)
   (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
-  (match-define (list xs ys zss) (f x-min x-max (samples/animating? samples)
-                                    y-min y-max (samples/animating? samples)))
+  (match-define (list xs ys zss) (f x-min x-max (animated-samples samples)
+                                    y-min y-max (animated-samples samples)))
   
   (send area put-alpha alpha)
   (send area put-brush color style)

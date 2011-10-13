@@ -27,12 +27,8 @@ before using @(racket plot) or @(racket plot3d).}
 The quality of JPEG images written by @(racket plot-file) and @(racket plot3d-file). See @(method bitmap% save-file).
 }
 
-@doc-apply[plot-ps-interactive?]{
-If @(racket #t), @(racket plot-file) and @(racket plot3d-file) open a dialog when writing PostScript files. See @(racket post-script-dc%).
-}
-
-@doc-apply[plot-pdf-interactive?]{
-If @(racket #t), @(racket plot-file) and @(racket plot3d-file) open a dialog when writing PDF files. See @(racket pdf-dc%).
+@doc-apply[plot-ps/pdf-interactive?]{
+If @(racket #t), @(racket plot-file) and @(racket plot3d-file) open a dialog when writing PostScript or PDF files. See @(racket post-script-dc%) and @(racket pdf-dc%).
 }
 
 @section{Axis Transforms}
@@ -94,6 +90,10 @@ See @(racket ->pen-color) and @(racket ->brush-color) for details on how PLoT in
 @doc-apply[plot-x-label]
 @doc-apply[plot-y-label]
 @doc-apply[plot-z-label]{The title and axis labels. A @(racket #f) value means the label is not drawn and takes no space. A @(racket "") value effectively means the label is not drawn, but it takes space.
+}
+
+@doc-apply[plot-animating?]{
+When @(racket #t), certain renderers draw simplified plots to speed up drawing. PLoT sets it to @(racket #t), for example, when a user is clicking and dragging a 3D plot to rotate it.
 }
 
 @section{Lines}
@@ -189,10 +189,9 @@ These parameters do not control the @italic{typical} appearance of plots. Instea
 @section{3D General Appearance}
 
 @doc-apply[plot3d-samples]
-@doc-apply[plot3d-animating?]
 @doc-apply[plot3d-angle]
 @doc-apply[plot3d-altitude]
-@doc-apply[plot3d-ambient-light-value]
+@doc-apply[plot3d-ambient-light]
 @doc-apply[plot3d-diffuse-light?]
 @doc-apply[plot3d-specular-light?]
 

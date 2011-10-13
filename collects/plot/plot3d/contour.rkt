@@ -21,8 +21,8 @@
 
 (define ((contours3d-render-proc f levels samples colors widths styles alphas label) area)
   (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
-  (match-define (list xs ys zss) (f x-min x-max (samples/animating? samples)
-                                    y-min y-max (samples/animating? samples)))
+  (match-define (list xs ys zss) (f x-min x-max (animated-samples samples)
+                                    y-min y-max (animated-samples samples)))
   (define zs
     (cond [(list? levels)      levels]
           [(eq? levels 'auto)  (auto-contour-zs z-min z-max)]
@@ -91,8 +91,8 @@
           contour-colors contour-widths contour-styles alphas label)
          area)
   (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))  
-  (match-define (list xs ys zss) (f x-min x-max (samples/animating? samples)
-                                    y-min y-max (samples/animating? samples)))
+  (match-define (list xs ys zss) (f x-min x-max (animated-samples samples)
+                                    y-min y-max (animated-samples samples)))
   
   (define contour-zs
     (cond [(list? levels)      levels]

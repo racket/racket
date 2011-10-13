@@ -129,8 +129,17 @@ Returns @racket[#t] if @racket[v] is one of the following symbols,
 
 @section[#:tag "curve-fit"]{Curve Fitting}
 
-The @racketmodname[plot] library uses a non-linear, least-squares fit
-algorithm to fit parameterized functions to given data.
+@define[fit-warning]{
+@para{
+@bold{Do not use the @(racket fit) function. It is going to be removed in Racket 5.2.1.}
+It relies on old C code that nobody understands or is willing to maintain, and that is also slightly crashy.
+}}
+
+@fit-warning
+
+Quite independent of plotting, and for reasons lost in the sands of time,
+the @racketmodname[plot] library provides a non-linear, least-squares
+fit algorithm to fit parameterized functions to given data.
 The code that implements the algorithm is public
 domain, and is used by the @tt{gnuplot} package.
 
@@ -204,6 +213,8 @@ A more realistic example can be found in
                           (list-of (vector/c real? real? real? real?)))])
          fit-result?]{
 
+@fit-warning
+                       
 Attempts to fit a @defterm{fittable function} to the data that is
 given. The @racket[guess-list] should be a set of arguments and
 values. The more accurate your initial guesses are, the more likely

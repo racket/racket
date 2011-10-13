@@ -20,8 +20,7 @@
 (defparam plot-height exact-positive-integer? 400)
 (defparam plot-new-window? boolean? #f)
 (defparam plot-jpeg-quality (integer-in 0 100) 100)
-(defparam plot-ps-interactive? boolean? #f)
-(defparam plot-pdf-interactive? boolean? #f)
+(defparam plot-ps/pdf-interactive? boolean? #f)
 
 ;; General appearance
 
@@ -45,6 +44,12 @@
 (defparam plot-x-label (or/c string? #f) "x axis")
 (defparam plot-y-label (or/c string? #f) "y axis")
 (defparam plot-z-label (or/c string? #f) #f)
+
+(defparam plot-animating? boolean? #f)
+
+(defproc (animated-samples [samples (and/c exact-integer? (>=/c 2))]) (and/c exact-integer? (>=/c 2))
+  (cond [(plot-animating?)  (max 2 (ceiling (* 1/4 samples)))]
+        [else  samples]))
 
 ;; Lines
 
@@ -148,17 +153,11 @@
 ;; General appearance
 
 (defparam plot3d-samples (and/c exact-integer? (>=/c 2)) 41)
-(defparam plot3d-animating? boolean? #f)
 (defparam plot3d-angle real? 30)
 (defparam plot3d-altitude real? 60)
-(defparam plot3d-ambient-light-value (real-in 0 1) 2/3)
+(defparam plot3d-ambient-light (real-in 0 1) 2/3)
 (defparam plot3d-diffuse-light? boolean? #t)
 (defparam plot3d-specular-light? boolean? #t)
-
-(defproc (samples/animating? [samples (and/c exact-integer? (>=/c 2))]
-                             ) (and/c exact-integer? (>=/c 2))
-  (cond [(plot3d-animating?)  (max 2 (ceiling (* 1/4 samples)))]
-        [else  samples]))
 
 ;; Surfaces
 

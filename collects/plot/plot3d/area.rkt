@@ -467,7 +467,7 @@
                              (* 32 (expt (if (cos-angle . > . 0) cos-angle 0.0) 10))]
                             [else  0.0]))
          ; ambient lighting
-         (define amb (plot3d-ambient-light-value))
+         (define amb (plot3d-ambient-light))
          ; put it all together
          (values (+ amb (* (- 1 amb) diff)) spec)]))
     

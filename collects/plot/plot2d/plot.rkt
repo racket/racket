@@ -131,6 +131,8 @@
   (define tick-skip (plot-tick-skip))
   (define x-transform (plot-x-transform))
   (define y-transform (plot-y-transform))
+  (define z-transform (plot-z-transform))
+  (define animating? (plot-animating?))
   
   (dc (λ (dc x y)
         (parameterize ([plot-foreground        foreground]
@@ -144,7 +146,9 @@
                        [plot-tick-size         tick-size]
                        [plot-tick-skip         tick-skip]
                        [plot-x-transform       x-transform]
-                       [plot-y-transform       y-transform])
+                       [plot-y-transform       y-transform]
+                       [plot-z-transform       z-transform]
+                       [plot-animating?        animating?])
           (plot/dc renderer-tree dc x y width height
                    #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
                    #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)))
@@ -211,10 +215,10 @@
      (define dc
        (case real-kind
          [(ps)  (new post-script-dc%
-                     [interactive (plot-ps-interactive?)] [parent #f] [use-paper-bbox #f] [as-eps #t]
-                     [width width] [height height] [output output])]
+                     [interactive (plot-ps/pdf-interactive?)] [parent #f] [use-paper-bbox #f]
+                     [as-eps #t] [width width] [height height] [output output])]
          [(pdf)  (new pdf-dc%
-                      [interactive (plot-pdf-interactive?)] [parent #f] [use-paper-bbox #f]
+                      [interactive (plot-ps/pdf-interactive?)] [parent #f] [use-paper-bbox #f]
                       [width width] [height height] [output output])]
          [(svg)  (new svg-dc%
                       [width width] [height height] [output output] [exists 'truncate/replace])]))
