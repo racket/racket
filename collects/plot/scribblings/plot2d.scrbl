@@ -62,7 +62,7 @@ Plot to different backends. Each of these procedures has the same keyword argume
 
 Use @(racket plot-file) to save a plot to a file.
 When creating a JPEG file, the parameter @(racket plot-jpeg-quality) determines its quality.
-When creating a PostScript or PDF file, the parameters @(racket plot-ps-interactive?) and @(racket plot-pdf-interactive?) determine whether the user is given a dialog for setting printing parameters.
+When creating a PostScript or PDF file, the parameter @(racket plot-ps/pdf-interactive?) determines whether the user is given a dialog for setting printing parameters.
 (See @(racket post-script-dc%) and @(racket pdf-dc%).)
 When @(racket kind) is @(racket 'auto), @(racket plot-file) tries to determine the kind of file to write from the file name extension.
 

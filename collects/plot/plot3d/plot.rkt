@@ -93,11 +93,11 @@
         (send area end-plot)
         
         (when (and (not (empty? legend-entries))
-                   (or (not (plot3d-animating?))
+                   (or (not (plot-animating?))
                        (not (equal? (plot-legend-anchor) 'center))))
           (send area put-legend legend-entries))
         
-        (when (plot3d-animating?) (send area put-angles))
+        (when (plot-animating?) (send area put-angles))
         
         (send area restore-drawing-params)))))
 
@@ -154,31 +154,31 @@
   (define x-transform (plot-x-transform))
   (define y-transform (plot-y-transform))
   (define z-transform (plot-z-transform))
+  (define animating? (plot-animating?))
   (define samples (plot3d-samples))
-  (define animating? (plot3d-animating?))
-  (define ambient-light-value (plot3d-ambient-light-value))
+  (define ambient-light (plot3d-ambient-light))
   (define diffuse-light? (plot3d-diffuse-light?))
   (define specular-light? (plot3d-specular-light?))
   
   (dc (λ (dc x y)
-        (parameterize ([plot-foreground             foreground]
-                       [plot-background             background]
-                       [plot-foreground-alpha  foreground-alpha]
-                       [plot-background-alpha  background-alpha]
-                       [plot-font-size              font-size]
-                       [plot-font-family            font-family]
-                       [plot-line-width             line-width]
-                       [plot-legend-box-alpha       legend-box-alpha]
-                       [plot-tick-size              tick-size]
-                       [plot-tick-skip              tick-skip]
-                       [plot-x-transform            x-transform]
-                       [plot-y-transform            y-transform]
-                       [plot-z-transform            z-transform]
-                       [plot3d-samples              samples]
-                       [plot3d-animating?           animating?]
-                       [plot3d-ambient-light-value  ambient-light-value]
-                       [plot3d-diffuse-light?       diffuse-light?]
-                       [plot3d-specular-light?      specular-light?])
+        (parameterize ([plot-foreground         foreground]
+                       [plot-background         background]
+                       [plot-foreground-alpha   foreground-alpha]
+                       [plot-background-alpha   background-alpha]
+                       [plot-font-size          font-size]
+                       [plot-font-family        font-family]
+                       [plot-line-width         line-width]
+                       [plot-legend-box-alpha   legend-box-alpha]
+                       [plot-tick-size          tick-size]
+                       [plot-tick-skip          tick-skip]
+                       [plot-x-transform        x-transform]
+                       [plot-y-transform        y-transform]
+                       [plot-z-transform        z-transform]
+                       [plot-animating?         animating?]
+                       [plot3d-samples          samples]
+                       [plot3d-ambient-light    ambient-light]
+                       [plot3d-diffuse-light?   diffuse-light?]
+                       [plot3d-specular-light?  specular-light?])
           (plot3d/dc
            renderer-tree dc x y width height
            #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
@@ -203,7 +203,7 @@
                       ) (is-a?/c image-snip%)
   (make-3d-plot-snip
    (λ (angle altitude anim?)
-     (parameterize ([plot3d-animating?  (if anim? #t (plot3d-animating?))])
+     (parameterize ([plot-animating?  (if anim? #t (plot-animating?))])
        (plot3d-bitmap
         renderer-tree
         #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
@@ -264,10 +264,10 @@
      (define dc
        (case real-kind
          [(ps)  (new post-script-dc%
-                     [interactive (plot-ps-interactive?)] [parent #f] [use-paper-bbox #f] [as-eps #t]
-                     [width width] [height height] [output output])]
+                     [interactive (plot-ps/pdf-interactive?)] [parent #f] [use-paper-bbox #f]
+                     [as-eps #t] [width width] [height height] [output output])]
          [(pdf)  (new pdf-dc%
-                      [interactive (plot-pdf-interactive?)] [parent #f] [use-paper-bbox #f]
+                      [interactive (plot-ps/pdf-interactive?)] [parent #f] [use-paper-bbox #f]
                       [width width] [height height] [output output])]
          [(svg)  (new svg-dc%
                       [width width] [height height] [output output] [exists 'truncate/replace])]))

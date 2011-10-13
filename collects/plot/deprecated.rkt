@@ -11,18 +11,9 @@
          "plot3d/surface.rkt"
          "plot3d/renderer.rkt"
          "utils.rkt"
-         "deprecated/renderers.rkt"
-         ;; Curve fitting
-         "deprecated/fit.rkt"
-         ;; Miscellaneous
-         "deprecated/math.rkt")
+         "deprecated/renderers.rkt")
 
-(provide mix line contour shade surface
-         ;; Curve fitting
-         (rename-out [fit-int fit])
-         (struct-out fit-result)
-         ;; Miscellaneous
-         make-vec derivative gradient)
+(provide mix line contour shade surface)
 
 (define (mix . renderers)
   (deprecation-warning "mix" "list")

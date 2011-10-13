@@ -246,8 +246,8 @@
     
     (define/public (start-renderer rx-min rx-max ry-min ry-max)
       (reset-drawing-params)
-      (set-clipping-rect (vector (- area-x-min (plot-line-width))
-                                 (- area-y-min (plot-line-width)))
+      (set-clipping-rect (vector (+ 1/2 (- area-x-min (plot-line-width)))
+                                 (+ 1/2 (- area-y-min (plot-line-width))))
                          (vector (+ area-x-max (plot-line-width))
                                  (+ area-y-max (plot-line-width))))
       (clip-to-bounds rx-min rx-max ry-min ry-max))
