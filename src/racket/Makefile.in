@@ -205,9 +205,6 @@ ee-main:
 ee-app: $(RACKET) main_ee.@LTO@
 	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(CC) $(MAIN_CFLAGS_NODBG) -o $(EEAPP) main_ee.@LTO@ $(EEOBJECTS) $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@ ; fi
 
-testext.@LTO@: testext.c
-	$(CC) $(MAIN_CFLAGS) -I/home/scheme/plt/compiler/ -c testext.c -o testext.@LTO@
-
 mzstart.exe: $(srcdir)/dynsrc/start.c
 	$(CC) @CFLAGS@ -o mzstart.exe $(srcdir)/dynsrc/start.c
 

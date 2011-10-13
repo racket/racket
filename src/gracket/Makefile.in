@@ -62,8 +62,6 @@ GRACKETOBJECTS = grmain.@LTO@
 
 RACKETDEPS = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@
 
-INSTALLDEST=/home/scheme/plt
-
 MRSTATIC = 
 MRSTATIC_STUB =
 
