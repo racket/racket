@@ -54,7 +54,8 @@
                    benchmarks)
          (for-each (lambda (bm)
                      (printf " ~a (not run by default)\n" bm))
-                   extra-benchmarks)]
+                   extra-benchmarks)
+         (exit 0)]
         [("-o" "--out") filename "append output to <filename>"
          (current-output-file filename)]
         [("-n" "--iters") n "set number of run iterations"
