@@ -697,12 +697,12 @@
                            (send admin get-editor))])
           (let-values ([(n tabs tabspace mult)
                         (let-boxes ([n 0]
-                                        [space 0]
-                                        [units? #f]
-                                        [tabs null])
+                                    [space 0]
+                                    [units? #f]
+                                    [tabs null])
                             (set-box! tabs (send admin get-tabs n space units?))
                           (values n
-                                  tabs ;; this should be a vector, right?
+                                  tabs ;; a list
                                   space
                                   (if units? 
                                       1 
@@ -714,12 +714,12 @@
                (if (= i n)
                    (let ([base (if (zero? n)
                                    0
-                                   (vector-ref tabs (- n 1)))])
+                                   (list-ref tabs (- n 1)))])
                      (let ([tabspace (* tabspace mult)])
                        (+ base (- (->long tabspace)
                                   (modulo (->long (- ex base))
                                           (->long tabspace))))))
-                   (let ([v (vector-ref tabs i)])
+                   (let ([v (list-ref tabs i)])
                      (if ((* mult v) . > . ex)
                          (- (* mult v) ex)
                          (loop (add1 i))))))))))
