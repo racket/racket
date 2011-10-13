@@ -391,13 +391,13 @@ static void do_scheme_rep(Scheme_Env *env, FinishArgs *fa)
 
 #ifdef GRAPHICAL_REPL
   if (!fa->a->alternate_rep) {
-    a[0] = scheme_intern_symbol("mred/mred");
+    a[0] = scheme_intern_symbol("racket/gui/init");
     a[1] = scheme_intern_symbol("graphical-read-eval-print-loop");
     ending_newline = 0;
   } else
 #endif
     {
-      a[0] = scheme_intern_symbol("scheme/base");
+      a[0] = scheme_intern_symbol("racket/base");
       a[1] = scheme_intern_symbol("read-eval-print-loop");
     }
 

@@ -45,7 +45,7 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 #define INITIAL_BIN_TYPE "ri"
 
 #define CMDLINE_STDIO_FLAG
-#define INITIAL_NAMESPACE_MODULE "scheme/gui/init"
+#define INITIAL_NAMESPACE_MODULE "racket/gui/init"
 #define GRAPHICAL_REPL
 
 # include "../racket/main.c"

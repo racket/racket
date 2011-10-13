@@ -161,7 +161,7 @@ void setupSchemeEnv(Scheme_Env *in_env)
 
   // initialize namespace
 
-  scheme_namespace_require(scheme_intern_symbol("scheme"));
+  scheme_namespace_require(scheme_intern_symbol("racket"));
 
   // set up exception trapping
 
