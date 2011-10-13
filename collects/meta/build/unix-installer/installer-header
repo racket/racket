@@ -20,9 +20,10 @@ failwith() {
   fi
   exit 1
 }
-exithandler() {
-  failwith "Aborting..."
-}
+# intentional aborts
+abort() { failwith "abort."; }
+# unexpected exits
+exithandler() { failwith "Aborting..."; }
 
 trap exithandler 2 3 9 15
 
@@ -38,11 +39,6 @@ lookfor() {
   done
   IFS="$saved_IFS"
   failwith "could not find \"$1\"."
-}
-
-link() { # args are source, target, where we are
-  "$rm" -f "$2"      || failwith "could not remove \"$2\" in \"$3\"."
-  "$ln" -s "$1" "$2" || failwith "could not link \"$2\" in \"$3\"."
 }
 
 lookfor rm
@@ -62,6 +58,12 @@ _POSIX2_VERSION=199209
 export _POSIX2_VERSION
 
 origwd="`pwd`"
+installer_file="$0"
+cat_installer() {
+  oldwd="`pwd`"; cd "$origwd"
+  "$tail" +"$BINSTARTLINE" "$installer_file"
+  cd "$oldwd"
+}
 
 echo "This program will extract and install $DISTNAME."
 echo ""
@@ -97,6 +99,7 @@ done
 
 ###############################################################################
 ## Where do you want it?
+## sets $where to the location: target path for wholedir, prefix for unixstyle
 
 echo ""
 if test "$unixstyle" = "Y"; then
@@ -119,183 +122,89 @@ else
 fi
 echon "> "
 read where
-case "$where" in
-  "~/"* ) where="$HOME/${where#\~/}" ;;
-  "~"*  ) failwith "cannot use '~user' paths" ;;
-esac
-case "$unixstyle$where" in
-  ? | ?1  ) where="/usr" ;;
-  ?2      ) where="/usr/local" ;;
-  ?3      ) where="$HOME" ;;
-  ?4 | ?. ) where="`pwd`" ;;
-  N/*     ) TARGET="`\"$basename\" \"$where\"`"
-            where="`\"$dirname\" \"$where\"`" ;;
-  Y/*     ) ;;
-  N*      ) TARGET="`\"$basename\" \"$where\"`"
-            where="`\"$dirname\" \"$where\"`"
-            if test -d "$where"; then cd "$where"; where="`pwd`"; cd "$origwd"
-            else where="`pwd`/$where"; fi ;;
-  Y*      ) if test -d "$where"; then cd "$where"; where="`pwd`"; cd "$origwd"
-            else where="`pwd`/$where"; fi ;;
+
+# numeric choice (make "." and "./" synonym for 4)
+if test "$unixstyle" = "Y"; then TARGET1=""
+else TARGET1="/$TARGET"; fi
+case "x$where" in
+  x | x1 ) where="/usr$TARGET1" ;;
+  x2     ) where="/usr/local${TARGET1}" ;;
+  x3     ) where="${HOME}${TARGET1}" ;;
+  x4 | x. | x./ ) where="`pwd`${TARGET1}" ;;
 esac
 
-if test "$unixstyle" = "N"; then
-  # can happen when choosing the root
-  if test "$TARGET" = "/"; then
-    failwith "refusing to remove your root"
-  fi
-fi
-
-# BASE can be used with "$BASE/$TARGET" to avoid a double slash
-case "$where" in
-  "" )   failwith "internal error (empty \$where)" ;;
-  "/" )  BASE="" ;;
-  *"/" ) failwith "internal error (\$where ends in a slash)" ;;
-  "/"* ) BASE="$where" ;;
-  * )    failwith "internal error (\$where is not absolute)" ;;
-esac
-
-if test ! -d "$where"; then
-  failwith "the directory \"$where\" does not exist."
-fi
-if test ! -w "$where"; then
-  failwith "cannot write to \"$where\"."
-fi
+# substitute env vars and tildes
+where="`eval \"echo \\\"$where\\\"\"`"
 
 ###############################################################################
-## Deal with Unix-style path questions
+## Default system directories prefixed by $1, mimic configure behavior
+## used for unixstyle targets and for wholedir links
 
-set_prefix() {
-  BASE="$1"
-  # default dirs -- mimic configure behavior
-  bindir="$BASE/bin"
-  collectsdir="$BASE/lib/racket/collects"
-  if   test -d "$BASE/share"; then docdir="$BASE/share/racket/doc"
-  elif test -d "$BASE/doc";   then docdir="$BASE/doc/racket"
-  else                             docdir="$BASE/share/racket/doc"
+set_dirs() {
+  # unixstyle: uses all of these
+  # wholedir: uses only bindir & mandir, no need for the others
+  bindir="$1/bin"
+  libdir="$1/lib"
+  incrktdir="$1/include/$TARGET"
+  librktdir="$1/lib/$TARGET"
+  collectsdir="$1/lib/$TARGET/collects"
+  has_share="N"
+  if test -d "$1/share"; then has_share="Y"; fi
+  if test "$has_share" = "N" && test -d "$1/doc"; then docdir="$1/doc/$TARGET"
+  else docdir="$1/share/$TARGET/doc"
   fi
-  libdir="$BASE/lib"
-  includerktdir="$BASE/include/racket"
-  librktdir="$BASE/lib/racket"
-  mandir="$BASE/man"
+  if test "$has_share" = "N" && test -d "$1/man"; then mandir="$1/man"
+  else mandir="$1/share/man"
+  fi
   # The source tree is always removed -- no point keeping it if it won't work
-  # if   test -d "$BASE/share"; then srcdir="$BASE/share/racket/src"
-  # elif test -d "$BASE/src";   then srcdir="$BASE/src/racket"
-  # else                             srcdir="$BASE/share/racket/src"
+  # if test "$has_share" = "N" && test -d "$1/src"; then srcdir="$1/src/$TARGET"
+  # else srcdir="$1/share/$TARGET/src"
   # fi
 }
 
-dir_createable() {
-  test_dir="`\"$dirname\" \"$1\"`"
-  if test -d "$test_dir" && test -w "$test_dir"; then return 0
-  elif test "$test_dir" = "/"; then return 1
-  else dir_createable "$test_dir"; fi
-}
-
-show_dir_var() {
-  if   test -f   "$2"; then dir_status="(error: not a directory!)"; err="Y"
-  elif test ! -d "$2"; then
-    if dir_createable "$2"; then dir_status="(will be created)"
-    else                    dir_status="(error: not writable!)"; err="Y"; fi
-  elif test ! -w "$2"; then dir_status="(error: not writable!)"; err="Y"
-  else                      dir_status="(exists)"
-  fi
-  echo "  $1 $2 $dir_status"
-}
-
-read_dir() {
-  echon "New directory: "
-  read new_dir
-  case "$new_dir" in
-    "/"* ) echo "$new_dir" ;;
-    * )    echo "$BASE/$new_dir" ;;
-  esac
-}
-
-if test "$unixstyle" = "Y"; then
-  set_prefix "$BASE"
-  # loop for possible changes
-  done="N"
-  while test ! "$done" = "Y"; do
-    echo ""
-    echo "Target Directories:"
-    err="N"
-    show_dir_var "[e] Executables  " "$bindir"
-    show_dir_var "[s] Scheme Code  " "$collectsdir"
-    show_dir_var "[d] Core Docs    " "$docdir"
-    show_dir_var "[l] C Libraries  " "$libdir"
-    show_dir_var "[h] C headers    " "$includerktdir"
-    show_dir_var "[o] Extra C Objs " "$librktdir"
-    show_dir_var "[m] Man Pages    " "$mandir"
-    if test "$PNAME" = "full"; then
-      echo "  (C sources are not kept)"
-      # show_dir_var "[r] Source Tree  " "$srcdir"
-    fi
-    if test "$err" = "Y"; then echo "*** Errors in some paths ***"; fi
-    echo "Enter a letter to change an entry, a new prefix, or enter to continue"
-    echon "> "
-    read change_what
-    case "$change_what" in
-      [eE]* ) bindir="`read_dir`" ;;
-      [sS]* ) collectsdir="`read_dir`" ;;
-      [dD]* ) docdir="`read_dir`" ;;
-      [lL]* ) libdir="`read_dir`" ;;
-      [hH]* ) includerktdir="`read_dir`" ;;
-      [oO]* ) librktdir="`read_dir`" ;;
-      [mM]* ) mandir="`read_dir`" ;;
-      # [rR]* ) if test "$PNAME" = "full"; then
-      #           srcdir="`read_dir`"
-      #         else
-      #           echo "Invalid response"
-      #         fi ;;
-      "/"*  ) set_prefix "$change_what" ;;
-      ""    ) done="Y" ;;
-      *     ) echo "Invalid response" ;;
-    esac
-  done
-  if test "$err" = "Y"; then failwith "errors in some paths"; fi
-fi
-
 ###############################################################################
-## Integrity check
-
-echo ""
-echon "Checking the integrity of the binary archive... "
-SUM="`\"$tail\" +\"$BINSTARTLINE\" \"$0\" | \"$cksum\"`" \
-  || failwith "problems running cksum."
-SUM="`set $SUM; echo $1`"
-test "$BINSUM" = "$SUM" || failwith "bad CRC checksum."
-echo "ok."
-
-###############################################################################
-## Unpacking into $BASE/$TARGET
+## Integrity check and unpack into $1
+## also sets $INSTDIR to the directory in its canonical form
 
 unpack_installation() {
-  # test that no TARGET exists
-  if test -d "$BASE/$TARGET" || test -f "$BASE/$TARGET"; then
-    echon "\"$BASE/$TARGET\" exists, delete? "
+  T="$1"
+  # integrity check
+  echo ""
+  echon "Checking the integrity of the binary archive... "
+  SUM="`cat_installer | \"$cksum\"`" || failwith "problems running cksum."
+  SUM="`set $SUM; echo $1`"
+  test "$BINSUM" = "$SUM" || failwith "bad CRC checksum."
+  echo "ok."
+  # test that the target does not exists
+  if test -d "$T" || test -f "$T"; then
+    if test -d "$T"; then
+      # use the real name, so "/foo/.." shows as an explicit "/"
+      oldwd="`pwd`"; cd "$T"; T="`pwd`"; cd "$oldwd"; echon "\"$T\" exists"
+    else
+      echon "\"$T\" exists (as a file)"
+    fi
+    echon ", delete? "
     read R
     case "$R" in
       [yY]* )
-        echon "Deleting old \"$BASE/$TARGET\"... "
-        "$rm" -rf "$BASE/$TARGET" \
-        || failwith "could not delete \"$BASE/$TARGET\"."
+        echon "Deleting old \"$T\"... "
+        "$rm" -rf "$T" || failwith "could not delete \"$T\"."
         echo "done."
         ;;
-      * ) failwith "aborting because \"$BASE/$TARGET\" exists." ;;
+      * ) abort ;;
     esac
   fi
   # unpack
-  echon "Unpacking into \"$BASE/$TARGET\"... "
-  rm_on_abort="$BASE/$TARGET"
-  "$mkdir" "$BASE/$TARGET"
-  "$tail" +"$BINSTARTLINE" "$0" | "$gunzip" -c \
-  | { cd "$BASE/$TARGET"
-      "$tar" xf - || failwith "problems during unpacking of binary archive."
-    }
-  cd "$BASE/$TARGET"
-  test -d "collects" \
-    || failwith "unpack failed (could not find \"$BASE/$TARGET/collects\")."
+  rm_on_abort="$T"
+  "$mkdir" -p "$T" || failwith "could not create directory: $T"
+  oldwd="`pwd`"; cd "$T"; INSTDIR="`pwd`"; cd "$oldwd"
+  echon "Unpacking into \"$INSTDIR\" (Ctrl+C to abort)... "
+  cat_installer | "$gunzip" -c \
+    | { cd "$INSTDIR"
+        "$tar" xf - || failwith "problems during unpacking of binary archive."
+      }
+  test -d "$INSTDIR/collects" \
+    || failwith "unpack failed (could not find \"$T/collects\")."
   echo "done."
 }
 
@@ -304,178 +213,159 @@ unpack_installation() {
 
 wholedir_install() {
 
-unpack_installation
-rm_on_abort=""
+  unpack_installation "$where"
+  rm_on_abort=""
 
-cd "$BASE"
-if test -d "bin"; then
-  echo "Do you want to install new system links within the bin, lib, include,"
-  echo "  man, and doc subdirectories of \"$BASE\", possibly overriding"
-  echon "  existing links? "
-  read R
-  case "$R" in
-    [yY]* ) sysdir="$BASE" ;;
-    * ) sysdir="" ;;
-  esac
-else
-  cd "$origwd"
   echo ""
-  echo "If you want to install new system links within the bin, lib, include,"
-  echo "  man, and doc subdirectories of a common directory prefix (for"
-  echo "  example, \"/usr/local\") then enter the prefix you want to use."
+  echo "If you want to install new system links within the \"bin\" and"
+  echo "  \"man\" subdirectories of a common directory prefix (for example,"
+  echo "  \"/usr/local\") then enter the prefix of an existing directory"
+  echo "  that you want to use.  This might overwrite existing symlinks,"
+  echo "  but not files."
   echon "(default: skip links) > "
-  read sysdir
-  if test ! "x$sysdir" = "x"; then
-    if test ! -d "$sysdir"; then
-      echo "Directory \"$sysdir\" does not exist, skipping links."
-      sysdir=""
-    elif test ! -w "$sysdir"; then
-      echo "Directory \"$sysdir\" is not writable, skipping links."
-      sysdir=""
-    else
-      cd "$sysdir"
-      sysdir="`pwd`"
-    fi
-  fi
-fi
-
-if test ! "x$sysdir" = "x"; then
-  # binaries
-  cd "$sysdir"
-  if test -d "bin" && test -w "bin"; then
-    echo "Installing links in \"$sysdir/bin\"..."
-    printsep="  "
-    cd "bin"
-    for x in `cd "$BASE/$TARGET/bin"; ls`; do
-      if test -x "$BASE/$TARGET/bin/$x"; then
-        echon "${printsep}$x"
-        printsep=", "
-        link "$BASE/$TARGET/bin/$x" "$x" "$sysdir/bin"
+  read SYSDIR
+  if test "x$SYSDIR" = "x"; then :
+  elif test ! -d "$SYSDIR"; then
+    echo "\"$SYSDIR\" does not exist, skipping links."
+  elif test ! -w "$SYSDIR"; then
+    echo "\"$SYSDIR\" is not writable, skipping links."
+  else
+    oldwd="`pwd`"; cd "$SYSDIR"; SYSDIR="`pwd`"; cd "$oldwd"
+    set_dirs "$SYSDIR"
+    install_links() { # tgtdir(absolute) srcdir(relative to INSTDIR)
+      if ! test -d "$1"; then
+        echo "\"$1\" does not exist, skipping."
+      elif ! test -w "$1"; then
+        echo "\"$1\" is not writable, skipping"
+      else
+        echo "Installing links in \"$1\"..."
+        printsep="  "
+        cd "$1"
+        for x in `cd "$INSTDIR/$2"; ls`; do
+          echon "${printsep}$x"; printsep=", "
+          if test -h "$x"; then rm -f "$x"; fi
+          if test -d "$x" || test -f "$x"; then
+            echon " skipped (non-link exists)"
+          elif ! "$ln" -s "$INSTDIR/$2/$x" "$x"; then
+            echon " skipped (symlink failed)"
+          fi
+        done
+        echo ""; echo "  done."
       fi
-    done
-    echo ""
-    echo "Done. (see \"$BASE/$TARGET/bin\" for other executables)"
-  else
-    echo "Skipping \"$sysdir/bin\" (does not exist or not writable)."
+    }
+    install_links "$bindir" "bin"
+    install_links "$mandir/man1" "man/man1"
   fi
-  # man pages
-  cd "$sysdir"
-  if test -d "man" && test -d "man/man1" && test -w "man/man1"; then
-    mandir="man/man1"
-  elif test -d "share" && test -d "share/man" && test -d "share/man/man1" \
-       && test -w "share/man/man1"; then
-    mandir="share/man/man1"
-  else
-    mandir=""
-  fi
-  if test "x$mandir" = "x"; then
-    echo "Skipping \"$sysdir/man/man1\" (does not exist or not writable)."
-  else
-    cd "$mandir"
-    echo "Installing links in \"$sysdir/$mandir\"..."
-    printsep="  "
-    for x in `cd "$BASE/$TARGET/man/man1/"; "$ls"`; do
-      echon "${printsep}$x"
-      printsep=", "
-      link "$BASE/$TARGET/man/man1/$x" "$x" "$sysdir/$mandir"
-    done
-    echo ""
-    echo "Done"
-  fi
-  # lib link
-  cd "$sysdir"
-  if test -d "lib" && test -w "lib"; then
-    libdir="lib"
-  elif test -d "share" && test -d "share/lib" && test -w "share/lib"; then
-    libdir="share/lib"
-  else
-    libdir=""
-  fi
-  if test "x$libdir" = "x"; then
-    echo "Skipping \"$sysdir/lib\" (does not exist or not writable)."
-  else
-    cd "$libdir"
-    echo "Installing \"$sysdir/$libdir/$TARGET\"."
-    link "$BASE/$TARGET/lib" "$TARGET" "$sysdir/$libdir"
-  fi
-  # include link
-  cd "$sysdir"
-  if test -d "include" && test -w "include"; then
-    incdir="include"
-  elif test -d "share" && test -d "share/include" \
-       && test -w "share/include"; then
-    incdir="share/include"
-  else
-    incdir=""
-  fi
-  if test "x$incdir" = "x"; then
-    echo "Skipping \"$sysdir/include\" (does not exist or not writable)."
-  else
-    cd "$incdir"
-    echo "Installing \"$sysdir/$incdir/$TARGET\"."
-    link "$BASE/$TARGET/include" "$TARGET" "$sysdir/$incdir"
-  fi
-  # doc link
-  cd "$sysdir"
-  if test -d "doc" && test -w "doc"; then
-    docdir="doc"
-  elif test -d "share" && test -d "share/doc" && test -w "share/doc"; then
-    docdir="share/doc"
-  else
-    docdir=""
-  fi
-  if test "x$docdir" = "x"; then
-    echo "Skipping \"$sysdir/doc\" (does not exist or not writable)."
-  else
-    cd "$docdir"
-    echo "Installing \"$sysdir/$docdir/$TARGET\"."
-    link "$BASE/$TARGET/doc" "$TARGET" "$sysdir/$docdir"
-  fi
-fi
 
 }
 
 ###############################################################################
 ## Unix-style installations
 
+dir_createable() {
+  test_dir="`\"$dirname\" \"$1\"`"
+  if test -d "$test_dir" && test -w "$test_dir"; then return 0
+  elif test "$test_dir" = "/"; then return 1
+  else dir_createable "$test_dir"; fi
+}
+show_dir_var() {
+  if   test -f   "$2"; then status="error: not a directory!"; err="Y"
+  elif test ! -d "$2"; then
+    if dir_createable "$2"; then status="will be created"
+    else                    status="error: not writable!"; err="Y"; fi
+  elif test ! -w "$2"; then status="error: not writable!"; err="Y"
+  else                      status="exists"
+  fi
+  echo "  $1 $2 ($status)"
+}
+
 unixstyle_install() {
 
-TARGET="$TARGET-tmp-install"
-if test -e "$BASE/$TARGET"; then
-  echo "\"$BASE/$TARGET\" already exists (needed for the installation),"
-  echon "  ok to remove? "
-  read R
-  case "$R" in
-    [yY]* ) "$rm" -rf "$BASE/$TARGET" ;;
-    * ) failwith "abort..." ;;
-  esac
-fi
+  if test -f "$where"; then
+    failwith "The entered base directory exists as a file: $where"
+  elif test ! -d "$where"; then
+    echo "Base directory does not exist: $where"
+    echon "  should I create it? (default: yes) "
+    read R; case "$R" in [nN]* ) abort ;; esac
+    "$mkdir" -p "$where" || failwith "could not create directory: $where"
+  fi
+  cd "$where" || failwith "Base directory does not exist: $where"
+  where="`pwd`"; cd "$origwd"
 
-if test -x "$bindir/racket-uninstall"; then
-  echo "A previous Racket uninstaller is found at"
-  echo "  \"$bindir/racket-uninstall\","
-  echon "  should I run it? (default: yes) "
-  read R
-  case "$R" in
-    [nN]* ) failwith "abort..." ;;
-    * ) echon "  running uninstaller..."
-        "$bindir/racket-uninstall" || failwith "problems during uninstall"
-        echo " done." ;;
-  esac
-fi
+  set_dirs "$where"
+  # loop for possible changes
+  done="N"
+  while test ! "$done" = "Y" || test "x$err" = "xY" ; do
+    echo ""
+    echo "Target Directories:"
+    err="N"
+    show_dir_var "[e] Executables  " "$bindir"
+    show_dir_var "[r] Racket Code  " "$collectsdir"
+    show_dir_var "[d] Core Docs    " "$docdir"
+    show_dir_var "[l] C Libraries  " "$libdir"
+    show_dir_var "[h] C headers    " "$incrktdir"
+    show_dir_var "[o] Extra C Objs " "$librktdir"
+    show_dir_var "[m] Man Pages    " "$mandir"
+    if test "$PNAME" = "full"; then
+      echo "  (C sources are not kept)"
+      # show_dir_var "[s] Source Tree  " "$srcdir"
+    fi
+    echo "Enter a letter to change an entry, or enter to continue"
+    echon "> "; read change_what
+    read_dir() {
+      echon "New directory (absolute or relative to $where): "; read new_dir
+      case "$new_dir" in
+        "/"* ) echo "$new_dir" ;;
+        *    ) echo "$where/$new_dir" ;;
+      esac
+    }
+    case "$change_what" in
+      [eE]* ) bindir="`read_dir`" ;;
+      [rR]* ) collectsdir="`read_dir`" ;;
+      [dD]* ) docdir="`read_dir`" ;;
+      [lL]* ) libdir="`read_dir`" ;;
+      [hH]* ) incrktdir="`read_dir`" ;;
+      [oO]* ) librktdir="`read_dir`" ;;
+      [mM]* ) mandir="`read_dir`" ;;
+      # [sS]* ) if test "$PNAME" = "full"; then srcdir="`read_dir`"
+      #         else echo "Invalid response"; fi ;;
+      ""    ) if test "$err" = "N"; then done="Y"
+              else echo "*** Please fix erroneous paths to proceed"; fi ;;
+      *     ) echo "Invalid response" ;;
+    esac
+  done
 
-unpack_installation
+  if test -x "$bindir/racket-uninstall"; then
+    echo "A previous Racket uninstaller is found at"
+    echo "  \"$bindir/racket-uninstall\","
+    echon "  should I run it? (default: yes) "
+    read R
+    case "$R" in
+      [nN]* ) abort ;;
+      * ) echon "  running uninstaller..."
+          "$bindir/racket-uninstall" || failwith "problems during uninstall"
+          echo " done." ;;
+    esac
+  fi
 
-cd "$BASE"
-"$TARGET/bin/racket" "$TARGET/collects/setup/unixstyle-install.rkt" \
-  "move" "$BASE/$TARGET" "$bindir" "$collectsdir" "$docdir" "$libdir" \
-  "$includerktdir" "$librktdir" "$mandir" \
-|| failwith "installation failed"
+  tmp="$where/$TARGET-tmp-install"
+  if test -f "$tmp" || test -d "$tmp"; then
+    echo "\"$tmp\" already exists (needed for the installation),"
+    echon "  ok to remove it? "
+    read R; case "$R" in [yY]* ) "$rm" -rf "$tmp" ;; * ) abort ;; esac
+  fi
+  unpack_installation "$tmp"
+
+  cd "$where"
+  "$tmp/bin/racket" "$tmp/collects/setup/unixstyle-install.rkt" \
+    "move" "$tmp" "$bindir" "$collectsdir" "$docdir" "$libdir" \
+    "$incrktdir" "$librktdir" "$mandir" \
+    || failwith "installation failed"
 
 }
 
 ###############################################################################
-## Done
+## Run the right installer now
 
 if test "$unixstyle" = "Y"; then unixstyle_install; else wholedir_install; fi
 
