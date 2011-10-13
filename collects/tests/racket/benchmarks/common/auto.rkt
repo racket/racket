@@ -17,7 +17,8 @@ exec racket -qu "$0" ${1+"$@"}
            mzlib/file
            dynext/file
            syntax/toplevel
-           scheme/runtime-path)
+           scheme/runtime-path
+           racket/port)
 
   ;; Implementaton-specific control functions ------------------------------
 
@@ -245,18 +246,28 @@ exec racket -qu "$0" ${1+"$@"}
             (bytes->number (cadddr m))
             (if (caddr m) (bytes->number (caddr m)) 0))))
 
+  ;; requires guile 2.0.2 or higher
+  (define (mk-guile bm)
+    (with-output-to-file (format "~a.scm" bm)
+      #:exists 'truncate
+      (lambda ()
+        (call-with-input-file "guile-prelude.sch"
+          (lambda (in) (copy-port in (current-output-port))))
+        (call-with-input-file (format "~a.sch" bm)
+          (lambda (in) (copy-port in (current-output-port))))))
+    (parameterize ([current-output-port (open-output-nowhere)]
+                   [current-error-port  (open-output-nowhere)])
+      (system (format "guild compile ~a.scm" bm))))
+
   (define (run-guile bm)
-    (parameterize ([current-input-port
-                    (open-input-string
-                     (format
-                      "(load \"guile-prelude.sch\")\n(load \"~a.sch\")\n"
-                      bm))])
-      (system "guile")))
+    (system (format "guile ~a.scm" bm)))
+
+  (define (clean-up-guile bm)
+    ;; compiled files are in a cache directory, which is hard to get to
+    (delete-file (format "~a.scm" bm)))
 
   (define (extract-guile-times bm str)
-    (let ([m (regexp-match #rx#"user: ([0-9]+) system: ([0-9]+) real: ([0-9]+) gc: ([0-9]+)" str)]
-          ;; `time' result is 10s of milliseconds? OS ticks, maybe?
-          [msec/tick 10])
+    (let ([m (regexp-match #rx#"user: ([0-9]+) system: ([0-9]+) real: ([0-9]+) gc: ([0-9]+)" str)])
       (list (+ (bytes->number (cadr m))
                (bytes->number (caddr m)))
             (bytes->number (cadddr m))
@@ -497,12 +508,11 @@ exec racket -qu "$0" ${1+"$@"}
                 racket-specific-progs)
      (make-impl 'guile
                 void
-                void
+                mk-guile
                 run-guile
                 extract-guile-times
-                void
-                (append '(ctak)
-                        racket-specific-progs))
+                clean-up-guile
+                racket-specific-progs)
 ))
 
   (define obsolete-impls '(racket3m racketcgc racket-j racketcgc-j racketcgc-tl mzc mz-old))
