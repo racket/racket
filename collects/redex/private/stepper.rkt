@@ -104,9 +104,10 @@ todo:
                 [parent choice-vp]
                 [font small-control-font]
                 [label #f]
-                [choices (cons "Single Step"
-                               (map (λ (x) (format "Reduce until ~a" x))
-                                    reduction-names))])))
+                [choices (list* "Single Step"
+                                "Step Until Choice"
+                                (map (λ (x) (format "Reduce until ~a" x))
+                                     reduction-names))])))
     (define red-name-message
       (and (not (null? (reduction-relation->rule-names red)))
            (new message% 
@@ -221,8 +222,10 @@ todo:
                [(or (not reds-choice)
                     (zero? (send reds-choice get-selection)))
                 #f]
+               [(equal? (send reds-choice get-selection) 1)
+                #t]
                [else (symbol->string
-                      (list-ref reduction-names (- (send reds-choice get-selection) 1)))])])
+                      (list-ref reduction-names (- (send reds-choice get-selection) 2)))])])
         (let loop ([next-node click-target]
                    [new-nodes (list)]
                    [cutoff (if looking-for
@@ -240,7 +243,8 @@ todo:
                   (cond
                     [(send (car new-children) in-cycle?)
                      (reverse (cons new-children new-nodes))]
-                    [(member looking-for (find-reduction-label next-node (car new-children) #f))
+                    [(and (not (eq? looking-for #t))
+                          (member looking-for (find-reduction-label next-node (car new-children) #f)))
                      (reverse (cons new-children new-nodes))]
                     [else
                      (loop (car new-children)
