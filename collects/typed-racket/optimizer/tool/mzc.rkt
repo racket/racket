@@ -34,13 +34,24 @@
 (define (mzc-opt-log-message->log-entry l)
   (define evt (parse-inlining-event l))
   (define forged-stx (inlining-event->forged-stx evt))
+  (define self? (self-inline-evt? evt))
   (match (inlining-event-kind evt)
     [(and k (== success-regexp))
-     (inlining-event->opt-log-entry success-kind forged-stx)]
+     (inlining-event->opt-log-entry
+      (if self?
+          unrolling-kind ; we treat unrolling specially
+          success-kind)
+      forged-stx)]
     [(and k (== failure-regexp))
      (inlining-event->missed-opt-log-entry failure-kind forged-stx)]
     [(and k (== out-of-fuel-regexp))
-     (inlining-event->missed-opt-log-entry out-of-fuel-kind forged-stx)]
+     (inlining-event->missed-opt-log-entry
+      (if self?
+          ;; self out-of-fuels are not interesting, they're the end of loop
+          ;; unrolling
+          "Ignored Inlining" ; dummy log-entry that will get ignored later on
+          out-of-fuel-kind)
+      forged-stx)]
     [_
      (error "Unknown log message type" l)]))
 
@@ -95,6 +106,18 @@
                          #f))] ; no source location
     [_ (error "ill-formed inlining log entry" l)]))
 
+;; f gets inlined in f (or tried to)
+(define (self-inline-evt? evt)
+  (match evt
+    [(inlining-event kind name loc where-name where-loc)
+     (match* (loc where-loc)
+       [((list path line col pos span)
+         (list where-path where-line where-col))
+        (and (equal? path where-path)
+             (= col  where-col)
+             (= line where-line))]
+       [(hunoz hukairz) #f])]))
+
 (define (inlining-event->forged-stx evt)
   (match evt
     [(inlining-event kind name loc where-name where-loc)
@@ -102,6 +125,7 @@
 
 
 (define success-kind     "Inlining")
+(define unrolling-kind   "Unrolling Inlining")
 (define failure-kind     "Failed Inlining")
 (define out-of-fuel-kind "Failed Inlining, Out of Fuel")
 
@@ -133,6 +157,7 @@
                         (log-entry-pos y)))
               inliner-logs))
   (define (success?     l) (equal? success-kind     (log-entry-kind l)))
+  (define (unrolling?   l) (equal? unrolling-kind   (log-entry-kind l)))
   (define (failure?     l) (equal? failure-kind     (log-entry-kind l)))
   (define (out-of-fuel? l) (equal? out-of-fuel-kind (log-entry-kind l)))
   (define new-inline-log-entries
@@ -141,6 +166,7 @@
       (match head ; events are grouped, first element is representative
         [(log-entry kind msg stx located-stx pos)
          (define n-successes    (length (filter success?     group)))
+         (define n-unrollings   (length (filter unrolling?   group)))
          (define n-failures     (length (filter failure?     group)))
          (define n-out-of-fuels (length (filter out-of-fuel? group)))
          (define aggregation-string
@@ -150,6 +176,11 @@
                                 (list (format "~a success~a"
                                               n-successes
                                               (if (> n-successes 1) "es" "")))
+                                '())
+                            (if (> n-unrollings 0)
+                                (list (format "~a unrolling~a"
+                                              n-unrollings
+                                              (if (> n-unrollings 1) "s" "")))
                                 '())
                             (if (> n-failures 0)
                                 (list (format "~a failure~a"
