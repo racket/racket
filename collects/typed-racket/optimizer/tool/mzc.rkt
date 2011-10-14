@@ -4,7 +4,7 @@
 
 (require "utilities.rkt"
          typed-racket/optimizer/logging
-         unstable/syntax racket/match racket/list racket/string)
+         unstable/syntax racket/match unstable/match racket/list racket/string)
 
 (provide log-message-from-mzc-opt?
          mzc-opt-log-message->log-entry
@@ -29,20 +29,20 @@
 (define (log-message-from-mzc-opt? l)
   (regexp-match mzc-optimizer-regexp l))
 
+
 ;; String (message from the mzc optimizer) -> log-entry
 (define (mzc-opt-log-message->log-entry l)
-  (define forged-stx (inlining-event->forged-stx l))
-  (cond [(regexp-match (string-append mzc-optimizer-regexp success-regexp)
-                       l)
-         (inlining-success->log-entry forged-stx)]
-        [(regexp-match (string-append mzc-optimizer-regexp failure-regexp)
-                       l)
-         (inlining-failure->log-entry forged-stx)]
-        [(regexp-match (string-append mzc-optimizer-regexp out-of-fuel-regexp)
-                       l)
-         (inlining-out-of-fuel->log-entry forged-stx)]
-        [else
-         (error "Unknown log message type" l)]))
+  (define evt (parse-inlining-event l))
+  (define forged-stx (inlining-event->forged-stx evt))
+  (match (inlining-event-kind evt)
+    [(and k (== success-regexp))
+     (inlining-event->opt-log-entry success-kind forged-stx)]
+    [(and k (== failure-regexp))
+     (inlining-event->missed-opt-log-entry failure-kind forged-stx)]
+    [(and k (== out-of-fuel-regexp))
+     (inlining-event->missed-opt-log-entry out-of-fuel-kind forged-stx)]
+    [_
+     (error "Unknown log message type" l)]))
 
 (define inlining-event-regexp
   ;; Last bit is `generated?'. We don't care about that.
@@ -66,41 +66,57 @@
     " in module: [^ ]+")
    "$"))
 
-(define (inlining-event->forged-stx l)
+(struct inlining-event (kind ; success, miss, out of fuel, ...
+                        name ; _what_ gets inlined
+                        loc  ; (U #f (List path line col pos span))
+                        where-name ; _where_ it gets inlined (enclosing fun)
+                        where-loc  ; (U #f (Line path line col))
+                        ))
+(define (parse-inlining-event l)
   (match (regexp-match inlining-event-regexp l)
     [`(,all ,kind
             ,what ,name ,path ,line ,col ,pos ,span
                   ,only-name
             ,where ,where-loc ,where-path ,where-line ,where-col ,where-name)
-     (datum->syntax #'here (string->symbol (or name only-name))
-                    (if only-name
+     (inlining-event kind
+                     (string->symbol (or name only-name))
+                     (if only-name
                         #f ; no source location
                         (list path
                               (string->number line)
                               (string->number col)
                               (string->number pos)
-                              (string->number span))))]
+                              (string->number span)))
+                     where-name
+                     (if where-loc
+                         (list where-path
+                               (string->number where-line)
+                               (string->number where-col))
+                         #f))] ; no source location
     [_ (error "ill-formed inlining log entry" l)]))
+
+(define (inlining-event->forged-stx evt)
+  (match evt
+    [(inlining-event kind name loc where-name where-loc)
+     (datum->syntax #'here name loc)]))
+
 
 (define success-kind     "Inlining")
 (define failure-kind     "Failed Inlining")
 (define out-of-fuel-kind "Failed Inlining, Out of Fuel")
 
-(define (inlining-success->log-entry forged-stx)
-  (opt-log-entry success-kind success-kind
+(define (inlining-event->opt-log-entry kind forged-stx)
+  (opt-log-entry kind kind
                  forged-stx forged-stx ; stx, located-stx
                  (syntax-position forged-stx)))
-(define (inlining-failure->log-entry forged-stx)
-  (missed-opt-log-entry failure-kind failure-kind
+(define (inlining-event->missed-opt-log-entry kind forged-stx)
+  (missed-opt-log-entry kind kind
                         forged-stx forged-stx
                         (syntax-position forged-stx)
                         '() '() 1)) ; irritants, merged-irritants badness
-(define (inlining-out-of-fuel->log-entry forged-stx)
-  (missed-opt-log-entry out-of-fuel-kind out-of-fuel-kind
-                        forged-stx forged-stx
-                        (syntax-position forged-stx)
-                        '() '() 1))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Log processing. Interprets the log entries, and produces new ones.
 
