@@ -678,10 +678,13 @@ one of the following forms:
        3]{@nonterm{digit@sub{8}}}, as in string escapes (see
        @secref["parse-string"]).}
 
+@;{
+ Not implemented:
  @item{@litchar{#\x}@kleenerange[1 2]{@nonterm{digit@sub{16}}}:
        Unicode for the hexadecimal number specified by @kleenerange[1
        2]{@nonterm{digit@sub{16}}}, as in string escapes (see
        @secref["parse-string"]).}
+}
 
  @item{@litchar{#\u}@kleenerange[1 4]{@nonterm{digit@sub{16}}}:
        like @litchar{#\x}, but with up to four hexadecimal digits.}
