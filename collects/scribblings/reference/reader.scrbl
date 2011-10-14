@@ -229,13 +229,17 @@ specials with the @litchar{.0} suffix, like @racket[-nan.0] are
 double-precision, whereas specials with the @litchar{.f} suffix are
 single-precision.
 
+A @litchar{#} in an @nunterm{inexact} number is the same as
+@litchar{0}, but @litchar{#} can be used to suggest
+that the digit's actual value is unknown.
+
 @BNF[(list @nunterm{number} @BNF-alt[@nunterm{exact}
                                      @nunterm{inexact}])
      (list @nunterm{exact} @BNF-alt[@nunterm{exact-integer}
                                     @nunterm{exact-rational}]
                                   @nunterm{exact-complex})
-     (list @nunterm{exact-integer} @BNF-seq[@optional{@nonterm{sign}} @nunterm{digits}])
-     (list @nunterm{digits} @kleeneplus{@nunterm{digit}})
+     (list @nunterm{exact-integer} @BNF-seq[@optional{@nonterm{sign}} @nunterm{unsigned-integer}])
+     (list @nunterm{unsigned-integer} @kleeneplus{@nunterm{digit}})
      (list @nunterm{exact-rational} @BNF-seq[@nunterm{exact-integer} @litchar{/} @nunterm{unsigned-integer}])
      (list @nunterm{exact-complex} @BNF-seq[@nunterm{exact-rational} @nonterm{sign} @nunterm{exact-rational} @litchar{i}])
      (list @nunterm{inexact} @BNF-alt[@nunterm{inexact-real}
@@ -263,8 +267,8 @@ single-precision.
      (list @nonterm{digit@sub{8}} @BNF-alt[@nonterm{digit@sub{2}} @litchar{2} @litchar{3}
                                            @litchar{4} @litchar{5} @litchar{6} @litchar{7}])
      (list @nonterm{digit@sub{2}} @BNF-alt[@litchar{0} @litchar{1}])
-     (list @nonterm{exp-mark@sub{16}} @BNF-alt[@litchar{s} @litchar{d} @litchar{l}])
-     (list @nonterm{exp-mark@sub{10}} @BNF-alt[@nonterm{exp-mark@sub{16}} @litchar{e} @litchar{f}])
+     (list @nonterm{exp-mark@sub{16}} @BNF-alt[@litchar{s} @litchar{l}])
+     (list @nonterm{exp-mark@sub{10}} @BNF-alt[@nonterm{exp-mark@sub{16}} @litchar{d} @litchar{e} @litchar{f}])
      (list @nonterm{exp-mark@sub{8}} @nonterm{exp-mark@sub{10}})
      (list @nonterm{exp-mark@sub{2}} @nonterm{exp-mark@sub{10}})
      (list @nunterm{general-number} @BNF-seq[@optional{@nonterm{exactness}} @nunterm{number}])
