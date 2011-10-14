@@ -143,31 +143,25 @@
          (define n-successes    (length (filter success?     group)))
          (define n-failures     (length (filter failure?     group)))
          (define n-out-of-fuels (length (filter out-of-fuel? group)))
-         ;; If we have any failures at all, we consider it a missed opt.
          (define aggregation-string
-           (format "(~a~a~a~a~a~a~a)"
-                   (if (> n-successes 0)
-                       (format "~a success~a"
-                               n-successes
-                               (if (> n-successes 1) "es" ""))
-                       "")
-                   (if (and (> n-successes 0)
-                            (or (> n-failures     0)
-                                (> n-out-of-fuels 0)))
-                       ", " "")
-                   (if (> n-failures 0)
-                       (format "~a failure~a"
-                               n-failures
-                               (if (> n-failures 1) "s" ""))
-                       "")
-                   (if (and (> n-failures     0)
-			    (> n-out-of-fuels 0))
-                       ", " "")
-                   (if (> n-out-of-fuels 0)
-                       (format "~a out of fuel~a"
-                               n-out-of-fuels
-                               (if (> n-out-of-fuels 1) "s" ""))
-                       "")))
+           (format "(~a)"
+                   (string-join
+                    (append (if (> n-successes 0)
+                                (list (format "~a success~a"
+                                              n-successes
+                                              (if (> n-successes 1) "es" "")))
+                                '())
+                            (if (> n-failures 0)
+                                (list (format "~a failure~a"
+                                              n-failures
+                                              (if (> n-failures 1) "s" "")))
+                                '())
+                            (if (> n-out-of-fuels 0)
+                                (list (format "~a out of fuel~a"
+                                              n-out-of-fuels
+                                              (if (> n-out-of-fuels 1) "s" "")))
+                                '()))
+                    ", ")))
          ;; This is where the interesting decisions are taken.
          (define counts-as-a-missed-opt?
            (or (> n-failures 0) ; any straight failure is a problem
