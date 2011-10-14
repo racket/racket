@@ -15,18 +15,20 @@
 
 @; ----------------------------------------------------------------------
 
-@margin-note{Currently, parallel support for places is enabled
-  only for Racket 3m (which is the main variant of Racket), and only
-  by default for Windows, Linux x86/x86_64, and Mac OS X x86/x86_64. To
-  enable support for other platforms, use @DFlag{enable-places} with
-  @exec{configure} when building Racket. The @racket[place-enabled?]
-  function reports whether places run in parallel.}
+@guideintro["effective-places"]{places}
 
 @note-lib[racket/place]
 
 @tech{Places} enable the development of parallel programs that
 take advantage of machines with multiple processors, cores, or
 hardware threads.
+
+@margin-note{Currently, parallel support for places is enabled
+  only for Racket 3m (which is the main variant of Racket), and only
+  by default for Windows, Linux x86/x86_64, and Mac OS X x86/x86_64. To
+  enable support for other platforms, use @DFlag{enable-places} with
+  @exec{configure} when building Racket. The @racket[place-enabled?]
+  function reports whether places run in parallel.}
 
 A @deftech{place} is a parallel task that is effectively a separate
 instance of the Racket virtual machine. Places communicate through
