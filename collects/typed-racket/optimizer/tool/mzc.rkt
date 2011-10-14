@@ -116,6 +116,7 @@
         (and (equal? path where-path)
              (= col  where-col)
              (= line where-line))]
+       [(hunoz #f) #t] ; we assume it is, to be conservative
        [(hunoz hukairz) #f])]))
 
 (define (inlining-event->forged-stx evt)
