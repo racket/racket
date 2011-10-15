@@ -1,7 +1,6 @@
 #lang racket
 
-(require "../main.rkt"
-         "../utils.rkt")
+(require rackunit plot plot/utils)
 
 ;(plot-new-window? #t)
 
@@ -137,9 +136,10 @@
                       #:color "blue")
             (axes 1 0 #:y-ticks? #f)))
 
-#;; error: could not determine x bounds
-(plot (list (function sqr #f -1)
-            (function sqr 1 #f)))
+;; error: could not determine x bounds
+(check-exn exn:fail?
+           (λ () (plot (list (function sqr #f -1)
+                             (function sqr 1 #f)))))
 
 ; draws first function with x in [-2,-1]
 (plot (list (function sqr #f -1)
@@ -155,6 +155,10 @@
 (plot (list (function sqr #f -1)
             (function sqr 1 #f))
       #:x-min -2 #:x-max 2)
+
+; draws both in full (particularly, without chopping off the top of the parabola), in [-2,2]
+(plot (list (function sqr)
+            (function sin -2 2)))
 
 (time
  (plot (list (discrete-histogram

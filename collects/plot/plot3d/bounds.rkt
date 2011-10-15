@@ -15,9 +15,9 @@
 ;; Attempts to comptute a fixpoint of, roughly, the bounds functions for the given renderers.
 ;; More precisely, starting with the given plot bounds, it attempts to compute a fixpoint of
 ;; apply-bounds*, overridden at every iteration by the plot bounds (if given).
-;; Because a fixpoint doesn't always exist, or only exists in the limit, it stops after max-iters.
+;; Because a fixpoint doesn't always exist, or may only exist in the limit, it stops after max-iters.
 (define (renderer3d-bounds-fixpoint renderers plot-x-min plot-x-max plot-y-min plot-y-max
-                                    plot-z-min plot-z-max [max-iters 4])
+                                    plot-z-min plot-z-max [max-iters 2])
   (let/ec break
     ;; Shortcut eval: if the plot bounds are all specified, the code below just returns them
     (when (and plot-x-min plot-x-max plot-y-min plot-y-max plot-z-min plot-z-max)
@@ -65,7 +65,5 @@
          (match-define (list xs ys zss) (f x-min x-max samples y-min y-max samples))
          (define zs (filter regular? (2d-sample->list zss)))
          (cond [(empty? zs)  (values x-min x-max y-min y-max z-min z-max)]
-               [else  (values x-min x-max y-min y-max
-                              (if z-min z-min (apply min* zs))
-                              (if z-max z-max (apply max* zs)))])]
+               [else  (values x-min x-max y-min y-max (apply min* zs) (apply max* zs))])]
         [else  (values x-min x-max y-min y-max z-min z-max)]))

@@ -17,9 +17,9 @@
 ;; Attempts to comptute a fixpoint of, roughly, the bounds functions for the given renderers.
 ;; More precisely, starting with the given plot bounds, it attempts to compute a fixpoint of
 ;; apply-bounds*, overridden at every iteration by the plot bounds (if given).
-;; Because a fixpoint doesn't always exist, or only exists in the limit, it stops after max-iters.
+;; Because a fixpoint doesn't always exist, or may only exist in the limit, it stops after max-iters.
 (define (renderer2d-bounds-fixpoint renderers plot-x-min plot-x-max plot-y-min plot-y-max
-                                    [max-iters 4])
+                                    [max-iters 2])
   (let/ec break
     ;; Shortcut eval: if the plot bounds are all specified, the code below just returns them
     (when (and plot-x-min plot-x-max plot-y-min plot-y-max)
@@ -61,18 +61,14 @@
   (cond [(and x-min x-max)  (match-define (list xs ys) (f x-min x-max samples))
                             (define rys (filter regular? ys))
                             (cond [(empty? rys)  (values x-min x-max y-min y-max)]
-                                  [else  (values x-min x-max
-                                                 (if y-min y-min (apply min* rys))
-                                                 (if y-max y-max (apply max* rys)))])]
+                                  [else  (values x-min x-max (apply min* rys) (apply max* rys))])]
         [else  (values x-min x-max y-min y-max)]))
 
 (define ((inverse-bounds-fun f samples) x-min x-max y-min y-max)
   (cond [(and y-min y-max)  (match-define (list ys xs) (f y-min y-max samples))
                             (define rxs (filter regular? xs))
                             (cond [(empty? rxs)  (values x-min x-max y-min y-max)]
-                                  [else  (values (if x-min x-min (apply min* rxs))
-                                                 (if x-max x-max (apply max* rxs))
-                                                 y-min y-max)])]
+                                  [else  (values (apply min* rxs) (apply max* rxs) y-min y-max)])]
         [else  (values x-min x-max y-min y-max)]))
 
 (define ((function-interval-bounds-fun f1 f2 samples) x-min x-max y-min y-max)
@@ -81,9 +77,7 @@
          (match-define (list x2s y2s) (f2 x-min x-max samples))
          (define rys (filter regular? (append y1s y2s)))
          (cond [(empty? rys)  (values x-min x-max y-min y-max)]
-               [else  (values x-min x-max
-                              (if y-min y-min (apply min* rys))
-                              (if y-max y-max (apply max* rys)))])]
+               [else  (values x-min x-max (apply min* rys) (apply max* rys))])]
         [else  (values x-min x-max y-min y-max)]))
 
 (define ((inverse-interval-bounds-fun f1 f2 samples) x-min x-max y-min y-max)
@@ -92,7 +86,5 @@
          (match-define (list y2s x2s) (f2 y-min y-max samples))
          (define rxs (filter regular? (append x1s x2s)))
          (cond [(empty? rxs)  (values x-min x-max y-min y-max)]
-               [else  (values (if x-min x-min (apply min* rxs))
-                              (if x-max x-max (apply max* rxs))
-                              y-min y-max)])]
+               [else  (values (apply min* rxs) (apply max* rxs) y-min y-max)])]
         [else  (values x-min x-max y-min y-max)]))
