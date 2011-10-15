@@ -76,8 +76,8 @@
                [#:x-ticks? x-ticks? boolean? (x-axis-ticks?)]
                [#:y-ticks? y-ticks? boolean? (y-axis-ticks?)]
                ) (listof renderer2d?)
-  (list (x-axis x #:ticks? x-ticks?)
-        (y-axis y #:ticks? y-ticks?)))
+  (list (x-axis y #:ticks? x-ticks?)
+        (y-axis x #:ticks? y-ticks?)))
 
 ;; ===================================================================================================
 ;; Polar axes

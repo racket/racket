@@ -38,7 +38,6 @@
 (defparam plot-legend-box-alpha alpha (real-in 0 1) 2/3)
 
 (defparam plot-tick-size (>=/c 0) 10)
-(defparam plot-tick-skip exact-positive-integer? 2)
 
 (defparam plot-title (or/c string? #f) #f)
 (defparam plot-x-label (or/c string? #f) "x axis")

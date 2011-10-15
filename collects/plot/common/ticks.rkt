@@ -42,7 +42,7 @@
     (map tick ps labels majors)))
 
 (defproc (default-ticks-fun [x-min real?] [x-max real?]) (listof tick?)
-  (linear-ticks (plot-tick-skip) x-min x-max))
+  (linear-ticks 2 x-min x-max))
 
 (defproc (auto-contour-zs [z-min real?] [z-max real?]) (listof real?)
   (let* ([zs  (map tick-p (default-ticks-fun z-min z-max))]
