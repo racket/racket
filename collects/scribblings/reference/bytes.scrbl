@@ -22,6 +22,8 @@ A byte string can be used as a single-valued sequence (see
 @secref["sequences"]). The bytes of the string serve as elements
 of the sequence. See also @racket[in-bytes].
 
+@see-read-print["string"]{byte strings}
+
 See also: @racket[immutable?].
 
 @; ----------------------------------------

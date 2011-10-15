@@ -18,6 +18,8 @@ Two characters are @racket[eqv?] if they correspond to the same scalar
 value. For each scalar value less than 256, character values that are
 @racket[eqv?] are also @racket[eq?].
 
+@see-read-print["character"]{characters}
+
 @; ----------------------------------------
 @section{Characters and Scalar Values}
 

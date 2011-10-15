@@ -22,6 +22,10 @@ A vector can be used as a single-valued sequence (see
 @secref["sequences"]). The elements of the vector serve as elements
 of the sequence. See also @racket[in-vector].
 
+A literal or printed vector starts with @litchar{#(}, optionally with
+a number between the @litchar{#} and
+@litchar{(}. @see-read-print["vector" #:print "vectors"]{vectors}
+
 @defproc[(vector? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a vector, @racket[#f] otherwise.}

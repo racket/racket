@@ -22,6 +22,8 @@ A string can be used as a single-valued sequence (see
 @secref["sequences"]). The characters of the string serve as elements
 of the sequence. See also @racket[in-string].
 
+@see-read-print["string"]{strings}
+
 See also: @racket[immutable?], @racket[symbol->string],
 @racket[bytes->string/utf-8].
 

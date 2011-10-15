@@ -97,6 +97,8 @@ Cyclic data structures can be created using only immutable pairs via
 and using some number of @racket[cdr]s returns to the starting pair,
 then the pair is not a list.
 
+@see-read-print["pair" #:print "pairs"]{pairs and lists}
+
 @; ----------------------------------------
 @section{Pair Constructors and Selectors}
 

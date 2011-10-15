@@ -87,6 +87,8 @@ exact, and when they are @racket[=] (except for @racket[+nan.0], @racket[+nan.f]
 @racket[+0.0], @racket[+0.0f0], @racket[-0.0], and @racket[-0.0f0], as noted above). Two numbers are
 @racket[equal?] when they are @racket[eqv?].
 
+@see-read-print["number"]{numbers}
+
 @local-table-of-contents[]
 
 @; ----------------------------------------

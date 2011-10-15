@@ -9,7 +9,9 @@ depend on a boolean value typically treat anything other than
 @racket[#f] as true. The @racket[#t] value is always @racket[eq?] to
 itself, and @racket[#f] is always @racket[eq?] to itself.
 
-See also: @racket[and], @racket[or], @racket[andmap], @racket[ormap].
+@see-read-print["boolean" #:print "booleans"]{booleans}
+
+See also @racket[and], @racket[or], @racket[andmap], and @racket[ormap].
 
 
 @defproc[(boolean? [v any/c]) boolean?]{
