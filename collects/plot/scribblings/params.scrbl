@@ -84,7 +84,6 @@ See @(racket ->pen-color) and @(racket ->brush-color) for details on how PLoT in
 @doc-apply[plot-legend-box-alpha]{The opacity of the filled rectangle behind the legend entries.}
 
 @doc-apply[plot-tick-size]{The length of tick lines, in drawing units.}
-@doc-apply[plot-tick-skip]{Controls the spacing between major ticks for renderers that use the default tick function, such as the renderers returned by @(racket function) and @(racket surface3d). With the default value @(racket 2), every other tick is major. A tick at @(racket 0) is always major. Major ticks are thicker and labeled; minor ticks are thinner and unlabeled.}
 
 @doc-apply[plot-title]
 @doc-apply[plot-x-label]

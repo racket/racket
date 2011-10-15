@@ -11,6 +11,8 @@
 
 (plot empty #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1)
 
+(plot (list (axes 1 2) (function values -4 4)))
+
 (time (plot (function values 0 1000)))
 
 (parameterize ([plot-background  "black"]

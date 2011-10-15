@@ -128,7 +128,6 @@
   (define line-width (plot-line-width))
   (define legend-box-alpha (plot-legend-box-alpha))
   (define tick-size (plot-tick-size))
-  (define tick-skip (plot-tick-skip))
   (define x-transform (plot-x-transform))
   (define y-transform (plot-y-transform))
   (define z-transform (plot-z-transform))
@@ -144,7 +143,6 @@
                        [plot-line-width        line-width]
                        [plot-legend-box-alpha  legend-box-alpha]
                        [plot-tick-size         tick-size]
-                       [plot-tick-skip         tick-skip]
                        [plot-x-transform       x-transform]
                        [plot-y-transform       y-transform]
                        [plot-z-transform       z-transform]
