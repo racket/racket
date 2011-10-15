@@ -80,6 +80,9 @@ keys:}} If a key in an @racket[equal?]-based hash table is mutated
 hash table's behavior for insertion and lookup operations becomes
 unpredictable.
 
+A literal or printed hash table starts with @litchar{#hash},
+@litchar{#hasheqv}, or
+@litchar{#hasheq}. @see-read-print["hashtable"]{hash tables}
 
 @defproc[(hash? [v any/c]) boolean?]{
 

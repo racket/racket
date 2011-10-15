@@ -54,6 +54,9 @@ compatible with Perl.  In addition, Racket constants written with
 @litchar{#rx} or @litchar{#px} (see @secref["reader"]) produce
 compiled regexp values.
 
+A literal or printed regular expression starts with @litchar{#rx} or
+@litchar{#px}. @see-read-print["regexp"]{regular expressions}
+
 The internal size of a regexp value is limited to 32 kilobytes; this
 limit roughly corresponds to a source string with 32,000 literal
 characters or 5,000 operators.

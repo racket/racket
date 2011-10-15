@@ -97,7 +97,7 @@ Symbols @racket[print] the same as they @racket[write], unless
 @racket[print]ed form is prefixed with @litchar{'}. For the purposes
 of printing enclosing datatypes, a symbol is @tech{quotable}.
 
-@section{Printing Numbers}
+@section[#:tag "print-number"]{Printing Numbers}
 
 A @tech{number} prints the same way in @racket[write], @racket[display], and
 @racket[print] modes. For the purposes of printing enclosing
@@ -126,7 +126,7 @@ determined by @racket[numerator] and @racket[denominator]).
 A negative @tech{exact number} prints with a @litchar{-} prefix on the
 printed form of the number's exact negation.
 
-@section{Printing Booleans}
+@section[#:tag "print-booleans"]{Printing Booleans}
 
 The @tech{boolean} constant @racket[#t] prints as @litchar{#true} or @litchar{#t} in
 all modes (@racket[display], @racket[write], and @racket[print]),
@@ -219,7 +219,7 @@ always @tech{quotable}, a pair is @tech{quotable} when its
 @racket[car] and @racket[cdr] are @tech{quotable}, and a mutable list
 is never @tech{quotable}.
 
-@section{Printing Strings}
+@section[#:tag "print-string"]{Printing Strings}
 
 All @tech{strings} @racket[display] as their literal character sequences.
 
@@ -419,7 +419,7 @@ When the @racket[print-box] parameter is set to @racket[#f], a box
 prints as @litchar{#<box>} and counts as @tech{quotable}.
 
 
-@section{Printing Characters}
+@section[#:tag "print-character"]{Printing Characters}
 
 @tech{Characters} with the special names described in
 @secref["parse-character"] @racket[write] and @racket[print] using the
@@ -439,7 +439,7 @@ For the purposes of printing enclosing datatypes, a character is
 @tech{quotable}.
 
 
-@section{Printing Keywords}
+@section[#:tag "print-keyword"]{Printing Keywords}
 
 @tech{Keywords} @racket[write], @racket[print], and @racket[display] the same
 as symbols (see @secref["print-symbol"]) except with a leading
@@ -452,7 +452,7 @@ For the purposes of printing enclosing datatypes, a keyword is
 @tech{quotable}.
 
 
-@section{Printing Regular Expressions}
+@section[#:tag "print-regexp"]{Printing Regular Expressions}
 
 @tech{Regexp values} @racket[write], @racket[display], and @racket[print]
 starting with @litchar{#px} (for @racket[pregexp]-based regexps) or
