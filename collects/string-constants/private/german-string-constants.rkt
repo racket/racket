@@ -1120,9 +1120,13 @@
   (exited-successfully "Erfolgreich beendet.")
   (exited-with-error-code "Beendet mit Fehlercode ~a.") ;; ~a is filled in with a number between 1 and 255
   (program-ran-out-of-memory "Dem Programm ist der Speicher ausgegangen.")
- (last-stack-frame "letzten Stack-Frame zeigen")
- (last-stack-frames "die letzten ~a Stack-Frames zeigen")
- (next-stack-frames "die nächsten ~a Stack-Frames zeigen")
+  
+  (show-evaluation-terminated-dialog "Den Dialog ‘Auswertung abgebrochen’ zeigen")
+  (evaluation-terminated-ask "Diesen Dialog das nächste Mal anzeigen?")
+  
+  (last-stack-frame "letzten Stack-Frame anzeigen")
+  (last-stack-frames "die letzten ~a Stack-Frames anzeigen")
+  (next-stack-frames "die nächsten ~a Stack-Frames anzeigen")
  
  ;;; welcoming message in repl
  (language "Sprache")
