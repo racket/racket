@@ -1757,7 +1757,7 @@
        (for-each 
         (λ (x)
           (syntax-case x ()
-            [(stuff ...) (void)]
+            [(stuff stuff2 ...) (void)]
             [x (raise-syntax-error syn-error-name "expected a clause" stx #'x)]))
         (syntax->list #'(x ...)))
        (raise-syntax-error syn-error-name "error checking failed.2" stx))]))
