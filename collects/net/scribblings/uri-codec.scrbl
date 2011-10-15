@@ -132,7 +132,7 @@ associations in @racket[form-urlencoded->alist],
 The default value is @racket['amp-or-semi], which means that both
 @litchar{&} and @litchar{;} are treated as separators when parsing,
 and @litchar{&} is used as a separator when encoding. The other modes
-use/recognize only of the separators.
+use/recognize only one of the separators.
 
 @examples[
 #:eval uri-codec-eval
