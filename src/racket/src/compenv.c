@@ -1086,10 +1086,13 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
 	  break;
 	}
       } else {
-        if (!SCHEME_PAIRP(marks)) {
+        if (SCHEME_NULLP(amarks)) {
+          /* can always match empty marks */
+          best_match = SCHEME_CDR(a);
+          best_match_skipped = 0;
+        } else if (!SCHEME_PAIRP(marks)) {
 	  /* To be better than nothing, could only match exactly: */
-	  if (scheme_equal(amarks, marks)
-              || SCHEME_NULLP(amarks)) {
+	  if (scheme_equal(amarks, marks)) {
 	    best_match = SCHEME_CDR(a);
 	    best_match_skipped = 0;
 	  }
