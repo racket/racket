@@ -82,11 +82,8 @@ SQLite support requires the appropriate native library.
 
 @itemlist[
 
-@item{On Windows, the library is @tt{sqlite3.dll}. It can be obtained
-from @hyperlink["http://www.sqlite.org/download.html"]{the SQLite
-download page}; the DLL file should be extracted and placed into one
-of the directories produced by
-@racketblock[(begin (require setup/dirs) (get-lib-search-dirs))]}
+@item{On Windows, the library is @tt{sqlite3.dll}. It is included in
+the Racket distribution.}
 
 @item{On Mac OS X, the library is @tt{libsqlite3.0.dylib}, which is
 included (in @tt{/usr/lib}) in Mac OS X version 10.4 onwards.}
