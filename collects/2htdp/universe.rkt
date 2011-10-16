@@ -93,7 +93,7 @@
   [on-key DEFAULT #f (function-with-arity 2)]
   ;; World KeyEvent -> World 
   ;; on-release must specify a release event handler 
-  [on-release DEFAULT #'K (function-with-arity 2)]
+  [on-release DEFAULT #f (function-with-arity 2)]
   ;; (U #f (World S-expression -> World))
   ;; -- on-receive must specify a receive handler 
   [on-receive DEFAULT #'#f (function-with-arity 2)]

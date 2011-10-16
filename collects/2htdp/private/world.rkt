@@ -52,8 +52,8 @@
     (class* object% (start-stop<%>)
       (inspect #f)
       (init-field world0)
-      (init-field name state register check-with on-key on-mouse record?)
-      (init on-release on-receive on-draw stop-when)
+      (init-field name state register check-with on-key on-release on-mouse record?)
+      (init on-receive on-draw stop-when)
       
       ;; -----------------------------------------------------------------------
       (field
@@ -152,7 +152,8 @@
           (show fst-scene)))
       
       (define/public (deal-with-key %)
-        (if (not on-key) %
+        (if (and (not on-key) (not on-release))
+            %
             (class %
               (super-new)
               (define/override (on-char e) 
@@ -235,8 +236,8 @@
       ;; ----------------------------------------------------------------------
       ;; callbacks 
       (field
-       (key    on-key)
-       (release on-release)
+       (key     (if on-key on-key (lambda (w ke) w)))
+       (release (if on-release on-release (lambda (w ke) w)))
        (mouse  on-mouse)
        (rec    on-receive))
       

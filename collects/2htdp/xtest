@@ -35,4 +35,5 @@ run record-stop-when.rkt
 run stop-when-crash.rkt
 run on-tick-universe-with-limit.rkt
 run on-tick-with-limit.rkt
+run on-release-no-key.rkt
 
