@@ -58,7 +58,11 @@
 (: looks-like-module? ((Instance Text%) -> Boolean))
 (define (looks-like-module? text)
   (or (looks-like-new-module-style? text)
-      (looks-like-old-module-style? text)))
+      (looks-like-old-module-style? text)
+      (with-handlers ((exn:fail? (λ (x) #f)))
+        (procedure?
+         (read-language (open-input-text-editor text 0 'end (λ (x) x) text #f) 
+                        (λ () #f)))))) 
 
 (: looks-like-old-module-style? ((Instance Text%) -> Boolean))
 (define (looks-like-old-module-style? text)
