@@ -16,11 +16,8 @@
 (void
  (interaction-eval #:eval the-eval
                    (require racket/class
-                            racket/pretty
                             db/base
                             db/util/datetime))
- (interaction-eval #:eval the-eval
-                   (current-print pretty-print-handler))
  (interaction-eval #:eval the-eval
                    (define connection% (class object% (super-new))))
  (interaction-eval #:eval the-eval
