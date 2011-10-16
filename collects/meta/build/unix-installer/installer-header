@@ -12,7 +12,9 @@ fi
 
 rm_on_abort=""
 failwith() {
-  echo "Error: $*" 1>&2
+  err="Error: "
+  if test "x$1" = "x-noerror"; then err=""; shift; fi
+  echo "$err$*" 1>&2
   if test ! "x$rm_on_abort" = "x" && test -e "$rm_on_abort"; then
     echon "  (Removing installation files in $rm_on_abort)"
     "$rm" -rf "$rm_on_abort"
@@ -21,9 +23,9 @@ failwith() {
   exit 1
 }
 # intentional aborts
-abort() { failwith "abort."; }
+abort() { failwith -noerror "Aborting installation."; }
 # unexpected exits
-exithandler() { failwith "Aborting..."; }
+exithandler() { echo ""; failwith "Aborting..."; }
 
 trap exithandler 2 3 9 15
 
@@ -68,11 +70,11 @@ cat_installer() {
 echo "This program will extract and install $DISTNAME."
 echo ""
 echo "Note: the required diskspace for this installation is $ORIGSIZE."
+echo ""
 
 ###############################################################################
 ## What kind of installation?
 
-echo ""
 echo "Do you want a Unix-style distribution?"
 echo "  In this distribution mode files go into different directories according"
 echo "  to Unix conventions.  A \"racket-uninstall\" script will be generated"
@@ -96,12 +98,12 @@ while test "$unixstyle" = "x"; do
     * )     unixstyle="x" ;;
   esac
 done
+echo ""
 
 ###############################################################################
 ## Where do you want it?
 ## sets $where to the location: target path for wholedir, prefix for unixstyle
 
-echo ""
 if test "$unixstyle" = "Y"; then
   echo "Where do you want to base your installation of $DISTNAME?"
   echo "  (If you've done such an installation in the past, either"
@@ -176,12 +178,15 @@ unpack_installation() {
   test "$BINSUM" = "$SUM" || failwith "bad CRC checksum."
   echo "ok."
   # test that the target does not exists
+  here="N"
   if test -d "$T" || test -f "$T"; then
-    if test -d "$T"; then
+    if test -d "$T" && test -x "$T"; then
       # use the real name, so "/foo/.." shows as an explicit "/"
-      oldwd="`pwd`"; cd "$T"; T="`pwd`"; cd "$oldwd"; echon "\"$T\" exists"
-    else
-      echon "\"$T\" exists (as a file)"
+      oldwd="`pwd`"; cd "$T"; T="`pwd`"; cd "$oldwd"
+    fi
+    if test -f "$T"; then echon "\"$T\" exists (as a file)"
+    elif test ! "`pwd`" = "$T"; then echon "\"$T\" exists"
+    else here="Y"; echon "\"$T\" is where you ran the installer from"
     fi
     echon ", delete? "
     read R
@@ -197,15 +202,23 @@ unpack_installation() {
   # unpack
   rm_on_abort="$T"
   "$mkdir" -p "$T" || failwith "could not create directory: $T"
-  oldwd="`pwd`"; cd "$T"; INSTDIR="`pwd`"; cd "$oldwd"
-  echon "Unpacking into \"$INSTDIR\" (Ctrl+C to abort)... "
+  if test "$here" = "Y"; then
+    cd "$T"; INSTDIR="$T"
+    echo "*** Note: your original directory was deleted, so you will need"
+    echo "*** to 'cd' back into it when the installer is done, otherwise"
+    echo "*** it will look like you have an empty directory."
+    sleep 1
+  else oldwd="`pwd`"; cd "$T"; INSTDIR="`pwd`"; cd "$oldwd"
+  fi
+  rm_on_abort="$INSTDIR"
+  echo "Unpacking into \"$INSTDIR\" (Ctrl+C to abort)..."
   cat_installer | "$gunzip" -c \
     | { cd "$INSTDIR"
         "$tar" xf - || failwith "problems during unpacking of binary archive."
       }
   test -d "$INSTDIR/collects" \
     || failwith "unpack failed (could not find \"$T/collects\")."
-  echo "done."
+  echo "Done."
 }
 
 ###############################################################################
@@ -227,7 +240,7 @@ wholedir_install() {
   if test "x$SYSDIR" = "x"; then :
   elif test ! -d "$SYSDIR"; then
     echo "\"$SYSDIR\" does not exist, skipping links."
-  elif test ! -w "$SYSDIR"; then
+  elif test ! -x "$SYSDIR" || test ! -w "$SYSDIR"; then
     echo "\"$SYSDIR\" is not writable, skipping links."
   else
     oldwd="`pwd`"; cd "$SYSDIR"; SYSDIR="`pwd`"; cd "$oldwd"
@@ -235,7 +248,7 @@ wholedir_install() {
     install_links() { # tgtdir(absolute) srcdir(relative to INSTDIR)
       if ! test -d "$1"; then
         echo "\"$1\" does not exist, skipping."
-      elif ! test -w "$1"; then
+      elif ! test -x "$1" || ! test -w "$1"; then
         echo "\"$1\" is not writable, skipping"
       else
         echo "Installing links in \"$1\"..."
@@ -263,10 +276,10 @@ wholedir_install() {
 ## Unix-style installations
 
 dir_createable() {
-  test_dir="`\"$dirname\" \"$1\"`"
-  if test -d "$test_dir" && test -w "$test_dir"; then return 0
-  elif test "$test_dir" = "/"; then return 1
-  else dir_createable "$test_dir"; fi
+  tdir="`\"$dirname\" \"$1\"`"
+  if test -d "$tdir" && test -x "$tdir" && test -w "$tdir"; then return 0
+  elif test "$tdir" = "/"; then return 1
+  else dir_createable "$tdir"; fi
 }
 show_dir_var() {
   if   test -f   "$2"; then status="error: not a directory!"; err="Y"
@@ -288,54 +301,60 @@ unixstyle_install() {
     echon "  should I create it? (default: yes) "
     read R; case "$R" in [nN]* ) abort ;; esac
     "$mkdir" -p "$where" || failwith "could not create directory: $where"
+  elif test ! -w "$where"; then
+    failwith "The entered base directory is not writable: $where"
   fi
   cd "$where" || failwith "Base directory does not exist: $where"
   where="`pwd`"; cd "$origwd"
 
   set_dirs "$where"
   # loop for possible changes
-  done="N"
+  done="N"; retry="N"
   while test ! "$done" = "Y" || test "x$err" = "xY" ; do
-    echo ""
-    echo "Target Directories:"
     err="N"
-    show_dir_var "[e] Executables  " "$bindir"
-    show_dir_var "[r] Racket Code  " "$collectsdir"
-    show_dir_var "[d] Core Docs    " "$docdir"
-    show_dir_var "[l] C Libraries  " "$libdir"
-    show_dir_var "[h] C headers    " "$incrktdir"
-    show_dir_var "[o] Extra C Objs " "$librktdir"
-    show_dir_var "[m] Man Pages    " "$mandir"
-    if test "$PNAME" = "full"; then
-      echo "  (C sources are not kept)"
-      # show_dir_var "[s] Source Tree  " "$srcdir"
+    if test "$retry" = "N"; then
+      echo ""
+      echo "Target Directories:"
+      show_dir_var "[e] Executables  " "$bindir"
+      show_dir_var "[r] Racket Code  " "$collectsdir"
+      show_dir_var "[d] Core Docs    " "$docdir"
+      show_dir_var "[l] C Libraries  " "$libdir"
+      show_dir_var "[h] C headers    " "$incrktdir"
+      show_dir_var "[o] Extra C Objs " "$librktdir"
+      show_dir_var "[m] Man Pages    " "$mandir"
+      if test "$PNAME" = "full"; then
+        echo "  (C sources are not kept)"
+        # show_dir_var "[s] Source Tree  " "$srcdir"
+      fi
+      echo "Enter a letter to change an entry, or enter to continue."
     fi
-    echo "Enter a letter to change an entry, or enter to continue"
+    retry="N"
     echon "> "; read change_what
     read_dir() {
       echon "New directory (absolute or relative to $where): "; read new_dir
       case "$new_dir" in
-        "/"* ) echo "$new_dir" ;;
-        *    ) echo "$where/$new_dir" ;;
+        "/"* ) eval "$1=\"$new_dir\"" ;;
+        *    ) eval "$1=\"$where/$new_dir\"" ;;
       esac
     }
     case "$change_what" in
-      [eE]* ) bindir="`read_dir`" ;;
-      [rR]* ) collectsdir="`read_dir`" ;;
-      [dD]* ) docdir="`read_dir`" ;;
-      [lL]* ) libdir="`read_dir`" ;;
-      [hH]* ) incrktdir="`read_dir`" ;;
-      [oO]* ) librktdir="`read_dir`" ;;
-      [mM]* ) mandir="`read_dir`" ;;
-      # [sS]* ) if test "$PNAME" = "full"; then srcdir="`read_dir`"
+      [eE]* ) read_dir bindir ;;
+      [rR]* ) read_dir collectsdir ;;
+      [dD]* ) read_dir docdir ;;
+      [lL]* ) read_dir libdir ;;
+      [hH]* ) read_dir incrktdir ;;
+      [oO]* ) read_dir librktdir ;;
+      [mM]* ) read_dir mandir ;;
+      # [sS]* ) if test "$PNAME" = "full"; then read_dir srcdir
       #         else echo "Invalid response"; fi ;;
       ""    ) if test "$err" = "N"; then done="Y"
               else echo "*** Please fix erroneous paths to proceed"; fi ;;
-      *     ) echo "Invalid response" ;;
+      *     ) retry="Y" ;;
     esac
   done
 
   if test -x "$bindir/racket-uninstall"; then
+    echo ""
     echo "A previous Racket uninstaller is found at"
     echo "  \"$bindir/racket-uninstall\","
     echon "  should I run it? (default: yes) "
@@ -370,7 +389,7 @@ unixstyle_install() {
 if test "$unixstyle" = "Y"; then unixstyle_install; else wholedir_install; fi
 
 echo ""
-echo "All done."
+echo "Installation complete."
 
 exit
 
