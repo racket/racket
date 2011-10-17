@@ -107,7 +107,7 @@
   (syntax-case provide-stx ()
     [(_ p/c-ele ...)
      (let ()
-       
+         
        ;; ids : table[id -o> (listof id)]
        ;; code-for-each-clause adds identifiers to this map.
        ;; when it binds things; they are then used to signal 
@@ -678,9 +678,6 @@
                                           (a:mangle-id provide-stx
                                                        "provide/contract-contract-id" 
                                                        (or user-rename-id ex-id)))]
-                         [pos-module-source (a:mangle-id provide-stx 
-                                                         "provide/contract-pos-module-source"
-                                                         (or user-rename-id ex-id))]
                          [pos-stx (datum->syntax id 'here)]
                          [id id]
                          [ex-id ex-id]
@@ -698,7 +695,6 @@
                               (syntax-property
                                (quasisyntax/loc stx
                                  (begin
-                                   (define pos-module-source (quote-module-name))
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
@@ -775,6 +771,7 @@
          (signal-dup-syntax-error)
          (syntax 
           (begin
+            (define pos-module-source (quote-module-name))
             bodies ...))))]))
 
 (define-syntax (provide/contract stx)
