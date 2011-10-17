@@ -300,6 +300,9 @@ scheme_init_type ()
   set_name(scheme_place_type, "<place>");
   set_name(scheme_place_async_channel_type, "<place-half-channel>");
   set_name(scheme_place_bi_channel_type, "<place-channel>");
+  set_name(scheme_place_dead_type, "<place-dead-evt>");
+
+  set_name(scheme_resolved_module_path_type, "<resolve-module-path>");
 
 #ifdef MZ_GC_BACKTRACE
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
@@ -388,9 +391,14 @@ Scheme_Type scheme_make_type(const char *name)
 
 char *scheme_get_type_name(Scheme_Type t)
 {
+  char *s;
   if (t < 0 || t >= maxtype)
     return "<bad-value>";
-  return type_names[t];
+  s = type_names[t];
+  if (!s)
+    return "???";
+  else
+    return s;
 }
 
 void scheme_install_type_reader(Scheme_Type t, Scheme_Type_Reader f)
