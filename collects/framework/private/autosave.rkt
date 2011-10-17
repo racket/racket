@@ -144,7 +144,7 @@
                [filtered-table
                 (filter (λ (x) (file-exists? (cadr x))) table)])
           (unless (null? filtered-table)
-            (let* ([dlg (new dialog%
+            (let* ([dlg (new (frame:focus-table-mixin dialog%)
                              (label (string-constant recover-autosave-files-frame-title)))]
                    [t (new text% (auto-wrap #t))]
                    [ec (new editor-canvas%
