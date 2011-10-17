@@ -608,6 +608,14 @@ Returns the currently active tab.
   It loads that file in the definitions window of the new tab.
 }
 
+@defmethod[(next-tab) void?]{
+  Switches to the next tab.
+}
+
+@defmethod[(prev-tab) void?]{
+  Switches to the previous tab.
+}
+
 @defmethod[#:mode public-final (close-current-tab) void?]{
   Closes the current tab, making some other tab visible.
   If there is only one tab open, this method does nothing.
