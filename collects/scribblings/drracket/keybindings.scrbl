@@ -229,6 +229,35 @@ s-exp framework/keybinding-lang
 (keybinding "c:a" (λ (editor evt) (send editor insert "!")))
 ]
 
+Since the file contains plain Racket code, you can write keybindings
+files that use DrRacket's @seclink[#:doc '(lib
+"scribblings/tools/tools.scrbl") "implementing-tools"]{Extension API}.
+For example, the following file binds ``control-t'' and ``control-='' to
+a execute the program and open a new tab respectively, as they were used
+before version 5.2.
+
+@racketmod[
+s-exp framework/keybinding-lang
+
+(require drracket/tool-lib)
+
+(define-syntax-rule (frame-key key command)
+  (keybinding
+   (format "~a:~a"
+           (case (get-default-shortcut-prefix)
+             [(ctl) "c"] [(cmd) "d"] [(alt meta) "m"]
+             [(shift) "s"] [(option) "a"])
+           key)
+   (λ (ed evt)
+     (when (is-a? ed text:basic<%>)
+       (define fr (send ed get-top-level-window))
+       ;; note: fr could be #f
+       (when fr (send fr command))))))
+
+(frame-key "t" execute-callback)
+(frame-key "=" create-new-tab)
+]
+
 Another example, this file rebinds ``control-w'' to delete the word
 behind the insertion point, but it does it by setting a new key to 
 be an existing keyboard shortcut. If you see a key in the 
