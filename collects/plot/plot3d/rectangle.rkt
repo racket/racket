@@ -68,11 +68,11 @@
          _x-min _x-max _y-min _y-max z-min z-max)
   (define x-ticks
     (for/list ([cat  (in-list c1s)] [x  (in-list tick-xs)])
-      (tick x (->plot-label cat) #t)))
+      (tick x #t (->plot-label cat))))
   (define y-ticks
     (for/list ([cat  (in-list c2s)] [y  (in-list tick-ys)])
-      (tick y (->plot-label cat) #t)))
-  (values x-ticks y-ticks (default-ticks-fun z-min z-max)))
+      (tick y #t (->plot-label cat))))
+  (values x-ticks y-ticks (default-z-ticks z-min z-max)))
 
 (define (adjust/gap i gap)
   (match-define (ivl x1 x2) i)

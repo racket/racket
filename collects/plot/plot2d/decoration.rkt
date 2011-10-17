@@ -6,19 +6,21 @@
          "../common/ticks.rkt"
          "../common/math.rkt"
          "../common/format.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/legend.rkt"
          "../common/vector.rkt"
          "../common/area.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
+         "../common/axis-transform.rkt"
          "renderer.rkt"
          "area.rkt"
          "line.rkt"
          "interval.rkt"
          "point.rkt"
          "contour.rkt"
-         "sample.rkt")
+         "clip.rkt")
 
 (provide x-axis y-axis axes
          polar-axes
@@ -38,16 +40,27 @@
   (define x-ticks (send area get-x-ticks))
   (define half (* 1/2 (plot-tick-size)))
   
-  (send area set-minor-pen)
+  (send area set-alpha 1/2)
+  (send area set-major-pen)
   (send area put-line (vector x-min y) (vector x-max y))
   
   (when ticks?
     (for ([t  (in-list x-ticks)])
-      (match-define (tick x _ major?) t)
+      (match-define (tick x major? _) t)
       (if major? (send area set-major-pen) (send area set-minor-pen))
       (send area put-tick (vector x y) half 1/2pi)))
   
   empty)
+
+(define ((x-axis-ticks-fun y) x-min x-max y-min y-max)
+  (define digits (digits-for-range y-min y-max))
+  (values empty (list (tick y #t (real->plot-label y digits)))))
+
+(defproc (x-axis [y real? 0] [add-y-tick? boolean? #f]
+                 [#:ticks? ticks? boolean? (x-axis-ticks?)]) renderer2d?
+  (renderer2d (x-axis-render-proc y ticks?)
+              (if add-y-tick? (x-axis-ticks-fun y) null-2d-ticks-fun)
+              null-2d-bounds-fun #f #f #f #f))
 
 (define ((y-axis-render-proc x ticks?) area)
   (define y-min (send area get-y-min))
@@ -55,32 +68,53 @@
   (define y-ticks (send area get-y-ticks))
   (define half (* 1/2 (plot-tick-size)))
   
-  (send area set-minor-pen)
+  (send area set-alpha 1/2)
+  (send area set-major-pen)
   (send area put-line (vector x y-min) (vector x y-max))
   
   (when ticks?
     (for ([t  (in-list y-ticks)])
-      (match-define (tick y _ major?) t)
+      (match-define (tick y major? _) t)
       (if major? (send area set-major-pen) (send area set-minor-pen))
       (send area put-tick (vector x y) half 0)))
   
   empty)
 
-(defproc (x-axis [y real? 0] [#:ticks? ticks? boolean? (x-axis-ticks?)]) renderer2d?
-  (renderer2d (x-axis-render-proc y ticks?) null-2d-ticks-fun null-2d-bounds-fun #f #f #f #f))
+(define ((y-axis-ticks-fun x) x-min x-max y-min y-max)
+  (define digits (digits-for-range x-min x-max))
+  (values (list (tick x #t (real->plot-label x digits))) empty))
 
-(defproc (y-axis [x real? 0] [#:ticks? ticks? boolean? (y-axis-ticks?)]) renderer2d?
-  (renderer2d (y-axis-render-proc x ticks?) null-2d-ticks-fun null-2d-bounds-fun #f #f #f #f))
+(defproc (y-axis [x real? 0] [add-x-tick? boolean? #f]
+                 [#:ticks? ticks? boolean? (y-axis-ticks?)]) renderer2d?
+  (renderer2d (y-axis-render-proc x ticks?)
+              (if add-x-tick? (y-axis-ticks-fun x) null-2d-ticks-fun)
+              null-2d-bounds-fun #f #f #f #f))
 
-(defproc (axes [x real? 0] [y real? 0]
+(defproc (axes [x real? 0] [y real? 0] [add-x-tick? boolean? #f] [add-y-tick? boolean? #f]
                [#:x-ticks? x-ticks? boolean? (x-axis-ticks?)]
                [#:y-ticks? y-ticks? boolean? (y-axis-ticks?)]
                ) (listof renderer2d?)
-  (list (x-axis y #:ticks? x-ticks?)
-        (y-axis x #:ticks? y-ticks?)))
+  (list (x-axis y add-y-tick? #:ticks? x-ticks?)
+        (y-axis x add-x-tick? #:ticks? y-ticks?)))
 
 ;; ===================================================================================================
 ;; Polar axes
+
+(define (build-polar-axes num x-min x-max y-min y-max)
+  (define step (/ (* 2 pi) num))
+  (define θs (build-list num (λ (n) (* n step))))
+  (define max-r (max (vmag (vector x-min y-min)) (vmag (vector x-min y-max))
+                     (vmag (vector x-max y-max)) (vmag (vector x-max y-min))))
+  (define-values (r-mins r-maxs)
+    (for/lists (r-mins r-maxs) ([θ  (in-list θs)])
+      (define-values (v1 v2)
+        (clip-line (vector 0 0) (vector (* max-r (cos θ)) (* max-r (sin θ)))
+                   x-min x-max y-min y-max))
+      (values (if v1 (vmag v1) #f)
+              (if v2 (vmag v2) #f))))
+  (for/lists (θs r-mins r-maxs) ([θ  (in-list θs)] [r-min  (in-list r-mins)] [r-max  (in-list r-maxs)]
+                                                   #:when (and r-min r-max (not (= r-min r-max))))
+    (values θ r-min r-max)))
 
 (define ((polar-axes-render-proc num ticks?) area)
   (define x-min (send area get-x-min))
@@ -88,22 +122,46 @@
   (define y-min (send area get-y-min))
   (define y-max (send area get-y-max))
   
-  (define step (/ (* 2 pi) num))
-  (define θs (build-list num (λ (n) (* n step))))
+  (define-values (θs r-mins r-maxs) (build-polar-axes num x-min x-max y-min y-max))
   
-  (send area set-minor-pen)
-  (let ([r  (* 2 (max (- x-min) x-max (- y-min) y-max))])
-    (for ([θ  (in-list θs)])
-      (send area put-line (vector 0 0) (vector (* r (cos θ)) (* r (sin θ))))))
+  ;; Draw the axes
+  (send area set-alpha 1/2)
+  (send area set-major-pen)
+  (for ([θ  (in-list θs)] [r-min  (in-list r-mins)] [r-max  (in-list r-maxs)])
+    (send area put-line
+          (vector (* r-min (cos θ)) (* r-min (sin θ)))
+          (vector (* r-max (cos θ)) (* r-max (sin θ)))))
   
-  (define ticks (remove-duplicates (map (λ (t) (abs (tick-p t)))
-                                        (send area get-x-ticks))))
-  
-  (send area set-minor-pen 'long-dash)
-  (for ([r  (in-list ticks)])
-    (define pts (for/list ([θ  (in-list (linear-seq 0 (* 2 pi) 100))])
-                  (vector (* r (cos θ)) (* r (sin θ)))))
-    (send area put-lines pts))
+  (when ticks?
+    (define corner-rs
+      (list (vmag (vector x-min y-min)) (vmag (vector x-min y-max))
+            (vmag (vector x-max y-max)) (vmag (vector x-max y-min))))
+    (define r-min (if (and (<= x-min 0 x-max) (<= y-min 0 y-max)) 0 (apply min corner-rs)))
+    (define r-max (apply max corner-rs))
+    (define ts ((linear-ticks) r-min r-max (polar-axes-max-ticks) id-transform))
+    
+    (send area set-alpha 1/2)
+    (for ([t  (in-list ts)])
+      (match-define (tick r major? label) t)
+      (if major? (send area set-major-pen) (send area set-minor-pen 'long-dash))
+      (define pts (for/list ([θ  (in-list (linear-seq 0 (* 2 pi) 100))])
+                    (vector (* r (cos θ)) (* r (sin θ)))))
+      (send area put-lines pts))
+    
+    (when (not (empty? θs))
+      ;; find the longest axis
+      (define mag (expt 10 (- (digits-for-range r-min r-max))))
+      (match-define (list mθ mr-min mr-max)
+        ;; find the longest, rounded to drown out floating-point error
+        (argmax (λ (lst) (* (round (/ (- (third lst) (second lst)) mag)) mag))
+                (map list θs r-mins r-maxs)))
+      
+      (send area set-alpha 1)
+      (for ([t  (in-list ts)])
+        (match-define (tick r major? label) t)
+        (when (and major? (<= mr-min r mr-max))
+          (send area put-text label (vector (* r (cos mθ)) (* r (sin mθ)))
+                'center 0 #:outline? #t)))))
   
   empty)
 
@@ -121,9 +179,10 @@
   (define y-max (send area get-y-max))
   (define x-ticks (send area get-x-ticks))
   
-  (send area set-pen (plot-foreground) (* 1/2 (plot-line-width)) 'long-dash)
+  (send area set-alpha 1/2)
   (for ([t  (in-list x-ticks)])
-    (match-define (tick x _ major?) t)
+    (match-define (tick x major? _) t)
+    (if major? (send area set-major-pen) (send area set-minor-pen 'long-dash))
     (send area put-line (vector x y-min) (vector x y-max)))
   
   empty)
@@ -133,9 +192,10 @@
   (define x-max (send area get-x-max))
   (define y-ticks (send area get-y-ticks))
   
-  (send area set-pen (plot-foreground) (* 1/2 (plot-line-width)) 'long-dash)
+  (send area set-alpha 1/2)
   (for ([t  (in-list y-ticks)])
-    (match-define (tick y _ major?) t)
+    (match-define (tick y major? _) t)
+    (if major? (send area set-major-pen) (send area set-minor-pen 'long-dash))
     (send area put-line (vector x-min y) (vector x-max y)))
   
   empty)

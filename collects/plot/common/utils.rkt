@@ -37,3 +37,23 @@
     (let ([sorted-lst  (sort lst)])
       (make-hash (map cons sorted-lst (f sorted-lst)))))
   (map (λ (e) (hash-ref h e)) lst))
+
+(define (transpose lsts)
+  (apply map list lsts))
+
+(define (equal?* xs)
+  (cond [(empty? xs)         #f]
+        [(empty? (rest xs))  #t]
+        [else  (and (equal? (first xs) (second xs))
+                    (equal?* (rest xs)))]))
+
+(define (group-neighbors lst equiv?)
+  (reverse
+   (map reverse
+        (cond
+          [(empty? lst)  empty]
+          [else
+           (for/fold ([res  (list (list (first lst)))]) ([e  (in-list (rest lst))])
+             (cond
+               [(andmap (λ (e2) (equiv? e e2)) (first res))  (cons (cons e (first res)) (rest res))]
+               [else  (list* (list e) res)]))]))))

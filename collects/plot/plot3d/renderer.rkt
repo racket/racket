@@ -1,9 +1,11 @@
 #lang racket/base
 
 (require racket/list racket/match racket/contract
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/math.rkt"
-         "../common/ticks.rkt")
+         "../common/ticks.rkt"
+         "../common/parameters.rkt")
 
 (provide (all-defined-out))
 
@@ -63,6 +65,6 @@
            [y-min real?] [y-max real?]
            [z-min real?] [z-max real?]
            ) (values (listof tick?) (listof tick?) (listof tick?))
-  (values (default-ticks-fun x-min x-max)
-          (default-ticks-fun y-min y-max)
-          (default-ticks-fun z-min z-max)))
+  (values (default-x-ticks x-min x-max)
+          (default-y-ticks y-min y-max)
+          (default-z-ticks z-min z-max)))

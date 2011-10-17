@@ -6,13 +6,13 @@
          "../common/math.rkt"
          "../common/vector.rkt"
          "../common/ticks.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
          "renderer.rkt"
-         "bounds.rkt"
-         "sample.rkt")
+         "bounds.rkt")
 
 (provide lines parametric polar function inverse)
 

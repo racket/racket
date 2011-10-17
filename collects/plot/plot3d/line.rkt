@@ -3,12 +3,12 @@
 (require racket/class racket/match racket/list racket/contract
          "../common/math.rkt"
          "../common/vector.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt"
-         "sample.rkt")
+         "renderer.rkt")
 
 (provide lines3d parametric3d)
 

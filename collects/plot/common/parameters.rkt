@@ -5,7 +5,8 @@
 (require racket/contract
          "contract.rkt" "contract-doc.rkt"
          "draw.rkt"
-         "axis-transform.rkt")
+         "axis-transform.rkt"
+         "ticks.rkt")
 
 (provide (all-defined-out))
 
@@ -49,6 +50,31 @@
 (defproc (animated-samples [samples (and/c exact-integer? (>=/c 2))]) (and/c exact-integer? (>=/c 2))
   (cond [(plot-animating?)  (max 2 (ceiling (* 1/4 samples)))]
         [else  samples]))
+
+;; Sampling
+
+(defparam plot-x-transform axis-transform/c id-transform)
+(defparam plot-y-transform axis-transform/c id-transform)
+(defparam plot-z-transform axis-transform/c id-transform)
+
+;; Ticks
+
+(defparam plot-x-max-ticks exact-positive-integer? 5)
+(defparam plot-y-max-ticks exact-positive-integer? 5)
+(defparam plot-z-max-ticks exact-positive-integer? 8)
+
+(defparam plot-x-ticks ticks? (linear-ticks))
+(defparam plot-y-ticks ticks? (linear-ticks))
+(defparam plot-z-ticks ticks? (linear-ticks))
+
+(defproc (default-x-ticks [x-min real?] [x-max real?]) (listof tick?)
+  ((plot-x-ticks) x-min x-max (plot-x-max-ticks) (plot-x-transform)))
+
+(defproc (default-y-ticks [y-min real?] [y-max real?]) (listof tick?)
+  ((plot-y-ticks) y-min y-max (plot-y-max-ticks) (plot-y-transform)))
+
+(defproc (default-z-ticks [z-min real?] [z-max real?]) (listof tick?)
+  ((plot-z-ticks) z-min z-max (plot-z-max-ticks) (plot-z-transform)))
 
 ;; Lines
 
@@ -134,17 +160,12 @@
 
 (defparam polar-axes-number exact-positive-integer? 12)
 (defparam polar-axes-ticks? boolean? #t)
+(defparam polar-axes-max-ticks exact-positive-integer? 8)
 
 (defparam label-anchor anchor/c 'left)
 (defparam label-angle real? 0)
 (defparam label-alpha (real-in 0 1) 1)
 (defparam label-point-size (>=/c 0) 4)
-
-;; Sampling
-
-(defparam plot-x-transform (real? real? . -> . invertible-function?) id-transform)
-(defparam plot-y-transform (real? real? . -> . invertible-function?) id-transform)
-(defparam plot-z-transform (real? real? . -> . invertible-function?) id-transform)
 
 ;; ===================================================================================================
 ;; 3D-specific parameters

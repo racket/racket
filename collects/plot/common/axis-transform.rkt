@@ -5,29 +5,70 @@
          "contract.rkt" "contract-doc.rkt")
 
 (provide (struct-out invertible-function)
-         make-axis-transform
+         id-function
+         axis-transform/c
          id-transform
+         apply-transform
+         make-axis-transform
+         axis-transform-compose
          log-transform
          cbrt-transform
-         hand-drawn-transform)
+         hand-drawn-transform
+         stretch-transform
+         collapse-transform)
 
 (define-struct/contract invertible-function ([f (real? . -> . real?)] [finv (real? . -> . real?)])
   #:transparent)
 
+(define (invertible-compose f1 f2)
+  (match-let ([(invertible-function f1 g1)  f1]
+              [(invertible-function f2 g2)  f2])
+    (invertible-function (compose f1 f2) (compose g2 g1))))
+
+(define axis-transform/c (real? real? invertible-function? . -> . invertible-function?))
+
+(defproc (id-transform [x-min real?] [x-max real?] [old-function invertible-function?]
+                       ) invertible-function?
+  old-function)
+
+(define id-function (invertible-function (λ (x) x) (λ (x) x)))
+
+(defproc (apply-transform [t axis-transform/c] [x-min real?] [x-max real?]) invertible-function?
+  (t x-min x-max id-function))
+
 ;; Turns any total, surjective, monotone flonum op and its inverse into an axis transform
-(define ((make-axis-transform flop flinv) x-min x-max)
-  (let ([x-min  (exact->inexact x-min)]
-        [x-max  (exact->inexact x-max)])
-    (define fx-min (flop x-min))
-    (define fx-scale (fl/ (fl- x-max x-min)
-                          (fl- (flop x-max) fx-min)))
-    (define (f x)
-      (fl+ x-min (fl* (fl- (flop (exact->inexact x)) fx-min)
-                      fx-scale)))
-    (define (finv y)
-      (flinv (fl+ fx-min (fl/ (fl- (exact->inexact y) x-min)
-                              fx-scale))))
-    (invertible-function f finv)))
+(define ((make-axis-transform f g) x-min x-max old-function)
+  (define fx-min (f x-min))
+  (define fx-scale (/ (- x-max x-min) (- (f x-max) fx-min)))
+  (define (new-f x) (+ x-min (* (- (f x) fx-min) fx-scale)))
+  (define (new-g y) (g (+ fx-min (/ (- y x-min) fx-scale))))
+  (invertible-compose (invertible-function new-f new-g) old-function))
+
+;; ===================================================================================================
+;; Axis transform combinators
+
+(defproc (axis-transform-compose [t1 axis-transform/c] [t2 axis-transform/c]) axis-transform/c
+  (λ (x-min x-max old-function)
+    (t1 x-min x-max (t2 x-min x-max old-function))))
+
+(defproc (axis-transform-append [t1 axis-transform/c] [t2 axis-transform/c] [x-mid real?]
+                                ) axis-transform/c
+  (λ (x-min x-max old-function)
+    (match-define (invertible-function old-f old-g) old-function)
+    (let ([x-mid  (old-f x-mid)])
+      (cond [(x-mid . >= . x-max)  (t1 x-min x-max old-function)]
+            [(x-mid . <= . x-min)  (t2 x-min x-max old-function)]
+            [else
+             (match-define (invertible-function f1 g1) (t1 x-min x-mid old-function))
+             (match-define (invertible-function f2 g2) (t2 x-mid x-max old-function))
+             ((make-axis-transform (λ (x) (cond [((old-f x) . < . x-mid)  (f1 x)]
+                                                [else  (f2 x)]))
+                                   (λ (x) (cond [(x . < . x-mid)  (g1 x)]
+                                                [else  (g2 x)])))
+              x-min x-max id-function)]))))
+
+(defproc (axis-transform-bound [t axis-transform/c] [x-min real?] [x-max real?]) axis-transform/c
+  (axis-transform-append (axis-transform-append id-transform t x-min) id-transform x-max))
 
 ;; ===================================================================================================
 ;; Specific axis transforms
@@ -65,21 +106,60 @@
   (let ([x  (exact->inexact x)])
     (fl* x (fl* x x))))
 
+(define (real-log x)
+  (fllog (exact->inexact x)))
 
-(defproc (id-transform [x-min real?] [x-max real?]) invertible-function?
-  (invertible-function values values))
+(define (real-exp x)
+  (flexp (exact->inexact x)))
 
-(defproc (log-transform [x-min real?] [x-max real?]) invertible-function?
+(defproc (log-transform [x-min real?] [x-max real?] [old-function invertible-function?]
+                        ) invertible-function?
   (when ((exact->inexact x-min) . <= . 0)
     (raise-type-error 'log-transform "positive real" 0 x-min x-max))
-  ((make-axis-transform fllog flexp) x-min x-max))
+  ((make-axis-transform real-log real-exp) x-min x-max old-function))
 
-(define cbrt-trans (make-axis-transform cbrt cube))
+(defproc (cbrt-transform [x-min real?] [x-max real?] [old-function invertible-function?]
+                         ) invertible-function?
+  ((make-axis-transform cbrt cube) x-min x-max old-function))
 
-(defproc (cbrt-transform [x-min real?] [x-max real?]) invertible-function?
-  (cbrt-trans x-min x-max))
+(defproc (hand-drawn-transform [freq (>/c 0)]) axis-transform/c
+  (λ (x-min x-max old-function)
+    (define d (/ freq (- x-max x-min)))
+    ((make-axis-transform (sine-diag d) (sine-diag-inv d)) x-min x-max old-function)))
 
-(defproc (hand-drawn-transform [freq (>/c 0)]) (real? real? . -> . invertible-function?)
-  (λ (mn mx)
-    (define d (/ freq (- mx mn)))
-    ((make-axis-transform (sine-diag d) (sine-diag-inv d)) mn mx)))
+;; ===================================================================================================
+
+(define (stretch a b s)
+  (define d (- b a))
+  (define ds (* d s))
+  (λ (x)
+    (cond [(x . < . a)  x]
+          [(x . > . b)  (+ (- x d) ds)]
+          [else         (+ a (* (- x a) s))])))
+
+(defproc (stretch-transform [a real?] [b real?] [scale (and/c real? (not/c (=/c 0)))]
+                            ) axis-transform/c
+  (when (a . > . b) (error 'stretch-transform "expected a <= b; given ~e and ~e" a b))
+  (λ (x-min x-max old-function)
+    (match-define (invertible-function old-f old-g) old-function)
+    (let ([a  (old-f a)]
+          [b  (old-f b)])
+      (define f (stretch a b scale))
+      (define g (stretch (f a) (f b) (/ 1 scale)))
+      ((make-axis-transform f g) x-min x-max old-function))))
+
+(defproc (collapse-transform [a real?] [b real?]) axis-transform/c
+  (when (a . > . b) (error 'stretch-transform "expected a <= b; given ~e and ~e" a b))
+  (λ (x-min x-max old-function)
+    (match-define (invertible-function old-f old-g) old-function)
+    (let ([a  (old-f a)]
+          [b  (old-f b)])
+      (define 1/2size (* 1/2 (- b a)))
+      (define center (* 1/2 (+ a b)))
+      (define (f x) (cond [(x . < . a)  (+ x 1/2size)]
+                          [(x . > . b)  (- x 1/2size)]
+                          [else  center]))
+      (define (g x) (cond [(x . < . center)  (- x 1/2size)]
+                          [(x . > . center)   (+ x 1/2size)]
+                          [else  center]))
+      ((make-axis-transform f g) x-min x-max old-function))))

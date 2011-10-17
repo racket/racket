@@ -101,8 +101,8 @@
 (define ((discrete-histogram-ticks-fun cats tick-xs) _x-min _x-max y-min y-max)
   (define x-ticks
     (for/list ([cat  (in-list cats)] [x  (in-list tick-xs)])
-      (tick x (->plot-label cat) #t)))
-  (values x-ticks (default-ticks-fun y-min y-max)))
+      (tick x #t (->plot-label cat))))
+  (values x-ticks (default-y-ticks y-min y-max)))
 
 (defproc (discrete-histogram
           [cat-vals (listof (vector/c any/c real?))]

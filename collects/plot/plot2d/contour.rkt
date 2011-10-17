@@ -6,14 +6,15 @@
          "../common/math.rkt"
          "../common/draw.rkt"
          "../common/marching-squares.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
          "../common/ticks.rkt"
          "../common/vector.rkt"
-         "renderer.rkt"
-         "sample.rkt")
+         "../common/format.rkt"
+         "renderer.rkt")
 
 (provide contours contour-intervals)
 
@@ -30,10 +31,7 @@
         (when (empty? zs) (return empty))
         (values (apply min* zs) (apply max* zs))))
     
-    (define zs
-      (cond [(list? levels)      levels]
-            [(eq? levels 'auto)  (auto-contour-zs z-min z-max)]
-            [else  (linear-seq z-min z-max levels #:start? #f #:end? #f)]))
+    (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
     
     (define cs (maybe-apply/list colors zs))
     (define ws (maybe-apply/list widths zs))
@@ -64,7 +62,7 @@
           (match-define (vector x1 y1 x2 y2) (scale-normalized-line line xa xb ya yb))
           (send area put-line (vector x1 y1) (vector x2 y2)))))
     
-    (cond [label  (line-legend-entries label zs colors widths styles)]
+    (cond [label  (line-legend-entries label zs labels colors widths styles)]
           [else   empty])))
 
 (defproc (contours
@@ -100,12 +98,8 @@
         (when (empty? flat-zs) (return empty))
         (values (apply min* flat-zs) (apply max* flat-zs))))
     
-    (define contour-zs
-      (cond [(list? levels)      levels]
-            [(eq? levels 'auto)  (auto-contour-zs z-min z-max)]
-            [else  (linear-seq z-min z-max levels #:start? #f #:end? #f)]))
+    (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
     
-    (define zs (append (list z-min) contour-zs (list z-max)))
     (define cs (map ->brush-color (maybe-apply/list colors zs)))
     (define fss (map ->brush-style (maybe-apply/list styles zs)))
     (define pss (map (λ (fill-style) (if (eq? fill-style 'solid) 'solid 'transparent)) fss))
@@ -163,8 +157,7 @@
      area)
     
     (cond [label  (contour-intervals-legend-entries
-                   label z-min z-max contour-zs
-                   cs fss cs '(1) pss contour-colors contour-widths contour-styles)]
+                   label zs labels cs fss cs '(1) pss contour-colors contour-widths contour-styles)]
           [else   empty])))
 
 (defproc (contour-intervals

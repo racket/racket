@@ -12,8 +12,10 @@
          (all-from-out "common/contract.rkt"))
 
 (require "common/axis-transform.rkt")
-(provide invertible-function?
-         id-transform log-transform cbrt-transform hand-drawn-transform)
+(provide (all-from-out "common/axis-transform.rkt"))
+
+(require "common/ticks.rkt")
+(provide (all-from-out "common/ticks.rkt"))
 
 (require "common/math.rkt")
 (provide (contract-out (struct ivl ([min real?] [max real?]))))

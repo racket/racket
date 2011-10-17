@@ -11,14 +11,13 @@
          "../common/parameters.rkt"
          "matrix.rkt"
          "shape.rkt"
-         "clip.rkt"
-         "sample.rkt")
+         "clip.rkt")
 
 (provide 3d-plot-area%)
 
 (define 3d-plot-area%
   (class plot-area%
-    (init-field x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max)
+    (init-field rx-ticks ry-ticks rz-ticks x-min x-max y-min y-max z-min z-max)
     (init dc dc-x-min dc-y-min dc-x-size dc-y-size)
     (inherit
       set-alpha set-pen set-major-pen set-minor-pen set-brush set-background set-text-foreground
@@ -31,6 +30,10 @@
     (super-make-object dc dc-x-min dc-y-min dc-x-size dc-y-size)
     
     (reset-drawing-params)
+    
+    (define x-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks))
+    (define y-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks))
+    (define z-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max)) rz-ticks))
     
     (define char-height (get-char-height))
     
@@ -104,19 +107,20 @@
            (equal? (plot-z-transform) id-transform)))
     
     (define center
-      (cond [identity-axis-transforms?
-             (λ (v)
-               (match-define (vector x y z) v)
-               (vector (- x x-mid) (- y y-mid) (- z z-mid)))]
-            [else
-             (match-define (invertible-function fx _) ((plot-x-transform) x-min x-max))
-             (match-define (invertible-function fy _) ((plot-y-transform) y-min y-max))
-             (match-define (invertible-function fz _) ((plot-z-transform) z-min z-max))
-             (λ (v)
-               (match-define (vector x y z) v)
-               (if do-axis-transforms?
-                   (vector (- (fx x) x-mid) (- (fy y) y-mid) (- (fz z) z-mid))
-                   (vector (- x x-mid) (- y y-mid) (- z z-mid))))]))
+      (cond
+        [identity-axis-transforms?
+         (λ (v)
+           (match-define (vector x y z) v)
+           (vector (- x x-mid) (- y y-mid) (- z z-mid)))]
+        [else
+         (match-define (invertible-function fx _) (apply-transform (plot-x-transform) x-min x-max))
+         (match-define (invertible-function fy _) (apply-transform (plot-y-transform) y-min y-max))
+         (match-define (invertible-function fz _) (apply-transform (plot-z-transform) z-min z-max))
+         (λ (v)
+           (match-define (vector x y z) v)
+           (if do-axis-transforms?
+               (vector (- (fx x) x-mid) (- (fy y) y-mid) (- (fz z) z-mid))
+               (vector (- x x-mid) (- y y-mid) (- z z-mid))))]))
     
     (define transform-matrix/no-rho
       (m3* (m3-rotate-z theta) (m3-scale (/ x-size) (/ y-size) (/ z-size))))
@@ -187,13 +191,12 @@
     (define x-labels-y-min? ((cos theta) . >= . 0))
     (define y-labels-x-min? ((sin theta) . >= . 0))
     
-    (define max-x-tick-label-width
-      (cond [(empty? x-ticks)  0]
-            [else  (apply max (map (λ (t) (get-text-width (tick-label t))) x-ticks))]))
+    (define (max-tick-label-width ts)
+      (apply max 0 (for/list ([t  (in-list ts)] #:when (pre-tick-major? t))
+                     (get-text-width (tick-label t)))))
     
-    (define max-y-tick-label-width
-      (cond [(empty? y-ticks)  0]
-            [else  (apply max (map (λ (t) (get-text-width (tick-label t))) y-ticks))]))
+    (define max-x-tick-label-width (max-tick-label-width x-ticks))
+    (define max-y-tick-label-width (max-tick-label-width y-ticks))
     
     ;; Label drawing parameters
     
@@ -242,10 +245,10 @@
               [(s . < . (sin (degrees->radians 67.5)))   (if x-labels-y-min? 'top-left 'top-right)]
               [else                                      (if x-labels-y-min? 'top-left 'top-right)]))
       
-      (define fx (invertible-function-f ((plot-x-transform) x-min x-max)))
-      (for/list ([t  (in-list (filter tick-major? x-ticks))])
-        (match-define (tick x x-str major?) t)
-        (list x-str (v+ (plot->dc (vector (fx x) y z-min)) offset) anchor 0)))
+      (define fx (invertible-function-f (apply-transform (plot-x-transform) x-min x-max)))
+      (for/list ([t  (in-list x-ticks)] #:when (pre-tick-major? t))
+        (match-define (tick x _ label) t)
+        (list label (v+ (plot->dc (vector (fx x) y z-min)) offset) anchor 0)))
     
     (define (get-y-tick-label-params)
       (define x-axis-angle (plot-dir->dc-angle (vector 1 0 0)))
@@ -261,10 +264,10 @@
               [(c . > . (cos (degrees->radians 157.5)))  (if y-labels-x-min? 'top-left 'top-right)]
               [else                                      (if y-labels-x-min? 'top-left 'top-right)]))
       
-      (define fy (invertible-function-f ((plot-y-transform) y-min y-max)))
-      (for/list ([t  (in-list (filter tick-major? y-ticks))])
-        (match-define (tick y y-str major?) t)
-        (list y-str (v+ (plot->dc (vector x (fy y) z-min)) offset) anchor 0)))
+      (define fy (invertible-function-f (apply-transform (plot-y-transform) y-min y-max)))
+      (for/list ([t  (in-list y-ticks)] #:when (pre-tick-major? t))
+        (match-define (tick y _ label) t)
+        (list label (v+ (plot->dc (vector x (fy y) z-min)) offset) anchor 0)))
     
     (define (get-z-tick-label-params)
       (define dist (+ (pen-gap) (* 1/2 (plot-tick-size))))
@@ -272,10 +275,10 @@
       (define x (if x-labels-y-min? x-min x-max))
       (define y (if y-labels-x-min? y-max y-min))
       
-      (define fz (invertible-function-f ((plot-z-transform) z-min z-max)))
-      (for/list ([t  (in-list (filter tick-major? z-ticks))])
-        (match-define (tick z z-str major?) t)
-        (list z-str (v+ (plot->dc (vector x y (fz z))) offset) 'bottom-right 0)))
+      (define fz (invertible-function-f (apply-transform (plot-z-transform) z-min z-max)))
+      (for/list ([t  (in-list z-ticks)] #:when (pre-tick-major? t))
+        (match-define (tick z _ label) t)
+        (list label (v+ (plot->dc (vector x y (fz z))) offset) 'bottom-right 0)))
     
     (define (get-label-params)
       (append (if (plot-x-label) (list (get-x-label-params)) empty)
@@ -351,37 +354,40 @@
     
     (define (put-x-ticks)
       (define radius (* 1/2 (plot-tick-size)))
+      (define 1/2radius (* 1/2 radius))
       (define angle (plot-dir->dc-angle (vector 0 1 0)))
-      (define fx (invertible-function-f ((plot-x-transform) x-min x-max)))
+      (define fx (invertible-function-f (apply-transform (plot-x-transform) x-min x-max)))
       (for ([t  (in-list x-ticks)])
-        (match-define (tick x x-str major?) t)
+        (match-define (tick x major? _) t)
         (if major? (put-major-pen) (put-minor-pen))
         ; x ticks on the y-min and y-max border
         (for ([y  (list y-min y-max)])
-          (put-tick (vector (fx x) y z-min) radius angle))))
+          (put-tick (vector (fx x) y z-min) (if major? radius 1/2radius) angle))))
     
     (define (put-y-ticks)
       (define radius (* 1/2 (plot-tick-size)))
+      (define 1/2radius (* 1/2 radius))
       (define angle (plot-dir->dc-angle (vector 1 0 0)))
-      (define fy (invertible-function-f ((plot-y-transform) y-min y-max)))
+      (define fy (invertible-function-f (apply-transform (plot-y-transform) y-min y-max)))
       (for ([t  (in-list y-ticks)])
-        (match-define (tick y y-str major?) t)
+        (match-define (tick y major? _) t)
         (if major? (put-major-pen) (put-minor-pen))
         ; y ticks on the x-min border
         (for ([x  (list x-min x-max)])
-          (put-tick (vector x (fy y) z-min) radius angle))))
+          (put-tick (vector x (fy y) z-min) (if major? radius 1/2radius) angle))))
     
     (define (put-z-ticks)
       (define radius (* 1/2 (plot-tick-size)))
+      (define 1/2radius (* 1/2 radius))
       (define angle 0)
-      (define fz (invertible-function-f ((plot-z-transform) z-min z-max)))
+      (define fz (invertible-function-f (apply-transform (plot-z-transform) z-min z-max)))
       (for ([t  (in-list z-ticks)])
-        (match-define (tick z z-str major?) t)
+        (match-define (tick z major? _) t)
         (if major? (put-major-pen) (put-minor-pen))
         ; z ticks on all four axes
         (for* ([x  (list x-min x-max)]
                [y  (list y-min y-max)])
-          (put-tick (vector x y (fz z)) radius angle))))
+          (put-tick (vector x y (fz z)) (if major? radius 1/2radius) angle))))
     
     (define (draw-labels)
       (for ([params  (in-list (get-label-params))])
@@ -656,7 +662,7 @@
           ;; Right
           (if ((sin theta) . < . 0)
               (list (vector x2 y1 z1) (vector x2 y2 z1) (vector x2 y2 z2) (vector x2 y1 z2))
-            empty))
+              empty))
          c)))
     
     (define/public (put-glyphs vs symbol size)

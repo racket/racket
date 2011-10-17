@@ -10,9 +10,16 @@
 
 (plot empty #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1)
 
-(plot (list (axes 1 2) (function values -4 4)))
+(plot (list (function values -4 4) (axes 1 2 #t #t)))
 
 (time (plot (function values 0 1000)))
+
+(parameterize ([plot-x-ticks      (log-ticks #:base 4)]
+               [plot-x-transform  log-transform]
+               [plot-y-max-ticks  10]
+               [plot-y-ticks      (linear-ticks)]
+               [plot-y-transform  log-transform])
+  (plot (function values 1 243)))
 
 (parameterize ([plot-background  "black"]
                [plot-foreground  "white"]
@@ -403,3 +410,14 @@
           13 (λ (n) (function (make-fun n) 0 2
                               #:color n #:width 2 #:style n))))
         #:x-min -2 #:x-max 2)))
+
+(let ()
+  (define (f x) (/ (sin x) x))
+  (parameterize ([plot-x-transform  (stretch-transform -1 1 10)]
+                 [plot-y-ticks      (fraction-ticks)])
+    (plot (list (y-axis -1 #t #:ticks? #f) (y-axis 1 #t #:ticks? #f)
+                (function f -1 1 #:width 2 #:color 4)
+                (function f -14 -1 #:color 4 #:label "y = sin(x)/x")
+                (function f 1 14 #:color 4)
+                (point-label (vector 0 1) "y → 1 as x → 0" #:anchor 'bottom-right))
+          #:y-max 1.2)))

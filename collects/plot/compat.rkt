@@ -6,13 +6,14 @@
          ;; Plotting
          "common/contract.rkt"
          "common/contract-doc.rkt"
-         "common/ticks.rkt"
+         ;"common/ticks.rkt"
          "plot2d/area.rkt"
          "plot2d/renderer.rkt"
          "plot3d/area.rkt"
          "plot3d/renderer.rkt"
          (prefix-in new. (only-in "main.rkt"
                                   x-axis y-axis
+                                  default-x-ticks default-y-ticks default-z-ticks
                                   points error-bars vector-field
                                   plot-title plot-x-label plot-y-label plot-z-label
                                   plot-foreground plot-background
@@ -72,8 +73,8 @@
                [#:lncolor lncolor (list/c byte? byte? byte?) '(255 0 0)]
                [#:out-file out-file (or/c path-string? output-port? #f) #f]
                ) (is-a?/c image-snip%)
-  (define x-ticks (default-ticks-fun x-min x-max))
-  (define y-ticks (default-ticks-fun y-min y-max))
+  (define x-ticks (new.default-x-ticks x-min x-max))
+  (define y-ticks (new.default-y-ticks y-min y-max))
   
   (parameterize ([new.plot-title       title]
                  [new.plot-x-label     x-label]
@@ -110,9 +111,9 @@
                  [#:lncolor lncolor (list/c byte? byte? byte?) '(255 0 0)]
                  [#:out-file out-file (or/c path-string? output-port? #f) #f]
                  ) (is-a?/c image-snip%)
-  (define x-ticks (default-ticks-fun x-min x-max))
-  (define y-ticks (default-ticks-fun y-min y-max))
-  (define z-ticks (default-ticks-fun z-min z-max))
+  (define x-ticks (new.default-x-ticks x-min x-max))
+  (define y-ticks (new.default-y-ticks y-min y-max))
+  (define z-ticks (new.default-z-ticks z-min z-max))
   
   (parameterize ([new.plot-title       title]
                  [new.plot-x-label     x-label]

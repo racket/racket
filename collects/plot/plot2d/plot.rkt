@@ -131,6 +131,9 @@
   (define x-transform (plot-x-transform))
   (define y-transform (plot-y-transform))
   (define z-transform (plot-z-transform))
+  (define x-ticks (plot-x-ticks))
+  (define y-ticks (plot-y-ticks))
+  (define z-ticks (plot-z-ticks))
   (define animating? (plot-animating?))
   
   (dc (λ (dc x y)
@@ -146,6 +149,9 @@
                        [plot-x-transform       x-transform]
                        [plot-y-transform       y-transform]
                        [plot-z-transform       z-transform]
+                       [plot-x-ticks           x-ticks]
+                       [plot-y-ticks           y-ticks]
+                       [plot-z-ticks           z-ticks]
                        [plot-animating?        animating?])
           (plot/dc renderer-tree dc x y width height
                    #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max

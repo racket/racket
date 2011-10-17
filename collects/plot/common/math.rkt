@@ -126,11 +126,17 @@
     (if x (if y (max* x y) x)
         (if y y #f))))
 
-(define (floor-log10 x)
-  (inexact->exact (floor (/ (log (abs x)) (log 10)))))
+(defproc (floor-log/base [b (and/c exact-integer? (>=/c 2))] [x (>/c 0)]) real?
+  (define y (inexact->exact (floor (/ (log x) (log b)))))
+  (cond [(exact? x)
+         (let loop ([y y] [x  (/ x (expt b y))])
+           (cond [(x . >= . b)  (loop (add1 y) (/ x b))]
+                 [(x . < . 1)   (loop (sub1 y) (* x b))]
+                 [else  y]))]
+        [else  y]))
 
-(define (ceiling-log10 x)
-  (inexact->exact (ceiling (/ (log (abs x)) (log 10)))))
+(define (ceiling-log/base b x)
+  (inexact->exact (ceiling (/ (log (abs x)) (log b)))))
 
 (define (bin-samples bin-bounds xs)
   (let* ([bin-bounds  (filter (compose not nan?) (remove-duplicates bin-bounds))]

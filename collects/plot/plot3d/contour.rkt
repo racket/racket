@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/flonum racket/contract
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/math.rkt"
          "../common/vector.rkt"
          "../common/marching-squares.rkt"
@@ -11,7 +12,6 @@
          "../common/sample.rkt"
          "../common/parameters.rkt"
          "renderer.rkt"
-         "sample.rkt"
          "bounds.rkt")
 
 (provide contours3d contour-intervals3d)
@@ -23,10 +23,8 @@
   (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
   (match-define (list xs ys zss) (f x-min x-max (animated-samples samples)
                                     y-min y-max (animated-samples samples)))
-  (define zs
-    (cond [(list? levels)      levels]
-          [(eq? levels 'auto)  (auto-contour-zs z-min z-max)]
-          [else  (linear-seq z-min z-max levels #:start? #f #:stop? #f)]))
+  
+  (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
   
   (define cs (maybe-apply/list colors zs))
   (define ws (maybe-apply/list widths zs))
@@ -61,7 +59,7 @@
               (center-coord (list (vector xa ya z1) (vector xb ya z2)
                                   (vector xa yb z3) (vector xb yb z4)))))))
   
-  (cond [label  (line-legend-entries label zs colors widths styles)]
+  (cond [label  (line-legend-entries label zs labels colors widths styles)]
         [else   empty]))
 
 (defproc (contours3d
@@ -94,12 +92,8 @@
   (match-define (list xs ys zss) (f x-min x-max (animated-samples samples)
                                     y-min y-max (animated-samples samples)))
   
-  (define contour-zs
-    (cond [(list? levels)      levels]
-          [(eq? levels 'auto)  (auto-contour-zs z-min z-max)]
-          [else  (linear-seq z-min z-max levels #:start? #f #:end? #f)]))
+  (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
   
-  (define zs (append (list z-min) contour-zs (list z-max)))
   (define cs (maybe-apply/list colors zs))
   (define lcs (maybe-apply/list line-colors zs))
   (define lws (maybe-apply/list line-widths zs))
@@ -140,7 +134,7 @@
    area)
   
   (cond [label  (contour-intervals-legend-entries
-                 label z-min z-max contour-zs colors '(solid) line-colors line-widths line-styles
+                 label zs labels colors '(solid) line-colors line-widths line-styles
                  contour-colors contour-widths contour-styles)]
         [else  empty]))
 

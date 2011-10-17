@@ -14,6 +14,7 @@
          "contract.rkt"
          "draw.rkt"
          "math.rkt"
+         "vector.rkt"
          "parameters.rkt")
 
 (provide plot-area% (struct-out legend-entry))
@@ -250,105 +251,118 @@
       (send dc set-alpha old-alpha))
     
     (define/public (draw-point v)
-      (match-define (vector x y) v)
-      (send dc draw-point x y))
+      (when (vregular? v)
+        (match-define (vector x y) v)
+        (send dc draw-point x y)))
     
     (define/public (draw-polygon vs [fill-style 'winding])
-      (send dc draw-polygon (map coord->cons vs) 0 0 fill-style))
+      (when (andmap vregular? vs)
+        (send dc draw-polygon (map coord->cons vs) 0 0 fill-style)))
     
     (define/public (draw-rectangle v1 v2)
-      (match-define (vector x1 y1) v1)
-      (match-define (vector x2 y2) v2)
-      (draw-polygon
-       (list (vector x1 y1) (vector x1 y2) (vector x2 y2) (vector x2 y1))))
+      (when (and (vregular? v1) (vregular? v2))
+        (match-define (vector x1 y1) v1)
+        (match-define (vector x2 y2) v2)
+        (draw-polygon
+         (list (vector x1 y1) (vector x1 y2) (vector x2 y2) (vector x2 y1)))))
     
     (define/public (draw-lines vs)
-      (send dc draw-lines (map coord->cons vs)))
+      (when (andmap vregular? vs)
+        (send dc draw-lines (map coord->cons vs))))
     
     (define/public (draw-line v1 v2)
-      (match-define (vector x1 y1) v1)
-      (match-define (vector x2 y2) v2)
-      (send dc draw-line x1 y1 x2 y2))
+      (when (and (vregular? v1) (vregular? v2))
+        (match-define (vector x1 y1) v1)
+        (match-define (vector x2 y2) v2)
+        (send dc draw-line x1 y1 x2 y2)))
     
     (define/public (draw-text str v [anchor 'top-left] [angle 0] #:outline? [outline? #f])
-      (match-define (vector x y) v)
-      
-      (when outline?
-        (define alpha (send dc get-alpha))
-        (define fg (send dc get-text-foreground))
+      (when (vregular? v)
+        (match-define (vector x y) v)
         
-        (send dc set-alpha (alpha-expt alpha 1/8))
-        (send dc set-text-foreground (send dc get-background))
-        (for* ([dx  (list -1 0 1)]
-               [dy  (list -1 0 1)]
-               #:when (not (and (zero? dx) (zero? dy))))
-          (draw-text/anchor dc str (+ x dx) (+ y dy) anchor #t 0 angle))
-        (send dc set-alpha alpha)
-        (send dc set-text-foreground fg))
-      
-      (draw-text/anchor dc str x y anchor #t 0 angle))
+        (when outline?
+          (define alpha (send dc get-alpha))
+          (define fg (send dc get-text-foreground))
+          
+          (send dc set-alpha (alpha-expt alpha 1/8))
+          (send dc set-text-foreground (send dc get-background))
+          (for* ([dx  (list -1 0 1)]
+                 [dy  (list -1 0 1)]
+                 #:when (not (and (zero? dx) (zero? dy))))
+            (draw-text/anchor dc str (+ x dx) (+ y dy) anchor #t 0 angle))
+          (send dc set-alpha alpha)
+          (send dc set-text-foreground fg))
+        
+        (draw-text/anchor dc str x y anchor #t 0 angle)))
     
     (define/public (get-text-corners str v [anchor 'top-left] [angle 0])
-      (match-define (vector x y) v)
-      (get-text-corners/anchor dc str x y anchor #t 0 angle))
+      (when (vregular? v)
+        (match-define (vector x y) v)
+        (get-text-corners/anchor dc str x y anchor #t 0 angle)))
     
     (define/public (draw-arrow v1 v2)
-      (match-define (vector x1 y1) v1)
-      (match-define (vector x2 y2) v2)
-      (define dx (- x2 x1))
-      (define dy (- y2 y1))
-      (define angle (if (and (zero? dy) (zero? dx)) 0 (atan dy dx)))
-      (define dist (sqrt (+ (sqr dx) (sqr dy))))
-      (define head-r (* 2/5 dist))
-      (define head-angle (* 1/6 pi))
-      (define dx1 (* (cos (+ angle head-angle)) head-r))
-      (define dy1 (* (sin (+ angle head-angle)) head-r))
-      (define dx2 (* (cos (- angle head-angle)) head-r))
-      (define dy2 (* (sin (- angle head-angle)) head-r))
-      (send dc draw-line x1 y1 x2 y2)
-      (send dc draw-line x2 y2 (- x2 dx1) (- y2 dy1))
-      (send dc draw-line x2 y2 (- x2 dx2) (- y2 dy2)))
+      (when (and (vregular? v1) (vregular? v2))
+        (match-define (vector x1 y1) v1)
+        (match-define (vector x2 y2) v2)
+        (define dx (- x2 x1))
+        (define dy (- y2 y1))
+        (define angle (if (and (zero? dy) (zero? dx)) 0 (atan dy dx)))
+        (define dist (sqrt (+ (sqr dx) (sqr dy))))
+        (define head-r (* 2/5 dist))
+        (define head-angle (* 1/6 pi))
+        (define dx1 (* (cos (+ angle head-angle)) head-r))
+        (define dy1 (* (sin (+ angle head-angle)) head-r))
+        (define dx2 (* (cos (- angle head-angle)) head-r))
+        (define dy2 (* (sin (- angle head-angle)) head-r))
+        (send dc draw-line x1 y1 x2 y2)
+        (send dc draw-line x2 y2 (- x2 dx1) (- y2 dy1))
+        (send dc draw-line x2 y2 (- x2 dx2) (- y2 dy2))))
     
     ;; -----------------------------------------------------------------------------------------------
     ;; Glyph (point sym) primitives
     
     (define/public ((make-draw-circle-glyph r) v)
-      (match-define (vector x y) v)
-      (send dc draw-ellipse (- x r -1/2) (- y r -1/2) (* 2 r) (* 2 r)))
+      (when (vregular? v)
+        (match-define (vector x y) v)
+        (send dc draw-ellipse (- x r -1/2) (- y r -1/2) (* 2 r) (* 2 r))))
     
     (define/public (make-draw-polygon-glyph r sides start-angle)
       (define angles (linear-seq start-angle (+ start-angle (* 2 pi)) (+ 1 sides)))
       (λ (v)
-        (match-define (vector x y) v)
-        (send dc draw-polygon (map (λ (a) (cons (+ x (* (cos a) r)) (+ y (* (sin a) r))))
-                                   angles))))
+        (when (vregular? v)
+          (match-define (vector x y) v)
+          (send dc draw-polygon (map (λ (a) (cons (+ x (* (cos a) r)) (+ y (* (sin a) r))))
+                                     angles)))))
     
     (define/public (make-draw-star-glyph r sides start-angle)
       (define angles (linear-seq start-angle (+ start-angle (* 2 pi)) (+ 1 (* 2 sides))))
       (λ (v)
-        (match-define (vector x y) v)
-        (define pts
-          (for/list ([a  (in-list angles)] [i  (in-naturals)])
-            (define r-cos-a (* r (cos a)))
-            (define r-sin-a (* r (sin a)))
-            (cond [(odd? i)  (cons (+ x r-cos-a) (+ y r-sin-a))]
-                  [else      (cons (+ x (* 1/2 r-cos-a)) (+ y (* 1/2 r-sin-a)))])))
-        (send dc draw-polygon pts)))
+        (when (vregular? v)
+          (match-define (vector x y) v)
+          (define pts
+            (for/list ([a  (in-list angles)] [i  (in-naturals)])
+              (define r-cos-a (* r (cos a)))
+              (define r-sin-a (* r (sin a)))
+              (cond [(odd? i)  (cons (+ x r-cos-a) (+ y r-sin-a))]
+                    [else      (cons (+ x (* 1/2 r-cos-a)) (+ y (* 1/2 r-sin-a)))])))
+          (send dc draw-polygon pts))))
     
     (define/public (make-draw-flare-glyph r sticks start-angle)
       (define step (/ (* 2 pi) sticks))
       (define angles (build-list sticks (λ (n) (+ start-angle (* n step)))))
       (λ (v)
-        (match-define (vector x y) v)
-        (for ([a  (in-list angles)])
-          (send dc draw-line x y (+ x (* (cos a) r)) (+ y (* (sin a) r))))))
+        (when (vregular? v)
+          (match-define (vector x y) v)
+          (for ([a  (in-list angles)])
+            (send dc draw-line x y (+ x (* (cos a) r)) (+ y (* (sin a) r)))))))
     
     (define/public (make-draw-tick r angle)
       (define dx (* (cos angle) r))
       (define dy (* (sin angle) r))
       (λ (v)
-        (match-define (vector x y) v)
-        (send dc draw-line (- x dx) (- y dy) (+ x dx) (+ y dy))))
+        (when (vregular? v)
+          (match-define (vector x y) v)
+          (send dc draw-line (- x dx) (- y dy) (+ x dx) (+ y dy)))))
     
     (define/public (draw-tick v r angle)
       ((make-draw-tick r angle) v))
@@ -363,14 +377,15 @@
       (define dx2 (* (cos (- angle head-angle)) head-r))
       (define dy2 (* (sin (- angle head-angle)) head-r))
       (λ (v)
-        (match-define (vector x y) v)
-        (define head-x (+ x dx))
-        (define head-y (+ y dy))
-        (define tail-x (- x dx))
-        (define tail-y (- y dy))
-        (send dc draw-line head-x head-y tail-x tail-y)
-        (send dc draw-line head-x head-y (- head-x dx1) (- head-y dy1))
-        (send dc draw-line head-x head-y (- head-x dx2) (- head-y dy2))))
+        (when (vregular? v)
+          (match-define (vector x y) v)
+          (define head-x (+ x dx))
+          (define head-y (+ y dy))
+          (define tail-x (- x dx))
+          (define tail-y (- y dy))
+          (send dc draw-line head-x head-y tail-x tail-y)
+          (send dc draw-line head-x head-y (- head-x dx1) (- head-y dy1))
+          (send dc draw-line head-x head-y (- head-x dx2) (- head-y dy2)))))
     
     (define/public (draw-arrow-glyph v r angle)
       ((make-draw-arrow-glyph r angle) v))
@@ -380,8 +395,9 @@
       (define dx (* 1/2 x-size))
       (define dy (* 1/2 y-size))
       (λ (v)
-        (match-define (vector x y) v)
-        (send dc draw-text str (- x dx) (- y dy) #t)))
+        (when (vregular? v)
+          (match-define (vector x y) v)
+          (send dc draw-text str (- x dx) (- y dy) #t))))
     
     (define ((mix-draw-glyph d1 d2) v)
       (d1 v)

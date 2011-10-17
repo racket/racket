@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require racket/flonum racket/list racket/promise racket/math racket/contract
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/math.rkt"
          "../common/utils.rkt"
          "../common/sample.rkt"

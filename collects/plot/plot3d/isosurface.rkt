@@ -4,13 +4,13 @@
          "../common/marching-cubes.rkt"
          "../common/math.rkt"
          "../common/vector.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/draw.rkt"
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt"
-         "sample.rkt")
+         "renderer.rkt")
 
 (provide isosurface3d isosurfaces3d polar3d)
 

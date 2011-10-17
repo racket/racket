@@ -9,7 +9,7 @@
          (prefix-in s. scribble/core)
          (prefix-in s. scribble/html-properties))
 
-(provide defproc defparam defcontract doc-apply)
+(provide defproc defparam defthing defcontract doc-apply)
 
 (begin-for-syntax
   (struct proc+doc (proc-transformer doc-transformer)
@@ -147,6 +147,24 @@
     [(_ name:id contract:expr default:expr)
      (quasisyntax/loc stx
        (defparam name #,(parameter-name->arg-name #'name) contract default))]))
+
+(define-syntax (defthing stx)
+  (syntax-parse stx
+    [(_ name:id contract:expr value:expr)
+     (with-syntax ([value-name           (make-value-name #'name)]
+                   [serialized-contract  (serialize-syntax #'contract)])
+       (syntax/loc stx
+         (begin
+           (define/contract value-name contract value)
+           (define-syntax name
+             (make-proc+doc
+              #'value-name
+              (λ (doc-stx)
+                (syntax-case doc-stx ()
+                  [(ctx . pre-flows)
+                   (with-syntax ([doc-name      (make-doc-name #'ctx #'name)]
+                                 [doc-contract  (unserialize-syntax #'ctx 'serialized-contract)])
+                     #'(s.defthing doc-name doc-contract . pre-flows))])))))))]))
 
 ;; Define a contract or a procedure that returns a contract
 (define-syntax (defcontract stx)

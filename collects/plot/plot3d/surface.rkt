@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/flonum racket/contract
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/math.rkt"
          "../common/vector.rkt"
          "../common/marching-squares.rkt"
@@ -12,7 +13,6 @@
          "../common/parameters.rkt"
          "area.rkt"
          "renderer.rkt"
-         "sample.rkt"
          "bounds.rkt")
 
 (provide surface3d)
