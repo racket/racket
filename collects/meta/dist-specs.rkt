@@ -686,8 +686,7 @@ mz-extras :+= (- (package: "unstable")
 plt-extras :+= (package: "plai/")
 
 ;; -------------------- rackunit & older schemeunit compatibility
-plt-extras :+= (package: "rackunit/")
-plt-extras :+= (package: "schemeunit/")
+plt-extras :+= (package: "rackunit/") (package: "schemeunit/")
 
 ;; -------------------- racklog (aka schelog)
 plt-extras :+= (package: "racklog/")
@@ -696,7 +695,7 @@ plt-extras :+= (package: "racklog/")
 plt-extras :+= (package: "datalog/")
 
 ;; -------------------- db
-plt-extras :+= (package: "db/")
+plt-extras :+= (package: "db/") (lib: "sqlite*")
 
 ;; ============================================================================
 ;; Readme header
