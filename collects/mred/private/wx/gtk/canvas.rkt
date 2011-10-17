@@ -209,6 +209,13 @@
       (when wx
         (send wx unrealize)))))
 
+(define-signal-handler connect-unmap "unmap"
+  (_fun _GtkWidget -> _void)
+  (lambda (gtk)
+    (let ([wx (gtk->wx gtk)])
+      (when wx
+        (send wx unrealize)))))
+
 (define (do-value-changed gtk dir)
   (let ([wx (gtk->wx gtk)])
     (when wx
@@ -385,6 +392,7 @@
      (when combo-button-gtk
        (connect-combo-key-and-mouse combo-button-gtk))
      (connect-unrealize client-gtk)
+     (connect-unmap client-gtk)
 
      (when hscroll-adj (connect-value-changed-h hscroll-adj))
      (when vscroll-adj (connect-value-changed-v vscroll-adj))
@@ -467,11 +475,14 @@
      (define flush-win-box (mcons #f 0))
      (define/public (get-flush-window) 
        (atomically
-        (if (win-box-valid? flush-win-box)
-            flush-win-box
-            (begin
-              (set! flush-win-box (window->win-box (widget-window client-gtk)))
-              flush-win-box))))
+	(if (zero? (bitwise-and (get-gtk-object-flags client-gtk) 
+				GTK_MAPPED))
+	    (mcons #f #f)
+	    (if (win-box-valid? flush-win-box)
+		flush-win-box
+		(begin
+		  (set! flush-win-box (window->win-box (widget-window client-gtk)))
+		  flush-win-box)))))
      (define/public (unrealize)
        (unrealize-win-box flush-win-box))
 
