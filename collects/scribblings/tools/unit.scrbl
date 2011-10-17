@@ -608,6 +608,10 @@ Returns the currently active tab.
   It loads that file in the definitions window of the new tab.
 }
 
+@defmethod[(create-new-tab) void?]{
+  Creates a new tab.
+}
+
 @defmethod[(next-tab) void?]{
   Switches to the next tab.
 }

@@ -37,6 +37,7 @@ remain the same for tools that use them.
     execute-callback
     get-current-tab
     open-in-new-tab
+    create-new-tab
     close-current-tab
     on-tab-change
     enable-evaluation
