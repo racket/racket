@@ -2,13 +2,14 @@
         Version 5.2
 ------------------------------
 
-  . changed a three menu keybidings:
+  . changed three menu keybidings:
       "New Tab" is now <menukey>-t
       "Run" is now <menukey>-r
       "Replace" is now <menukey>-shift-f
 
-    The preferences dialog (general tab) has a checkbox to
-    restore the old behavior.
+    The Keyboard Shortcuts section in the manual has a sample
+    keybindings file a checkbox that restores the old behavior of
+    the first two.
 
   . Under Windows, DrRacket now saves files, in some situations,
     with LF terminators. Previously, under windows, all files
@@ -26,7 +27,7 @@
   . removed the "open here" functionality (both from
     the DrRacket app and from the framework library)
 
-  . 2htdp/image: 
+  . 2htdp/image:
      - shrunk the size of saved files that contain 2htdp/image bitmaps
        (you can get these by copying and pasting from the REPL; using
         "insert image" isn't affected)
