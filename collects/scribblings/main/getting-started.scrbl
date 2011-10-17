@@ -8,7 +8,7 @@ through a textbook:
 
 @itemize[
 
- @item{@italic{@link["http:///www.htdp.org/"]{How to Design Programs}}
+ @item{@italic{@link["http://htdp.org/"]{How to Design Programs}}
        is the best place to start. Whenever the book says ``Scheme,''
        you can read it as ``Racket.''}
 
