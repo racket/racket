@@ -239,13 +239,13 @@ name with the new keystroke you want, like this:
 @racketmod[
 s-exp framework/keybinding-lang
 
-(define (rebind name new)
-  (keybinding 
-   new
-   (lambda (ed evt)
-     (send (send ed get-keymap) call-function name ed evt #t))))
+(define (rebind key command)
+  (keybinding
+   key
+   (λ (ed evt)
+     (send (send ed get-keymap) call-function command ed evt #t))))
 
-(rebind "backward-kill-word" "c:w")
+(rebind "c:w" "backward-kill-word")
 ]
 
 Note that DrRacket does not reload keybindings files automatically when you
