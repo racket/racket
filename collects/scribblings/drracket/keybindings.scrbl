@@ -239,8 +239,6 @@ before version 5.2.
 @racketmod[
 s-exp framework/keybinding-lang
 
-(require drracket/tool-lib)
-
 (define-syntax-rule (frame-key key command)
   (keybinding
    (format "~a:~a"
