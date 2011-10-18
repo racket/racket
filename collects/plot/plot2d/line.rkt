@@ -11,8 +11,7 @@
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt"
-         "bounds.rkt")
+         "../common/renderer.rkt")
 
 (provide lines parametric polar function inverse)
 
@@ -44,10 +43,10 @@
                [x-max  (if x-max x-max (apply max* rxs))]
                [y-min  (if y-min y-min (apply min* rys))]
                [y-max  (if y-max y-max (apply max* rys))])
-           (renderer2d (lines-render-proc vs color width style alpha label)
-                       default-2d-ticks-fun
-                       null-2d-bounds-fun
-                       x-min x-max y-min y-max))]))
+           (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+                       null-bounds-fun
+                       default-ticks-fun
+                       (lines-render-proc vs color width style alpha label)))]))
 
 (defproc (parametric [f (real? . -> . (vector/c real? real?))]
                      [t-min real?] [t-max real?]
@@ -107,10 +106,10 @@
                    [#:label label (or/c string? #f) #f]
                    ) renderer2d?
   (define g (function->sampler f))
-  (renderer2d (function-render-proc g samples color width style alpha label)
-              default-2d-ticks-fun
+  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
               (function-bounds-fun g samples)
-              x-min x-max y-min y-max))
+              default-ticks-fun
+              (function-render-proc g samples color width style alpha label)))
 
 ;; ===================================================================================================
 ;; Inverse function
@@ -138,7 +137,7 @@
                   [#:label label (or/c string? #f) #f]
                   ) renderer2d?
   (define g (inverse->sampler f))
-  (renderer2d (inverse-render-proc g samples color width style alpha label)
-              default-2d-ticks-fun
+  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
               (inverse-bounds-fun g samples)
-              x-min x-max y-min y-max))
+              default-ticks-fun
+              (inverse-render-proc g samples color width style alpha label)))

@@ -2,7 +2,8 @@
 
 (require racket/math racket/flonum racket/contract racket/match
          "math.rkt"
-         "contract.rkt" "contract-doc.rkt")
+         "contract.rkt"
+         "contract-doc.rkt")
 
 (provide (struct-out invertible-function)
          id-function
@@ -11,6 +12,8 @@
          apply-transform
          make-axis-transform
          axis-transform-compose
+         axis-transform-append
+         axis-transform-bound
          log-transform
          cbrt-transform
          hand-drawn-transform

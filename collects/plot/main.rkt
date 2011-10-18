@@ -18,7 +18,10 @@
 (provide (all-from-out "common/ticks.rkt"))
 
 (require "common/math.rkt")
-(provide (contract-out (struct ivl ([min real?] [max real?]))))
+(provide (contract-out (struct ivl ([min (or/c real? #f)] [max (or/c real? #f)]))))
+
+(require "common/renderer.rkt")
+(provide renderer2d? renderer3d?)
 
 ;; ===================================================================================================
 ;; 2D exports
@@ -41,9 +44,6 @@
          (all-from-out "plot2d/decoration.rkt")
          density)
 
-(require "plot2d/renderer.rkt")
-(provide renderer2d?)
-
 ;; ===================================================================================================
 ;; 3D exports
 
@@ -62,9 +62,6 @@
          (all-from-out "plot3d/point.rkt")
          (all-from-out "plot3d/isosurface.rkt")
          (all-from-out "plot3d/rectangle.rkt"))
-
-(require "plot3d/renderer.rkt")
-(provide renderer3d?)
 
 ;; ===================================================================================================
 ;; Deprecated functions

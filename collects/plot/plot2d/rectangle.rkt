@@ -7,10 +7,11 @@
          "../common/vector.rkt"
          "../common/format.rkt"
          "../common/ticks.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/legend.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt")
+         "../common/renderer.rkt")
 
 (provide rectangles area-histogram discrete-histogram)
 
@@ -51,12 +52,11 @@
            [x-max  (if x-max x-max (apply max* rxs))]
            [y-min  (if y-min y-min (apply min* rys))]
            [y-max  (if y-max y-max (apply max* rys))])
-       (renderer2d (rectangles-render-proc rects color style
-                                           line-color line-width line-style alpha label)
-                   default-2d-ticks-fun
-                   null-2d-bounds-fun
-                   x-min x-max y-min y-max))]))
-
+       (renderer2d
+        (vector (ivl x-min x-max) (ivl y-min y-max))
+        null-bounds-fun
+        default-ticks-fun
+        (rectangles-render-proc rects color style line-color line-width line-style alpha label)))]))
 
 ;; ===================================================================================================
 ;; Real histograms (or histograms on the real line)
@@ -98,7 +98,8 @@
 ;; ===================================================================================================
 ;; Discrete histograms
 
-(define ((discrete-histogram-ticks-fun cats tick-xs) _x-min _x-max y-min y-max)
+(define ((discrete-histogram-ticks-fun cats tick-xs) r)
+  (match-define (vector _ (ivl y-min y-max)) r)
   (define x-ticks
     (for/list ([cat  (in-list cats)] [x  (in-list tick-xs)])
       (tick x #t (->plot-label cat))))
@@ -132,8 +133,9 @@
                         (define 1/2-gap-size (* 1/2 gap (- x2 x1)))
                         (ivl (+ x1 1/2-gap-size) (- x2 1/2-gap-size))))
        (define tick-xs (linear-seq x-min x-max n #:start? #f #:end? #f))
-       (renderer2d (rectangles-render-proc (map (λ (x-ivl y) (vector x-ivl (ivl 0 y))) x-ivls ys)
-                                           color style line-color line-width line-style alpha label)
-                   (discrete-histogram-ticks-fun cats tick-xs)
-                   null-2d-bounds-fun
-                   x-min x-max y-min y-max))]))
+       (renderer2d
+        (vector (ivl x-min x-max) (ivl y-min y-max))
+        null-bounds-fun
+        (discrete-histogram-ticks-fun cats tick-xs)
+        (rectangles-render-proc (map (λ (x-ivl y) (vector x-ivl (ivl 0 y))) x-ivls ys)
+                                color style line-color line-width line-style alpha label)))]))

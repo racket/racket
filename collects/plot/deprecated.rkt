@@ -5,13 +5,12 @@
          "common/deprecation-warning.rkt"
          "common/contract.rkt"
          "common/contract-doc.rkt"
+         "common/renderer.rkt"
          "plot2d/line.rkt"
          "plot2d/contour.rkt"
-         "plot2d/renderer.rkt"
          "plot3d/surface.rkt"
-         "plot3d/renderer.rkt"
-         "utils.rkt"
-         "deprecated/renderers.rkt")
+         "deprecated/renderers.rkt"
+         "utils.rkt")
 
 (provide mix line contour shade surface)
 

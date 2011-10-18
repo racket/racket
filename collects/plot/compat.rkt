@@ -6,11 +6,9 @@
          ;; Plotting
          "common/contract.rkt"
          "common/contract-doc.rkt"
-         ;"common/ticks.rkt"
+         "common/renderer.rkt"
          "plot2d/area.rkt"
-         "plot2d/renderer.rkt"
          "plot3d/area.rkt"
-         "plot3d/renderer.rkt"
          (prefix-in new. (only-in "main.rkt"
                                   x-axis y-axis
                                   default-x-ticks default-y-ticks default-z-ticks

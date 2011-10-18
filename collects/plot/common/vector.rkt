@@ -2,8 +2,11 @@
 
 ;; A small vector library.
 
-(require racket/match racket/vector racket/math racket/list
-         "math.rkt")
+(require racket/match racket/vector racket/math racket/list racket/contract racket/string
+         "math.rkt"
+         "contract.rkt"
+         "contract-doc.rkt"
+         "utils.rkt")
 
 (provide (all-defined-out))
 
@@ -94,3 +97,71 @@
               [m   (vmag^2 n)])
          (cond [(m . > . 0)  (v/ n (sqrt m))]
                [else  default-normal]))])))
+
+(define vector-andmap
+  (case-lambda
+    [(f v)  (let/ec break
+              (for ([e  (in-vector v)])
+                (when (not (f e)) (break #f)))
+              #t)]
+    [(f v . vs)  (define ns (cons (vector-length v) (map vector-length vs)))
+                 (when (not (equal?* ns))
+                   (error 'vector-andmap "all vectors must have same size; arguments were ~e ~e ~e"
+                          f v (string-join (map (λ (v) (format "~e" v)) vs) " ")))
+                 (let/ec break
+                   (define ess (apply map list (map vector->list vs)))
+                   (for ([e  (in-vector v)] [es  (in-list ess)])
+                     (when (not (apply f e es)) (break #f)))
+                   #t)]))
+
+(define vector-ormap
+  (case-lambda
+    [(f v)  (let/ec break
+              (for ([e  (in-vector v)])
+                (when (f e) (break #t)))
+              #f)]
+    [(f v . vs)  (define ns (cons (vector-length v) (map vector-length vs)))
+                 (when (not (equal?* ns))
+                   (error 'vector-andmap "all vectors must have same size; arguments were ~e ~e ~e"
+                          f v (string-join (map (λ (v) (format "~e" v)) vs) " ")))
+                 (let/ec break
+                   (define ess (apply map list (map vector->list vs)))
+                   (for ([e  (in-vector v)] [es  (in-list ess)])
+                     (when (apply f e es) (break #t)))
+                   #f)]))
+
+;; ===================================================================================================
+;; Rectangles
+
+(defproc (empty-rect [n exact-nonnegative-integer?]) (vectorof ivl?)
+  (make-vector n empty-ivl))
+
+(defproc (unknown-rect [n exact-nonnegative-integer?]) (vectorof ivl?)
+  (make-vector n unknown-ivl))
+
+(defproc (rect-empty? [r (vectorof ivl?)]) boolean?
+  (vector-ormap ivl-empty? r))
+
+(defproc (rect-known? [r (vectorof ivl?)]) boolean?
+  (vector-andmap ivl-known? r))
+
+(defproc (rect-regular? [r (vectorof ivl?)]) boolean?
+  (vector-andmap ivl-regular? r))
+
+(defproc (rect-zero-area? [r (vectorof ivl?)]) boolean?
+  (vector-ormap ivl-zero-length? r))
+
+(defproc (rect-singular? [r (vectorof ivl?)]) boolean?
+  (vector-andmap ivl-singular? r))
+
+(defproc (rect-inexact->exact [r (vectorof ivl?)]) (vectorof ivl?)
+  (vector-map ivl-inexact->exact r))
+
+(defproc (rect-contains? [r (vectorof ivl?)] [v (vectorof real?)]) boolean?
+  (vector-andmap ivl-contains? r v))
+
+(define (rect-meet . rs)
+  (apply vector-map ivl-meet rs))
+
+(define (rect-join . rs)
+  (apply vector-map ivl-join rs))

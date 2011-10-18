@@ -10,7 +10,7 @@
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt")
+         "../common/renderer.rkt")
 
 (provide isosurface3d isosurfaces3d polar3d)
 
@@ -83,12 +83,12 @@
                        [#:label label (or/c string? #f) #f]
                        ) renderer3d?
   (define g (3d-function->sampler f))
-  (renderer3d (isosurface3d-render-proc g d samples color
+  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+              null-bounds-fun
+              default-ticks-fun
+              (isosurface3d-render-proc g d samples color
                                         line-color line-width line-style alpha
-                                        label)
-              default-3d-ticks-fun
-              null-3d-bounds-fun
-              x-min x-max y-min y-max z-min z-max))
+                                        label)))
 
 ;; ===================================================================================================
 ;; Nested isosurfaces
@@ -177,12 +177,12 @@
                         [#:label label (or/c string? #f) #f]
                         ) renderer3d?
   (define g (3d-function->sampler f))
-  (renderer3d (isosurfaces3d-render-proc g d-min d-max levels samples colors
+  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+              null-bounds-fun
+              default-ticks-fun
+              (isosurfaces3d-render-proc g d-min d-max levels samples colors
                                          line-colors line-widths line-styles alphas
-                                         label)
-              default-3d-ticks-fun
-              null-3d-bounds-fun
-              x-min x-max y-min y-max z-min z-max))
+                                         label)))
 
 ;; ===================================================================================================
 
@@ -273,8 +273,8 @@
                [z-max  (if z-max z-max (apply max* rzs))])
            (define new-f (2d-polar->3d-function f))
            (define g (3d-function->sampler new-f))
-           (renderer3d (polar3d-render-proc new-f g samples color
-                                            line-color line-width line-style alpha label)
-                       default-3d-ticks-fun
-                       null-3d-bounds-fun
-                       x-min x-max y-min y-max z-min z-max))]))
+           (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+                       null-bounds-fun
+                       default-ticks-fun
+                       (polar3d-render-proc new-f g samples color
+                                            line-color line-width line-style alpha label)))]))

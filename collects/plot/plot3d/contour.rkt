@@ -11,8 +11,7 @@
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt"
-         "bounds.rkt")
+         "../common/renderer.rkt")
 
 (provide contours3d contour-intervals3d)
 
@@ -76,10 +75,10 @@
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
   (define g (2d-function->sampler f))
-  (renderer3d (contours3d-render-proc g levels samples colors widths styles alphas label)
-              default-3d-ticks-fun
+  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
               (surface3d-bounds-fun g samples)
-              x-min x-max y-min y-max z-min z-max))
+              default-ticks-fun
+              (contours3d-render-proc g levels samples colors widths styles alphas label)))
 
 ;; ===================================================================================================
 ;; Contour intervals in 3D (using marching squares)
@@ -156,10 +155,10 @@
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
   (define g (2d-function->sampler f))
-  (renderer3d (contour-intervals3d-render-proc g levels samples colors
+  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+              (surface3d-bounds-fun g samples)
+              default-ticks-fun
+              (contour-intervals3d-render-proc g levels samples colors
                                                line-colors line-widths line-styles
                                                contour-colors contour-widths contour-styles
-                                               alphas label)
-              default-3d-ticks-fun
-              (surface3d-bounds-fun g samples)
-              x-min x-max y-min y-max z-min z-max))
+                                               alphas label)))

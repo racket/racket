@@ -7,7 +7,7 @@
          "../common/utils.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt"
+         "../common/renderer.rkt"
          "line.rkt")
 
 (provide kde density)

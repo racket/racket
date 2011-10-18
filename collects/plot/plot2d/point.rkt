@@ -5,12 +5,12 @@
 (require racket/contract racket/class racket/match racket/math racket/list
          "../common/math.rkt"
          "../common/vector.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/legend.rkt"
          "../common/draw.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt"
-         "bounds.rkt"
+         "../common/renderer.rkt"
          "clip.rkt")
 
 (provide points vector-field error-bars)
@@ -43,10 +43,10 @@
                    [x-max  (if x-max x-max (apply max* xs))]
                    [y-min  (if y-min y-min (apply min* ys))]
                    [y-max  (if y-max y-max (apply max* ys))])
-               (renderer2d (points-render-fun vs sym color size line-width alpha label)
-                           default-2d-ticks-fun
-                           null-2d-bounds-fun
-                           x-min x-max y-min y-max))])))
+               (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+                           null-bounds-fun
+                           default-ticks-fun
+                           (points-render-fun vs sym color size line-width alpha label)))])))
 
 ;; ===================================================================================================
 ;; Vector fields
@@ -107,17 +107,15 @@
           ) renderer2d?
   (let ([f  (cond [(procedure-arity-includes? f 2 #t)  f]
                   [else  (λ (x y) (f (vector x y)))])])
-    (renderer2d (vector-field-render-fun
-                 f samples scale color line-width line-style alpha label)
-                default-2d-ticks-fun
-                null-2d-bounds-fun
-                x-min x-max y-min y-max)))
+    (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+                null-bounds-fun
+                default-ticks-fun
+                (vector-field-render-fun f samples scale color line-width line-style alpha label))))
 
 ;; ===================================================================================================
 ;; Error bars
 
-(define ((error-bars-render-fun bars color line-width line-style width alpha) area)
-  (match-define (list (vector xs ys hs) ...) bars)
+(define ((error-bars-render-fun xs ys hs color line-width line-style width alpha) area)
   (define-values (x-min x-max y-min y-max) (send area get-clip-bounds))
   
   (define half (* 1/2 width))
@@ -141,18 +139,6 @@
   
   empty)
 
-(define (error-bars-bounds-fun bars)
-  (let ([bars  (filter vregular? bars)])
-    (cond [(empty? bars)  null-2d-bounds-fun]
-          [else
-           (match-define (list (vector xs ys hs) ...) bars)
-           (λ (x-min x-max y-min y-max)
-             (let ([x-min  (if x-min x-min (apply min* xs))]
-                   [x-max  (if x-max x-max (apply max* xs))]
-                   [y-min  (if y-min y-min (apply min* (map - ys hs)))]
-                   [y-max  (if y-max y-max (apply max* (map + ys hs)))])
-               (values x-min x-max y-min y-max)))])))
-
 (defproc (error-bars
           [bars (listof (vector/c real? real? real?))]
           [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
@@ -166,7 +152,13 @@
   (let ([bars  (filter vregular? bars)])
     (cond [(empty? bars)  null-renderer2d]
           [else
-           (renderer2d  (error-bars-render-fun bars color line-width line-style width alpha)
-                        default-2d-ticks-fun
-                        (error-bars-bounds-fun bars)
-                        x-min x-max y-min y-max)])))
+           (match-define (list (vector xs ys hs) ...) bars)
+           (let ([x-min  (if x-min x-min (apply min* xs))]
+                 [x-max  (if x-max x-max (apply max* xs))]
+                 [y-min  (if y-min y-min (apply min* (map - ys hs)))]
+                 [y-max  (if y-max y-max (apply max* (map + ys hs)))])
+             (renderer2d
+              (vector (ivl x-min x-max) (ivl y-min y-max))
+              null-bounds-fun
+              default-ticks-fun
+              (error-bars-render-fun xs ys hs color line-width line-style width alpha)))])))

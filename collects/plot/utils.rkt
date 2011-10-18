@@ -1,10 +1,13 @@
 #lang racket/base
 
 (require "common/math.rkt")
+(require "common/vector.rkt")
 (provide bounds->intervals
          linear-seq linear-seq*
          degrees->radians
-         radians->degrees)
+         radians->degrees
+         empty-ivl unknown-ivl ivl-empty? ivl-known? ivl-regular? ivl-meet ivl-join
+         empty-rect unknown-rect rect-empty? rect-known? rect-regular? rect-meet rect-join)
 
 (require "common/format.rkt")
 (provide digits-for-range

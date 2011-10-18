@@ -4,6 +4,47 @@
 
 (plot-font-family 'swiss)
 
+(define (ticks-scale fun t)
+  (match-define (invertible-function f g) fun)
+  (match-define (ticks layout format) t)
+  (ticks (λ (x-min x-max max-ticks transform)
+           (define ts (layout (f x-min) (f x-max) max-ticks transform))
+           (for/list ([t  (in-list ts)])
+             (match-define (pre-tick x major?) t)
+             (pre-tick (g x) major?)))
+         (λ (x-min x-max ts)
+           (format (f x-min) (f x-max) (map (λ (t)
+                                              (match-define (pre-tick x major?) t)
+                                              (pre-tick (f x) major?))
+                                            ts)))))
+
+(define (linear-scale m [b 0])
+  (invertible-function (λ (x) (+ (* m x) b))
+                       (λ (y) (/ (- y b) m))))
+
+(define exp-scale
+  (invertible-function exp log))
+
+(parameterize ([plot-y-ticks  (ticks-scale (linear-scale 2 1) (plot-y-ticks))])
+  (plot (list (function sqr -2 2)
+              (function sin -4 4))))
+
+(parameterize ([plot-y-ticks  (ticks-scale exp-scale (log-ticks))])
+  (plot (list (function sqr -2 2)
+              (function sin -4 4))))
+
+(parameterize ([plot-y-ticks  (ticks-scale exp-scale (log-ticks))])
+  (plot (function values -10 10)))
+
+(parameterize ([plot-y-transform  log-transform]
+               [plot-y-ticks  (log-ticks)])
+  (plot (function exp -10 10)))
+
+(parameterize ([plot-y-ticks  (ticks-append (plot-y-ticks)
+                                            (ticks-scale (linear-scale 2 1) (currency-ticks)))])
+  (plot (function values -4 4)))
+
+#|
 (plot (function (λ (x) (count pre-tick-major? ((linear-ticks) 0 x 8 id-transform)))
                 0.1 10))
 
@@ -80,3 +121,4 @@
 
 (plot (contours (λ (x y) (* 1/2 (+ (sqr x) (sqr y)))) -1 1 -1 1 #:label "z"))
 (plot3d (contours3d (λ (x y) (* 1/2 (+ (sqr x) (sqr y)))) -1 1 -1 1 #:label "z"))
+|#

@@ -11,8 +11,7 @@
          "../common/draw.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt"
-         "bounds.rkt")
+         "../common/renderer.rkt")
 
 (provide lines-interval parametric-interval polar-interval function-interval inverse-interval)
 
@@ -65,13 +64,13 @@
            [x-max  (if x-max x-max (apply max* rxs))]
            [y-min  (if y-min y-min (apply min* rys))]
            [y-max  (if y-max y-max (apply max* rys))])
-       (renderer2d (lines-interval-render-proc v1s v2s color style
+       (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+                   null-bounds-fun
+                   default-ticks-fun
+                   (lines-interval-render-proc v1s v2s color style
                                                line1-color line1-width line1-style
                                                line2-color line2-width line2-style
-                                               alpha label)
-                   default-2d-ticks-fun
-                   null-2d-bounds-fun
-                   x-min x-max y-min y-max))]))
+                                               alpha label)))]))
 
 (defproc (parametric-interval
           [f1 (real? . -> . (vector/c real? real?))]
@@ -165,13 +164,13 @@
           ) renderer2d?
   (define g1 (function->sampler f1))
   (define g2 (function->sampler f2))
-  (renderer2d (function-interval-render-proc g1 g2 samples color style
+  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+              (function-interval-bounds-fun g1 g2 samples)
+              default-ticks-fun
+              (function-interval-render-proc g1 g2 samples color style
                                              line1-color line1-width line1-style
                                              line2-color line2-width line2-style
-                                             alpha label)
-              default-2d-ticks-fun
-              (function-interval-bounds-fun g1 g2 samples)
-              x-min x-max y-min y-max))
+                                             alpha label)))
 
 ;; ===================================================================================================
 ;; Inverse function
@@ -212,10 +211,10 @@
           ) renderer2d?
   (define g1 (inverse->sampler f1))
   (define g2 (inverse->sampler f2))
-  (renderer2d (inverse-interval-render-proc g1 g2 samples color style
+  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+              (inverse-interval-bounds-fun g1 g2 samples)
+              default-ticks-fun
+              (inverse-interval-render-proc g1 g2 samples color style
                                             line1-color line1-width line1-style
                                             line2-color line2-width line2-style
-                                            alpha label)
-              default-2d-ticks-fun
-              (inverse-interval-bounds-fun g1 g2 samples)
-              x-min x-max y-min y-max))
+                                            alpha label)))

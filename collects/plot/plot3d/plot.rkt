@@ -5,14 +5,14 @@
          unstable/lazy-require
          (for-syntax racket/base)
          "../common/math.rkt"
+         "../common/vector.rkt"
          "../common/file-type.rkt"
          "../common/area.rkt"
          "../common/contract.rkt" "../common/contract-doc.rkt"
          "../common/parameters.rkt"
          "../common/deprecation-warning.rkt"
-         "area.rkt"
-         "renderer.rkt"
-         "bounds.rkt")
+         "../common/renderer.rkt"
+         "area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
 ;;   cannot instantiate `racket/gui/base' a second time in the same process
@@ -36,70 +36,59 @@
                     [#:y-label y-label (or/c string? #f) (plot-y-label)]
                     [#:z-label z-label (or/c string? #f) (plot-z-label)]
                     [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]) void?
-  (define rs (filter (λ (renderer) (not (renderer3d-out-of-bounds?
-                                         renderer x-min x-max y-min y-max z-min z-max)))
-                     (flatten (list renderer-tree))))
+  (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)))
+  (define rs (flatten (list renderer-tree)))
   
-  (define-values (px-min px-max py-min py-max pz-min pz-max)
-    (renderer3d-bounds-fixpoint rs x-min x-max y-min y-max z-min z-max))
+  (define plot-bounds-rect (renderer-bounds-fixpoint rs given-bounds-rect))
   
-  (let ([x-min  (if x-min x-min px-min)]
-        [x-max  (if x-max x-max px-max)]
-        [y-min  (if y-min y-min py-min)]
-        [y-max  (if y-max y-max py-max)]
-        [z-min  (if z-min z-min pz-min)]
-        [z-max  (if z-max z-max pz-max)])
-    (when (or (not x-min) (not x-max) (x-min . >= . x-max))
-      (error 'plot3d "could not determine x bounds; got: x-min = ~e, x-max = ~e" x-min x-max))
-    (when (or (not y-min) (not y-max) (y-min . >= . y-max))
-      (error 'plot3d "could not determine y bounds; got: y-min = ~e, y-max = ~e" y-min y-max))
-    (when (or (not z-min) (not z-max) (z-min . >= . z-max))
-      (error 'plot3d "could not determine z bounds; got: z-min = ~e, z-max = ~e" z-min z-max))
+  (when (or (not (rect-regular? plot-bounds-rect))
+            (rect-zero-area? plot-bounds-rect))
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) plot-bounds-rect)
+    (error 'plot "~a; determined x ∈ [~e,~e], y ∈ [~e,~e], z ∈ [~e,~e]"
+           "could not determine sensible plot bounds" x-min x-max y-min y-max z-min z-max))
+  
+  (define bounds-rect (rect-inexact->exact plot-bounds-rect))
+  
+  (define-values (all-x-ticks all-y-ticks all-z-ticks)
+    (for/lists (all-x-ticks all-y-ticks all-z-ticks) ([r  (in-list rs)])
+      ((renderer-ticks-fun r) bounds-rect)))
+  
+  (define x-ticks (remove-duplicates (append* all-x-ticks)))
+  (define y-ticks (remove-duplicates (append* all-y-ticks)))
+  (define z-ticks (remove-duplicates (append* all-z-ticks)))
+  
+  (parameterize ([plot3d-angle        angle]
+                 [plot3d-altitude     altitude]
+                 [plot-title          title]
+                 [plot-x-label        x-label]
+                 [plot-y-label        y-label]
+                 [plot-z-label        z-label]
+                 [plot-legend-anchor  legend-anchor])
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) bounds-rect)
+    (define area (make-object 3d-plot-area%
+                   x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max
+                   dc x y width height))
+    (send area start-plot)
     
-    (let ([x-min  (inexact->exact x-min)]
-          [x-max  (inexact->exact x-max)]
-          [y-min  (inexact->exact y-min)]
-          [y-max  (inexact->exact y-max)]
-          [z-min  (inexact->exact z-min)]
-          [z-max  (inexact->exact z-max)])
-      (define-values (all-x-ticks all-y-ticks all-z-ticks)
-        (for/lists (all-x-ticks all-y-ticks all-z-ticks) ([r  (in-list rs)])
-          ((renderer3d-ticks-fun r) x-min x-max y-min y-max z-min z-max)))
-      
-      (define x-ticks (remove-duplicates (append* all-x-ticks)))
-      (define y-ticks (remove-duplicates (append* all-y-ticks)))
-      (define z-ticks (remove-duplicates (append* all-z-ticks)))
-      
-      (parameterize ([plot3d-angle        angle]
-                     [plot3d-altitude     altitude]
-                     [plot-title          title]
-                     [plot-x-label        x-label]
-                     [plot-y-label        y-label]
-                     [plot-z-label        z-label]
-                     [plot-legend-anchor  legend-anchor])
-        (define area (make-object 3d-plot-area%
-                       x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max
-                       dc x y width height))
-        (send area start-plot)
-        
-        (define legend-entries
-          (flatten (for/list ([renderer  (in-list rs)])
-                     (match-define (renderer3d render-proc ticks-fun bounds-fun
-                                               rx-min rx-max ry-min ry-max rz-min rz-max)
-                       renderer)
-                     (send area start-renderer rx-min rx-max ry-min ry-max rz-min rz-max)
-                     (render-proc area))))
-        
-        (send area end-plot)
-        
-        (when (and (not (empty? legend-entries))
-                   (or (not (plot-animating?))
-                       (not (equal? (plot-legend-anchor) 'center))))
-          (send area put-legend legend-entries))
-        
-        (when (plot-animating?) (send area put-angles))
-        
-        (send area restore-drawing-params)))))
+    (define legend-entries
+      (flatten (for/list ([rend  (in-list rs)])
+                 (match-define (renderer3d
+                                (vector (ivl rx-min rx-max) (ivl ry-min ry-max) (ivl rz-min rz-max))
+                                _bf _tf render-proc)
+                   rend)
+                 (send area start-renderer rx-min rx-max ry-min ry-max rz-min rz-max)
+                 (render-proc area))))
+    
+    (send area end-plot)
+    
+    (when (and (not (empty? legend-entries))
+               (or (not (plot-animating?))
+                   (not (equal? (plot-legend-anchor) 'center))))
+      (send area put-legend legend-entries))
+    
+    (when (plot-animating?) (send area put-angles))
+    
+    (send area restore-drawing-params)))
 
 ;; ===================================================================================================
 ;; Plot to various other backends

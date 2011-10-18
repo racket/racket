@@ -3,14 +3,15 @@
 ;; Functions to create renderers for 3D histograms
 
 (require racket/match racket/list racket/contract racket/class
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/parameters.rkt"
          "../common/math.rkt"
          "../common/vector.rkt"
          "../common/legend.rkt"
          "../common/ticks.rkt"
          "../common/format.rkt"
-         "renderer.rkt")
+         "../common/renderer.rkt")
 
 (provide rectangles3d discrete-histogram3d)
 
@@ -55,17 +56,17 @@
            [y-max  (if y-max y-max (apply max* rys))]
            [z-min  (if z-min z-min (apply min* rzs))]
            [z-max  (if z-max z-max (apply max* rzs))])
-       (renderer3d (rectangles3d-render-proc rects color style line-color line-width line-style
-                                             alpha label)
-                   default-3d-ticks-fun
-                   null-3d-bounds-fun
-                   x-min x-max y-min y-max z-min z-max))]))
+       (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+                   null-bounds-fun
+                   default-ticks-fun
+                   (rectangles3d-render-proc rects color style line-color line-width line-style
+                                             alpha label)))]))
 
 ;; ===================================================================================================
 ;; Discrete histograms
 
-(define ((discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys)
-         _x-min _x-max _y-min _y-max z-min z-max)
+(define ((discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys) r)
+  (match-define (vector _xi _yi (ivl z-min z-max)) r)
   (define x-ticks
     (for/list ([cat  (in-list c1s)] [x  (in-list tick-xs)])
       (tick x #t (->plot-label cat))))
@@ -128,8 +129,8 @@
                                     (adjust/gap (ivl y1 y2) gap)
                                     (ivl 0 z)))
                           x1s x2s y1s y2s all-zs))
-       (renderer3d (rectangles3d-render-proc rects color style line-color line-width line-style
-                                             alpha label)
+       (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+                   null-bounds-fun
                    (discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys)
-                   null-3d-bounds-fun
-                   x-min x-max y-min y-max z-min z-max))]))
+                   (rectangles3d-render-proc rects color style line-color line-width line-style
+                                             alpha label)))]))

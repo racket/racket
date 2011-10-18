@@ -11,9 +11,8 @@
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "area.rkt"
-         "renderer.rkt"
-         "bounds.rkt")
+         "../common/renderer.rkt"
+         "area.rkt")
 
 (provide surface3d)
 
@@ -61,8 +60,8 @@
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
   (define g (2d-function->sampler f))
-  (renderer3d (surface3d-render-proc g samples color style
-                                     line-color line-width line-style alpha label)
-              default-3d-ticks-fun
+  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
               (surface3d-bounds-fun g samples)
-              x-min x-max y-min y-max z-min z-max))
+              default-ticks-fun
+              (surface3d-render-proc g samples color style
+                                     line-color line-width line-style alpha label)))

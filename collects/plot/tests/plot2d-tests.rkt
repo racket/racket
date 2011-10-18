@@ -148,6 +148,10 @@
            (λ () (plot (list (function sqr #f -1)
                              (function sqr 1 #f)))))
 
+; draws both functions with x in [-1,2] (meaning nothing is drawn)
+(plot (list (function sqr #f -1)
+            (function sqr 2 #f)))
+
 ; draws first function with x in [-2,-1]
 (plot (list (function sqr #f -1)
             (function sqr 1 #f))
@@ -411,13 +415,13 @@
                               #:color n #:width 2 #:style n))))
         #:x-min -2 #:x-max 2)))
 
-(let ()
-  (define (f x) (/ (sin x) x))
-  (parameterize ([plot-x-transform  (stretch-transform -1 1 10)]
-                 [plot-y-ticks      (fraction-ticks)])
-    (plot (list (y-axis -1 #t #:ticks? #f) (y-axis 1 #t #:ticks? #f)
-                (function f -1 1 #:width 2 #:color 4)
-                (function f -14 -1 #:color 4 #:label "y = sin(x)/x")
-                (function f 1 14 #:color 4)
-                (point-label (vector 0 1) "y → 1 as x → 0" #:anchor 'bottom-right))
-          #:y-max 1.2)))
+(time
+ (define (f x) (/ (sin x) x))
+ (parameterize ([plot-x-transform  (stretch-transform -1 1 10)]
+                [plot-y-ticks      (fraction-ticks)])
+   (plot (list (y-axis -1 #t #:ticks? #f) (y-axis 1 #t #:ticks? #f)
+               (function f -1 1 #:width 2 #:color 4)
+               (function f -14 -1 #:color 4 #:label "y = sin(x)/x")
+               (function f 1 14 #:color 4)
+               (point-label (vector 0 1) "y → 1 as x → 0" #:anchor 'bottom-right))
+         #:y-max 1.2)))

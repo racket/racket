@@ -3,10 +3,11 @@
 (require racket/class racket/list racket/match racket/contract
          "../common/math.rkt"
          "../common/vector.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/legend.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt")
+         "../common/renderer.rkt")
 
 (provide points3d)
 
@@ -42,6 +43,7 @@
                  [y-max  (if y-max y-max (apply max* ys))]
                  [z-min  (if z-min z-min (apply min* zs))]
                  [z-max  (if z-max z-max (apply max* zs))])
-             (renderer3d (points3d-render-proc vs sym color size line-width alpha label)
-                         default-3d-ticks-fun null-3d-bounds-fun
-                         x-min x-max y-min y-max z-min z-max))])))
+             (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+                         null-bounds-fun
+                         default-ticks-fun
+                         (points3d-render-proc vs sym color size line-width alpha label)))])))

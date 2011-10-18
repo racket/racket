@@ -14,7 +14,7 @@
          "../common/sample.rkt"
          "../common/parameters.rkt"
          "../common/axis-transform.rkt"
-         "renderer.rkt"
+         "../common/renderer.rkt"
          "area.rkt"
          "line.rkt"
          "interval.rkt"
@@ -52,15 +52,17 @@
   
   empty)
 
-(define ((x-axis-ticks-fun y) x-min x-max y-min y-max)
+(define ((x-axis-ticks-fun y) r)
+  (match-define (vector _ (ivl y-min y-max)) r)
   (define digits (digits-for-range y-min y-max))
   (values empty (list (tick y #t (real->plot-label y digits)))))
 
 (defproc (x-axis [y real? 0] [add-y-tick? boolean? #f]
                  [#:ticks? ticks? boolean? (x-axis-ticks?)]) renderer2d?
-  (renderer2d (x-axis-render-proc y ticks?)
-              (if add-y-tick? (x-axis-ticks-fun y) null-2d-ticks-fun)
-              null-2d-bounds-fun #f #f #f #f))
+  (renderer2d (empty-rect 2)
+              null-bounds-fun
+              (if add-y-tick? (x-axis-ticks-fun y) null-ticks-fun)
+              (x-axis-render-proc y ticks?)))
 
 (define ((y-axis-render-proc x ticks?) area)
   (define y-min (send area get-y-min))
@@ -80,15 +82,17 @@
   
   empty)
 
-(define ((y-axis-ticks-fun x) x-min x-max y-min y-max)
+(define ((y-axis-ticks-fun x) r)
+  (match-define (vector (ivl x-min x-max) _) r)
   (define digits (digits-for-range x-min x-max))
   (values (list (tick x #t (real->plot-label x digits))) empty))
 
 (defproc (y-axis [x real? 0] [add-x-tick? boolean? #f]
                  [#:ticks? ticks? boolean? (y-axis-ticks?)]) renderer2d?
-  (renderer2d (y-axis-render-proc x ticks?)
-              (if add-x-tick? (y-axis-ticks-fun x) null-2d-ticks-fun)
-              null-2d-bounds-fun #f #f #f #f))
+  (renderer2d (empty-rect 2)
+              null-bounds-fun
+              (if add-x-tick? (y-axis-ticks-fun x) null-ticks-fun)
+              (y-axis-render-proc x ticks?)))
 
 (defproc (axes [x real? 0] [y real? 0] [add-x-tick? boolean? #f] [add-y-tick? boolean? #f]
                [#:x-ticks? x-ticks? boolean? (x-axis-ticks?)]
@@ -168,8 +172,10 @@
 (defproc (polar-axes [#:number num exact-positive-integer? (polar-axes-number)]
                      [#:ticks? ticks? boolean? (polar-axes-ticks?)]
                      ) renderer2d?
-  (renderer2d (polar-axes-render-proc num ticks?)
-              null-2d-ticks-fun null-2d-bounds-fun #f #f #f #f))
+  (renderer2d (empty-rect 2)
+              null-bounds-fun
+              null-ticks-fun
+              (polar-axes-render-proc num ticks?)))
 
 ;; ===================================================================================================
 ;; Grid
@@ -201,10 +207,10 @@
   empty)
 
 (defproc (x-tick-lines) renderer2d?
-  (renderer2d (x-tick-lines-render-proc) null-2d-ticks-fun null-2d-bounds-fun #f #f #f #f))
+  (renderer2d (empty-rect 2) null-bounds-fun null-ticks-fun (x-tick-lines-render-proc)))
 
 (defproc (y-tick-lines) renderer2d?
-  (renderer2d (y-tick-lines-render-proc) null-2d-ticks-fun null-2d-bounds-fun #f #f #f #f))
+  (renderer2d (empty-rect 2) null-bounds-fun null-ticks-fun (y-tick-lines-render-proc)))
 
 (defproc (tick-grid) (listof renderer2d?)
   (list (x-tick-lines) (y-tick-lines)))
@@ -249,10 +255,10 @@
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (match-define (vector x y) v)
-  (renderer2d (label-render-proc label v color size anchor angle point-size alpha)
-              null-2d-ticks-fun
-              null-2d-bounds-fun
-              x x y y))
+  (renderer2d (vector (ivl x x) (ivl y y))
+              null-bounds-fun
+              null-ticks-fun
+              (label-render-proc label v color size anchor angle point-size alpha)))
 
 (defproc (parametric-label
           [f (real? . -> . (vector/c real? real?))]

@@ -9,15 +9,16 @@
                      syntax/strip-context
                      racket/syntax)
          "../common/math.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/vector.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/legend.rkt"
          "../common/file-type.rkt"
          "../common/area.rkt"
          "../common/parameters.rkt"
          "../common/deprecation-warning.rkt"
-         "area.rkt"
-         "renderer.rkt"
-         "bounds.rkt")
+         "../common/renderer.rkt"
+         "area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
 ;;   cannot instantiate `racket/gui/base' a second time in the same process
@@ -39,54 +40,49 @@
                   [#:x-label x-label (or/c string? #f) (plot-x-label)]
                   [#:y-label y-label (or/c string? #f) (plot-y-label)]
                   [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]) void?
-  (define rs (filter (λ (renderer) (not (renderer2d-out-of-bounds? renderer x-min x-max y-min y-max)))
-                     (flatten (list renderer-tree))))
+  (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max)))
+  (define rs (flatten (list renderer-tree)))
   
-  (define-values (px-min px-max py-min py-max)
-    (renderer2d-bounds-fixpoint rs x-min x-max y-min y-max))
+  (define plot-bounds-rect (renderer-bounds-fixpoint rs given-bounds-rect))
   
-  (let ([x-min  (if x-min x-min px-min)]
-        [x-max  (if x-max x-max px-max)]
-        [y-min  (if y-min y-min py-min)]
-        [y-max  (if y-max y-max py-max)])
-    (when (or (not x-min) (not x-max) (x-min . >= . x-max))
-      (error 'plot "could not determine nonempty x axis; got: x-min = ~e, x-max = ~e" x-min x-max))
-    (when (or (not y-min) (not y-max) (y-min . >= . y-max))
-      (error 'plot "could not determine nonempty y axis; got: y-min = ~e, y-max = ~e" y-min y-max))
+  (when (or (not (rect-regular? plot-bounds-rect))
+            (rect-zero-area? plot-bounds-rect))
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) plot-bounds-rect)
+    (error 'plot "could not determine sensible plot bounds; determined x ∈ [~e,~e], y ∈ [~e,~e]"
+           x-min x-max y-min y-max))
+  
+  (define bounds-rect (rect-inexact->exact plot-bounds-rect))
+  
+  (define-values (all-x-ticks all-y-ticks)
+    (for/lists (all-x-ticks all-y-ticks) ([r  (in-list rs)])
+      ((renderer-ticks-fun r) bounds-rect)))
+  
+  (define x-ticks (remove-duplicates (append* all-x-ticks)))
+  (define y-ticks (remove-duplicates (append* all-y-ticks)))
+  
+  (parameterize ([plot-title          title]
+                 [plot-x-label        x-label]
+                 [plot-y-label        y-label]
+                 [plot-legend-anchor  legend-anchor])
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) bounds-rect)
+    (define area (make-object 2d-plot-area%
+                   x-ticks y-ticks x-min x-max y-min y-max dc x y width height))
+    (send area start-plot)
     
-    (let ([x-min  (inexact->exact x-min)]
-          [x-max  (inexact->exact x-max)]
-          [y-min  (inexact->exact y-min)]
-          [y-max  (inexact->exact y-max)])
-      (define-values (all-x-ticks all-y-ticks)
-        (for/lists (all-x-ticks all-y-ticks) ([r  (in-list rs)])
-          ((renderer2d-ticks-fun r) x-min x-max y-min y-max)))
-      
-      (define x-ticks (remove-duplicates (append* all-x-ticks)))
-      (define y-ticks (remove-duplicates (append* all-y-ticks)))
-      
-      (parameterize ([plot-title          title]
-                     [plot-x-label        x-label]
-                     [plot-y-label        y-label]
-                     [plot-legend-anchor  legend-anchor])
-        (define area (make-object 2d-plot-area%
-                       x-ticks y-ticks x-min x-max y-min y-max dc x y width height))
-        (send area start-plot)
-        
-        (define legend-entries
-          (flatten (for/list ([renderer  (in-list rs)])
-                     (match-define (renderer2d render-proc ticks-fun bounds-fun
-                                               rx-min rx-max ry-min ry-max)
-                       renderer)
-                     (send area start-renderer rx-min rx-max ry-min ry-max)
-                     (render-proc area))))
-        
-        (send area end-plot)
-        
-        (when (not (empty? legend-entries))
-          (send area put-legend legend-entries))
-        
-        (send area restore-drawing-params)))))
+    (define legend-entries
+      (flatten (for/list ([rend  (in-list rs)])
+                 (match-define (renderer2d (vector (ivl rx-min rx-max) (ivl ry-min ry-max))
+                                           _bf _tf render-proc)
+                   rend)
+                 (send area start-renderer rx-min rx-max ry-min ry-max)
+                 (render-proc area))))
+    
+    (send area end-plot)
+    
+    (when (not (empty? legend-entries))
+      (send area put-legend legend-entries))
+    
+    (send area restore-drawing-params)))
 
 ;; ===================================================================================================
 ;; Plot to various other backends

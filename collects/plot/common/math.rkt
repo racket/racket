@@ -7,18 +7,6 @@
 
 (provide (all-defined-out))
 
-(define-struct ivl (min max) #:transparent
-  #:guard (λ (a b _)
-            (cond [(and (regular? a) (regular? b))  (values (min* a b) (max* a b))]
-                  [else  (values a b)])))
-
-(defproc (bounds->intervals [xs (listof real?)]) (listof ivl?)
-  (cond [((length xs) . < . 2)  (raise-type-error 'bounds->intervals "list with length >= 2" xs)]
-        [else
-         (for/list ([x1  (in-list xs)]
-                    [x2  (in-list (rest xs))])
-           (ivl x1 x2))]))
-
 (define -pi (- pi))
 (define 2pi (* 2 pi))
 (define -1/2pi (* -1/2 pi))
@@ -171,3 +159,73 @@
     (vector (fl* r (fl* (flcos θ) cos-ρ))
             (fl* r (fl* (flsin θ) cos-ρ))
             (fl* r (flsin ρ)))))
+
+;; ===================================================================================================
+;; Intervals
+
+(struct ivl (min max) #:transparent
+  #:guard (λ (a b _)
+            (cond [(or (nan? a) (nan? b))  (values +nan.0 +nan.0)]
+                  [(and a b)               (values (min* a b) (max* a b))]
+                  [else                    (values a b)])))
+
+(defthing empty-ivl ivl? (ivl +nan.0 +nan.0))
+(defthing unknown-ivl ivl? (ivl #f #f))
+
+(defproc (ivl-empty? [i ivl?]) boolean?
+  (nan? (ivl-min i)))
+
+(defproc (ivl-known? [i ivl?]) boolean?
+  (match-define (ivl a b) i)
+  (and a b #t))
+
+(defproc (ivl-regular? [i ivl?]) boolean?
+  (match-define (ivl a b) i)
+  (and (regular? a) (regular? b)))
+
+(defproc (ivl-singular? [i ivl?]) boolean?
+  (match-define (ivl a b) i)
+  (and a b (= a b)))
+
+(defproc (ivl-zero-length? [i ivl?]) boolean?
+  (or (ivl-empty? i) (ivl-singular? i)))
+
+(defproc (ivl-inexact->exact [i ivl?]) ivl?
+  (match-define (ivl a b) i)
+  (ivl (inexact->exact a) (inexact->exact b)))
+
+(defproc (ivl-contains? [i ivl?] [x real?]) boolean?
+  (match-define (ivl a b) i)
+  (and a b (x . >= . a) (x . <= . b)))
+
+(define (ivl-meet2 i1 i2) ivl?
+  (cond [(or (ivl-empty? i1) (ivl-empty? i2))  empty-ivl]
+        [else
+         (match-define (ivl a1 b1) i1)
+         (match-define (ivl a2 b2) i2)
+         (define a (maybe-max a1 a2))
+         (define b (maybe-min b1 b2))
+         (if (and a b (a . > . b)) empty-ivl (ivl a b))]))
+
+(define (ivl-meet . is)
+  (for/fold ([res  unknown-ivl]) ([i  (in-list is)])
+    (ivl-meet2 res i)))
+
+(define (ivl-join2 i1 i2)
+  (cond [(ivl-empty? i1)  i2]
+        [(ivl-empty? i2)  i1]
+        [else
+         (match-define (ivl a1 b1) i1)
+         (match-define (ivl a2 b2) i2)
+         (ivl (maybe-min a1 a2) (maybe-max b1 b2))]))
+
+(define (ivl-join . is)
+  (for/fold ([res  empty-ivl]) ([i  (in-list is)])
+    (ivl-join2 res i)))
+
+(defproc (bounds->intervals [xs (listof real?)]) (listof ivl?)
+  (cond [((length xs) . < . 2)  (raise-type-error 'bounds->intervals "list with length >= 2" xs)]
+        [else
+         (for/list ([x1  (in-list xs)]
+                    [x2  (in-list (rest xs))])
+           (ivl x1 x2))]))

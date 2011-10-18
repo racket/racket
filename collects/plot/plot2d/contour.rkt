@@ -14,7 +14,7 @@
          "../common/ticks.rkt"
          "../common/vector.rkt"
          "../common/format.rkt"
-         "renderer.rkt")
+         "../common/renderer.rkt")
 
 (provide contours contour-intervals)
 
@@ -78,10 +78,10 @@
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
   (define g (2d-function->sampler f))
-  (renderer2d (contours-render-proc g levels samples colors widths styles alphas label)
-              default-2d-ticks-fun
-              null-2d-bounds-fun
-              x-min x-max y-min y-max))
+  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+              null-bounds-fun
+              default-ticks-fun
+              (contours-render-proc g levels samples colors widths styles alphas label)))
 
 ;; ===================================================================================================
 ;; Contour intervals
@@ -175,9 +175,9 @@
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
   (define g (2d-function->sampler f))
-  (renderer2d (contour-intervals-render-proc g levels samples colors styles
+  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+              null-bounds-fun
+              default-ticks-fun
+              (contour-intervals-render-proc g levels samples colors styles
                                              contour-colors contour-widths contour-styles
-                                             alphas label)
-              default-2d-ticks-fun
-              null-2d-bounds-fun
-              x-min x-max y-min y-max))
+                                             alphas label)))

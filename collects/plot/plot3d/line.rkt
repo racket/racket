@@ -8,7 +8,7 @@
          "../common/legend.rkt"
          "../common/sample.rkt"
          "../common/parameters.rkt"
-         "renderer.rkt")
+         "../common/renderer.rkt")
 
 (provide lines3d parametric3d)
 
@@ -34,10 +34,10 @@
                [y-max  (if y-max y-max (apply max* rys))]
                [z-min  (if z-min z-min (apply min* rzs))]
                [z-max  (if z-max z-max (apply max* rzs))])
-           (renderer3d (lines3d-render-proc vs-thnk color width style alpha label)
-                       default-3d-ticks-fun
-                       null-3d-bounds-fun
-                       x-min x-max y-min y-max z-min z-max))]))
+           (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+                       null-bounds-fun
+                       default-ticks-fun
+                       (lines3d-render-proc vs-thnk color width style alpha label)))]))
 
 (defproc (lines3d
           [vs  (listof (vector/c real? real? real?))]
