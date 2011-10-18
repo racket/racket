@@ -780,7 +780,7 @@ before the pattern compiler is invoked.
       [else 
        (values
         (lambda (exp hole-info)
-          (and (eqv? pattern exp)
+          (and (equal? pattern exp)
                (list (make-mtch (make-bindings null)
                                 (build-flat-context exp)
                                 none))))

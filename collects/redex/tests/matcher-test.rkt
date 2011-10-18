@@ -31,6 +31,8 @@
     (test-empty "a" '(x) #f)
     (test-empty "a" '() #f)
     (test-empty "a" "a" (list (make-test-mtch (make-bindings null) "a" none)))
+    (test-empty #s(x 1) #s(x 1) (list (make-test-mtch (make-bindings null) #s(x 1) none)))
+    (test-empty #s(x 1) #s(x 2) #f)
     (test-empty 'number 1 (list (make-test-mtch (make-bindings (list (make-bind 'number 1))) 1 none)))
     (test-empty 'number 'x #f)
     (test-empty 'number '() #f)
