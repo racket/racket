@@ -11,4 +11,4 @@
 
 (start 200 200)
 (check-error (hangman-list reveal-list draw-next-part) 
-             "draw-next-part: result of type <boolean> expected, your function produced #<void>")
+             "draw-next-part: is expected to return a boolean, but it returned (void)")

@@ -28,8 +28,7 @@
 
 (check-expect (key=? "b" "a") false)
 
-(check-error (key=? "a" 0) "key=?: expected <KEY-EVTS> as second argument, given: 0")
-
+(check-error (key=? "a" 0) "key=?: expects a KEY-EVTS as second argument, given 0")
 
 ;; run world run
 
