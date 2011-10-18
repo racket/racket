@@ -1,4 +1,10 @@
 ------------------------------------------------------------------------
+Version 5.2				  [Tue Oct 18 12:34:16 EDT 2011]
+
+* bug fixes in 2htdp/universe 
+* also, on-release now works without presence of an on-key clause 
+
+------------------------------------------------------------------------
 Version 5.1.2				  [Fri Jul 22 15:27:37 EDT 2011]
 
 * The error messages of the image and universe teachpacks have been 
