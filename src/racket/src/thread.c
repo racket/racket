@@ -3514,7 +3514,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
     scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
 # ifdef HAVE_KQUEUE_SYSCALL
     {
-      struct kevent kev[2];
+      GC_CAN_IGNORE struct kevent kev[2];
       struct timespec timeout = {0, 0};
       int kr;
       EV_SET(kev, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
@@ -3545,7 +3545,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
         SCHEME_VEC_ELS(v)[0] = s;
 # ifdef HAVE_KQUEUE_SYSCALL
         {
-          struct kevent kev;
+          GC_CAN_IGNORE struct kevent kev;
           struct timespec timeout = {0, 0};
           int kr;
           EV_SET(&kev, fd, EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, NULL);
@@ -3556,7 +3556,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
         }
 # elif defined(HAVE_EPOLL_SYSCALL)
 	{
-	  struct epoll_event ev;
+	  GC_CAN_IGNORE struct epoll_event ev;
 	  int already = !SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1]), kr;
 	  ev.data.fd = fd;
 	  ev.events = EPOLLIN | (already ? EPOLLOUT : 0);
@@ -3579,7 +3579,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
         SCHEME_VEC_ELS(v)[1] = s;
 # ifdef HAVE_KQUEUE_SYSCALL
         {
-          struct kevent kev;
+          GC_CAN_IGNORE struct kevent kev;
           struct timespec timeout = {0, 0};
           int kr;
           EV_SET(&kev, fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0, 0, NULL);
@@ -3591,7 +3591,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 
 # elif defined(HAVE_EPOLL_SYSCALL)
 	{
-	  struct epoll_event ev;
+	  GC_CAN_IGNORE struct epoll_event ev;
 	  int already = !SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0]), kr;
 	  ev.data.fd = fd;
 	  ev.events = EPOLLOUT | (already ? EPOLLIN : 0);
@@ -3618,7 +3618,7 @@ static int check_fd_semaphores()
   return 0;
 #elif defined(HAVE_KQUEUE_SYSCALL)
   Scheme_Object *v, *s, *key;
-  struct kevent kev;
+  GC_CAN_IGNORE struct kevent kev;
   struct timespec timeout = {0, 0};
   int kr, hit = 0;
 
@@ -3664,7 +3664,7 @@ static int check_fd_semaphores()
 #elif defined(HAVE_EPOLL_SYSCALL)
   Scheme_Object *v, *s, *key;
   int kr, hit = 0;
-  struct epoll_event ev;
+  GC_CAN_IGNORE struct epoll_event ev;
 
   if (!scheme_semaphore_fd_mapping || (scheme_semaphore_fd_kqueue < 0))
     return 0;
