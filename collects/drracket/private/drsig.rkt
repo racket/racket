@@ -72,6 +72,7 @@
    hide-backtrace-window
    show-backtrace-window
    show-backtrace-window/edition-pairs
+   show-backtrace-window/edition-pairs/two
    open-and-highlight-in-file
    
    small-planet-bitmap

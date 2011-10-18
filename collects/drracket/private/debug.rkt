@@ -277,24 +277,29 @@ profile todo:
            #:definitions-text [defs (let ([rep (drracket:rep:current-rep)])
                                       (and rep
                                            (send rep get-definitions-text)))])
-                                                                     
-    (let* ([stack (or pre-stack
-                      (if (exn? exn)
-                          (map cdr (filter cdr (continuation-mark-set->context (exn-continuation-marks exn))))
-                          '()))]
-           [src-locs (if (exn:srclocs? exn)
-                         ((exn:srclocs-accessor exn) exn)
-                         (if (null? stack)
-                             '()
-                             (list (car stack))))]
+    (let* ([stack1 (or pre-stack '())]
+           [stack2 (if (exn? exn)
+                       (map cdr (filter cdr (continuation-mark-set->context (exn-continuation-marks exn))))
+                       '())]
+           [src-locs (cond
+                       [(exn:srclocs? exn)
+                        ((exn:srclocs-accessor exn) exn)]
+                       [(pair? stack1)
+                        (list (car stack1))]
+                       [(pair? stack2)
+                        (list (car stack2))]
+                       [else '()])]
            [port-name-matches-cache (make-hasheq)]
-           [stack-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack)]
+           [stack1-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack1)]
+           [stack2-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack2)]
            [src-locs-edition (and (pair? src-locs)
                                   (srcloc->edition/pair defs ints (car src-locs) port-name-matches-cache))])
+
       (print-planet-icon-to-stderr exn)
       (unless (exn:fail:user? exn)
-        (unless (null? stack)
-          (print-bug-to-stderr msg stack stack-editions defs ints))
+        (unless (and (null? stack1)
+                     (null? stack2))
+          (print-bug-to-stderr msg stack1 stack1-editions stack2 stack2-editions defs ints))
         (display-srclocs-in-error src-locs src-locs-edition))
       (display msg (current-error-port))
       (when (exn:fail:syntax? exn)
@@ -310,7 +315,9 @@ profile todo:
            (λ ()
              ;; need to make sure that the user's eventspace is still the same
              ;; and still running here?
-             (send ints highlight-errors src-locs stack)))))))
+             (send ints highlight-errors src-locs (if (null? stack1)
+                                                      stack2
+                                                      stack1))))))))
   
   (define (srcloc->edition/pair defs ints srcloc [port-name-matches-cache #f])
     (let ([src (srcloc-source srcloc)])
@@ -397,12 +404,12 @@ profile todo:
       (get-output-string sp)))
   
   ;; =User=
-  (define (print-bug-to-stderr msg cms editions defs ints)
+  (define (print-bug-to-stderr msg cms1 editions1 cms2 editions2 defs ints)
     (when (port-writes-special? (current-error-port))
       (let ([note% (if (mf-bday?) mf-note% bug-note%)])
         (when note%
           (let ([note (new note%)])
-            (send note set-callback (λ () (show-backtrace-window/edition-pairs msg cms editions defs ints)))
+            (send note set-callback (λ () (show-backtrace-window/edition-pairs/two msg cms1 editions1 cms2 editions2 defs ints)))
             (write-special note (current-error-port))
             (display #\space (current-error-port)))))))
   
@@ -623,16 +630,46 @@ profile todo:
     (show-backtrace-window/edition-pairs error-text dis (map (λ (x) #f) dis) defs rep)))
   
   (define (show-backtrace-window/edition-pairs error-text dis editions defs ints)
+    (show-backtrace-window/edition-pairs/two error-text dis editions '() '() defs ints))
+  
+  (define (show-backtrace-window/edition-pairs/two error-text dis1 editions1 dis2 editions2 defs ints)
     (reset-backtrace-window)
-    (letrec ([text (make-object (text:wide-snip-mixin text:hide-caret/selection%))]
-             [mf-bday-note (when (mf-bday?)
-                             (instantiate message% ()
-                               (label (string-constant happy-birthday-matthias))
-                               (parent (send current-backtrace-window get-area-container))))]
-             [ec (make-object (canvas:color-mixin canvas:wide-snip%)
-                   (send current-backtrace-window get-area-container)
-                   text)]
-             [di-vec (list->vector dis)]
+    (when (mf-bday?)
+      (instantiate message% ()
+        (label (string-constant happy-birthday-matthias))
+        (parent (send current-backtrace-window get-area-container))))
+    (define tab-panel 
+      (if (and (pair? dis1) (pair? dis2))
+          (new tab-panel% 
+               [choices (list "Errortrace" "Builtin")]
+               [parent (send current-backtrace-window get-area-container)]
+               [callback
+                (λ (a b) 
+                  (send tab-panel change-children
+                        (λ (l) (if (zero? (send tab-panel get-selection))
+                                   (list ec1)
+                                   (list ec2)))))])
+          (new panel% [parent (send current-backtrace-window get-area-container)])))
+    (define text1 (and (pair? dis1) (new (text:wide-snip-mixin text:hide-caret/selection%))))
+    (define ec1 (and (pair? dis1) 
+                     (new (canvas:color-mixin canvas:wide-snip%)
+                          [parent tab-panel]
+                          [editor text1])))
+    (define text2 (and (pair? dis2) (new (text:wide-snip-mixin text:hide-caret/selection%))))
+    (define ec2 (and (pair? dis2) 
+                     (new (canvas:color-mixin canvas:wide-snip%)
+                          [parent tab-panel]
+                          [editor text2])))
+    (when (pair? dis1)
+      (add-one-set-to-frame text1 ec1 error-text dis1 editions1 defs ints))
+    (when (pair? dis2)
+      (add-one-set-to-frame text2 ec2 error-text dis2 editions2 defs ints))
+    (when (and (pair? dis1) (pair? dis2))
+      (send tab-panel change-children (λ (l) (list ec1)))))
+
+  
+  (define (add-one-set-to-frame text ec error-text dis editions defs ints)
+    (letrec ([di-vec (list->vector dis)]
              [editions-vec (list->vector editions)]
              [index 0]
              [how-many-at-once 15]
@@ -739,8 +776,9 @@ profile todo:
           (send text insert (render-bindings/snip bindings))))
       (send text insert #\newline)
       
-      (insert-context editor-canvas text debug-source start span defs ints)
-      (send text insert #\newline)))
+      (when (and start span)
+        (insert-context editor-canvas text debug-source start span defs ints)
+        (send text insert #\newline))))
   
   ;; insert-context : (instanceof editor-canvas%)
   ;;                  (instanceof text%)

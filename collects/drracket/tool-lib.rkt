@@ -502,25 +502,64 @@ all of the names in the tools library, for use defining keybindings
   drracket:debug:show-backtrace-window/edition-pairs
   (-> string?
       (listof srcloc?)
-      (listof (or/c #f (cons/c (λ (x) (and (weak-box? x)
-                                           (let ([v (weak-box-value x)])
-                                             (or (not v)
-                                                 (is-a?/c v editor<%>)))))
-                               number?)))
+      (listof 
+       (or/c 
+        #f
+        (cons/c (λ (x) 
+                  (and (weak-box? x)
+                       (let ([v (weak-box-value x)])
+                         (or (not v)
+                             (is-a?/c v editor<%>)))))
+                number?)))
       (or/c #f (is-a?/c drracket:unit:definitions-text<%>))
       (or/c #f (is-a?/c drracket:rep:text<%>))
       void?)
   (error-message dis editions-pairs defs ints)
+  @{Same as @racket[drracket:debug:show-backtrace-window/edition-pairs/two],
+            where the @racket[_dis2] and @racket[_editions-pairs2] arguments
+            are both @racket['()]})
+ 
+ (proc-doc/names
+  drracket:debug:show-backtrace-window/edition-pairs/two
+  (-> string?
+      (listof srcloc?)
+      (listof 
+       (or/c 
+        #f
+        (cons/c (λ (x) 
+                  (and (weak-box? x)
+                       (let ([v (weak-box-value x)])
+                         (or (not v)
+                             (is-a?/c v editor<%>)))))
+                number?)))
+      (listof srcloc?)
+      (listof 
+       (or/c 
+        #f
+        (cons/c (λ (x) 
+                  (and (weak-box? x)
+                       (let ([v (weak-box-value x)])
+                         (or (not v)
+                             (is-a?/c v editor<%>)))))
+                number?)))
+      (or/c #f (is-a?/c drracket:unit:definitions-text<%>))
+      (or/c #f (is-a?/c drracket:rep:text<%>))
+      void?)
+  (error-message dis1 editions-pairs1 dis2 editions-pairs2 defs ints)
   @{Shows the backtrace window you get when clicking on the bug in
     DrRacket's REPL.
     
     The @racket[error-message] argument is the text of the error,
-    @racket[dis] is the debug information, extracted from the
+    @racket[dis1] and @racket[dis2] are the stacktrace information, 
+    extracted from the
     continuation mark in the exception record, using
-    @racket[errortrace-key].
+    @racket[errortrace-key] and using
+    @racket[continuation-mark-set->context].
     
-    The @racket[editions] argument indicates the editions of any editors
-    that are open editing the files corresponding to the source locations
+    The @racket[editions1] and @racket[editions2] arguments indicate
+    the editions of any editors
+    that are open editing the files corresponding to the source locations.
+    The lists must have the same length as @racket[dis1] and @racket[dis2].
     
     The @racket[defs] argument should be non-@racket[#f] if there are 
     possibly stacktrace frames that contain unsaved versions of the 
