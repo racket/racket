@@ -1203,6 +1203,26 @@
                cr
                (do-text cr #f s 0 0 use-font combine? offset 0.0))))))
 
+    (define/private (get-smoothing-index)
+      (case (dc-adjust-smoothing (send font get-smoothing))
+	[(default) 0]
+	[(unsmoothed) 1]
+	[(partly-smoothed) 2]
+	[(smoothed) 3]))
+
+    (define/private (get-context cr smoothing-index)
+      (or (vector-ref contexts smoothing-index)
+	  (let ([c (pango_font_map_create_context
+		    (let ([fm (vector-ref font-maps smoothing-index)])
+		      (or fm
+			  (let ([fm (pango_cairo_font_map_new)])
+			    (vector-set! font-maps smoothing-index fm)
+			    fm))))])
+	    (pango_cairo_update_context cr c)
+	    (vector-set! contexts smoothing-index c)
+	    (set-font-antialias c (dc-adjust-smoothing (send font get-smoothing)))
+	    c)))
+
     (define/private (do-text cr draw? s x y font combine? offset angle)
       (let* ([s (if (zero? offset) 
                     s 
@@ -1217,22 +1237,8 @@
                     (regexp-replace* #rx"[\uFFFE\uFFFF]" s "\uFFFD")
                     s)]
              [rotate? (and draw? (not (zero? angle)))]
-             [smoothing-index (case (dc-adjust-smoothing (send font get-smoothing))
-                                [(default) 0]
-                                [(unsmoothed) 1]
-                                [(partly-smoothed) 2]
-                                [(smoothed) 3])]
-             [context (or (vector-ref contexts smoothing-index)
-                          (let ([c (pango_font_map_create_context
-                                    (let ([fm (vector-ref font-maps smoothing-index)])
-                                      (or fm
-                                          (let ([fm (pango_cairo_font_map_new)])
-                                            (vector-set! font-maps smoothing-index fm)
-                                            fm))))])
-                            (pango_cairo_update_context cr c)
-                            (vector-set! contexts smoothing-index c)
-                            (set-font-antialias c (dc-adjust-smoothing (send font get-smoothing)))
-                            c))])
+             [smoothing-index (get-smoothing-index)]
+             [context (get-context cr smoothing-index)])
         (when draw?
           (when (eq? text-mode 'solid)
             (unless rotate?
@@ -1790,22 +1796,17 @@
             h)))
 
     (define/private (get-font-metric cr sel)
-      (let ([desc (get-pango font)]
-            [attrs (send font get-pango-attrs)]
-            [context+fontmap (or (for/or ([c (in-vector contexts)]
-                                          [fm (in-vector font-maps)])
-                                   (and c (cons c fm)))
-                                 (cons
-                                  (pango_cairo_create_context cr)
-                                  (pango_cairo_font_map_get_default)))])
-        (let ([font (pango_font_map_load_font (cdr context+fontmap)
-                                              (car context+fontmap)
-                                              desc)])
+      (let* ([desc (get-pango font)]
+	     [attrs (send font get-pango-attrs)]
+	     [index (get-smoothing-index)]
+	     [context (get-context cr index)]
+	     [fontmap (vector-ref font-maps index)]
+	     [font (pango_font_map_load_font fontmap context desc)])
           (and font ;; else font match failed
                (let ([metrics (pango_font_get_metrics font (pango_language_get_default))])
                  (let ([v (sel metrics)])
                    (pango_font_metrics_unref metrics)
-                   (/ v (exact->inexact PANGO_SCALE))))))))
+                   (/ v (exact->inexact PANGO_SCALE)))))))
 
     (void))
 
