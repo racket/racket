@@ -500,7 +500,8 @@ exec racket -qu "$0" ${1+"$@"}
                                                         base n-base c-base)
                                          (map (lambda (impl)
                                                 (let* ([a (assq impl (cdr bm-run))]
-                                                       [n (and a (caadr a))])
+                                                       [n (and a (caadr a) (caaadr a))]
+                                                       [coeff-var (and a (caadr a) (cadr (caadr a)))]) ; should be used for error bars
                                                   (list impl (if (zero? n) 1 (/ base n)))))
                                               sorted-impls))))
                                     bm-runs)]
@@ -527,7 +528,8 @@ exec racket -qu "$0" ${1+"$@"}
                           (lambda () 
                             (map (lambda (impl)
                                    (let* ([a (assq impl (cdr bm-run))]
-                                          [n (and a (caadr a))]
+                                          [n (and a (caadr a) (caaadr a))]
+                                          [coeff-var (and a (caadr a) (cadr (caadr a)))]
                                           [n2 (and a (ntime a))])
                                      (bar-plot impl n (and n base (not (zero? n))
                                                            (/ base n)))))
