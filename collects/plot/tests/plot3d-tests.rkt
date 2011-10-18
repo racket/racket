@@ -1,7 +1,6 @@
 #lang racket
 
-(require "../main.rkt"
-         "../utils.rkt")
+(require plot plot/utils)
 
 ;(plot-new-window? #t)
 
@@ -13,6 +12,10 @@
                [plot-background-alpha  1/2]
                [plot-foreground-alpha  1/2])
   (plot3d (surface3d (λ (x y) (* (sin x) (sin y))) -2 2 -2 2 #:label "z = trig(x,y)")))
+
+(time
+ (plot3d (points3d '(#(0.1 0.6 0.3)))
+         #:x-min 0 #:x-max 1 #:y-min 0 #:y-max 1 #:z-min 0 #:z-max 1))
 
 (time
  (define x-ivls (bounds->intervals (linear-seq 2 8 10)))
@@ -133,7 +136,6 @@
                 (points3d (map vector xs ys zs)))
           #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1 #:z-min -1 #:z-max 1))
 
-
 (define (norm mx my x y)
   (exp (* -1/2 (+ (sqr (- x mx)) (sqr (- y my))))))
 
@@ -206,71 +208,4 @@
                (contours3d f4 -4 4 -4 4))
          #:angle -30))
 
-(time
- (plot3d (contour-intervals3d f5 -5 5 -5 5 #:alphas '(1/4 3/4))
-         #:out-file "contour3d-test.pdf"))
-
-(time
- (plot3d (contour-intervals3d f5 -5 5 -5 5 #:alphas '(1/4 3/4))
-         #:out-file "contour3d-test.ps"))
-
-(time
- (plot3d (contour-intervals3d f5 -5 5 -5 5 #:alphas '(1/4 3/4))
-         #:out-file "contour3d-test.svg"))
-
-(time
- (plot3d (contour-intervals3d f5 -5 5 -5 5 #:alphas '(1/4 3/4))
-         #:out-file "contour3d-test.png"))
-
 (time (plot3d (contour-intervals3d f1 -4 4 -4 4)))
-
-(time
- (plot3d (isosurface3d (λ (x y z) (sqrt (+ (sqr x) (sqr y) (sqr z)))) 1
-                       #:color 2 #:line-color (->brush-color 2) #:line-width 1
-                       #:label "Sphere")
-         #:x-min -0.8 #:x-max 0.8
-         #:y-min -0.8 #:y-max 0.8
-         #:z-min -0.8 #:z-max 0.8
-         #:altitude 30
-         #:legend-anchor 'center))
-
-(time
- (define saddle (λ (x y z) (- (sqr x) (* 1/2 (+ (sqr y) (sqr z))))))
- (plot3d (isosurfaces3d saddle #:d-min -1 #:d-max 1 #:label "d")
-         #:x-min -2 #:x-max 2
-         #:y-min -2 #:y-max 2
-         #:z-min -2 #:z-max 2
-         #:legend-anchor 'top-left))
-
-(time
- (define saddle (λ (x y z) (- (sqr x) (* 1/2 (+ (sqr y) (sqr z))))))
- (plot3d (isosurfaces3d saddle #:d-min -1 #:d-max 1
-                        #:colors '(1 2 3)
-                        #:line-colors '(1 2 3)
-                        #:line-styles '(solid)
-                        #:alphas '(3/4)
-                        #:label "d")
-         #:x-min -2 #:x-max 2
-         #:y-min -2 #:y-max 2
-         #:z-min -2 #:z-max 2
-         #:legend-anchor 'top-left))
-
-(time
- (define saddle (λ (x y z) (- (sqr x) (* 1/2 (+ (sqr y) (sqr z))))))
- (plot3d (isosurface3d saddle -1/4 #:color 0 #:line-color 0 #:alpha 7/8
-                       #:label "d = -1/4")
-         #:x-min -2 #:x-max 2
-         #:y-min -2 #:y-max 2
-         #:z-min -2 #:z-max 2))
-
-(time
- (define (f1 θ ρ) (+ 1 (/ θ 2 pi) (* 1/8 (sin (* 8 ρ)))))
- (define (f2 θ ρ) (+ 0 (/ θ 2 pi) (* 1/8 (sin (* 8 ρ)))))
- 
- (plot3d (list (polar3d f1 #:samples 41 #:color "navajowhite" #:line-style 'transparent #:alpha 2/3)
-               (polar3d f2 #:samples 41 #:color "navajowhite" #:line-style 'transparent #:alpha 2/3))
-         #:title "A Seashell" #:x-label #f #:y-label #f))
-
-(time
- (plot3d (points3d '(#(0.1 0.6 0.3)))
-         #:x-min 0 #:x-max 1 #:y-min 0 #:y-max 1 #:z-min 0 #:z-max 1))

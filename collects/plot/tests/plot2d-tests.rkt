@@ -285,29 +285,6 @@
   (time (plot (contour-intervals f)
               #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5)))
 
-(parameterize ([plot-title  "Survival Rate of Torsion Widgets"]
-               [plot-x-label "Torsion"]
-               [plot-y-label "Widgetyness"])
-  (time
-   (plot (contour-intervals f1 #:alphas '(0.5))
-         #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5
-         #:out-file "contour-test.png"))
-  
-  (time
-   (plot (contour-intervals f1)
-         #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5
-         #:out-file "contour-test.ps"))
-  
-  (time
-   (plot (contour-intervals f1 #:alphas '(0.5))
-         #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5
-         #:out-file "contour-test.pdf"))
-  
-  (time
-   (plot (contour-intervals f1)
-         #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5
-         #:out-file "contour-test.svg")))
-
 (time
  (define (f2 x) (sin (* x pi)))
  (plot (list (x-tick-lines)
