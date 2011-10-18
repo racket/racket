@@ -86,7 +86,7 @@
     (syntax-parser #:literals [unsyntax]
       [(~and orig (_ (unsyntax e:expr)))
        #'(racketmodname
-           (unsyntax `(planet ,(make-planet-symbol (syntax-quote orig) e))))]
+           (unsyntax `(planet ,(make-planet-symbol (quote-syntax orig) e))))]
       [(_ suffix:id/this-package)
        #'(racketmodname (planet suffix.planet-id))]))
 
