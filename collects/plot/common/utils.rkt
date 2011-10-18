@@ -57,3 +57,11 @@
              (cond
                [(andmap (λ (e2) (equiv? e e2)) (first res))  (cons (cons e (first res)) (rest res))]
                [else  (list* (list e) res)]))]))))
+
+(define (parameterize-procedure t)
+  (define parameterization (current-parameterization))
+  (make-keyword-procedure
+   (lambda (kws kw-args . rest)
+     (call-with-parameterization
+      parameterization
+      (λ () (keyword-apply t kws kw-args rest))))))

@@ -22,6 +22,7 @@
  (parameterize ([plot-background  1]
                 [plot-background-alpha 1/2]
                 [plot-foreground  1])
+   ;; This parabola should be pink:
    (plot-pict (function sqr -1 1 #:label "y = x^2")
               #:legend-anchor 'center)))
 

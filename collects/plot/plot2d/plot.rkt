@@ -18,6 +18,7 @@
          "../common/parameters.rkt"
          "../common/deprecation-warning.rkt"
          "../common/renderer.rkt"
+         "../common/utils.rkt"
          "area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
@@ -115,43 +116,11 @@
                     [#:y-label y-label (or/c string? #f) (plot-y-label)]
                     [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                     ) pict?
-  (define foreground (plot-foreground))
-  (define background (plot-background))
-  (define foreground-alpha (plot-foreground-alpha))
-  (define background-alpha (plot-background-alpha))
-  (define font-size (plot-font-size))
-  (define font-family (plot-font-family))
-  (define line-width (plot-line-width))
-  (define legend-box-alpha (plot-legend-box-alpha))
-  (define tick-size (plot-tick-size))
-  (define x-transform (plot-x-transform))
-  (define y-transform (plot-y-transform))
-  (define z-transform (plot-z-transform))
-  (define x-ticks (plot-x-ticks))
-  (define y-ticks (plot-y-ticks))
-  (define z-ticks (plot-z-ticks))
-  (define animating? (plot-animating?))
-  
-  (dc (λ (dc x y)
-        (parameterize ([plot-foreground        foreground]
-                       [plot-background        background]
-                       [plot-foreground-alpha  foreground-alpha]
-                       [plot-background-alpha  background-alpha]
-                       [plot-font-size         font-size]
-                       [plot-font-family       font-family]
-                       [plot-line-width        line-width]
-                       [plot-legend-box-alpha  legend-box-alpha]
-                       [plot-tick-size         tick-size]
-                       [plot-x-transform       x-transform]
-                       [plot-y-transform       y-transform]
-                       [plot-z-transform       z-transform]
-                       [plot-x-ticks           x-ticks]
-                       [plot-y-ticks           y-ticks]
-                       [plot-z-ticks           z-ticks]
-                       [plot-animating?        animating?])
-          (plot/dc renderer-tree dc x y width height
-                   #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
-                   #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)))
+  (dc (parameterize-procedure
+       (λ (dc x y)
+         (plot/dc renderer-tree dc x y width height
+                  #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
+                  #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)))
       width height))
 
 ;; Plot to a snip
