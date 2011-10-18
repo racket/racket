@@ -29,7 +29,7 @@ Generic data is always retrieved from the clipboard as a byte
 
 
 @defmethod[(get-clipboard-bitmap [time exact-integer?])
-           (or/c (is-a?/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) #f)]{
 
 Gets the current clipboard contents as a bitmap (Windows, Mac OS X),
  returning @racket[#f] if the clipboard does not contain a bitmap.
@@ -43,9 +43,9 @@ See @|timediscuss| for a discussion of the @racket[time] argument.  If
 
 }
 
-@defmethod[(get-clipboard-data [format string]
+@defmethod[(get-clipboard-data [format string?]
                                [time exact-integer?])
-           (or/c bytes? string? false/c)]{
+           (or/c bytes? string? #f)]{
 
 Gets the current clipboard contents in a specific format, returning
  @racket[#f] if the clipboard does not contain data in the requested
@@ -66,10 +66,10 @@ See @|timediscuss| for a discussion of the @racket[time] argument.  If
 }
 
 @defmethod[(get-clipboard-string [time exact-integer?])
-           (or/c string false/c)]{
+           string?]{
 
 Gets the current clipboard contents as simple text, returning
- @racket[#f] if the clipboard does not contain any text.
+ @racket[""] if the clipboard does not contain any text.
 
 See @method[clipboard<%> get-clipboard-data] for information on
 eventspaces and the current clipboard client.
@@ -117,7 +117,7 @@ See @|timediscuss| for a discussion of the @racket[time] argument. If
 
 }
 
-@defmethod[(set-clipboard-string [new-text string]
+@defmethod[(set-clipboard-string [new-text string?]
                                  [time exact-integer?])
            void?]{
 

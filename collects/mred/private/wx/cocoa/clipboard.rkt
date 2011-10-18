@@ -80,8 +80,9 @@
 
   (define/public (get-text-data)
     (let ([bstr (get-data "TEXT")])
-      (and bstr
-           (bytes->string/utf-8 bstr #\?))))
+      (or (and bstr
+               (bytes->string/utf-8 bstr #\?))
+          "")))
   
   (define/public (get-data type)
     (atomically
