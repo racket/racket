@@ -93,6 +93,7 @@
     (gtk_widget_show client-gtk)
     
     (connect-key-and-mouse gtk)
+    (connect-focus gtk)
 
     ; With tabs to set client-width delta:
     (infer-client-delta #f #t)

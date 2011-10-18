@@ -29,6 +29,8 @@
               (struct-out GdkEventConfigure)
               _GdkEventExpose _GdkEventExpose-pointer
               (struct-out GdkEventExpose)
+              _GdkEventFocus _GdkEventFocus-pointer
+              (struct-out GdkEventFocus)
 	      _GdkEventSelection _GdkEventSelection-pointer
               (struct-out GdkEventSelection)
 	      _GdkRectangle _GdkRectangle-pointer
@@ -150,6 +152,11 @@
                                  [area _GdkRectangle]
                                  [region _pointer]
                                  [count _int]))
+
+(define-cstruct _GdkEventFocus ([type _GdkEventType]
+                                [window _GdkWindow]
+                               	[send_event _byte]
+                               	[in _short]))
 
 (define-cstruct _GdkColor ([pixel _uint32]
                            [red _uint16]

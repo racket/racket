@@ -76,8 +76,6 @@
                                 [width _int]
                                 [height _int]))
 
-(define _GdkEventFocus-pointer _pointer)
-
 (define-gtk gtk_widget_size_request (_fun _GtkWidget _GtkRequisition-pointer -> _void))
 (define-gtk gtk_widget_size_allocate (_fun _GtkWidget _GtkAllocation-pointer -> _void))
 (define-gtk gtk_widget_set_size_request (_fun _GtkWidget _int _int -> _void))
@@ -145,10 +143,10 @@
   (_fun _GtkWidget _GdkEventFocus-pointer -> _gboolean)
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
-      (when wx
+      (when wx 
         (send wx focus-change #t)
-        (send (send wx get-top-win) on-focus-child #t)
-        (queue-window-event wx (lambda () (send wx on-set-focus))))
+        (when (send wx on-focus? #t)
+	  (queue-window-event wx (lambda () (send wx on-set-focus)))))
       #f)))
 (define-signal-handler connect-focus-out "focus-out-event"
   (_fun _GtkWidget _GdkEventFocus-pointer -> _gboolean)
@@ -156,8 +154,8 @@
     (let ([wx (gtk->wx gtk)])
       (when wx
         (send wx focus-change #f)
-        (send (send wx get-top-win) on-focus-child #f)
-        (queue-window-event wx (lambda () (send wx on-kill-focus))))
+        (when (send wx on-focus? #f)
+          (queue-window-event wx (lambda () (send wx on-kill-focus)))))
       #f)))
 (define (connect-focus gtk)
   (connect-focus-in gtk)
@@ -618,6 +616,8 @@
 
     (define/public (focus-change on?) (void))
     (define/public (filter-key-event e) 'none)
+
+    (define/public (on-focus? on?) #t)
 
     (define/private (pre-event-refresh)
       ;; Since we break the connection between the

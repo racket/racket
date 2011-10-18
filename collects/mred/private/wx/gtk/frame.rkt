@@ -395,6 +395,21 @@
 				  (set! reported-activate on?)
 				  (on-activate on?)))))))
 
+    (define focus-here? #f)
+    (define/override (on-focus? on?)
+      (on-focus-child on?)
+      (cond
+       [on?
+	(if (ptr-equal? (gtk_window_get_focus gtk) gtk)
+	    (begin
+	      (set! focus-here? #t)
+	      (super on-focus? on?))
+	    #f)]
+       [focus-here?
+	(set! focus-here? #f)
+	(super on-focus? on?)]
+       [else #f]))
+
     (define/public (get-focus-window [even-if-not-active? #f])
       (let ([f-gtk (gtk_window_get_focus gtk)])
         (and f-gtk
