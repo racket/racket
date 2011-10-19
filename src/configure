@@ -1349,7 +1349,7 @@ Optional Features:
   --enable-libfw          install Mac OS X frameworks to /Library/Frameworks
   --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks
   --enable-macprefix      allow --prefix with a Mac OS X install
-  --enable-mac64          do not force 32-bit build
+  --enable-mac64          allow 64-bit Mac OS X build (enabled by default)
   --enable-cgcdefault     use CGC (Boehm or Senora) as default build
   --enable-sgc            use Senora GC instead of the Boehm GC
   --enable-sgcdebug       use Senora GC for debugging
@@ -2084,6 +2084,8 @@ fi
 # Check whether --enable-mac64 was given.
 if test "${enable_mac64+set}" = set; then
   enableval=$enable_mac64;
+else
+  enable_mac64=yes
 fi
 
 
@@ -2345,7 +2347,7 @@ show_explicitly_enabled "${enable_gcov}" "gcov"
 
 show_explicitly_enabled "${enable_noopt}" "No-optimization"
 
-show_explicitly_enabled "${enable_mac64}" "64-bit Mac OS X"
+show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"

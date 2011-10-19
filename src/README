@@ -68,9 +68,8 @@ the Unix instructions below, but note the following:
    directory structure on top of an existing Unix-style directory
    structure.)
 
- * Under Mac OS X 10.6 and later, `configure' by default selects
-   32-bit mode for building Racket.  To build Racket in 64-bit mode,
-   use `--enable-mac64'.
+ * Under Mac OS X 10.6 and later, to build Racket in 32-bit mode,
+   use `--disable-mac64'.
 
 ========================================================================
  Compiling for supported Unix variants (including Linux) or Cygwin
