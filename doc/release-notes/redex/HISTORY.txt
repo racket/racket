@@ -1,3 +1,15 @@
+v5.2
+
+  * added define-judgment-form form
+
+  * added define-term form
+
+  * added with-compound-rewriters form
+
+  * added Ariola-Felleisen by-need evaluation contexts to examples
+
+  * improved error message for definition forms in expression contexts
+
 v5.1.2
 
   * added support for typsetting define-relation relations
