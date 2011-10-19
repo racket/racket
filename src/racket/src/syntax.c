@@ -3764,7 +3764,7 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
                         scheme_write_to_string(((Scheme_Modidx *)result)->path, NULL),
                         scheme_write_to_string(((Scheme_Modidx *)result)->base, NULL)));
       } else {
-        EXPLAIN(fprintf(stderr, "%d Result: %s\n", depth, scheme_write_to_string(result, NULL)));
+        EXPLAIN(fprintf(stderr, "%d Result: %s %p\n", depth, scheme_write_to_string(result, NULL), result));
       }
       if (get_names) {
         EXPLAIN(fprintf(stderr, "%d  phase %s\n", depth, scheme_write_to_string(get_names[3], NULL)));
@@ -5075,12 +5075,17 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist)
 #define EXPLAIN_SIMP 0
 #if EXPLAIN_SIMP
 #define EXPLAIN_S(x) if (explain_simp) x
-static int explain_simp = 0;
+static int explain_simp = 1;
 static void print_skips(Scheme_Object *skips)
 {
   while (skips) {
-    fprintf(stderr, "  skip %s\n", scheme_write_to_string(SCHEME_CAR(skips), NULL));
-    skips = SCHEME_CDR(skips);
+    if (SCHEME_PAIRP(skips)) {
+      fprintf(stderr, "  skip %s\n", scheme_write_to_string(SCHEME_CAR(skips), NULL));
+      skips = SCHEME_CDR(skips);
+    } else {
+      fprintf(stderr, "  skip val %s\n", scheme_write_to_string(skips, NULL));
+      skips = NULL;
+    }
   }
 }
 #else
@@ -5273,7 +5278,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 
   EXPLAIN_S(fprintf(stderr, "[in simplify]\n"));
 
-  EXPLAIN_R(printf("Simplifying %p\n", lex_cache));
+  EXPLAIN_R(printf("Simplifying %p %s\n", lex_cache, scheme_write_to_string(stx_datum, NULL)));
 
   while (!WRAP_POS_END_P(w)) {
     if (SCHEME_VECTORP(WRAP_POS_FIRST(w))
@@ -6224,7 +6229,6 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
         return scheme_hash_get(rns, old_key);
       } else {
         a = scheme_marshal_lookup(mt, old_key);
-        scheme_marshal_using_key(mt, old_key);
         if (!mt->same_map) {
           Scheme_Hash_Table *same_map;
           same_map = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -6233,6 +6237,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
         scheme_hash_set(mt->same_map, w_in, old_key);
         /* nevermind references that we saw when creating `stack': */
         scheme_marshal_pop_refs(mt, 0);
+        scheme_marshal_using_key(mt, old_key);
         return a;
       }
     }
