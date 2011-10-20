@@ -2597,7 +2597,8 @@ static int common10(mz_jit_state *jitter, void *_data)
     jit_ldxi_i(JIT_R2, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->closure_size);
     (void)jit_blti_i(refslow, JIT_R2, 0); /* case lambda */
     jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->code);
-    ref_nc = jit_beqi_p(jit_forward(), JIT_R2, scheme_on_demand_jit_code); /* not yet JITted */
+    jit_movi_p(JIT_V1, scheme_on_demand_jit_code); /* movi_p doesn't depends on actual address, which might change size */
+    ref_nc = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1); /* not yet JITted? */
     jit_rshi_l(JIT_V1, JIT_R1, 1);
     jit_addi_l(JIT_V1, JIT_V1, 1);
     CHECK_LIMIT();
@@ -2614,6 +2615,7 @@ static int common10(mz_jit_state *jitter, void *_data)
 
     /* not-yet-JITted native: */
     mz_patch_branch(ref_nc);
+    jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
     jit_ldxi_p(JIT_R0, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u2.orig_code);
     jit_rshi_l(JIT_V1, JIT_R1, 1);
     jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Closure_Data *)0x0)->num_params);
