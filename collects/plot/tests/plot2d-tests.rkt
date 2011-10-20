@@ -8,9 +8,13 @@
  (define xs (build-list 10000 (λ _ (random))))
  (plot (density xs 1/2)))
 
-(plot empty #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1)
+(time
+ (plot empty #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1))
 
-(plot (list (function values -4 4) (axes 1 2 #t #t)))
+(time
+ (plot (points empty) #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1))
+
+(plot (list (function values -4 4) (axes 1 2)))
 
 (time (plot (function values 0 1000)))
 
@@ -418,8 +422,9 @@
 (time
  (define (f x) (/ (sin x) x))
  (parameterize ([plot-x-transform  (stretch-transform -1 1 10)]
+                [plot-x-ticks      (ticks-add (plot-x-ticks) '(-1 1))]
                 [plot-y-ticks      (fraction-ticks)])
-   (plot (list (y-axis -1 #t #:ticks? #f) (y-axis 1 #t #:ticks? #f)
+   (plot (list (y-axis -1 #:ticks? #f) (y-axis 1 #:ticks? #f)
                (function f -1 1 #:width 2 #:color 4)
                (function f -14 -1 #:color 4 #:label "y = sin(x)/x")
                (function f 1 14 #:color 4)

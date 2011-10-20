@@ -37,15 +37,13 @@
                  ) renderer2d?
   (let ([vs  (filter vregular? vs)])
     (cond
-      [(empty? vs)  null-renderer2d]
+      [(empty? vs)  (renderer2d #f #f #f #f)]
       [else  (match-define (list (vector xs ys) ...) vs)
              (let ([x-min  (if x-min x-min (apply min* xs))]
                    [x-max  (if x-max x-max (apply max* xs))]
                    [y-min  (if y-min y-min (apply min* ys))]
                    [y-max  (if y-max y-max (apply max* ys))])
-               (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
-                           null-bounds-fun
-                           default-ticks-fun
+               (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
                            (points-render-fun vs sym color size line-width alpha label)))])))
 
 ;; ===================================================================================================
@@ -107,9 +105,7 @@
           ) renderer2d?
   (let ([f  (cond [(procedure-arity-includes? f 2 #t)  f]
                   [else  (λ (x y) (f (vector x y)))])])
-    (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
-                null-bounds-fun
-                default-ticks-fun
+    (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
                 (vector-field-render-fun f samples scale color line-width line-style alpha label))))
 
 ;; ===================================================================================================
@@ -150,15 +146,13 @@
           [#:alpha alpha (real-in 0 1) (error-bar-alpha)]
           ) renderer2d?
   (let ([bars  (filter vregular? bars)])
-    (cond [(empty? bars)  null-renderer2d]
+    (cond [(empty? bars)  (renderer2d #f #f #f #f)]
           [else
            (match-define (list (vector xs ys hs) ...) bars)
            (let ([x-min  (if x-min x-min (apply min* xs))]
                  [x-max  (if x-max x-max (apply max* xs))]
                  [y-min  (if y-min y-min (apply min* (map - ys hs)))]
                  [y-max  (if y-max y-max (apply max* (map + ys hs)))])
-             (renderer2d
-              (vector (ivl x-min x-max) (ivl y-min y-max))
-              null-bounds-fun
-              default-ticks-fun
-              (error-bars-render-fun xs ys hs color line-width line-style width alpha)))])))
+             (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+                         (error-bars-render-fun xs ys hs
+                                                color line-width line-style width alpha)))])))

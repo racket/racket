@@ -3,10 +3,12 @@
 ;; Parameters that control the look and behavior of plots.
 
 (require racket/contract
-         "contract.rkt" "contract-doc.rkt"
+         "contract.rkt"
+         "contract-doc.rkt"
          "draw.rkt"
          "axis-transform.rkt"
-         "ticks.rkt")
+         "ticks.rkt"
+         "parameter-list.rkt")
 
 (provide (all-defined-out))
 
@@ -214,3 +216,43 @@
 ;; Histograms
 
 (defparam rectangle3d-line-width (>=/c 0) 1/3)
+
+;; ===================================================================================================
+
+(define plot-parameters
+  (parameter-list plot-deprecation-warnings?
+                  plot-width
+                  plot-height
+                  plot-new-window?
+                  plot-jpeg-quality
+                  plot-ps/pdf-interactive?
+                  plot-foreground
+                  plot-background
+                  plot-foreground-alpha
+                  plot-background-alpha
+                  plot-font-size
+                  plot-font-family
+                  plot-line-width
+                  plot-legend-anchor
+                  plot-legend-box-alpha
+                  plot-tick-size
+                  plot-title
+                  plot-x-label
+                  plot-y-label
+                  plot-z-label
+                  plot-animating?
+                  plot-x-transform
+                  plot-y-transform
+                  plot-z-transform
+                  plot-x-max-ticks
+                  plot-y-max-ticks
+                  plot-z-max-ticks
+                  plot-x-ticks
+                  plot-y-ticks
+                  plot-z-ticks
+                  plot3d-samples
+                  plot3d-angle
+                  plot3d-altitude
+                  plot3d-ambient-light
+                  plot3d-diffuse-light?
+                  plot3d-specular-light?))

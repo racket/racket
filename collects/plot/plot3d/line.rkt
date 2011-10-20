@@ -25,7 +25,7 @@
 (define (lines3d-renderer
          vs-thnk x-min x-max y-min y-max z-min z-max color width style alpha label)
   (define rvs (filter vregular? (vs-thnk)))
-  (cond [(empty? rvs)  null-renderer3d]
+  (cond [(empty? rvs)  (renderer3d #f #f #f #f)]
         [else
          (match-define (list (vector rxs rys rzs) ...) rvs)
          (let ([x-min  (if x-min x-min (apply min* rxs))]
@@ -34,8 +34,7 @@
                [y-max  (if y-max y-max (apply max* rys))]
                [z-min  (if z-min z-min (apply min* rzs))]
                [z-max  (if z-max z-max (apply max* rzs))])
-           (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-                       null-bounds-fun
+           (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
                        default-ticks-fun
                        (lines3d-render-proc vs-thnk color width style alpha label)))]))
 

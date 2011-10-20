@@ -17,13 +17,6 @@
 ;; ===================================================================================================
 ;; Common field values
 
-(define (null-bounds-fun r) r)
-(define (null-ticks-fun r) (apply values (make-list (vector-length r) empty)))
-(define (null-render-proc area) empty)
-
-(define null-renderer2d (renderer2d (unknown-rect 2) null-bounds-fun null-ticks-fun null-render-proc))
-(define null-renderer3d (renderer3d (unknown-rect 3) null-bounds-fun null-ticks-fun null-render-proc))
-
 (define (default-ticks-fun r)
   (apply values (for/list ([i  (in-vector r)]
                            [f  (in-list (list default-x-ticks default-y-ticks default-z-ticks))])
@@ -105,4 +98,7 @@
 ;; bounds will you try to draw in?
 (define (renderer-apply-bounds rend bounds-rect)
   (match-define (renderer rend-bounds-rect rend-bounds-fun _) rend)
-  (rend-bounds-fun (rect-meet bounds-rect rend-bounds-rect)))
+  (let ([rend-bounds-rect  (cond [rend-bounds-rect  (rect-meet bounds-rect rend-bounds-rect)]
+                                 [else  bounds-rect])])
+    (cond [rend-bounds-fun  (rend-bounds-fun rend-bounds-rect)]
+          [else  rend-bounds-rect])))

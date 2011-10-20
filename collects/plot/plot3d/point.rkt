@@ -34,7 +34,7 @@
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
   (let ([vs  (filter vregular? vs)])
-    (cond [(empty? vs)  null-renderer3d]
+    (cond [(empty? vs)  (renderer3d #f #f #f #f)]
           [else
            (match-define (list (vector xs ys zs) ...) vs)
            (let ([x-min  (if x-min x-min (apply min* xs))]
@@ -43,7 +43,6 @@
                  [y-max  (if y-max y-max (apply max* ys))]
                  [z-min  (if z-min z-min (apply min* zs))]
                  [z-max  (if z-max z-max (apply max* zs))])
-             (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-                         null-bounds-fun
+             (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
                          default-ticks-fun
                          (points3d-render-proc vs sym color size line-width alpha label)))])))

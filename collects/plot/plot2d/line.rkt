@@ -36,16 +36,14 @@
                 [#:label label (or/c string? #f) #f]
                 ) renderer2d?
   (define rvs (filter vregular? vs))
-  (cond [(empty? rvs)  null-renderer2d]
+  (cond [(empty? rvs)  (renderer2d #f #f #f #f)]
         [else
          (match-define (list (vector rxs rys) ...) rvs)
          (let ([x-min  (if x-min x-min (apply min* rxs))]
                [x-max  (if x-max x-max (apply max* rxs))]
                [y-min  (if y-min y-min (apply min* rys))]
                [y-max  (if y-max y-max (apply max* rys))])
-           (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
-                       null-bounds-fun
-                       default-ticks-fun
+           (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
                        (lines-render-proc vs color width style alpha label)))]))
 
 (defproc (parametric [f (real? . -> . (vector/c real? real?))]

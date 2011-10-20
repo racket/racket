@@ -7,6 +7,9 @@
 (time
  (plot3d empty #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1 #:z-min -1 #:z-max 1))
 
+(time
+ (plot3d (points3d empty) #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1 #:z-min -1 #:z-max 1))
+
 (parameterize ([plot-background  "black"]
                [plot-foreground  "white"]
                [plot-background-alpha  1/2]

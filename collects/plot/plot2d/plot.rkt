@@ -19,6 +19,7 @@
          "../common/deprecation-warning.rkt"
          "../common/renderer.rkt"
          "../common/utils.rkt"
+         "../common/parameter-list.rkt"
          "area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
@@ -56,7 +57,9 @@
   
   (define-values (all-x-ticks all-y-ticks)
     (for/lists (all-x-ticks all-y-ticks) ([r  (in-list rs)])
-      ((renderer-ticks-fun r) bounds-rect)))
+      (define ticks-fun (renderer-ticks-fun r))
+      (cond [ticks-fun  (ticks-fun bounds-rect)]
+            [else  (values empty empty)])))
   
   (define x-ticks (remove-duplicates (append* all-x-ticks)))
   (define y-ticks (remove-duplicates (append* all-y-ticks)))
@@ -72,11 +75,11 @@
     
     (define legend-entries
       (flatten (for/list ([rend  (in-list rs)])
-                 (match-define (renderer2d (vector (ivl rx-min rx-max) (ivl ry-min ry-max))
-                                           _bf _tf render-proc)
-                   rend)
+                 (match-define (renderer2d rend-bounds-rect _bf _tf render-proc) rend)
+                 (match-define (vector (ivl rx-min rx-max) (ivl ry-min ry-max))
+                   (if rend-bounds-rect rend-bounds-rect (empty-rect 2)))
                  (send area start-renderer rx-min rx-max ry-min ry-max)
-                 (render-proc area))))
+                 (if render-proc (render-proc area) empty))))
     
     (send area end-plot)
     
@@ -116,8 +119,10 @@
                     [#:y-label y-label (or/c string? #f) (plot-y-label)]
                     [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                     ) pict?
-  (dc (parameterize-procedure
-       (λ (dc x y)
+  (define saved-parameters (plot-parameters))
+  (dc (λ (dc x y)
+        (parameterize/list
+         ([plot-parameters  saved-parameters])
          (plot/dc renderer-tree dc x y width height
                   #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
                   #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)))

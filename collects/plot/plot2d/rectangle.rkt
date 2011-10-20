@@ -46,17 +46,15 @@
   (define rxs (filter regular? (append x1s x2s)))
   (define rys (filter regular? (append y1s y2s)))
   (cond
-    [(or (empty? rxs) (empty? rys))  null-renderer2d]
+    [(or (empty? rxs) (empty? rys))  (renderer2d #f #f #f #f)]
     [else
      (let ([x-min  (if x-min x-min (apply min* rxs))]
            [x-max  (if x-max x-max (apply max* rxs))]
            [y-min  (if y-min y-min (apply min* rys))]
            [y-max  (if y-max y-max (apply max* rys))])
-       (renderer2d
-        (vector (ivl x-min x-max) (ivl y-min y-max))
-        null-bounds-fun
-        default-ticks-fun
-        (rectangles-render-proc rects color style line-color line-width line-style alpha label)))]))
+       (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+                   (rectangles-render-proc rects color style line-color line-width line-style alpha
+                                           label)))]))
 
 ;; ===================================================================================================
 ;; Real histograms (or histograms on the real line)
@@ -78,7 +76,7 @@
   (let* ([bin-bounds  (filter regular? bin-bounds)]
          [bin-bounds  (sort bin-bounds <)])
     (cond
-      [((length bin-bounds) . < . 2)  null-renderer2d]
+      [((length bin-bounds) . < . 2)  (renderer2d #f #f #f #f)]
       [else
        (define xs (linear-seq (apply min* bin-bounds) (apply max* bin-bounds) samples
                               #:start? #f #:end? #f))
@@ -121,7 +119,7 @@
   (match-define (list (vector cats ys) ...) cat-vals)
   (define rys (filter regular? ys))
   (cond
-    [(empty? rys)  null-renderer2d]
+    [(empty? rys)  (renderer2d #f #f #f #f)]
     [else
      (define n (length cats))
      (let* ([x-min  (if x-min x-min 0)]
@@ -134,8 +132,7 @@
                         (ivl (+ x1 1/2-gap-size) (- x2 1/2-gap-size))))
        (define tick-xs (linear-seq x-min x-max n #:start? #f #:end? #f))
        (renderer2d
-        (vector (ivl x-min x-max) (ivl y-min y-max))
-        null-bounds-fun
+        (vector (ivl x-min x-max) (ivl y-min y-max)) #f
         (discrete-histogram-ticks-fun cats tick-xs)
         (rectangles-render-proc (map (λ (x-ivl y) (vector x-ivl (ivl 0 y))) x-ivls ys)
                                 color style line-color line-width line-style alpha label)))]))

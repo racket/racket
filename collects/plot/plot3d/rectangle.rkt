@@ -48,7 +48,7 @@
   (define rys (filter regular? (append y1s y2s)))
   (define rzs (filter regular? (append z1s z2s)))
   (cond
-    [(or (empty? rxs) (empty? rys) (empty? rzs))  null-renderer3d]
+    [(or (empty? rxs) (empty? rys) (empty? rzs))  (renderer3d #f #f #f #f)]
     [else
      (let ([x-min  (if x-min x-min (apply min* rxs))]
            [x-max  (if x-max x-max (apply max* rxs))]
@@ -56,8 +56,7 @@
            [y-max  (if y-max y-max (apply max* rys))]
            [z-min  (if z-min z-min (apply min* rzs))]
            [z-max  (if z-max z-max (apply max* rzs))])
-       (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-                   null-bounds-fun
+       (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
                    default-ticks-fun
                    (rectangles3d-render-proc rects color style line-color line-width line-style
                                              alpha label)))]))
@@ -97,7 +96,7 @@
   (match-define (list (vector cat1s cat2s zs) ...) cat-vals)
   (define rzs (filter regular? zs))
   (cond
-    [(empty? rzs)  null-renderer3d]
+    [(empty? rzs)  (renderer3d #f #f #f #f)]
     [else
      (define c1s (remove-duplicates cat1s))
      (define c2s (remove-duplicates cat2s))
@@ -129,8 +128,7 @@
                                     (adjust/gap (ivl y1 y2) gap)
                                     (ivl 0 z)))
                           x1s x2s y1s y2s all-zs))
-       (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-                   null-bounds-fun
+       (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
                    (discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys)
                    (rectangles3d-render-proc rects color style line-color line-width line-style
                                              alpha label)))]))

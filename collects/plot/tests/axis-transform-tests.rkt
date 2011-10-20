@@ -78,14 +78,16 @@
   (define t1 (stretch-transform -2 -1 4))
   (define t2 (stretch-transform 1 2 4))
   (values
-   (parameterize ([plot-x-transform  (axis-transform-compose t1 t2)])
-     (plot (list (y-axis -2) (y-axis -1 #t)
-                 (y-axis 1 #t) (y-axis 2)
+   (parameterize ([plot-x-transform  (axis-transform-compose t1 t2)]
+                  [plot-x-ticks      (ticks-add (plot-x-ticks) '(-1 1))])
+     (plot (list (y-axis -2) (y-axis -1)
+                 (y-axis 1) (y-axis 2)
                  (function values -3 3)
                  (function cos -3 3 #:color 3))))
-   (parameterize ([plot-x-transform  (axis-transform-compose t2 t1)])
-     (plot (list (y-axis -2) (y-axis -1 #t)
-                 (y-axis 1 #t) (y-axis 2)
+   (parameterize ([plot-x-transform  (axis-transform-compose t2 t1)]
+                  [plot-x-ticks      (ticks-add (plot-x-ticks) '(-1 1))])
+     (plot (list (y-axis -2) (y-axis -1)
+                 (y-axis 1) (y-axis 2)
                  (function values -3 3)
                  (function cos -3 3 #:color 3))))
    (parameterize ([plot-x-transform  (axis-transform-compose t2 t1)]
@@ -280,8 +282,8 @@
 
 (parameterize ([plot-x-transform  (axis-transform-compose (collapse-transform 2 6)
                                                           log-transform)]
-               [plot-x-ticks      (log-ticks)])
-  (plot (list (y-axis 2 #t) (y-axis 6 #t)
+               [plot-x-ticks      (ticks-add (log-ticks) '(2 6))])
+  (plot (list (y-axis 2) (y-axis 6)
               (function values 1 10))))
 
 (let ()

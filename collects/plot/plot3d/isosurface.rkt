@@ -83,11 +83,8 @@
                        [#:label label (or/c string? #f) #f]
                        ) renderer3d?
   (define g (3d-function->sampler f))
-  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-              null-bounds-fun
-              default-ticks-fun
-              (isosurface3d-render-proc g d samples color
-                                        line-color line-width line-style alpha
+  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f default-ticks-fun
+              (isosurface3d-render-proc g d samples color line-color line-width line-style alpha
                                         label)))
 
 ;; ===================================================================================================
@@ -177,9 +174,7 @@
                         [#:label label (or/c string? #f) #f]
                         ) renderer3d?
   (define g (3d-function->sampler f))
-  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-              null-bounds-fun
-              default-ticks-fun
+  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f default-ticks-fun
               (isosurfaces3d-render-proc g d-min d-max levels samples colors
                                          line-colors line-widths line-styles alphas
                                          label)))
@@ -262,7 +257,7 @@
                   [#:label label (or/c string? #f) #f]
                   ) renderer3d?
   (define rvs (filter vregular? (sample-2d-polar f 0 2pi (* 2 samples) -1/2pi 1/2pi samples)))
-  (cond [(empty? rvs)  null-renderer3d]
+  (cond [(empty? rvs)  (renderer3d #f #f #f #f)]
         [else
          (match-define (list (vector rxs rys rzs) ...) rvs)
          (let ([x-min  (if x-min x-min (apply min* rxs))]
@@ -273,8 +268,7 @@
                [z-max  (if z-max z-max (apply max* rzs))])
            (define new-f (2d-polar->3d-function f))
            (define g (3d-function->sampler new-f))
-           (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-                       null-bounds-fun
+           (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
                        default-ticks-fun
                        (polar3d-render-proc new-f g samples color
                                             line-color line-width line-style alpha label)))]))
