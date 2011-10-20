@@ -1092,9 +1092,11 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	  scheme_log(NULL,
 		     SCHEME_LOG_WARNING,
 		     0,
-		     "mzc optimizer: inlining: involving: %s%s",
+		     "mzc optimizer: inlining: involving: %s%s size: %d threshold: %d",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
-		     scheme_optimize_context_to_string(info->context));
+		     scheme_optimize_context_to_string(info->context),
+		     sz,
+		     threshold);
           le = apply_inlined(le, data, sub_info, argc, app, app2, app3, context,
                              nested_count, orig_le, prev, prev_offset);
           if (nested_count)
@@ -1105,9 +1107,11 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	  scheme_log(NULL,
 		     SCHEME_LOG_WARNING,
 		     0,
-		     "mzc optimizer: no inlining: involving: %s%s",
+		     "mzc optimizer: no inlining: involving: %s%s size: %d threshold: %d",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
-		     scheme_optimize_context_to_string(info->context));
+		     scheme_optimize_context_to_string(info->context),
+		     sz,
+		     threshold);
         }
       } else {
         LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
@@ -1116,9 +1120,11 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	scheme_log(NULL,
 		   SCHEME_LOG_WARNING,
 		   0,
-		   "mzc optimizer: no inlining, out of fuel: involving: %s%s",
+		   "mzc optimizer: no inlining, out of fuel: involving: %s%s size: %d threshold: %d",
 		   scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
-		   scheme_optimize_context_to_string(info->context));
+		   scheme_optimize_context_to_string(info->context),
+		   sz,
+		   threshold);
       }
     } else {
       /* Issue warning below */

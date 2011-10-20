@@ -75,6 +75,7 @@
     "( in: (([^ :]+):([^ :]+):([^ :]+): )?([^ ]+))?"
     ;; module info, useless to us (at least for now)
     " in module: [^ ]+")
+   " size: ([^ ]+) threshold: ([^ ]+)"
    "$"))
 
 (struct inlining-event (kind ; success, miss, out of fuel, ...
@@ -82,13 +83,17 @@
                         loc  ; (U #f (List path line col pos span))
                         where-name ; _where_ it gets inlined (enclosing fun)
                         where-loc  ; (U #f (Line path line col))
+                        size ; size of the closure being inlined
+                        threshold ; how big of a closure can we inline
+                        ;; the last two use the same units
                         ))
 (define (parse-inlining-event l)
   (match (regexp-match inlining-event-regexp l)
     [`(,all ,kind
             ,what ,name ,path ,line ,col ,pos ,span
                   ,only-name
-            ,where ,where-loc ,where-path ,where-line ,where-col ,where-name)
+            ,where ,where-loc ,where-path ,where-line ,where-col ,where-name
+            ,size ,threshold)
      (inlining-event kind
                      (string->symbol (or name only-name))
                      (if only-name
@@ -103,13 +108,15 @@
                          (list where-path
                                (string->number where-line)
                                (string->number where-col))
-                         #f))] ; no source location
+                         #f) ; no source location
+                     (string->number size)
+                     (string->number threshold))]
     [_ (error "ill-formed inlining log entry" l)]))
 
 ;; f gets inlined in f (or tried to)
 (define (self-inline-evt? evt)
   (match evt
-    [(inlining-event kind name loc where-name where-loc)
+    [(inlining-event kind name loc where-name where-loc size threshold)
      (match* (loc where-loc)
        [((list path line col pos span)
          (list where-path where-line where-col))
@@ -121,7 +128,7 @@
 
 (define (inlining-event->forged-stx evt)
   (match evt
-    [(inlining-event kind name loc where-name where-loc)
+    [(inlining-event kind name loc where-name where-loc size threshold)
      (datum->syntax #'here name loc)]))
 
 
