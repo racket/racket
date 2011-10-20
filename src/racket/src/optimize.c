@@ -1147,16 +1147,6 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (psize) {
     LOG_INLINE(fprintf(stderr, "Potential inline %d %d\n", psize, info->inline_fuel * (argc + 2)));
-    /* We're "close" to inlining. Report to the user. */
-    if (psize > info->inline_fuel /* We did not inline */
-	&& psize <= (2 * info->inline_fuel))
-      scheme_log(NULL,
-		 SCHEME_LOG_WARNING,
-		 0,
-		 "mzc optimizer: close call%s, fuel: %d, potential size: %d",
-		 scheme_optimize_context_to_string(info->context),
-		 info->inline_fuel,
-		 psize);
     /* If we inline, the enclosing function will get larger, so we increase
        its potential size. */
     if (psize <= (info->inline_fuel * (argc + 2)))
