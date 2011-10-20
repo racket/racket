@@ -1983,8 +1983,9 @@
 #       define STACKBOTTOM USRSTACK
 #    endif
         extern int __data_start[];
-#       define DATASTART ((ptr_t)(__data_start))
-        extern char _end[];
+/* PLTSCHEME: commented out these two: */
+/*#       define DATASTART ((ptr_t)(__data_start)) */
+/*        extern char _end[]; */
 #       define DATAEND ((ptr_t)(&_end))
 #       define DYNAMIC_LOADING
 #   endif
