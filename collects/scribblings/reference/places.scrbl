@@ -113,11 +113,11 @@ are simulated using @racket[thread].}
 
 
 @defproc[(dynamic-place [module-path (or/c module-path? path?)]
-                        [start-proc symbol?])
+                        [start-name symbol?])
                         place?]{
 
  Creates a @tech{place} to run the procedure that is identified by
- @racket[module-path] and @racket[start-proc]. The result is a
+ @racket[module-path] and @racket[start-name]. The result is a
  @tech{place descriptor} value that represents the new parallel task;
  the place descriptor is returned immediately. The place descriptor
  value is also a @tech{place channel} that permits communication with
@@ -156,7 +156,7 @@ are simulated using @racket[thread].}
 
 
 @defproc[(dynamic-place* [module-path (or/c module-path? path?)]
-                         [start-proc symbol?]
+                         [start-name symbol?]
                          [#:in in (or/c input-port? #f) #f]
                          [#:out out (or/c output-port? #f) (current-output-port)]
                          [#:err err (or/c output-port? #f) (current-error-port)])
