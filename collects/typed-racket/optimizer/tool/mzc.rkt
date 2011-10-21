@@ -30,30 +30,22 @@
   (regexp-match mzc-optimizer-regexp l))
 
 
+(struct inliner-log-entry log-entry (inlining-event) #:prefab)
+
 ;; String (message from the mzc optimizer) -> log-entry
 (define (mzc-opt-log-message->log-entry l)
   (define evt (parse-inlining-event l))
   (define forged-stx (inlining-event->forged-stx evt))
-  (define self? (self-inline-evt? evt))
-  (match (inlining-event-kind evt)
-    [(and k (== success-regexp))
-     (inlining-event->opt-log-entry
-      (if self?
-          unrolling-kind ; we treat unrolling specially
-          success-kind)
-      forged-stx)]
-    [(and k (== failure-regexp))
-     (inlining-event->missed-opt-log-entry failure-kind forged-stx)]
-    [(and k (== out-of-fuel-regexp))
-     (inlining-event->missed-opt-log-entry
-      (if self?
-          ;; self out-of-fuels are not interesting, they're the end of loop
-          ;; unrolling
-          "Ignored Inlining" ; dummy log-entry that will get ignored later on
-          out-of-fuel-kind)
-      forged-stx)]
-    [_
-     (error "Unknown log message type" l)]))
+  (define kind
+    (match (inlining-event-kind evt)
+      [(and k (== success-regexp))     success-regexp]
+      [(and k (== failure-regexp))     failure-regexp]
+      [(and k (== out-of-fuel-regexp)) out-of-fuel-regexp]
+      [_ (error "Unknown log message type" l)]))
+  (inliner-log-entry kind kind
+                     forged-stx forged-stx
+                     (syntax-position forged-stx)
+                     evt))
 
 (define inlining-event-regexp
   ;; Last bit is `generated?'. We don't care about that.
@@ -113,9 +105,26 @@
                      (string->number threshold))]
     [_ (error "ill-formed inlining log entry" l)]))
 
-;; f gets inlined in f (or tried to)
-(define (self-inline-evt? evt)
+
+(define (inlining-event->forged-stx evt)
   (match evt
+    [(inlining-event kind name loc where-name where-loc size threshold)
+     (datum->syntax #'here name loc)]))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; Log processing. Interprets the log entries, and produces new ones.
+;;; This is similar in spirit to the post-processing done for missed-opts in
+;;; the TR logger.
+
+(define (success?     l) (equal? success-regexp     (log-entry-kind l)))
+(define (failure?     l) (equal? failure-regexp     (log-entry-kind l)))
+(define (out-of-fuel? l) (equal? out-of-fuel-regexp (log-entry-kind l)))
+
+;; f gets inlined in f (or tried to)
+(define (self-inline? l)
+  (match (inliner-log-entry-inlining-event l)
     [(inlining-event kind name loc where-name where-loc size threshold)
      (match* (loc where-loc)
        [((list path line col pos span)
@@ -126,50 +135,28 @@
        [(hunoz #f) #t] ; we assume it is, to be conservative
        [(hunoz hukairz) #f])]))
 
-(define (inlining-event->forged-stx evt)
-  (match evt
-    [(inlining-event kind name loc where-name where-loc size threshold)
-     (datum->syntax #'here name loc)]))
+(define (unrolling? l) (and (success? l) (self-inline? l)))
 
-
-(define success-kind     "Inlining")
-(define unrolling-kind   "Unrolling Inlining")
-(define failure-kind     "Failed Inlining")
-(define out-of-fuel-kind "Failed Inlining, Out of Fuel")
-
-(define (inlining-event->opt-log-entry kind forged-stx)
-  (opt-log-entry kind kind
-                 forged-stx forged-stx ; stx, located-stx
-                 (syntax-position forged-stx)))
-(define (inlining-event->missed-opt-log-entry kind forged-stx)
-  (missed-opt-log-entry kind kind
-                        forged-stx forged-stx
-                        (syntax-position forged-stx)
-                        '() '() 1)) ; irritants, merged-irritants badness
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;; Log processing. Interprets the log entries, and produces new ones.
+;; self out-of-fuels are not interesting, they're the end of loop unrolling
+(define (self-out-of-fuel? l) (and (out-of-fuel? l) (self-inline? l)))
 
 ;; We aggregate results for each function.
 ;; Log messages produced by the inliner are very raw, unlike the TR logs,
 ;; which have gone through some aggregation. We do the aggregation here.
 (define (post-process-inline-log log)
   (define-values (inliner-logs tr-logs)
-    (partition (lambda (x) (regexp-match "[iI]nlining" (log-entry-kind x)))
-               log))
+    (partition inliner-log-entry? log))
   (define grouped-events
     (group-by (lambda (x y)
                 (equal? (log-entry-pos x) ; right file, so that's enough
                         (log-entry-pos y)))
               inliner-logs))
-  (define (success?     l) (equal? success-kind     (log-entry-kind l)))
-  (define (unrolling?   l) (equal? unrolling-kind   (log-entry-kind l)))
-  (define (failure?     l) (equal? failure-kind     (log-entry-kind l)))
-  (define (out-of-fuel? l) (equal? out-of-fuel-kind (log-entry-kind l)))
   (define new-inline-log-entries
-    (for/list ([group (in-list grouped-events)])
+    (for*/list ([g     (in-list  grouped-events)]
+                [group (in-value (filter (lambda (x)
+                                           (not (self-out-of-fuel? x)))
+                                         g))]
+                #:when (not (null? group)))
       (define head (car group))
       (match head ; events are grouped, first element is representative
         [(log-entry kind msg stx located-stx pos)
