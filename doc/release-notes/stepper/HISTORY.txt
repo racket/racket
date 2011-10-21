@@ -1,6 +1,10 @@
 Stepper
 -------
 
+Changes for v5.2:
+
+None.
+
 Changes for v5.1.2:
 
 Support for 'require' in stepped programs, fixed a number of
