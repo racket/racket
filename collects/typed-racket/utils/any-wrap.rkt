@@ -7,12 +7,15 @@
   (lambda (v p write?)
     (fprintf p "#<Typed Value: ~a>" (any-wrap-val v))))
 
+(define undef (letrec ([x x]) x))
+
 (define (traverse wrap?)
   (define (t v)
     (match v
       [(? (lambda (e) (and (any-wrap? e) (not wrap?)))) (any-wrap-val v)]
       [(? (lambda (e)
             (or (number? e) (string? e) (char? e) (symbol? e)
+                (null? e) (regexp? e) (eq? undef e)
                 (keyword? e) (bytes? e) (boolean? e) (void? e))))
        v]
       [(cons x y) (cons (t x) (t y))]
