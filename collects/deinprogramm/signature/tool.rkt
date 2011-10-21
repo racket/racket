@@ -37,7 +37,7 @@
                           (unless enabled?
                             (set! enabled? #t)
                             (set-label disable-label)
-                            (preferences:set 'signatures:enable-checking? '#f)))
+                            (preferences:set 'signatures:enable-checking? '#t)))
                         (define/public (disable-signature-checking)
                           (when enabled?
                             (set! enabled? #f)
