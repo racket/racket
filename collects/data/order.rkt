@@ -2,7 +2,8 @@
 (require racket/dict
          racket/contract/base
          racket/string
-         unstable/prop-contract)
+         unstable/prop-contract
+         ffi/unsafe/atomic)
 
 (define ordering/c
   (or/c '= '< '>))
@@ -154,7 +155,8 @@ Other:
   < pair
   < vector
   < box
-  < prefab
+  < prefab-struct
+  < fully-transparent-struct
 
 ;; FIXME: What else to add? regexps (4 kinds?), syntax, ...
 
@@ -171,16 +173,16 @@ Other:
 (define (gen-cmp x y natural?)
   (define-syntax-rule (recur x* y*)
     (gen-cmp x* y* natural?))
-  #|
-  (cond ...
+  (cond [(eq? x y) '=]
+        #|
         [(T? x) ...]
-        ;; at this point, Type(x) > T
+         ;; at this point, Type(x) > T
         [(T? y)
          ;; Type(x) > T = Type(y), so:
-         '>])
-  Assumes arguments are legal.
-  |#
-  (cond [(real? x)
+         '>]
+        Assumes arguments are legal.
+        |#
+        [(real? x)
          (if (real? y)
              (cond [natural?
                     (cmp* < = x y)]
@@ -252,7 +254,7 @@ Other:
         [(pair? y) '>]
         [(vector? x)
          (if (vector? y)
-             (vector<? x y 0 natural?)
+             (vector-cmp x y 0 natural?)
              '<)]
         [(vector? y) '>]
         [(box? x)
@@ -263,16 +265,29 @@ Other:
         [(prefab-struct-key x)
          (if (prefab-struct-key y)
              (lexico (recur (prefab-struct-key x) (prefab-struct-key y))
-                     (vector<? (struct->vector x) (struct->vector y) 1 natural?))
+                     ;; FIXME: use struct-ref to avoid allocation?
+                     (vector-cmp (struct->vector x) (struct->vector y) 1 natural?))
              '<)]
         [(prefab-struct-key y)
+         '>]
+        [(fully-transparent-struct-type x)
+         => (lambda (xtype)
+              (cond [(fully-transparent-struct-type y)
+                     => (lambda (ytype)
+                          ;; could also do another lexico with object-name first
+                          (lexico (object-cmp xtype ytype)
+                                  ;; FIXME: use struct-ref to avoid allocation?
+                                  (vector-cmp (struct->vector x) (struct->vector y)
+                                              1 natural?)))]
+                    [else '<]))]
+        [(fully-transparent-struct-type y)
          '>]
         [else
          (raise-type-error
           (if natural? 'natural-cmp 'datum-cmp)
           (string-join '("number" "string" "bytes" "keyword" "symbol" "boolean" "character"
                          "null" "pair" "vector" "box"
-                         "or prefab struct")
+                         "prefab struct" "or fully-transparent struct")
                        ", ")
           0 x y)]))
 
@@ -287,17 +302,53 @@ Other:
     ((>) '>)))
 
 (define (symbol<? x y)
+  ;; FIXME: need prim symbol<? to avoid allocation!
   (string<? (symbol->string x) (symbol->string y)))
 
-(define (vector<? x y i natural?)
+(define (vector-cmp x y i natural?)
   (cond [(< i (vector-length x))
          (if (< i (vector-length y))
              (lexico (gen-cmp (vector-ref x i) (vector-ref y i) natural?)
-                     (vector<? x y (add1 i) natural?))
+                     (vector-cmp x y (add1 i) natural?))
              '>)]
         [(< i (vector-length y))
          '<]
         [else '=]))
+
+;; fully-transparent-struct-type : any -> struct-type or #f
+(define (fully-transparent-struct-type x)
+  (parameterize ((current-inspector weak-inspector))
+    (let-values ([(x-type x-skipped?) (struct-info x)])
+      (and (not x-skipped?) x-type))))
+
+;; weak inspector controls no struct types;
+;; so if it can inspect, must be transparent
+(define weak-inspector (make-inspector))
+
+;; Impose an arbitrary (but consistent) ordering on eq?-compared
+;; objects. Use eq? and eq-hash-code for common fast path. Fall back
+;; to table when comparing struct-types *same eq-hash-code* but *not
+;; eq?*. That should be rare.
+(define object-order-table (make-weak-hasheq))
+(define object-order-next 0)
+(define (object-cmp x y)
+  (cond [(eq? x y) '=]
+        [else
+         (lexico
+          (cmp* < = (eq-hash-code x) (eq-hash-code y))
+          (call-as-atomic
+           (lambda ()
+             (let ([xi (hash-ref object-order-table x #f)]
+                   [yi (hash-ref object-order-table y #f)])
+               (cond [(and xi yi)
+                      ;; x not eq? y, so xi != yi
+                      (if (< xi yi) '< '>)]
+                     [xi '<]
+                     [yi '>]
+                     [else ;; neither one is in table; we only need to add one
+                      (hash-set! object-order-table x object-order-next)
+                      (set! object-order-next (add1 object-order-next))
+                      '<])))))]))
 
 (define datum-order
   (order* 'datum-order any/c datum-cmp))

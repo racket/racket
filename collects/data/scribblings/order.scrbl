@@ -65,8 +65,10 @@ implementing the @tech{ordered dictionary} interface (via
 }
 
 @deftogether[[
-@defproc[(dict-iterate-least [dict ordered-dict?]) any/c]
-@defproc[(dict-iterate-greatest [dict ordered-dict?]) any/c]]]{
+@defproc[(dict-iterate-least [dict ordered-dict?])
+         (or/c (dict-iter-contract dict) #f)]
+@defproc[(dict-iterate-greatest [dict ordered-dict?])
+         (or/c (dict-iter-contract dict) #f)]]]{
 
 Returns the position of the least (greatest) key in the ordered
 dictionary @racket[dict]. If @racket[dict] is empty, @racket[#f] is
@@ -74,10 +76,14 @@ returned.
 }
 
 @deftogether[[
-@defproc[(dict-iterate-least/>? [dict ordered-dict?] [key any/c]) any/c]
-@defproc[(dict-iterate-least/>=? [dict ordered-dict?] [key any/c]) any/c]
-@defproc[(dict-iterate-greatest/<? [dict ordered-dict?] [key any/c]) any/c]
-@defproc[(dict-iterate-greatest/<=? [dict ordered-dict?] [key any/c]) any/c]
+@defproc[(dict-iterate-least/>? [dict ordered-dict?] [key any/c])
+         (or/c (dict-iter-contract dict) #f)]
+@defproc[(dict-iterate-least/>=? [dict ordered-dict?] [key any/c])
+         (or/c (dict-iter-contract dict) #f)]
+@defproc[(dict-iterate-greatest/<? [dict ordered-dict?] [key any/c])
+         (or/c (dict-iter-contract dict) #f)]
+@defproc[(dict-iterate-greatest/<=? [dict ordered-dict?] [key any/c])
+         (or/c (dict-iter-contract dict) #f)]
 ]]{
 
 Returns the position of the least key greater than @racket[key], the
@@ -167,35 +173,73 @@ excludes @racket[+nan.0] but includes @racket[+inf.0] and
 
 @defthing[datum-order order?]{
 
-An ad hoc order that encompasses many built-in Racket data types. The
+An ad hoc order that encompasses many built-in Racket data types as
+well as prefab structs and fully-transparent structs. The
 @racket[datum-order] comparator orders values of the same data type
 according to the data type's natural order: @racket[string=?],
 @racket[string<?] for strings, for example (but see the warning about
 numbers below). Different data types are ordered arbitrarily but
 contiguously; for example, all strings sort before all vectors, or
-vice versa. Programs should not rely on the ordering of different data
-types.
+vice versa. Prefab and fully-transparent structs are ordered according
+to their most specific struct type, and prefab structs are ordered
+first by their prefab struct keys. The ordering of struct types is
+independent of the struct type hierarchy; a struct type may sort
+before one of its subtypes but after another.
 
-The order is designed so that lists, vectors, and prefab structs are
-ordered lexicographically.
+Programs should not rely on the ordering of different data types,
+since it may change in future versions of Racket to improve comparison
+performance. The ordering of non-prefab struct types may change
+between one execution of a program and the next.
 
-@bold{Warning!} The @racket[datum-order] is not compatible with the
-standard numeric order; all exact numbers are ordered before all
-inexact numbers. This allows @racket[1] to be considered distinct from
+The order is guaranteed, however, to lexicographically sort proper
+lists, vectors, prefab structs, and fully-transparent
+structs. Improper lists sort lexicographically considered as pairs,
+but the ordering of an improper list and its proper prefix, such as
+@racket['(a b . c)] and @racket['(a b)], is not specified.
+
+The @racket[datum-order] comparator does not perform cycle-detection;
+comparisons involving cyclic data may diverge.
+
+@bold{Warning:} @racket[datum-order] is not compatible with the
+standard numeric order; all exact numbers are ordered separately from
+all inexact numbers. Thus @racket[1] is considered distinct from
 @racket[1.0], for example.
 
-The following built-in data types are currently supported: numbers,
-strings, bytes, keywords, symbols, booleans, characters, null, pairs,
-vectors, boxes, and prefab structs.
+The following data types are currently supported: numbers, strings,
+bytes, keywords, symbols, booleans, characters, null, pairs, vectors,
+boxes, prefab structs, and fully-transparent structs.
 
-@examples[#:eval the-eval
+The following example comparisons are specified to return the results
+shown:
+@interaction[#:eval the-eval
 (datum-order 1 2)
-(datum-order 8 5.0)
-(datum-order 3+5i 3+2i)
+(datum-order 8.0 5.0)
+(datum-order 'apple 'candy)
 (datum-order '(a #:b c) '(a #:c d c))
+(datum-order '(5 . 4) '(3 2 1))
+(datum-order '(a b . c) '(a b . z))
 (datum-order "apricot" "apple")
 (datum-order '#(1 2 3) '#(1 2))
 (datum-order '#(1 2 3) '#(1 3))
-(datum-order 'apple (box "candy"))
+(datum-order (box 'car) (box 'candy))
+(datum-order '#s(point a 1) '#s(point b 0))
+(datum-order '#s(A 1 2) '#s(Z 3 4 5))
+(datum-order (make-fish 'alewife) (make-fish 'sockeye))
+]
+
+The following example comparisons are unspecified but consistent within
+all executions of a single version of Racket:
+@racketblock[
+(datum-order 1 2.0)
+(datum-order 3+5i 3+2i)
+(datum-order 'apple "zucchini")
+(datum-order '(a b) '(a b . c))
+(datum-order 0 'zero)
+]
+
+The following example comparison is unspecified but consistent within
+a single execution of a program:
+@racketblock[
+(datum-order (make-fish 'alewife) (make-fowl 'dodo))
 ]
 }
