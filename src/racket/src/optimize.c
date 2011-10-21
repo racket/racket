@@ -1090,7 +1090,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	  LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
                              single_use, scheme_write_to_string(data->name ? data->name : scheme_false, NULL)));
 	  scheme_log(NULL,
-		     SCHEME_LOG_WARNING,
+		     SCHEME_LOG_DEBUG,
 		     0,
 		     "mzc optimizer: inlining: involving: %s%s size: %d threshold: %d",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
@@ -1105,7 +1105,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL)));
 	  scheme_log(NULL,
-		     SCHEME_LOG_WARNING,
+		     SCHEME_LOG_DEBUG,
 		     0,
 		     "mzc optimizer: no inlining: involving: %s%s size: %d threshold: %d",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
@@ -1118,7 +1118,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
                            sz, is_leaf, threshold,
                            info->inline_fuel, info->use_psize));
 	scheme_log(NULL,
-		   SCHEME_LOG_WARNING,
+		   SCHEME_LOG_DEBUG,
 		   0,
 		   "mzc optimizer: no inlining, out of fuel: involving: %s%s size: %d threshold: %d",
 		   scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
