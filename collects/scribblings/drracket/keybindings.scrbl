@@ -239,13 +239,17 @@ before version 5.2.
 @racketmod[
 s-exp framework/keybinding-lang
 
+(define modifiers
+  (apply string-append
+         (map (λ (p)
+                (case p
+                  [(ctl) "c:"] [(cmd) "d:"] [(alt meta) "m:"]
+                  [(shift) "s:"] [(option) "a:"]))
+              (get-default-shortcut-prefix))))
+
 (define-syntax-rule (frame-key key command)
   (keybinding
-   (format "~a:~a"
-           (case (get-default-shortcut-prefix)
-             [(ctl) "c"] [(cmd) "d"] [(alt meta) "m"]
-             [(shift) "s"] [(option) "a"])
-           key)
+   (string-append modifiers key)
    (λ (ed evt)
      (when (is-a? ed text:basic<%>)
        (define fr (send ed get-top-level-window))
