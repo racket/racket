@@ -147,9 +147,7 @@
   (define-values (inliner-logs tr-logs)
     (partition inliner-log-entry? log))
   (define grouped-events
-    (group-by (lambda (x y)
-                (equal? (log-entry-pos x) ; right file, so that's enough
-                        (log-entry-pos y)))
+    (group-by equal? #:key log-entry-pos ; right file, so that's enough
               inliner-logs))
   (define new-inline-log-entries
     (for*/list ([g     (in-list  grouped-events)]
