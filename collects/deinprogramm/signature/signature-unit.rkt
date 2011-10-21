@@ -5,7 +5,7 @@
 
 (require scheme/promise
 	 mzlib/struct
-         (only-in racket/list first rest)
+         (only-in mzlib/list first rest)
 	 (for-syntax scheme/base)
 	 (for-syntax stepper/private/shared))
 
