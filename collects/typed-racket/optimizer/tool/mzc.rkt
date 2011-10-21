@@ -164,30 +164,11 @@
          (define n-unrollings   (length (filter unrolling?   group)))
          (define n-failures     (length (filter failure?     group)))
          (define n-out-of-fuels (length (filter out-of-fuel? group)))
+
          (define aggregation-string
-           (format "(~a)"
-                   (string-join
-                    (append (if (> n-successes 0)
-                                (list (format "~a success~a"
-                                              n-successes
-                                              (if (> n-successes 1) "es" "")))
-                                '())
-                            (if (> n-unrollings 0)
-                                (list (format "~a unrolling~a"
-                                              n-unrollings
-                                              (if (> n-unrollings 1) "s" "")))
-                                '())
-                            (if (> n-failures 0)
-                                (list (format "~a failure~a"
-                                              n-failures
-                                              (if (> n-failures 1) "s" "")))
-                                '())
-                            (if (> n-out-of-fuels 0)
-                                (list (format "~a out of fuel~a"
-                                              n-out-of-fuels
-                                              (if (> n-out-of-fuels 1) "s" "")))
-                                '()))
-                    ", ")))
+           (format-aggregation-string
+            n-successes n-unrollings n-failures n-out-of-fuels))
+
          ;; This is where the interesting decisions are taken.
          (define counts-as-a-missed-opt?
            (or (> n-failures 0) ; any straight failure is a problem
@@ -205,3 +186,19 @@
               (format "Inlining ~a" aggregation-string)
               stx located-stx pos))])))
   (append tr-logs new-inline-log-entries))
+
+(define (format-aggregation-string
+         n-successes n-unrollings n-failures n-out-of-fuels)
+  ;; Integer String #:suffix String -> (U Null (List String))
+  ;; if n = 0, nothing, if n = 1 singular, o/w plural
+  (define (pluralize n noun #:suffix [suffix "s"])
+    (if (> n 0)
+        (list (format "~a ~a~a" n noun (if (> n 1) suffix "")))
+        '()))
+  (format "(~a)"
+          (string-join
+           (append (pluralize n-successes    "success" #:suffix "es")
+                   (pluralize n-unrollings   "unrolling")
+                   (pluralize n-failures     "failure")
+                   (pluralize n-out-of-fuels "out of fuel"))
+           ", ")))
