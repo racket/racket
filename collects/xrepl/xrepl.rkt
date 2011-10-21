@@ -1300,7 +1300,9 @@
     (define (get-prefix)
       (let* ([x (here-source)]
              [x (and x (if (symbol? x) (format "'~s" x) (get-prefix* x)))]
-             [x (or x (toplevel-prefix))])
+             [x (or x (toplevel-prefix))]
+             [x (let ([ph (namespace-base-phase)])
+                  (if (eq? 0 ph) x (format "~a[~a]" x ph)))])
         (if (eq? (current-namespace-name) default-namespace-name)
           x (format "~a::~a" (current-namespace-name) x))))
     (define last-directory #f)
