@@ -478,7 +478,7 @@ terminated.
 
 The @racketmodname[ffi/unsafe/alloc] library provides functions to
 connect resource-allocating functions and resource-releasing
-functions. The library then for finalization to release a resource if
+functions. The library then arranges for finalization to release a resource if
 it becomes inaccessible (according to the GC) before it is explicitly
 released. At the same time, the library handles tricky atomicity
 requirements to ensure that the finalization is properly registered
