@@ -611,7 +611,7 @@ simple application to values---that make them suitable for different
 purposes.
 
 The @racket[module] form is more fundamental than the others, in a
-sense. After all, a program fragment cannot reliably refer to
+sense. After all, a program fragment cannot reliably refer to a
 @racket[lambda], @racket[class], or @racket[unit] form without the
 namespace management provided by @racket[module]. At the same time,
 because namespace management is closely related to separate expansion
