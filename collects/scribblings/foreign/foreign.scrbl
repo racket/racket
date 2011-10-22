@@ -15,6 +15,8 @@ interface}. Furthermore, since most APIs consist mostly of functions,
 the foreign interface is sometimes called a @defterm{foreign function
 interface}, abbreviated @deftech{FFI}.
 
+@;------------------------------------------------------------------------
+
 @table-of-contents[]
 
 @include-section["intro.scrbl"]
@@ -24,5 +26,12 @@ interface}, abbreviated @deftech{FFI}.
 @include-section["derived.scrbl"]
 @include-section["misc.scrbl"]
 @include-section["unexported.scrbl"]
+
+@(bibliography
+  (bib-entry #:key "Barzilay04"
+             #:author "Eli Barzilay and Dmitry Orlovsky"
+             #:title "Foreign Interface for PLT Scheme"
+             #:location "Workshop on Scheme and Functional Programming"
+             #:date "2004"))
 
 @index-section[]

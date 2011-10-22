@@ -12,7 +12,7 @@
                     ffi/vector))
 
 (provide cpp
-         InsideRacket
+         InsideRacket InsideRacket-doc
          guide.scrbl
          (all-from-out scribble/manual)
          (for-label (all-from-out racket/base
@@ -21,8 +21,10 @@
                                   ffi/unsafe/cvector
                                   ffi/vector)))
 
+(define InsideRacket-doc '(lib "scribblings/inside/inside.scrbl"))
+
 (define InsideRacket
-  (other-manual '(lib "scribblings/inside/inside.scrbl")))
+  (other-manual InsideRacket-doc))
 
 (define guide.scrbl
   '(lib "scribblings/guide/guide.scrbl"))
