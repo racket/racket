@@ -17,6 +17,24 @@
 @(interaction-eval #:eval img-eval (require 2htdp/image))
 @(interaction-eval #:eval img-eval (require lang/posn))
 
+@(interaction-eval
+  #:eval
+  img-eval
+  (let ([ce (current-eval)])
+    (define (adjust-image i)
+      (if (image? i)
+          (overlay/xy i 
+                      0 0
+                      (rectangle 
+                       (+ (image-width i) 1)
+                       (+ (image-height i) 1)
+                       'solid
+                       (color 0 0 0 0)))
+          i))
+    (current-eval
+     (λ (exp)
+       (adjust-image (ce exp))))))
+
 @(define-syntax-rule 
    (image-examples exp ...)
    (examples #:eval img-eval exp ...))
