@@ -2508,6 +2508,36 @@
         (test (sort (covered-cases c) <)
               '(("plain" . 1) ("shortcut" . 1) ("side-condition" . 2)))))
     
+    (let ()
+      (define-language L
+        (e (e e)
+           (delay e)
+           +inf.0
+           I)
+        (v (delay e)
+           +inf.0
+           I))
+      
+      (define red
+        (compatible-closure
+         (reduction-relation
+          L
+          (--> (+inf.0 +inf.0) (+inf.0 +inf.0))
+          (--> (I e) e))
+         L
+         e))
+      
+      (test (apply-reduction-relation* 
+             red
+             (term (I (delay (+inf.0 +inf.0))))
+             #:stop-when (redex-match L v))
+            (list (term (delay (+inf.0 +inf.0)))))
+      
+      (test (apply-reduction-relation* 
+             red
+             (term (I (delay (+inf.0 +inf.0)))))
+            '()))
+    
     (let* ([S (reduction-relation
                empty-language
                (--> 1 1 uno))]

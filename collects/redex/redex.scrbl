@@ -908,7 +908,8 @@ names of the reductions that were used.
 @defproc[(apply-reduction-relation*
           [r reduction-relation?]
           [t any/c]
-          [#:cache-all? cache-all? boolean? (current-cache-all?)])
+          [#:cache-all? cache-all? boolean? (current-cache-all?)]
+          [#:stop-when stop-when (-> any/c any) (λ (x) #f)])
          (listof any/c)]{
 
 Accepts a reduction relation and a
@@ -923,6 +924,13 @@ keeps a cache of all visited terms when traversing the graph and does not revisi
 any of them. This cache can, in some cases, use a lot of memory, so it is off by
 default and the cycle checking happens by keeping track only of the current path
 it is traversing through the reduction graph.
+
+The @racket[stop-when] argument controls the stopping criterion. Specifically, it is
+called with each term that @racket[apply-reduction-relation*] encounters. If it
+ever returns a true value (anything except @racket[#f]), then @racket[apply-reduction-relation*]
+considers the term to be irreducible (and so returns it and does not try to
+reduce it further).
+
 }
 
 @defparam[current-cache-all? cache-all? boolean?]{
