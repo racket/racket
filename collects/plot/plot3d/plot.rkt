@@ -2,18 +2,19 @@
 
 (require racket/draw racket/snip racket/match racket/list racket/class racket/contract
          slideshow/pict
+         unstable/parameter-group
          unstable/lazy-require
          (for-syntax racket/base)
          "../common/math.rkt"
          "../common/vector.rkt"
          "../common/file-type.rkt"
          "../common/area.rkt"
-         "../common/contract.rkt" "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/contract-doc.rkt"
          "../common/parameters.rkt"
          "../common/deprecation-warning.rkt"
          "../common/renderer.rkt"
          "../common/utils.rkt"
-         "../common/parameter-list.rkt"
          "area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
@@ -133,10 +134,10 @@
                       [#:z-label z-label (or/c string? #f) (plot-z-label)]
                       [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                       ) pict?
-  (define saved-parameters (plot-parameters))
+  (define saved-values (plot-parameters))
   (dc (λ (dc x y)
-        (parameterize/list
-         ([plot-parameters  saved-parameters])
+        (parameterize/group
+         ([plot-parameters  saved-values])
          (plot3d/dc renderer-tree dc x y width height
                     #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min
                     #:z-max z-max #:angle angle #:altitude altitude #:title title #:x-label x-label

@@ -2,72 +2,115 @@
 
 ;; Parameters that control the look and behavior of plots.
 
-(require racket/contract
+(require racket/contract unstable/parameter-group
          "contract.rkt"
          "contract-doc.rkt"
          "draw.rkt"
          "axis-transform.rkt"
-         "ticks.rkt"
-         "parameter-list.rkt")
+         "ticks.rkt")
 
 (provide (all-defined-out))
 
-;; ===================================================================================================
-;; Parameters common to 2D and 3D
-
 (defparam plot-deprecation-warnings? boolean? #f)
 
-;; Output
-
-(defparam plot-width exact-positive-integer? 400)
-(defparam plot-height exact-positive-integer? 400)
-(defparam plot-new-window? boolean? #f)
-(defparam plot-jpeg-quality (integer-in 0 100) 100)
-(defparam plot-ps/pdf-interactive? boolean? #f)
+;; ===================================================================================================
+;; General plot parameters
 
 ;; General appearance
 
+(defparam plot-width exact-positive-integer? 400)
+(defparam plot-height exact-positive-integer? 400)
 (defparam plot-foreground color plot-color/c 0)
 (defparam plot-background color plot-color/c 0)
 (defparam plot-foreground-alpha alpha (real-in 0 1) 1)
 (defparam plot-background-alpha alpha (real-in 0 1) 1)
+(defparam plot-line-width width (>=/c 0) 1)
+(defparam plot-tick-size (>=/c 0) 10)
 (defparam plot-font-size size (>=/c 0) 11)
 (defparam plot-font-family family font-family/c 'roman)
-(defparam plot-line-width width (>=/c 0) 1)
+(defparam plot-legend-anchor anchor anchor/c 'top-right)
+(defparam plot-legend-box-alpha alpha (real-in 0 1) 2/3)
+(defparam plot-animating? boolean? #f)
+
+(defparam plot-x-max-ticks exact-positive-integer? 5)
+(defparam plot-y-max-ticks exact-positive-integer? 5)
+(defparam plot-z-max-ticks exact-positive-integer? 8)
+
+(define-parameter-group plot-max-ticks (plot-x-max-ticks plot-y-max-ticks plot-z-max-ticks)
+  #:struct list)
+
+(define-parameter-group plot-appearance
+   (plot-width
+    plot-height
+    plot-foreground
+    plot-background
+    plot-foreground-alpha
+    plot-background-alpha
+    plot-line-width
+    plot-tick-size
+    plot-font-size
+    plot-font-family
+    plot-legend-anchor
+    plot-legend-box-alpha
+    plot-animating?
+    plot-max-ticks))
 
 (define (pen-gap) (* 2 (plot-line-width)))
 
-(defparam plot-legend-anchor anchor anchor/c 'top-right)
-(defparam plot-legend-box-alpha alpha (real-in 0 1) 2/3)
+(defproc (animated-samples [samples (and/c exact-integer? (>=/c 2))]) (and/c exact-integer? (>=/c 2))
+  (cond [(plot-animating?)  (max 2 (ceiling (* 1/4 samples)))]
+        [else  samples]))
 
-(defparam plot-tick-size (>=/c 0) 10)
+;; 3D-specific appearance
+
+(defparam plot3d-samples (and/c exact-integer? (>=/c 2)) 41)
+(defparam plot3d-angle real? 30)
+(defparam plot3d-altitude real? 60)
+(defparam plot3d-ambient-light (real-in 0 1) 2/3)
+(defparam plot3d-diffuse-light? boolean? #t)
+(defparam plot3d-specular-light? boolean? #t)
+
+(define-parameter-group plot3d-appearance
+  (plot3d-samples
+   plot3d-angle
+   plot3d-altitude
+   plot3d-ambient-light
+   plot3d-diffuse-light?
+   plot3d-specular-light?))
+
+;; Output
+
+(defparam plot-new-window? boolean? #f)
+(defparam plot-jpeg-quality (integer-in 0 100) 100)
+(defparam plot-ps/pdf-interactive? boolean? #f)
+
+(define-parameter-group plot-output (plot-new-window? plot-jpeg-quality plot-ps/pdf-interactive?))
+
+;; Labels
 
 (defparam plot-title (or/c string? #f) #f)
 (defparam plot-x-label (or/c string? #f) "x axis")
 (defparam plot-y-label (or/c string? #f) "y axis")
 (defparam plot-z-label (or/c string? #f) #f)
 
-(defparam plot-animating? boolean? #f)
+(define-parameter-group plot-labels (plot-title plot-x-label plot-y-label plot-z-label))
 
-(defproc (animated-samples [samples (and/c exact-integer? (>=/c 2))]) (and/c exact-integer? (>=/c 2))
-  (cond [(plot-animating?)  (max 2 (ceiling (* 1/4 samples)))]
-        [else  samples]))
-
-;; Sampling
+;; Axes: transform, ticks
 
 (defparam plot-x-transform axis-transform/c id-transform)
 (defparam plot-y-transform axis-transform/c id-transform)
 (defparam plot-z-transform axis-transform/c id-transform)
 
-;; Ticks
-
-(defparam plot-x-max-ticks exact-positive-integer? 5)
-(defparam plot-y-max-ticks exact-positive-integer? 5)
-(defparam plot-z-max-ticks exact-positive-integer? 8)
-
 (defparam plot-x-ticks ticks? (linear-ticks))
 (defparam plot-y-ticks ticks? (linear-ticks))
 (defparam plot-z-ticks ticks? (linear-ticks))
+
+(struct axis (transform ticks) #:transparent)
+
+(define-parameter-group plot-x-axis (plot-x-transform plot-x-ticks) #:struct axis)
+(define-parameter-group plot-y-axis (plot-y-transform plot-y-ticks) #:struct axis)
+(define-parameter-group plot-z-axis (plot-z-transform plot-z-ticks) #:struct axis)
+(define-parameter-group plot-axes (plot-x-axis plot-y-axis plot-z-axis) #:struct list)
 
 (defproc (default-x-ticks [x-min real?] [x-max real?]) (listof tick?)
   ((plot-x-ticks) x-min x-max (plot-x-max-ticks) (plot-x-transform)))
@@ -77,6 +120,18 @@
 
 (defproc (default-z-ticks [z-min real?] [z-max real?]) (listof tick?)
   ((plot-z-ticks) z-min z-max (plot-z-max-ticks) (plot-z-transform)))
+
+;; ===================================================================================================
+
+(define-parameter-group plot-parameters
+  (plot-appearance
+   plot3d-appearance
+   plot-labels
+   plot-output
+   plot-axes))
+
+;; ===================================================================================================
+;; Renderer-specific parameters
 
 ;; Lines
 
@@ -169,18 +224,6 @@
 (defparam label-alpha (real-in 0 1) 1)
 (defparam label-point-size (>=/c 0) 4)
 
-;; ===================================================================================================
-;; 3D-specific parameters
-
-;; General appearance
-
-(defparam plot3d-samples (and/c exact-integer? (>=/c 2)) 41)
-(defparam plot3d-angle real? 30)
-(defparam plot3d-altitude real? 60)
-(defparam plot3d-ambient-light (real-in 0 1) 2/3)
-(defparam plot3d-diffuse-light? boolean? #t)
-(defparam plot3d-specular-light? boolean? #t)
-
 ;; Surfaces
 
 (defparam surface-color plot-color/c 0)
@@ -216,43 +259,3 @@
 ;; Histograms
 
 (defparam rectangle3d-line-width (>=/c 0) 1/3)
-
-;; ===================================================================================================
-
-(define plot-parameters
-  (parameter-list plot-deprecation-warnings?
-                  plot-width
-                  plot-height
-                  plot-new-window?
-                  plot-jpeg-quality
-                  plot-ps/pdf-interactive?
-                  plot-foreground
-                  plot-background
-                  plot-foreground-alpha
-                  plot-background-alpha
-                  plot-font-size
-                  plot-font-family
-                  plot-line-width
-                  plot-legend-anchor
-                  plot-legend-box-alpha
-                  plot-tick-size
-                  plot-title
-                  plot-x-label
-                  plot-y-label
-                  plot-z-label
-                  plot-animating?
-                  plot-x-transform
-                  plot-y-transform
-                  plot-z-transform
-                  plot-x-max-ticks
-                  plot-y-max-ticks
-                  plot-z-max-ticks
-                  plot-x-ticks
-                  plot-y-ticks
-                  plot-z-ticks
-                  plot3d-samples
-                  plot3d-angle
-                  plot3d-altitude
-                  plot3d-ambient-light
-                  plot3d-diffuse-light?
-                  plot3d-specular-light?))

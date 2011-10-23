@@ -9,7 +9,8 @@ exec gracket "$0" "$@"
          plot/common/date-time
          plot/common/vector
          plot/common/utils
-         plot/common/parameter-list)
+         plot/common/parameter-list
+         plot/common/parameter-group)
 
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #t) '(0 1))
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #f) '(0 2/3))
@@ -303,117 +304,3 @@ exec gracket "$0" "$@"
 (check-false (vector-ormap (λ (x y) (and (= x 1) (= y 2)))
                            #(0 0 1 0)
                            #(0 2 0 0)))
-
-;; ===================================================================================================
-;; Parameter lists
-
-(define p1 (make-parameter 1))
-(define p2 (make-parameter 2))
-
-(define ps1 (parameter-list p1 p2))
-
-(check-equal? (ps1) (list 1 2))
-(check-equal? (parameterize/list () (ps1)) (ps1))
-(check-equal? (parameterize*/list () (ps1)) (ps1))
-(check-equal? (parameterize/list ([ps1  (list 10 20)]) (ps1))
-              (list 10 20))
-(check-equal? (parameterize/list ([p1 10] [p2 20]) (ps1))
-              (list 10 20))
-(check-equal? (parameterize/list ([ps1  (list 10 20)]) (list (p1) (p2)))
-              (list 10 20))
-(check-equal? (ps1) (list 1 2))
-
-(check-exn exn:fail:contract? (λ () (ps1 (list 1 2 3))))
-(check-exn exn:fail:contract? (λ () (parameterize ([ps1  (list 1 2 3)]) (ps1))))
-(check-exn exn:fail:contract? (λ () (parameter-list 0)))
-(check-exn exn:fail:contract? (λ () (parameter-list* 0 ps1)))
-(check-exn exn:fail:contract? (λ () (parameter-list* p1 0)))
-(check-exn exn:fail:contract? (λ () (parameter-list-append 0 ps1)))
-(check-exn exn:fail:contract? (λ () (parameter-list-append ps1 0)))
-
-(ps1 (list 10 20))
-
-(check-equal? (ps1) (list 10 20))
-(check-equal? (parameterize/list ([ps1  (list 1 2)]) (ps1))
-              (list 1 2))
-(check-equal? (parameterize/list ([p1 1] [p2 2]) (ps1))
-              (list 1 2))
-(check-equal? (parameterize/list ([ps1  (list 1 2)]) (list (p1) (p2)))
-              (list 1 2))
-(check-equal? (ps1) (list 10 20))
-
-(p1 1)
-(p2 2)
-
-(define p3 (make-parameter 3))
-
-(define ps2 (parameter-list* p3 ps1))
-
-(check-equal? (ps2) (list 3 1 2))
-(check-equal? (parameterize/list ([ps2  (list 30 10 20)]) (ps2))
-              (list 30 10 20))
-(check-equal? (parameterize/list ([p3 30] [p1 10] [p2 20]) (ps2))
-              (list 30 10 20))
-(check-equal? (parameterize/list ([ps2  (list 30 10 20)]) (list (p3) (p1) (p2)))
-              (list 30 10 20))
-(check-equal? (ps2) (list 3 1 2))
-
-(ps2 (list 30 10 20))
-
-(check-equal? (ps2) (list 30 10 20))
-(check-equal? (parameterize/list ([ps2  (list 3 1 2)]) (ps2))
-              (list 3 1 2))
-(check-equal? (parameterize/list ([p3 3] [p1 1] [p2 2]) (ps2))
-              (list 3 1 2))
-(check-equal? (parameterize/list ([ps2  (list 3 1 2)]) (list (p3) (p1) (p2)))
-              (list 3 1 2))
-(check-equal? (ps2) (list 30 10 20))
-
-(p1 1)
-(p2 2)
-(p3 3)
-
-(define ps3 (parameter-list-append ps1 (parameter-list p3)))
-
-(check-equal? (ps3) (list 1 2 3))
-(check-equal? (parameterize/list ([ps3  (list 10 20 30)]) (ps3))
-              (list 10 20 30))
-(check-equal? (parameterize/list ([p1 10] [p2 20] [p3 30]) (ps3))
-              (list 10 20 30))
-(check-equal? (parameterize/list ([ps3  (list 10 20 30)]) (list (p1) (p2) (p3)))
-              (list 10 20 30))
-(check-equal? (ps3) (list 1 2 3))
-
-(ps3 (list 10 20 30))
-
-(check-equal? (ps3) (list 10 20 30))
-(check-equal? (parameterize/list ([ps3  (list 1 2 3)]) (ps3))
-              (list 1 2 3))
-(check-equal? (parameterize/list ([p1 1] [p2 2] [p3 3]) (ps3))
-              (list 1 2 3))
-(check-equal? (parameterize/list ([ps3  (list 1 2 3)]) (list (p1) (p2) (p3)))
-              (list 1 2 3))
-(check-equal? (ps3) (list 10 20 30))
-
-(ps3 (list 1 2 3))
-
-(define p4 (make-parameter 4))
-(define p5 (make-parameter 5))
-(define ps4 (parameter-list p4 p5))
-(define ps5 (parameter-list ps3 ps4))
-
-(check-equal? (ps5) (list (list 1 2 3) (list 4 5)))
-(check-equal? (parameterize/list ([ps5  (list (list 10 20 30) (list 40 50))]) (ps5))
-              (list (list 10 20 30) (list 40 50)))
-(check-equal? (parameterize/list ([p1 10] [p2 20] [p3 30] [p4 40] [p5 50]) (ps5))
-              (list (list 10 20 30) (list 40 50)))
-(check-equal? (parameterize/list ([ps5  (list (list 10 20 30) (list 40 50))])
-                                 (list (p1) (p2) (p3) (p4) (p5)))
-              (list 10 20 30 40 50))
-(check-equal? (parameterize/list ([ps3  (list 10 20 30)] [ps4  (list 40 50)]) (ps5))
-              (list (list 10 20 30) (list 40 50)))
-(check-equal? (parameterize/list ([ps3  (list 10 20 30)] [ps4  (list (p1) (p2))]) (ps5))
-              (list (list 10 20 30) (list 1 2)))
-(check-equal? (parameterize*/list ([ps3  (list 10 20 30)] [ps4  (list (p1) (p2))]) (ps5))
-              (list (list 10 20 30) (list 10 20)))
-(check-equal? (ps5) (list (list 1 2 3) (list 4 5)))

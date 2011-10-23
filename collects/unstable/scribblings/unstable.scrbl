@@ -92,6 +92,7 @@ Keep documentation and tests up to date.
 @include-section["list.scrbl"]
 @include-section["logging.scrbl"]
 @include-section["markparam.scrbl"]
+@include-section["parameter-group.scrbl"]
 @include-section["match.scrbl"]
 @include-section["net.scrbl"]
 @include-section["path.scrbl"]

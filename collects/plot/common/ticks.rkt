@@ -12,7 +12,7 @@
          "axis-transform.rkt"
          "currency.rkt")
 
-(provide (struct-out pre-tick) (struct-out tick) (struct-out ticks)
+(provide (struct-out pre-tick) (struct-out tick) (struct-out ticks) ticks-layout/c ticks-format/c
          ;; No ticks
          no-ticks-layout no-ticks
          ;; Linear ticks

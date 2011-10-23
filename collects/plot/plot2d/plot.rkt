@@ -4,6 +4,7 @@
 
 (require racket/draw racket/snip racket/contract racket/list racket/class racket/match
          slideshow/pict
+         unstable/parameter-group
          unstable/lazy-require
          (for-syntax racket/base
                      syntax/strip-context
@@ -19,7 +20,6 @@
          "../common/deprecation-warning.rkt"
          "../common/renderer.rkt"
          "../common/utils.rkt"
-         "../common/parameter-list.rkt"
          "area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
@@ -119,10 +119,10 @@
                     [#:y-label y-label (or/c string? #f) (plot-y-label)]
                     [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                     ) pict?
-  (define saved-parameters (plot-parameters))
+  (define saved-values (plot-parameters))
   (dc (λ (dc x y)
-        (parameterize/list
-         ([plot-parameters  saved-parameters])
+        (parameterize/group
+         ([plot-parameters  saved-values])
          (plot/dc renderer-tree dc x y width height
                   #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
                   #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)))
