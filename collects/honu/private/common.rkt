@@ -14,7 +14,7 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
       [(_ (~seq clause:honu-expression colon body:honu-expression (~optional honu-comma)) ...
-          semicolon . rest)
+          . rest)
        (values
          #'(cond
              [clause.result body.result] ...)

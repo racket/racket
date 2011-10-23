@@ -80,7 +80,7 @@
   var n = 5;
   cond
     n < 10: 'x1,
-    n > 10: 'x2;
+    n > 10: 'x2
   }
 
   @output{'x1
