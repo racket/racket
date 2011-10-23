@@ -9,24 +9,24 @@ class Xml(data){
   }
 
   Element(name){
-    new Xml(get_element(data, name));
+    new Xml(get_element(data, name))
   }
 
   Value(){
-    get_text(data);
+    get_text(data)
   }
 
   getData(){ data }
-};
+}
 
 read_xml(){
-  xml_permissive_xexprs(true);
-  xml_xml_to_xexpr(xml_document_element(xml_read_xml()));
+  xml_permissive_xexprs(true)
+  xml_xml_to_xexpr(xml_document_element(xml_read_xml()))
 }
 
 loadXml(file){
   with_input_from_file(file){
-    new Xml(read_xml());
+    new Xml(read_xml())
   }
 }
 
@@ -34,23 +34,23 @@ starts_with(start, what){
   substring(what, 0, string_length(start)) string_equal start
 }
 
-var xml = loadXml("test.xml");
-printf("xml ~a\n", xml);
-printf("data: ~a\n", xml.getData());
-printf("table1: ~a\n", xml.Descendants("Table1"));
+var xml = loadXml("test.xml")
+printf("xml ~a\n", xml)
+printf("data: ~a\n", xml.getData())
+printf("table1: ~a\n", xml.Descendants("Table1"))
 
-struct test{name, address};
+struct test{name, address}
 
 var addresses = linq from add in xml.Descendants("Table1")
                      where true
                      orderby add.Element("familyName").Value()
                      select test(add.Element("familyName").Value(),
-                                 add.Element("address").Value());
+                                 add.Element("address").Value())
 
-printf("addresses ~a\n", addresses);
+printf("addresses ~a\n", addresses)
 
 for add in addresses do {
-  printf("name ~a address ~a\n", add.name, add.address);
+  printf("name ~a address ~a\n", add.name, add.address)
 }
 
 for xs in linq from foo in xml.Descendants("Table1")

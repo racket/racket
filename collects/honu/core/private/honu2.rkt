@@ -38,10 +38,15 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-=)
-      [(_ name:id honu-= . rest)
+      [(_ name:id honu-= one:honu-expression . rest)
+       (values #'(define name one.result)
+               #'rest
+               #t)
        ;; parse one expression
+       #;
        (define-values (parsed unparsed)
                       (parse #'rest))
+       #;
        (values
          (with-syntax ([parsed parsed])
            #'(define name parsed))

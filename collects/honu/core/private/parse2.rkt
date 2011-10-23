@@ -100,6 +100,7 @@
 ;; removes syntax that causes expression parsing to stop
 (define (strip-stops code)
   (define-syntax-class stopper #:literal-sets (cruft)
+    #;
     [pattern semicolon]
     [pattern honu-comma]
     [pattern colon])
@@ -227,11 +228,23 @@
                       0
                       (lambda (x) x)
                       (left final)))]
+         
          [(stopper? #'head)
           (values (left final)
                   stream)]
          [else
            (syntax-parse #'(head rest ...) #:literal-sets (cruft)
+             [((semicolon more ...) . rest)
+              #;
+              (define-values (parsed unparsed)
+                             (do-parse #'(more ...)
+                                       0
+                                       (lambda (x) x)
+                                       #f))
+              #;
+              (when (not (stx-null? unparsed))
+                (raise-syntax-error 'parse "found unparsed input" unparsed))
+              (values (parse-all #'(more ...)) #'rest)]
              [(function:honu-function . rest)
               (values #'function.result #'rest)]
              #;

@@ -9,6 +9,7 @@
                      syntax/parse/experimental/splicing
                      scheme/splicing
                      macro-debugger/emit
+                     racket/pretty
                      "debug.rkt"
                      "contexts.rkt"
                      "util.rkt"
@@ -474,5 +475,5 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
   (syntax-case stx ()
     [(_ forms ...)
      (begin
-       (debug "Module begin ~a\n" (syntax->datum #'(forms ...)))
+       (debug "Module begin ~a\n" (pretty-format (syntax->datum #'(forms ...))))
        #'(#%module-begin (honu-unparsed-begin forms ...)))]))

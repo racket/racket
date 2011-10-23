@@ -20,6 +20,7 @@
                       parse-error
                       left-bracket right-bracket
                       left-brace right-brace
+                      semicolon
                       block-comment
                       end-of-line-comment])
 
@@ -67,13 +68,13 @@
     #;
     [block-comment (token-whitespace)]
     ["/*" (token-block-comment)]
-    ["." (token-identifier '|.|)]
-    ["," (token-identifier '|,|)]
-    [":" (token-identifier ':)]
+    ["." (token-identifier '%dot)]
+    ["," (token-identifier '%comma)]
+    [":" (token-identifier '%colon)]
     ["'" (token-identifier 'quote)]
     ["`" (token-identifier 'quasiquote)]
     [operator (token-identifier (string->symbol lexeme))]
-    [";" (token-identifier '|;|)]
+    [";" (token-semicolon)]
     ;; strip the quotes from the resulting string
     ;; TODO: find a more optimal way
     [string (let ()
@@ -109,7 +110,8 @@
                 block-comment parse-error
                 identifier left-parens right-parens
                 left-bracket right-bracket
-                left-brace right-brace)
+                left-brace right-brace
+                semicolon)
 
 ;; returns #t if an entire comment was read (with an ending newline)
 (define (read-until-end-of-line input)
@@ -294,6 +296,63 @@
 
   (define (do-empty current tokens table)
     (reverse current))
+
+  (define (contains-semicolon? syntax)
+    (syntax-case syntax (%semicolon #%braces #%parens)
+      [(%semicolon x ...) #t]
+      [#%braces #t]
+      [(#%braces x ...) #t]
+      #;
+      [(#%parens x ...) #t]
+      [else #f]))
+
+  ;; wraps syntax objects with (%semicolon ...)
+  ;; it will search backwards through the list of already created syntax objects
+  ;; until it either runs out of syntax objects or finds one already wrapped with
+  ;; (%semicolon ...)
+  ;; 
+  ;; if the original input is '1 + 2; 3 + 4;' this will get read as
+  ;;   (1 + 2 %semicolon 3 + 4 %semicolon)
+  ;; then parsing will start from the front. when %semicolon is reached we will have
+  ;; the following (current is always backwards).
+  ;;   current: (2 + 1)
+  ;; do-semicolon will search this for a syntax object containing (%semicolon ...) but
+  ;; since one doesn't appear the entire expression will be reversed and wrapped thus
+  ;; resulting in
+  ;;   (%semicolon 1 + 2)
+  ;;
+  ;; Now parsing continues with (3 + 4 %semicolon). When the next %semicolon is hit we
+  ;; will have
+  ;;   current: (4 + 3 (%semicolon 1 + 2))
+  ;;
+  ;; So do-semicolon will find (%semicolon 1 + 2) and leave stop processing there,
+  ;; resulting in
+  ;;   ((%semicolon 3 + 4) (%semicolon 1 + 2))
+  ;;
+  ;; The entire list will be reversed at the end of parsing.
+  (define (do-semicolon current tokens table)
+    ;; (debug "Do semicolon on ~a\n" current)
+    (define-values (wrap ok)
+                   (let loop ([found '()]
+                              [rest current])
+                     (match rest
+                       [(list) (values found rest)]
+                       [(list (and (? contains-semicolon?) head) rest* ...)
+                        (values found rest)]
+                       [(list head rest ...)
+                        (loop (cons head found) rest)])))
+    (define semicolon (make-syntax `(%semicolon ,@wrap)
+                                   ;; FIXME: this is probably the wrong token
+                                   ;; to get source location from
+                                   (car tokens)
+                                   source))
+
+    (do-parse (cons semicolon ok)
+              (cdr tokens)
+              table))
+
+  (define (semicolon? tokens)
+    (is-first-token token-semicolon? tokens))
   
   (define (left-parens? tokens)
     (is-first-token token-left-parens? tokens))
@@ -334,7 +393,8 @@
   (define do-left-bracket (make-encloser '#%brackets "}" right-bracket?))
   (define do-left-brace (make-encloser '#%braces "]" right-brace?))
   
-  (define dispatch-table (list [list atom? do-atom]
+  (define dispatch-table (list [list semicolon? do-semicolon]
+                               [list atom? do-atom]
                                [list left-parens? do-left-parens]
                                [list left-bracket? do-left-bracket]
                                [list left-brace? do-left-brace]
