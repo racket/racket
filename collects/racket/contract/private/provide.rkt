@@ -92,8 +92,8 @@
                [name (identifier? #'name) #'saved-id]
                [(set! id arg)
                 (raise-syntax-error
-                 'provide/contract
-                 "cannot set! a provide/contract variable"
+                 'contract/out
+                 "cannot set! a contract/out variable"
                  stx #'id)]
                [(name . more)
                 (with-syntax ([app (datum->syntax stx '#%app)])
@@ -103,7 +103,7 @@
          ;; expressions:
          (quasisyntax/loc stx (#%expression #,stx)))))))
 
-(define-for-syntax (true-provide/contract provide-stx lift-end-declaration)
+(define-for-syntax (true-provide/contract provide-stx just-check-errors? who)
   (syntax-case provide-stx ()
     [(_ p/c-ele ...)
      (let ()
@@ -131,7 +131,7 @@
                    [(ormap (λ (x) (bound-identifier=? (car ids) x)) (cdr ids))
                     (let ([dups (filter (λ (x) (bound-identifier=? (car ids) x))
                                         ids)])
-                      (raise-syntax-error 'provide/contract
+                      (raise-syntax-error who
                                           "duplicate identifiers"
                                           provide-stx
                                           (car dups)
@@ -154,7 +154,7 @@
 		 (or (eq? '#:exists (syntax-e #'exists)) (eq? '#:∃ (syntax-e #'exists)))
                  (cond
                    [(null? (cdr clauses))
-                    (raise-syntax-error 'provide/conract
+                    (raise-syntax-error who
                                         (format "expected either a single variable or a sequence of variables to follow ~a, but found nothing"
 						(syntax-e #'exists))
                                         provide-stx
@@ -163,27 +163,31 @@
                     (syntax-case (cadr clauses) ()
 		      [x
 		       (identifier? #'x)
-                       (with-syntax ([(x-gen) (generate-temporaries #'(x))])
-                         (cons (code-for-one-exists-id #'x #'x-gen)
-                               (loop (cddr clauses) 
-                                     (add-a-binder #'x #'x-gen exists-binders))))]
+                       (if just-check-errors?
+                           (loop (cddr clauses) exists-binders)
+                           (with-syntax ([(x-gen) (generate-temporaries #'(x))])
+                             (cons (code-for-one-exists-id #'x #'x-gen)
+                                   (loop (cddr clauses) 
+                                         (add-a-binder #'x #'x-gen exists-binders)))))]
                       [(x ...)
                        (andmap identifier? (syntax->list #'(x ...)))
-                       (with-syntax ([(x-gen ...) (generate-temporaries #'(x ...))])
-                         (append (map code-for-one-exists-id 
-                                      (syntax->list #'(x ...))
-                                      (syntax->list #'(x-gen ...)))
-                                 (loop (cddr clauses)
-                                       (let loop ([binders exists-binders]
-                                                  [xs (syntax->list #'(x ...))]
-                                                  [x-gens (syntax->list #'(x-gen ...))])
-                                         (cond
-                                           [(null? xs) binders]
-                                           [else (loop (add-a-binder (car xs) (car x-gens) binders)
-                                                       (cdr xs)
-                                                       (cdr x-gens))])))))]
+                       (if just-check-errors?
+                           (loop (cddr clauses) exists-binders)
+                           (with-syntax ([(x-gen ...) (generate-temporaries #'(x ...))])
+                             (append (map code-for-one-exists-id 
+                                          (syntax->list #'(x ...))
+                                          (syntax->list #'(x-gen ...)))
+                                     (loop (cddr clauses)
+                                           (let loop ([binders exists-binders]
+                                                      [xs (syntax->list #'(x ...))]
+                                                      [x-gens (syntax->list #'(x-gen ...))])
+                                             (cond
+                                               [(null? xs) binders]
+                                               [else (loop (add-a-binder (car xs) (car x-gens) binders)
+                                                           (cdr xs)
+                                                           (cdr x-gens))]))))))]
                       [else
-                       (raise-syntax-error 'provide/contract
+                       (raise-syntax-error who
 					   (format "expected either a single variable or a sequence of variables to follow ~a"
 						   (syntax-e #'exists))
                                            provide-stx
@@ -193,44 +197,50 @@
                       (identifier? (syntax new-name)))
                  (begin
                    (add-to-dups-table #'new-name)
-                   (cons (code-for-one-id provide-stx 
-                                          (syntax this-name) #f
-                                          (add-exists-binders (syntax contract) exists-binders)
-                                          (syntax new-name))
-                         (loop (cdr clauses) exists-binders)))]
+                   (if just-check-errors?
+                       (loop (cdr clauses) exists-binders)
+                       (cons (code-for-one-id provide-stx 
+                                              (syntax this-name) #f
+                                              (add-exists-binders (syntax contract) exists-binders)
+                                              (syntax new-name))
+                             (loop (cdr clauses) exists-binders))))]
                 [(rename this-name new-name contract)
                  (identifier? (syntax this-name))
-                 (raise-syntax-error 'provide/contract 
+                 (raise-syntax-error who 
                                      "malformed rename clause, expected an identifier" 
                                      provide-stx
                                      (syntax new-name))]
                 [(rename this-name new-name contract)
                  (identifier? (syntax new-name))
-                 (raise-syntax-error 'provide/contract 
+                 (raise-syntax-error who 
                                      "malformed rename clause, expected an identifier" 
                                      provide-stx
                                      (syntax this-name))]
                 [(rename . _)
-                 (raise-syntax-error 'provide/contract "malformed rename clause" provide-stx clause)]
+                 (raise-syntax-error who "malformed rename clause" provide-stx clause)]
                 [(struct struct-name ((field-name contract) ...))
                  (and (well-formed-struct-name? (syntax struct-name))
                       (andmap identifier? (syntax->list (syntax (field-name ...)))))
-                 (let ([sc (build-struct-code provide-stx
-                                              (syntax struct-name)
-                                              (syntax->list (syntax (field-name ...)))
-                                              (map (λ (x) (add-exists-binders x exists-binders))
-                                                   (syntax->list (syntax (contract ...)))))])
+                 (begin
                    (add-to-dups-table #'struct-name)
-                   (cons sc (loop (cdr clauses) exists-binders)))]
+                   (if just-check-errors?
+                       (loop (cdr clauses) exists-binders)
+                       (let ([sc (build-struct-code provide-stx
+                                                    (syntax struct-name)
+                                                    (syntax->list (syntax (field-name ...)))
+                                                    (map (λ (x) (add-exists-binders x exists-binders))
+                                                         (syntax->list (syntax (contract ...)))))])
+                         (cons sc (loop (cdr clauses) exists-binders)))))]
                 [(struct name)
                  (identifier? (syntax name))
-                 (raise-syntax-error 'provide/contract
+                 (raise-syntax-error who
                                      "missing fields"
                                      provide-stx
                                      clause)]
                 [(struct name . rest)
                  (not (well-formed-struct-name? (syntax name)))
-                 (raise-syntax-error 'provide/contract "name must be an identifier or two identifiers with parens around them"
+                 (raise-syntax-error who
+                                     "name must be an identifier or two identifiers with parens around them"
                                      provide-stx
                                      (syntax name))]
                 [(struct name (fields ...))
@@ -240,21 +250,21 @@
                                 (identifier? (syntax x)) 
                                 (void)]
                                [(x y) 
-                                (raise-syntax-error 'provide/contract
+                                (raise-syntax-error who
                                                     "malformed struct field, expected identifier"
                                                     provide-stx
                                                     (syntax x))]
                                [else
-                                (raise-syntax-error 'provide/contract
+                                (raise-syntax-error who
                                                     "malformed struct field"
                                                     provide-stx
                                                     field)]))
                            (syntax->list (syntax (fields ...))))
                  
                  ;; if we didn't find a bad field something is wrong!
-                 (raise-syntax-error 'provide/contract "internal error.1" provide-stx clause)]
+                 (raise-syntax-error who "internal error.1" provide-stx clause)]
                 [(struct name . fields)
-                 (raise-syntax-error 'provide/contract
+                 (raise-syntax-error who
                                      "malformed struct fields"
                                      provide-stx
                                      clause)]
@@ -262,19 +272,21 @@
                  (identifier? (syntax name))
                  (begin
                    (add-to-dups-table #'name)
-                   (cons (code-for-one-id provide-stx 
-                                          (syntax name) #f
-                                          (add-exists-binders (syntax contract)
-                                                              exists-binders)
-                                          #f)
-                         (loop (cdr clauses) exists-binders)))]
+                   (if just-check-errors?
+                       (loop (cdr clauses) exists-binders)
+                       (cons (code-for-one-id provide-stx 
+                                              (syntax name) #f
+                                              (add-exists-binders (syntax contract)
+                                                                  exists-binders)
+                                              #f)
+                             (loop (cdr clauses) exists-binders))))]
                 [(name contract)
-                 (raise-syntax-error 'provide/contract
+                 (raise-syntax-error who
                                      "expected identifier"
                                      provide-stx
                                      (syntax name))]
                 [unk
-                 (raise-syntax-error 'provide/contract
+                 (raise-syntax-error who
                                      "malformed clause"
                                      provide-stx
                                      (syntax unk))]))])))
@@ -355,7 +367,7 @@
            (let ([unknown-info
                   (λ (what names)
                     (raise-syntax-error
-                     'provide/contract
+                     who
                      (format "cannot determine ~a, found ~s" what names)
                      provide-stx
                      struct-name))])
@@ -375,7 +387,7 @@
            
            (unless (equal? (length selector-ids)
                            (length field-contract-ids))
-             (raise-syntax-error 'provide/contract
+             (raise-syntax-error who
                                  (format "found ~a field~a in struct, but ~a contract~a"
                                          (length selector-ids)
                                          (if (= 1 (length selector-ids)) "" "s")
@@ -415,7 +427,7 @@
                                      (string-length selector-str))]
                          [field-name-is (format "~a" (syntax-e field-name))])
                     (unless (equal? field-name-should-be field-name-is)
-                      (raise-syntax-error 'provide/contract
+                      (raise-syntax-error who
                                           (format "expected field name to be ~a, but found ~a"
                                                   field-name-should-be
                                                   field-name-is)
@@ -591,7 +603,7 @@
                     [(and (not (null? fields))
                           (not (last fields)))
                      (raise-syntax-error 
-                      'provide/contract
+                      who
                       "cannot determine the number of fields in super struct"
                       provide-stx
                       struct-name)]
@@ -604,7 +616,7 @@
               (let ([m (regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx)))])
                 (cond
                   [m (cadr m)]
-                  [else (raise-syntax-error 'contract-base.rkt
+                  [else (raise-syntax-error who
                                             "unable to cope with a struct supertype whose predicate doesn't end with `?'"
                                             orig-stx)]))))
        
@@ -720,7 +732,7 @@
                                'provide/contract-original-contract
                                (vector #'external-name #'ctrct))])
                  
-                 (lift-end-declaration
+                 (syntax-local-lift-module-end-declaration
                   #`(begin 
                       (unless extra-test
                         (contract contract-id id pos-module-source 'ignored 'id 
@@ -758,21 +770,25 @@
                 struct-id-mapping
                 selector-id
                 (id-for-one-id #f #f selector-id))))))
-       (for ([clause (in-list p/c-clauses)])
-         (syntax-case* clause (struct) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
-           [(struct a ((fld ctc) ...))
-            (identifier? #'a)
-            (add-struct-clause-to-struct-id-mapping #'a #f #'(fld ...))]
-           [(struct (a b) ((fld ctc) ...))
-            (add-struct-clause-to-struct-id-mapping #'a #'b #'(fld ...))]
-           [_ (void)]))
        
-       (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)])
-         (signal-dup-syntax-error)
-         (syntax 
-          (begin
-            (define pos-module-source (quote-module-name))
-            bodies ...))))]))
+       (cond
+         [just-check-errors?
+          (code-for-each-clause p/c-clauses)
+          (signal-dup-syntax-error)]
+         [else
+          (for ([clause (in-list p/c-clauses)])
+            (syntax-case* clause (struct) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
+              [(struct a ((fld ctc) ...))
+               (identifier? #'a)
+               (add-struct-clause-to-struct-id-mapping #'a #f #'(fld ...))]
+              [(struct (a b) ((fld ctc) ...))
+               (add-struct-clause-to-struct-id-mapping #'a #'b #'(fld ...))]
+              [_ (void)]))
+          (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)])
+            (syntax 
+             (begin
+               (define pos-module-source (quote-module-name))
+               bodies ...)))]))]))
 
 (define-syntax (provide/contract stx)
   (define s-l-c (syntax-local-context))
@@ -781,7 +797,7 @@
     #`(begin (define-values () (values))  ;; force us into the 'module' local context
              #,stx)]
    [(module) ;; the good case
-    (true-provide/contract stx syntax-local-lift-module-end-declaration)]
+    (true-provide/contract stx #f 'provide/contract)]
    [else ;; expression or internal definition
     (raise-syntax-error 'provide/contract 
                         (format "not allowed in a ~a context"
