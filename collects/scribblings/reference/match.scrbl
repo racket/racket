@@ -3,6 +3,7 @@
 
 @(define match-eval (make-base-eval))
 @(interaction-eval #:eval match-eval (require racket/match))
+@(interaction-eval #:eval match-eval (require (for-syntax racket/base)))
 
 @title[#:tag "match"]{Pattern Matching}
 
@@ -489,7 +490,40 @@ The first @racket[proc-expr] sub-expression must evaluate to a
 A transformer produced by a second @racket[proc-expr] sub-expression is
  used when @racket[id] is used in an expression context. Using the
  second @racket[proc-expr], @racket[id] can be given meaning both
- inside and outside patterns.}
+ inside and outside patterns.
+
+For example, to extend the pattern matcher and destructure syntax lists,
+@defs+int[
+  #:eval match-eval
+  ((define-match-expander syntax-list 
+     (lambda (stx)
+       (syntax-case stx ()
+         [(_ elts ...)
+          #'(? (lambda (x) (and (syntax? x)
+                                (list? (syntax->list x))))
+               (app syntax->list (list elts ...)))])))
+   (define (make-keyword-predicate keyword)
+     (lambda (stx)
+       (and (identifier? stx)
+            (free-identifier=? stx keyword))))
+   (define or-keyword? (make-keyword-predicate #'or))
+   (define and-keyword? (make-keyword-predicate #'and))
+  )
+
+  (match #'(or 3 4)
+    [(syntax-list (? or-keyword?) b c)
+     (list "OOORRR!" b c)]
+    [(syntax-list (? and-keyword?) b c)
+     (list "AAANND!" b c)])
+
+  (match #'(and 5 6)
+    [(syntax-list (? or-keyword?) b c)
+     (list "OOORRR!" b c)]
+    [(syntax-list (? and-keyword?) b c)
+     (list "AAANND!" b c)])
+ ]
+
+}
 
 
 @defparam[match-equality-test comp-proc (any/c any/c . -> . any)]{
