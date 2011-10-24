@@ -9460,6 +9460,9 @@ so that propagation occurs.
   (ctest #f flat-contract? (set/c (-> integer? integer?)))
   (ctest #t chaperone-contract? (set/c (-> integer? integer?)))
   
+  (ctest #t flat-contract? (list/c integer?))
+  (ctest #t chaperone-contract? (list/c (-> integer? integer?)))
+  
   ;; Make sure that impersonators cannot be used as the element contract in set/c.
   (contract-error-test
    'contract-error-test-set
