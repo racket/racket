@@ -14,7 +14,8 @@
          racket/private/class-internal
          (except-in syntax/parse id)
          unstable/function #;unstable/debug
-         (only-in srfi/1 split-at))
+         (only-in srfi/1 split-at)
+         (for-template "internal-forms.rkt"))
 
 (require (for-template scheme/base racket/private/class-internal))
 
@@ -229,6 +230,15 @@
                     (add-typeof-expr form t)
                     t)]))))
 
+(define (explicit-fail stx msg var)
+  (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
+         =>
+         (λ (t)
+           (tc-error/expr #:return (ret (Un)) #:stx stx
+                          (string-append (syntax-e msg) "; missing coverage of ~a")
+                          t))]
+         [else (tc-error/expr #:return (ret (Un)) #:stx stx (syntax-e msg))]))
+
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
   (--> syntax? tc-results? tc-results?)
@@ -255,6 +265,9 @@
            (unless ty
              (int-err "internal error: ignore-some"))
            (check-below ty expected))]
+        ;; explicit failure
+        [(quote-syntax ((~literal typecheck-fail-internal) stx msg:str var))
+         (explicit-fail #'stx #'msg #'var)]
         ;; data
         [(quote #f) (ret (-val #f) false-filter)]
         [(quote #t) (ret (-val #t) true-filter)]
@@ -349,7 +362,9 @@
          (unless ty
            (int-err "internal error: ignore-some"))
          ty)]
-
+      ;; explicit failure
+      [(quote-syntax ((~literal typecheck-fail-internal) stx msg var))
+       (explicit-fail #'stx #'msg #'var)]
       ;; data
       [(quote #f) (ret (-val #f) false-filter)]
       [(quote #t) (ret (-val #t) true-filter)]

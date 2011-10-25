@@ -822,3 +822,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
         (cond c.cond-clause
               ...
               [else body ...]))]))
+
+(define-syntax (typecheck-fail stx)
+  (syntax-parse stx    
+    [(_ orig msg:str #:covered-id var:id)
+     #'(quote-syntax (typecheck-fail-internal orig msg var))]
+    [(_ orig msg:str)
+     #'(quote-syntax (typecheck-fail-internal orig msg #f))]
+    [(_ orig #:covered-id var:id)
+     #'(quote-syntax (typecheck-fail-internal orig "Incomplete case coverage" var))]
+    [(_ orig)
+     #'(quote-syntax (typecheck-fail-internal orig "Incomplete case coverage" #f))]))

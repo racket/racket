@@ -17,5 +17,6 @@
  define-typed-struct/exec-internal
  assert-predicate-internal
  declare-refinement-internal
- :-internal)
+ :-internal
+ typecheck-fail-internal)
 

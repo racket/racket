@@ -43,4 +43,31 @@ program errors. These assertions behave like @racket[assert].
 @defproc[(index? [v any/c]) boolean?]{A predicate for the @racket[Index]
 type.}
 
+@defform*/subs[[(typecheck-fail orig-stx maybe-msg maybe-id)]
+               ([maybe-msg code:blank (code:line msg-string)]
+	        [maybe-id code:blank (code:line #:covered-id id)])]{
+Explicitly produce a type error, with the source location or
+@racket[orig-stx].  If @racket[msg-string] is present, it must be a literal string, it is used as
+the error message, otherwise the error message 
+@racket["Incomplete case coverage"] is used.
+If @racket[id] is present and has 
+type @racket[T], then the message @racket["missing coverage of T"] is added to
+the error message.   
+
+@examples[#:eval the-top-eval #:escape UNSYNTAX
+(define-syntax (cond* stx)
+  (syntax-case stx ()
+    [(_ x clause ...)
+     #`(cond clause ... [else (typecheck-fail #,stx "incomplete coverage"
+                                              #:covered-id x)])]))
+
+(define: (f [x  : (U String Integer)]) : Boolean
+  (cond* x
+         [(string? x) #t]
+         [(exact-nonnegative-integer? x) #f]))
+]
+
+}
+
 @(close-eval the-eval)
+@(close-eval the-top-eval)
