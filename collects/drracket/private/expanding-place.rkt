@@ -48,7 +48,8 @@
            (define path (vector-ref message 1))
            (define response-pc (vector-ref message 2))
            (define settings (vector-ref message 3))
-           (loop (new-job program-as-string path response-pc settings)
+           (define pc-status-expanding-place (vector-ref message 4))
+           (loop (new-job program-as-string path response-pc settings pc-status-expanding-place)
                  old-registry)]))))))
 
 (define (abort-job job)
@@ -66,7 +67,7 @@
 
 (struct exn:access exn:fail ())
 
-(define (new-job program-as-string path response-pc settings)
+(define (new-job program-as-string path response-pc settings pc-status-expanding-place)
   (define cust (make-custodian))
   (define exn-chan (make-channel))
   (define result-chan (make-channel))
@@ -121,6 +122,7 @@
            (define expanded (expand transformed-stx))
            (channel-put old-registry-chan 
                         (namespace-module-registry (current-namespace)))
+           (place-channel-put pc-status-expanding-place (void))
            (log-info "expanding-place.rkt: 10 expanded")
            (define handler-results
              (for/list ([handler (in-list handlers)])

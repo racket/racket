@@ -220,10 +220,13 @@ please adhere to these guidelines:
   
  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
  (online-expansion-running "Online expansion running")
- (only-raw-text-files-supported "Only pure text files supported")
- (abnormal-termination "Online expansion terminated abnormally")
+ (online-expansion-only-raw-text-files-supported "Only pure text files supported")
+ (online-expansion-abnormal-termination "Online expansion terminated abnormally")
+ (online-expansion-finished-successfully "Online expansion finished successfully")
+
  (jump-to-error "Jump to Error")
  (online-expansion-is-disabled "Online expansion is disabled")
+ ;; these next two show up in the bar along the bottom of the drracket window
  (online-expansion-pending "Online expansion pending ...")
  (online-expansion-finished "Online expansion finished") ;; note: there may still be errors in this case
   

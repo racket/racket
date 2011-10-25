@@ -28,9 +28,10 @@
 (define-runtime-path expanding-place.rkt "expanding-place.rkt")
 
 (define sc-online-expansion-running (string-constant online-expansion-running))
-(define sc-only-raw-text-files-supported (string-constant only-raw-text-files-supported))
-(define sc-abnormal-termination (string-constant abnormal-termination))
+(define sc-only-raw-text-files-supported (string-constant online-expansion-only-raw-text-files-supported))
+(define sc-abnormal-termination (string-constant online-expansion-abnormal-termination))
 (define sc-jump-to-error (string-constant jump-to-error))
+(define sc-finished-successfully (string-constant online-expansion-finished-successfully))
 
 (define op (current-output-port))
 (define (oprintf . args) (apply fprintf op args))
@@ -796,6 +797,11 @@
         (case bkg-state
           [(reader-in-defs-error) 'parens]
           [(running) (list "blue")]
+          [(finished-expansion) (list "purple")]
+          [(completed-successfully)
+           (if (null? bkg-colors)
+               (list "forestgreen")
+               (map (λ (x) (list-ref x 1)) bkg-colors))]
           [(nothing) (if (null? bkg-colors)
                          #f
                          (map (λ (x) (list-ref x 1)) bkg-colors))]
@@ -990,13 +996,15 @@
                         (define len (length colors-to-draw))
                         (for ([color (in-list colors-to-draw)]
                               [i (in-naturals)])
-                          (send dc set-brush color 'solid)
+                          (if color
+                              (send dc set-brush color 'solid)
+                              (send dc set-brush "black" 'transparent))
                           (send dc draw-arc 
                                 (- (/ cw 2) (/ ball-size 2))
                                 (- (/ ch 2) (/ ball-size 2))
                                 ball-size ball-size
-                                (* 2 pi (/ i len))
-                                (* 2 pi (/ (+ i 1) len))))]
+                                (+ (* pi 1/2) (* 2 pi (/ i len)))
+                                (+ (* pi 1/2) (* 2 pi (/ (+ i 1) len)))))]
                        [(eq? colors-to-draw 'parens)
                         (send dc draw-text parens-mismatch-str 
                               (- (/ cw 2) (/ tw 2))
@@ -1108,7 +1116,12 @@
   (define expanding-place #f)
   (define pending-thread #f)
   
-  (define (send-to-place editor-contents filename prefab-module-settings show-results)
+  (define (send-to-place editor-contents 
+                         filename 
+                         prefab-module-settings 
+                         show-results 
+                         tell-the-tab-show-bkg-running)
+    (tell-the-tab-show-bkg-running 'running sc-online-expansion-running)
     (unless expanding-place
       (set! expanding-place (dynamic-place expanding-place.rkt 'start))
       (place-channel-put expanding-place module-language-compile-lock)
@@ -1120,22 +1133,32 @@
     (set! pending-thread
           (thread (λ () 
                     (define-values (pc-in pc-out) (place-channel))
+                    (define-values (pc-status-drracket-place pc-status-expanding-place) (place-channel))
                     (define to-send
                       (vector-immutable editor-contents
                                         filename
                                         pc-in 
-                                        prefab-module-settings))
+                                        prefab-module-settings
+                                        pc-status-expanding-place))
                     (place-channel-put expanding-place to-send)
+                    (define us (current-thread))
+                    (thread (λ () 
+                              (define got-status-update (place-channel-get pc-status-drracket-place))
+                              (queue-callback
+                               (λ ()
+                                 (when (eq? us pending-thread)
+                                   (tell-the-tab-show-bkg-running
+                                    'finished-expansion
+                                    sc-online-expansion-running))))))
                     (define res (place-channel-get pc-out))
                     (when res
-                      (let ([t (current-thread)])
-                        (queue-callback
-                         (λ ()
-                           (when (eq? t pending-thread)
-                             (set! pending-thread #f)
-                             (when (getenv "PLTDRPLACEPRINT")
-                               (printf "PLTDRPLACEPRINT: got results back from the place\n"))
-                             (show-results res))))))))))
+                      (queue-callback
+                       (λ ()
+                         (when (eq? us pending-thread)
+                           (set! pending-thread #f)
+                           (when (getenv "PLTDRPLACEPRINT")
+                             (printf "PLTDRPLACEPRINT: got results back from the place\n"))
+                           (show-results res)))))))))
   
   (define (stop-place-running)
     (when expanding-place
@@ -1207,11 +1230,11 @@
               (send-to-place editor-contents
                              filename
                              (module-language-settings->prefab-module-settings settings)
-                             (λ (res) (show-results res)))
+                             (λ (res) (show-results res))
+                             (λ (a b) (send (get-tab) show-bkg-running a b)))
               (when status-line-open?
                 (clear-old-error)
-                (reset-frame-expand-error #t))
-              (send (get-tab) show-bkg-running 'running sc-online-expansion-running)))))
+                (reset-frame-expand-error #t))))))
       
       (define/private (fetch-data-to-send)
         (define str (make-string (last-position) #\space))
@@ -1312,7 +1335,7 @@
            (clear-old-error)
            (reset-frame-expand-error #f)]
           [(no-errors)
-           (send (get-tab) show-bkg-running 'nothing #f)
+           (send (get-tab) show-bkg-running 'completed-successfully sc-finished-successfully)
            (clear-old-error)
            (reset-frame-expand-error #f)]
           [(handler-results)
@@ -1327,7 +1350,7 @@
                                       (drracket:module-language-tools:online-expansion-handler-id o-e-h)))
                (when (equal? this-key that-key)
                  ((drracket:module-language-tools:online-expansion-handler-local-handler o-e-h) this val))))
-           (send (get-tab) show-bkg-running 'nothing #f)]
+           (send (get-tab) show-bkg-running 'completed-successfully sc-finished-successfully)]
           [else
            (error 'module-language.rkt "unknown response from the expanding place: ~s\n" res)]))
       

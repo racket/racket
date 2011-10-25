@@ -1506,7 +1506,7 @@ If the namespace does not, they are colored the unbound color.
               (send tab syncheck:clear-error-message)
               (send tab syncheck:clear-highlighting))
             
-            (send (send defs-text get-tab) add-bkg-running-color 'syncheck "forestgreen" cs-syncheck-running)
+            (send (send defs-text get-tab) add-bkg-running-color 'syncheck "orchid" cs-syncheck-running)
             (send defs-text syncheck:init-arrows)
             (let loop ([val val]
                        [i 0])
