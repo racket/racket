@@ -545,7 +545,7 @@
      (let* ([unrotated (translate-shape simple-shape)]
             [rotated (rotate-atomic θ unrotated)])
        (let-values ([(dx dy) 
-                     (c->xy (* (make-polar 1 (degrees->radians θ))
+                     (c->xy (* (degrees->complex θ)
                                (xy->c (translate-dx simple-shape)
                                       (translate-dy simple-shape))))])
          (make-translate dx dy rotated)))]))
@@ -748,8 +748,18 @@
     (make-point x y)))
 
 (define (rotate-c c θ)
-  (* (make-polar 1 (degrees->radians θ)) 
-     c))
+  (* (degrees->complex θ) c))
+
+(define (degrees->complex θ) 
+  (unless (and (<= 0 θ)
+               (< θ 360))
+    (error 'degrees->complex "~s" θ))
+  (case (modulo θ 360)
+    [(0)    1+0i]
+    [(90)   0+1i]
+    [(180) -1+0i]
+    [(270)  0-1i]
+    [else (make-polar 1 (degrees->radians θ))]))
 
 ;; rotate-xy : x,y angle -> x,y
 (define (rotate-xy x y θ)
