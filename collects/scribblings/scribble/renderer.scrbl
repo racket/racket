@@ -48,7 +48,7 @@ function to render a document.
                  [#:style-extra-files style-extra-files (listof path-string?) #f]
                  [#:extra-files extra-files (listof path-string?) #f]
                  [#:xrefs xrefs (listof xref?) null]
-                 [#:info-in-files info-in-files (listof path?) null]
+                 [#:info-in-files info-in-files (listof path-string?) null]
                  [#:info-out-file info-out-file (or/c #f path-string?) #f]
                  [#:redirect redirect (or/c #f string?) #f]
                  [#:redirect-main redirect-main (or/c #f string?) #f]

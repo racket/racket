@@ -21,7 +21,7 @@
            #:redirect (or/c #f string?)
            #:redirect-main (or/c #f string?)
            #:xrefs (listof xref?)
-           #:info-in-files (listof path?)
+           #:info-in-files (listof path-string?)
            #:info-out-file (or/c #f path-string?)
            #:quiet? any/c)
           . ->* . void?)])
