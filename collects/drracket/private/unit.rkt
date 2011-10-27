@@ -4165,7 +4165,7 @@ module browser threading seems wrong.
       
       (set! name-message (new drs-name-message% [parent name-panel]))
       (send name-message stretchable-width #t)
-      (send name-message set-allow-shrinking 200)
+      (send name-message set-allow-shrinking 160)
       [define teachpack-items null]
       [define break-button (void)]
       [define execute-button (void)]
