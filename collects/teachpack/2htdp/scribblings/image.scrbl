@@ -1224,6 +1224,8 @@ are represented as bitmaps, i.e., an array of colors (that can be quite large in
 This means that scaling and rotating them loses fidelity in the image and is significantly
 more expensive than with the other shapes.
 
+See also the @racketmodname[2htdp/planetcute] library.
+
 @defform/subs[(bitmap bitmap-spec)
               ([bitmap-spec rel-string
                             id])]{

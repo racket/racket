@@ -11,3 +11,4 @@
 @include-section["image.scrbl"]
 @include-section["universe.scrbl"]
 @include-section["port.scrbl"]
+@include-section["planetcute.scrbl"]
