@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base syntax/parse "internal.rkt")
+(require (for-syntax scheme/base syntax/parse "internal.rkt" "../utils/tc-utils.rkt")
          "../typecheck/internal-forms.rkt"
          (prefix-in t: "base-types-extra.rkt"))
 
@@ -12,12 +12,13 @@
     ;; and in that case, a `->' on the RHS does not need to be
     ;; explicitly parenthesized
     (syntax-parse stx #:literals (: t:->)
-      [(: id : x ...)
-       #:fail-unless (= 1 (length
-                           (for/list ([i (syntax->list #'(x ...))]
-                                      #:when (and (identifier? i)
-                                                  (free-identifier=? i #'t:->)))
-                                     i))) #f
+      [(: id (~and kw :) x ...)
+       #:fail-unless (for/first ([i (syntax->list #'(x ...))]
+                                 #:when (identifier? i)
+                                 #:when (free-identifier=? i #'t:->))
+                       i) 
+       #f
+       (add-disappeared-use #'kw)
        (syntax/loc stx (: id (x ...)))]
       [(: id : . more)
        (syntax/loc stx (: id . more))]
