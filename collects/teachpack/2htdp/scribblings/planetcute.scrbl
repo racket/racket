@@ -20,8 +20,8 @@
 @(interaction-eval #:eval pc-eval (require 2htdp/planetcute))
 
 The @racketmodname[2htdp/planetcute] library contains the 
-Planet Cute images:
-@url{http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html}.
+Planet Cute art by Daniel Cook (Lostgarden.com),
+@url{http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html},
 
 The images are designed to be overlaid with each other to build
 scenes for use in games. Here is an example image taken
