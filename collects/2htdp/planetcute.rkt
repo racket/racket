@@ -5,7 +5,7 @@
 
 (define-syntax (definitions stx)
   #`(begin
-      #,@(for/list ([img (in-list images)])
+      #,@(for/list ([img (in-list (apply append (map cdr images)))])
            (define req (string->symbol (format "2htdp/planetcute/~a" (name->filename img))))
            #`(begin
                (provide #,img)

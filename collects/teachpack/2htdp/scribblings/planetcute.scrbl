@@ -4,8 +4,11 @@
           "port.rkt"
           scribble/manual
           scribble/eval
-          (for-syntax racket/base)
           2htdp/image
+          racket/runtime-path
+          racket/draw
+          racket/class
+          (for-syntax racket/base)
           (for-label 2htdp/image
                      2htdp/planetcute))
 
@@ -20,8 +23,8 @@
 @(interaction-eval #:eval pc-eval (require 2htdp/planetcute))
 
 The @racketmodname[2htdp/planetcute] library contains the 
-Planet Cute art by Daniel Cook (Lostgarden.com),
-@url{http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html},
+@link["http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html"]{Planet Cute} 
+art by Daniel Cook (Lostgarden.com).
 
 The images are designed to be overlaid with each other to build
 scenes for use in games. Here is an example image taken
@@ -29,6 +32,8 @@ from the Planet Cute website.
 
 @racketblock+eval[#:eval 
                   pc-eval
+                  (code:comment "stacks its arguments on each")
+                  (code:comment "other, separated by 40 pixels")
                   (define (stack arg . args)
                     (cond
                       [(null? args) arg]
@@ -36,25 +41,42 @@ from the Planet Cute website.
                                         (apply stack args))]))]
 @interaction[#:eval 
              pc-eval
-             (scale
-              1
-              (beside/align
-               "bottom"
-               (stack wall-block-tall stone-block)
-               (stack character-cat-girl
-                      stone-block stone-block
-                      stone-block stone-block)
-               water-block
-               (stack grass-block dirt-block)
-               (stack grass-block dirt-block dirt-block)))]
+             (beside/align
+              "bottom"
+              (stack wall-block-tall stone-block)
+              (stack character-cat-girl
+                     stone-block stone-block
+                     stone-block stone-block)
+              water-block
+              (stack grass-block dirt-block)
+              (stack grass-block dirt-block dirt-block))]
 
 @(close-eval pc-eval)
-           
+
+The Planet Cute images also include some shadows that can improve the
+look of your game; see the @secref["pc:Shadows"] section for an overview
+of how to use them.
+
 @(require (for-syntax 2htdp/private/planetcute-image-list))
 @(define-syntax (defthings stx)
-   #`(begin
-       #,@(for/list ([img (in-list images)])
-            (define req (string->symbol (format "2htdp/planetcute/~a" (name->filename img))))
-            #`@defthing[#,img image?]{  @(bitmap #,req) })))
+   (syntax-case stx ()
+     [(_ what whatever ...)
+      (identifier? #'what)
+      (let* ([sym (syntax-e #'what)]
+             [sec-title (symbol->string sym)]
+             [these-images (cdr (assoc sym images))])
+        #`(begin
+            @section[#:tag #,(format "pc:~a" sec-title) #,sec-title]
+            whatever ...
+            #,@(for/list ([img (in-list these-images)])
+                 (define req (string->symbol (format "2htdp/planetcute/~a" (name->filename img))))
+                 #`@defthing[#,img image?]{  @(bitmap #,req) })))]))
 
-@defthings[]
+@(define-runtime-path PlanetCuteShadowTest.png "PlanetCuteShadowTest.png")
+
+@defthings[Characters]{}
+@defthings[Blocks]{}
+@defthings[Items]{}
+@defthings[Ramps]{}
+@defthings[Buildings]{}
+@defthings[Shadows]{@(make-object bitmap% PlanetCuteShadowTest.png)}
