@@ -2,17 +2,7 @@
 (provide images name->filename)
 
 (define (name->filename img)
-  (define-values (_ new-chars)
-    (for/fold ([cap-next? #t]
-               [chars '()])
-      ([c (in-string (format "~a" img))])
-      (values (equal? #\- c)
-              (cons (cond
-                      [(equal? c #\-) #\space]
-                      [cap-next? (char-upcase c)]
-                      [else c])
-                    chars))))
-  (format "~a.png" (apply string (reverse new-chars))))
+  (format "~a.png" img))
 
 (define images
   '((Characters
@@ -20,9 +10,9 @@
      character-cat-girl
      character-horn-girl
      character-pink-girl
-     character-princess-girl    
+     character-princess-girl
      enemy-bug
-     speechbubble)
+     speech-bubble)
 
     (Items
      chest-closed
@@ -39,7 +29,7 @@
      tree-tall
      tree-ugly
      yellow-star)
-    
+
     (Blocks
      brown-block
      dirt-block
@@ -57,7 +47,7 @@
      ramp-north
      ramp-south
      ramp-west)
-    
+
     (Buildings
      door-tall-closed
      door-tall-open
@@ -70,7 +60,7 @@
      roof-south
      roof-west
      window-tall)
-    
+
     (Shadows
      shadow-east
      shadow-north-east
