@@ -1253,11 +1253,11 @@ int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym
   return 0;
 }
 
-static Scheme_Object *make_uid()
+static Scheme_Object *make_uid(int in_rib)
 {
   char name[20];
 
-  sprintf(name, "env%d", env_uid_counter++);
+  sprintf(name, "%cnv%d", in_rib ? 'r' : 'e', env_uid_counter++);
   return scheme_make_symbol(name); /* uninterned! */
 }
 
@@ -1268,7 +1268,7 @@ Scheme_Object *scheme_env_frame_uid(Scheme_Comp_Env *env)
 
   if (!env->uid) {
     Scheme_Object *sym;
-    sym = make_uid();
+    sym = make_uid(env->flags & SCHEME_FOR_INTDEF);
     env->uid = sym;
   }
   return env->uid;
@@ -1314,7 +1314,7 @@ static void make_env_renames(Scheme_Comp_Env *env, int rcount, int rstart, int r
       else
 	uid = env->uids[rstart];
       if (!uid)
-	uid = make_uid();
+	uid = make_uid(env->flags & SCHEME_FOR_INTDEF);
     }
   }
   

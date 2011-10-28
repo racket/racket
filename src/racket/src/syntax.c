@@ -3090,14 +3090,35 @@ int scheme_explain_resolves = 1;
 # define EXPLAIN(x) /* empty */
 #endif
 
+XFORM_NONGCING static int is_from_rib(Scheme_Object *other_env) 
+{
+  /* The symbol for a renaming starts with "e" for a normal one
+     or "r" for one within a rib. */
+  if (SCHEME_SYMBOLP(other_env) && (SCHEME_SYM_VAL(other_env)[0] == 'r'))
+    return 1;
+  else
+    return 0;
+}
+
 static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env)
-/* Compares the marks in two wraps lists. A result of 2 means that the
-   result depended on a barrier env. For a rib-based renaming, we need
-   to check only up to the rib, and the barrier effect important for
-   when a rib-based renaming is layered with another renaming (such as
-   when an internal-definition-base local-expand is used to form a new
-   set of bindings, as in the unit form); simplification cleans up the
-   layers, so that we only need to check in ribs. */
+/* Compares the marks in two wraps lists. The `barrier_env' argument cuts
+   off the mark list if a rib containing a `barrier_env' renaming is found;
+   effectively, the barrier causes marks between the first and last instance
+   of the rib to be discarded, which is how re-expansion correctly matches
+   uses (perhaps macro-introduced) that have extra marks relative to their
+   bindings. For example, in
+       (begin-with-definitions
+         (define x 1)
+         (define-syntax-rule (m) x)
+         (m))
+   the expansion of `m' will have an extra mark relative to the binding. That
+   extra mark shouldn't prevent `(letrec ([x 1]) ...)' from binding the use of
+   `x' as expansion continues with the result of `begin-with-definitions'. Since
+   `local-expand' adds the int-def context before and after an expansion, the
+    extra mark can be discarded when checking the `letrec' layer of marks.
+   Note that it's ok to just cut off the marks at the ribs, because any
+   further differences in the mark lists would correspond to different renamings
+   within the rib. */
 {
   WRAP_POS awl;
   WRAP_POS bwl;
@@ -3110,6 +3131,8 @@ static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env
 
   WRAP_POS_COPY(awl, *_awl);
   WRAP_POS_COPY(bwl, *_bwl);
+
+  if (!is_from_rib(barrier_env)) barrier_env = scheme_false;
 
   /* A simple way to compare marks would be to make two lists of
      marks.  The loop below attempts to speed up that process by
