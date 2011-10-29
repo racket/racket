@@ -7,11 +7,14 @@ exec racket "$0" "$@"
 
 (require racket/list racket/file racket/match racket/system)
 
-(define testdir "/tmp/racket-installer-test")
-(define installer "/tmp/r.sh")
-
 (define (err fmt . args)
   (raise-user-error (format "Error: ~a" (apply format fmt args))))
+
+(define testdir "/tmp/racket-installer-test")
+(define installer
+  (match (current-command-line-arguments)
+    [(vector installer) installer]
+    [(vector _ ...) (err "usage: test-installer <instalelr-file-name>")]))
 
 (define (exe name [just-path? #f])
   (define path (or (find-executable-path name)
@@ -26,8 +29,8 @@ exec racket "$0" "$@"
 (when (directory-exists? testdir) (err "test directory exists: ~a" testdir))
 (make-directory testdir)
 (current-directory testdir)
-;; make identifiable prompts, predictable ls output, safe-for-play home
-(void (putenv "PS1" "sh> ") (putenv "COLUMNS" "72") (putenv "HOME" testdir))
+;; plain interaction, identifiable prompts, safe-for-play home
+(void (putenv "TERM" "dumb") (putenv "PS1" "sh> ") (putenv "HOME" testdir))
 
 (define (transcript)
   ;; the test transcript text:
@@ -35,15 +38,22 @@ exec racket "$0" "$@"
   ;; - `i' is for user input to send
   ;; - `r' is for a regexp
   ;; - `s' is a nested list to be spliced in
-  ;; - `N' is short for @r{[0-9.]+}
+  ;; - `N' is short for @r{(?:-?[0-9.]+)?}
   ;; - `...' makes the next match unanchored (so it's similar to a non-greedy
   ;;   ".*" regexp)
   (define (i . xs) `(i . ,xs))
   (define (r . xs) `(r . ,xs))
   (define (s . xs) `(s . ,xs))
   (define break 'break)
-  (define N @r{[0-9.]+})
+  (define N @r{(?:-?[0-9.]+)?})
   (define ... '...)
+  (define not-recommended
+    (let ([s (string-append
+              "*** This is a nightly build: such a unix-style distribution"
+              " is *not*\n"
+              "*** recommended because it cannot be used to install multiple"
+              " versions.\n")])
+      (format "(?:~a)?" (regexp-quote s))))
   @list{
     @; the first few puzzling interactions are testing that we generate the
     @; right expect code -- which requires regexp and $-quoting.
@@ -58,6 +68,8 @@ exec racket "$0" "$@"
     []{}blah*$x*
     sh> @i{pwd}
     @testdir
+    @; utilities
+    sh> @i{LS() { ls --width=72 -mF "$@"@""@";" }}
     @; proper testing begins here
     sh> @i{sh @installer}
     This program will extract and install Racket v@|N|.
@@ -72,22 +84,21 @@ exec racket "$0" "$@"
       (movable and erasable), possibly with external links into it -- this is
       often more convenient, especially if you want to install multiple
       versions or keep it in your home directory.
-    *** This is a nightly build: such a unix-style distribution is *not*
-    *** recommended because it cannot be used to install multiple versions.
+    @r{@not-recommended}@;
     Enter yes/no (default: no) > @i{bleh}
     Enter yes/no (default: no) > @i{foo}
     Enter yes/no (default: no) > @i{}
     @||
-    Where do you want to install the "racket-@N" directory tree?
-      1 - /usr/racket-@N [default]
-      2 - /usr/local/racket-@N
-      3 - ~/racket-@N (@|testdir|/racket-@N)
-      4 - ./racket-@N (here)
+    Where do you want to install the "racket@N" directory tree?
+      1 - /usr/racket@N [default]
+      2 - /usr/local/racket@N
+      3 - ~/racket@N (@|testdir|/racket@N)
+      4 - ./racket@N (here)
       Or enter a different "racket" directory to install in.
     > @i{4}
     @||
     Checking the integrity of the binary archive... ok.
-    Unpacking into "@|testdir|/racket-@N" (Ctrl+C to abort)...
+    Unpacking into "@|testdir|/racket@N" (Ctrl+C to abort)...
     Done.
     @||
     If you want to install new system links within the "bin" and
@@ -98,9 +109,9 @@ exec racket "$0" "$@"
     (default: skip links) > @i{}
     @||
     Installation complete.
-    sh> @i{ls -mF}
-    racket-@|N|/
-    sh> @i{ls -mF racket-*}
+    sh> @i{LS}
+    racket@|N|/
+    sh> @i{LS racket*}
     README, bin/, collects/, doc/, include/, lib/, man/
     sh> @i{sh @installer}
     @...
@@ -109,9 +120,9 @@ exec racket "$0" "$@"
     > @i{.}
     @||
     Checking the integrity of the binary archive... ok.
-    "@|testdir|/racket-@N" exists, delete? @i{n}
+    "@|testdir|/racket@N" exists, delete? @i{n}
     Aborting installation.
-    sh> @i{ls -mF racket-*}
+    sh> @i{LS racket*}
     README, bin/, collects/, doc/, include/, lib/, man/
     sh> @i{chmod 000 racket*}
     sh> @i{sh @installer}
@@ -121,11 +132,11 @@ exec racket "$0" "$@"
     > @i{./}
     @||
     Checking the integrity of the binary archive... ok.
-    "@|testdir|/racket-@N" exists, delete? @i{y}
-    Deleting old "@|testdir|/racket-@N"... @;
-      /bin/rm: cannot remove `@|testdir|/racket-@N': @;
+    "@|testdir|/racket@N" exists, delete? @i{y}
+    Deleting old "@|testdir|/racket@N"... @;
+      /bin/rm: cannot remove `@|testdir|/racket@N': @;
         Permission denied
-    Error: could not delete "@|testdir|/racket-@N".
+    Error: could not delete "@|testdir|/racket@N".
     sh> @i{chmod 755 racket*}
     sh> @i{sh @installer}
     @...
@@ -134,8 +145,8 @@ exec racket "$0" "$@"
     > @i{.}
     @||
     Checking the integrity of the binary archive... ok.
-    "@|testdir|/racket-@N" exists, delete? @i{y}
-    Deleting old "@|testdir|/racket-@N"... done.
+    "@|testdir|/racket@N" exists, delete? @i{y}
+    Deleting old "@|testdir|/racket@N"... done.
     @...
     (default: skip links) > @i{.}
     "@|testdir|/bin" does not exist, skipping.
@@ -167,18 +178,18 @@ exec racket "$0" "$@"
     "@|testdir|/share/man/man1" does not exist, skipping.
     @||
     Installation complete.
-    sh> @i{ls -mF .}
-    R/, bin/, racket-@|N|/
-    sh> @i{ls -mF R}
+    sh> @i{LS .}
+    R/, bin/, racket@|N|/
+    sh> @i{LS R}
     README, bin/, collects/, doc/, include/, lib/, man/
-    sh> @i{ls -mF bin}
+    sh> @i{LS bin}
     @s|{drracket@, gracket, gracket-text@, mred@, mred-text@, mzc@, mzpp@,
         mzscheme@, mztext@, pdf-slatex@, planet@, plt-games@, plt-help@,
         plt-r5rs@, plt-r6rs@, plt-web-server@, racket@, raco@, scribble@,
         setup-plt@, slatex@, slideshow@, swindle@, tex2page@}|
-    sh> @i{ls -l bin/ra*}
-    lrwxrwxrwx. @... bin/racket -> @|testdir|/R/bin/racket
-    lrwxrwxrwx. @... bin/raco -> @|testdir|/R/bin/raco
+    sh> @i{LS -l bin/ra*}
+    lrwxrwxrwx. @... bin/racket -> @|testdir|/R/bin/racket*
+    lrwxrwxrwx. @... bin/raco -> @|testdir|/R/bin/raco*
     sh> @i{sh @installer}
     @...
     Enter yes/no (default: no) > @i{}
@@ -190,8 +201,8 @@ exec racket "$0" "$@"
     @break
     Error: Aborting...
       (Removing installation files in @|testdir|/R1)
-    sh> @i{ls -mF}
-    R/, bin/, racket-@|N|/
+    sh> @i{LS}
+    R/, bin/, racket@|N|/
     sh> @i{sh @installer}
     @...
     Enter yes/no (default: no) > @i{}
@@ -203,8 +214,8 @@ exec racket "$0" "$@"
     @...
     (default: skip links) > @break
     Error: Aborting...
-    sh> @i{ls -mF}
-    R/, bin/, mmm/, racket-5.2.0.1/
+    sh> @i{LS}
+    R/, bin/, mmm/, racket@|N|/
     sh> @i{sh @installer}
     @...
     Enter yes/no (default: no) > @i{}
@@ -223,13 +234,13 @@ exec racket "$0" "$@"
     "/usr/local" is not writable, skipping links.
     @||
     Installation complete.
-    sh> @i{ls -mF}
+    sh> @i{LS}
     sh> @i{cd /}
     sh> @i{cd @testdir}
-    sh> @i{ls -mF}
+    sh> @i{LS}
     README, bin/, collects/, doc/, include/, lib/, man/
     sh> @i{rm -rf [a-zR]*}
-    sh> @i{ls -mF}
+    sh> @i{LS}
     sh> @i{sh @installer}
     @...
     Do you want a Unix-style distribution?
@@ -261,11 +272,11 @@ exec racket "$0" "$@"
     @||
     Target Directories:
       [e] Executables   @|testdir|/bin (will be created)
-      [r] Racket Code   @|testdir|/lib/racket-@|N|/collects (will be created)
-      [d] Core Docs     @|testdir|/share/racket-@|N|/doc (will be created)
+      [r] Racket Code   @|testdir|/lib/racket@|N|/collects (will be created)
+      [d] Core Docs     @|testdir|/share/racket@|N|/doc (will be created)
       [l] C Libraries   @|testdir|/lib (will be created)
-      [h] C headers     @|testdir|/include/racket-@|N| (will be created)
-      [o] Extra C Objs  @|testdir|/lib/racket-@|N| (will be created)
+      [h] C headers     @|testdir|/include/racket@|N| (will be created)
+      [o] Extra C Objs  @|testdir|/lib/racket@|N| (will be created)
       [m] Man Pages     @|testdir|/share/man (will be created)
     Enter a letter to change an entry, or enter to continue.
     > @i{z}
@@ -273,43 +284,43 @@ exec racket "$0" "$@"
     > @i{}
     @||
     Checking the integrity of the binary archive... ok.
-    Unpacking into "@|testdir|/racket-@|N|-tmp-install" (Ctrl+C to abort)...
+    Unpacking into "@|testdir|/racket@|N|-tmp-install" (Ctrl+C to abort)...
     Done.
     Moving bin -> @|testdir|/bin
-    Moving collects -> @|testdir|/lib/racket-@|N|/collects
-    Moving doc -> @|testdir|/share/racket-@|N|/doc
-    Moving include -> @|testdir|/include/racket-@|N|
-    Moving lib -> @|testdir|/lib/racket-@|N|
+    Moving collects -> @|testdir|/lib/racket@|N|/collects
+    Moving doc -> @|testdir|/share/racket@|N|/doc
+    Moving include -> @|testdir|/include/racket@|N|
+    Moving lib -> @|testdir|/lib/racket@|N|
     Moving man -> @|testdir|/share/man
-    Moving README -> @|testdir|/share/racket-@|N|/doc/README
+    Moving README -> @|testdir|/share/racket@|N|/doc/README
     Writing uninstaller at: @|testdir|/bin/racket-uninstall...
-    Rewriting configuration file at: @|testdir|/lib/racket-@|N|/@;
+    Rewriting configuration file at: @|testdir|/lib/racket@|N|/@;
       collects/config/config.rkt...
-    Recompiling to @|testdir|/lib/racket-@|N|/@;
+    Recompiling to @|testdir|/lib/racket@|N|/@;
       collects/config/compiled/config_rkt.zo...
     @||
     Installation complete.
-    sh> @i{ls -mF}
+    sh> @i{LS}
     bin/, include/, lib/, share/
-    sh> @i{ls -mF bin}
+    sh> @i{LS bin}
     drracket*, gracket*, gracket-text*, mred*, mred-text*, mzc*, mzpp*,
     mzscheme*, mztext*, pdf-slatex*, planet*, plt-games*, plt-help*,
     plt-r5rs*, plt-r6rs*, plt-web-server*, racket*, racket-uninstall*,
     raco*, scribble*, setup-plt*, slatex*, slideshow*, swindle*, tex2page*
-    sh> @i{ls -mF include && ls -mF lib && ls -mF share}
-    racket-@|N|/
-    racket-@|N|/
-    man/, racket-@|N|/
-    sh> @i{ls -mF include/r*}
+    sh> @i{LS include && LS lib && LS share}
+    racket@|N|/
+    racket@|N|/
+    man/, racket@|N|/
+    sh> @i{LS include/r*}
     escheme.h, ext.exp, mzconfig.h, mzscheme3m.exp, scheme.h, schemef.h,
     schemegc2.h, schemex.h, schemexm.h, schexn.h, schgc2obj.h, schthread.h,
     schvers.h, sconfig.h, stypes.h, uconfig.h
-    sh> @i{ls -mF lib/r*}
+    sh> @i{LS lib/r*}
     buildinfo, collects/, libfit.so*, mzdyn3m.o, starter*
-    sh> @i{ls -mF share/r* && ls -mF share/r*/doc}
+    sh> @i{LS share/r* && LS share/r*/doc}
     doc/
     README, @... xrepl/
-    sh> @i{ls -mF share/man && ls -mF share/man/man1}
+    sh> @i{LS share/man && LS share/man/man1}
     man1/
     drracket.1, gracket.1, mred.1, mzc.1, mzscheme.1, plt-help.1, racket.1,
     raco.1, setup-plt.1, tex2page.1
@@ -330,11 +341,11 @@ exec racket "$0" "$@"
     @||
     Target Directories:
       [e] Executables   @|testdir|/bin (exists)
-      [r] Racket Code   @|testdir|/lib/racket-@|N|/collects (exists)
-      [d] Core Docs     @|testdir|/share/racket-@|N|/doc (exists)
+      [r] Racket Code   @|testdir|/lib/racket@|N|/collects (exists)
+      [d] Core Docs     @|testdir|/share/racket@|N|/doc (exists)
       [l] C Libraries   @|testdir|/lib (exists)
-      [h] C headers     @|testdir|/include/racket-@|N| (exists)
-      [o] Extra C Objs  @|testdir|/lib/racket-@|N| (exists)
+      [h] C headers     @|testdir|/include/racket@|N| (exists)
+      [o] Extra C Objs  @|testdir|/lib/racket@|N| (exists)
       [m] Man Pages     @|testdir|/share/man (exists)
     Enter a letter to change an entry, or enter to continue.
     > @i{m}
@@ -342,11 +353,11 @@ exec racket "$0" "$@"
     @||
     Target Directories:
       [e] Executables   @|testdir|/bin (exists)
-      [r] Racket Code   @|testdir|/lib/racket-@|N|/collects (exists)
-      [d] Core Docs     @|testdir|/share/racket-@|N|/doc (exists)
+      [r] Racket Code   @|testdir|/lib/racket@|N|/collects (exists)
+      [d] Core Docs     @|testdir|/share/racket@|N|/doc (exists)
       [l] C Libraries   @|testdir|/lib (exists)
-      [h] C headers     @|testdir|/include/racket-@|N| (exists)
-      [o] Extra C Objs  @|testdir|/lib/racket-@|N| (exists)
+      [h] C headers     @|testdir|/include/racket@|N| (exists)
+      [o] Extra C Objs  @|testdir|/lib/racket@|N| (exists)
       [m] Man Pages     @|testdir|/m (error: not a directory!)
     Enter a letter to change an entry, or enter to continue.
     > @i{}
@@ -358,11 +369,11 @@ exec racket "$0" "$@"
     @||
     Target Directories:
       [e] Executables   @|testdir|/bin (exists)
-      [r] Racket Code   @|testdir|/lib/racket-@|N|/collects (exists)
-      [d] Core Docs     @|testdir|/share/racket-@|N|/doc (exists)
+      [r] Racket Code   @|testdir|/lib/racket@|N|/collects (exists)
+      [d] Core Docs     @|testdir|/share/racket@|N|/doc (exists)
       [l] C Libraries   @|testdir|/lib (exists)
-      [h] C headers     @|testdir|/include/racket-@|N| (exists)
-      [o] Extra C Objs  @|testdir|/lib/racket-@|N| (exists)
+      [h] C headers     @|testdir|/include/racket@|N| (exists)
+      [o] Extra C Objs  @|testdir|/lib/racket@|N| (exists)
       [m] Man Pages     @|testdir|/man (will be created)
     Enter a letter to change an entry, or enter to continue.
     > @i{}
@@ -375,7 +386,7 @@ exec racket "$0" "$@"
     Checking the integrity of the binary archive... ok.
     @...
     Installation complete.
-    sh> @i{ls -mF}
+    sh> @i{LS}
     bin/, include/, lib/, m, man/, share/
     sh> @i{sh @installer}
     @...
@@ -400,7 +411,7 @@ exec racket "$0" "$@"
     Enter a letter to change an entry, or enter to continue.
     > @break
     Error: Aborting...
-    sh> @i{ls -mF}
+    sh> @i{LS}
     bin/, include/, lib/, m, man/
     sh> @i{exit}
     @||})
