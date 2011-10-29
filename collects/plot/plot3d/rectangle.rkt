@@ -3,15 +3,8 @@
 ;; Functions to create renderers for 3D histograms
 
 (require racket/match racket/list racket/contract racket/class
-         "../common/contract.rkt"
-         "../common/contract-doc.rkt"
-         "../common/parameters.rkt"
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/legend.rkt"
-         "../common/ticks.rkt"
-         "../common/format.rkt"
-         "../common/renderer.rkt")
+         plot/custom plot/utils
+         "../common/contract-doc.rkt")
 
 (provide rectangles3d discrete-histogram3d)
 
@@ -64,15 +57,19 @@
 ;; ===================================================================================================
 ;; Discrete histograms
 
-(define ((discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys) r)
+(define ((discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys x-far-ticks? y-far-ticks?) r)
   (match-define (vector _xi _yi (ivl z-min z-max)) r)
-  (define x-ticks
-    (for/list ([cat  (in-list c1s)] [x  (in-list tick-xs)])
-      (tick x #t (->plot-label cat))))
-  (define y-ticks
-    (for/list ([cat  (in-list c2s)] [y  (in-list tick-ys)])
-      (tick y #t (->plot-label cat))))
-  (values x-ticks y-ticks (default-z-ticks z-min z-max)))
+  (define-values (x-ticks x-far-ticks)
+    (let ([ts  (for/list ([cat  (in-list c1s)] [x  (in-list tick-xs)])
+                 (tick x #t (->plot-label cat)))])
+      (if x-far-ticks? (values empty ts) (values ts empty))))
+  (define-values (y-ticks y-far-ticks)
+    (let ([ts  (for/list ([cat  (in-list c2s)] [y  (in-list tick-ys)])
+                 (tick y #t (->plot-label cat)))])
+      (if y-far-ticks? (values empty ts) (values ts empty))))
+  (values x-ticks x-far-ticks
+          y-ticks y-far-ticks
+          (default-z-ticks z-min z-max) (default-z-far-ticks z-min z-max)))
 
 (define (adjust/gap i gap)
   (match-define (ivl x1 x2) i)
@@ -92,6 +89,8 @@
           [#:line-style line-style plot-pen-style/c (rectangle-line-style)]
           [#:alpha alpha (real-in 0 1) (rectangle-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:x-far-ticks? x-far-ticks? boolean? #f]
+          [#:y-far-ticks? y-far-ticks? boolean? #f]
           ) renderer3d?
   (match-define (list (vector cat1s cat2s zs) ...) cat-vals)
   (define rzs (filter regular? zs))
@@ -129,6 +128,6 @@
                                     (ivl 0 z)))
                           x1s x2s y1s y2s all-zs))
        (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
-                   (discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys)
+                   (discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys x-far-ticks? y-far-ticks?)
                    (rectangles3d-render-proc rects color style line-color line-width line-style
                                              alpha label)))]))

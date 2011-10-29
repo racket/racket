@@ -3,18 +3,8 @@
 ;; Renderers for contour lines and contour intervals
 
 (require racket/contract racket/class racket/match racket/list racket/flonum racket/vector
-         "../common/math.rkt"
-         "../common/draw.rkt"
-         "../common/marching-squares.rkt"
-         "../common/contract.rkt"
-         "../common/contract-doc.rkt"
-         "../common/legend.rkt"
-         "../common/sample.rkt"
-         "../common/parameters.rkt"
-         "../common/ticks.rkt"
-         "../common/vector.rkt"
-         "../common/format.rkt"
-         "../common/renderer.rkt")
+         plot/custom plot/utils
+         "../common/contract-doc.rkt")
 
 (provide contours contour-intervals)
 
@@ -56,11 +46,8 @@
             [z2  (in-vector zs0 1)]
             [z3  (in-vector zs1 1)]
             [z4  (in-vector zs1)])
-        (for/list ([line  (in-list (heights->lines (exact->inexact z)
-                                                   (exact->inexact z1) (exact->inexact z2)
-                                                   (exact->inexact z3) (exact->inexact z4)))])
-          (match-define (vector x1 y1 x2 y2) (scale-normalized-line line xa xb ya yb))
-          (send area put-line (vector x1 y1) (vector x2 y2)))))
+        (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+          (send/apply area put-line (map (λ (v) (vector-take v 2)) line)))))
     
     (cond [label  (line-legend-entries label zs labels colors widths styles)]
           [else   empty])))
@@ -122,13 +109,8 @@
                     [z2  (in-vector zs0 1)]
                     [z3  (in-vector zs1 1)]
                     [z4  (in-vector zs1)])
-           (for/list ([poly  (in-list (heights->mid-polys (exact->inexact za) (exact->inexact zb)
-                                                          (exact->inexact z1) (exact->inexact z2)
-                                                          (exact->inexact z3) (exact->inexact z4)))])
-             (cond [(equal? poly 'full)  (list (vector xa ya) (vector xa yb)
-                                               (vector xb yb) (vector xb ya))]
-                   [else  (map (λ (v) (vector-take v 2))
-                               (scale-normalized-poly poly xa xb ya yb))])))))
+           (for/list ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
+             (map (λ (v) (vector-take v 2)) poly)))))
       
       (define (draw-polys)
         (for ([poly  (in-list polys)])

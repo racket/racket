@@ -2,9 +2,10 @@
 
 ;; Extra drawing, font, color and style functions.
 
-(require racket/draw racket/class racket/vector racket/match racket/list racket/contract
-         "math.rkt"
-         "contract.rkt" "contract-doc.rkt")
+(require racket/draw racket/class racket/match racket/list racket/contract
+         "contract.rkt"
+         "contract-doc.rkt"
+         "sample.rkt")
 
 (provide (all-defined-out))
 
@@ -57,7 +58,7 @@
 
 (define (color%? c) (is-a? c color%))
 
-(defproc (->color [c color/c]) (list/c real? real? real?)
+(define (->color c)
   (match c
     [(? color%?)  (list (send c red) (send c green) (send c blue))]
     [(? string?)  (define color (send the-color-database find-color c))
@@ -81,7 +82,7 @@
      (160 32 240)     ; magenta
      (160 160 160)))  ; gray
 
-(defproc (->pen-color [c plot-color/c]) (list/c real? real? real?)
+(define (->pen-color c)
   (cond [(exact-integer? c)  (vector-ref pen-colors (remainder (abs c) 8))]
         [else                (->color c)]))
 
@@ -95,11 +96,11 @@
      (240 224 255)    ; magenta
      (212 212 212)))  ; gray
 
-(defproc (->brush-color [c plot-color/c]) (list/c real? real? real?)
+(define (->brush-color c)
   (cond [(exact-integer? c)  (vector-ref brush-colors (remainder (abs c) 8))]
         [else                (->color c)]))
 
-(defproc (->pen-style [s plot-pen-style/c]) symbol?
+(define (->pen-style s)
   (cond [(exact-integer? s)  (case (remainder (abs s) 5)
                                [(0)  'solid]
                                [(1)  'dot]
@@ -109,7 +110,7 @@
         [(symbol? s)  s]
         [else  (raise-type-error '->pen-style "symbol or integer" s)]))
 
-(defproc (->brush-style [s plot-brush-style/c]) symbol?
+(define (->brush-style s)
   (cond [(exact-integer? s)  (case (remainder (abs s) 7)
                                [(0)  'solid]
                                [(1)  'bdiagonal-hatch]

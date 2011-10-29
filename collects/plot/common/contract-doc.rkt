@@ -4,24 +4,13 @@
 
 (require racket/contract
          (for-syntax racket/base racket/list syntax/parse
-                     "serialize-syntax.rkt")
+                     "serialize-syntax.rkt"
+                     "contract-doc-stx.rkt")
          (prefix-in s. scribble/manual)
          (prefix-in s. scribble/core)
          (prefix-in s. scribble/html-properties))
 
 (provide defproc defparam defthing defcontract doc-apply)
-
-(begin-for-syntax
-  (struct proc+doc (proc-transformer doc-transformer)
-    #:property prop:procedure (λ (p stx) ((proc+doc-proc-transformer p) stx)))
-  
-  (define-syntax-class argument-spec
-    #:description "argument specification"
-    (pattern [name:id contract:expr])
-    (pattern [name:id contract:expr default:expr])
-    (pattern [kw:keyword name:id contract:expr])
-    (pattern [kw:keyword name:id contract:expr default:expr]))
-  )
 
 (define-for-syntax (make-proc+doc id-stx doc-transformer)
   (proc+doc

@@ -18,10 +18,13 @@
 (provide (all-from-out "common/ticks.rkt"))
 
 (require "common/math.rkt")
-(provide (contract-out (struct ivl ([min (or/c real? #f)] [max (or/c real? #f)]))))
+(provide (struct-out ivl))
 
-(require "common/renderer.rkt")
-(provide renderer2d? renderer3d?)
+(require "common/plot-element.rkt")
+(provide plot-element? non-renderer? renderer2d? renderer3d?)
+
+(require "common/non-renderer.rkt")
+(provide (all-from-out "common/non-renderer.rkt"))
 
 ;; ===================================================================================================
 ;; 2D exports

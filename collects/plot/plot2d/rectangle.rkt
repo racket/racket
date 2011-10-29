@@ -3,15 +3,9 @@
 ;; The histogram renderer.
 
 (require racket/match racket/contract racket/class racket/list
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/format.rkt"
-         "../common/ticks.rkt"
-         "../common/contract.rkt"
+         plot/custom plot/utils
          "../common/contract-doc.rkt"
-         "../common/legend.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt")
+         "../common/utils.rkt")
 
 (provide rectangles area-histogram discrete-histogram)
 
@@ -96,12 +90,14 @@
 ;; ===================================================================================================
 ;; Discrete histograms
 
-(define ((discrete-histogram-ticks-fun cats tick-xs) r)
+(define ((discrete-histogram-ticks-fun cats tick-xs far-ticks?) r)
   (match-define (vector _ (ivl y-min y-max)) r)
-  (define x-ticks
-    (for/list ([cat  (in-list cats)] [x  (in-list tick-xs)])
-      (tick x #t (->plot-label cat))))
-  (values x-ticks (default-y-ticks y-min y-max)))
+  (define-values (x-ticks x-far-ticks)
+    (let ([ticks  (for/list ([cat  (in-list cats)] [x  (in-list tick-xs)])
+                    (tick x #t (->plot-label cat)))])
+      (if far-ticks? (values empty ticks) (values ticks empty))))
+  (values x-ticks x-far-ticks
+          (default-y-ticks y-min y-max) (default-y-far-ticks y-min y-max)))
 
 (defproc (discrete-histogram
           [cat-vals (listof (vector/c any/c real?))]
@@ -115,6 +111,7 @@
           [#:line-style line-style plot-pen-style/c (rectangle-line-style)]
           [#:alpha alpha (real-in 0 1) (rectangle-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:far-ticks? far-ticks? boolean? #f]
           ) renderer2d?
   (match-define (list (vector cats ys) ...) cat-vals)
   (define rys (filter regular? ys))
@@ -133,6 +130,6 @@
        (define tick-xs (linear-seq x-min x-max n #:start? #f #:end? #f))
        (renderer2d
         (vector (ivl x-min x-max) (ivl y-min y-max)) #f
-        (discrete-histogram-ticks-fun cats tick-xs)
+        (discrete-histogram-ticks-fun cats tick-xs far-ticks?)
         (rectangles-render-proc (map (λ (x-ivl y) (vector x-ivl (ivl 0 y))) x-ivls ys)
                                 color style line-color line-width line-style alpha label)))]))

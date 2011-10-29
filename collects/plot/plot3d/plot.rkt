@@ -6,14 +6,14 @@
          unstable/lazy-require
          (for-syntax racket/base)
          "../common/math.rkt"
-         "../common/vector.rkt"
          "../common/file-type.rkt"
          "../common/area.rkt"
          "../common/contract.rkt"
          "../common/contract-doc.rkt"
          "../common/parameters.rkt"
          "../common/deprecation-warning.rkt"
-         "../common/renderer.rkt"
+         "../common/plot-element.rkt"
+         "../common/non-renderer.rkt"
          "../common/utils.rkt"
          "area.rkt")
 
@@ -27,7 +27,7 @@
 ;; ===================================================================================================
 ;; Plot to a given device context
 
-(defproc (plot3d/dc [renderer-tree  (treeof renderer3d?)]
+(defproc (plot3d/dc [renderer-tree  (treeof (or/c renderer3d? non-renderer?))]
                     [dc  (is-a?/c dc<%>)]
                     [x real?] [y real?] [width (>=/c 0)] [height (>=/c 0)]
                     [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
@@ -40,9 +40,13 @@
                     [#:z-label z-label (or/c string? #f) (plot-z-label)]
                     [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]) void?
   (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)))
-  (define rs (flatten (list renderer-tree)))
+  (define rs (for/list ([r  (flatten (list renderer-tree))])
+               (match r
+                 [(non-renderer bounds-rect bounds-fun ticks-fun)
+                  (renderer3d bounds-rect bounds-fun ticks-fun #f)]
+                 [_  r])))
   
-  (define plot-bounds-rect (renderer-bounds-fixpoint rs given-bounds-rect))
+  (define plot-bounds-rect (bounds-fixpoint rs given-bounds-rect))
   
   (when (or (not (rect-regular? plot-bounds-rect))
             (rect-zero-area? plot-bounds-rect))
@@ -52,15 +56,24 @@
   
   (define bounds-rect (rect-inexact->exact plot-bounds-rect))
   
-  (define-values (all-x-ticks all-y-ticks all-z-ticks)
-    (for/lists (all-x-ticks all-y-ticks all-z-ticks) ([r  (in-list rs)])
-      (define ticks-fun (renderer-ticks-fun r))
+  (define-values (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks all-z-ticks all-z-far-ticks)
+    (for/lists (all-x-ticks
+                all-x-far-ticks
+                all-y-ticks
+                all-y-far-ticks
+                all-z-ticks
+                all-z-far-ticks) ([r  (in-list rs)])
+      (define ticks-fun (plot-element-ticks-fun r))
       (cond [ticks-fun  (ticks-fun bounds-rect)]
-            [else  (values empty empty empty)])))
+            [else  (values empty empty empty empty empty empty)])))
   
   (define x-ticks (remove-duplicates (append* all-x-ticks)))
   (define y-ticks (remove-duplicates (append* all-y-ticks)))
   (define z-ticks (remove-duplicates (append* all-z-ticks)))
+  
+  (define x-far-ticks (remove-duplicates (append* all-x-far-ticks)))
+  (define y-far-ticks (remove-duplicates (append* all-y-far-ticks)))
+  (define z-far-ticks (remove-duplicates (append* all-z-far-ticks)))
   
   (parameterize ([plot3d-angle        angle]
                  [plot3d-altitude     altitude]
@@ -71,7 +84,8 @@
                  [plot-legend-anchor  legend-anchor])
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) bounds-rect)
     (define area (make-object 3d-plot-area%
-                   x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max
+                   x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
+                   x-min x-max y-min y-max z-min z-max
                    dc x y width height))
     (send area start-plot)
     
@@ -98,7 +112,7 @@
 ;; Plot to various other backends
 
 ;; Plot to a bitmap
-(defproc (plot3d-bitmap [renderer-tree (treeof renderer3d?)]
+(defproc (plot3d-bitmap [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                         [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                         [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                         [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
@@ -120,7 +134,7 @@
              #:z-label z-label #:legend-anchor legend-anchor)
   bm)
 
-(defproc (plot3d-pict [renderer-tree (treeof renderer3d?)]
+(defproc (plot3d-pict [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                       [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                       [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                       [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
@@ -145,7 +159,7 @@
       width height))
 
 ;; Plot to a snip
-(defproc (plot3d-snip [renderer-tree (treeof renderer3d?)]
+(defproc (plot3d-snip [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                       [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                       [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                       [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
@@ -170,7 +184,7 @@
    angle altitude))
 
 ;; Plot to a frame
-(defproc (plot3d-frame [renderer-tree (treeof renderer3d?)]
+(defproc (plot3d-frame [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                        [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                        [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                        [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
@@ -193,7 +207,7 @@
   (make-snip-frame snip width height (if title (format "Plot: ~a" title) "Plot")))
 
 ;; Plot to any supported kind of file
-(defproc (plot3d-file [renderer-tree (treeof renderer3d?)]
+(defproc (plot3d-file [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                       [output (or/c path-string? output-port?)]
                       [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
                       [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
@@ -242,7 +256,7 @@
   (void))
 
 ;; Plot to a frame or a snip, depending on the value of plot-new-window?
-(defproc (plot3d [renderer-tree (treeof renderer3d?)]
+(defproc (plot3d [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                  [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                  [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                  [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]

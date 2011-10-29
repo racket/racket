@@ -5,8 +5,7 @@
          "contract.rkt"
          "contract-doc.rkt")
 
-(provide (struct-out invertible-function)
-         id-function
+(provide id-function
          axis-transform/c
          id-transform
          apply-transform
@@ -20,8 +19,10 @@
          stretch-transform
          collapse-transform)
 
-(define-struct/contract invertible-function ([f (real? . -> . real?)] [finv (real? . -> . real?)])
-  #:transparent)
+(struct invertible-function (f g) #:transparent)
+
+(provide (contract-out (struct invertible-function ([f (real? . -> . real?)]
+                                                    [g (real? . -> . real?)]))))
 
 (define (invertible-compose f1 f2)
   (match-let ([(invertible-function f1 g1)  f1]

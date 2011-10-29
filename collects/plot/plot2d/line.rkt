@@ -3,15 +3,8 @@
 ;; Line renderers.
 
 (require racket/contract racket/class racket/match racket/math racket/list
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/ticks.rkt"
-         "../common/contract.rkt"
-         "../common/contract-doc.rkt"
-         "../common/legend.rkt"
-         "../common/sample.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt")
+         plot/custom plot/utils
+         "../common/contract-doc.rkt")
 
 (provide lines parametric polar function inverse)
 

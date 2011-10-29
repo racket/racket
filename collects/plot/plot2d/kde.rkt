@@ -1,16 +1,15 @@
 #lang racket/base
 
 (require racket/flonum racket/list racket/promise racket/math racket/contract
-         "../common/contract.rkt"
+         plot/custom plot/utils
          "../common/contract-doc.rkt"
-         "../common/math.rkt"
          "../common/utils.rkt"
-         "../common/sample.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt"
          "line.rkt")
 
 (provide kde density)
+
+(define (factorial n)
+  (if (zero? n) 1 (* n (factorial (sub1 n)))))
 
 ;; make-kde/windowed : (vectorof flonum) flonum flonum flonum -> (listof flonum) -> (listof flonum)
 ;; (can assume that xs is sorted)
@@ -21,9 +20,9 @@
       (define new-i (vector-find-index (λ (x) ((flabs (fl- x y)) . fl<= . max-dist)) xs i))
       (cond [new-i
              (define new-j (vector-find-index (λ (x) ((flabs (fl- x y)) . fl> . max-dist)) xs new-i))
-             (define p (flsum (for/list ([x  (in-vector xs new-i new-j)])
-                                (define z (fl/ (fl- x y) h))
-                                (fl* q (flexp (fl- 0.0 (fl* z z)))))))
+             (define p (apply + (for/list ([x  (in-vector xs new-i new-j)])
+                                  (define z (fl/ (fl- x y) h))
+                                  (fl* q (flexp (fl- 0.0 (fl* z z)))))))
              (values new-i (cons p ps))]
             [else
              (values 0 (cons 0.0 ps))])))
@@ -61,10 +60,10 @@
                  (define new-j (vector-find-index (λ (x) ((flabs (fl- x* x)) . fl> . max-dist))
                                                   xs new-i))
                  (for/list ([a  (in-range p)] [scale  (in-list scales)])
-                   (* scale (flsum (for/list ([x  (in-vector xs new-i new-j)])
-                                     (define zx (fl/ (fl- x x*) h))
-                                     (fl* q (fl* (flexp (fl- 0.0 (fl* zx zx)))
-                                                 (exact->inexact (expt zx a))))))))]
+                   (* scale (apply + (for/list ([x  (in-vector xs new-i new-j)])
+                                       (define zx (fl/ (fl- x x*) h))
+                                       (fl* q (fl* (flexp (fl- 0.0 (fl* zx zx)))
+                                                   (exact->inexact (expt zx a))))))))]
                 [else  (build-list p (λ _ 0.0))])))
       (values (if new-i new-i 0) (cons Cs Css))))
   
@@ -73,10 +72,10 @@
     (append*
      (for/list ([x*  (in-list x*s)] [Cs  (in-list (reverse Css))] [ys  (in-list yss)])
        (for/list ([y  (in-list ys)])
-         (flsum (for/list ([a  (in-range p)] [C  (in-list (force Cs))])
-                  (define zy (fl/ (fl- y x*) h))
-                  (fl* C (fl* (flexp (fl- 0.0 (fl* zy zy)))
-                              (exact->inexact (expt zy a)))))))))))
+         (apply + (for/list ([a  (in-range p)] [C  (in-list (force Cs))])
+                    (define zy (fl/ (fl- y x*) h))
+                    (fl* C (fl* (flexp (fl- 0.0 (fl* zy zy)))
+                                (exact->inexact (expt zy a)))))))))))
 
 ;; The number of series terms to compute
 ;; Making this odd ensures fast-gauss doesn't return negatives (the series partial sums alternate +/-)

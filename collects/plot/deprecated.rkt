@@ -5,7 +5,7 @@
          "common/deprecation-warning.rkt"
          "common/contract.rkt"
          "common/contract-doc.rkt"
-         "common/renderer.rkt"
+         "common/plot-element.rkt"
          "plot2d/line.rkt"
          "plot2d/contour.rkt"
          "plot3d/surface.rkt"

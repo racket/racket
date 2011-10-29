@@ -3,14 +3,8 @@
 ;; Renderers for points and other point-like things.
 
 (require racket/contract racket/class racket/match racket/math racket/list
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/contract.rkt"
+         plot/custom plot/utils
          "../common/contract-doc.rkt"
-         "../common/legend.rkt"
-         "../common/draw.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt"
          "clip.rkt")
 
 (provide points vector-field error-bars)

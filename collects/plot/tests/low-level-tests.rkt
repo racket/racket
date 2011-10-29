@@ -1,16 +1,10 @@
-#!/bin/sh
-#| -*- racket -*-
-exec gracket "$0" "$@"
-|#
 #lang racket
 
 (require rackunit racket/date
          plot plot/utils
          plot/common/date-time
          plot/common/vector
-         plot/common/utils
-         plot/common/parameter-list
-         plot/common/parameter-group)
+         plot/common/utils)
 
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #t) '(0 1))
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #f) '(0 2/3))

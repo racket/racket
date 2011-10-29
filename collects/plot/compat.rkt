@@ -6,7 +6,7 @@
          ;; Plotting
          "common/contract.rkt"
          "common/contract-doc.rkt"
-         "common/renderer.rkt"
+         "common/plot-element.rkt"
          "plot2d/area.rkt"
          "plot3d/area.rkt"
          (prefix-in new. (only-in "main.rkt"

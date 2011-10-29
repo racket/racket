@@ -177,6 +177,12 @@
 (time (plot3d (contour-intervals3d f5 -4 4 -4 4 #:label "z")))
 
 (time
+ (plot3d (contour-intervals3d (λ (x y) (+ x y)))
+         #:x-min #e100000000000000.0 #:x-max #e100000000000000.1
+         #:y-min #e100000000000000.0 #:y-max #e100000000000000.1
+         #:width 500))
+
+(time
  (plot3d (list (surface3d f5 0 4 -4 4 #:color '(128 255 160) #:alpha 0.5
                           #:label "x pos.")
                (contour-intervals3d f5 -4 0 -4 4

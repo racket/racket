@@ -7,6 +7,8 @@
 
 (provide 3d-plot-snip% make-3d-plot-snip)
 
+(define update-delay 33)  ; about 30 fps (just over)
+
 (struct render-thread (state command-channel response-channel thread) #:mutable #:transparent)
 
 (struct draw-command (angle altitude animating?) #:transparent)
@@ -57,6 +59,8 @@
   (channel-put com-ch (copy-command))
   (async-channel-get res-ch))
 
+(define (clamp x mn mx) (min* (max* x mn) mx))
+
 (define 3d-plot-snip%
   (class image-snip%
     (init-field make-bm angle altitude
@@ -99,7 +103,7 @@
     
     (define (start-timer)
       (stop-timer)
-      (set! timer (make-object timer% (update #t) 20)))
+      (set! timer (make-object timer% (update #t) update-delay)))
     
     (define/override (on-event dc x y editorx editory evt)
       (case (send evt get-event-type)

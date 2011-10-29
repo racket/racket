@@ -3,15 +3,8 @@
 ;; Renderers for intervals between functions.
 
 (require racket/contract racket/class racket/match racket/math racket/list
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/contract.rkt"
          "../common/contract-doc.rkt"
-         "../common/legend.rkt"
-         "../common/draw.rkt"
-         "../common/sample.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt")
+         plot/custom plot/utils)
 
 (provide lines-interval parametric-interval polar-interval function-interval inverse-interval)
 

@@ -1,13 +1,8 @@
 #lang racket/base
 
 (require racket/class racket/list racket/match racket/contract
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/contract.rkt"
-         "../common/contract-doc.rkt"
-         "../common/legend.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt")
+         plot/custom plot/utils
+         "../common/contract-doc.rkt")
 
 (provide points3d)
 

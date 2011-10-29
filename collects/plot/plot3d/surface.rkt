@@ -1,18 +1,8 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/flonum racket/contract
-         "../common/contract.rkt"
-         "../common/contract-doc.rkt"
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/marching-squares.rkt"
-         "../common/ticks.rkt"
-         "../common/draw.rkt"
-         "../common/legend.rkt"
-         "../common/sample.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt"
-         "area.rkt")
+         plot/custom plot/utils
+         "../common/contract-doc.rkt")
 
 (provide surface3d)
 

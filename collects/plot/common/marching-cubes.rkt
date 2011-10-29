@@ -2,8 +2,7 @@
 
 (require racket/flonum racket/fixnum racket/list racket/match
          (for-syntax racket/base racket/syntax racket/match racket/list)
-         "math.rkt"
-         "vector.rkt")
+         "math.rkt")
 
 (provide scale-normalized-poly
          heights->cube-polys)
@@ -11,7 +10,7 @@
 (define (scale-normalized-poly poly xa xb ya yb za zb)
   (for/list ([uvw  (in-list poly)])
     (match-define (vector u v w) uvw)
-    (vector (alpha-blend xb xa u) (alpha-blend yb ya v) (alpha-blend zb za w))))
+    (vector (blend xb xa u) (blend yb ya v) (blend zb za w))))
 
 (define-syntax-rule (solve-t d da db)
   (fl/ (fl- d da) (fl- db da)))

@@ -2,23 +2,23 @@
 
 ;; Data structure that represents a tick, and functions that produce ticks.
 
-(require racket/string racket/list racket/contract racket/pretty racket/match
+(require racket/string racket/list racket/contract racket/pretty racket/match racket/sequence
          "math.rkt"
-         "format.rkt"
-         "utils.rkt"
          "contract.rkt"
          "contract-doc.rkt"
-         "date-time.rkt"
+         "format.rkt"
+         "utils.rkt"
          "axis-transform.rkt"
+         "sample.rkt"
+         "date-time.rkt"
          "currency.rkt")
 
-(provide (struct-out pre-tick) (struct-out tick) (struct-out ticks) ticks-layout/c ticks-format/c
+(provide ;(struct-out pre-tick) (struct-out tick) (struct-out ticks)
+         ticks-layout/c ticks-format/c
          ;; No ticks
          no-ticks-layout no-ticks
          ;; Linear ticks
          linear-ticks-layout linear-ticks-format linear-ticks
-         ;; Uniform ticks
-         uniform-ticks-layout uniform-ticks
          ;; Log-scale ticks
          log-ticks-layout log-ticks-format log-ticks
          ;; Date ticks
@@ -36,25 +36,29 @@
          ;; Fractions
          fraction-ticks-format fraction-ticks
          ;; Combinators
-         ticks-scale ticks-add linear-scale
+         ticks-mimic ticks-scale ticks-add linear-scale
          )
 
-(define-struct/contract pre-tick ([value real?] [major? boolean?]) #:transparent)
-(define-struct/contract (tick pre-tick) ([label string?]) #:transparent)
+(struct pre-tick (value major?) #:transparent)
+(struct tick pre-tick (label) #:transparent)
+
+(struct ticks (layout format) #:transparent
+  #:property prop:procedure
+  (λ (t x-min x-max max-ticks)
+    (match-define (ticks layout format) t)
+    (define ts (layout x-min x-max max-ticks))
+    (match-define (list (pre-tick xs majors) ...) ts)
+    (map tick xs majors (format x-min x-max ts))))
 
 (defcontract ticks-layout/c
-  (real? real? exact-positive-integer? axis-transform/c . -> . (listof pre-tick?)))
+  (real? real? exact-positive-integer? . -> . (listof pre-tick?)))
 
 (defcontract ticks-format/c
   (real? real? (listof pre-tick?) . -> . (listof string?)))
 
-(define-struct/contract ticks ([layout ticks-layout/c] [format ticks-format/c]) #:transparent
-  #:property prop:procedure
-  (λ (t x-min x-max max-ticks transform)
-    (match-define (ticks layout format) t)
-    (define ts (layout x-min x-max max-ticks transform))
-    (match-define (list (pre-tick xs majors) ...) ts)
-    (map tick xs majors (format x-min x-max ts))))
+(provide (contract-out (struct pre-tick ([value real?] [major? boolean?]))
+                       (struct (tick pre-tick) ([value real?] [major? boolean?] [label string?]))
+                       (struct ticks ([layout ticks-layout/c] [format ticks-format/c]))))
 
 ;; ===================================================================================================
 ;; Helpers
@@ -135,7 +139,7 @@
 (defproc (linear-ticks-layout [#:base base (and/c exact-integer? (>=/c 2)) 10]
                               [#:divisors divisors (listof exact-positive-integer?) '(1 2 5)]
                               ) ticks-layout/c
-  (λ (x-min x-max max-ticks transform)
+  (λ (x-min x-max max-ticks)
     (define-values (major-xs minor-xs) (linear-tick-values x-min x-max max-ticks base divisors))
     (tick-values->pre-ticks major-xs minor-xs)))
 
@@ -156,49 +160,32 @@
 ;; No ticks
 
 (defproc (no-ticks-layout) ticks-layout/c
-  (λ (x-min x-max max-ticks transform) empty))
+  (λ (x-min x-max max-ticks) empty))
 
 (defproc (no-ticks) ticks?
   (ticks (no-ticks-layout) (linear-ticks-format)))
 
 ;; ===================================================================================================
-;; Uniform spacing ticks
-
-(defproc (uniform-ticks-layout [#:layout layout ticks-layout/c (linear-ticks-layout)]) ticks-layout/c
-  (λ (x-min x-max max-ticks transform)
-    (define ts (layout x-min x-max max-ticks transform))
-    (define xs (map pre-tick-value ts))
-    (define majors (map pre-tick-major? ts))
-    (define new-xs (map (invertible-function-finv (apply-transform transform x-min x-max)) xs))
-    (map pre-tick new-xs majors)))
-
-(defproc (uniform-ticks [#:layout layout ticks-layout/c (linear-ticks-layout)]) ticks?
-  (ticks (uniform-ticks-layout #:layout layout)
-         (linear-ticks-format)))
-
-;; ===================================================================================================
-;; Exponential ticks (use for log scale)
+;; Exponential ticks (for log scale)
 
 (defproc (log-ticks-layout [#:base base (and/c exact-integer? (>=/c 2)) 10]) ticks-layout/c
-  (λ (x-min x-max max-ticks transform)
+  (λ (x-min x-max max-ticks)
     (with-exact-bounds
      x-min x-max
      (when ((exact->inexact x-min) . <= . 0)
        (raise-type-error 'log-ticks-layout "positive real" 0 x-min x-max))
-     (define log-start (floor-log/base base x-min))
-     (define log-end (ceiling-log/base base x-max))
-     (define log-xs (for/list ([i  (in-range log-start (add1 log-end))]) i))
-     (define skip (max 1 (floor (/ (+ (length log-xs) 2) 5))))
+     (define log-start (ceiling-log/base base x-min))
+     (define log-end (floor-log/base base x-max))
+     (define skip (max 1 (ceiling (/ (+ 1 (- log-end log-start)) max-ticks))))
      (filter (λ (t) (<= x-min (pre-tick-value t) x-max))
              (append*
-              (for/list ([log-x  (in-list log-xs)]
+              (for/list ([log-x  (in-range (- log-start 1) (+ log-end 2))]
                          [m      (in-cycle (in-range skip))])
                 (define x (expt base log-x))
-                (cond [(= skip 1)  (for/list ([i  (in-range 0 (sub1 base) skip)])
+                (cond [(= skip 1)  (for/list ([i  (in-range 0 (sub1 base))])
                                      (pre-tick (+ x (* i x))
                                                (and (zero? i) (zero? m))))]
-                      [else  (list (cond [(zero? m)  (pre-tick x #t)]
-                                         [else  (pre-tick x #f)]))])))))))
+                      [else  (list (pre-tick x (zero? m)))])))))))
 
 (defproc (log-ticks-format [#:base base (and/c exact-integer? (>=/c 2)) 10]) ticks-format/c
   (define base-str (number->string base))
@@ -210,12 +197,13 @@
      (for/list ([t  (in-list ts)])
        (define x (pre-tick-value t))
        (define log-x (floor-log/base base x))
-       (define round? ((abs (- x (expt base log-x))) . < . epsilon))
-       (define major-str (format "~a~a" base-str (integer->superscript log-x)))
-       (cond [round?  major-str]
-             [else    (format "~a×~a"
-                              (real->plot-label (/ x (expt base log-x)) base-digits)
-                              major-str)])))))
+       (define (major-str)
+         (if (zero? log-x) "1" (format "~a~a" base-str (integer->superscript log-x))))
+       (cond [((abs (- x (expt base log-x))) . < . epsilon)  (major-str)]
+             [(zero? log-x)  (real->plot-label x base-digits)]
+             [else  (format "~a×~a"
+                            (real->plot-label (/ x (expt base log-x)) base-digits)
+                            (major-str))])))))
 
 (defproc (log-ticks [#:base base (and/c exact-integer? (>=/c 2)) 10]) ticks?
   (ticks (log-ticks-layout #:base base)
@@ -351,7 +339,7 @@
    (values (map date-round major-xs) empty)))
 
 (defproc (date-ticks-layout) ticks-layout/c
-  (λ (x-min x-max max-ticks transform)
+  (λ (x-min x-max max-ticks)
     (define-values (major-xs minor-xs) (date-tick-values x-min x-max max-ticks))
     (tick-values->pre-ticks major-xs minor-xs)))
 
@@ -362,9 +350,13 @@
      x-min x-max
      (define formatter (plot-date-formatter x-min x-max))
      (define xs (map pre-tick-value ts))
-     (define fmt-list (choose-format-list formatter fmt-lists xs))
-     (for/list ([x  (in-list xs)])
-       (string-append* (apply-formatter formatter fmt-list x))))))
+     (cond [(empty? xs)  empty]
+           [else
+            (define fmt-list (choose-format-list formatter fmt-lists xs))
+            (cons (string-append* (apply-formatter formatter fmt-list (first xs)))
+                  (for/list ([last-x  (in-list xs)] [x  (in-list (rest xs))])
+                    (define fmt-list (choose-format-list formatter fmt-lists (list last-x x)))
+                    (string-append* (apply-formatter formatter fmt-list x))))]))))
 
 (defproc (date-ticks [#:formats formats (listof string?) (date-ticks-formats)]) ticks?
   (ticks (date-ticks-layout)
@@ -386,7 +378,7 @@
     "~M:~f"
     "~Mm"
     
-    "~ss"))
+    "~fs"))
 
 (defparam time-ticks-formats (listof string?) descending-time-ticks-formats)
 
@@ -439,7 +431,7 @@
    (values major-xs empty)))
 
 (defproc (time-ticks-layout) ticks-layout/c
-  (λ (x-min x-max max-ticks transform)
+  (λ (x-min x-max max-ticks)
     (define-values (major-xs minor-xs) (time-tick-values x-min x-max max-ticks))
     (tick-values->pre-ticks major-xs minor-xs)))
 
@@ -450,9 +442,13 @@
      x-min x-max
      (define formatter (plot-time-formatter x-min x-max))
      (define xs (map pre-tick-value ts))
-     (define fmt-list (choose-format-list formatter fmt-lists xs))
-     (for/list ([x  (in-list xs)])
-       (string-append* (apply-formatter formatter fmt-list x))))))
+     (cond [(empty? xs)  empty]
+           [else
+            (define fmt-list (choose-format-list formatter fmt-lists xs))
+            (cons (string-append* (apply-formatter formatter fmt-list (first xs)))
+                  (for/list ([last-x  (in-list xs)] [x  (in-list (rest xs))])
+                    (define fmt-list (choose-format-list formatter fmt-lists (list last-x x)))
+                    (string-append* (apply-formatter formatter fmt-list x))))]))))
 
 (defproc (time-ticks [#:formats formats (listof string?) (time-ticks-formats)]) ticks?
   (ticks (time-ticks-layout)
@@ -566,9 +562,11 @@
                                  [(negative? x)  negative-format-list]
                                  [else           zero-format-list]))
        (define unit-x (/ (abs x) unit))
+       (define whole (inexact->exact (floor unit-x)))
+       (define frac (- unit-x whole))
        (string-append*
         (apply-formatter formatter format-list
-                         (amount-data sign (floor unit-x) (- unit-x (floor unit-x)) unit suffix)))))))
+                         (amount-data sign whole frac unit suffix)))))))
 
 (defproc (currency-ticks-layout) ticks-layout/c
   (linear-ticks-layout #:base 10 #:divisors '(1 2 4 5)))
@@ -613,11 +611,17 @@
 ;; ===================================================================================================
 ;; Tick combinators
 
+(defproc (ticks-mimic [thunk (-> ticks?)]) ticks?
+  (ticks (λ (x-min x-max max-ticks)
+           ((ticks-layout (thunk)) x-min x-max max-ticks))
+         (λ (x-min x-max ts)
+           ((ticks-format (thunk)) x-min x-max ts))))
+
 (defproc (ticks-scale [t ticks?] [fun invertible-function?]) ticks?
   (match-define (invertible-function f g) fun)
   (match-define (ticks layout format) t)
-  (ticks (λ (x-min x-max max-ticks transform)
-           (define ts (layout (f x-min) (f x-max) max-ticks transform))
+  (ticks (λ (x-min x-max max-ticks)
+           (define ts (layout (f x-min) (f x-max) max-ticks))
            (for/list ([t  (in-list ts)])
              (match-define (pre-tick x major?) t)
              (pre-tick (g x) major?)))
@@ -629,8 +633,8 @@
 
 (defproc (ticks-add [t ticks?] [xs (listof real?)] [major? boolean? #t]) ticks?
   (match-define (ticks layout format) t)
-  (ticks (λ (x-min x-max max-ticks transform)
-           (append (layout x-min x-max max-ticks transform)
+  (ticks (λ (x-min x-max max-ticks)
+           (append (layout x-min x-max max-ticks)
                    (for/list ([x  (in-list xs)])
                      (pre-tick x major?))))
          format))

@@ -2,8 +2,7 @@
 
 ;; Small library for clipping points, rectangles, lines and polygons against axial planes.
 
-(require racket/match racket/list
-         "../common/vector.rkt")
+(require racket/match racket/list)
 
 (provide point-in-bounds? clip-line clip-rectangle clip-lines clip-polygon)
 

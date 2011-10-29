@@ -1,16 +1,9 @@
 #lang racket/base
 
-(require racket/class racket/match racket/list racket/flonum racket/contract
+(require racket/class racket/match racket/list racket/flonum racket/contract racket/math
+         plot/custom plot/utils
          "../common/marching-cubes.rkt"
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/contract.rkt"
-         "../common/contract-doc.rkt"
-         "../common/draw.rkt"
-         "../common/legend.rkt"
-         "../common/sample.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt")
+         "../common/contract-doc.rkt")
 
 (provide isosurface3d isosurfaces3d polar3d)
 
@@ -63,8 +56,7 @@
     (when (not (empty? polys))
       (send area put-polygons
             (scale-normalized-polys polys xa xb ya yb za zb)
-            (center-coord (list (vector xa ya za)
-                                (vector xb yb zb))))))
+            (vcenter (list (vector xa ya za) (vector xb yb zb))))))
   
   (cond [label  (rectangle-legend-entry
                  label color 'solid line-color line-width line-style)]
@@ -152,7 +144,7 @@
          (when (not (empty? polys))
            (send area put-polygons
                  (scale-normalized-polys polys xa xb ya yb za zb)
-                 (center-coord (list (vector xa ya za) (vector xb yb zb)))))))
+                 (vcenter (list (vector xa ya za) (vector xb yb zb)))))))
      
      (cond
        [label  (rectangle-legend-entries
@@ -222,8 +214,7 @@
       (when (not (empty? polys))
         (send area put-polygons
               (scale-normalized-polys polys xa xb ya yb za zb)
-              (center-coord (list (vector xa ya za)
-                                  (vector xb yb zb))))))
+              (vcenter (list (vector xa ya za) (vector xb yb zb))))))
     (cond [(and (xb . > . 0) (ya . < . 0) (yb . > . 0))
            (let* ([yb  -0.00001]
                   [d3  (f xb yb za)]
@@ -256,7 +247,8 @@
                   [#:alpha alpha (real-in 0 1) (surface-alpha)]
                   [#:label label (or/c string? #f) #f]
                   ) renderer3d?
-  (define rvs (filter vregular? (sample-2d-polar f 0 2pi (* 2 samples) -1/2pi 1/2pi samples)))
+  (define rvs (filter vregular? (sample-2d-polar f 0 2pi (* 2 samples)
+                                                 (* -1/2 pi) (* 1/2 pi) samples)))
   (cond [(empty? rvs)  (renderer3d #f #f #f #f)]
         [else
          (match-define (list (vector rxs rys rzs) ...) rvs)

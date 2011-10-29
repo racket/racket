@@ -3,7 +3,6 @@
 (require racket/draw racket/class racket/contract racket/match racket/math racket/list racket/string
          "../common/area.rkt"
          "../common/ticks.rkt"
-         "../common/vector.rkt"
          "../common/contract.rkt"
          "../common/math.rkt"
          "../common/axis-transform.rkt"
@@ -17,7 +16,8 @@
 
 (define 2d-plot-area%
   (class plot-area%
-    (init-field rx-ticks ry-ticks x-min x-max y-min y-max)
+    (init-field rx-ticks rx-far-ticks ry-ticks ry-far-ticks
+                x-min x-max y-min y-max)
     (init dc dc-x-min dc-y-min dc-x-size dc-y-size)
     (inherit
       set-alpha set-pen set-major-pen set-minor-pen set-brush set-background set-text-foreground
@@ -31,57 +31,13 @@
     
     (reset-drawing-params)
     
-    (define x-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks))
-    (define y-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks))
-    
-    (define (max-tick-label-width ts)
-      (apply max 0 (for/list ([t  (in-list ts)] #:when (pre-tick-major? t))
-                     (get-text-width (tick-label t)))))
-    
-    (define max-x-tick-label-width (max-tick-label-width x-ticks))
-    (define max-y-tick-label-width (max-tick-label-width y-ticks))
-    
     (define char-height (get-char-height))    
-    
-    (define last-x-tick-label-width
-      (let ([x-ticks  (filter pre-tick-major? x-ticks)])
-        (cond [(empty? x-ticks)  0]
-              [else  (get-text-width (tick-label (argmax pre-tick-value x-ticks)))])))
     
     (define dc-x-max (+ dc-x-min dc-x-size))
     (define dc-y-max (+ dc-y-min dc-y-size))
-    
-    (define area-x-min
-      (+ dc-x-min
-         (* 1/2 (plot-tick-size))                   ; y ticks
-         (pen-gap) max-y-tick-label-width           ; y tick labels
-         (if (plot-y-label) (* 3/2 char-height) 0)  ; y label
-         ))
-    
-    (define area-x-max
-      (- dc-x-max
-         (max (* 1/2 last-x-tick-label-width)  ; protruding x tick label
-              (* 1/2 (plot-tick-size)))        ; y ticks
-         ))
-    
-    (define area-y-min
-      (+ dc-y-min
-         (if (plot-title) (* 3/2 char-height) 0)  ; title
-         (max (* 1/2 char-height)                 ; protruding y tick label
-              (* 1/2 (plot-tick-size)))           ; x ticks
-         ))
-    
-    (define area-y-max
-      (- dc-y-max
-         (* 1/2 (plot-tick-size))                   ; x ticks
-         (pen-gap) char-height                      ; x tick labels
-         (if (plot-x-label) (* 3/2 char-height) 0)  ; x label
-         ))
-    
-    (define area-x-size (- area-x-max area-x-min))
-    (define area-y-size (- area-y-max area-y-min))
-    (define area-x-mid (* 1/2 (+ area-x-min area-x-max)))
-    (define area-y-mid (* 1/2 (+ area-y-min area-y-max)))
+    (define title-y-min
+      (cond [(and (plot-decorations?) (plot-title))  (+ dc-y-min (* 3/2 char-height))]
+            [else  dc-y-min]))
     
     (define x-size (- x-max x-min))
     (define y-size (- y-max y-min))
@@ -111,7 +67,9 @@
       (set! clipping? #f))
     
     (define/public (get-x-ticks) x-ticks)
+    (define/public (get-x-far-ticks) x-far-ticks)
     (define/public (get-y-ticks) y-ticks)
+    (define/public (get-y-far-ticks) y-far-ticks)
     
     (define/public (get-x-min) x-min)
     (define/public (get-x-max) x-max)
@@ -122,44 +80,6 @@
     (define/public (get-clip-bounds)
       (cond [clipping?  (values clip-x-min clip-x-max clip-y-min clip-y-max)]
             [else       (values x-min x-max y-min y-max)]))
-    
-    (define/public (get-area-x-min) area-x-min)
-    (define/public (get-area-x-max) area-x-max)
-    (define/public (get-area-y-min) area-y-min)
-    (define/public (get-area-y-max) area-y-max)
-    
-    (define/public (view->dc/x-size x)
-      (* x (/ area-x-size x-size)))
-    
-    (define/public (view->dc/y-size y)
-      (* y (/ area-y-size y-size)))
-    
-    (define/public (view->dc/angle a)
-      (- (atan (view->dc/y-size (sin a))
-               (view->dc/x-size (cos a)))))
-    
-    (define/public (view->dc/angle+mag a m)
-      (define dx (view->dc/x-size (* m (cos a))))
-      (define dy (view->dc/y-size (* m (sin a))))
-      (values (atan (- dy) dx) (sqrt (+ (sqr dx) (sqr dy)))))
-    
-    (define/public (dc->view/x-size x)
-      (* x (/ x-size area-x-size)))
-    
-    (define/public (dc->view/y-size y)
-      (* y (/ y-size area-y-size)))
-    
-    (define/public (dc->view/angle a)
-      (- (atan (dc->view/y-size (sin a))
-               (dc->view/x-size (cos a)))))
-    
-    (define x-zero (view->dc/x-size (- x-min)))
-    (define y-zero (view->dc/y-size (- y-min)))
-    
-    (define/public (view->dc xy)
-      (match-define (vector x y) xy)
-      (vector (+ area-x-min (+ x-zero (view->dc/x-size x)))
-              (- area-y-max (+ y-zero (view->dc/y-size y)))))
     
     (define identity-transforms?
       (and (equal? (plot-x-transform) id-transform)
@@ -175,17 +95,38 @@
            (match-define (vector x y) v)
            (vector (fx x) (fy y)))]))
     
-    (define/public (plot->dc v)
-      (view->dc (plot->view v)))
+    (define view->dc #f)
+    (define/public (plot->dc v) (view->dc (plot->view v)))
+    
+    (define (make-view->dc left right top bottom)
+      (define corners (list (vector x-min y-min) (vector x-min y-max)
+                            (vector x-max y-min) (vector x-max y-max)))
+      (match-define (list (vector xs ys) ...) (map plot->view corners))
+      (define view-x-min (apply min xs))
+      (define view-x-max (apply max xs))
+      (define view-y-min (apply min ys))
+      (define view-y-max (apply max ys))
+      
+      (define area-x-min (+ dc-x-min left))
+      (define area-x-max (- dc-x-max right))
+      (define area-y-min (+ dc-y-min top))
+      (define area-y-max (- dc-y-max bottom))
+      (define area-x-size (- area-x-max area-x-min))
+      (define area-y-size (- area-y-max area-y-min))
+      
+      (define area-per-view-x (/ area-x-size (- view-x-max view-x-min)))
+      (define area-per-view-y (/ area-y-size (- view-y-max view-y-min)))
+      (λ (v)
+        (match-define (vector x y) v)
+        (vector (+ area-x-min (* (- x x-min) area-per-view-x))
+                (- area-y-max (* (- y y-min) area-per-view-y)))))
+    
+    ;; Initial view->dc (draws labels and half of every tick off the allotted space on the dc)
+    (define init-top-margin (- title-y-min dc-y-min))
+    (set! view->dc (make-view->dc 0 0 init-top-margin 0))
     
     ;; ===============================================================================================
-    ;; Plot decoration
-    
-    (define (draw-borders)
-      (set-minor-pen)
-      (set-brush (plot-background) 'transparent)
-      (draw-rectangle (vector area-x-min area-y-min)
-                      (vector area-x-max area-y-max)))
+    ;; Tick and label constants
     
     (define (collapse-ticks ts dc-pos)
       (define (dc-dist t1 t2) (abs (- (dc-pos t1) (dc-pos t2))))
@@ -201,69 +142,222 @@
                                      "|"))
           (tick x major? label))))
     
-    (define collapsed-x-ticks
-      (collapse-ticks x-ticks (λ (t) (vector-ref (plot->dc (vector (pre-tick-value t) y-min)) 0))))
-    (define collapsed-y-ticks
-      (collapse-ticks y-ticks (λ (t) (vector-ref (plot->dc (vector x-min (pre-tick-value t))) 1))))
+    (define ((x-tick-dc-pos y) t)
+      (vector-ref (plot->dc (vector (pre-tick-value t) y)) 0))
     
-    (define (draw-x-ticks)
-      (define radius (* 1/2 (plot-tick-size)))
-      (define 1/2radius (* 1/2 radius))
-      (for ([t  (in-list collapsed-x-ticks)])
-        (match-define (tick x major? _) t)
-        (if major? (set-major-pen) (set-minor-pen))
-        (put-tick (vector x y-min) (if major? radius 1/2radius) 1/2pi)
-        (put-tick (vector x y-max) (if major? radius 1/2radius) 1/2pi)))
+    (define ((y-tick-dc-pos x) t)
+      (vector-ref (plot->dc (vector x (pre-tick-value t))) 1))
     
-    (define (draw-y-ticks)
-      (define radius (* 1/2 (plot-tick-size)))
-      (define 1/2radius (* 1/2 radius))
-      (for ([t  (in-list collapsed-y-ticks)])
-        (match-define (tick y major? _) t)
-        (if major? (set-major-pen) (set-minor-pen))
-        (put-tick (vector x-min y) (if major? radius 1/2radius) 0)
-        (put-tick (vector x-max y) (if major? radius 1/2radius) 0)))
+    (define x-ticks
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
+                      (x-tick-dc-pos y-min)))
     
-    (define (draw-x-tick-labels)
+    (define x-far-ticks
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
+                      (x-tick-dc-pos y-max)))
+    
+    (define y-ticks
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
+                      (y-tick-dc-pos x-min)))
+    
+    (define y-far-ticks
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
+                      (y-tick-dc-pos x-min)))
+    
+    (define draw-x-far-tick-labels? (not (and (plot-x-axis?) (equal? x-ticks x-far-ticks))))
+    (define draw-y-far-tick-labels? (not (and (plot-y-axis?) (equal? y-ticks y-far-ticks))))
+    
+    (define (max-tick-offset ts)
+      (cond [(empty? ts)  0]
+            [(ormap pre-tick-major? ts)  (+ (pen-gap) (* 1/2 (plot-tick-size)))]
+            [else  (+ (pen-gap) (* 1/4 (plot-tick-size)))]))
+    
+    (define max-x-tick-offset (if (plot-x-axis?) (max-tick-offset x-ticks) 0))
+    (define max-y-tick-offset (if (plot-y-axis?) (max-tick-offset y-ticks) 0))
+    (define max-x-far-tick-offset (if (plot-x-far-axis?) (max-tick-offset x-far-ticks) 0))
+    (define max-y-far-tick-offset (if (plot-y-far-axis?) (max-tick-offset y-far-ticks) 0))
+    
+    (define (max-tick-label-height ts)
+      (if (ormap pre-tick-major? ts) char-height 0))
+    
+    (define (max-tick-label-width ts)
+      (apply max 0 (for/list ([t  (in-list ts)] #:when (pre-tick-major? t))
+                     (get-text-width (tick-label t)))))
+    
+    (define max-x-tick-label-height (if (plot-x-axis?) (max-tick-label-height x-ticks) 0))
+    (define max-y-tick-label-width (if (plot-y-axis?) (max-tick-label-width y-ticks) 0))
+    (define max-x-far-tick-label-height (if (and (plot-x-far-axis?) draw-x-far-tick-labels?)
+                                            (max-tick-label-height x-far-ticks)
+                                            0))
+    (define max-y-far-tick-label-width (if (and (plot-y-far-axis?) draw-y-far-tick-labels?)
+                                           (max-tick-label-width y-far-ticks)
+                                           0))
+    
+    ;; ===============================================================================================
+    ;; Axis label parameters
+    
+    (define (get-x-label-params)
+      (define offset (vector 0 (+ max-x-tick-offset
+                                  max-x-tick-label-height
+                                  (* 1/2 char-height))))
+      (list (plot-x-label) (v+ (view->dc (vector (* 1/2 (+ x-min x-max)) y-min)) offset) 'top))
+    
+    (define (get-y-label-params)
+      (define offset (vector (+ max-y-tick-offset
+                                max-y-tick-label-width
+                                (* 1/2 char-height))
+                             0))
+      (list (plot-y-label) (v- (view->dc (vector x-min (* 1/2 (+ y-min y-max)))) offset)
+            'bottom (/ pi 2)))
+    
+    (define (get-x-far-label-params)
+      (define offset (vector 0 (+ max-x-far-tick-offset
+                                  max-x-far-tick-label-height
+                                  (* 1/2 char-height))))
+      (list (plot-x-far-label) (v- (view->dc (vector (* 1/2 (+ x-min x-max)) y-max)) offset) 'bottom))
+    
+    (define (get-y-far-label-params)
+      (define offset (vector (+ max-y-far-tick-offset
+                                max-y-far-tick-label-width
+                                (* 1/2 char-height))
+                             0))
+      (list (plot-y-far-label) (v+ (view->dc (vector x-max (* 1/2 (+ y-min y-max)))) offset)
+            'top (/ pi 2)))
+    
+    ;; ===============================================================================================
+    ;; Tick label parameters
+    
+    (define (get-x-tick-label-params)
       (define offset (vector 0 (+ (pen-gap) (* 1/2 (plot-tick-size)))))
-      (for ([t  (in-list collapsed-x-ticks)])
-        (match-define (tick x major? label) t)
-        (when (and major? ((string-length label) . > . 0))
-          (draw-text label (v+ (plot->dc (vector x y-min)) offset) 'top))))
+      (for/list ([t  (in-list x-ticks)] #:when (pre-tick-major? t))
+        (match-define (tick x _ label) t)
+        (list label (v+ (plot->dc (vector x y-min)) offset) 'top)))
     
-    (define (draw-y-tick-labels)
+    (define (get-y-tick-label-params)
       (define offset (vector (+ (pen-gap) (* 1/2 (plot-tick-size))) 0))
-      (for ([t  (in-list collapsed-y-ticks)])
-        (match-define (tick y major? label) t)
-        (when (and major? ((string-length label) . > . 0))
-          (draw-text label (v- (plot->dc (vector x-min y)) offset) 'right))))
+      (for/list ([t  (in-list y-ticks)] #:when (pre-tick-major? t))
+        (match-define (tick y _ label) t)
+        (list label (v- (plot->dc (vector x-min y)) offset) 'right)))
+    
+    (define (get-x-far-tick-label-params)
+      (define offset (vector 0 (+ (pen-gap) (* 1/2 (plot-tick-size)))))
+      (for/list ([t  (in-list x-far-ticks)] #:when (pre-tick-major? t))
+        (match-define (tick x _ label) t)
+        (list label (v- (plot->dc (vector x y-max)) offset) 'bottom)))
+    
+    (define (get-y-far-tick-label-params)
+      (define offset (vector (+ (pen-gap) (* 1/2 (plot-tick-size))) 0))
+      (for/list ([t  (in-list y-far-ticks)] #:when (pre-tick-major? t))
+        (match-define (tick y _ label) t)
+        (list label (v+ (plot->dc (vector x-max y)) offset) 'left)))
+    
+    ;; ===============================================================================================
+    ;; Tick parameters
+    
+    (define (get-tick-params)
+      (cond [(plot-decorations?)
+             (define radius (* 1/2 (plot-tick-size)))
+             (define 1/2radius (* 1/2 radius))
+             (append
+              (for/list ([t  (in-list (if (plot-x-axis?) x-ticks empty))])
+                (match-define (tick x major? _) t)
+                (list major? (plot->dc (vector x y-min)) (if major? radius 1/2radius) (* 1/2 pi)))
+              (for/list ([t  (in-list (if (plot-y-axis?) y-ticks empty))])
+                (match-define (tick y major? _) t)
+                (list major? (plot->dc (vector x-min y)) (if major? radius 1/2radius) 0))
+              (for/list ([t  (in-list (if (plot-x-far-axis?) x-far-ticks empty))])
+                (match-define (tick x major? _) t)
+                (list major? (plot->dc (vector x y-max)) (if major? radius 1/2radius) (* 1/2 pi)))
+              (for/list ([t  (in-list (if (plot-y-far-axis?) y-far-ticks empty))])
+                (match-define (tick y major? _) t)
+                (list major? (plot->dc (vector x-max y)) (if major? radius 1/2radius) 0)))]
+            [else  empty]))
+    
+    ;; ===============================================================================================
+    ;; Fixpoint margin computation
+    
+    (define (get-label-params)
+      (cond [(plot-decorations?)
+             (append (if (plot-x-label) (list (get-x-label-params)) empty)
+                     (if (plot-y-label) (list (get-y-label-params)) empty)
+                     (if (plot-x-far-label) (list (get-x-far-label-params)) empty)
+                     (if (plot-y-far-label) (list (get-y-far-label-params)) empty)
+                     (if (plot-x-axis?) (get-x-tick-label-params) empty)
+                     (if (plot-y-axis?) (get-y-tick-label-params) empty)
+                     (if (and (plot-x-far-axis?) draw-x-far-tick-labels?)
+                         (get-x-far-tick-label-params)
+                         empty)
+                     (if (and (plot-y-far-axis?) draw-y-far-tick-labels?)
+                         (get-y-far-tick-label-params)
+                         empty))]
+            [else  empty]))
+    
+    (define (new-margins left right top bottom label-params tick-params)
+      (match-define (list (vector label-xs label-ys) ...)
+        (append* (map (λ (params) (send/apply this get-text-corners params)) label-params)))
+      (match-define (list (vector tick-xs tick-ys) ...)
+        (append* (map (λ (params) (send/apply this get-tick-endpoints (rest params))) tick-params)))
+      (define xs (append label-xs tick-xs))
+      (define ys (append label-ys tick-ys))
+      
+      (define param-x-min (apply min dc-x-min xs))
+      (define param-x-max (apply max (sub1 dc-x-max) xs))
+      (define param-y-min (apply min title-y-min ys))
+      (define param-y-max (apply max (sub1 dc-y-max) ys))
+      
+      (values (+ left (- dc-x-min param-x-min))
+              (- right (- (sub1 dc-x-max) param-x-max))
+              (+ top (- title-y-min param-y-min))
+              (- bottom (- (sub1 dc-y-max) param-y-max))))
+    
+    (define-values (area-x-min right area-y-min bottom)
+      (for/fold ([left 0] [right 0] [top init-top-margin] [bottom 0]) ([i  (in-range 5)])
+        (define-values (new-left new-right new-top new-bottom)
+          (new-margins left right top bottom (get-label-params) (get-tick-params)))
+        (set! view->dc (make-view->dc new-left new-right new-top new-bottom))
+        ;(printf "margins: ~v ~v ~v ~v~n" new-left new-right new-top new-bottom)
+        (values new-left new-right new-top new-bottom)))
+    
+    (define area-x-max (- dc-x-max right))
+    (define area-y-max (- dc-y-max bottom))
+    
+    ;; ===============================================================================================
+    ;; Plot decoration
+    
+    (define (draw-labels)
+      (for ([params  (in-list (get-label-params))])
+        (send/apply this draw-text params)))
+    
+    (define (draw-ticks)
+      (for ([params  (in-list (get-tick-params))])
+        (match-define (list major? v r angle) params)
+        (if major? (set-major-pen) (set-minor-pen))
+        (send this draw-tick v r angle)))
     
     (define (draw-title)
-      (define-values (title-x-size _1 _2 _3)
-        (get-text-extent (plot-title)))
-      (draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top))
+      (when (and (plot-decorations?) (plot-title))
+        (draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top)))
     
-    (define (draw-x-label)
-      (match-define (vector x _)
-        (view->dc (vector (* 1/2 (+ x-min x-max)) 0)))
-      (draw-text (plot-x-label) (vector x dc-y-max) 'bottom))
+    (define (draw-borders)
+      (when (plot-decorations?)
+        (set-minor-pen)
+        (when (plot-x-axis?) (draw-line (vector area-x-min area-y-max)
+                                        (vector area-x-max area-y-max)))
+        (when (plot-x-far-axis?) (draw-line (vector area-x-min area-y-min)
+                                            (vector area-x-max area-y-min)))
+        (when (plot-y-axis?) (draw-line (vector area-x-min area-y-min)
+                                        (vector area-x-min area-y-max)))
+        (when (plot-y-far-axis?) (draw-line (vector area-x-max area-y-min)
+                                            (vector area-x-max area-y-max)))))
     
-    (define (draw-y-label)
-      (match-define (vector _ y)
-        (view->dc (vector 0 (* 1/2 (+ y-min y-max)))))
-      (draw-text (plot-y-label) (vector dc-x-min y) 'bottom (/ pi -2)))
-    
-    ;; -------------------------------------------------------------------------
+    ;; ===============================================================================================
     ;; Drawing
     
     (define/public (start-plot)
       (reset-drawing-params)
       (clear)
       (draw-borders)
-      (draw-x-ticks)
-      (draw-y-ticks)
-      (draw-x-tick-labels)
-      (draw-y-tick-labels))
+      (draw-ticks))
     
     (define/public (start-renderer rx-min rx-max ry-min ry-max)
       (reset-drawing-params)
@@ -277,9 +371,8 @@
       (clear-clipping-rect)
       (clip-to-none)
       (reset-drawing-params)
-      (when (plot-title) (draw-title))
-      (when (plot-x-label) (draw-x-label))
-      (when (plot-y-label) (draw-y-label)))
+      (draw-title)
+      (draw-labels))
     
     (define/public (put-legend legend-entries)
       (define gap-size (+ (pen-gap) (* 1/2 (plot-tick-size))))

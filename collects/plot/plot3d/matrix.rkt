@@ -3,14 +3,16 @@
 ;; A small rotation matrix library, used to transform plot coordinates into view coordinates.
 
 (require racket/match
-         "../common/vector.rkt"
          "../common/math.rkt")
 
-(provide (all-defined-out))
+(provide m3-apply m3-transpose m3* m3-rotate-z m3-rotate-x m3-scale)
+
+(define-syntax-rule (dot x1 y1 z1 x2 y2 z2) (+ (* x1 x2) (* y1 y2) (* z1 z2)))
 
 (define (m3-apply m v)
-  (match-define (vector v1 v2 v3) m)
-  (vector (vdot v1 v) (vdot v2 v) (vdot v3 v)))
+  (match-define (vector (vector v11 v12 v13) (vector v21 v22 v23) (vector v31 v32 v33)) m)
+  (match-define (vector x y z) v)
+  (vector (dot x y z v11 v12 v13) (dot x y z v21 v22 v23) (dot x y z v31 v32 v33)))
 
 (define (m3-transpose m)
   (match-define (vector (vector m11 m12 m13)
@@ -24,16 +26,6 @@
   (match-define (vector v1 v2 v3) m1)
   (define m (m3-transpose m2))
   (vector (m3-apply m v1) (m3-apply m v2) (m3-apply m v3)))
-
-#|
-(m3* #(#(1 2 3)
-       #(4 5 6)
-       #(7 8 9))
-     #(#(10 20 30)
-       #(40 50 60)
-       #(70 80 90)))
-#(#(300 360 420) #(660 810 960) #(1020 1260 1500))
-|#
 
 (define (m3-rotate-z theta)
   (define cos-theta (cos theta))

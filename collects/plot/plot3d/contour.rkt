@@ -1,17 +1,8 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/flonum racket/contract
-         "../common/contract.rkt"
-         "../common/contract-doc.rkt"
-         "../common/math.rkt"
-         "../common/vector.rkt"
-         "../common/marching-squares.rkt"
-         "../common/ticks.rkt"
-         "../common/draw.rkt"
-         "../common/legend.rkt"
-         "../common/sample.rkt"
-         "../common/parameters.rkt"
-         "../common/renderer.rkt")
+         plot/custom plot/utils
+         "../common/contract-doc.rkt")
 
 (provide contours3d contour-intervals3d)
 
@@ -48,15 +39,11 @@
           [z2  (in-vector zs0 1)]
           [z3  (in-vector zs1 1)]
           [z4  (in-vector zs1)])
-      (define lines (heights->lines (exact->inexact z)
-                                    (exact->inexact z1) (exact->inexact z2)
-                                    (exact->inexact z3) (exact->inexact z4)))
-      (for ([line  (in-list lines)])
-        (match-define (vector x1 y1 x2 y2) (scale-normalized-line line xa xb ya yb))
-        (send area put-line
-              (vector x1 y1 z) (vector x2 y2 z)
-              (center-coord (list (vector xa ya z1) (vector xb ya z2)
-                                  (vector xa yb z3) (vector xb yb z4)))))))
+      (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+        (match-define (list v1 v2) line)
+        (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
+                               (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+        (send area put-line v1 v2 center))))
   
   (cond [label  (line-legend-entries label zs labels colors widths styles)]
         [else   empty]))
@@ -120,14 +107,11 @@
           [z2  (in-vector zs0 1)]
           [z3  (in-vector zs1 1)]
           [z4  (in-vector zs1)])
-      (for ([poly  (in-list (heights->mid-polys (exact->inexact za) (exact->inexact zb)
-                                                (exact->inexact z1) (exact->inexact z2)
-                                                (exact->inexact z3) (exact->inexact z4)))])
-        (define rect (list (vector xa ya z1) (vector xb ya z2) (vector xb yb z3) (vector xa yb z4)))
-        (send area put-polygon
-              (cond [(equal? poly 'full)  rect]
-                    [else  (scale-normalized-poly poly xa xb ya yb)])
-              (center-coord rect)))))
+      (for ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
+        (define center (vector (* 1/2 (+ xa xb))
+                               (* 1/2 (+ ya yb))
+                               (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+        (send area put-polygon poly center))))
   
   ((contours3d-render-proc f levels samples contour-colors contour-widths contour-styles alphas #f)
    area)

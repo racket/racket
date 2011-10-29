@@ -2,10 +2,9 @@
 
 ;; Extra functions that can't be easily categorized (i.e. math, vector).
 
-(require racket/sequence racket/list racket/match)
+(require racket/sequence racket/list racket/math racket/flonum racket/match)
 
 (provide (all-defined-out))
-
 
 (define (sequence-take seq start end)
   (for/list ([e  (sequence-tail seq start)] 
@@ -48,12 +47,6 @@
 (define (transpose lsts)
   (apply map list lsts))
 
-(define (equal?* xs)
-  (cond [(empty? xs)         #f]
-        [(empty? (rest xs))  #t]
-        [else  (and (equal? (first xs) (second xs))
-                    (equal?* (rest xs)))]))
-
 (define (group-neighbors lst equiv?)
   (reverse
    (map reverse
@@ -65,39 +58,21 @@
                [(andmap (λ (e2) (equiv? e e2)) (first res))  (cons (cons e (first res)) (rest res))]
                [else  (list* (list e) res)]))]))))
 
-#;
-(define (parameterize-procedure t)
-  (define parameterization (current-parameterization))
-  (make-keyword-procedure
-   (lambda (kws kw-args . rest)
-     (call-with-parameterization
-      parameterization
-      (λ () (keyword-apply t kws kw-args rest))))))
-
-;; f : any -> any
-;; Returns a wrapper for 'f' that preserves most of the parameter values
-;; in the dynamic extent where 'parameterize-procedure' is applied.
-(define (parameterize-procedure f)
-  (struct apply-thread (channel thread) #:transparent)
-  (struct apply-command (kws kw-values rest) #:transparent)
-  (struct exception-response (exception) #:transparent)
-  (struct values-response (values) #:transparent)
-  ;; A synchronous channel for commands and responses
-  (define ch (make-channel))
-  ;; The command loop
-  (define (command-loop)
-    (match-define (apply-command kws kw-values rest) (channel-get ch))
-    (with-handlers ([(λ (e) #t)  (λ (e) (channel-put ch (exception-response e)))])
-      (channel-put ch (call-with-values (λ () (keyword-apply f kws kw-values rest))
-                                        (λ vals (values-response vals)))))
-    (command-loop))
-  ;; Save the thread in a struct so it'll get closed over
-  (define th (apply-thread ch (thread command-loop)))
-  ;; Return the wrapper
-  (make-keyword-procedure
-   (lambda (kws kw-args . rest)
-     (match-define (apply-thread ch _) th)
-     (channel-put ch (apply-command kws kw-args rest))
-     (match (channel-get ch)
-       [(exception-response e)  (raise e)]
-       [(values-response vals)  (apply values vals)]))))
+(define (bin-samples bin-bounds xs)
+  (let* ([bin-bounds  (filter (λ (x) (not (eqv? x +nan.0))) (remove-duplicates bin-bounds))]
+         [bin-bounds  (sort bin-bounds <)]
+         [x-min  (first bin-bounds)]
+         [x-max  (last bin-bounds)]
+         [xs  (filter (λ (x) (<= x-min x x-max)) xs)]
+         [xs  (sort xs <)])
+    (define-values (res rest-xs)
+      (for/fold ([res empty] [xs xs]) ([x1  (in-list bin-bounds)]
+                                       [x2  (in-list (rest bin-bounds))])
+        (define-values (lst rest-xs)
+          (let loop ([lst empty] [xs xs])
+            (if (and (not (empty? xs)) (<= x1 (first xs) x2))
+                (loop (cons (first xs) lst) (rest xs))
+                (values lst xs))))
+        (values (cons (reverse lst) res)
+                rest-xs)))
+    (reverse res)))

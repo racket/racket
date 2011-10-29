@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require racket/match
-         "../common/vector.rkt"
          "../common/math.rkt")
 
 (provide (all-defined-out))
@@ -16,8 +15,8 @@
 (struct shapes shape (list) #:transparent)
 
 (define (shape-normal s)
-  (cond [(polygon? s)  (surface-normal (polygon-vs s))]
-        [else          default-normal]))
+  (cond [(polygon? s)  (vnormal (polygon-vs s))]
+        [else          (vector 0 -1 0)]))
 
 (define (shape-coords s)
   (cond [(polygon? s)  (polygon-vs s)]

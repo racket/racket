@@ -32,11 +32,40 @@
 (defparam plot-legend-box-alpha alpha (real-in 0 1) 2/3)
 (defparam plot-animating? boolean? #f)
 
+(defparam plot-x-axis? boolean? #t)
+(defparam plot-y-axis? boolean? #t)
+(defparam plot-z-axis? boolean? #t)
+
+(defparam plot-x-far-axis? boolean? #t)
+(defparam plot-y-far-axis? boolean? #t)
+(defparam plot-z-far-axis? boolean? #t)
+
 (defparam plot-x-max-ticks exact-positive-integer? 5)
 (defparam plot-y-max-ticks exact-positive-integer? 5)
 (defparam plot-z-max-ticks exact-positive-integer? 8)
 
-(define-parameter-group plot-max-ticks (plot-x-max-ticks plot-y-max-ticks plot-z-max-ticks)
+(defparam plot-x-far-max-ticks exact-positive-integer? 5)
+(defparam plot-y-far-max-ticks exact-positive-integer? 5)
+(defparam plot-z-far-max-ticks exact-positive-integer? 8)
+
+(defparam plot-decorations? boolean? #t)
+
+(define-parameter-group plot-axes?
+  (plot-x-axis?
+   plot-y-axis?
+   plot-z-axis?
+   plot-x-far-axis?
+   plot-y-far-axis?
+   plot-z-far-axis?)
+  #:struct list)
+
+(define-parameter-group plot-max-ticks
+  (plot-x-max-ticks
+   plot-y-max-ticks
+   plot-z-max-ticks
+   plot-x-far-max-ticks
+   plot-y-far-max-ticks
+   plot-z-far-max-ticks)
   #:struct list)
 
 (define-parameter-group plot-appearance
@@ -52,8 +81,10 @@
     plot-font-family
     plot-legend-anchor
     plot-legend-box-alpha
-    plot-animating?
-    plot-max-ticks))
+    plot-axes?
+    plot-max-ticks
+    plot-decorations?
+    plot-animating?))
 
 (define (pen-gap) (* 2 (plot-line-width)))
 
@@ -93,7 +124,14 @@
 (defparam plot-y-label (or/c string? #f) "y axis")
 (defparam plot-z-label (or/c string? #f) #f)
 
-(define-parameter-group plot-labels (plot-title plot-x-label plot-y-label plot-z-label))
+(defparam plot-x-far-label (or/c string? #f) #f)
+(defparam plot-y-far-label (or/c string? #f) #f)
+(defparam plot-z-far-label (or/c string? #f) #f)
+
+(define-parameter-group plot-labels
+  (plot-title
+   plot-x-label plot-y-label plot-z-label
+   plot-x-far-label plot-y-far-label plot-z-far-label))
 
 ;; Axes: transform, ticks
 
@@ -105,21 +143,34 @@
 (defparam plot-y-ticks ticks? (linear-ticks))
 (defparam plot-z-ticks ticks? (linear-ticks))
 
-(struct axis (transform ticks) #:transparent)
+(defparam plot-x-far-ticks ticks? (ticks-mimic plot-x-ticks))
+(defparam plot-y-far-ticks ticks? (ticks-mimic plot-y-ticks))
+(defparam plot-z-far-ticks ticks? (ticks-mimic plot-z-ticks))
 
-(define-parameter-group plot-x-axis (plot-x-transform plot-x-ticks) #:struct axis)
-(define-parameter-group plot-y-axis (plot-y-transform plot-y-ticks) #:struct axis)
-(define-parameter-group plot-z-axis (plot-z-transform plot-z-ticks) #:struct axis)
+(struct axis (transform ticks far-ticks) #:transparent)
+
+(define-parameter-group plot-x-axis (plot-x-transform plot-x-ticks plot-x-far-ticks) #:struct axis)
+(define-parameter-group plot-y-axis (plot-y-transform plot-y-ticks plot-y-far-ticks) #:struct axis)
+(define-parameter-group plot-z-axis (plot-z-transform plot-z-ticks plot-z-far-ticks) #:struct axis)
 (define-parameter-group plot-axes (plot-x-axis plot-y-axis plot-z-axis) #:struct list)
 
 (defproc (default-x-ticks [x-min real?] [x-max real?]) (listof tick?)
-  ((plot-x-ticks) x-min x-max (plot-x-max-ticks) (plot-x-transform)))
+  ((plot-x-ticks) x-min x-max (plot-x-max-ticks)))
 
 (defproc (default-y-ticks [y-min real?] [y-max real?]) (listof tick?)
-  ((plot-y-ticks) y-min y-max (plot-y-max-ticks) (plot-y-transform)))
+  ((plot-y-ticks) y-min y-max (plot-y-max-ticks)))
 
 (defproc (default-z-ticks [z-min real?] [z-max real?]) (listof tick?)
-  ((plot-z-ticks) z-min z-max (plot-z-max-ticks) (plot-z-transform)))
+  ((plot-z-ticks) z-min z-max (plot-z-max-ticks)))
+
+(defproc (default-x-far-ticks [x-min real?] [x-max real?]) (listof tick?)
+  ((plot-x-far-ticks) x-min x-max (plot-x-far-max-ticks)))
+
+(defproc (default-y-far-ticks [y-min real?] [y-max real?]) (listof tick?)
+  ((plot-y-far-ticks) y-min y-max (plot-y-far-max-ticks)))
+
+(defproc (default-z-far-ticks [z-min real?] [z-max real?]) (listof tick?)
+  ((plot-z-far-ticks) z-min z-max (plot-z-far-max-ticks)))
 
 ;; ===================================================================================================
 
@@ -214,6 +265,18 @@
 (defparam x-axis-ticks? boolean? #t)
 (defparam y-axis-ticks? boolean? #t)
 (defparam z-axis-ticks? boolean? #t)
+
+(defparam x-axis-labels? boolean? #f)
+(defparam y-axis-labels? boolean? #f)
+(defparam z-axis-labels? boolean? #f)
+
+(defparam x-axis-far? boolean? #f)
+(defparam y-axis-far? boolean? #f)
+(defparam z-axis-far? boolean? #f)
+
+(defparam x-axis-alpha (real-in 0 1) 1)
+(defparam y-axis-alpha (real-in 0 1) 1)
+(defparam z-axis-alpha (real-in 0 1) 1)
 
 (defparam polar-axes-number exact-positive-integer? 12)
 (defparam polar-axes-ticks? boolean? #t)

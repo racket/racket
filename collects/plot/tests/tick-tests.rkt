@@ -4,10 +4,10 @@
 
 (plot-font-family 'swiss)
 
-(plot (function (λ (x) (count pre-tick-major? ((linear-ticks) 0 x 8 id-transform)))
+(plot (function (λ (x) (count pre-tick-major? ((linear-ticks) 0 x 8)))
                 0.1 10))
 
-(plot (function (λ (x) (count pre-tick-major? ((linear-ticks) 0 x 40 id-transform)))
+(plot (function (λ (x) (count pre-tick-major? ((linear-ticks) 0 x 40)))
                 1 100))
 
 (parameterize ([plot-x-ticks  (linear-ticks #:base 2 #:divisors '(1 2))]
@@ -25,17 +25,15 @@
                [plot-y-ticks  (currency-ticks)])
   (plot (function values -1 1)))
 
-(currency-ticks-formats uk-currency-formats)
-(currency-ticks-scales uk-currency-scales)
-
-(parameterize ([plot-x-ticks  (date-ticks)]
-               [plot-y-ticks  (currency-ticks #:kind 'GBP)])
+(parameterize* ([currency-ticks-formats uk-currency-formats]
+                [currency-ticks-scales uk-currency-scales]
+                [plot-x-ticks  (date-ticks)]
+                [plot-y-ticks  (currency-ticks #:kind 'GBP)])
   (plot (function values 101232512 2321236192)))
 
-(currency-ticks-formats eu-currency-formats)
-(currency-ticks-scales eu-currency-scales)
-
-(parameterize ([plot-x-ticks  (currency-ticks #:kind 'EUR)]
+(parameterize ([plot-x-ticks  (currency-ticks #:kind 'EUR
+                                              #:scales eu-currency-scales
+                                              #:formats eu-currency-formats)]
                [plot-y-ticks  (currency-ticks)])
   (plot (function (λ (x) (* x 1.377)) 8000000 10000000)
         #:title "EUR-USD Conversion, 2011-10-13"
@@ -53,9 +51,9 @@
 
 (parameterize ([plot-x-transform  log-transform]
                [plot-y-transform  (stretch-transform -1 1 4)]
-               [plot-x-ticks      (ticks (uniform-ticks-layout)
+               [plot-x-ticks      (ticks (linear-ticks-layout)
                                          (log-ticks-format #:base 10))]
-               [plot-y-ticks      (ticks (uniform-ticks-layout)
+               [plot-y-ticks      (ticks (linear-ticks-layout)
                                          (currency-ticks-format #:kind 'USD))])
   (plot (function log 0.1 10)))
 
@@ -99,3 +97,63 @@
             (points '(#(-3.75 -1/4)) #:size 10)
             (x-ticks (list (tick 1.5 #t "3/2") (tick 3 #t "Three")))
             (y-ticks (list (tick 1/4 #t "1/4") (tick -1/4 #f "")))))
+
+(parameterize ([plot-z-max-ticks  5])
+  (plot3d (list (surface3d (λ (x y) (* 2 (+ (sin x) (cos y)))) -4 4 -4 4)
+                (x-ticks (list (tick 1.5 #t "3/2") (tick 3 #t "Three")))
+                (y-ticks (list (tick 1/3 #t "1/3") (tick -1/3 #f "1/3")))
+                (z-ticks (list (tick pi #f "π") (tick (- pi) #t "-π"))))))
+
+(parameterize ([plot-title  "Money for time in a sine wave"]
+               [plot-x-far-ticks  (time-ticks)]
+               [plot-y-ticks  (currency-ticks #:kind 'USD)]
+               [plot-y-far-ticks  (ticks-scale (currency-ticks #:kind 'EUR) (linear-scale 1.47))]
+               [plot-x-label  #f]
+               [plot-y-label  #f])
+  (values
+   (parameterize ([plot-x-axis?  #f]
+                  [plot-x-far-axis?  #f])
+     (plot (list (function sin -4 4)
+                 (x-axis -0.25 #:ticks? #f #:labels? #t)
+                 (x-axis 0.25 #:ticks? #t #:labels? #t #:far? #t))))
+   
+   (parameterize ([plot-y-axis?  #f]
+                  [plot-y-far-axis?  #f])
+     (plot (list (function sin -4 4)
+                 (y-axis -1 #:ticks? #f #:labels? #t)
+                 (y-axis 1 #:ticks? #t #:labels? #t #:far? #t))))))
+
+(parameterize ([plot-y-ticks  (fraction-ticks)])
+  (plot (function sin (- pi) pi)))
+
+(parameterize ([plot-x-far-label  "x far axis"]
+               [plot-x-max-ticks  10]
+               [plot-y-far-label  "y far axis"]
+               [plot-y-far-ticks  (date-ticks)]
+               [plot-z-label  "z axis"]
+               [plot-z-far-label  "z far axis"]
+               [plot-z-far-ticks  (currency-ticks)]
+               [plot-z-far-max-ticks  5])
+  (plot3d (surface3d (λ (x y) (+ (sin x) (cos y))) -2 2 -2 2 #:alpha 1/2)))
+
+(parameterize ([plot-title  "Saddle"]
+               [plot-x-axis?  #f]
+               [plot-y-axis?  #f]
+               [plot-z-axis?  #f]
+               [plot-x-far-axis?  #f]
+               [plot-y-far-axis?  #f]
+               [plot-z-far-axis?  #f]
+               [plot-x-label  #f]
+               [plot-y-label  #f]
+               [plot-z-label  #f]
+               [plot-x-far-label  #f]
+               [plot-y-far-label  #f]
+               [plot-z-far-label  #f])
+  (plot3d (contour-intervals3d (λ (x y) (- (sqr x) (sqr y))) -2 2 -2 2
+                               #:label "z")))
+
+(parameterize ([plot-decorations?  #f])
+  (values
+   (plot (function sin -4 4)
+         #:title "Hello")
+   (plot3d (contour-intervals3d (λ (x y) (- (sqr x) (sqr y))) -2 2 -2 2))))

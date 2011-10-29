@@ -16,8 +16,6 @@
     (#rx"(?i:.*\\.ps)$" . ps)
     (#rx"(?i:.*\\.svg)$" . svg)))
 
-(define png-regexp #rx"(?i:.*\\.png)$")
-
 (define (detect-image-file-type output)
   (define name
     (cond [(string? output)  output]

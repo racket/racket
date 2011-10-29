@@ -3,9 +3,9 @@
 ;; Functions to format numbers, and data structures containing numbers.
 
 (require racket/string racket/list racket/pretty racket/contract racket/match
-         "math.rkt"
          "contract.rkt"
-         "contract-doc.rkt")
+         "contract-doc.rkt"
+         "math.rkt")
 
 (provide integer->superscript
          real->decimal-string* real->string/trunc

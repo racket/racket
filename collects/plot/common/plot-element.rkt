@@ -2,7 +2,6 @@
 
 (require racket/list racket/contract racket/match
          "math.rkt"
-         "vector.rkt"
          "contract.rkt"
          "contract-doc.rkt"
          "parameters.rkt"
@@ -10,18 +9,24 @@
 
 (provide (all-defined-out))
 
-(struct renderer (bounds-rect bounds-fun ticks-fun) #:transparent)
-(struct renderer2d renderer (render-proc) #:transparent)
-(struct renderer3d renderer (render-proc) #:transparent)
+(struct plot-element (bounds-rect bounds-fun ticks-fun) #:transparent)
+(struct non-renderer plot-element () #:transparent)
+(struct renderer2d plot-element (render-proc) #:transparent)
+(struct renderer3d plot-element (render-proc) #:transparent)
 
 ;; ===================================================================================================
 ;; Common field values
 
 (define (default-ticks-fun r)
-  (apply values (for/list ([i  (in-vector r)]
-                           [f  (in-list (list default-x-ticks default-y-ticks default-z-ticks))])
-                  (match-define (ivl a b) i)
-                  (f a b))))
+  (match r
+    [(vector (ivl xa xb) (ivl ya yb))
+     (values (default-x-ticks xa xb) (default-x-far-ticks xa xb)
+             (default-y-ticks ya yb) (default-y-far-ticks ya yb))]
+    [(vector (ivl xa xb) (ivl ya yb) (ivl za zb))
+     (values (default-x-ticks xa xb) (default-x-far-ticks xa xb)
+             (default-y-ticks ya yb) (default-y-far-ticks ya yb)
+             (default-z-ticks za zb) (default-z-far-ticks za zb))]
+    [_  (raise-type-error 'default-ticks-fun "2- or 3-vector of ivl" r)]))
 
 (define ((function-bounds-fun f samples) r)
   (match-define (vector xi yi) r)
@@ -68,37 +73,37 @@
 ;; The reasoning in the following comments is in terms of a lattice comprised of rectangles,
 ;; rect-meet and rect-join. Think of rect-meet like a set intersection; rect-join like a set union.
 
-;; Attempts to comptute a fixpoint of, roughly, the bounds functions for the given renderers.
+;; Attempts to comptute a fixpoint of, roughly, the bounds functions for the given plot elements.
 ;; More precisely, starting with the given plot bounds, it attempts to compute a fixpoint of
-;; (renderer-apply-bounds* rs), overridden at every iteration by the plot bounds (if given).
-;; Because a fixpoint doesn't always exist, or only exists in the limit, it stops after max-iters.
-(define (renderer-bounds-fixpoint rends plot-bounds-rect [max-iters 4])
+;; (apply-bounds* elems), overridden at every iteration by the plot bounds (if given). Because a
+;; fixpoint doesn't always exist, or only exists in the limit, it stops after max-iters.
+(define (bounds-fixpoint elems plot-bounds-rect [max-iters 4])
   (let/ec break
     ;; Shortcut eval: if the plot bounds are all known, the code below just returns them anyway
     (when (rect-known? plot-bounds-rect) (break plot-bounds-rect))
-    ;; Objective: find the fixpoint of F (meeted with plot-bounds-rect) starting at plot-bounds-rect
-    (define F (renderer-apply-bounds* rends))
+    ;; Objective: find the fixpoint of F starting at plot-bounds-rect
+    (define (F bounds-rect) (rect-meet plot-bounds-rect (apply-bounds* elems bounds-rect)))
     ;; Iterate joint bounds to (hopefully) a fixpoint
     (for/fold ([bounds-rect plot-bounds-rect]) ([n  (in-range max-iters)])
       ;(printf "bounds-rect = ~v~n" bounds-rect)
-      ;; Get new bounds from the renderers' bounds functions, limit them to plot bounds (when given)
-      (define new-bounds-rect (rect-meet plot-bounds-rect (F bounds-rect)))
+      ;; Get new bounds from the elements' bounds functions
+      (define new-bounds-rect (F bounds-rect))
       ;; Shortcut eval: if the bounds haven't changed, we have a fixpoint
       (cond [(equal? bounds-rect new-bounds-rect)  (break bounds-rect)]
             [else  new-bounds-rect]))))
 
-;; Applies the bounds functions of multiple renderers, in parallel, and returns the smallest bounds
-;; containing all the new bounds. This function is monotone and increasing regardless of whether any
-;; renderer's bounds function is. If iterating it is bounded, a fixpoint exists.
-(define ((renderer-apply-bounds* rends) bounds-rect)
-  (apply rect-join bounds-rect (for/list ([rend  (in-list rends)])
-                                 (renderer-apply-bounds rend bounds-rect))))
+;; Applies the bounds functions of multiple plot elements, in parallel, and returns the smallest
+;; bounds containing all the new bounds. This function is monotone and increasing regardless of
+;; whether any element's bounds function is. If iterating it is bounded, a fixpoint exists.
+(define (apply-bounds* elems bounds-rect)
+  (apply rect-join bounds-rect (for/list ([elem  (in-list elems)])
+                                 (apply-bounds elem bounds-rect))))
 
-;; Applies the renderer's bounds function. Asks this question: If these are your allowed bounds, what
-;; bounds will you try to draw in?
-(define (renderer-apply-bounds rend bounds-rect)
-  (match-define (renderer rend-bounds-rect rend-bounds-fun _) rend)
-  (let ([rend-bounds-rect  (cond [rend-bounds-rect  (rect-meet bounds-rect rend-bounds-rect)]
+;; Applies the plot element's bounds function. Asks this question: If these are your allowed bounds,
+;; what bounds will you try to use?
+(define (apply-bounds elem bounds-rect)
+  (match-define (plot-element elem-bounds-rect elem-bounds-fun _) elem)
+  (let ([elem-bounds-rect  (cond [elem-bounds-rect  (rect-meet bounds-rect elem-bounds-rect)]
                                  [else  bounds-rect])])
-    (cond [rend-bounds-fun  (rend-bounds-fun rend-bounds-rect)]
-          [else  rend-bounds-rect])))
+    (cond [elem-bounds-fun  (elem-bounds-fun elem-bounds-rect)]
+          [else  elem-bounds-rect])))

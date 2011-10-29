@@ -14,10 +14,10 @@
          "contract.rkt"
          "draw.rkt"
          "math.rkt"
-         "vector.rkt"
+         "sample.rkt"
          "parameters.rkt")
 
-(provide plot-area% (struct-out legend-entry))
+(provide plot-area%)
 
 (define (coord->cons v)
   (match-define (vector x y) v)
@@ -88,9 +88,74 @@
         (full7star . 7star)
         (full8star . 8star)))
 
+(define-syntax-rule (define-public-stubs val name ...)
+  (begin (define/public (name . args) val) ...))
+
+(define null-dc%
+  (class* object% (dc<%>)
+    (define color (make-object color% 0 0 0))
+    (define font (make-object font% 8 'default))
+    (define pen (make-object pen% color 1 'solid))
+    (define brush (make-object brush% color 'solid))
+    (define matrix (vector 1 0 0 0 1 0))
+    (define transformation (vector matrix 0 0 0 0 0))
+    (define-public-stubs transformation get-transformation)
+    (define-public-stubs matrix get-initial-matrix)
+    (define-public-stubs 'solid get-text-mode)
+    (define-public-stubs color get-text-foreground get-text-background get-background)
+    (define-public-stubs #t get-smoothing ok? start-doc glyph-exists?)
+    (define-public-stubs #f get-clipping-region get-gl-context)
+    (define-public-stubs 0 get-rotation get-char-height get-char-width)
+    (define-public-stubs (values 0 0) get-origin get-scale get-size)
+    (define-public-stubs font get-font)
+    (define-public-stubs pen get-pen)
+    (define-public-stubs brush get-brush)
+    (define-public-stubs 1 get-alpha)
+    (define-public-stubs (values 1 1) get-device-scale)
+    (define-public-stubs (values 0 0 0 0) get-text-extent)
+    (define-public-stubs (void)
+      flush suspend-flush resume-flush
+      start-page end-page end-doc
+      set-transformation
+      set-text-mode
+      set-smoothing
+      set-text-foreground
+      set-text-background
+      set-scale
+      set-rotation
+      set-origin
+      set-initial-matrix
+      set-font
+      set-clipping-region
+      set-clipping-rect
+      set-brush
+      set-pen
+      set-alpha
+      set-background
+      draw-text
+      draw-spline
+      draw-line
+      draw-lines
+      draw-ellipse
+      draw-rectangle
+      draw-rounded-rectangle
+      draw-polygon
+      draw-point
+      draw-path
+      draw-bitmap-section
+      draw-bitmap
+      draw-arc
+      copy clear erase
+      cache-font-metrics-key
+      transform rotate scale translate
+      try-color)
+    (super-new)))
+
 (define plot-area%
   (class object%
     (init-field dc dc-x-min dc-y-min dc-x-size dc-y-size)
+    
+    ;(define dc (make-object null-dc%))
     
     (super-new)
     
@@ -133,18 +198,18 @@
     ;; -----------------------------------------------------------------------------------------------
     ;; Pen, brush, alpha parameters
     
-    ;; Sets the pen, if the pen is different. At time of writing, this actually makes setting the pen
-    ;; more efficient, because setting the pen is kind of slow.
+    (define pen-hash (make-hash))
+    
+    ;; Sets the pen, using a hash table to avoid making duplicate objects. At time of writing (and for
+    ;; the forseeable future) this is much faster than using a pen-list%, because it doesn't have to
+    ;; synchronize access to be thread-safe.
     (define/public (set-pen color width style)
-      (match-define (list r g b) (map real->color-byte (->pen-color color)))
+      (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
+        (->pen-color color))
       (let ([style  (->pen-style style)])
-        (define pen (send dc get-pen))
-        (define c (send pen get-color))
-        ; only change the pen if it's different (pen changes are kind of slow)
-        (unless (and (= r (send c red)) (= g (send c green)) (= b (send c blue))
-                     (= width (send pen get-width))
-                     (eq? style (send pen get-style)))
-          (send dc set-pen (make-object color% r g b) width style))))
+        (send dc set-pen
+              (hash-ref! pen-hash (vector r g b width style)
+                         (λ () (make-object pen% (make-object color% r g b) width style))))))
     
     ;; Sets the pen used to draw major ticks.
     (define/public (set-major-pen [style 'solid])
@@ -154,17 +219,16 @@
     (define/public (set-minor-pen [style 'solid])
       (set-pen (plot-foreground) (* 1/2 (plot-line-width)) style))
     
-    ;; Sets the brush, if the brush is different. Same idea as set-pen; actually makes it faster.
+    (define brush-hash (make-hash))
+    
+    ;; Sets the brush. Same idea as set-pen.
     (define/public (set-brush color style)
-      (match-define (list r g b) (map real->color-byte (->brush-color color)))
+      (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
+        (->brush-color color))
       (let ([style  (->brush-style style)])
-        (define brush (send dc get-brush))
-        (define c (send brush get-color))
-        (define s (send brush get-style))
-        (unless (and (eq? style s)
-                     (or (eq? style 'transparent)
-                         (and (= r (send c red)) (= g (send c green)) (= b (send c blue)))))
-          (send dc set-brush (make-object color% r g b) style))))
+        (send dc set-brush
+              (hash-ref! brush-hash (vector r g b style)
+                         (λ () (make-object brush% (make-object color% r g b) style))))))
     
     ;; Sets alpha.
     (define/public (set-alpha a) (send dc set-alpha a))
@@ -182,16 +246,17 @@
     ;; -----------------------------------------------------------------------------------------------
     ;; Text parameters
     
-    (define font-list (make-object font-list%))
+    (define font-hash (make-hash))
     
-    ;; Sets the font, using font-list to cache fonts.
+    ;; Sets the font, using hash table to cache fonts.
     (define/public set-font
       (case-lambda
         [(font)  (send dc set-font font)]
         [(size family)
-         (define font (send font-list find-or-create-font
-                            (real->font-size size) family 'normal 'normal #f 'default #t))
-         (send dc set-font font)]))
+         (send dc set-font
+               (hash-ref! font-hash (vector size family)
+                          (λ () (make-object font% (real->font-size size) family
+                                  'normal 'normal #f 'default #t))))]))
     
     ;; Sets only the font size, not the family.
     (define/public (set-font-size size)
@@ -356,6 +421,12 @@
           (for ([a  (in-list angles)])
             (send dc draw-line x y (+ x (* (cos a) r)) (+ y (* (sin a) r)))))))
     
+    (define/public (get-tick-endpoints v r angle)
+      (match-define (vector x y) v)
+      (define dx (* (cos angle) r))
+      (define dy (* (sin angle) r))
+      (list (vector (- x dx) (- y dy)) (vector (+ x dx) (+ y dy))))
+    
     (define/public (make-draw-tick r angle)
       (define dx (* (cos angle) r))
       (define dy (* (sin angle) r))
@@ -412,8 +483,8 @@
         (define draw-glyph
           (cond
             [(string? real-sym)  (set-font-size (* 2 size))
-                                    (set-text-foreground color)
-                                    (make-draw-text-glyph real-sym)]
+                                 (set-text-foreground color)
+                                 (make-draw-text-glyph real-sym)]
             [(symbol? real-sym)
              (define r (* 1/2 size))
              (define line-sym
@@ -537,7 +608,8 @@
       (clear-clipping-rect))
     ))  ; end class
 
-(define-struct/contract legend-entry
-  ([label string?]
-   [draw ((is-a?/c plot-area%) real? real? real? real? . -> . void?)])
-  #:transparent)
+(struct legend-entry (label draw) #:transparent)
+
+(provide (contract-out
+          (struct legend-entry ([label string?] [draw ((is-a?/c plot-area%) real? real? real? real?
+                                                                            . -> . void?)]))))
