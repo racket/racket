@@ -119,5 +119,31 @@
             (loop))))))))
 
 ;; ----------------------------------------
+;; Check that a constant-space loop doesn't
+;; accumulate memory (test by Nicolas Oury)
+
+(let ()
+  (define prompt1 (make-continuation-prompt-tag 'p1))
+  (define prompt2 (make-continuation-prompt-tag 'p2))
+
+  (define (capture-and-abort prompt-tag)
+    (call-with-composable-continuation
+     (lambda (k) (abort-current-continuation prompt-tag k))
+     prompt-tag))
+
+  (define (go i)
+    (call-with-continuation-prompt
+     (lambda ()
+       (call-with-continuation-prompt
+        (lambda()
+          (for ((j i))
+            (capture-and-abort prompt1)
+            (capture-and-abort prompt2)))
+        prompt2))
+     prompt1))
+
+  (test (void) go 100000))
+
+;; ----------------------------------------
 
 (report-errs)

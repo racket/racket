@@ -6256,6 +6256,9 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
     empty_to_next_mc = 0;
   }
 
+  /* Clear to avoid retaining a chain of meta-continuationss: */
+  mc = NULL;
+
   value = compose_continuation(cont, 0, NULL, empty_to_next_mc);
   
   scheme_current_thread->next_meta -= 1;

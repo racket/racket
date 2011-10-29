@@ -395,9 +395,11 @@ char *scheme_get_type_name(Scheme_Type t)
   if (t < 0 || t >= maxtype)
     return "<bad-value>";
   s = type_names[t];
+#ifndef MZ_GC_BACKTRACE
   if (!s)
     return "???";
   else
+#endif
     return s;
 }
 
