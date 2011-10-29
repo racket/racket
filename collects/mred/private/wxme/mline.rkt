@@ -1145,13 +1145,13 @@ Debugging tools:
                  (unless (= maxscroll (mline-numscrolls mline))
                    (set-scroll-length mline maxscroll))
                  (if (= maxh (mline-h mline))
-                     (send media refresh-box 0 y bigwidth maxh)
+                     (send media refresh-box padding-l y bigwidth maxh)
                      (begin
                        (set-height mline maxh)
                        (let ([bigwidth (max 1e5 ;; really want viewable width, but > ok
                                             (send media get-s-total-width))]
                              [bigheight (+ maxh (send media get-s-total-height))])
-                         (send media refresh-box 0 y bigwidth bigheight))))))))
+                         (send media refresh-box padding-l y bigwidth bigheight))))))))
        #t)))
   (define (update-right)
     (and (bit-overlap? (mline-flags mline) CALC-RIGHT)
