@@ -125,10 +125,13 @@
 
  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
  (online-expansion-running "Online-Expansion läuft")
- (only-raw-text-files-supported "Nur reine Textdateien werden unterstützt")
- (abnormal-termination "Online-Expansion vorzeitig abgebrochen")
+ (online-expansion-only-raw-text-files-supported "Nur reine Text-Dateien sind unterstützt")
+ (online-expansion-abnormal-termination "Online-Expansion unglücklich abgebrochen")
+ (online-expansion-finished-successfully "Online-Expansion erfolgreich abgeschlossen")
+
  (jump-to-error "Zum Fehler springen")
  (online-expansion-is-disabled "Online-Expansion ist deaktiviert")
+ ;; these next two show up in the bar along the bottom of the drracket window
  (online-expansion-pending "Online-Expansion läuft ...")
  (online-expansion-finished "Online-Expansion fertig") ;; note: there may still be errors in this case
  
