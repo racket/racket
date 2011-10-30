@@ -36,9 +36,19 @@
 (define (supported? option)
   (send dbsystem has-support? option))
 
+(define (pg-type-name type)
+  (case type
+    ((double) 'float8)
+    ((char1) "\"char\"")
+    (else
+     (cond [(regexp-match #rx"^(.*)-array$" (format "~a" type))
+            => (lambda (m)
+                 (format "~a[]" (pg-type-name (string->symbol (cadr m)))))]
+           [else type]))))
+
 (define (check-roundtrip* c value check-equal?)
   (cond [(ANYFLAGS 'postgresql 'ispg)
-         (let* ([tname (if (eq? (current-type) 'double) "float8" (current-type))]
+         (let* ([tname (pg-type-name (current-type))]
                 [q (sql (format "select $1::~a" tname))])
            (check-equal? (query-value c q value)
                          value))]
@@ -137,6 +147,10 @@
                                     (char->integer (string-ref str 0)))))
                       str
                       "check server-side int->char")))))
+
+(define-check (check-=any c elt lst in?)
+  (check-equal? (query-value c (format "select ~a = any ($1)" elt) (list->pg-array lst))
+                in?))
 
 (define test
   (test-suite "SQL types (roundtrip, etc)"
@@ -329,17 +343,6 @@
        (lambda (c)
          (check-roundtrip c (line-string (list (point 0 0) (point 1 1)))))))
 
-    (type-test-case '(pg-path)
-      (call-with-connection
-       (lambda (c)
-         (check-roundtrip c (pg-path #t (list (point 0 0) (point 1 1) (point -5 7))))
-         (check-roundtrip c (pg-path #f (list (point -1 -1) (point (exp 1) pi)))))))
-
-    (type-test-case '(pg-box)
-      (call-with-connection
-       (lambda (c)
-         (check-roundtrip c (pg-box (point 10 10) (point 2 8))))))
-
     (type-test-case '(polygon geometry)
       (call-with-connection
        (lambda (c)
@@ -351,7 +354,223 @@
                      (list (line-string (list (point 1 1) (point 3 1)
                                               (point 1.5 1.5) (point 1 1))))))))))
 
-    (type-test-case '(pg-circle)
+    (when (ANYFLAGS 'postgresql) ;; "Driver not capable"
+      (type-test-case '(path)
+        (call-with-connection
+         (lambda (c)
+           (check-roundtrip c (pg-path #t (list (point 0 0) (point 1 1) (point -5 7))))
+           (check-roundtrip c (pg-path #f (list (point -1 -1) (point (exp 1) pi)))))))
+      (type-test-case '(box)
+        (call-with-connection
+         (lambda (c)
+           (check-roundtrip c (pg-box (point 10 10) (point 2 8))))))
+      (type-test-case '(circle)
+        (call-with-connection
+         (lambda (c)
+           (check-roundtrip c (pg-circle (point 1 2) 45))))))
+
+    (type-test-case '(boolean-array)
       (call-with-connection
        (lambda (c)
-         (check-roundtrip c (pg-circle (point 1 2) 45)))))))
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list #t)))
+         (check-roundtrip c (list->pg-array (list #t #t #f)))
+         (check-roundtrip c (list->pg-array (list #t sql-null #f)))
+         (check-=any c "'t'::boolean" (list) #f)
+         (check-=any c "'t'::boolean" (list #f) #f)
+         (check-=any c "'t'::boolean" (list sql-null #t #f) #t))))
+
+    (type-test-case '(bytea-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list #"abc")))
+         (check-roundtrip c (list->pg-array (list #"a" #"bc" #"def")))
+         (check-roundtrip c (list->pg-array (list #"a" sql-null #"bc")))
+         (check-=any c "'abc'::bytea" (list) #f)
+         (check-=any c "'abc'::bytea" (list #"a" #"abc") #t)
+         (check-=any c "'abc'::bytea" (list #"a" sql-null #"abc") #t))))
+
+    (type-test-case '(char1-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list #\a)))
+         (check-roundtrip c (list->pg-array (list #\a #\z)))
+         (check-roundtrip c (list->pg-array (list #\a sql-null #\z)))
+         (check-=any c "'a'::\"char\"" (list) #f)
+         (check-=any c "'a'::\"char\"" (list #\a #\b) #t)
+         (check-=any c "'a'::\"char\"" (list #\a sql-null #\z) #t))))
+
+    (type-test-case '(smallint-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list 1)))
+         (check-roundtrip c (list->pg-array (list 1 2 3)))
+         (check-roundtrip c (list->pg-array (list 1 sql-null 3 4 5)))
+         (check-=any c "1::smallint" (list) #f)
+         (check-=any c "1::smallint" (list 1 2 3) #t)
+         (check-=any c "1::smallint" (list sql-null 1 2 3) #t))))
+
+    (type-test-case '(integer-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list 1)))
+         (check-roundtrip c (list->pg-array (list 1 2 3)))
+         (check-roundtrip c (list->pg-array (list 1 sql-null 3 4 5)))
+         (check-=any c "1" (list) #f)
+         (check-=any c "1" (list 1 2 3) #t)
+         (check-=any c "1" (list sql-null 1 2 3) #t))))
+
+    (type-test-case '(text-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list "abc")))
+         (check-roundtrip c (list->pg-array (list "a" "" "bc" "def" "")))
+         (check-roundtrip c (list->pg-array (list "a" sql-null "")))
+         (check-=any c "'abc'" (list) #f)
+         (check-=any c "'abc'" (list "abc" "def") #t)
+         (check-=any c "'abc'" (list "abc" "def" sql-null) #t))))
+
+    #|
+    (type-test-case '(character-array)
+      (call-with-connection
+       (lambda (c)
+         ;; NOTE: seems to infer an elt type of character(1)...
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list "abc")))
+         (check-roundtrip c (list->pg-array (list "a" "" "bc" "def" "")))
+         (check-roundtrip c (list->pg-array (list "a" sql-null "")))
+         (check-=any c "'abc'" (list) #f)
+         (check-=any c "'abc'" (list "abc" "def") #t)
+         (check-=any c "'abc'" (list "ab" "c" sql-null) #f))))
+    |#
+
+    (type-test-case '(varchar-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list "abc")))
+         (check-roundtrip c (list->pg-array (list "a" "" "bc" "def" "")))
+         (check-roundtrip c (list->pg-array (list "a" sql-null "")))
+         (check-=any c "'abc'" (list) #f)
+         (check-=any c "'abc'" (list "abc" "def") #t)
+         (check-=any c "'abc'" (list "abc" "def" sql-null) #t))))
+
+    (type-test-case '(bigint-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list 1)))
+         (check-roundtrip c (list->pg-array (list 1 2 3)))
+         (check-roundtrip c (list->pg-array (list 1 sql-null 3 4 5)))
+         (check-=any c "1::bigint" (list) #f)
+         (check-=any c "1::bigint" (list 1 2 3) #t)
+         (check-=any c "1::bigint" (list sql-null 1 2 3) #t))))
+
+    (type-test-case '(point-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list (point 1 2))))
+         (check-roundtrip c (list->pg-array (list (point 1 2) sql-null (point 3 4))))
+         #| ;; no op= for point ?!
+         (check-=any c "POINT (1,2)" (list (point 1 2)) #t)
+         (check-=any c "POINT (1,2)" (list (point 3 4)) #f)
+         (check-=any c "POINT (1,2)" (list sql-null (point 1 2) (point 3 4)) #t)
+         |#)))
+
+    (type-test-case '(real-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list 1.0)))
+         (check-roundtrip c (list->pg-array (list 1.0 2.0 3.0)))
+         (check-roundtrip c (list->pg-array (list 1.0 sql-null 3.0 4.0 +inf.0)))
+         (check-=any c "1.0::real" (list) #f)
+         (check-=any c "1.0::real" (list 1.0) #t)
+         (check-=any c "1.0::real" (list sql-null 1.0 2.0 +inf.0) #t))))
+
+    (type-test-case '(double-array)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list 1.0)))
+         (check-roundtrip c (list->pg-array (list 1.0 2.0 3.0)))
+         (check-roundtrip c (list->pg-array (list 1.0 sql-null 3.0 4.0 +inf.0)))
+         (check-=any c "1.0::float8" (list) #f)
+         (check-=any c "1.0::float8" (list 1.0) #t)
+         (check-=any c "1.0::float8" (list sql-null 1.0 2.0 +inf.0) #t))))
+
+    (type-test-case '(timestamp-array)
+      (call-with-connection
+       (lambda (c)
+         (define ts1 (sql-timestamp 1999 12 31 11 22 33 0 #f))
+         (define ts2 (sql-timestamp 2011 09 13 15 17 19 0 #f))
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list ts1)))
+         (check-roundtrip c (list->pg-array (list ts2 sql-null)))
+         (check-=any c "'1999-12-31 11:22:33'::timestamp" (list) #f)
+         (check-=any c "'1999-12-31 11:22:33'::timestamp" (list ts2) #f)
+         (check-=any c "'1999-12-31 11:22:33'::timestamp" (list ts1 sql-null ts2) #t))))
+
+    ;; FIXME: add timestamptz-array test (harder due to tz conversion)
+
+    (type-test-case '(date-array)
+      (call-with-connection
+       (lambda (c)
+         (define ts1 (sql-date 1999 12 31))
+         (define ts2 (sql-date 2011 09 13))
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list ts1)))
+         (check-roundtrip c (list->pg-array (list ts2 sql-null)))
+         (check-=any c "'1999-12-31'::date" (list) #f)
+         (check-=any c "'1999-12-31'::date" (list ts2) #f)
+         (check-=any c "'1999-12-31'::date" (list ts1 sql-null ts2) #t))))
+
+    (type-test-case '(time-array)
+      (call-with-connection
+       (lambda (c)
+         (define ts1 (sql-time 11 22 33 0 #f))
+         (define ts2 (sql-time 15 17 19 0 #f))
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list ts1)))
+         (check-roundtrip c (list->pg-array (list ts2 sql-null)))
+         (check-=any c "'11:22:33'::time" (list) #f)
+         (check-=any c "'11:22:33'::time" (list ts2) #f)
+         (check-=any c "'11:22:33'::time" (list ts1 sql-null ts2) #t))))
+
+    ;; FIXME: add timetz-array test
+    ;; FIXME: add interval-array test
+
+    (type-test-case '(interval-array)
+      (call-with-connection
+       (lambda (c)
+         (define i1 (sql-interval 0 0 3 4 5 6 0))
+         (define i2 (sql-interval 87 1 0 0 0 0 0))
+         (define i3 (sql-interval 1 2 3 4 5 6 45000))
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list i1)))
+         (check-roundtrip c (list->pg-array (list i2 sql-null i3)))
+         (check-=any c "'87 years 1 month'::interval" (list) #f)
+         (check-=any c "'87 years 1 month'::interval" (list i1 i3) #f)
+         (check-=any c "'87 years 1 month'::interval" (list i1 sql-null i2) #t))))
+
+    (type-test-case '(decimal-array)
+      (call-with-connection
+       (lambda (c)
+         (define d1 12345678901234567890)
+         (define d2 1/20)
+         (define d3 +nan.0)
+         (define d4 -100)
+         (check-roundtrip c (list->pg-array (list)))
+         (check-roundtrip c (list->pg-array (list d1)))
+         (check-roundtrip c (list->pg-array (list d2 sql-null d3 d4)))
+         (check-=any c "'0.05'::numeric" (list) #f)
+         (check-=any c "'0.05'::numeric" (list d1) #f)
+         (check-=any c "'0.05'::numeric" (list d1 sql-null d2 d3 d4) #t))))
+
+    ))

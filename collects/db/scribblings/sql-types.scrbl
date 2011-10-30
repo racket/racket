@@ -120,9 +120,40 @@ underlying type. For example, if the type of @tt{$1} is a domain whose
 underlying type is @tt{integer}, then replace @tt{$1} with
 @tt{($1::integer)}.
 
-PostgreSQL defines many other types, such as network addresses, array
-types, and row types. These are currently not supported, but support
-may be added in future versions of this library.
+For each type in the table above, the corresponding
+@hyperlink["http://www.postgresql.org/docs/8.2/static/arrays.html"]{array
+type} is also supported, using the @racket[pg-array] structure. Use
+the
+@hyperlink["http://www.postgresql.org/docs/8.2/static/functions-comparisons.html#AEN14122"]{
+@tt{= ANY}} syntax with an array parameter instead of dynamically
+constructing a SQL @tt{IN} expression:
+
+@examples/results[
+[(query-value pgc "select 1 in (1, 2, 3)") #t]
+[(query-value pgc "select 1 = any ($1::integer[])"
+              (list->pg-array (list 1 2 3)))
+ #t]
+]
+
+A list may be provided for an array parameter, in which case it is
+automatically converted using @racket[list->pg-array]. The type
+annotation can be dropped when the array type can be inferred from the
+left-hand side.
+
+@examples/results[
+[(query-value pgc "select 1 = any ($1)" (list 1 2 3))
+ #t]
+[(query-value pgc "select $1::integer = any ($2)"
+              1 (list 1 2 3))
+ #t]
+[(query-value pgc "select $1 = any ($2)" (code:comment "what type are we using?")
+              1 (list 1 2 3))
+ (error 'query-value "cannot convert to PostgreSQL string type: 1")]
+]
+
+PostgreSQL defines many other types, such as network addresses and row
+types. These are currently not supported, but support may be added in
+future versions of this library.
 
 
 @subsection[#:tag "mysql-types"]{MySQL Types}

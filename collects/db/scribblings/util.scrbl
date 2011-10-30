@@ -146,16 +146,43 @@ structures to and from WKB format is supported by the
 
 @defmodule[db/util/postgresql]
 
-The following structures represent certain of PostgreSQL's built-in
-geometric types that have no appropriate analogue in the OpenGIS
-model: @tt{box}, @tt{path}, and @tt{circle}. The @tt{point},
-@tt{lseg}, and @tt{polygon} PostgreSQL built-in types are represented
-using @racket[point], @racket[line-string] (@racket[line?]), and
-@racket[polygon] structures.
+@defstruct*[pg-array
+            ([dimensions exact-nonnegative-integer?]
+             [dimension-lengths (listof exact-positive-integer?)]
+             [dimension-lower-bounds (listof exact-integer?)]
+             [contents vector?])]{
 
-Note: PostgreSQL's built-in geometric types are distinct from those
-provided by the PostGIS extension library (see @secref["geometry"]).
+Represents a PostrgreSQL array. The @racket[dimension-lengths] and
+@racket[dimension-lower-bounds] fields are both lists of
+@racket[dimensions] elements. By default, PostgreSQL array indexes
+start with 1 (not 0), so @racket[dimension-lower-bounds] is typically
+a list of @racket[1]s.
+}
 
+@defproc[(pg-array-ref [arr pg-array?] [index exact-integer?] ...+)
+         any/c]{
+
+Returns the element of @racket[arr] at the given position. There must
+be as many @racket[index] arguments as the dimension of
+@racket[arr]. Recall that PostgreSQL array indexes usually start with
+1, not 0.
+}
+
+@defproc[(pg-array->list [arr pg-array?])
+         list?]{
+
+Returns a list of @racket[arr]'s contents. The dimension of
+@racket[arr] must be 1; otherwise an error is raised.
+}
+
+@defproc[(list->pg-array [lst list?])
+         pg-array?]{
+
+Returns a @racket[pg-array] of dimension 1 with the contents of
+@racket[lst].
+}
+
+@deftogether[[
 @defstruct*[pg-box
             ([ne point?] [sw point?])]
 
@@ -164,3 +191,15 @@ provided by the PostGIS extension library (see @secref["geometry"]).
 
 @defstruct*[pg-circle
             ([center point?] [radius real?])]
+]]{
+
+These structures represent certain of PostgreSQL's built-in geometric
+types that have no appropriate analogue in the OpenGIS model:
+@tt{box}, @tt{path}, and @tt{circle}. The @tt{point}, @tt{lseg}, and
+@tt{polygon} PostgreSQL built-in types are represented using
+@racket[point], @racket[line-string] (@racket[line?]), and
+@racket[polygon] structures.
+
+Note: PostgreSQL's built-in geometric types are distinct from those
+provided by the PostGIS extension library (see @secref["geometry"]).
+}

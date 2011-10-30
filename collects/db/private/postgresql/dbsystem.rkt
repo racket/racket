@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/list
+         racket/string
          racket/match
          (prefix-in srfi: srfi/19)
          "../generic/interfaces.rkt"
@@ -46,6 +47,8 @@
 
 ;; Derived from 
 ;; http://www.us.postgresql.org/users-lounge/docs/7.2/postgres/datatype.html
+;; and
+;; result of "SELECT oid, typname, typelem FROM pg_type;"
 
 (define-type-table (supported-types
                     type-alias->type
@@ -76,30 +79,71 @@
   (1560 bit      () #t)
   (1562 varbit   () #t)
 
-  (600 point     () #t)
-  (601 lseg      () #t)
-  (602 path      () #t)
-  (603 box       () #t)
-  (604 polygon   () #t)
-  (718 circle    () #t)
+  (600  point    () #t)
+  (601  lseg     () #t)
+  (602  path     () #t)
+  (603  box      () #t)
+  (604  polygon  () #t)
+  (718  circle   () #t)
 
   ;; "string" literals have type unknown; just treat as string
   (705 unknown     ()        #t)
 
+  (1000 boolean-array   () #t)
+  (1001 bytea-array     () #t)
+  (1002 char1-array     () #t)
+  (1003 name-array      () #t)
+  (1005 smallint-array  (int2-array) #t)
+  (1007 integer-array   (int4-array) #t)
+  (1009 text-array      () #t)
+  (1028 oid-array       () #t)
+  (1014 character-array (bpchar-array) #t)
+  (1015 varchar-array   () #t)
+  (1016 bigint-array    (int8-array) #t)
+  (1017 point-array     () #t)
+  (1018 lseg-array      () #t)
+  (1019 path-array      () #t)
+  (1020 box-array       () #t)
+  (1021 real-array      (float4-array) #t)
+  (1022 double-array    (float8-array) #t)
+  (1027 polygon-array   () #t)
+  (1561 bit-array       () #t)
+  (1563 varbit-array    () #t)
+  (719  circle-array    () #t)
+
+  (1115 timestamp-array   () #t)
+  (1182 date-array        () #t)
+  (1183 time-array        () #t)
+  (1185 timestamptz-array () #t)
+  (1187 interval-array    () #t)
+  (1231 decimal-array     (numeric-array) #t)
+  (1270 timetz-array      () #t)
+
   ;; The following types are not supported.
   ;; (But putting their names here yields better not-supported errors.)
 
-  (2249 record   () #t)
-
-  (628 line      () #f)
-  (142 xml       () #f)
-  (702 abstime   () #f)
-  (703 reltime   () #f)
-  (704 tinterval () #f)
-  (790 money     () #f)
-  (829 macaddr   () #f)
-  (869 inet      () #f)
-  (650 cidr      () #f))
+  (142  xml             () #f)
+  (143  xml-array       () #f)
+  (628  line            () #f)
+  (629  line-array      () #f)
+  (650  cidr            () #f)
+  (651  cidr-array      () #f)
+  (702  abstime         () #f)
+  (703  reltime         () #f)
+  (704  tinterval       () #f)
+  (790  money           () #f)
+  (829  macaddr         () #f)
+  (869  inet            () #f)
+  (791  money-array     () #f)
+  (1023 abstime-array   () #f)
+  (1024 reltime-array   () #f)
+  (1025 tinterval-array () #f)
+  (1040 macaddr-array   () #f)
+  (1041 inet-array      () #f)
+  (2249 record          () #f)
+  (2287 record-array    () #f)
+  (2950 uuid            () #f)
+  (2951 uuid-array      () #f))
 
 ;; ============================================================
 
@@ -108,7 +152,7 @@ BINARY VS TEXT FORMAT
 
 For most types, we send and receive data in binary format
 only. However, datetime types are tricky enough that binary format
-isn't worth it (yet).
+isn't worth it (yet). Also decimal/numeric.
 
 Domain typeids never seem to appear as result typeids, but do appear
 as parameter typeids.
@@ -171,10 +215,12 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
 (define interval-rx
   (regexp
    (string-append "^"
+                  "[\"]?" ;; when in array
                   "(?:(-?[0-9]*) years? *)?"
                   "(?:(-?[0-9]*) mons? *)?"
                   "(?:(-?[0-9]*) days? *)?"
                   "(?:(-?)([0-9]*):([0-9]*):([0-9]*)(?:\\.([0-9]*))?)?"
+                  "[\"]?" ;; when in array
                   "$")))
 
 (define (parse-interval s)
@@ -196,6 +242,26 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
                             (expt 10 (- 9 (min flen 9)))))
                        0)])
        (sql-interval years months days hours mins secs nsecs))]))
+
+(define ((c-parse-array parse-elt) x)
+  ;; NOTE: we assume that array enclosed with "{" and "}", and separator is ","
+  (let* ([s (bytes->string/utf-8 x)]
+         [vals
+          (let loop ([s s])
+            (cond [(equal? s "{}") '#()]
+                  [(regexp-match? #rx"^{.*}$" s)
+                   (let ([parts (regexp-split #rx"," s 1 (sub1 (string-length s)))])
+                     (list->vector (map loop parts)))]
+                  [(equal? s "NULL") sql-null]
+                  [else (parse-elt s)]))]
+         [lengths
+          ;; NOTE: we assume array is well-formed (dimension lengths consistent)
+          (cond [(zero? (vector-length vals)) null]
+                [else
+                 (let loop ([x vals])
+                   (cond [(vector? x) (cons (vector-length x) (loop (vector-ref x 0)))]
+                         [else null]))])])
+    (pg-array (length lengths) lengths (map (lambda (_) 1) lengths) vals)))
 
 ;; Text writers
 
@@ -241,6 +307,27 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
     [else
      (marshal-error f i "interval" t)]))
 
+(define ((marshal-array marshal-elt) f i x0)
+  (define x
+    (cond [(pg-array? x0) x0]
+          [(list? x0) (list->pg-array x0)]
+          [else (marshal-error f i "pg-array" x0)]))
+  (match x
+    [(pg-array dims lengths lbounds vals)
+     (cond [(zero? dims) "{}"]
+           [else
+            (let loop ([dims dims] [v vals])
+              (cond [(zero? dims)
+                     (if (sql-null? v)
+                         "NULL"
+                         (marshal-elt f #f v))]
+                    [else
+                     (string-append "{"
+                                    (string-join (for/list ([v* (in-vector v)])
+                                                   (loop (sub1 dims) v*))
+                                                 ",")
+                                    "}")]))])]))
+
 ;; Binary readers
 
 (define (recv-bits x)
@@ -264,6 +351,9 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
 
 (define (recv-integer x)
   (integer-bytes->integer x #t #t))
+
+(define (recv-unsigned-integer x)
+  (integer-bytes->integer x #f #t))
 
 (define (recv-float x)
   (floating-point-bytes->real x #t))
@@ -290,6 +380,30 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
     (polygon (line-string points)
              null)))
 
+#|
+(require srfi/19)
+(define (recv-date x)
+  (let* ([POSTGRESQL-JD-ADJUST 2451545] ;; from $PG/src/include/utils/datetime.h
+         [jd (+ (integer-bytes->integer x #t #t 0 4) POSTGRESQL-JD-ADJUST)]
+         [t (julian-day->date jd 0)]) ;; gives noon on the designated day
+    (srfi-date->sql-date t)))
+(define-values (recv-time recv-timetz)
+  (let ()
+    (define (usec->time t tz)
+      (let*-values ([(t usec) (quotient/remainder t #e1e6)]
+                    [(t sec)  (quotient/remainder t 60)]
+                    [(hr min)  (quotient/remainder t 60)])
+        (make-sql-time hr min sec (* 1000 usec) tz)))
+    (define (recv-time x)
+      (usec->time (integer-bytes->integer x #t #t 0 8) #f))
+    (define (recv-timetz x)
+      (let* ([t (integer-bytes->integer x #t #t 0 8)]
+             [tz (integer-bytes->integer x #t #t 8 12)])
+        ;; FIXME: seem to need to invert timezone... why?
+        (usec->time t (- tz))))
+    (values recv-time recv-timetz)))
+|#
+
 (define (recv-record x)
   (let ([start 0])
     (define (get-int signed?)
@@ -310,6 +424,36 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
                   'unreadable)))))
     (let ([columns (get-int #t)])
       (build-vector columns (lambda (i) (recv-col))))))
+
+(define (recv-array x)
+  (let ([start 0])
+    (define (get-int signed?)
+      (begin0 (integer-bytes->integer x signed? #t start (+ start 4))
+        (set! start (+ start 4))))
+    (define (get-bytes len)
+      (begin0 (subbytes x start (+ start len))
+        (set! start (+ start len))))
+    (let* ([ndim (get-int #t)]
+           [flags (get-int #f)]
+           [elttype (get-int #f)]
+           [reader (typeid->type-reader 'recv-array elttype)]
+           [bounds
+            (for/list ([i (in-range ndim)])
+              (let* ([dim (get-int #t)]
+                     [lbound (get-int #t)])
+                (cons dim lbound)))]
+           [vals ;; (vector^ndim X)
+            (cond [(zero? ndim) '#()]
+                  [else
+                   (let loop ([bounds bounds])
+                     (cond [(pair? bounds)
+                            (for/vector ([i (in-range (car (car bounds)))])
+                                        (loop (cdr bounds)))]
+                           [else
+                            (let* ([len (get-int #t)])
+                              (cond [(= len -1) sql-null]
+                                    [else (reader (get-bytes len))]))]))])])
+      (pg-array ndim (map car bounds) (map cdr bounds) vals))))
 
 #|
 (define (recv-numeric x)
@@ -437,6 +581,37 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
            (for/list ([p (in-list points)])
              (send-point f #f p)))))
 
+(define ((send-array elttype) f i x0)
+  ;; NOTE: elttype must have binary writer
+  (define writer (typeid->type-writer elttype))
+  (define x
+    (cond [(pg-array? x0) x0]
+          [(list? x0) (list->pg-array x0)]
+          [else (send-error f i "pg-array" x0)]))
+  (match x
+    [(pg-array ndim counts lbounds vals)
+     (let ([out (open-output-bytes)])
+       (write-bytes (integer->integer-bytes ndim 4 #t #t) out)
+       (write-bytes (integer->integer-bytes 0 4 #t #t) out)
+       (write-bytes (integer->integer-bytes elttype 4 #t #t) out)
+       (for ([count (in-list counts)]
+             [lbound (in-list lbounds)])
+         (write-bytes (integer->integer-bytes count 4 #t #t) out)
+         (write-bytes (integer->integer-bytes lbound 4 #t #t) out))
+       (unless (zero? ndim)
+         (let loop ([n ndim] [vals vals])
+           (cond [(zero? n)
+                  (cond [(sql-null? vals)
+                         (write-bytes (integer->integer-bytes -1 4 #t #t) out)]
+                        [else
+                         (let ([b (writer f #f vals)])
+                           (write-bytes (integer->integer-bytes (bytes-length b) 4 #t #t) out)
+                           (write-bytes b out))])]
+                 [else
+                  (for ([v (in-vector vals)])
+                    (loop (sub1 n) v))])))
+       (get-output-bytes out))]))
+
 ;; send-error : string datum -> (raises error)
 (define (send-error f i type datum)
   (error/no-convert f "PostgreSQL" type datum))
@@ -466,6 +641,31 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
     ((718)  recv-circle)
     ((1560) recv-bits)
     ((1562) recv-bits)
+    ((2249) recv-record)
+
+    ((1000) recv-array) ;; _bool
+    ((1001) recv-array) ;; _bytea
+    ((1002) recv-array) ;; _char
+    ((1003) recv-array) ;; _name
+    ((1005) recv-array) ;; _int2
+    ((1007) recv-array) ;; _int4
+    ((1009) recv-array) ;; _text
+    ((1028) recv-array) ;; _oid
+    ((1014) recv-array) ;; _bpchar
+    ((1015) recv-array) ;; _varchar
+    ((1016) recv-array) ;; _int8
+    ((1017) recv-array) ;; _point
+    ((1018) recv-array) ;; _lseg
+    ((1019) recv-array) ;; _path
+    ((1020) recv-array) ;; _box
+    ((1021) recv-array) ;; _float4
+    ((1022) recv-array) ;; _float8
+    ((1027) recv-array) ;; _polygon
+    ((1561) recv-array) ;; _bit
+    ((1563) recv-array) ;; _varbit
+    ((2287) recv-array) ;; _record
+    ((719)  recv-array) ;; _circle
+
     ((1082) c-parse-date)
     ((1083) c-parse-time)
     ((1114) c-parse-timestamp)
@@ -473,7 +673,14 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
     ((1186) c-parse-interval)
     ((1266) c-parse-time-tz)
     ((1700) c-parse-decimal)
-    ((2249) recv-record)
+
+    ((1115) (c-parse-array parse-timestamp))
+    ((1182) (c-parse-array parse-date))
+    ((1183) (c-parse-array parse-time))
+    ((1185) (c-parse-array parse-timestamp-tz))
+    ((1187) (c-parse-array parse-interval))
+    ((1231) (c-parse-array parse-decimal))
+    ((1270) (c-parse-array parse-time-tz))
 
     ;; "string" literals have type unknown; just treat as string
     ((705) recv-string)
@@ -502,6 +709,30 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
     ((718)  send-circle)
     ((1560) send-bits)
     ((1562) send-bits)
+
+    ((1000) (send-array      16)) ;; _bool
+    ((1001) (send-array      17)) ;; _bytea
+    ((1002) (send-array      18)) ;; _char
+    ((1003) (send-array      19)) ;; _name
+    ((1005) (send-array      21)) ;; _int2
+    ((1007) (send-array      23)) ;; _int4
+    ((1009) (send-array      25)) ;; _text
+    ((1028) (send-array      26)) ;; _oid
+    ((1014) (send-array    1042)) ;; _bpchar
+    ((1015) (send-array    1043)) ;; _varchar
+    ((1016) (send-array      20)) ;; _int8
+    ((1017) (send-array     600)) ;; _point
+    ((1018) (send-array     601)) ;; _lseg
+    ((1019) (send-array     602)) ;; _path
+    ((1020) (send-array     603)) ;; _box
+    ((1021) (send-array     700)) ;; _float4
+    ((1022) (send-array     701)) ;; _float8
+    ((1027) (send-array     604)) ;; _polygon
+    ((1263) (send-array    2275)) ;; _cstring
+    ((1561) (send-array    1560)) ;; _bit
+    ((1563) (send-array    1562)) ;; _varbit
+    ((719)  (send-array     718)) ;; _circle
+
     ((1082) marshal-date)
     ((1083) marshal-time)
     ((1114) marshal-timestamp)
@@ -509,6 +740,14 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
     ((1186) marshal-interval)
     ((1266) marshal-time-tz)
     ((1700) marshal-decimal)
+
+    ((1115) (marshal-array marshal-timestamp))
+    ((1182) (marshal-array marshal-date))
+    ((1183) (marshal-array marshal-time))
+    ((1185) (marshal-array marshal-timestamp-tz))
+    ((1187) (marshal-array marshal-interval))
+    ((1231) (marshal-array marshal-decimal))
+    ((1270) (marshal-array marshal-time-tz))
 
     ;; "string" literals have type unknown; just treat as string
     ((705)  send-string)
@@ -518,6 +757,9 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
   (case x
     ((16 17 18 19 20 21 23 25 26 700 701 1042 1043 705) 1)
     ((600 601 602 603 604 718 1560 1562 2249) 1)
+    ((1000 1001 1002 1003 1005 1007 1009 1028 1010
+      1011 1012 1014 1015 1016 1017 1018 1019 1020
+      1021 1022 1027 1561 1563 2287) 1)
     (else 0)))
 
 (define (make-unsupported-writer x t)
