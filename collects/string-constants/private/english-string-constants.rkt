@@ -906,6 +906,8 @@ please adhere to these guidelines:
  (definitions-menu-item-help-string "Show/Hide the definitions window")
  (show-interactions-menu-item-label "Show &Interactions")
  (hide-interactions-menu-item-label "Hide &Interactions")
+ (put-interactions-beside-definitions "Put the Interactions Window Beside the Definitions Window")
+ (put-interactions-below-definitions "Put the Interactions Window Below the Definitions Window")
  (interactions-menu-item-help-string "Show/Hide the interactions window")
  (toolbar "Toolbar")
  (toolbar-on-top "Toolbar On Top")

@@ -3101,6 +3101,30 @@ module browser threading seems wrong.
                 (string-constant interactions-menu-item-help-string)))
         
         (new menu:can-restore-menu-item%
+             [label (string-constant put-interactions-beside-definitions)]
+             [parent (get-show-menu)]
+             [callback (λ (x y) 
+                         (define vertical? (send resizable-panel get-vertical?)) 
+                         (preferences:set 'drracket:defs/ints-horizontal vertical?)
+                         (send resizable-panel set-orientation vertical?)
+                         (define update-shown? (or (not interactions-shown?)
+                                                   (not definitions-shown?)))
+                         (unless interactions-shown?
+                           (toggle-show/hide-interactions))
+                         (unless definitions-shown?
+                           (toggle-show/hide-definitions))
+                         (when update-shown?
+                           (update-shown)))]
+             [demand-callback
+              (λ (mi) (send mi set-label (if (send resizable-panel get-vertical?)
+                                             (string-constant put-interactions-beside-definitions)
+                                             (string-constant put-interactions-below-definitions))))]
+             [shortcut #\d]
+             [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))])
+        
+        (new separator-menu-item% [parent (get-show-menu)])
+        
+        (new menu:can-restore-menu-item%
              (shortcut #\u)
              (label 
               (if (delegated-text-shown?)
