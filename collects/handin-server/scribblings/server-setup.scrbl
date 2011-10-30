@@ -57,6 +57,13 @@ This directory contains the following files and sub-directories:
     Racket with the (default) exact garbage collector and memory
     accounting); the default is 40000000.}
 
+  @item{@indexed-racket[allow-web-upload] --- either @racket[#f] (to
+    disable upload via the HTTPS status server) or a non-empty list of
+    suffix strings (to enable uploads for active assignments and force
+    the uploaded file to have one of the suffixes); the default is
+    @racket[#f]. The suffix strings should include a @litchar{.}, as
+    in @racket[".rkt"].}
+
   @item{@indexed-racket[default-file-name] --- the default filename
     that will be saved with the submission contents.  The default is
     @filepath{handin.rkt}.}

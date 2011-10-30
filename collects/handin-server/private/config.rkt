@@ -64,6 +64,9 @@
 (define (path p) (path->complete-path p server-dir))
 (define (path/false p) (and p (path p)))
 (define (path-list l) (map path l))
+(define (maybe-strs l) (and l
+                            (pair? l)
+                            (map string->bytes/utf-8 l)))
 
 (define (config-default+translate which)
   (case which
@@ -82,6 +85,7 @@
     [(username-case-sensitive) (values #f                    id           )]
     [(allow-new-users)         (values #f                    id           )]
     [(allow-change-info)       (values #f                    id           )]
+    [(allow-web-upload)        (values #f                    maybe-strs   )]
     [(master-password)         (values #f                    id           )]
     [(log-output)              (values #t                    id           )]
     [(log-file)                (values "log"                 path/false   )]
