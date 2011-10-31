@@ -1,4 +1,4 @@
-#lang scheme
+#lang scheme/base
 
 (require "matcher.rkt"
          "reduction-semantics.rkt"
@@ -6,10 +6,18 @@
          "term.rkt"
          "error.rkt"
          "struct.rkt"
-         (for-syntax "rewrite-side-conditions.rkt")
-         (for-syntax "term-fn.rkt")
-         (for-syntax "reduction-semantics.rkt")
-         (for-syntax "keyword-macros.rkt")
+         (for-syntax scheme/base
+                     "rewrite-side-conditions.rkt"
+                     "term-fn.rkt"
+                     "reduction-semantics.rkt"
+                     "keyword-macros.rkt")
+         scheme/dict
+         scheme/contract
+         scheme/promise
+         scheme/unit
+         scheme/match
+         scheme/pretty
+         scheme/function
          mrlib/tex-table)
 
 (define redex-pseudo-random-generator
@@ -149,7 +157,8 @@
          [min-size (apply min/f sizes)])
     (map cadr (filter (λ (x) (equal? min-size (car x))) (map list sizes prods)))))
 
-(define-struct rg-lang (non-cross cross base-cases))
+(define-struct rg-lang (non-cross delayed-cross base-cases))
+(define (rg-lang-cross x) (force (rg-lang-delayed-cross x)))
 (define (prepare-lang lang)
   (let ([parsed (parse-language lang)])
     (values parsed (map symbol->string (compiled-lang-literals lang)) (find-base-cases parsed))))
@@ -405,7 +414,7 @@
           (λ (lang bases any?)
             (make-rg-lang
              (compile-non-terminals (compiled-lang-lang lang) any?)
-             (compile-non-terminals (compiled-lang-cclang lang) any?)
+             (delay (compile-non-terminals (compiled-lang-cclang lang) any?))
              bases))]
          [(langc sexpc compile-pattern)
           (values
@@ -422,7 +431,8 @@
                               [else t])) 
                       (bindings e)))))))))
 
-(define-struct base-cases (cross non-cross))
+(define-struct base-cases (delayed-cross non-cross))
+(define (base-cases-cross x) (force (base-cases-delayed-cross x)))
 
 ;; find-base-cases : (list/c nt) -> base-cases
 (define (find-base-cases lang)
@@ -469,7 +479,7 @@
            (loop a)
            (loop b)]
           [_ (void)]))
-      nts))
+      nts)) 
 
   ;; build-table : (listof nt) -> hash
   (define (build-table nts)
@@ -479,15 +489,23 @@
        nts)
       tbl))
   
+  ;; we can delay the work of computing the base cases for
+  ;; the cross part of the language since none of the productions 
+  ;; refer to it (as that's not allowed in general and would be
+  ;; quite confusing if it were...)
   (let loop ()
     (set! changed? #f)
     (for-each (process-nt #f) (compiled-lang-lang lang))
-    (for-each (process-nt #t) (compiled-lang-cclang lang))
     (when changed?
       (loop)))
-  
   (make-base-cases
-   (build-table (compiled-lang-cclang lang))
+   (delay (begin
+            (let loop ()
+              (set! changed? #f)
+              (for-each (process-nt #t) (compiled-lang-cclang lang))
+              (when changed?
+                (loop)))
+            (build-table (compiled-lang-cclang lang))))
    (build-table (compiled-lang-lang lang))))
 
 (define min/f
@@ -623,10 +641,10 @@
   (define ((parse-rhs mode) rhs)
     (make-rhs (reassign-classes (parse-pattern (rhs-pattern rhs) lang mode))))
   
-  (struct-copy 
+  (struct-copy
    compiled-lang lang
    [lang (map (parse-nt 'grammar) (compiled-lang-lang lang))]
-   [cclang (map (parse-nt 'cross) (compiled-lang-cclang lang))]))
+   [delayed-cclang (delay (map (parse-nt 'cross) (compiled-lang-cclang lang)))]))
 
 ;; unparse-pattern: parsed-pattern -> pattern
 (define unparse-pattern
@@ -1051,7 +1069,7 @@
          (struct-out class)
          (struct-out binder)
          (struct-out rg-lang)
-         (struct-out base-cases)
+         (struct-out base-cases) base-cases-cross
          (struct-out counterexample)
          (struct-out exn:fail:redex:test))
 

@@ -2,18 +2,19 @@
 
 #|
 
-Note: the patterns described in the doc.txt file are
+Note: the patterns described in the documentation are
 slightly different than the patterns processed here.
 The difference is in the form of the side-condition
 expressions. Here they are procedures that accept
 binding structures, instead of expressions. The
-reduction (And other) macros do this transformation
-before the pattern compiler is invoked.
+rewrite-side-conditions/check-errs macro does this
+transformation before the pattern compiler is invoked.
 
 |#
 (require scheme/list
          scheme/match
          scheme/contract
+         racket/promise
          "underscore-allowed.rkt")
 
 (define-struct compiled-pattern (cp))
@@ -85,9 +86,16 @@ before the pattern compiler is invoked.
 ;;                                     (listof symbol)
 ;;                                     (listof (listof symbol))) -- keeps track of `primary' non-terminals
 
-(define-struct compiled-lang (lang cclang ht list-ht across-ht across-list-ht
+(define-struct compiled-lang (lang delayed-cclang ht list-ht raw-across-ht raw-across-list-ht
                                    has-hole-ht cache bind-names-cache pict-builder
                                    literals nt-map))
+(define (compiled-lang-cclang x) (force (compiled-lang-delayed-cclang x)))
+(define (compiled-lang-across-ht x)
+  (compiled-lang-cclang x) ;; ensure this is computed
+  (compiled-lang-raw-across-ht x))
+(define (compiled-lang-across-list-ht x) 
+  (compiled-lang-cclang x) ;; ensure this is computed
+  (compiled-lang-raw-across-list-ht x))
 
 ;; lookup-binding : bindings (union sym (cons sym sym)) [(-> any)] -> any
 (define (lookup-binding bindings
@@ -160,15 +168,18 @@ before the pattern compiler is invoked.
        (when (has-underscore? nt)
          (error 'compile-language "cannot use underscore in nonterminal name, ~s" nt))))
     
-    (let ([compatible-context-language
-           (build-compatible-context-language clang-ht lang)])
-      (for-each (lambda (nt)
-                  (hash-set! across-ht (nt-name nt) null)
-                  (hash-set! across-list-ht (nt-name nt) null))
-                compatible-context-language)
-      (do-compilation clang-ht clang-list-ht lang #t)
-      (do-compilation across-ht across-list-ht compatible-context-language #f)
-      (struct-copy compiled-lang clang [cclang compatible-context-language]))))
+    (define compatible-context-language
+      (delay
+        (let ([compatible-context-language
+               (build-compatible-context-language clang-ht lang)])
+          (for-each (lambda (nt)
+                      (hash-set! across-ht (nt-name nt) null)
+                      (hash-set! across-list-ht (nt-name nt) null))
+                    compatible-context-language)
+          (do-compilation across-ht across-list-ht compatible-context-language #f)
+          compatible-context-language)))
+    (do-compilation clang-ht clang-list-ht lang #t)
+    (struct-copy compiled-lang clang [delayed-cclang compatible-context-language])))
 
 ;; extract-literals : (listof nt) -> (listof symbol)
 (define (extract-literals nts)
@@ -633,8 +644,6 @@ before the pattern compiler is invoked.
   (define clang-ht (compiled-lang-ht clang))
   (define clang-list-ht (compiled-lang-list-ht clang))
   (define has-hole-ht (compiled-lang-has-hole-ht clang))
-  (define across-ht (compiled-lang-across-ht clang))
-  (define across-list-ht (compiled-lang-across-list-ht clang))
   
   (define (compile-pattern/default-cache pattern)
     (compile-pattern/cache pattern 
@@ -709,19 +718,21 @@ before the pattern compiler is invoked.
                         match-raw-name)
                     has-hole?))])]
       [`(cross ,(? symbol? pre-id))
-       (let ([id (if prefix-cross?
-                     (symbol-append pre-id '- pre-id)
-                     pre-id)])
-         (cond
-           [(hash-maps? across-ht id)
-            (values
-             (lambda (exp hole-info)
-               (match-nt (hash-ref across-list-ht id)
-                         (hash-ref across-ht id)
-                         id exp hole-info))
-             #t)]
-           [else
-            (error 'compile-pattern "unknown cross reference ~a" id)]))]
+       (define across-ht (compiled-lang-across-ht clang))
+       (define across-list-ht (compiled-lang-across-list-ht clang))
+       (define id (if prefix-cross?
+                      (symbol-append pre-id '- pre-id)
+                      pre-id))
+       (cond
+         [(hash-maps? across-ht id)
+          (values
+           (lambda (exp hole-info)
+             (match-nt (hash-ref across-list-ht id)
+                       (hash-ref across-ht id)
+                       id exp hole-info))
+           #t)]
+         [else
+          (error 'compile-pattern "unknown cross reference ~a" id)])]
       
       [`(name ,name ,pat)
        (let-values ([(match-pat has-hole?) (compile-pattern/default-cache pat)])
@@ -1613,6 +1624,7 @@ before the pattern compiler is invoked.
 (provide (struct-out nt)
          (struct-out rhs)
          (struct-out compiled-lang)
+         compiled-lang-cclang
          
          lookup-binding
          
