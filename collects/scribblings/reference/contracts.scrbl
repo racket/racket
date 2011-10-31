@@ -1320,7 +1320,8 @@ the contract library primitives below.
                (if (test x)
                  x
                  (raise-blame-error
-                  b x "expected <~a>, given: ~e" name x))))])
+                  b x "expected <~a>, given: ~e" name x))))]
+          [#:stronger stronger (-> contract? contract? boolean?)])
          contract?]
 @defproc[(make-chaperone-contract
           [#:name name any/c 'anonymous-chaperone-contract]
@@ -1331,7 +1332,8 @@ the contract library primitives below.
                (if (test x)
                  x
                  (raise-blame-error
-                  b x "expected <~a>, given: ~e" name x))))])
+                  b x "expected <~a>, given: ~e" name x))))]
+          [#:stronger stronger (-> contract? contract? boolean?)])
          chaperone-contract?]
 @defproc[(make-flat-contract
           [#:name name any/c 'anonymous-flat-contract]
@@ -1342,7 +1344,8 @@ the contract library primitives below.
                (if (test x)
                  x
                  (raise-blame-error
-                  b x "expected <~a>, given: ~e" name x))))])
+                  b x "expected <~a>, given: ~e" name x))))]
+          [#:stronger stronger (-> contract? contract? boolean?)])
          flat-contract?]
 )]{
 
@@ -1379,6 +1382,10 @@ contract may result in either an application of the predicate, or the
 projection, or both; therefore, the two must be consistent.  The existence of a
 separate projection only serves to provide more specific error messages.  Most
 flat contracts do not need to supply an explicit projection.
+
+The @racket[stronger] argument is used to implement @racket[contract-stronger?]. The
+first argument is always the contract itself and the second argument is whatever
+was passed as the second argument to @racket[contract-stronger?].
 
 @defexamples[#:eval (contract-eval)
 (define int/c
