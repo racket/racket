@@ -18,8 +18,14 @@
                     (for/list ([name (in-list (syntax->list #'(name ...)))])
                       (unless (identifier? name)
                         (raise-syntax-error #f "expected identifier" #'orig-stx name))
-                      #`(define #,name (make-lazy-function '#,name get-sym)))])
-       ;; implicit quasiquote, so can use normal module-path syntax'
+                      (with-syntax ([name name]
+                                    [(aux) (generate-temporaries (list name))])
+                        #`(begin (define aux (make-lazy-function 'name get-sym))
+                                 (define-syntax name
+                                   (make-rename-transformer
+                                    (syntax-property (quote-syntax aux)
+                                                     'not-provide-all-defined #t))))))])
+       ;; implicit quasiquote, so can use normal module-path syntax
        ;; or escape to compute a the module-path via expression
        #'(begin (define-runtime-module-path-index mpi-var (quasiquote modpath))
                 (define (get-sym sym)
