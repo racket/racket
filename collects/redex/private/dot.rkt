@@ -1,9 +1,10 @@
-#lang scheme/gui
-
+#lang racket/base
+(require racket/contract
+         racket/class
+         racket/gui/base
+         racket/system)
 (provide/contract [dot-positioning (-> (is-a?/c pasteboard%) string? boolean? void?)]
                   [find-dot (-> (or/c path? false/c))])
-      
-(require scheme/system)
 
 (provide dot-label neato-label neato-hier-label neato-ipsep-label)
 (define dot-label "dot")

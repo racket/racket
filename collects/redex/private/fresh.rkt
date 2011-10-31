@@ -1,4 +1,5 @@
-#lang scheme
+#lang racket/base
+(require racket/contract)
 
 (define re:gen-d #rx".*[^0-9]([0-9]+)$")
 (define (variable-not-in sexp var)
@@ -31,7 +32,7 @@
   (let loop ([sorted (sort nums <)]
              [i 1])
     (cond
-      [(empty? sorted) i]
+      [(null? sorted) i]
       [else 
        (let ([fst (car sorted)])
          (cond

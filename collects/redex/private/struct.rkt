@@ -1,6 +1,6 @@
-#lang racket
+#lang racket/base
 
-(require "matcher.rkt")
+(require racket/list "matcher.rkt")
 
 ;; don't provide reduction-relation directly, so that we can use that for the macro's name.
 (provide reduction-relation-lang

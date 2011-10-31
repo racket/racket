@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require (for-template racket/base racket/contract))
+(require racket/match
+         (for-template racket/base racket/contract))
 
 (define (parse-kw-args formals actuals source form-name)
   (let loop ([current (for/hash ([arg formals]) (values (car arg) #f))]
