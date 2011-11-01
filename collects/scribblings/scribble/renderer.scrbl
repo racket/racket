@@ -129,6 +129,11 @@ example, @racket[dest-dir] could name the directory containing the
 output Latex file, the HTML file for a single-file output, or the
 output sub-directory for multi-file HTML output.
 
+If @racket[refer-to-existing-files] is true, then when a document
+refers to external files, such as an image or a style file, then the
+file is referenced from its source location instead of copied to the
+document destination.
+
 If @racket[root-path] is not @racket[#f], it is normally the same as
 @racket[dest-dir] or a parent of @racket[dest-dir]. It causes
 cross-reference information to record destination files relative to
