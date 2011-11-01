@@ -352,17 +352,16 @@ the state transitions / contracts are:
   preferences:set
   (symbol? any/c . -> . void?)
   (symbol value)
-  @{See also @racket[preferences:set-default].
-        
-        @racket[preferences:set-preference] sets the preference
-        @racket[symbol] to @racket[value]. This should be called when the
-        users requests a change to a preference.
-        
-        This function immediately writes the preference value to disk.
-        
-        It raises
-        @index['("exn:unknown-preference")]{@racket[exn:unknown-preference]}
-        if the preference's default has not been set.})
+  @{Sets the preference
+    @racket[symbol] to @racket[value]. It should be called when the
+    users requests a change to a preference.
+    
+    @racket[preferences:set] immediately writes the preference value to disk.    
+    It raises
+    @index['("exn:unknown-preference")]{@racket[exn:unknown-preference]}
+    if the preference's default has not been set.
+    
+    See also @racket[preferences:set-default].})
  
  (proc-doc/names
   preferences:add-callback
