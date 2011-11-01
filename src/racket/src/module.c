@@ -517,8 +517,6 @@ void scheme_finish_kernel(Scheme_Env *env)
       }
     }
 
-    kernel->no_cert = 1;
-
     {
       Scheme_Module_Exports *me;
       me = scheme_make_module_exports();

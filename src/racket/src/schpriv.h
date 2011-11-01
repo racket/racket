@@ -3010,8 +3010,6 @@ typedef struct Scheme_Module
 
   Scheme_Object **bodies; /* array `num_phases' long */
 
-  char no_cert;
-  
   struct Scheme_Module_Exports *me;
 
   int num_phases;
