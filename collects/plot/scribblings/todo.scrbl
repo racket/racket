@@ -30,11 +30,9 @@
        @itemlist[
         @item{Better depth sorting (possibly split intersecting polygons; look into BSP tree)}
         @item{Legend entries have minimum sizes}
-        @item{Log-scale tick functions (i.e. major ticks are 10^0, 10^1, 10^2, ...)}
         @item{Label contour heights on the contour lines}
         @item{3D support for exact rational functions (i.e. polynomial at [big..big+ε])}
         @item{Join 2D contour lines}
-        @item{More appearance options (i.e. draw 2D tick labels on right/top)}
         @item{Manually exclude discontinuous points from function renderers: allow values @(racket (hole p1 p2)), @(racket (left-hole p1 p2)), @(racket (right-hole p1 p2))}
         @item{@(racket histogram-list) to plot multiple histograms without manually calculating @(racket #:x-min)}
         ]

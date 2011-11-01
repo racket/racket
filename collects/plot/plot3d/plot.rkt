@@ -20,7 +20,7 @@
 (lazy-require ["snip.rkt" (make-3d-plot-snip)]
               ["../common/gui.rkt" (make-snip-frame)])
 
-(provide (except-out (all-defined-out) make-3d-plot-snip make-snip-frame))
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Plot to a given device context

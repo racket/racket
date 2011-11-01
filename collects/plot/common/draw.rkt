@@ -2,7 +2,8 @@
 
 ;; Extra drawing, font, color and style functions.
 
-(require racket/draw racket/class racket/match racket/list racket/contract
+(require racket/draw racket/class racket/match racket/list racket/contract racket/math
+         "math.rkt"
          "contract.rkt"
          "contract-doc.rkt"
          "sample.rkt")
@@ -72,6 +73,87 @@
   (match-define (list r g b) c)
   (make-object color% (real->color-byte r) (real->color-byte g) (real->color-byte b)))
 
+(define (rgb->hsv rgb)
+  (match-define (list r g b) (map (λ (x) (/ x 255)) rgb))
+  (define mx (max r g b))
+  (define mn (min r g b))
+  (define c (- mx mn))
+  (define h (* 60 (cond [(zero? c)  0]
+                        [(= mx r)   (/ (- g b) c)]
+                        [(= mx g)   (+ (/ (- b r) c) 2)]
+                        [(= mx b)   (+ (/ (- r g) c) 4)])))
+  (list (if (h . < . 0) (+ h 360) h)
+        (if (zero? mx) 0 (/ c mx))
+        mx))
+
+(define (hsv->rgb hsv)
+  (match-define (list h s v) hsv)
+  (define c (* v s))
+  (let ([h  (/ (real-modulo h 360) 60)])
+    (define x (* c (- 1 (abs (- (real-modulo h 2) 1)))))
+    (define-values (r g b)
+      (cond [(and (0 . <= . h) (h . < . 1))  (values c x 0)]
+            [(and (1 . <= . h) (h . < . 2))  (values x c 0)]
+            [(and (2 . <= . h) (h . < . 3))  (values 0 c x)]
+            [(and (3 . <= . h) (h . < . 4))  (values 0 x c)]
+            [(and (4 . <= . h) (h . < . 5))  (values x 0 c)]
+            [(and (5 . <= . h) (h . < . 6))  (values c 0 x)]))
+    (define m (- v c))
+    (list (* 255 (+ r m))
+          (* 255 (+ g m))
+          (* 255 (+ b m)))))
+
+(define (integer->hue n)
+  (let ([n  (abs n)])
+    (define i (+ (case (remainder n 6) [(0) 0] [(1) 2] [(2) 4] [(3) 1] [(4) 3] [(5) 5])
+                 (* 6 3 (quotient n 6))))
+    (remainder (* i 59) 360)))
+
+(define (integer->gray-value n)
+  (* 1/7 (remainder (abs n) 8)))
+
+(define (integer->pen-color n)
+  (define h (integer->hue n))
+  (hsv->rgb (list (- h (* 25 (sin (* (/ h 360) (* 3 pi)))))
+                  1
+                  (+ 1/2 (* 1/6 (sin (* (/ h 360) (* 3 pi))))))))
+
+(define (integer->brush-color n)
+  (define h (integer->hue n))
+  (hsv->rgb (list (let ([y  (* (/ (- (sqrt (+ (/ h 60) 2)) (sqrt 2))
+                                  (- (sqrt 8) (sqrt 2)))
+                               6)])
+                    (- h (* 15 (sin (* (/ y 6) (* 3 pi))))))
+                  (+ 3/16 (* 3/32 (sin (* (/ h 360) (* 2 pi)))))
+                  1)))
+
+(define (integer->gray-pen-color i)
+  (make-list 3 (* 128 (expt (integer->gray-value i) 3/4))))
+
+(define (integer->gray-brush-color i)
+  (make-list 3 (+ 127 (* 128 (expt (- 1 (integer->gray-value i)) 3/4)))))
+
+(define pen-colors
+  (for/vector ([color  (in-list (append (list (integer->gray-pen-color 0))
+                                        (build-list 120 integer->pen-color)
+                                        (build-list 7 (λ (n) (integer->gray-pen-color (- 7 n))))))])
+    (map real->color-byte color)))
+
+(define brush-colors
+  (for/vector ([color  (in-list (append (list (integer->gray-brush-color 0))
+                                        (build-list 120 integer->brush-color)
+                                        (build-list 7 (λ (n) (integer->gray-brush-color (- 7 n))))))])
+    (map real->color-byte color)))
+
+(defproc (->pen-color [c plot-color/c]) (list/c real? real? real?)
+  (cond [(exact-integer? c)  (vector-ref pen-colors (modulo c 128))]
+        [else                (->color c)]))
+
+(defproc (->brush-color [c plot-color/c]) (list/c real? real? real?)
+  (cond [(exact-integer? c)  (vector-ref brush-colors (modulo c 128))]
+        [else                (->color c)]))
+
+#|
 (define pen-colors
   '#((0 0 0)          ; black
      (128 0 0)        ; red
@@ -83,7 +165,7 @@
      (160 160 160)))  ; gray
 
 (defproc (->pen-color [c plot-color/c]) (list/c real? real? real?)
-  (cond [(exact-integer? c)  (vector-ref pen-colors (remainder (abs c) 8))]
+  (cond [(exact-integer? c)  (vector-ref pen-colors (modulo c 8))]
         [else                (->color c)]))
 
 (define brush-colors
@@ -97,8 +179,9 @@
      (212 212 212)))  ; gray
 
 (defproc (->brush-color [c plot-color/c]) (list/c real? real? real?)
-  (cond [(exact-integer? c)  (vector-ref brush-colors (remainder (abs c) 8))]
+  (cond [(exact-integer? c)  (vector-ref brush-colors (modulo c 8))]
         [else                (->color c)]))
+|#
 
 (defproc (->pen-style [s plot-pen-style/c]) symbol?
   (cond [(exact-integer? s)  (case (remainder (abs s) 5)

@@ -112,7 +112,7 @@ Converts a @italic{line} color to an RGB triplet. This function interprets integ
 
 Non-integer colors are converted using @(racket ->color).
 Integer colors are chosen for good pairwise contrast, especially between neighbors.
-Integer colors repeat starting with @(racket 8).
+Integer colors repeat starting with @(racket 128).
 
 @examples[#:eval plot-eval
                  (equal? (->pen-color 0) (->pen-color 8))
@@ -127,7 +127,7 @@ Converts a @italic{fill} color to an RGB triplet. This function interprets integ
 
 Non-integer colors are converted using @(racket ->color).
 Integer colors are chosen for good pairwise contrast, especially between neighbors.
-Integer colors repeat starting with @(racket 8).
+Integer colors repeat starting with @(racket 128).
 
 @examples[#:eval plot-eval
                  (equal? (->brush-color 0) (->brush-color 8))

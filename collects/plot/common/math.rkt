@@ -166,7 +166,13 @@
   (cond [(not (and (exact-integer? b) (b . >= . 2)))  (raise-type-error 'floor-log/base
                                                                         "exact integer >= 2" 0 b x)]
         [(not (and (real? x) (x . > . 0)))  (raise-type-error 'floor-log/base "real > 0" 1 b x)]
-        [else  (inexact->exact (ceiling (/ (log (abs x)) (log b))))]))
+        [else  (define y (inexact->exact (ceiling (/ (log x) (log b)))))
+               (cond [(exact? x)
+                      (let loop ([y y] [x  (/ x (expt b y))])
+                        (cond [(x . > . 1)         (loop (add1 y) (/ x b))]
+                              [(x . <= . (/ 1 b))  (loop (sub1 y) (* x b))]
+                              [else  y]))]
+                     [else  y])]))
 
 (defproc (polar->cartesian [θ real?] [r real?]) (vector/c real? real?)
   (cond [(not (real? θ))  (raise-type-error 'polar->cartesian "real number" 0 θ r)]

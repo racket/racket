@@ -19,7 +19,7 @@
 ;;   cannot instantiate `racket/gui/base' a second time in the same process
 (lazy-require ["../common/gui.rkt" (make-snip-frame)])
 
-(provide (except-out (all-defined-out) make-snip-frame))
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Plot to a given device context

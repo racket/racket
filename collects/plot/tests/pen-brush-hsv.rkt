@@ -71,7 +71,7 @@
 (define (integer->hue n)
   (let ([n  (abs n)])
     (define i (+ (case (remainder n 6) [(0) 0] [(1) 2] [(2) 4] [(3) 1] [(4) 3] [(5) 5])
-                 (* 6 (quotient n 6))))
+                 (* 6 3 (quotient n 6))))
     (remainder (* i 59) 360)))
 
 (define (pen-color n)
@@ -117,16 +117,48 @@
 (define (brush-color n)
   (define h (integer->hue n))
   (hsv->rgb (list (brush-hue-transform h) (brush-saturation-transform h) (brush-value-transform h))))
-#|
+
+(define (integer->value n)
+  (* 1/7 (remainder (abs n) 8)))
+
+(define (pen-intensity-transform i)
+  (* 128 (expt (integer->value i) 3/4)))
+
+(define (brush-intensity-transform i)
+  (+ 127 (* 128 (expt (- 1 (integer->value i)) 3/4))))
+
+(define (gray-pen-color i)
+  (make-list 3 (pen-intensity-transform i)))
+
+(define (gray-brush-color i)
+  (make-list 3 (brush-intensity-transform i)))
+
+(plot (for/list ([n  (in-range 8)])
+        (function-interval sin (λ (x) (+ 1 (sin x))) n (+ 1 n)
+                           #:color (gray-brush-color n)
+                           #:line1-color (gray-pen-color n)
+                           #:line2-color (gray-pen-color n)
+                           #:line1-width 2 #:line2-width 2 #:alpha 1)))
+
+(define new-brush-colors
+  (append (list (gray-brush-color 0))
+          (build-list 120 brush-color)
+          (build-list 7 (λ (n) (gray-brush-color (- 7 n))))))
+
+(define new-pen-colors
+  (append (list (gray-brush-color 0))
+          (build-list 120 brush-color)
+          (build-list 7 (λ (n) (gray-brush-color (- 7 n))))))
+
 (plot (for/list ([n  (in-range 60)])
         (lines (list (vector 0 n) (vector 1 n))
                #:color (brush-color n)
                #:width 6)))
 
-(plot (for*/list ([i  (in-range 6)] [j  (in-range 60)])
+(plot (for*/list ([i  (in-range 6)] [j  (in-range 20)])
         (define n (+ i (* j 6)))
         (rectangles (list (vector (ivl (+ i 0.05) (+ i 0.95))
-                                  (ivl (+ j 0.3) (+ j 0.7))))
+                                  (ivl (+ j 0.05) (+ j 0.95))))
                     #:color (brush-color n)
                     #:line-color (pen-color n)
                     #:line-width 3))
@@ -146,10 +178,10 @@
                           #:line-width 3)))
       #:height 200)
 
-(plot (for/list ([n  (in-range 6)])
-        (function-interval (λ (x) (* 1/2 (sin (+ x n))))
-                           (λ (x) (+ 1/2 (sin (+ x n))))
-                           -4 4 #:color (brush-color n)
+(plot (for/list ([n  (in-range 12)])
+        (function-interval (λ (x) (* 1/2 (sqr (+ x (* 2 n)))))
+                           (λ (x) (+ 1/2 (sqr (+ x (* 2 n)))))
+                           0 12 #:color (brush-color n)
                            #:line1-color (pen-color n)
                            #:line2-color (pen-color n)
                            #:line1-width 2 #:line2-width 2)))
@@ -161,26 +193,3 @@
                            #:line1-color (->pen-color (+ n 1))
                            #:line2-color (->pen-color (+ n 1))
                            #:line1-width 2 #:line2-width 2)))
-|#
-
-(define (integer->value n)
-  (* 1/3 (case (remainder (abs n) 4) [(0) 0] [(1) 2] [(2) 1] [(3) 3])))
-
-(define (pen-intensity-transform i)
-  (* 95 (expt (integer->value i) 3/4)))
-
-(define (brush-intensity-transform i)
-  (+ 160 (* 95 (- 1 (integer->value i)))))
-
-(define (gray-pen-color i)
-  (make-list 3 (pen-intensity-transform i)))
-
-(define (gray-brush-color i)
-  (make-list 3 (brush-intensity-transform i)))
-
-(plot (for/list ([n  (in-range 8)])
-        (function-interval sin (λ (x) (+ 1 (sin x))) n (+ 1 n)
-                           #:color (gray-brush-color n)
-                           #:line1-color (gray-pen-color n)
-                           #:line2-color (gray-pen-color n)
-                           #:line1-width 2 #:line2-width 2 #:alpha 1)))
