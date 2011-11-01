@@ -47,7 +47,7 @@
    
    (test-exn
     "add-param.rkt - Parameters, s/s/u (should fail)"
-    exn:fail:contract?
+    exn:fail?
     (lambda ()
       (let* ([xs #"10"]
              [ys #"17"]
