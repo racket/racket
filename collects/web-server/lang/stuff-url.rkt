@@ -41,8 +41,21 @@
   (insert-param uri URL-KEY (bytes->string/utf-8 c)))
 
 (define (stuff-url stuffer uri c)
-  (insert-in-uri
-   uri ((stuffer-in stuffer) c)))
+  (with-handlers
+   ([(lambda (x)
+       (and (exn:fail? x)
+            (regexp-match #rx"serialize: expected argument of type <serializable object>; given (.*)"
+                          (exn-message x))))
+     (lambda (x)
+       (define non
+         (second
+          (regexp-match #rx"serialize: expected argument of type <serializable object>; given (.*)"
+                       (exn-message x))))
+       (error 'stuff-url 
+              "Cannot stuff ~e into a URL because it contains non-serializable pieces. Convert ~a to a serializable struct"
+              c non))])
+   (insert-in-uri
+    uri ((stuffer-in stuffer) c))))
 
 (define (stuffed-url? uri)
   (string? (extract-param uri URL-KEY)))
