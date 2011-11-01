@@ -8,7 +8,7 @@
 (define (monitor-scm repos start-rev notify-newer! notify-user!)
   (define (monitor-w/o-wait prev-rev)
     (define new-revs
-      (scm-revisions-after prev-rev))
+      (scm-revisions-after prev-rev repos))
     (match new-revs
       [(list)
        ; There has not yet been more revisions

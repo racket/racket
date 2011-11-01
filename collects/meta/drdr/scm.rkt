@@ -120,20 +120,23 @@
     [else
      empty]))
 
-(define (parse-push num author in-p)
-  (make-git-push num author (read-commits in-p)))
-
 (define (get-scm-commit-msg rev repo)
   (match-define (struct push-data (who _ branches)) (push-info rev))
-  (match-define (vector start-commit end-commit) (hash-ref branches master-branch))
-  (parameterize ([current-directory repo])
-    (system/output-port 
-     #:k (curry parse-push rev who)
-     (git-path)
-     "--no-pager" "log" "--date=iso" "--name-only" "--no-merges"
-     (format "~a..~a" start-commit end-commit))))
+  (make-git-push
+   rev who
+   (apply append
+          (for/list
+           ([(branch cs) branches])
+           (match-define (vector start-commit end-commit) cs)
+           (parameterize 
+            ([current-directory repo])
+            (system/output-port 
+             #:k read-commits
+             (git-path)
+             "--no-pager" "log" "--date=iso" "--name-only" "--no-merges"
+             (format "~a..~a" start-commit end-commit)))))))
 (provide/contract
- [struct git-push 
+  [struct git-push 
          ([num exact-nonnegative-integer?]
           [author string?]
           [commits (listof git-commit?)])]
@@ -212,16 +215,23 @@
 
 (define master-branch "refs/heads/master")
 
-(define (scm-revisions-after cur-rev)
+(define (contains-drdr-request? p)
+  (for*/or ([c (in-list (git-push-commits p))]
+            [m (in-list (git-commit-msg c))])
+           (regexp-match #rx"DrDr, test this push" m)))
+
+(define (scm-revisions-after cur-rev repo)
   (define newest-rev (newest-push))
   (for/list ([rev (in-range (add1 cur-rev) (add1 newest-rev))]
              #:when
              (let ([info (push-info rev)])
-               (and info (hash-has-key? (push-data-branches info) master-branch))))
+               (and info 
+                    (or (hash-has-key? (push-data-branches info) master-branch)
+                        (contains-drdr-request? (get-scm-commit-msg rev repo))))))
     rev))
 
 (provide/contract
  [scm-update (path? . -> . void?)]
- [scm-revisions-after (exact-nonnegative-integer? . -> . (listof exact-nonnegative-integer?))]
+ [scm-revisions-after (exact-nonnegative-integer? path-string? . -> . (listof exact-nonnegative-integer?))]
  [scm-export-file (exact-nonnegative-integer? path-string? string? path-string? . -> . void?)]
  [scm-export-repo (exact-nonnegative-integer? path-string? path-string? . -> . void?)])
