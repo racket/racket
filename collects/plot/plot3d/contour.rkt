@@ -1,10 +1,10 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/flonum racket/contract
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt")
 
-(provide contours3d contour-intervals3d)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Contour lines in 3D (using marching squares)

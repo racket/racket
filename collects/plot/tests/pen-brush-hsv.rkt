@@ -2,8 +2,6 @@
 
 (require plot plot/utils)
 
-(define (real-modulo x y) (- x (* y (floor (/ x y)))))
-
 (define (rgb->hsv rgb)
   (match-define (list r g b) (map (λ (x) (/ x 255)) rgb))
   (define mx (max r g b))

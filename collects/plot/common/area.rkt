@@ -15,7 +15,8 @@
          "draw.rkt"
          "math.rkt"
          "sample.rkt"
-         "parameters.rkt")
+         "parameters.rkt"
+         "legend.rkt")
 
 (provide plot-area%)
 
@@ -346,16 +347,16 @@
         (match-define (vector x y) v)
         
         (when outline?
-          (define alpha (send dc get-alpha))
+          ;(define alpha (send dc get-alpha))
           (define fg (send dc get-text-foreground))
           
-          (send dc set-alpha (alpha-expt alpha 1/8))
+          ;(send dc set-alpha (alpha-expt alpha 1/2))
           (send dc set-text-foreground (send dc get-background))
           (for* ([dx  (list -1 0 1)]
                  [dy  (list -1 0 1)]
                  #:when (not (and (zero? dx) (zero? dy))))
             (draw-text/anchor dc str (+ x dx) (+ y dy) anchor #t 0 angle))
-          (send dc set-alpha alpha)
+          ;(send dc set-alpha alpha)
           (send dc set-text-foreground fg))
         
         (draw-text/anchor dc str x y anchor #t 0 angle)))
@@ -607,9 +608,3 @@
       
       (clear-clipping-rect))
     ))  ; end class
-
-(struct legend-entry (label draw) #:transparent)
-
-(provide (contract-out
-          (struct legend-entry ([label string?] [draw ((is-a?/c plot-area%) real? real? real? real?
-                                                                            . -> . void?)]))))

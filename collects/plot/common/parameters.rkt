@@ -2,7 +2,7 @@
 
 ;; Parameters that control the look and behavior of plots.
 
-(require racket/contract unstable/parameter-group
+(require racket/contract unstable/parameter-group unstable/latent-contract
          "contract.rkt"
          "contract-doc.rkt"
          "draw.rkt"
@@ -43,6 +43,8 @@
 (defparam plot-x-max-ticks exact-positive-integer? 5)
 (defparam plot-y-max-ticks exact-positive-integer? 5)
 (defparam plot-z-max-ticks exact-positive-integer? 8)
+(defparam plot-d-max-ticks exact-positive-integer? 5)
+(defparam plot-r-max-ticks exact-positive-integer? 8)
 
 (defparam plot-x-far-max-ticks exact-positive-integer? 5)
 (defparam plot-y-far-max-ticks exact-positive-integer? 5)
@@ -51,44 +53,35 @@
 (defparam plot-decorations? boolean? #t)
 
 (define-parameter-group plot-axes?
-  (plot-x-axis?
-   plot-y-axis?
-   plot-z-axis?
-   plot-x-far-axis?
-   plot-y-far-axis?
-   plot-z-far-axis?)
+  (plot-x-axis? plot-x-far-axis?
+   plot-y-axis? plot-y-far-axis?
+   plot-z-axis? plot-z-far-axis?)
   #:struct list)
 
 (define-parameter-group plot-max-ticks
-  (plot-x-max-ticks
-   plot-y-max-ticks
-   plot-z-max-ticks
-   plot-x-far-max-ticks
-   plot-y-far-max-ticks
-   plot-z-far-max-ticks)
+  (plot-x-max-ticks plot-x-far-max-ticks
+   plot-y-max-ticks plot-y-far-max-ticks
+   plot-z-max-ticks plot-z-far-max-ticks
+   plot-d-max-ticks
+   plot-r-max-ticks)
   #:struct list)
 
 (define-parameter-group plot-appearance
    (plot-width
     plot-height
-    plot-foreground
-    plot-background
-    plot-foreground-alpha
-    plot-background-alpha
-    plot-line-width
-    plot-tick-size
-    plot-font-size
-    plot-font-family
-    plot-legend-anchor
-    plot-legend-box-alpha
-    plot-axes?
-    plot-max-ticks
-    plot-decorations?
+    plot-foreground plot-foreground-alpha
+    plot-background plot-background-alpha
+    plot-line-width plot-tick-size
+    plot-font-size plot-font-family
+    plot-legend-anchor plot-legend-box-alpha
+    plot-axes? plot-max-ticks plot-decorations?
     plot-animating?))
 
-(define (pen-gap) (* 2 (plot-line-width)))
+(defproc (pen-gap) real? #:document-body
+  (* 2 (plot-line-width)))
 
-(defproc (animated-samples [samples (and/c exact-integer? (>=/c 2))]) (and/c exact-integer? (>=/c 2))
+(defproc (animated-samples [samples (and/c exact-integer? (>=/c 2))]
+                           ) (and/c exact-integer? (>=/c 2)) #:document-body
   (cond [(plot-animating?)  (max 2 (ceiling (* 1/4 samples)))]
         [else  samples]))
 
@@ -138,38 +131,56 @@
 (defparam plot-x-transform axis-transform/c id-transform)
 (defparam plot-y-transform axis-transform/c id-transform)
 (defparam plot-z-transform axis-transform/c id-transform)
+(defparam plot-d-transform axis-transform/c id-transform)
+(defparam plot-r-transform axis-transform/c id-transform)
 
 (defparam plot-x-ticks ticks? (linear-ticks))
 (defparam plot-y-ticks ticks? (linear-ticks))
 (defparam plot-z-ticks ticks? (linear-ticks))
+(defparam plot-d-ticks ticks? (linear-ticks))
+(defparam plot-r-ticks ticks? (linear-ticks))
 
 (defparam plot-x-far-ticks ticks? (ticks-mimic plot-x-ticks))
 (defparam plot-y-far-ticks ticks? (ticks-mimic plot-y-ticks))
 (defparam plot-z-far-ticks ticks? (ticks-mimic plot-z-ticks))
 
-(struct axis (transform ticks far-ticks) #:transparent)
+(struct axis (transform ticks) #:transparent)
+(define-parameter-group plot-d-axis (plot-d-transform plot-d-ticks) #:struct axis)
+(define-parameter-group plot-r-axis (plot-r-transform plot-r-ticks) #:struct axis)
 
-(define-parameter-group plot-x-axis (plot-x-transform plot-x-ticks plot-x-far-ticks) #:struct axis)
-(define-parameter-group plot-y-axis (plot-y-transform plot-y-ticks plot-y-far-ticks) #:struct axis)
-(define-parameter-group plot-z-axis (plot-z-transform plot-z-ticks plot-z-far-ticks) #:struct axis)
-(define-parameter-group plot-axes (plot-x-axis plot-y-axis plot-z-axis) #:struct list)
+(struct dual-axis (transform ticks far-ticks) #:transparent)
+(define-parameter-group plot-x-axis (plot-x-transform plot-x-ticks plot-x-far-ticks)
+  #:struct dual-axis)
+(define-parameter-group plot-y-axis (plot-y-transform plot-y-ticks plot-y-far-ticks)
+  #:struct dual-axis)
+(define-parameter-group plot-z-axis (plot-z-transform plot-z-ticks plot-z-far-ticks)
+  #:struct dual-axis)
 
-(defproc (default-x-ticks [x-min real?] [x-max real?]) (listof tick?)
+(define-parameter-group plot-axes (plot-x-axis plot-y-axis plot-z-axis plot-d-axis plot-r-axis)
+  #:struct list)
+
+(defproc (default-x-ticks [x-min real?] [x-max real?]) (listof tick?) #:document-body
   ((plot-x-ticks) x-min x-max (plot-x-max-ticks)))
 
-(defproc (default-y-ticks [y-min real?] [y-max real?]) (listof tick?)
+(defproc (default-y-ticks [y-min real?] [y-max real?]) (listof tick?) #:document-body
   ((plot-y-ticks) y-min y-max (plot-y-max-ticks)))
 
-(defproc (default-z-ticks [z-min real?] [z-max real?]) (listof tick?)
+(defproc (default-z-ticks [z-min real?] [z-max real?]) (listof tick?) #:document-body
   ((plot-z-ticks) z-min z-max (plot-z-max-ticks)))
 
-(defproc (default-x-far-ticks [x-min real?] [x-max real?]) (listof tick?)
+(defproc (default-d-ticks [d-min real?] [d-max real?]) (listof tick?) #:document-body
+  ((plot-d-ticks) d-min d-max (plot-d-max-ticks)))
+
+(defproc (default-r-ticks [r-min real?] [r-max real?]) (listof tick?) #:document-body
+  ((plot-r-ticks) r-min r-max (plot-r-max-ticks)))
+
+(defproc (default-x-far-ticks [x-min real?] [x-max real?]) (listof tick?) #:document-body
   ((plot-x-far-ticks) x-min x-max (plot-x-far-max-ticks)))
 
-(defproc (default-y-far-ticks [y-min real?] [y-max real?]) (listof tick?)
+(defproc (default-y-far-ticks [y-min real?] [y-max real?]) (listof tick?) #:document-body
   ((plot-y-far-ticks) y-min y-max (plot-y-far-max-ticks)))
 
-(defproc (default-z-far-ticks [z-min real?] [z-max real?]) (listof tick?)
+(defproc (default-z-far-ticks [z-min real?] [z-max real?]) (listof tick?) #:document-body
   ((plot-z-far-ticks) z-min z-max (plot-z-far-max-ticks)))
 
 ;; ===================================================================================================
@@ -231,11 +242,11 @@
 
 ;; Contours
 
-(defproc (default-contour-colors [zs (listof real?)]) (listof plot-color/c)
+(defproc (default-contour-colors [zs (listof real?)]) (listof plot-color/c) #:document-body
   (color-seq* (list (->pen-color 5) (->pen-color 0) (->pen-color 1))
               (length zs)))
 
-(defproc (default-contour-fill-colors [zs (listof real?)]) (listof plot-color/c)
+(defproc (default-contour-fill-colors [zs (listof real?)]) (listof plot-color/c) #:document-body
   (color-seq* (list (->brush-color 5) (->brush-color 0) (->brush-color 1))
               (sub1 (length zs))))
 
@@ -265,10 +276,12 @@
 (defparam x-axis-ticks? boolean? #t)
 (defparam y-axis-ticks? boolean? #t)
 (defparam z-axis-ticks? boolean? #t)
+(defparam polar-axes-ticks? boolean? #t)
 
 (defparam x-axis-labels? boolean? #f)
 (defparam y-axis-labels? boolean? #f)
 (defparam z-axis-labels? boolean? #f)
+(defparam polar-axes-labels? boolean? #t)
 
 (defparam x-axis-far? boolean? #f)
 (defparam y-axis-far? boolean? #f)
@@ -277,10 +290,9 @@
 (defparam x-axis-alpha (real-in 0 1) 1)
 (defparam y-axis-alpha (real-in 0 1) 1)
 (defparam z-axis-alpha (real-in 0 1) 1)
+(defparam polar-axes-alpha (real-in 0 1) 1/2)
 
 (defparam polar-axes-number exact-positive-integer? 12)
-(defparam polar-axes-ticks? boolean? #t)
-(defparam polar-axes-max-ticks exact-positive-integer? 8)
 
 (defparam label-anchor anchor/c 'left)
 (defparam label-angle real? 0)
@@ -304,11 +316,11 @@
 
 ;; Isosurfaces
 
-(defproc (default-isosurface-colors [zs (listof real?)]) (listof plot-color/c)
+(defproc (default-isosurface-colors [zs (listof real?)]) (listof plot-color/c) #:document-body
   (color-seq* (list (->brush-color 5) (->brush-color 0) (->brush-color 1))
               (length zs)))
 
-(defproc (default-isosurface-line-colors [zs (listof real?)]) (listof plot-color/c)
+(defproc (default-isosurface-line-colors [zs (listof real?)]) (listof plot-color/c) #:document-body
   (color-seq* (list (->pen-color 5) (->pen-color 0) (->pen-color 1))
               (length zs)))
 

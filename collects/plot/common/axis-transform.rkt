@@ -5,48 +5,35 @@
          "contract.rkt"
          "contract-doc.rkt")
 
-(provide id-function
-         axis-transform/c
-         id-transform
-         apply-transform
-         make-axis-transform
-         axis-transform-compose
-         axis-transform-append
-         axis-transform-bound
-         log-transform
-         cbrt-transform
-         hand-drawn-transform
-         stretch-transform
-         collapse-transform)
+(provide (all-defined-out))
 
 (struct invertible-function (f g) #:transparent)
 
-(provide (contract-out (struct invertible-function ([f (real? . -> . real?)]
-                                                    [g (real? . -> . real?)]))))
-
-(define (invertible-compose f1 f2)
+(defproc (invertible-compose [f1 invertible-function?] [f2 invertible-function?]
+                             ) invertible-function?
   (match-let ([(invertible-function f1 g1)  f1]
               [(invertible-function f2 g2)  f2])
     (invertible-function (compose f1 f2) (compose g2 g1))))
 
-(define axis-transform/c (real? real? invertible-function? . -> . invertible-function?))
+(defcontract axis-transform/c (real? real? invertible-function? . -> . invertible-function?))
 
 (defproc (id-transform [x-min real?] [x-max real?] [old-function invertible-function?]
                        ) invertible-function?
   old-function)
 
-(define id-function (invertible-function (λ (x) x) (λ (x) x)))
+(defthing id-function invertible-function? (invertible-function (λ (x) x) (λ (x) x)))
 
 (defproc (apply-transform [t axis-transform/c] [x-min real?] [x-max real?]) invertible-function?
   (t x-min x-max id-function))
 
 ;; Turns any total, surjective, monotone flonum op and its inverse into an axis transform
-(define ((make-axis-transform f g) x-min x-max old-function)
-  (define fx-min (f x-min))
-  (define fx-scale (/ (- x-max x-min) (- (f x-max) fx-min)))
-  (define (new-f x) (+ x-min (* (- (f x) fx-min) fx-scale)))
-  (define (new-g y) (g (+ fx-min (/ (- y x-min) fx-scale))))
-  (invertible-compose (invertible-function new-f new-g) old-function))
+(defproc (make-axis-transform [f axis-transform/c] [g axis-transform/c]) axis-transform/c
+  (λ (x-min x-max old-function)
+    (define fx-min (f x-min))
+    (define fx-scale (/ (- x-max x-min) (- (f x-max) fx-min)))
+    (define (new-f x) (+ x-min (* (- (f x) fx-min) fx-scale)))
+    (define (new-g y) (g (+ fx-min (/ (- y x-min) fx-scale))))
+    (invertible-compose (invertible-function new-f new-g) old-function)))
 
 ;; ===================================================================================================
 ;; Axis transform combinators

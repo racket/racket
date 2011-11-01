@@ -1,73 +1,90 @@
 #lang racket/base
 
-(require racket/contract)
+(require racket/contract unstable/latent-contract)
 
 ;; ===================================================================================================
-;; Common exports
+;; General exports
 
-(require "common/parameters.rkt"
-         "common/contract.rkt")
+(require "contracted/parameters.rkt")
+(provide (all-from-out "contracted/parameters.rkt"))
 
-(provide (all-from-out "common/parameters.rkt")
-         (all-from-out "common/contract.rkt"))
-
-(require "common/axis-transform.rkt")
-(provide (all-from-out "common/axis-transform.rkt"))
-
-(require "common/ticks.rkt")
-(provide (all-from-out "common/ticks.rkt"))
-
-(require "common/math.rkt")
+(require "contracted/math.rkt")
 (provide (struct-out ivl))
 
-(require "common/plot-element.rkt")
-(provide plot-element? non-renderer? renderer2d? renderer3d?)
+(require "contracted/axis-transform.rkt")
+(provide axis-transform-compose axis-transform-append axis-transform-bound
+         id-transform log-transform cbrt-transform hand-drawn-transform
+         stretch-transform collapse-transform)
+
+(require "contracted/ticks.rkt")
+(provide (all-from-out "contracted/ticks.rkt"))
+
+(require "contracted/date-time.rkt")
+(provide (struct-out plot-time)
+         plot-time->seconds seconds->plot-time
+         datetime->real)
 
 (require "common/non-renderer.rkt")
-(provide (all-from-out "common/non-renderer.rkt"))
+(provide (activate-contract-out x-ticks y-ticks z-ticks invisible-box invisible-box3d))
 
 ;; ===================================================================================================
 ;; 2D exports
 
-(require "plot2d/plot.rkt"
-         "plot2d/point.rkt"
-         "plot2d/line.rkt"
-         "plot2d/interval.rkt"
-         "plot2d/contour.rkt"
-         "plot2d/rectangle.rkt"
-         "plot2d/decoration.rkt"
-         "plot2d/kde.rkt")
+(require "plot2d/plot.rkt")
+(provide (activate-contract-out plot/dc plot plot-bitmap plot-pict plot-snip plot-frame plot-file))
 
-(provide (all-from-out "plot2d/plot.rkt")
-         (all-from-out "plot2d/point.rkt")
-         (all-from-out "plot2d/line.rkt")
-         (all-from-out "plot2d/interval.rkt")
-         (all-from-out "plot2d/contour.rkt")
-         (all-from-out "plot2d/rectangle.rkt")
-         (all-from-out "plot2d/decoration.rkt")
-         density)
+(require "plot2d/point.rkt")
+(provide (activate-contract-out points vector-field error-bars))
+
+(require "plot2d/line.rkt")
+(provide (activate-contract-out lines parametric polar function inverse))
+
+(require "plot2d/interval.rkt")
+(provide (activate-contract-out
+          lines-interval parametric-interval polar-interval function-interval inverse-interval))
+
+(require "plot2d/contour.rkt")
+(provide (activate-contract-out contours contour-intervals))
+
+(require "plot2d/rectangle.rkt")
+(provide (activate-contract-out rectangles area-histogram discrete-histogram))
+
+(require "plot2d/decoration.rkt")
+(provide (activate-contract-out
+          x-axis y-axis axes polar-axes
+          x-tick-lines y-tick-lines tick-grid
+          point-label parametric-label polar-label function-label inverse-label))
+
+(require "plot2d/kde.rkt")
+(provide (activate-contract-out density))
 
 ;; ===================================================================================================
 ;; 3D exports
 
-(require "plot3d/plot.rkt"
-         "plot3d/surface.rkt"
-         "plot3d/contour.rkt"
-         "plot3d/line.rkt"
-         "plot3d/point.rkt"
-         "plot3d/isosurface.rkt"
-         "plot3d/rectangle.rkt")
+(require "plot3d/plot.rkt")
+(provide (activate-contract-out
+          plot3d/dc plot3d plot3d-bitmap plot3d-pict plot3d-snip plot3d-frame plot3d-file))
 
-(provide (all-from-out "plot3d/plot.rkt")
-         (all-from-out "plot3d/surface.rkt")
-         (all-from-out "plot3d/contour.rkt")
-         (all-from-out "plot3d/line.rkt")
-         (all-from-out "plot3d/point.rkt")
-         (all-from-out "plot3d/isosurface.rkt")
-         (all-from-out "plot3d/rectangle.rkt"))
+(require "plot3d/surface.rkt")
+(provide (activate-contract-out surface3d))
+
+(require "plot3d/contour.rkt")
+(provide (activate-contract-out contours3d contour-intervals3d))
+
+(require "plot3d/line.rkt")
+(provide (activate-contract-out lines3d parametric3d))
+
+(require "plot3d/point.rkt")
+(provide (activate-contract-out points3d))
+
+(require "plot3d/isosurface.rkt")
+(provide (activate-contract-out isosurface3d isosurfaces3d polar3d))
+
+(require "plot3d/rectangle.rkt")
+(provide (activate-contract-out rectangles3d discrete-histogram3d))
 
 ;; ===================================================================================================
 ;; Deprecated functions
 
-(require "deprecated.rkt")
-(provide (all-from-out "deprecated.rkt"))
+(require "deprecated/deprecated.rkt")
+(provide mix (activate-contract-out line contour shade surface))

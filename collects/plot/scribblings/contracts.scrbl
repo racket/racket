@@ -2,7 +2,7 @@
 
 @(require "common.rkt")
 
-@declare-exporting[plot]
+@declare-exporting[plot/utils]
 
 @title[#:tag "contracts"]{Plot Contracts}
 
@@ -43,7 +43,7 @@ Identifies legal font family values. See @(racket plot-font-family).
 The contract for the @(racket #:sym) arguments in @(racket points) and @(racket points3d), and the parameter @(racket point-sym).
 }
 
-@defthing[known-point-symbols (listof symbol?)]{
+@doc-apply[known-point-symbols]{
 A list containing the symbols that are valid @(racket points) symbols.
 
 @interaction[#:eval plot-eval

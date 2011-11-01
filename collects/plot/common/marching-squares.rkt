@@ -1,10 +1,12 @@
 #lang racket/base
 
-(require racket/flonum racket/fixnum racket/list racket/match racket/unsafe/ops
+(require racket/flonum racket/fixnum racket/list racket/match racket/unsafe/ops racket/contract
          (for-syntax racket/base)
-         "math.rkt")
+         "math.rkt"
+         "contract-doc.rkt")
 
-(provide heights->lines heights->polys)
+(provide heights->lines heights->polys
+         heights->lines:doc heights->polys:doc)
 
 ;; Returns the interpolated distance of z from za toward zb
 ;; Examples: if z = za, this returns 0.0
@@ -141,7 +143,9 @@ above.
   (let ([id  (exact->inexact id)] ...)
     body0 body ...))
 
-(define (heights->lines xa xb ya yb z z1 z2 z3 z4)
+(defproc (heights->lines [xa real?] [xb real?] [ya real?] [yb real?]
+                         [z real?] [z1 real?] [z2 real?] [z3 real?] [z4 real?]
+                         ) (list/c (vector/c real? real? real?) (vector/c real? real? real?))
   (check-all-real! 'heights->lines xa xb ya yb z z1 z2 z3 z4)
   (let-exact->inexact
    (xa xb ya yb z z1 z2 z3 z4)
@@ -585,7 +589,10 @@ above.
           polys2210 polys2211 polys2212 
           polys2220 polys2221 polys2222))
 
-(define (heights->polys xa xb ya yb za zb z1 z2 z3 z4)
+(defproc (heights->polys [xa real?] [xb real?] [ya real?] [yb real?]
+                         [za real?] [zb real?]
+                         [z1 real?] [z2 real?] [z3 real?] [z4 real?]
+                         ) (listof (vector/c real? real? real?))
   (check-all-real! xa xb ya yb za zb z1 z2 z3 z4)
   (let-exact->inexact
    (xa xb ya yb za zb z1 z2 z3 z4)

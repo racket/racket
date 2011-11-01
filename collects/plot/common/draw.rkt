@@ -58,7 +58,7 @@
 
 (define (color%? c) (is-a? c color%))
 
-(define (->color c)
+(defproc (->color [c color/c]) (list/c real? real? real?)
   (match c
     [(? color%?)  (list (send c red) (send c green) (send c blue))]
     [(? string?)  (define color (send the-color-database find-color c))
@@ -82,7 +82,7 @@
      (160 32 240)     ; magenta
      (160 160 160)))  ; gray
 
-(define (->pen-color c)
+(defproc (->pen-color [c plot-color/c]) (list/c real? real? real?)
   (cond [(exact-integer? c)  (vector-ref pen-colors (remainder (abs c) 8))]
         [else                (->color c)]))
 
@@ -96,11 +96,11 @@
      (240 224 255)    ; magenta
      (212 212 212)))  ; gray
 
-(define (->brush-color c)
+(defproc (->brush-color [c plot-color/c]) (list/c real? real? real?)
   (cond [(exact-integer? c)  (vector-ref brush-colors (remainder (abs c) 8))]
         [else                (->color c)]))
 
-(define (->pen-style s)
+(defproc (->pen-style [s plot-pen-style/c]) symbol?
   (cond [(exact-integer? s)  (case (remainder (abs s) 5)
                                [(0)  'solid]
                                [(1)  'dot]
@@ -110,7 +110,7 @@
         [(symbol? s)  s]
         [else  (raise-type-error '->pen-style "symbol or integer" s)]))
 
-(define (->brush-style s)
+(defproc (->brush-style [s plot-brush-style/c]) symbol?
   (cond [(exact-integer? s)  (case (remainder (abs s) 7)
                                [(0)  'solid]
                                [(1)  'bdiagonal-hatch]
@@ -146,9 +146,10 @@
     (map list rs gs bs)))
 
 ;; Returns an alpha value b such that, if 
-(define (alpha-expt a n)
+(defproc (alpha-expt [a (real-in 0 1)] [n (>/c 0)]) real?
   (- 1 (expt (- 1 a) n)))
 
-(define (maybe-apply/list list-or-proc xs)
+(defproc (maybe-apply/list [list-or-proc (or/c (listof any/c) (any/c . -> . any/c))]
+                           [xs (listof any/c)]) (listof any/c)
   (cond [(procedure? list-or-proc)  (list-or-proc xs)]
         [else                       list-or-proc]))

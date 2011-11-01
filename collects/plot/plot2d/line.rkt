@@ -3,10 +3,10 @@
 ;; Line renderers.
 
 (require racket/contract racket/class racket/match racket/math racket/list
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt")
 
-(provide lines parametric polar function inverse)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Lines, parametric, polar
@@ -50,7 +50,7 @@
                      [#:alpha alpha (real-in 0 1) (line-alpha)]
                      [#:label label (or/c string? #f) #f]
                      ) renderer2d?
-  (lines (sample-parametric f t-min t-max samples)
+  (lines (map f (linear-seq t-min t-max samples))
          #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
          #:color color #:width width #:style style #:alpha alpha
          #:label label))
@@ -66,7 +66,8 @@
                 [#:alpha alpha (real-in 0 1) (line-alpha)]
                 [#:label label (or/c string? #f) #f]
                 ) renderer2d?
-  (lines (sample-polar f θ-min θ-max samples)
+  (lines (let ([θs  (linear-seq θ-min θ-max samples)])
+           (map polar->cartesian θs (map* f θs)))
          #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
          #:color color #:width width #:style style #:alpha alpha
          #:label label))

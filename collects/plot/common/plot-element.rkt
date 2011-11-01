@@ -2,6 +2,7 @@
 
 (require racket/list racket/contract racket/match
          "math.rkt"
+         "ticks.rkt"
          "contract.rkt"
          "contract-doc.rkt"
          "parameters.rkt"
@@ -14,58 +15,69 @@
 (struct renderer2d plot-element (render-proc) #:transparent)
 (struct renderer3d plot-element (render-proc) #:transparent)
 
+(defcontract bounds-fun/c ((vectorof ivl?) . -> . (vectorof ivl?)))
+(defcontract ticks-fun/c ((vectorof ivl?) . -> . any))
+
 ;; ===================================================================================================
 ;; Common field values
 
-(define (default-ticks-fun r)
-  (match r
-    [(vector (ivl xa xb) (ivl ya yb))
-     (values (default-x-ticks xa xb) (default-x-far-ticks xa xb)
-             (default-y-ticks ya yb) (default-y-far-ticks ya yb))]
-    [(vector (ivl xa xb) (ivl ya yb) (ivl za zb))
-     (values (default-x-ticks xa xb) (default-x-far-ticks xa xb)
-             (default-y-ticks ya yb) (default-y-far-ticks ya yb)
+(defthing default-ticks-fun ticks-fun/c
+  (λ (r)
+    (match r
+      [(vector (ivl xa xb) (ivl ya yb))
+       (values (default-x-ticks xa xb) (default-x-far-ticks xa xb)
+               (default-y-ticks ya yb) (default-y-far-ticks ya yb))]
+      [(vector (ivl xa xb) (ivl ya yb) (ivl za zb))
+       (values (default-x-ticks xa xb) (default-x-far-ticks xa xb)
+               (default-y-ticks ya yb) (default-y-far-ticks ya yb)
              (default-z-ticks za zb) (default-z-far-ticks za zb))]
-    [_  (raise-type-error 'default-ticks-fun "2- or 3-vector of ivl" r)]))
+      [_  (raise-type-error 'default-ticks-fun "2- or 3-vector of ivl" r)])))
 
-(define ((function-bounds-fun f samples) r)
-  (match-define (vector xi yi) r)
-  (cond [(ivl-known? xi)
-         (match-define (ivl x-min x-max) xi)
-         (match-define (list xs ys) (f x-min x-max samples))
-         (define rys (filter regular? ys))
-         (cond [(not (empty? rys))  (vector xi (ivl (apply min* rys) (apply max* rys)))]
-               [else  r])]
-        [else  r]))
+(defproc (function-bounds-fun [f sampler/c] [samples exact-nonnegative-integer?]) bounds-fun/c
+  (λ (r)
+    (match-define (vector xi yi) r)
+    (cond [(ivl-known? xi)
+           (match-define (ivl x-min x-max) xi)
+           (match-define (list xs ys) (f x-min x-max samples))
+           (define rys (filter regular? ys))
+           (cond [(not (empty? rys))  (vector xi (ivl (apply min* rys) (apply max* rys)))]
+                 [else  r])]
+          [else  r])))
 
-(define ((inverse-bounds-fun f samples) r)
-  (match-define (vector xi yi) r)
-  (cond [(ivl-known? yi)
-         (match-define (ivl y-min y-max) yi)
-         (match-define (list ys xs) (f y-min y-max samples))
-         (define rxs (filter regular? xs))
-         (cond [(not (empty? rxs))  (vector (ivl (apply min* rxs) (apply max* rxs)) yi)]
-               [else  r])]
-        [else  r]))
+(defproc (inverse-bounds-fun [f sampler/c] [samples exact-nonnegative-integer?]) bounds-fun/c
+  (λ (r)
+    (match-define (vector xi yi) r)
+    (cond [(ivl-known? yi)
+           (match-define (ivl y-min y-max) yi)
+           (match-define (list ys xs) (f y-min y-max samples))
+           (define rxs (filter regular? xs))
+           (cond [(not (empty? rxs))  (vector (ivl (apply min* rxs) (apply max* rxs)) yi)]
+                 [else  r])]
+          [else  r])))
 
-(define ((function-interval-bounds-fun f1 f2 samples) r)
-  (rect-join ((function-bounds-fun f1 samples) r)
-             ((function-bounds-fun f2 samples) r)))
+(defproc (function-interval-bounds-fun [f1 sampler/c] [f2 sampler/c]
+                                       [samples exact-nonnegative-integer?]) bounds-fun/c
+  (λ (r)
+    (rect-join ((function-bounds-fun f1 samples) r)
+               ((function-bounds-fun f2 samples) r))))
 
-(define ((inverse-interval-bounds-fun f1 f2 samples) r)
-  (rect-join ((inverse-bounds-fun f1 samples) r)
-             ((inverse-bounds-fun f2 samples) r)))
+(defproc (inverse-interval-bounds-fun [f1 sampler/c] [f2 sampler/c]
+                                      [samples exact-nonnegative-integer?]) bounds-fun/c
+  (λ (r)
+    (rect-join ((inverse-bounds-fun f1 samples) r)
+               ((inverse-bounds-fun f2 samples) r))))
 
-(define ((surface3d-bounds-fun f samples) r)
-  (match-define (vector xi yi zi) r)
-  (cond [(and (ivl-known? xi) (ivl-known? yi))
-         (match-define (ivl x-min x-max) xi)
-         (match-define (ivl y-min y-max) yi)
-         (match-define (list xs ys zss) (f x-min x-max samples y-min y-max samples))
-         (define zs (filter regular? (2d-sample->list zss)))
-         (cond [(not (empty? zs)) (vector xi yi (ivl (apply min* zs) (apply max* zs)))]
-               [else  r])]
-        [else  r]))
+(defproc (surface3d-bounds-fun [f 2d-sampler/c] [samples exact-nonnegative-integer?]) bounds-fun/c
+  (λ (r)
+    (match-define (vector xi yi zi) r)
+    (cond [(and (ivl-known? xi) (ivl-known? yi))
+           (match-define (ivl x-min x-max) xi)
+           (match-define (ivl y-min y-max) yi)
+           (match-define (list xs ys zss) (f x-min x-max samples y-min y-max samples))
+           (define zs (filter regular? (2d-sample->list zss)))
+           (cond [(not (empty? zs)) (vector xi yi (ivl (apply min* zs) (apply max* zs)))]
+                 [else  r])]
+          [else  r])))
 
 ;; ===================================================================================================
 ;; Fixpoint computation of bounding rectangles

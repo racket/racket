@@ -1,18 +1,11 @@
 #lang racket/base
 
-(require racket/contract racket/match racket/class racket/snip racket/draw racket/string
-         ;; Plotting
-         "common/deprecation-warning.rkt"
-         "common/contract.rkt"
-         "common/contract-doc.rkt"
-         "common/plot-element.rkt"
-         "plot2d/line.rkt"
-         "plot2d/contour.rkt"
-         "plot3d/surface.rkt"
-         "deprecated/renderers.rkt"
-         "utils.rkt")
+(require racket/contract plot/utils
+         "../common/deprecation-warning.rkt"
+         "../common/contract-doc.rkt"
+         "renderers.rkt")
 
-(provide mix line contour shade surface)
+(provide (all-defined-out))
 
 (define (mix . renderers)
   (deprecation-warning "mix" "list")

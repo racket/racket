@@ -2,9 +2,19 @@
 
 (require rackunit racket/date
          plot plot/utils
-         plot/common/date-time
-         plot/common/vector
-         plot/common/utils)
+         plot/common/utils
+         (only-in plot/common/math
+                  vector-andmap
+                  vector-ormap)
+         (only-in plot/common/date-time
+                  utc-seconds-round-year
+                  utc-seconds-round-month
+                  seconds-per-minute
+                  seconds-per-hour
+                  seconds-per-day
+                  seconds-per-week)
+         (only-in plot/common/format
+                  int-str->e-str frac-str->e-str))
 
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #t) '(0 1))
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #f) '(0 2/3))
@@ -14,6 +24,19 @@
 (check-exn exn:fail:contract?
            (λ () (vector-field (λ (v [z 0]) v) -4 4 -4 4))
            "Exception should be 'two of the clauses in the or/c might both match' or similar")
+
+;; ===================================================================================================
+;; Formatting
+
+(check-equal? (int-str->e-str "") "0")
+(check-equal? (int-str->e-str "0") "0")
+(check-equal? (int-str->e-str "10") "1×10\u00b9")
+
+(check-equal? (frac-str->e-str "") "0")
+(check-equal? (frac-str->e-str "0") "0")
+(check-equal? (frac-str->e-str "00") "0")
+(check-equal? (frac-str->e-str "1") "1×10\u207b\u00b9")
+(check-equal? (frac-str->e-str "01") "1×10\u207b\u00b2")
 
 ;; ===================================================================================================
 ;; Date rounding

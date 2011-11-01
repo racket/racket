@@ -1,48 +1,26 @@
 #lang racket/base
 
-(require racket/contract racket/match racket/list
-         "common/contract-doc.rkt"
-         "common/format.rkt"
-         ;"common/math.rkt"
-         ;"common/contract.rkt"
-         ;"common/format.rkt"
-         ;"common/plot-element.rkt"
-         ;"common/area.rkt"
-         ;"common/axis-transform.rkt"
-         ;"common/utils.rkt"
-         ;"common/marching-squares.rkt"
-         ;"common/marching-cubes.rkt"
-         ;"plot2d/clip.rkt"
-         ;"plot3d/clip.rkt"
-         )
+;; Functions that sample from functions, and functions that create memoized samplers.
 
-(require "common/ticks.rkt")
-(provide (all-from-out "common/ticks.rkt"))
-
-(require "common/parameters.rkt")
-(provide (all-from-out "common/parameters.rkt"))
-
-(require "common/sample.rkt")
-(provide (all-from-out "common/sample.rkt"))
-
-(require "common/draw.rkt")
-(provide maybe-apply/list)
-
-(require "common/legend.rkt")
-(provide (all-from-out "common/legend.rkt"))
-
-(require "common/plot-element.rkt")
-(provide (all-from-out "common/plot-element.rkt"))
-
-(require "common/marching-squares.rkt")
-(provide (all-from-out "common/marching-squares.rkt"))
+(require racket/match racket/flonum racket/math racket/contract racket/list
+         "parameters.rkt"
+         "sample.rkt"
+         "ticks.rkt"
+         "format.rkt"
+         "contract-doc.rkt")
 
 (provide (all-defined-out))
 
-(define function->sampler (make-function->sampler plot-x-transform))
-(define inverse->sampler (make-function->sampler plot-y-transform))
-(define 2d-function->sampler (make-2d-function->sampler plot-x-transform plot-y-transform))
-(define 3d-function->sampler
+(defthing function->sampler ((real? . -> . real?) . -> . sampler/c)
+  (make-function->sampler plot-x-transform))
+
+(defthing inverse->sampler ((real? . -> . real?) . -> . sampler/c)
+  (make-function->sampler plot-y-transform))
+
+(defthing 2d-function->sampler ((real? real? . -> . real?) . -> . 2d-sampler/c)
+  (make-2d-function->sampler plot-x-transform plot-y-transform))
+
+(defthing 3d-function->sampler ((real? real? real? . -> . real?) . -> . 3d-sampler/c)
   (make-3d-function->sampler plot-x-transform plot-y-transform plot-z-transform))
 
 (defproc (contour-ticks [z-min real?] [z-max real?]

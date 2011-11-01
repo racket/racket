@@ -3,11 +3,11 @@
 ;; The histogram renderer.
 
 (require racket/match racket/contract racket/class racket/list
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt"
          "../common/utils.rkt")
 
-(provide rectangles area-histogram discrete-histogram)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Rectangles

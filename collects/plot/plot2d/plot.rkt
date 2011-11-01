@@ -6,21 +6,20 @@
          slideshow/pict
          unstable/parameter-group
          unstable/lazy-require
-         (for-syntax racket/base
-                     syntax/strip-context
-                     racket/syntax)
-         plot/custom plot/utils
-         "../common/contract-doc.rkt"
+         "../common/contract.rkt"
+         "../common/math.rkt"
+         "../common/parameters.rkt"
+         "../common/plot-element.rkt"
          "../common/file-type.rkt"
          "../common/deprecation-warning.rkt"
-         "../common/utils.rkt"
+         "../common/contract-doc.rkt"
          "area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
 ;;   cannot instantiate `racket/gui/base' a second time in the same process
 (lazy-require ["../common/gui.rkt" (make-snip-frame)])
 
-(provide plot/dc plot plot-bitmap plot-pict plot-snip plot-frame plot-file)
+(provide (except-out (all-defined-out) make-snip-frame))
 
 ;; ===================================================================================================
 ;; Plot to a given device context

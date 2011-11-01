@@ -9,7 +9,7 @@
 
 (provide (all-defined-out))
 
-(define (build-linear-seq start step num)
+(defproc (build-linear-seq [start real?] [step real?] [num exact-nonnegative-integer?]) (listof real?)
   (for/list ([n  (in-range num)])
     (+ start (* n step))))
 
@@ -49,6 +49,13 @@
                (blend (vector-ref pts (add1 i)) (vector-ref pts i) f)))
          int-parts frac-parts)))
 
+(defproc (nonlinear-seq [start real?] [end real?] [num exact-nonnegative-integer?]
+                        [transform axis-transform/c]
+                        [#:start? start? boolean? #t]
+                        [#:end? end? boolean? #t]) (listof real?)
+  (match-define (invertible-function _ finv) (apply-transform transform start end))
+  (map finv (linear-seq start end num #:start? start? #:end? end?)))
+
 (struct mapped-function (f fmap) #:transparent
   #:property prop:procedure
   (λ (g x) ((mapped-function-f g) x)))
@@ -60,85 +67,80 @@
     [(? mapped-function?)  ((mapped-function-fmap f) xs)]
     [_  (map f xs)]))
 
-(defproc (nonlinear-seq [start real?] [end real?] [num exact-nonnegative-integer?]
-                        [transform axis-transform/c]
-                        [#:start? start? boolean? #t]
-                        [#:end? end? boolean? #t]) (listof real?)
-  (match-define (invertible-function _ finv) (apply-transform transform start end))
-  (map finv (linear-seq start end num #:start? start? #:end? end?)))
+;; ===================================================================================================
+;; Making memoized samplers
 
-(define 2pi (* 2 pi))
+(defcontract sample/c (list/c (listof real?) (listof real?)))
+(defcontract sampler/c (real? real? exact-nonnegative-integer? . -> . sample/c))
 
-(define ((2d-polar->3d-function f) x y z)
-  (let ([x  (exact->inexact x)]
-        [y  (exact->inexact y)]
-        [z  (exact->inexact z)])
-    (define-values (θ ρ)
-      (cond [(and (fl= x 0.0) (fl= y 0.0))  (values 0.0 0.0)]
-            [else  (values (flmodulo (flatan2 y x) 2pi)
-                           (flatan (fl/ z (distance x y))))]))
-    (define r (exact->inexact (f θ ρ)))
-    (fl- r (distance x y z))))
+(defcontract 2d-sample/c (list/c (listof real?) (listof real?)
+                                 (vectorof (vectorof real?))))
+(defcontract 2d-sampler/c (real? real? exact-nonnegative-integer?
+                                 real? real? exact-nonnegative-integer?
+                                 . -> . 2d-sample/c))
 
-(define (sample-parametric f t-min t-max samples)
-  (map* f (linear-seq t-min t-max samples)))
+(defcontract 3d-sample/c (list/c (listof real?) (listof real?) (listof real?)
+                                 (vectorof (vectorof (vectorof real?)))))
+(defcontract 3d-sampler/c (real? real? exact-nonnegative-integer?
+                                 real? real? exact-nonnegative-integer?
+                                 real? real? exact-nonnegative-integer?
+                                 . -> . 3d-sample/c))
 
-(define (sample-polar f θ-min θ-max samples)
-  (define θs (linear-seq θ-min θ-max samples))
-  (define rs (map* f θs))
-  (map polar->cartesian θs rs))
+(defproc (make-function->sampler [transform-thnk (-> axis-transform/c)]
+                                 ) ((real? . -> . real?) . -> . sampler/c)
+  (λ (f)
+    (define memo (make-hash))
+    (λ (x-min x-max x-samples)
+      (define tx (transform-thnk))
+      (hash-ref! memo (vector x-min x-max x-samples tx)
+                 (λ ()
+                   (define xs (nonlinear-seq x-min x-max x-samples tx))
+                   (list xs (map* f xs)))))))
 
-(define (sample-2d-polar f θ-min θ-max θ-samples ρ-min ρ-max ρ-samples)
-  (for*/list ([θ  (in-list (linear-seq θ-min θ-max θ-samples))]
-              [ρ  (in-list (linear-seq ρ-min ρ-max ρ-samples))])
-    (3d-polar->3d-cartesian θ ρ (f θ ρ))))
+(defproc (make-2d-function->sampler [transform-x-thnk (-> axis-transform/c)]
+                                    [transform-y-thnk (-> axis-transform/c)]
+                                    ) ((real? real? . -> . real?) . -> . 2d-sampler/c)
+  (λ (f)
+    (define memo (make-hash))
+    (λ (x-min x-max x-samples y-min y-max y-samples)
+      (define tx (transform-x-thnk))
+      (define ty (transform-y-thnk))
+      (hash-ref! memo (vector x-min x-max x-samples tx y-min y-max y-samples ty)
+                 (λ ()
+                   (define xs (nonlinear-seq x-min x-max x-samples tx))
+                   (define ys (nonlinear-seq y-min y-max y-samples ty))
+                   (list xs ys (for/vector #:length y-samples ([y  (in-list ys)])
+                                 (for/vector #:length x-samples ([x  (in-list xs)])
+                                   (f x y)))))))))
 
-(define ((make-function->sampler transform-thnk) f)
-  (define memo (make-hash))
-  (λ (x-min x-max x-samples)
-    (define tx (transform-thnk))
-    (hash-ref! memo (vector x-min x-max x-samples tx)
-               (λ ()
-                 (define xs (nonlinear-seq x-min x-max x-samples tx))
-                 (list xs (map* f xs))))))
+(defproc (make-3d-function->sampler [transform-x-thnk (-> axis-transform/c)]
+                                    [transform-y-thnk (-> axis-transform/c)]
+                                    [transform-z-thnk (-> axis-transform/c)]
+                                    ) ((real? real? real? . -> . real?) . -> . 3d-sampler/c)
+  (λ (f)
+    (define memo (make-hash))
+    (λ (x-min x-max x-samples y-min y-max y-samples z-min z-max z-samples)
+      (define tx (transform-x-thnk))
+      (define ty (transform-y-thnk))
+      (define tz (transform-z-thnk))
+      (hash-ref! memo (vector x-min x-max x-samples tx
+                              y-min y-max y-samples ty
+                              z-min z-max z-samples tz)
+                 (λ ()
+                   (define xs (nonlinear-seq x-min x-max x-samples tx))
+                   (define ys (nonlinear-seq y-min y-max y-samples ty))
+                   (define zs (nonlinear-seq z-min z-max z-samples tz))
+                   (list xs ys zs (for/vector #:length z-samples ([z  (in-list zs)])
+                                    (for/vector #:length y-samples ([y  (in-list ys)])
+                                      (for/vector #:length x-samples ([x  (in-list xs)])
+                                        (f x y z))))))))))
 
-(define ((make-2d-function->sampler transform-x-thnk transform-y-thnk) f)
-  (define memo (make-hash))
-  (λ (x-min x-max x-samples y-min y-max y-samples)
-    (define tx (transform-x-thnk))
-    (define ty (transform-y-thnk))
-    (hash-ref! memo (vector x-min x-max x-samples tx y-min y-max y-samples ty)
-               (λ ()
-                 (define xs (nonlinear-seq x-min x-max x-samples tx))
-                 (define ys (nonlinear-seq y-min y-max y-samples ty))
-                 (list xs ys (for/vector #:length y-samples ([y  (in-list ys)])
-                               (for/vector #:length x-samples ([x  (in-list xs)])
-                                 (f x y))))))))
-
-(define ((make-3d-function->sampler transform-x-thnk transform-y-thnk transform-z-thnk) f)
-  (define memo (make-hash))
-  (λ (x-min x-max x-samples y-min y-max y-samples z-min z-max z-samples)
-    (define tx (transform-x-thnk))
-    (define ty (transform-y-thnk))
-    (define tz (transform-z-thnk))
-    (hash-ref! memo (vector x-min x-max x-samples tx
-                            y-min y-max y-samples ty
-                            z-min z-max z-samples tz)
-               (λ ()
-                 (define xs (nonlinear-seq x-min x-max x-samples tx))
-                 (define ys (nonlinear-seq y-min y-max y-samples ty))
-                 (define zs (nonlinear-seq z-min z-max z-samples tz))
-                 (list xs ys zs (for/vector #:length z-samples ([z  (in-list zs)])
-                                  (for/vector #:length y-samples ([y  (in-list ys)])
-                                    (for/vector #:length x-samples ([x  (in-list xs)])
-                                      (f x y z)))))))))
-
-(define (2d-sample->list zss)
+(defproc (2d-sample->list [zss (vectorof (vectorof real?))]) (listof real?)
   (for*/list ([zs  (in-vector zss)]
               [z   (in-vector zs)])
     z))
 
-(define (3d-sample->list dsss)
+(defproc (3d-sample->list [dsss (vectorof (vectorof (vectorof real?)))]) (listof real?)
   (for*/list ([dss  (in-vector dsss)]
               [ds   (in-vector dss)]
               [d    (in-vector ds)])

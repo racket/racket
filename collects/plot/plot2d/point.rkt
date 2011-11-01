@@ -3,11 +3,11 @@
 ;; Renderers for points and other point-like things.
 
 (require racket/contract racket/class racket/match racket/math racket/list
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt"
          "clip.rkt")
 
-(provide points vector-field error-bars)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Points (scatter plots)

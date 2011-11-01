@@ -3,7 +3,7 @@
 ;; Renderers for plot decorations: axes, grids, labeled points, etc.
 
 (require racket/contract racket/class racket/match racket/math racket/list
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt"
          "area.rkt"
          "line.rkt"
@@ -12,14 +12,7 @@
          "contour.rkt"
          "clip.rkt")
 
-(provide x-axis y-axis axes
-         polar-axes
-         x-tick-lines y-tick-lines tick-grid
-         point-label
-         parametric-label
-         polar-label
-         function-label
-         inverse-label)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; X and Y axes
@@ -94,9 +87,11 @@
                [#:x-ticks? x-ticks? boolean? (x-axis-ticks?)]
                [#:y-ticks? y-ticks? boolean? (y-axis-ticks?)]
                [#:x-labels? x-labels? boolean? (x-axis-labels?)]
-               [#:y-labels? y-labels? boolean? (y-axis-labels?)]) (listof renderer2d?)
-  (list (x-axis y #:ticks? x-ticks? #:labels? x-labels?)
-        (y-axis x #:ticks? y-ticks? #:labels? y-labels?)))
+               [#:y-labels? y-labels? boolean? (y-axis-labels?)]
+               [#:x-alpha x-alpha (real-in 0 1) (x-axis-alpha)]
+               [#:y-alpha y-alpha (real-in 0 1) (y-axis-alpha)]) (listof renderer2d?)
+  (list (x-axis y #:ticks? x-ticks? #:labels? x-labels? #:alpha x-alpha)
+        (y-axis x #:ticks? y-ticks? #:labels? y-labels? #:alpha y-alpha)))
 
 ;; ===================================================================================================
 ;; Polar axes
@@ -117,63 +112,58 @@
                                                    #:when (and r-min r-max (not (= r-min r-max))))
     (values θ r-min r-max)))
 
-(define (draw-polar-axis-ticks num area)
+(define (draw-polar-axis-ticks num labels? area)
   (define-values (x-min x-max y-min y-max) (send area get-bounds))
-  
   (define-values (θs r-mins r-maxs) (build-polar-axes num x-min x-max y-min y-max
                                                       (* 1/2 (/ (* 2 pi) num))))
-  
   (define corner-rs
     (list (vmag (vector x-min y-min)) (vmag (vector x-min y-max))
           (vmag (vector x-max y-max)) (vmag (vector x-max y-min))))
   (define r-min (if (and (<= x-min 0 x-max) (<= y-min 0 y-max)) 0 (apply min corner-rs)))
   (define r-max (apply max corner-rs))
   (define ts (filter (λ (t) (not (zero? (pre-tick-value t))))
-                     ((linear-ticks) r-min r-max (polar-axes-max-ticks))))
-  
-  (send area set-alpha 1/2)
+                     (default-r-ticks r-min r-max)))
+  ;; Draw the tick lines
   (for ([t  (in-list ts)])
     (match-define (tick r major? label) t)
     (if major? (send area set-major-pen) (send area set-minor-pen 'long-dash))
     (define pts (for/list ([θ  (in-list (linear-seq 0 (* 2 pi) 500))])
                   (vector (* r (cos θ)) (* r (sin θ)))))
     (send area put-lines pts))
-  
-  (when (not (empty? θs))
-    ;; find the longest axis
+  ;; Draw the labels
+  (when (and labels? (not (empty? θs)))
+    ;; Find the longest half-axis, rounded to drown out floating-point error
     (define mag (expt 10 (- (digits-for-range r-min r-max))))
     (match-define (list mθ mr-min mr-max)
-      ;; find the longest, rounded to drown out floating-point error
       (argmax (λ (lst) (* (round (/ (- (third lst) (second lst)) mag)) mag))
               (map list θs r-mins r-maxs)))
-    
-    (send area set-alpha 1)
+    ;; Actually draw the labels
     (for ([t  (in-list ts)])
       (match-define (tick r major? label) t)
       (when (and major? (<= mr-min r mr-max))
         (send area put-text label (vector (* r (cos mθ)) (* r (sin mθ)))
               'center 0 #:outline? #t)))))
 
-(define ((polar-axes-render-proc num ticks?) area)
+(define ((polar-axes-render-proc num ticks? labels? alpha) area)
   (define-values (x-min x-max y-min y-max) (send area get-bounds))
   (define-values (θs r-mins r-maxs) (build-polar-axes num x-min x-max y-min y-max))
-  
   ;; Draw the axes
-  (send area set-alpha 1/2)
+  (send area set-alpha alpha)
   (send area set-major-pen)
   (for ([θ  (in-list θs)] [r-min  (in-list r-mins)] [r-max  (in-list r-maxs)])
     (send area put-line
           (vector (* r-min (cos θ)) (* r-min (sin θ)))
           (vector (* r-max (cos θ)) (* r-max (sin θ)))))
-  
-  (when ticks? (draw-polar-axis-ticks num area))
-  
+  ;; Draw the ticks
+  (when ticks? (draw-polar-axis-ticks num labels? area))
+  ;; No legend
   empty)
 
 (defproc (polar-axes [#:number num exact-positive-integer? (polar-axes-number)]
                      [#:ticks? ticks? boolean? (polar-axes-ticks?)]
-                     ) renderer2d?
-  (renderer2d #f #f #f (polar-axes-render-proc num ticks?)))
+                     [#:labels? labels? boolean? (polar-axes-labels?)]
+                     [#:alpha alpha (real-in 0 1) (polar-axes-alpha)]) renderer2d?
+  (renderer2d #f #f #f (polar-axes-render-proc num ticks? labels? alpha)))
 
 ;; ===================================================================================================
 ;; Grid

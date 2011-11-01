@@ -1,6 +1,6 @@
 #lang racket
 
-(require plot (only-in plot/common/math floor-log/base real-modulo))
+(require plot plot/utils)
 
 (plot-font-family 'swiss)
 
@@ -99,7 +99,7 @@
             (y-ticks (list (tick 1/4 #t "1/4") (tick -1/4 #f "")))))
 
 (parameterize ([plot-z-max-ticks  5])
-  (plot3d (list (surface3d (λ (x y) (* 2 (+ (sin x) (cos y)))) -4 4 -4 4)
+  (plot3d (list (surface3d (λ (x y) (* 2 (+ (sin x) (cos y)))) -4 4 -4 4 #:alpha 1/2)
                 (x-ticks (list (tick 1.5 #t "3/2") (tick 3 #t "Three")))
                 (y-ticks (list (tick 1/3 #t "1/3") (tick -1/3 #f "1/3")))
                 (z-ticks (list (tick pi #f "π") (tick (- pi) #t "-π"))))))

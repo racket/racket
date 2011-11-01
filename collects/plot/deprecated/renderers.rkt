@@ -2,11 +2,10 @@
 
 ;; Functions that create renderers for backward-compatible functions 'line', 'contour', etc.
 
-(require racket/match
+(require racket/match plot/utils
          "../plot2d/line.rkt"
          "../plot2d/contour.rkt"
-         "../plot3d/surface.rkt"
-         "../utils.rkt")
+         "../plot3d/surface.rkt")
 
 (provide line-renderer
          contour-renderer

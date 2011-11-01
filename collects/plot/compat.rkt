@@ -3,6 +3,7 @@
 ;; A compatibility module for the old 'plot'.
 
 (require racket/contract racket/class racket/snip racket/draw racket/vector
+         unstable/latent-contract
          ;; Plotting
          "common/contract.rkt"
          "common/contract-doc.rkt"
@@ -22,12 +23,14 @@
          ;; Miscellaneous
          "deprecated/math.rkt")
 
-(provide mix plot-color?
-         plot plot3d
-         points vector-field error-bars
-         line
-         contour shade
-         surface
+(provide mix
+         (activate-contract-out plot-color?
+                                plot plot3d
+                                points vector-field error-bars
+                                line
+                                contour shade
+                                surface)
+         (only-doc-out (all-defined-out))
          ;; Curve fitting
          (rename-out [fit-int fit])
          (struct-out fit-result)
@@ -81,7 +84,8 @@
                  [new.plot-background  bgcolor])
     (define bm (make-bitmap (ceiling width) (ceiling height)))
     (define dc (make-object bitmap-dc% bm))
-    (define area (make-object 2d-plot-area% x-ticks y-ticks x-min x-max y-min y-max
+    (define area (make-object 2d-plot-area% x-ticks x-ticks y-ticks y-ticks
+                   x-min x-max y-min y-max
                    dc 0 0 width height))
     
     (send area start-plot)
@@ -124,7 +128,8 @@
     (define bm (make-bitmap (ceiling width) (ceiling height)))
     (define dc (make-object bitmap-dc% bm))
     (define area
-      (make-object 3d-plot-area% x-ticks y-ticks z-ticks x-min x-max y-min y-max z-min z-max
+      (make-object 3d-plot-area% x-ticks x-ticks y-ticks y-ticks z-ticks z-ticks
+        x-min x-max y-min y-max z-min z-max
         dc 0 0 width height))
     
     (send area start-plot)

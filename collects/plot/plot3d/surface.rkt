@@ -1,10 +1,10 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/flonum racket/contract
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt")
 
-(provide surface3d)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Surface plots of R R -> R functions

@@ -3,37 +3,38 @@
 (require racket/contract racket/unsafe/ops
          "contract-doc.rkt")
 
+(provide (all-defined-out))
+
 ;; ===================================================================================================
 ;; Flonums
 
-(provide nan? infinite? special? flblend flatan2 flsum flmodulo fldistance)
+(defproc (nan? [x any/c]) boolean?
+  (eqv? x +nan.0))
 
-(define (nan? x) (eqv? x +nan.0))
-
-(define (infinite? x)
+(defproc (infinite? [x any/c]) boolean?
   (and (flonum? x) (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0))))
 
-(define (special? x)
+(defproc (special? [x any/c]) boolean?
   (and (flonum? x) (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0) (eqv? x +nan.0))))
 
-(define (flblend x y α)
+(defproc (flblend [x flonum?] [y flonum?] [α flonum?]) flonum?
   (cond [(not (flonum? x))  (raise-type-error 'flblend "flonum" 0 x y α)]
         [(not (flonum? y))  (raise-type-error 'flblend "flonum" 1 x y α)]
         [(not (flonum? α))  (raise-type-error 'flblend "flonum" 2 x y α)]
         [else  (unsafe-fl+ (unsafe-fl* α x) (unsafe-fl* (unsafe-fl- 1 α) y))]))
 
-(define (flatan2 y x)
+(defproc (flatan2 [y flonum?] [x flonum?]) flonum?
   (cond [(not (flonum? y))  (raise-type-error 'flatan2 "flonum" 0 x y)]
         [(not (flonum? x))  (raise-type-error 'flatan2 "flonum" 1 x y)]
         [else  (exact->inexact (atan2 y x))]))
 
-(define (flsum f xs)
+(defproc (flsum [f (any/c . -> . flonum?)] [xs (listof any/c)]) flonum?
   (define ys (map f xs))
   (cond [(not (andmap flonum? ys))  (raise-type-error 'sum "any -> flonum" f)]
         [else  (for/fold ([sum 0.0]) ([y  (in-list ys)])
                  (unsafe-fl+ sum y))]))
 
-(define (flmodulo x y)
+(defproc (flmodulo [x flonum?] [y flonum?]) flonum?
   (cond [(not (flonum? x))  (raise-type-error 'real-modulo "flonum" 0 x y)]
         [(not (flonum? y))  (raise-type-error 'real-modulo "flonum" 1 x y)]
         [else  (unsafe-fl- x (unsafe-fl* y (unsafe-flfloor (unsafe-fl/ x y))))]))
@@ -56,20 +57,15 @@
 ;; ===================================================================================================
 ;; Reals
 
-(provide regular? equal?* min* max*
-         degrees->radians radians->degrees
-         blend atan2 sum real-modulo distance
-         floor-log/base ceiling-log/base
-         polar->cartesian 3d-polar->3d-cartesian)
-
-(define (regular? x) (and (real? x) (not (special? x))))
+(defproc (regular? [x any/c]) boolean?
+  (and (real? x) (not (special? x))))
 
 (define equal?*
   (case-lambda
     [()   #t]
     [(x)  #t]
     [xs   (and (equal? (car xs) (cadr xs))
-               (equal?* (cdr xs)))]))
+               (apply equal?* (cdr xs)))]))
 
 (define-syntax-rule (min2* x y)
   (cond [(x . < . y)  x]
@@ -110,32 +106,32 @@
 (define 180/pi (/ 180 pi))
 (define pi/180 (/ pi 180))
 
-(define (degrees->radians d)
+(defproc (degrees->radians [d real?]) real?
   (cond [(not (real? d))  (raise-type-error 'degrees->radians "real number" d)]
         [else  (* d pi/180)]))
 
-(define (radians->degrees r)
+(defproc (radians->degrees [r real?]) real?
   (cond [(not (real? r))  (raise-type-error 'radians->degrees "real number" r)]
         [else  (* r 180/pi)]))
 
-(define (blend x y α)
+(defproc (blend [x real?] [y real?] [α real?]) real?
   (cond [(not (real? x))  (raise-type-error 'blend "real number" 0 x y α)]
         [(not (real? y))  (raise-type-error 'blend "real number" 1 x y α)]
         [(not (real? α))  (raise-type-error 'blend "real number" 2 x y α)]
         [else  (+ (* α x) (* (- 1 α) y))]))
 
-(define (atan2 y x)
+(defproc (atan2 [y real?] [x real?]) real?
   (cond [(not (real? y))  (raise-type-error 'atan2 "real number" 0 y x)]
         [(not (real? x))  (raise-type-error 'atan2 "real number" 1 y x)]
         [(and (zero? y) (zero? x))  0]
         [else  (atan y x)]))
 
-(define (sum f xs)
+(defproc (sum [f (any/c . -> . real?)] [xs (listof any/c)]) real?
   (define ys (map f xs))
   (cond [(not (andmap real? ys))  (raise-type-error 'sum "any -> real" f)]
         [else  (apply + ys)]))
 
-(define (real-modulo x y)
+(defproc (real-modulo [x real?] [y real?]) real?
   (cond [(not (real? x))  (raise-type-error 'real-modulo "real number" 0 x y)]
         [(not (real? y))  (raise-type-error 'real-modulo "real number" 1 x y)]
         [else  (- x (* y (floor (/ x y))))]))
@@ -154,7 +150,7 @@
     [xs  (cond [(not (andmap real? xs)) (raise-type-error 'distance "real numbers" xs)]
                [else  (sqrt (sum sqr xs))])]))
 
-(define (floor-log/base b x)
+(defproc (floor-log/base [b (and/c exact-integer? (>=/c 2))] [x (>/c 0)]) exact-integer?
   (cond [(not (and (exact-integer? b) (b . >= . 2)))  (raise-type-error 'floor-log/base
                                                                         "exact integer >= 2" 0 b x)]
         [(not (and (real? x) (x . > . 0)))  (raise-type-error 'floor-log/base "real > 0" 1 b x)]
@@ -166,13 +162,13 @@
                               [else  y]))]
                      [else  y])]))
 
-(define (ceiling-log/base b x)
+(defproc (ceiling-log/base [b (and/c exact-integer? (>=/c 2))] [x (>/c 0)]) exact-integer?
   (cond [(not (and (exact-integer? b) (b . >= . 2)))  (raise-type-error 'floor-log/base
                                                                         "exact integer >= 2" 0 b x)]
         [(not (and (real? x) (x . > . 0)))  (raise-type-error 'floor-log/base "real > 0" 1 b x)]
         [else  (inexact->exact (ceiling (/ (log (abs x)) (log b))))]))
 
-(define (polar->cartesian θ r)
+(defproc (polar->cartesian [θ real?] [r real?]) (vector/c real? real?)
   (cond [(not (real? θ))  (raise-type-error 'polar->cartesian "real number" 0 θ r)]
         [(not (real? r))  (raise-type-error 'polar->cartesian "real number" 1 θ r)]
         [else  (let ([θ  (exact->inexact θ)]
@@ -180,7 +176,7 @@
                  (vector (unsafe-fl* r (unsafe-flcos θ))
                          (unsafe-fl* r (unsafe-flsin θ))))]))
 
-(define (3d-polar->3d-cartesian θ ρ r)
+(defproc (3d-polar->3d-cartesian [θ real?] [ρ real?] [r real?]) (vector/c real? real? real?)
   (cond [(not (real? θ))  (raise-type-error '3d-polar->3d-cartesian "real number" 0 θ ρ r)]
         [(not (real? ρ))  (raise-type-error '3d-polar->3d-cartesian "real number" 1 θ ρ r)]
         [(not (real? r))  (raise-type-error '3d-polar->3d-cartesian "real number" 2 θ ρ r)]
@@ -195,10 +191,8 @@
 ;; ===================================================================================================
 ;; Vectors
 
-(provide vcross v+ v- vneg v* v/ vmag^2 vmag vnormalize vdot vregular? v= vcenter
-         vregular-sublists vnormal)
-
-(define (vcross v1 v2)
+(defproc (vcross [v1 (vector/c real? real? real?)] [v2 (vector/c real? real? real?)]
+                 ) (vector/c real? real? real?)
   (match v1
     [(vector (? real? x1) (? real? y1) (? real? z1))
      (match v2
@@ -253,21 +247,26 @@
        [_  (raise-type-error name "vector of 3 reals" 1 v1 v2)])]
     [_  (vmap2 name f v1 v2)]))
 
-(define (v+ v1 v2) (unrolled-vmap2 'v+ + v1 v2))
-(define (v- v1 v2) (unrolled-vmap2 'v- - v1 v2))
-(define (vneg v) (unrolled-vmap 'vneg - v))
+(defproc (v+ [v1 (vectorof real?)] [v2 (vectorof real?)]) (vectorof real?)
+  (unrolled-vmap2 'v+ + v1 v2))
 
-(define (v* v c)
+(defproc (v- [v1 (vectorof real?)] [v2 (vectorof real?)]) (vectorof real?)
+  (unrolled-vmap2 'v- - v1 v2))
+
+(defproc (vneg [v (vectorof real?)]) (vectorof real?)
+  (unrolled-vmap 'vneg - v))
+
+(defproc (v* [v (vectorof real?)] [c real?]) (vectorof real?)
   (cond [(real? c)  (define-syntax-rule (f x) (* x c))
                     (unrolled-vmap 'v* f v)]
         [else  (raise-type-error 'v* "real" 1 v c)]))
 
-(define (v/ v c)
+(defproc (v/ [v (vectorof real?)] [c real?]) (vectorof real?)
   (cond [(real? c)  (define-syntax-rule (f x) (/ x c))
                     (unrolled-vmap 'v/ f v)]
         [else  (raise-type-error 'v/ "real" 1 v c)]))
 
-(define (vmag^2 v)
+(defproc (vmag^2 [v (vectorof real?)]) real?
   (match v
     [(vector (? real? x) (? real? y))              (+ (* x x) (* y y))]
     [(vector (? real? x) (? real? y) (? real? z))  (+ (* x x) (* y y) (* z z))]
@@ -277,17 +276,19 @@
           (+ mag (cond [(real? x)    (* x x)]
                        [else  (raise-type-error 'vmag^2 "vector of reals" v)])))]))
 
-(define (vmag v) (sqrt (vmag^2 v)))
+(defproc (vmag [v (vectorof real?)]) real?
+  (sqrt (vmag^2 v)))
 
-(define (vnormalize v)
+(defproc (vnormalize [v (vectorof real?)]) (vectorof real?)
   (match v
     [(vector (? real? x) (? real? y))              (define m (sqrt (+ (* x x) (* y y))))
-                                                   (vector (/ x m) (/ y m))]
+                                                   (if (= m 0) v (vector (/ x m) (/ y m)))]
     [(vector (? real? x) (? real? y) (? real? z))  (define m (sqrt (+ (* x x) (* y y) (* z z))))
-                                                   (vector (/ x m) (/ y m) (/ z m))]
-    [_  (v/ v (vmag v))]))
+                                                   (if (= m 0) v (vector (/ x m) (/ y m) (/ z m)))]
+    [_  (define m (vmag v))
+        (if (= m 0) v (v/ v m))]))
 
-(define (vdot v1 v2)
+(defproc (vdot [v1 (vectorof real?)] [v2 (vectorof real?)]) real?
   (match v1
     [(vector (? real? x1) (? real? y1))
      (match v2
@@ -312,7 +313,7 @@
 (define-syntax-rule (unsafe-flregular? x)
   (not (unsafe-flspecial? x)))
 
-(define (vregular? v)
+(defproc (vregular? [v (vectorof real?)]) boolean?
   (match v
     [(vector (? real? x) (? real? y))
      (cond [(flonum? x)  (unsafe-flregular? x)]
@@ -329,7 +330,7 @@
               (break #f)))
           #t)]))
 
-(define (v= v1 v2)
+(defproc (v= [v1 (vectorof real?)] [v2 (vectorof real?)]) boolean?
   (match v1
     [(vector (? real? x1) (? real? y1))
      (match v2
@@ -350,7 +351,7 @@
                 (raise-type-error 'v= "vector of real" 0 v1 v2)))
           #t)]))
 
-(define (vcenter vs)
+(defproc (vcenter [vs (listof (vectorof real?))]) (vectorof real?)
   (match vs
     [(list (vector xs ys) ...)
      (define mins (vector (apply min* xs) (apply min* ys)))
@@ -485,21 +486,8 @@
                     [x2  (in-list (rest xs))])
            (ivl x1 x2))]))
 
-(provide
- (contract-out (struct ivl ([min (or/c real? #f)] [max (or/c real? #f)]))
-               [ivl-meet (->* () () #:rest (listof ivl?) ivl?)]
-               [ivl-join (->* () () #:rest (listof ivl?) ivl?)])
- empty-ivl unknown-ivl ivl-inexact->exact bounds->intervals
- ivl-empty? ivl-known? ivl-regular? ivl-singular? ivl-zero-length? ivl-contains?)
-
 ;; ===================================================================================================
 ;; Rectangles
-
-(provide
- empty-rect unknown-rect bounding-rect rect-inexact->exact 
- rect-empty? rect-known? rect-regular? rect-zero-area? rect-singular? rect-contains?
- (contract-out [rect-meet (->* () () #:rest (listof (vectorof ivl?)) (vectorof ivl?))]
-               [rect-join (->* () () #:rest (listof (vectorof ivl?)) (vectorof ivl?))]))
 
 (define vector-andmap
   (case-lambda

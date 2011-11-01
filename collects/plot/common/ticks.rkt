@@ -13,31 +13,7 @@
          "date-time.rkt"
          "currency.rkt")
 
-(provide ;(struct-out pre-tick) (struct-out tick) (struct-out ticks)
-         ticks-layout/c ticks-format/c
-         ;; No ticks
-         no-ticks-layout no-ticks
-         ;; Linear ticks
-         linear-ticks-layout linear-ticks-format linear-ticks
-         ;; Log-scale ticks
-         log-ticks-layout log-ticks-format log-ticks
-         ;; Date ticks
-         date-ticks-formats 24h-descending-date-ticks-formats 12h-descending-date-ticks-formats
-         date-ticks-layout date-ticks-format date-ticks
-         ;; Time ticks
-         time-ticks-formats descending-time-ticks-formats
-         time-ticks-layout time-ticks-format time-ticks
-         ;; Bit/byte ticks
-         bit/byte-ticks-format bit/byte-ticks
-         ;; Currency ticks and formats
-         currency-ticks-scales us-currency-scales uk-currency-scales eu-currency-scales
-         currency-ticks-formats us-currency-formats uk-currency-formats eu-currency-formats
-         currency-ticks-layout currency-ticks-format currency-ticks
-         ;; Fractions
-         fraction-ticks-format fraction-ticks
-         ;; Combinators
-         ticks-mimic ticks-scale ticks-add linear-scale
-         )
+(provide (all-defined-out))
 
 (struct pre-tick (value major?) #:transparent)
 (struct tick pre-tick (label) #:transparent)
@@ -55,10 +31,6 @@
 
 (defcontract ticks-format/c
   (real? real? (listof pre-tick?) . -> . (listof string?)))
-
-(provide (contract-out (struct pre-tick ([value real?] [major? boolean?]))
-                       (struct (tick pre-tick) ([value real?] [major? boolean?] [label string?]))
-                       (struct ticks ([layout ticks-layout/c] [format ticks-format/c]))))
 
 ;; ===================================================================================================
 ;; Helpers
@@ -223,39 +195,43 @@
          (break step)))
      #f)))
 
-(define (count-unchanging-fields formatter fmt-list xs)
+(define (count-changing-fields formatter fmt-list xs)
   (let ([fmt-list  (filter symbol? fmt-list)])
     (define formatted-dates (for/list ([x  (in-list xs)])
                               (apply-formatter formatter fmt-list x)))
-    (count equal?* (transpose formatted-dates))))
+    (count (λ (fields) (not (apply equal?* fields)))
+           (transpose formatted-dates))))
 
+;; Find the shortest format string that has the maximum number of changing fields
 (define (choose-format-list formatter fmt-lists xs)
-  (let ([fmt-lists  (sort fmt-lists >
+  (let ([fmt-lists  (sort fmt-lists <
                           #:key (λ (fmt-list) (count symbol? fmt-list))
                           #:cache-keys? #t)])
-    (argmin (λ (fmt-list) (count-unchanging-fields formatter fmt-list xs))
+    (argmax (λ (fmt-list) (count-changing-fields formatter fmt-list xs))
             fmt-lists)))
 
 ;; ===================================================================================================
 ;; Date ticks
 
 (define 12h-descending-date-ticks-formats
-  '("~Y-~m-~d ~I:~M:~f~p"
-    "~Y-~m-~d ~I:~M~p"
-    "~Y-~m-~d ~I~p"
+  '("~Y-~m-~d ~I:~M:~f ~p"
+    "~Y-~m-~d ~I:~M ~p"
+    "~Y-~m-~d ~I ~p"
     "~Y-~m-~d"
     "~Y-~m"
     "~Y"
     
-    "~m-~d ~I:~M:~f~p"
-    "~m-~d ~I:~M~p"
-    "~m-~d ~I~p"
+    "~m-~d ~I:~M:~f ~p"
+    "~m-~d ~I:~M ~p"
+    "~m-~d ~I ~p"
     "~m-~d"
     
-    "~I:~M:~f~p"
-    "~I:~M~p"
+    "~I:~M:~f ~p"
+    "~I:~M ~p"
+    "~I ~p"
     
     "~M:~fs"
+    "~Mm"
     
     "~fs"))
 
@@ -274,8 +250,10 @@
     
     "~H:~M:~f"
     "~H:~M"
+    "~Hh"
     
     "~M:~fs"
+    "~Mm"
     
     "~fs"))
 
@@ -375,7 +353,7 @@
     "~H:~M"
     "~Hh"
     
-    "~M:~f"
+    "~M:~fs"
     "~Mm"
     
     "~fs"))

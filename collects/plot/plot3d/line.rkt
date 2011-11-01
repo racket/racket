@@ -1,10 +1,10 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/contract
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt")
 
-(provide lines3d parametric3d)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 
@@ -58,5 +58,5 @@
           [#:alpha alpha (real-in 0 1) (line-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (lines3d-renderer (λ () (sample-parametric f t-min t-max (animated-samples samples)))
+  (lines3d-renderer (λ () (map f (linear-seq t-min t-max (animated-samples samples))))
                     x-min x-max y-min y-max z-min z-max color width style alpha label))

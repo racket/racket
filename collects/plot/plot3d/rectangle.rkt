@@ -3,10 +3,10 @@
 ;; Functions to create renderers for 3D histograms
 
 (require racket/match racket/list racket/contract racket/class
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt")
 
-(provide rectangles3d discrete-histogram3d)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Rectangles

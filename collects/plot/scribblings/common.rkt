@@ -8,6 +8,7 @@
                     plot/utils)
          plot
          plot/utils
+         plot/doc
          plot/common/contract-doc)
 
 (provide (all-defined-out)
@@ -18,6 +19,7 @@
                                   plot
                                   plot/utils))
          (all-from-out plot)
+         (all-from-out plot/doc)
          (all-from-out plot/utils)
          doc-apply)
 

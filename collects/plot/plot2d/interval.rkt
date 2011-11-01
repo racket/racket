@@ -3,10 +3,10 @@
 ;; Renderers for intervals between functions.
 
 (require racket/contract racket/class racket/match racket/math racket/list
-         "../common/contract-doc.rkt"
-         plot/custom plot/utils)
+         plot/utils
+         "../common/contract-doc.rkt")
 
-(provide lines-interval parametric-interval polar-interval function-interval inverse-interval)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Lines, parametric, polar
@@ -82,8 +82,8 @@
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
   (lines-interval
-   (sample-parametric f1 t-min t-max samples)
-   (sample-parametric f2 t-min t-max samples)
+   (map f1 (linear-seq t-min t-max samples))
+   (map f2 (linear-seq t-min t-max samples))
    #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
    #:color color #:style style
    #:line1-color line1-color #:line1-width line1-width #:line1-style line1-style
@@ -107,9 +107,10 @@
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
+  (define θs (linear-seq θ-min θ-max samples))
   (lines-interval
-   (sample-polar f1 θ-min θ-max samples)
-   (sample-polar f2 θ-min θ-max samples)
+   (map polar->cartesian θs (map* f1 θs))
+   (map polar->cartesian θs (map* f2 θs))
    #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
    #:color color #:style style
    #:line1-color line1-color #:line1-width line1-width #:line1-style line1-style

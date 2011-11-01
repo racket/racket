@@ -200,7 +200,8 @@
       (define offset (vector 0 (+ max-x-tick-offset
                                   max-x-tick-label-height
                                   (* 1/2 char-height))))
-      (list (plot-x-label) (v+ (view->dc (vector (* 1/2 (+ x-min x-max)) y-min)) offset) 'top))
+      (list (plot-x-label) (v+ (view->dc (vector (* 1/2 (+ x-min x-max)) y-min)) offset)
+            'top))
     
     (define (get-y-label-params)
       (define offset (vector (+ max-y-tick-offset
@@ -214,7 +215,8 @@
       (define offset (vector 0 (+ max-x-far-tick-offset
                                   max-x-far-tick-label-height
                                   (* 1/2 char-height))))
-      (list (plot-x-far-label) (v- (view->dc (vector (* 1/2 (+ x-min x-max)) y-max)) offset) 'bottom))
+      (list (plot-x-far-label) (v- (view->dc (vector (* 1/2 (+ x-min x-max)) y-max)) offset)
+            'bottom))
     
     (define (get-y-far-label-params)
       (define offset (vector (+ max-y-far-tick-offset

@@ -1,9 +1,10 @@
 #lang racket/base
 
-(require racket/contract racket/draw racket/class
+(require racket/contract racket/draw racket/class unstable/latent-contract
          "contract-doc.rkt")
 
-(provide (all-defined-out))
+(provide (except-out (all-defined-out) treeof)
+         (activate-contract-out treeof))
 
 ;; ===================================================================================================
 ;; Convenience
@@ -36,7 +37,7 @@
 (defcontract font-family/c (one-of/c 'default 'decorative 'roman 'script 'swiss
                                      'modern 'symbol 'system))
 
-(define known-point-symbols
+(defthing known-point-symbols (listof symbol?) #:document-value
   '(dot point pixel
         plus times asterisk 5asterisk
         odot oplus otimes oasterisk o5asterisk

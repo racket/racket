@@ -1,11 +1,11 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/flonum racket/contract racket/math
-         plot/custom plot/utils
+         plot/utils
          "../common/marching-cubes.rkt"
          "../common/contract-doc.rkt")
 
-(provide isosurface3d isosurfaces3d polar3d)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Surfaces of constant value (isosurfaces)
@@ -235,6 +235,18 @@
                  label color 'solid line-color line-width line-style)]
         [else  empty]))
 
+(define 2pi (* 2 pi))
+
+(define ((2d-polar->3d-function f) x y z)
+  (let ([x  (exact->inexact x)]
+        [y  (exact->inexact y)]
+        [z  (exact->inexact z)])
+    (define-values (θ ρ)
+      (cond [(and (fl= x 0.0) (fl= y 0.0))  (values 0.0 0.0)]
+            [else  (values (flmodulo (flatan2 y x) 2pi)
+                           (flatan (fl/ z (distance x y))))]))
+    (fl- (exact->inexact (f θ ρ)) (distance x y z))))
+
 (defproc (polar3d [f (real? real? . -> . real?)]
                   [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                   [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
@@ -247,8 +259,10 @@
                   [#:alpha alpha (real-in 0 1) (surface-alpha)]
                   [#:label label (or/c string? #f) #f]
                   ) renderer3d?
-  (define rvs (filter vregular? (sample-2d-polar f 0 2pi (* 2 samples)
-                                                 (* -1/2 pi) (* 1/2 pi) samples)))
+  (define vs (for*/list ([θ  (in-list (linear-seq 0 2pi (* 4 samples)))]
+                         [ρ  (in-list (linear-seq (* -1/2 pi) (* 1/2 pi) (* 2 samples)))])
+               (3d-polar->3d-cartesian θ ρ (f θ ρ))))
+  (define rvs (filter vregular? vs))
   (cond [(empty? rvs)  (renderer3d #f #f #f #f)]
         [else
          (match-define (list (vector rxs rys rzs) ...) rvs)

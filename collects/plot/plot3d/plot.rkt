@@ -1,20 +1,18 @@
 #lang racket/base
 
+;; Procedures that plot 3D renderers.
+
 (require racket/draw racket/snip racket/match racket/list racket/class racket/contract
          slideshow/pict
          unstable/parameter-group
          unstable/lazy-require
-         (for-syntax racket/base)
-         "../common/math.rkt"
-         "../common/file-type.rkt"
-         "../common/area.rkt"
          "../common/contract.rkt"
-         "../common/contract-doc.rkt"
+         "../common/math.rkt"
          "../common/parameters.rkt"
-         "../common/deprecation-warning.rkt"
          "../common/plot-element.rkt"
-         "../common/non-renderer.rkt"
-         "../common/utils.rkt"
+         "../common/file-type.rkt"
+         "../common/deprecation-warning.rkt"
+         "../common/contract-doc.rkt"
          "area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
@@ -22,7 +20,7 @@
 (lazy-require ["snip.rkt" (make-3d-plot-snip)]
               ["../common/gui.rkt" (make-snip-frame)])
 
-(provide plot3d/dc plot3d plot3d-bitmap plot3d-pict plot3d-snip plot3d-frame plot3d-file)
+(provide (except-out (all-defined-out) make-3d-plot-snip make-snip-frame))
 
 ;; ===================================================================================================
 ;; Plot to a given device context

@@ -3,10 +3,10 @@
 ;; Renderers for contour lines and contour intervals
 
 (require racket/contract racket/class racket/match racket/list racket/flonum racket/vector
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt")
 
-(provide contours contour-intervals)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Contour lines

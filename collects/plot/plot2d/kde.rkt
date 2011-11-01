@@ -1,12 +1,12 @@
 #lang racket/base
 
 (require racket/flonum racket/list racket/promise racket/math racket/contract
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt"
          "../common/utils.rkt"
          "line.rkt")
 
-(provide kde density)
+(provide (all-defined-out))
 
 (define (factorial n)
   (if (zero? n) 1 (* n (factorial (sub1 n)))))

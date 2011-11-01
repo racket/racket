@@ -8,7 +8,7 @@
 
 Each 3D plot procedure corresponds with a @(secref "plot2d") procedure. Each behaves the same way as its corresponding 2D procedure, but takes the additional keyword arguments @(racket #:z-min), @(racket #:z-max), @(racket #:angle), @(racket #:altitude) and @(racket #:z-label).
 
-@defproc[(plot3d [renderer-tree (treeof renderer3d?)]
+@defproc[(plot3d [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                  [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
                  [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
                  [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
@@ -40,14 +40,14 @@ The @(racket #:az) and @(racket #:alt) keyword arguments are backward-compatible
 }
 
 @deftogether[
-(@defproc[(plot3d-file [renderer-tree (treeof renderer3d?)]
+(@defproc[(plot3d-file [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                        [output (or/c path-string? output-port?)]
                        [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
                        [#:<plot-keyword> <plot-keyword> <plot-keyword-contract>] ...) void?]
- @defproc[(plot3d-pict [renderer-tree (treeof renderer3d?)] ...) pict?]
- @defproc[(plot3d-bitmap [renderer-tree (treeof renderer3d?)] ...) (is-a?/c bitmap%)]
- @defproc[(plot3d-snip [renderer-tree (treeof renderer3d?)] ...) (is-a?/c image-snip%)]
- @defproc[(plot3d-frame [renderer-tree (treeof renderer3d?)] ...) (is-a?/c frame%)])]{
+ @defproc[(plot3d-pict [renderer-tree (treeof (or/c renderer3d? non-renderer?))] ...) pict?]
+ @defproc[(plot3d-bitmap [renderer-tree (treeof (or/c renderer3d? non-renderer?))] ...) (is-a?/c bitmap%)]
+ @defproc[(plot3d-snip [renderer-tree (treeof (or/c renderer3d? non-renderer?))] ...) (is-a?/c image-snip%)]
+ @defproc[(plot3d-frame [renderer-tree (treeof (or/c renderer3d? non-renderer?))] ...) (is-a?/c frame%)])]{
 Plot to different backends. Each of these procedures has the same keyword arguments as @(racket plot3d), except for deprecated keywords.
 
 These procedures correspond with  @(racket plot-file), @(racket plot-pict), @(racket plot-bitmap), @(racket plot-snip) and @(racket plot-frame).

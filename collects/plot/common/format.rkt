@@ -7,10 +7,7 @@
          "contract-doc.rkt"
          "math.rkt")
 
-(provide integer->superscript
-         real->decimal-string* real->string/trunc
-         digits-for-range real->plot-label ->plot-label
-         parse-format-string apply-formatter)
+(provide (all-defined-out))
 
 (define (string-map f str)
   (list->string (map f (string->list str))))
@@ -68,13 +65,6 @@
                  (remove-trailing-zeros (format "~a.~a" fst rst))
                  (integer->superscript (sub1 n)))]))
 
-#;
-(begin
-  (require rackunit)
-  (check-equal? (int-str->e-str "") "0")
-  (check-equal? (int-str->e-str "0") "0")
-  (check-equal? (int-str->e-str "10") "1×10\u00b9"))
-
 (define (frac-str->e-str str)
   (define n (string-length str))
   (let loop ([i 0])
@@ -86,15 +76,6 @@
                         (format "~a×10~a" fst (integer->superscript (- (add1 i))))]
                        [else
                         (format "~a.~a×10~a" fst rst (integer->superscript (- (add1 i))))])])))
-
-#;
-(begin
-  (require rackunit)
-  (check-equal? (frac-str->e-str "") "0")
-  (check-equal? (frac-str->e-str "0") "0")
-  (check-equal? (frac-str->e-str "00") "0")
-  (check-equal? (frac-str->e-str "1") "1×10\u207b\u00b9")
-  (check-equal? (frac-str->e-str "01") "1×10\u207b\u00b2"))
 
 (define (zero-string n)
   (list->string (build-list n (λ _ #\0))))
@@ -179,9 +160,9 @@
            (loop (+ i 2) (cons (string->symbol (substring str i (+ i 2))) fmt-list))]
           [else  (loop (+ i 1) (cons (substring str i (+ i 1)) fmt-list))])))
 
-(define (apply-formatter [formatter (symbol? . -> . (or/c string? #f))]
-                         [fmt-list (listof (or/c string? symbol?))]
-                         [d any/c]) (listof string?)
+(defproc (apply-formatter [formatter (symbol? . -> . (or/c string? #f))]
+                          [fmt-list (listof (or/c string? symbol?))]
+                          [d any/c]) (listof string?)
   (for/list ([fmt  (in-list fmt-list)])
     (cond [(eq? fmt '~~)  "~"]
           [(symbol? fmt)  (let ([val  (formatter fmt d)])

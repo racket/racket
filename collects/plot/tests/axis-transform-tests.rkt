@@ -5,7 +5,6 @@
          plot/utils
          plot/common/contract
          plot/common/contract-doc
-         ;plot/common/axis-transform
          )
 
 (x-axis-ticks? #f)

@@ -1,27 +1,29 @@
 #lang racket/base
 
-(require "common/math.rkt")
-(provide (all-from-out "common/math.rkt"))
+(require "common/contract.rkt"
+         "common/marching-squares.rkt"
+         "contracted/parameters.rkt"
+         "contracted/math.rkt"
+         "contracted/axis-transform.rkt"
+         "contracted/ticks.rkt"
+         "contracted/format.rkt"
+         "contracted/draw.rkt"
+         "contracted/sample.rkt"
+         "contracted/samplers.rkt"
+         "contracted/legend.rkt"
+         "contracted/plot-element.rkt"
+         "contracted/date-time.rkt")
 
-(require "common/format.rkt")
-(provide digits-for-range
-         real->plot-label
-         ->plot-label
-         real->string/trunc)
-
-(require "common/draw.rkt")
-(provide color-seq color-seq*
-         ->color
-         ->pen-color ->brush-color
-         ->pen-style ->brush-style
-         alpha-expt)
-
-(require "common/axis-transform.rkt")
-(provide (struct-out invertible-function))
-
-(require "common/sample.rkt")
-(provide linear-seq linear-seq* nonlinear-seq
-         (struct-out mapped-function))
-
-(require "common/contract.rkt")
-(provide (all-from-out "common/contract.rkt"))
+(provide (all-from-out "common/contract.rkt")
+         (all-from-out "common/marching-squares.rkt")
+         (all-from-out "contracted/parameters.rkt")
+         (all-from-out "contracted/math.rkt")
+         (all-from-out "contracted/axis-transform.rkt")
+         (all-from-out "contracted/ticks.rkt")
+         (all-from-out "contracted/format.rkt")
+         (all-from-out "contracted/draw.rkt")
+         (all-from-out "contracted/sample.rkt")
+         (all-from-out "contracted/samplers.rkt")
+         (all-from-out "contracted/legend.rkt")
+         (all-from-out "contracted/plot-element.rkt")
+         (all-from-out "contracted/date-time.rkt"))

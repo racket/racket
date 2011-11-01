@@ -8,16 +8,7 @@
          "math.rkt"
          "format.rkt")
 
-(provide seconds-per-minute
-         seconds-per-hour
-         seconds-per-day
-         seconds-per-week
-         avg-seconds-per-year
-         avg-seconds-per-month
-         utc-seconds-round-month
-         utc-seconds-round-year
-         plot-date-formatter
-         plot-time-formatter)
+(provide (all-defined-out))
 
 (define seconds-per-minute 60)
 (define seconds-per-hour (* 60 seconds-per-minute))
@@ -78,12 +69,7 @@
 
 (struct plot-time (second minute hour day) #:transparent)
 
-(provide (contract-out (struct plot-time ([second (and/c (>=/c 0) (</c 60))]
-                                          [minute (integer-in 0 59)]
-                                          [hour (integer-in 0 23)]
-                                          [day exact-integer?]))))
-
-(define (seconds->plot-time s)
+(defproc (seconds->plot-time [s real?]) plot-time?
   (let* ([s  (inexact->exact s)]
          [day  (floor (/ s seconds-per-day))]
          [s  (- s (* day seconds-per-day))]
@@ -93,7 +79,7 @@
          [s  (- s (* minute seconds-per-minute))])
     (plot-time s minute hour day)))
 
-(define (plot-time->seconds t)
+(defproc (plot-time->seconds [t plot-time?]) real?
   (match-define (plot-time second minute hour day) t)
   (+ second
      (* minute seconds-per-minute)

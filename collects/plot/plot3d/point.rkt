@@ -1,10 +1,10 @@
 #lang racket/base
 
 (require racket/class racket/list racket/match racket/contract
-         plot/custom plot/utils
+         plot/utils
          "../common/contract-doc.rkt")
 
-(provide points3d)
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 
