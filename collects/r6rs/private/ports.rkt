@@ -643,7 +643,10 @@
     (raise-type-error 'get-bytevector-all "binary port" p))
   (let ([p2 (open-output-bytes)])
     (copy-port p p2)
-    (get-output-bytes p2 #t)))
+    (let ([s (get-output-bytes p2 #t)])
+      (if (zero? (bytes-length s))
+          eof
+          s))))
 
 ;; ----------------------------------------
 

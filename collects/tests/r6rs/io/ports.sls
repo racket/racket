@@ -382,6 +382,10 @@
       (test-transcoders bytevector->string-via-file
                         string->bytevector-via-file))
 
+    (let ((port (open-bytevector-input-port #vu8())))
+      (test (eof-object? (get-bytevector-all port)) #t)
+      (test (eof-object? (get-bytevector-n port 10)) #t))
+
     (let ([test-i+o
            (lambda (buf)
              (let ([p (open-file-input/output-port "io-tmp1"
