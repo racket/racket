@@ -299,6 +299,7 @@ A @tech{lexer macro} that matches any character in @racket[string].}
 @defidform[lower-case]
 @defidform[upper-case]
 @defidform[title-case]
+@defidform[numeric]
 @defidform[symbolic]
 @defidform[punctuation]
 @defidform[graphic]
