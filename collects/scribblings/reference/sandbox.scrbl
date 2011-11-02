@@ -676,22 +676,24 @@ other resources intact.}
 
 @defparam[sandbox-make-inspector make (-> inspector?)]{
 
-A parameter that determines the procedure used to create the inspector
-for sandboxed evaluation.  The procedure is called when initializing
-an evaluator, and the default parameter value is
-@racket[make-inspector].}
+A parameter that determines the (nullary) procedure that is used to
+create the inspector for sandboxed evaluation.  The procedure is called
+when initializing an evaluator.  The default parameter value is
+@racket[(lambda () (make-inspector (current-inspector)))].}
 
 
 @defparam[sandbox-make-code-inspector make (-> inspector?)]{
 
-A parameter that determines the procedure used to create the code
-inspector for sandboxed evaluation.  The procedure is called when
-initializing an evaluator, and the default parameter value is
-@racket[make-inspector].  The @racket[current-load/use-compiled]
-handler is setup to still allow loading of bytecode files under the
-original code inspector when @racket[sandbox-path-permissions] allows
-it through a @racket['read-bytecode] mode symbol, to make it possible
-to load libraries.}
+A parameter that determines the (nullary) procedure that is used to
+create the code inspector for sandboxed evaluation.  The procedure is
+called when initializing an evaluator.  The default parameter value is
+@racket[(lambda () (make-inspector (current-code-inspector)))].
+
+The @racket[current-load/use-compiled] handler is setup to allow loading
+of bytecode files under the original code inspector when
+@racket[sandbox-path-permissions] allows it through a
+@racket['read-bytecode] mode symbol, which makes loading libraries
+possible.}
 
 
 @defparam[sandbox-make-logger make (-> logger?)]{

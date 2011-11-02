@@ -202,9 +202,11 @@
 
 (define sandbox-exit-handler (make-parameter default-sandbox-exit-handler))
 
-(define sandbox-make-inspector (make-parameter make-inspector))
+(define sandbox-make-inspector
+  (make-parameter (lambda () (make-inspector (current-inspector)))))
 
-(define sandbox-make-code-inspector (make-parameter make-inspector))
+(define sandbox-make-code-inspector
+  (make-parameter (lambda () (make-inspector (current-code-inspector)))))
 
 (define sandbox-make-logger (make-parameter current-logger))
 
