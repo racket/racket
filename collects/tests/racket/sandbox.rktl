@@ -516,4 +516,16 @@
       #t))
   (test #t avoid-module-declare-name))
 
+(let ()
+  (define (try lang)
+    (define e (make-evaluator lang))
+    (e '(require ffi/unsafe))
+    (with-handlers ([exn? exn-message]) (e '(ffi-lib #f))))
+  (define r1 (try 'racket/base))
+  (define r2 (try '(begin)))
+  (test #t regexp-match?
+        #rx"access disallowed by code inspector to protected variable"
+        r1)
+  (test #t equal? r1 r2))
+
 (report-errs)

@@ -876,7 +876,6 @@
    (;; create a sandbox context first
     [current-custodian user-cust]
     [current-thread-group (make-thread-group)]
-    [current-namespace (make-evaluation-namespace)]
     ;; set up the IO context
     [current-input-port
      (let ([inp (sandbox-input)])
@@ -945,7 +944,10 @@
     ;; it will not use the new namespace.
     [current-eventspace (parameterize-break
                          #f
-                         (make-eventspace))])
+                         (make-eventspace))]
+    ;; Finally, create the namespace in the restricted environment (in
+    ;; particular, it must be created under the new code inspector)
+    [current-namespace (make-evaluation-namespace)])
    (define t (bg-run->thread (run-in-bg user-process)))
    (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
    (set! user-thread t))
