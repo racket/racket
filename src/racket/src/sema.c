@@ -673,7 +673,12 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
           break;
         } else {
           /* there may have been some action on one of the waitables;
-             try again */
+             try again, if no result, yet */
+          if (syncing && syncing->result) {
+            i = syncing->result - 1;
+            ii = 0;
+            break;
+          }
         }
       } else
         break;
