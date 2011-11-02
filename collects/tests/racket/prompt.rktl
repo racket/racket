@@ -122,7 +122,7 @@
 ;; Check that a constant-space loop doesn't
 ;; accumulate memory (test by Nicolas Oury)
 
-(let ()
+(when (custodian-memory-accounting-available?) ; as a check for 3m-ness
   (define prompt1 (make-continuation-prompt-tag 'p1))
   (define prompt2 (make-continuation-prompt-tag 'p2))
 
