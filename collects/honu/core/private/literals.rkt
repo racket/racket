@@ -29,7 +29,9 @@
                 honu-in
                 honu-for-syntax
                 honu-for-template
-                honu-prefix)
+                honu-prefix
+                %racket
+                %racket-expression)
 
 (define-syntax-rule (define-literal+set set literal ...)
                     (begin
@@ -37,4 +39,6 @@
                       (begin-for-syntax
                         (define-literal-set set (literal ...)))))
 
-(define-literal-set cruft (#%parens #%brackets #%braces semicolon colon honu-comma honu-<-))
+(define-literal-set cruft (#%parens #%brackets #%braces
+                           %racket %racket-expression
+                           semicolon colon honu-comma honu-<-))

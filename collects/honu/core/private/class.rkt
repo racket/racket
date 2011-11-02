@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "macro2.rkt"
+         "literals.rkt"
          (for-syntax racket/base
                      "literals.rkt"
                      "parse2.rkt"
@@ -22,21 +23,18 @@
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens constructor-argument ...) (#%braces method:honu-class-method ...) . rest)
        (define class
-         #'(define name (class* object% ()
-                                (super-new)
-                                (init-field constructor-argument ...)
-                                method.result ...)))
-       (values
-         class
-         #'rest
-         #t)])))
+         #'(%racket (define name (class* object% ()
+                                         (super-new)
+                                         (init-field constructor-argument ...)
+                                         method.result ...))))
+       (values class #'rest #t)])))
 
 (provide honu-new)
 (define-honu-syntax honu-new
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens arg:honu-expression ...) . rest)
-       (define new #'(make-object name arg.result ...))
+       (define new #'(%racket (make-object name arg.result ...)))
        (values
          new
          #'rest

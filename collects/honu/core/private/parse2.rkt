@@ -174,33 +174,55 @@
 ;; parse one form
 ;; return the parsed stuff and the unparsed stuff
 (define (parse input)
+  (define (do-macro head rest precedence left current stream)
+    (if current
+      (values (left current) stream)
+      (begin
+        (debug "Honu macro ~a\n" head)
+        (let-values ([(parsed unparsed terminate?)
+                      ((syntax-local-value head)
+                       (with-syntax ([head head]
+                                     [(rest ...) rest])
+                         #'(head rest ...))
+                       #f)])
+          (with-syntax ([(parsed ...) parsed]
+                        [(rest ...) unparsed])
+            (debug "Output from macro ~a\n" #'(parsed ...))
+            (do-parse #'(parsed ... rest ...)
+                      precedence left current)
+            #;
+            (if terminate?
+              (values (left #'parsed)
+                      #'rest)
+              (do-parse #'rest precedence
+                        left #'parsed)))))))
   (define (do-parse stream precedence left current)
     (define-syntax-class atom
       [pattern x:identifier]
       [pattern x:str]
       [pattern x:number])
 
-    (debug "parse ~a precedence ~a left ~a current ~a\n" stream precedence left current)
+    (debug "parse ~a precedence ~a left ~a current ~a\n" (syntax->datum stream) precedence left current)
     (define final (if current current #f))
     (syntax-parse stream #:literal-sets (cruft)
       [()
        (values (left final) #'())]
+      ;; dont reparse pure racket code
+      [(%racket racket rest ...)
+       (if current
+         (values (left current) stream)
+         (values (left #'racket) #'(rest ...)))]
+      ;; for expressions that can keep parsing
+      [(%racket-expression racket rest ...)
+       (if current
+         (values (left current) stream)
+         (do-parse #'(rest ...)
+                   precedence left
+                   #'racket))]
       [(head rest ...)
        (cond
          [(honu-macro? #'head)
-          (if current
-            (values (left current) stream)
-            (begin
-              (debug "Honu macro ~a\n" #'head)
-              (let-values ([(parsed unparsed terminate?)
-                            ((syntax-local-value #'head) #'(head rest ...) #f)])
-                (with-syntax ([parsed parsed]
-                              [rest unparsed])
-                  (if terminate?
-                    (values (left #'parsed)
-                            #'rest)
-                    (do-parse #'rest precedence
-                              left #'parsed))))))]
+          (do-macro #'head #'(rest ...) precedence left current stream)]
          [(parsed-syntax? #'head)
           (do-parse #'(rest ...) precedence left #'head)]
          [(honu-operator? #'head)

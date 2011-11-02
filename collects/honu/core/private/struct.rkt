@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "macro2.rkt"
+         "literals.rkt"
          (for-syntax racket/base
                      "parse2.rkt"
                      "literals.rkt"
@@ -23,12 +24,12 @@
        (define out
          (with-syntax ([(fields.name/accessor ...)
                         (make-accessors #'name (syntax->list #'(fields.name ...)))])
-           #'(struct name (fields.name ...)
-                     #:transparent
-                     #:property honu-struct (lambda (instance name)
-                                              (case name
-                                                [(fields.name) (fields.name/accessor instance)]
-                                                ...
-                                                [else (error 'dot "no such field name ~a" name)])))))
+           #'(%racket (struct name (fields.name ...)
+                              #:transparent
+                              #:property honu-struct (lambda (instance name)
+                                                       (case name
+                                                         [(fields.name) (fields.name/accessor instance)]
+                                                         ...
+                                                         [else (error 'dot "no such field name ~a" name)]))))))
        (values out #'rest #t)])))
 

@@ -36,9 +36,9 @@
                                 #'(sort store.result string<?
                                         #:key (lambda (name) order-by.result))
                                 #'store.result)])
-           #'(for/list ([name order]
-                        guard ...)
-               select.result)))
+           #'(%racket (for/list ([name order]
+                                 guard ...)
+                      select.result))))
        (values out #'rest #f)])))
           
 #|

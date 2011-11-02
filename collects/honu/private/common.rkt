@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require honu/core/private/macro2
+         honu/core/private/literals
          (for-syntax syntax/parse
                      racket/base
                      honu/core/private/literals
@@ -16,7 +17,8 @@
       [(_ (~seq clause:honu-expression colon body:honu-expression (~optional honu-comma)) ...
           . rest)
        (values
-         #'(cond
-             [clause.result body.result] ...)
+         #'(%racket-expression (cond
+                                 [clause.result body.result]
+                                 ...))
          #'rest
          #t)])))

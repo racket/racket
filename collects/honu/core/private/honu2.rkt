@@ -10,7 +10,9 @@
                   honu-then
                   honu-in
                   honu-prefix
-                  semicolon)
+                  semicolon
+                  %racket
+                  %racket-expression)
          (for-syntax syntax/parse
                      "literals.rkt"
                      "parse2.rkt"
@@ -26,10 +28,10 @@
           (#%braces code ...)
           . rest)
        (values
-         #'(lambda (arg ...)
-             (let-syntax ([do-parse (lambda (stx)
-                                      (parse-all #'(code ...)))])
-               (do-parse)))
+         #'(%racket-expression (lambda (arg ...)
+                      (let-syntax ([do-parse (lambda (stx)
+                                               (parse-all #'(code ...)))])
+                        (do-parse))))
          #'rest
          #f)])))
 
@@ -39,20 +41,9 @@
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-=)
       [(_ name:id honu-= one:honu-expression . rest)
-       (values #'(define name one.result)
+       (values #'(%racket (define name one.result))
                #'rest
-               #t)
-       ;; parse one expression
-       #;
-       (define-values (parsed unparsed)
-                      (parse #'rest))
-       #;
-       (values
-         (with-syntax ([parsed parsed])
-           #'(define name parsed))
-         (with-syntax ([unparsed unparsed])
-         #'unparsed)
-         #t)])))
+               #t)])))
 
 (provide honu-for)
 (define-honu-syntax honu-for
@@ -62,14 +53,14 @@
       [(_ iterator:id honu-= start:honu-expression honu-to end:honu-expression
           honu-do body:honu-expression . rest)
        (values
-         #'(for ([iterator (in-range start.result end.result)])
-             body.result)
+         #'(%racket (for ([iterator (in-range start.result end.result)])
+                      body.result))
          #'rest
          #t)]
       [(_ iterator:id honu-in stuff:honu-expression
           honu-do body:honu-expression . rest)
-       (values #'(for ([iterator stuff.result])
-                   body.result)
+       (values #'(%racket (for ([iterator stuff.result])
+                            body.result))
                #'rest
                #t)])))
 
@@ -80,7 +71,7 @@
                        #:literals (else honu-then)
       [(_ condition:honu-expression honu-then true:honu-expression else false:honu-expression . rest)
        (values
-         #'(if condition.result true.result false.result)
+         #'(%racket-expression (if condition.result true.result false.result))
          #'rest
          #f)])))
 
@@ -98,14 +89,14 @@
   (lambda (code context)
     (syntax-parse code
       [(_ expression rest ...)
-       (values #'(quote expression) #'(rest ...) #f)])))
+       (values #'(%racket-expression (quote expression)) #'(rest ...) #f)])))
 
 (provide honu-quasiquote)
 (define-honu-syntax honu-quasiquote
   (lambda (code context)
     (syntax-parse code
       [(_ expression rest ...)
-       (values #'(quasiquote expression)
+       (values #'(%racket-expression (quasiquote expression))
                #'(rest ...)
                #f)])))
 
@@ -138,14 +129,15 @@
   (lambda (left right)
     (with-syntax ([left left]
                   [right right])
-      #'(let ([left* left])
-          (cond
-            [(honu-struct? left*) (let ([use (honu-struct-get left*)])
-                                    (use left* 'right))]
-            [(object? left*) (lambda args
-                               (send/apply left* right args))]
-            ;; possibly handle other types of data
-            [else (error 'dot "don't know how to deal with ~a (~a)" 'left left*)])))))
+      #'(%racket-expression
+          (let ([left* left])
+            (cond
+              [(honu-struct? left*) (let ([use (honu-struct-get left*)])
+                                      (use left* 'right))]
+              [(object? left*) (lambda args
+                                 (send/apply left* right args))]
+              ;; possibly handle other types of data
+              [else (error 'dot "don't know how to deal with ~a (~a)" 'left left*)]))))))
 
 (provide honu-flow)
 (define-honu-operator/syntax honu-flow 0.001 'left
@@ -204,11 +196,11 @@
     (syntax-parse code
       [(_ form:require-form ... . rest)
        (values
-         #'(require (filtered-in (lambda (name)
+         #'(%racket (require (filtered-in (lambda (name)
                                    (regexp-replace* #rx"-"
                                                     (regexp-replace* #rx"->" name "_to_")
                                                     "_"))
-                                 (combine-in form.result ...)))
+                                 (combine-in form.result ...))))
 
          #'rest
          #f)])))
@@ -218,7 +210,7 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
       [(_ (#%parens name:id) something:honu-expression . rest)
-       (define with #'(with-input-from-file name (lambda () something.result)))
+       (define with #'(%racket-expression (with-input-from-file name (lambda () something.result))))
        (values
          with
          #'rest
