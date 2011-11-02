@@ -45,14 +45,6 @@ The contract for the @(racket #:sym) arguments in @(racket points) and @(racket 
 
 @doc-apply[known-point-symbols]{
 A list containing the symbols that are valid @(racket points) symbols.
-
-@interaction[#:eval plot-eval
-                    (require (only-in srfi/13 string-pad-right))
-                    (for ([sym  (in-list known-point-symbols)]
-                          [n    (in-cycle (in-range 3))])
-                      (display (string-pad-right (format "~v" sym) 22))
-                      (when (= n 2) (newline)))
-                    (length known-point-symbols)]
 }
 
 @section{Appearance Argument Sequence Contracts}

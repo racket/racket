@@ -42,6 +42,9 @@
     (define x-size (- x-max x-min))
     (define y-size (- y-max y-min))
     
+    (define x-mid (* 1/2 (+ x-min x-max)))
+    (define y-mid (* 1/2 (+ y-min y-max)))
+    
     (define clipping? #f)
     (define clip-x-min x-min)
     (define clip-x-max x-max)
@@ -97,6 +100,10 @@
     
     (define view->dc #f)
     (define/public (plot->dc v) (view->dc (plot->view v)))
+    
+    (define/public (plot-line->dc-angle v1 v2)
+      (match-define (vector dx dy) (v- (plot->dc v1) (plot->dc v2)))
+      (- (atan2 (- dy) dx)))
     
     (define (make-view->dc left right top bottom)
       (define corners (list (vector x-min y-min) (vector x-min y-max)

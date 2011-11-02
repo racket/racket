@@ -4,7 +4,60 @@
          plot/utils
          "../common/contract-doc.rkt")
 
-(provide (all-defined-out))
+(provide (all-defined-out)
+         (rename-out [contour3d isoline3d]
+                     [contours3d isolines3d]
+                     [contour-intervals3d isoline-intervals3d]))
+
+;; ===================================================================================================
+;; One contour line in 3D (using marching squares)
+
+(define ((contour3d-render-proc f z samples color width style alpha label) area)
+  (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
+  (match-define (list xs ys zss) (f x-min x-max (animated-samples samples)
+                                    y-min y-max (animated-samples samples)))
+  
+  (when (<= z-min z z-max)
+    (send area put-alpha alpha)
+    (send area put-pen color width style)
+    (for ([ya  (in-list ys)]
+          [yb  (in-list (rest ys))]
+          [zs0  (in-vector zss)]
+          [zs1  (in-vector zss 1)]
+          #:when #t
+          [xa  (in-list xs)]
+          [xb  (in-list (rest xs))]
+          [z1  (in-vector zs0)]
+          [z2  (in-vector zs0 1)]
+          [z3  (in-vector zs1 1)]
+          [z4  (in-vector zs1)])
+      (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+        (match-define (list v1 v2) line)
+        (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
+                               (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+        (send area put-line v1 v2 center))))
+  
+  (cond [label  (line-legend-entry label color width style)]
+        [else   empty]))
+
+(defproc (contour3d
+          [f (real? real? . -> . real?)] [z real?]
+          [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
+          [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
+          [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+          [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
+          [#:color color plot-color/c (line-color)]
+          [#:width width (>=/c 0) (line-width)]
+          [#:style style plot-pen-style/c (line-style)]
+          [#:alpha alpha (real-in 0 1) (line-alpha)]
+          [#:label label (or/c string? #f) #f]
+          ) renderer3d?
+  (define g (2d-function->sampler f))
+  (let ([z-min  (if z-min z-min z)]
+        [z-max  (if z-max z-max z)])
+    (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+                #f default-ticks-fun
+                (contour3d-render-proc g z samples color width style alpha label))))
 
 ;; ===================================================================================================
 ;; Contour lines in 3D (using marching squares)

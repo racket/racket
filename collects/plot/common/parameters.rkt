@@ -28,7 +28,7 @@
 (defparam plot-tick-size (>=/c 0) 10)
 (defparam plot-font-size size (>=/c 0) 11)
 (defparam plot-font-family family font-family/c 'roman)
-(defparam plot-legend-anchor anchor anchor/c 'top-right)
+(defparam plot-legend-anchor anchor anchor/c 'top-left)
 (defparam plot-legend-box-alpha alpha (real-in 0 1) 2/3)
 (defparam plot-animating? boolean? #f)
 

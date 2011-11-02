@@ -210,10 +210,18 @@ Corresponds with @(racket polar).
                                   (polar-interval f1 f2 #:label "[f1,f2]"))))]
 }
 
-@section{2D Contour Renderers}
+@section{2D Contour (Isoline) Renderers}
+
+@doc-apply[isoline]{
+Returns a renderer that plots a contour line, or a line of constant value (height).
+A circle of radius @(racket r), for example, is the line of constant value @(racket r) for the distance function:
+@interaction[#:eval plot-eval (plot (isoline (λ (x y) (sqrt (+ (sqr x) (sqr y)))) 1.5
+                                             -2 2 -2 2 #:label "z"))]
+}
+In this case, @(racket r) = @(racket 1.5).
 
 @doc-apply[contours]{
-Returns a renderer that plots contour lines, or lines of constant height.
+Returns a renderer that plots contour lines, or lines of constant value (height).
 
 When @(racket levels) is @(racket 'auto), the number of contour lines and their values are chosen the same way as axis tick positions; i.e. they are chosen to be simple.
 When @(racket levels) is a number, @(racket contours) chooses that number of values, evenly spaced, within the output range of @(racket f).
@@ -235,6 +243,10 @@ For example,
                                               #:styles '(solid dot)))]
 }
 
+@defproc[(isolines ...) renderer2d?]{
+A synonym of @(racket contours).
+}
+
 @doc-apply[contour-intervals]{
 Returns a renderer that fills the area between contour lines, and additionally draws contour lines.
 
@@ -244,6 +256,10 @@ For example, the canonical saddle, with its gradient field superimposed:
                                                    -2 2 -2 2 #:label "z")
                                 (vector-field (λ (x y) (vector (* 2 x) (* -2 y)))
                                               #:color "black" #:label "Gradient")))]
+}
+
+@defproc[(isoline-intervals ...) renderer2d?]{
+A synonym of @(racket contour-intervals).
 }
 
 @section{2D Rectangle Renderers}

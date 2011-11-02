@@ -2,19 +2,66 @@
 
 ;; Renderers for contour lines and contour intervals
 
-(require racket/contract racket/class racket/match racket/list racket/flonum racket/vector
+(require racket/contract racket/class racket/match racket/list racket/flonum racket/vector racket/math
          plot/utils
          "../common/contract-doc.rkt")
 
-(provide (all-defined-out))
+(provide (all-defined-out)
+         (rename-out [contours isolines]
+                     [contour-intervals isoline-intervals]))
+
+;; ===================================================================================================
+;; One contour line
+
+(define ((isoline-render-proc f z samples color width style alpha label) area)
+  (define-values (x-min x-max y-min y-max) (send area get-bounds))
+  (match-define (list xs ys zss) (f x-min x-max samples y-min y-max samples))
+  (define zs (2d-sample->list zss))
+  (define z-min (apply min* zs))
+  (define z-max (apply max* zs))
+  
+  (when (<= z-min z z-max)
+    (send area set-alpha alpha)
+    (send area set-pen color width style)
+    (for ([ya  (in-list ys)]
+          [yb  (in-list (rest ys))]
+          [zs0  (in-vector zss)]
+          [zs1  (in-vector zss 1)]
+          #:when #t
+          [xa  (in-list xs)]
+          [xb  (in-list (rest xs))]
+          [z1  (in-vector zs0)]
+          [z2  (in-vector zs0 1)]
+          [z3  (in-vector zs1 1)]
+          [z4  (in-vector zs1)])
+      (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+        (send/apply area put-line (map (λ (v) (vector-take v 2)) line)))))
+  
+  (cond [label  (line-legend-entry label color width style)]
+        [else   empty]))
+
+(defproc (isoline
+          [f (real? real? . -> . real?)] [z real?]
+          [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
+          [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
+          [#:samples samples (and/c exact-integer? (>=/c 2)) (contour-samples)]
+          [#:color color plot-color/c (line-color)]
+          [#:width width (>=/c 0) (line-width)]
+          [#:style style plot-pen-style/c (line-style)]
+          [#:alpha alpha (real-in 0 1) (line-alpha)]
+          [#:label label (or/c string? #f) #f]
+          ) renderer2d?
+  (define g (2d-function->sampler f))
+  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+              (isoline-render-proc g z samples color width style alpha label)))
 
 ;; ===================================================================================================
 ;; Contour lines
 
-(define ((contours-render-proc f levels samples colors widths styles alphas label) area)
+(define ((contours-render-proc f g levels samples colors widths styles alphas label) area)
   (let/ec return
     (define-values (x-min x-max y-min y-max) (send area get-bounds))
-    (match-define (list xs ys zss) (f x-min x-max samples y-min y-max samples))
+    (match-define (list xs ys zss) (g x-min x-max samples y-min y-max samples))
     
     (define-values (z-min z-max)
       (let ([zs  (filter regular? (2d-sample->list zss))])
@@ -47,7 +94,8 @@
             [z3  (in-vector zs1 1)]
             [z4  (in-vector zs1)])
         (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-          (send/apply area put-line (map (λ (v) (vector-take v 2)) line)))))
+          (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
+          (send area put-line v1 v2))))
     
     (cond [label  (line-legend-entries label zs labels colors widths styles)]
           [else   empty])))
@@ -66,7 +114,7 @@
           ) renderer2d?
   (define g (2d-function->sampler f))
   (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
-              (contours-render-proc g levels samples colors widths styles alphas label)))
+              (contours-render-proc f g levels samples colors widths styles alphas label)))
 
 ;; ===================================================================================================
 ;; Contour intervals

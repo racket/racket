@@ -42,16 +42,16 @@
 (define fldistance
   (case-lambda
     [()   0]
-    [(x)  (if (flonum? x) (abs x) (raise-type-error 'distance "flonum" x))]
-    [(x y)  (cond [(not (flonum? x))  (raise-type-error 'distance "flonum" 0 x y)]
-                  [(not (flonum? y))  (raise-type-error 'distance "flonum" 1 x y)]
+    [(x)  (if (flonum? x) (abs x) (raise-type-error 'fldistance "flonum" x))]
+    [(x y)  (cond [(not (flonum? x))  (raise-type-error 'fldistance "flonum" 0 x y)]
+                  [(not (flonum? y))  (raise-type-error 'fldistance "flonum" 1 x y)]
                   [else  (unsafe-flsqrt (unsafe-fl+ (unsafe-fl* x x) (unsafe-fl* y y)))])]
-    [(x y z)  (cond [(not (flonum? x))  (raise-type-error 'distance "flonum" 0 x y z)]
-                    [(not (flonum? y))  (raise-type-error 'distance "flonum" 1 x y z)]
-                    [(not (flonum? z))  (raise-type-error 'distance "flonum" 2 x y z)]
+    [(x y z)  (cond [(not (flonum? x))  (raise-type-error 'fldistance "flonum" 0 x y z)]
+                    [(not (flonum? y))  (raise-type-error 'fldistance "flonum" 1 x y z)]
+                    [(not (flonum? z))  (raise-type-error 'fldistance "flonum" 2 x y z)]
                     [else  (unsafe-flsqrt (unsafe-fl+ (unsafe-fl+ (unsafe-fl* x x) (unsafe-fl* y y))
                                                       (unsafe-fl* z z)))])]
-    [xs  (cond [(not (andmap flonum? xs))  (raise-type-error 'distance "flonums" xs)]
+    [xs  (cond [(not (andmap flonum? xs))  (raise-type-error 'fldistance "flonums" xs)]
                [else  (unsafe-flsqrt (flsum (λ (x) (unsafe-fl* x x)) xs))])]))
 
 ;; ===================================================================================================

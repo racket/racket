@@ -9,7 +9,6 @@
          "line.rkt"
          "interval.rkt"
          "point.rkt"
-         "contour.rkt"
          "clip.rkt")
 
 (provide (all-defined-out))
@@ -220,12 +219,13 @@
   (match-define (vector x y) v)
   (format "(~a,~a)" (format-x-coordinate x area) (format-y-coordinate y area)))
 
-(define ((label-render-proc label v color size anchor angle point-size alpha) area)
+(define ((label-render-proc label v color size family anchor angle point-size alpha) area)
   (let ([label  (if label label (format-coordinate v area))])
     (send area set-alpha alpha)
     ; label
     (send area set-text-foreground color)
     (send area set-font-size size)
+    (send area set-font-family family)
     (send area put-text (string-append " " label " ") v anchor angle #:outline? #t)
     ; point
     (send area set-pen color 1 'solid)
@@ -237,6 +237,7 @@
           [v (vector/c real? real?)] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
           [#:size size (>=/c 0) (plot-font-size)]
+          [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
           [#:point-size point-size (>=/c 0) (label-point-size)]
@@ -244,13 +245,14 @@
           ) renderer2d?
   (match-define (vector x y) v)
   (renderer2d (vector (ivl x x) (ivl y y)) #f #f
-              (label-render-proc label v color size anchor angle point-size alpha)))
+              (label-render-proc label v color size family anchor angle point-size alpha)))
 
 (defproc (parametric-label
           [f (real? . -> . (vector/c real? real?))]
           [t real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
           [#:size size (>=/c 0) (plot-font-size)]
+          [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
           [#:point-size point-size (>=/c 0) (label-point-size)]
@@ -259,44 +261,47 @@
   (point-label (match f
                  [(vector fx fy)  (vector (fx t) (fy t))]
                  [(? procedure?)  (f t)])
-               label #:color color #:size size #:anchor anchor #:angle angle
+               label #:color color #:size size #:family family #:anchor anchor #:angle angle
                #:point-size point-size #:alpha alpha))
 
 (defproc (polar-label
           [f (real? . -> . real?)] [θ real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
           [#:size size (>=/c 0) (plot-font-size)]
+          [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
           [#:point-size point-size (>=/c 0) (label-point-size)]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (polar->cartesian θ (f θ)) label
-               #:color color #:size size #:anchor anchor #:angle angle
+               #:color color #:size size #:family family #:anchor anchor #:angle angle
                #:point-size point-size #:alpha alpha))
 
 (defproc (function-label
           [f  (real? . -> . real?)] [x real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
           [#:size size (>=/c 0) (plot-font-size)]
+          [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
           [#:point-size point-size (>=/c 0) (label-point-size)]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (vector x (f x)) label
-               #:color color #:size size #:anchor anchor #:angle angle
+               #:color color #:size size #:family family #:anchor anchor #:angle angle
                #:point-size point-size #:alpha alpha))
 
 (defproc (inverse-label
           [f  (real? . -> . real?)] [y real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
           [#:size size (>=/c 0) (plot-font-size)]
+          [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
           [#:point-size point-size (>=/c 0) (label-point-size)]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (vector (f y) y) label
-               #:color color #:size size #:anchor anchor #:angle angle
+               #:color color #:size size #:family family #:anchor anchor #:angle angle
                #:point-size point-size #:alpha alpha))
