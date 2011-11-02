@@ -5159,7 +5159,7 @@ static Scheme_Object *
 local_eval(int argc, Scheme_Object **argv)
 {
   Scheme_Comp_Env *env, *stx_env, *old_stx_env;
-  Scheme_Object *l, *a, *rib, *expr, *names, *observer;
+  Scheme_Object *l, *a, *rib, *expr, *names, *rn_names, *observer;
   int cnt = 0, pos;
 
   observer = scheme_get_expand_observe();
@@ -5215,6 +5215,9 @@ local_eval(int argc, Scheme_Object **argv)
     scheme_set_local_syntax(cnt++, SCHEME_CAR(l), scheme_false, stx_env);
   }
 	  
+  /* Extend shared rib with renamings */
+  scheme_add_env_renames(rib, stx_env, old_stx_env);
+
   stx_env->in_modidx = scheme_current_thread->current_local_modidx;
   if (!SCHEME_FALSEP(expr)) {
     Scheme_Compile_Expand_Info rec;
@@ -5233,14 +5236,12 @@ local_eval(int argc, Scheme_Object **argv)
     scheme_prepare_compile_env(stx_env->genv->exp_env);
     pos = 0;
     expr = scheme_add_rename_rib(expr, rib);
-    scheme_bind_syntaxes("local syntax definition", names, expr,
+    rn_names = scheme_named_map_1(NULL, scheme_add_rename_rib, names, rib);
+    scheme_bind_syntaxes("local syntax definition", rn_names, expr,
 			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
 			 stx_env, stx_env,
 			 &pos, rib);
   }
-
-  /* Extend shared rib with renamings */
-  scheme_add_env_renames(rib, stx_env, old_stx_env);
 
   /* Remember extended environment */
   ((void **)SCHEME_PTR1_VAL(argv[2]))[0] = stx_env;

@@ -603,5 +603,31 @@
   (two))
 
 ;; ----------------------------------------
+;; Check `free-identifier=?' propagation,
+;; definition contexts, and `syntax-local-bind-syntaxes'
+
+(let ()
+  (define-syntax (compare stx)
+    (define id0 (cadr (syntax->list stx)))
+    (unless (free-identifier=? id0 #'compare)
+      (error "`free-identifier=? test failed on int-def binding"))
+    #'10)
+  
+  (define-syntax (invoke stx)
+    (define id1 (cadr (syntax->list stx)))
+    (define id2 ((make-syntax-introducer) (datum->syntax #false 'dummy)))
+    (define d-ctx (syntax-local-make-definition-context #false))
+    (define e-ctx (list (gensym)))
+    (syntax-local-bind-syntaxes
+     (list id2)
+     #`(make-rename-transformer #'#,id1)
+     d-ctx)
+    (internal-definition-context-seal d-ctx)
+    (local-expand #`(#,id2 #,id2) e-ctx (list #'quote) d-ctx))
+
+  (test 10 'ten (invoke compare)))
+
+
+;; ----------------------------------------
 
 (report-errs)
