@@ -6,8 +6,8 @@
          "../common/plot-element.rkt"
          "../common/math.rkt"
          "../common/legend.rkt"
-         "../plot2d/area.rkt"
-         "../plot3d/area.rkt")
+         "../plot2d/plot-area.rkt"
+         "../plot3d/plot-area.rkt")
 
 (provide
  (contract-out

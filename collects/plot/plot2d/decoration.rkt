@@ -5,7 +5,6 @@
 (require racket/contract racket/class racket/match racket/math racket/list
          plot/utils
          "../common/contract-doc.rkt"
-         "area.rkt"
          "line.rkt"
          "interval.rkt"
          "point.rkt"

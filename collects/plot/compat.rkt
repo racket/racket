@@ -8,8 +8,8 @@
          "common/contract.rkt"
          "common/contract-doc.rkt"
          "common/plot-element.rkt"
-         "plot2d/area.rkt"
-         "plot3d/area.rkt"
+         "plot2d/plot-area.rkt"
+         "plot3d/plot-area.rkt"
          (prefix-in new. (only-in "main.rkt"
                                   x-axis y-axis
                                   default-x-ticks default-y-ticks default-z-ticks

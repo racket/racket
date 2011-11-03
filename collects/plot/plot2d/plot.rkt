@@ -13,7 +13,7 @@
          "../common/file-type.rkt"
          "../common/deprecation-warning.rkt"
          "../common/contract-doc.rkt"
-         "area.rkt")
+         "plot-area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
 ;;   cannot instantiate `racket/gui/base' a second time in the same process

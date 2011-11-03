@@ -2,8 +2,7 @@
 
 (require racket/gui/base racket/class racket/match racket/bool racket/async-channel
          "../common/gui.rkt"
-         "../common/math.rkt"
-         "area.rkt")
+         "../common/math.rkt")
 
 (provide 3d-plot-snip% make-3d-plot-snip)
 
