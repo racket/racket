@@ -52,6 +52,8 @@ Removed the Racket-to-C compiler: raco ctool -e/-c, mzc -e/-c,
  compile-extensions, compile-extensions-to-c, compile-c-extensions,
  compiler/cffi, compiler/comp-unit,  compiler:inner^, and most 
  options in compiler/option
+The The `lazy' language is now based on `racket' instead of `mzscheme'.
+ Specifically, it now uses modern `require's and `provide's.
 
 Version 5.1.3, August 2011
 No changes
