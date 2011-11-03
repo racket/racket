@@ -415,27 +415,32 @@ for this canvas's DC as returned by
 @method[canvas<%> get-dc].
 
 The 
-@method[gl-context<%> swap-buffers]
+@xmethod[gl-context<%> swap-buffers]
 method acquires a re-entrant lock, so nested calls to
-@method[canvas% with-gl-context] on different threads or OpenGL contexts can block or deadlock.
+@method[canvas% swap-gl-buffers] or @method[canvas% with-gl-context]
+on different threads or OpenGL contexts can block or deadlock.
 
 
 }
 
 
-@defmethod[(with-gl-context [thunk (-> any)])
+@defmethod[(with-gl-context [thunk (-> any)]
+			    [#:fail fail (-> any) (lambda () (error ....))])
            any]{
 Passes the given thunk to
 @method[gl-context<%> call-as-current]
 of the result of 
 @method[dc<%> get-gl-context]
 for this canvas's DC as returned by
-@method[canvas<%> get-dc].
+@method[canvas<%> get-dc]. If @method[dc<%> get-gl-context]
+returns @racket[#f], then @racket[fail] is called,
+instead.
 
 The 
-@method[gl-context<%> call-as-current]
+@xmethod[gl-context<%> call-as-current]
 method acquires a re-entrant lock, so nested calls to
-@method[canvas% with-gl-context] on different threads or OpenGL contexts can block or deadlock.
+@method[canvas% with-gl-context] or @method[canvas% swap-gl-buffers]
+on different threads or OpenGL contexts can block or deadlock.
 
 
 }

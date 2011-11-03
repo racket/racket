@@ -117,9 +117,17 @@
 	  (check-label-string/false cwho label)))
       (public
         [on-scroll (lambda (e) (send wx do-on-scroll e))]
-	[swap-gl-buffers (lambda () (send (send (send wx get-dc) get-gl-context) swap-buffers))]
-	[with-gl-context (lambda (thunk) 
-			   (send (send (send wx get-dc) get-gl-context) call-as-current thunk))]
+	[swap-gl-buffers (lambda () 
+                           (let ([ctx (send (send wx get-dc) get-gl-context)])
+                             (when ctx
+                               (send ctx swap-buffers))))]
+	[with-gl-context (lambda (thunk #:fail [fail (lambda () 
+                                                       (error (who->name '(method canvas% with-gl-context))
+                                                              "no gl context available"))])
+			   (let ([ctx (send (send wx get-dc) get-gl-context)])
+			     (if ctx
+				 (send ctx call-as-current thunk)
+				 (fail))))]
 	[accept-tab-focus (entry-point
 			   (case-lambda
 			    [() (send wx get-tab-focus)]
