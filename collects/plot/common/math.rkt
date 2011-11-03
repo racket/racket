@@ -209,6 +209,14 @@
        [_  (raise-type-error 'vcross "vector of 3 reals" 1 v1 v2)])]
     [_  (raise-type-error 'vcross "vector of 3 reals" 0 v1 v2)]))
 
+(defproc (vcross2 [v1 (vector/c real? real?)] [v2 (vector/c real? real?)]) real?
+  (match v1
+    [(vector (? real? x1) (? real? y1))
+     (match v2
+       [(vector (? real? x2) (? real? y2))  (- (* x1 y2) (* y1 x2))]
+       [_  (raise-type-error 'vcross "vector of 2 reals" 1 v1 v2)])]
+    [_  (raise-type-error 'vcross "vector of 2 reals" 0 v1 v2)]))
+
 (define-syntax-rule (vmap name f v)
   (let ()
     (unless (vector? v)
@@ -313,6 +321,11 @@
                   (raise-type-error 'vdot "vector of real" 1 v1 v2))
               (raise-type-error 'vdot "vector of real" 0 v1 v2)))]))
 
+(defproc (vcos-angle [v1 (vectorof real?)] [v2 (vectorof real?)]) real?
+  (define d (vdot v1 v2))
+  (cond [(= d 0)  0]
+        [else     (/ d (vmag v1) (vmag v2))]))
+
 (define-syntax-rule (unsafe-flspecial? x)
   (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0) (eqv? x +nan.0)))
 
@@ -391,7 +404,7 @@
     [else
      (let*-values ([(last vs)
                     (for/fold ([last  (first vs)] [vs  (list (first vs))])
-                              ([v  (in-list (rest vs))])
+                      ([v  (in-list (rest vs))])
                       (cond [(v= last v)  (values v vs)]
                             [else         (values v (cons v vs))]))]
                    [(vs)  (reverse vs)])
@@ -408,11 +421,20 @@
            (for ([v1  (in-list vs)]
                  [v2  (in-list (rest vs))]
                  [v3  (in-list (rest (rest vs)))])
-             (define n (vcross (v- v3 v2) (v- v1 v2)))
-             (define m (vmag^2 n))
-             (when (m . > . 0)
-               (break (v/ n (sqrt m)))))
-           default-normal))])))
+             (define norm (vcross (v- v3 v2) (v- v1 v2)))
+             (define m (vmag norm))
+             (when (m . > . 0) (break (v/ norm m))))
+           default-normal)
+         #;
+         (begin
+           (define n
+             (for/fold ([norm  (vector 0 0 0)])
+               ([v1  (in-list vs)]
+                [v2  (in-list (rest vs))]
+                [v3  (in-list (rest (rest vs)))])
+               (v+ norm (vcross (v- v3 v2) (v- v1 v2)))))
+           (define m (vmag norm))
+           (if (= m 0) default-normal (v/ norm m))))])))
 
 ;; ===================================================================================================
 ;; Intervals
@@ -448,6 +470,10 @@
 (defproc (ivl-singular? [i ivl?]) boolean?
   (match-define (ivl a b) i)
   (and a b (= a b)))
+
+(defproc (ivl-length [i ivl?]) (or/c real? #f)
+  (match-define (ivl a b) i)
+  (if (and a b) (- b a) #f))
 
 (defproc (ivl-zero-length? [i ivl?]) boolean?
   (or (ivl-empty? i) (ivl-singular? i)))
@@ -547,6 +573,13 @@
 
 (defproc (rect-regular? [r (vectorof ivl?)]) boolean?
   (vector-andmap ivl-regular? r))
+
+(defproc (rect-area [r (vectorof ivl?)]) (or/c real? #f)
+  (let/ec break
+    (for/fold ([area 1]) ([i  (in-vector r)])
+      (define len (ivl-length i))
+      (when (or (not len) (zero? len)) (break len))
+      (* area (ivl-length i)))))
 
 (defproc (rect-zero-area? [r (vectorof ivl?)]) boolean?
   (vector-ormap ivl-zero-length? r))

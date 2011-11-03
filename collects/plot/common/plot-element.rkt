@@ -96,13 +96,23 @@
     ;; Objective: find the fixpoint of F starting at plot-bounds-rect
     (define (F bounds-rect) (rect-meet plot-bounds-rect (apply-bounds* elems bounds-rect)))
     ;; Iterate joint bounds to (hopefully) a fixpoint
-    (for/fold ([bounds-rect plot-bounds-rect]) ([n  (in-range max-iters)])
-      ;(printf "bounds-rect = ~v~n" bounds-rect)
-      ;; Get new bounds from the elements' bounds functions
-      (define new-bounds-rect (F bounds-rect))
-      ;; Shortcut eval: if the bounds haven't changed, we have a fixpoint
-      (cond [(equal? bounds-rect new-bounds-rect)  (break bounds-rect)]
-            [else  new-bounds-rect]))))
+    (define-values (bounds-rect area delta-area)
+      (for/fold ([bounds-rect  plot-bounds-rect]
+                 [area  (rect-area plot-bounds-rect)] [delta-area  #f]
+                 ) ([n  (in-range max-iters)])
+        ;(printf "bounds-rect = ~v~n" bounds-rect)
+        ;; Get new bounds from the elements' bounds functions
+        (define new-bounds-rect (F bounds-rect))
+        (define new-area (rect-area new-bounds-rect))
+        (define new-delta-area (and area new-area (- new-area area)))
+        (cond
+          ;; Shortcut eval: if the bounds haven't changed, we have a fixpoint
+          [(equal? bounds-rect new-bounds-rect)  (break bounds-rect)]
+          ;; If the area grew more this iteration than last, it may not converge, so stop now
+          [(and delta-area new-delta-area (new-delta-area . > . delta-area))  (break bounds-rect)]
+          ;; All good - one more iteration
+          [else  (values new-bounds-rect new-area new-delta-area)])))
+    bounds-rect))
 
 ;; Applies the bounds functions of multiple plot elements, in parallel, and returns the smallest
 ;; bounds containing all the new bounds. This function is monotone and increasing regardless of

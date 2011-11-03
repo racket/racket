@@ -13,7 +13,7 @@
          floor-log/base ceiling-log/base
          polar->cartesian 3d-polar->3d-cartesian
          ;; Vectors
-         vcross v+ v- vneg v* v/ vmag^2 vmag vnormalize vdot vregular? v= vcenter)
+         vcross vcross2 v+ v- vneg v* v/ vmag^2 vmag vnormalize vdot vcos-angle vregular? v= vcenter)
 
 ;; Intervals
 (provide (contract-out (struct ivl ([min (or/c real? #f)] [max (or/c real? #f)]))
@@ -21,7 +21,7 @@
                        [ivl-join  (->* () () #:rest (listof ivl?) ivl?)])
          empty-ivl unknown-ivl
          (activate-contract-out
-          ivl-empty? ivl-known? ivl-regular? ivl-singular? ivl-zero-length?
+          ivl-empty? ivl-known? ivl-regular? ivl-singular? ivl-length ivl-zero-length?
           ivl-inexact->exact ivl-contains? bounds->intervals))
 
 ;; Rectangles
@@ -29,5 +29,5 @@
                        [rect-join (->* () () #:rest (listof (vectorof ivl?)) (vectorof ivl?))])
          (activate-contract-out
           empty-rect unknown-rect bounding-rect
-          rect-empty? rect-known? rect-regular? rect-zero-area? rect-singular?
+          rect-empty? rect-known? rect-regular? rect-area rect-zero-area? rect-singular?
           rect-inexact->exact rect-contains?))

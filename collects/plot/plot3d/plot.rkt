@@ -100,9 +100,9 @@
     (when (and (not (empty? legend-entries))
                (or (not (plot-animating?))
                    (not (equal? (plot-legend-anchor) 'center))))
-      (send area put-legend legend-entries))
+      (send area draw-legend legend-entries))
     
-    (when (plot-animating?) (send area put-angles))
+    (when (plot-animating?) (send area draw-angles))
     
     (send area restore-drawing-params)))
 

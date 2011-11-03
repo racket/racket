@@ -85,7 +85,7 @@
     (send area end-plot)
     
     (when (not (empty? legend-entries))
-      (send area put-legend legend-entries))
+      (send area draw-legend legend-entries))
     
     (send area restore-drawing-params)))
 

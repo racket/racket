@@ -58,7 +58,7 @@
 ;; ===================================================================================================
 ;; Contour lines
 
-(define ((contours-render-proc f g levels samples colors widths styles alphas label) area)
+(define ((contours-render-proc g levels samples colors widths styles alphas label) area)
   (let/ec return
     (define-values (x-min x-max y-min y-max) (send area get-bounds))
     (match-define (list xs ys zss) (g x-min x-max samples y-min y-max samples))
@@ -114,7 +114,7 @@
           ) renderer2d?
   (define g (2d-function->sampler f))
   (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
-              (contours-render-proc f g levels samples colors widths styles alphas label)))
+              (contours-render-proc g levels samples colors widths styles alphas label)))
 
 ;; ===================================================================================================
 ;; Contour intervals

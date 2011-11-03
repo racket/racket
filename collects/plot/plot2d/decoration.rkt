@@ -224,8 +224,7 @@
     (send area set-alpha alpha)
     ; label
     (send area set-text-foreground color)
-    (send area set-font-size size)
-    (send area set-font-family family)
+    (send area set-font size family)
     (send area put-text (string-append " " label " ") v anchor angle #:outline? #t)
     ; point
     (send area set-pen color 1 'solid)

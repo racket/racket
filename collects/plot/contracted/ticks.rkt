@@ -21,4 +21,5 @@
                         bit/byte-ticks-format bit/byte-ticks
                         currency-ticks-scales currency-ticks-formats
                         currency-ticks-layout currency-ticks-format currency-ticks
-                        fraction-ticks-format fraction-ticks))
+                        fraction-ticks-format fraction-ticks
+                        collapse-nearby-ticks))

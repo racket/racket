@@ -620,3 +620,21 @@
 (defproc (linear-scale [m real?] [b real? 0]) invertible-function?
   (invertible-function (λ (x) (+ (* m x) b))
                        (λ (y) (/ (- y b) m))))
+
+;; ===================================================================================================
+;; Tick utils
+
+(defproc (collapse-nearby-ticks [ts (listof tick?)]
+                                [near? (tick? tick? . -> . boolean?)]
+                                [format-string string? "~a|~a"]) (listof tick?)
+  (let* ([ts  (remove-duplicates (filter pre-tick-major? ts) #:key pre-tick-value)]
+         [ts  (sort ts < #:key pre-tick-value)])
+    (append*
+     (for/list ([ts  (in-list (group-neighbors ts near?))])
+       (define n (length ts))
+       (cond [(n . <= . 1)  ts]
+             [else
+              (match-define (list (tick xs _ labels) ...) ts)
+              (define x (/ (apply + xs) n))
+              (define label (format format-string (first labels) (last labels)))
+              (list (tick x #t label))])))))

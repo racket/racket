@@ -547,7 +547,7 @@
     ;; ===============================================================================================
     ;; Legend
     
-    (define/public (draw-legend legend-entries x-min x-max y-min y-max)
+    (define/public (draw-legend-box legend-entries x-min x-max y-min y-max)
       (define n (length legend-entries))
       (match-define (list (legend-entry labels draws) ...) legend-entries)
       

@@ -12,7 +12,9 @@
          "../common/utils.rkt"
          "clip.rkt")
 
-(provide 2d-plot-area%)
+(provide (all-defined-out))
+
+(define plot2d-subdivisions (make-parameter 0))
 
 (define 2d-plot-area%
   (class plot-area%
@@ -25,7 +27,7 @@
       get-text-width get-text-extent get-char-height get-char-baseline
       set-clipping-rect clear-clipping-rect
       clear draw-polygon draw-rectangle draw-line draw-lines draw-text draw-glyphs draw-arrow
-      draw-tick draw-legend)
+      draw-tick draw-legend-box)
     
     (super-make-object dc dc-x-min dc-y-min dc-x-size dc-y-size)
     
@@ -88,15 +90,13 @@
       (and (equal? (plot-x-transform) id-transform)
            (equal? (plot-y-transform) id-transform)))
     
+    (match-define (invertible-function fx _) (apply-transform (plot-x-transform) x-min x-max))
+    (match-define (invertible-function fy _) (apply-transform (plot-y-transform) y-min y-max))
+    
     (define plot->view
-      (cond
-        [identity-transforms?  (λ (v) v)]
-        [else
-         (match-define (invertible-function fx _) (apply-transform (plot-x-transform) x-min x-max))
-         (match-define (invertible-function fy _) (apply-transform (plot-y-transform) y-min y-max))
-         (λ (v)
-           (match-define (vector x y) v)
-           (vector (fx x) (fy y)))]))
+      (cond [identity-transforms?  (λ (v) v)]
+            [else  (λ (v) (match-let ([(vector x y)  v])
+                            (vector (fx x) (fy y))))]))
     
     (define view->dc #f)
     (define/public (plot->dc v) (view->dc (plot->view v)))
@@ -135,41 +135,28 @@
     ;; ===============================================================================================
     ;; Tick and label constants
     
-    (define (collapse-ticks ts dc-pos)
-      (define (dc-dist t1 t2) (abs (- (dc-pos t1) (dc-pos t2))))
-      (let ([ts  (sort ts < #:key pre-tick-value)])
-        (define tss
-          (group-neighbors ts (λ (t1 t2) ((dc-dist t1 t2) . <= . (* 2 (plot-line-width))))))
-        (for/list ([ts  (in-list tss)])
-          (match-define (list (tick xs majors labels) ...) ts)
-          (define x (let ([xs  (remove-duplicates xs)])
-                      (/ (apply + xs) (length xs))))
-          (define major? (ormap values majors))
-          (define label (string-join (remove-duplicates (map tick-label (filter pre-tick-major? ts)))
-                                     "|"))
-          (tick x major? label))))
+    (define ((x-tick-near? y) t1 t2)
+      ((vmag (v- (plot->dc (vector (pre-tick-value t1) y))
+                 (plot->dc (vector (pre-tick-value t2) y))))
+       . <= . (* 3 (plot-line-width))))
     
-    (define ((x-tick-dc-pos y) t)
-      (vector-ref (plot->dc (vector (pre-tick-value t) y)) 0))
-    
-    (define ((y-tick-dc-pos x) t)
-      (vector-ref (plot->dc (vector x (pre-tick-value t))) 1))
+    (define ((y-tick-near? x) t1 t2)
+      ((vmag (v- (plot->dc (vector x (pre-tick-value t1)))
+                 (plot->dc (vector x (pre-tick-value t2)))))
+       . <= . (* 3 (plot-line-width))))
     
     (define x-ticks
-      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
-                      (x-tick-dc-pos y-min)))
-    
+      (collapse-nearby-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
+                             (x-tick-near? y-min)))
     (define x-far-ticks
-      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
-                      (x-tick-dc-pos y-max)))
-    
+      (collapse-nearby-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
+                             (x-tick-near? y-max)))
     (define y-ticks
-      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
-                      (y-tick-dc-pos x-min)))
-    
+      (collapse-nearby-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
+                             (y-tick-near? x-min)))
     (define y-far-ticks
-      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
-                      (y-tick-dc-pos x-min)))
+      (collapse-nearby-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
+                             (y-tick-near? x-max)))
     
     (define draw-x-far-tick-labels? (not (and (plot-x-axis?) (equal? x-ticks x-far-ticks))))
     (define draw-y-far-tick-labels? (not (and (plot-y-axis?) (equal? y-ticks y-far-ticks))))
@@ -383,36 +370,36 @@
       (draw-title)
       (draw-labels))
     
-    (define/public (put-legend legend-entries)
+    (define/public (draw-legend legend-entries)
       (define gap-size (+ (pen-gap) (* 1/2 (plot-tick-size))))
-      (draw-legend legend-entries
-                   (+ area-x-min gap-size) (- area-x-max gap-size)
-                   (+ area-y-min gap-size) (- area-y-max gap-size)))
+      (draw-legend-box legend-entries
+                       (+ area-x-min gap-size) (- area-x-max gap-size)
+                       (+ area-y-min gap-size) (- area-y-max gap-size)))
     
-    (define (subdivide-line v1 v2)
+    (define subdivide-fracs '(3/7 4/7 2/7 5/7 1/7 6/7))
+    
+    (define (subdivide-line v1 v2 [depth 10])
       (let/ec return
-        (match-define (vector dc-x1 dc-y1) (plot->dc v1))
-        (match-define (vector dc-x2 dc-y2) (plot->dc v2))
-        (define dc-dx (- dc-x2 dc-x1))
-        (define dc-dy (- dc-y2 dc-y1))
-        (when (or (zero? dc-dx) (zero? dc-dy)) (return (list v1 v2)))
+        (when (zero? depth) (return (list v1 v2)))
         
-        (match-define (vector x1 y1) v1)
-        (match-define (vector x2 y2) v2)
-        (cond [((abs dc-dx) . > . (abs dc-dy))
-               (define num (+ 1 (inexact->exact (ceiling (* 1/3 (abs dc-dx))))))
-               (define xs (nonlinear-seq x1 x2 num (plot-x-transform)))
-               (define m (/ (- y2 y1) (- x2 x1)))
-               (define b (- y1 (* m x1)))
-               (define ys (map (λ (x) (+ (* m x) b)) xs))
-               (map vector xs ys)]
-              [else
-               (define num (+ 1 (inexact->exact (ceiling (* 1/3 (abs dc-dy))))))
-               (define ys (nonlinear-seq y1 y2 num (plot-y-transform)))
-               (define m (/ (- x2 x1) (- y2 y1)))
-               (define b (- x1 (* m y1)))
-               (define xs (map (λ (y) (+ (* m y) b)) ys))
-               (map vector xs ys)])))
+        (define dc-v1 (plot->dc v1))
+        (define dc-v2 (plot->dc v2))
+        (define dc-dv (v- dc-v2 dc-v1))
+        (when ((vmag dc-dv) . <= . 3)
+          (return (list v1 v2)))
+        
+        (define dv (v- v2 v1))
+        (define-values (max-area vc)
+          (for/fold ([max-area 0] [vc v1]) ([frac  (in-list subdivide-fracs)])
+            (define test-vc (v+ (v* dv frac) v1))
+            (define test-area (abs (vcross2 dc-dv (v- (plot->dc test-vc) dc-v1))))
+            (cond [(test-area . > . max-area)  (values test-area test-vc)]
+                  [else  (values max-area vc)])))
+        (when (max-area . <= . 3) (return (list v1 v2)))
+        
+        ;(plot2d-subdivisions (+ (plot2d-subdivisions) 1))
+        (append (subdivide-line v1 vc (- depth 1))
+                (rest (subdivide-line vc v2 (- depth 1))))))
     
     (define (subdivide-lines vs)
       (append

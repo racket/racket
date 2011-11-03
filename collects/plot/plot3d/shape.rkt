@@ -7,21 +7,12 @@
 
 (struct shape (alpha center) #:transparent)
 
-(struct polygon shape (vs pen-color pen-width pen-style brush-color brush-style) #:transparent)
+(struct polygon shape (vs normal pen-color pen-width pen-style brush-color brush-style) #:transparent)
 (struct line shape (v1 v2 pen-color pen-width pen-style) #:transparent)
 (struct text shape (anchor angle str font-size font-family color) #:transparent)
 (struct glyph shape (symbol size pen-color pen-width pen-style brush-color brush-style) #:transparent)
 (struct tick-glyph shape (radius angle pen-color pen-width pen-style) #:transparent)
 (struct shapes shape (list) #:transparent)
-
-(define (shape-normal s)
-  (cond [(polygon? s)  (vnormal (polygon-vs s))]
-        [else          (vector 0 -1 0)]))
-
-(define (shape-coords s)
-  (cond [(polygon? s)  (polygon-vs s)]
-        [(line? s)     (list (line-v1 s) (line-v2 s))]
-        [else          (list (shape-center s))]))
 
 (define (draw-before? s1 s2)
   (match-define (vector x1 y1 z1) (shape-center s1))
