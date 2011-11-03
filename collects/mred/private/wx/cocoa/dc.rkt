@@ -20,6 +20,7 @@
               do-backing-flush))
 
 (import-class NSOpenGLContext)
+(define NSOpenGLCPSwapInterval 222)
 
 (define dc%
   (class backing-dc%
@@ -44,6 +45,14 @@
                                  (define/override (do-swap-buffers)
                                    (tellv gl-ctx flushBuffer))
                                  (super-new)))])
+                   ;; Disable screen sync for GL flushBuffer; otherwise,
+                   ;; flushBuffer can take around 10 msec depending on the timing
+                   ;; of event polling, and that can be bad for examples like gears.
+                   ;; Maybe whether to sync with the screen should be a configuration
+                   ;; option, but I can't tell the difference on my screen.
+                   (tellv gl-ctx setValues: 
+                          #:type (_ptr i _long) 0
+                          forParameter: #:type _int NSOpenGLCPSwapInterval)
                    (set! gl g)
                    g)))))
 

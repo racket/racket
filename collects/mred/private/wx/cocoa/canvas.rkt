@@ -280,10 +280,13 @@
        (queue-window-refresh-event this  thunk))
 
      (define/public (paint-or-queue-paint)
-       (or (do-canvas-backing-flush #f)
-           (begin
-             (queue-paint)
-             #f)))
+       (cond
+        [is-gl? (do-canvas-backing-flush #f)
+                (queue-paint)
+                #t]
+        [(do-canvas-backing-flush #f) #t]
+        [else (queue-paint)
+              #f]))
 
      (define/public (do-canvas-backing-flush ctx)
        (do-backing-flush this dc (tell NSGraphicsContext currentContext)
