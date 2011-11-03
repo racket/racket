@@ -82,12 +82,12 @@
                  (send area start-renderer rx-min rx-max ry-min ry-max)
                  (if render-proc (render-proc area) empty))))
     
-    (send area end-plot)
+    (send area end-renderers)
     
     (when (not (empty? legend-entries))
       (send area draw-legend legend-entries))
     
-    (send area restore-drawing-params)))
+    (send area end-plot)))
 
 ;; ===================================================================================================
 ;; Plot to various other backends

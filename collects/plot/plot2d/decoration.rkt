@@ -22,21 +22,22 @@
   (define x-ticks (if far? (send area get-x-far-ticks) (send area get-x-ticks)))
   (define radius (if ticks? (* 1/2 (plot-tick-size)) 0))
   
-  (send area set-alpha alpha)
-  (send area set-major-pen)
+  (send area put-alpha alpha)
+  (send area put-major-pen)
   (send area put-line (vector x-min y) (vector x-max y))
   
   (when ticks?
     (for ([t  (in-list x-ticks)])
       (match-define (tick x major? _) t)
-      (if major? (send area set-major-pen) (send area set-minor-pen))
+      (if major? (send area put-major-pen) (send area put-minor-pen))
       (send area put-tick (vector x y) (if major? radius (* 1/2 radius)) (* 1/2 pi))))
   
   (when labels?
+    (define pd (send area get-plot-device))
     (define offset (vector 0 (+ radius (pen-gap))))
     (for ([t  (in-list x-ticks)] #:when (pre-tick-major? t))
       (match-define (tick x _ label) t)
-      (send area draw-text label
+      (send pd draw-text label
             ((if far? v- v+) (send area plot->dc (vector x y)) offset)
             (if far? 'bottom 'top) 0)))
   
@@ -55,21 +56,22 @@
   (define y-ticks (if far? (send area get-y-far-ticks) (send area get-y-ticks)))
   (define radius (if ticks? (* 1/2 (plot-tick-size)) 0))
   
-  (send area set-alpha alpha)
-  (send area set-major-pen)
+  (send area put-alpha alpha)
+  (send area put-major-pen)
   (send area put-line (vector x y-min) (vector x y-max))
   
   (when ticks?
     (for ([t  (in-list y-ticks)])
       (match-define (tick y major? _) t)
-      (if major? (send area set-major-pen) (send area set-minor-pen))
+      (if major? (send area put-major-pen) (send area put-minor-pen))
       (send area put-tick (vector x y) (if major? radius (* 1/2 radius)) 0)))
   
   (when labels?
+    (define pd (send area get-plot-device))
     (define offset (vector (+ radius (pen-gap)) 0))
     (for ([t  (in-list y-ticks)] #:when (pre-tick-major? t))
       (match-define (tick y _ label) t)
-      (send area draw-text label
+      (send pd draw-text label
             ((if far? v+ v-) (send area plot->dc (vector x y)) offset)
             (if far? 'left 'right) 0)))
   
@@ -125,7 +127,7 @@
   ;; Draw the tick lines
   (for ([t  (in-list ts)])
     (match-define (tick r major? label) t)
-    (if major? (send area set-minor-pen) (send area set-minor-pen 'long-dash))
+    (if major? (send area put-minor-pen) (send area put-minor-pen 'long-dash))
     (define pts (for/list ([θ  (in-list (linear-seq 0 (* 2 pi) 500))])
                   (vector (* r (cos θ)) (* r (sin θ)))))
     (send area put-lines pts))
@@ -147,14 +149,14 @@
   (define-values (x-min x-max y-min y-max) (send area get-bounds))
   (define-values (θs r-mins r-maxs) (build-polar-axes num x-min x-max y-min y-max))
   
-  (send area set-major-pen)
+  (send area put-major-pen)
   (for ([θ  (in-list θs)] [r-min  (in-list r-mins)] [r-max  (in-list r-maxs)])
     (send area put-line
           (vector (* r-min (cos θ)) (* r-min (sin θ)))
           (vector (* r-max (cos θ)) (* r-max (sin θ))))))
 
 (define ((polar-axes-render-proc num ticks? labels? alpha) area)
-  (send area set-alpha alpha)
+  (send area put-alpha alpha)
   (when (num . > . 0) (draw-polar-axis-lines num area))
   (when ticks? (draw-polar-axis-ticks (if (num . > . 0) num 12) labels? area))
   empty)
@@ -173,10 +175,10 @@
   (define y-max (send area get-y-max))
   (define x-ticks (send area get-x-ticks))
   
-  (send area set-alpha 1/2)
+  (send area put-alpha 1/2)
   (for ([t  (in-list x-ticks)])
     (match-define (tick x major? _) t)
-    (if major? (send area set-minor-pen) (send area set-minor-pen 'long-dash))
+    (if major? (send area put-minor-pen) (send area put-minor-pen 'long-dash))
     (send area put-line (vector x y-min) (vector x y-max)))
   
   empty)
@@ -186,10 +188,10 @@
   (define x-max (send area get-x-max))
   (define y-ticks (send area get-y-ticks))
   
-  (send area set-alpha 1/2)
+  (send area put-alpha 1/2)
   (for ([t  (in-list y-ticks)])
     (match-define (tick y major? _) t)
-    (if major? (send area set-minor-pen) (send area set-minor-pen 'long-dash))
+    (if major? (send area put-minor-pen) (send area put-minor-pen 'long-dash))
     (send area put-line (vector x-min y) (vector x-max y)))
   
   empty)
@@ -222,13 +224,13 @@
 
 (define ((label-render-proc label v color size family anchor angle point-size alpha) area)
   (let ([label  (if label label (format-coordinate v area))])
-    (send area set-alpha alpha)
+    (send area put-alpha alpha)
     ; label
-    (send area set-text-foreground color)
-    (send area set-font size family)
+    (send area put-text-foreground color)
+    (send area put-font size family)
     (send area put-text (string-append " " label " ") v anchor angle #:outline? #t)
     ; point
-    (send area set-pen color 1 'solid)
+    (send area put-pen color 1 'solid)
     (send area put-glyphs (list v) 'fullcircle point-size))
   
   empty)

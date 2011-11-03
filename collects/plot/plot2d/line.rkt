@@ -12,8 +12,8 @@
 ;; Lines, parametric, polar
 
 (define ((lines-render-proc vs color width style alpha label) area)
-  (send area set-alpha alpha)
-  (send area set-pen color width style)
+  (send area put-alpha alpha)
+  (send area put-pen color width style)
   (send area put-lines vs)
   
   (cond [label  (line-legend-entry label color width style)]
@@ -80,8 +80,8 @@
   (define x-max (send area get-x-max))
   (match-define (sample xs ys y-min y-max) (f x-min x-max samples))
   
-  (send area set-alpha alpha)
-  (send area set-pen color width style)
+  (send area put-alpha alpha)
+  (send area put-pen color width style)
   (send area put-lines (map vector xs ys))
   
   (cond [label  (line-legend-entry label color width style)]
@@ -109,10 +109,10 @@
 (define ((inverse-render-proc f samples color width style alpha label) area)
   (define y-min (send area get-y-min))
   (define y-max (send area get-y-max))
-  (match-define (list ys xs x-min x-max) (f y-min y-max samples))
+  (match-define (sample ys xs x-min x-max) (f y-min y-max samples))
   
-  (send area set-alpha alpha)
-  (send area set-pen color width style)
+  (send area put-alpha alpha)
+  (send area put-pen color width style)
   (send area put-lines (map vector xs ys))
   
   (cond [label  (line-legend-entry label color width style)]

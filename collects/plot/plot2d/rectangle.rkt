@@ -14,9 +14,9 @@
 
 (define ((rectangles-render-proc rects color style line-color line-width line-style alpha label)
          area)
-  (send area set-pen line-color line-width line-style)
-  (send area set-brush color style)
-  (send area set-alpha alpha)
+  (send area put-pen line-color line-width line-style)
+  (send area put-brush color style)
+  (send area put-alpha alpha)
   (for ([rect  (in-list rects)])
     (match-define (vector (ivl x1 x2) (ivl y1 y2)) rect)
     (send area put-rectangle (vector x1 y1) (vector x2 y2)))

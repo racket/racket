@@ -88,9 +88,12 @@
                    x-min x-max y-min y-max
                    dc 0 0 width height))
     
+    (define data+axes (mix x-axis-data y-axis-data data))
+    
     (send area start-plot)
     (send area start-renderer x-min x-max y-min y-max)
-    ((mix x-axis-data y-axis-data data) area)
+    (data+axes area)
+    (send area end-renderers)
     (send area end-plot)
     
     (when out-file (send bm save-file out-file 'png))
@@ -135,6 +138,7 @@
     (send area start-plot)
     (send area start-renderer x-min x-max y-min y-max z-min z-max)
     (data area)
+    (send area end-renderers)
     (send area end-plot)
     
     (when out-file (send bm save-file out-file 'png))

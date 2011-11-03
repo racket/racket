@@ -13,8 +13,8 @@
 ;; Points (scatter plots)
 
 (define ((points-render-fun vs sym color size line-width alpha label) area)
-  (send area set-alpha alpha)
-  (send area set-pen color line-width 'solid)
+  (send area put-alpha alpha)
+  (send area put-pen color line-width 'solid)
   (send area put-glyphs vs sym size)
   
   (if label (point-legend-entry label sym color size line-width) empty))
@@ -71,8 +71,8 @@
                                              (/ box-y-size dy-max)))
                           (map (λ (mag) (* scale mag)) mags)]))
               
-              (send area set-alpha alpha)
-              (send area set-pen color line-width line-style)
+              (send area put-alpha alpha)
+              (send area put-pen color line-width line-style)
               (for ([x      (in-list xs)]
                     [y      (in-list ys)]
                     [angle  (in-list angles)]
@@ -108,24 +108,17 @@
 (define ((error-bars-render-fun xs ys hs color line-width line-style width alpha) area)
   (define-values (x-min x-max y-min y-max) (send area get-clip-bounds))
   
-  (define half (* 1/2 width))
+  (define radius (* 1/2 width))
   
-  (send area set-alpha alpha)
-  (send area set-pen color line-width line-style)
+  (send area put-alpha alpha)
+  (send area put-pen color line-width line-style)
   (for ([x  (in-list xs)] [y  (in-list ys)] [h  (in-list hs)])
     (when (point-in-bounds? (vector x y) x-min x-max y-min y-max)
       (define v1 (vector x (- y h)))
       (define v2 (vector x (+ y h)))
       (send area put-line v1 v2)
-      
-      (match-define (vector dc-x1 dc-y1) (send area plot->dc v1))
-      (match-define (vector dc-x2 dc-y2) (send area plot->dc v2))
-      (send area draw-line
-            (vector (- dc-x1 half) dc-y1)
-            (vector (+ dc-x1 half) dc-y1))
-      (send area draw-line
-            (vector (- dc-x2 half) dc-y2)
-            (vector (+ dc-x2 half) dc-y2))))
+      (send area put-tick v1 radius 0)
+      (send area put-tick v2 radius 0)))
   
   empty)
 

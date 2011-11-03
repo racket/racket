@@ -19,8 +19,8 @@
     (g x-min x-max samples y-min y-max samples))
   
   (when (<= z-min z z-max)
-    (send area set-alpha alpha)
-    (send area set-pen color width style)
+    (send area put-alpha alpha)
+    (send area put-pen color width style)
     (for ([ya  (in-list ys)]
           [yb  (in-list (rest ys))]
           [zs0  (in-vector zss)]
@@ -74,8 +74,8 @@
           [width  (in-cycle ws)]
           [style  (in-cycle ss)]
           [alpha  (in-cycle as)])
-      (send area set-alpha alpha)
-      (send area set-pen color width style)
+      (send area put-alpha alpha)
+      (send area put-pen color width style)
       (for ([ya  (in-list ys)]
             [yb  (in-list (rest ys))]
             [zs0  (in-vector zss)]
@@ -155,20 +155,20 @@
           (send area put-polygon poly)))
       
       (cond [(= alpha 1)
-             (send area set-pen color 1 poly-line-style)
-             (send area set-brush color fill-style)
-             (send area set-alpha 1)
+             (send area put-pen color 1 poly-line-style)
+             (send area put-brush color fill-style)
+             (send area put-alpha 1)
              (draw-polys)]
             [else
              ;; draw the outlines with reduced alpha first
-             (send area set-pen color 1 poly-line-style)
-             (send area set-brush color 'transparent)
-             (send area set-alpha (alpha-expt alpha 1/8))
+             (send area put-pen color 1 poly-line-style)
+             (send area put-brush color 'transparent)
+             (send area put-alpha (alpha-expt alpha 1/8))
              (draw-polys)
              ;; now draw the centers
-             (send area set-pen color 1 'transparent)
-             (send area set-brush color fill-style)
-             (send area set-alpha alpha)
+             (send area put-pen color 1 'transparent)
+             (send area put-brush color fill-style)
+             (send area put-alpha alpha)
              (draw-polys)]))
     
     ((contours-render-proc g levels samples contour-colors contour-widths contour-styles alphas #f)

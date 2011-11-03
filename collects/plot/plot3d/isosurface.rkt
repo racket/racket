@@ -173,7 +173,7 @@
 (define ((polar3d-render-proc f g samples color line-color line-width line-style alpha label) area)
   (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
   (match-define (3d-sample xs ys zs dsss d-min d-max)
-    (f x-min x-max (animated-samples samples)
+    (g x-min x-max (animated-samples samples)
        y-min y-max (animated-samples samples)
        z-min z-max (animated-samples samples)))
   

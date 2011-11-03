@@ -19,11 +19,11 @@
 (defproc (line-legend-entry [label string?]
                             [color plot-color/c] [width (>=/c 0)] [style plot-pen-style/c]
                             ) legend-entry?
-  (legend-entry label (λ (plot-area x-min x-max y-min y-max)
+  (legend-entry label (λ (pd x-min x-max y-min y-max)
                         (define y (* 1/2 (+ y-min y-max)))
-                        (send plot-area set-pen color width style)
-                        (send plot-area set-alpha 1)
-                        (send plot-area draw-line (vector x-min y) (vector x-max y)))))
+                        (send pd set-pen color width style)
+                        (send pd set-alpha 1)
+                        (send pd draw-line (vector x-min y) (vector x-max y)))))
 
 (defproc (line-legend-entries [label string?] [zs (listof real?)] [z-labels (listof string?)]
                               [colors plot-colors/c] [widths pen-widths/c] [styles plot-pen-styles/c]
@@ -51,11 +51,11 @@
                                  [fill-color plot-color/c] [fill-style plot-brush-style/c]
                                  [line-color plot-color/c] [line-width (>=/c 0)]
                                  [line-style plot-pen-style/c]) legend-entry?
-  (legend-entry label (λ (plot-area x-min x-max y-min y-max)
-                        (send plot-area set-brush fill-color fill-style)
-                        (send plot-area set-pen line-color line-width line-style)
-                        (send plot-area set-alpha 1)
-                        (send plot-area draw-rectangle (vector x-min y-min) (vector x-max y-max)))))
+  (legend-entry label (λ (pd x-min x-max y-min y-max)
+                        (send pd set-brush fill-color fill-style)
+                        (send pd set-pen line-color line-width line-style)
+                        (send pd set-alpha 1)
+                        (send pd draw-rectangle (vector x-min y-min) (vector x-max y-max)))))
 
 (defproc (rectangle-legend-entries [label string?] [zs (listof real?)]
                                    [fill-colors plot-colors/c] [fill-styles plot-brush-styles/c]
@@ -92,18 +92,18 @@
           [line1-color plot-color/c] [line1-width (>=/c 0)] [line1-style plot-pen-style/c]
           [line2-color plot-color/c] [line2-width (>=/c 0)] [line2-style plot-pen-style/c]
           ) legend-entry?
-  (legend-entry label (λ (plot-area x-min x-max y-min y-max)
-                        (send plot-area set-alpha 1)
+  (legend-entry label (λ (pd x-min x-max y-min y-max)
+                        (send pd set-alpha 1)
                         ;; rectangle
-                        (send plot-area set-pen line-color line-width line-style)
-                        (send plot-area set-brush fill-color fill-style)
-                        (send plot-area draw-rectangle (vector x-min y-min) (vector x-max y-max))
+                        (send pd set-pen line-color line-width line-style)
+                        (send pd set-brush fill-color fill-style)
+                        (send pd draw-rectangle (vector x-min y-min) (vector x-max y-max))
                         ;; bottom line
-                        (send plot-area set-pen line1-color line1-width line1-style)
-                        (send plot-area draw-line (vector x-min y-max) (vector x-max y-max))
+                        (send pd set-pen line1-color line1-width line1-style)
+                        (send pd draw-line (vector x-min y-max) (vector x-max y-max))
                         ;; top line
-                        (send plot-area set-pen line2-color line2-width line2-style)
-                        (send plot-area draw-line (vector x-min y-min) (vector x-max y-min)))))
+                        (send pd set-pen line2-color line2-width line2-style)
+                        (send pd draw-line (vector x-min y-min) (vector x-max y-min)))))
 
 (defproc (interval-legend-entries
           [label string?] [zs (listof real?)] [z-labels (listof string?)]
@@ -173,19 +173,19 @@
 
 (defproc (point-legend-entry [label string?] [sym point-sym/c]
                              [color plot-color/c] [size (>=/c 0)] [line-width (>=/c 0)]) legend-entry?
-  (legend-entry label (λ (plot-area x-min x-max y-min y-max)
-                        (send plot-area set-pen color line-width 'solid)
-                        (send plot-area set-alpha 1)
-                        (send plot-area draw-glyphs
+  (legend-entry label (λ (pd x-min x-max y-min y-max)
+                        (send pd set-pen color line-width 'solid)
+                        (send pd set-alpha 1)
+                        (send pd draw-glyphs
                               (list (vector (* 1/2 (+ x-min x-max)) (* 1/2 (+ y-min y-max))))
                               sym size))))
 
 (defproc (vector-field-legend-entry [label string?] [color plot-color/c]
                                     [line-width (>=/c 0)] [line-style plot-pen-style/c]
                                     ) legend-entry?
-  (legend-entry label (λ (plot-area x-min x-max y-min y-max)
-                        (send plot-area set-pen color line-width line-style)
-                        (send plot-area set-alpha 1)
-                        (send plot-area draw-arrow-glyph
+  (legend-entry label (λ (pd x-min x-max y-min y-max)
+                        (send pd set-pen color line-width line-style)
+                        (send pd set-alpha 1)
+                        (send pd draw-arrow-glyph
                               (vector (* 1/2 (+ x-min x-max)) (* 1/2 (+ y-min y-max)))
                               (* 1/4 (- x-max x-min)) 0))))

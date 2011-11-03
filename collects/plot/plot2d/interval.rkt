@@ -16,15 +16,15 @@
                                      line2-color line2-width line2-style
                                      alpha label)
          area)
-  (send area set-alpha alpha)
-  (send area set-pen 0 0 'transparent)
-  (send area set-brush color style)
+  (send area put-alpha alpha)
+  (send area put-pen 0 0 'transparent)
+  (send area put-brush color style)
   (send area put-polygon (append v1s (reverse v2s)))
   
-  (send area set-pen line1-color line1-width line1-style)
+  (send area put-pen line1-color line1-width line1-style)
   (send area put-lines v1s)
   
-  (send area set-pen line2-color line2-width line2-style)
+  (send area put-pen line2-color line2-width line2-style)
   (send area put-lines v2s)
   
   (cond [label  (interval-legend-entry label color style 0 0 'transparent
@@ -127,8 +127,8 @@
          area)
   (define x-min (send area get-x-min))
   (define x-max (send area get-x-max))
-  (match-define (list x1s y1s) (f1 x-min x-max samples))
-  (match-define (list x2s y2s) (f2 x-min x-max samples))
+  (match-define (sample x1s y1s y1-min y1-max) (f1 x-min x-max samples))
+  (match-define (sample x2s y2s y2-min y2-max) (f2 x-min x-max samples))
   (define v1s (map vector x1s y1s))
   (define v2s (map vector x2s y2s))
   
@@ -174,8 +174,8 @@
          area)
   (define y-min (send area get-y-min))
   (define y-max (send area get-y-max))
-  (match-define (list y1s x1s) (f1 y-min y-max samples))
-  (match-define (list y2s x2s) (f2 y-min y-max samples))
+  (match-define (sample y1s x1s x1-min x1-max) (f1 y-min y-max samples))
+  (match-define (sample y2s x2s x2-min x2-max) (f2 y-min y-max samples))
   (define v1s (map vector x1s y1s))
   (define v2s (map vector x2s y2s))
   

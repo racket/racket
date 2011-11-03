@@ -134,7 +134,8 @@
                [plot-z-far-label  "z far axis"]
                [plot-z-far-ticks  (currency-ticks)]
                [plot-z-far-max-ticks  5])
-  (plot3d (surface3d (λ (x y) (+ (sin x) (cos y))) -2 2 -2 2 #:alpha 1/2)))
+  (plot3d (surface3d (λ (x y) (+ (sin x) (cos y))) -2 2 -2 2 #:alpha 1/2)
+          #:angle 60 #:altitude 35))
 
 (parameterize ([plot-title  "Saddle"]
                [plot-x-axis?  #f]

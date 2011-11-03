@@ -1,14 +1,10 @@
 #lang racket/base
 
-;; Defines the base class for 2d-plot-area% and 3d-plot-area%.
-
-;; Instances of this class know how to draw points, polygons, rectangles, lines, text, and a bunch of
+;; Instances of this class know how to draw points, polygons, rectangles, lines, text, a bunch of
 ;; different "glyphs" (used for point symbols and ticks), and legends on their underlying device
-;; contexts.
+;; contexts. Drawing functions accept vectors representing dc coordinates.
 
-;; Drawing functions accept vectors representing dc coordinates. It is up to descendants to provide
-;; drawing functions that accept view coordinates and transform them into dc coordinates. By
-;; convention, such functions start with "put-" instead of "draw-".
+;; It is up to callers to transform view or plot coordinates into dc coordinates.
 
 (require racket/draw racket/class racket/match racket/math racket/bool racket/list racket/contract
          "contract.rkt"
@@ -18,7 +14,7 @@
          "parameters.rkt"
          "legend.rkt")
 
-(provide plot-area%)
+(provide plot-device%)
 
 (define (coord->cons v)
   (match-define (vector x y) v)
@@ -152,7 +148,7 @@
       try-color)
     (super-new)))
 
-(define plot-area%
+(define plot-device%
   (class object%
     (init-field dc dc-x-min dc-y-min dc-x-size dc-y-size)
     
@@ -547,7 +543,7 @@
     ;; ===============================================================================================
     ;; Legend
     
-    (define/public (draw-legend-box legend-entries x-min x-max y-min y-max)
+    (define/public (draw-legend legend-entries x-min x-max y-min y-max)
       (define n (length legend-entries))
       (match-define (list (legend-entry labels draws) ...) legend-entries)
       

@@ -95,7 +95,7 @@
                  (send area start-renderer rx-min rx-max ry-min ry-max rz-min rz-max)
                  (if render-proc (render-proc area) empty))))
     
-    (send area end-plot)
+    (send area end-renderers)
     
     (when (and (not (empty? legend-entries))
                (or (not (plot-animating?))
@@ -104,7 +104,7 @@
     
     (when (plot-animating?) (send area draw-angles))
     
-    (send area restore-drawing-params)))
+    (send area end-plot)))
 
 ;; ===================================================================================================
 ;; Plot to various other backends

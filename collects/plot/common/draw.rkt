@@ -236,3 +236,43 @@
                            [xs (listof any/c)]) (listof any/c)
   (cond [(procedure? list-or-proc)  (list-or-proc xs)]
         [else                       list-or-proc]))
+
+;; ===================================================================================================
+;; Subdividing nonlinearly transformed shapes
+
+(define subdivide-fracs '(3/7 4/7 2/7 5/7 1/7 6/7))
+
+(define (subdivide-line transform v1 v2)
+  (let loop ([v1 v1] [v2 v2] [depth 10])
+    (let/ec return
+      (when (zero? depth) (return (list v1 v2)))
+      
+      (define dc-v1 (transform v1))
+      (define dc-v2 (transform v2))
+      (define dc-dv (v- dc-v2 dc-v1))
+      (when ((vmag dc-dv) . <= . 3)
+        (return (list v1 v2)))
+      
+      (define dv (v- v2 v1))
+      (define-values (max-area vc)
+        (for/fold ([max-area 0] [vc v1]) ([frac  (in-list subdivide-fracs)])
+          (define test-vc (v+ (v* dv frac) v1))
+          (define test-area (abs (vcross2 dc-dv (v- (transform test-vc) dc-v1))))
+          (cond [(test-area . > . max-area)  (values test-area test-vc)]
+                [else  (values max-area vc)])))
+      (when (max-area . <= . 3) (return (list v1 v2)))
+      
+      ;(plot3d-subdivisions (+ (plot3d-subdivisions) 1))
+      (append (loop v1 vc (- depth 1))
+              (rest (loop vc v2 (- depth 1)))))))
+
+(define (subdivide-lines transform vs)
+  (append
+   (append*
+    (for/list ([v1  (in-list vs)] [v2  (in-list (rest vs))])
+      (define line-vs (subdivide-line transform v1 v2))
+      (take line-vs (sub1 (length line-vs)))))
+   (list (last vs))))
+
+(define (subdivide-polygon transform vs)
+  (subdivide-lines transform (cons (last vs) vs)))
