@@ -78,7 +78,7 @@
 (define ((function-render-proc f samples color width style alpha label) area)
   (define x-min (send area get-x-min))
   (define x-max (send area get-x-max))
-  (match-define (list xs ys) (f x-min x-max samples))
+  (match-define (sample xs ys y-min y-max) (f x-min x-max samples))
   
   (send area set-alpha alpha)
   (send area set-pen color width style)
@@ -109,7 +109,7 @@
 (define ((inverse-render-proc f samples color width style alpha label) area)
   (define y-min (send area get-y-min))
   (define y-max (send area get-y-max))
-  (match-define (list ys xs) (f y-min y-max samples))
+  (match-define (list ys xs x-min x-max) (f y-min y-max samples))
   
   (send area set-alpha alpha)
   (send area set-pen color width style)

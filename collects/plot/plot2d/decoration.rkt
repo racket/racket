@@ -23,7 +23,7 @@
   (define radius (if ticks? (* 1/2 (plot-tick-size)) 0))
   
   (send area set-alpha alpha)
-  (send area set-minor-pen)
+  (send area set-major-pen)
   (send area put-line (vector x-min y) (vector x-max y))
   
   (when ticks?
@@ -56,7 +56,7 @@
   (define radius (if ticks? (* 1/2 (plot-tick-size)) 0))
   
   (send area set-alpha alpha)
-  (send area set-minor-pen)
+  (send area set-major-pen)
   (send area put-line (vector x y-min) (vector x y-max))
   
   (when ticks?
@@ -125,7 +125,7 @@
   ;; Draw the tick lines
   (for ([t  (in-list ts)])
     (match-define (tick r major? label) t)
-    (if major? (send area set-major-pen) (send area set-minor-pen 'long-dash))
+    (if major? (send area set-minor-pen) (send area set-minor-pen 'long-dash))
     (define pts (for/list ([θ  (in-list (linear-seq 0 (* 2 pi) 500))])
                   (vector (* r (cos θ)) (* r (sin θ)))))
     (send area put-lines pts))
@@ -143,22 +143,23 @@
         (send area put-text label (vector (* r (cos mθ)) (* r (sin mθ)))
               'center 0 #:outline? #t)))))
 
-(define ((polar-axes-render-proc num ticks? labels? alpha) area)
+(define (draw-polar-axis-lines num area)
   (define-values (x-min x-max y-min y-max) (send area get-bounds))
   (define-values (θs r-mins r-maxs) (build-polar-axes num x-min x-max y-min y-max))
-  ;; Draw the axes
-  (send area set-alpha alpha)
+  
   (send area set-major-pen)
   (for ([θ  (in-list θs)] [r-min  (in-list r-mins)] [r-max  (in-list r-maxs)])
     (send area put-line
           (vector (* r-min (cos θ)) (* r-min (sin θ)))
-          (vector (* r-max (cos θ)) (* r-max (sin θ)))))
-  ;; Draw the ticks
-  (when ticks? (draw-polar-axis-ticks num labels? area))
-  ;; No legend
+          (vector (* r-max (cos θ)) (* r-max (sin θ))))))
+
+(define ((polar-axes-render-proc num ticks? labels? alpha) area)
+  (send area set-alpha alpha)
+  (when (num . > . 0) (draw-polar-axis-lines num area))
+  (when ticks? (draw-polar-axis-ticks (if (num . > . 0) num 12) labels? area))
   empty)
 
-(defproc (polar-axes [#:number num exact-positive-integer? (polar-axes-number)]
+(defproc (polar-axes [#:number num exact-nonnegative-integer? (polar-axes-number)]
                      [#:ticks? ticks? boolean? (polar-axes-ticks?)]
                      [#:labels? labels? boolean? (polar-axes-labels?)]
                      [#:alpha alpha (real-in 0 1) (polar-axes-alpha)]) renderer2d?
@@ -175,7 +176,7 @@
   (send area set-alpha 1/2)
   (for ([t  (in-list x-ticks)])
     (match-define (tick x major? _) t)
-    (if major? (send area set-major-pen) (send area set-minor-pen 'long-dash))
+    (if major? (send area set-minor-pen) (send area set-minor-pen 'long-dash))
     (send area put-line (vector x y-min) (vector x y-max)))
   
   empty)
@@ -188,7 +189,7 @@
   (send area set-alpha 1/2)
   (for ([t  (in-list y-ticks)])
     (match-define (tick y major? _) t)
-    (if major? (send area set-major-pen) (send area set-minor-pen 'long-dash))
+    (if major? (send area set-minor-pen) (send area set-minor-pen 'long-dash))
     (send area put-line (vector x-min y) (vector x-max y)))
   
   empty)

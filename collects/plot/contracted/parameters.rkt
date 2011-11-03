@@ -29,8 +29,7 @@
   plot-x-transform plot-x-ticks plot-x-far-ticks
   plot-y-transform plot-y-ticks plot-y-far-ticks
   plot-z-transform plot-z-ticks plot-z-far-ticks
-  plot-d-transform plot-d-ticks
-  plot-r-transform plot-r-ticks
+  plot-d-ticks plot-r-ticks
   ;; Renderer parameters
   line-samples line-color line-width line-style line-alpha
   interval-color interval-style

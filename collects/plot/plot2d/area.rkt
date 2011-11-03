@@ -90,8 +90,8 @@
       (and (equal? (plot-x-transform) id-transform)
            (equal? (plot-y-transform) id-transform)))
     
-    (match-define (invertible-function fx _) (apply-transform (plot-x-transform) x-min x-max))
-    (match-define (invertible-function fy _) (apply-transform (plot-y-transform) y-min y-max))
+    (match-define (invertible-function fx _) (apply-axis-transform (plot-x-transform) x-min x-max))
+    (match-define (invertible-function fy _) (apply-axis-transform (plot-y-transform) y-min y-max))
     
     (define plot->view
       (cond [identity-transforms?  (λ (v) v)]

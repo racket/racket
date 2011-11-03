@@ -17,7 +17,7 @@
 (define ((isosurface3d-render-proc f d samples color line-color line-width line-style alpha label)
          area)
   (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
-  (match-define (list xs ys zs dsss)
+  (match-define (3d-sample xs ys zs dsss d-min d-max)
     (f x-min x-max (animated-samples samples)
        y-min y-max (animated-samples samples)
        z-min z-max (animated-samples samples)))
@@ -86,15 +86,10 @@
           f rd-min rd-max levels samples colors line-colors line-widths line-styles alphas label)
          area)
   (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
-  (match-define (list xs ys zs dsss)
+  (match-define (3d-sample xs ys zs dsss fd-min fd-max)
     (f x-min x-max (animated-samples samples)
        y-min y-max (animated-samples samples)
        z-min z-max (animated-samples samples)))
-  
-  (define-values (fd-min fd-max)
-    (let ([regular-ds  (filter regular? (3d-sample->list dsss))])
-      (values (if (empty? regular-ds) #f (apply min* regular-ds))
-              (if (empty? regular-ds) #f (apply max* regular-ds)))))
   
   (define d-min (if rd-min rd-min fd-min))
   (define d-max (if rd-max rd-max fd-max))
@@ -102,7 +97,8 @@
   (cond
     [(not (and d-min d-max))  empty]
     [else
-     (define ds (linear-seq d-min d-max levels #:start? (and rd-min #t) #:end? (and rd-max #t)))
+     (match-define (list (tick ds _ labels) ...) (isosurface-ticks d-min d-max levels))
+     #;(define ds (linear-seq d-min d-max levels #:start? (and rd-min #t) #:end? (and rd-max #t)))
      
      (for ([d           (in-list ds)]
            [color       (in-cycle (maybe-apply/list colors ds))]
@@ -156,7 +152,8 @@
                         [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
                         [z-min (or/c real? #f) #f] [z-max (or/c real? #f) #f]
                         [#:d-min d-min (or/c real? #f) #f] [#:d-max d-max (or/c real? #f) #f]
-                        [#:levels levels exact-positive-integer? (isosurface-levels)]
+                        [#:levels levels (or/c 'auto exact-positive-integer? (listof real?))
+                                  (isosurface-levels)]
                         [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
                         [#:colors colors plot-colors/c (isosurface-colors)]
                         [#:line-colors line-colors plot-colors/c (isosurface-line-colors)]
@@ -175,8 +172,8 @@
 
 (define ((polar3d-render-proc f g samples color line-color line-width line-style alpha label) area)
   (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
-  (match-define (list xs ys zs dsss)
-    (g x-min x-max (animated-samples samples)
+  (match-define (3d-sample xs ys zs dsss d-min d-max)
+    (f x-min x-max (animated-samples samples)
        y-min y-max (animated-samples samples)
        z-min z-max (animated-samples samples)))
   

@@ -43,7 +43,7 @@
 (defparam plot-x-max-ticks exact-positive-integer? 5)
 (defparam plot-y-max-ticks exact-positive-integer? 5)
 (defparam plot-z-max-ticks exact-positive-integer? 8)
-(defparam plot-d-max-ticks exact-positive-integer? 5)
+(defparam plot-d-max-ticks exact-positive-integer? 6)
 (defparam plot-r-max-ticks exact-positive-integer? 8)
 
 (defparam plot-x-far-max-ticks exact-positive-integer? 5)
@@ -131,32 +131,23 @@
 (defparam plot-x-transform axis-transform/c id-transform)
 (defparam plot-y-transform axis-transform/c id-transform)
 (defparam plot-z-transform axis-transform/c id-transform)
-(defparam plot-d-transform axis-transform/c id-transform)
-(defparam plot-r-transform axis-transform/c id-transform)
 
 (defparam plot-x-ticks ticks? (linear-ticks))
 (defparam plot-y-ticks ticks? (linear-ticks))
 (defparam plot-z-ticks ticks? (linear-ticks))
-(defparam plot-d-ticks ticks? (linear-ticks))
+(defparam plot-d-ticks ticks? (linear-ticks #:divisors '(1 2 4 5)))
 (defparam plot-r-ticks ticks? (linear-ticks))
 
 (defparam plot-x-far-ticks ticks? (ticks-mimic plot-x-ticks))
 (defparam plot-y-far-ticks ticks? (ticks-mimic plot-y-ticks))
 (defparam plot-z-far-ticks ticks? (ticks-mimic plot-z-ticks))
 
-(struct axis (transform ticks) #:transparent)
-(define-parameter-group plot-d-axis (plot-d-transform plot-d-ticks) #:struct axis)
-(define-parameter-group plot-r-axis (plot-r-transform plot-r-ticks) #:struct axis)
+(struct axis (transform ticks far-ticks) #:transparent)
+(define-parameter-group plot-x-axis (plot-x-transform plot-x-ticks plot-x-far-ticks) #:struct axis)
+(define-parameter-group plot-y-axis (plot-y-transform plot-y-ticks plot-y-far-ticks) #:struct axis)
+(define-parameter-group plot-z-axis (plot-z-transform plot-z-ticks plot-z-far-ticks) #:struct axis)
 
-(struct dual-axis (transform ticks far-ticks) #:transparent)
-(define-parameter-group plot-x-axis (plot-x-transform plot-x-ticks plot-x-far-ticks)
-  #:struct dual-axis)
-(define-parameter-group plot-y-axis (plot-y-transform plot-y-ticks plot-y-far-ticks)
-  #:struct dual-axis)
-(define-parameter-group plot-z-axis (plot-z-transform plot-z-ticks plot-z-far-ticks)
-  #:struct dual-axis)
-
-(define-parameter-group plot-axes (plot-x-axis plot-y-axis plot-z-axis plot-d-axis plot-r-axis)
+(define-parameter-group plot-axes (plot-x-axis plot-y-axis plot-z-axis plot-d-ticks plot-r-ticks)
   #:struct list)
 
 (defproc (default-x-ticks [x-min real?] [x-max real?]) (listof tick?) #:document-body
@@ -276,12 +267,10 @@
 (defparam x-axis-ticks? boolean? #t)
 (defparam y-axis-ticks? boolean? #t)
 (defparam z-axis-ticks? boolean? #t)
-(defparam polar-axes-ticks? boolean? #t)
 
 (defparam x-axis-labels? boolean? #f)
 (defparam y-axis-labels? boolean? #f)
 (defparam z-axis-labels? boolean? #f)
-(defparam polar-axes-labels? boolean? #t)
 
 (defparam x-axis-far? boolean? #f)
 (defparam y-axis-far? boolean? #f)
@@ -290,9 +279,11 @@
 (defparam x-axis-alpha (real-in 0 1) 1)
 (defparam y-axis-alpha (real-in 0 1) 1)
 (defparam z-axis-alpha (real-in 0 1) 1)
-(defparam polar-axes-alpha (real-in 0 1) 1/2)
 
-(defparam polar-axes-number exact-positive-integer? 12)
+(defparam polar-axes-number exact-nonnegative-integer? 12)
+(defparam polar-axes-ticks? boolean? #t)
+(defparam polar-axes-labels? boolean? #t)
+(defparam polar-axes-alpha (real-in 0 1) 1/2)
 
 (defparam label-anchor anchor/c 'left)
 (defparam label-angle real? 0)
@@ -324,7 +315,7 @@
   (color-seq* (list (->pen-color 5) (->pen-color 0) (->pen-color 1))
               (length zs)))
 
-(defparam isosurface-levels exact-positive-integer? 3)
+(defparam isosurface-levels (or/c 'auto exact-positive-integer? (listof real?)) 'auto)
 (defparam isosurface-colors plot-colors/c default-isosurface-colors)
 (defparam isosurface-line-colors plot-colors/c default-isosurface-line-colors)
 (defparam isosurface-line-widths pen-widths/c '(1/3))

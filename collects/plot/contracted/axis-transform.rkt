@@ -8,7 +8,7 @@
          (activate-contract-out id-function
                                 axis-transform/c
                                 id-transform
-                                apply-transform
+                                apply-axis-transform
                                 make-axis-transform
                                 axis-transform-compose
                                 axis-transform-append

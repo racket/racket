@@ -23,7 +23,7 @@
 
 (defthing id-function invertible-function? (invertible-function (λ (x) x) (λ (x) x)))
 
-(defproc (apply-transform [t axis-transform/c] [x-min real?] [x-max real?]) invertible-function?
+(defproc (apply-axis-transform [t axis-transform/c] [x-min real?] [x-max real?]) invertible-function?
   (t x-min x-max id-function))
 
 ;; Turns any total, surjective, monotone flonum op and its inverse into an axis transform

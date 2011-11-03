@@ -13,12 +13,10 @@
 ;; ===================================================================================================
 ;; One contour line
 
-(define ((isoline-render-proc f z samples color width style alpha label) area)
+(define ((isoline-render-proc g z samples color width style alpha label) area)
   (define-values (x-min x-max y-min y-max) (send area get-bounds))
-  (match-define (list xs ys zss) (f x-min x-max samples y-min y-max samples))
-  (define zs (2d-sample->list zss))
-  (define z-min (apply min* zs))
-  (define z-max (apply max* zs))
+  (match-define (2d-sample xs ys zss z-min z-max)
+    (g x-min x-max samples y-min y-max samples))
   
   (when (<= z-min z z-max)
     (send area set-alpha alpha)
@@ -61,12 +59,8 @@
 (define ((contours-render-proc g levels samples colors widths styles alphas label) area)
   (let/ec return
     (define-values (x-min x-max y-min y-max) (send area get-bounds))
-    (match-define (list xs ys zss) (g x-min x-max samples y-min y-max samples))
-    
-    (define-values (z-min z-max)
-      (let ([zs  (filter regular? (2d-sample->list zss))])
-        (when (empty? zs) (return empty))
-        (values (apply min* zs) (apply max* zs))))
+    (match-define (2d-sample xs ys zss z-min z-max)
+      (g x-min x-max samples y-min y-max samples))
     
     (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
     
@@ -120,16 +114,12 @@
 ;; Contour intervals
 
 (define ((contour-intervals-render-proc
-          f levels samples colors styles contour-colors contour-widths contour-styles alphas label)
+          g levels samples colors styles contour-colors contour-widths contour-styles alphas label)
          area)
   (let/ec return
     (define-values (x-min x-max y-min y-max) (send area get-bounds))
-    (match-define (list xs ys zss) (f x-min x-max samples y-min y-max samples))
-    
-    (define-values (z-min z-max)
-      (let ([flat-zs  (filter regular? (2d-sample->list zss))])
-        (when (empty? flat-zs) (return empty))
-        (values (apply min* flat-zs) (apply max* flat-zs))))
+    (match-define (2d-sample xs ys zss z-min z-max)
+      (g x-min x-max samples y-min y-max samples))
     
     (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
     
@@ -181,7 +171,7 @@
              (send area set-alpha alpha)
              (draw-polys)]))
     
-    ((contours-render-proc f levels samples contour-colors contour-widths contour-styles alphas #f)
+    ((contours-render-proc g levels samples contour-colors contour-widths contour-styles alphas #f)
      area)
     
     (cond [label  (contour-intervals-legend-entries

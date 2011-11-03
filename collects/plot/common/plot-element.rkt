@@ -38,10 +38,8 @@
     (match-define (vector xi yi) r)
     (cond [(ivl-known? xi)
            (match-define (ivl x-min x-max) xi)
-           (match-define (list xs ys) (f x-min x-max samples))
-           (define rys (filter regular? ys))
-           (cond [(not (empty? rys))  (vector xi (ivl (apply min* rys) (apply max* rys)))]
-                 [else  r])]
+           (match-define (sample xs ys y-min y-max) (f x-min x-max samples))
+           (vector xi (ivl y-min y-max))]
           [else  r])))
 
 (defproc (inverse-bounds-fun [f sampler/c] [samples exact-nonnegative-integer?]) bounds-fun/c
@@ -49,10 +47,8 @@
     (match-define (vector xi yi) r)
     (cond [(ivl-known? yi)
            (match-define (ivl y-min y-max) yi)
-           (match-define (list ys xs) (f y-min y-max samples))
-           (define rxs (filter regular? xs))
-           (cond [(not (empty? rxs))  (vector (ivl (apply min* rxs) (apply max* rxs)) yi)]
-                 [else  r])]
+           (match-define (sample ys xs x-min x-max) (f y-min y-max samples))
+           (vector (ivl x-min x-max) yi)]
           [else  r])))
 
 (defproc (function-interval-bounds-fun [f1 sampler/c] [f2 sampler/c]
@@ -73,10 +69,9 @@
     (cond [(and (ivl-known? xi) (ivl-known? yi))
            (match-define (ivl x-min x-max) xi)
            (match-define (ivl y-min y-max) yi)
-           (match-define (list xs ys zss) (f x-min x-max samples y-min y-max samples))
-           (define zs (filter regular? (2d-sample->list zss)))
-           (cond [(not (empty? zs)) (vector xi yi (ivl (apply min* zs) (apply max* zs)))]
-                 [else  r])]
+           (match-define (2d-sample xs ys zss z-min z-max)
+             (f x-min x-max samples y-min y-max samples))
+           (vector xi yi (ivl z-min z-max))]
           [else  r])))
 
 ;; ===================================================================================================

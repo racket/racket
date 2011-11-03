@@ -49,3 +49,23 @@
   (match-define (list (pre-tick zs majors) ...) all-ts)
   (define labels (format z-min z-max all-ts))
   (map tick zs majors labels))
+
+(defproc (isosurface-ticks [d-min real?] [d-max real?]
+                           [levels (or/c 'auto exact-positive-integer? (listof real?))]
+                           ) (listof tick?)
+  (define epsilon (expt 10 (- (digits-for-range d-min d-max))))
+  (match-define (ticks layout format) (plot-d-ticks))
+  (define ts
+    (cond [(eq? levels 'auto)  (filter pre-tick-major? (layout d-min d-max (plot-d-max-ticks)))]
+          [else  (define ds (cond [(list? levels)  (filter (λ (d) (<= d-min d d-max)) levels)]
+                                  [else  (linear-seq d-min d-max levels #:start? #f #:end? #f)]))
+                 (map (λ (d) (pre-tick d #t)) ds)]))
+  (define all-ts
+    (let* ([ts  (cond [((abs (- d-min (pre-tick-value (first ts)))) . >= . epsilon)  ts]
+                      [else  (rest ts)])]
+           [ts  (cond [((abs (- d-max (pre-tick-value (last ts)))) . >= . epsilon)  ts]
+                      [else  (take ts (- (length ts) 1))])])
+      ts))
+  (match-define (list (pre-tick ds majors) ...) all-ts)
+  (define labels (format d-min d-max all-ts))
+  (map tick ds majors labels))
