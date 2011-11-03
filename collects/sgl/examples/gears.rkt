@@ -45,7 +45,8 @@
 (define gears-canvas%
   (class* canvas% ()
 
-    (inherit refresh with-gl-context swap-gl-buffers get-parent)
+    (inherit refresh with-gl-context swap-gl-buffers get-parent
+	     get-top-level-window)
 
     (define rotation 0.0)
 
@@ -231,8 +232,18 @@
             (gl-vertex (* r0 cos-angle) (* r0 sin-angle) half-width)))
         (gl-end)))
 
+    (define/private (report-no-gl)
+      (message-box "Gears"
+		   (string-append
+		    "There was an error initializing OpenGL. "
+		    "Maybe OpenGL is not supported on the current platform.")
+		   (get-top-level-window)
+		   '(ok stop))
+      (exit 1))
+
     (define/override (on-size width height)
       (with-gl-context
+       #:fail (lambda () (report-no-gl))
        (lambda ()
 
          (unless gear1
@@ -301,6 +312,7 @@
 	  ;; TODO: Don't increment this infinitely.
 	  (set! rotation (+ 2.0 rotation)))
 	(with-gl-context
+         #:fail (lambda () (report-no-gl))
 	 (lambda ()
 
 	   (gl-clear-color 0.0 0.0 0.0 0.0)
