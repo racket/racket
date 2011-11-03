@@ -891,9 +891,8 @@ Scheme_Object *scheme_make_sized_offset_utf8_string(char *chars, intptr_t d, int
 			      NULL, 0 /* not UTF-16 */, 0xFFFD);
     us = scheme_malloc_atomic(sizeof(mzchar) * (ulen + 1));
     scheme_utf8_decode((unsigned char *)chars, d, d + len,
-		       us, 0, -1,
-		       NULL, 0 /* not UTF-16 */, 0xFFFD);
-
+                       us, 0, -1,
+                       NULL, 0 /* not UTF-16 */, 0xFFFD);
     us[ulen] = 0;
   } else {
     us = (mzchar *)"\0\0\0";

@@ -3013,10 +3013,12 @@ static Scheme_Object *
 do_read_line (int as_bytes, const char *who, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *port;
-  int ch;
+  int ch, ascii;
   int crlf = 0, cr = 0, lf = 1;
   char *buf, *oldbuf, onstack[32];
   intptr_t size = 31, oldsize, i = 0;
+  Scheme_Input_Port *ip;
+  Scheme_Get_String_Fun gs;
 
   if (argc && !SCHEME_INPUT_PORTP(argv[0]))
     scheme_wrong_type(who, "input-port", 0, argc, argv);
@@ -3051,8 +3053,31 @@ do_read_line (int as_bytes, const char *who, int argc, Scheme_Object *argv[])
 
   buf = onstack;
 
+  ip = scheme_input_port_record(port);
+  gs = ip->get_string_fun;
+  ascii = 1;
+      
   while (1) {
-    ch = scheme_get_byte(port);
+    if (!ip->slow) {
+      /* `read-line' seems important enough to inline the `read-byte' fast path: */
+      char s[1];
+      
+      ch = gs(ip, s, 0, 1, 0, NULL);
+
+      if (ch == SCHEME_SPECIAL) {
+        scheme_bad_time_for_special(who, port);
+      } else if (ch) {
+        if (ip->p.position >= 0)
+          ip->p.position++;
+
+        if (ch != EOF)
+          ch = ((unsigned char *)s)[0];
+      } else
+        ch = scheme_get_byte(port);
+    } else {
+      ch = scheme_get_byte(port);
+    }
+
     if (ch == EOF) {
       if (!i)
 	return scheme_eof;
@@ -3086,14 +3111,26 @@ do_read_line (int as_bytes, const char *who, int argc, Scheme_Object *argv[])
       memcpy(buf, oldbuf, oldsize);
     }
     buf[i++] = ch;
+    if (ch > 127) ascii = 0;
   }
 
   if (as_bytes) {
     buf[i] = '\0';
     return scheme_make_sized_byte_string(buf, i, buf == (char *)onstack);
   } else {
-    buf[i] = '\0';
-    return scheme_make_sized_utf8_string(buf, i);
+    int j;
+    if (ascii) {
+      mzchar *us;
+      us = scheme_malloc_atomic(sizeof(mzchar) * (i + 1));
+      for (j = 0; j < i; j++) {
+        us[j] = ((unsigned char *)buf)[j];
+      }
+      us[i] = 0;
+      return scheme_make_sized_offset_char_string(us, 0, i, 0);
+    } else {
+      buf[i] = '\0';
+      return scheme_make_sized_utf8_string(buf, i);
+    }
   }
 }
 

@@ -1374,6 +1374,7 @@ struct Scheme_Port
 struct Scheme_Input_Port
 {
   struct Scheme_Port p;
+  char slow; /* 0 => no line count, no ungotten, etc.: can call get_string_fun directly */
   char closed, pending_eof;
   Scheme_Object *sub_type;
   Scheme_Custodian_Reference *mref;

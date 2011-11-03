@@ -1448,6 +1448,7 @@ scheme_make_input_port(Scheme_Object *subtype,
   ip->closed = 0;
   ip->read_handler = NULL;
   init_port_locations((Scheme_Port *)ip);
+  if (ip->p.count_lines) ip->slow = 1;
 
   if (progress_evt_fun == scheme_progress_evt_via_get)
     ip->unless_cache = scheme_false;
@@ -1854,8 +1855,10 @@ intptr_t scheme_get_byte_string_unless(const char *who,
       }
       s = NULL;
 
-      if (!peek)
+      if (!peek) {
 	ip->ungotten_count = i;
+        ip->slow = 1;
+      }
 
       l = pipe_char_count(ip->peeked_read);
       if (size && l) {
@@ -2064,6 +2067,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	}
 
 	if ((got || total_got) && only_avail) {
+          ip->slow = 1;
 	  ip->ungotten_special = ip->special;
 	  ip->special = NULL;
 	  gc = 0;
@@ -2075,13 +2079,17 @@ intptr_t scheme_get_byte_string_unless(const char *who,
       } else if (gc == EOF) {
 	ip->p.utf8state = 0;
 	if (!got && !total_got) {
-	  if (peek && ip->pending_eof)
+	  if (peek && ip->pending_eof) {
 	    ip->pending_eof = 2;
+            ip->slow = 1;
+          }
 	  return EOF;
 	}
 	/* remember the EOF for next time */
-	if (ip->pending_eof)
+	if (ip->pending_eof) {
 	  ip->pending_eof = 2;
+          ip->slow = 1;
+        }
 	gc = 0;
 	size = 0; /* so that we stop */
       } else if (gc == SCHEME_UNLESS_READY) {
@@ -2115,9 +2123,10 @@ intptr_t scheme_get_byte_string_unless(const char *who,
       /* save newly peeked string for future peeks/reads */
       /***************************************************/
       if (gc) {
-	if ((gc == 1) && !ip->ungotten_count && !ip->peeked_write) {
+        ip->slow = 1;
+	if ((gc == 1) && !ip->ungotten_count && !ip->peeked_write)
 	  ip->ungotten[ip->ungotten_count++] = buffer[offset];
-	} else {
+	else {
 	  if (!ip->peeked_write) {
 	    Scheme_Object *rd, *wt;
 	    scheme_pipe(&rd, &wt);
@@ -2425,6 +2434,7 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
       /* This sema makes other threads wait before reading: */
       sema = scheme_make_sema(0);
       ip->input_lock = sema;
+      ip->slow = 1;
       
       /* This sema lets other threads try to make progress,
 	 if the current target doesn't work out */
@@ -2541,6 +2551,7 @@ Scheme_Object *scheme_progress_evt_via_get(Scheme_Input_Port *port)
   sema = scheme_make_sema(0);
 
   port->progress_evt = sema;
+  port->slow = 1;
 
   return sema;
 }
@@ -2729,11 +2740,15 @@ intptr_t scheme_get_char_string(const char *who,
   }
 }
 
-static MZ_INLINE
-intptr_t get_one_byte(const char *who,
-		  Scheme_Object *port,
-		  char *buffer, intptr_t offset,
-		  int only_avail)
+MZ_DO_NOT_INLINE(static intptr_t get_one_byte_slow(const char *who,
+                                                   Scheme_Object *port,
+                                                   char *buffer, intptr_t offset,
+                                                   int only_avail));
+
+static intptr_t get_one_byte_slow(const char *who,
+                                  Scheme_Object *port,
+                                  char *buffer, intptr_t offset,
+                                  int only_avail)
 {
   Scheme_Input_Port *ip;
   intptr_t gc;
@@ -2777,36 +2792,39 @@ intptr_t get_one_byte(const char *who,
       ip->pending_eof = 1;
       return EOF;
     } else {
+      if (!ip->progress_evt && !ip->p.count_lines)
+        ip->slow = 0;
+
       /* Call port's get function. */
       gs = ip->get_string_fun;
 
       gc = gs(ip, buffer, offset, 1, 0, NULL);
 	
       if (ip->progress_evt && (gc > 0))
-	post_progress(ip);
+        post_progress(ip);
 
       if (gc < 1) {
-	if (gc == SCHEME_SPECIAL) {
-	  if (special_ok) {
-	    if (ip->p.position >= 0)
-	      ip->p.position++;
-	    if (ip->p.count_lines)
-	      inc_pos((Scheme_Port *)ip, 1);
-	    return SCHEME_SPECIAL;
-	  } else {
-	    scheme_bad_time_for_special(who, port);
-	    return 0;
-	  }
-	} else if (gc == EOF) {
-	  ip->p.utf8state = 0;
-	  return EOF;
-	} else {
-	  /* didn't get anything the first try, so use slow path: */
-	  special_is_ok = special_ok;
-	  return scheme_get_byte_string_unless(who, port,
-					       buffer, offset, 1,
-					       0, 0, NULL, NULL);
-	}
+        if (gc == SCHEME_SPECIAL) {
+          if (special_ok) {
+            if (ip->p.position >= 0)
+              ip->p.position++;
+            if (ip->p.count_lines)
+              inc_pos((Scheme_Port *)ip, 1);
+            return SCHEME_SPECIAL;
+          } else {
+            scheme_bad_time_for_special(who, port);
+            return 0;
+          }
+        } else if (gc == EOF) {
+          ip->p.utf8state = 0;
+          return EOF;
+        } else {
+          /* didn't get anything the first try, so use slow path: */
+          special_is_ok = special_ok;
+          return scheme_get_byte_string_unless(who, port,
+                                               buffer, offset, 1,
+                                               0, 0, NULL, NULL);
+        }
       }
     }
   }
@@ -2821,6 +2839,37 @@ intptr_t get_one_byte(const char *who,
     do_count_lines((Scheme_Port *)ip, buffer, offset, 1);
   
   return gc;
+}
+
+static MZ_INLINE intptr_t get_one_byte(GC_CAN_IGNORE const char *who,
+                                       Scheme_Object *port, char *buffer)
+{
+  if (!special_is_ok && SCHEME_INPORTP(port)) {
+    GC_CAN_IGNORE Scheme_Input_Port *ip;
+    ip = (Scheme_Input_Port *)port;
+    if (!ip->slow) {
+      Scheme_Get_String_Fun gs;
+      int v;
+
+      gs = ip->get_string_fun;
+
+      v = gs(ip, buffer, 0, 1, 0, NULL);
+    
+      if (v) {
+        if (v == SCHEME_SPECIAL) {
+          scheme_bad_time_for_special(who, port);
+        }
+
+        ip = (Scheme_Input_Port *)port; /* since ignored by GC */
+        if (ip->p.position >= 0)
+          ip->p.position++;
+
+        return v;
+      }
+    }
+  }
+  
+  return get_one_byte_slow(who, port, buffer, 0, 0);
 }
 
 int
@@ -2838,9 +2887,7 @@ scheme_getc(Scheme_Object *port)
 					delta > 0, scheme_make_integer(delta-1),
 					NULL);
     } else {
-      v = get_one_byte("read-char", port,
-		       s, 0, 
-		       0);
+      v = get_one_byte("read-char", port, s);
     }
 
     if ((v == EOF) || (v == SCHEME_SPECIAL)) {
@@ -2880,9 +2927,7 @@ scheme_get_byte(Scheme_Object *port)
   char s[1];
   int v;
 
-  v = get_one_byte("read-byte", port,
-		   s, 0,
-		   0);
+  v = get_one_byte("read-byte", port, s);
 
   if ((v == EOF) || (v == SCHEME_SPECIAL))
     return v;
@@ -3160,6 +3205,8 @@ scheme_ungetc (int ch, Scheme_Object *port)
 
   CHECK_PORT_CLOSED("#<primitive:peek-port-char>", "input", port, ip->closed);
 
+  ip->slow = 1;
+
   if (ch == EOF) {
     if (ip->pending_eof) /* non-zero means that EOFs are tracked */
       ip->pending_eof = 2;
@@ -3210,9 +3257,10 @@ scheme_byte_ready (Scheme_Object *port)
 
   CHECK_PORT_CLOSED("char-ready?", "input", port, ip->closed);
 
-  if (ip->ungotten_count || ip->ungotten_special
-      || (ip->pending_eof > 1)
-      || pipe_char_count(ip->peeked_read))
+  if (ip->slow
+      && (ip->ungotten_count || ip->ungotten_special
+          || (ip->pending_eof > 1)
+          || pipe_char_count(ip->peeked_read)))
     retval = 1;
   else {
     Scheme_In_Ready_Fun f = ip->byte_ready_fun;
@@ -3582,6 +3630,13 @@ scheme_count_lines (Scheme_Object *port)
       Scheme_Count_Lines_Fun cl = ip->count_lines_fun;
       cl(ip);
     }
+    
+    if (scheme_is_input_port(port)) {
+      Scheme_Input_Port *iip;
+      iip = scheme_input_port_record(port);
+      if (iip)
+        iip->slow = 1;
+    }
   }
 }
 
@@ -3609,6 +3664,7 @@ scheme_close_input_port (Scheme_Object *port)
     }
 
     ip->closed = 1;
+    ip->slow = 1;
     ip->ungotten_count = 0;
     ip->ungotten_special = NULL;
   }
@@ -5540,6 +5596,11 @@ fd_byte_ready (Scheme_Input_Port *port)
 #endif
   }
 }
+
+MZ_DO_NOT_INLINE(static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
+                                                    char *buffer, intptr_t offset, intptr_t size,
+                                                    int nonblock,
+                                                    Scheme_Object *unless));
 
 static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
                                char *buffer, intptr_t offset, intptr_t size,
