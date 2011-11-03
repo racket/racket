@@ -34,8 +34,7 @@
                         (lambda (v) (loop)))
                        (handle-evt
                         (channel-put-evt lock-holder-ch t)
-                        (lambda (v) (waiting-loop)))))
-               (loop))))
+                        (lambda (v) (waiting-loop))))))))
           (handle-evt
            (channel-put-evt lock-holder-ch #f)
            (lambda (v) (loop))))))
