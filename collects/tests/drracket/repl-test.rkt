@@ -59,7 +59,7 @@ This produces an ACK message
   (string-append
    (regexp-quote "#<syntax:")
    ".*"
-a   (regexp-quote "tests/drracket/repl-test-tmp")
+   (regexp-quote "tests/drracket/repl-test-tmp")
    "3?"
    (regexp-quote ".rkt")))
 
@@ -77,10 +77,6 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
                   "[0-9]+:[0-9]+: "
                   (regexp-quote str))))
 
-;; err-prefix : string -> regexp
-(define (err-prefix x)
-  (regexp (string-append "({[^]*}|){[^]*} " (regexp-quote x))))
-
 (define test-data
   (list
    ;; basic tests
@@ -96,7 +92,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "\"a\""           
+   (mktest "\"a\""
+           
            ("\"a\""
             "\"a\""
             "\"a\""
@@ -108,7 +105,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "1 2"           
+   (mktest "1 2"
+           
            ("1\n2"
             "2"
             "2"
@@ -120,7 +118,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "\"a\" \"b\""           
+   (mktest "\"a\" \"b\""
+           
            ("\"a\"\n\"b\""
             "\"b\""
             "\"b\""
@@ -133,67 +132,71 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    (mktest "("
-           ((err-prefix "read: expected a `)' to close `('")
-            (err-prefix "read: expected a `)' to close `('")
-            (err-prefix "repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('")
-            (err-prefix "read: expected a `)' to close `('")
-            (err-prefix "read: expected a `)' to close `('")
-            (err-prefix "repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('"))
+           ("{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('"
+            "{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('")
            'definitions
            #f
            void
            void)
    
    (mktest "."
-           ((err-prefix "read: illegal use of \".\"")
-            (err-prefix "read: illegal use of \".\"")
-            (err-prefix "repl-test-tmp3.rkt:1:0: read: illegal use of \".\"")
-            (err-prefix "read: illegal use of \".\"")
-            (err-prefix "read: illegal use of \".\"")
-            (err-prefix "repl-test-tmp3.rkt:1:0: read: illegal use of \".\""))
+           
+           ("{stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of \".\""
+            "{stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of \".\"")
            'definitions
            #f
            void
            void)
    
    (mktest "(lambda ())"
-           ((err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "repl-test-tmp3.rkt:1:0: lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "repl-test-tmp3.rkt:1:0: lambda: bad syntax in: (lambda ())"))
+           
+           ("{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:0: lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: lambda: bad syntax in: (lambda ())")
            'definitions
            #f
            void
            void)
    
    ;; make sure only a single syntax error occurs when in nested begin situation
-   (mktest "(begin (lambda ()) (lambda ()))"           
-           ((err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "repl-test-tmp3.rkt:1:7: lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "repl-test-tmp3.rkt:1:7: lambda: bad syntax in: (lambda ())"))
+   (mktest "(begin (lambda ()) (lambda ()))"
+           
+           ("{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:7: lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: lambda: bad syntax in: (lambda ())")
            'definitions
            #f
            void
            void)
    
    (mktest "xx"
-           ((err-prefix "reference to undefined identifier: xx")
-            (err-prefix "reference to undefined identifier: xx")
-            (err-prefix "repl-test-tmp3.rkt:1:0: reference to undefined identifier: xx")
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
            'definitions
            #f
            void
            void)
-
    (mktest "(raise 1)"
+           
            ("uncaught exception: 1"
             "uncaught exception: 1"
             "uncaught exception: 1"
@@ -204,8 +207,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            #f
            void
            void)
-
    (mktest "(raise #f)"
+           
            ("uncaught exception: #f"
             "uncaught exception: #f"
             "uncaught exception: #f"
@@ -218,6 +221,7 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    (mktest "(values 1 2)"
+           
            ("1\n2"
             "1\n2"
             "1\n2"
@@ -228,7 +232,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            #f
            void
            void)
-   (mktest "(list 1 2)"           
+   (mktest "(list 1 2)"
+           
            ("(1 2)"
             "(1 2)"
             "(1 2)"
@@ -240,7 +245,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "(parameterize ([print-struct #t])(define-struct s (x) (make-inspector))(printf \"~s\\n\" (make-s 1)))"           
+   (mktest "(parameterize ([print-struct #t])(define-struct s (x) (make-inspector))(printf \"~s\\n\" (make-s 1)))"
+           
            ("#(struct:s 1)"
             "#(struct:s 1)"
             "#(struct:s 1)"
@@ -253,19 +259,21 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    ;; top-level semantics test
-   (mktest "(define (f) (+ 1 1)) (define + -) (f)"           
+   (mktest "(define (f) (+ 1 1)) (define + -) (f)"
+           
            ("define-values: cannot change constant variable: +"
             "define-values: cannot change constant variable: +"
             "define-values: cannot change constant variable: +"
             "define-values: cannot change constant variable: +"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+")
            'interactions
            #f
            void
            void)
    
-   (mktest "(begin (define-struct a ()) (define-struct (b a) ()))"           
+   (mktest "(begin (define-struct a ()) (define-struct (b a) ()))"
+           
            (""
             ""
             ""
@@ -277,7 +285,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "(begin (values) 1)"           
+   (mktest "(begin (values) 1)"
+           
            ("1"
             "1"
             "1"
@@ -289,13 +298,14 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "(begin xx (printf \"hi\\n\"))"           
-           ((err-prefix "reference to undefined identifier: xx")
-            (err-prefix "reference to undefined identifier: xx")
-            (err-prefix "repl-test-tmp3.rkt:1:7: reference to undefined identifier: xx")
+   (mktest "(begin xx (printf \"hi\\n\"))"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
            'definitions
            #f
            void
@@ -307,12 +317,12 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
             "(require 'n)\n"
             "s")
            
-           ((err-prefix "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
-            (err-prefix "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
-            (err-prefix "repl-test-tmp3.rkt:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
-            (err-prefix "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
-            (err-prefix "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
-            (err-prefix "repl-test-tmp3.rkt:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"))
+           ("{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-multi.png} {stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
            'definitions
            #f
            void
@@ -320,7 +330,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
    
    
    ;; leading comment test
-   (mktest "#!/bin/sh\n1"           
+   (mktest "#!/bin/sh\n1"
+           
            ("1"
             "1"
             "1"
@@ -332,13 +343,14 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "#!/bin/sh\nxx"           
-           ((err-prefix "reference to undefined identifier: xx")
-            (err-prefix "reference to undefined identifier: xx")
-            (err-prefix "repl-test-tmp3.rkt:2:0: reference to undefined identifier: xx")
+   (mktest "#!/bin/sh\nxx"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
            'definitions
            #f
            void
@@ -346,7 +358,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
    
    ;; eval tests
    
-   (mktest "    (eval '(values 1 2))"           
+   (mktest "    (eval '(values 1 2))"
+           
            ("1\n2"
             "1\n2"
             "1\n2"
@@ -358,7 +371,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "    (eval '(list 1 2))"           
+   (mktest "    (eval '(list 1 2))"
+           
            ("(1 2)"
             "(1 2)"
             "(1 2)"
@@ -370,43 +384,47 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "    (eval '(lambda ()))"           
-           ((err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-	    (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())")
-            (err-prefix "lambda: bad syntax in: (lambda ())"))
+   (mktest "    (eval '(lambda ()))"
+           
+           ("{stop-multi.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} lambda: bad syntax in: (lambda ())"
+            "lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} lambda: bad syntax in: (lambda ())")
            'interactions
            #f
            void
            void)
    
-   (mktest "    (read (open-input-string \".\"))"           
-           ((err-prefix "read: illegal use of \".\"")
-            (err-prefix "read: illegal use of \".\"")
-            (err-prefix "read: illegal use of \".\"")
-            (err-prefix "read: illegal use of \".\"")
-            (err-prefix "read: illegal use of \".\"")
-            (err-prefix "read: illegal use of \".\""))
+   (mktest "    (read (open-input-string \".\"))"
+           
+           ("{stop-multi.png} read: illegal use of \".\""
+            "{stop-multi.png} read: illegal use of \".\""
+            "{stop-multi.png} read: illegal use of \".\""
+            "read: illegal use of \".\""
+            "{stop-multi.png} read: illegal use of \".\""
+            "{stop-multi.png} read: illegal use of \".\"")
            'interactions
            #f
            void
            void)
    
-   (mktest "    (eval 'x)"           
-           ((err-prefix "reference to undefined identifier: x")
-            (err-prefix "reference to undefined identifier: x")
-            (err-prefix "repl-test-tmp3.rkt:1:4: reference to undefined identifier: x")
+   (mktest "    (eval 'x)"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier: x"
             "reference to undefined identifier: x"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x")
            'definitions
            #f
            void
            void)
    
-   (mktest "(eval (box 1))"           
+   (mktest "(eval (box 1))"
+           
            ("#&1"
             "#&1"
             "#&1"
@@ -418,7 +436,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "(eval '(box 1))"           
+   (mktest "(eval '(box 1))"
+           
            ("#&1"
             "#&1"
             "#&1"
@@ -431,64 +450,70 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    ; printer setup test
-   (mktest "(expt 3 (void))"           
-           ((err-prefix "expt: expected argument of type <number>; given #<void>")
-            (err-prefix "expt: expected argument of type <number>; given #<void>")
-            (err-prefix "repl-test-tmp3.rkt:1:0: expt: expected argument of type <number>; given #<void>")
+   (mktest "(expt 3 (void))"
+           
+           ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
+            "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: expt: expected argument of type <number>; given #<void>"
             "expt: expected argument of type <number>; given #<void>"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>")
            'definitions
            #f
            void
            void)
    
    ;; error in the middle
-   (mktest "1 2 ( 3 4"           
+   (mktest "1 2 ( 3 4"
+           
            ("1\n2\n{stop-22x22.png} read: expected a `)' to close `('"
-            (err-prefix "read: expected a `)' to close `('")
-            (err-prefix "repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('")
- 	    #rx"1\n2\n({[^}]*}|){stop-22x22.png} read: expected a `[)]' to close `[(]'"
-            (err-prefix "read: expected a `)' to close `('")
-            (err-prefix "repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('"))
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('"
+            "1\n2\n{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('")
            'definitions
            #f
            void
            void)
    (mktest "1 2 . 3 4"
-           (#rx"1\n2\n({[^}]*}|){stop-22x22.png} read: illegal use of \"[.]\""
-            "{stop-22x22.png} read: illegal use of \".\""
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\""
+           
+           ("1\n2\n{stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\""
             "1\n2\n{stop-22x22.png} read: illegal use of \".\""
-            "{stop-22x22.png} read: illegal use of \".\""
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\"")
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\"")
            'definitions
            #f
            void
            void)
-   (mktest "1 2 (lambda ()) 3 4"           
+   (mktest "1 2 (lambda ()) 3 4"
+           
            ("1\n2\n{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:4: lambda: bad syntax in: (lambda ())"
             "1\n2\n{stop-22x22.png} lambda: bad syntax in: (lambda ())"
-            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:4: lambda: bad syntax in: (lambda ())")
+            "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: lambda: bad syntax in: (lambda ())")
            'definitions
            #f
            void
            void)
-   (mktest "1 2 x 3 4"           
-           ("1\n2\n{stop-22x22.png} reference to undefined identifier: x"
-            "{stop-22x22.png} reference to undefined identifier: x"
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier: x"
+   (mktest "1 2 x 3 4"
+           
+           ("1\n2\n{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier: x"
             "1\n2\nreference to undefined identifier: x"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x")
            'definitions
            #f
            void
            void)
-   (mktest "1 2 (raise 1) 3 4"           
+   (mktest "1 2 (raise 1) 3 4"
+           
            ("1\n2\nuncaught exception: 1"
             "uncaught exception: 1"
             "uncaught exception: 1"
@@ -499,7 +524,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            #f
            void
            void)
-   (mktest "1 2 (raise #f) 3 4"           
+   (mktest "1 2 (raise #f) 3 4"
+           
            ("1\n2\nuncaught exception: #f"
             "uncaught exception: #f"
             "uncaught exception: #f"
@@ -511,26 +537,29 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "(require lang/htdp-beginner)\n(cond [1 2 3 4])"           
+   (mktest "(require lang/htdp-beginner)\n(cond [1 2 3 4])"
+           
            ("{stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
             "{stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
             "{stop-22x22.png} repl-test-tmp3.rkt:2:7: cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
-            "{stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
-            "{stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
-            "{stop-22x22.png} repl-test-tmp3.rkt:2:7: cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4")
+            "{stop-multi.png} {stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
+            "{stop-multi.png} {stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:7: cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4")
            'definitions
            #f
            void
            void)
    
    ;; error across separate files
-   (mktest "(load \"repl-test-tmp2.rkt\") (define (g) (+ 1 (expt 3 #f))) (f g)"    
-    ("{stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-22x22.png} repl-test-tmp3.rkt:1:45: expt: expected argument of type <number>; given #f"
-     "{stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-22x22.png} repl-test-tmp3.rkt:1:28: expt: expected argument of type <number>; given #f")
+   (mktest
+    "(load \"repl-test-tmp2.rkt\") (define (g) (+ 1 (expt 3 #f))) (f g)"
+    
+    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:45: expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:28: expt: expected argument of type <number>; given #f")
     'definitions
     #f
     (λ ()
@@ -542,32 +571,35 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
     (λ () (delete-file (build-path tmp-load-directory "repl-test-tmp2.rkt"))))
    
    ;; new namespace test
-   (mktest "(current-namespace (make-namespace))\nif"           
+   (mktest "(current-namespace (make-namespace))\nif"
+           
            ("{stop-22x22.png} if: bad syntax in: if"
             "{stop-22x22.png} if: bad syntax in: if"
             "{stop-22x22.png} repl-test-tmp3.rkt:2:0: if: bad syntax in: if"
             "{stop-22x22.png} if: bad syntax in: if"
-            "{stop-22x22.png} if: bad syntax in: if"
-            "{stop-22x22.png} repl-test-tmp3.rkt:2:0: if: bad syntax in: if")
+            "{stop-multi.png} {stop-22x22.png} if: bad syntax in: if"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: if: bad syntax in: if")
            'definitions
            #f
            void
            void)
    
-   (mktest "(current-namespace (make-namespace 'empty))\nif"           
+   (mktest "(current-namespace (make-namespace 'empty))\nif"
+           
            ("{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
             "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
             "{stop-22x22.png} repl-test-tmp3.rkt:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
             "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-22x22.png} repl-test-tmp3.rkt:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction")
+            "{stop-multi.png} {stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction")
            'definitions
            #f
            void
            void)
    
    ;; macro tests
-   (mktest "(define-syntax (c stx) (syntax-case stx () [(_ p q r) (syntax (+ p q r))]))"           
+   (mktest "(define-syntax (c stx) (syntax-case stx () [(_ p q r) (syntax (+ p q r))]))"
+           
            (""
             ""
             ""
@@ -582,12 +614,13 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
    ;; error escape handler test
    (mktest
     "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (expt 3 #f))\n(lambda () (error-escape-handler old))))\n10))"
-    ("{stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
-     "{stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
-     "{stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: expected argument of type <number>; given #f\n15"
+    
+    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: expected argument of type <number>; given #f\n15"
      "expt: expected argument of type <number>; given #f\n15"
-     #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15"
-     #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15")
+     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15"
+     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15")
     'definitions
     #f
     void
@@ -622,7 +655,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    ;; make sure syntax objects only go into good ports
-   (mktest "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"           
+   (mktest "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
+           
            ("10"
             "10"
             "10"
@@ -635,7 +669,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    ;; make sure syntax objects don't go into bad ports
-   (mktest "(parameterize ([current-output-port (open-output-string)]) (write #'1))"           
+   (mktest "(parameterize ([current-output-port (open-output-string)]) (write #'1))"
+           
            (""
             ""
             ""
@@ -647,7 +682,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"           
+   (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
+           
            (#rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
             #rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
             #rx"#<syntax:.*repl-test-tmp3.rkt:1:96.*>"
@@ -660,7 +696,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    
-   (mktest "(write-special 1)"           
+   (mktest "(write-special 1)"
+           
            ("1#t"
             "1#t"
             "1#t"
@@ -676,6 +713,7 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
     ;; the begin/void combo is to make sure that no value printout
     ;; comes and messes up the source location for the error.
     "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (expt 3 #f))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
+    
     (#rx"expt: expected argument of type <number>; given #f"
      #rx"expt: expected argument of type <number>; given #f"
      #rx"expt: expected argument of type <number>; given #f"
@@ -714,7 +752,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    ;; continuation tests
-   (mktest "(define k (call/cc (lambda (x) x)))\n(k 17)\nk"           
+   (mktest "(define k (call/cc (lambda (x) x)))\n(k 17)\nk"
+           
            ("17"
             "17"
             "17"
@@ -725,7 +764,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            #f
            void
            void)
-   (mktest "(define v (vector (call/cc (lambda (x) x))))\n((vector-ref v 0) 2)\nv"           
+   (mktest "(define v (vector (call/cc (lambda (x) x))))\n((vector-ref v 0) 2)\nv"
+           
            ("#(2)"
             "#(2)"
             "#(2)"
@@ -736,7 +776,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            #f
            void
            void)
-   (mktest "(define v (vector (eval '(call/cc (lambda (x) x)))))\n((vector-ref v 0) 2)\nv"           
+   (mktest "(define v (vector (eval '(call/cc (lambda (x) x)))))\n((vector-ref v 0) 2)\nv"
+           
            ("#(2)"
             "#(2)"
             "#(2)"
@@ -748,20 +789,22 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void
            void)
    
-   (mktest "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"           
-           ("{stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
-            "{stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
-            "{stop-22x22.png} repl-test-tmp3.rkt:3:13: procedure application: expected procedure, given: 3; arguments were: 3"
+   (mktest "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
+           
+           ("{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
+            "{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:3:13: procedure application: expected procedure, given: 3; arguments were: 3"
             "procedure application: expected procedure, given: 3; arguments were: 3"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3")
            'definitions
            #f
            void
            void)
    
    ;; top-level & continuation interaction test
-   (mktest "(begin (define k (call/cc (λ (x) x)))\n(define x 'wrong))\n(set! x 'right)\n(k 1)\nx"           
+   (mktest "(begin (define k (call/cc (λ (x) x)))\n(define x 'wrong))\n(set! x 'right)\n(k 1)\nx"
+           
            ("right"
             "right"
             "right"
@@ -782,6 +825,7 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
                                      10)))
                      (default-continuation-prompt-tag)
                      list))
+           
            ("(1 2 3)"
             "(1 2 3)"
             "(1 2 3)"
@@ -806,7 +850,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
 
    ;; graphical lambda tests
-   (mktest (list "((" '("Insert" "Insert λ") "(x) x) 1)")           
+   (mktest (list "((" '("Insert" "Insert λ") "(x) x) 1)")
+           
            ("1"
             "1"
             "1"
@@ -819,12 +864,13 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
            void)
    
    (mktest (list "(" '("Insert" "Insert λ") "())")
+           
            ("{stop-22x22.png} λ: bad syntax in: (λ ())"
             "{stop-22x22.png} λ: bad syntax in: (λ ())"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:0: λ: bad syntax in: (λ ())"
             "{stop-22x22.png} λ: bad syntax in: (λ ())"
-            "{stop-22x22.png} λ: bad syntax in: (λ ())"
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:0: λ: bad syntax in: (λ ())")
+            "{stop-multi.png} {stop-22x22.png} λ: bad syntax in: (λ ())"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: λ: bad syntax in: (λ ())")
            'definitions
            #f
            void
@@ -832,9 +878,10 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
    
    ;; thread tests
    (mktest "(begin (thread (lambda () x)) (sleep 1/10))"
-           ("{stop-22x22.png} reference to undefined identifier: x"
-            "{stop-22x22.png} reference to undefined identifier: x"
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:26: reference to undefined identifier: x"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:26: reference to undefined identifier: x"
             "reference to undefined identifier: x"
             "reference to undefined identifier: x"
             "reference to undefined identifier: x")
@@ -845,12 +892,13 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
    
    ;; brought down from above for comparison
    (mktest "xx"
-           ("{stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier: xx"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
            'definitions
            #f
            void
@@ -859,6 +907,7 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
    ;; setup of the namespaces for pict printing (from slideshow)
 
    (mktest "(require texpict/utils)(disk 3)"
+
            ("{image}"
             "{image}"
             "{image}"
@@ -876,7 +925,8 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
                (current-namespace (make-namespace))
                (namespace-set-variable-value! 'd (disk 3)))
             'd)
-	   ("#<pict>"
+           
+           ("#<pict>"
             "#<pict>"
             "#<pict>"
             "#<pict>"
@@ -893,6 +943,7 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
                (namespace-attach-module on n))
             '(require texpict/utils)
             '(disk 3))
+           
            ("{image}"
             "{image}"
             "{image}"
@@ -908,6 +959,7 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
             "(require mzlib/pretty)"
             "(pretty-print-print-hook (lambda x (expt 3 #f)))"
             "(list 1 2 3)")
+
            ("(1 2 3)"
             "(1 2 3)"
             "(1 2 3)"
@@ -922,6 +974,7 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
    (mktest (format "~s\n~s"
                    `(require scheme/pretty)
                    `(parameterize ((pretty-print-exact-as-decimal #t)) (display 1/4)))
+           
            ("1/4"
             "1/4"
             "1/4"
@@ -945,6 +998,7 @@ a   (regexp-quote "tests/drracket/repl-test-tmp")
      "(with-handlers ((void values)) (eval '(lambda ())))))\n"
      "(lambda ()\n"
      "(display (get-output-string p)))))\n")
+    
     ("x in: (lambda ())"
      "x in: (lambda ())"
      "x in: (lambda ())"
