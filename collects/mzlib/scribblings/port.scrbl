@@ -5,7 +5,7 @@
 @mzlib[#:mode title port]
 
 The @racketmodname[mzlib/port] library mostly re-provides
-@racketmodname[scheme/port].
+@racketmodname[racket/port].
 
 @defproc[(strip-shell-command-start [in input-port?]) void?]{
 

@@ -25,36 +25,37 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
 (define (module-lexer in offset mode)
   (cond
     [(or (not mode) (eq? mode 'before-lang-line))
-     (define lexer-port (peeking-input-port in))
+     (define lexer-port (peeking-input-port in #:init-position (+ 1 (file-position in))))
      (port-count-lines! lexer-port)
-     (define-values (lexeme type data raw-new-token-start raw-new-token-end) (scheme-lexer lexer-port))
-     (define new-token-start (and raw-new-token-start (+ raw-new-token-start (file-position in))))
-     (define new-token-end (and raw-new-token-end (+ raw-new-token-end (file-position in))))
+     (set-port-next-location-from in lexer-port)
+     (define-values (lexeme type data new-token-start new-token-end) (scheme-lexer lexer-port))
      (cond
        [(or (eq? type 'comment) (eq? type 'white-space))
         (define lexer-end (file-position lexer-port))
         ;; sync ports
-        (for ([i (in-range 0 lexer-end)])
-          (read-char-or-special in))
+        (for/list ([i (in-range (file-position in) (file-position lexer-port))])
+          (read-byte-or-special in))
         (values lexeme type data new-token-start new-token-end 0 'before-lang-line)]
        [else
         ;; look for #lang:
-        (define p (peeking-input-port in))
+        (define p (peeking-input-port in #:init-position (+ 1 (file-position in))))
         (port-count-lines! p)
+        (set-port-next-location-from in p)
+        (define-values (_1 _2 start-pos) (port-next-location p))
         (define get-info (with-handlers ([exn:fail? values]) (read-language p (λ () 'fail))))
-        (define end-pos (file-position p))
+        (define-values (_3 _4 end-pos) (port-next-location p))
         (cond
           [(procedure? get-info)
            ;; sync ports
-           (for ([i (in-range 0 end-pos)])
-             (read-char-or-special in))
+           (for ([i (in-range (file-position in) (file-position p))])
+             (read-byte-or-special in))
            ;; Produce language as first token:
            (values
             "#lang"
             'other
             #f
-            1 ;; start-pos
-            (+ end-pos 1)
+            start-pos
+            end-pos
             0
             (or (let ([v (get-info 'color-lexer #f)])
                   (and v
@@ -68,12 +69,12 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
                 ;; the read-language docs say that this is all it takes to commit to a #lang
                 (regexp-match #rx"^#[!l]" lexeme))
            ;; sync ports
-           (for ([i (in-range 0 end-pos)])
-             (read-char-or-special in))
+           (for ([i (in-range (file-position in) (file-position p))])
+             (read-byte-or-special in))
            (values lexeme 'error data 1 (+ end-pos 1) 0 'no-lang-line)]
           [else 
-           (for ([i (in-range 0 (file-position lexer-port))])
-             (read-char-or-special in))
+           (for ([i (in-range (file-position in) (file-position lexer-port))])
+             (read-byte-or-special in))
            (values lexeme type data new-token-start new-token-end 0 'no-lang-line)])])]
     [(eq? mode 'no-lang-line)
      (let-values ([(lexeme type data new-token-start new-token-end) 
@@ -89,3 +90,7 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
      (let-values ([(lexeme type data new-token-start new-token-end) 
                    (mode in)])
        (values lexeme type data new-token-start new-token-end 0 mode))]))
+
+(define (set-port-next-location-from src dest)
+  (define-values (line col pos) (port-next-location src))
+  (set-port-next-location! dest line col pos))

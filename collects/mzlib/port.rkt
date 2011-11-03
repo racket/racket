@@ -428,17 +428,22 @@
              (set! buffering? (eq? mode 'block))
              (buffer-mode-proc mode)])))))
 
-(define peeking-input-port
-  (lambda (orig-in [name (object-name orig-in)] [delta 0])
-    (make-input-port/read-to-peek
-     name
-     (lambda (s)
-       (let ([r (peek-bytes-avail!* s delta #f orig-in)])
-         (set! delta (+ delta (if (number? r) r 1)))
-         (if (eq? r 0) (handle-evt orig-in (lambda (v) 0)) r)))
-     (lambda (s skip default)
-       (peek-bytes-avail!* s (+ delta skip) #f orig-in))
-     void)))
+(define (peeking-input-port orig-in
+                            [name (object-name orig-in)]
+                            [delta 0]
+                            #:init-position [init-position 1])
+  (make-input-port/read-to-peek
+   name
+   (lambda (s)
+     (let ([r (peek-bytes-avail!* s delta #f orig-in)])
+       (set! delta (+ delta (if (number? r) r 1)))
+       (if (eq? r 0) (handle-evt orig-in (lambda (v) 0)) r)))
+   (lambda (s skip default)
+     (peek-bytes-avail!* s (+ delta skip) #f orig-in))
+   void
+   #f
+   void
+   init-position))
 
 (define relocate-input-port
   (lambda (p line col pos [close? #t])

@@ -310,7 +310,8 @@ resulting port supports @racket[write-special], otherwise it does not.}
 
 @defproc[(peeking-input-port [in input-port?]
                              [name any/c (object-name in)]
-                             [skip exact-nonnegative-integer? 0])
+                             [skip exact-nonnegative-integer? 0]
+                             [#:init-position init-position exact-positive-integer? 1])
          input-port]{
 
 Returns an input port whose content is determined by peeking into
@@ -323,8 +324,8 @@ The optional @racket[name] argument is the name of the resulting
 port. The @racket[skip] argument is the port initial skip count, and
 it defaults to @racket[0].
 
-The resulting port's initial position is @racket[0], no matter the
-position of @racket[in].
+The resulting port's initial position (as reported by @racket[file-position])
+is @racket[(- init-position 1)], no matter the position of @racket[in].
 
 For example, when you read from a peeking port, you
 see the same answers as when you read from the original port.
