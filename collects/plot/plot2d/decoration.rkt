@@ -22,7 +22,7 @@
   (define radius (if ticks? (* 1/2 (plot-tick-size)) 0))
   
   (send area put-alpha alpha)
-  (send area put-major-pen)
+  (send area put-minor-pen)
   (send area put-line (vector x-min y) (vector x-max y))
   
   (when ticks?
@@ -56,7 +56,7 @@
   (define radius (if ticks? (* 1/2 (plot-tick-size)) 0))
   
   (send area put-alpha alpha)
-  (send area put-major-pen)
+  (send area put-minor-pen)
   (send area put-line (vector x y-min) (vector x y-max))
   
   (when ticks?
@@ -148,7 +148,7 @@
   (define-values (x-min x-max y-min y-max) (send area get-bounds))
   (define-values (θs r-mins r-maxs) (build-polar-axes num x-min x-max y-min y-max))
   
-  (send area put-major-pen)
+  (send area put-minor-pen)
   (for ([θ  (in-list θs)] [r-min  (in-list r-mins)] [r-max  (in-list r-maxs)])
     (send area put-line
           (vector (* r-min (cos θ)) (* r-min (sin θ)))

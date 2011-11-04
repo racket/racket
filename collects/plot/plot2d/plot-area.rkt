@@ -139,7 +139,7 @@
     (define tick-radius (* 1/2 (plot-tick-size)))
     (define half-tick-radius (* 1/2 tick-radius))
     
-    (define near-dist^2 (sqr(* 3 (plot-line-width))))
+    (define near-dist^2 (sqr (* 3 (plot-line-width))))
     (define (vnear? v1 v2)
       ((vmag^2 (v- (plot->dc* v1) (plot->dc* v2))) . <= . near-dist^2))
     
@@ -164,14 +164,20 @@
       (collapse-nearby-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
                              (y-tick-near? x-max)))
     
-    (define draw-x-far-tick-labels? (not (and (plot-x-axis?) (equal? x-ticks x-far-ticks))))
-    (define draw-y-far-tick-labels? (not (and (plot-y-axis?) (equal? y-ticks y-far-ticks))))
-    
     ;; ===============================================================================================
-    ;; Tick and tick label parameters
+    ;; Tick and label parameters, and fixpoint margin computation
+    
+    ;; From here through "All parameters" are functions that compute *just the parameters* of ticks
+    ;; and labels that will be drawn on the plot. We have to separate computing parameters from
+    ;; actually drawing the ticks and labels so we can solve for the plot margins using a fixpoint
+    ;; computation. See ../common/draw.rkt for more explanation. (Search for 'margin-fixpoint'.)
+    
+    ;; -----------------------------------------------------------------------------------------------
+    ;; Tick parameters
     
     (define (x-tick-value->dc x) (plot->dc* (vector x y-min)))
     (define (y-tick-value->dc y) (plot->dc* (vector x-min y)))
+    
     (define (x-far-tick-value->dc x) (plot->dc* (vector x y-max)))
     (define (y-far-tick-value->dc y) (plot->dc* (vector x-max y)))
     
@@ -191,9 +197,16 @@
     
     (define (get-y-far-tick-params)
       (if (plot-y-far-axis?) (get-tick-params y-far-ticks y-far-tick-value->dc 0) empty))
-
+    
+    ;; -----------------------------------------------------------------------------------------------
+    ;; Tick label parameters
+    
+    (define draw-x-far-tick-labels? (not (and (plot-x-axis?) (equal? x-ticks x-far-ticks))))
+    (define draw-y-far-tick-labels? (not (and (plot-y-axis?) (equal? y-ticks y-far-ticks))))
+    
     (define x-tick-label-offset (vector 0 (+ (pen-gap) tick-radius)))
     (define y-tick-label-offset (vector (- (+ (pen-gap) tick-radius)) 0))
+    
     (define x-far-tick-label-offset (vneg x-tick-label-offset))
     (define y-far-tick-label-offset (vneg y-tick-label-offset))
     
@@ -213,16 +226,16 @@
           empty))
     
     (define (get-x-far-tick-label-params)
-      (if (plot-x-far-axis?)
+      (if (and (plot-x-far-axis?) draw-x-far-tick-labels?)
           (get-tick-label-params x-far-ticks x-far-tick-label-offset x-far-tick-value->dc 'bottom)
           empty))
     
     (define (get-y-far-tick-label-params)
-      (if (plot-y-far-axis?)
+      (if (and (plot-y-far-axis?) draw-y-far-tick-labels?)
           (get-tick-label-params y-far-ticks y-far-tick-label-offset y-far-tick-value->dc 'left)
           empty))
     
-    ;; ===============================================================================================
+    ;; -----------------------------------------------------------------------------------------------
     ;; Axis label parameters
     
     (define (max-tick-offset ts)
@@ -232,6 +245,7 @@
     
     (define max-x-tick-offset (if (plot-x-axis?) (max-tick-offset x-ticks) 0))
     (define max-y-tick-offset (if (plot-y-axis?) (max-tick-offset y-ticks) 0))
+    
     (define max-x-far-tick-offset (if (plot-x-far-axis?) (max-tick-offset x-far-ticks) 0))
     (define max-y-far-tick-offset (if (plot-y-far-axis?) (max-tick-offset y-far-ticks) 0))
     
@@ -244,6 +258,7 @@
     
     (define max-x-tick-label-height (if (plot-x-axis?) (max-tick-label-height x-ticks) 0))
     (define max-y-tick-label-width (if (plot-y-axis?) (max-tick-label-width y-ticks) 0))
+    
     (define max-x-far-tick-label-height (if (and (plot-x-far-axis?) draw-x-far-tick-labels?)
                                             (max-tick-label-height x-far-ticks)
                                             0))
@@ -267,54 +282,40 @@
       (define offset (vector (+ max-y-far-tick-offset max-y-far-tick-label-width half-char-height) 0))
       (list (plot-y-far-label) (v+ (view->dc (vector x-max y-mid)) offset) 'top (/ pi 2)))
     
-    ;; ===============================================================================================
-    ;; Fixpoint margin computation
-    
-    (define (get-all-tick-label-params)
-      (append (get-x-tick-label-params) (get-y-tick-label-params)
-              (if draw-x-far-tick-labels? (get-x-far-tick-label-params) empty)
-              (if draw-y-far-tick-labels? (get-y-far-tick-label-params) empty)))
-    
-    (define (get-all-axis-label-params)
-      (append (if (plot-x-label) (list (get-x-label-params)) empty)
-              (if (plot-y-label) (list (get-y-label-params)) empty)
-              (if (plot-x-far-label) (list (get-x-far-label-params)) empty)
-              (if (plot-y-far-label) (list (get-y-far-label-params)) empty)))
+    ;; -----------------------------------------------------------------------------------------------
+    ;; All parameters
     
     (define (get-all-label-params)
-      (cond [(plot-decorations?)  (append (get-all-axis-label-params) (get-all-tick-label-params))]
-            [else  empty]))
+      (if (plot-decorations?)
+          (append (if (plot-x-label) (list (get-x-label-params)) empty)
+                  (if (plot-y-label) (list (get-y-label-params)) empty)
+                  (if (plot-x-far-label) (list (get-x-far-label-params)) empty)
+                  (if (plot-y-far-label) (list (get-y-far-label-params)) empty)
+                  (get-x-tick-label-params)
+                  (get-y-tick-label-params)
+                  (get-x-far-tick-label-params)
+                  (get-y-far-tick-label-params))
+          empty))
     
     (define (get-all-tick-params)
-      (cond [(plot-decorations?)  (append (get-x-tick-params) (get-y-tick-params)
-                                          (get-x-far-tick-params) (get-y-far-tick-params))]
-            [else  empty]))
+      (if (plot-decorations?)
+          (append (get-x-tick-params) (get-y-tick-params)
+                  (get-x-far-tick-params) (get-y-far-tick-params))
+          empty))
     
-    (define (new-margins left right top bottom label-params tick-params)
-      (match-define (list (vector label-xs label-ys) ...)
-        (append* (map (λ (params) (send/apply pd get-text-corners params)) label-params)))
-      (match-define (list (vector tick-xs tick-ys) ...)
-        (append* (map (λ (params) (send/apply pd get-tick-endpoints (rest params))) tick-params)))
-      (define xs (append label-xs tick-xs))
-      (define ys (append label-ys tick-ys))
-      
-      (define param-x-min (apply min dc-x-min xs))
-      (define param-x-max (apply max (sub1 dc-x-max) xs))
-      (define param-y-min (apply min title-y-min ys))
-      (define param-y-max (apply max (sub1 dc-y-max) ys))
-      
-      (values (+ left (- dc-x-min param-x-min))
-              (- right (- (sub1 dc-x-max) param-x-max))
-              (+ top (- title-y-min param-y-min))
-              (- bottom (- (sub1 dc-y-max) param-y-max))))
+    ;; -----------------------------------------------------------------------------------------------
+    ;; Fixpoint margin computation
+    
+    (define (get-param-vs/set-view->dc! left right top bottom)
+      (set! view->dc (make-view->dc left right top bottom))
+      (append (append* (map (λ (params) (send/apply pd get-text-corners params))
+                            (get-all-label-params)))
+              (append* (map (λ (params) (send/apply pd get-tick-endpoints (rest params)))
+                            (get-all-tick-params)))))
     
     (define-values (area-x-min right area-y-min bottom)
-      (for/fold ([left 0] [right 0] [top init-top-margin] [bottom 0]) ([i  (in-range 5)])
-        (define-values (new-left new-right new-top new-bottom)
-          (new-margins left right top bottom (get-all-label-params) (get-all-tick-params)))
-        (set! view->dc (make-view->dc new-left new-right new-top new-bottom))
-        ;(printf "margins: ~v ~v ~v ~v~n" new-left new-right new-top new-bottom)
-        (values new-left new-right new-top new-bottom)))
+      (margin-fixpoint dc-x-min dc-x-max title-y-min dc-y-max 0 0 init-top-margin 0
+                       get-param-vs/set-view->dc!))
     
     (define area-x-max (- dc-x-max right))
     (define area-y-max (- dc-y-max bottom))
@@ -336,21 +337,25 @@
       (when (and (plot-decorations?) (plot-title))
         (send pd draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top)))
     
-    (define (draw-borders)
+    (define (draw-axes)
       (when (plot-decorations?)
-        (put-minor-pen)
-        (when (plot-x-axis?) (send pd draw-line
-                                   (vector area-x-min area-y-max)
-                                   (vector area-x-max area-y-max)))
-        (when (plot-x-far-axis?) (send pd draw-line
-                                       (vector area-x-min area-y-min)
-                                       (vector area-x-max area-y-min)))
-        (when (plot-y-axis?) (send pd draw-line
-                                   (vector area-x-min area-y-min)
-                                   (vector area-x-min area-y-max)))
-        (when (plot-y-far-axis?) (send pd draw-line
-                                       (vector area-x-max area-y-min)
-                                       (vector area-x-max area-y-max)))))
+        (send pd set-minor-pen)
+        (when (plot-x-axis?)
+          (send pd draw-line
+                (vector area-x-min area-y-max)
+                (vector area-x-max area-y-max)))
+        (when (plot-x-far-axis?)
+          (send pd draw-line
+                (vector area-x-min area-y-min)
+                (vector area-x-max area-y-min)))
+        (when (plot-y-axis?)
+          (send pd draw-line
+                (vector area-x-min area-y-min)
+                (vector area-x-min area-y-max)))
+        (when (plot-y-far-axis?)
+          (send pd draw-line
+                (vector area-x-max area-y-min)
+                (vector area-x-max area-y-max)))))
     
     ;; ===============================================================================================
     ;; Public drawing control (used by plot/dc)
@@ -358,7 +363,7 @@
     (define/public (start-plot)
       (send pd reset-drawing-params)
       (send pd clear)
-      (draw-borders)
+      (draw-axes)
       (draw-ticks))
     
     (define/public (start-renderer rx-min rx-max ry-min ry-max)
