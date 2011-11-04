@@ -153,36 +153,6 @@
   (cond [(exact-integer? c)  (vector-ref brush-colors (modulo c 128))]
         [else                (->color c)]))
 
-#|
-(define pen-colors
-  '#((0 0 0)          ; black
-     (128 0 0)        ; red
-     (0 96 0)         ; green
-     (0 0 160)        ; blue
-     (192 96 0)       ; yellow
-     (0 112 128)      ; cyan
-     (160 32 240)     ; magenta
-     (160 160 160)))  ; gray
-
-(defproc (->pen-color [c plot-color/c]) (list/c real? real? real?)
-  (cond [(exact-integer? c)  (vector-ref pen-colors (modulo c 8))]
-        [else                (->color c)]))
-
-(define brush-colors
-  '#((255 255 255)    ; white
-     (255 192 192)    ; red
-     (192 255 192)    ; green
-     (212 224 240)    ; blue
-     (255 248 192)    ; yellow
-     (192 240 255)    ; cyan
-     (240 224 255)    ; magenta
-     (212 212 212)))  ; gray
-
-(defproc (->brush-color [c plot-color/c]) (list/c real? real? real?)
-  (cond [(exact-integer? c)  (vector-ref brush-colors (modulo c 8))]
-        [else                (->color c)]))
-|#
-
 (defproc (->pen-style [s plot-pen-style/c]) symbol?
   (cond [(exact-integer? s)  (case (remainder (abs s) 5)
                                [(0)  'solid]
@@ -321,3 +291,69 @@
         (return new-left new-right new-top new-bottom))
       
       (values new-left new-right new-top new-bottom))))
+
+;; ===================================================================================================
+;; Null device context (used for speed testing)
+
+(define-syntax-rule (define-public-stubs val name ...)
+  (begin (define/public (name . args) val) ...))
+
+(define null-dc%
+  (class* object% (dc<%>)
+    (define color (make-object color% 0 0 0))
+    (define font (make-object font% 8 'default))
+    (define pen (make-object pen% color 1 'solid))
+    (define brush (make-object brush% color 'solid))
+    (define matrix (vector 1 0 0 0 1 0))
+    (define transformation (vector matrix 0 0 0 0 0))
+    (define-public-stubs transformation get-transformation)
+    (define-public-stubs matrix get-initial-matrix)
+    (define-public-stubs 'solid get-text-mode)
+    (define-public-stubs color get-text-foreground get-text-background get-background)
+    (define-public-stubs #t get-smoothing ok? start-doc glyph-exists?)
+    (define-public-stubs #f get-clipping-region get-gl-context)
+    (define-public-stubs 0 get-rotation get-char-height get-char-width)
+    (define-public-stubs (values 0 0) get-origin get-scale get-size)
+    (define-public-stubs font get-font)
+    (define-public-stubs pen get-pen)
+    (define-public-stubs brush get-brush)
+    (define-public-stubs 1 get-alpha)
+    (define-public-stubs (values 1 1) get-device-scale)
+    (define-public-stubs (values 0 0 0 0) get-text-extent)
+    (define-public-stubs (void)
+      flush suspend-flush resume-flush
+      start-page end-page end-doc
+      set-transformation
+      set-text-mode
+      set-smoothing
+      set-text-foreground
+      set-text-background
+      set-scale
+      set-rotation
+      set-origin
+      set-initial-matrix
+      set-font
+      set-clipping-region
+      set-clipping-rect
+      set-brush
+      set-pen
+      set-alpha
+      set-background
+      draw-text
+      draw-spline
+      draw-line
+      draw-lines
+      draw-ellipse
+      draw-rectangle
+      draw-rounded-rectangle
+      draw-polygon
+      draw-point
+      draw-path
+      draw-bitmap-section
+      draw-bitmap
+      draw-arc
+      copy clear erase
+      cache-font-metrics-key
+      transform rotate scale translate
+      try-color)
+    (super-new)))

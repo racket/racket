@@ -18,8 +18,7 @@
   (send area put-brush color style)
   (send area put-alpha alpha)
   (for ([rect  (in-list rects)])
-    (match-define (vector (ivl x1 x2) (ivl y1 y2)) rect)
-    (send area put-rectangle (vector x1 y1) (vector x2 y2)))
+    (send area put-rect rect))
   
   (cond [label  (rectangle-legend-entry label color style line-color line-width line-style)]
         [else  empty]))

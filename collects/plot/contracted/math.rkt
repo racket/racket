@@ -21,7 +21,7 @@
                        [ivl-join  (->* () () #:rest (listof ivl?) ivl?)])
          empty-ivl unknown-ivl
          (activate-contract-out
-          ivl-empty? ivl-known? ivl-regular? ivl-singular? ivl-length ivl-zero-length?
+          ivl-empty? ivl-known? ivl-regular? ivl-singular? ivl-length ivl-center ivl-zero-length?
           ivl-inexact->exact ivl-contains? bounds->intervals))
 
 ;; Rectangles
@@ -29,5 +29,5 @@
                        [rect-join (->* () () #:rest (listof (vectorof ivl?)) (vectorof ivl?))])
          (activate-contract-out
           empty-rect unknown-rect bounding-rect
-          rect-empty? rect-known? rect-regular? rect-area rect-zero-area? rect-singular?
+          rect-empty? rect-known? rect-regular? rect-area rect-center rect-zero-area? rect-singular?
           rect-inexact->exact rect-contains?))

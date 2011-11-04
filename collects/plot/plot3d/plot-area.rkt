@@ -48,8 +48,8 @@
     (define clip-z-min z-min)
     (define clip-z-max z-max)
     
-    (define (clip-to-bounds rx-min rx-max ry-min ry-max rz-min rz-max)
-      (set! clipping? #t)
+    (define/public (put-clip-rect rect)
+      (match-define (vector (ivl rx-min rx-max) (ivl ry-min ry-max) (ivl rz-min rz-max)) rect)
       (define cx-min (if rx-min (max* x-min rx-min) x-min))
       (define cx-max (if rx-max (min* x-max rx-max) x-max))
       (define cy-min (if ry-min (max* y-min ry-min) y-min))
@@ -67,9 +67,10 @@
         (set! clip-y-min cy-min)
         (set! clip-y-max cy-max)
         (set! clip-z-min cz-min)
-        (set! clip-z-max cz-max)))
+        (set! clip-z-max cz-max))
+      (set! clipping? #t))
     
-    (define (clip-to-none) (set! clipping? #f))
+    (define/public (clear-clip-rect) (set! clipping? #f))
     
     (define (in-bounds? v)
       (or (not clipping?) (point-in-bounds? v clip-x-min clip-x-max
@@ -503,6 +504,9 @@
     ;; Fixpoint margin computation
     
     (define (get-param-vs/set-view->dc! left right top bottom)
+      ;(printf "margins: ~v ~v ~v ~v~n" left right top bottom)
+      ;(printf "label params = ~v~n" (get-all-label-params))
+      ;(printf "tick params = ~v~n" (get-all-tick-params))
       (set! view->dc (make-view->dc left right top bottom))
       (append (append* (map (λ (params) (send/apply pd get-text-corners (rest params)))
                             (get-all-label-params)))
@@ -521,17 +525,11 @@
     ;; ===============================================================================================
     ;; Plot decoration
     
-    (define (draw-ticks tick-params)
-      (for ([params  (in-list tick-params)])
-        (match-define (list major? v r angle) params)
-        (if major? (send pd set-major-pen) (send pd set-minor-pen))
-        (send pd draw-tick v r angle)))
+    (define (draw-title)
+      (when (and (plot-decorations?) (plot-title))
+        (send pd draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top)))
     
-    (define (draw-labels label-params)
-      (for ([params  (in-list label-params)])
-        (send/apply pd draw-text (rest params) #:outline? (first params))))
-    
-    (define (draw-far-axes)
+    (define (draw-back-axes)
       (when (plot-decorations?)
         (send pd set-minor-pen)
         (when (plot-x-axis?)
@@ -551,7 +549,7 @@
                 (plot->dc/no-axis-trans (vector y-far-axis-x y-min z-min))
                 (plot->dc/no-axis-trans (vector y-far-axis-x y-max z-min))))))
     
-    (define (draw-near-axes)
+    (define (draw-front-axes)
       (when (plot-decorations?)
         (send pd set-minor-pen)
         (when (plot-z-axis?)
@@ -563,9 +561,15 @@
                 (plot->dc/no-axis-trans (vector z-far-axis-x z-far-axis-y z-min))
                 (plot->dc/no-axis-trans (vector z-far-axis-x z-far-axis-y z-max))))))
     
-    (define (draw-title)
-      (when (and (plot-decorations?) (plot-title))
-        (send pd draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top)))
+    (define (draw-ticks tick-params)
+      (for ([params  (in-list tick-params)])
+        (match-define (list major? v r angle) params)
+        (if major? (send pd set-major-pen) (send pd set-minor-pen))
+        (send pd draw-tick v r angle)))
+    
+    (define (draw-labels label-params)
+      (for ([params  (in-list label-params)])
+        (send/apply pd draw-text (rest params) #:outline? (first params))))
     
     ;; ===============================================================================================
     ;; Delayed drawing
@@ -638,23 +642,24 @@
     (define/public (start-plot)
       (send pd reset-drawing-params)
       (send pd clear)
-      (set! render-list empty)
+      (draw-title)
       (draw-labels (get-back-label-params))
       (draw-ticks (get-back-tick-params))
-      (draw-far-axes))
+      (draw-back-axes)
+      (send pd set-clipping-rect
+            (vector (ivl (+ 1/2 (- area-x-min (plot-line-width))) (+ area-x-max (plot-line-width)))
+                    (ivl (+ 1/2 (- area-y-min (plot-line-width))) (+ area-y-max (plot-line-width)))))
+      (set! render-list empty))
     
     (define/public (start-renderer rend-bounds-rect)
-      (match-define (vector (ivl rx-min rx-max) (ivl ry-min ry-max) (ivl rz-min rz-max))
-        rend-bounds-rect)
-      (send pd reset-drawing-params)
-      (clip-to-bounds rx-min rx-max ry-min ry-max rz-min rz-max))
+      (reset-drawing-params)
+      (put-clip-rect rend-bounds-rect))
     
     (define/public (end-renderers)
+      (clear-clip-rect)
       (draw-shapes render-list)
-      (clip-to-none)
       (send pd reset-drawing-params)
-      (draw-title)
-      (draw-near-axes)
+      (draw-front-axes)
       (draw-ticks (get-front-tick-params))
       (draw-labels (get-front-label-params)))
     
@@ -674,7 +679,7 @@
       (send pd set-alpha 1/2)
       (send pd set-minor-pen)
       (send pd set-brush (plot-background) 'solid)
-      (send pd draw-rectangle (vector box-x-min box-y-min) (vector box-x-max box-y-max))
+      (send pd draw-rect (vector (ivl box-x-min box-x-max) (ivl box-y-min box-y-max)))
       
       (send pd set-alpha 1)
       (send pd draw-text
@@ -688,10 +693,9 @@
     
     (define (draw-legend* legend-entries)
       (define gap-size (+ (pen-gap) tick-radius))
-      (send pd draw-legend
-            legend-entries
-            (+ area-x-min gap-size) (- area-x-max gap-size)
-            (+ area-y-min gap-size) (- area-y-max gap-size)))
+      (send pd draw-legend legend-entries
+            (vector (ivl (+ area-x-min gap-size) (- area-x-max gap-size))
+                    (ivl (+ area-y-min gap-size) (- area-y-max gap-size)))))
     
     (define/public (draw-legend legend-entries) (draw-legend* legend-entries))
     
@@ -764,6 +768,14 @@
     (define (get-font-family) font-family)
     (define (get-text-foreground) text-foreground)
     
+    (define/public (reset-drawing-params)
+      (put-alpha (plot-foreground-alpha))
+      (put-pen (plot-foreground) (plot-line-width) 'solid)
+      (put-brush (plot-background) 'solid)
+      (put-background (plot-background))
+      (put-font (plot-font-size) (plot-font-family))
+      (put-text-foreground (plot-foreground)))
+    
     ;; Drawing shapes
     
     (define/public (put-line v1 v2 [c (vcenter (list v1 v2))])
@@ -829,10 +841,9 @@
          (text (get-alpha) (plot->view/no-rho v) anchor angle str
                (get-font-size) (get-font-family) (get-text-foreground)))))
     
-    (define/public (put-box v1 v2 [c (vcenter (list v1 v2))])
-      (when (and (vregular? v1) (vregular? v2))
-        (match-define (vector x1 y1 z1) v1)
-        (match-define (vector x2 y2 z2) v2)
+    (define/public (put-rect r [c (rect-center r)])
+      (when (rect-regular? r)
+        (match-define (vector (ivl x1 x2) (ivl y1 y2) (ivl z1 z2)) r)
         (put-polygons
          (list 
           ;; Top

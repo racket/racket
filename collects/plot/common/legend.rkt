@@ -3,6 +3,7 @@
 ;; Functions that create legend entries and lists of legend entries.
 
 (require racket/class racket/match racket/list racket/string racket/sequence racket/contract
+         "math.rkt"
          "contract.rkt"
          "contract-doc.rkt"
          "format.rkt"
@@ -19,7 +20,8 @@
 (defproc (line-legend-entry [label string?]
                             [color plot-color/c] [width (>=/c 0)] [style plot-pen-style/c]
                             ) legend-entry?
-  (legend-entry label (λ (pd x-min x-max y-min y-max)
+  (legend-entry label (λ (pd rect)
+                        (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) rect)
                         (define y (* 1/2 (+ y-min y-max)))
                         (send pd set-pen color width style)
                         (send pd set-alpha 1)
@@ -51,11 +53,11 @@
                                  [fill-color plot-color/c] [fill-style plot-brush-style/c]
                                  [line-color plot-color/c] [line-width (>=/c 0)]
                                  [line-style plot-pen-style/c]) legend-entry?
-  (legend-entry label (λ (pd x-min x-max y-min y-max)
+  (legend-entry label (λ (pd rect)
                         (send pd set-brush fill-color fill-style)
                         (send pd set-pen line-color line-width line-style)
                         (send pd set-alpha 1)
-                        (send pd draw-rectangle (vector x-min y-min) (vector x-max y-max)))))
+                        (send pd draw-rect rect))))
 
 (defproc (rectangle-legend-entries [label string?] [zs (listof real?)]
                                    [fill-colors plot-colors/c] [fill-styles plot-brush-styles/c]
@@ -92,12 +94,13 @@
           [line1-color plot-color/c] [line1-width (>=/c 0)] [line1-style plot-pen-style/c]
           [line2-color plot-color/c] [line2-width (>=/c 0)] [line2-style plot-pen-style/c]
           ) legend-entry?
-  (legend-entry label (λ (pd x-min x-max y-min y-max)
+  (legend-entry label (λ (pd rect)
+                        (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) rect)
                         (send pd set-alpha 1)
                         ;; rectangle
                         (send pd set-pen line-color line-width line-style)
                         (send pd set-brush fill-color fill-style)
-                        (send pd draw-rectangle (vector x-min y-min) (vector x-max y-max))
+                        (send pd draw-rect rect)
                         ;; bottom line
                         (send pd set-pen line1-color line1-width line1-style)
                         (send pd draw-line (vector x-min y-max) (vector x-max y-max))
@@ -173,19 +176,17 @@
 
 (defproc (point-legend-entry [label string?] [sym point-sym/c]
                              [color plot-color/c] [size (>=/c 0)] [line-width (>=/c 0)]) legend-entry?
-  (legend-entry label (λ (pd x-min x-max y-min y-max)
+  (legend-entry label (λ (pd rect)
+                        (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) rect)
                         (send pd set-pen color line-width 'solid)
                         (send pd set-alpha 1)
-                        (send pd draw-glyphs
-                              (list (vector (* 1/2 (+ x-min x-max)) (* 1/2 (+ y-min y-max))))
-                              sym size))))
+                        (send pd draw-glyphs (list (rect-center rect)) sym size))))
 
 (defproc (vector-field-legend-entry [label string?] [color plot-color/c]
                                     [line-width (>=/c 0)] [line-style plot-pen-style/c]
                                     ) legend-entry?
-  (legend-entry label (λ (pd x-min x-max y-min y-max)
+  (legend-entry label (λ (pd rect)
+                        (match-define (vector (ivl x-min x-max) y-ivl) rect)
                         (send pd set-pen color line-width line-style)
                         (send pd set-alpha 1)
-                        (send pd draw-arrow-glyph
-                              (vector (* 1/2 (+ x-min x-max)) (* 1/2 (+ y-min y-max)))
-                              (* 1/4 (- x-max x-min)) 0))))
+                        (send pd draw-arrow-glyph (rect-center rect) (* 1/4 (- x-max x-min)) 0))))

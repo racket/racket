@@ -639,6 +639,6 @@
                            (list (tick x #f label))]
              [(m . = . 1)  (filter pre-tick-major? ts)]
              [else  (match-define (list (tick xs _ labels) ...) (filter pre-tick-major? ts))
-                    (define x (/ (apply + xs) n))
+                    (define x (/ (apply + xs) m))
                     (define label (format format-string (first labels) (last labels)))
                     (list (tick x #t label))])))))

@@ -465,6 +465,10 @@
   (match-define (ivl a b) i)
   (if (and a b) (- b a) #f))
 
+(defproc (ivl-center [i ivl?]) (or/c real? #f)
+  (match-define (ivl a b) i)
+  (if (and a b) (* 1/2 (+ a b)) #f))
+
 (defproc (ivl-zero-length? [i ivl?]) boolean?
   (or (ivl-empty? i) (ivl-singular? i)))
 
@@ -570,6 +574,9 @@
       (define len (ivl-length i))
       (when (or (not len) (zero? len)) (break len))
       (* area (ivl-length i)))))
+
+(defproc (rect-center [r (vectorof ivl?)]) (vectorof real?)
+  (vector-map ivl-center r))
 
 (defproc (rect-zero-area? [r (vectorof ivl?)]) boolean?
   (vector-ormap ivl-zero-length? r))

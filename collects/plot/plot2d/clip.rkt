@@ -4,7 +4,7 @@
 
 (require racket/match racket/list)
 
-(provide point-in-bounds? clip-line clip-rectangle clip-lines clip-polygon)
+(provide point-in-bounds? clip-line clip-lines clip-polygon)
 
 ;; ===================================================================================================
 ;; Point clipping
@@ -12,27 +12,6 @@
 (define (point-in-bounds? v x-min x-max y-min y-max)
   (match-define (vector x y) v)
   (and (<= x-min x x-max) (<= y-min y y-max)))
-
-;; ===================================================================================================
-;; Rectangle clipping
-
-(define (clip-rectangle v1 v2 x-min x-max y-min y-max)
-  (let/ec return
-    ; early accept: both endpoints in bounds
-    (when (and (point-in-bounds? v1 x-min x-max y-min y-max)
-               (point-in-bounds? v2 x-min x-max y-min y-max))
-      (return v1 v2))
-    ; early reject: both endpoints on the outside of the same plane
-    (match-define (vector x1 y1) v1)
-    (match-define (vector x2 y2) v2)
-    (when (or (and (x1 . < . x-min) (x2 . < . x-min)) (and (x1 . > . x-max) (x2 . > . x-max))
-              (and (y1 . < . y-min) (y2 . < . y-min)) (and (y1 . > . y-max) (y2 . > . y-max)))
-      (return #f #f))
-    (let ([x1  (max (min x1 x-max) x-min)]
-          [x2  (max (min x2 x-max) x-min)]
-          [y1  (max (min y1 y-max) y-min)]
-          [y2  (max (min y2 y-max) y-min)])
-      (values (vector x1 y1) (vector x2 y2)))))
 
 ;; ===================================================================================================
 ;; Line clipping

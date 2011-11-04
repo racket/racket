@@ -85,73 +85,10 @@
         (full7star . 7star)
         (full8star . 8star)))
 
-(define-syntax-rule (define-public-stubs val name ...)
-  (begin (define/public (name . args) val) ...))
-
-(define null-dc%
-  (class* object% (dc<%>)
-    (define color (make-object color% 0 0 0))
-    (define font (make-object font% 8 'default))
-    (define pen (make-object pen% color 1 'solid))
-    (define brush (make-object brush% color 'solid))
-    (define matrix (vector 1 0 0 0 1 0))
-    (define transformation (vector matrix 0 0 0 0 0))
-    (define-public-stubs transformation get-transformation)
-    (define-public-stubs matrix get-initial-matrix)
-    (define-public-stubs 'solid get-text-mode)
-    (define-public-stubs color get-text-foreground get-text-background get-background)
-    (define-public-stubs #t get-smoothing ok? start-doc glyph-exists?)
-    (define-public-stubs #f get-clipping-region get-gl-context)
-    (define-public-stubs 0 get-rotation get-char-height get-char-width)
-    (define-public-stubs (values 0 0) get-origin get-scale get-size)
-    (define-public-stubs font get-font)
-    (define-public-stubs pen get-pen)
-    (define-public-stubs brush get-brush)
-    (define-public-stubs 1 get-alpha)
-    (define-public-stubs (values 1 1) get-device-scale)
-    (define-public-stubs (values 0 0 0 0) get-text-extent)
-    (define-public-stubs (void)
-      flush suspend-flush resume-flush
-      start-page end-page end-doc
-      set-transformation
-      set-text-mode
-      set-smoothing
-      set-text-foreground
-      set-text-background
-      set-scale
-      set-rotation
-      set-origin
-      set-initial-matrix
-      set-font
-      set-clipping-region
-      set-clipping-rect
-      set-brush
-      set-pen
-      set-alpha
-      set-background
-      draw-text
-      draw-spline
-      draw-line
-      draw-lines
-      draw-ellipse
-      draw-rectangle
-      draw-rounded-rectangle
-      draw-polygon
-      draw-point
-      draw-path
-      draw-bitmap-section
-      draw-bitmap
-      draw-arc
-      copy clear erase
-      cache-font-metrics-key
-      transform rotate scale translate
-      try-color)
-    (super-new)))
-
 (define plot-device%
   (class object%
     (init-field dc dc-x-min dc-y-min dc-x-size dc-y-size)
-
+    
     ;(init-field the-dc dc-x-min dc-y-min dc-x-size dc-y-size)
     ;(define dc (make-object null-dc%))
     
@@ -288,15 +225,10 @@
     ;; -----------------------------------------------------------------------------------------------
     ;; Clipping
     
-    ;; Sets a clipping rectangle; deals with swapped mins and maxes.
-    (define/public (set-clipping-rect v1 v2)
-      (match-define (vector x1 y1) v1)
-      (match-define (vector x2 y2) v2)
-      (let ([x1  (min x1 x2)]
-            [x2  (max x1 x2)]
-            [y1  (min y1 y2)]
-            [y2  (max y1 y2)])
-        (send dc set-clipping-rect x1 y1 (- x2 x1) (- y2 y1))))
+    ;; Sets a clipping rectangle
+    (define/public (set-clipping-rect r)
+      (match-define (vector (ivl x1 x2) (ivl y1 y2)) r)
+      (send dc set-clipping-rect x1 y1 (- x2 x1) (- y2 y1)))
     
     ;; Clears the clipping rectangle.
     (define/public (clear-clipping-rect)
@@ -322,12 +254,10 @@
       (when (andmap vregular? vs)
         (send dc draw-polygon (map coord->cons vs) 0 0 fill-style)))
     
-    (define/public (draw-rectangle v1 v2)
-      (when (and (vregular? v1) (vregular? v2))
-        (match-define (vector x1 y1) v1)
-        (match-define (vector x2 y2) v2)
-        (draw-polygon
-         (list (vector x1 y1) (vector x1 y2) (vector x2 y2) (vector x2 y1)))))
+    (define/public (draw-rect r)
+      (when (rect-regular? r)
+        (match-define (vector (ivl x1 x2) (ivl y1 y2)) r)
+        (draw-polygon (list (vector x1 y1) (vector x1 y2) (vector x2 y2) (vector x2 y1)))))
     
     (define/public (draw-lines vs)
       (when (andmap vregular? vs)
@@ -544,9 +474,11 @@
     ;; ===============================================================================================
     ;; Legend
     
-    (define/public (draw-legend legend-entries x-min x-max y-min y-max)
+    (define/public (draw-legend legend-entries rect)
       (define n (length legend-entries))
       (match-define (list (legend-entry labels draws) ...) legend-entries)
+      
+      (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) rect)
       
       (define-values (_1 label-y-size baseline _2) (get-text-extent (first labels)))
       (define horiz-gap (get-text-width " "))
@@ -581,6 +513,7 @@
       
       (define legend-x-max (+ legend-x-min legend-x-size))
       (define legend-y-max (+ legend-y-min legend-y-size))
+      (define legend-rect (vector (ivl legend-x-min legend-x-max) (ivl legend-y-min legend-y-max)))
       
       (define label-x-min (+ legend-x-min horiz-gap))
       (define draw-x-min (+ legend-x-min (* 2 horiz-gap) labels-x-size horiz-gap))
@@ -589,19 +522,20 @@
       (set-alpha (plot-legend-box-alpha))
       (set-minor-pen)
       (set-brush (plot-background) 'solid)
-      (draw-rectangle (vector legend-x-min legend-y-min) (vector legend-x-max legend-y-max))
+      (draw-rect legend-rect)
       
-      (set-clipping-rect (vector legend-x-min legend-y-min) (vector legend-x-max legend-y-max))
+      (set-clipping-rect legend-rect)
       (for ([label  (in-list labels)]
             [draw   (in-list draws)]
             [i      (in-naturals)])
         (define label-y-min (+ legend-y-min top-gap (* i baseline-skip)))
         (define draw-y-min (+ label-y-min (* 1/2 baseline)))
         (define draw-y-max (+ draw-y-min draw-y-size))
+        (define drawing-rect (vector (ivl draw-x-min draw-x-max) (ivl draw-y-min draw-y-max)))
         
         (reset-drawing-params)
         (draw-text label (vector label-x-min label-y-min) #:outline? #t)
-        (draw this draw-x-min draw-x-max draw-y-min draw-y-max))
+        (draw this drawing-rect))
       
       (clear-clipping-rect))
     ))  ; end class
