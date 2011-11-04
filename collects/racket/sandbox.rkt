@@ -878,13 +878,6 @@
    (;; create a sandbox context first
     [current-custodian user-cust]
     [current-thread-group (make-thread-group)]
-    ;; Note the above definition of `current-eventspace': in Racket, it
-    ;; is an unused parameter.  Also note that creating an eventspace
-    ;; starts a thread that will eventually run the callback code (which
-    ;; evaluates the program in `run-in-bg') -- so this parameterization
-    ;; must be nested in the above (which is what paramaterize* does), or
-    ;; it will not use the new namespace.
-    [current-eventspace (parameterize-break #f (make-eventspace))]
     ;; paths
     [current-library-collection-paths
      (filter directory-exists?
@@ -948,7 +941,14 @@
     [current-command-line-arguments '#()]
     ;; Finally, create the namespace in the restricted environment (in
     ;; particular, it must be created under the new code inspector)
-    [current-namespace (make-evaluation-namespace)])
+    [current-namespace (make-evaluation-namespace)]
+    ;; Note the above definition of `current-eventspace': in Racket, it
+    ;; is an unused parameter.  Also note that creating an eventspace
+    ;; starts a thread that will eventually run the callback code (which
+    ;; evaluates the program in `run-in-bg') -- so this parameterization
+    ;; must be nested in the above (which is what paramaterize* does), or
+    ;; it will not use the new namespace.
+    [current-eventspace (parameterize-break #f (make-eventspace))])
    (define t (bg-run->thread (run-in-bg user-process)))
    (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
    (set! user-thread t))
