@@ -482,15 +482,15 @@
     (define (get-back-tick-params)
       (if (plot-decorations?)
           (append (if (plot-x-far-axis?) (get-x-far-tick-params) empty)
-                  (if (plot-y-far-axis?) (get-y-far-tick-params) empty))
+                  (if (plot-y-far-axis?) (get-y-far-tick-params) empty)
+                  (if (plot-x-axis?) (get-x-tick-params) empty)
+                  (if (plot-y-axis?) (get-y-tick-params) empty))
           empty))
     
     
     (define (get-front-tick-params)
       (if (plot-decorations?)
-          (append (if (plot-x-axis?) (get-x-tick-params) empty)
-                  (if (plot-y-axis?) (get-y-tick-params) empty)
-                  (if (plot-z-axis?) (get-z-tick-params) empty)
+          (append (if (plot-z-axis?) (get-z-tick-params) empty)
                   (if (plot-z-far-axis?) (get-z-far-tick-params) empty))
           empty))
     
@@ -611,7 +611,19 @@
            (send pd draw-tick (view->dc (rotate/rho center)) radius angle)]
           [_  (error 'draw-shapes "shape not implemented: ~e" s)])))
     
-    (define light (plot->view (vector x-mid y-mid (+ z-max (* 5 z-size)))))
+    ;; Use a special view transform for the light so that the light angle is always the same
+    ;; regardless of theta (but rotates rho). This also doesn't do any axis transforms, which could
+    ;; fail; e.g. log transform when the light is at a negative position.
+    (define transform-matrix/light
+      (m3* (m3-rotate-x rho) (m3-scale (/ x-size) (/ y-size) (/ z-size))))
+    (define (plot->view/light v) (m3-apply transform-matrix/light (center v)))
+    
+    ;; Light position, in normalized view coordinates: 5 units up, ~3 units back and to the left
+    ;; (simulates non-noon daylight conditions)
+    (define light (plot->view/light (vector (- x-min (* 2 x-size))
+                                            (- y-min (* 2 y-size))
+                                            (+ z-max (* 5 z-size)))))
+    ;; View direction, in normalized view coordinates: many graph widths backward
     (define view-dir (vector 0 -50 0))
     
     (define diffuse-light? (plot3d-diffuse-light?))
