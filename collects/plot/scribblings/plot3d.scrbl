@@ -9,9 +9,12 @@
 Each 3D plot procedure corresponds with a @(secref "plot2d") procedure. Each behaves the same way as its corresponding 2D procedure, but takes the additional keyword arguments @(racket #:z-min), @(racket #:z-max), @(racket #:angle), @(racket #:altitude) and @(racket #:z-label).
 
 @defproc[(plot3d [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
-                 [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-                 [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
-                 [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+                 [#:x-min x-min (or/c regular-real? #f) #f]
+                 [#:x-max x-max (or/c regular-real? #f) #f]
+                 [#:y-min y-min (or/c regular-real? #f) #f]
+                 [#:y-max y-max (or/c regular-real? #f) #f]
+                 [#:z-min z-min (or/c regular-real? #f) #f]
+                 [#:z-max z-max (or/c regular-real? #f) #f]
                  [#:width width exact-positive-integer? (plot-width)]
                  [#:height height exact-positive-integer? (plot-height)]
                  [#:angle angle real? (plot3d-angle)]

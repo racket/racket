@@ -14,7 +14,7 @@
 (defproc (infinite? [x any/c]) boolean?
   (and (flonum? x) (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0))))
 
-(defproc (special? [x any/c]) boolean?
+(defproc (special-real? [x any/c]) boolean?
   (and (flonum? x) (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0) (eqv? x +nan.0))))
 
 (defproc (flblend [x flonum?] [y flonum?] [α flonum?]) flonum?
@@ -57,8 +57,8 @@
 ;; ===================================================================================================
 ;; Reals
 
-(defproc (regular? [x any/c]) boolean?
-  (and (real? x) (not (special? x))))
+(defproc (regular-real? [x any/c]) boolean?
+  (and (real? x) (not (special-real? x))))
 
 (define equal?*
   (case-lambda
@@ -197,6 +197,38 @@
 ;; ===================================================================================================
 ;; Vectors
 
+(define vector-andmap
+  (case-lambda
+    [(f v)  (let/ec break
+              (for ([e  (in-vector v)])
+                (unless (f e) (break #f)))
+              #t)]
+    [(f v . vs)  (define ns (cons (vector-length v) (map vector-length vs)))
+                 (unless (apply equal?* ns)
+                   (error 'vector-andmap "all vectors must have same size; arguments were ~e ~e ~e"
+                          f v (string-join (map (λ (v) (format "~e" v)) vs) " ")))
+                 (let/ec break
+                   (define ess (apply map list (map vector->list vs)))
+                   (for ([e  (in-vector v)] [es  (in-list ess)])
+                     (when (not (apply f e es)) (break #f)))
+                   #t)]))
+
+(define vector-ormap
+  (case-lambda
+    [(f v)  (let/ec break
+              (for ([e  (in-vector v)])
+                (when (f e) (break #t)))
+              #f)]
+    [(f v . vs)  (define ns (cons (vector-length v) (map vector-length vs)))
+                 (unless (apply equal?* ns)
+                   (error 'vector-andmap "all vectors must have same size; arguments were ~e ~e ~e"
+                          f v (string-join (map (λ (v) (format "~e" v)) vs) " ")))
+                 (let/ec break
+                   (define ess (apply map list (map vector->list vs)))
+                   (for ([e  (in-vector v)] [es  (in-list ess)])
+                     (when (apply f e es) (break #t)))
+                   #f)]))
+
 (defproc (vcross [v1 (vector/c real? real? real?)] [v2 (vector/c real? real? real?)]
                  ) (vector/c real? real? real?)
   (match v1
@@ -206,25 +238,25 @@
         (vector (- (* y1 z2) (* z1 y2))
                 (- (* z1 x2) (* x1 z2))
                 (- (* x1 y2) (* y1 x2)))]
-       [_  (raise-type-error 'vcross "vector of 3 reals" 1 v1 v2)])]
-    [_  (raise-type-error 'vcross "vector of 3 reals" 0 v1 v2)]))
+       [_  (raise-type-error 'vcross "vector of 3 real numbers" 1 v1 v2)])]
+    [_  (raise-type-error 'vcross "vector of 3 real numbers" 0 v1 v2)]))
 
 (defproc (vcross2 [v1 (vector/c real? real?)] [v2 (vector/c real? real?)]) real?
   (match v1
     [(vector (? real? x1) (? real? y1))
      (match v2
        [(vector (? real? x2) (? real? y2))  (- (* x1 y2) (* y1 x2))]
-       [_  (raise-type-error 'vcross "vector of 2 reals" 1 v1 v2)])]
-    [_  (raise-type-error 'vcross "vector of 2 reals" 0 v1 v2)]))
+       [_  (raise-type-error 'vcross "vector of 2 real numbers" 1 v1 v2)])]
+    [_  (raise-type-error 'vcross "vector of 2 real numbers" 0 v1 v2)]))
 
 (define-syntax-rule (vmap name f v)
   (let ()
     (unless (vector? v)
-      (raise-type-error name "vector of reals" v))
+      (raise-type-error name "vector of real numbers" v))
     (define n (vector-length v))
     (for/vector #:length n ([x  (in-vector v)])
       (cond [(real? x)    (f x)]
-            [else  (raise-type-error name "vector of real" v)]))))
+            [else  (raise-type-error name "vector of real numbers" v)]))))
 
 (define-syntax-rule (unrolled-vmap name f v)
   (let ()
@@ -236,29 +268,29 @@
 (define-syntax-rule (vmap2 name f v1 v2)
   (let ()
     (unless (vector? v1)
-      (raise-type-error name "vector of reals" 0 v1 v2))
+      (raise-type-error name "vector of real numbers" 0 v1 v2))
     (unless (vector? v2)
-      (raise-type-error name "vector of reals" 1 v1 v2))
+      (raise-type-error name "vector of real numbers" 1 v1 v2))
     (define n (vector-length v1))
     (unless (= n (vector-length v2))
-      (raise-type-error name (format "vector of ~a reals" n) 1 v1 v2))
+      (raise-type-error name (format "vector of ~a real numbers" n) 1 v1 v2))
     (for/vector #:length n ([x  (in-vector v1)] [y  (in-vector v2)])
       (if (real? x)
           (if (real? y)
               (f x y)
-              (raise-type-error name "vector of real" 1 v1 v2))
-          (raise-type-error name "vector of real" 0 v1 v2)))))
+              (raise-type-error name "vector of real numbers" 1 v1 v2))
+          (raise-type-error name "vector of real numbers" 0 v1 v2)))))
 
 (define-syntax-rule (unrolled-vmap2 name f v1 v2)
   (match v1
     [(vector (? real? x1) (? real? y1))
      (match v2
        [(vector (? real? x2) (? real? y2))  (vector (f x1 x2) (f y1 y2))]
-       [_  (raise-type-error name "vector of 2 reals" 1 v1 v2)])]
+       [_  (raise-type-error name "vector of 2 real numbers" 1 v1 v2)])]
     [(vector (? real? x1) (? real? y1) (? real? z1))
      (match v2
        [(vector (? real? x2) (? real? y2) (? real? z2))  (vector (f x1 x2) (f y1 y2) (f z1 z2))]
-       [_  (raise-type-error name "vector of 3 reals" 1 v1 v2)])]
+       [_  (raise-type-error name "vector of 3 real numbers" 1 v1 v2)])]
     [_  (vmap2 name f v1 v2)]))
 
 (defproc (v+ [v1 (vectorof real?)] [v2 (vectorof real?)]) (vectorof real?)
@@ -285,10 +317,10 @@
     [(vector (? real? x) (? real? y))              (+ (* x x) (* y y))]
     [(vector (? real? x) (? real? y) (? real? z))  (+ (* x x) (* y y) (* z z))]
     [_  (unless (vector? v)
-          (raise-type-error 'vmag^2 "vector of reals" v))
+          (raise-type-error 'vmag^2 "vector of real numbers" v))
         (for/fold ([mag  0]) ([x  (in-vector v)])
           (+ mag (cond [(real? x)    (* x x)]
-                       [else  (raise-type-error 'vmag^2 "vector of reals" v)])))]))
+                       [else  (raise-type-error 'vmag^2 "vector of real numbers" v)])))]))
 
 (defproc (vmag [v (vectorof real?)]) real?
   (sqrt (vmag^2 v)))
@@ -307,19 +339,19 @@
     [(vector (? real? x1) (? real? y1))
      (match v2
        [(vector (? real? x2) (? real? y2))  (+ (* x1 x2) (* y1 y2))]
-       [_  (raise-type-error 'vdot "vector of 2 reals" 1 v1 v2)])]
+       [_  (raise-type-error 'vdot "vector of 2 real numbers" 1 v1 v2)])]
     [(vector (? real? x1) (? real? y1) (? real? z1))
      (match v2
        [(vector (? real? x2) (? real? y2) (? real? z2))  (+ (* x1 x2) (* y1 y2) (* z1 z2))]
-       [_  (raise-type-error 'vdot "vector of 3 reals" 1 v1 v2)])]
+       [_  (raise-type-error 'vdot "vector of 3 real numbers" 1 v1 v2)])]
     [_  (unless (= (vector-length v1) (vector-length v2))
-          (raise-type-error 'vdot (format "vector of ~a reals" (vector-length v1)) 1 v1 v2))
+          (raise-type-error 'vdot (format "vector of ~a real numbers" (vector-length v1)) 1 v1 v2))
         (for/fold ([dot  0]) ([x1  (in-vector v1)] [x2  (in-vector v2)])
           (if (real? x1)
               (if (real? x2)
                   (+ dot (* x1 x2))
-                  (raise-type-error 'vdot "vector of real" 1 v1 v2))
-              (raise-type-error 'vdot "vector of real" 0 v1 v2)))]))
+                  (raise-type-error 'vdot "vector of real numbers" 1 v1 v2))
+              (raise-type-error 'vdot "vector of real numbers" 0 v1 v2)))]))
 
 (defproc (vcos-angle [v1 (vectorof real?)] [v2 (vectorof real?)]) real?
   (define d (vdot v1 v2))
@@ -343,31 +375,32 @@
            [(flonum? y)  (unsafe-flregular? y)]
            [(flonum? z)  (unsafe-flregular? z)]
            [else  #t])]
-    [_  (let/ec break
-          (for ([x  (in-vector v)])
-            (when (and (flonum? x) (unsafe-flspecial? x))
-              (break #f)))
-          #t)]))
+    [_  (cond [(vector-andmap real? v)  (let/ec break
+                                          (for ([x  (in-vector v)])
+                                            (when (and (flonum? x) (unsafe-flspecial? x))
+                                              (break #f)))
+                                          #t)]
+              [else  (raise-type-error 'vregular? "vector of real numbers" v)])]))
 
 (defproc (v= [v1 (vectorof real?)] [v2 (vectorof real?)]) boolean?
   (match v1
     [(vector (? real? x1) (? real? y1))
      (match v2
        [(vector (? real? x2) (? real? y2))  (and (= x1 x2) (= y1 y2))]
-       [_  (raise-type-error 'v= "vector of 2 reals" 1 v1 v2)])]
+       [_  (raise-type-error 'v= "vector of 2 real numbers" 1 v1 v2)])]
     [(vector (? real? x1) (? real? y1) (? real? z1))
      (match v2
        [(vector (? real? x2) (? real? y2) (? real? z2))  (and (= x1 x2) (= y1 y2) (= z1 z2))]
-       [_  (raise-type-error 'v= "vector of 3 reals" 1 v1 v2)])]
+       [_  (raise-type-error 'v= "vector of 3 real numbers" 1 v1 v2)])]
     [_  (unless (= (vector-length v1) (vector-length v2))
-          (raise-type-error 'v= (format "vector of ~a reals" (vector-length v1)) 1 v1 v2))
+          (raise-type-error 'v= (format "vector of ~a real numbers" (vector-length v1)) 1 v1 v2))
         (let/ec break
           (for ([x1  (in-vector v1)] [x2  (in-vector v2)])
             (if (real? x1)
                 (if (real? x2)
                     (unless (= x1 x2) (break #f))
-                    (raise-type-error 'v= "vector of real" 1 v1 v2))
-                (raise-type-error 'v= "vector of real" 0 v1 v2)))
+                    (raise-type-error 'v= "vector of real numbers" 1 v1 v2))
+                (raise-type-error 'v= "vector of real numbers" 0 v1 v2)))
           #t)]))
 
 (defproc (vcenter [vs (listof (vectorof real?))]) (vectorof real?)
@@ -455,7 +488,10 @@
 
 (defproc (ivl-regular? [i ivl?]) boolean?
   (match-define (ivl a b) i)
-  (and (regular? a) (regular? b)))
+  (and (regular-real? a) (regular-real? b)))
+
+(defproc (regular-ivl? [i any/c]) boolean?
+  (and (ivl? i) (ivl-regular? i)))
 
 (defproc (ivl-singular? [i ivl?]) boolean?
   (match-define (ivl a b) i)
@@ -514,38 +550,6 @@
 
 ;; ===================================================================================================
 ;; Rectangles
-
-(define vector-andmap
-  (case-lambda
-    [(f v)  (let/ec break
-              (for ([e  (in-vector v)])
-                (unless (f e) (break #f)))
-              #t)]
-    [(f v . vs)  (define ns (cons (vector-length v) (map vector-length vs)))
-                 (unless (apply equal?* ns)
-                   (error 'vector-andmap "all vectors must have same size; arguments were ~e ~e ~e"
-                          f v (string-join (map (λ (v) (format "~e" v)) vs) " ")))
-                 (let/ec break
-                   (define ess (apply map list (map vector->list vs)))
-                   (for ([e  (in-vector v)] [es  (in-list ess)])
-                     (when (not (apply f e es)) (break #f)))
-                   #t)]))
-
-(define vector-ormap
-  (case-lambda
-    [(f v)  (let/ec break
-              (for ([e  (in-vector v)])
-                (when (f e) (break #t)))
-              #f)]
-    [(f v . vs)  (define ns (cons (vector-length v) (map vector-length vs)))
-                 (unless (apply equal?* ns)
-                   (error 'vector-andmap "all vectors must have same size; arguments were ~e ~e ~e"
-                          f v (string-join (map (λ (v) (format "~e" v)) vs) " ")))
-                 (let/ec break
-                   (define ess (apply map list (map vector->list vs)))
-                   (for ([e  (in-vector v)] [es  (in-list ess)])
-                     (when (apply f e es) (break #t)))
-                   #f)]))
 
 (defproc (empty-rect [n exact-nonnegative-integer?]) (vectorof ivl?)
   (make-vector n empty-ivl))

@@ -20,8 +20,10 @@
         [else   empty]))
 
 (defproc (lines [vs  (listof (vector/c real? real?))]
-                [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-                [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+                [#:x-min x-min (or/c regular-real? #f) #f]
+                [#:x-max x-max (or/c regular-real? #f) #f]
+                [#:y-min y-min (or/c regular-real? #f) #f]
+                [#:y-max y-max (or/c regular-real? #f) #f]
                 [#:color color plot-color/c (line-color)]
                 [#:width width (>=/c 0) (line-width)]
                 [#:style style plot-pen-style/c (line-style)]
@@ -40,9 +42,11 @@
                        (lines-render-proc vs color width style alpha label)))]))
 
 (defproc (parametric [f (real? . -> . (vector/c real? real?))]
-                     [t-min real?] [t-max real?]
-                     [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-                     [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+                     [t-min regular-real?] [t-max regular-real?]
+                     [#:x-min x-min (or/c regular-real? #f) #f]
+                     [#:x-max x-max (or/c regular-real? #f) #f]
+                     [#:y-min y-min (or/c regular-real? #f) #f]
+                     [#:y-max y-max (or/c regular-real? #f) #f]
                      [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                      [#:color color plot-color/c (line-color)]
                      [#:width width (>=/c 0) (line-width)]
@@ -57,8 +61,10 @@
 
 (defproc (polar [f (real? . -> . real?)]
                 [θ-min real? 0] [θ-max real? (* 2 pi)]
-                [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-                [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+                [#:x-min x-min (or/c regular-real? #f) #f]
+                [#:x-max x-max (or/c regular-real? #f) #f]
+                [#:y-min y-min (or/c regular-real? #f) #f]
+                [#:y-max y-max (or/c regular-real? #f) #f]
                 [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                 [#:color color plot-color/c (line-color)]
                 [#:width width (>=/c 0) (line-width)]
@@ -87,8 +93,10 @@
         [else   empty]))
 
 (defproc (function [f (real? . -> . real?)]
-                   [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
-                   [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+                   [x-min (or/c regular-real? #f) #f]
+                   [x-max (or/c regular-real? #f) #f]
+                   [#:y-min y-min (or/c regular-real? #f) #f]
+                   [#:y-max y-max (or/c regular-real? #f) #f]
                    [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                    [#:color color plot-color/c (line-color)]
                    [#:width width (>=/c 0) (line-width)]
@@ -117,8 +125,10 @@
         [else   empty]))
 
 (defproc (inverse [f (real? . -> . real?)]
-                  [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
-                  [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
+                  [y-min (or/c regular-real? #f) #f]
+                  [y-max (or/c regular-real? #f) #f]
+                  [#:x-min x-min (or/c regular-real? #f) #f]
+                  [#:x-max x-max (or/c regular-real? #f) #f]
                   [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                   [#:color color plot-color/c (line-color)]
                   [#:width width (>=/c 0) (line-width)]

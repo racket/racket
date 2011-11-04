@@ -75,13 +75,3 @@
 
 (defcontract alphas/c (or/c (listof (real-in 0 1))
                             ((listof real?) . -> . (listof (real-in 0 1)))))
-
-(defcontract bounding-box-corner/c
-  (or/c (vector/c (or/c real? #f) (or/c real? #f))
-        (vector/c (or/c real? #f) (or/c real? #f) (or/c real? #f))))
-
-(defcontract bounds-function/c
-  (bounding-box-corner/c
-   bounding-box-corner/c
-   . -> . (values bounding-box-corner/c
-                  bounding-box-corner/c)))

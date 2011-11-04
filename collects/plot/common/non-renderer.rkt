@@ -35,11 +35,13 @@
 (defproc (z-ticks [ts (listof tick?)] [#:far? far? boolean? #f]) non-renderer?
   (non-renderer #f #f (z-ticks-fun ts far?)))
 
-(defproc (invisible-box [x-min (or/c real? #f)] [x-max (or/c real? #f)]
-                        [y-min (or/c real? #f)] [y-max (or/c real? #f)]) non-renderer?
+(defproc (invisible-box [x-min (or/c regular-real? #f)] [x-max (or/c regular-real? #f)]
+                        [y-min (or/c regular-real? #f)] [y-max (or/c regular-real? #f)]
+                        ) non-renderer?
   (non-renderer (vector (ivl x-min x-max) (ivl y-min y-max)) #f #f))
 
-(defproc (invisible-box3d [x-min (or/c real? #f)] [x-max (or/c real? #f)]
-                          [y-min (or/c real? #f)] [y-max (or/c real? #f)]
-                          [z-min (or/c real? #f)] [z-max (or/c real? #f)]) non-renderer?
+(defproc (invisible-box3d [x-min (or/c regular-real? #f)] [x-max (or/c regular-real? #f)]
+                          [y-min (or/c regular-real? #f)] [y-max (or/c regular-real? #f)]
+                          [z-min (or/c regular-real? #f)] [z-max (or/c regular-real? #f)]
+                          ) non-renderer?
   (non-renderer (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f #f))

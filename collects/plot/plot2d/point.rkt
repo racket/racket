@@ -19,8 +19,10 @@
   (if label (point-legend-entry label sym color size line-width) empty))
 
 (defproc (points [vs  (listof (vector/c real? real?))]
-                 [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-                 [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+                 [#:x-min x-min (or/c regular-real? #f) #f]
+                 [#:x-max x-max (or/c regular-real? #f) #f]
+                 [#:y-min y-min (or/c regular-real? #f) #f]
+                 [#:y-max y-max (or/c regular-real? #f) #f]
                  [#:sym sym point-sym/c (point-sym)]
                  [#:color color plot-color/c (point-color)]
                  [#:size size (>=/c 0) (point-size)]
@@ -86,8 +88,10 @@
 (defproc (vector-field
           [f (or/c (real? real? . -> . (vector/c real? real?))
                    ((vector/c real? real?) . -> . (vector/c real? real?)))]
-          [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
-          [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
+          [x-min (or/c regular-real? #f) #f]
+          [x-max (or/c regular-real? #f) #f]
+          [y-min (or/c regular-real? #f) #f]
+          [y-max (or/c regular-real? #f) #f]
           [#:samples samples exact-positive-integer? (vector-field-samples)]
           [#:scale scale (or/c real? (one-of/c 'auto 'normalized)) (vector-field-scale)]
           [#:color color plot-color/c (vector-field-color)]
@@ -122,8 +126,10 @@
 
 (defproc (error-bars
           [bars (listof (vector/c real? real? real?))]
-          [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-          [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+          [#:x-min x-min (or/c regular-real? #f) #f]
+          [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) #f]
+          [#:y-max y-max (or/c regular-real? #f) #f]
           [#:color color plot-color/c (error-bar-color)]
           [#:line-width line-width (>=/c 0) (error-bar-line-width)]
           [#:line-style line-style plot-pen-style/c (error-bar-line-style)]

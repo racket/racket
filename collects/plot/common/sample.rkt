@@ -9,7 +9,8 @@
 
 (provide (all-defined-out))
 
-(defproc (build-linear-seq [start real?] [step real?] [num exact-nonnegative-integer?]) (listof real?)
+(defproc (build-linear-seq [start real?] [step real?]
+                           [num exact-nonnegative-integer?]) (listof real?)
   (for/list ([n  (in-range num)])
     (+ start (* n step))))
 
@@ -96,7 +97,7 @@
                  (λ ()
                    (define xs (nonlinear-seq x-min x-max x-samples tx))
                    (define ys (map* f xs))
-                   (define rys (filter regular? ys))
+                   (define rys (filter regular-real? ys))
                    (define-values (y-min y-max)
                      (cond [(empty? rys)  (values #f #f)]
                            [else  (values (apply min* rys) (apply max* rys))]))
@@ -119,7 +120,7 @@
                    (define zss (for/vector #:length y-samples ([y  (in-list ys)])
                                  (for/vector #:length x-samples ([x  (in-list xs)])
                                    (let ([z  (f x y)])
-                                     (when (regular? z)
+                                     (when (regular-real? z)
                                        (unless (and z-min (z . >= . z-min)) (set! z-min z))
                                        (unless (and z-max (z . <= . z-max)) (set! z-max z)))
                                      z))))
@@ -148,7 +149,7 @@
                                   (for/vector #:length y-samples ([y  (in-list ys)])
                                     (for/vector #:length x-samples ([x  (in-list xs)])
                                       (let ([d  (f x y z)])
-                                        (when (regular? d)
+                                        (when (regular-real? d)
                                           (unless (and d-min (d . >= . d-min)) (set! d-min d))
                                           (unless (and d-max (d . <= . d-max)) (set! d-max d)))
                                         d)))))

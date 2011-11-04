@@ -43,9 +43,12 @@
 
 (defproc (contour3d
           [f (real? real? . -> . real?)] [z real?]
-          [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
-          [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
-          [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+          [x-min (or/c regular-real? #f) #f]
+          [x-max (or/c regular-real? #f) #f]
+          [y-min (or/c regular-real? #f) #f]
+          [y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f]
+          [#:z-max z-max (or/c regular-real? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
           [#:color color plot-color/c (line-color)]
           [#:width width (>=/c 0) (line-width)]
@@ -105,9 +108,12 @@
 
 (defproc (contours3d
           [f (real? real? . -> . real?)]
-          [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
-          [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
-          [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+          [x-min (or/c regular-real? #f) #f]
+          [x-max (or/c regular-real? #f) #f]
+          [y-min (or/c regular-real? #f) #f]
+          [y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f]
+          [#:z-max z-max (or/c regular-real? #f) #f]
           [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
           [#:colors colors plot-colors/c (contour-colors)]
@@ -179,9 +185,12 @@
 
 (defproc (contour-intervals3d
           [f (real? real? . -> . real?)]
-          [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
-          [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
-          [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+          [x-min (or/c regular-real? #f) #f]
+          [x-max (or/c regular-real? #f) #f]
+          [y-min (or/c regular-real? #f) #f]
+          [y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f]
+          [#:z-max z-max (or/c regular-real? #f) #f]
           [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
           [#:colors colors plot-colors/c (contour-interval-colors)]

@@ -34,9 +34,12 @@
 
 (defproc (lines3d
           [vs  (listof (vector/c real? real? real?))]
-          [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-          [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
-          [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+          [#:x-min x-min (or/c regular-real? #f) #f]
+          [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) #f]
+          [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f]
+          [#:z-max z-max (or/c regular-real? #f) #f]
           [#:color color plot-color/c (line-color)]
           [#:width width (>=/c 0) (line-width)]
           [#:style style plot-pen-style/c (line-style)]
@@ -47,10 +50,13 @@
 
 (defproc (parametric3d
           [f (real? . -> . (vector/c real? real? real?))]
-          [t-min real?] [t-max real?]
-          [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-          [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
-          [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+          [t-min regular-real?] [t-max regular-real?]
+          [#:x-min x-min (or/c regular-real? #f) #f]
+          [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) #f]
+          [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f]
+          [#:z-max z-max (or/c regular-real? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
           [#:color color plot-color/c (line-color)]
           [#:width width (>=/c 0) (line-width)]

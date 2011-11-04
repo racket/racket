@@ -82,8 +82,8 @@
 (define series-terms 9)
 
 (defproc (kde [xs (listof real?)] [h real?]) (values mapped-function?
-                                                     (or/c real? #f)
-                                                     (or/c real? #f))
+                                                     (or/c regular-real? #f)
+                                                     (or/c regular-real? #f))
   (if (empty? xs)
       (values (mapped-function (λ (y) 0) (λ (ys) (map (λ _ 0.0) ys))) #f #f)
       (let* ([xs  (list->vector (sort (map exact->inexact xs) fl<))]
@@ -132,8 +132,10 @@
         (values (mapped-function (λ (x) (first (fmap (list x)))) fmap) x-min x-max))))
 
 (defproc (density [xs (listof real?)] [bw-adjust real? 1]
-                  [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-                  [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+                  [#:x-min x-min (or/c regular-real? #f) #f]
+                  [#:x-max x-max (or/c regular-real? #f) #f]
+                  [#:y-min y-min (or/c regular-real? #f) #f]
+                  [#:y-max y-max (or/c regular-real? #f) #f]
                   [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                   [#:color color plot-color/c (line-color)]
                   [#:width width (>=/c 0) (line-width)]

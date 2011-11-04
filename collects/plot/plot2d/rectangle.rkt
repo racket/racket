@@ -25,8 +25,10 @@
 
 (defproc (rectangles
           [rects  (listof (vector/c ivl? ivl?))]
-          [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-          [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+          [#:x-min x-min (or/c regular-real? #f) #f]
+          [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) #f]
+          [#:y-max y-max (or/c regular-real? #f) #f]
           [#:color color plot-color/c (rectangle-color)]
           [#:style style plot-brush-style/c (rectangle-style)]
           [#:line-color line-color plot-color/c (rectangle-line-color)]
@@ -36,8 +38,8 @@
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
   (match-define (list (vector (ivl x1s x2s) (ivl y1s y2s)) ...) rects)
-  (define rxs (filter regular? (append x1s x2s)))
-  (define rys (filter regular? (append y1s y2s)))
+  (define rxs (filter regular-real? (append x1s x2s)))
+  (define rys (filter regular-real? (append y1s y2s)))
   (cond
     [(or (empty? rxs) (empty? rys))  (renderer2d #f #f #f #f)]
     [else
@@ -55,8 +57,10 @@
 (defproc (area-histogram
           [f (real? . -> . real?)]
           [bin-bounds (listof real?)]
-          [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-          [#:y-min y-min (or/c real? #f) 0] [#:y-max y-max (or/c real? #f) #f]
+          [#:x-min x-min (or/c regular-real? #f) #f]
+          [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) 0]
+          [#:y-max y-max (or/c regular-real? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
           [#:color color plot-color/c (rectangle-color)]
           [#:style style plot-brush-style/c (rectangle-style)]
@@ -66,7 +70,7 @@
           [#:alpha alpha (real-in 0 1) (rectangle-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (let* ([bin-bounds  (filter regular? bin-bounds)]
+  (let* ([bin-bounds  (filter regular-real? bin-bounds)]
          [bin-bounds  (sort bin-bounds <)])
     (cond
       [((length bin-bounds) . < . 2)  (renderer2d #f #f #f #f)]
@@ -100,8 +104,10 @@
 
 (defproc (discrete-histogram
           [cat-vals (listof (vector/c any/c real?))]
-          [#:x-min x-min (or/c real? #f) 0] [#:x-max x-max (or/c real? #f) #f]
-          [#:y-min y-min (or/c real? #f) 0] [#:y-max y-max (or/c real? #f) #f]
+          [#:x-min x-min (or/c regular-real? #f) 0]
+          [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) 0]
+          [#:y-max y-max (or/c regular-real? #f) #f]
           [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
           [#:color color plot-color/c (rectangle-color)]
           [#:style style plot-brush-style/c (rectangle-style)]
@@ -113,7 +119,7 @@
           [#:far-ticks? far-ticks? boolean? #f]
           ) renderer2d?
   (match-define (list (vector cats ys) ...) cat-vals)
-  (define rys (filter regular? ys))
+  (define rys (filter regular-real? ys))
   (cond
     [(empty? rys)  (renderer2d #f #f #f #f)]
     [else

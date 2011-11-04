@@ -18,9 +18,12 @@
 
 (defproc (points3d
           [vs  (listof (vector/c real? real? real?))]
-          [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-          [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
-          [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+          [#:x-min x-min (or/c regular-real? #f) #f]
+          [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) #f]
+          [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f]
+          [#:z-max z-max (or/c regular-real? #f) #f]
           [#:sym sym point-sym/c (point-sym)]
           [#:color color plot-color/c (point-color)]
           [#:size size (>=/c 0) (point-size)]

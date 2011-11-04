@@ -8,8 +8,10 @@
 @title[#:tag "plot2d"]{2D Plot Procedures}
 
 @defproc[(plot [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
-               [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-               [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
+               [#:x-min x-min (or/c regular-real? #f) #f]
+               [#:x-max x-max (or/c regular-real? #f) #f]
+               [#:y-min y-min (or/c regular-real? #f) #f]
+               [#:y-max y-max (or/c regular-real? #f) #f]
                [#:width width exact-positive-integer? (plot-width)]
                [#:height height exact-positive-integer? (plot-height)]
                [#:title title (or/c string? #f) (plot-title)]

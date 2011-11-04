@@ -64,9 +64,12 @@
         [else  empty]))
 
 (defproc (isosurface3d [f (real? real? real? . -> . real?)] [d real?]
-                       [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
-                       [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
-                       [z-min (or/c real? #f) #f] [z-max (or/c real? #f) #f]
+                       [x-min (or/c regular-real? #f) #f]
+                       [x-max (or/c regular-real? #f) #f]
+                       [y-min (or/c regular-real? #f) #f]
+                       [y-max (or/c regular-real? #f) #f]
+                       [z-min (or/c regular-real? #f) #f]
+                       [z-max (or/c regular-real? #f) #f]
                        [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
                        [#:color color plot-color/c (surface-color)]
                        [#:line-color line-color plot-color/c (surface-line-color)]
@@ -150,10 +153,14 @@
        [else  empty])]))
 
 (defproc (isosurfaces3d [f (real? real? real? . -> . real?)]
-                        [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
-                        [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
-                        [z-min (or/c real? #f) #f] [z-max (or/c real? #f) #f]
-                        [#:d-min d-min (or/c real? #f) #f] [#:d-max d-max (or/c real? #f) #f]
+                        [x-min (or/c regular-real? #f) #f]
+                        [x-max (or/c regular-real? #f) #f]
+                        [y-min (or/c regular-real? #f) #f]
+                        [y-max (or/c regular-real? #f) #f]
+                        [z-min (or/c regular-real? #f) #f]
+                        [z-max (or/c regular-real? #f) #f]
+                        [#:d-min d-min (or/c regular-real? #f) #f]
+                        [#:d-max d-max (or/c regular-real? #f) #f]
                         [#:levels levels (or/c 'auto exact-positive-integer? (listof real?))
                                   (isosurface-levels)]
                         [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
@@ -248,9 +255,12 @@
     (fl- (exact->inexact (f θ ρ)) (distance x y z))))
 
 (defproc (polar3d [f (real? real? . -> . real?)]
-                  [#:x-min x-min (or/c real? #f) #f] [#:x-max x-max (or/c real? #f) #f]
-                  [#:y-min y-min (or/c real? #f) #f] [#:y-max y-max (or/c real? #f) #f]
-                  [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+                  [#:x-min x-min (or/c regular-real? #f) #f]
+                  [#:x-max x-max (or/c regular-real? #f) #f]
+                  [#:y-min y-min (or/c regular-real? #f) #f]
+                  [#:y-max y-max (or/c regular-real? #f) #f]
+                  [#:z-min z-min (or/c regular-real? #f) #f]
+                  [#:z-max z-max (or/c regular-real? #f) #f]
                   [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
                   [#:color color plot-color/c (surface-color)]
                   [#:line-color line-color plot-color/c (surface-line-color)]

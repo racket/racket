@@ -37,9 +37,12 @@
 
 (defproc (surface3d
           [f (real? real? . -> . real?)]
-          [x-min (or/c real? #f) #f] [x-max (or/c real? #f) #f]
-          [y-min (or/c real? #f) #f] [y-max (or/c real? #f) #f]
-          [#:z-min z-min (or/c real? #f) #f] [#:z-max z-max (or/c real? #f) #f]
+          [x-min (or/c regular-real? #f) #f]
+          [x-max (or/c regular-real? #f) #f]
+          [y-min (or/c regular-real? #f) #f]
+          [y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f]
+          [#:z-max z-max (or/c regular-real? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
           [#:color color plot-color/c (surface-color)]
           [#:style style plot-brush-style/c (surface-style)]
