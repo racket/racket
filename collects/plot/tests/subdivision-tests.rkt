@@ -1,6 +1,6 @@
 #lang racket
 
-(require plot plot/plot2d/area plot/plot3d/area)
+(require plot plot/plot2d/plot-area plot/plot3d/plot-area)
 
 (parameterize ([plot-x-transform  log-transform]
                [plot-x-ticks      (log-ticks)])

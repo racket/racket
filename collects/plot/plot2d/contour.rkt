@@ -14,7 +14,7 @@
 ;; One contour line
 
 (define ((isoline-render-proc g z samples color width style alpha label) area)
-  (define-values (x-min x-max y-min y-max) (send area get-bounds))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
   (match-define (2d-sample xs ys zss z-min z-max)
     (g x-min x-max samples y-min y-max samples))
   
@@ -58,7 +58,7 @@
 
 (define ((contours-render-proc g levels samples colors widths styles alphas label) area)
   (let/ec return
-    (define-values (x-min x-max y-min y-max) (send area get-bounds))
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
     (match-define (2d-sample xs ys zss z-min z-max)
       (g x-min x-max samples y-min y-max samples))
     
@@ -117,7 +117,7 @@
           g levels samples colors styles contour-colors contour-widths contour-styles alphas label)
          area)
   (let/ec return
-    (define-values (x-min x-max y-min y-max) (send area get-bounds))
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
     (match-define (2d-sample xs ys zss z-min z-max)
       (g x-min x-max samples y-min y-max samples))
     

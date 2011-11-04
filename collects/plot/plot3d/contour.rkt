@@ -13,8 +13,9 @@
 ;; One contour line in 3D (using marching squares)
 
 (define ((contour3d-render-proc f z samples color width style alpha label) area)
-  (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
-  (match-define (2d-sample xs ys zss _z-min _z-max)
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+    (send area get-bounds-rect))
+  (match-define (2d-sample xs ys zss fz-min fz-max)
     (f x-min x-max (animated-samples samples) y-min y-max (animated-samples samples)))
   
   (when (<= z-min z z-max)
@@ -63,8 +64,9 @@
 ;; Contour lines in 3D (using marching squares)
 
 (define ((contours3d-render-proc f levels samples colors widths styles alphas label) area)
-  (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
-  (match-define (2d-sample xs ys zss _z-min _z-max)
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+    (send area get-bounds-rect))
+  (match-define (2d-sample xs ys zss fz-min fz-max)
     (f x-min x-max (animated-samples samples) y-min y-max (animated-samples samples)))
   
   (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
@@ -127,8 +129,9 @@
           f levels samples colors line-colors line-widths line-styles
           contour-colors contour-widths contour-styles alphas label)
          area)
-  (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))  
-  (match-define (2d-sample xs ys zss _z-min _z-max)
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+    (send area get-bounds-rect))
+  (match-define (2d-sample xs ys zss fz-min fz-max)
     (f x-min x-max (animated-samples samples) y-min y-max (animated-samples samples)))
   
   (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))

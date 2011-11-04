@@ -19,8 +19,7 @@
 
 (define 3d-plot-area%
   (class object%
-    (init-field rx-ticks rx-far-ticks ry-ticks ry-far-ticks rz-ticks rz-far-ticks
-                x-min x-max y-min y-max z-min z-max)
+    (init-field bounds-rect rx-ticks rx-far-ticks ry-ticks ry-far-ticks rz-ticks rz-far-ticks)
     (init dc dc-x-min dc-y-min dc-x-size dc-y-size)
     (super-new)
     
@@ -29,7 +28,17 @@
     
     (define char-height (send pd get-char-height))
     (define half-char-height (* 1/2 char-height))
-    (define char-baseline (send pd get-char-baseline))
+    
+    (define dc-x-max (+ dc-x-min dc-x-size))
+    (define dc-y-max (+ dc-y-min dc-y-size))
+    
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) bounds-rect)
+    (define x-size (- x-max x-min))
+    (define y-size (- y-max y-min))
+    (define z-size (- z-max z-min))
+    (define x-mid (* 1/2 (+ x-min x-max)))
+    (define y-mid (* 1/2 (+ y-min y-max)))
+    (define z-mid (* 1/2 (+ z-min z-max)))
     
     (define clipping? #f)
     (define clip-x-min x-min)
@@ -39,7 +48,7 @@
     (define clip-z-min z-min)
     (define clip-z-max z-max)
     
-    (define/public (clip-to-bounds rx-min rx-max ry-min ry-max rz-min rz-max)
+    (define (clip-to-bounds rx-min rx-max ry-min ry-max rz-min rz-max)
       (set! clipping? #t)
       (define cx-min (if rx-min (max* x-min rx-min) x-min))
       (define cx-max (if rx-max (min* x-max rx-max) x-max))
@@ -63,28 +72,23 @@
     (define (clip-to-none) (set! clipping? #f))
     
     (define (in-bounds? v)
-      (or (not clipping?)
-          (point-in-bounds? v clip-x-min clip-x-max clip-y-min clip-y-max clip-z-min clip-z-max)))
+      (or (not clipping?) (point-in-bounds? v clip-x-min clip-x-max
+                                            clip-y-min clip-y-max
+                                            clip-z-min clip-z-max)))
     
-    (define/public (get-x-min) x-min)
-    (define/public (get-x-max) x-max)
-    (define/public (get-y-min) y-min)
-    (define/public (get-y-max) y-max)
-    (define/public (get-z-min) z-min)
-    (define/public (get-z-max) z-max)
-    (define/public (get-bounds) (values x-min x-max y-min y-max z-min z-max))
+    (define/public (get-x-ticks) x-ticks)
+    (define/public (get-x-far-ticks) x-far-ticks)
+    (define/public (get-y-ticks) y-ticks)
+    (define/public (get-y-far-ticks) y-far-ticks)
+    (define/public (get-z-ticks) z-ticks)
+    (define/public (get-z-far-ticks) z-far-ticks)
     
-    (define/public (get-clip-bounds)
-      (cond [clipping?  (values clip-x-min clip-x-max clip-y-min clip-y-max clip-z-min clip-z-max)]
-            [else       (values x-min x-max y-min y-max z-min z-max)]))
+    (define/public (get-bounds-rect) bounds-rect)
     
-    (define x-size (- x-max x-min))
-    (define y-size (- y-max y-min))
-    (define z-size (- z-max z-min))
-    
-    (define x-mid (* 1/2 (+ x-min x-max)))
-    (define y-mid (* 1/2 (+ y-min y-max)))
-    (define z-mid (* 1/2 (+ z-min z-max)))
+    (define/public (get-clip-rect)
+      (if clipping?
+          (vector (ivl clip-x-min clip-x-max) (ivl clip-y-min clip-y-max) (ivl clip-z-min clip-z-max))
+          bounds-rect))
     
     (define angle (plot3d-angle))
     (define altitude (plot3d-altitude))
@@ -126,37 +130,28 @@
     (define (plot->dc* v) (view->dc (plot->view v)))
     (define/public (plot->dc v) (plot->dc* v))
     
-    (define dc-x-max (+ dc-x-min dc-x-size))
-    (define dc-y-max (+ dc-y-min dc-y-size))
+    (define-values (view-x-size view-y-size view-z-size)
+      (match-let ([(vector view-x-ivl view-y-ivl view-z-ivl)
+                   (bounding-rect
+                    (map plot->view (list (vector x-min y-min z-min) (vector x-min y-min z-max)
+                                          (vector x-min y-max z-min) (vector x-min y-max z-max)
+                                          (vector x-max y-min z-min) (vector x-max y-min z-max)
+                                          (vector x-max y-max z-min) (vector x-max y-max z-max))))])
+        (values (ivl-length view-x-ivl) (ivl-length view-y-ivl) (ivl-length view-z-ivl))))
     
     (define (make-view->dc left right top bottom)
-      (define corners (list (vector x-min y-min z-min) (vector x-min y-min z-max)
-                            (vector x-min y-max z-min) (vector x-min y-max z-max)
-                            (vector x-max y-min z-min) (vector x-max y-min z-max)
-                            (vector x-max y-max z-min) (vector x-max y-max z-max)))
-      (match-define (list (vector xs ys zs) ...) (map plot->view corners))
-      (define view-x-min (apply min xs))
-      (define view-x-max (apply max xs))
-      (define view-y-min (apply min ys))
-      (define view-y-max (apply max ys))
-      (define view-z-min (apply min zs))
-      (define view-z-max (apply max zs))
-      
       (define area-x-min (+ dc-x-min left))
       (define area-x-max (- dc-x-max right))
       (define area-y-min (+ dc-y-min top))
       (define area-y-max (- dc-y-max bottom))
       (define area-x-mid (* 1/2 (+ area-x-min area-x-max)))
-      (define area-x-size (- area-x-max area-x-min))
       (define area-y-mid (* 1/2 (+ area-y-min area-y-max)))
-      (define area-y-size (- area-y-max area-y-min))
-      
-      (define area-per-view-x (/ area-x-size (- view-x-max view-x-min)))
-      (define area-per-view-z (/ area-y-size (- view-z-max view-z-min)))
+      (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
+      (define area-per-view-z (/ (- area-y-max area-y-min) view-z-size))
       (λ (v)
-        (match-define (vector x y z) v)
-        (let ([x  (* x area-per-view-x)] [z  (* z area-per-view-z)])
-          (vector (+ area-x-mid x) (- area-y-mid z)))))
+        (match-define (vector x _ z) v)
+        (vector (+ area-x-mid (* x area-per-view-x))
+                (- area-y-mid (* z area-per-view-z)))))
     
     ;; Initial view->dc
     (define init-top-margin (if (and (plot-decorations?) (plot-title)) (* 3/2 char-height) 0))
@@ -177,6 +172,10 @@
     
     (define (x-axis-dir) (plot-dir->dc-dir #(1 0 0)))
     (define (y-axis-dir) (plot-dir->dc-dir #(0 1 0)))
+    
+    (define/public (plot-line->dc-angle v1 v2)
+      (match-define (vector dx dy) (v- (plot->dc* v2) (plot->dc* v1)))
+      (- (atan2 (- dy) dx)))
     
     ;; ===============================================================================================
     ;; Tick and label constants
@@ -510,9 +509,14 @@
               (append* (map (λ (params) (send/apply pd get-tick-endpoints (rest params)))
                             (get-all-tick-params)))))
     
-    (define-values (area-x-min right area-y-min bottom)
+    (define-values (left right top bottom)
       (margin-fixpoint dc-x-min dc-x-max dc-y-min dc-y-max 0 0 init-top-margin 0
                        get-param-vs/set-view->dc!))
+    
+    (define area-x-min (+ dc-x-min left))
+    (define area-x-max (- dc-x-max right))
+    (define area-y-min (+ dc-y-min top))
+    (define area-y-max (- dc-y-max bottom))
     
     ;; ===============================================================================================
     ;; Plot decoration
@@ -639,19 +643,20 @@
       (draw-ticks (get-back-tick-params))
       (draw-far-axes))
     
-    (define/public (start-renderer rx-min rx-max ry-min ry-max rz-min rz-max)
+    (define/public (start-renderer rend-bounds-rect)
+      (match-define (vector (ivl rx-min rx-max) (ivl ry-min ry-max) (ivl rz-min rz-max))
+        rend-bounds-rect)
       (send pd reset-drawing-params)
       (clip-to-bounds rx-min rx-max ry-min ry-max rz-min rz-max))
     
     (define/public (end-renderers)
       (draw-shapes render-list)
-      #;(
       (clip-to-none)
       (send pd reset-drawing-params)
       (draw-title)
       (draw-near-axes)
       (draw-ticks (get-front-tick-params))
-      (draw-labels (get-front-label-params))))
+      (draw-labels (get-front-label-params)))
     
     (define (draw-angles*)
       (define angle-str (format " angle = ~a " (number->string (round angle))))
@@ -682,11 +687,11 @@
     (define/public (draw-angles) (draw-angles*))
     
     (define (draw-legend* legend-entries)
-      (define gap (plot-line-width))
+      (define gap-size (+ (pen-gap) tick-radius))
       (send pd draw-legend
             legend-entries
-            (+ dc-x-min gap) (- dc-x-max gap)
-            (+ area-y-min gap) (- dc-y-max gap)))
+            (+ area-x-min gap-size) (- area-x-max gap-size)
+            (+ area-y-min gap-size) (- area-y-max gap-size)))
     
     (define/public (draw-legend legend-entries) (draw-legend* legend-entries))
     

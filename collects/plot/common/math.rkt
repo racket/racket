@@ -424,17 +424,7 @@
              (define norm (vcross (v- v3 v2) (v- v1 v2)))
              (define m (vmag norm))
              (when (m . > . 0) (break (v/ norm m))))
-           default-normal)
-         #;
-         (begin
-           (define n
-             (for/fold ([norm  (vector 0 0 0)])
-               ([v1  (in-list vs)]
-                [v2  (in-list (rest vs))]
-                [v3  (in-list (rest (rest vs)))])
-               (v+ norm (vcross (v- v3 v2) (v- v1 v2)))))
-           (define m (vmag norm))
-           (if (= m 0) default-normal (v/ norm m))))])))
+           default-normal))])))
 
 ;; ===================================================================================================
 ;; Intervals

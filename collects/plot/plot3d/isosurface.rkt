@@ -16,7 +16,8 @@
 
 (define ((isosurface3d-render-proc f d samples color line-color line-width line-style alpha label)
          area)
-  (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+    (send area get-bounds-rect))
   (match-define (3d-sample xs ys zs dsss d-min d-max)
     (f x-min x-max (animated-samples samples)
        y-min y-max (animated-samples samples)
@@ -85,7 +86,8 @@
 (define ((isosurfaces3d-render-proc
           f rd-min rd-max levels samples colors line-colors line-widths line-styles alphas label)
          area)
-  (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+    (send area get-bounds-rect))
   (match-define (3d-sample xs ys zs dsss fd-min fd-max)
     (f x-min x-max (animated-samples samples)
        y-min y-max (animated-samples samples)
@@ -171,7 +173,8 @@
 ;; ===================================================================================================
 
 (define ((polar3d-render-proc f g samples color line-color line-width line-style alpha label) area)
-  (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+    (send area get-bounds-rect))
   (match-define (3d-sample xs ys zs dsss d-min d-max)
     (g x-min x-max (animated-samples samples)
        y-min y-max (animated-samples samples)

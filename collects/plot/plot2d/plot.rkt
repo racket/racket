@@ -47,7 +47,7 @@
   (when (or (not (rect-regular? plot-bounds-rect))
             (rect-zero-area? plot-bounds-rect))
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) plot-bounds-rect)
-    (error 'plot "could not determine sensible plot bounds; determined x ∈ [~e,~e], y ∈ [~e,~e]"
+    (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a]"
            x-min x-max y-min y-max))
   
   (define bounds-rect (rect-inexact->exact plot-bounds-rect))
@@ -67,19 +67,14 @@
                  [plot-x-label        x-label]
                  [plot-y-label        y-label]
                  [plot-legend-anchor  legend-anchor])
-    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) bounds-rect)
     (define area (make-object 2d-plot-area%
-                   x-ticks x-far-ticks y-ticks y-far-ticks
-                   x-min x-max y-min y-max
-                   dc x y width height))
+                   bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks dc x y width height))
     (send area start-plot)
     
     (define legend-entries
       (flatten (for/list ([rend  (in-list rs)])
                  (match-define (renderer2d rend-bounds-rect _bf _tf render-proc) rend)
-                 (match-define (vector (ivl rx-min rx-max) (ivl ry-min ry-max))
-                   (if rend-bounds-rect rend-bounds-rect (empty-rect 2)))
-                 (send area start-renderer rx-min rx-max ry-min ry-max)
+                 (send area start-renderer (if rend-bounds-rect rend-bounds-rect (empty-rect 2)))
                  (if render-proc (render-proc area) empty))))
     
     (send area end-renderers)

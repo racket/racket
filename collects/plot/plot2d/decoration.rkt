@@ -16,8 +16,7 @@
 ;; X and Y axes
 
 (define ((x-axis-render-proc y ticks? labels? far? alpha) area)
-  (define x-min (send area get-x-min))
-  (define x-max (send area get-x-max))
+  (match-define (vector (ivl x-min x-max) y-ivl) (send area get-bounds-rect))
   (define x-ticks (if far? (send area get-x-far-ticks) (send area get-x-ticks)))
   (define radius (if ticks? (* 1/2 (plot-tick-size)) 0))
   
@@ -50,8 +49,7 @@
   (renderer2d #f #f #f (x-axis-render-proc y ticks? labels? far? alpha)))
 
 (define ((y-axis-render-proc x ticks? labels? far? alpha) area)
-  (define y-min (send area get-y-min))
-  (define y-max (send area get-y-max))
+  (match-define (vector x-ivl (ivl y-min y-max)) (send area get-bounds-rect))
   (define y-ticks (if far? (send area get-y-far-ticks) (send area get-y-ticks)))
   (define radius (if ticks? (* 1/2 (plot-tick-size)) 0))
   
@@ -113,7 +111,7 @@
     (values θ r-min r-max)))
 
 (define (draw-polar-axis-ticks num labels? area)
-  (define-values (x-min x-max y-min y-max) (send area get-bounds))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
   (define-values (θs r-mins r-maxs) (build-polar-axes num x-min x-max y-min y-max
                                                       (* 1/2 (/ (* 2 pi) num))))
   (define corner-rs
@@ -145,7 +143,7 @@
               'center 0 #:outline? #t)))))
 
 (define (draw-polar-axis-lines num area)
-  (define-values (x-min x-max y-min y-max) (send area get-bounds))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
   (define-values (θs r-mins r-maxs) (build-polar-axes num x-min x-max y-min y-max))
   
   (send area put-minor-pen)
@@ -170,8 +168,7 @@
 ;; Grid
 
 (define ((x-tick-lines-render-proc) area)
-  (define y-min (send area get-y-min))
-  (define y-max (send area get-y-max))
+  (match-define (vector x-ivl (ivl y-min y-max)) (send area get-bounds-rect))
   (define x-ticks (send area get-x-ticks))
   
   (send area put-alpha 1/2)
@@ -183,8 +180,7 @@
   empty)
 
 (define ((y-tick-lines-render-proc) area)
-  (define x-min (send area get-x-min))
-  (define x-max (send area get-x-max))
+  (match-define (vector (ivl x-min x-max) y-ivl) (send area get-bounds-rect))
   (define y-ticks (send area get-y-ticks))
   
   (send area put-alpha 1/2)
@@ -208,13 +204,11 @@
 ;; Labeled points
 
 (define (format-x-coordinate x area)
-  (define x-min (send area get-x-min))
-  (define x-max (send area get-x-max))
+  (match-define (vector (ivl x-min x-max) y-ivl) (send area get-bounds-rect))
   (format "~a" (real->plot-label x (digits-for-range x-min x-max))))
 
 (define (format-y-coordinate y area)
-  (define y-min (send area get-y-min))
-  (define y-max (send area get-y-max))
+  (match-define (vector x-ivl (ivl y-min y-max)) (send area get-bounds-rect))
   (format "~a" (real->plot-label y (digits-for-range y-min y-max))))
 
 (define (format-coordinate v area)

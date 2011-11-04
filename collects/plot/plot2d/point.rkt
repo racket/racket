@@ -4,8 +4,7 @@
 
 (require racket/contract racket/class racket/match racket/math racket/list
          plot/utils
-         "../common/contract-doc.rkt"
-         "clip.rkt")
+         "../common/contract-doc.rkt")
 
 (provide (all-defined-out))
 
@@ -44,7 +43,7 @@
 ;; Vector fields
 
 (define ((vector-field-render-fun f samples scale color line-width line-style alpha label) area)
-  (define-values (x-min x-max y-min y-max) (send area get-bounds))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
   
   (define xs0 (linear-seq x-min x-max samples #:start? #t #:end? #t))
   (define ys0 (linear-seq y-min y-max samples #:start? #t #:end? #t))
@@ -106,14 +105,13 @@
 ;; Error bars
 
 (define ((error-bars-render-fun xs ys hs color line-width line-style width alpha) area)
-  (define-values (x-min x-max y-min y-max) (send area get-clip-bounds))
-  
+  (define clip-rect (send area get-clip-rect))
   (define radius (* 1/2 width))
   
   (send area put-alpha alpha)
   (send area put-pen color line-width line-style)
   (for ([x  (in-list xs)] [y  (in-list ys)] [h  (in-list hs)])
-    (when (point-in-bounds? (vector x y) x-min x-max y-min y-max)
+    (when (rect-contains? clip-rect (vector x y))
       (define v1 (vector x (- y h)))
       (define v2 (vector x (+ y h)))
       (send area put-line v1 v2)

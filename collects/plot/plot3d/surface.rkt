@@ -11,7 +11,7 @@
 
 (define ((surface3d-render-proc f samples color style line-color line-width line-style alpha label)
          area)
-  (define-values (x-min x-max y-min y-max z-min z-max) (send area get-bounds))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) z-ivl) (send area get-bounds-rect))
   (match-define (2d-sample xs ys zss fz-min fz-max) (f x-min x-max (animated-samples samples)
                                                        y-min y-max (animated-samples samples)))
   

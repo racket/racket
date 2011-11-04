@@ -49,8 +49,8 @@
   (when (or (not (rect-regular? plot-bounds-rect))
             (rect-zero-area? plot-bounds-rect))
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) plot-bounds-rect)
-    (error 'plot "~a; determined x ∈ [~e,~e], y ∈ [~e,~e], z ∈ [~e,~e]"
-           "could not determine sensible plot bounds" x-min x-max y-min y-max z-min z-max))
+    (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a], z ∈ [~a,~a]"
+            x-min x-max y-min y-max z-min z-max))
   
   (define bounds-rect (rect-inexact->exact plot-bounds-rect))
   
@@ -82,17 +82,14 @@
                  [plot-legend-anchor  legend-anchor])
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) bounds-rect)
     (define area (make-object 3d-plot-area%
-                   x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
-                   x-min x-max y-min y-max z-min z-max
+                   bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
                    dc x y width height))
     (send area start-plot)
     
     (define legend-entries
       (flatten (for/list ([rend  (in-list rs)])
                  (match-define (renderer3d rend-bounds-rect _bf _tf render-proc) rend)
-                 (match-define (vector (ivl rx-min rx-max) (ivl ry-min ry-max) (ivl rz-min rz-max))
-                   (if rend-bounds-rect rend-bounds-rect (empty-rect 3)))
-                 (send area start-renderer rx-min rx-max ry-min ry-max rz-min rz-max)
+                 (send area start-renderer (if rend-bounds-rect rend-bounds-rect (empty-rect 3)))
                  (if render-proc (render-proc area) empty))))
     
     (send area end-renderers)

@@ -5,6 +5,7 @@
 (require racket/contract racket/class racket/snip racket/draw racket/vector
          unstable/latent-contract
          ;; Plotting
+         "common/math.rkt"
          "common/contract.rkt"
          "common/contract-doc.rkt"
          "common/plot-element.rkt"
@@ -76,6 +77,7 @@
                ) (is-a?/c image-snip%)
   (define x-ticks (new.default-x-ticks x-min x-max))
   (define y-ticks (new.default-y-ticks y-min y-max))
+  (define bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max)))
   
   (parameterize ([new.plot-title       title]
                  [new.plot-x-label     x-label]
@@ -84,14 +86,13 @@
                  [new.plot-background  bgcolor])
     (define bm (make-bitmap (ceiling width) (ceiling height)))
     (define dc (make-object bitmap-dc% bm))
-    (define area (make-object 2d-plot-area% x-ticks x-ticks y-ticks y-ticks
-                   x-min x-max y-min y-max
-                   dc 0 0 width height))
+    (define area (make-object 2d-plot-area%
+                   bounds-rect x-ticks x-ticks y-ticks y-ticks dc 0 0 width height))
     
     (define data+axes (mix x-axis-data y-axis-data data))
     
     (send area start-plot)
-    (send area start-renderer x-min x-max y-min y-max)
+    (send area start-renderer bounds-rect)
     (data+axes area)
     (send area end-renderers)
     (send area end-plot)
@@ -119,6 +120,7 @@
   (define x-ticks (new.default-x-ticks x-min x-max))
   (define y-ticks (new.default-y-ticks y-min y-max))
   (define z-ticks (new.default-z-ticks z-min z-max))
+  (define bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)))
   
   (parameterize ([new.plot-title       title]
                  [new.plot-x-label     x-label]
@@ -130,13 +132,11 @@
                  [new.plot3d-altitude  alt])
     (define bm (make-bitmap (ceiling width) (ceiling height)))
     (define dc (make-object bitmap-dc% bm))
-    (define area
-      (make-object 3d-plot-area% x-ticks x-ticks y-ticks y-ticks z-ticks z-ticks
-        x-min x-max y-min y-max z-min z-max
-        dc 0 0 width height))
+    (define area (make-object 3d-plot-area%
+                   bounds-rect x-ticks x-ticks y-ticks y-ticks z-ticks z-ticks dc 0 0 width height))
     
     (send area start-plot)
-    (send area start-renderer x-min x-max y-min y-max z-min z-max)
+    (send area start-renderer bounds-rect)
     (data area)
     (send area end-renderers)
     (send area end-plot)

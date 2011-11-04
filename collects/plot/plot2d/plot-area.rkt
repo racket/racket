@@ -19,8 +19,7 @@
 
 (define 2d-plot-area%
   (class object%
-    (init-field rx-ticks rx-far-ticks ry-ticks ry-far-ticks
-                x-min x-max y-min y-max)
+    (init-field bounds-rect rx-ticks rx-far-ticks ry-ticks ry-far-ticks)
     (init dc dc-x-min dc-y-min dc-x-size dc-y-size)
     (super-new)
     
@@ -36,9 +35,9 @@
       (cond [(and (plot-decorations?) (plot-title))  (+ dc-y-min (* 3/2 char-height))]
             [else  dc-y-min]))
     
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) bounds-rect)
     (define x-size (- x-max x-min))
     (define y-size (- y-max y-min))
-    
     (define x-mid (* 1/2 (+ x-min x-max)))
     (define y-mid (* 1/2 (+ y-min y-max)))
     
@@ -48,7 +47,7 @@
     (define clip-y-min y-min)
     (define clip-y-max y-max)
     
-    (define/public (clip-to-bounds rx-min rx-max ry-min ry-max)
+    (define (clip-to-bounds rx-min rx-max ry-min ry-max)
       (set! clipping? #t)
       (define cx-min (if rx-min (max* x-min rx-min) x-min))
       (define cx-max (if rx-max (min* x-max rx-max) x-max))
@@ -63,28 +62,21 @@
         (set! clip-y-min cy-min)
         (set! clip-y-max cy-max)))
     
-    (define/public (clip-to-none)
-      (set! clipping? #f))
+    (define (clip-to-none) (set! clipping? #f))
     
     (define (in-bounds? v)
-      (or (not clipping?)
-          (point-in-bounds? v clip-x-min clip-x-max
-                            clip-y-min clip-y-max)))
+      (or (not clipping?) (point-in-bounds? v clip-x-min clip-x-max clip-y-min clip-y-max)))
     
     (define/public (get-x-ticks) x-ticks)
     (define/public (get-x-far-ticks) x-far-ticks)
     (define/public (get-y-ticks) y-ticks)
     (define/public (get-y-far-ticks) y-far-ticks)
     
-    (define/public (get-x-min) x-min)
-    (define/public (get-x-max) x-max)
-    (define/public (get-y-min) y-min)
-    (define/public (get-y-max) y-max)
-    (define/public (get-bounds) (values x-min x-max y-min y-max))
+    (define/public (get-bounds-rect) bounds-rect)
     
-    (define/public (get-clip-bounds)
-      (cond [clipping?  (values clip-x-min clip-x-max clip-y-min clip-y-max)]
-            [else       (values x-min x-max y-min y-max)]))
+    (define/public (get-clip-rect)
+      (cond [clipping?  (vector (ivl clip-x-min clip-x-max) (ivl clip-y-min clip-y-max))]
+            [else       bounds-rect]))
     
     (define identity-transforms?
       (and (equal? (plot-x-transform) id-transform)
@@ -102,28 +94,19 @@
     (define (plot->dc* v) (view->dc (plot->view v)))
     (define/public (plot->dc v) (plot->dc* v))
     
-    (define/public (plot-line->dc-angle v1 v2)
-      (match-define (vector dx dy) (v- (plot->dc* v1) (plot->dc* v2)))
-      (- (atan2 (- dy) dx)))
+    (define-values (view-x-size view-y-size)
+      (match-let ([(vector view-x-ivl view-y-ivl)
+                   (bounding-rect (map plot->view (list (vector x-min y-min) (vector x-min y-max)
+                                                        (vector x-max y-min) (vector x-max y-max))))])
+        (values (ivl-length view-x-ivl) (ivl-length view-y-ivl))))
     
     (define (make-view->dc left right top bottom)
-      (define corners (list (vector x-min y-min) (vector x-min y-max)
-                            (vector x-max y-min) (vector x-max y-max)))
-      (match-define (list (vector xs ys) ...) (map plot->view corners))
-      (define view-x-min (apply min xs))
-      (define view-x-max (apply max xs))
-      (define view-y-min (apply min ys))
-      (define view-y-max (apply max ys))
-      
       (define area-x-min (+ dc-x-min left))
       (define area-x-max (- dc-x-max right))
       (define area-y-min (+ dc-y-min top))
       (define area-y-max (- dc-y-max bottom))
-      (define area-x-size (- area-x-max area-x-min))
-      (define area-y-size (- area-y-max area-y-min))
-      
-      (define area-per-view-x (/ area-x-size (- view-x-max view-x-min)))
-      (define area-per-view-y (/ area-y-size (- view-y-max view-y-min)))
+      (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
+      (define area-per-view-y (/ (- area-y-max area-y-min) view-y-size))
       (λ (v)
         (match-define (vector x y) v)
         (vector (+ area-x-min (* (- x x-min) area-per-view-x))
@@ -132,6 +115,10 @@
     ;; Initial view->dc (draws labels and half of every tick off the allotted space on the dc)
     (define init-top-margin (- title-y-min dc-y-min))
     (set! view->dc (make-view->dc 0 0 init-top-margin 0))
+    
+    (define/public (plot-line->dc-angle v1 v2)
+      (match-define (vector dx dy) (v- (plot->dc* v2) (plot->dc* v1)))
+      (- (atan2 (- dy) dx)))
     
     ;; ===============================================================================================
     ;; Tick and label constants
@@ -313,11 +300,13 @@
               (append* (map (λ (params) (send/apply pd get-tick-endpoints (rest params)))
                             (get-all-tick-params)))))
     
-    (define-values (area-x-min right area-y-min bottom)
+    (define-values (left right top bottom)
       (margin-fixpoint dc-x-min dc-x-max title-y-min dc-y-max 0 0 init-top-margin 0
                        get-param-vs/set-view->dc!))
     
+    (define area-x-min (+ dc-x-min left))
     (define area-x-max (- dc-x-max right))
+    (define area-y-min (+ dc-y-min top))
     (define area-y-max (- dc-y-max bottom))
     
     ;; ===============================================================================================
@@ -366,7 +355,8 @@
       (draw-axes)
       (draw-ticks))
     
-    (define/public (start-renderer rx-min rx-max ry-min ry-max)
+    (define/public (start-renderer rend-bounds-rect)
+      (match-define (vector (ivl rx-min rx-max) (ivl ry-min ry-max)) rend-bounds-rect)
       (send pd reset-drawing-params)
       (send pd set-clipping-rect (vector (+ 1/2 (- area-x-min (plot-line-width)))
                                          (+ 1/2 (- area-y-min (plot-line-width))))

@@ -125,8 +125,7 @@
                                         line2-color line2-width line2-style
                                         alpha label)
          area)
-  (define x-min (send area get-x-min))
-  (define x-max (send area get-x-max))
+  (match-define (vector (ivl x-min x-max) y-ivl) (send area get-bounds-rect))
   (match-define (sample x1s y1s y1-min y1-max) (f1 x-min x-max samples))
   (match-define (sample x2s y2s y2-min y2-max) (f2 x-min x-max samples))
   (define v1s (map vector x1s y1s))
@@ -172,8 +171,7 @@
                                        line2-color line2-width line2-style
                                        alpha label)
          area)
-  (define y-min (send area get-y-min))
-  (define y-max (send area get-y-max))
+  (match-define (vector x-ivl (ivl y-min y-max)) (send area get-bounds-rect))
   (match-define (sample y1s x1s x1-min x1-max) (f1 y-min y-max samples))
   (match-define (sample y2s x2s x2-min x2-max) (f2 y-min y-max samples))
   (define v1s (map vector x1s y1s))
