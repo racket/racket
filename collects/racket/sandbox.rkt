@@ -878,7 +878,6 @@
    (;; create a sandbox context first
     [current-custodian user-cust]
     [current-thread-group (make-thread-group)]
-    [current-namespace (make-evaluation-namespace)]
     ;; set up the IO context
     [current-input-port
      (let ([inp (sandbox-input)])
@@ -917,6 +916,8 @@
     [current-logger ((sandbox-make-logger))]
     [current-inspector ((sandbox-make-inspector))]
     [current-code-inspector ((sandbox-make-code-inspector))]
+    ;; Create the namespace under the restricted code inspector
+    [current-namespace (make-evaluation-namespace)]
     ;; The code inspector serves two purposes -- making sure that only trusted
     ;; byte-code is loaded, and avoiding using protected module bindings, like
     ;; the foreign library's `unsafe!'.  We control the first through the path
