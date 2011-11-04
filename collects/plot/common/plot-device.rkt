@@ -151,7 +151,8 @@
 (define plot-device%
   (class object%
     (init-field dc dc-x-min dc-y-min dc-x-size dc-y-size)
-    
+
+    ;(init-field the-dc dc-x-min dc-y-min dc-x-size dc-y-size)
     ;(define dc (make-object null-dc%))
     
     (super-new)

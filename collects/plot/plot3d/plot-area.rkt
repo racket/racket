@@ -645,12 +645,13 @@
     
     (define/public (end-renderers)
       (draw-shapes render-list)
+      #;(
       (clip-to-none)
       (send pd reset-drawing-params)
       (draw-title)
       (draw-near-axes)
       (draw-ticks (get-front-tick-params))
-      (draw-labels (get-front-label-params)))
+      (draw-labels (get-front-label-params))))
     
     (define (draw-angles*)
       (define angle-str (format " angle = ~a " (number->string (round angle))))
