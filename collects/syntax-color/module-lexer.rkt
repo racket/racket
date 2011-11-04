@@ -26,7 +26,9 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
   (cond
     [(or (not mode) (eq? mode 'before-lang-line))
      (define lexer-port (peeking-input-port in #:init-position (+ 1 (file-position in))))
-     (port-count-lines! lexer-port)
+     (let-values ([(line col pos) (port-next-location in)])
+       (when line 
+         (port-count-lines! lexer-port)))
      (set-port-next-location-from in lexer-port)
      (define-values (lexeme type data new-token-start new-token-end) (scheme-lexer lexer-port))
      (cond
@@ -39,7 +41,9 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
        [else
         ;; look for #lang:
         (define p (peeking-input-port in #:init-position (+ 1 (file-position in))))
-        (port-count-lines! p)
+        (let-values ([(line col pos) (port-next-location in)])
+          (when line 
+            (port-count-lines! p)))
         (set-port-next-location-from in p)
         (define-values (_1 _2 start-pos) (port-next-location p))
         (define get-info (with-handlers ([exn:fail? values]) (read-language p (λ () 'fail))))
