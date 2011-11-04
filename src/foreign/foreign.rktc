@@ -414,9 +414,8 @@ static unsigned short *ucs4_string_or_null_to_utf16_pointer(Scheme_Object *ucs)
 
 Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 {
-  intptr_t ulen;
+  intptr_t ulen, end;
   mzchar *res;
-  int end;
   if (!utf) return scheme_false;
   for (end=0; utf[end] != 0; end++) { /**/ }
   res = scheme_utf16_to_ucs4(utf, 0, end, NULL, -1, &ulen, 1);
@@ -1189,7 +1188,7 @@ void *scheme_extract_pointer(Scheme_Object *v) {
 #endif
 
 static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
-                               int delta, int args_loc, int gcsrc)
+                               intptr_t delta, int args_loc, int gcsrc)
 {
   Scheme_Object *res;
   if (!SCHEME_CTYPEP(type))
@@ -1480,7 +1479,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
  * bytes or a type.  If no mode is specified, then scheme_malloc will be used
  * when the type is any pointer, otherwise scheme_malloc_atomic is used. */
 @cdefine[malloc 1 5]{
-  int i, size=0, num=0, failok=0;
+  int i, failok=0;
+  intptr_t size=0, num=0;
   void *from = NULL, *res = NULL;
   intptr_t foff = 0;
   Scheme_Object *mode = NULL, *a, *base = NULL;
@@ -1492,7 +1492,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
         scheme_signal_error(MYNAME": specifying a second integer size: %V", a);
       num = SCHEME_INT_VAL(a);
       if (num <= 0)
-        scheme_wrong_type(MYNAME, "positive-integer", 0, argc, argv);
+        scheme_wrong_type(MYNAME, "positive fixnum", 0, argc, argv);
     } else if (SCHEME_CTYPEP(a)) {
       if (size != 0)
         scheme_signal_error(MYNAME": specifying a second type: %V", a);
@@ -1534,7 +1534,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
     scheme_signal_error(MYNAME": bad allocation mode: %V", mode);
     return NULL; /* hush the compiler */
   }
-  if (failok) res = scheme_malloc_fail_ok(mf,size); else res = mf(size);
+  res = scheme_malloc_fail_ok(mf,size);
+  if (failok && (res == NULL)) scheme_signal_error("malloc: out of memory");
   if (((from != NULL) || (foff != 0)) && (res != NULL))
     memcpy(res, W_OFFSET(from, foff), size);
   if (SAME_OBJ(mode, raw_sym))
@@ -1829,11 +1830,11 @@ static Scheme_Object *do_memop(const char *who, int mode,
     if (!SAME_OBJ(argv[2],abs_sym))
       scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
-      scheme_wrong_type(MYNAME, "integer", 3, argc, argv);
+      scheme_wrong_type(MYNAME, "fixnum", 3, argc, argv);
     delta += SCHEME_INT_VAL(argv[3]);
   } else if (argc > 2) {
     if (!SCHEME_INTP(argv[2]))
-      scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
+      scheme_wrong_type(MYNAME, "fixnum", 2, argc, argv);
     if (!size)
       scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
     delta += (size * SCHEME_INT_VAL(argv[2]));
@@ -1871,11 +1872,11 @@ static Scheme_Object *do_memop(const char *who, int mode,
     if (!SAME_OBJ(argv[2],abs_sym))
       scheme_wrong_type(MYNAME, "'abs", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
-      scheme_wrong_type(MYNAME, "integer", 3, argc, argv);
+      scheme_wrong_type(MYNAME, "fixnum", 3, argc, argv);
     delta += SCHEME_INT_VAL(argv[3]);
   } else if (argc > 3) {
     if (!SCHEME_INTP(argv[2]))
-      scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
+      scheme_wrong_type(MYNAME, "fixnum", 2, argc, argv);
     if (!size)
       scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
     delta += (size * SCHEME_INT_VAL(argv[2]));
