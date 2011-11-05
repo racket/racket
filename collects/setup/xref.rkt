@@ -19,7 +19,10 @@
       (for/hash ([k (in-list (find-relevant-directories '(scribblings) 'no-planet))])
         (values k #t))))
   (for*/list ([dir (find-relevant-directories '(scribblings) 'all-available)]
-              [d ((get-info/full dir) 'scribblings)])
+              [d (let ([info-proc (get-info/full dir)])
+                   (if info-proc
+                       (info-proc 'scribblings)
+                       '()))])
     (unless (and (list? d) (pair? d))
       (error 'xref "bad scribblings entry: ~e" d))
     (let* ([len   (length d)]
