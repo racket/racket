@@ -803,6 +803,8 @@
  (definitions-menu-item-help-string "Definitionsfenster ein-/ausblenden")
  (show-interactions-menu-item-label "&Interaktionen einblenden")
  (hide-interactions-menu-item-label "&Interaktionen ausblenden")
+ (put-interactions-beside-definitions "Interaktionsfenster neben die Definitionen setzen")
+ (put-interactions-below-definitions "Interaktionsfenster unter die Definitionen setzen")
  (interactions-menu-item-help-string "Interaktionsfenster ein-/ausblenden")
  (toolbar "Toolbar")
  (toolbar-on-top "Toolbar oben")
