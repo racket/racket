@@ -15,7 +15,9 @@
          "common/format.rkt"
          "common/sample.rkt"
          "common/draw.rkt"
-         "common/date-time.rkt")
+         "common/date-time.rkt"
+         "common/marching-squares.rkt"
+         "common/marching-cubes.rkt")
 
 (provide (only-doc-out
           (combine-out (all-from-out "common/parameters.rkt")
@@ -28,7 +30,9 @@
                        (all-from-out "common/format.rkt")
                        (all-from-out "common/sample.rkt")
                        (all-from-out "common/draw.rkt")
-                       (all-from-out "common/date-time.rkt"))))
+                       (all-from-out "common/date-time.rkt")
+                       (all-from-out "common/marching-squares.rkt")
+                       (all-from-out "common/marching-cubes.rkt"))))
 
 ;; ===================================================================================================
 ;; 2D exports

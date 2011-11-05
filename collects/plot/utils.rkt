@@ -2,6 +2,7 @@
 
 (require "common/contract.rkt"
          "common/marching-squares.rkt"
+         "common/marching-cubes.rkt"
          "contracted/parameters.rkt"
          "contracted/math.rkt"
          "contracted/axis-transform.rkt"
@@ -16,6 +17,7 @@
 
 (provide (all-from-out "common/contract.rkt")
          (all-from-out "common/marching-squares.rkt")
+         (all-from-out "common/marching-cubes.rkt")
          (all-from-out "contracted/parameters.rkt")
          (all-from-out "contracted/math.rkt")
          (all-from-out "contracted/axis-transform.rkt")

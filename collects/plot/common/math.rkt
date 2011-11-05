@@ -21,7 +21,7 @@
   (cond [(not (flonum? x))  (raise-type-error 'flblend "flonum" 0 x y α)]
         [(not (flonum? y))  (raise-type-error 'flblend "flonum" 1 x y α)]
         [(not (flonum? α))  (raise-type-error 'flblend "flonum" 2 x y α)]
-        [else  (unsafe-fl+ (unsafe-fl* α x) (unsafe-fl* (unsafe-fl- 1 α) y))]))
+        [else  (unsafe-fl+ (unsafe-fl* α x) (unsafe-fl* (unsafe-fl- 1.0 α) y))]))
 
 (defproc (flatan2 [y flonum?] [x flonum?]) flonum?
   (cond [(not (flonum? y))  (raise-type-error 'flatan2 "flonum" 0 x y)]
@@ -35,13 +35,13 @@
                  (unsafe-fl+ sum y))]))
 
 (defproc (flmodulo [x flonum?] [y flonum?]) flonum?
-  (cond [(not (flonum? x))  (raise-type-error 'real-modulo "flonum" 0 x y)]
-        [(not (flonum? y))  (raise-type-error 'real-modulo "flonum" 1 x y)]
+  (cond [(not (flonum? x))  (raise-type-error 'flmodulo "flonum" 0 x y)]
+        [(not (flonum? y))  (raise-type-error 'flmodulo "flonum" 1 x y)]
         [else  (unsafe-fl- x (unsafe-fl* y (unsafe-flfloor (unsafe-fl/ x y))))]))
 
 (define fldistance
   (case-lambda
-    [()   0]
+    [()   0.0]
     [(x)  (if (flonum? x) (abs x) (raise-type-error 'fldistance "flonum" x))]
     [(x y)  (cond [(not (flonum? x))  (raise-type-error 'fldistance "flonum" 0 x y)]
                   [(not (flonum? y))  (raise-type-error 'fldistance "flonum" 1 x y)]
@@ -406,18 +406,24 @@
 (defproc (vcenter [vs (listof (vectorof real?))]) (vectorof real?)
   (match vs
     [(list (vector xs ys) ...)
-     (define mins (vector (apply min* xs) (apply min* ys)))
-     (define maxs (vector (apply max* xs) (apply max* ys)))
-     (unrolled-vmap2 'center-coord (λ (x1 x2) (* 1/2 (+ x1 x2))) mins maxs)]
+     (define x-min (apply min* xs))
+     (define x-max (apply max* xs))
+     (define y-min (apply min* ys))
+     (define y-max (apply max* ys))
+     (vector (* 1/2 (+ x-min x-max)) (* 1/2 (+ y-min y-max)))]
     [(list (vector xs ys zs) ...)
-     (define mins (vector (apply min* xs) (apply min* ys) (apply min* zs)))
-     (define maxs (vector (apply max* xs) (apply max* ys) (apply max* zs)))
-     (unrolled-vmap2 'center-coord (λ (x1 x2) (* 1/2 (+ x1 x2))) mins maxs)]
+     (define x-min (apply min* xs))
+     (define x-max (apply max* xs))
+     (define y-min (apply min* ys))
+     (define y-max (apply max* ys))
+     (define z-min (apply min* zs))
+     (define z-max (apply max* zs))
+     (vector (* 1/2 (+ x-min x-max)) (* 1/2 (+ y-min y-max)) (* 1/2 (+ z-min z-max)))]
     [_
      (define xss (apply vector-map list vs))
      (define mins (vector-map (λ (xs) (apply min xs)) xss))
      (define maxs (vector-map (λ (xs) (apply max xs)) xss))
-     (unrolled-vmap2 'center-coord (λ (x1 x2) (* 1/2 (+ x1 x2))) mins maxs)]))
+     (unrolled-vmap2 'vcenter (λ (x1 x2) (* 1/2 (+ x1 x2))) mins maxs)]))
 
 (define (vregular-sublists vs)
   (define res

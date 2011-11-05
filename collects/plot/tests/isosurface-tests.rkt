@@ -1,6 +1,6 @@
 #lang racket
 
-(require plot plot/utils)
+(require plot plot/utils racket/flonum)
 
 (time
  (plot3d (isosurface3d (λ (x y z) (sqrt (+ (sqr x) (sqr y) (sqr z)))) 1
@@ -41,9 +41,11 @@
          #:y-min -2 #:y-max 2
          #:z-min -2 #:z-max 2))
 
+(define 2pi (* 2 pi))
+
 (time
- (define (f1 θ ρ) (+ 1 (/ θ 2 pi) (* 1/8 (sin (* 8 ρ)))))
- (define (f2 θ ρ) (+ 0 (/ θ 2 pi) (* 1/8 (sin (* 8 ρ)))))
+ (define (f1 θ ρ) (+ 1 (/ θ 2pi) (* 1/8 (sin (* 8 ρ)))))
+ (define (f2 θ ρ) (+ (/ θ 2pi) (* 1/8 (sin (* 8 ρ)))))
  
  (plot3d (list (polar3d f1 #:samples 41 #:color "navajowhite" #:line-style 'transparent #:alpha 2/3)
                (polar3d f2 #:samples 41 #:color "navajowhite" #:line-style 'transparent #:alpha 2/3))

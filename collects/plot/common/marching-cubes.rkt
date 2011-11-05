@@ -1,22 +1,12 @@
 #lang racket/base
 
-(require racket/flonum racket/fixnum racket/list racket/match
+(require racket/contract racket/flonum racket/fixnum racket/list racket/match racket/unsafe/ops
          (for-syntax racket/base racket/syntax racket/match racket/list)
-         "math.rkt")
+         "math.rkt"
+         "marching-utils.rkt"
+         "contract-doc.rkt")
 
-(provide scale-normalized-poly
-         heights->cube-polys)
-
-(define (scale-normalized-poly poly xa xb ya yb za zb)
-  (for/list ([uvw  (in-list poly)])
-    (match-define (vector u v w) uvw)
-    (vector (blend xb xa u) (blend yb ya v) (blend zb za w))))
-
-(define-syntax-rule (solve-t d da db)
-  (fl/ (fl- d da) (fl- db da)))
-
-(define (flavg4 d1 d2 d3 d4)
-  (fl* 0.25 (fl+ (fl+ (fl+ d1 d2) d3) d4)))
+(provide heights->cube-polys heights->cube-polys:doc)
 
 (define-for-syntax (->datum x)
   (if (syntax? x) (syntax->datum x) x))
@@ -81,7 +71,7 @@ Cube vertex numbers:
 (define known-cube-0000-1111 known-cube-1111-0000)
 
 (define ((make-known-cube-1010-0000 test?) d d1 d2 d3 d4 d5 d6 d7 d8)
-  (define da (flavg4 d1 d2 d3 d4))
+  (define da (unsafe-flavg4 d1 d2 d3 d4))
   (cond
     [(test? da d)
       (list (list (edge-1-2 d d1 d2) (edge-2-3 d d2 d3)
@@ -92,8 +82,8 @@ Cube vertex numbers:
      (list (list (edge-1-2 d d1 d2) (edge-1-5 d d1 d5) (edge-1-4 d d1 d4))
            (list (edge-2-3 d d2 d3) (edge-3-4 d d3 d4) (edge-3-7 d d3 d7)))]))
 
-(define known-cube-1010-0000 (make-known-cube-1010-0000 fl>=))
-(define known-cube-0101-1111 (make-known-cube-1010-0000 fl<))
+(define known-cube-1010-0000 (make-known-cube-1010-0000 unsafe-fl>=))
+(define known-cube-0101-1111 (make-known-cube-1010-0000 unsafe-fl<))
 
 (define (known-cube-1000-0010 d d1 d2 d3 d4 d5 d6 d7 d8)
   (list (list (edge-1-2 d d1 d2) (edge-1-5 d d1 d5) (edge-1-4 d d1 d4))
@@ -102,7 +92,7 @@ Cube vertex numbers:
 (define known-cube-0111-1101 known-cube-1000-0010)
 
 (define ((make-known-cube-1100-0010 test?) d d1 d2 d3 d4 d5 d6 d7 d8)
-  (define da (flavg4 d2 d6 d7 d3))
+  (define da (unsafe-flavg4 d2 d6 d7 d3))
   (cond
     [(test? da d)
      (list (list (edge-1-5 d d1 d5) (edge-2-6 d d2 d6)
@@ -115,12 +105,12 @@ Cube vertex numbers:
                  (edge-2-3 d d2 d3) (edge-1-4 d d1 d4))
            (list (edge-6-7 d d6 d7) (edge-3-7 d d3 d7) (edge-7-8 d d7 d8)))]))
   
-(define known-cube-1100-0010 (make-known-cube-1100-0010 fl>=))
-(define known-cube-0011-1101 (make-known-cube-1100-0010 fl<))
+(define known-cube-1100-0010 (make-known-cube-1100-0010 unsafe-fl>=))
+(define known-cube-0011-1101 (make-known-cube-1100-0010 unsafe-fl<))
 
 (define ((make-known-cube-1100-0011 test?) d d1 d2 d3 d4 d5 d6 d7 d8)
-  (define da (flavg4 d1 d5 d8 d4))
-  (define db (flavg4 d2 d6 d7 d3))
+  (define da (unsafe-flavg4 d1 d5 d8 d4))
+  (define db (unsafe-flavg4 d2 d6 d7 d3))
   (cond
     [(and (test? da d) (test? db d))
      (list (list (edge-1-5 d d1 d5) (edge-5-8 d d5 d8)
@@ -161,8 +151,8 @@ Cube vertex numbers:
            (list (edge-5-8 d d5 d8) (edge-6-7 d d6 d7)
                  (edge-3-7 d d3 d7) (edge-4-8 d d4 d8)))]))
 
-(define known-cube-1100-0011 (make-known-cube-1100-0011 fl>=))
-(define known-cube-0011-1100 (make-known-cube-1100-0011 fl<))
+(define known-cube-1100-0011 (make-known-cube-1100-0011 unsafe-fl>=))
+(define known-cube-0011-1100 (make-known-cube-1100-0011 unsafe-fl<))
 
 #|
 Cube vertex numbers:
@@ -178,12 +168,12 @@ Cube vertex numbers:
 
 
 (define ((make-known-cube-1010-0101 test?) d d1 d2 d3 d4 d5 d6 d7 d8)
-  (define da (flavg4 d1 d2 d3 d4))
-  (define db (flavg4 d1 d5 d8 d4))
-  (define dc (flavg4 d3 d4 d8 d7))
-  (define dd (flavg4 d1 d2 d6 d5))
-  (define de (flavg4 d2 d3 d7 d6))
-  (define df (flavg4 d5 d6 d7 d8))
+  (define da (unsafe-flavg4 d1 d2 d3 d4))
+  (define db (unsafe-flavg4 d1 d5 d8 d4))
+  (define dc (unsafe-flavg4 d3 d4 d8 d7))
+  (define dd (unsafe-flavg4 d1 d2 d6 d5))
+  (define de (unsafe-flavg4 d2 d3 d7 d6))
+  (define df (unsafe-flavg4 d5 d6 d7 d8))
   (append
    (list (list (edge-1-5 d d1 d5) (edge-1-2 d d1 d2) (edge-1-4 d d1 d4))
          (list (edge-2-3 d d2 d3) (edge-3-7 d d3 d7) (edge-3-4 d d3 d4))
@@ -214,25 +204,25 @@ Cube vertex numbers:
                    (edge-7-8 d d7 d8) (edge-5-8 d d5 d8)))
        empty)))
 
-(define known-cube-1010-0101 (make-known-cube-1010-0101 fl>=))
-(define known-cube-0101-1010 (make-known-cube-1010-0101 fl<))
+(define known-cube-1010-0101 (make-known-cube-1010-0101 unsafe-fl>=))
+(define known-cube-0101-1010 (make-known-cube-1010-0101 unsafe-fl<))
 
-(define ((make-known-cube-1110-0001 fl>=) d d1 d2 d3 d4 d5 d6 d7 d8)
-  (define da (flavg4 d1 d5 d8 d4))
-  (define db (flavg4 d7 d8 d4 d3))
+(define ((make-known-cube-1110-0001 unsafe-fl>=) d d1 d2 d3 d4 d5 d6 d7 d8)
+  (define da (unsafe-flavg4 d1 d5 d8 d4))
+  (define db (unsafe-flavg4 d7 d8 d4 d3))
   (cond
-    [(and (da . fl>= . d) (db . fl>= . d))
+    [(and (da . unsafe-fl>= . d) (db . unsafe-fl>= . d))
      (list (list (edge-1-5 d d1 d5) (edge-2-6 d d2 d6) (edge-3-7 d d3 d7))
            (list (edge-1-5 d d1 d5) (edge-3-7 d d3 d7)
                  (edge-7-8 d d7 d8) (edge-5-8 d d5 d8))
            (list (edge-1-4 d d1 d4) (edge-3-4 d d3 d4) (edge-4-8 d d4 d8)))]
-    [(da . fl>= . d)
+    [(da . unsafe-fl>= . d)
      (define ec (v* (v+ (edge-1-5 d d1 d5) (edge-3-7 d d3 d7)) 0.5))
      (list (list (edge-1-5 d d1 d5) (edge-2-6 d d2 d6) (edge-3-7 d d3 d7))
            (list ec (edge-3-7 d d3 d7) (edge-3-4 d d3 d4) (edge-1-4 d d1 d4))
            (list ec (edge-1-5 d d1 d5) (edge-5-8 d d5 d8) (edge-7-8 d d7 d8))
            (list ec (edge-1-4 d d1 d4) (edge-4-8 d d4 d8) (edge-7-8 d d7 d8)))]
-    [(db . fl>= . d)
+    [(db . unsafe-fl>= . d)
      (define ec (v* (v+ (edge-1-5 d d1 d5) (edge-3-7 d d3 d7)) 0.5))
      (list (list (edge-1-5 d d1 d5) (edge-2-6 d d2 d6) (edge-3-7 d d3 d7))
            (list ec (edge-1-5 d d1 d5) (edge-1-4 d d1 d4) (edge-3-4 d d3 d4))
@@ -244,8 +234,8 @@ Cube vertex numbers:
                  (edge-3-4 d d3 d4) (edge-1-4 d d1 d4))
            (list (edge-7-8 d d7 d8) (edge-5-8 d d5 d8) (edge-4-8 d d4 d8)))]))
 
-(define known-cube-1110-0001 (make-known-cube-1110-0001 fl>=))
-(define known-cube-0001-1110 (make-known-cube-1110-0001 fl<))
+(define known-cube-1110-0001 (make-known-cube-1110-0001 unsafe-fl>=))
+(define known-cube-0001-1110 (make-known-cube-1110-0001 unsafe-fl<))
 
 (define (known-cube-1110-0100 d d1 d2 d3 d4 d5 d6 d7 d8)
   (list (list (edge-1-5 d d1 d5) (edge-5-6 d d5 d6) (edge-6-7 d d6 d7)
@@ -260,9 +250,9 @@ Cube vertex numbers:
 (define known-cube-0001-1101 known-cube-1110-0010)
 
 (define ((make-known-cube-1010-0001 test?) d d1 d2 d3 d4 d5 d6 d7 d8)
-  (define da (flavg4 d1 d2 d3 d4))
-  (define db (flavg4 d1 d5 d8 d4))
-  (define dc (flavg4 d3 d4 d8 d7))
+  (define da (unsafe-flavg4 d1 d2 d3 d4))
+  (define db (unsafe-flavg4 d1 d5 d8 d4))
+  (define dc (unsafe-flavg4 d3 d4 d8 d7))
   (append
    (list (list (edge-1-5 d d1 d5) (edge-1-2 d d1 d2) (edge-1-4 d d1 d4))
          (list (edge-2-3 d d2 d3) (edge-3-7 d d3 d7) (edge-3-4 d d3 d4))
@@ -280,8 +270,8 @@ Cube vertex numbers:
                    (edge-7-8 d d7 d8) (edge-4-8 d d4 d8)))
        empty)))
 
-(define known-cube-1010-0001 (make-known-cube-1010-0001 fl>=))
-(define known-cube-0101-1110 (make-known-cube-1010-0001 fl<))
+(define known-cube-1010-0001 (make-known-cube-1010-0001 unsafe-fl>=))
+(define known-cube-0101-1110 (make-known-cube-1010-0001 unsafe-fl<))
 
 (define-for-syntax known-cubes
   '((0 0 0 0 0 0 0 0)
@@ -317,7 +307,7 @@ Cube vertex numbers:
 
 (define (mirror-vec-d v)
   (match-define (vector x y d) v)
-  (vector x y (fl- 1.0 d)))
+  (vector x y (unsafe-fl- 1.0 d)))
 
 (define ((mirror-cube-d f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map mirror-vec-d poly))
@@ -325,7 +315,7 @@ Cube vertex numbers:
 
 (define (mirror-vec-y v)
   (match-define (vector x y d) v)
-  (vector x (fl- 1.0 y) d))
+  (vector x (unsafe-fl- 1.0 y) d))
 
 (define ((mirror-cube-y f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map mirror-vec-y poly))
@@ -333,7 +323,7 @@ Cube vertex numbers:
 
 (define (mirror-vec-x v)
   (match-define (vector x y d) v)
-  (vector (fl- 1.0 x) y d))
+  (vector (unsafe-fl- 1.0 x) y d))
 
 (define ((mirror-cube-x f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map mirror-vec-x poly))
@@ -343,7 +333,7 @@ Cube vertex numbers:
 
 (define (unrotate-vec-d v)
   (match-define (vector x y d) v)
-  (vector (fl- 1.0 y) x d))
+  (vector (unsafe-fl- 1.0 y) x d))
 
 (define ((rotate-cube-d f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map unrotate-vec-d poly))
@@ -351,7 +341,7 @@ Cube vertex numbers:
 
 (define (unrotate-vec-y v)
   (match-define (vector x y d) v)
-  (vector d y (fl- 1.0 x)))
+  (vector d y (unsafe-fl- 1.0 x)))
 
 (define ((rotate-cube-y f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map unrotate-vec-y poly))
@@ -359,7 +349,7 @@ Cube vertex numbers:
 
 (define (unrotate-vec-x v)
   (match-define (vector x y d) v)
-  (vector x (fl- 1.0 d) y))
+  (vector x (unsafe-fl- 1.0 d) y))
 
 (define ((rotate-cube-x f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map unrotate-vec-x poly))
@@ -369,7 +359,7 @@ Cube vertex numbers:
 
 (define (rotate-vec-d v)
   (match-define (vector x y d) v)
-  (vector y (fl- 1.0 x) d))
+  (vector y (unsafe-fl- 1.0 x) d))
 
 (define ((unrotate-cube-d f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map rotate-vec-d poly))
@@ -377,7 +367,7 @@ Cube vertex numbers:
 
 (define (rotate-vec-y v)
   (match-define (vector x y d) v)
-  (vector (fl- 1.0 d) y x))
+  (vector (unsafe-fl- 1.0 d) y x))
 
 (define ((unrotate-cube-y f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map rotate-vec-y poly))
@@ -385,7 +375,7 @@ Cube vertex numbers:
 
 (define (rotate-vec-x v)
   (match-define (vector x y d) v)
-  (vector x d (fl- 1.0 y)))
+  (vector x d (unsafe-fl- 1.0 y)))
 
 (define ((unrotate-cube-x f) d d1 d2 d3 d4 d5 d6 d7 d8)
   (map (λ (poly) (map rotate-vec-x poly))
@@ -518,44 +508,34 @@ Cube vertex numbers:
   (make-cube-dispatch-table))
 
 (define-syntax-rule (add-digit j idx)
-  (fx+ (fx* idx 2) j))
+  (unsafe-fx+ (unsafe-fx* idx 2) j))
 
-(define (heights->cube-polys d d1 d2 d3 d4 d5 d6 d7 d8)
-  (define j1 (if (d1 . fl< . d) 0 1))
-  (define j2 (if (d2 . fl< . d) 0 1))
-  (define j3 (if (d3 . fl< . d) 0 1))
-  (define j4 (if (d4 . fl< . d) 0 1))
-  (define j5 (if (d5 . fl< . d) 0 1))
-  (define j6 (if (d6 . fl< . d) 0 1))
-  (define j7 (if (d7 . fl< . d) 0 1))
-  (define j8 (if (d8 . fl< . d) 0 1))
-  (define facet-num
-    (add-digit
-     j1 (add-digit
-         j2 (add-digit
-             j3 (add-digit
-                 j4 (add-digit
-                     j5 (add-digit
-                         j6 (add-digit j7 j8))))))))
-  (define f (vector-ref cube-dispatch-table facet-num))
-  (f d d1 d2 d3 d4 d5 d6 d7 d8))
-
-#|
-(require "../plot3d.rkt")
-
-(define ((shift-x dx) v)
-  (match-define (vector x y d) v)
-  (vector (+ x dx) y d))
-
-(define (polys->lines lsts [dx 0.0] #:color [color 1] #:alpha [alpha 1])
-  (map (λ (lst) (lines3d (map (shift-x dx) 
-                              (append lst (list (first lst))))
-                         #:color color #:alpha alpha))
-       lsts))
-
-(plot3d (polys->lines (heights->cube-polys 0.5
-                                           1.0 0.0 1.0 0.0
-                                           0.0 1.0 0.0 1.0)
-                       #:alpha 1/2)
-        #:x-min 0 #:x-max 1 #:y-min 0 #:y-max 1 #:d-min 0 #:d-max 1)
-|#
+(defproc (heights->cube-polys [xa real?] [xb real?] [ya real?] [yb real?] [za real?] [zb real?]
+                              [d real?]
+                              [d1 real?] [d2 real?] [d3 real?] [d4 real?]
+                              [d5 real?] [d6 real?] [d7 real?] [d8 real?]
+                              ) (listof (vector/c real? real? real?))
+  (check-all-real! 'heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
+  (let-exact->inexact
+   (xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
+   (define j1 (if (d1 . unsafe-fl< . d) 0 1))
+   (define j2 (if (d2 . unsafe-fl< . d) 0 1))
+   (define j3 (if (d3 . unsafe-fl< . d) 0 1))
+   (define j4 (if (d4 . unsafe-fl< . d) 0 1))
+   (define j5 (if (d5 . unsafe-fl< . d) 0 1))
+   (define j6 (if (d6 . unsafe-fl< . d) 0 1))
+   (define j7 (if (d7 . unsafe-fl< . d) 0 1))
+   (define j8 (if (d8 . unsafe-fl< . d) 0 1))
+   (define facet-num
+     (add-digit
+      j1 (add-digit
+          j2 (add-digit
+              j3 (add-digit
+                  j4 (add-digit
+                      j5 (add-digit
+                          j6 (add-digit j7 j8))))))))
+   (define f (vector-ref cube-dispatch-table facet-num))
+   (for/list ([poly  (in-list (f d d1 d2 d3 d4 d5 d6 d7 d8))])
+     (for/list ([uvw  (in-list poly)])
+       (match-define (vector u v w) uvw)
+       (vector (unsolve-t xa xb u) (unsolve-t ya yb v) (unsolve-t za zb w))))))

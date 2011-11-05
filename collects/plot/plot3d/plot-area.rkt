@@ -790,7 +790,7 @@
     
     ;; Drawing shapes
     
-    (define/public (put-line v1 v2 [c (vcenter (list v1 v2))])
+    (define/public (put-line v1 v2 [c (v* (v+ v1 v2) 1/2)])
       (let/ec return
         (unless (and (vregular? v1) (vregular? v2)) (return (void)))
         (let-values ([(v1 v2)  (if clipping?

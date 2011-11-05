@@ -3,21 +3,11 @@
 (require racket/flonum racket/fixnum racket/list racket/match racket/unsafe/ops racket/contract
          (for-syntax racket/base)
          "math.rkt"
+         "marching-utils.rkt"
          "contract-doc.rkt")
 
 (provide heights->lines heights->polys
          heights->lines:doc heights->polys:doc)
-
-;; Returns the interpolated distance of z from za toward zb
-;; Examples: if z = za, this returns 0.0
-;;           if z = zb, this returns 1.0
-;;           if z = (za + zb) / 2, this returns 0.5
-;; Intuitively, regard a use (solve-t z za zb) as "the point between za and zb".
-(define-syntax-rule (solve-t z za zb)
-  (unsafe-fl/ (unsafe-fl- z za) (unsafe-fl- zb za)))
-
-(define-syntax-rule (solve-z za zb t)
-  (unsafe-fl+ (unsafe-fl* t zb) (unsafe-fl* (unsafe-fl- 1.0 t) za)))
 
 #|
 Z values are at these normalized coordinates:
@@ -49,9 +39,6 @@ above.
 (define-syntax-rule (mirror-y-vec v)
   (match-let ([(vector x y z)  v])
     (vector x (fl- 1.0 y) z)))
-
-(define-syntax-rule (flavg4 z1 z2 z3 z4)
-  (unsafe-fl* 0.25 (unsafe-fl+ (unsafe-fl+ (unsafe-fl+ z1 z2) z3) z4)))
 
 ;; =============================================================================
 ;; Contour lines
@@ -116,7 +103,7 @@ above.
 ;(: lines-opposite ((Float Float -> Boolean) -> (FType Lines)))
 (define-syntax-rule (lines-opposite test? z z1 z2 z3 z4)
   ; disambiguate using average of corners as guess for center value
-  (let ([z5  (flavg4 z1 z2 z3 z4)])
+  (let ([z5  (unsafe-flavg4 z1 z2 z3 z4)])
     (if (test? z5 z)
         (list (vector (solve-t z z1 z2) 0.0
                       1.0 (solve-t z z2 z3))
@@ -129,19 +116,6 @@ above.
 
 (define-syntax-rule (lines1010 z z1 z2 z3 z4) (lines-opposite unsafe-fl>= z z1 z2 z3 z4))
 (define-syntax-rule (lines0101 z z1 z2 z3 z4) (lines-opposite unsafe-fl< z z1 z2 z3 z4))
-
-(define-syntax (check-all-real! stx)
-  (syntax-case stx ()
-    [(_ name id ...)
-     (with-syntax ([(i ...)  (build-list (length (syntax->list #'(id ...))) values)])
-       (define ids (syntax->list #'(id ...)))
-       #`(begin (unless (real? id)
-                  (raise-type-error name "real number" i #,@ids))
-                ...))]))
-
-(define-syntax-rule (let-exact->inexact (id ...) body0 body ...)
-  (let ([id  (exact->inexact id)] ...)
-    body0 body ...))
 
 (defproc (heights->lines [xa real?] [xb real?] [ya real?] [yb real?]
                          [z real?] [z1 real?] [z2 real?] [z3 real?] [z4 real?]
@@ -187,8 +161,8 @@ above.
                      (lines0000 z z1 z2 z3 z4))))))
    (for/list ([line  (in-list lines)])
      (match-define (vector u1 v1 u2 v2) line)
-     (list (vector (solve-z xa xb u1) (solve-z ya yb v1) z)
-           (vector (solve-z xa xb u2) (solve-z ya yb v2) z)))))
+     (list (vector (unsolve-t xa xb u1) (unsolve-t ya yb v1) z)
+           (vector (unsolve-t xa xb u2) (unsolve-t ya yb v2) z)))))
 
 ;; =============================================================================
 ;; Isoband marching squares: polygonizes contour between two isoline values
@@ -417,7 +391,7 @@ above.
               (vector 0.0 (solve-t za z1 z4) za))))
 
 (define (polys1010 za zb z1 z2 z3 z4)
-  (define z5 (flavg4 z1 z2 z3 z4))
+  (define z5 (unsafe-flavg4 z1 z2 z3 z4))
   (cond [(z5 . unsafe-fl< . za)  (polys10100 za zb z1 z2 z3 z4)]
         ; (z5 . >= . zb) is impossible
         [else  (polys10101 za zb z1 z2 z3 z4)]))
@@ -441,7 +415,7 @@ above.
               (vector 0.0 (solve-t zb z1 z4) zb))))
 
 (define (polys1212 za zb z1 z2 z3 z4)
-  (define z5 (flavg4 z1 z2 z3 z4))
+  (define z5 (unsafe-flavg4 z1 z2 z3 z4))
   (cond [(z5 . unsafe-fl>= . zb)  (polys1212-2 za zb z1 z2 z3 z4)]
         ; (z5 . < . za) is impossible
         [else  (polys1212-1 za zb z1 z2 z3 z4)]))
@@ -470,7 +444,7 @@ above.
               (vector (solve-t zb z4 z3) 1.0 zb))))
 
 (define (polys0212 za zb z1 z2 z3 z4)
-  (define z5 (flavg4 z1 z2 z3 z4))
+  (define z5 (unsafe-flavg4 z1 z2 z3 z4))
   (cond [(z5 . unsafe-fl< . zb)  (polys0212-1 za zb z1 z2 z3 z4)]
         ; handling (z5 . < . za) separately results in a non-convex polygon
         [else  (polys0212-2 za zb z1 z2 z3 z4)]))
@@ -498,7 +472,7 @@ above.
               (vector (solve-t za z4 z3) 1.0 za))))
 
 (define (polys2010 za zb z1 z2 z3 z4)
-  (define z5 (flavg4  z1 z2 z3 z4))
+  (define z5 (unsafe-flavg4  z1 z2 z3 z4))
   (cond [(z5 . unsafe-fl>= . za)  (polys2010-1 za zb z1 z2 z3 z4)]
         ; handling (z5 . >= . zb) separately results in a non-convex polygon
         [else  (polys2010-0 za zb z1 z2 z3 z4)]))
@@ -541,7 +515,7 @@ above.
               (vector (solve-t zb z4 z3) 1.0 zb))))
 
 (define (polys0202 za zb z1 z2 z3 z4)
-  (define z5 (flavg4 z1 z2 z3 z4))
+  (define z5 (unsafe-flavg4 z1 z2 z3 z4))
   (cond [(z5 . unsafe-fl< . za)  (polys0202-0 za zb z1 z2 z3 z4)]
         [(z5 . unsafe-fl< . zb)  (polys0202-1 za zb z1 z2 z3 z4)]
         [else  (polys0202-2 za zb z1 z2 z3 z4)]))
@@ -593,7 +567,7 @@ above.
                          [za real?] [zb real?]
                          [z1 real?] [z2 real?] [z3 real?] [z4 real?]
                          ) (listof (vector/c real? real? real?))
-  (check-all-real! xa xb ya yb za zb z1 z2 z3 z4)
+  (check-all-real! 'heights->polys xa xb ya yb za zb z1 z2 z3 z4)
   (let-exact->inexact
    (xa xb ya yb za zb z1 z2 z3 z4)
    (define t1 (if (z1 . unsafe-fl< . za) 0 (if (z1 . unsafe-fl< . zb) 1 2)))
@@ -611,4 +585,4 @@ above.
                                     (vector xb yb z3) (vector xa yb z4))]
            [else  (for/list ([uv  (in-list poly)])
                     (match-define (vector u v z) uv)
-                    (vector (solve-z xa xb u) (solve-z ya yb v) z))]))))
+                    (vector (unsolve-t xa xb u) (unsolve-t ya yb v) z))]))))

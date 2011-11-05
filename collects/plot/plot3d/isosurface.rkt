@@ -2,17 +2,12 @@
 
 (require racket/class racket/match racket/list racket/flonum racket/contract racket/math
          plot/utils
-         "../common/marching-cubes.rkt"
          "../common/contract-doc.rkt")
 
 (provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; Surfaces of constant value (isosurfaces)
-
-(define (scale-normalized-polys polys xa xb ya yb za zb)
-  (map (λ (poly) (scale-normalized-poly poly xa xb ya yb za zb))
-       polys))
 
 (define ((isosurface3d-render-proc f d samples color line-color line-width line-style alpha label)
          area)
@@ -48,16 +43,11 @@
         [d6  (in-vector ds10 1)]
         [d7  (in-vector ds11 1)]
         [d8  (in-vector ds11)])
-    (define polys
-      (heights->cube-polys
-       (exact->inexact d)
-       (exact->inexact d1) (exact->inexact d2) (exact->inexact d3) (exact->inexact d4)
-       (exact->inexact d5) (exact->inexact d6) (exact->inexact d7) (exact->inexact d8)))
+    (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
     
     (when (not (empty? polys))
-      (send area put-polygons
-            (scale-normalized-polys polys xa xb ya yb za zb)
-            (vcenter (list (vector xa ya za) (vector xb yb zb))))))
+      (send area put-polygons polys
+            (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb))))))
   
   (cond [label  (rectangle-legend-entry
                  label color 'solid line-color line-width line-style)]
@@ -136,16 +126,10 @@
              [d6  (in-vector ds10 1)]
              [d7  (in-vector ds11 1)]
              [d8  (in-vector ds11)])
-         (define polys
-           (heights->cube-polys
-            (exact->inexact d)
-            (exact->inexact d1) (exact->inexact d2) (exact->inexact d3) (exact->inexact d4)
-            (exact->inexact d5) (exact->inexact d6) (exact->inexact d7) (exact->inexact d8)))
-         
+         (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
          (when (not (empty? polys))
-           (send area put-polygons
-                 (scale-normalized-polys polys xa xb ya yb za zb)
-                 (vcenter (list (vector xa ya za) (vector xb yb zb)))))))
+           (send area put-polygons polys
+                 (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))
      
      (cond
        [label  (rectangle-legend-entries
@@ -213,15 +197,10 @@
         [d7  (in-vector ds11 1)]
         [d8  (in-vector ds11)])
     (define (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8)
-      (define polys
-        (heights->cube-polys
-         0.0
-         (exact->inexact d1) (exact->inexact d2) (exact->inexact d3) (exact->inexact d4)
-         (exact->inexact d5) (exact->inexact d6) (exact->inexact d7) (exact->inexact d8)))
+      (define polys (heights->cube-polys xa xb ya yb za zb 0.0 d1 d2 d3 d4 d5 d6 d7 d8))
       (when (not (empty? polys))
-        (send area put-polygons
-              (scale-normalized-polys polys xa xb ya yb za zb)
-              (vcenter (list (vector xa ya za) (vector xb yb zb))))))
+        (send area put-polygons polys
+              (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb))))))
     (cond [(and (xb . > . 0) (ya . < . 0) (yb . > . 0))
            (let* ([yb  -0.00001]
                   [d3  (f xb yb za)]
@@ -251,8 +230,8 @@
     (define-values (θ ρ)
       (cond [(and (fl= x 0.0) (fl= y 0.0))  (values 0.0 0.0)]
             [else  (values (flmodulo (flatan2 y x) 2pi)
-                           (flatan (fl/ z (distance x y))))]))
-    (fl- (exact->inexact (f θ ρ)) (distance x y z))))
+                           (flatan (fl/ z (fldistance x y))))]))
+    (fl- (exact->inexact (f θ ρ)) (fldistance x y z))))
 
 (defproc (polar3d [f (real? real? . -> . real?)]
                   [#:x-min x-min (or/c regular-real? #f) #f]
@@ -269,7 +248,7 @@
                   [#:alpha alpha (real-in 0 1) (surface-alpha)]
                   [#:label label (or/c string? #f) #f]
                   ) renderer3d?
-  (define vs (for*/list ([θ  (in-list (linear-seq 0 2pi (* 4 samples)))]
+  (define vs (for*/list ([θ  (in-list (linear-seq 0.0 2pi (* 4 samples)))]
                          [ρ  (in-list (linear-seq (* -1/2 pi) (* 1/2 pi) (* 2 samples)))])
                (3d-polar->3d-cartesian θ ρ (f θ ρ))))
   (define rvs (filter vregular? vs))
