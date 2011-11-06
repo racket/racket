@@ -62,7 +62,7 @@ the settings above should match r5rs
     
     (test-expression "(define-struct spider (legs))(make-spider 4)" 
                      "#<spider>"
-                     "define-values: cannot re-define a constant: struct:spider\n#<spider>")
+                     "define-values: cannot re-define a constant: struct:spider")
     
     (test-expression "(sqrt -1)" "0+1i")
     
@@ -99,7 +99,7 @@ the settings above should match r5rs
     (test-expression "'(1)" "'(1)")
     (test-expression "(define shrd (box 1)) (list shrd shrd)"
                      "'(#&1 #&1)"
-                     "define-values: cannot re-define a constant: shrd\n'(#&1 #&1)")
+                     "define-values: cannot re-define a constant: shrd")
     (test-expression "(local ((define x x)) 1)" "1")
     (test-expression "(letrec ([x x]) 1)" "1")
     (test-expression "(if 1 1 1)" "1")
@@ -274,8 +274,7 @@ the settings above should match r5rs
     
     (test-expression 
      "(define-struct spider (legs))(make-spider 4)" 
-     "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: define-struct"
-     "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: define-struct\n{stop-multi.png} {stop-22x22.png} reference to undefined identifier: make-spider")
+     "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: define-struct")
     
     (test-expression "(sqrt -1)" "0+1i")
     
@@ -389,7 +388,7 @@ the settings above should match r5rs
     
     (test-expression "(define-struct spider (legs))(make-spider 4)" 
                      "(make-spider 4)"
-                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
@@ -427,7 +426,7 @@ the settings above should match r5rs
                      "quote: expected the name of the symbol after the quote, but found a part")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(cons (cons 1 empty) (cons (cons 1 empty) empty))"
-                     "shrd: this name was defined previously and cannot be re-defined\n(cons (cons 1 empty) (cons (cons 1 empty) empty))")
+                     "shrd: this name was defined previously and cannot be re-defined")
     (test-expression "(local ((define x x)) 1)" 
                      "local: this function is not defined" 
                      "function call: expected a function after the open parenthesis, but found a part")
@@ -542,7 +541,7 @@ the settings above should match r5rs
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
                      "(make-spider 4)"
-                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
@@ -578,7 +577,7 @@ the settings above should match r5rs
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(list (list 1) (list 1))"
-                     "shrd: this name was defined previously and cannot be re-defined\n(list (list 1) (list 1))")
+                     "shrd: this name was defined previously and cannot be re-defined")
     (test-expression "(local ((define x x)) 1)"
                      "local: this function is not defined"
                      "function call: expected a function after the open parenthesis, but found a part")
@@ -691,7 +690,7 @@ the settings above should match r5rs
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
                      "(make-spider 4)"
-                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
@@ -728,7 +727,7 @@ the settings above should match r5rs
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(list (list 1) (list 1))"
-                     "shrd: this name was defined previously and cannot be re-defined\n(list (list 1) (list 1))")
+                     "shrd: this name was defined previously and cannot be re-defined")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -838,7 +837,7 @@ the settings above should match r5rs
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
                      "(make-spider 4)"
-                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
@@ -875,7 +874,7 @@ the settings above should match r5rs
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(list (list 1) (list 1))"
-                     "shrd: this name was defined previously and cannot be re-defined\n(list (list 1) (list 1))")
+                     "shrd: this name was defined previously and cannot be re-defined")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -957,17 +956,17 @@ the settings above should match r5rs
 
 (define (advanced)
   (parameterize ([language (list "How to Design Programs" #rx"Advanced Student(;|$)")])
-;    (check-top-of-repl)
+    (check-top-of-repl)
     
-;    (generic-settings #t)
-;    (generic-output #t #t #t #f)
-;    (teaching-language-fraction-output)
+    (generic-settings #t)
+    (generic-output #t #t #t #f)
+    (teaching-language-fraction-output)
     
-;    (test-hash-bang)
-;    (test-error-after-definition)
+    (test-hash-bang)
+    (test-error-after-definition)
     
     (prepare-for-test-expression)
-    #|
+    
     (test-expression "'|.|" 
                      "'|.|"
                      "'|.|")
@@ -980,12 +979,12 @@ the settings above should match r5rs
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
                      "(make-spider 4)"
-                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
                      "0+1i")
-    |#
+    
     (test-undefined-var "class")
     
     (test-expression "shared" "shared: expected an open parenthesis before shared, but found none")
@@ -1013,7 +1012,7 @@ the settings above should match r5rs
                      "set!: cannot set variable before its definition: x")
     (test-expression "(define qqq 2) (set! qqq 1)" 
                      "(void)" 
-                     "qqq: this name was defined previously and cannot be re-defined\n(void)")
+                     "qqq: this name was defined previously and cannot be re-defined")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
     (test-expression "(cons 1 2)"  "cons: second argument must be a list, but received 1 and 2")
     (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given (list 1)")
@@ -1022,7 +1021,7 @@ the settings above should match r5rs
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(shared ((-1- (list 1))) (list -1- -1-))"
-                     "shrd: this name was defined previously and cannot be re-defined\n(shared ((-1- (list 1))) (list -1- -1-))")
+                     "shrd: this name was defined previously and cannot be re-defined")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -1337,7 +1336,6 @@ the settings above should match r5rs
 ;; types an expression in the definitions window, executes it and tests the output
 ;; types an expression in the REPL and tests the output from the REPL.
 (define (test-expression expression defs-expected [repl-expected defs-expected])
-  (printf "test-expression ~a~n" expression)
   (let* ([drs (wait-for-drscheme-frame)]
          [interactions-text (queue-callback/res (λ () (send drs get-interactions-text)))]
          [definitions-text (queue-callback/res (λ () (send drs get-definitions-text)))]

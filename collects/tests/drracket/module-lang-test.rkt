@@ -140,7 +140,7 @@
            (require-for-syntax (file @in-here{module-lang-test-tmp2.rkt}))
            (provide s)
            (define-syntax (s stx) e))}
-      @t{(require m) s}
+      @t{(require 'm) s}
       @rx{compile: bad syntax;
           literal data is not allowed, because no #%datum syntax transformer
           is bound in: 1$})
@@ -157,7 +157,7 @@
 (test @t{#lang racket
          (eval 'cons)}
       #f
-      @rx{. compile: unbound identifier \(and no #%top syntax transformer is bound\) in: cons})
+      @rx{compile: unbound identifier \(and no #%top syntax transformer is bound\) in: cons})
 (test @t{(module m (file @in-here{module-lang-test-tmp1.rkt}) 1 2 3)}
       @t{1} ;; just make sure no errors.
       "1")

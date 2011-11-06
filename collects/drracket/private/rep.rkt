@@ -29,6 +29,7 @@ TODO
          browser/external
          "drsig.rkt"
          "local-member-names.rkt"
+         "stack-checkpoint.rkt"
          
          ;; the dynamic-require below loads this module, 
          ;; so we make the dependency explicit here, even
@@ -40,42 +41,6 @@ TODO
 (define orig-output-port (current-output-port))
 (define (oprintf . args) (apply fprintf orig-output-port args))
  
-
-;; run a thunk, and if an exception is raised, make it possible to cut the
-;; stack so that the surrounding context is hidden
-(define checkpoints (make-weak-hasheq))
-(define (call-with-stack-checkpoint thunk)
-  (define checkpoint #f)
-  (call-with-exception-handler
-   (λ (exn)
-     (when (and checkpoint ; just in case there's an exception before it's set
-                (not (hash-has-key? checkpoints exn)))
-       (hash-set! checkpoints exn checkpoint))
-     exn)
-   (lambda ()
-     (set! checkpoint (current-continuation-marks))
-     (thunk))))
-;; returns the stack of the input exception, cutting off any tail that was
-;; registered as a checkpoint
-(define (cut-stack-at-checkpoint exn)
-  (define stack (continuation-mark-set->context (exn-continuation-marks exn)))
-  (define checkpoint
-    (cond [(hash-ref checkpoints exn #f) => continuation-mark-set->context]
-          [else #f]))
-  (if (not checkpoint)
-    stack
-    (let loop ([st stack]
-               [sl (length stack)]
-               [cp checkpoint]
-               [cl (length checkpoint)])
-      (cond [(sl . > . cl) (cons (car st) (loop (cdr st) (sub1 sl) cp cl))]
-            [(sl . < . cl) (loop st sl (cdr cp) (sub1 cl))]
-            [(equal? st cp) '()]
-            [else (loop st sl (cdr cp) (sub1 cl))]))))
-
-(define-syntax-rule (with-stack-checkpoint expr)
-  (call-with-stack-checkpoint (lambda () expr)))
-
 (define no-breaks-break-parameterization
   (parameterize-break #f (current-break-parameterization)))
 
@@ -164,37 +129,7 @@ TODO
   ;; the highlight must be set after the error message, because inserting into the text resets
   ;;     the highlighting.
   (define (drracket-error-display-handler msg exn)
-    (let* ([cut-stack (if (and (exn? exn)
-                               (main-user-eventspace-thread?))
-                          (cut-stack-at-checkpoint exn)
-                          '())]
-           [srclocs-stack (filter values (map cdr cut-stack))]
-           [stack 
-            (filter
-             values
-             (map (λ (srcloc)
-                    (let ([source (srcloc-source srcloc)]
-                          [pos (srcloc-position srcloc)]
-                          [span (srcloc-span srcloc)])
-                      (and source pos span 
-                           srcloc)))
-                  srclocs-stack))]
-           [src-locs (if (exn:srclocs? exn)
-                         ((exn:srclocs-accessor exn) exn)
-                         (if (null? stack)
-                             '()
-                             (list (car srclocs-stack))))])
-      
-      ;; for use in debugging the stack trace stuff
-      #;
-      (when (exn? exn)
-        (parameterize ([print-struct #t])
-          (for-each 
-           (λ (frame) (printf " ~s\n" frame))
-           (continuation-mark-set->context (exn-continuation-marks exn)))
-          (printf "\n")))
-      
-      (drracket:debug:error-display-handler/stacktrace msg exn stack)))
+    (drracket:debug:error-display-handler/stacktrace msg exn))
   
   (define (main-user-eventspace-thread?)
     (let ([rep (current-rep)])
@@ -1114,17 +1049,38 @@ TODO
                    (let loop ()
                      (let ([sexp/syntax/eof (with-stack-checkpoint (get-sexp/syntax/eof))])
                        (unless (eof-object? sexp/syntax/eof)
-                         (call-with-values
-                          (λ () 
-                            (call-with-continuation-prompt
-                             (λ () (with-stack-checkpoint (eval-syntax sexp/syntax/eof)))
-                             (default-continuation-prompt-tag)
-                             (and complete-program?
-                                  (λ args
-                                    (abort-current-continuation 
-                                     (default-continuation-prompt-tag))))))
-                          (λ x (parameterize ([pretty-print-columns pretty-print-width])
-                                 (for-each (λ (x) ((current-print) x)) x))))
+                         (define results
+                           ;; we duplicate the 'expand-syntax-to-top-form' dance that eval-syntax
+                           ;; does here, so that we can put 'with-stack-checkpoint's in to limit
+                           ;; the amount of DrRacket code we see in stacktraces
+                           (let loop ([stx sexp/syntax/eof])
+                             (define top-expanded (with-stack-checkpoint (expand-syntax-to-top-form stx)))
+                             (syntax-case top-expanded (begin)
+                               [(begin a1 . args)
+                                (let lloop ([args (syntax->list #'(a1 . args))])
+                                  (cond
+                                    [(null? (cdr args))
+                                     (loop (car args))]
+                                    [else
+                                     (loop (car args))
+                                     (lloop (cdr args))]))]
+                               [_ 
+                                (let ([expanded (with-stack-checkpoint (expand-syntax top-expanded))])
+                                  (call-with-values
+                                   (λ () 
+                                     (call-with-continuation-prompt
+                                      (λ ()
+                                        (with-stack-checkpoint (eval-syntax expanded)))
+                                      (default-continuation-prompt-tag)
+                                      (λ args
+                                        (apply
+                                         abort-current-continuation 
+                                         (default-continuation-prompt-tag)
+                                         args))))
+                                   list))])))
+                         (parameterize ([pretty-print-columns pretty-print-width])
+                           (for ([x (in-list results)])
+                             ((current-print) x)))
                          (loop)))))))
               (default-continuation-prompt-tag)
               (λ args (void)))

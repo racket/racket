@@ -21,6 +21,7 @@ profile todo:
          "embedded-snip-utils.rkt"
          "drsig.rkt"
          "bindings-browser.rkt"
+         "stack-checkpoint.rkt"
          net/sendurl
          net/url
          racket/match
@@ -282,7 +283,7 @@ profile todo:
                                            (send rep get-definitions-text)))])
     (let* ([stack1 (or pre-stack '())]
            [stack2 (if (exn? exn)
-                       (map cdr (filter cdr (continuation-mark-set->context (exn-continuation-marks exn))))
+                       (map cdr (filter cdr (cut-stack-at-checkpoint exn)))
                        '())]
            [src-locs (cond
                        [(exn:srclocs? exn)
@@ -638,9 +639,9 @@ profile todo:
   (define (show-backtrace-window/edition-pairs/two error-text dis1 editions1 dis2 editions2 defs ints)
     (reset-backtrace-window)
     (when (mf-bday?)
-      (instantiate message% ()
-        (label (string-constant happy-birthday-matthias))
-        (parent (send current-backtrace-window get-area-container))))
+      (new message%
+           [label (string-constant happy-birthday-matthias)]
+           [parent (send current-backtrace-window get-area-container)]))
     (define tab-panel 
       (if (and (pair? dis1) (pair? dis2))
           (new tab-panel% 
@@ -652,24 +653,22 @@ profile todo:
                         (λ (l) (if (zero? (send tab-panel get-selection))
                                    (list ec1)
                                    (list ec2)))))])
-          (new panel% [parent (send current-backtrace-window get-area-container)])))
-    (define text1 (and (pair? dis1) (new (text:wide-snip-mixin text:hide-caret/selection%))))
-    (define ec1 (and (pair? dis1) 
-                     (new (canvas:color-mixin canvas:wide-snip%)
-                          [parent tab-panel]
-                          [editor text1])))
-    (define text2 (and (pair? dis2) (new (text:wide-snip-mixin text:hide-caret/selection%))))
-    (define ec2 (and (pair? dis2) 
-                     (new (canvas:color-mixin canvas:wide-snip%)
-                          [parent tab-panel]
-                          [editor text2])))
-    (when (pair? dis1)
-      (add-one-set-to-frame text1 ec1 error-text dis1 editions1 defs ints))
-    (when (pair? dis2)
-      (add-one-set-to-frame text2 ec2 error-text dis2 editions2 defs ints))
+          (new vertical-panel% [parent (send current-backtrace-window get-area-container)])))
+    (define ec1 (add-ec/text dis1 editions1 defs ints tab-panel error-text))
+    (define ec2 (add-ec/text dis2 editions2 defs ints tab-panel error-text))
     (when (and (pair? dis1) (pair? dis2))
       (send tab-panel change-children (λ (l) (list ec1)))))
-
+  
+  (define (add-ec/text dis1 editions1 defs ints tab-panel error-text)
+    (cond
+      [(pair? dis1)
+       (define text1 (new (text:wide-snip-mixin text:hide-caret/selection%)))
+       (define ec1 (new (canvas:color-mixin canvas:wide-snip%)
+                        [parent tab-panel]
+                        [editor text1]))
+       (add-one-set-to-frame text1 ec1 error-text dis1 editions1 defs ints)
+       ec1]
+      [else #f]))
   
   (define (add-one-set-to-frame text ec error-text dis editions defs ints)
     (letrec ([di-vec (list->vector dis)]
