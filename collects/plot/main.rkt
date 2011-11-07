@@ -44,11 +44,10 @@
           lines-interval parametric-interval polar-interval function-interval inverse-interval))
 
 (require "plot2d/contour.rkt")
-(provide (activate-contract-out         contours contour-intervals
-                                isoline isolines isoline-intervals))
+(provide (activate-contract-out isoline contours contour-intervals))
 
 (require "plot2d/rectangle.rkt")
-(provide (activate-contract-out rectangles area-histogram discrete-histogram))
+(provide (activate-contract-out rectangles area-histogram discrete-histogram stacked-histogram))
 
 (require "plot2d/decoration.rkt")
 (provide (activate-contract-out
@@ -70,14 +69,13 @@
 (provide (activate-contract-out surface3d))
 
 (require "plot3d/contour.rkt")
-(provide (activate-contract-out contour3d contours3d contour-intervals3d
-                                isoline3d isolines3d isoline-intervals3d))
+(provide (activate-contract-out isoline3d contours3d contour-intervals3d))
 
 (require "plot3d/line.rkt")
 (provide (activate-contract-out lines3d parametric3d))
 
 (require "plot3d/point.rkt")
-(provide (activate-contract-out points3d))
+(provide (activate-contract-out points3d vector-field3d))
 
 (require "plot3d/isosurface.rkt")
 (provide (activate-contract-out isosurface3d isosurfaces3d polar3d))

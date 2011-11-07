@@ -7,7 +7,8 @@
          "contract-doc.rkt"
          "draw.rkt"
          "axis-transform.rkt"
-         "ticks.rkt")
+         "ticks.rkt"
+         "math.rkt")
 
 (provide (all-defined-out))
 
@@ -78,7 +79,7 @@
     plot-animating?))
 
 (defproc (pen-gap) real? #:document-body
-  (* 2 (plot-line-width)))
+  (max 1 (* 2 (plot-line-width))))
 
 (defproc (animated-samples [samples (and/c exact-integer? (>=/c 2))]
                            ) (and/c exact-integer? (>=/c 2)) #:document-body
@@ -222,6 +223,7 @@
 (defparam vector-field-line-style plot-pen-style/c 'solid)
 (defparam vector-field-scale (or/c real? (one-of/c 'auto 'normalized)) 'auto)
 (defparam vector-field-alpha (real-in 0 1) 1)
+(defparam vector-field3d-samples exact-positive-integer? 9)
 
 ;; Error bars
 
@@ -237,22 +239,22 @@
   (color-seq* (list (->pen-color 5) (->pen-color 0) (->pen-color 1))
               (length zs)))
 
-(defproc (default-contour-fill-colors [zs (listof real?)]) (listof plot-color/c) #:document-body
+(defproc (default-contour-fill-colors [z-ivls (listof ivl?)]) (listof plot-color/c) #:document-body
   (color-seq* (list (->brush-color 5) (->brush-color 0) (->brush-color 1))
-              (sub1 (length zs))))
+              (length z-ivls)))
 
 (defparam contour-samples (and/c exact-integer? (>=/c 2)) 51)
 (defparam contour-levels (or/c 'auto exact-positive-integer? (listof real?)) 'auto)
-(defparam contour-colors plot-colors/c default-contour-colors)
-(defparam contour-widths pen-widths/c '(1))
-(defparam contour-styles plot-pen-styles/c '(solid long-dash))
-(defparam contour-alphas alphas/c '(1))
+(defparam contour-colors (plot-colors/c (listof real?)) default-contour-colors)
+(defparam contour-widths (pen-widths/c (listof real?)) '(1))
+(defparam contour-styles (plot-pen-styles/c (listof real?)) '(solid long-dash))
+(defparam contour-alphas (alphas/c (listof real?)) '(1))
 
-(defparam contour-interval-colors plot-colors/c default-contour-fill-colors)
-(defparam contour-interval-styles plot-brush-styles/c '(solid))
-(defparam contour-interval-alphas alphas/c '(1))
+(defparam contour-interval-colors (plot-colors/c (listof ivl?)) default-contour-fill-colors)
+(defparam contour-interval-styles (plot-brush-styles/c (listof ivl?)) '(solid))
+(defparam contour-interval-alphas (alphas/c (listof ivl?)) '(1))
 
-;; Histograms
+;; Rectangles
 
 (defparam rectangle-color plot-color/c 3)
 (defparam rectangle-style plot-brush-style/c 'solid)
@@ -260,7 +262,17 @@
 (defparam rectangle-line-width (>=/c 0) 1)
 (defparam rectangle-line-style plot-pen-style/c 'solid)
 (defparam rectangle-alpha (real-in 0 1) 1)
+(defparam rectangle3d-line-width (>=/c 0) 1/3)
+
 (defparam discrete-histogram-gap (real-in 0 1) 1/8)
+(defparam discrete-histogram-skip (>=/c 0) 1)
+
+(defparam stacked-histogram-colors (plot-colors/c nat/c) (λ (n) (build-list n add1)))
+(defparam stacked-histogram-styles (plot-brush-styles/c nat/c) '(solid))
+(defparam stacked-histogram-line-colors (plot-colors/c nat/c) (stacked-histogram-colors))
+(defparam stacked-histogram-line-widths (pen-widths/c nat/c) '(1))
+(defparam stacked-histogram-line-styles (plot-pen-styles/c nat/c) '(solid))
+(defparam stacked-histogram-alphas (alphas/c nat/c) '(1))
 
 ;; Decorations
 
@@ -301,9 +313,9 @@
 
 ;; Contour surfaces
 
-(defparam contour-interval-line-colors plot-colors/c '(0))
-(defparam contour-interval-line-widths pen-widths/c '(1/3))
-(defparam contour-interval-line-styles plot-pen-styles/c '(solid))
+(defparam contour-interval-line-colors (plot-colors/c (listof ivl?)) '(0))
+(defparam contour-interval-line-widths (pen-widths/c (listof ivl?)) '(1/3))
+(defparam contour-interval-line-styles (plot-pen-styles/c (listof ivl?)) '(solid))
 
 ;; Isosurfaces
 
@@ -316,12 +328,9 @@
               (length zs)))
 
 (defparam isosurface-levels (or/c 'auto exact-positive-integer? (listof real?)) 'auto)
-(defparam isosurface-colors plot-colors/c default-isosurface-colors)
-(defparam isosurface-line-colors plot-colors/c default-isosurface-line-colors)
-(defparam isosurface-line-widths pen-widths/c '(1/3))
-(defparam isosurface-line-styles plot-pen-styles/c '(solid))
-(defparam isosurface-alphas alphas/c '(1/2))
-
-;; Histograms
-
-(defparam rectangle3d-line-width (>=/c 0) 1/3)
+(defparam isosurface-colors (plot-colors/c (listof real?)) default-isosurface-colors)
+(defparam isosurface-styles (plot-brush-styles/c (listof real?)) '(solid))
+(defparam isosurface-line-colors (plot-colors/c (listof real?)) default-isosurface-line-colors)
+(defparam isosurface-line-widths (pen-widths/c (listof real?)) '(1/3))
+(defparam isosurface-line-styles (plot-pen-styles/c (listof real?)) '(solid))
+(defparam isosurface-alphas (alphas/c (listof real?)) '(1/2))

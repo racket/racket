@@ -243,10 +243,6 @@ For example,
                                               #:styles '(solid dot)))]
 }
 
-@defproc[(isolines ...) renderer2d?]{
-A synonym of @(racket contours).
-}
-
 @doc-apply[contour-intervals]{
 Returns a renderer that fills the area between contour lines, and additionally draws contour lines.
 
@@ -256,10 +252,6 @@ For example, the canonical saddle, with its gradient field superimposed:
                                                    -2 2 -2 2 #:label "z")
                                 (vector-field (λ (x y) (vector (* 2 x) (* -2 y)))
                                               #:color "black" #:label "Gradient")))]
-}
-
-@defproc[(isoline-intervals ...) renderer2d?]{
-A synonym of @(racket contour-intervals).
 }
 
 @section{2D Rectangle Renderers}

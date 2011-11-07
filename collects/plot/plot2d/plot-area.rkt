@@ -140,17 +140,17 @@
               (vector x (pre-tick-value t2))))
     
     (define x-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
-                             (x-tick-near? y-min)))
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
+                      (x-tick-near? y-min)))
     (define x-far-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
-                             (x-tick-near? y-max)))
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
+                      (x-tick-near? y-max)))
     (define y-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
-                             (y-tick-near? x-min)))
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
+                      (y-tick-near? x-min)))
     (define y-far-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
-                             (y-tick-near? x-max)))
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
+                      (y-tick-near? x-max)))
     
     ;; ===============================================================================================
     ;; Tick and label parameters, and fixpoint margin computation
@@ -345,7 +345,7 @@
     
     (define (draw-labels)
       (for ([params  (in-list (get-all-label-params))])
-        (send/apply pd draw-text params)))
+        (send/apply pd draw-text params #:outline? #t)))
     
     ;; ===============================================================================================
     ;; Public drawing control (used by plot/dc)

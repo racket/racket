@@ -30,7 +30,7 @@
                                  #:samples samples #:width width #:color color)])]))
 
 (define (contour-renderer f samples width color levels)
-  (isolines f #:samples samples #:levels (if (exact-integer? levels) (sub1 levels) levels)
+  (contours f #:samples samples #:levels (if (exact-integer? levels) (sub1 levels) levels)
             #:colors (list color) #:widths (list width) #:styles '(solid)))
 
 (define (shade-fill-colors zs)

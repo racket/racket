@@ -202,11 +202,6 @@
 (defproc (alpha-expt [a (real-in 0 1)] [n (>/c 0)]) real?
   (- 1 (expt (- 1 a) n)))
 
-(defproc (maybe-apply/list [list-or-proc (or/c (listof any/c) (any/c . -> . any/c))]
-                           [xs (listof any/c)]) (listof any/c)
-  (cond [(procedure? list-or-proc)  (list-or-proc xs)]
-        [else                       list-or-proc]))
-
 ;; ===================================================================================================
 ;; Subdividing nonlinearly transformed shapes
 

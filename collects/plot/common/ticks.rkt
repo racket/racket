@@ -624,21 +624,28 @@
 ;; ===================================================================================================
 ;; Tick utils
 
-(defproc (collapse-nearby-ticks [ts (listof tick?)]
-                                [near? (tick? tick? . -> . boolean?)]
-                                [format-string string? "~a|~a"]) (listof tick?)
-  (let* ([ts  (sort ts < #:key pre-tick-value)])
+(define (same-label? t1 t2) (string=? (tick-label t1) (tick-label t2)))
+
+(define (collapse-equiv-ticks ts near-format-string)
+  (match-define (list (tick xs majors labels) ...) ts)
+  (define x (/ (apply + xs) (length ts)))
+  (define major? (ormap values majors))
+  (define label1 (first labels))
+  (define label2 (last labels))
+  (define label
+    (cond [(string=? label1 label2)  label1]
+          [else  (format near-format-string label1 label2)]))
+  (tick x major? label))
+
+(defproc (collapse-ticks [ts (listof tick?)] [near? (tick? tick? . -> . boolean?)]
+                         [near-format-string string? "~a|~a"]) (listof tick?)
+  (let ([ts  (sort ts < #:key pre-tick-value)])
     (append*
-     (for/list ([ts  (in-list (group-neighbors ts near?))])
+     (for/list ([ts  (in-list (group-neighbors
+                               ts (λ (t1 t2) (or (same-label? t1 t2) (near? t1 t2)))))])
        (define n (length ts))
        (define m (count pre-tick-major? ts))
        (cond [(n . <= . 1)  ts]
-             [(m . = . 0)  (match-define (list (tick xs _ labels) ...) ts)
-                           (define x (/ (apply + xs) n))
-                           (define label (format format-string (first labels) (last labels)))
-                           (list (tick x #f label))]
+             [(m . = . 0)  (list (collapse-equiv-ticks ts near-format-string))]
              [(m . = . 1)  (filter pre-tick-major? ts)]
-             [else  (match-define (list (tick xs _ labels) ...) (filter pre-tick-major? ts))
-                    (define x (/ (apply + xs) m))
-                    (define label (format format-string (first labels) (last labels)))
-                    (list (tick x #t label))])))))
+             [else  (list (collapse-equiv-ticks (filter pre-tick-major? ts) near-format-string))])))))

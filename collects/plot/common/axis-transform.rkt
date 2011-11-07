@@ -26,8 +26,8 @@
 (defproc (apply-axis-transform [t axis-transform/c] [x-min real?] [x-max real?]) invertible-function?
   (t x-min x-max id-function))
 
-;; Turns any total, surjective, monotone flonum op and its inverse into an axis transform
-(defproc (make-axis-transform [f axis-transform/c] [g axis-transform/c]) axis-transform/c
+;; Turns any total, surjective, monotone real function and its inverse into an axis transform
+(defproc (make-axis-transform [f (real? . -> . real?)] [g (real? . -> . real?)]) axis-transform/c
   (λ (x-min x-max old-function)
     (define fx-min (f x-min))
     (define fx-scale (/ (- x-max x-min) (- (f x-max) fx-min)))

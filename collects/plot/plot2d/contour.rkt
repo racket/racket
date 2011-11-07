@@ -4,11 +4,10 @@
 
 (require racket/contract racket/class racket/match racket/list racket/flonum racket/vector racket/math
          plot/utils
-         "../common/contract-doc.rkt")
+         "../common/contract-doc.rkt"
+         "../common/utils.rkt")
 
-(provide (all-defined-out)
-         (rename-out [contours isolines]
-                     [contour-intervals isoline-intervals]))
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; One contour line
@@ -66,35 +65,34 @@
     
     (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
     
-    (define cs (maybe-apply/list colors zs))
-    (define ws (maybe-apply/list widths zs))
-    (define ss (maybe-apply/list styles zs))
-    (define as (maybe-apply/list alphas zs))
-    
-    (for ([z      (in-list zs)]
-          [color  (in-cycle cs)]
-          [width  (in-cycle ws)]
-          [style  (in-cycle ss)]
-          [alpha  (in-cycle as)])
-      (send area put-alpha alpha)
-      (send area put-pen color width style)
-      (for ([ya  (in-list ys)]
-            [yb  (in-list (rest ys))]
-            [zs0  (in-vector zss)]
-            [zs1  (in-vector zss 1)]
-            #:when #t
-            [xa  (in-list xs)]
-            [xb  (in-list (rest xs))]
-            [z1  (in-vector zs0)]
-            [z2  (in-vector zs0 1)]
-            [z3  (in-vector zs1 1)]
-            [z4  (in-vector zs1)])
-        (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-          (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
-          (send area put-line v1 v2))))
-    
-    (cond [label  (line-legend-entries label zs labels colors widths styles)]
-          [else   empty])))
+    (let ([colors  (maybe-apply colors zs)]
+          [widths  (maybe-apply widths zs)]
+          [styles  (maybe-apply styles zs)]
+          [alphas  (maybe-apply alphas zs)])
+      (for ([z      (in-list zs)]
+            [color  (in-cycle colors)]
+            [width  (in-cycle widths)]
+            [style  (in-cycle styles)]
+            [alpha  (in-cycle alphas)])
+        (send area put-alpha alpha)
+        (send area put-pen color width style)
+        (for ([ya  (in-list ys)]
+              [yb  (in-list (rest ys))]
+              [zs0  (in-vector zss)]
+              [zs1  (in-vector zss 1)]
+              #:when #t
+              [xa  (in-list xs)]
+              [xb  (in-list (rest xs))]
+              [z1  (in-vector zs0)]
+              [z2  (in-vector zs0 1)]
+              [z3  (in-vector zs1 1)]
+              [z4  (in-vector zs1)])
+          (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+            (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
+            (send area put-line v1 v2))))
+      
+      (cond [label  (line-legend-entries label zs labels colors widths styles)]
+            [else   empty]))))
 
 (defproc (contours
           [f (real? real? . -> . real?)]
@@ -102,12 +100,12 @@
           [x-max (or/c regular-real? #f) #f]
           [y-min (or/c regular-real? #f) #f]
           [y-max (or/c regular-real? #f) #f]
-          [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (contour-samples)]
-          [#:colors colors plot-colors/c (contour-colors)]
-          [#:widths widths pen-widths/c (contour-widths)]
-          [#:styles styles plot-pen-styles/c (contour-styles)]
-          [#:alphas alphas alphas/c (contour-alphas)]
+          [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
+          [#:colors colors (plot-colors/c (listof real?)) (contour-colors)]
+          [#:widths widths (pen-widths/c (listof real?)) (contour-widths)]
+          [#:styles styles (plot-pen-styles/c (listof real?)) (contour-styles)]
+          [#:alphas alphas (alphas/c (listof real?)) (contour-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
   (define g (2d-function->sampler f))
@@ -127,60 +125,79 @@
     
     (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
     
-    (define cs (map ->brush-color (maybe-apply/list colors zs)))
-    (define fss (map ->brush-style (maybe-apply/list styles zs)))
-    (define pss (map (λ (fill-style) (if (eq? fill-style 'solid) 'solid 'transparent)) fss))
-    (define as (maybe-apply/list alphas zs))
+    (define-values (z-ivls ivl-labels)
+      (for/lists (z-ivls ivl-labels) ([za  (in-list zs)]
+                                      [zb  (in-list (rest zs))]
+                                      [la  (in-list labels)]
+                                      [lb  (in-list (rest labels))])
+        (values (ivl za zb) (format "[~a,~a]" la lb))))
     
-    (for ([za     (in-list zs)]
-          [zb     (in-list (rest zs))]
-          [color  (in-cycle cs)]
-          [fill-style       (in-cycle fss)]
-          [poly-line-style  (in-cycle pss)]
-          [alpha  (in-cycle as)])
-      (define polys
-        (append*
-         (for/list ([ya  (in-list ys)]
-                    [yb  (in-list (rest ys))]
-                    [zs0  (in-vector zss)]
-                    [zs1  (in-vector zss 1)]
-                    #:when #t
-                    [xa  (in-list xs)]
-                    [xb  (in-list (rest xs))]
-                    [z1  (in-vector zs0)]
-                    [z2  (in-vector zs0 1)]
-                    [z3  (in-vector zs1 1)]
-                    [z4  (in-vector zs1)])
-           (for/list ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
-             (map (λ (v) (vector-take v 2)) poly)))))
+    (let ([colors  (map ->brush-color (maybe-apply colors z-ivls))]
+          [styles  (map ->brush-style (maybe-apply styles z-ivls))]
+          [alphas  (maybe-apply alphas z-ivls)])
+      (define line-styles (map (λ (style) (if (eq? style 'solid) 'solid 'transparent)) styles))
       
-      (define (draw-polys)
-        (for ([poly  (in-list polys)])
-          (send area put-polygon poly)))
+      (for ([za     (in-list zs)]
+            [zb     (in-list (rest zs))]
+            [color  (in-cycle colors)]
+            [style  (in-cycle styles)]
+            [alpha  (in-cycle alphas)]
+            [line-style  (in-cycle line-styles)])
+        (define polys
+          (append*
+           (for/list ([ya  (in-list ys)]
+                      [yb  (in-list (rest ys))]
+                      [zs0  (in-vector zss)]
+                      [zs1  (in-vector zss 1)]
+                      #:when #t
+                      [xa  (in-list xs)]
+                      [xb  (in-list (rest xs))]
+                      [z1  (in-vector zs0)]
+                      [z2  (in-vector zs0 1)]
+                      [z3  (in-vector zs1 1)]
+                      [z4  (in-vector zs1)])
+             (for/list ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
+               (map (λ (v) (vector-take v 2)) poly)))))
+        
+        (define (draw-polys)
+          (for ([poly  (in-list polys)])
+            (send area put-polygon poly)))
+        
+        (cond [(= alpha 1)
+               (send area put-pen color 1 line-style)
+               (send area put-brush color style)
+               (send area put-alpha 1)
+               (draw-polys)]
+              [else
+               ;; draw the outlines with reduced alpha first
+               (send area put-pen color 1 line-style)
+               (send area put-brush color 'transparent)
+               (send area put-alpha (alpha-expt alpha 1/8))
+               (draw-polys)
+               ;; now draw the centers
+               (send area put-pen color 1 'transparent)
+               (send area put-brush color style)
+               (send area put-alpha alpha)
+               (draw-polys)]))
       
-      (cond [(= alpha 1)
-             (send area put-pen color 1 poly-line-style)
-             (send area put-brush color fill-style)
-             (send area put-alpha 1)
-             (draw-polys)]
-            [else
-             ;; draw the outlines with reduced alpha first
-             (send area put-pen color 1 poly-line-style)
-             (send area put-brush color 'transparent)
-             (send area put-alpha (alpha-expt alpha 1/8))
-             (draw-polys)
-             ;; now draw the centers
-             (send area put-pen color 1 'transparent)
-             (send area put-brush color fill-style)
-             (send area put-alpha alpha)
-             (draw-polys)]))
-    
-    ((contours-render-proc g levels samples contour-colors contour-widths contour-styles alphas #f)
-     area)
-    
-    (cond [label  (contour-intervals-legend-entries
-                   label zs labels cs fss cs '(1) pss contour-colors contour-widths contour-styles)]
-          [else   empty])))
+      ((contours-render-proc g levels samples contour-colors contour-widths contour-styles alphas #f)
+       area)
+      
+      (define n (- (length zs) 2))
+      (define contour-colors*
+        (append (list 0) (sequence-take (in-cycle (maybe-apply contour-colors zs)) 0 n) (list 0)))
+      (define contour-widths*
+        (append (list 0) (sequence-take (in-cycle (maybe-apply contour-widths zs)) 0 n) (list 0)))
+      (define contour-styles*
+        (append '(transparent) (sequence-take (in-cycle (maybe-apply contour-styles zs)) 0 n)
+                '(transparent)))
+      
+      (cond [label  (interval-legend-entries
+                     label z-ivls ivl-labels
+                     colors styles colors '(1) line-styles
+                     contour-colors* contour-widths* contour-styles*
+                     (rest contour-colors*) (rest contour-widths*) (rest contour-styles*))]
+            [else   empty]))))
 
 (defproc (contour-intervals
           [f (real? real? . -> . real?)]
@@ -188,14 +205,14 @@
           [x-max (or/c regular-real? #f) #f]
           [y-min (or/c regular-real? #f) #f]
           [y-max (or/c regular-real? #f) #f]
-          [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (contour-samples)]
-          [#:colors colors plot-colors/c (contour-interval-colors)]
-          [#:styles styles plot-brush-styles/c (contour-interval-styles)]
-          [#:contour-colors contour-colors plot-colors/c (contour-colors)]
-          [#:contour-widths contour-widths pen-widths/c (contour-widths)]
-          [#:contour-styles contour-styles plot-pen-styles/c (contour-styles)]
-          [#:alphas alphas alphas/c (contour-interval-alphas)]
+          [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
+          [#:colors colors (plot-colors/c (listof ivl?)) (contour-interval-colors)]
+          [#:styles styles (plot-brush-styles/c (listof ivl?)) (contour-interval-styles)]
+          [#:contour-colors contour-colors (plot-colors/c (listof real?)) (contour-colors)]
+          [#:contour-widths contour-widths (pen-widths/c (listof real?)) (contour-widths)]
+          [#:contour-styles contour-styles (plot-pen-styles/c (listof real?)) (contour-styles)]
+          [#:alphas alphas (alphas/c (listof ivl?)) (contour-interval-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
   (define g (2d-function->sampler f))

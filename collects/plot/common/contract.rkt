@@ -1,16 +1,28 @@
 #lang racket/base
 
-(require racket/contract racket/draw racket/class unstable/latent-contract
+(require racket/contract racket/draw racket/class unstable/latent-contract unstable/contract
          "contract-doc.rkt")
 
-(provide (except-out (all-defined-out) treeof)
-         (activate-contract-out treeof))
+(provide (except-out (all-defined-out)
+                     treeof
+                     maybe-function/c maybe-apply
+                     plot-colors/c pen-widths/c plot-pen-styles/c plot-brush-styles/c alphas/c
+                     labels/c)
+         (activate-contract-out
+          treeof
+          maybe-function/c maybe-apply
+          plot-colors/c pen-widths/c plot-pen-styles/c plot-brush-styles/c alphas/c
+          labels/c)
+         nat/c pos/c truth/c)
 
 ;; ===================================================================================================
 ;; Convenience
 
-(defcontract (treeof [ct (or/c contract? (any/c . -> . any/c))])
-  (or/c ct (listof (recursive-contract (treeof ct)))))
+(defcontract contract/c (or/c contract? (any/c . -> . any/c)))
+
+(defcontract (treeof [elem-contract contract/c])
+  (or/c elem-contract
+        (listof (recursive-contract (treeof elem-contract)))))
 
 ;; ===================================================================================================
 ;; Plot-specific contracts
@@ -61,17 +73,28 @@
 
 (defcontract point-sym/c (or/c char? string? integer? (apply one-of/c known-point-symbols)))
 
-(defcontract plot-colors/c (or/c (listof plot-color/c)
-                                 ((listof real?) . -> . (listof plot-color/c))))
+(defcontract (maybe-function/c [in-contract contract/c] [out-contract contract/c])
+  (or/c out-contract (in-contract . -> . out-contract)))
 
-(defcontract pen-widths/c (or/c (listof (>=/c 0))
-                                ((listof real?) . -> . (listof (>=/c 0)))))
+(defproc (maybe-apply [f (maybe-function/c any/c any/c)]
+                      [arg any/c]) any/c
+  (cond [(procedure? f)  (f arg)]
+        [else            f]))
 
-(defcontract plot-pen-styles/c (or/c (listof plot-pen-style/c)
-                                     ((listof real?) . -> . (listof plot-pen-style/c))))
+(defcontract (plot-colors/c [in-contract contract/c])
+  (maybe-function/c in-contract (listof plot-color/c)))
 
-(defcontract plot-brush-styles/c (or/c (listof plot-brush-style/c)
-                                       ((listof real?) . -> . (listof plot-brush-style/c))))
+(defcontract (pen-widths/c [in-contract contract/c])
+  (maybe-function/c in-contract (listof (>=/c 0))))
 
-(defcontract alphas/c (or/c (listof (real-in 0 1))
-                            ((listof real?) . -> . (listof (real-in 0 1)))))
+(defcontract (plot-pen-styles/c [in-contract contract/c])
+  (maybe-function/c in-contract (listof plot-pen-style/c)))
+
+(defcontract (plot-brush-styles/c [in-contract contract/c])
+  (maybe-function/c in-contract (listof plot-brush-style/c)))
+
+(defcontract (alphas/c [in-contract contract/c])
+  (maybe-function/c in-contract (listof (real-in 0 1))))
+
+(defcontract (labels/c [in-contract contract/c])
+  (maybe-function/c in-contract (listof (or/c string? #f))))

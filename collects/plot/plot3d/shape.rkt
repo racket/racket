@@ -12,6 +12,7 @@
 (struct text shape (anchor angle str font-size font-family color) #:transparent)
 (struct glyph shape (symbol size pen-color pen-width pen-style brush-color brush-style) #:transparent)
 (struct tick-glyph shape (radius angle pen-color pen-width pen-style) #:transparent)
+(struct arrow-glyph shape (start end pen-color pen-width pen-style) #:transparent)
 (struct shapes shape (list) #:transparent)
 
 (define (draw-before? s1 s2)

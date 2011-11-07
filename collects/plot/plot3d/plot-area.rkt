@@ -214,24 +214,24 @@
               (vector x y (pre-tick-value t2))))
     
     (define x-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
-                             (x-ticks-near? x-axis-y)))
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
+                      (x-ticks-near? x-axis-y)))
     (define y-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
-                             (y-ticks-near? y-axis-x)))
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
+                      (y-ticks-near? y-axis-x)))
     (define z-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max)) rz-ticks)
-                             (z-ticks-near? z-axis-x z-axis-y)))
+      (collapse-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max)) rz-ticks)
+                      (z-ticks-near? z-axis-x z-axis-y)))
     
     (define x-far-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
-                             (x-ticks-near? x-far-axis-y)))
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
+                      (x-ticks-near? x-far-axis-y)))
     (define y-far-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
-                             (y-ticks-near? y-far-axis-x)))
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
+                      (y-ticks-near? y-far-axis-x)))
     (define z-far-ticks
-      (collapse-nearby-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max)) rz-far-ticks)
-                             (z-ticks-near? z-far-axis-x z-far-axis-y)))
+      (collapse-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max)) rz-far-ticks)
+                      (z-ticks-near? z-far-axis-x z-far-axis-y)))
     
     ;; ===============================================================================================
     ;; Tick and label parameters, and fixpoint margin computation
@@ -321,7 +321,7 @@
       (define dist (+ (pen-gap) tick-radius))
       (for/list ([t  (in-list ticks)] #:when (pre-tick-major? t))
         (match-define (tick x _ label) t)
-        (list #t label (v+ (tick-value->dc x) (v* offset-dir dist)) anchor)))
+        (list label (v+ (tick-value->dc x) (v* offset-dir dist)) anchor)))
     
     (define (get-x-tick-label-params)
       (if (plot-x-axis?)
@@ -423,35 +423,35 @@
     (define (get-x-label-params)
       (define v0 (plot->dc/no-axis-trans (vector x-mid x-axis-y z-min)))
       (define dist (+ max-x-tick-offset (max-x-tick-label-diag) half-char-height))
-      (list #t (plot-x-label) (v+ v0 (v* (y-axis-dir) (if x-axis-y-min? (- dist) dist)))
+      (list (plot-x-label) (v+ v0 (v* (y-axis-dir) (if x-axis-y-min? (- dist) dist)))
             'top (- (if x-axis-y-min? 0 pi) (x-axis-angle))))
     
     (define (get-y-label-params)
       (define v0 (plot->dc/no-axis-trans (vector y-axis-x y-mid z-min)))
       (define dist (+ max-y-tick-offset (max-y-tick-label-diag) half-char-height))
-      (list #t (plot-y-label) (v+ v0 (v* (x-axis-dir) (if y-axis-x-min? (- dist) dist)))
+      (list (plot-y-label) (v+ v0 (v* (x-axis-dir) (if y-axis-x-min? (- dist) dist)))
             'top (- (if y-axis-x-min? pi 0) (y-axis-angle))))
     
     (define (get-z-label-params)
-      (list #t (plot-z-label) (v+ (plot->dc* (vector z-axis-x z-axis-y z-max))
-                                  (vector 0 (- half-char-height)))
+      (list (plot-z-label) (v+ (plot->dc* (vector z-axis-x z-axis-y z-max))
+                               (vector 0 (- half-char-height)))
             'bottom-left 0))
     
     (define (get-x-far-label-params)
       (define v0 (plot->dc/no-axis-trans (vector x-mid x-far-axis-y z-min)))
       (define dist (+ max-x-far-tick-offset (max-x-far-tick-label-diag) half-char-height))
-      (list #f (plot-x-far-label) (v+ v0 (v* (y-axis-dir) (if x-axis-y-min? dist (- dist))))
+      (list (plot-x-far-label) (v+ v0 (v* (y-axis-dir) (if x-axis-y-min? dist (- dist))))
             'bottom (- (if x-axis-y-min? 0 pi) (x-axis-angle))))
     
     (define (get-y-far-label-params)
       (define v0 (plot->dc/no-axis-trans (vector y-far-axis-x y-mid z-min)))
       (define dist (+ max-y-far-tick-offset (max-y-far-tick-label-diag) half-char-height))
-      (list #f (plot-y-far-label) (v+ v0 (v* (x-axis-dir) (if y-axis-x-min? dist (- dist))))
+      (list (plot-y-far-label) (v+ v0 (v* (x-axis-dir) (if y-axis-x-min? dist (- dist))))
             'bottom (- (if y-axis-x-min? pi 0) (y-axis-angle))))
     
     (define (get-z-far-label-params)
-      (list #t (plot-z-far-label) (v+ (plot->dc* (vector z-far-axis-x z-far-axis-y z-max))
-                                      (vector 0 (- half-char-height)))
+      (list (plot-z-far-label) (v+ (plot->dc* (vector z-far-axis-x z-far-axis-y z-max))
+                                   (vector 0 (- half-char-height)))
             'bottom-right 0))
     
     ;; -----------------------------------------------------------------------------------------------
@@ -508,7 +508,7 @@
       ;(printf "label params = ~v~n" (get-all-label-params))
       ;(printf "tick params = ~v~n" (get-all-tick-params))
       (set! view->dc (make-view->dc left right top bottom))
-      (append (append* (map (λ (params) (send/apply pd get-text-corners (rest params)))
+      (append (append* (map (λ (params) (send/apply pd get-text-corners params))
                             (get-all-label-params)))
               (append* (map (λ (params) (send/apply pd get-tick-endpoints (rest params)))
                             (get-all-tick-params)))))
@@ -569,7 +569,7 @@
     
     (define (draw-labels label-params)
       (for ([params  (in-list label-params)])
-        (send/apply pd draw-text (rest params) #:outline? (first params))))
+        (send/apply pd draw-text params #:outline? #t)))
     
     ;; ===============================================================================================
     ;; Delayed drawing
@@ -578,7 +578,7 @@
     (define (add-shape! shape) (set! render-list (cons shape render-list)))    
     
     (define (draw-shapes lst)
-      (for ([s  (in-list (depth-sort lst))])
+      (for ([s  (in-list (depth-sort (reverse lst)))])
         (send pd set-alpha (shape-alpha s))
         (match s
           ; shapes
@@ -609,6 +609,10 @@
           [(tick-glyph alpha center radius angle pen-color pen-width pen-style)
            (send pd set-pen pen-color pen-width pen-style)
            (send pd draw-tick (view->dc (rotate/rho center)) radius angle)]
+          ; arrow glyph
+          [(arrow-glyph alpha center v1 v2 pen-color pen-width pen-style)
+           (send pd set-pen pen-color pen-width pen-style)
+           (send pd draw-arrow (view->dc v1) (view->dc v2))]
           [_  (error 'draw-shapes "shape not implemented: ~e" s)])))
     
     ;; Use a special view transform for the light so that the light angle is always the same
@@ -885,6 +889,19 @@
            (glyph (get-alpha) (plot->view/no-rho v) symbol size
                   (get-pen-color) (get-pen-width) (get-pen-style)
                   (get-brush-color) (get-brush-style))))))
+    
+    (define/public (put-arrow v1 v2 [c (v* (v+ v1 v2) 1/2)])
+      (when (and (vregular? v1) (vregular? v2) (in-bounds? v1))
+        (cond [(in-bounds? v2)  (add-shape!
+                                 (arrow-glyph (get-alpha) (plot->view/no-rho c)
+                                              (plot->view v1) (plot->view v2)
+                                              (->brush-color (plot-background))
+                                              (+ 2 (get-pen-width)) 'solid))
+                                (add-shape!
+                                 (arrow-glyph (get-alpha) (plot->view/no-rho c)
+                                              (plot->view v1) (plot->view v2)
+                                              (get-pen-color) (get-pen-width) (get-pen-style)))]
+              [else  (put-line v1 v2)])))
     
     (define/public (put-tick v radius angle)
       (when (and (vregular? v) (in-bounds? v))

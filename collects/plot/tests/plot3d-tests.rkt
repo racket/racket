@@ -21,6 +21,10 @@
          #:x-min 0 #:x-max 1 #:y-min 0 #:y-max 1 #:z-min 0 #:z-max 1))
 
 (time
+ (plot3d (vector-field3d (λ (x y z) (vector x z y)) -2 2 -2 2 -2 2
+                               #:line-width 3)))
+
+(time
  (define x-ivls (bounds->intervals (linear-seq 2 8 10)))
  (define y-ivls (bounds->intervals (linear-seq -5 5 10)))
  (define x-mids (linear-seq 2 8 9 #:start? #f #:end? #f))

@@ -98,12 +98,8 @@ Combining polar function renderers allows faking latitudes or longitudes in larg
 
 @section{3D Contour (Isoline) Renderers}
 
-@doc-apply[contour3d]{
+@doc-apply[isoline3d]{
 Returns a renderer that plots a single contour line on the surface of a function.
-}
-
-@defproc[(isoline3d ...) renderer3d?]{
-A synonym of @(racket contour3d).
 }
 
 @doc-apply[contours3d]{
@@ -118,10 +114,6 @@ For example,
                                       #:legend-anchor 'top-left)]
 }
 
-@defproc[(isolines3d ...) renderer3d?]{
-A synonym of @(racket contours3d).
-}
-
 @doc-apply[contour-intervals3d]{
 Returns a renderer that plots contour intervals and contour lines on the surface of a function.
 The appearance keyword arguments are interpreted identically to the appearance keyword arguments to @(racket contour-intervals).
@@ -131,10 +123,6 @@ For example,
                                                            -1.1 1.1 -1.1 1.1
                                                            #:label "z = x^2 + y^2")
                                       #:legend-anchor 'top-left)]
-}
-
-@defproc[(isoline-intervals3d ...) renderer3d?]{
-A synonym of @(racket contour-intervals3d).
 }
 
 @section{3D Isosurface Renderers}

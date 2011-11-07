@@ -197,6 +197,29 @@
        #:legend-anchor 'bottom-right))
 
 (time
+ (plot (stacked-histogram '(#(a (1 1 1)) #(b (1.5 3)) #(c ()) #(d (1/2)))
+                          #:labels '("Red" #f "Blue"))))
+
+(time
+ (parameterize ([discrete-histogram-gap  0]
+                [discrete-histogram-skip  3]
+                [rectangle-line-width 2])
+   (plot (list (discrete-histogram '(#(a 1) #(b 2.5) #(c 2)) #:label "Blue")
+               (discrete-histogram '(#(a 2) #(b 4) #(c 1)) #:x-min 2/3 #:color 1 #:line-color 1
+                                   #:label "Red")
+               (discrete-histogram '(#(a 3) #(b 3) #(c 2.5)) #:x-min 4/3 #:color 2 #:line-color 2
+                                   #:label "Green")))))
+
+(time
+ (parameterize ([discrete-histogram-gap  0]
+                [discrete-histogram-skip  2]
+                [stacked-histogram-line-widths '(3)])
+   (plot (list (stacked-histogram '(#(a (0.2 1)) #(b (2.5 1.2)) #(c (2 0))))
+               (stacked-histogram '(#(a (2 1)) #(b (1.1 0.9)) #(c (1 1.1))) #:x-min 7/8
+                                  #:colors '(3 4)
+                                  #:line-colors '(3 4))))))
+
+(time
  (plot (rectangles
         (map vector
              (bounds->intervals (map log (linear-seq 10 20 10)))
@@ -285,7 +308,7 @@
 (time (plot (list (tick-grid)
                   (contour-intervals f1 -5 2 -5 2
                                      #:levels '(0.25 0.5 0.75 1.0 1.25 1.5 1.75)
-                                     #:colors default-contour-colors
+                                     #:colors (compose default-contour-colors (curry map ivl-center))
                                      #:styles '(0 1 2 3 4 5 6)
                                      #:contour-styles '(transparent)
                                      #:label "z")

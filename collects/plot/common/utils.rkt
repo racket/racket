@@ -1,6 +1,6 @@
 #lang racket/base
 
-;; Extra functions that can't be easily categorized (i.e. math, vector).
+;; Extra functions that can't be easily categorized
 
 (require racket/sequence racket/list racket/math racket/flonum racket/match)
 
@@ -44,8 +44,10 @@
       (make-hash (map cons sorted-lst (f sorted-lst)))))
   (map (λ (e) (hash-ref h e)) lst))
 
-(define (transpose lsts)
-  (apply map list lsts))
+(define (transpose xss)
+  (cond [(andmap empty? xss)  empty]
+        [else  (cons (map (λ (xs) (if (empty? xs) #f (first xs))) xss)
+                     (transpose (map (λ (xs) (if (empty? xs) empty (rest xs))) xss)))]))
 
 (define (group-neighbors lst equiv?)
   (reverse

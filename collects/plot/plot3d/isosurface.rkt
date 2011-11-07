@@ -9,7 +9,8 @@
 ;; ===================================================================================================
 ;; Surfaces of constant value (isosurfaces)
 
-(define ((isosurface3d-render-proc f d samples color line-color line-width line-style alpha label)
+(define ((isosurface3d-render-proc
+          f d samples color style line-color line-width line-style alpha label)
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
@@ -19,7 +20,7 @@
        z-min z-max (animated-samples samples)))
   
   (send area put-alpha alpha)
-  (send area put-brush color 'solid)
+  (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
   (for ([za  (in-list zs)]
         [zb  (in-list (rest zs))]
@@ -50,7 +51,7 @@
             (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb))))))
   
   (cond [label  (rectangle-legend-entry
-                 label color 'solid line-color line-width line-style)]
+                 label color style line-color line-width line-style)]
         [else  empty]))
 
 (defproc (isosurface3d [f (real? real? real? . -> . real?)] [d real?]
@@ -62,6 +63,7 @@
                        [z-max (or/c regular-real? #f) #f]
                        [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
                        [#:color color plot-color/c (surface-color)]
+                       [#:style style plot-brush-style/c (surface-style)]
                        [#:line-color line-color plot-color/c (surface-line-color)]
                        [#:line-width line-width (>=/c 0) (surface-line-width)]
                        [#:line-style line-style plot-pen-style/c (surface-line-style)]
@@ -70,14 +72,14 @@
                        ) renderer3d?
   (define g (3d-function->sampler f))
   (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f default-ticks-fun
-              (isosurface3d-render-proc g d samples color line-color line-width line-style alpha
-                                        label)))
+              (isosurface3d-render-proc
+               g d samples color style line-color line-width line-style alpha label)))
 
 ;; ===================================================================================================
 ;; Nested isosurfaces
 
-(define ((isosurfaces3d-render-proc
-          f rd-min rd-max levels samples colors line-colors line-widths line-styles alphas label)
+(define ((isosurfaces3d-render-proc f rd-min rd-max levels samples colors styles
+                                    line-colors line-widths line-styles alphas label)
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
@@ -95,75 +97,80 @@
      (match-define (list (tick ds _ labels) ...) (isosurface-ticks d-min d-max levels))
      #;(define ds (linear-seq d-min d-max levels #:start? (and rd-min #t) #:end? (and rd-max #t)))
      
-     (for ([d           (in-list ds)]
-           [color       (in-cycle (maybe-apply/list colors ds))]
-           [line-color  (in-cycle (maybe-apply/list line-colors ds))]
-           [line-width  (in-cycle (maybe-apply/list line-widths ds))]
-           [line-style  (in-cycle (maybe-apply/list line-styles ds))]
-           [alpha       (in-cycle (maybe-apply/list alphas ds))])
-       (send area put-alpha alpha)
-       (send area put-brush color 'solid)
-       (send area put-pen line-color line-width line-style)
-       (for ([za  (in-list zs)]
-             [zb  (in-list (rest zs))]
-             [dss0  (in-vector dsss)]
-             [dss1  (in-vector dsss 1)]
-             #:when #t
-             [ya  (in-list ys)]
-             [yb  (in-list (rest ys))]
-             [ds00  (in-vector dss0)]
-             [ds01  (in-vector dss0 1)]
-             [ds10  (in-vector dss1)]
-             [ds11  (in-vector dss1 1)]
-             #:when #t
-             [xa  (in-list xs)]
-             [xb  (in-list (rest xs))]
-             [d1  (in-vector ds00)]
-             [d2  (in-vector ds00 1)]
-             [d3  (in-vector ds01 1)]
-             [d4  (in-vector ds01)]
-             [d5  (in-vector ds10)]
-             [d6  (in-vector ds10 1)]
-             [d7  (in-vector ds11 1)]
-             [d8  (in-vector ds11)])
-         (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
-         (when (not (empty? polys))
-           (send area put-polygons polys
-                 (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))
-     
-     (cond
-       [label  (rectangle-legend-entries
-                label ds colors '(solid) line-colors line-widths line-styles)]
-       [else  empty])]))
+     (let ([colors  (maybe-apply colors ds)]
+           [styles  (maybe-apply styles ds)]
+           [alphas  (maybe-apply alphas ds)]
+           [line-colors  (maybe-apply line-colors ds)]
+           [line-widths  (maybe-apply line-widths ds)]
+           [line-styles  (maybe-apply line-styles ds)])
+       (for ([d           (in-list ds)]
+             [color  (in-cycle colors)]
+             [style  (in-cycle styles)]
+             [alpha  (in-cycle alphas)]
+             [line-color  (in-cycle line-colors)]
+             [line-width  (in-cycle line-widths)]
+             [line-style  (in-cycle line-styles)])
+         (send area put-alpha alpha)
+         (send area put-brush color style)
+         (send area put-pen line-color line-width line-style)
+         (for ([za  (in-list zs)]
+               [zb  (in-list (rest zs))]
+               [dss0  (in-vector dsss)]
+               [dss1  (in-vector dsss 1)]
+               #:when #t
+               [ya  (in-list ys)]
+               [yb  (in-list (rest ys))]
+               [ds00  (in-vector dss0)]
+               [ds01  (in-vector dss0 1)]
+               [ds10  (in-vector dss1)]
+               [ds11  (in-vector dss1 1)]
+               #:when #t
+               [xa  (in-list xs)]
+               [xb  (in-list (rest xs))]
+               [d1  (in-vector ds00)]
+               [d2  (in-vector ds00 1)]
+               [d3  (in-vector ds01 1)]
+               [d4  (in-vector ds01)]
+               [d5  (in-vector ds10)]
+               [d6  (in-vector ds10 1)]
+               [d7  (in-vector ds11 1)]
+               [d8  (in-vector ds11)])
+           (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
+           (when (not (empty? polys))
+             (send area put-polygons polys
+                   (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))
+       
+       (cond
+         [label  (rectangle-legend-entries
+                  label ds colors styles line-colors line-widths line-styles)]
+         [else  empty]))]))
 
-(defproc (isosurfaces3d [f (real? real? real? . -> . real?)]
-                        [x-min (or/c regular-real? #f) #f]
-                        [x-max (or/c regular-real? #f) #f]
-                        [y-min (or/c regular-real? #f) #f]
-                        [y-max (or/c regular-real? #f) #f]
-                        [z-min (or/c regular-real? #f) #f]
-                        [z-max (or/c regular-real? #f) #f]
-                        [#:d-min d-min (or/c regular-real? #f) #f]
-                        [#:d-max d-max (or/c regular-real? #f) #f]
-                        [#:levels levels (or/c 'auto exact-positive-integer? (listof real?))
-                                  (isosurface-levels)]
-                        [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
-                        [#:colors colors plot-colors/c (isosurface-colors)]
-                        [#:line-colors line-colors plot-colors/c (isosurface-line-colors)]
-                        [#:line-widths line-widths pen-widths/c (isosurface-line-widths)]
-                        [#:line-styles line-styles plot-pen-styles/c (isosurface-line-styles)]
-                        [#:alphas alphas alphas/c (isosurface-alphas)]
-                        [#:label label (or/c string? #f) #f]
-                        ) renderer3d?
+(defproc (isosurfaces3d
+          [f (real? real? real? . -> . real?)]
+          [x-min (or/c regular-real? #f) #f] [x-max (or/c regular-real? #f) #f]
+          [y-min (or/c regular-real? #f) #f] [y-max (or/c regular-real? #f) #f]
+          [z-min (or/c regular-real? #f) #f] [z-max (or/c regular-real? #f) #f]
+          [#:d-min d-min (or/c regular-real? #f) #f] [#:d-max d-max (or/c regular-real? #f) #f]
+          [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
+          [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (isosurface-levels)]
+          [#:colors colors (plot-colors/c (listof real?)) (isosurface-colors)]
+          [#:styles styles (plot-brush-styles/c (listof real?)) (isosurface-styles)]
+          [#:line-colors line-colors (plot-colors/c (listof real?)) (isosurface-line-colors)]
+          [#:line-widths line-widths (pen-widths/c (listof real?)) (isosurface-line-widths)]
+          [#:line-styles line-styles (plot-pen-styles/c (listof real?)) (isosurface-line-styles)]
+          [#:alphas alphas (alphas/c (listof real?)) (isosurface-alphas)]
+          [#:label label (or/c string? #f) #f]
+          ) renderer3d?
   (define g (3d-function->sampler f))
   (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f default-ticks-fun
-              (isosurfaces3d-render-proc g d-min d-max levels samples colors
+              (isosurfaces3d-render-proc g d-min d-max levels samples colors styles
                                          line-colors line-widths line-styles alphas
                                          label)))
 
 ;; ===================================================================================================
 
-(define ((polar3d-render-proc f g samples color line-color line-width line-style alpha label) area)
+(define ((polar3d-render-proc f g samples color style line-color line-width line-style alpha label)
+         area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
   (match-define (3d-sample xs ys zs dsss d-min d-max)
@@ -172,7 +179,7 @@
        z-min z-max (animated-samples samples)))
   
   (send area put-alpha alpha)
-  (send area put-brush color 'solid)
+  (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
   (for ([za  (in-list zs)]
         [zb  (in-list (rest zs))]
@@ -218,7 +225,7 @@
            (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8)]))
   
   (cond [label  (rectangle-legend-entry
-                 label color 'solid line-color line-width line-style)]
+                 label color style line-color line-width line-style)]
         [else  empty]))
 
 (define 2pi (* 2 pi))
@@ -233,21 +240,20 @@
                            (flatan (fl/ z (fldistance x y))))]))
     (fl- (exact->inexact (f θ ρ)) (fldistance x y z))))
 
-(defproc (polar3d [f (real? real? . -> . real?)]
-                  [#:x-min x-min (or/c regular-real? #f) #f]
-                  [#:x-max x-max (or/c regular-real? #f) #f]
-                  [#:y-min y-min (or/c regular-real? #f) #f]
-                  [#:y-max y-max (or/c regular-real? #f) #f]
-                  [#:z-min z-min (or/c regular-real? #f) #f]
-                  [#:z-max z-max (or/c regular-real? #f) #f]
-                  [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
-                  [#:color color plot-color/c (surface-color)]
-                  [#:line-color line-color plot-color/c (surface-line-color)]
-                  [#:line-width line-width (>=/c 0) (surface-line-width)]
-                  [#:line-style line-style plot-pen-style/c (surface-line-style)]
-                  [#:alpha alpha (real-in 0 1) (surface-alpha)]
-                  [#:label label (or/c string? #f) #f]
-                  ) renderer3d?
+(defproc (polar3d
+          [f (real? real? . -> . real?)]
+          [#:x-min x-min (or/c regular-real? #f) #f] [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) #f] [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f] [#:z-max z-max (or/c regular-real? #f) #f]
+          [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
+          [#:color color plot-color/c (surface-color)]
+          [#:style style plot-brush-style/c (surface-style)]
+          [#:line-color line-color plot-color/c (surface-line-color)]
+          [#:line-width line-width (>=/c 0) (surface-line-width)]
+          [#:line-style line-style plot-pen-style/c (surface-line-style)]
+          [#:alpha alpha (real-in 0 1) (surface-alpha)]
+          [#:label label (or/c string? #f) #f]
+          ) renderer3d?
   (define vs (for*/list ([θ  (in-list (linear-seq 0.0 2pi (* 4 samples)))]
                          [ρ  (in-list (linear-seq (* -1/2 pi) (* 1/2 pi) (* 2 samples)))])
                (3d-polar->3d-cartesian θ ρ (f θ ρ))))
@@ -265,5 +271,5 @@
            (define g (3d-function->sampler new-f))
            (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
                        default-ticks-fun
-                       (polar3d-render-proc new-f g samples color
+                       (polar3d-render-proc new-f g samples color style
                                             line-color line-width line-style alpha label)))]))

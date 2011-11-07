@@ -103,12 +103,13 @@
           (default-y-ticks y-min y-max) (default-y-far-ticks y-min y-max)))
 
 (defproc (discrete-histogram
-          [cat-vals (listof (vector/c any/c real?))]
+          [cat-vals (listof (vector/c any/c (or/c real? ivl? #f)))]
           [#:x-min x-min (or/c regular-real? #f) 0]
           [#:x-max x-max (or/c regular-real? #f) #f]
           [#:y-min y-min (or/c regular-real? #f) 0]
           [#:y-max y-max (or/c regular-real? #f) #f]
           [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
+          [#:skip skip (>=/c 0) (discrete-histogram-skip)]
           [#:color color plot-color/c (rectangle-color)]
           [#:style style plot-brush-style/c (rectangle-style)]
           [#:line-color line-color plot-color/c (rectangle-line-color)]
@@ -119,22 +120,64 @@
           [#:far-ticks? far-ticks? boolean? #f]
           ) renderer2d?
   (match-define (list (vector cats ys) ...) cat-vals)
-  (define rys (filter regular-real? ys))
+  (define rys (filter regular-real? (append* (for/list ([y  (in-list ys)])
+                                               (match y
+                                                 [(ivl y1 y2)  (list y1 y2)]
+                                                 [_            (list y)])))))
   (cond
     [(empty? rys)  (renderer2d #f #f #f #f)]
     [else
      (define n (length cats))
      (let* ([x-min  (if x-min x-min 0)]
-            [x-max  (if x-max x-max (+ x-min n))]
+            [x-max  (if x-max x-max (+ x-min (* n skip)))]
             [y-min  (if y-min y-min (apply min* rys))]
             [y-max  (if y-max y-max (apply max* rys))])
        (define xs (linear-seq x-min x-max (add1 n)))
        (define x-ivls (for/list ([x1  (in-list xs)] [x2  (in-list (rest xs))])
-                        (define 1/2-gap-size (* 1/2 gap (- x2 x1)))
+                        (define 1/2-gap-size (+ (* 1/2 (- skip 1)) (* 1/2 gap (- x2 x1))))
                         (ivl (+ x1 1/2-gap-size) (- x2 1/2-gap-size))))
        (define tick-xs (linear-seq x-min x-max n #:start? #f #:end? #f))
        (renderer2d
         (vector (ivl x-min x-max) (ivl y-min y-max)) #f
         (discrete-histogram-ticks-fun cats tick-xs far-ticks?)
-        (rectangles-render-proc (map (λ (x-ivl y) (vector x-ivl (ivl 0 y))) x-ivls ys)
+        (rectangles-render-proc (map (λ (x-ivl y) (vector x-ivl (if (ivl? y) y (ivl 0 y)))) x-ivls ys)
                                 color style line-color line-width line-style alpha label)))]))
+
+(defproc (stacked-histogram
+          [cat-vals (listof (vector/c any/c (listof real?)))]
+          [#:x-min x-min (or/c regular-real? #f) 0]
+          [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) 0]
+          [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
+          [#:skip skip (>=/c 0) (discrete-histogram-skip)]
+          [#:colors colors (plot-colors/c nat/c) (stacked-histogram-colors)]
+          [#:styles styles (plot-brush-styles/c nat/c) (stacked-histogram-styles)]
+          [#:line-colors line-colors (plot-colors/c nat/c) (stacked-histogram-line-colors)]
+          [#:line-widths line-widths (pen-widths/c nat/c) (stacked-histogram-line-widths)]
+          [#:line-styles line-styles (plot-pen-styles/c nat/c) (stacked-histogram-line-styles)]
+          [#:alphas alphas (alphas/c nat/c) (stacked-histogram-alphas)]
+          [#:labels labels (labels/c nat/c) '(#f)]
+          [#:far-ticks? far-ticks? boolean? #f]
+          ) (listof renderer2d?)
+  (match-define (list (vector cats ys) ...) cat-vals)
+  (define yss
+    (for/list ([y  (in-list ys)])
+       (reverse (foldl (λ (x xs) (cons (+ x (first xs)) xs)) '(0) y))))
+  (define y-ivlss (for/list ([ys  (in-list yss)])
+                    (for/list ([y1  (in-list ys)] [y2  (in-list (rest ys))])
+                      (ivl y1 y2))))
+  (define max-num (apply max (map length yss)))
+  (for/list ([y-ivls  (in-list (transpose y-ivlss))]
+             [color   (in-cycle (maybe-apply colors max-num))]
+             [style   (in-cycle (maybe-apply styles max-num))]
+             [line-color  (in-cycle (maybe-apply line-colors max-num))]
+             [line-width  (in-cycle (maybe-apply line-widths max-num))]
+             [line-style  (in-cycle (maybe-apply line-styles max-num))]
+             [alpha   (in-cycle (maybe-apply alphas max-num))]
+             [label   (in-cycle (maybe-apply labels max-num))])
+    (discrete-histogram (for/list ([cat  (in-list cats)] [y-ivl  (in-list y-ivls)])
+                          (vector cat y-ivl))
+                        #:x-min x-min #:x-max x-max #:y-min y-min #:gap gap #:skip skip
+                        #:color color #:style style #:line-color line-color #:line-width line-width
+                        #:line-style line-style #:alpha alpha #:label label #:far-ticks? far-ticks?)))

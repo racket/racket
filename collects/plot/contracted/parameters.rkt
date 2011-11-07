@@ -41,14 +41,19 @@
   vector-field-color vector-field-line-width vector-field-line-style
   vector-field-scale
   vector-field-alpha
+  vector-field3d-samples
   error-bar-width error-bar-color error-bar-line-width error-bar-line-style error-bar-alpha
   contour-samples contour-levels contour-colors contour-widths contour-styles contour-alphas
   contour-interval-colors contour-interval-styles contour-interval-alphas
   rectangle-color rectangle-style
   rectangle-line-color rectangle-line-width rectangle-line-style
   rectangle-alpha
-  discrete-histogram-gap
   rectangle3d-line-width
+  discrete-histogram-gap
+  discrete-histogram-skip
+  stacked-histogram-colors stacked-histogram-styles
+  stacked-histogram-line-colors stacked-histogram-line-widths stacked-histogram-line-styles
+  stacked-histogram-alphas
   x-axis-ticks? y-axis-ticks? z-axis-ticks?
   x-axis-labels? y-axis-labels? z-axis-labels?
   x-axis-far? y-axis-far? z-axis-far?
@@ -58,7 +63,8 @@
   surface-color surface-style surface-line-color surface-line-width surface-line-style surface-alpha
   contour-interval-line-colors contour-interval-line-widths contour-interval-line-styles
   isosurface-levels
-  isosurface-colors isosurface-line-colors isosurface-line-widths isosurface-line-styles
+  isosurface-colors isosurface-styles
+  isosurface-line-colors isosurface-line-widths isosurface-line-styles
   isosurface-alphas
   ;; Functions
   pen-gap

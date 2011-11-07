@@ -2,17 +2,15 @@
 
 (require racket/class racket/match racket/list racket/flonum racket/contract
          plot/utils
-         "../common/contract-doc.rkt")
+         "../common/contract-doc.rkt"
+         "../common/utils.rkt")
 
-(provide (all-defined-out)
-         (rename-out [contour3d isoline3d]
-                     [contours3d isolines3d]
-                     [contour-intervals3d isoline-intervals3d]))
+(provide (all-defined-out))
 
 ;; ===================================================================================================
 ;; One contour line in 3D (using marching squares)
 
-(define ((contour3d-render-proc f z samples color width style alpha label) area)
+(define ((isoline3d-render-proc f z samples color width style alpha label) area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
   (match-define (2d-sample xs ys zss fz-min fz-max)
@@ -41,7 +39,7 @@
   (cond [label  (line-legend-entry label color width style)]
         [else   empty]))
 
-(defproc (contour3d
+(defproc (isoline3d
           [f (real? real? . -> . real?)] [z real?]
           [x-min (or/c regular-real? #f) #f]
           [x-max (or/c regular-real? #f) #f]
@@ -61,7 +59,7 @@
         [z-max  (if z-max z-max z)])
     (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
                 #f default-ticks-fun
-                (contour3d-render-proc g z samples color width style alpha label))))
+                (isoline3d-render-proc g z samples color width style alpha label))))
 
 ;; ===================================================================================================
 ;; Contour lines in 3D (using marching squares)
@@ -74,37 +72,36 @@
   
   (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
   
-  (define cs (maybe-apply/list colors zs))
-  (define ws (maybe-apply/list widths zs))
-  (define ss (maybe-apply/list styles zs))
-  (define as (maybe-apply/list alphas zs))
-  
-  (for ([z  (in-list zs)]
-        [color  (in-cycle cs)]
-        [width  (in-cycle ws)]
-        [style  (in-cycle ss)]
-        [alpha  (in-cycle as)])
-    (send area put-alpha alpha)
-    (send area put-pen color width style)
-    (for ([ya  (in-list ys)]
-          [yb  (in-list (rest ys))]
-          [zs0  (in-vector zss)]
-          [zs1  (in-vector zss 1)]
-          #:when #t
-          [xa  (in-list xs)]
-          [xb  (in-list (rest xs))]
-          [z1  (in-vector zs0)]
-          [z2  (in-vector zs0 1)]
-          [z3  (in-vector zs1 1)]
-          [z4  (in-vector zs1)])
-      (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-        (match-define (list v1 v2) line)
-        (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
-                               (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-        (send area put-line v1 v2 center))))
-  
-  (cond [label  (line-legend-entries label zs labels colors widths styles)]
-        [else   empty]))
+  (let ([colors  (maybe-apply colors zs)]
+        [widths  (maybe-apply widths zs)]
+        [styles  (maybe-apply styles zs)]
+        [alphas  (maybe-apply alphas zs)])
+    (for ([z  (in-list zs)]
+          [color  (in-cycle colors)]
+          [width  (in-cycle widths)]
+          [style  (in-cycle styles)]
+          [alpha  (in-cycle alphas)])
+      (send area put-alpha alpha)
+      (send area put-pen color width style)
+      (for ([ya  (in-list ys)]
+            [yb  (in-list (rest ys))]
+            [zs0  (in-vector zss)]
+            [zs1  (in-vector zss 1)]
+            #:when #t
+            [xa  (in-list xs)]
+            [xb  (in-list (rest xs))]
+            [z1  (in-vector zs0)]
+            [z2  (in-vector zs0 1)]
+            [z3  (in-vector zs1 1)]
+            [z4  (in-vector zs1)])
+        (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+          (match-define (list v1 v2) line)
+          (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
+                                 (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+          (send area put-line v1 v2 center))))
+    
+    (cond [label  (line-legend-entries label zs labels colors widths styles)]
+          [else   empty])))
 
 (defproc (contours3d
           [f (real? real? . -> . real?)]
@@ -114,12 +111,12 @@
           [y-max (or/c regular-real? #f) #f]
           [#:z-min z-min (or/c regular-real? #f) #f]
           [#:z-max z-max (or/c regular-real? #f) #f]
-          [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
-          [#:colors colors plot-colors/c (contour-colors)]
-          [#:widths widths pen-widths/c (contour-widths)]
-          [#:styles styles plot-pen-styles/c (contour-styles)]
-          [#:alphas alphas alphas/c (contour-alphas)]
+          [#:levels levels (or/c 'auto pos/c (listof real?)) (contour-levels)]
+          [#:colors colors (plot-colors/c (listof real?)) (contour-colors)]
+          [#:widths widths (pen-widths/c (listof real?)) (contour-widths)]
+          [#:styles styles (plot-pen-styles/c (listof real?)) (contour-styles)]
+          [#:alphas alphas (alphas/c (listof real?)) (contour-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
   (define g (2d-function->sampler f))
@@ -132,7 +129,7 @@
 ;; Contour intervals in 3D (using marching squares)
 
 (define ((contour-intervals3d-render-proc
-          f levels samples colors line-colors line-widths line-styles
+          f levels samples colors styles line-colors line-widths line-styles
           contour-colors contour-widths contour-styles alphas label)
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
@@ -142,46 +139,65 @@
   
   (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
   
-  (define cs (maybe-apply/list colors zs))
-  (define lcs (maybe-apply/list line-colors zs))
-  (define lws (maybe-apply/list line-widths zs))
-  (define lss (maybe-apply/list line-styles zs))
-  (define as (maybe-apply/list alphas zs))
+  (define-values (z-ivls ivl-labels)
+    (for/lists (z-ivls ivl-labels) ([za  (in-list zs)]
+                                    [zb  (in-list (rest zs))]
+                                    [la  (in-list labels)]
+                                    [lb  (in-list (rest labels))])
+      (values (ivl za zb) (format "[~a,~a]" la lb))))
   
-  (for ([za  (in-list zs)]
-        [zb  (in-list (rest zs))]
-        [color  (in-cycle cs)]
-        [line-color  (in-cycle lcs)]
-        [line-width  (in-cycle lws)]
-        [line-style  (in-cycle lss)]
-        [alpha  (in-cycle as)])
-    (send area put-alpha alpha)
-    (send area put-pen line-color line-width line-style)
-    (send area put-brush color 'solid)
-    (for ([ya  (in-list ys)]
-          [yb  (in-list (rest ys))]
-          [zs0  (in-vector zss)]
-          [zs1  (in-vector zss 1)]
-          #:when #t
-          [xa  (in-list xs)]
-          [xb  (in-list (rest xs))]
-          [z1  (in-vector zs0)]
-          [z2  (in-vector zs0 1)]
-          [z3  (in-vector zs1 1)]
-          [z4  (in-vector zs1)])
-      (for ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
-        (define center (vector (* 1/2 (+ xa xb))
-                               (* 1/2 (+ ya yb))
-                               (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-        (send area put-polygon poly center))))
-  
-  ((contours3d-render-proc f levels samples contour-colors contour-widths contour-styles alphas #f)
-   area)
-  
-  (cond [label  (contour-intervals-legend-entries
-                 label zs labels colors '(solid) line-colors line-widths line-styles
-                 contour-colors contour-widths contour-styles)]
-        [else  empty]))
+  (let ([colors  (maybe-apply colors z-ivls)]
+        [styles  (maybe-apply styles z-ivls)]
+        [alphas  (maybe-apply alphas z-ivls)]
+        [line-colors  (maybe-apply line-colors z-ivls)]
+        [line-widths  (maybe-apply line-widths z-ivls)]
+        [line-styles  (maybe-apply line-styles z-ivls)])
+    (for ([za  (in-list zs)]
+          [zb  (in-list (rest zs))]
+          [color  (in-cycle colors)]
+          [style  (in-cycle styles)]
+          [alpha  (in-cycle alphas)]
+          [line-color  (in-cycle line-colors)]
+          [line-width  (in-cycle line-widths)]
+          [line-style  (in-cycle line-styles)])
+      (send area put-alpha alpha)
+      (send area put-pen line-color line-width line-style)
+      (send area put-brush color style)
+      (for ([ya  (in-list ys)]
+            [yb  (in-list (rest ys))]
+            [zs0  (in-vector zss)]
+            [zs1  (in-vector zss 1)]
+            #:when #t
+            [xa  (in-list xs)]
+            [xb  (in-list (rest xs))]
+            [z1  (in-vector zs0)]
+            [z2  (in-vector zs0 1)]
+            [z3  (in-vector zs1 1)]
+            [z4  (in-vector zs1)])
+        (for ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
+          (define center (vector (* 1/2 (+ xa xb))
+                                 (* 1/2 (+ ya yb))
+                                 (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+          (send area put-polygon poly center))))
+    
+    ((contours3d-render-proc f levels samples contour-colors contour-widths contour-styles alphas #f)
+     area)
+    
+    (define n (- (length zs) 2))
+    (define contour-colors*
+      (append (list 0) (sequence-take (in-cycle (maybe-apply contour-colors zs)) 0 n) (list 0)))
+    (define contour-widths*
+      (append (list 0) (sequence-take (in-cycle (maybe-apply contour-widths zs)) 0 n) (list 0)))
+    (define contour-styles*
+      (append '(transparent) (sequence-take (in-cycle (maybe-apply contour-styles zs)) 0 n)
+              '(transparent)))
+    
+    (cond [label  (interval-legend-entries
+                   label z-ivls ivl-labels
+                   colors styles line-colors line-widths line-styles
+                   contour-colors* contour-widths* contour-styles*
+                   (rest contour-colors*) (rest contour-widths*) (rest contour-styles*))]
+          [else  empty])))
 
 (defproc (contour-intervals3d
           [f (real? real? . -> . real?)]
@@ -191,23 +207,24 @@
           [y-max (or/c regular-real? #f) #f]
           [#:z-min z-min (or/c regular-real? #f) #f]
           [#:z-max z-max (or/c regular-real? #f) #f]
-          [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
-          [#:colors colors plot-colors/c (contour-interval-colors)]
-          [#:line-colors line-colors plot-colors/c (contour-interval-line-colors)]
-          [#:line-widths line-widths pen-widths/c (contour-interval-line-widths)]
-          [#:line-styles line-styles plot-pen-styles/c (contour-interval-line-styles)]
-          [#:contour-colors contour-colors plot-colors/c (contour-colors)]
-          [#:contour-widths contour-widths pen-widths/c (contour-widths)]
-          [#:contour-styles contour-styles plot-pen-styles/c (contour-styles)]
-          [#:alphas alphas alphas/c (contour-interval-alphas)]
+          [#:levels levels (or/c 'auto pos/c (listof real?)) (contour-levels)]
+          [#:colors colors (plot-colors/c (listof ivl?)) (contour-interval-colors)]
+          [#:styles styles (plot-brush-styles/c (listof ivl?)) (contour-interval-styles)]
+          [#:line-colors line-colors (plot-colors/c (listof ivl?)) (contour-interval-line-colors)]
+          [#:line-widths line-widths (pen-widths/c (listof ivl?)) (contour-interval-line-widths)]
+          [#:line-styles line-styles (plot-pen-styles/c (listof ivl?)) (contour-interval-line-styles)]
+          [#:contour-colors contour-colors (plot-colors/c (listof real?)) (contour-colors)]
+          [#:contour-widths contour-widths (pen-widths/c (listof real?)) (contour-widths)]
+          [#:contour-styles contour-styles (plot-pen-styles/c (listof real?)) (contour-styles)]
+          [#:alphas alphas (alphas/c (listof ivl?)) (contour-interval-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
   (define g (2d-function->sampler f))
   (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
               (surface3d-bounds-fun g samples)
               default-ticks-fun
-              (contour-intervals3d-render-proc g levels samples colors
+              (contour-intervals3d-render-proc g levels samples colors styles
                                                line-colors line-widths line-styles
                                                contour-colors contour-widths contour-styles
                                                alphas label)))

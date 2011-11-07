@@ -22,9 +22,11 @@
 
 ;; A define-with-value form for scribble documentation
 (define (def/value def val . pre-flows)
-  (apply s.nested (s.tabular #:style def/value-table-style
-                             (list (list (s.nested def) 'cont)
-                                   (list "=" val)))
+  (apply s.nested
+         (s.tabular #:style (s.style 'boxed '())
+                    (list (list (s.nested def))
+                          (list (s.tabular #:style def/value-table-style
+                                           (list (list "=" val))))))
          pre-flows))
 
 (define def/value-table-style

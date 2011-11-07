@@ -35,7 +35,9 @@
 
 (time
  (define saddle (λ (x y z) (- (sqr x) (* 1/2 (+ (sqr y) (sqr z))))))
- (plot3d (isosurface3d saddle -1/4 #:color 0 #:line-color 0 #:alpha 7/8
+ (plot3d (isosurface3d saddle -1/4 #:samples 21
+                       #:color "black" #:style 3
+                       #:alpha 1
                        #:label "d = -1/4")
          #:x-min -2 #:x-max 2
          #:y-min -2 #:y-max 2
