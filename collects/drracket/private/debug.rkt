@@ -30,6 +30,9 @@ profile todo:
 (define orig (current-output-port))
 (define (oprintf . args) (apply fprintf orig args))
 
+(define base-phase
+  (variable-reference->module-base-phase (#%variable-reference)))
+
 (provide debug@)
 (define-unit debug@
   (import [prefix drracket:rep: drracket:rep^]
@@ -297,9 +300,9 @@ profile todo:
 
       (print-planet-icon-to-stderr exn)
       (unless (exn:fail:user? exn)
-        (unless (and (null? stack1)
-                     (null? stack2))
-          (print-bug-to-stderr msg stack1 stack1-editions stack2 stack2-editions defs ints))
+        (unless (exn:fail:syntax? exn)
+          (unless (and (null? stack1) (null? stack2))
+            (print-bug-to-stderr msg stack1 stack1-editions stack2 stack2-editions defs ints)))
         (display-srclocs-in-error src-locs src-locs-edition))
       (display msg (current-error-port))
       (when (exn:fail:syntax? exn)
