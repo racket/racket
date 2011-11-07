@@ -162,6 +162,14 @@
       @t{1} ;; just make sure no errors.
       "1")
 
+(test @t{#lang racket}
+      @t{(begin-for-syntax (+ 1 2))}
+      "")
+
+(test @t{#lang racket}
+      @t{(begin (struct s (x)) (struct t s (y)) (s-x (t 1 2)))}
+      "1")
+
 ;; check that we have a working repl in the right language after
 ;; syntax errors, unless it's a bad language
 (test @t{#lang racket
