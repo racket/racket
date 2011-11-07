@@ -1363,7 +1363,7 @@
            (let ([v (make-vector len)])
              (for/fold ([i 0])
                  (for-clause ... #:when (< i len))
-               (vector-set! v i (begin body ...))
+               (vector-set! v i (let () body ...))
                (add1 i))
              v)))]))
 
@@ -1381,7 +1381,7 @@
            (let ([v (make-vector len)])
              (for*/fold ([i 0])
                  (for-clause ... #:when (< i len))
-               (vector-set! v i (begin body ...))
+               (vector-set! v i (let () body ...))
                (add1 i))
              v)))]))
 
