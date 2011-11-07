@@ -426,7 +426,11 @@
                                  body ...)
                               #'mb))))))])])))]
       [_else
-       (normal top-e)])))
+       (let ([e (normal top-e)])
+         (let ([meta-depth ((count-meta-levels 0) e)])
+           #`(begin
+               #,(generate-key-imports meta-depth)
+               #,e)))])))
 
 (define-namespace-anchor orig-namespace)
                       
