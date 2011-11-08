@@ -53,8 +53,12 @@
       [(_ iterator:id honu-= start:honu-expression honu-to end:honu-expression
           honu-do body:honu-expression . rest)
        (values
-         #'(%racket (for ([iterator (in-range start.result end.result)])
-                      body.result))
+         (with-syntax ([start-parsed (parse-all #'start.result)]
+                       [end-parsed (parse-all #'end.result)]
+                       [body-parsed (parse-all #'body.result)])
+           #'(%racket (for ([iterator (in-range start-parsed
+                                                end-parsed)])
+                        body-parsed)))
          #'rest
          #t)]
       [(_ iterator:id honu-in stuff:honu-expression

@@ -8,6 +8,7 @@
          "literals.rkt"
          "debug.rkt"
          (prefix-in transformer: "transformer.rkt")
+         racket/pretty
          syntax/stx
          syntax/parse/experimental/splicing
          syntax/parse)
@@ -17,9 +18,10 @@
 ;; phase -1
 (require (for-template racket/base
                        racket/splicing
+                       (only-in "literals.rkt" %racket-expression)
                        "extra.rkt"))
 
-(provide parse parse-all)
+(provide parse parse-all parse-all)
 
 #;
 (define-literal-set literals
@@ -148,6 +150,13 @@
                                             (parse-all #'(code ...)))])
                    (parse-more))))])
 
+;; E = macro
+;;   | E operator E
+;;   | [...]
+;;   | f(...)
+;;   | { ... }
+;;   | (...)
+
 ;; 1 + 1
 ;; ^
 ;;  left: identity
@@ -187,7 +196,7 @@
                        #f)])
           (with-syntax ([(parsed ...) parsed]
                         [(rest ...) unparsed])
-            (debug "Output from macro ~a\n" #'(parsed ...))
+            (debug "Output from macro ~a\n" (pretty-format (syntax->datum #'(parsed ...))))
             (do-parse #'(parsed ... rest ...)
                       precedence left current)
             #;
@@ -213,10 +222,16 @@
          (values (left current) stream)
          (values (left #'racket) #'(rest ...)))]
       ;; for expressions that can keep parsing
-      [(%racket-expression racket rest ...)
+      [((%racket-expression racket) rest ...)
        (if current
          (values (left current) stream)
          (do-parse #'(rest ...)
+                   precedence left
+                   #'racket))]
+      [(%racket-expression racket)
+       (if current
+         (values (left current) stream)
+         (do-parse #'()
                    precedence left
                    #'racket))]
       [(head rest ...)
@@ -397,7 +412,8 @@
     (define-values (parsed unparsed)
                    (parse stx))
     (debug "parsed ~a\n" (if parsed (syntax->datum parsed) parsed))
-    (list (parsed-things stx unparsed) parsed)))
+    (list (parsed-things stx unparsed) (with-syntax ([parsed parsed])
+                                         #'(%racket-expression parsed)))))
 
 (provide identifier-comma-list)
 (define-splicing-syntax-class identifier-comma-list
