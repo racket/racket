@@ -19,6 +19,7 @@
 (define STM_SETIMAGE        #x0172)
 
 (define SS_LEFT #x00000000)
+(define SS_LEFTNOWORDWRAP #x0000000C)
 (define SS_BITMAP #x0000000E)
 (define SS_ICON #x00000003)
 
@@ -83,7 +84,10 @@
                                          (if (string? label)
                                              label
                                              "<image>")
-                                         (bitwise-ior SS_LEFT WS_CHILD WS_CLIPSIBLINGS
+                                         (bitwise-ior (if (string? label)
+							  SS_LEFTNOWORDWRAP
+							  SS_LEFT)
+						      WS_CHILD WS_CLIPSIBLINGS
                                                       (if bitmap?
                                                           SS_BITMAP
                                                           (if (symbol? label)
