@@ -4,7 +4,7 @@
 
 (time
  (plot3d (isosurface3d (λ (x y z) (sqrt (+ (sqr x) (sqr y) (sqr z)))) 1
-                       #:color 2 #:line-color (->brush-color 2) #:line-width 1
+                       #:color 2 #:line-style 'transparent
                        #:label "Sphere")
          #:x-min -0.8 #:x-max 0.8
          #:y-min -0.8 #:y-max 0.8

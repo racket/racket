@@ -4,7 +4,10 @@
 
 (require racket/match racket/list racket/unsafe/ops)
 
-(provide point-in-bounds? clip-line clip-polygon)
+(provide point-in-bounds? clip-line clip-polygon
+         clip-polygon-x-min clip-polygon-x-max
+         clip-polygon-y-min clip-polygon-y-max
+         clip-polygon-z-min clip-polygon-z-max)
 
 ;; ===================================================================================================
 ;; Points
@@ -132,3 +135,59 @@
            [_   (when (empty? vs) (return empty))]
            [vs  (clip-polygon-z-max z-max vs)])
       vs)))
+
+
+;; ===================================================================================================
+
+#|
+(define (chop-polygon-x vs)
+  (cond [(empty? vs)  empty]
+        [else
+         (match-define (vector (ivl vx-min vx-max) y-ivl z-ivl) (bounding-rect vs))
+         (define n (animated-samples (plot3d-samples)))
+         (define xs (rest (nonlinear-seq x-min x-max n (plot-x-transform))))
+         (let-values ([(vss vs)
+                       (for/fold ([vss empty] [vs vs]) ([x  (in-list xs)])
+                         (cond [(empty? vs)  (values vss vs)]
+                               #;[(vx-max . <= . x)  (values vss vs)]
+                               #;[(vx-min . >= . x)  (values vss vs)]
+                               [else  (values (cons (clip-polygon-x-max x vs) vss)
+                                              (clip-polygon-x-min x vs))]))])
+           vss)]))
+
+(define (chop-polygon-y vs)
+  (cond [(empty? vs)  empty]
+        [else
+         (match-define (vector x-ivl (ivl vy-min vy-max) z-ivl) (bounding-rect vs))
+         (define n (animated-samples (plot3d-samples)))
+         (define ys (rest (nonlinear-seq y-min y-max n (plot-y-transform))))
+         (let-values ([(vss vs)
+                       (for/fold ([vss empty] [vs vs]) ([y  (in-list ys)])
+                         (cond [(empty? vs)  (values vss vs)]
+                               #;[(vx-max . <= . x)  (values vss vs)]
+                               #;[(vx-min . >= . x)  (values vss vs)]
+                               [else  (values (cons (clip-polygon-y-max y vs) vss)
+                                              (clip-polygon-y-min y vs))]))])
+           vss)]))
+
+(define (chop-polygon-z vs)
+  (cond [(empty? vs)  empty]
+        [else
+         (match-define (vector x-ivl y-ivl (ivl vz-min vz-max)) (bounding-rect vs))
+         (define n (animated-samples (plot3d-samples)))
+         (define zs (rest (nonlinear-seq z-min z-max n (plot-z-transform))))
+         (let-values ([(vss vs)
+                       (for/fold ([vss empty] [vs vs]) ([z  (in-list zs)])
+                         (cond [(empty? vs)  (values vss vs)]
+                               #;[(vx-max . <= . x)  (values vss vs)]
+                               #;[(vx-min . >= . x)  (values vss vs)]
+                               [else  (values (cons (clip-polygon-z-max z vs) vss)
+                                              (clip-polygon-z-min z vs))]))])
+           vss)]))
+
+(define (chop-polygon vs)
+  (let* ([vss  (chop-polygon-x vs)]
+         [vss  (append* (map chop-polygon-y vss))]
+         [vss  (append* (map chop-polygon-z vss))])
+    vss))
+|#

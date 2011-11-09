@@ -2,7 +2,7 @@
 
 ;; Extra drawing, font, color and style functions.
 
-(require racket/draw racket/class racket/match racket/list racket/contract racket/math
+(require racket/draw racket/class racket/match racket/list racket/contract racket/math racket/flonum
          "math.rkt"
          "contract.rkt"
          "contract-doc.rkt"
@@ -352,3 +352,189 @@
       transform rotate scale translate
       try-color)
     (super-new)))
+
+;; ===================================================================================================
+;; Visible faces of a 3D rectangle
+
+(define (visible-rect-faces r theta)
+  (match-define (vector (ivl x1 x2) (ivl y1 y2) (ivl z1 z2)) r)
+  (list 
+   ;; Top
+   (list (vector x1 y1 z2) (vector x2 y1 z2) (vector x2 y2 z2) (vector x1 y2 z2))
+   ;; Front
+   (if ((cos theta) . > . 0)
+       (list (vector x1 y1 z1) (vector x2 y1 z1) (vector x2 y1 z2) (vector x1 y1 z2))
+       empty)
+   ;; Back
+   (if ((cos theta) . < . 0)
+       (list (vector x1 y2 z1) (vector x2 y2 z1) (vector x2 y2 z2) (vector x1 y2 z2))
+       empty)
+   ;; Left
+   (if ((sin theta) . > . 0)
+       (list (vector x1 y1 z1) (vector x1 y2 z1) (vector x1 y2 z2) (vector x1 y1 z2))
+       empty)
+   ;; Right
+   (if ((sin theta) . < . 0)
+       (list (vector x2 y1 z1) (vector x2 y2 z1) (vector x2 y2 z2) (vector x2 y1 z2))
+       empty)))
+
+;; ===================================================================================================
+;; Origin-neutral pen styles
+
+(struct pen-style (length ps) #:transparent)
+
+(define (make-pen-style diff-ps)
+  (let* ([diff-ps  (map exact->inexact diff-ps)]
+         [diff-ps  (if (even? (length diff-ps)) diff-ps (append diff-ps diff-ps))])
+    (define ps (reverse (foldl (λ (p ps) (cons (fl+ p (first ps)) ps)) '(0.0) diff-ps)))
+    (define len (last ps))
+    (pen-style len ps)))
+
+(define long-dash-pen-style (make-pen-style '(5 4)))
+(define short-dash-pen-style (make-pen-style '(3 2)))
+(define dot-pen-style (make-pen-style '(1 2)))
+(define dot-dash-pen-style (make-pen-style '(1 3 4 3)))
+
+(define (scale-pen-style sty scale)
+  (let ([scale  (exact->inexact scale)])
+    (match-define (pen-style len ps) sty)
+    (pen-style (fl* scale len) (map (λ (p) (fl* scale p)) ps))))
+
+(define (cons-exact->inexact v)
+  (match-define (cons x1 y1) v)
+  (cons (exact->inexact x1) (exact->inexact y1)))
+
+(define (cons=? v1 v2)
+  (match-define (cons x1 y1) v1)
+  (match-define (cons x2 y2) v2)
+  (and (fl= x1 x2) (fl= y1 y2)))
+
+(define (segment-reverse seg)
+  (reverse (map reverse seg)))
+
+(define (segment-join s1 s2)
+  (match-let ([(list s1 ... a)  s1]
+              [(list b s2 ...)  s2])
+    (append s1 (list (append a (rest b))) s2)))
+
+(define (join-styled-segments segments)
+  (let ([segments  (filter (compose not empty?) segments)])
+    (if (empty? segments)
+        empty
+        (match-let ([(cons current-segment segments)  segments])
+          (let loop ([current-segment current-segment] [segments segments])
+            (cond [(empty? segments)  (list current-segment)]
+                  [else
+                   (define lst (last (last current-segment)))
+                   (match-let ([(cons segment segments)  segments])
+                     (define fst (first (first segment)))
+                     (cond [(cons=? lst fst)  (loop (segment-join current-segment segment) segments)]
+                           [else  (cons current-segment (loop segment segments))]))]))))))
+
+(define (styled-segment* x1 y1 x2 y2 sty pair)
+  (match-define (pen-style len (cons p rest-ps)) sty)
+  (define start-x (fl* len (flfloor (fl/ x1 len))))
+  (define m (fl/ (fl- y2 y1) (fl- x2 x1)))
+  (define b (fl- y1 (fl* m x1)))
+  (let loop ([xa start-x] [base-x 0.0] [ps rest-ps] [on? #t] [res empty])
+    (let-values ([(base-x ps)  (cond [(empty? ps)  (values (fl+ base-x len) rest-ps)]
+                                     [else         (values base-x ps)])])
+      (cond [(xa . fl>= . x2)  (reverse res)]
+            [else
+             (match-let ([(cons p ps)  ps])
+               (define xb (fl+ start-x (fl+ p base-x)))
+               (cond [(and on? (xb . fl>= . x1))
+                      (define v (let ([xa  (flmax x1 xa)]
+                                      [xb  (flmin x2 xb)])
+                                  (define ya (if (fl= x1 xa) y1 (fl+ (fl* m xa) b)))
+                                  (define yb (if (fl= x2 xb) y2 (fl+ (fl* m xb) b)))
+                                  (list (pair xa ya) (pair xb yb))))
+                      (loop xb base-x ps (not on?) (cons v res))]
+                     [else  (loop xb base-x ps (not on?) res)]))]))))
+
+(define (styled-segment x1 y1 x2 y2 sty)
+  (define dx (flabs (fl- x2 x1)))
+  (define dy (flabs (fl- y2 y1)))
+  (cond [(and (fl= dx 0.0) (fl= dy 0.0))  (list (list (cons x1 y1) (cons x2 y2)))]
+        [(dx . > . dy)
+         (define reverse? (x1 . fl> . x2))
+         (let-values ([(x1 y1)  (if reverse? (values x2 y2) (values x1 y1))]
+                      [(x2 y2)  (if reverse? (values x1 y1) (values x2 y2))])
+           (define segment (styled-segment* x1 y1 x2 y2 sty cons))
+           (if reverse? (segment-reverse segment) segment))]
+        [else
+         (define reverse? (y1 . fl> . y2))
+         (let-values ([(x1 y1)  (if reverse? (values x2 y2) (values x1 y1))]
+                      [(x2 y2)  (if reverse? (values x1 y1) (values x2 y2))])
+           (define segment (styled-segment* y1 x1 y2 x2 sty (λ (y x) (cons x y))))
+           (if reverse? (segment-reverse segment) segment))]))
+
+(define (symbol->style name style-sym)
+  (case style-sym
+    [(long-dash)   long-dash-pen-style]
+    [(short-dash)  short-dash-pen-style]
+    [(dot)         dot-pen-style]
+    [(dot-dash)    dot-dash-pen-style]
+    [else  (error name "unknown pen style ~e" style-sym)]))
+
+(define (draw-line/pen-style dc x1 y1 x2 y2 style-sym)
+  (case style-sym
+    [(transparent)  (void)]
+    [(solid)        (send dc draw-line x1 y1 x2 y2)]
+    [else
+     (let ([x1  (exact->inexact x1)]
+           [y1  (exact->inexact y1)]
+           [x2  (exact->inexact x2)]
+           [y2  (exact->inexact y2)])
+       (define sty (symbol->style 'draw-line style-sym))
+       (define pen (send dc get-pen))
+       (define scale (flmax 1.0 (exact->inexact (send pen get-width))))
+       (define vss (styled-segment x1 y1 x2 y2 (scale-pen-style sty scale)))
+       (for ([vs  (in-list vss)] #:when (not (empty? vs)))
+         (match-define (list (cons xa ya) (cons xb yb)) vs)
+         (send dc draw-line xa ya xb yb)))]))
+
+(define (draw-lines* dc vs sty)
+  (define vss
+    (append* (join-styled-segments
+              (for/list ([v1  (in-list vs)] [v2  (in-list (rest vs))])
+                (match-define (cons x1 y1) v1)
+                (match-define (cons x2 y2) v2)
+                (styled-segment x1 y1 x2 y2 sty)))))
+  (for ([vs  (in-list vss)])
+    (match vs
+      [(list (cons x1 y1) (cons x2 y2))  (send dc draw-line x1 y1 x2 y2)]
+      [_  (send dc draw-lines vs)])))
+
+(define (draw-lines/pen-style dc vs style-sym)
+  (cond [(or (empty? vs) (eq? style-sym 'transparent))  (void)]
+        [else
+         (let ([vs  (map cons-exact->inexact vs)])
+           (cond [(eq? style-sym 'solid)  (send dc draw-lines vs)]
+                 [else
+                  (define pen (send dc get-pen))
+                  (define scale (flmax 1.0 (exact->inexact (send pen get-width))))
+                  (define sty (scale-pen-style (symbol->style 'draw-lines style-sym) scale))
+                  (draw-lines* dc vs sty)]))]))
+
+;; ===================================================================================================
+;; Drawing a bitmap using 2x supersampling
+
+(define (draw-bitmap/supersampling draw width height)
+  (define bm2 (make-bitmap (* 2 width) (* 2 height)))
+  (define dc2 (make-object bitmap-dc% bm2))
+  (send dc2 set-scale 2 2)
+  (draw dc2)
+  
+  (define bm (make-bitmap width height))
+  (define dc (make-object bitmap-dc% bm))
+  (send dc set-scale 1/2 1/2)
+  (send dc set-smoothing 'smoothed)
+  (send dc draw-bitmap bm2 0 0)
+  bm)
+
+(define (draw-bitmap draw width height)
+  (define bm (make-bitmap width height))
+  (define dc (make-object bitmap-dc% bm))
+  (draw dc)
+  bm)

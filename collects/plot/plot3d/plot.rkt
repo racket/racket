@@ -8,6 +8,7 @@
          unstable/lazy-require
          "../common/contract.rkt"
          "../common/math.rkt"
+         "../common/draw.rkt"
          "../common/parameters.rkt"
          "../common/plot-element.rkt"
          "../common/file-type.rkt"
@@ -20,10 +21,74 @@
 (lazy-require ["snip.rkt" (make-3d-plot-snip)]
               ["../common/gui.rkt" (make-snip-frame)])
 
-(provide (all-defined-out))
+(provide (except-out (all-defined-out) get-renderer-list get-bounds-rect get-ticks plot3d-dc))
 
 ;; ===================================================================================================
 ;; Plot to a given device context
+
+(define (get-renderer-list renderer-tree)
+  (for/list ([r  (flatten (list renderer-tree))])
+    (match r
+      [(non-renderer bounds-rect bounds-fun ticks-fun)
+       (renderer3d bounds-rect bounds-fun ticks-fun #f)]
+      [_  r])))
+
+(define (get-bounds-rect renderer-list x-min x-max y-min y-max z-min z-max)
+  (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)))
+  (define plot-bounds-rect (bounds-fixpoint renderer-list given-bounds-rect))
+  
+  (when (or (not (rect-regular? plot-bounds-rect))
+            (rect-zero-area? plot-bounds-rect))
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) plot-bounds-rect)
+    (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a], z ∈ [~a,~a]"
+            x-min x-max y-min y-max z-min z-max))
+  
+  (rect-inexact->exact plot-bounds-rect))
+
+(define (get-ticks renderer-list bounds-rect)
+  (define-values (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks all-z-ticks all-z-far-ticks)
+    (for/lists (all-x-ticks
+                all-x-far-ticks
+                all-y-ticks
+                all-y-far-ticks
+                all-z-ticks
+                all-z-far-ticks) ([r  (in-list renderer-list)])
+      (define ticks-fun (plot-element-ticks-fun r))
+      (cond [ticks-fun  (ticks-fun bounds-rect)]
+            [else       (values empty empty empty empty empty empty)])))
+  
+  (values (remove-duplicates (append* all-x-ticks))
+          (remove-duplicates (append* all-x-far-ticks))
+          (remove-duplicates (append* all-y-ticks))
+          (remove-duplicates (append* all-y-far-ticks))
+          (remove-duplicates (append* all-z-ticks))
+          (remove-duplicates (append* all-z-far-ticks))))
+
+(define (plot3d-dc renderer-list bounds-rect
+                   x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
+                   dc x y width height)
+  (define area (make-object 3d-plot-area%
+                 bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
+                 dc x y width height))
+  (send area start-plot)
+  
+  (define legend-entries
+    (flatten (for/list ([rend  (in-list renderer-list)])
+               (match-define (renderer3d rend-bounds-rect _bf _tf render-proc) rend)
+               (send area start-renderer (if rend-bounds-rect rend-bounds-rect (empty-rect 3)))
+               (if render-proc (render-proc area) empty))))
+  
+  (send area end-renderers)
+  
+  (when (and (not (empty? legend-entries))
+             (or (not (plot-animating?))
+                 (not (equal? (plot-legend-anchor) 'center))))
+    (send area draw-legend legend-entries))
+  
+  (when (plot-animating?) (send area draw-angles))
+  
+  (send area end-plot))
+  
 
 (defproc (plot3d/dc [renderer-tree  (treeof (or/c renderer3d? non-renderer?))]
                     [dc  (is-a?/c dc<%>)]
@@ -40,41 +105,10 @@
                     [#:y-label y-label (or/c string? #f) (plot-y-label)]
                     [#:z-label z-label (or/c string? #f) (plot-z-label)]
                     [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]) void?
-  (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)))
-  (define rs (for/list ([r  (flatten (list renderer-tree))])
-               (match r
-                 [(non-renderer bounds-rect bounds-fun ticks-fun)
-                  (renderer3d bounds-rect bounds-fun ticks-fun #f)]
-                 [_  r])))
-  
-  (define plot-bounds-rect (bounds-fixpoint rs given-bounds-rect))
-  
-  (when (or (not (rect-regular? plot-bounds-rect))
-            (rect-zero-area? plot-bounds-rect))
-    (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) plot-bounds-rect)
-    (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a], z ∈ [~a,~a]"
-            x-min x-max y-min y-max z-min z-max))
-  
-  (define bounds-rect (rect-inexact->exact plot-bounds-rect))
-  
-  (define-values (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks all-z-ticks all-z-far-ticks)
-    (for/lists (all-x-ticks
-                all-x-far-ticks
-                all-y-ticks
-                all-y-far-ticks
-                all-z-ticks
-                all-z-far-ticks) ([r  (in-list rs)])
-      (define ticks-fun (plot-element-ticks-fun r))
-      (cond [ticks-fun  (ticks-fun bounds-rect)]
-            [else  (values empty empty empty empty empty empty)])))
-  
-  (define x-ticks (remove-duplicates (append* all-x-ticks)))
-  (define y-ticks (remove-duplicates (append* all-y-ticks)))
-  (define z-ticks (remove-duplicates (append* all-z-ticks)))
-  
-  (define x-far-ticks (remove-duplicates (append* all-x-far-ticks)))
-  (define y-far-ticks (remove-duplicates (append* all-y-far-ticks)))
-  (define z-far-ticks (remove-duplicates (append* all-z-far-ticks)))
+  (define renderer-list (get-renderer-list renderer-tree))
+  (define bounds-rect (get-bounds-rect renderer-list x-min x-max y-min y-max z-min z-max))
+  (define-values (x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks)
+    (get-ticks renderer-list bounds-rect))
   
   (parameterize ([plot3d-angle        angle]
                  [plot3d-altitude     altitude]
@@ -83,28 +117,9 @@
                  [plot-y-label        y-label]
                  [plot-z-label        z-label]
                  [plot-legend-anchor  legend-anchor])
-    (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) bounds-rect)
-    (define area (make-object 3d-plot-area%
-                   bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
-                   dc x y width height))
-    (send area start-plot)
-    
-    (define legend-entries
-      (flatten (for/list ([rend  (in-list rs)])
-                 (match-define (renderer3d rend-bounds-rect _bf _tf render-proc) rend)
-                 (send area start-renderer (if rend-bounds-rect rend-bounds-rect (empty-rect 3)))
-                 (if render-proc (render-proc area) empty))))
-    
-    (send area end-renderers)
-    
-    (when (and (not (empty? legend-entries))
-               (or (not (plot-animating?))
-                   (not (equal? (plot-legend-anchor) 'center))))
-      (send area draw-legend legend-entries))
-    
-    (when (plot-animating?) (send area draw-angles))
-    
-    (send area end-plot)))
+    (plot3d-dc renderer-list bounds-rect
+               x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
+               dc x y width height)))
 
 ;; ===================================================================================================
 ;; Plot to various other backends
@@ -127,13 +142,13 @@
                         [#:z-label z-label (or/c string? #f) (plot-z-label)]
                         [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                         ) (is-a?/c bitmap%)
-  (define bm (make-bitmap width height))
-  (define dc (make-object bitmap-dc% bm))
-  (plot3d/dc renderer-tree dc 0 0 width height
-             #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
-             #:angle angle #:altitude altitude #:title title #:x-label x-label #:y-label y-label
-             #:z-label z-label #:legend-anchor legend-anchor)
-  bm)
+  ((if (plot-animating?) draw-bitmap draw-bitmap/supersampling)
+   (λ (dc)
+     (plot3d/dc renderer-tree dc 0 0 width height
+                #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
+                #:angle angle #:altitude altitude #:title title #:x-label x-label #:y-label y-label
+                #:z-label z-label #:legend-anchor legend-anchor))
+   width height))
 
 (defproc (plot3d-pict [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
                       [#:x-min x-min (or/c regular-real? #f) #f]
@@ -154,12 +169,11 @@
                       ) pict?
   (define saved-values (plot-parameters))
   (dc (λ (dc x y)
-        (parameterize/group
-         ([plot-parameters  saved-values])
-         (plot3d/dc renderer-tree dc x y width height
-                    #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min
-                    #:z-max z-max #:angle angle #:altitude altitude #:title title #:x-label x-label
-                    #:y-label y-label #:z-label z-label #:legend-anchor legend-anchor)))
+        (parameterize/group ([plot-parameters  saved-values])
+          (plot3d/dc renderer-tree dc x y width height
+                     #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min
+                     #:z-max z-max #:angle angle #:altitude altitude #:title title #:x-label x-label
+                     #:y-label y-label #:z-label z-label #:legend-anchor legend-anchor)))
       width height))
 
 ;; Plot to a snip
@@ -180,14 +194,26 @@
                       [#:z-label z-label (or/c string? #f) (plot-z-label)]
                       [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                       ) (is-a?/c image-snip%)
+  (define renderer-list (get-renderer-list renderer-tree))
+  (define bounds-rect (get-bounds-rect renderer-list x-min x-max y-min y-max z-min z-max))
+  (define-values (x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks)
+    (get-ticks renderer-list bounds-rect))
+  
   (make-3d-plot-snip
-   (λ (angle altitude anim?)
-     (parameterize ([plot-animating?  (if anim? #t (plot-animating?))])
-       (plot3d-bitmap
-        renderer-tree
-        #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max
-        #:width width #:height height #:angle angle #:altitude altitude #:title title
-        #:x-label x-label #:y-label y-label #:z-label z-label #:legend-anchor legend-anchor)))
+   (λ (anim? angle altitude)
+     (parameterize ([plot-animating?     (if anim? #t (plot-animating?))]
+                    [plot3d-angle        angle]
+                    [plot3d-altitude     altitude]
+                    [plot-title          title]
+                    [plot-x-label        x-label]
+                    [plot-y-label        y-label]
+                    [plot-z-label        z-label]
+                    [plot-legend-anchor  legend-anchor])
+       ((if (plot-animating?) draw-bitmap draw-bitmap/supersampling)
+        (λ (dc) (plot3d-dc renderer-list bounds-rect
+                           x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
+                           dc 0 0 width height))
+        width height)))
    angle altitude))
 
 ;; Plot to a frame

@@ -135,13 +135,20 @@
     
     (define pen-hash (make-hash))
     
+    (define pen-color (plot-foreground))
+    (define pen-width (plot-line-width))
+    (define pen-style 'solid)
+    
     ;; Sets the pen, using a hash table to avoid making duplicate objects. At time of writing (and for
     ;; the forseeable future) this is much faster than using a pen-list%, because it doesn't have to
     ;; synchronize access to be thread-safe.
     (define/public (set-pen color width style)
       (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
         (->pen-color color))
-      (let ([style  (->pen-style style)])
+      (set! pen-color color)
+      (set! pen-width width)
+      (set! pen-style (->pen-style style))
+      (let ([style  (if (eq? style 'transparent) 'transparent 'solid)])
         (send dc set-pen
               (hash-ref! pen-hash (vector r g b width style)
                          (λ () (make-object pen% (make-object color% r g b) width style))))))
@@ -156,17 +163,26 @@
     
     (define brush-hash (make-hash))
     
+    (define brush-color (plot-background))
+    (define brush-style 'solid)
+    
     ;; Sets the brush. Same idea as set-pen.
     (define/public (set-brush color style)
       (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
         (->brush-color color))
       (let ([style  (->brush-style style)])
+        (set! brush-color color)
+        (set! brush-style style)
         (send dc set-brush
               (hash-ref! brush-hash (vector r g b style)
                          (λ () (make-object brush% (make-object color% r g b) style))))))
     
+    (define alpha (plot-foreground-alpha))
+    
     ;; Sets alpha.
-    (define/public (set-alpha a) (send dc set-alpha a))
+    (define/public (set-alpha a)
+      (set! alpha a)
+      (send dc set-alpha a))
     
     ;; Sets the background color.
     (define/public (set-background color)
@@ -250,9 +266,21 @@
         (match-define (vector x y) v)
         (send dc draw-point x y)))
     
-    (define/public (draw-polygon vs [fill-style 'winding])
+    (define/public (draw-polygon vs)
       (when (andmap vregular? vs)
-        (send dc draw-polygon (map coord->cons vs) 0 0 fill-style)))
+        (let ([vs  (map coord->cons vs)])
+          (cond [(eq? pen-style 'transparent)
+                 (send dc set-smoothing 'unsmoothed)
+                 (send dc draw-polygon vs 0 0 'winding)
+                 (send dc set-smoothing 'smoothed)]
+                [else
+                 (define old-pen-style pen-style)
+                 (set-pen pen-color pen-width 'transparent)
+                 (send dc set-smoothing 'unsmoothed)
+                 (send dc draw-polygon vs 0 0 'winding)
+                 (send dc set-smoothing 'smoothed)
+                 (set-pen pen-color pen-width old-pen-style)
+                 (draw-lines/pen-style dc (cons (last vs) vs) old-pen-style)]))))
     
     (define/public (draw-rect r)
       (when (rect-regular? r)
@@ -261,13 +289,13 @@
     
     (define/public (draw-lines vs)
       (when (andmap vregular? vs)
-        (send dc draw-lines (map coord->cons vs))))
+        (draw-lines/pen-style dc (map coord->cons vs) pen-style)))
     
     (define/public (draw-line v1 v2)
       (when (and (vregular? v1) (vregular? v2))
         (match-define (vector x1 y1) v1)
         (match-define (vector x2 y2) v2)
-        (send dc draw-line x1 y1 x2 y2)))
+        (draw-line/pen-style dc x1 y1 x2 y2 pen-style)))
     
     (define/public (draw-text str v [anchor 'top-left] [angle 0] #:outline? [outline? #f])
       (when (vregular? v)

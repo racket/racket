@@ -14,7 +14,8 @@
                   seconds-per-day
                   seconds-per-week)
          (only-in plot/common/format
-                  int-str->e-str frac-str->e-str))
+                  int-str->e-str frac-str->e-str)
+         plot/common/worker-thread)
 
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #t) '(0 1))
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #f) '(0 2/3))
@@ -321,3 +322,35 @@
 (check-false (vector-ormap (λ (x y) (and (= x 1) (= y 2)))
                            #(0 0 1 0)
                            #(0 2 0 0)))
+
+;; ===================================================================================================
+;; Worker threads
+
+(let ()
+  (define wt (make-worker-thread (match-lambda
+                                   [(list x y z)  (sleep 0.1)
+                                                  (+ x y z)])))
+  
+  (collect-garbage)
+  (collect-garbage)
+  (check-true (worker-thread-waiting? wt))
+  (check-true (worker-thread-put wt (list 1 2 3)))
+  (check-true (worker-thread-working? wt))
+  (check-equal? (worker-thread-get wt) 6)
+  (check-true (worker-thread-put wt (list 1 2 3)))
+  (check-false (worker-thread-try-put wt (list 10 20 30)))
+  (check-exn exn? (λ () (worker-thread-put wt (list 10 20 30))))
+  (check-false (worker-thread-try-get wt))
+  (sleep 0.2)
+  (check-equal? (worker-thread-try-get wt) 6)
+  (check-true (worker-thread-put wt (list 10 20 30)))
+  (check-equal? (worker-thread-send wt (list 1 2 3)) 6)
+  (check-exn exn? (λ () (worker-thread-get wt)))
+  (check-false (worker-thread-try-get wt))
+  (check-true (worker-thread-try-put wt (list 1 2 3)))
+  (sleep 0.2)
+  (check-false (worker-thread-try-put wt (list 10 20 30)))
+  (check-equal? (worker-thread-wait wt) (void))
+  (check-true (worker-thread-put wt (list 1 2)))
+  (check-exn exn? (λ () (worker-thread-get wt)))
+  )

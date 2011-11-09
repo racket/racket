@@ -192,7 +192,7 @@
                (contour-intervals3d f5 -4 0 -4 4
                                     #:colors '(0 1 5)
                                     #:line-colors '(0 4 2)
-                                    #:line-widths '(1) #:line-styles '(dot)
+                                    #:line-widths '(1.5) #:line-styles '(dot)
                                     #:contour-colors '(0)
                                     #:contour-widths '(0)
                                     #:contour-styles '(transparent)
@@ -205,7 +205,7 @@
  (parameterize ([plot3d-samples 81])
    (plot3d (contour-intervals3d
             f5 -4 4 -4 4 #:label "z"
-            #:line-colors default-contour-fill-colors))))
+            #:line-styles '(transparent)))))
 
 (time
  (plot3d (list (contours3d f5 -4 4 -4 4)

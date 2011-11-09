@@ -8,6 +8,7 @@
          unstable/lazy-require
          "../common/contract.rkt"
          "../common/math.rkt"
+         "../common/draw.rkt"
          "../common/parameters.rkt"
          "../common/plot-element.rkt"
          "../common/file-type.rkt"
@@ -19,10 +20,61 @@
 ;;   cannot instantiate `racket/gui/base' a second time in the same process
 (lazy-require ["../common/gui.rkt" (make-snip-frame)])
 
-(provide (all-defined-out))
+(provide (except-out (all-defined-out) get-renderer-list get-bounds-rect get-ticks plot-dc))
 
 ;; ===================================================================================================
 ;; Plot to a given device context
+
+(define (get-renderer-list renderer-tree)
+  (for/list ([r  (flatten (list renderer-tree))])
+    (match r
+      [(non-renderer bounds-rect bounds-fun ticks-fun)
+       (renderer2d bounds-rect bounds-fun ticks-fun #f)]
+      [_  r])))
+
+(define (get-bounds-rect renderer-list x-min x-max y-min y-max)
+  (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max)))
+  (define plot-bounds-rect (bounds-fixpoint renderer-list given-bounds-rect))
+  
+  (when (or (not (rect-regular? plot-bounds-rect))
+            (rect-zero-area? plot-bounds-rect))
+    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) plot-bounds-rect)
+    (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a]"
+           x-min x-max y-min y-max))
+  
+  (rect-inexact->exact plot-bounds-rect))
+
+(define (get-ticks renderer-list bounds-rect)
+  (define-values (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks)
+    (for/lists (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks
+                            ) ([r  (in-list renderer-list)])
+      (define ticks-fun (plot-element-ticks-fun r))
+      (cond [ticks-fun  (ticks-fun bounds-rect)]
+            [else       (values empty empty empty empty)])))
+  
+  (values (remove-duplicates (append* all-x-ticks))
+          (remove-duplicates (append* all-x-far-ticks))
+          (remove-duplicates (append* all-y-ticks))
+          (remove-duplicates (append* all-y-far-ticks))))
+
+(define (plot-dc renderer-list bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks
+                 dc x y width height)
+  (define area (make-object 2d-plot-area%
+                 bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks dc x y width height))
+  (send area start-plot)
+  
+  (define legend-entries
+    (flatten (for/list ([rend  (in-list renderer-list)])
+               (match-define (renderer2d rend-bounds-rect _bf _tf render-proc) rend)
+               (send area start-renderer (if rend-bounds-rect rend-bounds-rect (empty-rect 2)))
+               (if render-proc (render-proc area) empty))))
+  
+  (send area end-renderers)
+  
+  (when (not (empty? legend-entries))
+    (send area draw-legend legend-entries))
+  
+  (send area end-plot))
 
 (defproc (plot/dc [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
                   [dc (is-a?/c dc<%>)]
@@ -35,54 +87,17 @@
                   [#:x-label x-label (or/c string? #f) (plot-x-label)]
                   [#:y-label y-label (or/c string? #f) (plot-y-label)]
                   [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]) void?
-  (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max)))
-  (define rs (for/list ([r  (flatten (list renderer-tree))])
-               (match r
-                 [(non-renderer bounds-rect bounds-fun ticks-fun)
-                  (renderer2d bounds-rect bounds-fun ticks-fun #f)]
-                 [_  r])))
-  
-  (define plot-bounds-rect (bounds-fixpoint rs given-bounds-rect))
-  
-  (when (or (not (rect-regular? plot-bounds-rect))
-            (rect-zero-area? plot-bounds-rect))
-    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) plot-bounds-rect)
-    (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a]"
-           x-min x-max y-min y-max))
-  
-  (define bounds-rect (rect-inexact->exact plot-bounds-rect))
-  
-  (define-values (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks)
-    (for/lists (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks) ([r  (in-list rs)])
-      (define ticks-fun (plot-element-ticks-fun r))
-      (cond [ticks-fun  (ticks-fun bounds-rect)]
-            [else  (values empty empty empty empty)])))
-  
-  (define x-ticks (remove-duplicates (append* all-x-ticks)))
-  (define y-ticks (remove-duplicates (append* all-y-ticks)))
-  (define x-far-ticks (remove-duplicates (append* all-x-far-ticks)))
-  (define y-far-ticks (remove-duplicates (append* all-y-far-ticks)))
+  (define renderer-list (get-renderer-list renderer-tree))
+  (define bounds-rect (get-bounds-rect renderer-list x-min x-max y-min y-max))
+  (define-values (x-ticks x-far-ticks y-ticks y-far-ticks)
+    (get-ticks renderer-list bounds-rect))
   
   (parameterize ([plot-title          title]
                  [plot-x-label        x-label]
                  [plot-y-label        y-label]
                  [plot-legend-anchor  legend-anchor])
-    (define area (make-object 2d-plot-area%
-                   bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks dc x y width height))
-    (send area start-plot)
-    
-    (define legend-entries
-      (flatten (for/list ([rend  (in-list rs)])
-                 (match-define (renderer2d rend-bounds-rect _bf _tf render-proc) rend)
-                 (send area start-renderer (if rend-bounds-rect rend-bounds-rect (empty-rect 2)))
-                 (if render-proc (render-proc area) empty))))
-    
-    (send area end-renderers)
-    
-    (when (not (empty? legend-entries))
-      (send area draw-legend legend-entries))
-    
-    (send area end-plot)))
+    (plot-dc renderer-list bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks
+             dc x y width height)))
 
 ;; ===================================================================================================
 ;; Plot to various other backends
@@ -100,12 +115,16 @@
                       [#:y-label y-label (or/c string? #f) (plot-y-label)]
                       [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                       ) (is-a?/c bitmap%)
-  (define bm (make-bitmap width height))
-  (define dc (make-object bitmap-dc% bm))
-  (plot/dc renderer-tree dc 0 0 width height
-           #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
-           #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)
-  bm)
+  (define renderer-list (get-renderer-list renderer-tree))
+  (define bounds-rect (get-bounds-rect renderer-list x-min x-max y-min y-max))
+  (define-values (x-ticks x-far-ticks y-ticks y-far-ticks)
+    (get-ticks renderer-list bounds-rect))
+  ((if (plot-animating?) draw-bitmap draw-bitmap/supersampling)
+   (λ (dc) 
+     (plot/dc renderer-tree dc 0 0 width height
+              #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
+              #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor))
+   width height))
 
 (defproc (plot-pict [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
                     [#:x-min x-min (or/c regular-real? #f) #f]
@@ -122,10 +141,10 @@
   (define saved-values (plot-parameters))
   (dc (λ (dc x y)
         (parameterize/group
-         ([plot-parameters  saved-values])
-         (plot/dc renderer-tree dc x y width height
-                  #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
-                  #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)))
+            ([plot-parameters  saved-values])
+          (plot/dc renderer-tree dc x y width height
+                   #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
+                   #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor)))
       width height))
 
 ;; Plot to a snip

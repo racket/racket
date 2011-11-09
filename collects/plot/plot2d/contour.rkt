@@ -135,14 +135,11 @@
     (let ([colors  (map ->brush-color (maybe-apply colors z-ivls))]
           [styles  (map ->brush-style (maybe-apply styles z-ivls))]
           [alphas  (maybe-apply alphas z-ivls)])
-      (define line-styles (map (λ (style) (if (eq? style 'solid) 'solid 'transparent)) styles))
-      
       (for ([za     (in-list zs)]
             [zb     (in-list (rest zs))]
             [color  (in-cycle colors)]
             [style  (in-cycle styles)]
-            [alpha  (in-cycle alphas)]
-            [line-style  (in-cycle line-styles)])
+            [alpha  (in-cycle alphas)])
         (define polys
           (append*
            (for/list ([ya  (in-list ys)]
@@ -159,26 +156,11 @@
              (for/list ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
                (map (λ (v) (vector-take v 2)) poly)))))
         
-        (define (draw-polys)
-          (for ([poly  (in-list polys)])
+        (send area put-pen color 1 'transparent)
+        (send area put-brush color style)
+        (send area put-alpha alpha)
+        (for ([poly  (in-list polys)])
             (send area put-polygon poly)))
-        
-        (cond [(= alpha 1)
-               (send area put-pen color 1 line-style)
-               (send area put-brush color style)
-               (send area put-alpha 1)
-               (draw-polys)]
-              [else
-               ;; draw the outlines with reduced alpha first
-               (send area put-pen color 1 line-style)
-               (send area put-brush color 'transparent)
-               (send area put-alpha (alpha-expt alpha 1/8))
-               (draw-polys)
-               ;; now draw the centers
-               (send area put-pen color 1 'transparent)
-               (send area put-brush color style)
-               (send area put-alpha alpha)
-               (draw-polys)]))
       
       ((contours-render-proc g levels samples contour-colors contour-widths contour-styles alphas #f)
        area)
@@ -194,7 +176,7 @@
       
       (cond [label  (interval-legend-entries
                      label z-ivls ivl-labels
-                     colors styles colors '(1) line-styles
+                     colors styles colors '(1) '(transparent)
                      contour-colors* contour-widths* contour-styles*
                      (rest contour-colors*) (rest contour-widths*) (rest contour-styles*))]
             [else   empty]))))

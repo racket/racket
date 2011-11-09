@@ -167,7 +167,7 @@
     (define (x-axis-angle) (plot-dir->dc-angle #(1 0 0)))
     (define (y-axis-angle) (plot-dir->dc-angle #(0 1 0)))
     
-    (define (plot-dir->dc-dir v)
+    (define/public (plot-dir->dc-dir v)
       (vnormalize (v- (plot->dc/no-axis-trans (v+ v (vector x-mid y-mid z-mid)))
                       (plot->dc/no-axis-trans (vector x-mid y-mid z-mid)))))
     
@@ -851,36 +851,15 @@
         (set! render-list (cons (shapes (get-alpha) (plot->view/no-rho c) lst)
                                 render-list))))
     
+    (define/public (put-rect r [c (rect-center r)])
+      (when (rect-regular? r)
+        (put-polygons (visible-rect-faces r theta) c)))
+    
     (define/public (put-text str v [anchor 'center] [angle 0])
       (when (and (vregular? v) (in-bounds? v))
         (add-shape!
          (text (get-alpha) (plot->view/no-rho v) anchor angle str
                (get-font-size) (get-font-family) (get-text-foreground)))))
-    
-    (define/public (put-rect r [c (rect-center r)])
-      (when (rect-regular? r)
-        (match-define (vector (ivl x1 x2) (ivl y1 y2) (ivl z1 z2)) r)
-        (put-polygons
-         (list 
-          ;; Top
-          (list (vector x1 y1 z2) (vector x2 y1 z2) (vector x2 y2 z2) (vector x1 y2 z2))
-          ;; Front
-          (if ((cos theta) . > . 0)
-              (list (vector x1 y1 z1) (vector x2 y1 z1) (vector x2 y1 z2) (vector x1 y1 z2))
-              empty)
-          ;; Back
-          (if ((cos theta) . < . 0)
-              (list (vector x1 y2 z1) (vector x2 y2 z1) (vector x2 y2 z2) (vector x1 y2 z2))
-              empty)
-          ;; Left
-          (if ((sin theta) . > . 0)
-              (list (vector x1 y1 z1) (vector x1 y2 z1) (vector x1 y2 z2) (vector x1 y1 z2))
-              empty)
-          ;; Right
-          (if ((sin theta) . < . 0)
-              (list (vector x2 y1 z1) (vector x2 y2 z1) (vector x2 y2 z2) (vector x2 y1 z2))
-              empty))
-         c)))
     
     (define/public (put-glyphs vs symbol size)
       (for ([v  (in-list vs)])
