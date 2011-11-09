@@ -490,6 +490,8 @@ static intptr_t getaddrinfo_in_thread(void *_data)
   } while ((cr == -1) && (errno == EINTR));
 # endif
 
+  res = NULL;
+
   ok = mz_getaddrinfo(hn_copy[0] ? hn_copy : NULL, 
 		      sn_copy[0] ? sn_copy : NULL, 
 		      &hints, &res);
@@ -658,7 +660,7 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
     }
 
     if (!ok) {
-      getaddrinfo_in_thread(rec);
+      getaddrinfo_in_thread(ghbn_thread_data);
       rec->result = ghbn_thread_data->ghbn_result;
       ghbn_thread_data->ghbn_result = NULL;
       rec->err = ghbn_thread_data->ghbn_err;
