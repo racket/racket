@@ -915,7 +915,7 @@
                        (format "counterexample found after ~a~a:\n"
                                (format-attempts attempt)
                                (if source (format " with ~a" source) "")))
-                      (pretty-print term (current-output-port)))
+                      (pretty-write term (current-output-port)))
                     (make-counterexample term)))))))))
 
 (define (check-lhs-pats lang mf/rr prop attempts retries what show term-fix

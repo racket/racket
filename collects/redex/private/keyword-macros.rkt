@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/match
+         racket/contract
          (for-template racket/base racket/contract))
 
 (define (parse-kw-args formals actuals source form-name)
