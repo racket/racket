@@ -41,7 +41,8 @@
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-=)
       [(_ name:id honu-= one:honu-expression . rest)
-       (values #'(%racket (define name one.result))
+       (values (with-syntax ([one-parsed (parse-all #'one.result)])
+                 #'(%racket (define name one-parsed)))
                #'rest
                #t)])))
 
@@ -75,7 +76,10 @@
                        #:literals (else honu-then)
       [(_ condition:honu-expression honu-then true:honu-expression else false:honu-expression . rest)
        (values
-         #'(%racket-expression (if condition.result true.result false.result))
+         (with-syntax ([condition-parsed (parse-all #'condition.result)]
+                       [true-parsed (parse-all #'true.result)]
+                       [false-parsed (parse-all #'false.result)])
+           #'(%racket-expression (if condition-parsed true-parsed false-parsed)))
          #'rest
          #f)])))
 

@@ -228,10 +228,10 @@
          (do-parse #'(rest ...)
                    precedence left
                    #'racket))]
-      [(%racket-expression racket)
+      [(%racket-expression racket rest ...)
        (if current
          (values (left current) stream)
-         (do-parse #'()
+         (do-parse #'(rest ...)
                    precedence left
                    #'racket))]
       [(head rest ...)
@@ -304,9 +304,14 @@
                      [(#%brackets stuff ...)
                       (syntax-parse #'(stuff ...) #:literal-sets (cruft)
                         [(work:honu-expression colon (~seq variable:id honu-<- list:honu-expression (~optional honu-comma)) ...)
-                         (define comprehension #'(for/list ([variable list.result]
-                                                            ...)
-                                                   work.result))
+                         (define comprehension
+                           (with-syntax ([(list-parsed ...) (map (lambda (list)
+                                                                   (parse-all list))
+                                                                 (syntax->list #'(list.result ...)))]
+                                         [work-parsed (parse-all #'work.result)])
+                             #'(for/list ([variable list-parsed]
+                                          ...)
+                                 work-parsed)))
                          (if current
                            (error 'parse "a list comprehension cannot follow an expression")
                            (do-parse #'(rest ...) precedence left comprehension))]
