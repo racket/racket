@@ -493,6 +493,7 @@ case "$host_os" in
     LIBS="$LIBS -ldl -lm -rdynamic"
     DYN_CFLAGS="-fPIC"
     STRIP_DEBUG="strip -S"
+    try_poll_syscall=yes
     case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
@@ -784,6 +785,25 @@ if test "$mbsrtowcs" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DNO_MBTOWC_FUNCTIONS"
 fi
 AC_MSG_RESULT($mbsrtowcs)
+
+if test "${try_poll_syscall}" = "yes" ; then
+  [ msg="for poll" ]
+  AC_MSG_CHECKING($msg)
+  AC_TRY_RUN(
+  [  #include <poll.h> ]
+     int main() {
+      struct pollfd pfd;
+      int r;
+      pfd.fd = 0;
+      pfd.events = POLLIN;
+      r = poll(&pfd, 1, 0);
+      return 0;
+     }, use_poll=yes, use_poll=no, use_poll=no)
+  AC_MSG_RESULT($use_poll)
+  if test "${use_poll}" = "yes" ; then
+     AC_DEFINE(HAVE_POLL_SYSCALL,1,[Have poll()])
+  fi
+fi
 
 if test "${enable_libffi}" = "yes" ; then
  if test "${enable_foreign}" = "yes" ; then

@@ -1,16 +1,29 @@
 
 #ifdef USE_FAR_MZ_FDCALLS
-struct mz_fd_set { fd_set fd; };
 THREAD_LOCAL_DECL(extern struct mz_fd_set *scheme_fd_set);
-# define DECL_FDSET(n, c) fd_set *n
-# define INIT_DECL_FDSET(r, w, e) { \
-    r = MZ_GET_FDSET(&scheme_fd_set->fd, 0 ); \
-    w = MZ_GET_FDSET(&scheme_fd_set->fd, 1 ); \
-    e = MZ_GET_FDSET(&scheme_fd_set->fd, 2 ); \
-  }
-# define INIT_DECL_RD_FDSET(r) r = MZ_GET_FDSET(&scheme_fd_set->fd, 0 )
-# define INIT_DECL_WR_FDSET(r) r = MZ_GET_FDSET(&scheme_fd_set->fd, 1 )
-# define INIT_DECL_ER_FDSET(r) r = MZ_GET_FDSET(&scheme_fd_set->fd, 2 )
+# ifdef HAVE_POLL_SYSCALL
+struct mz_fd_set {
+  struct mz_fd_set_data *data;
+  struct mz_fd_set *w;
+  struct mz_fd_set *e;
+  Scheme_Object *flags;
+};
+struct mz_fd_set_data {
+  struct pollfd *pfd;
+  Scheme_Object *size, *count;
+};
+# else
+struct mz_fd_set { fd_set data; };
+# endif
+#define DECL_FDSET(n, c) fd_set *n
+#define INIT_DECL_FDSET(r, w, e) { \
+   r = MZ_GET_FDSET(&scheme_fd_set->data, 0 ); \
+   w = MZ_GET_FDSET(&scheme_fd_set->data, 1 ); \
+   e = MZ_GET_FDSET(&scheme_fd_set->data, 2 ); \
+ }
+# define INIT_DECL_RD_FDSET(r) r = MZ_GET_FDSET(&scheme_fd_set->data, 0 )
+# define INIT_DECL_WR_FDSET(r) r = MZ_GET_FDSET(&scheme_fd_set->data, 1 )
+# define INIT_DECL_ER_FDSET(r) r = MZ_GET_FDSET(&scheme_fd_set->data, 2 )
 #else
 # define DECL_FDSET(n, c) fd_set n[c]
 # define INIT_DECL_FDSET(r, w, e) /* empty */

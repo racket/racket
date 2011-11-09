@@ -46,6 +46,9 @@
 # ifdef SELECT_INCLUDE
 #  include <sys/select.h>
 # endif
+# ifdef HAVE_POLL_SYSCALL
+#  include <poll.h>
+# endif
 #endif
 #ifdef IO_INCLUDE
 # include <io.h>
@@ -123,6 +126,9 @@ typedef struct {
   Scheme_Object so;
   Scheme_Custodian_Reference *mref;
   int count;
+# ifdef HAVE_POLL_SYSCALL
+  struct pollfd *pfd;
+# endif
   tcp_t s[mzFLEX_ARRAY_DECL];
 } listener_t;
 #endif
@@ -883,8 +889,27 @@ static int stop_listener(Scheme_Object *o);
 static int tcp_check_accept(Scheme_Object *_listener)
 {
 #ifdef USE_SOCKETS_TCP
-  tcp_t s, mx;
   listener_t *listener = (listener_t *)_listener;
+# ifdef HAVE_POLL_SYSCALL
+  int sr, i;
+
+  if (LISTENER_WAS_CLOSED(listener))
+    return 1;
+
+  do {
+    sr = poll(listener->pfd, listener->count, 0);
+  } while ((sr == -1) && (errno == EINTR));
+
+  if (sr) {
+    for (i = listener->count; i--; ) {
+      if (listener->pfd[i].revents)
+        return i + 1;
+    }
+  }
+
+  return sr;
+# else
+  tcp_t s, mx;
   DECL_OS_FDSET(readfds);
   DECL_OS_FDSET(exnfds);
   struct timeval time = {0, 0};
@@ -922,6 +947,7 @@ static int tcp_check_accept(Scheme_Object *_listener)
   }
 
   return sr;
+# endif
 #endif
 }
 
@@ -949,32 +975,53 @@ static int tcp_check_connect(Scheme_Object *connector_p)
 {
 #ifdef USE_SOCKETS_TCP
   tcp_t s;
-  DECL_OS_FDSET(writefds);
-  DECL_OS_FDSET(exnfds);
-  struct timeval time = {0, 0};
   int sr;
-
-  INIT_DECL_OS_WR_FDSET(writefds);
-  INIT_DECL_OS_ER_FDSET(exnfds);
 
   s = *(tcp_t *)connector_p;
 
-  MZ_OS_FD_ZERO(writefds);
-  MZ_OS_FD_ZERO(exnfds);
+# ifdef HAVE_POLL_SYSCALL
+  {
+    GC_CAN_IGNORE struct pollfd pfd[1];
+    pfd[0].fd = s;
+    pfd[0].events = POLLOUT;
+    do {
+      sr = poll(pfd, 1, 0);
+    } while ((sr == -1) && (errno == EINTR));
 
-  MZ_OS_FD_SET(s, writefds);
-  MZ_OS_FD_SET(s, exnfds);
+    if (!sr)
+      return 0;
+    else if (pfd[0].revents & POLLOUT)
+      return 1;
+    else
+      return -1;
+  }
+# else
+  {
+    DECL_OS_FDSET(writefds);
+    DECL_OS_FDSET(exnfds);
+    struct timeval time = {0, 0};
     
-  do {
-    sr = select(s + 1, NULL, writefds, exnfds, &time);
-  } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
+    INIT_DECL_OS_WR_FDSET(writefds);
+    INIT_DECL_OS_ER_FDSET(exnfds);
 
-  if (!sr)
-    return 0;
-  if (FD_ISSET(s, exnfds))
-    return -1;
-  else
-    return 1;
+    MZ_OS_FD_ZERO(writefds);
+    MZ_OS_FD_ZERO(exnfds);
+    
+    MZ_OS_FD_SET(s, writefds);
+    MZ_OS_FD_SET(s, exnfds);
+    
+    do {
+      sr = select(s + 1, NULL, writefds, exnfds, &time);
+    } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
+    
+    if (!sr)
+      return 0;
+    else if (FD_ISSET(s, exnfds))
+      return -1;
+    else
+      return 1;
+  }
+# endif
 #else
   return 0;
 #endif
@@ -1002,6 +1049,25 @@ static int tcp_check_write(Scheme_Object *port)
     return 1;
 
 #ifdef USE_SOCKETS_TCP
+# ifdef HAVE_POLL_SYSCALL
+  {
+    GC_CAN_IGNORE struct pollfd pfd[1];
+    int sr;
+
+    pfd[0].fd = data->tcp;
+    pfd[0].events = POLLOUT;
+    do {
+      sr = poll(pfd, 1, 0);
+    } while ((sr == -1) && (errno == EINTR));
+
+    if (!sr)
+      return 0;
+    else if (pfd[0].revents & POLLOUT)
+      return 1;
+    else
+      return -1;
+  }
+# else
   {
     tcp_t s;
     DECL_OS_FDSET(writefds);
@@ -1025,6 +1091,7 @@ static int tcp_check_write(Scheme_Object *port)
     
     return sr;
   }
+# endif
 #else
   {
     TCPiopbX *xpb;
@@ -1104,12 +1171,14 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
   Scheme_Tcp *data;
 #ifdef USE_SOCKETS_TCP
   int sr;
+# ifndef HAVE_POLL_SYSCALL
   DECL_OS_FDSET(readfds);
   DECL_OS_FDSET(exfds);
   struct timeval time = {0, 0};
 
   INIT_DECL_OS_RD_FDSET(readfds);
   INIT_DECL_OS_ER_FDSET(exfds);
+# endif
 #endif
 
   if (port->closed)
@@ -1123,16 +1192,32 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
     return 1;
 
 #ifdef USE_SOCKETS_TCP
-  MZ_OS_FD_ZERO(readfds);
-  MZ_OS_FD_ZERO(exfds);
-  MZ_OS_FD_SET(data->tcp, readfds);
-  MZ_OS_FD_SET(data->tcp, exfds);
-    
-  do {
-    sr = select(data->tcp + 1, readfds, NULL, exfds, &time);
-  } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
+# ifdef HAVE_POLL_SYSCALL
+  {
+    GC_CAN_IGNORE struct pollfd pfd[1];
 
-  return sr;
+    pfd[0].fd = data->tcp;
+    pfd[0].events = POLLIN;
+    do {
+      sr = poll(pfd, 1, 0);
+    } while ((sr == -1) && (errno == EINTR));
+
+    return sr;
+  }
+# else
+  {
+    MZ_OS_FD_ZERO(readfds);
+    MZ_OS_FD_ZERO(exfds);
+    MZ_OS_FD_SET(data->tcp, readfds);
+    MZ_OS_FD_SET(data->tcp, exfds);
+    
+    do {
+      sr = select(data->tcp + 1, readfds, NULL, exfds, &time);
+    } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
+
+    return sr;
+  }
+# endif
 #endif
 
   return 0;
@@ -2009,6 +2094,13 @@ tcp_listen(int argc, Scheme_Object *argv[])
 		l = scheme_malloc_tagged(sizeof(listener_t) + ((count - mzFLEX_DELTA) * sizeof(tcp_t)));
 		l->so.type = scheme_listener_type;
 		l->count = count;
+# ifdef HAVE_POLL_SYSCALL
+                {
+                  struct pollfd *pfd;
+                  pfd = (struct pollfd *)scheme_malloc_atomic(sizeof(struct pollfd) * count);
+                  l->pfd = pfd;
+                }
+# endif
 		{
 		  Scheme_Custodian_Reference *mref;
 		  mref = scheme_add_managed(NULL,
@@ -2019,6 +2111,10 @@ tcp_listen(int argc, Scheme_Object *argv[])
 		  l->mref = mref;
 		}
 	      }
+# ifdef HAVE_POLL_SYSCALL
+              l->pfd[pos].fd = s;
+              l->pfd[pos].events = POLLIN;
+# endif
 	      l->s[pos++] = s;
 	    
 	      REGISTER_SOCKET(s);
@@ -3001,6 +3097,20 @@ static int udp_check_send(Scheme_Object *_udp)
   if (udp->s == INVALID_SOCKET)
     return 1;
 
+# ifdef HAVE_POLL_SYSCALL
+  {
+    GC_CAN_IGNORE struct pollfd pfd[1];
+    int sr;
+
+    pfd[0].fd = udp->s;
+    pfd[0].events = POLLOUT;
+    do {
+      sr = poll(pfd, 1, 0);
+    } while ((sr == -1) && (errno == EINTR));
+
+    return sr;
+  }
+# else
   {
     DECL_OS_FDSET(writefds);
     DECL_OS_FDSET(exnfds);
@@ -3021,6 +3131,7 @@ static int udp_check_send(Scheme_Object *_udp)
     
     return sr;
   }
+#endif
 }
 
 static void udp_send_needs_wakeup(Scheme_Object *_udp, void *fds)
@@ -3233,6 +3344,20 @@ static int udp_check_recv(Scheme_Object *_udp)
   if (udp->s == INVALID_SOCKET)
     return 1;
 
+# ifdef HAVE_POLL_SYSCALL
+  {
+    GC_CAN_IGNORE struct pollfd pfd[1];
+    int sr;
+
+    pfd[0].fd = udp->s;
+    pfd[0].events = POLLIN;
+    do {
+      sr = poll(pfd, 1, 0);
+    } while ((sr == -1) && (errno == EINTR));
+
+    return sr;
+  }
+# else
   {
     DECL_OS_FDSET(readfds);
     DECL_OS_FDSET(exnfds);
@@ -3253,6 +3378,7 @@ static int udp_check_recv(Scheme_Object *_udp)
     
     return sr;
   }
+# endif
 }
 
 static void udp_recv_needs_wakeup(Scheme_Object *_udp, void *fds)

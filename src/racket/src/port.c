@@ -48,6 +48,9 @@
 # ifdef SELECT_INCLUDE
 #  include <sys/select.h>
 # endif
+# ifdef HAVE_POLL_SYSCALL
+#  include <poll.h>
+# endif
 #endif
 #ifdef USE_ITIMER
 # include <sys/types.h>
@@ -780,7 +783,136 @@ void scheme_alloc_global_fdset() {
 #endif
 }
 
-#ifdef USE_DYNAMIC_FDSET_SIZE
+#ifdef HAVE_POLL_SYSCALL
+
+# define PFD_EXTRA_SPACE 1
+
+void *scheme_alloc_fdset_array(int count, int permanent)
+{
+  struct mz_fd_set_data *data;
+  struct mz_fd_set *r, *w, *e;
+  struct pollfd *pfd;
+
+  data = (struct mz_fd_set_data *)scheme_malloc(sizeof(struct mz_fd_set_data));
+  r = (struct mz_fd_set *)scheme_malloc(sizeof(struct mz_fd_set));
+  w = (struct mz_fd_set *)scheme_malloc(sizeof(struct mz_fd_set));
+  e = (struct mz_fd_set *)scheme_malloc(sizeof(struct mz_fd_set));
+
+  r->w = w;
+  r->e = e;
+  r->data = data;
+  w->data = data;
+  e->data = data;
+
+  r->flags = scheme_make_integer(POLLIN);
+  w->flags = scheme_make_integer(POLLOUT);
+  e->flags = scheme_make_integer(0);
+
+  data->size = scheme_make_integer(32);
+  data->count = scheme_make_integer(0);
+
+  pfd = (struct pollfd *)scheme_malloc_atomic(sizeof(struct pollfd) * (32 + PFD_EXTRA_SPACE));
+  data->pfd = pfd;
+
+  if (permanent)
+    scheme_dont_gc_ptr(data);
+
+  return r;
+}
+
+void *scheme_init_fdset_array(void *fdarray, int count)
+{
+  ((struct mz_fd_set *)fdarray)->data->count = scheme_make_integer(0);
+  return fdarray;
+}
+
+void *scheme_get_fdset(void *fdarray, int pos)
+{
+  switch (pos) {
+  case 0: 
+    return fdarray;
+  case 1: 
+    return ((struct mz_fd_set *)fdarray)->w;
+  case 2: 
+  default:
+    return ((struct mz_fd_set *)fdarray)->e;
+  }
+}
+
+void scheme_fdzero(void *fd)
+{
+  ((struct mz_fd_set *)fd)->data->count = scheme_make_integer(0);
+}
+
+void scheme_fdclr(void *fd, int n)
+{
+  struct mz_fd_set_data *data = ((struct mz_fd_set *)fd)->data;
+  intptr_t flag = SCHEME_INT_VAL(((struct mz_fd_set *)fd)->flags);
+  intptr_t count = SCHEME_INT_VAL(data->count);
+  intptr_t i;
+
+  for (i = 0; i < count; i++) {
+    if (data->pfd[i].fd == n) {
+      data->pfd[i].events -= (data->pfd[i].events & flag);
+      return;
+    }
+  }
+}
+
+void scheme_fdset(void *fd, int n)
+{
+  struct mz_fd_set_data *data = ((struct mz_fd_set *)fd)->data;
+  intptr_t flag = SCHEME_INT_VAL(((struct mz_fd_set *)fd)->flags);
+  intptr_t count = SCHEME_INT_VAL(data->count);
+  intptr_t size, i;
+  struct pollfd *pfd;
+
+  for (i = 0; i < count; i++) {
+    if (data->pfd[i].fd == n) {
+      data->pfd[i].events |= flag;
+      return;
+    }
+  }
+
+  size = SCHEME_INT_VAL(data->size);
+  if (count >= size) {
+    size = size * 2;
+    pfd = scheme_malloc_atomic(sizeof(struct pollfd) * (size + PFD_EXTRA_SPACE));
+    memcpy(pfd, data->pfd, sizeof(struct pollfd) * count);
+    data->pfd = pfd;
+    data->size = scheme_make_integer(size);
+  }
+
+  data->pfd[count].fd = n;
+  data->pfd[count].events = flag;
+  count++;
+  data->count = scheme_make_integer(count);
+}
+
+int scheme_fdisset(void *fd, int n)
+{
+  struct mz_fd_set_data *data = ((struct mz_fd_set *)fd)->data;
+  intptr_t flag = SCHEME_INT_VAL(((struct mz_fd_set *)fd)->flags);
+  intptr_t count = SCHEME_INT_VAL(data->count);
+  intptr_t i;
+
+  if (!flag) flag = (POLLERR | POLLHUP);
+
+  for (i = 0; i < count; i++) {
+    if (data->pfd[i].fd == n) {
+      if (data->pfd[i].revents & flag)
+        return 1;
+      else
+        return 0;
+    }
+  }
+
+  return 0;
+}
+
+#else
+
+# if defined(USE_DYNAMIC_FDSET_SIZE)
 /* initialized early via scheme_alloc_global_fdset */
 SHARED_OK static int dynamic_fd_size;
 
@@ -828,7 +960,7 @@ void scheme_fdzero(void *fd)
   memset(fd, 0, dynamic_fd_size + sizeof(intptr_t));
 }
 
-#else
+# else
 
 # if defined(WIN32_FD_HANDLES)
 #  define fdset_type win_extended_fd_set
@@ -917,7 +1049,7 @@ void scheme_fdzero(void *fd)
 # endif
 }
 
-#endif
+# endif
 
 void scheme_fdclr(void *fd, int n)
 {
@@ -982,6 +1114,8 @@ int scheme_fdisset(void *fd, int n)
 # endif
 #endif
 }
+
+#endif
 
 void scheme_add_fd_handle(void *h, void *fds, int repost)
 {
@@ -5559,6 +5693,14 @@ fd_byte_ready (Scheme_Input_Port *port)
     return 0;
 #else
     int r;
+# ifdef HAVE_POLL_SYSCALL
+    GC_CAN_IGNORE struct pollfd pfd[1];
+    pfd[0].fd = fip->fd;
+    pfd[0].events = POLLIN;
+    do {
+      r = poll(pfd, 1, 0);
+    } while ((r == -1) && (errno == EINTR));
+# else
     DECL_FDSET(readfds, 1);
     DECL_FDSET(exnfds, 1);
     struct timeval time = {0, 0};
@@ -5574,6 +5716,7 @@ fd_byte_ready (Scheme_Input_Port *port)
     do {
       r = select(fip->fd + 1, readfds, NULL, exnfds, &time);
     } while ((r == -1) && (errno == EINTR));
+# endif
 
 # ifdef SOME_FDS_ARE_NOT_SELECTABLE
     /* Try a non-blocking read: */
@@ -6588,10 +6731,18 @@ fd_write_ready (Scheme_Object *port)
     return 1; /* non-blocking output, such as a console, or haven't written yet */
 #else
   {
+    int sr;
+# ifdef HAVE_POLL_SYSCALL
+    GC_CAN_IGNORE struct pollfd pfd[1];
+    pfd[0].fd = fop->fd;
+    pfd[0].events = POLLOUT;
+    do {
+      sr = poll(pfd, 1, 0);
+    } while ((sr == -1) && (errno == EINTR));
+# else
     DECL_FDSET(writefds, 1);
     DECL_FDSET(exnfds, 1);
     struct timeval time = {0, 0};
-    int sr;
 
     INIT_DECL_WR_FDSET(writefds);
     INIT_DECL_ER_FDSET(exnfds);
@@ -6604,6 +6755,7 @@ fd_write_ready (Scheme_Object *port)
     do {
       sr = select(fop->fd + 1, NULL, writefds, exnfds, &time);
     } while ((sr == -1) && (errno == EINTR));
+#endif
 
     return sr;
   }
@@ -9175,6 +9327,24 @@ static void default_sleep(float v, void *fds)
   if (!fds) {
     /* Nothing to block on - just sleep for some amount of time. */
 #if defined(FILES_HAVE_FDS)
+# ifdef HAVE_POLL_SYSCALL
+    int timeout;
+    if (v <= 0.0)
+      timeout = -1;
+    else {
+      timeout = (int)(v * 1000.0);
+      if (timeout < 0) 
+        timeout = 0;
+    }
+    if (external_event_fd) {
+      GC_CAN_IGNORE struct pollfd pfd[1];
+      pfd[0].fd = external_event_fd;
+      pfd[0].events = POLLIN;
+      poll(pfd, 1, timeout);
+    } else {
+      poll(NULL, 0, timeout);
+    }
+# else
     /* Sleep by selecting on the external event fd */
     struct timeval time;
     intptr_t secs = (intptr_t)v;
@@ -9202,7 +9372,7 @@ static void default_sleep(float v, void *fds)
     } else {
       select(0, NULL, NULL, NULL, &time);
     }
-
+# endif
 #else
 # ifndef NO_SLEEP
 #  ifndef NO_USLEEP
@@ -9216,18 +9386,21 @@ static void default_sleep(float v, void *fds)
     /* Something to block on - sort our the parts in Windows. */
 
 #if defined(FILES_HAVE_FDS) || defined(USE_WINSOCK_TCP)
+# ifndef HAVE_POLL_SYSCALL
     int limit, actual_limit;
     fd_set *rd, *wr, *ex;
     struct timeval time;
+# endif
 
-#ifdef SIGCHILD_DOESNT_INTERRUPT_SELECT
+# ifdef SIGCHILD_DOESNT_INTERRUPT_SELECT
     if (scheme_system_children) {
       /* Better poll every second or so... */
       if (!v || (v > 1))
 	v = 1;
     }
-#endif
+# endif
 
+# ifndef HAVE_POLL_SYSCALL
     {
       intptr_t secs = (intptr_t)v;
       intptr_t usecs = (intptr_t)(fmod(v, 1.0) * 1000000);
@@ -9243,32 +9416,33 @@ static void default_sleep(float v, void *fds)
       time.tv_usec = usecs;
     }
 
-# ifdef USE_WINSOCK_TCP
+#  ifdef USE_WINSOCK_TCP
     limit = 0;
-# else
-#  ifdef USE_ULIMIT
-    limit = ulimit(4, 0);
 #  else
-#   ifdef FIXED_FD_LIMIT
-    limit = FIXED_FD_LIMIT;
+#   ifdef USE_ULIMIT
+    limit = ulimit(4, 0);
 #   else
+#    ifdef FIXED_FD_LIMIT
+    limit = FIXED_FD_LIMIT;
+#    else
     limit = getdtablesize();
+#    endif
 #   endif
 #  endif
-#endif
 
     rd = (fd_set *)fds;
     wr = (fd_set *)MZ_GET_FDSET(fds, 1);
     ex = (fd_set *)MZ_GET_FDSET(fds, 2);
-# ifdef STORED_ACTUAL_FDSET_LIMIT
+#  ifdef STORED_ACTUAL_FDSET_LIMIT
     actual_limit = FDSET_LIMIT(rd);
     if (FDSET_LIMIT(wr) > actual_limit)
       actual_limit = FDSET_LIMIT(wr);
     if (FDSET_LIMIT(ex) > actual_limit)
       actual_limit = FDSET_LIMIT(ex);
     actual_limit++;
-# else
+#  else
     actual_limit = limit;
+#  endif
 # endif
 
     /******* Start Windows stuff *******/
@@ -9369,16 +9543,40 @@ static void default_sleep(float v, void *fds)
 
     /******* End Windows stuff *******/
 
-#if defined(FILES_HAVE_FDS)
+# ifdef HAVE_POLL_SYSCALL
+    {
+      struct mz_fd_set_data *data = ((struct mz_fd_set *)fds)->data;
+      intptr_t count = SCHEME_INT_VAL(data->count);
+      int timeout;
+
+      if (v <= 0.0)
+        timeout = -1;
+      else {
+        timeout = (int)(v * 1000.0);
+        if (timeout < 0) 
+          timeout = 0;
+      }
+      
+      if (external_event_fd) {
+        data->pfd[count].fd = external_event_fd;
+        data->pfd[count].events = POLLIN;
+        count++;
+      }
+
+      poll(data->pfd, count, timeout);
+    }
+#else
+# if defined(FILES_HAVE_FDS)
     /* Watch for external events, too: */
     if (external_event_fd) {
       MZ_FD_SET(external_event_fd, rd);
       if (external_event_fd >= actual_limit)
         actual_limit = external_event_fd + 1;
     }
-#endif
+# endif
 
     select(actual_limit, rd, wr, ex, v ? &time : NULL);
+#endif
 
 #endif
   }

@@ -1986,6 +1986,9 @@ extern Scheme_Extension_Table *scheme_extension_table;
 #ifdef USE_BEOS_PORT_THREADS
 # define USE_FAR_MZ_FDCALLS
 #endif
+#ifdef HAVE_POLL_SYSCALL
+# define USE_FAR_MZ_FDCALLS
+#endif
 
 #ifdef USE_FAR_MZ_FDCALLS
 # define MZ_GET_FDSET(p, n) scheme_get_fdset(p, n)

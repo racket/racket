@@ -3963,6 +3963,7 @@ case "$host_os" in
     LIBS="$LIBS -ldl -lm -rdynamic"
     DYN_CFLAGS="-fPIC"
     STRIP_DEBUG="strip -S"
+    try_poll_syscall=yes
     case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
@@ -5151,6 +5152,73 @@ if test "$mbsrtowcs" = "no" ; then
 fi
 { echo "$as_me:$LINENO: result: $mbsrtowcs" >&5
 echo "${ECHO_T}$mbsrtowcs" >&6; }
+
+if test "${try_poll_syscall}" = "yes" ; then
+   msg="for poll"
+  { echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
+  if test "$cross_compiling" = yes; then
+  use_poll=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+  #include <poll.h>
+     int main() {
+      struct pollfd pfd;
+      int r;
+      pfd.fd = 0;
+      pfd.events = POLLIN;
+      r = poll(&pfd, 1, 0);
+      return 0;
+     }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  use_poll=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+use_poll=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+  { echo "$as_me:$LINENO: result: $use_poll" >&5
+echo "${ECHO_T}$use_poll" >&6; }
+  if test "${use_poll}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_POLL_SYSCALL 1
+_ACEOF
+
+  fi
+fi
 
 if test "${enable_libffi}" = "yes" ; then
  if test "${enable_foreign}" = "yes" ; then

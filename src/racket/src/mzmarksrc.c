@@ -1699,6 +1699,9 @@ mark_listener {
  mark:
 
   gcMARK2(l->mref, gc);
+# ifdef HAVE_POLL_SYSCALL
+  gcMARK2(l->pfd, gc);
+# endif
 
  size:
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
