@@ -158,3 +158,37 @@
    (plot (function sin -4 4)
          #:title "Hello")
    (plot3d (contour-intervals3d (λ (x y) (- (sqr x) (sqr y))) -2 2 -2 2))))
+
+(time
+ (define ((degrees-ticks-format suffix) x-min x-max ts)
+   (map (λ (label) (format "~a\ub0~a" label suffix))
+        ((linear-ticks-format) x-min x-max ts)))
+ 
+ (define C-ticks (ticks (linear-ticks-layout) (degrees-ticks-format 'C)))
+ 
+ (define F/C-ticks (ticks-scale
+                    (ticks (linear-ticks-layout) (degrees-ticks-format 'F))
+                    (linear-scale 9/5 32)))
+ 
+ (define data (list #(0 0) #(15 0.6) #(30 9.5) #(45 10.0) #(60 16.6)
+                    #(75 41.6) #(90 42.7) #(105 65.5) #(120 78.9)
+                    #(135 78.9) #(150 131.1) #(165 151.1) #(180 176.2)))
+ 
+ (define (temp/time-trend x) (/ (sqr x) 180))
+
+ (define above-data (filter (λ (v) (match-let ([(vector x y)  v])
+                                     (y . > . (temp/time-trend x))))
+                            data))
+
+ (parameterize ([plot-x-ticks      (time-ticks)]
+                [plot-y-ticks      C-ticks]
+                [plot-y-far-ticks  F/C-ticks])
+   (plot (list (function temp/time-trend 0 180 #:style 'long-dash #:color 3
+                         #:label "Trend")
+               (lines data #:color 2 #:width 2)
+               (points data #:color 1 #:line-width 2 #:label "Measurement")
+               (map (λ (d) (point-label d #:anchor 'bottom-right))
+                    above-data))
+         #:y-min -25 #:x-label "Time" #:y-label "Temp."
+         #:title "Temp./Time With Applied Heat (Measurement and Trend)")))
+

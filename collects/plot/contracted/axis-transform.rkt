@@ -6,6 +6,8 @@
 (provide (contract-out (struct invertible-function ([f (real? . -> . real?)]
                                                     [g (real? . -> . real?)])))
          (activate-contract-out id-function
+                                invertible-compose
+                                invertible-inverse
                                 axis-transform/c
                                 id-transform
                                 apply-axis-transform

@@ -15,6 +15,10 @@
               [(invertible-function f2 g2)  f2])
     (invertible-function (compose f1 f2) (compose g2 g1))))
 
+(defproc (invertible-inverse [h invertible-function?]) invertible-function?
+  (match-define (invertible-function f g) h)
+  (invertible-function g f))
+
 (defcontract axis-transform/c (real? real? invertible-function? . -> . invertible-function?))
 
 (defproc (id-transform [x-min real?] [x-max real?] [old-function invertible-function?]
