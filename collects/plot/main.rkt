@@ -81,7 +81,7 @@
 (provide (activate-contract-out isosurface3d isosurfaces3d polar3d))
 
 (require "plot3d/rectangle.rkt")
-(provide (activate-contract-out rectangles3d discrete-histogram3d))
+(provide (activate-contract-out rectangles3d discrete-histogram3d stacked-histogram3d))
 
 ;; ===================================================================================================
 ;; Deprecated functions

@@ -4,7 +4,8 @@
 
 (require racket/match racket/list racket/contract racket/class
          plot/utils
-         "../common/contract-doc.rkt")
+         "../common/contract-doc.rkt"
+         "../common/utils.rkt")
 
 (provide (all-defined-out))
 
@@ -24,12 +25,9 @@
 
 (defproc (rectangles3d
           [rects  (listof (vector/c ivl? ivl? ivl?))]
-          [#:x-min x-min (or/c regular-real? #f) #f]
-          [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f]
-          [#:y-max y-max (or/c regular-real? #f) #f]
-          [#:z-min z-min (or/c regular-real? #f) #f]
-          [#:z-max z-max (or/c regular-real? #f) #f]
+          [#:x-min x-min (or/c regular-real? #f) #f] [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) #f] [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) #f] [#:z-max z-max (or/c regular-real? #f) #f]
           [#:color color plot-color/c (rectangle-color)]
           [#:style style plot-brush-style/c (rectangle-style)]
           [#:line-color line-color plot-color/c (rectangle-line-color)]
@@ -79,13 +77,10 @@
   (ivl (+ x1 1/2-gap-size) (- x2 1/2-gap-size)))
 
 (defproc (discrete-histogram3d
-          [cat-vals (listof (vector/c any/c any/c real?))]
-          [#:x-min x-min (or/c regular-real? #f) 0]
-          [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) 0]
-          [#:y-max y-max (or/c regular-real? #f) #f]
-          [#:z-min z-min (or/c regular-real? #f) 0]
-          [#:z-max z-max (or/c regular-real? #f) #f]
+          [cat-vals (listof (vector/c any/c any/c (or/c real? ivl? #f)))]
+          [#:x-min x-min (or/c regular-real? #f) 0] [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) 0] [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) 0] [#:z-max z-max (or/c regular-real? #f) #f]
           [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
           [#:color color plot-color/c (rectangle-color)]
           [#:style style plot-brush-style/c (rectangle-style)]
@@ -98,7 +93,10 @@
           [#:y-far-ticks? y-far-ticks? boolean? #f]
           ) renderer3d?
   (match-define (list (vector cat1s cat2s zs) ...) cat-vals)
-  (define rzs (filter regular-real? zs))
+  (define rzs (filter regular-real? (append* (for/list ([z  (in-list zs)])
+                                               (match z
+                                                 [(ivl z1 z2)  (list z1 z2)]
+                                                 [_            (list z)])))))
   (cond
     [(empty? rzs)  (renderer3d #f #f #f #f)]
     [else
@@ -130,9 +128,46 @@
        (define rects (map (λ (x1 x2 y1 y2 z)
                             (vector (adjust/gap (ivl x1 x2) gap)
                                     (adjust/gap (ivl y1 y2) gap)
-                                    (ivl 0 z)))
+                                    (if (ivl? z) z (ivl 0 z))))
                           x1s x2s y1s y2s all-zs))
        (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
                    (discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys x-far-ticks? y-far-ticks?)
                    (rectangles3d-render-proc rects color style line-color line-width line-style
                                              alpha label)))]))
+
+(defproc (stacked-histogram3d
+          [cat-vals (listof (vector/c any/c any/c (listof real?)))]
+          [#:x-min x-min (or/c regular-real? #f) 0] [#:x-max x-max (or/c regular-real? #f) #f]
+          [#:y-min y-min (or/c regular-real? #f) 0] [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:z-min z-min (or/c regular-real? #f) 0] [#:z-max z-max (or/c regular-real? #f) #f]
+          [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
+          [#:colors colors (plot-colors/c nat/c) (stacked-histogram-colors)]
+          [#:styles styles (plot-brush-styles/c nat/c) (stacked-histogram-styles)]
+          [#:line-colors line-colors (plot-colors/c nat/c) (stacked-histogram-line-colors)]
+          [#:line-widths line-widths (pen-widths/c nat/c) (stacked-histogram-line-widths)]
+          [#:line-styles line-styles (plot-pen-styles/c nat/c) (stacked-histogram-line-styles)]
+          [#:alphas alphas (alphas/c nat/c) (stacked-histogram-alphas)]
+          [#:labels labels (labels/c nat/c) '(#f)]
+          [#:x-far-ticks? x-far-ticks? boolean? #f]
+          [#:y-far-ticks? y-far-ticks? boolean? #f]
+          ) (listof renderer3d?)
+  (match-define (list (vector cat1s cat2s zs) ...) cat-vals)
+  (define zss (map cumulative-sum zs))
+  (define z-ivlss (for/list ([zs  (in-list zss)])
+                    (for/list ([z1  (in-list zs)] [z2  (in-list (rest zs))])
+                      (ivl z1 z2))))
+  (define max-num (apply max (map length zss)))
+  (for/list ([z-ivls  (in-list (transpose z-ivlss))]
+             [color   (in-cycle (maybe-apply colors max-num))]
+             [style   (in-cycle (maybe-apply styles max-num))]
+             [line-color  (in-cycle (maybe-apply line-colors max-num))]
+             [line-width  (in-cycle (maybe-apply line-widths max-num))]
+             [line-style  (in-cycle (maybe-apply line-styles max-num))]
+             [alpha   (in-cycle (maybe-apply alphas max-num))]
+             [label   (in-cycle (maybe-apply labels max-num))])
+    (discrete-histogram3d
+     (map vector cat1s cat2s z-ivls)
+     #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max #:gap gap
+     #:color color #:style style #:line-color line-color #:line-width line-width
+     #:line-style line-style #:alpha alpha #:label label
+     #:x-far-ticks? x-far-ticks? #:y-far-ticks? y-far-ticks?)))

@@ -266,6 +266,7 @@
 
 (defparam discrete-histogram-gap (real-in 0 1) 1/8)
 (defparam discrete-histogram-skip (>=/c 0) 1)
+(defparam discrete-histogram-invert? boolean? #f)
 
 (defparam stacked-histogram-colors (plot-colors/c nat/c) (λ (n) (build-list n add1)))
 (defparam stacked-histogram-styles (plot-brush-styles/c nat/c) '(solid))

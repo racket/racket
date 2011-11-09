@@ -49,8 +49,7 @@
   rectangle-line-color rectangle-line-width rectangle-line-style
   rectangle-alpha
   rectangle3d-line-width
-  discrete-histogram-gap
-  discrete-histogram-skip
+  discrete-histogram-gap discrete-histogram-skip discrete-histogram-invert?
   stacked-histogram-colors stacked-histogram-styles
   stacked-histogram-line-colors stacked-histogram-line-widths stacked-histogram-line-styles
   stacked-histogram-alphas

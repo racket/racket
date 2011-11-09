@@ -45,29 +45,29 @@
 
 (define-syntax activate-contract-out/end
   (make-provide-pre-transformer
-   (λ (stx metas)
+   (λ (stx phases)
      (syntax-case stx ()
        [(_ id ...)  (with-syntax ([(item ...)  (for/list ([id  (in-list (syntax->list #'(id ...)))])
                                                  (activate->contract-out stx id))])
                       (pre-expand-export
                        (syntax-protect
                         (syntax/loc stx (contract-out item ...)))
-                       metas))]))))
+                       phases))]))))
 
-(define-for-syntax (metas->abs-metas metas)
-  (map (λ (meta) (and meta (+ meta (syntax-local-phase-level))))
-       (if (null? metas) '(0) metas)))
+(define-for-syntax (phases->abs-phases phases)
+  (map (λ (phase) (and phase (+ phase (syntax-local-phase-level))))
+       (if (null? phases) '(0) phases)))
 
 (define-for-syntax (make-lifting-provide-pre-transformer target-id)
   (make-provide-pre-transformer
-   (λ (stx metas)
+   (λ (stx phases)
      (syntax-case stx ()
        [(_ args ...)  (let ()
-                        (for ([meta  (in-list (metas->abs-metas metas))])
+                        (for ([phase  (in-list (phases->abs-phases phases))])
                           (syntax-local-lift-module-end-declaration
                            (syntax-protect
                             (quasisyntax/loc stx
-                              (provide (for-meta #,meta (#,target-id args ...)))))))
+                              (provide (for-meta #,phase (#,target-id args ...)))))))
                         (syntax/loc stx (combine-out)))]))))
 
 (define-syntax activate-contract-out

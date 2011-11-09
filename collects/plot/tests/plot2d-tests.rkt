@@ -220,6 +220,18 @@
                                   #:line-colors '(3 4))))))
 
 (time
+ (parameterize ([plot-x-ticks  (currency-ticks)])
+   (plot (discrete-histogram (list (vector '(a . a) 1) (vector '(a . b) 2)
+                                   (vector '(b . b) 3) (vector '(b . a) 4))
+                             #:invert? #t))))
+
+(time
+ (parameterize ([plot-x-ticks  (currency-ticks)])
+   (plot (stacked-histogram (list (vector '(a . a) '(1 2 1)) (vector '(a . b) '(2 1 3))
+                                  (vector '(b . b) '()) (vector '(b . a) '(4 4 2)))
+                            #:invert? #t))))
+
+(time
  (plot (rectangles
         (map vector
              (bounds->intervals (map log (linear-seq 10 20 10)))

@@ -4,6 +4,7 @@
 
 (require racket/draw racket/class racket/match racket/list racket/contract racket/math racket/flonum
          "math.rkt"
+         "utils.rkt"
          "contract.rkt"
          "contract-doc.rkt"
          "sample.rkt")
@@ -386,7 +387,7 @@
 (define (make-pen-style diff-ps)
   (let* ([diff-ps  (map exact->inexact diff-ps)]
          [diff-ps  (if (even? (length diff-ps)) diff-ps (append diff-ps diff-ps))])
-    (define ps (reverse (foldl (λ (p ps) (cons (fl+ p (first ps)) ps)) '(0.0) diff-ps)))
+    (define ps (map exact->inexact (cumulative-sum diff-ps)))
     (define len (last ps))
     (pen-style len ps)))
 

@@ -25,6 +25,9 @@
                (+ i j 1)))
            (if idx idx (loop (rest lst) (+ j 1)))])))
 
+(define (cumulative-sum xs)
+  (reverse (foldl (λ (x xs) (cons (+ x (first xs)) xs)) '(0) xs)))
+
 (define (assoc-cons hash key new-value)
   (let loop ([hash  hash])
     (cond [(empty? hash)  (list (cons key (list new-value)))]

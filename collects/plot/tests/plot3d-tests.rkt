@@ -52,6 +52,10 @@
  (plot3d (discrete-histogram3d cat-vals)))
 
 (time
+ (plot3d (stacked-histogram3d '(#(a a (1 1 1)) #(a b (1.5 3)) #(b b ()) #(b a (1/2)))
+                              #:labels '("Red" #f "Blue"))))
+
+(time
  (plot3d (surface3d + 0 10 0 1)
          #:angle 10 #:z-label "z axis"))
 
@@ -222,3 +226,10 @@
          #:angle -30))
 
 (time (plot3d (contour-intervals3d f1 -4 4 -4 4)))
+
+(time (parameterize ([plot3d-samples  101])
+        (plot3d (contour-intervals3d f2 -2 2 -2 2 #:levels 10
+                                     #:line-styles '(transparent)
+                                     #:contour-styles '(long-dash)
+                                     #:alphas '(1 2/3))
+                #:altitude 20)))
