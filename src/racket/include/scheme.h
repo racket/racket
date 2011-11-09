@@ -2004,6 +2004,13 @@ extern Scheme_Extension_Table *scheme_extension_table;
 # define MZ_FD_ISSET(n, p) FD_ISSET(n, p)
 #endif
 
+/* For scheme_fd_to_semaphore(): */
+#define MZFD_CREATE_READ  1
+#define MZFD_CREATE_WRITE 2
+#define MZFD_CHECK_READ   3
+#define MZFD_CHECK_WRITE  4
+#define MZFD_REMOVE       5
+
 /*========================================================================*/
 
 #ifdef __cplusplus

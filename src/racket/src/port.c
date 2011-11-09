@@ -344,6 +344,8 @@ THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stderr_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdin_port);
 
 THREAD_LOCAL_DECL(struct mz_fd_set *scheme_fd_set);
+THREAD_LOCAL_DECL(struct mz_fd_set *scheme_semaphore_fd_set);
+THREAD_LOCAL_DECL(Scheme_Hash_Table *scheme_semaphore_fd_mapping);
 
 #ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 THREAD_LOCAL_DECL(Scheme_Hash_Table *locked_fd_process_map);
@@ -781,6 +783,19 @@ void scheme_alloc_global_fdset() {
   REGISTER_SO(scheme_fd_set);
   scheme_fd_set = (struct mz_fd_set *)scheme_alloc_fdset_array(3, 0);
 #endif
+
+  REGISTER_SO(scheme_semaphore_fd_set);
+#ifdef USE_FAR_MZ_FDCALLS
+  scheme_semaphore_fd_set = (struct mz_fd_set *)scheme_alloc_fdset_array(3, 0);
+#else
+  scheme_semaphore_fd_set = (struct mz_fd_set *)scheme_malloc_atomic(sizeof(struct mz_fd_set));
+#endif
+  scheme_fdzero(MZ_GET_FDSET(scheme_semaphore_fd_set, 0));
+  scheme_fdzero(MZ_GET_FDSET(scheme_semaphore_fd_set, 1));
+  scheme_fdzero(MZ_GET_FDSET(scheme_semaphore_fd_set, 2));
+
+  REGISTER_SO(scheme_semaphore_fd_mapping);
+  scheme_semaphore_fd_mapping = scheme_make_hash_table_eqv();
 }
 
 #ifdef HAVE_POLL_SYSCALL
@@ -815,7 +830,7 @@ void *scheme_alloc_fdset_array(int count, int permanent)
   data->pfd = pfd;
 
   if (permanent)
-    scheme_dont_gc_ptr(data);
+    scheme_dont_gc_ptr(r);
 
   return r;
 }
@@ -844,18 +859,35 @@ void scheme_fdzero(void *fd)
   ((struct mz_fd_set *)fd)->data->count = scheme_make_integer(0);
 }
 
+static int find_fd_pos(struct mz_fd_set_data *data, int n)
+{
+  intptr_t count = SCHEME_INT_VAL(data->count);
+  intptr_t i;
+  Scheme_Object *v;
+  
+  /* This linear search probably isn't good enough for hundreds or
+     thousands of descriptors, but epoll()/kqueue() mode should handle
+     that case, anyway. */
+  for (i = 0; i < count; i++) {
+    if (data->pfd[i].fd == n) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
 void scheme_fdclr(void *fd, int n)
 {
   struct mz_fd_set_data *data = ((struct mz_fd_set *)fd)->data;
   intptr_t flag = SCHEME_INT_VAL(((struct mz_fd_set *)fd)->flags);
-  intptr_t count = SCHEME_INT_VAL(data->count);
-  intptr_t i;
+  intptr_t pos;
 
-  for (i = 0; i < count; i++) {
-    if (data->pfd[i].fd == n) {
-      data->pfd[i].events -= (data->pfd[i].events & flag);
-      return;
-    }
+  if (!flag) return;
+
+  pos = find_fd_pos(data, n);
+  if (pos >= 0) {
+    data->pfd[pos].events -= (data->pfd[pos].events & flag);
   }
 }
 
@@ -863,17 +895,18 @@ void scheme_fdset(void *fd, int n)
 {
   struct mz_fd_set_data *data = ((struct mz_fd_set *)fd)->data;
   intptr_t flag = SCHEME_INT_VAL(((struct mz_fd_set *)fd)->flags);
-  intptr_t count = SCHEME_INT_VAL(data->count);
-  intptr_t size, i;
+  intptr_t count, size, pos;
   struct pollfd *pfd;
 
-  for (i = 0; i < count; i++) {
-    if (data->pfd[i].fd == n) {
-      data->pfd[i].events |= flag;
-      return;
-    }
+  if (!flag) return;
+
+  pos = find_fd_pos(data, n);
+  if (pos >= 0) {
+    data->pfd[pos].events |= flag;
+    return;
   }
 
+  count = SCHEME_INT_VAL(data->count);
   size = SCHEME_INT_VAL(data->size);
   if (count >= size) {
     size = size * 2;
@@ -893,20 +926,110 @@ int scheme_fdisset(void *fd, int n)
 {
   struct mz_fd_set_data *data = ((struct mz_fd_set *)fd)->data;
   intptr_t flag = SCHEME_INT_VAL(((struct mz_fd_set *)fd)->flags);
-  intptr_t count = SCHEME_INT_VAL(data->count);
-  intptr_t i;
+  intptr_t pos;
 
   if (!flag) flag = (POLLERR | POLLHUP);
 
-  for (i = 0; i < count; i++) {
-    if (data->pfd[i].fd == n) {
-      if (data->pfd[i].revents & flag)
-        return 1;
-      else
-        return 0;
-    }
+  pos = find_fd_pos(data, n);
+  if (pos >= 0) {
+    if (data->pfd[pos].revents & flag)
+      return 1;
+    else
+      return 0;
   }
 
+  return 0;
+}
+
+static int cmp_fd(const void *_a, const void *_b)
+{
+  struct pollfd *a = (struct pollfd *)_a;
+  struct pollfd *b = (struct pollfd *)_b;
+  return a->fd - b->fd;
+}
+
+void *scheme_merge_fd_sets(void *fds, void *src_fds)
+{
+  struct mz_fd_set_data *data = ((struct mz_fd_set *)fds)->data;
+  struct mz_fd_set_data *src_data = ((struct mz_fd_set *)src_fds)->data;
+  int i, si, c, sc, j, nc;
+  struct pollfd *pfds;
+
+  scheme_clean_fd_set(fds);
+  scheme_clean_fd_set(src_fds);
+
+  c = SCHEME_INT_VAL(data->count);
+  sc = SCHEME_INT_VAL(src_data->count);
+
+  if (!c)
+    return src_fds;
+  if (!sc)
+    return fds;
+
+  qsort(data->pfd, c, sizeof(struct pollfd), cmp_fd);
+  qsort(src_data->pfd, sc, sizeof(struct pollfd), cmp_fd);
+
+  nc = c + sc;
+  pfds = (struct pollfd *)scheme_malloc_atomic(sizeof(struct pollfd) * (nc + PFD_EXTRA_SPACE));
+  j = 0;
+  for (i = 0, si = 0; (i < c) && (si < sc); ) {
+    if (data->pfd[i].fd == src_data->pfd[si].fd) {
+      pfds[j].fd = data->pfd[i].fd;
+      pfds[j].events = (data->pfd[i].events | src_data->pfd[si].events);
+      i++;
+      si++;
+    } else if (data->pfd[i].fd < src_data->pfd[si].fd) {
+      pfds[j].fd = data->pfd[i].fd;
+      pfds[j].events = data->pfd[i].events;
+      i++;
+    } else {
+      pfds[j].fd = src_data->pfd[si].fd;
+      pfds[j].events = src_data->pfd[si].events;
+      si++;
+    }
+    j++;
+  }
+  for ( ; i < c; i++, j++) {
+    pfds[j].fd = data->pfd[i].fd;
+    pfds[j].events = data->pfd[i].events;
+  }
+  for ( ; si < sc; si++, j++) {
+    pfds[j].fd = src_data->pfd[si].fd;
+    pfds[j].events = src_data->pfd[si].events;
+  }
+
+  if (nc > SCHEME_INT_VAL(data->size)) {
+    data->pfd = pfds;
+    data->size = scheme_make_integer(nc);
+  } else
+    memcpy(data->pfd, pfds, j * sizeof(struct pollfd));
+  data->count = scheme_make_integer(j);
+
+  return fds;
+}
+
+void scheme_clean_fd_set(void *fds)
+{
+  struct mz_fd_set_data *data = ((struct mz_fd_set *)fds)->data;
+  intptr_t count = SCHEME_INT_VAL(data->count);
+  intptr_t i, j = 0;
+
+  for (i = 0; i < count; i++) {
+    if (data->pfd[i].events) {
+      if (j < i) {
+        data->pfd[j].fd = data->pfd[i].fd;
+        data->pfd[j].events = data->pfd[i].events;
+      }
+      j++;
+    }
+  }
+  
+  count = j;
+  data->count = scheme_make_integer(count);
+}
+
+int scheme_get_fd_limit(void *fds)
+{
   return 0;
 }
 
@@ -1113,6 +1236,79 @@ int scheme_fdisset(void *fd, int n)
   return 0;
 # endif
 #endif
+}
+
+void *scheme_merge_fd_sets(void *fds, void *src_fds)
+{
+#if defined(WIN32_FD_HANDLES)
+  win_extended_fd_set *efd = (win_extended_fd_set *)src_fds;
+  int i;
+  for (i = SCHEME_INT_VAL(efd->added); i--; ) {
+    if (efd->sockets[i] != INVALID_SOCKET)
+      scheme_fdset(fds, efd->sockets[i]);
+  }
+  return fds;
+#else
+  int i, j;
+  GC_CAN_IGNORE unsigned char *p, *sp;
+  for (j = 0; j < 3; j++) {
+    p = scheme_get_fdset(fds, j);
+    sp = scheme_get_fdset(src_fds, j);
+    if (FDSET_LIMIT(sp) > FDSET_LIMIT(p)) {
+      i = FDSET_LIMIT(sp);
+      FDSET_LIMIT(p) = i;
+    }
+# if defined(USE_DYNAMIC_FDSET_SIZE)
+    i = dynamic_fd_size;
+# else
+    i = sizeof(fd_set);
+# endif
+    for (; i--; p++, sp++) {
+      *p |= *sp;
+    }
+  }
+  return fds;
+#endif
+}
+
+void scheme_clean_fd_set(void *fds)
+{
+}
+
+int scheme_get_fd_limit(void *fds)
+{
+  int limit, actual_limit;
+  fd_set *rd, *wr, *ex;
+
+#  ifdef USE_WINSOCK_TCP
+  limit = 0;
+#  else
+#   ifdef USE_ULIMIT
+  limit = ulimit(4, 0);
+#   else
+#    ifdef FIXED_FD_LIMIT
+  limit = FIXED_FD_LIMIT;
+#    else
+  limit = getdtablesize();
+#    endif
+#   endif
+#  endif
+  
+  rd = (fd_set *)fds;
+  wr = (fd_set *)MZ_GET_FDSET(fds, 1);
+  ex = (fd_set *)MZ_GET_FDSET(fds, 2);
+#  ifdef STORED_ACTUAL_FDSET_LIMIT
+  actual_limit = FDSET_LIMIT(rd);
+  if (FDSET_LIMIT(wr) > actual_limit)
+    actual_limit = FDSET_LIMIT(wr);
+  if (FDSET_LIMIT(ex) > actual_limit)
+    actual_limit = FDSET_LIMIT(ex);
+  actual_limit++;
+#  else
+  actual_limit = limit;
+#  endif
+  
+  return actual_limit;
 }
 
 #endif
@@ -1691,9 +1887,9 @@ static int output_ready(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
   }
 
   if (op->ready_fun) {
-    Scheme_Out_Ready_Fun rf;
-    rf = op->ready_fun;
-    return rf(op);
+    Scheme_Out_Ready_Fun_FPC rf;
+    rf = (Scheme_Out_Ready_Fun_FPC)op->ready_fun;
+    return rf(op, sinfo);
   }
 
   return 1;
@@ -1714,6 +1910,8 @@ static void output_need_wakeup (Scheme_Object *port, void *fds)
   }
 }
 
+static int byte_input_ready (Scheme_Object *port, Scheme_Schedule_Info *sinfo);
+
 int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Input_Port *ip;
@@ -1732,14 +1930,14 @@ int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info 
        scheduler isn't requesting the status, we need sinfo. */
     return scheme_user_port_byte_probably_ready(ip, sinfo);
   } else
-    return scheme_byte_ready(p);
+    return byte_input_ready(p, sinfo);
 }
 
 static void register_port_wait()
 {
   scheme_add_evt(scheme_input_port_type,
-		  (Scheme_Ready_Fun)scheme_byte_ready_or_user_port_ready, scheme_need_wakeup,
-		  evt_input_port_p, 1);
+                 (Scheme_Ready_Fun)scheme_byte_ready_or_user_port_ready, scheme_need_wakeup,
+                 evt_input_port_p, 1);
   scheme_add_evt(scheme_output_port_type,
 		  (Scheme_Ready_Fun)output_ready, output_need_wakeup,
 		  evt_output_port_p, 1);
@@ -3381,8 +3579,7 @@ scheme_ungetc (int ch, Scheme_Object *port)
   }
 }
 
-int
-scheme_byte_ready (Scheme_Object *port)
+int byte_input_ready (Scheme_Object *port, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Input_Port *ip;
   int retval;
@@ -3397,11 +3594,18 @@ scheme_byte_ready (Scheme_Object *port)
           || pipe_char_count(ip->peeked_read)))
     retval = 1;
   else {
-    Scheme_In_Ready_Fun f = ip->byte_ready_fun;
-    retval = f(ip);
+    Scheme_In_Ready_Fun_FPC f;
+    f = (Scheme_In_Ready_Fun_FPC)ip->byte_ready_fun;
+    retval = f(ip, NULL);
   }
 
   return retval;
+}
+
+int
+scheme_byte_ready (Scheme_Object *port)
+{
+  return byte_input_ready(port, NULL);
 }
 
 int
@@ -5760,17 +5964,26 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
     int none_avail = 0;
     int target_size, target_offset, ext_target;
     char *target;
+    Scheme_Object *sema;
 
     /* If no chars appear to be ready, go to sleep. */
     while (!fd_byte_ready(port)) {
       if (nonblock > 0)
         return 0;
-
-      scheme_block_until_unless((Scheme_Ready_Fun)fd_byte_ready,
-                                (Scheme_Needs_Wakeup_Fun)fd_need_wakeup,
-                                (Scheme_Object *)port,
-                                0.0, unless,
-                                nonblock);
+      
+#ifdef WINDOWS_FILE_HANDLES
+      sema = NULL;
+#else
+      sema = scheme_fd_to_semaphore(fip->fd, MZFD_CREATE_READ);
+#endif
+      if (sema)
+        scheme_wait_sema(sema, nonblock ? -1 : 0);
+      else 
+        scheme_block_until_unless((Scheme_Ready_Fun)fd_byte_ready,
+                                  (Scheme_Needs_Wakeup_Fun)fd_need_wakeup,
+                                  (Scheme_Object *)port,
+                                  0.0, unless,
+                                  nonblock);
 
       scheme_wait_input_allowed(port, nonblock);
 
@@ -6061,6 +6274,7 @@ fd_close_input(Scheme_Input_Port *port)
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
      release_lockf(fip->fd);
 # endif
+     (void)scheme_fd_to_semaphore(fip->fd, MZFD_REMOVE);
    }
  }
 #endif
@@ -7181,16 +7395,27 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
 	  return wrote;
 	} else if (full_write_buffer) {
 	  /* Need to block; remember that we're holding a lock. */
+          Scheme_Object *sema;
+
 	  if (immediate_only == 2) {
 	    fop->flushing = 0;
 	    return wrote;
 	  }
 
+#ifdef WINDOWS_FILE_HANDLES
+          sema = NULL;
+#else
+          sema = scheme_fd_to_semaphore(fop->fd, MZFD_CREATE_WRITE);
+#endif
+
 	  BEGIN_ESCAPEABLE(release_flushing_lock, fop);
-	  scheme_block_until_enable_break(fd_write_ready,
-					  fd_write_need_wakeup,
-					  (Scheme_Object *)op, 0.0,
-					  enable_break);
+          if (sema)
+            scheme_wait_sema(sema, enable_break ? -1 : 0);
+          else
+            scheme_block_until_enable_break(fd_write_ready,
+                                            fd_write_need_wakeup,
+                                            (Scheme_Object *)op, 0.0,
+                                            enable_break);
 	  END_ESCAPEABLE();
 	} else {
 	  fop->flushing = 0;
@@ -7352,6 +7577,7 @@ fd_close_output(Scheme_Output_Port *port)
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
      release_lockf(fop->fd);
 # endif
+     (void)scheme_fd_to_semaphore(fop->fd, MZFD_REMOVE);
    }
  }
 #endif
@@ -9387,7 +9613,7 @@ static void default_sleep(float v, void *fds)
 
 #if defined(FILES_HAVE_FDS) || defined(USE_WINSOCK_TCP)
 # ifndef HAVE_POLL_SYSCALL
-    int limit, actual_limit;
+    int actual_limit;
     fd_set *rd, *wr, *ex;
     struct timeval time;
 # endif
@@ -9416,33 +9642,11 @@ static void default_sleep(float v, void *fds)
       time.tv_usec = usecs;
     }
 
-#  ifdef USE_WINSOCK_TCP
-    limit = 0;
-#  else
-#   ifdef USE_ULIMIT
-    limit = ulimit(4, 0);
-#   else
-#    ifdef FIXED_FD_LIMIT
-    limit = FIXED_FD_LIMIT;
-#    else
-    limit = getdtablesize();
-#    endif
-#   endif
-#  endif
-
     rd = (fd_set *)fds;
     wr = (fd_set *)MZ_GET_FDSET(fds, 1);
     ex = (fd_set *)MZ_GET_FDSET(fds, 2);
-#  ifdef STORED_ACTUAL_FDSET_LIMIT
-    actual_limit = FDSET_LIMIT(rd);
-    if (FDSET_LIMIT(wr) > actual_limit)
-      actual_limit = FDSET_LIMIT(wr);
-    if (FDSET_LIMIT(ex) > actual_limit)
-      actual_limit = FDSET_LIMIT(ex);
-    actual_limit++;
-#  else
-    actual_limit = limit;
-#  endif
+
+    actual_limit = scheme_get_fd_limit(fds);
 # endif
 
     /******* Start Windows stuff *******/

@@ -611,6 +611,8 @@ struct Syncing;
 void scheme_accept_sync(struct Syncing *syncing, int i);
 
 typedef int (*Scheme_Ready_Fun_FPC)(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+typedef int (*Scheme_Out_Ready_Fun_FPC)(Scheme_Output_Port *port, Scheme_Schedule_Info *sinfo);
+typedef int (*Scheme_In_Ready_Fun_FPC)(Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo);
 
 void scheme_check_break_now(void);
 

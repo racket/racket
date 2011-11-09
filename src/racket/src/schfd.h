@@ -31,3 +31,7 @@ struct mz_fd_set { fd_set data; };
 # define INIT_DECL_WR_FDSET(r) /* empty */
 # define INIT_DECL_ER_FDSET(r) /* empty */
 #endif
+
+void *scheme_merge_fd_sets(void *fds, void *src_fds);
+void scheme_clean_fd_set(void *fds);
+int scheme_get_fd_limit(void *fds);

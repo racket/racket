@@ -56,6 +56,10 @@
 # ifdef USE_BEOS_SOCKET_INCLUDE
 #  include <be/net/socket.h>
 # endif
+# ifdef HAVE_POLL_SYSCALL
+#  include <poll.h>
+# endif
+# include <errno.h>
 #endif
 #ifdef USE_WINSOCK_TCP
 # ifdef USE_TCP
@@ -3385,12 +3389,194 @@ static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
 /*                     thread scheduling and termination                  */
 /*========================================================================*/
 
+Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode)
+{
+#ifdef USE_WINSOCK_TCP
+  return NULL;
+#else
+  Scheme_Object *key, *v, *s;
+  void *r, *w, *e;
+
+  if (!scheme_semaphore_fd_mapping)
+    return NULL;
+
+  key = scheme_make_integer_value(fd);
+  v = scheme_hash_get(scheme_semaphore_fd_mapping, key);
+  if (!v && ((mode == MZFD_CHECK_READ)
+             || (mode == MZFD_CHECK_WRITE)
+             || (mode == MZFD_REMOVE)))
+    return NULL;
+
+  if (!v) {
+    v = scheme_make_vector(2, scheme_false);
+    scheme_hash_set(scheme_semaphore_fd_mapping, key, v);
+  }
+
+  r = MZ_GET_FDSET(scheme_semaphore_fd_set, 0);
+  w = MZ_GET_FDSET(scheme_semaphore_fd_set, 1);
+  e = MZ_GET_FDSET(scheme_semaphore_fd_set, 2);
+
+  if (mode == MZFD_REMOVE) {
+    scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
+    MZ_FD_CLR(fd, r);
+    MZ_FD_CLR(fd, w);
+    MZ_FD_CLR(fd, e);
+    s = NULL;
+  } else if ((mode == MZFD_CHECK_READ)
+             || (mode == MZFD_CREATE_READ)) {
+    s = SCHEME_VEC_ELS(v)[0];
+    if (SCHEME_FALSEP(s)) {
+      if (mode == MZFD_CREATE_READ) {
+        s = scheme_make_sema(0);
+        SCHEME_VEC_ELS(v)[0] = s;
+        MZ_FD_SET(fd, r);
+        MZ_FD_SET(fd, e);
+      }
+    }
+  } else {
+    s = SCHEME_VEC_ELS(v)[1];
+    if (SCHEME_FALSEP(s)) {
+      if (mode == MZFD_CREATE_WRITE) {
+        s = scheme_make_sema(0);
+        SCHEME_VEC_ELS(v)[1] = s;
+        MZ_FD_SET(fd, w);
+        MZ_FD_SET(fd, e);
+      }
+    }
+  }
+
+  return s;
+#endif
+}
+
+static int check_fd_semaphores()
+{
+#ifdef USE_WINSOCK_TCP
+  return 0;
+#elif defined(HAVE_POLL_SYSCALL)
+  struct pollfd *pfd;
+  intptr_t i, c;
+  Scheme_Object *v, *s, *key;
+  int sr, hit = 0;
+
+  if (!scheme_semaphore_fd_mapping || !scheme_semaphore_fd_mapping->count)
+    return 0;
+
+  scheme_clean_fd_set(scheme_semaphore_fd_set);
+  c = SCHEME_INT_VAL(scheme_semaphore_fd_set->data->count);
+  pfd = scheme_semaphore_fd_set->data->pfd;
+
+  do {
+    sr = poll(pfd, c, 0);
+  } while ((sr == -1) && (errno == EINTR));  
+
+  if (sr > 0) {
+    for (i = 0; i < c; i++) {
+      if (pfd[i].revents) {
+        key = scheme_make_integer_value(pfd[i].fd);
+        v = scheme_hash_get(scheme_semaphore_fd_mapping, key);
+        if (v) {
+          if (pfd[i].revents & (POLLIN | POLLHUP | POLLERR)) {
+            s = SCHEME_VEC_ELS(v)[0];
+            if (!SCHEME_FALSEP(s)) {
+              scheme_post_sema_all(s);
+              hit = 1;
+              SCHEME_VEC_ELS(v)[0] = scheme_false;
+            }
+            pfd[i].revents -= (pfd[i].revents & POLLIN);
+          }
+          if (pfd[i].revents & (POLLOUT | POLLHUP | POLLERR)) {
+            s = SCHEME_VEC_ELS(v)[1];
+            if (!SCHEME_FALSEP(s)) {
+              scheme_post_sema_all(s);
+              hit = 1;
+              SCHEME_VEC_ELS(v)[1] = scheme_false;
+            }
+            pfd[i].revents -= (pfd[i].revents & POLLOUT);
+          }
+          if (SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0])
+              && SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1]))
+            scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
+        }
+      }
+    }
+  }
+
+  return hit;
+#else
+  void *fds;
+  struct timeval time = {0, 0};
+  int i, actual_limit, r, w, e, sr, hit = 0;
+  Scheme_Object *key, *v, *s;
+  DECL_FDSET(set, 3);
+  fd_set *set1, *set2;
+
+  if (!scheme_semaphore_fd_mapping || !scheme_semaphore_fd_mapping->count)
+    return 0;
+
+  INIT_DECL_FDSET(set, set1, set2);
+  set1 = (fd_set *) MZ_GET_FDSET(set, 1);
+  set2 = (fd_set *) MZ_GET_FDSET(set, 2);
+  
+  fds = (void *)set;
+  MZ_FD_ZERO(set);
+  MZ_FD_ZERO(set1);
+  MZ_FD_ZERO(set2);
+
+  scheme_merge_fd_sets(fds, scheme_semaphore_fd_set);
+
+  actual_limit = scheme_get_fd_limit(fds);
+
+  do {
+    sr = select(actual_limit, set, set1, set2, &time);
+  } while ((sr == -1) && (errno == EINTR));
+
+  if (sr > 0) {
+    for (i = 0; i < actual_limit; i++) {
+      r = MZ_FD_ISSET(i, set);
+      w = MZ_FD_ISSET(i, set1);
+      e = MZ_FD_ISSET(i, set2);
+      if (r || w || e) {
+        key = scheme_make_integer_value(i);
+        v = scheme_hash_get(scheme_semaphore_fd_mapping, key);
+        if (v) {
+          if (r || e) {
+            s = SCHEME_VEC_ELS(v)[0];
+            if (!SCHEME_FALSEP(s)) {
+              scheme_post_sema_all(s);
+              hit = 1;
+              SCHEME_VEC_ELS(v)[0] = scheme_false;
+            }
+            MZ_FD_CLR(i, MZ_GET_FDSET(scheme_semaphore_fd_set, 0));
+          }
+          if (w || e) {
+            s = SCHEME_VEC_ELS(v)[1];
+            if (!SCHEME_FALSEP(s)) {
+              scheme_post_sema_all(s);
+              hit = 1;
+              SCHEME_VEC_ELS(v)[1] = scheme_false;
+            }
+            MZ_FD_CLR(i, MZ_GET_FDSET(scheme_semaphore_fd_set, 1));
+          }
+          if (SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0])
+              && SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1])) {
+            MZ_FD_CLR(i, MZ_GET_FDSET(scheme_semaphore_fd_set, 2));
+            scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
+          }
+        }
+      }
+    }
+  }
+
+  return hit;
+#endif
+}
+
 static int check_sleep(int need_activity, int sleep_now)
 /* Signals should be suspended */
 {
   Scheme_Thread *p, *p2;
   int end_with_act;
-
 #if defined(USING_FDS)
   DECL_FDSET(set, 3);
   fd_set *set1, *set2;
@@ -3505,7 +3691,10 @@ static int check_sleep(int need_activity, int sleep_now)
     if (post_system_idle()) {
       return 0;
     }
-  
+ 
+    scheme_clean_fd_set(fds);
+    fds = scheme_merge_fd_sets(fds, scheme_semaphore_fd_set);
+ 
     if (sleep_now) {
       float mst = (float)max_sleep_time;
 
@@ -4066,6 +4255,7 @@ void scheme_thread_block(float sleep_time)
   double sleep_end;
   Scheme_Thread *next;
   Scheme_Thread *p = scheme_current_thread;
+  int skip_sleep;
 
   if (p->return_marks_to) /* just in case we get here */
     return;
@@ -4136,6 +4326,24 @@ void scheme_thread_block(float sleep_time)
     scheme_check_foreign_work();
 #endif
 
+  skip_sleep = 0;
+  if (check_fd_semaphores()) {
+    /* double check whether a semaphore for this thread woke up: */
+    if (p->block_descriptor == GENERIC_BLOCKED) {
+      if (p->block_check) {
+        Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
+        Scheme_Schedule_Info sinfo;
+        init_schedule_info(&sinfo, p, sleep_end);
+        if (f(p->blocker, &sinfo)) {
+          sleep_end = 0;
+          skip_sleep = 1;
+        } else {
+          sleep_end = sinfo.sleep_end;
+        }
+      }
+    }
+  }
+
   if (!do_atomic && (sleep_end >= 0.0)) {
     find_next_thread(&next);
   } else
@@ -4204,7 +4412,7 @@ void scheme_thread_block(float sleep_time)
     }
   } else {
     /* If all processes are blocked, check for total process sleeping: */
-    if (p->block_descriptor != NOT_BLOCKED) {
+    if ((p->block_descriptor != NOT_BLOCKED) && !skip_sleep) {
       check_sleep(1, 1);
     }
   }

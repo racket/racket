@@ -294,6 +294,22 @@ void scheme_init_network(Scheme_Env *env)
 #endif
 }
 
+static int check_fd_sema(tcp_t s, int mode, Scheme_Schedule_Info *sinfo)
+{
+  Scheme_Object *sema;
+
+  sema = scheme_fd_to_semaphore(s, mode);
+  
+  if (sema) {
+    if (!scheme_wait_sema(sema, 1)) {
+      if (sinfo)
+        scheme_set_sync_target(sinfo, sema, NULL, NULL, 0, 0, NULL);
+      return 0;
+    }
+  }
+
+  return 1;
+}
 
 /*========================================================================*/
 /*                             TCP glue                                   */
@@ -888,13 +904,41 @@ static void TCP_INIT(char *name)
 /* Forward declaration */
 static int stop_listener(Scheme_Object *o);
 
-static int tcp_check_accept(Scheme_Object *_listener)
+static Scheme_Object *listener_to_evt(listener_t *listener)
+{
+  Scheme_Object **a, *sema;
+  int i;
+
+  a = MALLOC_N(Scheme_Object*, listener->count);
+  for (i = listener->count; i--; ) {
+    sema = scheme_fd_to_semaphore(listener->s[i], MZFD_CREATE_READ);
+    if (!sema) 
+      return NULL;
+    a[i] = sema;
+  }
+
+  return scheme_make_evt_set(listener->count, a);
+}
+
+static int tcp_check_accept(Scheme_Object *_listener, Scheme_Schedule_Info *sinfo)
 {
 #ifdef USE_SOCKETS_TCP
   listener_t *listener = (listener_t *)_listener;
-# ifdef HAVE_POLL_SYSCALL
   int sr, i;
+# ifndef HAVE_POLL_SYSCALL
+  tcp_t s, mx;
+  DECL_OS_FDSET(readfds);
+  DECL_OS_FDSET(exnfds);
+  struct timeval time = {0, 0};
+# endif
 
+  for (i = listener->count; i--; ) {
+    if (check_fd_sema(listener->s[i], MZFD_CHECK_READ, NULL))
+      break;
+  }
+  if (i < 0) return 0;
+
+# ifdef HAVE_POLL_SYSCALL
   if (LISTENER_WAS_CLOSED(listener))
     return 1;
 
@@ -909,13 +953,9 @@ static int tcp_check_accept(Scheme_Object *_listener)
     }
   }
 
-  return sr;
+  if (sr)
+    return sr;
 # else
-  tcp_t s, mx;
-  DECL_OS_FDSET(readfds);
-  DECL_OS_FDSET(exnfds);
-  struct timeval time = {0, 0};
-  int sr, i;
 
   INIT_DECL_OS_RD_FDSET(readfds);
   INIT_DECL_OS_ER_FDSET(exnfds);
@@ -948,9 +988,24 @@ static int tcp_check_accept(Scheme_Object *_listener)
     }
   }
 
-  return sr;
+  if (sr)
+    return sr;
 # endif
+
+  if (sinfo) {
+    Scheme_Object *evt;
+    evt = listener_to_evt(listener);
+    if (evt)
+      scheme_set_sync_target(sinfo, evt, NULL, NULL, 0, 0, NULL);
+  } else {
+    for (i = listener->count; i--; ) {
+      check_fd_sema(listener->s[i], MZFD_CREATE_READ, NULL);
+    }
+  }
+
 #endif
+
+  return 0;
 }
 
 static void tcp_accept_needs_wakeup(Scheme_Object *_listener, void *fds)
@@ -973,13 +1028,16 @@ static void tcp_accept_needs_wakeup(Scheme_Object *_listener, void *fds)
 #endif
 }
 
-static int tcp_check_connect(Scheme_Object *connector_p)
+static int tcp_check_connect(Scheme_Object *connector_p, Scheme_Schedule_Info *sinfo)
 {
 #ifdef USE_SOCKETS_TCP
   tcp_t s;
   int sr;
 
   s = *(tcp_t *)connector_p;
+
+  if (!check_fd_sema(s, MZFD_CHECK_WRITE, sinfo))
+    return 0;
 
 # ifdef HAVE_POLL_SYSCALL
   {
@@ -990,9 +1048,9 @@ static int tcp_check_connect(Scheme_Object *connector_p)
       sr = poll(pfd, 1, 0);
     } while ((sr == -1) && (errno == EINTR));
 
-    if (!sr)
-      return 0;
-    else if (pfd[0].revents & POLLOUT)
+    if (!sr) {
+      /* fall through */
+    } else if (pfd[0].revents & POLLOUT)
       return 1;
     else
       return -1;
@@ -1016,17 +1074,19 @@ static int tcp_check_connect(Scheme_Object *connector_p)
       sr = select(s + 1, NULL, writefds, exnfds, &time);
     } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
     
-    if (!sr)
-      return 0;
-    else if (FD_ISSET(s, exnfds))
+    if (!sr) {
+      /* fall through */
+    } else if (FD_ISSET(s, exnfds))
       return -1;
     else
       return 1;
   }
 # endif
-#else
-  return 0;
+
+  check_fd_sema(s, MZFD_CREATE_WRITE, sinfo);
+
 #endif
+  return 0;
 }
 
 static void tcp_connect_needs_wakeup(Scheme_Object *connector_p, void *fds)
@@ -1043,12 +1103,15 @@ static void tcp_connect_needs_wakeup(Scheme_Object *connector_p, void *fds)
 #endif
 }
 
-static int tcp_check_write(Scheme_Object *port)
+static int tcp_check_write(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Tcp *data = (Scheme_Tcp *)((Scheme_Output_Port *)port)->port_data;
-
+    
   if (((Scheme_Output_Port *)port)->closed)
     return 1;
+
+  if (!check_fd_sema(data->tcp, MZFD_CHECK_WRITE, sinfo))
+    return 0;
 
 #ifdef USE_SOCKETS_TCP
 # ifdef HAVE_POLL_SYSCALL
@@ -1062,9 +1125,9 @@ static int tcp_check_write(Scheme_Object *port)
       sr = poll(pfd, 1, 0);
     } while ((sr == -1) && (errno == EINTR));
 
-    if (!sr)
-      return 0;
-    else if (pfd[0].revents & POLLOUT)
+    if (!sr) {
+      /* fall through */
+    } else if (pfd[0].revents & POLLOUT)
       return 1;
     else
       return -1;
@@ -1091,7 +1154,8 @@ static int tcp_check_write(Scheme_Object *port)
       sr = select(s + 1, NULL, writefds, exnfds, &time);
     } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
     
-    return sr;
+    if (sr)
+      return sr;
   }
 # endif
 #else
@@ -1115,6 +1179,10 @@ static int tcp_check_write(Scheme_Object *port)
     return !!bytes;
   }
 #endif
+
+  check_fd_sema(data->tcp, MZFD_CREATE_WRITE, sinfo);
+
+  return 0;
 }
 
 static void tcp_write_needs_wakeup(Scheme_Object *port, void *fds)
@@ -1168,7 +1236,7 @@ static Scheme_Tcp *make_tcp_port_data(MAKE_TCP_ARG int refcount)
   return data;
 }
 
-static int tcp_byte_ready (Scheme_Input_Port *port)
+static int tcp_byte_ready (Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Tcp *data;
 #ifdef USE_SOCKETS_TCP
@@ -1193,6 +1261,9 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
   if (data->b.bufpos < data->b.bufmax)
     return 1;
 
+  if (!check_fd_sema(data->tcp, MZFD_CHECK_READ, sinfo))
+    return 0;
+
 #ifdef USE_SOCKETS_TCP
 # ifdef HAVE_POLL_SYSCALL
   {
@@ -1204,7 +1275,8 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
       sr = poll(pfd, 1, 0);
     } while ((sr == -1) && (errno == EINTR));
 
-    return sr;
+    if (sr)
+      return sr;
   }
 # else
   {
@@ -1217,10 +1289,13 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
       sr = select(data->tcp + 1, readfds, NULL, exfds, &time);
     } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
 
-    return sr;
+    if (sr)
+      return sr;
   }
 # endif
 #endif
+
+  check_fd_sema(data->tcp, MZFD_CREATE_READ, sinfo);
 
   return 0;
 }
@@ -1257,16 +1332,23 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
     return n;
   }
   
-  while (!tcp_byte_ready(port)) {
+  while (!tcp_byte_ready(port, NULL)) {
     if (nonblock > 0)
       return 0;
 
 #ifdef USE_SOCKETS_TCP
-    scheme_block_until_unless((Scheme_Ready_Fun)tcp_byte_ready,
-			      scheme_need_wakeup,
-			      (Scheme_Object *)port,
-			      0.0, unless,
-			      nonblock);
+    {
+      Scheme_Object *sema;
+      sema = scheme_fd_to_semaphore(data->tcp, MZFD_CREATE_READ);
+      if (sema)
+        scheme_wait_sema(sema, nonblock ? -1 : 0);
+      else
+        scheme_block_until_unless((Scheme_Ready_Fun)tcp_byte_ready,
+                                  scheme_need_wakeup,
+                                  (Scheme_Object *)port,
+                                  0.0, unless,
+                                  nonblock);
+    }
 #else
     do {
       scheme_thread_block_enable_break((float)0.0, nonblock);
@@ -1378,6 +1460,7 @@ static void tcp_close_input(Scheme_Input_Port *port)
   closesocket(data->tcp);
 #endif
 
+  (void)scheme_fd_to_semaphore(data->tcp, MZFD_REMOVE);
 }
 
 static int
@@ -1457,8 +1540,17 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
       return 0;
 
     /* Block for writing: */
-    scheme_block_until_enable_break(tcp_check_write, tcp_write_needs_wakeup, (Scheme_Object *)port, 
-				    (float)0.0, enable_break);
+    {
+      Scheme_Object *sema;
+      sema = scheme_fd_to_semaphore(data->tcp, MZFD_CREATE_WRITE);
+      if (sema)
+        scheme_wait_sema(sema, enable_break ? -1 : 0);
+      else
+        scheme_block_until_enable_break((Scheme_Ready_Fun)tcp_check_write, 
+                                        tcp_write_needs_wakeup, 
+                                        (Scheme_Object *)port, 
+                                        (float)0.0, enable_break);
+    }
 
     /* Closed while blocking? */
     if (((Scheme_Output_Port *)port)->closed) {
@@ -1576,6 +1668,7 @@ static void tcp_close_output(Scheme_Output_Port *port)
   closesocket(data->tcp);
 #endif
 
+  (void)scheme_fd_to_semaphore(data->tcp, MZFD_REMOVE);
 }
 
 static int
@@ -1611,7 +1704,7 @@ make_tcp_input_port_symbol_name(void *data, Scheme_Object *name, Scheme_Object *
 			      NULL,
 			      scheme_progress_evt_via_get,
 			      scheme_peeked_read_via_get,
-			      tcp_byte_ready,
+			      (Scheme_In_Ready_Fun)tcp_byte_ready,
 			      tcp_close_input,
 			      tcp_need_wakeup,
 			      1);
@@ -1673,6 +1766,7 @@ typedef struct Close_Socket_Data {
 static void closesocket_w_decrement(Close_Socket_Data *csd)
 {
   closesocket(csd->s);
+  (void)scheme_fd_to_semaphore(csd->s, MZFD_REMOVE);
   if (csd->src_addr)
     mz_freeaddrinfo(csd->src_addr);
   mz_freeaddrinfo(csd->dest_addr);  
@@ -1796,6 +1890,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	    if (inprogress) {
 	      tcp_t *sptr;
 	      Close_Socket_Data *csd;
+              Scheme_Object *sema;
 
 	      sptr = (tcp_t *)scheme_malloc_atomic(sizeof(tcp_t));
 	      *sptr = s;
@@ -1805,8 +1900,16 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	      csd->src_addr = tcp_connect_src;
 	      csd->dest_addr = tcp_connect_dest;
 
+              sema = scheme_fd_to_semaphore(s, MZFD_CREATE_WRITE);
+
 	      BEGIN_ESCAPEABLE(closesocket_w_decrement, csd);
-	      scheme_block_until(tcp_check_connect, tcp_connect_needs_wakeup, (void *)sptr, (float)0.0);
+              if (sema)
+                scheme_wait_sema(sema, 0);
+              else
+                scheme_block_until((Scheme_Ready_Fun)tcp_check_connect, 
+                                   tcp_connect_needs_wakeup, 
+                                   (void *)sptr, 
+                                   (float)0.0);
 	      END_ESCAPEABLE();
 
 	      /* Check whether connect succeeded, or get error: */
@@ -1823,7 +1926,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 		/* getsockopt() seems not to work in Windows 95, so use the
 		   result from select(), which seems to reliably detect an error condition */
 		if (!status) {
-		  if (tcp_check_connect((Scheme_Object *)sptr) == -1) {
+		  if (tcp_check_connect((Scheme_Object *)sptr, NULL) == -1) {
 		    status = 1;
 		    errno = WSAECONNREFUSED; /* guess! */
 		  }
@@ -1851,6 +1954,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	    } else {
 	      errid = errno;
 	      closesocket(s);
+              (void)scheme_fd_to_semaphore(s, MZFD_REMOVE);
 	      errpart = 6;
 	    }
 	  } else {
@@ -2055,6 +2159,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	      } else {
 		errid = errno;
 		closesocket(s);
+                (void)scheme_fd_to_semaphore(s, MZFD_REMOVE);
 		errno = errid;
 		s = INVALID_SOCKET;
 	      }
@@ -2197,6 +2302,7 @@ static int stop_listener(Scheme_Object *o)
 	s = listener->s[i];
 	UNREGISTER_SOCKET(s);
 	closesocket(s);
+        (void)scheme_fd_to_semaphore(s, MZFD_REMOVE);
 	listener->s[i] = INVALID_SOCKET;
       }
       scheme_remove_managed(((listener_t *)o)->mref, o);
@@ -2251,7 +2357,7 @@ tcp_accept_ready(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  ready = tcp_check_accept(argv[0]);
+  ready = tcp_check_accept(argv[0], NULL);
 
   return (ready ? scheme_true : scheme_false);
 #else
@@ -2283,10 +2389,18 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
   was_closed = LISTENER_WAS_CLOSED(listener);
 
   if (!was_closed) {
-    ready_pos = tcp_check_accept(listener);
+    ready_pos = tcp_check_accept(listener, NULL);
     if (!ready_pos) {
-      scheme_block_until(tcp_check_accept, tcp_accept_needs_wakeup, listener, 0.0);
-      ready_pos = tcp_check_accept(listener);
+      Scheme_Object *evt;
+      evt = listener_to_evt((listener_t *)listener);
+      if (evt)
+        scheme_sync(1, &evt);
+      else
+        scheme_block_until((Scheme_Ready_Fun)tcp_check_accept, 
+                           tcp_accept_needs_wakeup, 
+                           listener, 
+                           0.0);
+      ready_pos = tcp_check_accept(listener, NULL);
     }
     was_closed = LISTENER_WAS_CLOSED(listener);
   } else
@@ -2369,7 +2483,7 @@ tcp_accept_break(int argc, Scheme_Object *argv[])
 void register_network_evts()
 {
 #ifdef USE_TCP
-  scheme_add_evt(scheme_listener_type, tcp_check_accept, tcp_accept_needs_wakeup, NULL, 0);
+  scheme_add_evt(scheme_listener_type, (Scheme_Ready_Fun)tcp_check_accept, tcp_accept_needs_wakeup, NULL, 0);
   scheme_add_evt(scheme_tcp_accept_evt_type, (Scheme_Ready_Fun)tcp_check_accept_evt, tcp_accept_evt_needs_wakeup, NULL, 0);
 # ifdef UDP_IS_SUPPORTED
   scheme_add_evt(scheme_udp_evt_type, (Scheme_Ready_Fun)udp_evt_check_ready, udp_evt_needs_wakeup, NULL, 0);
@@ -2621,7 +2735,7 @@ static Scheme_Object *accept_failed(void *msg, int argc, Scheme_Object **argv)
 
 static int tcp_check_accept_evt(Scheme_Object *ae, Scheme_Schedule_Info *sinfo)
 {
-  if (tcp_check_accept(SCHEME_PTR1_VAL(ae))) {
+  if (tcp_check_accept(SCHEME_PTR1_VAL(ae), NULL)) {
     Scheme_Object *a[2];
     char *fail_reason = NULL;
     a[0] = SCHEME_PTR1_VAL(ae);
@@ -2759,6 +2873,7 @@ void scheme_close_socket_fd(intptr_t fd)
 #ifdef USE_SOCKETS_TCP
   UNREGISTER_SOCKET(fd);
   closesocket(fd);
+  (void)scheme_fd_to_semaphore(fd, MZFD_REMOVE);
 #endif
 }
 
@@ -2786,6 +2901,7 @@ static int udp_close_it(Scheme_Object *_udp)
 
   if (udp->s != INVALID_SOCKET) {
     closesocket(udp->s);
+    (void)scheme_fd_to_semaphore(udp->s, MZFD_REMOVE);
     udp->s = INVALID_SOCKET;
 
     scheme_remove_managed(udp->mref, (Scheme_Object *)udp);
@@ -3092,12 +3208,15 @@ static Scheme_Object *udp_connect(int argc, Scheme_Object *argv[])
 
 #ifdef UDP_IS_SUPPORTED
 
-static int udp_check_send(Scheme_Object *_udp)
+static int udp_check_send(Scheme_Object *_udp, Scheme_Schedule_Info *sinfo)
 {
   Scheme_UDP *udp = (Scheme_UDP *)_udp;
 
   if (udp->s == INVALID_SOCKET)
     return 1;
+
+  if (!check_fd_sema(udp->s, MZFD_CHECK_WRITE, sinfo))
+    return 0;
 
 # ifdef HAVE_POLL_SYSCALL
   {
@@ -3110,7 +3229,8 @@ static int udp_check_send(Scheme_Object *_udp)
       sr = poll(pfd, 1, 0);
     } while ((sr == -1) && (errno == EINTR));
 
-    return sr;
+    if (sr)
+      return sr;
   }
 # else
   {
@@ -3130,10 +3250,15 @@ static int udp_check_send(Scheme_Object *_udp)
     do {
       sr = select(udp->s + 1, NULL, writefds, exnfds, &time);
     } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
-    
-    return sr;
+   
+    if (sr)
+      return sr;
   }
 #endif
+
+  check_fd_sema(udp->s, MZFD_CREATE_WRITE, sinfo);
+  
+  return 0;
 }
 
 static void udp_send_needs_wakeup(Scheme_Object *_udp, void *fds)
@@ -3190,7 +3315,15 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
       if (WAS_EAGAIN(errid)) {
 	if (can_block) {
 	  /* Block and eventually try again. */
-	  scheme_block_until(udp_check_send, udp_send_needs_wakeup, (Scheme_Object *)udp, 0);
+          Scheme_Object *sema;
+          sema = scheme_fd_to_semaphore(udp->s, MZFD_CREATE_WRITE);
+          if (sema)
+            scheme_wait_sema(sema, 0);
+          else
+            scheme_block_until((Scheme_Ready_Fun)udp_check_send, 
+                               udp_send_needs_wakeup, 
+                               (Scheme_Object *)udp, 
+                               0);
 	} else
 	  return scheme_false;
       } else if (NOT_WINSOCK(errid) != EINTR)
@@ -3339,12 +3472,15 @@ static Scheme_Object *udp_send_enable_break(int argc, Scheme_Object *argv[])
 
 #ifdef UDP_IS_SUPPORTED
 
-static int udp_check_recv(Scheme_Object *_udp)
+static int udp_check_recv(Scheme_Object *_udp, Scheme_Schedule_Info *sinfo)
 {
   Scheme_UDP *udp = (Scheme_UDP *)_udp;
 
   if (udp->s == INVALID_SOCKET)
     return 1;
+
+  if (!check_fd_sema(udp->s, MZFD_CHECK_READ, sinfo))
+    return 0;
 
 # ifdef HAVE_POLL_SYSCALL
   {
@@ -3357,7 +3493,8 @@ static int udp_check_recv(Scheme_Object *_udp)
       sr = poll(pfd, 1, 0);
     } while ((sr == -1) && (errno == EINTR));
 
-    return sr;
+    if (sr)
+      return sr;
   }
 # else
   {
@@ -3378,9 +3515,14 @@ static int udp_check_recv(Scheme_Object *_udp)
       sr = select(udp->s + 1, readfds, NULL, exnfds, &time);
     } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
     
-    return sr;
+    if (sr)
+      return sr;
   }
 # endif
+
+  check_fd_sema(udp->s, MZFD_CREATE_READ, sinfo);
+
+  return 0;
 }
 
 static void udp_recv_needs_wakeup(Scheme_Object *_udp, void *fds)
@@ -3438,7 +3580,15 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
       } if (WAS_EAGAIN(errid)) {
 	if (can_block) {
 	  /* Block and eventually try again. */
-	  scheme_block_until(udp_check_recv, udp_recv_needs_wakeup, (Scheme_Object *)udp, 0);
+          Scheme_Object *sema;
+          sema = scheme_fd_to_semaphore(udp->s, MZFD_CREATE_READ);
+          if (sema)
+            scheme_wait_sema(sema, 0);
+          else
+            scheme_block_until((Scheme_Ready_Fun)udp_check_recv, 
+                               udp_recv_needs_wakeup, 
+                               (Scheme_Object *)udp,
+                               0);
 	} else {
 	  v[0] = scheme_false;
 	  v[1] = scheme_false;
@@ -3614,7 +3764,7 @@ static int udp_evt_check_ready(Scheme_Object *_uw, Scheme_Schedule_Info *sinfo)
       } else
 	return 0;
     } else {
-      return udp_check_recv((Scheme_Object *)uw->udp);
+      return udp_check_recv((Scheme_Object *)uw->udp, NULL);
     }
   } else {
     if (uw->str) {
@@ -3629,7 +3779,7 @@ static int udp_evt_check_ready(Scheme_Object *_uw, Scheme_Schedule_Info *sinfo)
       } else
 	return 0;
     } else
-      return udp_check_send((Scheme_Object *)uw->udp);
+      return udp_check_send((Scheme_Object *)uw->udp, NULL);
   }
 }
 

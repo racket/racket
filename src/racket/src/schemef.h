@@ -949,6 +949,8 @@ MZ_EXTERN int scheme_get_port_socket(Scheme_Object *p, intptr_t *_s);
 MZ_EXTERN void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
                                       Scheme_Object **_inp, Scheme_Object **_outp);
 
+MZ_EXTERN Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode);
+
 MZ_EXTERN void scheme_set_type_printer(Scheme_Type stype, Scheme_Type_Printer printer);
 MZ_EXTERN void scheme_print_bytes(Scheme_Print_Params *pp, const char *str, int offset, int len);
 MZ_EXTERN void scheme_print_utf8(Scheme_Print_Params *pp, const char *str, int offset, int len);
