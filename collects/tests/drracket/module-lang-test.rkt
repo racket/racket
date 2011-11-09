@@ -164,7 +164,8 @@
 
 (test @t{#lang racket}
       @t{(begin-for-syntax (+ 1 2))}
-      "")
+      @t{> (begin-for-syntax (+ 1 2))}
+      #t)
 
 (test @t{#lang racket}
       @t{(begin (struct s (x)) (struct t s (y)) (s-x (t 1 2)))}
