@@ -780,7 +780,7 @@ intptr_t (*scheme_get_port_fd)(Scheme_Object *p);
 int (*scheme_get_port_socket)(Scheme_Object *p, intptr_t *_s);
 void (*scheme_socket_to_ports)(intptr_t s, const char *name, int takeover,
                                       Scheme_Object **_inp, Scheme_Object **_outp);
-Scheme_Object *(*scheme_fd_to_semaphore)(intptr_t fd, int mode);
+Scheme_Object *(*scheme_fd_to_semaphore)(intptr_t fd, int mode, int is_socket);
 void (*scheme_set_type_printer)(Scheme_Type stype, Scheme_Type_Printer printer);
 void (*scheme_print_bytes)(Scheme_Print_Params *pp, const char *str, int offset, int len);
 void (*scheme_print_utf8)(Scheme_Print_Params *pp, const char *str, int offset, int len);

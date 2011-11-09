@@ -3943,13 +3943,16 @@ case "$host_os" in
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
     enable_pthread=yes
+    try_kqueue_syscall=yes
     ;;
   openbsd*)
     LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
     enable_pthread=yes
+    try_kqueue_syscall=yes
     ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
+    try_kqueue_syscall=yes
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -3964,6 +3967,7 @@ case "$host_os" in
     DYN_CFLAGS="-fPIC"
     STRIP_DEBUG="strip -S"
     try_poll_syscall=yes
+    try_epoll_syscall=yes
     case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
@@ -4046,6 +4050,7 @@ case "$host_os" in
     esac
 
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
+    try_kqueue_syscall=yes
 
     STRIP_DEBUG="/usr/bin/strip -S"
 
@@ -5215,6 +5220,143 @@ echo "${ECHO_T}$use_poll" >&6; }
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_POLL_SYSCALL 1
+_ACEOF
+
+  fi
+fi
+
+if test "${try_epoll_syscall}" = "yes" ; then
+   msg="for epoll"
+  { echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
+  if test "$cross_compiling" = yes; then
+  use_epoll=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+  #include <sys/epoll.h>
+    int main() {
+      int fd;
+      struct epoll_event ev;
+      fd = epoll_create(5);
+      ev.events = EPOLLIN | EPOLLONESHOT;
+      epoll_ctl(fd, EPOLL_CTL_ADD, 0, &ev);
+      return 0;
+    }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  use_epoll=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+use_epoll=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+  { echo "$as_me:$LINENO: result: $use_epoll" >&5
+echo "${ECHO_T}$use_epoll" >&6; }
+  if test "${use_epoll}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_EPOLL_SYSCALL 1
+_ACEOF
+
+  fi
+fi
+
+if test "${try_kqueue_syscall}" = "yes" ; then
+   msg="for kqueue"
+  { echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
+  if test "$cross_compiling" = yes; then
+  use_kqueue=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+  #include <sys/types.h>
+    #include <sys/event.h>
+    #include <sys/time.h>
+     int main() {
+        int kq;
+        struct kevent kev;
+      struct timespec timeout = {0, 0};
+        kq = kqueue();
+        EV_SET(&kev, 0, EVFILT_READ, EV_ADD, 0, 0, NULL);
+        kevent(kq, &kev, 1, NULL, 0, &timeout);
+        return 0;
+     }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  use_kqueue=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+use_kqueue=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+  { echo "$as_me:$LINENO: result: $use_kqueue" >&5
+echo "${ECHO_T}$use_kqueue" >&6; }
+  if test "${use_kqueue}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_KQUEUE_SYSCALL 1
 _ACEOF
 
   fi

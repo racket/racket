@@ -59,6 +59,14 @@
 # ifdef HAVE_POLL_SYSCALL
 #  include <poll.h>
 # endif
+# ifdef HAVE_EPOLL_SYSCALL
+#  include <sys/epoll.h>
+# endif
+# ifdef HAVE_KQUEUE_SYSCALL
+#  include <sys/types.h>
+#  include <sys/event.h>
+#  include <sys/time.h>
+# endif
 # include <errno.h>
 #endif
 #ifdef USE_WINSOCK_TCP
@@ -175,6 +183,8 @@ THREAD_LOCAL_DECL(Scheme_Object **scheme_current_runstack);
 THREAD_LOCAL_DECL(MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack);
 THREAD_LOCAL_DECL(MZ_MARK_POS_TYPE scheme_current_cont_mark_pos);
 #endif
+
+THREAD_LOCAL_DECL(int scheme_semaphore_fd_kqueue);
 
 THREAD_LOCAL_DECL(static Scheme_Custodian *main_custodian);
 THREAD_LOCAL_DECL(static Scheme_Custodian *last_custodian);
@@ -3389,16 +3399,91 @@ static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
 /*                     thread scheduling and termination                  */
 /*========================================================================*/
 
-Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode)
+void scheme_init_kqueue(void)
+{
+#if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
+  scheme_semaphore_fd_kqueue = -1;
+#endif
+}
+
+void scheme_release_kqueue(void)
+{
+#if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
+  if (scheme_semaphore_fd_kqueue >= 0) {
+    intptr_t rc;
+    do {
+      rc = close(scheme_semaphore_fd_kqueue);
+    } while ((rc == -1) && (errno == EINTR));
+  }
+#endif
+}
+
+#if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
+static void log_kqueue_error(const char *action, int kr)
+{
+  if (kr < 0) {
+    Scheme_Logger *logger;
+    logger = scheme_get_main_logger();
+    scheme_log(logger, SCHEME_LOG_WARNING, 0, 
+#ifdef HAVE_KQUEUE_SYSCALL
+	       "kqueue"
+#else
+	       "epoll"
+#endif
+	       " error at %s: %E", 
+	       action, errno);
+  }
+}
+
+static void log_kqueue_fd(int fd, int flags)
+{
+  Scheme_Logger *logger;
+  logger = scheme_get_main_logger();
+  scheme_log(logger, SCHEME_LOG_WARNING, 0, 
+#ifdef HAVE_KQUEUE_SYSCALL
+             "kqueue"
+#else
+             "epoll"
+#endif
+             " expected event %d %d", 
+             fd, flags);
+}
+#endif
+
+Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 {
 #ifdef USE_WINSOCK_TCP
   return NULL;
 #else
   Scheme_Object *key, *v, *s;
+#if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
+# else
   void *r, *w, *e;
+# endif
 
   if (!scheme_semaphore_fd_mapping)
     return NULL;
+
+# ifdef HAVE_KQUEUE_SYSCALL
+  if (!is_socket)
+    return NULL; /* kqueue() might not work on devices, such as ttys */
+  if (scheme_semaphore_fd_kqueue < 0) {
+    scheme_semaphore_fd_kqueue = kqueue();
+    if (scheme_semaphore_fd_kqueue < 0) {
+      log_kqueue_error("create", scheme_semaphore_fd_kqueue);
+      return NULL;
+    }
+  }
+# endif
+# ifdef HAVE_EPOLL_SYSCALL
+  if (scheme_semaphore_fd_kqueue < 0) {
+    scheme_semaphore_fd_kqueue = epoll_create(5);
+    if (scheme_semaphore_fd_kqueue < 0) {
+      log_kqueue_error("create", scheme_semaphore_fd_kqueue);
+      return NULL;
+    }
+  }
+# endif
 
   key = scheme_make_integer_value(fd);
   v = scheme_hash_get(scheme_semaphore_fd_mapping, key);
@@ -3412,15 +3497,44 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode)
     scheme_hash_set(scheme_semaphore_fd_mapping, key, v);
   }
 
+# if !defined(HAVE_KQUEUE_SYSCALL) && !defined(HAVE_EPOLL_SYSCALL)
   r = MZ_GET_FDSET(scheme_semaphore_fd_set, 0);
   w = MZ_GET_FDSET(scheme_semaphore_fd_set, 1);
   e = MZ_GET_FDSET(scheme_semaphore_fd_set, 2);
+# endif
 
   if (mode == MZFD_REMOVE) {
+    s = SCHEME_VEC_ELS(v)[0];
+    if (!SCHEME_FALSEP(s))
+      scheme_post_sema_all(s);
+    s = SCHEME_VEC_ELS(v)[1];
+    if (!SCHEME_FALSEP(s))
+      scheme_post_sema_all(s);
+    s = NULL;
     scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
+# ifdef HAVE_KQUEUE_SYSCALL
+    {
+      struct kevent kev[2];
+      struct timespec timeout = {0, 0};
+      int kr;
+      EV_SET(kev, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+      EV_SET(&kev[1], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+      do {
+        kr = kevent(scheme_semaphore_fd_kqueue, kev, 2, NULL, 0, &timeout);
+      } while ((kr == -1) && (errno == EINTR));
+      log_kqueue_error("remove", kr);
+    }
+# elif defined(HAVE_EPOLL_SYSCALL)
+    {
+      int kr;
+      kr = epoll_ctl(scheme_semaphore_fd_kqueue, EPOLL_CTL_DEL, fd, NULL);
+      log_kqueue_error("remove", kr);
+    }
+# else
     MZ_FD_CLR(fd, r);
     MZ_FD_CLR(fd, w);
     MZ_FD_CLR(fd, e);
+# endif
     s = NULL;
   } else if ((mode == MZFD_CHECK_READ)
              || (mode == MZFD_CREATE_READ)) {
@@ -3429,9 +3543,33 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode)
       if (mode == MZFD_CREATE_READ) {
         s = scheme_make_sema(0);
         SCHEME_VEC_ELS(v)[0] = s;
+# ifdef HAVE_KQUEUE_SYSCALL
+        {
+          struct kevent kev;
+          struct timespec timeout = {0, 0};
+          int kr;
+          EV_SET(&kev, fd, EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, NULL);
+          do {
+            kr = kevent(scheme_semaphore_fd_kqueue, &kev, 1, NULL, 0, &timeout);
+          } while ((kr == -1) && (errno == EINTR));
+	  log_kqueue_error("read", kr);
+        }
+# elif defined(HAVE_EPOLL_SYSCALL)
+	{
+	  struct epoll_event ev;
+	  int already = !SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1]), kr;
+	  ev.data.fd = fd;
+	  ev.events = EPOLLIN | (already ? EPOLLOUT : 0);
+	  kr = epoll_ctl(scheme_semaphore_fd_kqueue, 
+			 (already ? EPOLL_CTL_MOD : EPOLL_CTL_ADD), fd, &ev);
+	  log_kqueue_error("read", kr);
+	}
+# else
         MZ_FD_SET(fd, r);
         MZ_FD_SET(fd, e);
-      }
+#endif
+      } else
+        s = NULL;
     }
   } else {
     s = SCHEME_VEC_ELS(v)[1];
@@ -3439,9 +3577,34 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode)
       if (mode == MZFD_CREATE_WRITE) {
         s = scheme_make_sema(0);
         SCHEME_VEC_ELS(v)[1] = s;
+# ifdef HAVE_KQUEUE_SYSCALL
+        {
+          struct kevent kev;
+          struct timespec timeout = {0, 0};
+          int kr;
+          EV_SET(&kev, fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0, 0, NULL);
+          do {
+            kr = kevent(scheme_semaphore_fd_kqueue, &kev, 1, NULL, 0, &timeout);
+          } while ((kr == -1) && (errno == EINTR));
+	  log_kqueue_error("write", kr);
+        }
+
+# elif defined(HAVE_EPOLL_SYSCALL)
+	{
+	  struct epoll_event ev;
+	  int already = !SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0]), kr;
+	  ev.data.fd = fd;
+	  ev.events = EPOLLOUT | (already ? EPOLLIN : 0);
+	  kr = epoll_ctl(scheme_semaphore_fd_kqueue, 
+			 (already ? EPOLL_CTL_MOD : EPOLL_CTL_ADD), fd, &ev);
+	  log_kqueue_error("write", kr);
+	}
+# else
         MZ_FD_SET(fd, w);
         MZ_FD_SET(fd, e);
-      }
+#endif
+      } else
+        s = NULL;
     }
   }
 
@@ -3453,6 +3616,105 @@ static int check_fd_semaphores()
 {
 #ifdef USE_WINSOCK_TCP
   return 0;
+#elif defined(HAVE_KQUEUE_SYSCALL)
+  Scheme_Object *v, *s, *key;
+  struct kevent kev;
+  struct timespec timeout = {0, 0};
+  int kr, hit = 0;
+
+  if (!scheme_semaphore_fd_mapping || (scheme_semaphore_fd_kqueue < 0))
+    return 0;
+
+  while (1) {
+    do {
+      kr = kevent(scheme_semaphore_fd_kqueue, NULL, 0, &kev, 1, &timeout);
+    } while ((kr == -1) && (errno == EINTR));
+    log_kqueue_error("wait", kr);
+ 
+    if (kr > 0) {
+      key = scheme_make_integer_value(kev.ident);
+      v = scheme_hash_get(scheme_semaphore_fd_mapping, key);
+      if (v) {
+        if (kev.filter == EVFILT_READ) {
+          s = SCHEME_VEC_ELS(v)[0];
+          if (!SCHEME_FALSEP(s)) {
+            scheme_post_sema_all(s);
+            hit = 1;
+            SCHEME_VEC_ELS(v)[0] = scheme_false;
+          }
+        } else if (kev.filter == EVFILT_WRITE) {
+          s = SCHEME_VEC_ELS(v)[1];
+          if (!SCHEME_FALSEP(s)) {
+            scheme_post_sema_all(s);
+            hit = 1;
+            SCHEME_VEC_ELS(v)[1] = scheme_false;
+          }
+        }
+        if (SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0])
+            && SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1]))
+          scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
+      } else {
+        log_kqueue_fd(kev.ident, kev.filter);
+      }
+    } else
+      break;
+  }
+
+  return hit;
+#elif defined(HAVE_EPOLL_SYSCALL)
+  Scheme_Object *v, *s, *key;
+  int kr, hit = 0;
+  struct epoll_event ev;
+
+  if (!scheme_semaphore_fd_mapping || (scheme_semaphore_fd_kqueue < 0))
+    return 0;
+
+  while (1) {
+    
+    do {
+      kr = epoll_wait(scheme_semaphore_fd_kqueue, &ev, 1, 0);
+    } while ((kr == -1) && (errno == EINTR));
+    log_kqueue_error("wait", kr);
+ 
+    if (kr > 0) {
+      key = scheme_make_integer_value(ev.data.fd);
+      v = scheme_hash_get(scheme_semaphore_fd_mapping, key);
+      if (v) {
+	if (ev.events & (POLLIN | POLLHUP | POLLERR)) {
+	  s = SCHEME_VEC_ELS(v)[0];
+          if (!SCHEME_FALSEP(s)) {
+            scheme_post_sema_all(s);
+            hit = 1;
+            SCHEME_VEC_ELS(v)[0] = scheme_false;
+          }
+	}
+	if (ev.events & (POLLOUT | POLLHUP | POLLERR)) {
+	  s = SCHEME_VEC_ELS(v)[1];
+          if (!SCHEME_FALSEP(s)) {
+            scheme_post_sema_all(s);
+            hit = 1;
+            SCHEME_VEC_ELS(v)[1] = scheme_false;
+          }
+	}
+        if (SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0])
+            && SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1])) {
+          scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
+	  kr = epoll_ctl(scheme_semaphore_fd_kqueue, EPOLL_CTL_DEL, ev.data.fd, NULL);
+	  log_kqueue_error("remove*", kr);
+	} else {
+	  ev.events = ((SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0]) ? 0 : POLLIN)
+		       | (SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1]) ? 0 : POLLOUT));
+	  kr = epoll_ctl(scheme_semaphore_fd_kqueue, EPOLL_CTL_MOD, ev.data.fd, &ev);
+	  log_kqueue_error("update", kr);
+	}
+      } else {
+        log_kqueue_fd(ev.data.fd, ev.events);
+      }
+    } else
+      break;
+  }
+
+  return hit;
 #elif defined(HAVE_POLL_SYSCALL)
   struct pollfd *pfd;
   intptr_t i, c;
@@ -3691,9 +3953,17 @@ static int check_sleep(int need_activity, int sleep_now)
     if (post_system_idle()) {
       return 0;
     }
- 
+
+# if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL) 
+    if (scheme_semaphore_fd_mapping && (scheme_semaphore_fd_kqueue >= 0)) {
+      MZ_FD_SET(scheme_semaphore_fd_kqueue, set);
+      MZ_FD_SET(scheme_semaphore_fd_kqueue, set2);
+    }
+# else
+    fds = scheme_merge_fd_sets(fds, scheme_semaphore_fd_set); 
+# endif
+
     scheme_clean_fd_set(fds);
-    fds = scheme_merge_fd_sets(fds, scheme_semaphore_fd_set);
  
     if (sleep_now) {
       float mst = (float)max_sleep_time;
@@ -3768,13 +4038,14 @@ void scheme_out_of_fuel(void)
 }
 
 static void init_schedule_info(Scheme_Schedule_Info *sinfo, Scheme_Thread *false_pos_ok, 
-			       double sleep_end)
+			       int no_redirect, double sleep_end)
 {
   sinfo->false_positive_ok = false_pos_ok;
   sinfo->potentially_false_positive = 0;
   sinfo->current_syncing = NULL;
   sinfo->spin = 0;
   sinfo->is_poll = 0;
+  sinfo->no_redirect = no_redirect;
   sinfo->sleep_end = sleep_end;
 }
 
@@ -4179,7 +4450,7 @@ static void find_next_thread(Scheme_Thread **return_arg) {
         if (next->block_check) {
           Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)next->block_check;
           Scheme_Schedule_Info sinfo;
-          init_schedule_info(&sinfo, next, next->sleep_end);
+          init_schedule_info(&sinfo, next, 1, next->sleep_end);
           if (f(next->blocker, &sinfo))
             break;
           next->sleep_end = sinfo.sleep_end;
@@ -4333,7 +4604,7 @@ void scheme_thread_block(float sleep_time)
       if (p->block_check) {
         Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
         Scheme_Schedule_Info sinfo;
-        init_schedule_info(&sinfo, p, sleep_end);
+        init_schedule_info(&sinfo, p, 1, sleep_end);
         if (f(p->blocker, &sinfo)) {
           sleep_end = 0;
           skip_sleep = 1;
@@ -4471,7 +4742,7 @@ void scheme_thread_block(float sleep_time)
 	if (p->block_check) {
 	  Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
 	  Scheme_Schedule_Info sinfo;
-	  init_schedule_info(&sinfo, p, sleep_end);
+	  init_schedule_info(&sinfo, p, 1, sleep_end);
 	  if (f(p->blocker, &sinfo)) {
 	    sleep_end = 0;
 	  } else {
@@ -4520,12 +4791,12 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
 
   /* We make an sinfo to be polite, but we also assume
      that f will not generate any redirections! */
-  init_schedule_info(&sinfo, NULL, sleep_end);
+  init_schedule_info(&sinfo, NULL, 1, sleep_end);
 
   while (!(result = f((Scheme_Object *)data, &sinfo))) {
     sleep_end = sinfo.sleep_end;
     if (sinfo.spin) {
-      init_schedule_info(&sinfo, NULL, 0.0);
+      init_schedule_info(&sinfo, NULL, 1, 0.0);
       scheme_thread_block(0.0);
       scheme_current_thread->ran_some = 1;
     } else {
@@ -5844,7 +6115,7 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
     if (ready) {
       int yep;
 
-      init_schedule_info(&r_sinfo, sinfo->false_positive_ok, sleep_end);
+      init_schedule_info(&r_sinfo, sinfo->false_positive_ok, 0, sleep_end);
 
       r_sinfo.current_syncing = (Scheme_Object *)syncing;
       r_sinfo.w_i = i;

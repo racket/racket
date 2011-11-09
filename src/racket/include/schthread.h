@@ -176,6 +176,7 @@ typedef struct Thread_Local_Variables {
   struct mz_fd_set *scheme_fd_set_;
   struct mz_fd_set *scheme_semaphore_fd_set_;
   struct Scheme_Hash_Table *scheme_semaphore_fd_mapping_;
+  int scheme_semaphore_fd_kqueue_;
 #ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
   struct Scheme_Hash_Table *locked_fd_process_map_;
 #endif
@@ -522,6 +523,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_fd_set XOA (scheme_get_thread_local_variables()->scheme_fd_set_)
 #define scheme_semaphore_fd_set XOA (scheme_get_thread_local_variables()->scheme_semaphore_fd_set_)
 #define scheme_semaphore_fd_mapping XOA (scheme_get_thread_local_variables()->scheme_semaphore_fd_mapping_)
+#define scheme_semaphore_fd_kqueue XOA (scheme_get_thread_local_variables()->scheme_semaphore_fd_kqueue_)
 #define locked_fd_process_map XOA (scheme_get_thread_local_variables()->locked_fd_process_map_)
 #define new_port_cust XOA (scheme_get_thread_local_variables()->new_port_cust_)
 #define scheme_break_semaphore XOA (scheme_get_thread_local_variables()->scheme_break_semaphore_)

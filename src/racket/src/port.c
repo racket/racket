@@ -863,7 +863,6 @@ static int find_fd_pos(struct mz_fd_set_data *data, int n)
 {
   intptr_t count = SCHEME_INT_VAL(data->count);
   intptr_t i;
-  Scheme_Object *v;
   
   /* This linear search probably isn't good enough for hundreds or
      thousands of descriptors, but epoll()/kqueue() mode should handle
@@ -5974,7 +5973,7 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
 #ifdef WINDOWS_FILE_HANDLES
       sema = NULL;
 #else
-      sema = scheme_fd_to_semaphore(fip->fd, MZFD_CREATE_READ);
+      sema = scheme_fd_to_semaphore(fip->fd, MZFD_CREATE_READ, 0);
 #endif
       if (sema)
         scheme_wait_sema(sema, nonblock ? -1 : 0);
@@ -6274,7 +6273,7 @@ fd_close_input(Scheme_Input_Port *port)
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
      release_lockf(fip->fd);
 # endif
-     (void)scheme_fd_to_semaphore(fip->fd, MZFD_REMOVE);
+     (void)scheme_fd_to_semaphore(fip->fd, MZFD_REMOVE, 0);
    }
  }
 #endif
@@ -7405,7 +7404,7 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
 #ifdef WINDOWS_FILE_HANDLES
           sema = NULL;
 #else
-          sema = scheme_fd_to_semaphore(fop->fd, MZFD_CREATE_WRITE);
+          sema = scheme_fd_to_semaphore(fop->fd, MZFD_CREATE_WRITE, 0);
 #endif
 
 	  BEGIN_ESCAPEABLE(release_flushing_lock, fop);
@@ -7577,7 +7576,7 @@ fd_close_output(Scheme_Output_Port *port)
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
      release_lockf(fop->fd);
 # endif
-     (void)scheme_fd_to_semaphore(fop->fd, MZFD_REMOVE);
+     (void)scheme_fd_to_semaphore(fop->fd, MZFD_REMOVE, 0);
    }
  }
 #endif

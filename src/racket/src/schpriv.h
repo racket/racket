@@ -598,8 +598,7 @@ typedef struct {
   Scheme_Object *current_syncing;
   double sleep_end;
   int w_i;
-  short spin;
-  short is_poll;
+  char spin, is_poll, no_redirect;
 } Scheme_Schedule_Info;
 
 typedef Scheme_Object *(*Scheme_Accept_Sync)(Scheme_Object *wrap);
@@ -3478,6 +3477,12 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv);
 
 void scheme_reserve_file_descriptor(void);
 void scheme_release_file_descriptor(void);
+
+void scheme_init_kqueue(void);
+void scheme_release_kqueue(void);
+
+THREAD_LOCAL_DECL(extern struct mz_fd_set *scheme_semaphore_fd_set);
+THREAD_LOCAL_DECL(extern Scheme_Hash_Table *scheme_semaphore_fd_mapping);
 
 intptr_t scheme_get_byte_string_or_ch_put(const char *who,
 				      Scheme_Object *port,

@@ -56,8 +56,10 @@ typedef unsigned long uintptr_t;
 /* Whether pthread_rwlock is available. */
 #undef HAVE_PTHREAD_RWLOCK
 
-/* When poll() is available: */
+/* When poll(), epoll(), and/or kqueue() is available: */
 #undef HAVE_POLL_SYSCALL
+#undef HAVE_EPOLL_SYSCALL
+#undef HAVE_KQUEUE_SYSCALL
 
 /* Enable futures: */
 #undef MZ_USE_FUTURES

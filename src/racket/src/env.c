@@ -453,6 +453,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_stx_places(initial_main_os_thread);
   scheme_init_sema_places();
   scheme_init_gmp_places();
+  scheme_init_kqueue();
   scheme_alloc_global_fdset();
   scheme_init_file_places();
 #ifndef DONT_USE_FOREIGN
@@ -558,6 +559,7 @@ void scheme_place_instance_destroy(int force)
 #endif
   scheme_free_all_code();
   scheme_free_ghbn_data();
+  scheme_release_kqueue();
 }
 
 static void make_kernel_env(void)

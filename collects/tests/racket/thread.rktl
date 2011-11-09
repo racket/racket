@@ -650,7 +650,7 @@
 		      (loop (add1 n))
 		      n)))
 	  (test #f sync/timeout 0 sw sr)
-	  (test cr sync/timeout 0 sw sr cr)
+	  (test cr sync sw sr cr) ; sync/timeout 0 might work, but it depends on the underlying transport
 	  ;; Flush cr:
 	  (let ([s (make-bytes 4096)])
 	    (let loop ()

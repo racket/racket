@@ -294,16 +294,16 @@ void scheme_init_network(Scheme_Env *env)
 #endif
 }
 
-static int check_fd_sema(tcp_t s, int mode, Scheme_Schedule_Info *sinfo)
+static int check_fd_sema(tcp_t s, int mode, Scheme_Schedule_Info *sinfo, Scheme_Object *orig)
 {
   Scheme_Object *sema;
 
-  sema = scheme_fd_to_semaphore(s, mode);
+  sema = scheme_fd_to_semaphore(s, mode, 1);
   
   if (sema) {
     if (!scheme_wait_sema(sema, 1)) {
-      if (sinfo)
-        scheme_set_sync_target(sinfo, sema, NULL, NULL, 0, 0, NULL);
+      if (sinfo && !sinfo->no_redirect)
+        scheme_set_sync_target(sinfo, sema, orig, NULL, 0, 0, NULL);
       return 0;
     }
   }
@@ -911,7 +911,7 @@ static Scheme_Object *listener_to_evt(listener_t *listener)
 
   a = MALLOC_N(Scheme_Object*, listener->count);
   for (i = listener->count; i--; ) {
-    sema = scheme_fd_to_semaphore(listener->s[i], MZFD_CREATE_READ);
+    sema = scheme_fd_to_semaphore(listener->s[i], MZFD_CREATE_READ, 1);
     if (!sema) 
       return NULL;
     a[i] = sema;
@@ -932,11 +932,13 @@ static int tcp_check_accept(Scheme_Object *_listener, Scheme_Schedule_Info *sinf
   struct timeval time = {0, 0};
 # endif
 
-  for (i = listener->count; i--; ) {
-    if (check_fd_sema(listener->s[i], MZFD_CHECK_READ, NULL))
-      break;
+  if (!sinfo || !sinfo->is_poll) {
+    for (i = listener->count; i--; ) {
+      if (check_fd_sema(listener->s[i], MZFD_CHECK_READ, NULL, NULL))
+        break;
+    }
+    if (i < 0) return 0;
   }
-  if (i < 0) return 0;
 
 # ifdef HAVE_POLL_SYSCALL
   if (LISTENER_WAS_CLOSED(listener))
@@ -992,14 +994,14 @@ static int tcp_check_accept(Scheme_Object *_listener, Scheme_Schedule_Info *sinf
     return sr;
 # endif
 
-  if (sinfo) {
+  if (sinfo && !sinfo->no_redirect) {
     Scheme_Object *evt;
     evt = listener_to_evt(listener);
     if (evt)
-      scheme_set_sync_target(sinfo, evt, NULL, NULL, 0, 0, NULL);
+      scheme_set_sync_target(sinfo, evt, _listener, NULL, 0, 1, NULL);
   } else {
     for (i = listener->count; i--; ) {
-      check_fd_sema(listener->s[i], MZFD_CREATE_READ, NULL);
+      check_fd_sema(listener->s[i], MZFD_CREATE_READ, NULL, NULL);
     }
   }
 
@@ -1036,8 +1038,10 @@ static int tcp_check_connect(Scheme_Object *connector_p, Scheme_Schedule_Info *s
 
   s = *(tcp_t *)connector_p;
 
-  if (!check_fd_sema(s, MZFD_CHECK_WRITE, sinfo))
-    return 0;
+  if (!sinfo || !sinfo->is_poll) {
+    if (!check_fd_sema(s, MZFD_CHECK_WRITE, sinfo, NULL))
+      return 0;
+  }
 
 # ifdef HAVE_POLL_SYSCALL
   {
@@ -1083,7 +1087,7 @@ static int tcp_check_connect(Scheme_Object *connector_p, Scheme_Schedule_Info *s
   }
 # endif
 
-  check_fd_sema(s, MZFD_CREATE_WRITE, sinfo);
+  check_fd_sema(s, MZFD_CREATE_WRITE, sinfo, NULL);
 
 #endif
   return 0;
@@ -1110,8 +1114,10 @@ static int tcp_check_write(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
   if (((Scheme_Output_Port *)port)->closed)
     return 1;
 
-  if (!check_fd_sema(data->tcp, MZFD_CHECK_WRITE, sinfo))
-    return 0;
+  if (!sinfo || !sinfo->is_poll) {
+    if (!check_fd_sema(data->tcp, MZFD_CHECK_WRITE, sinfo, port))
+      return 0;
+  }
 
 #ifdef USE_SOCKETS_TCP
 # ifdef HAVE_POLL_SYSCALL
@@ -1180,7 +1186,7 @@ static int tcp_check_write(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
   }
 #endif
 
-  check_fd_sema(data->tcp, MZFD_CREATE_WRITE, sinfo);
+  check_fd_sema(data->tcp, MZFD_CREATE_WRITE, sinfo, port);
 
   return 0;
 }
@@ -1261,8 +1267,10 @@ static int tcp_byte_ready (Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo)
   if (data->b.bufpos < data->b.bufmax)
     return 1;
 
-  if (!check_fd_sema(data->tcp, MZFD_CHECK_READ, sinfo))
-    return 0;
+  if (!sinfo || !sinfo->is_poll) {
+    if (!check_fd_sema(data->tcp, MZFD_CHECK_READ, sinfo, (Scheme_Object *)port))
+      return 0;
+  }
 
 #ifdef USE_SOCKETS_TCP
 # ifdef HAVE_POLL_SYSCALL
@@ -1295,7 +1303,7 @@ static int tcp_byte_ready (Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo)
 # endif
 #endif
 
-  check_fd_sema(data->tcp, MZFD_CREATE_READ, sinfo);
+  check_fd_sema(data->tcp, MZFD_CREATE_READ, sinfo, (Scheme_Object *)port);
 
   return 0;
 }
@@ -1339,7 +1347,7 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
 #ifdef USE_SOCKETS_TCP
     {
       Scheme_Object *sema;
-      sema = scheme_fd_to_semaphore(data->tcp, MZFD_CREATE_READ);
+      sema = scheme_fd_to_semaphore(data->tcp, MZFD_CREATE_READ, 1);
       if (sema)
         scheme_wait_sema(sema, nonblock ? -1 : 0);
       else
@@ -1460,7 +1468,7 @@ static void tcp_close_input(Scheme_Input_Port *port)
   closesocket(data->tcp);
 #endif
 
-  (void)scheme_fd_to_semaphore(data->tcp, MZFD_REMOVE);
+  (void)scheme_fd_to_semaphore(data->tcp, MZFD_REMOVE, 1);
 }
 
 static int
@@ -1542,7 +1550,7 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
     /* Block for writing: */
     {
       Scheme_Object *sema;
-      sema = scheme_fd_to_semaphore(data->tcp, MZFD_CREATE_WRITE);
+      sema = scheme_fd_to_semaphore(data->tcp, MZFD_CREATE_WRITE, 1);
       if (sema)
         scheme_wait_sema(sema, enable_break ? -1 : 0);
       else
@@ -1668,7 +1676,7 @@ static void tcp_close_output(Scheme_Output_Port *port)
   closesocket(data->tcp);
 #endif
 
-  (void)scheme_fd_to_semaphore(data->tcp, MZFD_REMOVE);
+  (void)scheme_fd_to_semaphore(data->tcp, MZFD_REMOVE, 1);
 }
 
 static int
@@ -1766,7 +1774,7 @@ typedef struct Close_Socket_Data {
 static void closesocket_w_decrement(Close_Socket_Data *csd)
 {
   closesocket(csd->s);
-  (void)scheme_fd_to_semaphore(csd->s, MZFD_REMOVE);
+  (void)scheme_fd_to_semaphore(csd->s, MZFD_REMOVE, 1);
   if (csd->src_addr)
     mz_freeaddrinfo(csd->src_addr);
   mz_freeaddrinfo(csd->dest_addr);  
@@ -1900,7 +1908,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	      csd->src_addr = tcp_connect_src;
 	      csd->dest_addr = tcp_connect_dest;
 
-              sema = scheme_fd_to_semaphore(s, MZFD_CREATE_WRITE);
+              sema = scheme_fd_to_semaphore(s, MZFD_CREATE_WRITE, 1);
 
 	      BEGIN_ESCAPEABLE(closesocket_w_decrement, csd);
               if (sema)
@@ -1954,7 +1962,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	    } else {
 	      errid = errno;
 	      closesocket(s);
-              (void)scheme_fd_to_semaphore(s, MZFD_REMOVE);
+              (void)scheme_fd_to_semaphore(s, MZFD_REMOVE, 1);
 	      errpart = 6;
 	    }
 	  } else {
@@ -2159,7 +2167,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	      } else {
 		errid = errno;
 		closesocket(s);
-                (void)scheme_fd_to_semaphore(s, MZFD_REMOVE);
+                (void)scheme_fd_to_semaphore(s, MZFD_REMOVE, 1);
 		errno = errid;
 		s = INVALID_SOCKET;
 	      }
@@ -2302,7 +2310,7 @@ static int stop_listener(Scheme_Object *o)
 	s = listener->s[i];
 	UNREGISTER_SOCKET(s);
 	closesocket(s);
-        (void)scheme_fd_to_semaphore(s, MZFD_REMOVE);
+        (void)scheme_fd_to_semaphore(s, MZFD_REMOVE, 1);
 	listener->s[i] = INVALID_SOCKET;
       }
       scheme_remove_managed(((listener_t *)o)->mref, o);
@@ -2873,7 +2881,7 @@ void scheme_close_socket_fd(intptr_t fd)
 #ifdef USE_SOCKETS_TCP
   UNREGISTER_SOCKET(fd);
   closesocket(fd);
-  (void)scheme_fd_to_semaphore(fd, MZFD_REMOVE);
+  (void)scheme_fd_to_semaphore(fd, MZFD_REMOVE, 1);
 #endif
 }
 
@@ -2901,7 +2909,7 @@ static int udp_close_it(Scheme_Object *_udp)
 
   if (udp->s != INVALID_SOCKET) {
     closesocket(udp->s);
-    (void)scheme_fd_to_semaphore(udp->s, MZFD_REMOVE);
+    (void)scheme_fd_to_semaphore(udp->s, MZFD_REMOVE, 1);
     udp->s = INVALID_SOCKET;
 
     scheme_remove_managed(udp->mref, (Scheme_Object *)udp);
@@ -3215,8 +3223,10 @@ static int udp_check_send(Scheme_Object *_udp, Scheme_Schedule_Info *sinfo)
   if (udp->s == INVALID_SOCKET)
     return 1;
 
-  if (!check_fd_sema(udp->s, MZFD_CHECK_WRITE, sinfo))
-    return 0;
+  if (!sinfo || !sinfo->is_poll) {
+    if (!check_fd_sema(udp->s, MZFD_CHECK_WRITE, sinfo, NULL))
+      return 0;
+  }
 
 # ifdef HAVE_POLL_SYSCALL
   {
@@ -3256,7 +3266,7 @@ static int udp_check_send(Scheme_Object *_udp, Scheme_Schedule_Info *sinfo)
   }
 #endif
 
-  check_fd_sema(udp->s, MZFD_CREATE_WRITE, sinfo);
+  check_fd_sema(udp->s, MZFD_CREATE_WRITE, sinfo, NULL);
   
   return 0;
 }
@@ -3316,7 +3326,7 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
 	if (can_block) {
 	  /* Block and eventually try again. */
           Scheme_Object *sema;
-          sema = scheme_fd_to_semaphore(udp->s, MZFD_CREATE_WRITE);
+          sema = scheme_fd_to_semaphore(udp->s, MZFD_CREATE_WRITE, 1);
           if (sema)
             scheme_wait_sema(sema, 0);
           else
@@ -3479,8 +3489,10 @@ static int udp_check_recv(Scheme_Object *_udp, Scheme_Schedule_Info *sinfo)
   if (udp->s == INVALID_SOCKET)
     return 1;
 
-  if (!check_fd_sema(udp->s, MZFD_CHECK_READ, sinfo))
-    return 0;
+  if (!sinfo || !sinfo->is_poll) {
+    if (!check_fd_sema(udp->s, MZFD_CHECK_READ, sinfo, NULL))
+      return 0;
+  }
 
 # ifdef HAVE_POLL_SYSCALL
   {
@@ -3520,7 +3532,7 @@ static int udp_check_recv(Scheme_Object *_udp, Scheme_Schedule_Info *sinfo)
   }
 # endif
 
-  check_fd_sema(udp->s, MZFD_CREATE_READ, sinfo);
+  check_fd_sema(udp->s, MZFD_CREATE_READ, sinfo, NULL);
 
   return 0;
 }
@@ -3581,7 +3593,7 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
 	if (can_block) {
 	  /* Block and eventually try again. */
           Scheme_Object *sema;
-          sema = scheme_fd_to_semaphore(udp->s, MZFD_CREATE_READ);
+          sema = scheme_fd_to_semaphore(udp->s, MZFD_CREATE_READ, 1);
           if (sema)
             scheme_wait_sema(sema, 0);
           else

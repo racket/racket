@@ -473,13 +473,16 @@ case "$host_os" in
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
     enable_pthread=yes
+    try_kqueue_syscall=yes
     ;;
   openbsd*)
     LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
     enable_pthread=yes
+    try_kqueue_syscall=yes
     ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
+    try_kqueue_syscall=yes
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -494,6 +497,7 @@ case "$host_os" in
     DYN_CFLAGS="-fPIC"
     STRIP_DEBUG="strip -S"
     try_poll_syscall=yes
+    try_epoll_syscall=yes
     case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
@@ -576,6 +580,7 @@ case "$host_os" in
     esac
 
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
+    try_kqueue_syscall=yes
 
     STRIP_DEBUG="/usr/bin/strip -S"
 
@@ -801,7 +806,48 @@ if test "${try_poll_syscall}" = "yes" ; then
      }, use_poll=yes, use_poll=no, use_poll=no)
   AC_MSG_RESULT($use_poll)
   if test "${use_poll}" = "yes" ; then
-     AC_DEFINE(HAVE_POLL_SYSCALL,1,[Have poll()])
+     AC_DEFINE(HAVE_POLL_SYSCALL,1,[Have poll])
+  fi
+fi
+
+if test "${try_epoll_syscall}" = "yes" ; then
+  [ msg="for epoll" ]
+  AC_MSG_CHECKING($msg)
+  AC_TRY_RUN(
+  [  #include <sys/epoll.h> ]
+    int main() {
+      int fd;
+      struct epoll_event ev;
+      fd = epoll_create(5);
+      ev.events = EPOLLIN | EPOLLONESHOT;
+      epoll_ctl(fd, EPOLL_CTL_ADD, 0, &ev);
+      return 0;
+    }, use_epoll=yes, use_epoll=no, use_epoll=no)
+  AC_MSG_RESULT($use_epoll)
+  if test "${use_epoll}" = "yes" ; then
+     AC_DEFINE(HAVE_EPOLL_SYSCALL,1,[Have epoll])
+  fi
+fi
+
+if test "${try_kqueue_syscall}" = "yes" ; then
+  [ msg="for kqueue" ]
+  AC_MSG_CHECKING($msg)
+  AC_TRY_RUN(
+  [  #include <sys/types.h> ]
+  [  #include <sys/event.h> ]
+  [  #include <sys/time.h> ]
+     int main() {
+        int kq;
+        struct kevent kev;
+  [    struct timespec timeout = {0, 0}; ]
+        kq = kqueue();
+        EV_SET(&kev, 0, EVFILT_READ, EV_ADD, 0, 0, NULL);
+        kevent(kq, &kev, 1, NULL, 0, &timeout);
+        return 0;
+     }, use_kqueue=yes, use_kqueue=no, use_kqueue=no)
+  AC_MSG_RESULT($use_kqueue)
+  if test "${use_kqueue}" = "yes" ; then
+     AC_DEFINE(HAVE_KQUEUE_SYSCALL,1,[Have kqueue])
   fi
 fi
 
