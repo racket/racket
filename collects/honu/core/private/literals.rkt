@@ -10,7 +10,7 @@
   (begin
    (define-syntax name (lambda (stx)
                          (raise-syntax-error 'name
-                                             "this is a literal and cannot be used outside a macro")))
+                                             "this is a literal and cannot be used outside a macro" (syntax->datum stx))))
    ...))
 
 (define-literal honu-return)
@@ -30,8 +30,7 @@
                 honu-for-syntax
                 honu-for-template
                 honu-prefix
-                %racket
-                %racket-expression)
+                %racket)
 
 (define-syntax-rule (define-literal+set set literal ...)
                     (begin
@@ -40,5 +39,5 @@
                         (define-literal-set set (literal ...)))))
 
 (define-literal-set cruft (#%parens #%brackets #%braces
-                           %racket %racket-expression
+                           %racket
                            semicolon colon honu-comma honu-<-))

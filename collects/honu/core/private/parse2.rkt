@@ -18,10 +18,10 @@
 ;; phase -1
 (require (for-template racket/base
                        racket/splicing
-                       (only-in "literals.rkt" %racket-expression)
+                       (only-in "literals.rkt" %racket)
                        "extra.rkt"))
 
-(provide parse parse-all parse-all)
+(provide parse parse-all)
 
 #;
 (define-literal-set literals
@@ -194,12 +194,12 @@
                                      [(rest ...) rest])
                          #'(head rest ...))
                        #f)])
-          (with-syntax ([(parsed ...) parsed]
-                        [(rest ...) unparsed])
-            (debug "Output from macro ~a\n" (pretty-format (syntax->datum #'(parsed ...))))
+          (with-syntax ([parsed parsed]
+                        [rest unparsed])
+            (debug "Output from macro ~a\n" (pretty-format (syntax->datum #'parsed)))
+            #;
             (do-parse #'(parsed ... rest ...)
                       precedence left current)
-            #;
             (if terminate?
               (values (left #'parsed)
                       #'rest)
@@ -214,20 +214,25 @@
     (debug "parse ~a precedence ~a left ~a current ~a\n" (syntax->datum stream) precedence left current)
     (define final (if current current #f))
     (syntax-parse stream #:literal-sets (cruft)
+      #;
+      [x:id (values #'x #'())]
       [()
        (values (left final) #'())]
       ;; dont reparse pure racket code
+      #;
       [(%racket racket rest ...)
        (if current
          (values (left current) stream)
          (values (left #'racket) #'(rest ...)))]
       ;; for expressions that can keep parsing
+      #;
       [((%racket-expression racket) rest ...)
        (if current
          (values (left current) stream)
          (do-parse #'(rest ...)
                    precedence left
                    #'racket))]
+      #;
       [(%racket-expression racket rest ...)
        (if current
          (values (left current) stream)
@@ -295,6 +300,10 @@
                       #'rest)]
              [else (syntax-parse #'head
                      #:literal-sets (cruft)
+                     [(%racket rest ...)
+                      (if current
+                        (values (left current) stream)
+                        (do-parse #'(rest ...) precedence left #'head))]
                      [x:atom
                        (debug "atom ~a current ~a\n" #'x current)
                        (if current
@@ -418,7 +427,7 @@
                    (parse stx))
     (debug "parsed ~a\n" (if parsed (syntax->datum parsed) parsed))
     (list (parsed-things stx unparsed) (with-syntax ([parsed parsed])
-                                         #'(%racket-expression parsed)))))
+                                         #'(%racket parsed)))))
 
 (provide identifier-comma-list)
 (define-splicing-syntax-class identifier-comma-list

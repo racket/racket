@@ -17,14 +17,8 @@
       [(_ (~seq clause:honu-expression colon body:honu-expression (~optional honu-comma)) ...
           . rest)
        (values
-         (with-syntax ([(clause-parsed ...) (map (lambda (clause)
-                                                   (parse-all clause))
-                                                 (syntax->list #'(clause.result ...)))]
-                       [(body-parsed ...) (map (lambda (body)
-                                                 (parse-all body))
-                                               (syntax->list #'(body.result ...)))])
-           #'(%racket-expression (cond
-                                   [clause-parsed body-parsed]
-                                   ...)))
+         #'(%racket (cond
+                      [clause.result body.result]
+                      ...))
          #'rest
          #t)])))

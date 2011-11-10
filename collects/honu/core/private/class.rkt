@@ -34,7 +34,7 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens arg:honu-expression ...) . rest)
-       (define new #'(%racket (make-object name arg.result ...)))
+       (define new #'(make-object name arg.result ...))
        (values
          new
          #'rest

@@ -11,9 +11,9 @@
                   honu-in
                   honu-prefix
                   semicolon
-                  %racket
-                  %racket-expression)
+                  %racket)
          (for-syntax syntax/parse
+                     "debug.rkt"
                      "literals.rkt"
                      "parse2.rkt"
                      racket/base))
@@ -28,7 +28,7 @@
           (#%braces code ...)
           . rest)
        (values
-         #'(%racket-expression (lambda (arg ...)
+         #'(%racket (lambda (arg ...)
                       (let-syntax ([do-parse (lambda (stx)
                                                (parse-all #'(code ...)))])
                         (do-parse))))
@@ -41,8 +41,7 @@
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-=)
       [(_ name:id honu-= one:honu-expression . rest)
-       (values (with-syntax ([one-parsed (parse-all #'one.result)])
-                 #'(%racket (define name one-parsed)))
+       (values #'(%racket (define name one.result))
                #'rest
                #t)])))
 
@@ -54,12 +53,9 @@
       [(_ iterator:id honu-= start:honu-expression honu-to end:honu-expression
           honu-do body:honu-expression . rest)
        (values
-         (with-syntax ([start-parsed (parse-all #'start.result)]
-                       [end-parsed (parse-all #'end.result)]
-                       [body-parsed (parse-all #'body.result)])
-           #'(%racket (for ([iterator (in-range start-parsed
-                                                end-parsed)])
-                        body-parsed)))
+           #'(%racket (for ([iterator (in-range start.result
+                                                end.result)])
+                        body.result))
          #'rest
          #t)]
       [(_ iterator:id honu-in stuff:honu-expression
@@ -76,10 +72,7 @@
                        #:literals (else honu-then)
       [(_ condition:honu-expression honu-then true:honu-expression else false:honu-expression . rest)
        (values
-         (with-syntax ([condition-parsed (parse-all #'condition.result)]
-                       [true-parsed (parse-all #'true.result)]
-                       [false-parsed (parse-all #'false.result)])
-           #'(%racket-expression (if condition-parsed true-parsed false-parsed)))
+         #'(%racket (if condition.result true.result false.result))
          #'rest
          #f)])))
 
@@ -97,14 +90,14 @@
   (lambda (code context)
     (syntax-parse code
       [(_ expression rest ...)
-       (values #'(%racket-expression (quote expression)) #'(rest ...) #f)])))
+       (values #'(%racket (quote expression)) #'(rest ...) #f)])))
 
 (provide honu-quasiquote)
 (define-honu-syntax honu-quasiquote
   (lambda (code context)
     (syntax-parse code
       [(_ expression rest ...)
-       (values #'(%racket-expression (quasiquote expression))
+       (values #'(%racket (quasiquote expression))
                #'(rest ...)
                #f)])))
 
@@ -135,9 +128,10 @@
 (provide honu-dot)
 (define-honu-operator/syntax honu-dot 10000 'left
   (lambda (left right)
+    (debug "dot left ~a right ~a\n" left right)
     (with-syntax ([left left]
                   [right right])
-      #'(%racket-expression
+      #'(%racket
           (let ([left* left])
             (cond
               [(honu-struct? left*) (let ([use (honu-struct-get left*)])
@@ -218,7 +212,7 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
       [(_ (#%parens name:id) something:honu-expression . rest)
-       (define with #'(%racket-expression (with-input-from-file name (lambda () something.result))))
+       (define with #'(%racket (with-input-from-file name (lambda () something.result))))
        (values
          with
          #'rest
