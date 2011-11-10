@@ -1,5 +1,8 @@
-#lang scheme/gui
-(require "private/drracket-test-util.rkt" mzlib/etc framework scheme/string)
+#lang racket/gui
+(require "drracket-test-util.rkt"
+         mzlib/etc
+         framework
+         racket/string)
 
 (provide test t rx run-test in-here write-test-modules)
 
@@ -65,73 +68,80 @@
     (clear-definitions drs)
     (insert-in-definitions drs (test-definitions test))
     (do-execute drs)
-
-    (let ([ints (test-interactions test)])
-
-      (when ints
-        (let ([after-execute-output
-               (queue-callback/res
-                (λ ()
-                  (send interactions-text
-                        get-text
-                        (send interactions-text paragraph-start-position 2)
-                        (send interactions-text paragraph-end-position 2))))])
-          (unless (or (test-all? test) (string=? "> " after-execute-output))
-            (fprintf (current-error-port)
-                     "FAILED (line ~a): ~a\n        ~a\n        expected no output after execution, got: ~s\n"
-                    (test-line test)
-                    (test-definitions test)
-                    (or (test-interactions test) 'no-interactions)
-                    after-execute-output)
-            (k (void)))
-          (type-in-interactions drs ints)
-          (test:keystroke #\return)
-          (wait-for-computation drs)))
-
-      (let* ([text
-              (queue-callback/res
-               (λ ()
-                 (if (test-all? test)
-                     (let* ([para (- (send interactions-text position-paragraph
-                                           (send interactions-text last-position))
-                                     1)])
-                       (send interactions-text
-                             get-text
-                             (send interactions-text paragraph-start-position 2)
-                             (send interactions-text paragraph-end-position para)))
-                     (let* ([para (- (send interactions-text position-paragraph
-                                           (send interactions-text last-position))
-                                     1)])
-                       (send interactions-text
-                             get-text
-                             (send interactions-text paragraph-start-position para)
-                             (send interactions-text paragraph-end-position para))))))]
-             [output-passed? (let ([r (test-result test)])
-                               ((cond [(string? r) string=?]
-                                      [(regexp? r) regexp-match?]
-                                      [else 'module-lang-test "bad test value: ~e" r])
-                                r text))])
-        (unless output-passed?
+    
+    (define ints (test-interactions test))
+    
+    (define output-start-paragraph 2)
+    
+    (when ints
+      (let ([after-execute-output
+             (queue-callback/res
+              (λ ()
+                (send interactions-text
+                      get-text
+                      (send interactions-text paragraph-start-position 2)
+                      (send interactions-text paragraph-end-position 2))))])
+        (unless (or (test-all? test) (string=? "> " after-execute-output))
           (fprintf (current-error-port)
-                   "FAILED (line ~a): ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
+                   "FAILED (line ~a): ~a\n        ~a\n        expected no output after execution, got: ~s\n"
                    (test-line test)
                    (test-definitions test)
                    (or (test-interactions test) 'no-interactions)
-                   (test-result test)
-                   text))
-        (cond
-          [(eq? (test-error-ranges test) 'dont-test)
-           (void)]
-          [else
-           (let ([error-ranges-expected
-                  ((test-error-ranges test) definitions-text interactions-text)])
-             (unless (equal? error-ranges-expected (send interactions-text get-error-ranges))
-               (fprintf (current-error-port)
-                        "FAILED (line ~a; ranges): ~a\n  expected: ~s\n       got: ~s\n"
-                        (test-line test)
-                        (test-definitions test)
-                        error-ranges-expected
-                        (send interactions-text get-error-ranges))))])))))
+                   after-execute-output)
+          (k (void)))
+        (type-in-interactions drs ints)
+        ;; set to be the paragraph right after the insertion.
+        (set! output-start-paragraph
+              (queue-callback/res
+               (λ () (+ (send interactions-text position-paragraph 
+                              (send interactions-text last-position))
+                        1))))
+        (test:keystroke #\return '(alt))
+        (wait-for-computation drs)))
+    
+    (define text
+      (queue-callback/res
+       (λ ()
+         (define para-before-prompt
+           (- (send interactions-text position-paragraph
+                    (send interactions-text last-position))
+              1))
+         (if (test-all? test)
+             (send interactions-text
+                   get-text
+                   (send interactions-text paragraph-start-position 2)
+                   (send interactions-text paragraph-end-position para-before-prompt))
+             (send interactions-text
+                   get-text
+                   (send interactions-text paragraph-start-position output-start-paragraph)
+                   (send interactions-text paragraph-end-position para-before-prompt))))))
+    (define output-passed?
+      (let ([r (test-result test)])
+        ((cond [(string? r) string=?]
+               [(regexp? r) regexp-match?]
+               [else 'module-lang-test "bad test value: ~e" r])
+         r text)))
+    (unless output-passed?
+      (fprintf (current-error-port)
+               "FAILED (line ~a): ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
+               (test-line test)
+               (test-definitions test)
+               (or (test-interactions test) 'no-interactions)
+               (test-result test)
+               text))
+    (cond
+      [(eq? (test-error-ranges test) 'dont-test)
+       (void)]
+      [else
+       (let ([error-ranges-expected
+              ((test-error-ranges test) definitions-text interactions-text)])
+         (unless (equal? error-ranges-expected (send interactions-text get-error-ranges))
+           (fprintf (current-error-port)
+                    "FAILED (line ~a; ranges): ~a\n  expected: ~s\n       got: ~s\n"
+                    (test-line test)
+                    (test-definitions test)
+                    error-ranges-expected
+                    (send interactions-text get-error-ranges))))])))
 
 (define drs 'not-yet-drs-frame)
 (define interactions-text 'not-yet-interactions-text)

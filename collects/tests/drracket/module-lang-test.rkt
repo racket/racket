@@ -1,5 +1,5 @@
 #lang at-exp racket/gui
-(require "module-lang-test-utils.rkt")
+(require "private/module-lang-test-utils.rkt")
 (provide run-test)
 
 ;; set up for tests that need external files
@@ -164,8 +164,7 @@
 
 (test @t{#lang racket}
       @t{(begin-for-syntax (+ 1 2))}
-      @t{> (begin-for-syntax (+ 1 2))}
-      #t)
+      @t{})
 
 (test @t{#lang racket}
       @t{(begin (struct s (x)) (struct t s (y)) (s-x (t 1 2)))}
@@ -254,6 +253,112 @@
                      "  f\n"
                      "  (f)")
       #t)
+
+(test @t{#lang racket/base}
+      @t{(begin (values) 1)}
+      "1")
+
+(test @t{#lang racket/base}
+      @t{    (eval '(values 1 2))}
+      @t{1@"\n"2})
+(test @t{#lang racket/base}
+      @t{    (eval '(list 1 2))}
+      @t{'(1 2)})
+(test @t{#lang racket/base}
+      @t{    (eval '(lambda ()))}
+      @t{lambda: bad syntax in: (lambda ())})
+(test @t{#lang racket/base}
+      @t{(expt 3 (void))}
+      @rx{expt: expected argument of type <number>; given #<void>})
+(test @t{#lang racket/base}
+      @t{1 2 ( 3 4}
+      @t{1@"\n"2@"\n". read: expected a `)' to close `('})
+(test @t{#lang racket/base}
+      "1 2 . 3 4"
+      "1\n2\n. read: illegal use of \".\"")
+(test @t{#lang racket/base}
+      "1 2 (lambda ()) 3 4"
+      "1\n2\n. lambda: bad syntax in: (lambda ())")
+(test @t{#lang racket/base}
+      "1 2 x 3 4"
+      "1\n2\n. . reference to an identifier before its definition: x")
+(test @t{#lang racket/base}
+      "1 2 (raise 1) 3 4"
+      "1\n2\nuncaught exception: 1")
+(test @t{#lang racket/base}
+      "1 2 (raise #f) 3 4"
+      "1\n2\nuncaught exception: #f")
+(test @t{#lang racket/base}
+      "(current-namespace (make-empty-namespace)) if"
+      ". compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction")
+(test @t{#lang racket/base}
+      (string-append
+       "(let ([old (error-escape-handler)])\n"
+       "(+ (let/ec k\n(dynamic-wind\n"
+       "(lambda () (error-escape-handler (lambda () (k 5))))\n"
+       "(lambda () (expt 3 #f))\n"
+       "(lambda () (error-escape-handler old))))\n"
+       "10))")
+      ". . expt: expected argument of type <number>; given #f\n15")
+(test @t{#lang racket/base}
+      "(write (list (syntax x)))"
+      "(.)")
+(test @t{#lang racket/base}
+      "(parameterize ([current-output-port (open-output-string)]) (write #'1))"
+      "")
+(test @t{#lang racket/base}
+      "(write-special 1)"
+      "1#t")
+(test @t{#lang racket/gui}
+      (format "~s ~s ~s"
+              '(define s (make-semaphore 0))
+              '(queue-callback
+                (lambda ()
+                  (dynamic-wind
+                   void
+                   (lambda () (expt 3 #f))
+                   (lambda () (semaphore-post s)))))
+              '(begin (yield s) (void)))
+      ". . expt: expected argument of type <number>; given #f")
+(test @t{#lang racket/base}
+      (format "~s ~s" 
+              '(define x 1) 
+              '((λ (x y) y) (set! x (call/cc (lambda (x) x))) (x 3)))
+      ". . procedure application: expected procedure, given: 3; arguments were: 3")
+(test @t{#lang racket/base}
+      (format "~s ~s ~s ~s"
+              '(begin (define k (call/cc (λ (x) x)))
+                      (define x 'wrong))
+              '(set! x 'right)
+              '(k 1)
+              'x)
+      "'right")
+(test @t{#lang racket/base}
+      (format "~s"
+              '(call-with-continuation-prompt
+                (lambda ()
+                  (eval '(begin (abort-current-continuation
+                                 (default-continuation-prompt-tag)
+                                 1 2 3)
+                                10)))
+                (default-continuation-prompt-tag)
+                list))
+      "'(1 2 3)")
+(test @t{#lang racket/gui}
+      "(vector (new snip%))"
+      "(vector .)")
+(test @t{#lang racket/base}
+      "(begin (thread (lambda () x)) (sleep 1/10))"
+      ". . reference to an identifier before its definition: x")
+(test @t{#lang racket/base}
+      "(require texpict/utils)(disk 3)"
+      ".")
+(test @t{#lang racket/base}
+      (string-append
+       "(require mzlib/pretty)"
+       "(pretty-print-print-hook (lambda x (expt 3 #f)))"
+       "(list 1 2 3)")
+      "'(1 2 3)")
 
 ;; test protection against user-code changing the namespace
 (test @t{#lang racket/base
