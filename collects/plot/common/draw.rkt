@@ -357,26 +357,36 @@
 ;; ===================================================================================================
 ;; Visible faces of a 3D rectangle
 
-(define (visible-rect-faces r theta)
-  (match-define (vector (ivl x1 x2) (ivl y1 y2) (ivl z1 z2)) r)
+(define (rect-visible-faces r theta)
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) r)
   (list 
-   ;; Top
-   (list (vector x1 y1 z2) (vector x2 y1 z2) (vector x2 y2 z2) (vector x1 y2 z2))
-   ;; Front
+   ;; Top (z-max) face
+   (list (vector 0 0 1)
+         (vector x-min y-min z-max) (vector x-max y-min z-max)
+         (vector x-max y-max z-max) (vector x-min y-max z-max))
+   ;; Front (y-min) face
    (if ((cos theta) . > . 0)
-       (list (vector x1 y1 z1) (vector x2 y1 z1) (vector x2 y1 z2) (vector x1 y1 z2))
+       (list (vector 0 -1 0)
+             (vector x-min y-min z-min) (vector x-max y-min z-min)
+             (vector x-max y-min z-max) (vector x-min y-min z-max))
        empty)
-   ;; Back
+   ;; Back (y-max) face
    (if ((cos theta) . < . 0)
-       (list (vector x1 y2 z1) (vector x2 y2 z1) (vector x2 y2 z2) (vector x1 y2 z2))
+       (list (vector 0 1 0)
+             (vector x-min y-max z-min) (vector x-max y-max z-min)
+             (vector x-max y-max z-max) (vector x-min y-max z-max))
        empty)
-   ;; Left
+   ;; Left (x-min) face
    (if ((sin theta) . > . 0)
-       (list (vector x1 y1 z1) (vector x1 y2 z1) (vector x1 y2 z2) (vector x1 y1 z2))
+       (list (vector -1 0 0)
+             (vector x-min y-min z-min) (vector x-min y-max z-min)
+             (vector x-min y-max z-max) (vector x-min y-min z-max))
        empty)
-   ;; Right
+   ;; Right (x-max) face
    (if ((sin theta) . < . 0)
-       (list (vector x2 y1 z1) (vector x2 y2 z1) (vector x2 y2 z2) (vector x2 y1 z2))
+       (list (vector 1 0 0)
+             (vector x-max y-min z-min) (vector x-max y-max z-min)
+             (vector x-max y-max z-max) (vector x-max y-min z-max))
        empty)))
 
 ;; ===================================================================================================

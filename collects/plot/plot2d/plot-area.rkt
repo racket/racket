@@ -117,10 +117,6 @@
     (define init-top-margin (- title-y-min dc-y-min))
     (set! view->dc (make-view->dc 0 0 init-top-margin 0))
     
-    (define/public (plot-line->dc-angle v1 v2)
-      (match-define (vector dx dy) (v- (plot->dc* v2) (plot->dc* v1)))
-      (- (atan2 (- dy) dx)))
-    
     ;; ===============================================================================================
     ;; Tick and label constants
     
