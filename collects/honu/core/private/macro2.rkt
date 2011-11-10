@@ -9,6 +9,8 @@
                      "debug.rkt"
                      racket/base)
          "literals.rkt"
+         #;
+         (for-syntax "honu-typed-scheme.rkt")
          syntax/parse)
 
 (provide define-honu-syntax)
@@ -38,13 +40,13 @@
        (debug "Pattern is ~a\n" #'(pattern ...))
        (values
          (with-syntax ([(syntax-parse-pattern ...)
-                        (convert-pattern #'(pattern ...))])
+                        (convert-pattern #'(pattern ...))]
+                       [(code ...) (parse-all #'(action ...))])
            #'(%racket (define-honu-syntax name
                         (lambda (stx context-name)
                           (syntax-parse stx
                             [(_ syntax-parse-pattern ... . more)
-                             (define parsed (parse-all #'(action ...)))
-                             (values parsed #'more #t)
+                             (values (code ...) #'more #t)
                              #;
                              (values #'(%racket
                                          (let-syntax ([do-parse (lambda (stx)
@@ -63,7 +65,7 @@
     (syntax-parse code #:literal-sets (cruft)
       [(_ [#%brackets name:id data]
           (#%braces code ...))
-       #'(%racket-expression (with-syntax ([name data]) code ...))])))
+       #'(%racket (with-syntax ([name data]) code ...))])))
 
 #;
 (define-syntax (parse-stuff stx)
@@ -78,7 +80,7 @@
     (syntax-parse code #:literal-sets (cruft)
       [(_ (#%parens stuff ...) . rest)
        (values
-         #'(stuff ...)
+         #'(%racket #'(stuff ...))
          #; #'(%racket-expression (parse-stuff stuff ...))
          #'rest
          #f)])))

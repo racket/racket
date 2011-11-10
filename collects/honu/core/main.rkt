@@ -3,6 +3,7 @@
 (require "private/honu-typed-scheme.rkt"
          "private/honu2.rkt"
          "private/macro2.rkt"
+         (for-syntax (only-in "private/macro2.rkt" honu-syntax))
          "private/class.rkt"
          (for-syntax (only-in "private/parse2.rkt" honu-expression))
          (prefix-in literal: "private/literals.rkt"))
@@ -10,7 +11,8 @@
 (provide #%top
          #%datum
          print printf true false
-         (for-syntax (rename-out [honu-expression expression]))
+         (for-syntax (rename-out [honu-expression expression]
+                                 [honu-syntax syntax]))
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-top-interaction #%top-interaction]
                      [honu-with-input-from-file with_input_from_file]

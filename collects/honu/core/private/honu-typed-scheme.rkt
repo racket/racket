@@ -23,7 +23,7 @@
          "literals.rkt"
          "debug.rkt"
          ;; (prefix-in honu: "honu.rkt")
-         (prefix-in honu: "macro2.rkt")
+         ;; (prefix-in honu: "macro2.rkt")
          ;; "typed-utils.ss"
          )
 
@@ -294,6 +294,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       (syntax/loc stx
                  (define-syntax id (make-honu-infix-transformer rhs))))))
 
+#;
 (honu:define-honu-syntax honu-macro-item
   (lambda (stx ctx)
     (syntax-parse stx
@@ -303,6 +304,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
        (values #'(define-syntax-class name [pattern x])
                #'rest)])))
 
+#;
 (honu:define-honu-syntax honu-scheme
   (lambda (stx ctx)
     (syntax-parse stx #:literals (semicolon)
@@ -311,6 +313,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       [else (raise-syntax-error 'scheme "need a semicolon probably" stx)]
       )))
 
+#;
 (honu:define-honu-syntax honu-keywords
   (lambda (stx ctx)
     (syntax-parse stx #:literals (semicolon)
@@ -390,6 +393,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      (parse-an-expr #'(expr ...))]
     [else (raise-syntax-error 'honu-unparsed-expr "Invalid expression syntax" stx)]))
 
+#;
 (honu:define-honu-syntax scheme-syntax
   (lambda (body ctx)
     (syntax-parse body
@@ -400,6 +404,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
            (apply-scheme-syntax #'#'template))
          #'rest)])))
 
+#;
 (honu:define-honu-syntax honu-provide
   (lambda (body ctx)
     (syntax-parse body #:literals (semicolon)
@@ -463,6 +468,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
     [x #'x]
     [() forms]))
 
+(provide honu-unparsed-begin)
 (define-syntax (honu-unparsed-begin stx)
   (emit-remark "Honu unparsed begin!" stx)
   (debug "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))

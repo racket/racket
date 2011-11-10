@@ -200,11 +200,16 @@
             #;
             (do-parse #'(parsed ... rest ...)
                       precedence left current)
+            (define re-parse (let-values ([(re-parse re-unparse)
+                                           (parse #'parsed)])
+                               (with-syntax ([(re-parse* ...) re-parse]
+                                             [(re-unparse* ...) re-unparse])
+                                 #'(re-parse* ... re-unparse* ...))))
             (if terminate?
-              (values (left #'parsed)
+              (values (left re-parse)
                       #'rest)
               (do-parse #'rest precedence
-                        left #'parsed)))))))
+                        left re-parse)))))))
   (define (do-parse stream precedence left current)
     (define-syntax-class atom
       [pattern x:identifier]
@@ -219,8 +224,11 @@
       [()
        (values (left final) #'())]
       ;; dont reparse pure racket code
-      #;
-      [(%racket racket rest ...)
+      [(%racket racket)
+       (if current
+         (values (left current) stream)
+         (values (left stream) #'()))
+       #;
        (if current
          (values (left current) stream)
          (values (left #'racket) #'(rest ...)))]
@@ -300,7 +308,7 @@
                       #'rest)]
              [else (syntax-parse #'head
                      #:literal-sets (cruft)
-                     [(%racket rest ...)
+                     [(%racket x)
                       (if current
                         (values (left current) stream)
                         (do-parse #'(rest ...) precedence left #'head))]
