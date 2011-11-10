@@ -595,6 +595,7 @@ input_port {
   gcMARK2(ip->peeked_read, gc);
   gcMARK2(ip->peeked_write, gc);
   gcMARK2(ip->read_handler, gc);
+  gcMARK2(ip->closed_evt, gc);
   gcMARK2(ip->mref, gc);
   gcMARK2(ip->output_half, gc);
   gcMARK2(ip->special, gc);
@@ -621,6 +622,7 @@ output_port {
   gcMARK2(op->display_handler, gc);
   gcMARK2(op->write_handler, gc);
   gcMARK2(op->print_handler, gc);
+  gcMARK2(op->closed_evt, gc);
   gcMARK2(op->mref, gc);
   gcMARK2(op->input_half, gc);
 

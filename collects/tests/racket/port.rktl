@@ -696,5 +696,27 @@
   (check-all port-count-lines!))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; port-closed events
+
+(let ()
+  (define-values (i o) (make-pipe))
+  (define ic (port-closed-evt i))
+  (define oc (port-closed-evt o))
+  (test #f sync/timeout 0 ic oc)
+  (define t (thread (lambda () (sync ic))))
+  (sync (system-idle-evt))
+  (test #f sync/timeout 0 ic oc t)
+  (close-input-port i)
+  (test t sync t)
+  (test ic sync/timeout 0 ic oc)
+  (test #f sync/timeout 0 oc)
+  (define t2 (thread (lambda () (sync oc))))
+  (sync (system-idle-evt))
+  (test #f sync/timeout 0 oc t2)
+  (close-output-port o)
+  (test t2 sync t2)
+  (test oc sync/timeout 0 oc))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

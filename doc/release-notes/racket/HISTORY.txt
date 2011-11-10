@@ -1,3 +1,7 @@
+Version 5.2.2
+Added port-closed-evt
+Changed I/O scheduling to use epoll()/kqueue() when available
+
 Version 5.2, November 2011
 Generalized begin-with-syntax to allow phase-N definitions,
  both variable and syntax, within a module for all N >= 0;

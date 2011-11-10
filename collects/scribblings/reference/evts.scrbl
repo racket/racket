@@ -74,6 +74,10 @@ generate events (see @racket[prop:evt]).
  @racket[write-bytes-avail*] can flush part of the buffer (although
  @racket[write-bytes-avail] might block). @ResultItself[_output-port].}
 
+ @item{@racket[_closed] --- an event produced by
+ @racket[port-closed-evt] applied to @racket[_port] is ready after
+ @racket[_port] is closed. @ResultItself[_closed].}
+
  @item{@racket[_progress] --- an event produced by
  @racket[port-progress-evt] applied to @racket[_input-port] is ready after
  any subsequent read from @racket[_input-port]. @ResultItself[_progress].}

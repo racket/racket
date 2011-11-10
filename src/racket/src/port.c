@@ -434,6 +434,7 @@ static int rw_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
 static void rw_evt_wakeup(Scheme_Object *rww, void *fds);
 
 static int progress_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
+static int closed_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
 
 static Scheme_Object *
 _scheme_make_named_file_input_port(FILE *fp, Scheme_Object *name, int regfile);
@@ -613,9 +614,9 @@ scheme_init_port (Scheme_Env *env)
 
   scheme_add_global_constant("shell-execute", scheme_make_prim_w_arity(sch_shell_execute, "shell-execute", 5, 5), env);
 
-
   scheme_add_evt(scheme_progress_evt_type, (Scheme_Ready_Fun)progress_evt_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_write_evt_type, (Scheme_Ready_Fun)rw_evt_ready, rw_evt_wakeup, NULL, 1);
+  scheme_add_evt(scheme_port_closed_evt_type, (Scheme_Ready_Fun)closed_evt_ready, NULL, NULL, 1);
 }
 
 void scheme_init_port_places(void)
@@ -2918,6 +2919,12 @@ static int progress_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo)
   return 0;
 }
 
+static int closed_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo)
+{
+  scheme_set_sync_target(sinfo, SCHEME_PTR_VAL(evt), evt, NULL, 0, 1, NULL);
+  return 0;
+}
+
 intptr_t scheme_get_char_string(const char *who,
 			    Scheme_Object *port,
 			    mzchar *buffer, intptr_t offset, intptr_t size,
@@ -4004,6 +4011,8 @@ scheme_close_input_port (Scheme_Object *port)
     ip->slow = 1;
     ip->ungotten_count = 0;
     ip->ungotten_special = NULL;
+    if (ip->closed_evt)
+      scheme_post_sema_all(SCHEME_PTR_VAL(ip->closed_evt));
   }
 }
 
@@ -4151,6 +4160,8 @@ scheme_close_output_port(Scheme_Object *port)
     }
     
     op->closed = 1;
+    if (op->closed_evt)
+      scheme_post_sema_all(SCHEME_PTR_VAL(op->closed_evt));
   }
 }
 

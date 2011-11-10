@@ -88,6 +88,7 @@ static Scheme_Object *char_ready_p (int, Scheme_Object *[]);
 static Scheme_Object *byte_ready_p (int, Scheme_Object *[]);
 static Scheme_Object *peeked_read(int argc, Scheme_Object *argv[]);
 static Scheme_Object *progress_evt (int argc, Scheme_Object *argv[]);
+static Scheme_Object *closed_evt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *write_bytes_avail_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *write_special_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_write (int, Scheme_Object *[]);
@@ -299,6 +300,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("write-byte",                     write_byte,                     1, 2, env);
   GLOBAL_NONCM_PRIM("port-commit-peeked",             peeked_read,                    3, 4, env);
   GLOBAL_NONCM_PRIM("port-progress-evt",              progress_evt,                   0, 1, env);
+  GLOBAL_NONCM_PRIM("port-closed-evt",                closed_evt,                     0, 1, env);
   GLOBAL_NONCM_PRIM("write-bytes-avail-evt",          write_bytes_avail_evt,          1, 4, env);
   GLOBAL_NONCM_PRIM("write-special-evt",              write_special_evt,              2, 2, env);
   GLOBAL_NONCM_PRIM("port-read-handler",              port_read_handler,              1, 2, env);
@@ -3462,6 +3464,48 @@ progress_evt(int argc, Scheme_Object *argv[])
     return NULL;
   } else
     return v;
+}
+
+static Scheme_Object *make_closed_evt(int already_closed)
+{
+  Scheme_Object *evt, *sema;
+
+  sema = scheme_make_sema(0);
+  if (already_closed)
+    scheme_post_sema_all(sema);
+  evt = scheme_alloc_small_object();
+  evt->type = scheme_port_closed_evt_type;
+  SCHEME_PTR_VAL(evt) = sema;
+
+  return evt;
+}
+
+static Scheme_Object *
+closed_evt(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v = argv[0];
+  if (SCHEME_INPUT_PORTP(v)) {
+    Scheme_Input_Port *ip;
+    ip = scheme_input_port_record(v);
+    if (!ip->closed_evt) {
+      v = make_closed_evt(ip->closed);
+      ip->closed_evt = v;
+    } else
+      v = ip->closed_evt;
+    return v;
+  } else if (SCHEME_OUTPUT_PORTP(v)) {
+    Scheme_Output_Port *op;
+    op = scheme_output_port_record(v);
+    if (!op->closed_evt) {
+      v = make_closed_evt(op->closed);
+      op->closed_evt = v;
+    } else
+      v = op->closed_evt;
+    return v;
+  } else {
+    scheme_wrong_type("port-closed-evt", "input-port or output-port", 0, argc, argv);
+    return NULL;
+  }
 }
 
 static Scheme_Object *

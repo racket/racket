@@ -1377,6 +1377,7 @@ struct Scheme_Input_Port
   char slow; /* 0 => no line count, no ungotten, etc.: can call get_string_fun directly */
   char closed, pending_eof;
   Scheme_Object *sub_type;
+  Scheme_Object *closed_evt;
   Scheme_Custodian_Reference *mref;
   void *port_data;
   Scheme_Get_String_Fun get_string_fun;
@@ -1402,6 +1403,7 @@ struct Scheme_Output_Port
   struct Scheme_Port p;
   short closed;
   Scheme_Object *sub_type;
+  Scheme_Object *closed_evt;
   Scheme_Custodian_Reference *mref;
   void *port_data;
   Scheme_Write_String_Evt_Fun write_string_evt_fun;

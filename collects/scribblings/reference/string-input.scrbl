@@ -329,7 +329,7 @@ like @racket[peek-bytes-avail!].}
 @defproc[(port-progress-evt [in input-port? (current-input-port)])
          evt?]{
 
-Returns an event that becomes ready after any subsequent read from
+Returns a @tech{synchronizable event} that becomes ready after any subsequent read from
 @racket[in], or after @racket[in] is closed. After the event becomes
 ready, it remains ready.  If progress events are unavailable for
 @racket[in] (as reported by @racket[port-provides-progress-evts?]), then the

@@ -1544,6 +1544,7 @@ static int input_port_MARK(void *p, struct NewGC *gc) {
   gcMARK2(ip->peeked_read, gc);
   gcMARK2(ip->peeked_write, gc);
   gcMARK2(ip->read_handler, gc);
+  gcMARK2(ip->closed_evt, gc);
   gcMARK2(ip->mref, gc);
   gcMARK2(ip->output_half, gc);
   gcMARK2(ip->special, gc);
@@ -1569,6 +1570,7 @@ static int input_port_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(ip->peeked_read, gc);
   gcFIXUP2(ip->peeked_write, gc);
   gcFIXUP2(ip->read_handler, gc);
+  gcFIXUP2(ip->closed_evt, gc);
   gcFIXUP2(ip->mref, gc);
   gcFIXUP2(ip->output_half, gc);
   gcFIXUP2(ip->special, gc);
@@ -1603,6 +1605,7 @@ static int output_port_MARK(void *p, struct NewGC *gc) {
   gcMARK2(op->display_handler, gc);
   gcMARK2(op->write_handler, gc);
   gcMARK2(op->print_handler, gc);
+  gcMARK2(op->closed_evt, gc);
   gcMARK2(op->mref, gc);
   gcMARK2(op->input_half, gc);
 
@@ -1619,6 +1622,7 @@ static int output_port_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(op->display_handler, gc);
   gcFIXUP2(op->write_handler, gc);
   gcFIXUP2(op->print_handler, gc);
+  gcFIXUP2(op->closed_evt, gc);
   gcFIXUP2(op->mref, gc);
   gcFIXUP2(op->input_half, gc);
 
