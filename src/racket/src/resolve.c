@@ -1429,7 +1429,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       if (!clv->value)
         isproc = 1;
       else if (clv->count == 1)
-        isproc = is_nonconstant_procedure(clv->value, info, head->count);
+        isproc = is_nonconstant_procedure(clv->value, info, post_bind ? 0 : head->count);
       else
         isproc = 0;
       if (num_rec_procs && isproc) {

@@ -1725,6 +1725,24 @@
         (unc1))))
   (unc1))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test related to the `let'-resolve pass:
+
+(module check-against-problem-in-let-resolver racket/base
+  (let-values (((fail2) 12))
+    (let ([debugger-local-bindings
+           (lambda ()
+             (case-lambda ((v) (set! fail2 v))))])
+      (let ([f3 (lambda ()
+                  (let ([debugger-local-bindings
+                         (lambda ()
+                           (debugger-local-bindings))])
+                    '3))])
+        (let ([debugger-local-bindings
+               (lambda ()
+                 (case-lambda ((v) (set! f3 v))))])
+          (f3))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
