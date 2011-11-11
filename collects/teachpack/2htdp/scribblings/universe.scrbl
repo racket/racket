@@ -692,9 +692,10 @@ data; to be precise, an S-expression is one of:
  @item{a number,}
  @item{a boolean,}
  @item{a char, or}
- @item{a list of S-expressions.}
+ @item{a list of S-expressions, or}
+ @item{a prefab struct of S-expressions.}
 ]
-Note the last clause includes @racket[empty] of course. 
+Note the @racket[list] clause includes @racket[empty] of course. 
 
 @defproc[(sexp? [x any/c]) boolean?]{
  determines whether @racket[x] is an @tech{S-expression}.}
@@ -734,7 +735,7 @@ As mentioned, all event handlers may return @tech{WorldState}s or
 }
 
 @defform/none[#:literals (on-tick)
-              (on-tick tick-expr rate-expr)
+              (on-tick tick-expr rate-expr limit-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{WorldState}) (or/c (unsyntax @tech{WorldState}) package?))]
                [rate-expr (and/c real? positive?)]

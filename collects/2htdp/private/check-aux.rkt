@@ -26,7 +26,7 @@
 ;                                                                               
 ;                                                                               
 
-;; -----------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------------------------------
 
 ;; Any -> Boolean
 (define (nat? x)
@@ -37,14 +37,14 @@
   (check-arg t (and (number? x) (real? x)) "real number" p x)
   (inexact->exact (floor x)))
 
-;; -----------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------------------------------
 ;; Nat Nat ->String 
 ;; converts i to a string, adding leading zeros, make it at least as long as L
 (define (zero-fill i L)
   (let ([n (number->string i)])
     (string-append (make-string (max (- L (string-length n)) 0) #\0) n)))
 
-;; -----------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------------------------------
 
 ;; MouseEvent% -> [List Nat Nat MouseEventType]
 ;; turn a mouse event into its pieces 
@@ -78,13 +78,13 @@
     [(symbol? x) (symbol->string x)]
     [else (error 'on-key (format "Unknown event: ~a" x))]))
 
-;; -----------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------------------------------
 ;; Any -> Symbol 
 (define (name-of draw tag)
   (define fname  (object-name draw))
   (if fname fname tag))
 
-;; -----------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------------------------------
 ;; Any -> Boolean
 (define (sexp? x)
   (cond
@@ -95,12 +95,18 @@
     [(boolean? x) true]
     [(char? x) true]
     [(pair? x) (and (list? x) (andmap sexp? x))]
+    [(and (struct? x) (prefab-struct-key x)) (for/and ((i (struct->vector x))) (sexp? i))]
     [else false]))
+
+; tests:
+;(struct s (t) #:prefab)
+;(unless (sexp? (list (s (list 'a))))
+;  (error 'prefab "structs should be sexp?"))
 
 (define (no-newline? x)
   (not (member #\newline (string->list x))))
 
-;; -----------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------------------------------
 ;; exchange one-line messages between worlds and the server
 
 (define tcp-eof (gensym 'tcp-eof))
