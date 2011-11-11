@@ -4600,7 +4600,7 @@ void scheme_thread_block(float sleep_time)
   skip_sleep = 0;
   if (check_fd_semaphores()) {
     /* double check whether a semaphore for this thread woke up: */
-    if (p->block_descriptor == GENERIC_BLOCKED) {
+    if (!do_atomic && (p->block_descriptor == GENERIC_BLOCKED)) {
       if (p->block_check) {
         Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
         Scheme_Schedule_Info sinfo;
