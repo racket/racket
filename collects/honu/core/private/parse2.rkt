@@ -7,6 +7,7 @@
 (require ;; "macro2.rkt"
          "literals.rkt"
          "debug.rkt"
+         "compile.rkt"
          (prefix-in transformer: "transformer.rkt")
          racket/pretty
          syntax/stx
@@ -147,7 +148,7 @@
                           (parse-arguments #'(args ...))])
              #'(define (function parsed-arguments ...)
                  (let-syntax ([parse-more (lambda (stx)
-                                            (parse-all #'(code ...)))])
+                                            (honu->racket (parse-all #'(code ...))))])
                    (parse-more))))])
 
 ;; E = macro
@@ -322,13 +323,9 @@
                       (syntax-parse #'(stuff ...) #:literal-sets (cruft)
                         [(work:honu-expression colon (~seq variable:id honu-<- list:honu-expression (~optional honu-comma)) ...)
                          (define comprehension
-                           (with-syntax ([(list-parsed ...) (map (lambda (list)
-                                                                   (parse-all list))
-                                                                 (syntax->list #'(list.result ...)))]
-                                         [work-parsed (parse-all #'work.result)])
-                             #'(for/list ([variable list-parsed]
+                             #'(for/list ([variable list.result]
                                           ...)
-                                 work-parsed)))
+                                          work.result))
                          (if current
                            (error 'parse "a list comprehension cannot follow an expression")
                            (do-parse #'(rest ...) precedence left comprehension))]
@@ -409,7 +406,8 @@
              [code code])
     (define-values (parsed unparsed)
                    (parse (strip-stops code)))
-    (debug "Parsed ~a unparsed ~a\n" (if parsed (syntax->datum parsed) parsed)
+    (debug "Parsed ~a unparsed ~a\n"
+           (if parsed (syntax->datum parsed) parsed)
            (if unparsed (syntax->datum unparsed) unparsed))
     (if (empty-syntax? unparsed)
       (with-syntax ([(use ...) (reverse (if parsed

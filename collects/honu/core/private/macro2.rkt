@@ -36,6 +36,7 @@
   (define-splicing-syntax-class pattern-type
     #:literal-sets (cruft)
     [pattern (~seq name colon class)
+             ;; we know the output of syntactic classes will end with _result
              #:with result (with-syntax ([name.result (format-id #'name "~a_result" #'name)])
                              #'(name name.result))]
     [pattern x #:with result #f])

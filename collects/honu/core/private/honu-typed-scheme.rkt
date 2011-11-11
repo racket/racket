@@ -10,6 +10,7 @@
                      scheme/splicing
                      macro-debugger/emit
                      racket/pretty
+                     "compile.rkt"
                      "debug.rkt"
                      "contexts.rkt"
                      "util.rkt"
@@ -456,17 +457,6 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 
 (define-for-syntax (honu-compile forms)
   #'(void))
-
-(define-for-syntax (honu->racket forms)
-  (define-literal-set literals (%racket))
-  ;; (debug "honu to racket ~a\n" (pretty-format (syntax->datum forms)))
-  (syntax-parse forms #:literal-sets (literals)
-    [(%racket x) (honu->racket #'x)]
-    [(form ...)
-     (with-syntax ([(form* ...) (map honu->racket (syntax->list #'(form ...)))])
-       #'(form* ...))]
-    [x #'x]
-    [() forms]))
 
 (provide honu-unparsed-begin)
 (define-syntax (honu-unparsed-begin stx)
