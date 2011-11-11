@@ -391,7 +391,7 @@
           [((Name: n) (Name: n*))
            (if (free-identifier=? n n*)
                null
-               (let ((rn (resolve-once S)) (rn* (resolve-once)))
+               (let ((rn (resolve-once S)) (rn* (resolve-once T)))
                 (if (and rn rn*) (cg rn rn*) (fail! S T))))]
           ;; pairs are pointwise
           [((Pair: a b) (Pair: a* b*))
