@@ -3,6 +3,7 @@
 %               LaTeX Class/Style File
 %
 % Name:         sigplanconf.cls
+%
 % Purpose:      A LaTeX 2e class file for SIGPLAN conference proceedings.
 %               This class file supercedes acm_proc_article-sp,
 %               sig-alternate, and sigplan-proc.
@@ -10,17 +11,23 @@
 % Author:       Paul C. Anagnostopoulos
 %               Windfall Software
 %               978 371-2316
-%               sigplan-style [atsign] acm.org
+%               paul [atsign] windfall.com
 %
 % Created:      12 September 2004
 %
 % Revisions:    See end of file.
 %
+% This work is licensed under the Creative Commons Attribution License.
+% To view a copy of this license, visit
+%   http://creativecommons.org/licenses/by/3.0/
+% or send a letter to Creative Commons, 171 2nd Street, Suite 300,
+% San Francisco, California, 94105, U.S.A.
+%
 %-----------------------------------------------------------------------------
 
 
 \NeedsTeXFormat{LaTeX2e}[1995/12/01]
-\ProvidesClass{sigplanconf}[2010/05/24 v2.4 ACM SIGPLAN Proceedings]
+\ProvidesClass{sigplanconf}[2011/11/08 v2.5 ACM SIGPLAN Proceedings]
 
 % The following few pages contain LaTeX programming extensions adapted
 % from the ZzTeX macro package.
@@ -259,7 +266,7 @@
 
 \DeclareOption{numbers}{\@setflag \@authoryear = \@false}
 
-\DeclareOption{onecolumn}{\@setflag \@onecolumn = \@true}
+%%%\DeclareOption{onecolumn}{\@setflag \@onecolumn = \@true}
 
 \DeclareOption{preprint}{\@setflag \@preprint = \@true}
 
@@ -280,7 +287,7 @@
 \if \@onecolumn
   \if \@notp{\@explicitsize}%
     \@setflag \@ninepoint = \@false
-%    \PassOptionsToClass{11pt}{article}%
+    \PassOptionsToClass{11pt}{article}%
   \fi
   \PassOptionsToClass{twoside,onecolumn}{article}
 \else
@@ -333,7 +340,7 @@
 \setlength{\standardtextwidth}{42pc}
 
 \if \@onecolumn
-  \setlength{\textwidth}{20pc}
+  \setlength{\textwidth}{40.5pc}
 \else
   \setlength{\textwidth}{\standardtextwidth}
 \fi
@@ -516,7 +523,7 @@
 
 \if \@authoryear
   \typeout{Using natbib package with 'authoryear' citation style.}
-  \usepackage[authoryear,sort,square]{natbib}
+  \usepackage[authoryear,square]{natbib}
   \bibpunct{[}{]}{;}{a}{}{,}    % Change citation separator to semicolon,
                                 % eliminate comma between author and year.
   \let \cite = \citep
@@ -663,6 +670,13 @@
   \gdef \@reprintprice {#1}}
 
 \reprintprice{\$10.00}
+
+\newcommand{\authorversion}[4]{%
+  \permission{%
+  Copyright \copyright\ ACM, #1. This is the author's version of the work.
+  It is posted here by permission of ACM for your personal use.
+  Not for redistribution. The definitive version was published in
+  #2, #3, http://doi.acm.org/10.1145/#4.}}
 
 %                       Enunciations
 %                       ------------
@@ -913,8 +927,10 @@
 \def \ps@plain {%
   \let \@mkboth = \@gobbletwo
   \let \@evenhead = \@empty
-  \def \@evenfoot {\scriptsize \textit{\@preprintfooter}\hfil \thepage \hfil
-                   \textit{\@formatyear}}%
+  \def \@evenfoot {\scriptsize
+                   \rlap{\textit{\@preprintfooter}}\hfil
+                   \thepage \hfil
+                   \llap{\textit{\@formatyear}}}%
   \let \@oddhead = \@empty
   \let \@oddfoot = \@evenfoot}
 
@@ -1249,3 +1265,8 @@
 %                               Just include in the template.
 
 %  2010.05.24   PCA     2.4     Obfuscate author's email address.
+
+%  2011.11.08   PCA     2.5     Add copyright notice to this file.
+%                               Remove 'sort' option from natbib when using
+%                                 'authoryear' style.
+%                               Add the \authorversion command.
