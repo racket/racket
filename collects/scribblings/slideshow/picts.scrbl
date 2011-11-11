@@ -236,7 +236,8 @@ before drawing the rectangle.
             pict?]
            [(filled-rounded-rectangle [w real?] [h real?]
                                       [corner-radius real? -0.25]
-                                      [#:angle angle real? 0])
+                                      [#:angle angle real? 0] 
+                                      [#:draw-border? draw-border? any/c #t])
             pict?])]{
 
 Unfilled and filled rectangles with rounded corners.  The
@@ -251,6 +252,9 @@ and @racket[height].
 
 The @racket[angle] determines how much the rectangle is
 rotated, in radians.
+
+If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
+before drawing the rectangle.
 }
 
 @defproc[(bitmap [img (or/c path-string? 
