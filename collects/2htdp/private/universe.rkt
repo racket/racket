@@ -89,7 +89,7 @@
               (define nxt (name (send universe get) a ...))
               (define-values (u mails bad)
                 (if (stop-the-world? nxt)
-                    (error 'stop! "the universe stopped: ~e" (stop-the-world-world nxt))
+		    (stop! (stop-the-world-world nxt))
                     (bundle> n nxt)))
               (send universe set (format "value returned from ~a" 'name) u)
               (unless (boolean? to-string) (send gui add (to-string u)))

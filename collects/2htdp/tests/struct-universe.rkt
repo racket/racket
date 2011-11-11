@@ -32,7 +32,9 @@
               (on-new (lambda (w n) (make-bundle (cons n w) '() '())))
               (on-tick
                (lambda (w*)
-                 (make-bundle w* (map (lambda (w) (make-mail w 'go)) w*) '())))
+                 (make-bundle w* (map (lambda (w) (make-mail w 'go)) w*) '()))
+               1
+               3)
               (on-msg 
                (lambda (state iw msg)
                  ;; display the received prefabbed struct's content 
