@@ -49,7 +49,8 @@ seems little point to that).
                (loop))))))))))
 
 (define (planet-terse-log id str)
-  (sync (channel-put-evt terse-log-message-chan (list (thread-cell-ref log-key-tc) id str)))
+  (unless (thread-dead? thd)
+    (sync (channel-put-evt terse-log-message-chan (list (thread-cell-ref log-key-tc) id str))))
   (void))
 
 (define (planet-terse-register proc)
