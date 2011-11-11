@@ -4,6 +4,7 @@
                      syntax/define
                      syntax/parse
                      syntax/stx
+                     racket/syntax
                      "literals.rkt"
                      "parse2.rkt"
                      "debug.rkt"
@@ -31,6 +32,17 @@
     [(thing:pattern-type ...)
      #'(thing.result ...)]))
 
+(define-for-syntax (find-pattern-variables original-pattern)
+  (define-splicing-syntax-class pattern-type
+    #:literal-sets (cruft)
+    [pattern (~seq name colon class)
+             #:with result (with-syntax ([name.result (format-id #'name "~a_result" #'name)])
+                             #'(name name.result))]
+    [pattern x #:with result #f])
+  (syntax-parse original-pattern
+    [(thing:pattern-type ...)
+     (filter (lambda (x) x) (syntax->list #'(thing.result ...)))]))
+
 (provide honu-macro)
 (define-honu-syntax honu-macro 
   (lambda (code context)
@@ -41,21 +53,21 @@
        (values
          (with-syntax ([(syntax-parse-pattern ...)
                         (convert-pattern #'(pattern ...))]
+                       [((pattern-variable.name pattern-variable.result) ...)
+                        (find-pattern-variables #'(pattern ...))]
                        [(code ...) (parse-all #'(action ...))])
            #'(%racket (define-honu-syntax name
                         (lambda (stx context-name)
                           (syntax-parse stx
                             [(_ syntax-parse-pattern ... . more)
-                             (values (code ...) #'more #t)
-                             #;
-                             (values #'(%racket
-                                         (let-syntax ([do-parse (lambda (stx)
-                                                                  (define what (parse-all (stx-cdr stx)))
-                                                                  (debug "Macro parse all ~a\n" what)
-                                                                  what)])
-                                           (do-parse action ...)))
-                                     #'more
-                                     #t)])))))
+                             (values
+                               ;; if the pattern is x:expression then x_result will
+                               ;; hold the parsed version of x, so we rebind x to
+                               ;; x_result so you can use just x in the template
+                               ;; instead of x_result. x_result is still there, too
+                               (with-syntax ([pattern-variable.name #'pattern-variable.result]
+                                             ...)
+                                 (code ...)) #'more #t)])))))
          #'rest
          #t)])))
 
