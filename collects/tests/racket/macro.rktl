@@ -627,6 +627,15 @@
 
   (test 10 'ten (invoke compare)))
 
+;; ----------------------------------------
+;; Check zo marshaling of prefab in a list:
+
+(let ([s #'(quote-syntax (#s(foo bar)))])
+  (define-values (i o) (make-pipe))
+  (parameterize ([current-namespace (make-base-namespace)]
+                 [read-accept-compiled #t])
+    (write (compile s) o)
+    (test (syntax->datum (eval (read i))) values '(#s(foo bar)))))
 
 ;; ----------------------------------------
 
