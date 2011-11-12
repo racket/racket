@@ -31,6 +31,8 @@ If you have code written for PLoT 5.1.3 or earlier, please see @secref["porting"
 
 @include-section["renderer3d.scrbl"]
 
+@include-section["ticks.scrbl"]
+
 @include-section["utils.scrbl"]
 
 @include-section["params.scrbl"]

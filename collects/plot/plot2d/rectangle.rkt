@@ -96,14 +96,12 @@
                     (tick x #t (->plot-label cat)))])
       (if far-ticks? (values empty ticks) (values ticks empty))))
   (match-let*
-      ([(vector default-x-ticks default-y-ticks)
-        (maybe-invert default-x-ticks default-y-ticks)]
-       [(vector default-x-far-ticks default-y-far-ticks)
-        (maybe-invert default-x-far-ticks default-y-far-ticks)]
-       [(vector x-ticks y-ticks)
-        (maybe-invert x-ticks (default-y-ticks y-min y-max))]
-       [(vector x-far-ticks y-far-ticks)
-        (maybe-invert x-far-ticks (default-y-far-ticks y-min y-max))])
+      ([(vector plot-x-ticks plot-y-ticks)          (maybe-invert (plot-x-ticks)
+                                                                  (plot-y-ticks))]
+       [(vector plot-x-far-ticks plot-y-far-ticks)  (maybe-invert (plot-x-far-ticks)
+                                                                  (plot-y-far-ticks))]
+       [(vector x-ticks y-ticks)          (maybe-invert x-ticks (plot-y-ticks y-min y-max))]
+       [(vector x-far-ticks y-far-ticks)  (maybe-invert x-far-ticks (plot-y-far-ticks y-min y-max))])
     (values x-ticks x-far-ticks y-ticks y-far-ticks)))
 
 (defproc (discrete-histogram

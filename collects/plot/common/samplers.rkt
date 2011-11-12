@@ -29,7 +29,7 @@
   (define epsilon (expt 10 (- (digits-for-range z-min z-max))))
   (match-define (ticks layout format) (plot-z-ticks))
   (define ts
-    (cond [(eq? levels 'auto)  (filter pre-tick-major? (layout z-min z-max (plot-z-max-ticks)))]
+    (cond [(eq? levels 'auto)  (filter pre-tick-major? (layout z-min z-max))]
           [else  (define zs (cond [(list? levels)  (filter (λ (z) (<= z-min z z-max)) levels)]
                                   [else  (linear-seq z-min z-max levels #:start? #f #:end? #f)]))
                  (map (λ (z) (pre-tick z #t)) zs)]))
@@ -56,7 +56,7 @@
   (define epsilon (expt 10 (- (digits-for-range d-min d-max))))
   (match-define (ticks layout format) (plot-d-ticks))
   (define ts
-    (cond [(eq? levels 'auto)  (filter pre-tick-major? (layout d-min d-max (plot-d-max-ticks)))]
+    (cond [(eq? levels 'auto)  (filter pre-tick-major? (layout d-min d-max))]
           [else  (define ds (cond [(list? levels)  (filter (λ (d) (<= d-min d d-max)) levels)]
                                   [else  (linear-seq d-min d-max levels #:start? #f #:end? #f)]))
                  (map (λ (d) (pre-tick d #t)) ds)]))

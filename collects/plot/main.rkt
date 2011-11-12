@@ -12,9 +12,7 @@
 (provide (struct-out ivl))
 
 (require "contracted/axis-transform.rkt")
-(provide axis-transform-compose axis-transform-append axis-transform-bound
-         id-transform log-transform cbrt-transform hand-drawn-transform
-         stretch-transform collapse-transform)
+(provide (all-from-out "contracted/axis-transform.rkt"))
 
 (require "contracted/ticks.rkt")
 (provide (all-from-out "contracted/ticks.rkt"))

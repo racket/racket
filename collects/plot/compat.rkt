@@ -13,7 +13,7 @@
          "plot3d/plot-area.rkt"
          (prefix-in new. (only-in "main.rkt"
                                   x-axis y-axis
-                                  default-x-ticks default-y-ticks default-z-ticks
+                                  plot-x-ticks plot-y-ticks plot-z-ticks
                                   points error-bars vector-field
                                   plot-title plot-x-label plot-y-label plot-z-label
                                   plot-foreground plot-background
@@ -75,8 +75,8 @@
                [#:lncolor lncolor (list/c byte? byte? byte?) '(255 0 0)]
                [#:out-file out-file (or/c path-string? output-port? #f) #f]
                ) (is-a?/c image-snip%)
-  (define x-ticks (new.default-x-ticks x-min x-max))
-  (define y-ticks (new.default-y-ticks y-min y-max))
+  (define x-ticks ((new.plot-x-ticks) x-min x-max))
+  (define y-ticks ((new.plot-y-ticks) y-min y-max))
   (define bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max)))
   
   (parameterize ([new.plot-title       title]
@@ -117,9 +117,9 @@
                  [#:lncolor lncolor (list/c byte? byte? byte?) '(255 0 0)]
                  [#:out-file out-file (or/c path-string? output-port? #f) #f]
                  ) (is-a?/c image-snip%)
-  (define x-ticks (new.default-x-ticks x-min x-max))
-  (define y-ticks (new.default-y-ticks y-min y-max))
-  (define z-ticks (new.default-z-ticks z-min z-max))
+  (define x-ticks ((new.plot-x-ticks) x-min x-max))
+  (define y-ticks ((new.plot-y-ticks) y-min y-max))
+  (define z-ticks ((new.plot-z-ticks) z-min z-max))
   (define bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)))
   
   (parameterize ([new.plot-title       title]

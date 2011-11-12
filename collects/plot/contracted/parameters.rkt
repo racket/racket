@@ -9,8 +9,6 @@
   ;; General plot parameters
   plot-x-axis? plot-y-axis? plot-z-axis?
   plot-x-far-axis? plot-y-far-axis? plot-z-far-axis?
-  plot-x-max-ticks plot-y-max-ticks plot-z-max-ticks plot-d-max-ticks plot-r-max-ticks
-  plot-x-far-max-ticks plot-y-far-max-ticks plot-z-far-max-ticks
   plot-width plot-height
   plot-foreground plot-foreground-alpha
   plot-background plot-background-alpha
@@ -68,14 +66,11 @@
   ;; Functions
   pen-gap
   animated-samples
-  default-x-ticks default-y-ticks default-z-ticks default-d-ticks default-r-ticks
-  default-x-far-ticks default-y-far-ticks default-z-far-ticks
   default-contour-colors default-contour-fill-colors
   default-isosurface-colors default-isosurface-line-colors)
  ;; Parameter groups
  plot-parameters
  plot-axes?
- plot-max-ticks
  plot-appearance
  plot3d-appearance
  plot-output

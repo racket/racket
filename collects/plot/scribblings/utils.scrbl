@@ -6,13 +6,7 @@
 
 @defmodule[plot/utils]
 
-@doc-apply[degrees->radians]{
-Converts degrees to radians.
-}
-
-@doc-apply[radians->degrees]{
-Converts radians to degrees.
-}
+@section{Formatting}
 
 @doc-apply[digits-for-range]{
 Given a range, returns the number of decimal places necessary to distinguish numbers in the range. This may return negative numbers for large ranges.
@@ -41,37 +35,7 @@ Converts a Racket value to a label. Used by @(racket discrete-histogram) and @(r
 Like @(racket real->decimal-string), but removes trailing zeros and a trailing decimal point.
 }
 
-@doc-apply[linear-seq]{
-Returns a list of evenly spaced real numbers between @(racket start) and @(racket end).
-If @(racket start?) is @(racket #t), the list includes @(racket start).
-If @(racket end?) is @(racket #t), the list includes @(racket end).
-
-This function is used internally to generate sample points.
-
-@examples[#:eval plot-eval
-                 (linear-seq 0 1 5)
-                 (linear-seq 0 1 5 #:start? #f)
-                 (linear-seq 0 1 5 #:end? #f)
-                 (linear-seq 0 1 5 #:start? #f #:end? #f)]
-}
-
-@doc-apply[linear-seq*]{
-Like @(racket linear-seq), but accepts a list of reals instead of a start and end.
-The @(racket #:start?) and @(racket #:end?) keyword arguments work as in @(racket linear-seq).
-This function does not guarantee that each inner value will be in the returned list.
-
-@examples[#:eval plot-eval
-                 (linear-seq* '(0 1 2) 5)
-                 (linear-seq* '(0 1 2) 6)
-                 (linear-seq* '(0 1 0) 5)]
-}
-
-@doc-apply[bounds->intervals]{
-Given a list of points, returns intervals between each pair.
-
-Use this to construct inputs for @(racket rectangles) and @(racket rectangles3d).
-@examples[#:eval plot-eval (bounds->intervals (linear-seq 0 1 5))]
-}
+@section{Plot Colors and Styles}
 
 @doc-apply[color-seq]{
 Interpolates between colors---red, green and blue components separately---using @(racket linear-seq).
@@ -169,18 +133,44 @@ Integer brush styles repeat starting at @(racket 7).
                  (map ->brush-style '(4 5 6))]
 }
 
-@defstruct[invertible-function ([f (real? . -> . real?)] [finv (real? . -> . real?)])]{
-Represents an invertible function.
+@section{Plot-Specific Math}
 
-The function itself is @(racket f), and its inverse is @(racket finv).
-Because @(racket real?)s can be inexact, this invariant must be approximate and therefore cannot be enforced.
-(For example, @(racket (exp (log 10))) = @(racket 10.000000000000002).)
-The obligation to maintain it rests on whomever constructs one.
+@subsection{Real Numbers}
 
-An axis transform such as @(racket plot-x-transform) is a function from bounds @(racket start end) to an @(racket invertible-function) for which @(racket (f start)) = @(racket start) and @(racket (f end)) = @(racket end) (approximately), and the same is true of @(racket finv).
-The function @(racket f) is used to transform points before drawing; its inverse @(racket finv) is used to generate samples that will be evenly spaced after being transformed by @(racket f).
+@doc-apply[regular-real?]{
+}
 
-(Technically, because of the way PLoT uses @(racket invertible-function), @(racket f) must only be a left inverse of @(racket finv); there is no requirement that @(racket f) also be a right inverse of @(racket finv).)
+@doc-apply[degrees->radians]{
+Converts degrees to radians.
+}
+
+@doc-apply[radians->degrees]{
+Converts radians to degrees.
+}
+
+@doc-apply[linear-seq]{
+Returns a list of evenly spaced real numbers between @(racket start) and @(racket end).
+If @(racket start?) is @(racket #t), the list includes @(racket start).
+If @(racket end?) is @(racket #t), the list includes @(racket end).
+
+This function is used internally to generate sample points.
+
+@examples[#:eval plot-eval
+                 (linear-seq 0 1 5)
+                 (linear-seq 0 1 5 #:start? #f)
+                 (linear-seq 0 1 5 #:end? #f)
+                 (linear-seq 0 1 5 #:start? #f #:end? #f)]
+}
+
+@doc-apply[linear-seq*]{
+Like @(racket linear-seq), but accepts a list of reals instead of a start and end.
+The @(racket #:start?) and @(racket #:end?) keyword arguments work as in @(racket linear-seq).
+This function does not guarantee that each inner value will be in the returned list.
+
+@examples[#:eval plot-eval
+                 (linear-seq* '(0 1 2) 5)
+                 (linear-seq* '(0 1 2) 6)
+                 (linear-seq* '(0 1 0) 5)]
 }
 
 @doc-apply[nonlinear-seq]{
@@ -193,6 +183,23 @@ This is used to generate samples for transformed axes.
                    (plot (area-histogram sqr (nonlinear-seq 1 10 4 log-transform))))]
 }
 
+@subsection[#:tag "math.vectors"]{Vectors}
+
+@subsection[#:tag "math.intervals"]{Intervals}
+
+@doc-apply[bounds->intervals]{
+Given a list of points, returns intervals between each pair.
+
+Use this to construct inputs for @(racket rectangles) and @(racket rectangles3d).
+@examples[#:eval plot-eval (bounds->intervals (linear-seq 0 1 5))]
+}
+
+@subsection[#:tag "math.rectangles"]{Rectangles}
+
+@section{Dates and Times}
+
+@section{Sampling}
+
 @defstruct[mapped-function ([f (any/c . -> . any/c)] [fmap ((listof any/c) . -> . (listof any/c))])]{
 Represents a function that maps over lists differently than @(racket (map f xs)).
 
@@ -200,6 +207,8 @@ With some functions, mapping over a list can be done much more quickly if done s
 (An example is a piecewise function with many pieces that first must decide which interval its input belongs to. Deciding that for many inputs can be done more efficiently by sorting all the inputs first.)
 Renderer-producing functions that accept a @(racket (real? . -> . real?)) also accept a @(racket mapped-function), and use its @(racket fmap) to sample more efficiently.
 }
+
+@section{Denity Estimation}
 
 @doc-apply[kde]{
 Given samples and a kernel bandwidth, returns a @(racket mapped-function) representing a kernel density estimate, and bounds, outside of which the density estimate is zero. Used by @(racket density).

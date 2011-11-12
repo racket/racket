@@ -120,7 +120,7 @@
   (define r-min (if (and (<= x-min 0 x-max) (<= y-min 0 y-max)) 0 (apply min corner-rs)))
   (define r-max (apply max corner-rs))
   (define ts (filter (λ (t) (not (zero? (pre-tick-value t))))
-                     (default-r-ticks r-min r-max)))
+                     ((plot-r-ticks) r-min r-max)))
   ;; Draw the tick lines
   (for ([t  (in-list ts)])
     (match-define (tick r major? label) t)

@@ -4,10 +4,10 @@
 
 (plot-font-family 'swiss)
 
-(plot (function (λ (x) (count pre-tick-major? ((linear-ticks) 0 x 8)))
+(plot (function (λ (x) (count pre-tick-major? ((linear-ticks #:number 8) 0 x)))
                 0.1 10))
 
-(plot (function (λ (x) (count pre-tick-major? ((linear-ticks) 0 x 40)))
+(plot (function (λ (x) (count pre-tick-major? ((linear-ticks #:number 40) 0 x)))
                 1 100))
 
 (parameterize ([plot-x-ticks  (linear-ticks #:base 2 #:divisors '(1 2))]
@@ -20,8 +20,7 @@
                [plot-y-ticks  (fraction-ticks)])
   (plot (function (λ (x) (+ 1 (cos x))) 0.0001 12)))
 
-(parameterize ([plot-x-ticks  (date-ticks)]
-               [plot-x-max-ticks  3]
+(parameterize ([plot-x-ticks  (date-ticks #:number 3)]
                [plot-y-ticks  (currency-ticks)])
   (plot (function values -1 1)))
 
@@ -40,7 +39,7 @@
         #:x-label "Euros"
         #:y-label "Dollars"))
 
-(parameterize ([plot-x-ticks  (no-ticks)])
+(parameterize ([plot-x-ticks  no-ticks])
   (plot (function sin -1 4)))
 
 (parameterize ([plot-x-transform  log-transform]
@@ -90,7 +89,8 @@
 (parameterize ([plot-y-ticks  (ticks-scale (log-ticks) exp-scale)])
   (plot (function values -10 10)))
 
-(parameterize ([plot-y-ticks  (ticks-add (no-ticks) '(1/3 2/3))])
+(parameterize ([plot-y-ticks  (ticks-add (ticks no-ticks-layout (linear-ticks-format))
+                                         '(1/3 2/3))])
   (plot (function sin -4 4)))
 
 (plot (list (function sin -4 4)
@@ -98,7 +98,7 @@
             (x-ticks (list (tick 1.5 #t "3/2") (tick 3 #t "Three")))
             (y-ticks (list (tick 1/4 #t "1/4") (tick -1/4 #f "")))))
 
-(parameterize ([plot-z-max-ticks  5])
+(parameterize ([plot-z-ticks  (linear-ticks #:number 5)])
   (plot3d (list (surface3d (λ (x y) (* 2 (+ (sin x) (cos y)))) -4 4 -4 4 #:alpha 1/2)
                 (x-ticks (list (tick 1.5 #t "3/2") (tick 3 #t "Three")))
                 (y-ticks (list (tick 1/3 #t "1/3") (tick -1/3 #f "1/3")))
@@ -127,13 +127,12 @@
   (plot (function sin (- pi) pi)))
 
 (parameterize ([plot-x-far-label  "x far axis"]
-               [plot-x-max-ticks  10]
+               [plot-x-ticks      (linear-ticks #:number 10)]
                [plot-y-far-label  "y far axis"]
                [plot-y-far-ticks  (date-ticks)]
                [plot-z-label  "z axis"]
                [plot-z-far-label  "z far axis"]
-               [plot-z-far-ticks  (currency-ticks)]
-               [plot-z-far-max-ticks  5])
+               [plot-z-far-ticks  (currency-ticks #:number 5)])
   (plot3d (surface3d (λ (x y) (+ (sin x) (cos y))) -2 2 -2 2 #:alpha 1/2)
           #:angle 60 #:altitude 35))
 

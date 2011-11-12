@@ -18,11 +18,10 @@
 
 (time (plot (function values 0 1000)))
 
-(parameterize ([plot-x-ticks      (log-ticks #:base 4)]
-               [plot-x-transform  log-transform]
-               [plot-y-max-ticks  10]
-               [plot-y-ticks      (linear-ticks)]
-               [plot-y-transform  log-transform])
+(parameterize ([plot-x-transform  log-transform]
+               [plot-x-ticks      (log-ticks #:base 4)]
+               [plot-y-transform  log-transform]
+               [plot-y-ticks      (linear-ticks #:number 10)])
   (plot (function values 1 243)))
 
 (parameterize ([plot-background  "black"]

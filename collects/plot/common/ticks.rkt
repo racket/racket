@@ -20,17 +20,16 @@
 
 (struct ticks (layout format) #:transparent
   #:property prop:procedure
-  (λ (t x-min x-max max-ticks)
+  (λ (t x-min x-max)
     (match-define (ticks layout format) t)
-    (define ts (layout x-min x-max max-ticks))
+    (define ts (layout x-min x-max))
     (match-define (list (pre-tick xs majors) ...) ts)
     (map tick xs majors (format x-min x-max ts))))
 
-(defcontract ticks-layout/c
-  (real? real? exact-positive-integer? . -> . (listof pre-tick?)))
+(defcontract ticks-layout/c (real? real? . -> . (listof pre-tick?)))
+(defcontract ticks-format/c (real? real? (listof pre-tick?) . -> . (listof string?)))
 
-(defcontract ticks-format/c
-  (real? real? (listof pre-tick?) . -> . (listof string?)))
+(defparam ticks-default-number exact-positive-integer? 5)
 
 ;; ===================================================================================================
 ;; Helpers
@@ -108,11 +107,12 @@
    (define minor-xs (linear-minor-values/step major-xs step (- n 1)))
    (values major-xs (filter (λ (x) (<= x-min x x-max)) minor-xs))))
 
-(defproc (linear-ticks-layout [#:base base (and/c exact-integer? (>=/c 2)) 10]
+(defproc (linear-ticks-layout [#:number number exact-positive-integer? (ticks-default-number)]
+                              [#:base base (and/c exact-integer? (>=/c 2)) 10]
                               [#:divisors divisors (listof exact-positive-integer?) '(1 2 5)]
                               ) ticks-layout/c
-  (λ (x-min x-max max-ticks)
-    (define-values (major-xs minor-xs) (linear-tick-values x-min x-max max-ticks base divisors))
+  (λ (x-min x-max)
+    (define-values (major-xs minor-xs) (linear-tick-values x-min x-max number base divisors))
     (tick-values->pre-ticks major-xs minor-xs)))
 
 (defproc (linear-ticks-format) ticks-format/c
@@ -123,32 +123,41 @@
      (for/list ([t  (in-list ts)])
        (real->plot-label (pre-tick-value t) digits)))))
 
-(defproc (linear-ticks [#:base base (and/c exact-integer? (>=/c 2)) 10]
-                       [#:divisors divisors (listof exact-positive-integer?) '(1 2 5)]) ticks?
-  (ticks (linear-ticks-layout #:base base #:divisors divisors)
+(defproc (linear-ticks [#:number number exact-positive-integer? (ticks-default-number)]
+                       [#:base base (and/c exact-integer? (>=/c 2)) 10]
+                       [#:divisors divisors (listof exact-positive-integer?) '(1 2 5)]
+                       ) ticks? #:document-body
+  (ticks (linear-ticks-layout #:number number #:base base
+                              #:divisors divisors)
          (linear-ticks-format)))
 
 ;; ===================================================================================================
 ;; No ticks
 
-(defproc (no-ticks-layout) ticks-layout/c
-  (λ (x-min x-max max-ticks) empty))
+(defthing no-ticks-layout ticks-layout/c #:document-value
+  (λ (x-min x-max) empty))
 
-(defproc (no-ticks) ticks?
-  (ticks (no-ticks-layout) (linear-ticks-format)))
+(defthing no-ticks-format ticks-format/c #:document-value
+  (λ (x-min x-max pre-ticks)
+    (map (λ (_) "") pre-ticks)))
+
+(defthing no-ticks ticks? #:document-value
+  (ticks no-ticks-layout no-ticks-format))
 
 ;; ===================================================================================================
 ;; Exponential ticks (for log scale)
 
-(defproc (log-ticks-layout [#:base base (and/c exact-integer? (>=/c 2)) 10]) ticks-layout/c
-  (λ (x-min x-max max-ticks)
+(defproc (log-ticks-layout [#:number number exact-positive-integer? (ticks-default-number)]
+                           [#:base base (and/c exact-integer? (>=/c 2)) 10]
+                           ) ticks-layout/c
+  (λ (x-min x-max)
     (with-exact-bounds
      x-min x-max
      (when ((exact->inexact x-min) . <= . 0)
        (raise-type-error 'log-ticks-layout "positive real" 0 x-min x-max))
      (define log-start (ceiling-log/base base x-min))
      (define log-end (floor-log/base base x-max))
-     (define skip (max 1 (ceiling (/ (+ 1 (- log-end log-start)) max-ticks))))
+     (define skip (max 1 (ceiling (/ (+ 1 (- log-end log-start)) number))))
      (filter (λ (t) (<= x-min (pre-tick-value t) x-max))
              (append*
               (for/list ([log-x  (in-range (- log-start 1) (+ log-end 2))]
@@ -177,8 +186,10 @@
                             (real->plot-label (/ x (expt base log-x)) base-digits)
                             (major-str))])))))
 
-(defproc (log-ticks [#:base base (and/c exact-integer? (>=/c 2)) 10]) ticks?
-  (ticks (log-ticks-layout #:base base)
+(defproc (log-ticks [#:number number exact-positive-integer? (ticks-default-number)]
+                    [#:base base (and/c exact-integer? (>=/c 2)) 10]
+                    ) ticks? #:document-body
+  (ticks (log-ticks-layout #:number number #:base base)
          (log-ticks-format #:base base)))
 
 ;; ===================================================================================================
@@ -213,48 +224,40 @@
 ;; ===================================================================================================
 ;; Date ticks
 
-(define 12h-descending-date-ticks-formats
-  '("~Y-~m-~d ~I:~M:~f ~p"
-    "~Y-~m-~d ~I:~M ~p"
-    "~Y-~m-~d ~I ~p"
-    "~Y-~m-~d"
-    "~Y-~m"
-    "~Y"
-    
-    "~m-~d ~I:~M:~f ~p"
-    "~m-~d ~I:~M ~p"
-    "~m-~d ~I ~p"
-    "~m-~d"
-    
-    "~I:~M:~f ~p"
-    "~I:~M ~p"
-    "~I ~p"
-    
-    "~M:~fs"
-    "~Mm"
-    
-    "~fs"))
-
-(define 24h-descending-date-ticks-formats
+(defthing 24h-descending-date-ticks-formats (listof string?) #:document-value
   '("~Y-~m-~d ~H:~M:~f"
     "~Y-~m-~d ~H:~M"
     "~Y-~m-~d ~Hh"
     "~Y-~m-~d"
     "~Y-~m"
     "~Y"
-    
     "~m-~d ~H:~M:~f"
     "~m-~d ~H:~M"
     "~m-~d ~Hh"
     "~m-~d"
-    
     "~H:~M:~f"
     "~H:~M"
     "~Hh"
-    
     "~M:~fs"
     "~Mm"
-    
+    "~fs"))
+
+(defthing 12h-descending-date-ticks-formats (listof string?) #:document-value
+  '("~Y-~m-~d ~I:~M:~f ~p"
+    "~Y-~m-~d ~I:~M ~p"
+    "~Y-~m-~d ~I ~p"
+    "~Y-~m-~d"
+    "~Y-~m"
+    "~Y"
+    "~m-~d ~I:~M:~f ~p"
+    "~m-~d ~I:~M ~p"
+    "~m-~d ~I ~p"
+    "~m-~d"
+    "~I:~M:~f ~p"
+    "~I:~M ~p"
+    "~I ~p"
+    "~M:~fs"
+    "~Mm"
     "~fs"))
 
 (defparam date-ticks-formats (listof string?) 24h-descending-date-ticks-formats)
@@ -316,9 +319,10 @@
    (define major-xs (linear-major-values/step x-min x-max step))
    (values (map date-round major-xs) empty)))
 
-(defproc (date-ticks-layout) ticks-layout/c
-  (λ (x-min x-max max-ticks)
-    (define-values (major-xs minor-xs) (date-tick-values x-min x-max max-ticks))
+(defproc (date-ticks-layout [#:number number exact-positive-integer? (ticks-default-number)]
+                            ) ticks-layout/c
+  (λ (x-min x-max)
+    (define-values (major-xs minor-xs) (date-tick-values x-min x-max number))
     (tick-values->pre-ticks major-xs minor-xs)))
 
 (defproc (date-ticks-format [#:formats formats (listof string?) (date-ticks-formats)]) ticks-format/c
@@ -336,29 +340,40 @@
                     (define fmt-list (choose-format-list formatter fmt-lists (list last-x x)))
                     (string-append* (apply-formatter formatter fmt-list x))))]))))
 
-(defproc (date-ticks [#:formats formats (listof string?) (date-ticks-formats)]) ticks?
-  (ticks (date-ticks-layout)
+(defproc (date-ticks [#:number number exact-positive-integer? (ticks-default-number)]
+                     [#:formats formats (listof string?) (date-ticks-formats)]
+                     ) ticks? #:document-body
+  (ticks (date-ticks-layout #:number number)
          (date-ticks-format #:formats formats)))
 
 ;; ===================================================================================================
 ;; Time ticks
 
-(define descending-time-ticks-formats
+(defthing 24h-descending-time-ticks-formats (listof string?) #:document-value
   '("~dd ~H:~M:~f"
     "~dd ~H:~M"
     "~dd ~Hh"
     "~dd"
-    
     "~H:~M:~f"
     "~H:~M"
     "~Hh"
-    
     "~M:~fs"
     "~Mm"
-    
     "~fs"))
 
-(defparam time-ticks-formats (listof string?) descending-time-ticks-formats)
+(defthing 12h-descending-time-ticks-formats (listof string?) #:document-value
+  '("~dd ~I:~M:~f ~p"
+    "~dd ~I:~M ~p"
+    "~dd ~I ~p"
+    "~dd"
+    "~I:~M:~f ~p"
+    "~I:~M ~p"
+    "~I ~p"
+    "~M:~fs"
+    "~Mm"
+    "~fs"))
+
+(defparam time-ticks-formats (listof string?) 24h-descending-time-ticks-formats)
 
 ;; Tick steps to try, in seconds
 (define time-steps
@@ -408,9 +423,10 @@
    (define major-xs (linear-major-values/step x-min x-max step))
    (values major-xs empty)))
 
-(defproc (time-ticks-layout) ticks-layout/c
-  (λ (x-min x-max max-ticks)
-    (define-values (major-xs minor-xs) (time-tick-values x-min x-max max-ticks))
+(defproc (time-ticks-layout [#:number number exact-positive-integer? (ticks-default-number)]
+                            ) ticks-layout/c
+  (λ (x-min x-max)
+    (define-values (major-xs minor-xs) (time-tick-values x-min x-max number))
     (tick-values->pre-ticks major-xs minor-xs)))
 
 (defproc (time-ticks-format [#:formats formats (listof string?) (time-ticks-formats)]) ticks-format/c
@@ -428,8 +444,10 @@
                     (define fmt-list (choose-format-list formatter fmt-lists (list last-x x)))
                     (string-append* (apply-formatter formatter fmt-list x))))]))))
 
-(defproc (time-ticks [#:formats formats (listof string?) (time-ticks-formats)]) ticks?
-  (ticks (time-ticks-layout)
+(defproc (time-ticks [#:number number exact-positive-integer? (ticks-default-number)]
+                     [#:formats formats (listof string?) (time-ticks-formats)]
+                     ) ticks? #:document-body
+  (ticks (time-ticks-layout #:number number)
          (time-ticks-format #:formats formats)))
 
 ;; ===================================================================================================
@@ -462,33 +480,36 @@
        (define unit-x (/ (pre-tick-value t) unit))
        (format format-str (real->plot-label unit-x digits #f))))))
 
-(defproc (bit/byte-ticks [#:size size (or/c 'byte 'bit) 'byte]
-                         [#:kind kind (or/c 'CS 'SI) 'CS]) ticks?
-  (define layout
-    (case kind
-      [(SI)  (linear-ticks-layout #:base 10 #:divisors '(1 2 5))]
-      [else  (linear-ticks-layout #:base 2 #:divisors '(1 2))]))
-  (ticks layout (bit/byte-ticks-format #:size size #:kind kind)))
+(defproc (bit/byte-ticks [#:number number exact-positive-integer? (ticks-default-number)]
+                         [#:size size (or/c 'byte 'bit) 'byte]
+                         [#:kind kind (or/c 'CS 'SI) 'CS]
+                         ) ticks? #:document-body
+  (define si? (eq? kind 'SI))
+  (ticks (linear-ticks-layout #:number number #:base (if si? 10 2)
+                              #:divisors (if si? '(1 2 5) '(1 2)))
+         (bit/byte-ticks-format #:size size #:kind kind)))
 
 ;; ===================================================================================================
 ;; Currency
 
 ;; US "short scale" suffixes
-(define us-currency-scales '("" "K" "M" "B" "T"))
-;; The UK officially uses the short scale now
-;; Million is abbreviated "m" instead of "mn" because "mn" stands for minutes; also, the Daily
-;; Telegraph Style Guide totally says to use "m"
-(define uk-currency-scales '("" "k" "m" "bn" "tr"))
+(defthing us-currency-scales (listof string?) #:document-value '("" "K" "M" "B" "T"))
+;; The UK officially uses the short scale since 1974
+;; Million is abbreviated "m" instead of "mn" because "mn" stands for minutes
+(defthing uk-currency-scales (listof string?) #:document-value '("" "k" "m" "bn" "tr"))
 ;; European countries use the long scale: million, milliard, billion
-(define eu-currency-scales '("" "K" "M" "Md" "B"))
-;; The larger the scale suffixes get, the less standardized they are; so we stop at trillion (short)
+(defthing eu-currency-scales (listof string?) #:document-value '("" "K" "M" "Md" "B"))
+;; The larger the scale suffixes get, the less standardized they are; so we stop at billion (long)
 
 ;; US negative amounts are in parenthesis:
-(define us-currency-formats '("~$~w.~f~s" "(~$~w.~f~s)" "~$0"))
+(defthing us-currency-formats (list/c string? string? string?) #:document-value
+  '("~$~w.~f~s" "(~$~w.~f~s)" "~$0"))
 ;; The UK is more reasonable, using a negative sign for negative amounts:
-(define uk-currency-formats '("~$~w.~f ~s" "-~$~w.~f ~s" "~$0"))
+(defthing uk-currency-formats (list/c string? string? string?) #:document-value
+  '("~$~w.~f~s" "-~$~w.~f~s" "~$0"))
 ;; The more common EU format (e.g. France, Germany, Italy, Spain):
-(define eu-currency-formats '("~w,~f ~s~$" "-~w,~f ~s~$" "0 ~$"))
+(defthing eu-currency-formats (list/c string? string? string?) #:document-value
+  '("~w,~f ~s~$" "-~w,~f ~s~$" "0 ~$"))
 
 (defparam currency-ticks-scales (listof string?) us-currency-scales)
 (defparam currency-ticks-formats (list/c string? string? string?) us-currency-formats)
@@ -546,21 +567,18 @@
         (apply-formatter formatter format-list
                          (amount-data sign whole frac unit suffix)))))))
 
-(defproc (currency-ticks-layout) ticks-layout/c
-  (linear-ticks-layout #:base 10 #:divisors '(1 2 4 5)))
-
-(defproc (currency-ticks [#:kind kind (or/c string? symbol?) 'USD]
+(defproc (currency-ticks [#:number number exact-positive-integer? (ticks-default-number)]
+                         [#:kind kind (or/c string? symbol?) 'USD]
                          [#:scales scales (listof string?) (currency-ticks-scales)]
                          [#:formats formats (list/c string? string? string?) (currency-ticks-formats)]
-                         ) ticks?
-  (ticks (currency-ticks-layout)
-         (currency-ticks-format #:kind kind #:scales scales #:formats formats)))
+                         ) ticks? #:document-body
+  (ticks (linear-ticks-layout #:number number #:base 10
+                              #:divisors '(1 2 4 5))
+         (currency-ticks-format #:kind kind #:scales scales
+                                #:formats formats)))
 
 ;; ===================================================================================================
 ;; Fractions
-
-(defparam fraction-ticks-base (and/c exact-integer? (>=/c 2)) 10)
-(defparam fraction-ticks-divisors (listof exact-positive-integer?) '(1 2 3 4 5))
 
 (define (format-fraction x)
   (cond [(inexact? x)  (format-fraction (inexact->exact x))]
@@ -580,9 +598,9 @@
     (for/list ([t  (in-list ts)])
       (format-fraction (pre-tick-value t)))))
 
-(defproc (fraction-ticks [#:base base (and/c exact-integer? (>=/c 2)) (fraction-ticks-base)]
-                         [#:divisors divisors (listof exact-positive-integer?)
-                                     (fraction-ticks-divisors)]) ticks?
+(defproc (fraction-ticks [#:base base (and/c exact-integer? (>=/c 2)) 10]
+                         [#:divisors divisors (listof exact-positive-integer?) '(1 2 3 4 5)]
+                         ) ticks? #:document-body
   (ticks (linear-ticks #:base base #:divisors divisors)
          (fraction-ticks-format)))
 
@@ -590,16 +608,14 @@
 ;; Tick combinators
 
 (defproc (ticks-mimic [thunk (-> ticks?)]) ticks?
-  (ticks (λ (x-min x-max max-ticks)
-           ((ticks-layout (thunk)) x-min x-max max-ticks))
-         (λ (x-min x-max ts)
-           ((ticks-format (thunk)) x-min x-max ts))))
+  (ticks (λ (x-min x-max) ((ticks-layout (thunk)) x-min x-max))
+         (λ (x-min x-max ts) ((ticks-format (thunk)) x-min x-max ts))))
 
 (defproc (ticks-scale [t ticks?] [fun invertible-function?]) ticks?
   (match-define (invertible-function f g) fun)
   (match-define (ticks layout format) t)
-  (ticks (λ (x-min x-max max-ticks)
-           (define ts (layout (f x-min) (f x-max) max-ticks))
+  (ticks (λ (x-min x-max)
+           (define ts (layout (f x-min) (f x-max)))
            (for/list ([t  (in-list ts)])
              (match-define (pre-tick x major?) t)
              (pre-tick (g x) major?)))
@@ -611,13 +627,13 @@
 
 (defproc (ticks-add [t ticks?] [xs (listof real?)] [major? boolean? #t]) ticks?
   (match-define (ticks layout format) t)
-  (ticks (λ (x-min x-max max-ticks)
-           (append (layout x-min x-max max-ticks)
+  (ticks (λ (x-min x-max)
+           (append (layout x-min x-max)
                    (for/list ([x  (in-list xs)])
                      (pre-tick x major?))))
          format))
 
-(defproc (linear-scale [m real?] [b real? 0]) invertible-function?
+(defproc (linear-scale [m real?] [b real? 0]) invertible-function? #:document-body
   (invertible-function (λ (x) (+ (* m x) b))
                        (λ (y) (/ (- y b) m))))
 

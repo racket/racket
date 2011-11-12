@@ -41,30 +41,12 @@
 (defparam plot-y-far-axis? boolean? #t)
 (defparam plot-z-far-axis? boolean? #t)
 
-(defparam plot-x-max-ticks exact-positive-integer? 5)
-(defparam plot-y-max-ticks exact-positive-integer? 5)
-(defparam plot-z-max-ticks exact-positive-integer? 8)
-(defparam plot-d-max-ticks exact-positive-integer? 6)
-(defparam plot-r-max-ticks exact-positive-integer? 8)
-
-(defparam plot-x-far-max-ticks exact-positive-integer? 5)
-(defparam plot-y-far-max-ticks exact-positive-integer? 5)
-(defparam plot-z-far-max-ticks exact-positive-integer? 8)
-
 (defparam plot-decorations? boolean? #t)
 
 (define-parameter-group plot-axes?
   (plot-x-axis? plot-x-far-axis?
    plot-y-axis? plot-y-far-axis?
    plot-z-axis? plot-z-far-axis?)
-  #:struct list)
-
-(define-parameter-group plot-max-ticks
-  (plot-x-max-ticks plot-x-far-max-ticks
-   plot-y-max-ticks plot-y-far-max-ticks
-   plot-z-max-ticks plot-z-far-max-ticks
-   plot-d-max-ticks
-   plot-r-max-ticks)
   #:struct list)
 
 (define-parameter-group plot-appearance
@@ -75,7 +57,7 @@
     plot-line-width plot-tick-size
     plot-font-size plot-font-family
     plot-legend-anchor plot-legend-box-alpha
-    plot-axes? plot-max-ticks plot-decorations?
+    plot-axes? plot-decorations?
     plot-animating?))
 
 (defproc (pen-gap) real? #:document-body
@@ -135,9 +117,9 @@
 
 (defparam plot-x-ticks ticks? (linear-ticks))
 (defparam plot-y-ticks ticks? (linear-ticks))
-(defparam plot-z-ticks ticks? (linear-ticks))
-(defparam plot-d-ticks ticks? (linear-ticks #:divisors '(1 2 4 5)))
-(defparam plot-r-ticks ticks? (linear-ticks))
+(defparam plot-z-ticks ticks? (linear-ticks #:number 8))
+(defparam plot-d-ticks ticks? (linear-ticks #:number 6 #:divisors '(1 2 4 5)))
+(defparam plot-r-ticks ticks? (linear-ticks #:number 8))
 
 (defparam plot-x-far-ticks ticks? (ticks-mimic plot-x-ticks))
 (defparam plot-y-far-ticks ticks? (ticks-mimic plot-y-ticks))
@@ -150,30 +132,6 @@
 
 (define-parameter-group plot-axes (plot-x-axis plot-y-axis plot-z-axis plot-d-ticks plot-r-ticks)
   #:struct list)
-
-(defproc (default-x-ticks [x-min real?] [x-max real?]) (listof tick?) #:document-body
-  ((plot-x-ticks) x-min x-max (plot-x-max-ticks)))
-
-(defproc (default-y-ticks [y-min real?] [y-max real?]) (listof tick?) #:document-body
-  ((plot-y-ticks) y-min y-max (plot-y-max-ticks)))
-
-(defproc (default-z-ticks [z-min real?] [z-max real?]) (listof tick?) #:document-body
-  ((plot-z-ticks) z-min z-max (plot-z-max-ticks)))
-
-(defproc (default-d-ticks [d-min real?] [d-max real?]) (listof tick?) #:document-body
-  ((plot-d-ticks) d-min d-max (plot-d-max-ticks)))
-
-(defproc (default-r-ticks [r-min real?] [r-max real?]) (listof tick?) #:document-body
-  ((plot-r-ticks) r-min r-max (plot-r-max-ticks)))
-
-(defproc (default-x-far-ticks [x-min real?] [x-max real?]) (listof tick?) #:document-body
-  ((plot-x-far-ticks) x-min x-max (plot-x-far-max-ticks)))
-
-(defproc (default-y-far-ticks [y-min real?] [y-max real?]) (listof tick?) #:document-body
-  ((plot-y-far-ticks) y-min y-max (plot-y-far-max-ticks)))
-
-(defproc (default-z-far-ticks [z-min real?] [z-max real?]) (listof tick?) #:document-body
-  ((plot-z-far-ticks) z-min z-max (plot-z-far-max-ticks)))
 
 ;; ===================================================================================================
 

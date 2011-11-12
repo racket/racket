@@ -69,7 +69,7 @@
       (if y-far-ticks? (values empty ts) (values ts empty))))
   (values x-ticks x-far-ticks
           y-ticks y-far-ticks
-          (default-z-ticks z-min z-max) (default-z-far-ticks z-min z-max)))
+          ((plot-z-ticks) z-min z-max) ((plot-z-far-ticks) z-min z-max)))
 
 (define (adjust/gap i gap)
   (match-define (ivl x1 x2) i)

@@ -25,12 +25,12 @@
   (λ (r)
     (match r
       [(vector (ivl xa xb) (ivl ya yb))
-       (values (default-x-ticks xa xb) (default-x-far-ticks xa xb)
-               (default-y-ticks ya yb) (default-y-far-ticks ya yb))]
+       (values ((plot-x-ticks) xa xb) ((plot-x-far-ticks) xa xb)
+               ((plot-y-ticks) ya yb) ((plot-y-far-ticks) ya yb))]
       [(vector (ivl xa xb) (ivl ya yb) (ivl za zb))
-       (values (default-x-ticks xa xb) (default-x-far-ticks xa xb)
-               (default-y-ticks ya yb) (default-y-far-ticks ya yb)
-             (default-z-ticks za zb) (default-z-far-ticks za zb))]
+       (values ((plot-x-ticks) xa xb) ((plot-x-far-ticks) xa xb)
+               ((plot-y-ticks) ya yb) ((plot-y-far-ticks) ya yb)
+               ((plot-z-ticks) za zb) ((plot-z-far-ticks) za zb))]
       [_  (raise-type-error 'default-ticks-fun "2- or 3-vector of ivl" r)])))
 
 (defproc (function-bounds-fun [f sampler/c] [samples exact-nonnegative-integer?]) bounds-fun/c
