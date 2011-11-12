@@ -1,5 +1,8 @@
 #lang racket/base
-(require racket/file planet/util racket/system)
+(require racket/file 
+         racket/system
+         racket/port
+         planet/util)
 
 (define files
   '(("info.rkt"
@@ -34,24 +37,38 @@
 (define raco-bin-path
   (simplify-path (build-path (collection-path "racket") 'up 'up "bin" "raco")))
 
+;; send all of the output of 'raco setup' to stdout
+;; and to 'sp' and then check to see if there is an 
+;; error by grepping for 'error running' in order
+;; to cooperate with drdr more effectively
+(define-values (in out) (make-pipe))
 (define sp (open-output-string))
-(define res
-  (parameterize ([current-output-port sp]
-                 [current-error-port sp])
-    (system* (path->string raco-bin-path)
-             "setup" "-P" "planet" "docs-test.plt" "1" "0")))
+(define thd (thread (λ () (copy-port in (current-output-port) sp))))
 
-(define failed?
-  (or (not res)
-      (regexp-match #rx"error running" (get-output-string sp))))
+(define res
+  (parameterize ([current-output-port out]
+                 [current-error-port out])
+    (system* (path->string raco-bin-path)
+             "setup" "-xind" "-P" "planet" "docs-test.plt" "1" "0")))
 
 (remove-hard-link "planet" "docs-test.plt" 1 0)
 
-;; for drdr: print to stderr when the test fails, stdout otherwise
+;; run raco setup a second time to clear out the
+;; indicies that were added by running docs-test.plt.
+(define res2
+  (parameterize ([current-output-port out]
+                 [current-error-port out])
+    (system* (path->string raco-bin-path)
+             "setup" "-xin")))
+
+;; make sure all of the output has appeared
+(close-output-port out)
+(thread-wait thd)
+
 (cond
-  [failed?
-   (eprintf "FAILED; transcript:\n")
-   (eprintf "~a" (get-output-string sp))]
+  [(or (not res)
+       (not res2)
+       (regexp-match #rx"error running" (get-output-string sp)))
+   (eprintf "FAILED test (res ~s res2 ~s)\n" res res2)]
   [else
-   (printf "PASSED; transcript:\n")
-   (printf "~a\n" (get-output-string sp))])
+   (printf "PASSED\n")])
