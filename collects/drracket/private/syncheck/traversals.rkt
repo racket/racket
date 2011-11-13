@@ -668,9 +668,12 @@
                    (let/ec k
                      (namespace-variable-value (syntax-e var) #t (λ () (k #f)))
                      #t)))])
-        (if top-bound?
-            (color var lexically-bound-variable-style-name 'default-mode)
-            (color var free-variable-style-name 'default-mode))
+        (cond
+          [top-bound?
+           (color var lexically-bound-variable-style-name 'default-mode)]
+          [else
+           (add-mouse-over var (format "~s is a free variable" (syntax-e var)))
+           (color var free-variable-style-name 'default-mode)])
         (connect-identifier var binders #f #f 0 user-namespace user-directory #t)))
     
     ;; color-variable : syntax phase-level identifier-mapping -> void
