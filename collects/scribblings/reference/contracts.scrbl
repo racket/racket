@@ -761,6 +761,17 @@ be blamed using the above contract:
   (apply g (build-list i add1)))
 ]}
 
+@defthing[predicate/c contract?]{
+  Use this contract to indicate that some function 
+  is a predicate. It is semantically equivalent to
+  @racket[(-> any/c boolean?)].
+                             
+  This contract also includes an optimization so that functions returning
+  @racket[#t] from @racket[struct-predicate-procedure?] are just returned directly, without
+  being wrapped. This contract is used by @racket[provide/contract]'s
+  @racket[struct] subform so that struct predicates end up not being wrapped.
+}
+
 @defthing[the-unsupplied-arg unsupplied-arg?]{
   Used by @racket[->i] (and @racket[->d]) to bind 
   optional arguments that are not supplied by a call site.
@@ -780,7 +791,6 @@ The most convenient way to use parametric contract is to use
 @racket[contract-out]'s @racket[#:exists] keyword.
 The @racketmodname[racket/contract/parametric] provides a few more, 
 general-purpose parametric contracts.
-
 
 @defform[(parametric->/c (x ...) c)]{
 

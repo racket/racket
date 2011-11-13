@@ -1157,6 +1157,30 @@
           (regexp-match #rx"expected keyword argument #:the-missing-keyword-arg-b"
                         (exn-message x)))))
   
+  (test/pos-blame
+   'predicate/c1
+   '(contract predicate/c 1 'pos 'neg))
+  (test/pos-blame
+   'predicate/c2
+   '(contract predicate/c (λ (x y) 1) 'pos 'neg))
+  (test/pos-blame
+   'predicate/c3
+   '((contract predicate/c (λ (x) 1) 'pos 'neg) 12))
+  (test/spec-passed
+   'predicate/c4
+   '((contract predicate/c (λ (x) #t) 'pos 'neg) 12))
+  
+  ;; this test ensures that no contract wrappers
+  ;; are created for struct predicates
+  (test/spec-passed/result
+   'predicate/c5
+   '(let ()
+      (struct x (a))
+      (eq? (contract predicate/c x? 'pos 'neg) x?))
+   #t)
+  
+
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; procedure accepts-and-more
@@ -1176,7 +1200,6 @@
   (ctest #t procedure-accepts-and-more? (case-lambda [(x y . z) 1] [(x) 1]) 1)
   (ctest #f procedure-accepts-and-more? (case-lambda [(x y . z) 1] [(x) 1]) 0)
   
-
 ;                         
 ;                         
 ;                         

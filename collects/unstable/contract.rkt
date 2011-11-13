@@ -180,7 +180,6 @@
 (define thunk/c (-> any/c))
 (define unary/c (-> any/c any/c))
 (define binary/c (-> any/c any/c any/c))
-(define predicate/c (-> any/c boolean?))
 (define comparison/c (-> any/c any/c boolean?))
 (define predicate-like/c (-> any/c truth/c))
 (define comparison-like/c (-> any/c any/c truth/c))
@@ -426,7 +425,6 @@
  [thunk/c contract?]
  [unary/c contract?]
  [binary/c contract?]
- [predicate/c contract?]
  [comparison/c contract?]
  [predicate-like/c contract?]
  [comparison-like/c contract?]

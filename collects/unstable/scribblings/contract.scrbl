@@ -154,18 +154,10 @@ respectively, and produce a single result.
 }
 
 @deftogether[(
-@defthing[predicate/c contract?]
 @defthing[predicate-like/c contract?]
 )]{
 
-These contracts recognize predicates: functions of a single argument that
-produce a boolean result.
-
-The first constrains its output to satisfy @racket[boolean?].  Use
-@racket[predicate/c] in positive position for predicates that guarantee a result
-of @racket[#t] or @racket[#f].
-
-The second constrains its output to satisfy @racket[truth/c].  Use
+This contract recognizes unary functions whose results satisfy @racket[truth/c].  Use
 @racket[predicate-like/c] in negative position for predicates passed as
 arguments that may return arbitrary values as truth values.
 

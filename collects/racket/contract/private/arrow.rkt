@@ -35,6 +35,7 @@ v4 todo:
          case->
          unconstrained-domain->
          the-unsupplied-arg
+         (rename-out [-predicate/c predicate/c])
          unsupplied-arg?
          making-a-method
          procedure-accepts-and-more?
@@ -1950,3 +1951,25 @@ v4 todo:
                       'pos
                       'neg)])
      (λ (x) (send o m x)))))
+
+
+(define predicate/c-private->ctc 
+  (let ([predicate/c (-> any/c boolean?)])
+    predicate/c))
+
+(struct predicate/c ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection (let ([pc (contract-struct-projection predicate/c-private->ctc)])
+                  (λ (ctc)
+                    (λ (blame)
+                      (let ([proj (pc blame)])
+                        (λ (val)
+                          (if (struct-predicate-procedure? val)
+                              val
+                              (proj val)))))))
+   #:name (lambda (ctc) 'predicate/c)
+   #:first-order (let ([f (contract-struct-first-order predicate/c-private->ctc)]) (λ (ctc) f))
+   #:stronger (λ (this that) (contract-struct-stronger? predicate/c-private->ctc that))))
+
+(define -predicate/c (predicate/c))

@@ -479,7 +479,7 @@
                                      mutator-ids
                                      field-contract-ids)]
                          [(predicate-code predicate-new-name)
-                          (code-for-one-id/new-name stx predicate-id #f (syntax (-> any/c boolean?)) #f)]
+                          (code-for-one-id/new-name stx predicate-id #f (syntax predicate/c) #f)]
                          [(constructor-code constructor-new-name)
                           (code-for-one-id/new-name
                            stx
