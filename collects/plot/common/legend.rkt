@@ -168,9 +168,9 @@
                         (send pd set-alpha 1)
                         (send pd draw-glyphs (list (rect-center rect)) sym size))))
 
-(defproc (vector-field-legend-entry [label string?] [color plot-color/c]
-                                    [line-width (>=/c 0)] [line-style plot-pen-style/c]
-                                    ) legend-entry?
+(defproc (arrow-legend-entry [label string?] [color plot-color/c]
+                             [line-width (>=/c 0)] [line-style plot-pen-style/c]
+                             ) legend-entry?
   (legend-entry label (λ (pd rect)
                         (match-define (vector (ivl x-min x-max) y-ivl) rect)
                         (send pd set-pen color line-width line-style)

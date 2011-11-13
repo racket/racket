@@ -4,6 +4,7 @@
 
 @title[#:tag "custom"]{Custom Plot Elements}
 
+@defmodule*/no-declare[(plot/utils)]
 @declare-exporting[plot/utils]
 
 @section{Plot Elements}
@@ -64,6 +65,4 @@ Examples: @racket[x-ticks], @racket[y-ticks], @racket[z-ticks], @racket[invisibl
 @doc-apply[interval-legend-entry]
 @doc-apply[interval-legend-entries]
 @doc-apply[point-legend-entry]
-@doc-apply[vector-field-legend-entry]
-
-todo: rename vector-field-legend-entry to arrow-legend-entry?
+@doc-apply[arrow-legend-entry]

@@ -88,7 +88,7 @@
                     [mag   (in-list new-mags)])
                 (send area put-arrow v (v+ v (v* norm mag))))
               
-              (cond [label  (vector-field-legend-entry label color line-width line-style)]
+              (cond [label  (arrow-legend-entry label color line-width line-style)]
                     [else   empty])]))
 
 (defproc (vector-field3d

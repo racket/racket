@@ -58,6 +58,25 @@
   (define i (inexact->exact (floor f)))
   (min (max i 0) 255))
 
+;; Returns an immutable instance of color%. Immutable colors are faster because they don't have to
+;; have immutable copies made when they're used in a dc.
+(define (make-color% r g b)
+  (define color (make-object color% r g b))
+  (send color set-immutable)
+  color)
+
+;; Returns an immutable instance of pen%. Same reasoning as for make-color%.
+(define (make-pen% r g b w s)
+  (define pen (make-object pen% (make-color% r g b) w s))
+  (send pen set-immutable)
+  pen)
+
+;; Returns an immutable instance of brush%. Same reasoning as for make-color%.
+(define (make-brush% r g b s)
+  (define brush (make-object brush% (make-color% r g b) s))
+  (send brush set-immutable)
+  brush)
+
 (define (color%? c) (is-a? c color%))
 
 (defproc (->color [c color/c]) (list/c real? real? real?)
@@ -72,7 +91,7 @@
 
 (define (color->color% c)
   (match-define (list r g b) c)
-  (make-object color% (real->color-byte r) (real->color-byte g) (real->color-byte b)))
+  (make-color% (real->color-byte r) (real->color-byte g) (real->color-byte b)))
 
 (define (rgb->hsv rgb)
   (match-define (list r g b) (map (λ (x) (/ x 255)) rgb))

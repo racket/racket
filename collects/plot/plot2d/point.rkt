@@ -82,7 +82,7 @@
                       (vector x y)
                       (vector (+ x (* mag (cos angle))) (+ y (* mag (sin angle))))))
               
-              (cond [label  (vector-field-legend-entry label color line-width line-style)]
+              (cond [label  (arrow-legend-entry label color line-width line-style)]
                     [else   empty])]))
 
 (defproc (vector-field

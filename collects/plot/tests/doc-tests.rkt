@@ -4,7 +4,8 @@
          scribble/manual
          scribble/render
          scribble/text-render
-         scribble/decode)
+         scribble/decode
+         (for-syntax racket/base racket/syntax))
 
 (define (render-doc doc-part)
   (define path (make-temporary-file "racket-doc-~a.txt" #f (current-directory)))
@@ -21,11 +22,17 @@
   (for ([line  (in-list (render-doc doc-part))])
     (displayln line)))
 
-(display-doc (plot/dc:doc))
+(define-syntax (doc stx)
+  (syntax-case stx ()
+    [(_ name)  (with-syntax ([name:doc  (format-id #'name "~a:doc" #'name)])
+                 (syntax/loc stx
+                   (display-doc (name:doc))))]))
+
+(doc plot/dc)
 (newline)
-(display-doc (treeof:doc))
+(doc treeof)
 (newline)
-(display-doc (plot-background:doc))
+(doc plot-background)
 (newline)
-(display-doc (known-point-symbols:doc))
+(doc known-point-symbols)
 (newline)

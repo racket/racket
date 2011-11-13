@@ -113,13 +113,13 @@ We might say that bounds passed to renderers are @italic{suggestions}, and bound
 
 Here is an example of commanding @(racket plot3d) to override a renderer's bounds. First, consider the plot of a sphere with radius @(racket 1):
 
-@interaction[#:eval plot-eval (plot3d (polar3d (λ (θ ρ) 1) #:line-color "white" #:line-width 1)
+@interaction[#:eval plot-eval (plot3d (polar3d (λ (θ ρ) 1) #:color 2 #:line-style 'transparent)
                                       #:altitude 25)]
 
 Passing bounds to @(racket plot3d) that are smaller than [-1..1] × [-1..1] × [-1..1] cuts off the six axial poles:
 
 @interaction[#:eval plot-eval
-                    (plot3d (polar3d (λ (θ ρ) 1) #:line-color "white" #:line-width 1)
+                    (plot3d (polar3d (λ (θ ρ) 1) #:color 2 #:line-style 'transparent)
                             #:x-min -0.8 #:x-max 0.8
                             #:y-min -0.8 #:y-max 0.8
                             #:z-min -0.8 #:z-max 0.8

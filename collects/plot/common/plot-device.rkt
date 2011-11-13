@@ -135,24 +135,20 @@
     ;; Pen, brush, alpha parameters
     
     (define pen-hash (make-hash))
+    (define transparent-pen (make-pen% 0 0 0 1 'transparent))
     
-    (define pen-color (plot-foreground))
-    (define pen-width (plot-line-width))
     (define pen-style 'solid)
     
     ;; Sets the pen, using a hash table to avoid making duplicate objects. At time of writing (and for
     ;; the forseeable future) this is much faster than using a pen-list%, because it doesn't have to
-    ;; synchronize access to be thread-safe.
+    ;; synchronize access. It's also not thread-safe.
     (define/public (set-pen color width style)
       (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
         (->pen-color color))
-      (set! pen-color color)
-      (set! pen-width width)
       (set! pen-style (->pen-style style))
       (let ([style  (if (eq? style 'transparent) 'transparent 'solid)])
-        (send dc set-pen
-              (hash-ref! pen-hash (vector r g b width style)
-                         (λ () (make-object pen% (make-object color% r g b) width style))))))
+        (send dc set-pen (hash-ref! pen-hash (vector r g b width style)
+                                    (λ () (make-pen% r g b width style))))))
     
     ;; Sets the pen used to draw major ticks.
     (define/public (set-major-pen [style 'solid])
@@ -164,19 +160,13 @@
     
     (define brush-hash (make-hash))
     
-    (define brush-color (plot-background))
-    (define brush-style 'solid)
-    
     ;; Sets the brush. Same idea as set-pen.
     (define/public (set-brush color style)
       (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
         (->brush-color color))
       (let ([style  (->brush-style style)])
-        (set! brush-color color)
-        (set! brush-style style)
-        (send dc set-brush
-              (hash-ref! brush-hash (vector r g b style)
-                         (λ () (make-object brush% (make-object color% r g b) style))))))
+        (send dc set-brush (hash-ref! brush-hash (vector r g b style)
+                                      (λ () (make-brush% r g b style))))))
     
     (define alpha (plot-foreground-alpha))
     
@@ -275,13 +265,13 @@
                  (send dc draw-polygon vs 0 0 'winding)
                  (send dc set-smoothing 'smoothed)]
                 [else
-                 (define old-pen-style pen-style)
-                 (set-pen pen-color pen-width 'transparent)
+                 (define old-pen (send dc get-pen))
+                 (send dc set-pen transparent-pen)
                  (send dc set-smoothing 'unsmoothed)
                  (send dc draw-polygon vs 0 0 'winding)
                  (send dc set-smoothing 'smoothed)
-                 (set-pen pen-color pen-width old-pen-style)
-                 (draw-lines/pen-style dc (cons (last vs) vs) old-pen-style)]))))
+                 (send dc set-pen old-pen)
+                 (draw-lines/pen-style dc (cons (last vs) vs) pen-style)]))))
     
     (define/public (draw-rect r)
       (when (rect-regular? r)

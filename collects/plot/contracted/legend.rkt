@@ -13,4 +13,4 @@
           rectangle-legend-entry rectangle-legend-entries
           interval-legend-entry interval-legend-entries
           point-legend-entry
-          vector-field-legend-entry))
+          arrow-legend-entry))
