@@ -436,7 +436,8 @@
                         ;; 'read-write => "READ WRITE"
                         (if isolation-level
                             (string-append "BEGIN WORK ISOLATION LEVEL " isolation-level)
-                            "BEGIN WORK"))))
+                            "BEGIN WORK")))
+      (void))
 
     (define/public (end-transaction fsym mode)
       (internal-query fsym

@@ -252,6 +252,37 @@
                    sql-null 18 19 20 sql-null sql-null sql-null sql-null sql-null
                    sql-null 27 28 29 30 sql-null 32 33 sql-null 35)))))))
 
+(define tx-tests
+  (test-suite "transaction functions"
+    (test-case "start, commit"
+      (with-connection c
+        (check-pred void? (start-transaction c))
+        (check-equal? (in-transaction? c) #t)
+        (check-pred void? (commit-transaction c))
+        (check-equal? (in-transaction? c) #f)))
+    (test-case "start, rollback"
+      (with-connection c
+        (check-pred void? (start-transaction c))
+        (check-equal? (in-transaction? c) #t)
+        (check-pred void? (rollback-transaction c))
+        (check-equal? (in-transaction? c) #f)))
+    (test-case "error on repeated start"
+      (with-connection c
+        (start-transaction c)
+        (check-exn #rx"already in transaction"
+                   (lambda () (start-transaction c)))))
+    (test-case "call-with-tx"
+      (with-connection c
+        (check-equal? (call-with-transaction c
+                        (lambda ()
+                          (check-equal? (in-transaction? c) #t)
+                          'ok))
+                      'ok)
+        (check-equal? (call-with-values
+                          (lambda () (call-with-transaction c (lambda () (values 1 2 3))))
+                        list)
+                      (list 1 2 3))))))
+
 (define error-tests
   (test-suite "errors"
     (test-case "query - not a statement"
@@ -342,6 +373,7 @@
     (simple-tests 'bind)
     (simple-tests 'gen)
     low-level-tests
+    tx-tests
     misc-tests
     virtual-statement-tests
     pool-tests

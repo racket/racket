@@ -146,7 +146,7 @@
  [call-with-transaction
   (->* (connection? (-> any))
        (#:isolation (or/c 'serializable 'repeatable-read 'read-committed 'read-uncommitted #f))
-       void?)]
+       any)]
 
  [prop:statement
   (struct-type-property/c
