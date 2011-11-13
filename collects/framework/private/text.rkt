@@ -3393,11 +3393,46 @@ designates the character that triggers autocompletion
     
     (init-field word all-words)
     
-    (define/private (starts-with prefix)
-      (let ([re (regexp (string-append "^" (regexp-quote prefix)))])
-        (λ (w) (regexp-match re w))))
+    ;; string -> (values (string -> real) natural)
+    ;; produce a ranking function and a max normal score
+    ;; the ranking function is as follows:
+    ;; w |-> +inf.0 if `prefix' is a prefix of w
+    ;; w |-> 1000 if `prefix' appears in w
+    ;; w |-> n if n parts of `prefix' appear in w
+    ;; the max normal score is the largest n that the last clause can produce
+    (define/private (rank prefix)      
+      (define parts (regexp-split "[-/:_!]" prefix))
+      (define re (regexp (string-append "^" (regexp-quote prefix))))
+      (values (λ (w) (cond [(regexp-match re w) +inf.0]
+                           [(regexp-match (regexp-quote prefix) w) 1000]
+                           [else
+                            (for/fold ([c 0]) 
+                              ([r parts]
+                               #:when (regexp-match (regexp-quote r) w))
+                              (add1 c))]))
+              (length parts)))
     
-    (define all-completions (filter (starts-with word) all-words))
+    ;; all the possible completions for `word', in ranked order
+    (define all-completions 
+      (let ()
+        (define-values (rnk max-count) (rank word))
+        ;; this determines the fuzziness
+        ;; if we set mx to +inf.0, we get just the prefix matches
+        ;; if we set mx to 1000, we get just the matches somewhere in the word
+        ;; this definition is fuzzier the more parts there are in the word
+        (define mx (cond
+                     [(<= max-count 2) max-count]
+                     [(<= max-count 4) (- max-count 1)]
+                     [else (- max-count 2)]))
+        (map car (sort
+                  ;; we don't use `rnk' as the key to avoid
+                  ;; constructing a huge list
+                  (for*/list ([w (in-list all-words)]
+                              [r (in-value (rnk w))]
+                              #:when (>= r mx))
+                    (list w r))
+                  >
+                  #:key cadr))))
     (define all-completions-length (length all-completions))
     
     (define/public (narrow c)
