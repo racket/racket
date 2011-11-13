@@ -109,5 +109,5 @@
                       [else
                        "prepared statement finalizer thread handled non-exception"])
                 e))])
-         (will-execute will-executor)
-         (loop))))))
+         (will-execute will-executor))
+       (loop)))))
