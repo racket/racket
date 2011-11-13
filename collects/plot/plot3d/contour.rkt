@@ -13,28 +13,19 @@
 (define ((isoline3d-render-proc f z samples color width style alpha label) area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
-  (match-define (2d-sample xs ys zss fz-min fz-max)
-    (f x-min x-max (animated-samples samples) y-min y-max (animated-samples samples)))
+  (define sample (f x-min x-max (animated-samples samples)
+                    y-min y-max (animated-samples samples)))
   
   (when (<= z-min z z-max)
     (send area put-alpha alpha)
     (send area put-pen color width style)
-    (for ([ya  (in-list ys)]
-          [yb  (in-list (rest ys))]
-          [zs0  (in-vector zss)]
-          [zs1  (in-vector zss 1)]
-          #:when #t
-          [xa  (in-list xs)]
-          [xb  (in-list (rest xs))]
-          [z1  (in-vector zs0)]
-          [z2  (in-vector zs0 1)]
-          [z3  (in-vector zs1 1)]
-          [z4  (in-vector zs1)])
-      (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-        (match-define (list v1 v2) line)
-        (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
-                               (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-        (send area put-line v1 v2 center))))
+    (for-2d-sample
+     (xa xb ya yb z1 z2 z3 z4) sample
+     (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+       (match-define (list v1 v2) line)
+       (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
+                              (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+       (send area put-line v1 v2 center))))
   
   (cond [label  (line-legend-entry label color width style)]
         [else   empty]))
@@ -67,9 +58,8 @@
 (define ((contours3d-render-proc f levels samples colors widths styles alphas label) area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
-  (match-define (2d-sample xs ys zss fz-min fz-max)
-    (f x-min x-max (animated-samples samples) y-min y-max (animated-samples samples)))
-  
+  (define sample (f x-min x-max (animated-samples samples)
+                    y-min y-max (animated-samples samples)))
   (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
   
   (let ([colors  (maybe-apply colors zs)]
@@ -83,22 +73,13 @@
           [alpha  (in-cycle alphas)])
       (send area put-alpha alpha)
       (send area put-pen color width style)
-      (for ([ya  (in-list ys)]
-            [yb  (in-list (rest ys))]
-            [zs0  (in-vector zss)]
-            [zs1  (in-vector zss 1)]
-            #:when #t
-            [xa  (in-list xs)]
-            [xb  (in-list (rest xs))]
-            [z1  (in-vector zs0)]
-            [z2  (in-vector zs0 1)]
-            [z3  (in-vector zs1 1)]
-            [z4  (in-vector zs1)])
-        (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-          (match-define (list v1 v2) line)
-          (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
-                                 (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-          (send area put-line v1 v2 center))))
+      (for-2d-sample
+       (xa xb ya yb z1 z2 z3 z4) sample
+       (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+         (match-define (list v1 v2) line)
+         (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
+                                (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+         (send area put-line v1 v2 center))))
     
     (cond [label  (line-legend-entries label zs labels colors widths styles)]
           [else   empty])))
@@ -134,8 +115,8 @@
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
-  (match-define (2d-sample xs ys zss fz-min fz-max)
-    (f x-min x-max (animated-samples samples) y-min y-max (animated-samples samples)))
+  (define sample (f x-min x-max (animated-samples samples) y-min y-max (animated-samples samples)))
+  (match-define (2d-sample xs ys zss fz-min fz-max) sample)
   
   (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
   
@@ -163,22 +144,13 @@
       (send area put-alpha alpha)
       (send area put-pen line-color line-width line-style)
       (send area put-brush color style)
-      (for ([ya  (in-list ys)]
-            [yb  (in-list (rest ys))]
-            [zs0  (in-vector zss)]
-            [zs1  (in-vector zss 1)]
-            #:when #t
-            [xa  (in-list xs)]
-            [xb  (in-list (rest xs))]
-            [z1  (in-vector zs0)]
-            [z2  (in-vector zs0 1)]
-            [z3  (in-vector zs1 1)]
-            [z4  (in-vector zs1)])
-        (for ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
-          (define center (vector (* 1/2 (+ xa xb))
-                                 (* 1/2 (+ ya yb))
-                                 (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-          (send area put-polygon poly center))))
+      (for-2d-sample
+       (xa xb ya yb z1 z2 z3 z4) sample
+       (for ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
+         (define center (vector (* 1/2 (+ xa xb))
+                                (* 1/2 (+ ya yb))
+                                (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+         (send area put-polygon poly center))))
     
     ((contours3d-render-proc f levels samples contour-colors contour-widths contour-styles alphas #f)
      area)

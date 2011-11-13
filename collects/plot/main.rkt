@@ -23,7 +23,7 @@
          datetime->real)
 
 (require "common/non-renderer.rkt")
-(provide (activate-contract-out x-ticks y-ticks z-ticks invisible-box invisible-box3d))
+(provide (activate-contract-out x-ticks y-ticks z-ticks invisible-rect invisible-rect3d))
 
 ;; ===================================================================================================
 ;; 2D exports

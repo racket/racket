@@ -14,41 +14,20 @@
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
-  (match-define (3d-sample xs ys zs dsss d-min d-max)
-    (f x-min x-max (animated-samples samples)
-       y-min y-max (animated-samples samples)
-       z-min z-max (animated-samples samples)))
+  (define sample (f x-min x-max (animated-samples samples)
+                    y-min y-max (animated-samples samples)
+                    z-min z-max (animated-samples samples)))
+  (match-define (3d-sample xs ys zs dsss d-min d-max) sample)
   
   (send area put-alpha alpha)
   (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
-  (for ([za  (in-list zs)]
-        [zb  (in-list (rest zs))]
-        [dss0  (in-vector dsss)]
-        [dss1  (in-vector dsss 1)]
-        #:when #t
-        [ya  (in-list ys)]
-        [yb  (in-list (rest ys))]
-        [ds00  (in-vector dss0)]
-        [ds01  (in-vector dss0 1)]
-        [ds10  (in-vector dss1)]
-        [ds11  (in-vector dss1 1)]
-        #:when #t
-        [xa  (in-list xs)]
-        [xb  (in-list (rest xs))]
-        [d1  (in-vector ds00)]
-        [d2  (in-vector ds00 1)]
-        [d3  (in-vector ds01 1)]
-        [d4  (in-vector ds01)]
-        [d5  (in-vector ds10)]
-        [d6  (in-vector ds10 1)]
-        [d7  (in-vector ds11 1)]
-        [d8  (in-vector ds11)])
-    (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
-    
-    (when (not (empty? polys))
-      (send area put-polygons polys
-            (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb))))))
+  (for-3d-sample
+   (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
+   (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
+   (when (not (empty? polys))
+     (send area put-polygons polys
+           (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb))))))
   
   (cond [label  (rectangle-legend-entry
                  label color style line-color line-width line-style)]
@@ -83,10 +62,10 @@
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
-  (match-define (3d-sample xs ys zs dsss fd-min fd-max)
-    (f x-min x-max (animated-samples samples)
-       y-min y-max (animated-samples samples)
-       z-min z-max (animated-samples samples)))
+  (define sample (f x-min x-max (animated-samples samples)
+                    y-min y-max (animated-samples samples)
+                    z-min z-max (animated-samples samples)))
+  (match-define (3d-sample xs ys zs dsss fd-min fd-max) sample)
   
   (define d-min (if rd-min rd-min fd-min))
   (define d-max (if rd-max rd-max fd-max))
@@ -113,32 +92,12 @@
          (send area put-alpha alpha)
          (send area put-brush color style)
          (send area put-pen line-color line-width line-style)
-         (for ([za  (in-list zs)]
-               [zb  (in-list (rest zs))]
-               [dss0  (in-vector dsss)]
-               [dss1  (in-vector dsss 1)]
-               #:when #t
-               [ya  (in-list ys)]
-               [yb  (in-list (rest ys))]
-               [ds00  (in-vector dss0)]
-               [ds01  (in-vector dss0 1)]
-               [ds10  (in-vector dss1)]
-               [ds11  (in-vector dss1 1)]
-               #:when #t
-               [xa  (in-list xs)]
-               [xb  (in-list (rest xs))]
-               [d1  (in-vector ds00)]
-               [d2  (in-vector ds00 1)]
-               [d3  (in-vector ds01 1)]
-               [d4  (in-vector ds01)]
-               [d5  (in-vector ds10)]
-               [d6  (in-vector ds10 1)]
-               [d7  (in-vector ds11 1)]
-               [d8  (in-vector ds11)])
-           (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
-           (when (not (empty? polys))
-             (send area put-polygons polys
-                   (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))
+         (for-3d-sample
+          (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
+          (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
+          (when (not (empty? polys))
+            (send area put-polygons polys
+                  (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))
        
        (cond
          [label  (rectangle-legend-entries
@@ -173,56 +132,37 @@
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
-  (match-define (3d-sample xs ys zs dsss d-min d-max)
-    (g x-min x-max (animated-samples samples)
-       y-min y-max (animated-samples samples)
-       z-min z-max (animated-samples samples)))
+  (define sample (g x-min x-max (animated-samples samples)
+                    y-min y-max (animated-samples samples)
+                    z-min z-max (animated-samples samples)))
+  (match-define (3d-sample xs ys zs dsss d-min d-max) sample)
+  
+  (define (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8)
+    (define polys (heights->cube-polys xa xb ya yb za zb 0.0 d1 d2 d3 d4 d5 d6 d7 d8))
+    (when (not (empty? polys))
+      (send area put-polygons polys
+            (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb))))))
   
   (send area put-alpha alpha)
   (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
-  (for ([za  (in-list zs)]
-        [zb  (in-list (rest zs))]
-        [dss0  (in-vector dsss)]
-        [dss1  (in-vector dsss 1)]
-        #:when #t
-        [ya  (in-list ys)]
-        [yb  (in-list (rest ys))]
-        [ds00  (in-vector dss0)]
-        [ds01  (in-vector dss0 1)]
-        [ds10  (in-vector dss1)]
-        [ds11  (in-vector dss1 1)]
-        #:when #t
-        [xa  (in-list xs)]
-        [xb  (in-list (rest xs))]
-        [d1  (in-vector ds00)]
-        [d2  (in-vector ds00 1)]
-        [d3  (in-vector ds01 1)]
-        [d4  (in-vector ds01)]
-        [d5  (in-vector ds10)]
-        [d6  (in-vector ds10 1)]
-        [d7  (in-vector ds11 1)]
-        [d8  (in-vector ds11)])
-    (define (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8)
-      (define polys (heights->cube-polys xa xb ya yb za zb 0.0 d1 d2 d3 d4 d5 d6 d7 d8))
-      (when (not (empty? polys))
-        (send area put-polygons polys
-              (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb))))))
-    (cond [(and (xb . > . 0) (ya . < . 0) (yb . > . 0))
-           (let* ([yb  -0.00001]
-                  [d3  (f xb yb za)]
-                  [d4  (f xa yb za)]
-                  [d7  (f xb yb zb)]
-                  [d8  (f xa yb zb)])
-             (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8))
-           (let* ([ya  0.00001]
-                  [d1  (f xa ya za)]
-                  [d2  (f xb ya za)]
-                  [d5  (f xa ya zb)]
-                  [d6  (f xb ya zb)])
-             (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8))]
-          [else
-           (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8)]))
+  (for-3d-sample
+   (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
+   (cond [(and (xb . > . 0) (ya . < . 0) (yb . > . 0))
+          (let* ([yb  -0.00001]
+                 [d3  (f xb yb za)]
+                 [d4  (f xa yb za)]
+                 [d7  (f xb yb zb)]
+                 [d8  (f xa yb zb)])
+            (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8))
+          (let* ([ya  0.00001]
+                 [d1  (f xa ya za)]
+                 [d2  (f xb ya za)]
+                 [d5  (f xa ya zb)]
+                 [d6  (f xb ya zb)])
+            (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8))]
+         [else
+          (draw-cube xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8)]))
   
   (cond [label  (rectangle-legend-entry
                  label color style line-color line-width line-style)]

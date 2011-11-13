@@ -14,25 +14,17 @@
 
 (define ((isoline-render-proc g z samples color width style alpha label) area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
-  (match-define (2d-sample xs ys zss z-min z-max)
-    (g x-min x-max samples y-min y-max samples))
+  (define sample (g x-min x-max (animated-samples samples)
+                    y-min y-max (animated-samples samples)))
+  (match-define (2d-sample xs ys zss z-min z-max) sample)
   
   (when (<= z-min z z-max)
     (send area put-alpha alpha)
     (send area put-pen color width style)
-    (for ([ya  (in-list ys)]
-          [yb  (in-list (rest ys))]
-          [zs0  (in-vector zss)]
-          [zs1  (in-vector zss 1)]
-          #:when #t
-          [xa  (in-list xs)]
-          [xb  (in-list (rest xs))]
-          [z1  (in-vector zs0)]
-          [z2  (in-vector zs0 1)]
-          [z3  (in-vector zs1 1)]
-          [z4  (in-vector zs1)])
-      (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-        (send/apply area put-line (map (λ (v) (vector-take v 2)) line)))))
+    (for-2d-sample
+     (xa xb ya yb z1 z2 z3 z4) sample
+     (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+       (send/apply area put-line (map (λ (v) (vector-take v 2)) line)))))
   
   (cond [label  (line-legend-entry label color width style)]
         [else   empty]))
@@ -60,9 +52,9 @@
 (define ((contours-render-proc g levels samples colors widths styles alphas label) area)
   (let/ec return
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
-    (match-define (2d-sample xs ys zss z-min z-max)
-      (g x-min x-max samples y-min y-max samples))
-    
+    (define sample (g x-min x-max (animated-samples samples)
+                      y-min y-max (animated-samples samples)))
+    (match-define (2d-sample xs ys zss z-min z-max) sample)
     (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
     
     (let ([colors  (maybe-apply colors zs)]
@@ -76,20 +68,11 @@
             [alpha  (in-cycle alphas)])
         (send area put-alpha alpha)
         (send area put-pen color width style)
-        (for ([ya  (in-list ys)]
-              [yb  (in-list (rest ys))]
-              [zs0  (in-vector zss)]
-              [zs1  (in-vector zss 1)]
-              #:when #t
-              [xa  (in-list xs)]
-              [xb  (in-list (rest xs))]
-              [z1  (in-vector zs0)]
-              [z2  (in-vector zs0 1)]
-              [z3  (in-vector zs1 1)]
-              [z4  (in-vector zs1)])
-          (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-            (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
-            (send area put-line v1 v2))))
+        (for-2d-sample
+         (xa xb ya yb z1 z2 z3 z4) sample
+         (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+           (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
+           (send area put-line v1 v2))))
       
       (cond [label  (line-legend-entries label zs labels colors widths styles)]
             [else   empty]))))
@@ -120,9 +103,9 @@
          area)
   (let/ec return
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
-    (match-define (2d-sample xs ys zss z-min z-max)
-      (g x-min x-max samples y-min y-max samples))
-    
+    (define sample (g x-min x-max (animated-samples samples)
+                      y-min y-max (animated-samples samples)))
+    (match-define (2d-sample xs ys zss z-min z-max) sample)
     (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
     
     (define-values (z-ivls ivl-labels)
@@ -132,6 +115,7 @@
                                       [lb  (in-list (rest labels))])
         (values (ivl za zb) (format "[~a,~a]" la lb))))
     
+    (send area put-pen 0 1 'transparent)
     (let ([colors  (map ->brush-color (maybe-apply colors z-ivls))]
           [styles  (map ->brush-style (maybe-apply styles z-ivls))]
           [alphas  (maybe-apply alphas z-ivls)])
@@ -140,27 +124,12 @@
             [color  (in-cycle colors)]
             [style  (in-cycle styles)]
             [alpha  (in-cycle alphas)])
-        (define polys
-          (append*
-           (for/list ([ya  (in-list ys)]
-                      [yb  (in-list (rest ys))]
-                      [zs0  (in-vector zss)]
-                      [zs1  (in-vector zss 1)]
-                      #:when #t
-                      [xa  (in-list xs)]
-                      [xb  (in-list (rest xs))]
-                      [z1  (in-vector zs0)]
-                      [z2  (in-vector zs0 1)]
-                      [z3  (in-vector zs1 1)]
-                      [z4  (in-vector zs1)])
-             (for/list ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
-               (map (λ (v) (vector-take v 2)) poly)))))
-        
-        (send area put-pen color 1 'transparent)
         (send area put-brush color style)
         (send area put-alpha alpha)
-        (for ([poly  (in-list polys)])
-            (send area put-polygon poly)))
+        (for-2d-sample
+         (xa xb ya yb z1 z2 z3 z4) sample
+         (for/list ([poly  (in-list (heights->polys xa xb ya yb za zb z1 z2 z3 z4))])
+           (send area put-polygon (map (λ (v) (vector-take v 2)) poly)))))
       
       ((contours-render-proc g levels samples contour-colors contour-widths contour-styles alphas #f)
        area)

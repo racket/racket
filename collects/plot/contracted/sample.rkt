@@ -26,4 +26,5 @@
                                 make-3d-function->sampler)
          (contract-out (struct mapped-function ([f (any/c . -> . any/c)]
                                                 [fmap ((listof any/c) . -> . (listof any/c))])))
-         map*)
+         map*
+         for-2d-sample for-3d-sample)

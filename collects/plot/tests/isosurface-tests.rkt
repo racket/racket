@@ -1,6 +1,6 @@
 #lang racket
 
-(require plot plot/utils racket/flonum)
+(require plot plot/utils #;racket/flonum)
 
 (time
  (plot3d (isosurface3d (λ (x y z) (sqrt (+ (sqr x) (sqr y) (sqr z)))) 1
@@ -48,7 +48,10 @@
 (time
  (define (f1 θ ρ) (+ 1 (/ θ 2pi) (* 1/8 (sin (* 8 ρ)))))
  (define (f2 θ ρ) (+ (/ θ 2pi) (* 1/8 (sin (* 8 ρ)))))
- 
  (plot3d (list (polar3d f1 #:samples 41 #:color "navajowhite" #:line-style 'transparent #:alpha 2/3)
-               (polar3d f2 #:samples 41 #:color "navajowhite" #:line-style 'transparent #:alpha 2/3))
-         #:title "A Seashell" #:x-label #f #:y-label #f))
+               (polar3d f2 #:samples 41 #:color "navajowhite" #:line-style 'transparent #:alpha 2/3)
+               (parametric3d (λ (ρ) (3d-polar->3d-cartesian 0 ρ (f1 2pi ρ)))
+                             (* -1/2 pi) (* 1/2 pi)
+                             #:color "navajowhite" #:width 2)
+               (lines3d '(#(0 0 2) #(0 0 -2)) #:color "navajowhite" #:width 2))
+         #:title "A Seashell" #:x-label #f #:y-label #f #:angle 210 #:altitude 30))

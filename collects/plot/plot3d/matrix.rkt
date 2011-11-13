@@ -2,7 +2,7 @@
 
 ;; A small rotation matrix library, used to transform plot coordinates into view coordinates.
 
-(require racket/match
+(require racket/match racket/flonum
          "../common/math.rkt")
 
 (provide m3-apply m3-transpose m3* m3-rotate-z m3-rotate-x m3-scale)

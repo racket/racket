@@ -129,7 +129,9 @@
     ;; coordinates.
     
     (define scale-matrix (m3-scale (/ x-size) (/ y-size) (/ z-size)))
-    (define rotation-matrix (m3* (m3-rotate-x rho) (m3-rotate-z theta)))
+    (define rotate-theta-matrix (m3-rotate-z theta))
+    (define rotate-rho-matrix (m3-rotate-x rho))
+    (define rotation-matrix (m3* rotate-rho-matrix rotate-theta-matrix))
     (define transform-matrix (m3* rotation-matrix scale-matrix))
     
     (define (plot->norm v) (m3-apply scale-matrix (center (axis-transform v))))
@@ -138,11 +140,11 @@
     
     (define transform-matrix/no-rho (m3* (m3-rotate-z theta) scale-matrix))
     (define (plot->view/no-rho v) (m3-apply transform-matrix/no-rho (center (axis-transform v))))
+    (define (rotate/rho v) (m3-apply rotate-rho-matrix v))
     
     (define view->dc #f)
     (define (plot->dc/no-axis-trans v) (view->dc (m3-apply transform-matrix (center v))))
-    (define (plot->dc* v) (view->dc (plot->view v)))
-    (define (plot->dc v) (plot->dc* v))
+    (define (plot->dc v) (view->dc (plot->view v)))
     
     (define-values (view-x-size view-y-size view-z-size)
       (match-let ([(vector view-x-ivl view-y-ivl view-z-ivl)
@@ -208,7 +210,7 @@
     
     (define near-dist^2 (sqr (* 3 (plot-line-width))))
     (define (vnear? v1 v2)
-      ((vmag^2 (v- (plot->dc* v1) (plot->dc* v2))) . <= . near-dist^2))
+      ((vmag^2 (v- (plot->dc v1) (plot->dc v2))) . <= . near-dist^2))
     
     (define ((x-ticks-near? y) t1 t2)
       (vnear? (vector (pre-tick-value t1) y z-min)
@@ -257,13 +259,13 @@
     (define (y-tick-value->view y) (plot->view (vector y-axis-x y z-min)))
     (define (x-tick-value->dc x) (view->dc (x-tick-value->view x)))
     (define (y-tick-value->dc y) (view->dc (y-tick-value->view y)))
-    (define (z-tick-value->dc z) (plot->dc* (vector z-axis-x z-axis-y z)))
+    (define (z-tick-value->dc z) (plot->dc (vector z-axis-x z-axis-y z)))
     
     (define (x-far-tick-value->view x) (plot->view (vector x x-far-axis-y z-min)))
     (define (y-far-tick-value->view y) (plot->view (vector y-far-axis-x y z-min)))
     (define (x-far-tick-value->dc x) (view->dc (x-far-tick-value->view x)))
     (define (y-far-tick-value->dc y) (view->dc (y-far-tick-value->view y)))
-    (define (z-far-tick-value->dc z) (plot->dc* (vector z-far-axis-x z-far-axis-y z)))
+    (define (z-far-tick-value->dc z) (plot->dc (vector z-far-axis-x z-far-axis-y z)))
     
     (define (get-tick-params ticks tick-value->dc angle)
       (for/list ([t  (in-list ticks)])
@@ -442,7 +444,7 @@
             'top (- (if y-axis-x-min? pi 0) (y-axis-angle))))
     
     (define (get-z-label-params)
-      (list (plot-z-label) (v+ (plot->dc* (vector z-axis-x z-axis-y z-max))
+      (list (plot-z-label) (v+ (plot->dc (vector z-axis-x z-axis-y z-max))
                                (vector 0 (- half-char-height)))
             'bottom-left 0))
     
@@ -459,7 +461,7 @@
             'bottom (- (if y-axis-x-min? pi 0) (y-axis-angle))))
     
     (define (get-z-far-label-params)
-      (list (plot-z-far-label) (v+ (plot->dc* (vector z-far-axis-x z-far-axis-y z-max))
+      (list (plot-z-far-label) (v+ (plot->dc (vector z-far-axis-x z-far-axis-y z-max))
                                    (vector 0 (- half-char-height)))
             'bottom-right 0))
     
@@ -587,53 +589,55 @@
     (define (add-shape! shape) (set! render-list (cons shape render-list)))
     (define (add-shapes! shapes) (set! render-list (append shapes render-list)))
     
-    (define (draw-shapes lst)
-      (for ([s  (in-list (depth-sort (reverse lst) plot->view/no-rho))])
-        (draw-shape s)))
+    (define (draw-shapes ss)
+      (define s+cs (map (λ (s) (cons s (plot->view/no-rho (shape-center s)))) ss))
+      (for ([s+c  (in-list (depth-sort (reverse s+cs)))])
+        (match-define (cons s c) s+c)
+        (draw-shape s (rotate/rho c))))
     
     (define (draw-polygon alpha center vs norm pen-color pen-width pen-style brush-color brush-style)
-      (define-values (diff spec) (get-light-values (plot->view center) (norm->view norm)))
+      (define-values (diff spec) (get-light-values center (norm->view norm)))
       (let ([pen-color  (map (λ (v) (+ (* v diff) spec)) pen-color)]
             [brush-color  (map (λ (v) (+ (* v diff) spec)) brush-color)])
         (send pd set-pen pen-color pen-width pen-style)
         (send pd set-brush brush-color brush-style)
         (send pd draw-polygon (map (λ (v) (plot->dc v)) vs))))
     
-    (define (draw-shape s)
+    (define (draw-shape s center)
       (send pd set-alpha (shape-alpha s))
       (match s
         ;; shapes
-        [(shapes alpha center ss)  (draw-shapes ss)]
+        [(shapes alpha _ ss)  (draw-shapes ss)]
         ;; polygon
-        [(polygon alpha center vs norm pen-color pen-width pen-style brush-color brush-style)
+        [(polygon alpha _ vs norm pen-color pen-width pen-style brush-color brush-style)
          (draw-polygon alpha center vs norm pen-color pen-width pen-style brush-color brush-style)]
         ;; rectangle
-        [(rectangle alpha center r pen-color pen-width pen-style brush-color brush-style)
+        [(rectangle alpha _ r pen-color pen-width pen-style brush-color brush-style)
          (for ([face  (in-list (rect-visible-faces r theta))])
            (match face
              [(list norm vs ...)  (draw-polygon alpha center vs norm pen-color pen-width pen-style
                                                 brush-color brush-style)]
              [_  (void)]))]
         ;; line
-        [(line alpha center v1 v2 pen-color pen-width pen-style)
+        [(line alpha _ v1 v2 pen-color pen-width pen-style)
          (send pd set-pen pen-color pen-width pen-style)
          (send pd draw-line (plot->dc v1) (plot->dc v2))]
         ;; text
-        [(text alpha center anchor angle str font-size font-family color)
+        [(text alpha _ anchor angle str font-size font-family color)
          (send pd set-font font-size font-family)
          (send pd set-text-foreground color)
-         (send pd draw-text str (plot->dc center) anchor angle)]
+         (send pd draw-text str (view->dc center) anchor angle)]
         ;; glyph
-        [(glyph alpha center symbol size pen-color pen-width pen-style brush-color brush-style)
+        [(glyph alpha _ symbol size pen-color pen-width pen-style brush-color brush-style)
          (send pd set-pen pen-color pen-width pen-style)
          (send pd set-brush brush-color brush-style)
-         (send pd draw-glyphs (list (plot->dc center)) symbol size)]
+         (send pd draw-glyphs (list (view->dc center)) symbol size)]
         ;; tick glyph
-        [(tick-glyph alpha center radius angle pen-color pen-width pen-style)
+        [(tick-glyph alpha _ radius angle pen-color pen-width pen-style)
          (send pd set-pen pen-color pen-width pen-style)
-         (send pd draw-tick (plot->dc center) radius angle)]
+         (send pd draw-tick (view->dc center) radius angle)]
         ;; arrow glyph
-        [(arrow-glyph alpha center v1 v2 pen-color pen-width pen-style)
+        [(arrow-glyph alpha _ v1 v2 pen-color pen-width pen-style)
          (send pd set-pen pen-color pen-width pen-style)
          (send pd draw-arrow (plot->dc v1) (plot->dc v2))]
         [_  (error 'draw-shapes "shape not implemented: ~e" s)]))
@@ -701,34 +705,6 @@
       (draw-front-axes)
       (draw-ticks (get-front-tick-params))
       (draw-labels (get-front-label-params)))
-    
-    (define (draw-angles*)
-      (define angle-str (format " angle = ~a " (number->string (round angle))))
-      (define alt-str (format " altitude = ~a " (number->string (round altitude))))
-      (define-values (angle-width angle-height baseline _angle2) (send pd get-text-extent angle-str))
-      (define-values (alt-width alt-height _alt1 _alt2) (send pd get-text-extent alt-str))
-      
-      (define box-x-size (max angle-width alt-width))
-      (define box-y-size (+ angle-height alt-height (* 3 baseline)))
-      (define box-x-min (+ dc-x-min (* 1/2 (- dc-x-size box-x-size))))
-      (define box-y-min (+ dc-y-min (* 1/2 (- dc-y-size box-y-size))))
-      (define box-x-max (+ box-x-min box-x-size))
-      (define box-y-max (+ box-y-min box-y-size))
-      
-      (send pd set-alpha 1/2)
-      (send pd set-minor-pen)
-      (send pd set-brush (plot-background) 'solid)
-      (send pd draw-rect (vector (ivl box-x-min box-x-max) (ivl box-y-min box-y-max)))
-      
-      (send pd set-alpha 1)
-      (send pd draw-text
-            angle-str (vector box-x-min (+ box-y-min baseline))
-            'top-left #:outline? #t)
-      (send pd draw-text
-            alt-str (vector box-x-min (+ box-y-min baseline char-height))
-            'top-left #:outline? #t))
-    
-    (define/public (draw-angles) (draw-angles*))
     
     (define (draw-legend* legend-entries)
       (define gap-size (+ (pen-gap) tick-radius))
@@ -820,7 +796,7 @@
                  (add-shape! (line alpha c v1 v2
                                    pen-color pen-width pen-style))]
                 [else
-                 (define vs (subdivide-line plot->dc* v1 v2))
+                 (define vs (subdivide-line plot->dc v1 v2))
                  (for ([v1  (in-list vs)] [v2  (in-list (rest vs))])
                    (add-shape! (line alpha c v1 v2 pen-color pen-width pen-style)))]))))
     
@@ -841,7 +817,7 @@
                                       clip-y-min clip-y-max
                                       clip-z-min clip-z-max)
                         vs)]
-               [vs  (if identity-transforms? vs (subdivide-polygon plot->dc* vs))])
+               [vs  (if identity-transforms? vs (subdivide-polygon plot->dc vs))])
           (when (empty? vs) (return lst))
           (cons (polygon alpha c vs norm pen-color pen-width pen-style brush-color brush-style)
                 lst))))

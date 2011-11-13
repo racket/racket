@@ -41,7 +41,7 @@
             (rect-zero-area? plot-bounds-rect))
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) plot-bounds-rect)
     (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a], z ∈ [~a,~a]"
-            x-min x-max y-min y-max z-min z-max))
+           x-min x-max y-min y-max z-min z-max))
   
   (rect-inexact->exact plot-bounds-rect))
 
@@ -80,15 +80,11 @@
   
   (send area end-renderers)
   
-  (when (and (not (empty? legend-entries))
-             (or (not (plot-animating?))
-                 (not (equal? (plot-legend-anchor) 'center))))
+  (when (not (empty? legend-entries))
     (send area draw-legend legend-entries))
   
-  (when (plot-animating?) (send area draw-angles))
-  
   (send area end-plot))
-  
+
 
 (defproc (plot3d/dc [renderer-tree  (treeof (or/c renderer3d? non-renderer?))]
                     [dc  (is-a?/c dc<%>)]
@@ -167,9 +163,9 @@
                       [#:z-label z-label (or/c string? #f) (plot-z-label)]
                       [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                       ) pict?
-  (define saved-values (plot-parameters))
+  (define saved-plot-parameters (plot-parameters))
   (dc (λ (dc x y)
-        (parameterize/group ([plot-parameters  saved-values])
+        (parameterize/group ([plot-parameters  saved-plot-parameters])
           (plot3d/dc renderer-tree dc x y width height
                      #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min
                      #:z-max z-max #:angle angle #:altitude altitude #:title title #:x-label x-label
@@ -194,57 +190,54 @@
                       [#:z-label z-label (or/c string? #f) (plot-z-label)]
                       [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                       ) (is-a?/c image-snip%)
-  (define renderer-list (get-renderer-list renderer-tree))
-  (define bounds-rect (get-bounds-rect renderer-list x-min x-max y-min y-max z-min z-max))
-  (define-values (x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks)
-    (get-ticks renderer-list bounds-rect))
-  
-  (define render-list-hash (make-hash))
-  (define legend-entries-hash (make-hash))
-  
-  (make-3d-plot-snip
-   (λ (anim? angle altitude)
-     (parameterize ([plot-animating?     (if anim? #t (plot-animating?))]
-                    [plot3d-angle        angle]
-                    [plot3d-altitude     altitude]
-                    [plot-title          title]
-                    [plot-x-label        x-label]
-                    [plot-y-label        y-label]
-                    [plot-z-label        z-label]
-                    [plot-legend-anchor  legend-anchor])
-       ((if (plot-animating?) draw-bitmap draw-bitmap/supersampling)
-        (λ (dc)
-          (define area (make-object 3d-plot-area%
-                         bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
-                         dc 0 0 width height))
-          (send area start-plot)
-          
-          (cond [(not (hash-ref render-list-hash (plot-animating?) #f))
-                 (hash-set!
-                  legend-entries-hash (plot-animating?)
-                  (flatten (for/list ([rend  (in-list renderer-list)])
-                             (match-define (renderer3d rend-bounds-rect _bf _tf render-proc) rend)
-                             (send area start-renderer (cond [rend-bounds-rect  rend-bounds-rect]
-                                                             [else  (empty-rect 3)]))
-                             (if render-proc (render-proc area) empty))))
-                 
-                 (hash-set! render-list-hash (plot-animating?) (send area get-render-list))]
-                [else
-                 (send area put-render-list (hash-ref render-list-hash (plot-animating?)))])
-          
-          (send area end-renderers)
-          
-          (define legend-entries (hash-ref legend-entries-hash (plot-animating?) #f))
-          (when (and (not (empty? legend-entries))
-                     (or (not (plot-animating?))
-                         (not (equal? (plot-legend-anchor) 'center))))
-            (send area draw-legend legend-entries))
-          
-          (when (plot-animating?) (send area draw-angles))
-          
-          (send area end-plot))
-        width height)))
-   angle altitude))
+  (parameterize ([plot-title          title]
+                 [plot-x-label        x-label]
+                 [plot-y-label        y-label]
+                 [plot-z-label        z-label]
+                 [plot-legend-anchor  legend-anchor])
+    (define saved-plot-parameters (plot-parameters))
+    (define renderer-list (get-renderer-list renderer-tree))
+    (define bounds-rect (get-bounds-rect renderer-list x-min x-max y-min y-max z-min z-max))
+    (define-values (x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks)
+      (get-ticks renderer-list bounds-rect))
+    
+    (define render-list-hash (make-hash))
+    (define legend-entries-hash (make-hash))
+    
+    (make-3d-plot-snip
+     (λ (anim? angle altitude)
+       (parameterize ([plot-animating?     (if anim? #t (plot-animating?))]
+                      [plot3d-angle        angle]
+                      [plot3d-altitude     altitude])
+         ((if (plot-animating?) draw-bitmap draw-bitmap/supersampling)
+          (λ (dc)
+            (define area (make-object 3d-plot-area%
+                           bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks z-ticks z-far-ticks
+                           dc 0 0 width height))
+            (send area start-plot)
+            
+            (cond [(not (hash-ref render-list-hash (plot-animating?) #f))
+                   (hash-set!
+                    legend-entries-hash (plot-animating?)
+                    (flatten (for/list ([rend  (in-list renderer-list)])
+                               (match-define (renderer3d rend-bounds-rect _bf _tf render-proc) rend)
+                               (send area start-renderer (cond [rend-bounds-rect  rend-bounds-rect]
+                                                               [else  (empty-rect 3)]))
+                               (if render-proc (render-proc area) empty))))
+                   
+                   (hash-set! render-list-hash (plot-animating?) (send area get-render-list))]
+                  [else
+                   (send area put-render-list (hash-ref render-list-hash (plot-animating?)))])
+            
+            (send area end-renderers)
+            
+            (define legend-entries (hash-ref legend-entries-hash (plot-animating?) #f))
+            (when (not (empty? legend-entries))
+              (send area draw-legend legend-entries))
+            
+            (send area end-plot))
+          width height)))
+     angle altitude saved-plot-parameters)))
 
 ;; Plot to a frame
 (defproc (plot3d-frame [renderer-tree (treeof (or/c renderer3d? non-renderer?))]

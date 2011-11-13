@@ -11,9 +11,6 @@
         @item{2D kernel density estimator}
         @item{3D kernel density estimator}
         @item{3D decorations: labeled points, axes, grids}
-        @item{3D vector field}
-        @item{2D and 3D stacked histograms}
-        @item{2D grouped histograms}
        ]
  }
  @item{Possible minor enhancements

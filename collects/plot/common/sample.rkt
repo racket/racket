@@ -154,3 +154,48 @@
                                           (unless (and d-max (d . <= . d-max)) (set! d-max d)))
                                         d)))))
                    (3d-sample xs ys zs dsss d-min d-max))))))
+
+(define-syntax-rule (for-2d-sample (xa xb ya yb z1 z2 z3 z4) sample expr ...)
+  (let ()
+    (match-define (2d-sample xs ys zss fz-min fz-max) sample)
+    (define ya (first ys))
+    (define zs0 (vector-ref zss 0))
+    (for/fold ([ya ya] [zs0 zs0]) ([yb  (in-list (rest ys))]
+                                   [zs1  (in-vector zss 1)])
+      (define xa (first xs))
+      (define z1 (vector-ref zs0 0))
+      (define z4 (vector-ref zs1 0))
+      (for/fold ([xa xa] [z1 z1] [z4 z4]) ([xb  (in-list (rest xs))]
+                                           [z2  (in-vector zs0 1)]
+                                           [z3  (in-vector zs1 1)])
+        expr ...
+        (values xb z2 z3))
+      (values yb zs1))))
+
+(define-syntax-rule (for-3d-sample (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample expr ...)
+  (let ()
+    (match-define (3d-sample xs ys zs dsss fd-min fd-max) sample)
+    (define za (first zs))
+    (define dss0 (vector-ref dsss 0))
+    (for/fold ([za za] [dss0 dss0]) ([zb  (in-list (rest zs))]
+                                     [dss1  (in-vector dsss 1)])
+      (define ya (first ys))
+      (define ds00 (vector-ref dss0 0))
+      (define ds10 (vector-ref dss1 0))
+      (for/fold ([ya ya] [ds00 ds00] [ds10 ds10]) ([yb  (in-list (rest ys))]
+                                                   [ds01  (in-vector dss0 1)]
+                                                   [ds11  (in-vector dss1 1)])
+        (define xa (first xs))
+        (define d1 (vector-ref ds00 0))
+        (define d4 (vector-ref ds01 0))
+        (define d5 (vector-ref ds10 0))
+        (define d8 (vector-ref ds11 0))
+        (for/fold ([xa xa] [d1 d1] [d4 d4] [d5 d5] [d8 d8]) ([xb  (in-list (rest xs))]
+                                                             [d2  (in-vector ds00 1)]
+                                                             [d3  (in-vector ds01 1)]
+                                                             [d6  (in-vector ds10 1)]
+                                                             [d7  (in-vector ds11 1)])
+          expr ...
+          (values xb d2 d3 d6 d7))
+        (values yb ds01 ds11))
+      (values zb dss1))))

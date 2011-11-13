@@ -53,7 +53,7 @@
 
 (time
  (plot3d (stacked-histogram3d '(#(a a (1 1 1)) #(a b (1.5 3)) #(b b ()) #(b a (1/2)))
-                              #:labels '("Red" #f "Blue"))))
+                              #:labels '("Red" #f "Blue") #:alphas '(2/3))))
 
 (time
  (plot3d (surface3d + 0 10 0 1)

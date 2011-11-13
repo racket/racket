@@ -12,25 +12,16 @@
 (define ((surface3d-render-proc f samples color style line-color line-width line-style alpha label)
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) z-ivl) (send area get-bounds-rect))
-  (match-define (2d-sample xs ys zss fz-min fz-max) (f x-min x-max (animated-samples samples)
-                                                       y-min y-max (animated-samples samples)))
+  (define sample (f x-min x-max (animated-samples samples)
+                    y-min y-max (animated-samples samples)))
   
   (send area put-alpha alpha)
   (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
-  (for ([ya  (in-list ys)]
-        [yb  (in-list (rest ys))]
-        [zs0  (in-vector zss)]
-        [zs1  (in-vector zss 1)]
-        #:when #t
-        [xa  (in-list xs)]
-        [xb  (in-list (rest xs))]
-        [z1  (in-vector zs0)]
-        [z2  (in-vector zs0 1)]
-        [z3  (in-vector zs1 1)]
-        [z4  (in-vector zs1)])
-    (send area put-polygon
-          (list (vector xa ya z1) (vector xb ya z2) (vector xb yb z3) (vector xa yb z4))))
+  (for-2d-sample
+   (xa xb ya yb z1 z2 z3 z4) sample
+   (send area put-polygon
+         (list (vector xa ya z1) (vector xb ya z2) (vector xb yb z3) (vector xa yb z4))))
   
   (cond [label  (rectangle-legend-entry label color style line-color line-width line-style)]
         [else   empty]))

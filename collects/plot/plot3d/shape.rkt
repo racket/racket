@@ -17,14 +17,13 @@
 (struct shapes shape (list) #:transparent)
 
 (define (draw-before? cs1 cs2)
-  (match-define (cons (vector x1 y1 z1) s1) cs1)
-  (match-define (cons (vector x2 y2 z2) s2) cs2)
+  (match-define (cons s1 (vector x1 y1 z1)) cs1)
+  (match-define (cons s2 (vector x2 y2 z2)) cs2)
   (or (y1 . > . y2)
       (and (y1 . = . y2)
            (if (z1 . = . z2)
                (and (polygon? s1) (not (polygon? s2)))
                (z1 . < . z2)))))
 
-(define (depth-sort shapes f)
-  (map cdr (sort (map (λ (s) (cons (f (shape-center s)) s)) shapes)
-                 draw-before?)))
+(define (depth-sort s+cs)
+  (sort s+cs draw-before?))

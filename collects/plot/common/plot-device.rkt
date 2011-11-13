@@ -118,10 +118,11 @@
       (send dc set-background old-background)
       (send dc set-alpha old-alpha))
     
-    (define/public (reset-drawing-params)
+    (define/public (reset-drawing-params [clipping-rect? #t])
       (send dc set-smoothing 'smoothed)
       (send dc set-text-mode 'transparent)
-      (send dc set-clipping-rect dc-x-min dc-y-min dc-x-size dc-y-size)
+      (when clipping-rect?
+        (send dc set-clipping-rect dc-x-min dc-y-min dc-x-size dc-y-size))
       (set-font (plot-font-size) (plot-font-family))
       (set-text-foreground (plot-foreground))
       (set-pen (plot-foreground) (plot-line-width) 'solid)
