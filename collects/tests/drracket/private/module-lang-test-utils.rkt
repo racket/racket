@@ -64,6 +64,7 @@
      (begin (write-test-modules* 'name '(module name lang x ...)) ...)]))
 
 (define (single-test test)
+  (printf "single-test: ~s\n" (test-definitions test))
   (let/ec k
     (clear-definitions drs)
     (insert-in-definitions drs (test-definitions test))
@@ -148,28 +149,32 @@
 (define definitions-text 'not-yet-definitions-text)
 
 (define (run-test)
+  (printf "run-test.1\n")
   (set! drs (wait-for-drscheme-frame))
   (set! interactions-text  (send drs get-interactions-text))
   (set! definitions-text (send drs get-definitions-text))
+  (printf "run-test.2\n")
   (init-temp-files)
-  
+  (printf "run-test.3\n")
   (run-use-compiled-file-paths-tests)
-  
+  (printf "run-test.4\n")
   (set-module-language! #f)
   (test:set-radio-box-item! "Debugging")
   (let ([f (queue-callback/res (λ () (test:get-active-top-level-window)))])
     (test:button-push "OK")
     (wait-for-new-frame f))
-
+  (printf "run-test.5\n")
   (for-each single-test (reverse tests))
+  (printf "run-test.6\n")
   (clear-definitions drs)
   (queue-callback/res (λ () (send (send drs get-definitions-text) set-modified #f)))
+  (printf "run-test.7\n")
   (for ([file temp-files]) 
     (when (file-exists? file)
       (delete-file file))))
 
 (define (run-use-compiled-file-paths-tests)
-  
+  (printf "run-use-compiled-file-paths-tests.1\n")
   (define (setup-dialog/run proc)
     (set-module-language! #f)
     (proc)
@@ -206,8 +211,13 @@
   (define compiled (build-path "compiled"))
   
   (clear-definitions drs)
+  (printf "run-use-compiled-file-paths-tests.2\n")
   (insert-in-definitions drs "#lang scheme\n(use-compiled-file-paths)")
+  (printf "run-use-compiled-file-paths-tests.3\n")
   (run-one-test "No debugging or profiling" (list drs/compiled compiled) (list compiled))
+  (printf "run-use-compiled-file-paths-tests.4\n")
   (run-one-test "Debugging" (list drs/compiled/et compiled/et compiled) (list compiled/et compiled))
+  (printf "run-use-compiled-file-paths-tests.5\n")
   (run-one-test "Debugging and profiling" (list compiled))
+  (printf "run-use-compiled-file-paths-tests.6\n")
   (run-one-test "Syntactic test suite coverage" (list compiled)))
