@@ -2,7 +2,7 @@
 
 (require "macro2.rkt"
          "literals.rkt"
-         (only-in "honu2.rkt" honu-var honu-equal)
+         (only-in "honu2.rkt" honu-declaration honu-equal)
          (for-syntax racket/base
                      "literals.rkt"
                      "parse2.rkt"
@@ -15,11 +15,11 @@
       [(define (name args ...) body ...)
        #'(define/public (name args ...) body ...)]))
   (define-splicing-syntax-class honu-class-thing
-                                #:literals (honu-equal honu-var)
+                                #:literals (honu-equal)
     [pattern method:honu-function
              #:with result (replace-with-public #'method.result)]
-    [pattern (~seq honu-var name:identifier honu-= out:honu-expression)
-             #:with result #'(field [name out.result])]))
+    [pattern var:honu-declaration
+             #:with result #'(field [var.name var.expression])]))
 
 (provide honu-class)
 (define-honu-syntax honu-class

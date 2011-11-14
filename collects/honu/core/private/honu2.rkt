@@ -38,15 +38,22 @@
          #'rest
          #f)])))
 
+(begin-for-syntax 
+  (provide honu-declaration)
+  (define-splicing-syntax-class honu-declaration
+                              #:literal-sets (cruft)
+                              #:literals (honu-equal honu-var)
+     [pattern (~seq honu-var name:id honu-equal one:honu-expression)
+              #:with result #'(%racket (define name one.result))
+              #:with expression #'one.result]))
+
 (provide honu-var)
 (define-honu-syntax honu-var
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-equal)
-      [(_ name:id honu-equal one:honu-expression . rest)
-       (values #'(%racket (define name one.result))
-               #'rest
-               #t)])))
+      [(var:honu-declaration . rest)
+       (values #'var.result #'rest #t)])))
 
 (provide honu-for)
 (define-honu-syntax honu-for
