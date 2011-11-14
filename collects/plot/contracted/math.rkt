@@ -7,8 +7,11 @@
          ;; Flonums
          nan? infinite? special-real?
          flblend flatan2 flsum flmodulo fldistance
+         (activate-contract-out flonum->ordinal ordinal->flonum flstep flnext flprev
+                                flonum-ok-for-range?)
+         -max.0 -min.0 +min.0 +max.0
          ;; Reals
-         regular-real?
+         regular-real? maybe-inexact->exact
          min* max* degrees->radians radians->degrees blend atan2 sum real-modulo distance
          floor-log/base ceiling-log/base
          polar->cartesian 3d-polar->3d-cartesian

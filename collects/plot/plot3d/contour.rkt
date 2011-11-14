@@ -19,13 +19,16 @@
   (when (<= z-min z z-max)
     (send area put-alpha alpha)
     (send area put-pen color width style)
-    (for-2d-sample
-     (xa xb ya yb z1 z2 z3 z4) sample
-     (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-       (match-define (list v1 v2) line)
-       (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
-                              (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
-       (send area put-line v1 v2 center))))
+    (let* ([flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
+           [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)]
+           [z           (if flonum-ok? (exact->inexact z) z)])
+      (for-2d-sample
+       (xa xb ya yb z1 z2 z3 z4) sample
+       (for ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+         (match-define (list v1 v2) line)
+         (define center (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb))
+                                (* 1/2 (+ (min z1 z2 z3 z4) (max z1 z2 z3 z4)))))
+         (send area put-line v1 v2 center)))))
   
   (cond [label  (line-legend-entry label color width style)]
         [else   empty]))
@@ -62,10 +65,13 @@
                     y-min y-max (animated-samples samples)))
   (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
   
-  (let ([colors  (maybe-apply colors zs)]
-        [widths  (maybe-apply widths zs)]
-        [styles  (maybe-apply styles zs)]
-        [alphas  (maybe-apply alphas zs)])
+  (let* ([colors  (maybe-apply colors zs)]
+         [widths  (maybe-apply widths zs)]
+         [styles  (maybe-apply styles zs)]
+         [alphas  (maybe-apply alphas zs)]
+         [flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
+         [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)]
+         [zs          (if flonum-ok? (map exact->inexact zs) zs)])
     (for ([z  (in-list zs)]
           [color  (in-cycle colors)]
           [width  (in-cycle widths)]
@@ -115,9 +121,8 @@
          area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
     (send area get-bounds-rect))
-  (define sample (f x-min x-max (animated-samples samples) y-min y-max (animated-samples samples)))
-  (match-define (2d-sample xs ys zss fz-min fz-max) sample)
-  
+  (define sample (f x-min x-max (animated-samples samples)
+                    y-min y-max (animated-samples samples)))
   (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
   
   (define-values (z-ivls ivl-labels)
@@ -127,12 +132,15 @@
                                     [lb  (in-list (rest labels))])
       (values (ivl za zb) (format "[~a,~a]" la lb))))
   
-  (let ([colors  (maybe-apply colors z-ivls)]
-        [styles  (maybe-apply styles z-ivls)]
-        [alphas  (maybe-apply alphas z-ivls)]
-        [line-colors  (maybe-apply line-colors z-ivls)]
-        [line-widths  (maybe-apply line-widths z-ivls)]
-        [line-styles  (maybe-apply line-styles z-ivls)])
+  (let* ([colors  (maybe-apply colors z-ivls)]
+         [styles  (maybe-apply styles z-ivls)]
+         [alphas  (maybe-apply alphas z-ivls)]
+         [line-colors  (maybe-apply line-colors z-ivls)]
+         [line-widths  (maybe-apply line-widths z-ivls)]
+         [line-styles  (maybe-apply line-styles z-ivls)]
+         [flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
+         [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)]
+         [zs          (if flonum-ok? (map exact->inexact zs) zs)])
     (for ([za  (in-list zs)]
           [zb  (in-list (rest zs))]
           [color  (in-cycle colors)]

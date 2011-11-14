@@ -54,11 +54,78 @@
     [xs  (cond [(not (andmap flonum? xs))  (raise-type-error 'fldistance "flonums" xs)]
                [else  (unsafe-flsqrt (flsum (λ (x) (unsafe-fl* x x)) xs))])]))
 
+(define (flonum->bit-field x)
+  (integer-bytes->integer (real->floating-point-bytes x 8) #f))
+
+(define (bit-field->flonum i)
+  (floating-point-bytes->real (integer->integer-bytes i 8 #f)))
+
+(defproc (flonum->ordinal [x flonum?]) integer?
+  (cond [(x . < . 0)  (- (flonum->bit-field (- x)))]
+        [else         (flonum->bit-field (abs x))]))
+
+(defproc (ordinal->flonum [i (integer-in #x-7FFFFFFFFFFFFFFF #x7FFFFFFFFFFFFFFF)]) flonum?
+  (cond [(i . < . 0)  (- (bit-field->flonum (- i)))]
+        [else         (bit-field->flonum i)]))
+
+(define +inf-ordinal (flonum->ordinal +inf.0))
+(define -inf-ordinal (flonum->ordinal -inf.0))
+
+(defproc (flstep [x flonum?] [n exact-integer?]) flonum?
+  (cond [(eqv? x +nan.0)  +nan.0]
+        [(and (eqv? x +inf.0) (n . >= . 0))  +inf.0]
+        [(and (eqv? x -inf.0) (n . <= . 0))  -inf.0]
+        [else
+         (define i (+ n (flonum->ordinal x)))
+         (cond [(i . < . -inf-ordinal)  -inf.0]
+               [(i . > . +inf-ordinal)  +inf.0]
+               [else  (ordinal->flonum i)])]))
+
+(defproc (flnext [x flonum?]) flonum? #:document-body
+  (flstep x 1))
+
+(defproc (flprev [x flonum?]) flonum? #:document-body
+  (flstep x -1))
+
+(defthing +min.0 flonum? #:document-value (flnext 0.0))
+(defthing -min.0 flonum? #:document-value (flprev 0.0))
+(defthing +max.0 flonum? #:document-value (flprev +inf.0))
+(defthing -max.0 flonum? #:document-value (flnext -inf.0))
+
 ;; ===================================================================================================
 ;; Reals
 
 (defproc (regular-real? [x any/c]) boolean?
   (and (real? x) (not (special-real? x))))
+
+(defproc (maybe-inexact->exact [x (or/c regular-real? #f)]) (or/c regular-real? #f)
+  (cond [x  (unless (regular-real? x)
+              (raise-type-error 'maybe-inexact->exact "regular real or #f" x))
+            (inexact->exact x)]
+        [else  #f]))
+
+(defproc (flonum-ok-for-range? [x-min regular-real?] [x-max regular-real?]
+                               [size exact-positive-integer?]) boolean?
+  (let/ec return
+    (let ([x-min  (inexact->exact (min x-min x-max))]
+          [x-max  (inexact->exact (max x-min x-max))])
+      (define step-size (/ (- x-max x-min) size))
+      
+      (define inexact-x-min (exact->inexact x-min))
+      (unless (regular-real? inexact-x-min) (return #f))
+      
+      (define inexact-x-max (exact->inexact x-max))
+      (unless (regular-real? inexact-x-max) (return #f))
+      
+      (define inexact-x-max-prev (flprev inexact-x-max))
+      (unless (regular-real? inexact-x-max-prev) (return #f))
+      
+      (define inexact-x-min-next (flnext inexact-x-min))
+      (unless (regular-real? inexact-x-min-next) (return #f))
+      
+      (define max-diff (- x-max (inexact->exact inexact-x-max-prev)))
+      (define min-diff (- (inexact->exact inexact-x-min-next) x-min))
+      (and (max-diff . < . step-size) (min-diff . < . step-size)))))
 
 (define equal?*
   (case-lambda
@@ -154,25 +221,23 @@
   (cond [(not (and (exact-integer? b) (b . >= . 2)))  (raise-type-error 'floor-log/base
                                                                         "exact integer >= 2" 0 b x)]
         [(not (and (real? x) (x . > . 0)))  (raise-type-error 'floor-log/base "real > 0" 1 b x)]
-        [else  (define y (inexact->exact (floor (/ (log x) (log b)))))
-               (cond [(exact? x)
-                      (let loop ([y y] [x  (/ x (expt b y))])
+        [else  (cond [(exact? x)
+                      (let loop ([y 0] [x x])
                         (cond [(x . >= . b)  (loop (add1 y) (/ x b))]
                               [(x . < . 1)   (loop (sub1 y) (* x b))]
                               [else  y]))]
-                     [else  y])]))
+                     [else  (inexact->exact (floor (/ (log x) (log b))))])]))
 
 (defproc (ceiling-log/base [b (and/c exact-integer? (>=/c 2))] [x (>/c 0)]) exact-integer?
   (cond [(not (and (exact-integer? b) (b . >= . 2)))  (raise-type-error 'floor-log/base
                                                                         "exact integer >= 2" 0 b x)]
         [(not (and (real? x) (x . > . 0)))  (raise-type-error 'floor-log/base "real > 0" 1 b x)]
-        [else  (define y (inexact->exact (ceiling (/ (log x) (log b)))))
-               (cond [(exact? x)
-                      (let loop ([y y] [x  (/ x (expt b y))])
+        [else  (cond [(exact? x)
+                      (let loop ([y 0] [x x])
                         (cond [(x . > . 1)         (loop (add1 y) (/ x b))]
                               [(x . <= . (/ 1 b))  (loop (sub1 y) (* x b))]
                               [else  y]))]
-                     [else  y])]))
+                     [else  (inexact->exact (ceiling (/ (log x) (log b))))])]))
 
 (defproc (polar->cartesian [θ real?] [r real?]) (vector/c real? real?)
   (cond [(not (real? θ))  (raise-type-error 'polar->cartesian "real number" 0 θ r)]
@@ -367,14 +432,12 @@
 (defproc (vregular? [v (vectorof real?)]) boolean?
   (match v
     [(vector (? real? x) (? real? y))
-     (cond [(flonum? x)  (unsafe-flregular? x)]
-           [(flonum? y)  (unsafe-flregular? y)]
-           [else  #t])]
+     (not (or (and (flonum? x) (unsafe-flspecial? x))
+              (and (flonum? y) (unsafe-flspecial? y))))]
     [(vector (? real? x) (? real? y) (? real? z))
-     (cond [(flonum? x)  (unsafe-flregular? x)]
-           [(flonum? y)  (unsafe-flregular? y)]
-           [(flonum? z)  (unsafe-flregular? z)]
-           [else  #t])]
+     (not (or (and (flonum? x) (unsafe-flspecial? x))
+              (and (flonum? y) (unsafe-flspecial? y))
+              (and (flonum? z) (unsafe-flspecial? z))))]
     [_  (cond [(vector-andmap real? v)  (let/ec break
                                           (for ([x  (in-vector v)])
                                             (when (and (flonum? x) (unsafe-flspecial? x))
@@ -435,8 +498,6 @@
   (cond [(and (not (null? res)) (null? (car res)))  (cdr res)]
         [else  res]))
 
-(define default-normal (vector 0 -1 0))
-
 (define (remove-degenerate-edges vs)
   (cond
     [(empty? vs)  empty]
@@ -449,6 +510,8 @@
                    [(vs)  (reverse vs)])
        (cond [(v= last (first vs))  (rest vs)]
              [else  vs]))]))
+
+(define default-normal (vector 0.0 -1.0 0.0))
 
 (define (vnormal vs)
   (let ([vs  (remove-degenerate-edges vs)])
@@ -515,7 +578,8 @@
 
 (defproc (ivl-inexact->exact [i ivl?]) ivl?
   (match-define (ivl a b) i)
-  (ivl (inexact->exact a) (inexact->exact b)))
+  (ivl (and a (if (nan? a) a (inexact->exact a)))
+       (and b (if (nan? b) b (inexact->exact b)))))
 
 (defproc (ivl-contains? [i ivl?] [x real?]) boolean?
   (match-define (ivl a b) i)

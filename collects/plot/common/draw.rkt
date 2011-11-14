@@ -279,8 +279,6 @@
 ;; As long as this process is monotone and bounded, the distance off the dc is zero in the limit. In
 ;; practice, only a few iterations drives this distance to less than 1 drawing unit.
 
-(define (appx= x y) ((abs (- x y)) . < . 1/2))
-
 (define (margin-fixpoint x-min x-max y-min y-max
                          init-left init-right init-top init-bottom
                          get-vs)
@@ -288,21 +286,20 @@
     (for/fold ([left init-left] [right init-right] [top init-top] [bottom init-bottom]
                                 ) ([i  (in-range 3)])
       (match-define (list (vector xs ys) ...) (get-vs left right top bottom))
-      
       (define param-x-min (apply min x-min xs))
       (define param-x-max (apply max (sub1 x-max) xs))
       (define param-y-min (apply min y-min ys))
       (define param-y-max (apply max (sub1 y-max) ys))
       
-      (define new-left (+ left (- x-min param-x-min)))
-      (define new-right (- right (- (sub1 x-max) param-x-max)))
-      (define new-top (+ top (- y-min param-y-min)))
-      (define new-bottom (- bottom (- (sub1 y-max) param-y-max)))
+      (define new-left (round (+ left (- x-min param-x-min))))
+      (define new-right (round (- right (- (sub1 x-max) param-x-max))))
+      (define new-top (round (+ top (- y-min param-y-min))))
+      (define new-bottom (round (- bottom (- (sub1 y-max) param-y-max))))
       
       ;; Early out: if the margins haven't changed much, another iteration won't change them more
       ;; (hopefully)
-      (when (and (appx= left new-left) (appx= right new-right)
-                 (appx= top new-top) (appx= bottom new-bottom))
+      (when (and (= left new-left) (= right new-right)
+                 (= top new-top) (= bottom new-bottom))
         (return new-left new-right new-top new-bottom))
       
       (values new-left new-right new-top new-bottom))))
@@ -380,30 +377,30 @@
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) r)
   (list 
    ;; Top (z-max) face
-   (list (vector 0 0 1)
+   (list (vector 0.0 0.0 1.0)
          (vector x-min y-min z-max) (vector x-max y-min z-max)
          (vector x-max y-max z-max) (vector x-min y-max z-max))
    ;; Front (y-min) face
-   (if ((cos theta) . > . 0)
-       (list (vector 0 -1 0)
+   (if ((cos theta) . > . 0.0)
+       (list (vector 0.0 -1.0 0.0)
              (vector x-min y-min z-min) (vector x-max y-min z-min)
              (vector x-max y-min z-max) (vector x-min y-min z-max))
        empty)
    ;; Back (y-max) face
-   (if ((cos theta) . < . 0)
-       (list (vector 0 1 0)
+   (if ((cos theta) . < . 0.0)
+       (list (vector 0.0 1.0 0.0)
              (vector x-min y-max z-min) (vector x-max y-max z-min)
              (vector x-max y-max z-max) (vector x-min y-max z-max))
        empty)
    ;; Left (x-min) face
-   (if ((sin theta) . > . 0)
-       (list (vector -1 0 0)
+   (if ((sin theta) . > . 0.0)
+       (list (vector -1.0 0.0 0.0)
              (vector x-min y-min z-min) (vector x-min y-max z-min)
              (vector x-min y-max z-max) (vector x-min y-min z-max))
        empty)
    ;; Right (x-max) face
-   (if ((sin theta) . < . 0)
-       (list (vector 1 0 0)
+   (if ((sin theta) . < . 0.0)
+       (list (vector 1.0 0.0 0.0)
              (vector x-max y-min z-min) (vector x-max y-max z-min)
              (vector x-max y-max z-max) (vector x-max y-min z-max))
        empty)))

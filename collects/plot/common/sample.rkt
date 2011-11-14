@@ -2,7 +2,7 @@
 
 ;; Functions that sample from functions, and functions that create memoized samplers.
 
-(require racket/match racket/flonum racket/math racket/contract racket/list
+(require racket/match racket/flonum racket/math racket/contract racket/list racket/vector
          "contract-doc.rkt"
          "math.rkt"
          "axis-transform.rkt")
@@ -75,7 +75,6 @@
 (struct 2d-sample (xs ys zss z-min z-max) #:transparent)
 (struct 3d-sample (xs ys zs dsss d-min d-max) #:transparent)
 
-(defcontract sample/c (list/c (listof real?) (listof real?)))
 (defcontract sampler/c (real? real? exact-nonnegative-integer? . -> . sample?))
 
 (defcontract 2d-sampler/c (real? real? exact-nonnegative-integer?
@@ -101,7 +100,9 @@
                    (define-values (y-min y-max)
                      (cond [(empty? rys)  (values #f #f)]
                            [else  (values (apply min* rys) (apply max* rys))]))
-                   (sample xs ys y-min y-max))))))
+                   (sample xs ys
+                           (maybe-inexact->exact y-min)
+                           (maybe-inexact->exact y-max)))))))
 
 (defproc (make-2d-function->sampler [transform-x-thnk (-> axis-transform/c)]
                                     [transform-y-thnk (-> axis-transform/c)]
@@ -124,7 +125,9 @@
                                        (unless (and z-min (z . >= . z-min)) (set! z-min z))
                                        (unless (and z-max (z . <= . z-max)) (set! z-max z)))
                                      z))))
-                   (2d-sample xs ys zss z-min z-max))))))
+                   (2d-sample xs ys zss
+                              (maybe-inexact->exact z-min)
+                              (maybe-inexact->exact z-max)))))))
 
 (defproc (make-3d-function->sampler [transform-x-thnk (-> axis-transform/c)]
                                     [transform-y-thnk (-> axis-transform/c)]
@@ -153,7 +156,9 @@
                                           (unless (and d-min (d . >= . d-min)) (set! d-min d))
                                           (unless (and d-max (d . <= . d-max)) (set! d-max d)))
                                         d)))))
-                   (3d-sample xs ys zs dsss d-min d-max))))))
+                   (3d-sample xs ys zs dsss
+                              (maybe-inexact->exact d-min)
+                              (maybe-inexact->exact d-max)))))))
 
 (define-syntax-rule (for-2d-sample (xa xb ya yb z1 z2 z3 z4) sample expr ...)
   (let ()
@@ -199,3 +204,46 @@
           (values xb d2 d3 d6 d7))
         (values yb ds01 ds11))
       (values zb dss1))))
+
+(defproc (sample-exact->inexact [s sample?]) sample?
+  (match-define (sample xs ys y-min y-max) s)
+  (sample (map exact->inexact xs) (map exact->inexact ys)
+          y-min y-max))
+
+(defproc (2d-sample-exact->inexact [s 2d-sample?]) 2d-sample?
+  (match-define (2d-sample xs ys zss z-min z-max) s)
+  (2d-sample (map exact->inexact xs) (map exact->inexact ys)
+             (for/vector #:length (vector-length zss) ([zs  (in-vector zss)])
+               (for/vector #:length (vector-length zs) ([z  (in-vector zs)])
+                 (exact->inexact z)))
+             z-min z-max))
+
+(defproc (3d-sample-exact->inexact [s 3d-sample?]) 3d-sample?
+  (match-define (3d-sample xs ys zs dsss d-min d-max) s)
+  (3d-sample (map exact->inexact xs) (map exact->inexact ys) (map exact->inexact zs)
+             (for/vector #:length (vector-length dsss) ([dss  (in-vector dsss)])
+               (for/vector #:length (vector-length dss) ([ds  (in-vector dss)])
+                 (for/vector #:length (vector-length ds) ([d  (in-vector ds)])
+                   (exact->inexact d))))
+             d-min d-max))
+
+(defproc (flonum-ok-for-2d? [x-min regular-real?] [x-max regular-real?]
+                            [y-min regular-real?] [y-max regular-real?]) boolean?
+  (and (flonum-ok-for-range? x-min x-max 10000)
+       (flonum-ok-for-range? y-min y-max 10000)))
+
+(defproc (flonum-ok-for-3d? [x-min regular-real?] [x-max regular-real?]
+                            [y-min regular-real?] [y-max regular-real?]
+                            [z-min regular-real?] [z-max regular-real?]) boolean?
+  (and (flonum-ok-for-range? x-min x-max 10000)
+       (flonum-ok-for-range? y-min y-max 10000)
+       (flonum-ok-for-range? z-min z-max 10000)))
+
+(defproc (flonum-ok-for-4d? [x-min regular-real?] [x-max regular-real?]
+                            [y-min regular-real?] [y-max regular-real?]
+                            [z-min regular-real?] [z-max regular-real?]
+                            [d-min regular-real?] [d-max regular-real?]) boolean?
+  (and (flonum-ok-for-range? x-min x-max 10000)
+       (flonum-ok-for-range? y-min y-max 10000)
+       (flonum-ok-for-range? z-min z-max 10000)
+       (flonum-ok-for-range? d-min d-max 10000)))

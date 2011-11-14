@@ -3,6 +3,7 @@
 (require racket/contract racket/flonum racket/fixnum racket/list racket/match racket/unsafe/ops
          (for-syntax racket/base racket/syntax racket/match racket/list)
          "math.rkt"
+         "utils.rkt"
          "marching-utils.rkt"
          "contract-doc.rkt")
 
@@ -16,20 +17,20 @@
 
 ;; edge vertexes 
 
-(define-syntax-rule (edge-1-2 d d1 d2) (vector (solve-t d d1 d2) 0.0 0.0))
-(define-syntax-rule (edge-2-3 d d2 d3) (vector 1.0 (solve-t d d2 d3) 0.0))
-(define-syntax-rule (edge-3-4 d d3 d4) (vector (solve-t d d4 d3) 1.0 0.0))
-(define-syntax-rule (edge-1-4 d d1 d4) (vector 0.0 (solve-t d d1 d4) 0.0))
+(define-syntax-rule (edge-1-2 d d1 d2) (vector (unsafe-solve-t d d1 d2) 0.0 0.0))
+(define-syntax-rule (edge-2-3 d d2 d3) (vector 1.0 (unsafe-solve-t d d2 d3) 0.0))
+(define-syntax-rule (edge-3-4 d d3 d4) (vector (unsafe-solve-t d d4 d3) 1.0 0.0))
+(define-syntax-rule (edge-1-4 d d1 d4) (vector 0.0 (unsafe-solve-t d d1 d4) 0.0))
 
-(define-syntax-rule (edge-5-6 d d5 d6) (vector (solve-t d d5 d6) 0.0 1.0))
-(define-syntax-rule (edge-6-7 d d6 d7) (vector 1.0 (solve-t d d6 d7) 1.0))
-(define-syntax-rule (edge-7-8 d d7 d8) (vector (solve-t d d7 d8) 1.0 1.0))
-(define-syntax-rule (edge-5-8 d d5 d8) (vector 0.0 (solve-t d d5 d8) 1.0))
+(define-syntax-rule (edge-5-6 d d5 d6) (vector (unsafe-solve-t d d5 d6) 0.0 1.0))
+(define-syntax-rule (edge-6-7 d d6 d7) (vector 1.0 (unsafe-solve-t d d6 d7) 1.0))
+(define-syntax-rule (edge-7-8 d d7 d8) (vector (unsafe-solve-t d d7 d8) 1.0 1.0))
+(define-syntax-rule (edge-5-8 d d5 d8) (vector 0.0 (unsafe-solve-t d d5 d8) 1.0))
 
-(define-syntax-rule (edge-1-5 d d1 d5) (vector 0.0 0.0 (solve-t d d1 d5)))
-(define-syntax-rule (edge-2-6 d d2 d6) (vector 1.0 0.0 (solve-t d d2 d6)))
-(define-syntax-rule (edge-3-7 d d3 d7) (vector 1.0 1.0 (solve-t d d3 d7)))
-(define-syntax-rule (edge-4-8 d d4 d8) (vector 0.0 1.0 (solve-t d d4 d8)))
+(define-syntax-rule (edge-1-5 d d1 d5) (vector 0.0 0.0 (unsafe-solve-t d d1 d5)))
+(define-syntax-rule (edge-2-6 d d2 d6) (vector 1.0 0.0 (unsafe-solve-t d d2 d6)))
+(define-syntax-rule (edge-3-7 d d3 d7) (vector 1.0 1.0 (unsafe-solve-t d d3 d7)))
+(define-syntax-rule (edge-4-8 d d4 d8) (vector 0.0 1.0 (unsafe-solve-t d d4 d8)))
 
 #|
 Cube vertex numbers:
@@ -74,10 +75,10 @@ Cube vertex numbers:
   (define da (unsafe-flavg4 d1 d2 d3 d4))
   (cond
     [(test? da d)
-      (list (list (edge-1-2 d d1 d2) (edge-2-3 d d2 d3)
-                  (edge-3-7 d d3 d7) (edge-1-5 d d1 d5))
-            (list (edge-3-4 d d3 d4) (edge-1-4 d d1 d4)
-                  (edge-1-5 d d1 d5) (edge-3-7 d d3 d7)))]
+     (list (list (edge-1-2 d d1 d2) (edge-2-3 d d2 d3)
+                 (edge-3-7 d d3 d7) (edge-1-5 d d1 d5))
+           (list (edge-3-4 d d3 d4) (edge-1-4 d d1 d4)
+                 (edge-1-5 d d1 d5) (edge-3-7 d d3 d7)))]
     [else
      (list (list (edge-1-2 d d1 d2) (edge-1-5 d d1 d5) (edge-1-4 d d1 d4))
            (list (edge-2-3 d d2 d3) (edge-3-4 d d3 d4) (edge-3-7 d d3 d7)))]))
@@ -104,7 +105,7 @@ Cube vertex numbers:
      (list (list (edge-1-5 d d1 d5) (edge-2-6 d d2 d6)
                  (edge-2-3 d d2 d3) (edge-1-4 d d1 d4))
            (list (edge-6-7 d d6 d7) (edge-3-7 d d3 d7) (edge-7-8 d d7 d8)))]))
-  
+
 (define known-cube-1100-0010 (make-known-cube-1100-0010 unsafe-fl>=))
 (define known-cube-0011-1101 (make-known-cube-1100-0010 unsafe-fl<))
 
@@ -510,32 +511,62 @@ Cube vertex numbers:
 (define-syntax-rule (add-digit j idx)
   (unsafe-fx+ (unsafe-fx* idx 2) j))
 
+(define (unsafe-heights->cube-polys d d1 d2 d3 d4 d5 d6 d7 d8)
+  (define j1 (if (d1 . unsafe-fl< . d) 0 1))
+  (define j2 (if (d2 . unsafe-fl< . d) 0 1))
+  (define j3 (if (d3 . unsafe-fl< . d) 0 1))
+  (define j4 (if (d4 . unsafe-fl< . d) 0 1))
+  (define j5 (if (d5 . unsafe-fl< . d) 0 1))
+  (define j6 (if (d6 . unsafe-fl< . d) 0 1))
+  (define j7 (if (d7 . unsafe-fl< . d) 0 1))
+  (define j8 (if (d8 . unsafe-fl< . d) 0 1))
+  (define facet-num
+    (add-digit
+     j1 (add-digit
+         j2 (add-digit
+             j3 (add-digit
+                 j4 (add-digit
+                     j5 (add-digit
+                         j6 (add-digit j7 j8))))))))
+  (define f (vector-ref cube-dispatch-table facet-num))
+  (f d d1 d2 d3 d4 d5 d6 d7 d8))
+
 (defproc (heights->cube-polys [xa real?] [xb real?] [ya real?] [yb real?] [za real?] [zb real?]
                               [d real?]
                               [d1 real?] [d2 real?] [d3 real?] [d4 real?]
                               [d5 real?] [d6 real?] [d7 real?] [d8 real?]
                               ) (listof (vector/c real? real? real?))
-  (check-all-real! 'heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
-  (let-exact->inexact
-   (xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
-   (define j1 (if (d1 . unsafe-fl< . d) 0 1))
-   (define j2 (if (d2 . unsafe-fl< . d) 0 1))
-   (define j3 (if (d3 . unsafe-fl< . d) 0 1))
-   (define j4 (if (d4 . unsafe-fl< . d) 0 1))
-   (define j5 (if (d5 . unsafe-fl< . d) 0 1))
-   (define j6 (if (d6 . unsafe-fl< . d) 0 1))
-   (define j7 (if (d7 . unsafe-fl< . d) 0 1))
-   (define j8 (if (d8 . unsafe-fl< . d) 0 1))
-   (define facet-num
-     (add-digit
-      j1 (add-digit
-          j2 (add-digit
-              j3 (add-digit
-                  j4 (add-digit
-                      j5 (add-digit
-                          j6 (add-digit j7 j8))))))))
-   (define f (vector-ref cube-dispatch-table facet-num))
-   (for/list ([poly  (in-list (f d d1 d2 d3 d4 d5 d6 d7 d8))])
-     (for/list ([uvw  (in-list poly)])
-       (match-define (vector u v w) uvw)
-       (vector (unsolve-t xa xb u) (unsolve-t ya yb v) (unsolve-t za zb w))))))
+  (cond [(all inexact-real? xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
+         (define polys (unsafe-heights->cube-polys d d1 d2 d3 d4 d5 d6 d7 d8))
+         (for/list ([poly  (in-list polys)])
+           (for/list ([uvw  (in-list poly)])
+             (match-define (vector u v w) uvw)
+             (vector (unsafe-unsolve-t xa xb u)
+                     (unsafe-unsolve-t ya yb v)
+                     (unsafe-unsolve-t za zb w))))]
+        [(find-failure-index real? xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
+         => (λ (i) (raise-type-error 'heights->polys "real number"
+                                     i xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))]
+        [(= d d1 d2 d3 d4 d5 d6 d7 d8)  empty]
+        [else
+         (let-map
+          (d d1 d2 d3 d4 d5 d6 d7 d8) inexact->exact
+          (define d-min (min d d1 d2 d3 d4 d5 d6 d7 d8))
+          (define d-max (max d d1 d2 d3 d4 d5 d6 d7 d8))
+          (define d-scale (- d-max d-min))
+          (define polys
+            (unsafe-heights->cube-polys (exact->inexact (/ (- d d-min) d-scale))
+                                        (exact->inexact (/ (- d1 d-min) d-scale))
+                                        (exact->inexact (/ (- d2 d-min) d-scale))
+                                        (exact->inexact (/ (- d3 d-min) d-scale))
+                                        (exact->inexact (/ (- d4 d-min) d-scale))
+                                        (exact->inexact (/ (- d5 d-min) d-scale))
+                                        (exact->inexact (/ (- d6 d-min) d-scale))
+                                        (exact->inexact (/ (- d7 d-min) d-scale))
+                                        (exact->inexact (/ (- d8 d-min) d-scale))))
+          (for/list ([poly  (in-list polys)])
+            (for/list ([uvw  (in-list poly)])
+              (match-define (vector u v w) uvw)
+              (vector (unsolve-t xa xb u)
+                      (unsolve-t ya yb v)
+                      (unsolve-t za zb w)))))]))

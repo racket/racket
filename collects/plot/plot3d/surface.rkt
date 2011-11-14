@@ -11,17 +11,20 @@
 
 (define ((surface3d-render-proc f samples color style line-color line-width line-style alpha label)
          area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) z-ivl) (send area get-bounds-rect))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+    (send area get-bounds-rect))
   (define sample (f x-min x-max (animated-samples samples)
                     y-min y-max (animated-samples samples)))
   
   (send area put-alpha alpha)
   (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
-  (for-2d-sample
-   (xa xb ya yb z1 z2 z3 z4) sample
-   (send area put-polygon
-         (list (vector xa ya z1) (vector xb ya z2) (vector xb yb z3) (vector xa yb z4))))
+  (let* ([flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
+         [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)])
+    (for-2d-sample
+     (xa xb ya yb z1 z2 z3 z4) sample
+     (send area put-polygon
+           (list (vector xa ya z1) (vector xb ya z2) (vector xb yb z3) (vector xa yb z4)))))
   
   (cond [label  (rectangle-legend-entry label color style line-color line-width line-style)]
         [else   empty]))

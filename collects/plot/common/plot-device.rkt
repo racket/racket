@@ -7,6 +7,7 @@
 ;; It is up to callers to transform view or plot coordinates into dc coordinates.
 
 (require racket/draw racket/class racket/match racket/math racket/bool racket/list racket/contract
+         racket/vector
          "contract.rkt"
          "draw.rkt"
          "math.rkt"
@@ -308,9 +309,11 @@
         (draw-text/anchor dc str x y anchor #t 0 angle)))
     
     (define/public (get-text-corners str v [anchor 'top-left] [angle 0])
-      (when (vregular? v)
-        (match-define (vector x y) v)
-        (get-text-corners/anchor dc str x y anchor #t 0 angle)))
+      (cond [(vregular? v)
+             (match-define (vector x y) v)
+             (map (λ (v) (vector-map inexact->exact v))
+                  (get-text-corners/anchor dc str x y anchor #t 0 angle))]
+            [else  empty]))
     
     (define/public (draw-arrow v1 v2)
       (when (and (vregular? v1) (vregular? v2))
@@ -370,8 +373,8 @@
     
     (define/public (get-tick-endpoints v r angle)
       (match-define (vector x y) v)
-      (define dx (* (cos angle) r))
-      (define dy (* (sin angle) r))
+      (define dx (* (inexact->exact (cos angle)) r))
+      (define dy (* (inexact->exact (sin angle)) r))
       (list (vector (- x dx) (- y dy)) (vector (+ x dx) (+ y dy))))
     
     (define/public (make-draw-tick r angle)

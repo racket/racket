@@ -35,14 +35,12 @@
 (define (get-bounds-rect renderer-list x-min x-max y-min y-max)
   (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max)))
   (define plot-bounds-rect (bounds-fixpoint renderer-list given-bounds-rect))
-  
   (when (or (not (rect-regular? plot-bounds-rect))
             (rect-zero-area? plot-bounds-rect))
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) plot-bounds-rect)
     (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a]"
            x-min x-max y-min y-max))
-  
-  (rect-inexact->exact plot-bounds-rect))
+  plot-bounds-rect)
 
 (define (get-ticks renderer-list bounds-rect)
   (define-values (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks)
@@ -51,7 +49,6 @@
       (define ticks-fun (plot-element-ticks-fun r))
       (cond [ticks-fun  (ticks-fun bounds-rect)]
             [else       (values empty empty empty empty)])))
-  
   (values (remove-duplicates (append* all-x-ticks))
           (remove-duplicates (append* all-x-far-ticks))
           (remove-duplicates (append* all-y-ticks))

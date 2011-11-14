@@ -81,3 +81,7 @@
         (values (cons (reverse lst) res)
                 rest-xs)))
     (reverse res)))
+
+(define-syntax-rule (let-map (id ...) fun body0 body ...)
+  (let ([id  (fun id)] ...)
+    body0 body ...))

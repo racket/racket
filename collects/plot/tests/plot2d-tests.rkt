@@ -18,6 +18,10 @@
 
 (time (plot (function values 0 1000)))
 
+(time
+ (define flepsilon (ordinal->flonum 1))
+ (plot (lines (list (vector 0 0) (vector flepsilon flepsilon)))))
+
 (parameterize ([plot-x-transform  log-transform]
                [plot-x-ticks      (log-ticks #:base 4)]
                [plot-y-transform  log-transform]

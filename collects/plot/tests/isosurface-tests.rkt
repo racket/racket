@@ -55,3 +55,9 @@
                              #:color "navajowhite" #:width 2)
                (lines3d '(#(0 0 2) #(0 0 -2)) #:color "navajowhite" #:width 2))
          #:title "A Seashell" #:x-label #f #:y-label #f #:angle 210 #:altitude 30))
+
+(define flepsilon (flnext 0.0))
+
+(time
+ (plot3d (isosurface3d (λ (x y z) (+ (sqr x) (sqr y) (sqr z))) (sqr (inexact->exact flepsilon))
+                       (- flepsilon) flepsilon (- flepsilon) flepsilon (- flepsilon) flepsilon)))
