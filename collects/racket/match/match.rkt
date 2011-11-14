@@ -6,14 +6,17 @@
          (only-in "match-expander.rkt"
                   define-match-expander)
          "define-forms.rkt"
-         "struct.rkt"
+         "struct.rkt"         
          (for-syntax "parse.rkt"
-                     (only-in "patterns.rkt" match-...-nesting)))
+                     (only-in "patterns.rkt" 
+                              match-...-nesting
+                              prop:match-expander prop:legacy-match-expander)))
 
-(provide (for-syntax match-...-nesting)
+(provide (for-syntax match-...-nesting
+                     prop:match-expander prop:legacy-match-expander)
          match-equality-test
          define-match-expander
-         struct* ==
+         struct* ==          
          exn:misc:match?)
 
 (define-forms parse

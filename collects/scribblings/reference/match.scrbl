@@ -525,6 +525,35 @@ For example, to extend the pattern matcher and destructure syntax lists,
 
 }
 
+@defthing[prop:match-expander struct-type-property?]{
+
+A @tech{structure type property} to identify structure types that act
+as @tech{match expanders} like the ones created by
+@racket[define-match-expander].
+
+The property value must be an exact non-negative integer or a
+procedure of one or two arguments.  In the former case, the integer
+designates a field within the structure that should contain a
+procedure; the integer must be between @racket[0] (inclusive) and the
+number of non-automatic fields in the structure type (exclusive, not
+counting supertype fields), and the designated field must also be
+specified as immutable.
+
+If the property value is a procedure of one argument, then the
+procedure serves as the transformer for match expansion. If the property value is a procedure of two
+arguments, then the first argument is the structure whose type has
+@racket[prop:match-expander] property, and the second argument is a
+syntax object as for a @tech{match expander}..
+
+If the property value is a @tech{assignment transformer}, then the wrapped
+procedure is extracted with
+@racket[set!-transformer-procedure] before it is called.
+}
+
+@defthing[prop:legacy-match-expander struct-type-property?]{
+Like @racket[prop:match-expander], but for the legacy match syntax.
+}
+
 
 @defparam[match-equality-test comp-proc (any/c any/c . -> . any)]{
 

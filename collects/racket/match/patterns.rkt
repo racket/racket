@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (require syntax/boundmap
-         scheme/contract
-         (for-syntax scheme/base))
+         racket/contract
+         (for-syntax racket/base))
 
 (provide (except-out (all-defined-out)
                      struct-key-ht
@@ -208,20 +208,45 @@
                                [vars-seen (listof (cons/c identifier?
                                                           identifier?))])))
 
-(define-struct match-expander (match-xform legacy-xform macro-xform)
-#|  #:property prop:procedure (lambda (me stx)
-                              (define xf (match-expander-macro-xform me))
-                              (define xf* (if (set!-transformer? xf)
-                                              (set!-transformer-procedure xf)
-                                              xf))
-                              (xf* stx))|#
-  #:property prop:set!-transformer (lambda (me stx)
-                                     (define xf (match-expander-macro-xform me))
-                                     (if (set!-transformer? xf)
-                                         ((set!-transformer-procedure xf) stx)
-                                         (syntax-case stx (set!)
-                                           [(set! . _)
-                                            (raise-syntax-error #f "cannot mutate syntax identifier" stx)]
-                                           [_ (xf stx)]))))
 
-(provide (struct-out match-expander))
+(struct acc-prop (n acc))
+(define (make-struct-type-property/accessor name [guard #f] [supers null])
+  (define-values (p pred? acc)
+    (make-struct-type-property name
+     (λ (pval sinfo)
+	(cond [(exact-nonnegative-integer? pval)
+	       (acc-prop pval (cadddr sinfo))]
+	      [else (if (procedure? guard) 
+			(guard pval sinfo)
+			pval)]))
+     supers))
+  (values p pred? (lambda (v)
+		    (define v* (acc v))
+		    (if (acc-prop? v*)
+			((acc-prop-acc v*) v (acc-prop-n v*))
+			v*))))
+
+(define-values (prop:match-expander match-expander? match-expander-proc) 
+  (make-struct-type-property/accessor 'prop:match-expander))
+
+(define-values (prop:legacy-match-expander legacy-match-expander? legacy-match-expander-proc)
+  (make-struct-type-property/accessor 'prop:legacy-match-expander ))
+
+(define make-match-expander
+  (let ()
+    (define-struct match-expander (match-xform legacy-xform macro-xform)
+      #:property prop:set!-transformer (lambda (me stx)
+                                         (define xf (match-expander-macro-xform me))
+                                         (if (set!-transformer? xf)
+                                             ((set!-transformer-procedure xf) stx)
+                                             (syntax-case stx (set!)
+                                               [(set! . _)
+                                                (raise-syntax-error #f "cannot mutate syntax identifier" stx)]
+                                               [_ (xf stx)])))
+      #:property prop:match-expander (struct-field-index match-xform)
+      #:property prop:legacy-match-expander (struct-field-index legacy-xform))
+    (values make-match-expander)))
+
+(provide match-expander? legacy-match-expander?
+         match-expander-proc legacy-match-expander-proc
+         prop:match-expander prop:legacy-match-expander)

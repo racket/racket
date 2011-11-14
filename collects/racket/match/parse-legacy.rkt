@@ -18,10 +18,10 @@
                 (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(expander args ...)
      (and (identifier? #'expander)
-          (match-expander?
-           (syntax-local-value #'expander (lambda () #f))))
+          (legacy-match-expander?
+           (syntax-local-value #'expander (λ () #f))))
      (match-expander-transform
-      parse #'expander disarmed-stx match-expander-legacy-xform
+      parse #'expander disarmed-stx legacy-match-expander-proc
       "This expander only works with the standard match syntax")]
     [(and p ...)
      (make-And (map parse (syntax->list #'(p ...))))]

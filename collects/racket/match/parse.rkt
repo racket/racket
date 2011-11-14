@@ -32,7 +32,7 @@
           (match-expander? (syntax-local-value #'expander
                                                (lambda () #f))))
      (match-expander-transform
-      rearm+parse #'expander disarmed-stx match-expander-match-xform
+      rearm+parse #'expander disarmed-stx match-expander-proc
       "This expander only works with the legacy match syntax")]
     [(var v)
      (identifier? #'v)

@@ -138,13 +138,16 @@
                                   error-msg)
   (let* ([expander* (syntax-local-value expander)]
          [transformer (accessor expander*)]
+         ;; this transformer might have been defined w/ `syntax-id-rules'
          [transformer (if (set!-transformer? transformer)
                           (set!-transformer-procedure transformer)
                           transformer)])
     (unless transformer (raise-syntax-error #f error-msg expander*))
     (let* ([introducer (make-syntax-introducer)]
            [mstx (introducer (syntax-local-introduce stx))]
-           [mresult (transformer mstx)]
+           [mresult (if (procedure-arity-includes? transformer 2) 
+                        (transformer expander* mstx)
+                        (transformer mstx))]
            [result (syntax-local-introduce (introducer mresult))])
       ;(emit-local-step stx result #:id expander)
       (parse result))))
