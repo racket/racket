@@ -24,6 +24,8 @@
          length
          substring
          void
+         format
+         integer
          (rename-out [honu-cond cond]
                      [null empty]
                      [current-inexact-milliseconds currentMilliseconds]

@@ -10,6 +10,11 @@
 (provide sqr)
 (define (sqr x) (* x x))
 
+;; convert a float to an integer
+(provide integer)
+(define (integer x)
+  (inexact->exact (round x)))
+
 (provide honu-cond)
 (define-honu-syntax honu-cond
   (lambda (code context)
