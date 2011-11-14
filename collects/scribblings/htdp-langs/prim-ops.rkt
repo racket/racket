@@ -1,5 +1,4 @@
-#reader scribble/reader
-#lang racket/base
+#lang at-exp racket/base
 (require "common.rkt"
          scribble/decode
          scribble/struct
@@ -377,12 +376,24 @@
   way as for the @racket[(#,require-elem string)] form.}
 
 
+  @deftogether[(
   @defform/none[#:literals (planet)
-                (#,require-elem (planet string (string string number number)))]{
+                (#,require-elem (planet string (string string number number)))]{}
+  @defform/none[#:literals (planet) (#,require-elem (planet id))]{}
+  @defform/none[#:literals (planet) (#,require-elem (planet string))]{})]{
 
   Accesses a library that is distributed on the internet via the
   @|PLaneT| server, making it definitions available in the current module
-  (i.e., current file).}))
+  (i.e., current file).
+
+  The full grammar for planet requires is given in 
+  @secref["require"
+          #:doc '(lib "scribblings/reference/reference.scrbl")], but
+  the best place to find examples of the syntax is on the
+  @link["http://planet.racket-lang.org"]{the @PLaneT server}, in the
+  description of a specific package.  
+}
+))
 
 ;; ----------------------------------------
 
