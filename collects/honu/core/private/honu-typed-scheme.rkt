@@ -16,7 +16,7 @@
                      "util.rkt"
                      "ops.rkt"
                      "syntax.rkt"
-                     "parse.rkt"
+                     ;; "parse.rkt"
                      "parse2.rkt"
                      "literals.rkt"
                      )
@@ -35,6 +35,7 @@
 
 (begin-for-syntax
 
+#;
 (define parse-expr
   ;; The given syntax sequence must not be empty
   (let ()
@@ -209,6 +210,7 @@
 
     parse-expr))
 
+#;
 (define (parse-tail-expr expr-stxs)
   (syntax-parse expr-stxs
     #:literals (honu-return)
@@ -218,6 +220,7 @@
     [else (parse-expr expr-stxs)]))
 
 
+#;
 (define (parse-block-one context body combine-k done-k)
   (define (parse-one expr-stxs after-expr terminator)
     (define (checks)
@@ -254,6 +257,7 @@
                                                  ))
                        parse-one )]))
 
+#;
 (define (parse-block stx ctx)
   (let loop ([stx stx])
     (parse-block-one ctx
@@ -387,6 +391,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 (define (display2 x y)
   (debug "~a ~a" x y))
 
+#;
 (define-syntax (honu-unparsed-expr stx)
   (syntax-parse stx
     [(_ expr ...)
@@ -474,7 +479,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      ;; in the input such as parsing just ";".
      (with-syntax ([parsed (if (not parsed) #'(begin) (honu->racket parsed))]
                    [(unparsed ...) unparsed])
-       (debug "Final parsed syntax ~a\n" (syntax->datum #'parsed))
+       (debug "Final parsed syntax\n~a\n" (pretty-format (syntax->datum #'parsed)))
        (if (null? (syntax->datum #'(unparsed ...)))
          #'parsed
          #'(begin parsed (honu-unparsed-begin unparsed ...))))]))

@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require (for-syntax racket/base))
+(require (for-syntax racket/base
+                     syntax/parse))
 
 (provide debug)
 
@@ -34,8 +35,8 @@
 (define-for-syntax verbose? (getenv "HONU_DEBUG"))
 (define-syntax (debug stx)
   (if verbose?
-    (syntax-case stx ()
-      [(_ str x ...)
+    (syntax-parse stx
+      [(_ str:str x ...)
        (with-syntax ([file (filename (syntax-source #'str))]
                      [line (syntax-line #'str)]
                      [column (syntax-column #'str)])
@@ -43,6 +44,11 @@
                    (colorize file 'green)
                    (colorize line 'red)
                    (colorize column 'red)
-                   x ...))])
+                   x ...))]
+      [(_ level:number message:str x ...)
+       (if (>= (string->number verbose?)
+               (syntax->datum #'level))
+         #'(debug message x ...)
+         #'(void))])
     #'(void)))
 

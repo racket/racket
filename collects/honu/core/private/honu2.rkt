@@ -4,6 +4,7 @@
          "operator.rkt"
          "struct.rkt"
          "honu-typed-scheme.rkt"
+         racket/match
          racket/class
          racket/require
          (only-in "literals.rkt"
@@ -11,8 +12,10 @@
                   honu-in
                   honu-prefix
                   semicolon
+                  define-literal
                   %racket)
          (for-syntax syntax/parse
+                     racket/syntax
                      "debug.rkt"
                      "literals.rkt"
                      "parse2.rkt"
@@ -39,8 +42,8 @@
 (define-honu-syntax honu-var
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-=)
-      [(_ name:id honu-= one:honu-expression . rest)
+                       #:literals (honu-equal)
+      [(_ name:id honu-equal one:honu-expression . rest)
        (values #'(%racket (define name one.result))
                #'rest
                #t)])))
@@ -49,8 +52,8 @@
 (define-honu-syntax honu-for
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-= honu-in)
-      [(_ iterator:id honu-= start:honu-expression honu-to end:honu-expression
+                       #:literals (honu-equal honu-in)
+      [(_ iterator:id honu-equal start:honu-expression honu-to end:honu-expression
           honu-do body:honu-expression . rest)
        (values
            #'(%racket (for ([iterator (in-range start.result
@@ -136,8 +139,7 @@
             (cond
               [(honu-struct? left*) (let ([use (honu-struct-get left*)])
                                       (use left* 'right))]
-              [(object? left*) (lambda args
-                                 (send/apply left* right args))]
+              [(object? left*) (get-field right left*)]
               ;; possibly handle other types of data
               [else (error 'dot "don't know how to deal with ~a (~a)" 'left left*)]))))))
 
@@ -164,14 +166,17 @@
 (define-binary-operator honu-<= 0.9 'left <=)
 (define-binary-operator honu-> 0.9 'left >)
 (define-binary-operator honu->= 0.9 'left >=)
-(define-binary-operator honu-= 0.9 'left =)
+;; (define-binary-operator honu-= 0.9 'left =)
 (define-binary-operator honu-and 0.5 'left and)
 (define-binary-operator honu-or 0.5 'left or)
 (define-binary-operator honu-cons 0.1 'right cons)
 (define-binary-operator honu-map 0.09 'left map)
 (define-binary-operator honu-string=? 1 'left string=?)
+(define-binary-operator honu-modulo 2 'left modulo)
 
 (define-unary-operator honu-not 0.7 'left not)
+
+(define-binary-operator honu-equal 1 'left equal?)
 
 (provide honu-top-interaction)
 (define-syntax (honu-top-interaction stx)
@@ -180,13 +185,17 @@
      #'(#%top-interaction . (honu-unparsed-begin rest ...))]))
 
 (begin-for-syntax
+  (define (fix-module-name name)
+    (format-id name "~a" (regexp-replace* #rx"_" (symbol->string (syntax->datum name)) "-")))
   (define-splicing-syntax-class require-form
                                 #:literals (honu-prefix)
                                 #:literal-sets (cruft)
     [pattern (~seq honu-prefix prefix module)
-             #:with result #'(prefix-in prefix module)]
+             #:with result (with-syntax ([module (fix-module-name #'module)])
+                             #'(prefix-in prefix module))]
     [pattern x:str #:with result #'x]
-    [pattern x:id #:with result #'x
+    [pattern x:id
+             #:with result (with-syntax ([name (fix-module-name #'x)]) #'name)
              #:when (not ((literal-set->predicate cruft) #'x))]))
 
 (define-for-syntax (racket-names->honu name)
@@ -217,3 +226,44 @@
          with
          #'rest
          #f)])))
+
+(provide honu-while)
+(define-honu-syntax honu-while
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ condition:honu-expression body:honu-body . rest)
+       (values
+         #'(%racket (let loop ()
+                      body.result
+                      (when condition.result (loop))))
+         #'rest
+         #t)])))
+
+(provide honu-with honu-match)
+(define-literal honu-with)
+(define-honu-syntax honu-match
+  (lambda (code context)
+    (define-splicing-syntax-class match-clause
+                                  #:literal-sets (cruft)
+      [pattern (~seq (#%parens pattern ...)
+                     body:honu-body)
+               #:with code #'body.result])
+
+    (syntax-parse code #:literal-sets (cruft)
+                       #:literals (honu-with)
+      [(_ thing:honu-expression honu-with clause:match-clause ... . rest)
+       (values
+         #'(%racket (match thing.result
+                      [(clause.pattern ...) clause.code]
+                      ...))
+         #'rest
+         #t)])))
+
+(provide honu-->)
+(define-honu-fixture honu-->
+  (lambda (left rest)
+    (syntax-parse rest #:literal-sets (cruft)
+      [(_ name:identifier (#%parens argument:honu-expression/comma) . more)
+       (with-syntax ([left left])
+         (values #'(send/apply left name (list argument.result ...))
+                 #'more))])))

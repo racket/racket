@@ -16,7 +16,7 @@
 (define-literal honu-return)
 (define-literal semicolon)
 (define-literal honu-+ honu-* honu-/ honu-- honu-|| honu-%
-                honu-= honu-+= honu--= honu-*= honu-/= honu-%=
+                honu-+= honu--= honu-*= honu-/= honu-%=
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
                 honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
                 honu-!= honu-==

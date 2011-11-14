@@ -5,13 +5,15 @@
          "private/macro2.rkt"
          (for-syntax (only-in "private/macro2.rkt" honu-syntax))
          "private/class.rkt"
-         (for-syntax (only-in "private/parse2.rkt" honu-expression))
+         (for-syntax (prefix-in class: syntax/parse))
+         (for-syntax (only-in "private/parse2.rkt" honu-expression honu-identifier))
          (prefix-in literal: "private/literals.rkt"))
 
 (provide #%top
          #%datum
          print printf true false
          (for-syntax (rename-out [honu-expression expression]
+                                 [honu-identifier identifier]
                                  [honu-syntax syntax]))
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-top-interaction #%top-interaction]
@@ -22,6 +24,9 @@
                      [honu-require require]
                      [honu-macro macro]
                      [honu-syntax syntax]
+                     [honu-while while]
+                     [honu-match match]
+                     [honu-with with]
                      [honu-var var]
                      [honu-val val]
                      [honu-for for]
@@ -30,15 +35,18 @@
                      [honu-quasiquote quasiquote]
                      [honu-+ +] [honu-- -]
                      [honu-* *] [honu-/ /]
+                     [honu-modulo %]
                      [honu-^ ^]
                      [honu-> >] [honu-< <]
                      [honu->= >=] [honu-<= <=]
-                     [honu-= =]
+                     ; [honu-= =]
+                     [honu-equal =]
                      [honu-assignment :=]
                      [literal:honu-<- <-]
                      [honu-map map]
                      [honu-flow \|]
                      [honu-dot %dot]
+                     [honu--> %arrow]
                      [honu-string=? string_equal]
                      [honu-cons ::]
                      [honu-and and] [honu-and &&]

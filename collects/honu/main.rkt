@@ -25,6 +25,7 @@
          substring
          (rename-out [honu-cond cond]
                      [null empty]
+                     [current-inexact-milliseconds currentMilliseconds]
                      [string-length string_length]
                      [racket:empty? empty?]
                      [racket:first first]

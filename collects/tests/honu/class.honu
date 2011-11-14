@@ -1,6 +1,7 @@
 #lang honu
 
 class What(x){
+  var q = 2
   foobar(z){
     z + x
   }
