@@ -23,6 +23,7 @@
          null?
          length
          substring
+         void
          (rename-out [honu-cond cond]
                      [null empty]
                      [current-inexact-milliseconds currentMilliseconds]

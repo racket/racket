@@ -42,7 +42,7 @@
     [pattern x #:with result #f])
   (syntax-parse original-pattern
     [(thing:pattern-type ...)
-     (filter (lambda (x) x) (syntax->list #'(thing.result ...)))]))
+     (filter (lambda (x) (syntax-e x)) (syntax->list #'(thing.result ...)))]))
 
 (provide honu-macro)
 (define-honu-syntax honu-macro 
@@ -51,6 +51,7 @@
     (syntax-parse code #:literal-sets (cruft)
       [(_ name literals (#%braces pattern ...) (#%braces action ...) . rest)
        (debug "Pattern is ~a\n" #'(pattern ...))
+       (debug 2 "Pattern variables ~a\n" (find-pattern-variables #'(pattern ...)))
        (values
          (with-syntax ([(syntax-parse-pattern ...)
                         (convert-pattern #'(pattern ...))]
@@ -68,7 +69,8 @@
                                ;; instead of x_result. x_result is still there, too
                                (with-syntax ([pattern-variable.name #'pattern-variable.result]
                                              ...)
-                                 (code ...)) #'more #t)])))))
+                                 (code ...))
+                               #'more #t)])))))
          #'rest
          #t)])))
 
