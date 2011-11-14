@@ -9,27 +9,6 @@
 
 @defmodule[unstable/match]
 
-@unstable[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]]
-
-@defform*[[(== val comparator) (== val)]]{
-A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{match expander} 
-which checks if the matched value is the same as @racket[val] when
-compared by @racket[comparator].  If @racket[comparator] is
-not provided, it defaults to @racket[equal?].  
-
-@examples[#:eval the-eval
-(match (list 1 2 3)
-  [(== (list 1 2 3)) 'yes]
-  [_ 'no])
-(match (list 1 2 3)
-  [(== (list 1 2 3) eq?) 'yes]
-  [_ 'no])
-(match (list 1 2 3)
-  [(list 1 2 (== 3 =)) 'yes]
-  [_ 'no])
-]
-}
-
 @addition[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defform[(match? val-expr pat ...)]{

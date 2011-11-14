@@ -544,6 +544,26 @@ instead of @racket[match].}
 
 @section{Library Extensions}
 
+@defform*[[(== val comparator) (== val)]]{
+A @tech{match expander} 
+which checks if the matched value is the same as @racket[val] when
+compared by @racket[comparator].  If @racket[comparator] is
+not provided, it defaults to @racket[equal?].  
+
+@examples[#:eval match-eval
+(match (list 1 2 3)
+  [(== (list 1 2 3)) 'yes]
+  [_ 'no])
+(match (list 1 2 3)
+  [(== (list 1 2 3) eq?) 'yes]
+  [_ 'no])
+(match (list 1 2 3)
+  [(list 1 2 (== 3 =)) 'yes]
+  [_ 'no])
+]
+}
+
+
 @defform[(struct* struct-id ([field pat] ...))]{
  A @racket[match] pattern form that matches an instance of a structure
  type named @racket[struct-id], where the field @racket[field] in the

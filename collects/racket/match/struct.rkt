@@ -70,4 +70,12 @@
            (quasisyntax/loc stx
              (struct struct-name #,pats-in-order))))])))
 
-(provide struct*)
+(provide struct* ==)
+
+(define-match-expander
+  ==
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ val comp)
+       #'(? (lambda (x) (comp val x)))]
+      [(_ val) #'(? (lambda (x) (equal? val x)))])))

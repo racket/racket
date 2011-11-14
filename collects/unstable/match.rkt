@@ -5,15 +5,7 @@
          (for-syntax racket/base)
          (for-syntax syntax/parse))
 
-(provide == match? as object)
-
-(define-match-expander
-  ==
-  (lambda (stx)
-    (syntax-case stx ()
-      [(_ val comp)
-       #'(? (lambda (x) (comp val x)))]
-      [(_ val) #'(== val equal?)])))
+(provide match? as object)
 
 (define-syntax-rule (match? e p ...)
   (match e [p #t] ... [_ #f]))

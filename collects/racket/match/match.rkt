@@ -13,7 +13,7 @@
 (provide (for-syntax match-...-nesting)
          match-equality-test
          define-match-expander
-         struct*
+         struct* ==
          exn:misc:match?)
 
 (define-forms parse
