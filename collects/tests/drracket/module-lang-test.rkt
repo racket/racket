@@ -1,5 +1,6 @@
-#lang at-exp racket/gui
-(require "private/module-lang-test-utils.rkt")
+#lang at-exp racket/base
+(require "private/module-lang-test-utils.rkt"
+         "private/drracket-test-util.rkt")
 (provide run-test)
 
 ;; set up for tests that need external files
@@ -370,6 +371,5 @@
       "(+ 1 2)"
       "3")
 
-
-(require "private/drracket-test-util.rkt")
+(printf "starting drracket\n")
 (fire-up-drscheme-and-run-tests run-test)

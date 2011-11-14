@@ -1,8 +1,10 @@
-#lang racket/gui
+#lang racket/base
 (require "drracket-test-util.rkt"
          mzlib/etc
          framework
-         racket/string)
+         racket/string
+         (for-syntax racket/base)
+         racket/class)
 
 (provide test t rx run-test in-here write-test-modules)
 
