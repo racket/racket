@@ -82,9 +82,24 @@ static int place_async_channel_val_SIZE(void *p, struct NewGC *gc) {
 
 static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
+  Scheme_Object *pr;
+  int i, j, sz;
   gcMARK2(pac->msgs, gc);
   gcMARK2(pac->msg_memory, gc);
+  gcMARK2(pac->msg_chains, gc);
   gcMARK2(pac->wakeup_signal, gc);
+
+  /* mark master-allocated objects within each messages: */
+  j = pac->out;
+  sz = pac->size;
+  for (i = pac->count; i--; ) {
+    pr = pac->msg_chains[j];
+    while (pr) {
+      gcMARK2(SCHEME_CAR(pr), gc);
+      pr = SCHEME_CDR(pr);
+    }
+    j = ((j + 1) & sz);
+  }
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
@@ -92,9 +107,24 @@ static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
 
 static int place_async_channel_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
+  Scheme_Object *pr;
+  int i, j, sz;
   gcFIXUP2(pac->msgs, gc);
   gcFIXUP2(pac->msg_memory, gc);
+  gcFIXUP2(pac->msg_chains, gc);
   gcFIXUP2(pac->wakeup_signal, gc);
+
+  /* mark master-allocated objects within each messages: */
+  j = pac->out;
+  sz = pac->size;
+  for (i = pac->count; i--; ) {
+    pr = pac->msg_chains[j];
+    while (pr) {
+      gcFIXUP2(SCHEME_CAR(pr), gc);
+      pr = SCHEME_CDR(pr);
+    }
+    j = ((j + 1) & sz);
+  }
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));

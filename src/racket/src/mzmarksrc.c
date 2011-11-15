@@ -1470,9 +1470,24 @@ place_val {
 place_async_channel_val {
  mark:
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
+  Scheme_Object *pr;
+  int i, j, sz;
   gcMARK2(pac->msgs, gc);
   gcMARK2(pac->msg_memory, gc);
+  gcMARK2(pac->msg_chains, gc);
   gcMARK2(pac->wakeup_signal, gc);
+
+  /* mark master-allocated objects within each messages: */
+  j = pac->out;
+  sz = pac->size;
+  for (i = pac->count; i--; ) {
+    pr = pac->msg_chains[j];
+    while (pr) {
+      gcMARK2(SCHEME_CAR(pr), gc);
+      pr = SCHEME_CDR(pr);
+    }
+    j = ((j + 1) & sz);
+  }
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
