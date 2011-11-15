@@ -47,7 +47,6 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *cache_ht);
 /* read-only globals */
 SHARED_OK static char compacts[_CPT_COUNT_];
 SHARED_OK static Scheme_Hash_Table *global_constants_ht;
-SHARED_OK static Scheme_Object *quote_link_symbol = NULL;
 
 ROSYM Scheme_Object *quote_symbol;
 ROSYM Scheme_Object *quasiquote_symbol;
@@ -162,11 +161,6 @@ void scheme_init_print(Scheme_Env *env)
 {
   int i;
 
-
-  REGISTER_SO(quote_link_symbol);
-  
-  quote_link_symbol = scheme_intern_symbol("-q");
-  
   for (i = 0; i < _CPT_COUNT_; i++) {
     compacts[i] = i;
   }
