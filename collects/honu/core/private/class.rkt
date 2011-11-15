@@ -19,7 +19,7 @@
     [pattern method:honu-function
              #:with result (replace-with-public #'method.result)]
     [pattern var:honu-declaration
-             #:with result #'(field [var.name var.expression])]))
+             #:with result #'(field [var.name var.expression] ...)]))
 
 (provide honu-class)
 (define-honu-syntax honu-class
