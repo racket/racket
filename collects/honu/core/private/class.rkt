@@ -2,7 +2,7 @@
 
 (require "macro2.rkt"
          "literals.rkt"
-         (only-in "honu2.rkt" honu-declaration honu-equal)
+         (only-in "honu2.rkt" honu-declaration honu-equal separate-ids)
          (for-syntax racket/base
                      "literals.rkt"
                      "parse2.rkt"
@@ -25,11 +25,12 @@
 (define-honu-syntax honu-class
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ name (#%parens constructor-argument ...) (#%braces method:honu-class-thing ...) . rest)
+      [(_ name (#%parens (~var constructor-argument (separate-ids #'honu-comma #'dont-care)))
+          (#%braces method:honu-class-thing ...) . rest)
        (define class
          #'(%racket (define name (class* object% ()
                                          (super-new)
-                                         (init-field constructor-argument ...)
+                                         (init-field constructor-argument.id ...)
                                          method.result ...))))
        (values class #'rest #t)])))
 

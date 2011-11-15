@@ -1,11 +1,11 @@
 #lang honu
 
-class What(x){
+class What(x, y){
   var q = 2
   foobar(z){
-    z + x
+    z + x + y
   }
 };
 
-var instance = new What(5);
+var instance = new What(5, 8);
 printf("got ~a\n", instance->foobar(10))

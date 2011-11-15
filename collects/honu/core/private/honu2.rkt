@@ -260,15 +260,18 @@
                  #'more))])))
 
 (begin-for-syntax
+  (define-splicing-syntax-class (id-must-be what)
+    [pattern x:id #:when (free-identifier=? #'x what)])
   (define-splicing-syntax-class (id-except ignores)
-    [pattern x:id #:when (not (for/fold ([ok #t])
+    [pattern x:id #:when (not (for/fold ([ok #f])
                                         ([ignore ignores])
-                                (and ok (free-identifier=? #'x ignore))))])
+                                (or ok (free-identifier=? #'x ignore))))])
+  (provide separate-ids)
   (define-splicing-syntax-class (separate-ids separator end)
     [pattern (~seq (~var first (id-except (list separator end)))
-                   (~seq (~var between (id-except (list separator end)))
+                   (~seq (~var between (id-must-be separator))
                          (~var next (id-except (list separator end)))) ...)
-             #:with (ids ...) #'(first.x next.x ...)]))
+             #:with (id ...) #'(first.x next.x ...)]))
 
 (begin-for-syntax
   (provide honu-declaration)
@@ -285,7 +288,7 @@
                               #:literals (honu-equal honu-var)
      [pattern (~seq honu-var (~var variables (separate-ids #'honu-comma #'honu-equal))
                     honu-equal one:honu-expression)
-              #:with (name ...) #'(variables.ids ...)
+              #:with (name ...) #'(variables.id ...)
               #:with expression #'one.result]))
 
 (provide honu-var)
