@@ -303,7 +303,14 @@
    [bytes-utf-8-index (-Bytes [index-type (Un (-val #f) -Char) index-type index-type] . ->opt . -Index)]
 
    [integer->integer-bytes (-Integer index-type Univ [Univ -Bytes index-type] . ->opt . -Bytes)]
-   [integer-bytes->integer (-Bytes Univ [Univ index-type index-type] . ->opt . -Integer)]
+   [integer-bytes->integer
+    (cl->*
+     ;; Any truthy value (not only #t) would work here.
+     ;; We can define a truthy type (without difference types (- Univ #f))
+     ;; by unioning everything (including StructTop and co).
+     ;; We should do this at some point.
+     (-Bytes (-val #t) [Univ index-type index-type] . ->opt . -Nat)
+     (-Bytes Univ [Univ index-type index-type] . ->opt . -Integer))]
 
    [peek-char
     (cl->* [->opt [-Input-Port index-type] (Un -Char (-val eof))])]

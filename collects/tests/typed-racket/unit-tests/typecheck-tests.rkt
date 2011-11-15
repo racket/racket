@@ -266,6 +266,9 @@
                     (when (boolean? x) #t))
               -Void]
 
+        [tc-e (integer-bytes->integer '#"abcd" #t) -Nat]
+        [tc-e (integer-bytes->integer '#"abcd" #f) -Int]
+
         [tc-e/t (let: ([x : Any 3])
                     (if (list? x)
                         (begin (car x) 1)

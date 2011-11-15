@@ -1352,9 +1352,11 @@
   (-NonPosInt -Int . -> . (-values (list -Int -NonPosInt)))
   (-Int -Int . -> . (-values (list -Int -Int))))]
 
-[arithmetic-shift (cl->* (-Zero (Un -NegFixnum -Zero) . -> . -Zero)
-                         (-NonNegFixnum (Un -NegFixnum -Zero) . -> . -NonNegFixnum)
-                         (-Fixnum (Un -NegFixnum -Zero) . -> . -Fixnum)
+[arithmetic-shift (cl->* (-Zero -NonPosInt . -> . -Zero)
+                         (-Byte -NonPosInt . -> . -Byte)
+                         (-Index -NonPosInt . -> . -Index)
+                         (-NonNegFixnum -NonPosInt . -> . -NonNegFixnum)
+                         (-Fixnum -NonPosInt . -> . -Fixnum)
                          (-Nat -Int . -> . -Nat)
                          (-Int -Int . -> . -Int))]
 
