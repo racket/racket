@@ -276,6 +276,11 @@
      [(and (= msg WM_SIZE)
            (not (= wParam SIZE_MINIMIZED)))
       (queue-window-event this (lambda () (queue-on-size)))
+      ;; for live resize:
+      (constrained-reply (get-eventspace)
+			 (lambda ()
+			   (let loop () (pre-event-sync #t) (when (yield) (loop))))
+			 (void))
       (stdret 0 1)]
      [(= msg WM_MOVE)
       (queue-window-event this (lambda () (queue-on-size)))
