@@ -7,5 +7,5 @@
           integer->superscript
           digits-for-range
           real->decimal-string* real->string/trunc
-          real->plot-label ->plot-label
+          real->plot-label ivl->string ->plot-label
           parse-format-string apply-formatter))

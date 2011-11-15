@@ -83,6 +83,9 @@
 (defproc (real->plot-label [x real?] [digits exact-integer?] [scientific? boolean? #t]) any
   (cond
     [(zero? x)  "0"]
+    [(eqv? x +nan.0)  "+nan.0"]
+    [(eqv? x +inf.0)  "+inf.0"]
+    [(eqv? x -inf.0)  "-inf.0"]
     [else
      (define front-sign (if (x . < . 0) "-" ""))
      (define mid-sign (if (x . < . 0) "-" "+"))
@@ -132,6 +135,26 @@
                 [int-zero?   (format "~a.~a" front-sign frac-str)]
                 [frac-zero?  (format "~a~a" front-sign int-str)]
                 [else        (format "~a~a.~a" front-sign int-str frac-str)])]))]))
+
+(define (format-special x)
+  (case x
+    [(#f)  "#f"]
+    [(+nan.0)  "+nan.0"]
+    [(+inf.0)  "+inf.0"]
+    [(-inf.0)  "-inf.0"]
+    [else  "<unknown>"]))
+
+(defproc (ivl->string [i ivl?] [extra-digits exact-integer? 3]) string?
+  (match-define (ivl a b) i)
+  (cond [(and (not (regular-real? a)) (not (regular-real? b)))
+         (format "[~a,~a]" (format-special a) (format-special b))]
+        [(not (regular-real? a))  (format "[~a,~a]" (format-special a) (real->plot-label b 15))]
+        [(not (regular-real? b))  (format "[~a,~a]" (real->plot-label a 15) (format-special b))]
+        [else
+         (define digits (digits-for-range a b extra-digits))
+         (format "[~a,~a]"
+                 (real->plot-label a digits)
+                 (real->plot-label b digits))]))
 
 (defproc (->plot-label [a any/c] [digits exact-integer? 7]) string?
   (let loop ([a a])

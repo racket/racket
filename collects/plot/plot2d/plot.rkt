@@ -14,6 +14,7 @@
          "../common/file-type.rkt"
          "../common/deprecation-warning.rkt"
          "../common/contract-doc.rkt"
+         "../common/format.rkt"
          "plot-area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
@@ -37,9 +38,9 @@
   (define plot-bounds-rect (bounds-fixpoint renderer-list given-bounds-rect))
   (when (or (not (rect-regular? plot-bounds-rect))
             (rect-zero-area? plot-bounds-rect))
-    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) plot-bounds-rect)
-    (error 'plot "could not determine sensible plot bounds; got x ∈ [~a,~a], y ∈ [~a,~a]"
-           x-min x-max y-min y-max))
+    (match-define (vector x-ivl y-ivl) plot-bounds-rect)
+    (error 'plot "could not determine sensible plot bounds; got x ∈ ~a, y ∈ ~a"
+           (ivl->string x-ivl) (ivl->string y-ivl)))
   plot-bounds-rect)
 
 (define (get-ticks renderer-list bounds-rect)
