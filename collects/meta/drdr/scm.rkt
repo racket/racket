@@ -34,16 +34,22 @@
      (get-pure-port 
       (string->url 
        (format "~a/pushes/~a/~a" git-url-base push-n100s push-nrem)))))
-  (match ls
-    [(list (regexp #rx"^([^ ]+) +([0-9abcdef]+)$" (list _ who end-commit))
-           (regexp #rx"^([0-9abcdef]+) +([0-9abcdef]+) +(.+)$" (list _ bstart bend branch))
-           ...)
-     (make-push-data who end-commit 
-                     (make-immutable-hash
-                      (map (lambda (b bs be) (cons b (vector bs be)))
-                           branch bstart bend)))]
-    [_
-     #f]))
+  (match 
+   ls
+   [(list (regexp #rx"^([^ ]+) +([0-9abcdef]+)$" (list _ who end-commit))
+          (regexp #rx"^([0-9abcdef]+) +([0-9abcdef]+) +(.+)$" (list _ bstart bend branch)))
+    (make-push-data who bend
+                    (make-immutable-hash
+                     (list (cons branch (vector bstart bend)))))]
+   [(list (regexp #rx"^([^ ]+) +([0-9abcdef]+)$" (list _ who end-commit))
+          (regexp #rx"^([0-9abcdef]+) +([0-9abcdef]+) +(.+)$" (list _ bstart bend branch))
+          ...)
+    (make-push-data who end-commit 
+                    (make-immutable-hash
+                     (map (lambda (b bs be) (cons b (vector bs be)))
+                          branch bstart bend)))]
+   [_
+    #f]))
 
 (define (pipe/proc cmds)
   (if (null? (cdr cmds))
@@ -168,9 +174,15 @@
      (git-path)
      "--no-pager" "log" "--format=format:%P" start "-1")))  
 (define (git-push-start-commit gp)
-  (git-commit-hash (last (git-push-commits gp))))
+  (define cs (git-push-commits gp))
+  (if (empty? cs)
+      "xxxxxxxxxxxxxxxxxxxxxxxxx"
+      (git-commit-hash (last cs))))
 (define (git-push-end-commit gp)
-  (git-commit-hash (first (git-push-commits gp))))
+  (define cs (git-push-commits gp))
+  (if (empty? cs)
+      "xxxxxxxxxxxxxxxxxxxxxxxxx"
+      (git-commit-hash (first cs))))
 (provide/contract
  [git-push-previous-commit (git-push? . -> . string?)]
  [git-push-start-commit (git-push? . -> . string?)]
@@ -198,19 +210,23 @@
   (void))
 
 (define (scm-export-repo rev repo dest)
+  (define end (push-data-end-commit (push-info rev)))
+  (printf "Exporting ~v where end = ~a\n"
+          (list rev repo dest)
+          end)
   (pipe
    (system*
     (git-path) "archive"
     (format "--remote=~a" repo)
     (format "--prefix=~a/" (regexp-replace #rx"/+$" (path->string* dest) ""))
     "--format=tar"
-    (push-data-end-commit (push-info rev)))
+    end)
    (system* (find-executable-path "tar") "xf" "-" "--absolute-names"))
   (void))
 
 (define (scm-update repo)
   (parameterize ([current-directory repo])
-    (system* (git-path) "fetch" git-url-base))
+    (system* (git-path) "fetch"))
   (void))
 
 (define master-branch "refs/heads/master")
