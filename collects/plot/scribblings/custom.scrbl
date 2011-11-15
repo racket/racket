@@ -4,7 +4,6 @@
 
 @title[#:tag "custom"]{Custom Plot Elements}
 
-@defmodule*/no-declare[(plot/utils)]
 @declare-exporting[plot/utils]
 
 @section{Plot Elements}

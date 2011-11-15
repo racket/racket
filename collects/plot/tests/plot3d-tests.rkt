@@ -10,15 +10,6 @@
 (time
  (plot3d (points3d empty) #:x-min -1 #:x-max 1 #:y-min -1 #:y-max 1 #:z-min -1 #:z-max 1))
 
-(define flepsilon (ordinal->flonum 1))
-
-(time
- (plot3d (lines3d (list (vector 0 0 0) (vector flepsilon flepsilon flepsilon)))))
-
-(time
- (plot3d (contour-intervals3d (λ (x y) (- (sqr x) (sqr y)))
-                              (- flepsilon) flepsilon (- flepsilon) flepsilon)))
-
 (parameterize ([plot-background  "black"]
                [plot-foreground  "white"]
                [plot-background-alpha  1/2]
@@ -242,3 +233,6 @@
                                      #:contour-styles '(long-dash)
                                      #:alphas '(1 2/3))
                 #:altitude 20)))
+
+(time
+ (plot3d (contour-intervals3d (λ (x y) (- (sqr x) (sqr y))) -min.0 +min.0 -min.0 +min.0)))
