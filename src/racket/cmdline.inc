@@ -142,6 +142,7 @@ enum {
   mzcmd_REQUIRE_LIB     = 4,
   mzcmd_REQUIRE_PLANET  = 5,
   mzcmd_EMBEDDED        = 6,
+  mzcmd_EMBEDDED_REG    = 7,
 };
 
 /* To avoid having to create a specific mark procedure for
@@ -283,7 +284,8 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
                  || (fa->eval_kind[i] == mzcmd_REQUIRE_FILE)
                  || (fa->eval_kind[i] == mzcmd_REQUIRE_LIB)
                  || (fa->eval_kind[i] == mzcmd_REQUIRE_PLANET)
-                 || (fa->eval_kind[i] == mzcmd_EMBEDDED)) {
+                 || (fa->eval_kind[i] == mzcmd_EMBEDDED)
+                 || (fa->eval_kind[i] == mzcmd_EMBEDDED_REG)) {
 	Scheme_Thread * volatile p;
 	p = scheme_get_current_thread();
 	save = p->error_buf;
@@ -295,15 +297,11 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
           } else if (fa->eval_kind[i] == mzcmd_LOAD) {
             /* eval from stdin */
             scheme_eval_all_with_prompt(NULL, fa->global_env, 2);
+          } else if (fa->eval_kind[i] == mzcmd_EMBEDDED_REG) {
+            scheme_register_embedded_load(fa->evals_and_loads[i]);
+            scheme_embedded_load(fa->evals_and_loads[i], 1);
           } else if (fa->eval_kind[i] == mzcmd_EMBEDDED) {
-            Scheme_Object *s, *e, *a[3], *eload;
-            eload = scheme_builtin_value("embedded-load");
-            s = scheme_make_utf8_string(fa->evals_and_loads[i]);
-            e = scheme_make_utf8_string(fa->evals_and_loads[i] + strlen(fa->evals_and_loads[i]) + 1);
-            a[0] = s;
-            a[1] = e;
-            a[2] = scheme_make_false();
-            scheme_apply(eload, 3, a);
+            scheme_embedded_load(fa->evals_and_loads[i], 0);
           } else {
             Scheme_Object *a[1], *nsreq;
             char *name;
@@ -990,16 +988,21 @@ static int run_from_cmd_line(int argc, char *_argv[],
           if (!init_ns)
             no_init_ns = 1;
 	  break;
-	case 'k':
-	  if (argc < 3) {
+        case 'k':
+	  if (argc < 4) {
 	    PRINTF("%s: missing %s after %s switch\n", 
 		   prog, 
-		   (argc < 2) ? "starting and ending offsets" : "ending offset",
+		   (argc < 2) ? "starting and ending offsets" : "second ending offset",
 		   real_switch);
 	    goto show_need_help;
 	  }
 	  argv++;
 	  --argc;
+	  se = make_embedded_load(argv[0], argv[1]);
+	  evals_and_loads[num_enl] = se;
+	  argv++;
+	  --argc;
+	  eval_kind[num_enl++] = mzcmd_EMBEDDED_REG;
 	  se = make_embedded_load(argv[0], argv[1]);
 	  evals_and_loads[num_enl] = se;
 	  argv++;
@@ -1348,7 +1351,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -p <package> : Like -e '(require (planet \"<package>\")'\n"
 	 "  -r <file>, --script <file> : Same as -f <file> -N <file> --\n" 
 	 "  -u <file>, --require-script <file> : Same as -t <file> -N <file> --\n" 
-	 "  -k <n> <m> : Load executable-embedded code from file offset <n> to <m>\n"
+	 "  -k <n> <m> <p> : Load executable-embedded code from offset <n> to <p>\n"
 	 "  -m, --main : Call `main' with command-line arguments, print results\n"
 	 " Interaction options:\n"
          "  -i, --repl : Run interactive read-eval-print loop; implies -v\n"

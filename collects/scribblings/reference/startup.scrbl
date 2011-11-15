@@ -166,10 +166,14 @@ flags:
        all further command-line elements to be treated as non-flag
        arguments.}
 
-  @item{@FlagFirst{k} @nonterm{n} @nonterm{m} : Loads code embedded in
-        the executable from file position @nonterm{n} to
-        @nonterm{m}. This option is normally embedded in a stand-alone
-        binary that also embeds Racket code.}
+  @item{@FlagFirst{k} @nonterm{n} @nonterm{m} @nonterm{p} : Loads code
+        embedded in the executable from file position @nonterm{n} to
+        @nonterm{m} and from @nonterm{m} to @nonterm{p}. The first
+        range is loaded in every new @tech{place}, and any modules
+        declared in that range are considered predefined in the sense
+        of @racket[module-predefined?]. This option is normally
+        embedded in a stand-alone binary that also embeds Racket
+        code.}
 
   @item{@FlagFirst{m} or @DFlagFirst{main} : Evaluates a call to
         @racketidfont{main} as bound in the top-level environment. All

@@ -43,7 +43,7 @@
 SHARED_OK int scheme_allow_set_undefined;
 void scheme_set_allow_set_undefined(int v) { scheme_allow_set_undefined =  v; }
 int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
-SHARED_OK int scheme_starting_up;
+THREAD_LOCAL_DECL(int scheme_starting_up);
 
 /* globals READ-ONLY SHARED */
 Scheme_Object *scheme_varref_const_p_proc;
@@ -489,12 +489,13 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 
   scheme_init_foreign(env);
 
+  scheme_starting_up = 1; /* in case it's not set already */
+
   scheme_add_embedded_builtins(env);
 
   boot_module_resolver();
 
   scheme_save_initial_module_set(env);
-
 
   scheme_starting_up = 0;
 

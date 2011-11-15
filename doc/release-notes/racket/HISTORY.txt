@@ -1,4 +1,8 @@
-Version 5.2.2
+Version 5.2.0.3
+Added module-predefined?
+Changed the raacket -k command-line flag
+
+Version 5.2.0.2
 Added port-closed-evt
 Changed I/O scheduling to use epoll()/kqueue() when available
 

@@ -799,7 +799,7 @@
     ;; into an executable). The bundle is written to the current output port.
     (define (do-write-module-bundle outp verbose? modules config? literal-files literal-expressions collects-dest
                                     on-extension program-name compiler expand-namespace 
-                                    src-filter get-extra-imports)
+                                    src-filter get-extra-imports on-decls-done)
       (let* ([module-paths (map cadr modules)]
              [resolve-one-path (lambda (mp)
                                  (let ([f (resolve-module-path mp #f)])
@@ -998,6 +998,7 @@
         ;; Remove `module' binding before we start running user code:
         (write (compile-using-kernel '(namespace-set-variable-value! 'module #f #t)) outp)
         (write (compile-using-kernel '(namespace-undefine-variable! 'module)) outp)
+        (on-decls-done outp)
         (newline outp)
         (when config-infos
           (for ([config-info (in-list config-infos)])
@@ -1032,7 +1033,8 @@
                               on-extension
                               "?" ; program-name 
                               compiler expand-namespace 
-                              src-filter get-extra-imports))
+                              src-filter get-extra-imports
+                              void))
 
     
     ;; The old interface:
@@ -1175,6 +1177,7 @@
                           (update-dll-dir dest (build-path orig-dir dir))))))))
             (let ([write-module
                    (lambda (s)
+                     (define pos #f)
                      (do-write-module-bundle s
                                              verbose? modules config? literal-files literal-expressions collects-dest
                                              on-extension
@@ -1182,11 +1185,14 @@
                                              compiler
                                              expand-namespace
                                              src-filter
-                                             get-extra-imports))]
+                                             get-extra-imports
+                                             (lambda (outp) (set! pos (file-position outp))))
+                     pos)]
 		  [make-full-cmdline
-		   (lambda (start end)
+		   (lambda (start decl-end end)
 		     (let ([start-s (number->string start)]
-			   [end-s (number->string end)])
+			   [decl-end-s (number->string decl-end)]
+                           [end-s (number->string end)])
 		       (append (if launcher?
 				   (if (and (eq? 'windows (system-type))
 					    keep-exe?)
@@ -1197,7 +1203,7 @@
 						  exe)))
 				       ;; No argv[0]:
 				       null)
-				   (list "-k" start-s end-s))
+				   (list "-k" start-s decl-end-s end-s))
 			       cmdline)))]
 		  [make-starter-cmdline
 		   (lambda (full-cmdline)
@@ -1219,20 +1225,21 @@
 						  dir)
 					      "")))
 				  full-cmdline))))])
-              (let-values ([(start end cmdline-end)
+              (let-values ([(start decl-end end cmdline-end)
                             (if (and (eq? (system-type) 'macosx)
                                      (not unix-starter?))
                                 ;; For Mach-O, we know how to add a proper segment
                                 (let ([s (open-output-bytes)])
-                                  (write-module s)
+                                  (define decl-len (write-module s))
                                   (let ([s (get-output-bytes s)])
                                     (let ([start (add-plt-segment dest-exe s)])
                                       (values start
+                                              (+ start decl-len)
                                               (+ start (bytes-length s))
 					      #f))))
                                 ;; Unix starter: Maybe ELF, in which case we 
                                 ;; can add a proper section
-                                (let-values ([(s e p)
+                                (let-values ([(s e dl p)
 					      (if unix-starter?
 						  (add-racket-section 
 						   orig-exe 
@@ -1240,25 +1247,28 @@
 						   (if launcher? #".rackcmdl" #".rackprog")
 						   (lambda (start)
 						     (let ([s (open-output-bytes)])
-						       (write-module s)
+						       (define decl-len (write-module s))
 						       (let ([p (file-position s)])
 							 (display (make-starter-cmdline
-								   (make-full-cmdline start (+ start p)))
+								   (make-full-cmdline start 
+                                                                                      (+ start decl-len)
+                                                                                      (+ start p)))
 								  s)
-							 (values (get-output-bytes s) p)))))
-						  (values #f #f #f))])
+							 (values (get-output-bytes s) decl-len p)))))
+						  (values #f #f #f #f))])
                                   (if (and s e)
 				      ;; ELF succeeded:
-                                      (values s (+ s p) e)
+                                      (values s (+ s dl) (+ s p) e)
                                       ;; Otherwise, just add to the end of the file:
                                       (let ([start (file-size dest-exe)])
-                                        (call-with-output-file* dest-exe write-module 
-                                                                #:exists 'append)
-                                        (values start (file-size dest-exe) #f)))))])
+                                        (define decl-end
+                                          (call-with-output-file* dest-exe write-module 
+                                                                  #:exists 'append))
+                                        (values start decl-end (file-size dest-exe) #f)))))])
                 (when verbose?
                   (fprintf (current-error-port) "Setting command line\n"))
 		(let ()
-                  (let ([full-cmdline (make-full-cmdline start end)])
+                  (let ([full-cmdline (make-full-cmdline start decl-end end)])
                     (when collects-path-bytes
                       (when verbose?
                         (fprintf (current-error-port) "Setting collection path\n"))
@@ -1298,6 +1308,7 @@
                               (file-position out (+ numpos 7))
                               (write-bytes #"!" out)
                               (write-num start)
+                              (write-num decl-end)
                               (write-num end)
                               (write-num cmdline-end)
                               (write-num (length full-cmdline))

@@ -179,7 +179,7 @@ void scheme_clear_ephemerons(void);
 /*                             initialization                             */
 /*========================================================================*/
 
-extern int scheme_starting_up;
+THREAD_LOCAL_DECL(extern int scheme_starting_up);
 
 void scheme_init_finalization(void);
 void scheme_init_portable_case(void);
@@ -1095,6 +1095,8 @@ Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht);
 void scheme_populate_pt_ht(struct Scheme_Module_Phase_Exports * pt);
 
 Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from);
+
+int scheme_is_predefined_module_p(Scheme_Object *name);
 
 /*========================================================================*/
 /*                   syntax run-time structures                           */
@@ -2994,6 +2996,7 @@ typedef struct Scheme_Module_Export_Info {
 typedef struct Scheme_Module
 {
   Scheme_Object so; /* scheme_module_type */
+  short predefined;
 
   Scheme_Object *code_key;
 

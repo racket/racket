@@ -63,6 +63,7 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_imports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_exports(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_is_predefined(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_resolve(int argc, Scheme_Object *argv[]);
@@ -408,6 +409,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 2, env);
   GLOBAL_PRIM_W_ARITY("module->imports",                  module_to_imports,          1, 1, env);
   GLOBAL_PRIM_W_ARITY2("module->exports",                 module_to_exports,          1, 1, 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("module-predefined?",               module_is_predefined,       1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-path?",                     is_module_path,             1, 1, env);
 }
 
@@ -458,6 +460,7 @@ void scheme_finish_kernel(Scheme_Env *env)
 
   kernel = MALLOC_ONE_TAGGED(Scheme_Module);
   kernel->so.type = scheme_module_type;
+  kernel->predefined = 1;
   env->module = kernel;
 
   {
@@ -2739,7 +2742,7 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
   return scheme_module_to_namespace(argv[0], env);
 }
 
-static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[])
+static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[], int unknown_ok)
 {
   Scheme_Env *env;
   Scheme_Object *name;
@@ -2764,7 +2767,7 @@ static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[
     m = (Scheme_Module *)scheme_hash_get(env->module_registry->loaded, name);
   }
 
-  if (!m)
+  if (!m && !unknown_ok)
     scheme_arg_mismatch(who,
                         "unknown module in the current namespace: ",
                         name);
@@ -2776,9 +2779,29 @@ static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[])
 {
   Scheme_Module *m;
 
-  m = module_to_("module->language-info", argc, argv);
+  m = module_to_("module->language-info", argc, argv, 0);
 
   return (m->lang_info ? m->lang_info : scheme_false);
+}
+
+static Scheme_Object *module_is_predefined(int argc, Scheme_Object *argv[])
+{
+  Scheme_Module *m;
+
+  m = module_to_("module-predefined?", argc, argv, 1);
+
+  return ((m && m->predefined) ? scheme_true : scheme_false);
+}
+
+int scheme_is_predefined_module_p(Scheme_Object *name)
+{
+  Scheme_Object *a[1];
+  Scheme_Module *m;
+
+  a[0] = name;
+  m = module_to_("module-predefined?", 1, a, 1);
+  
+  return m && m->predefined;
 }
 
 static Scheme_Object *extract_compiled_imports(Scheme_Module *m)
@@ -2882,7 +2905,7 @@ static Scheme_Object *module_to_imports(int argc, Scheme_Object *argv[])
 {
   Scheme_Module *m;
 
-  m = module_to_("module->imports", argc, argv);
+  m = module_to_("module->imports", argc, argv, 0);
 
   return extract_compiled_imports(m);
 }
@@ -2891,7 +2914,7 @@ static Scheme_Object *module_to_exports(int argc, Scheme_Object *argv[])
 {
   Scheme_Module *m;
 
-  m = module_to_("module->exports", argc, argv);
+  m = module_to_("module->exports", argc, argv, 0);
 
   return extract_compiled_exports(m);
 }
@@ -4963,6 +4986,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
+  m->predefined = scheme_starting_up;
   
   env = scheme_new_module_env(for_env, m, 0);
 
@@ -5657,6 +5681,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
+  m->predefined = scheme_starting_up;
 
   /* must set before calling new_module_env: */
   rmp = SCHEME_STX_VAL(nm);

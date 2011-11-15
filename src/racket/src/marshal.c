@@ -1326,6 +1326,7 @@ static Scheme_Object *read_module(Scheme_Object *obj)
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
+  m->predefined = scheme_starting_up;
 
   me = scheme_make_module_exports();
   m->me = me;

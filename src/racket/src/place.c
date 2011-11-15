@@ -24,7 +24,8 @@ static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]);
 static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]);
 
 THREAD_LOCAL_DECL(int scheme_current_place_id);
-ROSYM static Scheme_Object *quote_symbol;
+
+SHARED_OK static const char *embedded_load;
 
 #ifdef MZ_USE_PLACES
 
@@ -36,6 +37,8 @@ ROSYM static Scheme_Object *quote_symbol;
 
 READ_ONLY static Scheme_Object *scheme_def_place_exit_proc;
 SHARED_OK static int scheme_places_enabled = 1;
+
+ROSYM static Scheme_Object *quote_symbol;
 
 static int id_counter;
 static mzrt_mutex *id_counter_mutex;
@@ -112,6 +115,7 @@ static void register_traversers(void) { }
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
+
 void scheme_init_place(Scheme_Env *env)
 {
   Scheme_Env *plenv;
@@ -157,10 +161,10 @@ void scheme_init_places_once() {
   mzrt_mutex_create(&id_counter_mutex);
   REGISTER_SO(scheme_def_place_exit_proc);
   scheme_def_place_exit_proc = scheme_make_prim_w_arity(def_place_exit_handler_proc, "default-place-exit-handler", 1, 1);
-#endif
 
  REGISTER_SO(quote_symbol);
  quote_symbol = scheme_intern_symbol("quote");
+#endif
 }
 
 int scheme_get_place_id(void)
@@ -170,6 +174,11 @@ int scheme_get_place_id(void)
 #else
   return 0;
 #endif
+}
+
+void scheme_register_embedded_load(const char *s)
+{
+  embedded_load = s;
 }
 
 #ifdef MZ_USE_PLACES
@@ -316,8 +325,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
       scheme_wrong_type("dynamic-place", "file-stream-output-port or #f", 4, argc, args);
     }
 
-    if (SCHEME_PAIRP(args[0]) && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)) {
-      scheme_arg_mismatch("dynamic-place", "not only a filesystem module-path: ", args[0]);
+    if (SCHEME_PAIRP(args[0]) 
+        && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)
+        && !scheme_is_predefined_module_p(args[0])) {
+      scheme_arg_mismatch("dynamic-place", "not a filesystem or predefined module-path: ", args[0]);
     }
 
     so = places_deep_copy_to_master(args[0]);
@@ -2199,7 +2210,33 @@ static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[
 
   return scheme_void; /* Never get here */
 }
-  
+
+static int do_embedded_load()
+{
+  if (embedded_load) {
+    Scheme_Thread * volatile p;
+    mz_jmp_buf * volatile save, newbuf;
+    volatile int rc;
+
+    p = scheme_get_current_thread();
+    save = p->error_buf;
+    p->error_buf = &newbuf;
+    
+    if (!scheme_setjmp(newbuf)) {
+      scheme_embedded_load(embedded_load, 1);
+      rc = 1;
+    } else {
+      rc = 0;
+    }
+
+    p->error_buf = save;
+
+    return rc;
+  }
+
+  return 1;
+}
+
 static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   Place_Start_Data *place_data;
   Scheme_Place_Object *place_obj;
@@ -2285,10 +2322,9 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_place_exit_proc);
 
-  
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: started", scheme_current_place_id);
 
-  {
+  if (do_embedded_load()) {
     Scheme_Thread * volatile p;
     mz_jmp_buf * volatile saved_error_buf;
     mz_jmp_buf new_error_buf;
@@ -2313,6 +2349,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     p->error_buf = saved_error_buf;
     
     place_set_result(rc);
+  } else {
+    place_set_result(scheme_make_integer(1));
   }
 
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);

@@ -5078,6 +5078,22 @@ Scheme_Object *scheme_eval_string_multi_with_prompt(const char *str, Scheme_Env 
   return do_eval_string_all(NULL, str, env, 0, 1);
 }
 
+void scheme_embedded_load(const char *desc, int predefined)
+{
+  Scheme_Object *s, *e, *a[3], *eload;
+  eload = scheme_builtin_value("embedded-load");
+  s = scheme_make_utf8_string(desc);
+  e = scheme_make_utf8_string(desc XFORM_OK_PLUS strlen(desc) XFORM_OK_PLUS 1);
+  a[0] = s;
+  a[1] = e;
+  a[2] = scheme_false;
+  if (predefined)
+    scheme_starting_up = 1;
+  (void)scheme_apply(eload, 3, a);
+  if (predefined)
+    scheme_starting_up = 0;
+}
+
 void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs)
 {		
   mz_jmp_buf * volatile save, newbuf;

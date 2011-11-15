@@ -148,7 +148,11 @@ are simulated using @racket[thread].}
  place. If the output ports are @tech{file-stream ports}, then the
  connected ports in the places share the underlying stream, otherwise
  a @tech{thread} in the creating place pumps bytes to the current
- ports in the creating place.}
+ ports in the creating place.
+
+ The @racket[module-path] argument must not be a module path of the
+ form @racket[(#,(racket quote) _sym)] unless the module is predefined (see
+ @racket[module-predefined?]).}
 
 
 @defproc[(dynamic-place* [module-path (or/c module-path? path?)]

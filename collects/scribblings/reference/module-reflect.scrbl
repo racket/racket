@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label compiler/embed))
 
 @title{Module Names and Loading}
 
@@ -417,3 +418,13 @@ Like @racket[module-compiled-imports], but produces the imports of
 Like @racket[module-compiled-exports], but produces the exports of
 @racket[mod], which must be declared (but not necessarily
 @tech{instantiate}d or @tech{visit}ed) in the current namespace.}
+
+@defproc[(module-predefined?
+          [mod (or/c module-path? path? resolved-module-path?)])
+         boolean?]{
+
+Reports whether @racket[mod] refers to a module that is predefined for
+the running Racket instance. Predefined modules always have a symbolic
+resolved module path, and they may be predefined always or
+specifically within a particular executable (such as one created by
+@exec{raco exe} or @racket[create-embedding-executable]).}

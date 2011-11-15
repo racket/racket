@@ -182,8 +182,9 @@
     (raise-type-error who "output-port or #f" out))
   (unless (or (not err) (output-port? err) (eq? err 'stdout))
     (raise-type-error who "output-port, #f, or 'stdout" err))
-  (when (and (pair? module-path) (eq? (car module-path) 'quote))
-    (raise-mismatch-error who "not a filesystem module-path: " module-path))
+  (when (and (pair? module-path) (eq? (car module-path) 'quote)
+             (not (module-predefined? module-path)))
+    (raise-mismatch-error who "not a filesystem or predefined module-path: " module-path))
   (when (and (input-port? in) (port-closed? in))
     (raise-mismatch-error who "input port is closed: " in))
   (when (and (output-port? out) (port-closed? out))
@@ -261,6 +262,7 @@
     (resolved-module-path-name
      (variable-reference->resolved-module-path
       vr)))
-  (when (symbol? name)
-     (error who "the current module-path-name is not a file path"))
-  (start-place-func who name func-name in out err))
+  (when (and (symbol? name)
+             (not (module-predefined? `(quote ,name))))
+     (error who "the enclosing module's resolved name is not a path or predefined"))
+  (start-place-func who (if (symbol? name) `(quote ,name) name) func-name in out err))

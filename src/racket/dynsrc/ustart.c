@@ -16,7 +16,8 @@
    of little-endian 4-byte ints:
     start - offset into the binary
     prog_end - offset; start to prog_end is the program region
-    end - offset; prog_end to end is the command region
+    decl_end - offset; prog_end to decl_end is the module-command region
+    end - offset; prog_end to end is the complete command region
     count - number of cmdline args in command region
     x11? - non-zero => launches GRacket for X
 
@@ -25,10 +26,10 @@
      dll_path - DLL directory if non-empty (relative is w.r.t. executable)
      cmdline_arg ...
 
-   For ELF binaries, the absolute values of `start', `prog_end', and
-   `end' are ignored if a ".rackcmdl" (starter) or ".rackprog"
+   For ELF binaries, the absolute values of `start', `decl_end', `prog_end',
+   and `end' are ignored if a ".rackcmdl" (starter) or ".rackprog"
    (embedding) section is found. The `start' value is set to match the
-   section offset, and `prog_end' and `end' are correspondingly
+   section offset, and `decl_end', `prog_end', and `end' are correspondingly
    adjusted. Using a seciton offset allows linking tools (such as
    `strip') to move the data in the executable.
 */
@@ -266,7 +267,7 @@ typedef struct
   ELF__Xword sh_entsize;
 } Elf__Shdr;
 
-static int try_elf_section(const char *me, int *_start, int *_prog_end, int *_end)
+static int try_elf_section(const char *me, int *_start, int *_decl_end, int *_prog_end, int *_end)
 {
   int fd, i;
   ELF__Header e;
@@ -303,6 +304,7 @@ static int try_elf_section(const char *me, int *_start, int *_prog_end, int *_en
 	}
 	if (!strcmp(strs + s.sh_name, ".rackcmdl")
 	    || !strcmp(strs + s.sh_name, ".rackprog")) {
+	  *_decl_end = (*_decl_end - *_start) + s.sh_offset;
 	  *_prog_end = (*_prog_end - *_start) + s.sh_offset;
 	  *_start = s.sh_offset;
 	  *_end = s.sh_offset + s.sh_size;
@@ -321,7 +323,7 @@ int main(int argc, char **argv)
 {
   char *me = argv[0], *data, **new_argv;
   char *exe_path, *lib_path, *dll_path;
-  int start, prog_end, end, count, fd, v, en, x11;
+  int start, decl_end, prog_end, end, count, fd, v, en, x11;
   int argpos, inpos, collcount = 1, fix_argv;
 
   if (config[7] == '[') {
@@ -401,12 +403,13 @@ int main(int argc, char **argv)
   }
 
   start = as_int(config + 8);
-  prog_end = as_int(config + 12);
-  end = as_int(config + 16);
-  count = as_int(config + 20);
-  x11 = as_int(config + 24);
+  decl_end = as_int(config + 12);
+  prog_end = as_int(config + 16);
+  end = as_int(config + 20);
+  count = as_int(config + 24);
+  x11 = as_int(config + 28);
 
-  fix_argv = try_elf_section(me, &start, &prog_end, &end);
+  fix_argv = try_elf_section(me, &start, &decl_end, &prog_end, &end);
 
   {
     int offset, len;
@@ -503,7 +506,7 @@ int main(int argc, char **argv)
 
   if (fix_argv) {
     /* next three args are "-k" and numbers; fix 
-       the numbers to match start and prog_end */
+       the numbers to match start, decl_end, and prog_end */
     fix_argv = argpos + 1;
   }
 
@@ -522,7 +525,8 @@ int main(int argc, char **argv)
 
   if (fix_argv) {
     new_argv[fix_argv] = num_to_string(start);
-    new_argv[fix_argv+1] = num_to_string(prog_end);
+    new_argv[fix_argv+1] = num_to_string(decl_end);
+    new_argv[fix_argv+2] = num_to_string(prog_end);
   }
 
   /* Execute the original binary: */
