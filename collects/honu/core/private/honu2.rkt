@@ -47,14 +47,14 @@
       [(_ iterator:id honu-equal start:honu-expression honu-to end:honu-expression
           honu-do body:honu-expression . rest)
        (values
-           #'(%racket (for ([iterator (in-range start.result
-                                                end.result)])
+           #'(%racket (for/list ([iterator (in-range start.result
+                                                     end.result)])
                         body.result))
          #'rest
          #t)]
       [(_ iterator:id honu-in stuff:honu-expression
           honu-do body:honu-expression . rest)
-       (values #'(%racket (for ([iterator stuff.result])
+       (values #'(%racket (for/list ([iterator stuff.result])
                             body.result))
                #'rest
                #t)])))
@@ -260,18 +260,32 @@
                  #'more))])))
 
 (begin-for-syntax
+  (define-splicing-syntax-class (id-except ignores)
+    [pattern x:id #:when (not (for/fold ([ok #t])
+                                        ([ignore ignores])
+                                (and ok (free-identifier=? #'x ignore))))])
+  (define-splicing-syntax-class (separate-ids separator end)
+    [pattern (~seq (~var first (id-except (list separator end)))
+                   (~seq (~var between (id-except (list separator end)))
+                         (~var next (id-except (list separator end)))) ...)
+             #:with (ids ...) #'(first.x next.x ...)]))
+
+(begin-for-syntax
   (provide honu-declaration)
 
   (define-literal-set declaration-literals (honu-comma honu-equal))
   (define-splicing-syntax-class var-id
     [pattern x:id #:when (not ((literal-set->predicate declaration-literals) #'x))])
 
+  ;; parses a declaration
+  ;; var x = 9
+  ;; var a, b, c = values(1 + 2, 5, 9)
   (define-splicing-syntax-class honu-declaration
                               #:literal-sets (cruft)
                               #:literals (honu-equal honu-var)
-     [pattern (~seq honu-var (~seq name*:var-id (~optional honu-comma)) ... honu-equal one:honu-expression)
-              #:with result #'(%racket (define-values (name*.x ...) one.result))
-              #:with (name ...) #'(name*.x ...)
+     [pattern (~seq honu-var (~var variables (separate-ids #'honu-comma #'honu-equal))
+                    honu-equal one:honu-expression)
+              #:with (name ...) #'(variables.ids ...)
               #:with expression #'one.result]))
 
 (provide honu-var)
@@ -280,5 +294,6 @@
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-equal)
       [(var:honu-declaration . rest)
-       (values #'var.result #'rest #t)])))
+       (define result #'(%racket (define-values (var.name ...) var.expression)))
+       (values result #'rest #t)])))
 
