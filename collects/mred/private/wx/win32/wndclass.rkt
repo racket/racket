@@ -22,7 +22,8 @@
               CreateDialogIndirectParamW dialog-proc
               clean-up-destroyed
               MessageBoxW
-              _WndProc))
+              _WndProc
+	      app-icon))
 
 ;; ----------------------------------------
 ;; We use the "user data" field of an HWND to
@@ -226,8 +227,6 @@
 
 (define-user32 RegisterClassW (_wfun _WNDCLASS-pointer -> _ATOM))
 (define-kernel32 GetModuleHandleW (_wfun _pointer -> _HINSTANCE))
-(define-user32 LoadCursorW (_wfun _HINSTANCE _pointer -> _HCURSOR))
-(define-user32 LoadIconW (_wfun _HINSTANCE _string/utf-16 -> _HICON))
 
 (define-user32 GetClassInfoW (_wfun _HINSTANCE _string/utf-16 (i : (_ptr o _WNDCLASS)) -> (r : _BOOL)
                                     -> (if r i (failed 'GetClassInfoW))))
@@ -243,13 +242,33 @@
 (define background-hbrush (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
                             (cpointer-push-tag! p 'HBRUSH)
                             p))
- 
+
+(define-kernel32 GetModuleFileNameW (_wfun _pointer _pointer _DWORD -> _DWORD))
+(define ERROR_INSUFFICIENT_BUFFER 122)
+(define-shell32 ExtractIconW (_wfun _HINSTANCE _string/utf-16 _UINT -> (r : _HICON)
+                                    -> (or r (failed 'ExtractIconW))))
+
+(define app-icon
+  (let ([path
+	 (let loop ([size 1024])
+	   (let ([p (make-bytes (* (ctype-sizeof _WCHAR) 1024))])
+	     (let ([r (GetModuleFileNameW #f p size)])
+	       (cond
+		[(and (or (zero? r) (= r size))
+		      (= (GetLastError) ERROR_INSUFFICIENT_BUFFER))
+		 (loop (* size 2))]
+		[(zero? r) (failed 'GetModuleFileNameW)]
+		[else (cast p _gcpointer _string/utf-16)]))))])
+    (if path
+	(ExtractIconW hInstance path 0)
+	(LoadIconW #f IDI_APPLICATION))))
+
 (void (RegisterClassW (make-WNDCLASS CS_OWNDC
 				     wind-proc-ptr
 				     0
                                      0
 				     hInstance
-				     (LoadIconW hInstance "WXSTD_FRAME")
+				     app-icon
                                      #f
                                      background-hbrush
 				     #f ; menu

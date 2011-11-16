@@ -1,14 +1,8 @@
-
 /////////////////////////////////////////////////////////////////////////////
 //
 // Icon
 //
 
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-WXSTD_FRAME             ICON    DISCARDABLE     "gracket.ico"
-WXSTD_MDICHILDFRAME     ICON    DISCARDABLE     "gracket.ico"
-WXSTD_MDIPARENTFRAME    ICON    DISCARDABLE     "gracket.ico"
 APPLICATION             ICON    DISCARDABLE     "gracket.ico"
 
 /////////////////////////////////////////////////////////////////////////////

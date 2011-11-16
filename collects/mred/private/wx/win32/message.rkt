@@ -11,7 +11,8 @@
 	 "window.rkt"
 	 "wndclass.rkt"
          "hbitmap.rkt"
-         "types.rkt")
+         "types.rkt"
+	 "icons.rkt")
 
 (provide
  (protect-out message%))
@@ -23,39 +24,8 @@
 (define SS_BITMAP #x0000000E)
 (define SS_ICON #x00000003)
 
-(define IDI_APPLICATION     32512)
-(define IDI_HAND            32513)
-(define IDI_QUESTION        32514)
-(define IDI_EXCLAMATION     32515)
-(define IDI_WARNING         IDI_EXCLAMATION)
-(define IDI_ERROR           IDI_HAND)
-
 (define IMAGE_ICON 1)
 
-(define-user32 LoadIconW (_wfun _HINSTANCE _LONG -> _HICON))
-(define-kernel32 GetModuleFileNameW (_wfun _pointer _pointer _DWORD -> _DWORD))
-
-(define-shell32 ExtractIconW (_wfun _HINSTANCE _string/utf-16 _UINT -> (r : _HICON)
-                                    -> (or r (failed 'ExtractIconW))))
-                                           
-(define ERROR_INSUFFICIENT_BUFFER 122)
-
-(define app-icon
-  (delay
-    (let ()
-      (let ([path
-             (let loop ([size 1024])
-               (let ([p (make-bytes (* (ctype-sizeof _WCHAR) 1024))])
-                 (let ([r (GetModuleFileNameW #f p size)])
-                   (cond
-                    [(and (or (zero? r) (= r size))
-                          (= (GetLastError) ERROR_INSUFFICIENT_BUFFER))
-                     (loop (* size 2))]
-                    [(zero? r) (failed 'GetModuleFileNameW)]
-                    [else (cast p _gcpointer _string/utf-16)]))))])
-        (if path
-            (ExtractIconW hInstance path 0)
-            (LoadIconW #f IDI_APPLICATION))))))
 (define warning-icon
   (delay
     (LoadIconW #f IDI_WARNING)))
@@ -108,10 +78,10 @@
 
     (when (symbol? label)
       (SendMessageW (get-hwnd) STM_SETIMAGE IMAGE_ICON
-                    (cast (force (case label
-                                   [(caution) warning-icon]
-                                   [(stop) error-icon]
-                                   [else app-icon]))
+                    (cast (case label
+			    [(caution) (force warning-icon)]
+			    [(stop) (force error-icon)]
+			    [else app-icon])
                           _HICON _LPARAM)))
     
     (set-control-font font)

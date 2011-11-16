@@ -5,6 +5,7 @@
          "types.rkt"
          "const.rkt"
          "wndclass.rkt"
+	 "icons.rkt"
          "../common/cursor-draw.rkt"
           "../../syntax.rkt")
 
@@ -12,25 +13,6 @@
  (protect-out cursor-driver%
               get-arrow-cursor
               get-wait-cursor))
-
-(define (MAKEINTRESOURCE v) v)
-
-(define IDC_ARROW           (MAKEINTRESOURCE 32512))
-(define IDC_IBEAM           (MAKEINTRESOURCE 32513))
-(define IDC_WAIT            (MAKEINTRESOURCE 32514))
-(define IDC_APPSTARTING     (MAKEINTRESOURCE 32650))
-(define IDC_CROSS           (MAKEINTRESOURCE 32515))
-(define IDC_UPARROW         (MAKEINTRESOURCE 32516))
-(define IDC_SIZENWSE        (MAKEINTRESOURCE 32642))
-(define IDC_SIZENESW        (MAKEINTRESOURCE 32643))
-(define IDC_SIZEWE          (MAKEINTRESOURCE 32644))
-(define IDC_SIZENS          (MAKEINTRESOURCE 32645))
-(define IDC_SIZEALL         (MAKEINTRESOURCE 32646))
-(define IDC_NO              (MAKEINTRESOURCE 32648))
-(define IDC_HAND            (MAKEINTRESOURCE 32649))
-(define IDC_HELP            (MAKEINTRESOURCE 32651))
-
-(define-user32 LoadCursorW (_wfun _HINSTANCE _LONG -> _HCURSOR))
 
 (define-user32 CreateCursor (_wfun _HINSTANCE
                                    _int ; x

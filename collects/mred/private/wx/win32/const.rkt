@@ -623,4 +623,3 @@
 (define CBN_DROPDOWN        7)
 (define CBN_CLOSEUP         8)
 (define CBN_SELENDCANCEL    10)
-
