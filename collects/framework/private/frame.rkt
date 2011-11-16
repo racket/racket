@@ -2168,13 +2168,27 @@
     (define/override (edit-menu:create-find-previous?) #t)
     
     (define/override (edit-menu:create-show/hide-replace?) #t)
-    (define/override (edit-menu:show/hide-replace-callback a b) (set-replace-visible? (not replace-visible?)))
+    (define/override (edit-menu:show/hide-replace-callback a b) 
+      (cond
+        [hidden?
+         (unhide-search #f)
+         (set-replace-visible? #t)
+         (send replace-edit set-position 0 (send find-edit last-position))
+         (send (send replace-edit get-canvas) focus)]
+        [else
+         (set-replace-visible? (not replace-visible?))
+         (when replace-visible?
+           (send (send replace-edit get-canvas) focus))])
+      #t)
     (define/override (edit-menu:show/hide-replace-string)
       (if replace-visible?
           (string-constant hide-replace-menu-item)
           (string-constant show-replace-menu-item)))
     (define/override (edit-menu:show/hide-replace-on-demand item) 
-      (send item enable (not hidden?)))
+      (send item set-label
+            (if (and (not hidden?) replace-visible?)
+                (string-constant hide-replace-menu-item)
+                (string-constant show-replace-menu-item))))
     
     (define/override (edit-menu:replace-callback a b) (search-replace))
     (define/override (edit-menu:create-replace?) #t)
@@ -2509,18 +2523,17 @@
                  [callback (λ (a b) (set-replace-visible? #f))]
                  [parent replace-panel]))
           
-          (define stupid-internal-definitions-syntax2
-            (set! show/hide-replace
-                  (λ ()
-                    (send replace-panel begin-container-sequence)
-                    (cond
-                      [replace-visible?
-                       (send replace-panel change-children (λ (l) all-replace-children))
-                       (send replace-panel stretchable-width #t)]
-                      [else
-                       (send replace-panel change-children (λ (l) (list show-replace-button)))
-                       (send replace-panel stretchable-width #f)])
-                    (send replace-panel end-container-sequence))))
+          (set! show/hide-replace
+                (λ ()
+                  (send replace-panel begin-container-sequence)
+                  (cond
+                    [replace-visible?
+                     (send replace-panel change-children (λ (l) all-replace-children))
+                     (send replace-panel stretchable-width #t)]
+                    [else
+                     (send replace-panel change-children (λ (l) (list show-replace-button)))
+                     (send replace-panel stretchable-width #f)])
+                  (send replace-panel end-container-sequence)))
           
           (define all-replace-children
             (list replace-canvas
