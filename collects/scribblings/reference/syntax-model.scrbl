@@ -35,7 +35,7 @@ new binding information.
 
 @guideintro["binding"]{binding}
 
-An @deftech{identifier} is source-program entity. Parsing (i.e.,
+An @deftech{identifier} is a source-program entity. Parsing (i.e.,
 expanding) a Racket program reveals that some @tech{identifiers}
 correspond to @tech{variables}, some refer to syntactic forms, and
 some are quoted to produce a symbol or a syntax object.
@@ -123,7 +123,7 @@ indicate that it references a @tech{top-level variable}.
 
 When a @tech{syntax object} represents a more complex expression than
 an @tech{identifier} or simple constant, its internal components can
-be extracted. Even for extracted identifier, detailed information
+be extracted. Even for extracted identifiers, detailed information
 about binding is available mostly indirectly; two identifiers can be
 compared to determine whether they refer to the same binding (i.e.,
 @racket[free-identifier=?]), or whether each identifier would bind the
