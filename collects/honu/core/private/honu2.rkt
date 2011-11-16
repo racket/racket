@@ -238,8 +238,12 @@
   (lambda (code context)
     (define-splicing-syntax-class match-clause
                                   #:literal-sets (cruft)
-      [pattern (~seq (#%parens pattern ...)
-                     body:honu-body)
+                                  #:literals (else)
+      [pattern (~seq else body:honu-body)
+               #:with final #'else
+               #:with code #'body.result]
+      [pattern (~seq (#%parens pattern ...) body:honu-body)
+               #:with final #'(pattern ...)
                #:with code #'body.result])
 
     (syntax-parse code #:literal-sets (cruft)
@@ -247,7 +251,7 @@
       [(_ thing:honu-expression honu-with clause:match-clause ... . rest)
        (values
          #'(%racket (match thing.result
-                      [(clause.pattern ...) clause.code]
+                      [clause.final clause.code]
                       ...))
          #'rest
          #t)])))
