@@ -10,7 +10,7 @@
            setup/dirs
            setup/variant
            "embed-sig.rkt"
-           "private/winicon.rkt"
+           file/ico
            "private/winsubsys.rkt"
            "private/macfw.rkt"
            "private/mach-o.rkt"
@@ -1371,7 +1371,7 @@
                          (let ([m (and (eq? 'windows (system-type))
                                        (assq 'ico aux))])
                            (when m
-                             (install-icon dest-exe (cdr m))))
+                             (replace-icos (read-icos (cdr m)) dest-exe)))
                          (let ([m (and (eq? 'windows (system-type))
                                        (assq 'subsystem aux))])
                            (when m
