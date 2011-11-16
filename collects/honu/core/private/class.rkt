@@ -6,6 +6,7 @@
          (for-syntax racket/base
                      "literals.rkt"
                      "parse2.rkt"
+                     "util.rkt"
                      syntax/parse)
          racket/class)
 
@@ -17,7 +18,7 @@
   (define-splicing-syntax-class honu-class-thing
                                 #:literals (honu-equal)
     [pattern method:honu-function
-             #:with result (replace-with-public #'method.result)]
+             #:with result (replace-with-public (local-binding method.result))]
     [pattern var:honu-declaration
              #:with result #'(field [var.name var.expression] ...)]))
 
@@ -25,14 +26,14 @@
 (define-honu-syntax honu-class
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ name (#%parens (~var constructor-argument (separate-ids #'honu-comma #'dont-care)))
+      [(_ name (#%parens (~var constructor-argument (separate-ids (literal-syntax-class honu-comma) (literal-syntax-class honu-comma))))
           (#%braces method:honu-class-thing ...) . rest)
        (define class
          #'(%racket (define name (class* object% ()
                                          (super-new)
                                          (init-field constructor-argument.id ...)
                                          method.result ...))))
-       (values class #'rest #t)])))
+       (values class (local-binding rest) #t)])))
 
 (provide honu-new)
 (define-honu-syntax honu-new
@@ -42,5 +43,5 @@
        (define new #'(%racket (make-object name arg.result ...)))
        (values
          new
-         #'rest
+         (local-binding rest)
          #f)])))

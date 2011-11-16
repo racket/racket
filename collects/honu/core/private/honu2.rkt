@@ -16,7 +16,9 @@
                   define-literal
                   %racket)
          (for-syntax syntax/parse
+                     syntax/parse/experimental/reflect
                      racket/syntax
+                     "util.rkt"
                      "debug.rkt"
                      "literals.rkt"
                      "parse2.rkt"
@@ -261,16 +263,16 @@
 
 (begin-for-syntax
   (define-splicing-syntax-class (id-must-be what)
-    [pattern x:id #:when (free-identifier=? #'x what)])
-  (define-splicing-syntax-class (id-except ignores)
-    [pattern x:id #:when (not (for/fold ([ok #f])
-                                        ([ignore ignores])
-                                (or ok (free-identifier=? #'x ignore))))])
+    [pattern (~reflect x (what))])
+  (define-syntax-class (id-except ignore1 ignore2)
+    [pattern (~and x:id (~not (~or (~reflect x1 (ignore1))
+                                   (~reflect x2 (ignore2)))))])
+
   (provide separate-ids)
   (define-splicing-syntax-class (separate-ids separator end)
-    [pattern (~seq (~var first (id-except (list separator end)))
+    [pattern (~seq (~var first (id-except separator end))
                    (~seq (~var between (id-must-be separator))
-                         (~var next (id-except (list separator end)))) ...)
+                         (~var next (id-except separator end))) ...)
              #:with (id ...) #'(first.x next.x ...)]))
 
 (begin-for-syntax
@@ -278,7 +280,8 @@
 
   (define-literal-set declaration-literals (honu-comma honu-equal))
   (define-splicing-syntax-class var-id
-    [pattern x:id #:when (not ((literal-set->predicate declaration-literals) #'x))])
+    [pattern (~var x (id-except (literal-syntax-class honu-comma)
+                                (literal-syntax-class honu-equal)))])
 
   ;; parses a declaration
   ;; var x = 9
@@ -286,7 +289,8 @@
   (define-splicing-syntax-class honu-declaration
                               #:literal-sets (cruft)
                               #:literals (honu-equal honu-var)
-     [pattern (~seq honu-var (~var variables (separate-ids #'honu-comma #'honu-equal))
+     [pattern (~seq honu-var (~var variables (separate-ids (literal-syntax-class honu-comma)
+                                                           (literal-syntax-class honu-equal)))
                     honu-equal one:honu-expression)
               #:with (name ...) #'(variables.id ...)
               #:with expression #'one.result]))

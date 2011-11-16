@@ -3,7 +3,12 @@
 (provide (except-out (all-defined-out) test-delimiter))
 (require "debug.rkt"
          racket/match
-         (for-syntax racket/base)
+         syntax/parse
+         syntax/parse/experimental/reflect
+         (for-syntax racket/base
+                     syntax/parse
+                     "debug.rkt"
+                     )
          syntax/stx
          racket/list)
 
@@ -94,3 +99,32 @@
                    [match-variable (extract-variable #'pattern)])
        #'(match expression
            [match-pattern match-variable]))]))
+
+;; local-binding and module-binding check that the identifier is bound at the given phase
+(define-syntax (local-binding stx)
+  (syntax-parse stx
+    [(_ name)
+     (define type (identifier-binding #'name))
+     (when (not (eq? type 'lexical))
+       (raise-syntax-error 'local-binding "not bound locally" #'name))
+     #'#'name]))
+
+(define-syntax (module-binding stx)
+  (syntax-parse stx
+    [(_ name level)
+     (define type (identifier-binding #'name (syntax-e #'level)))
+     (when (not (and (list? type)
+                     (= (length type) 7)))
+       (raise-syntax-error 'module-binding
+                           (format "not bound by a module at phase ~a" (syntax-e #'level))
+                           #'name))
+     #'#'name]))
+
+(define-syntax-rule (literal-syntax-class literal)
+  (let ()
+    (define-literal-set set (literal))
+    (define-syntax-class class
+      #:literal-sets (set)
+      ;; BUG! shouldn't need ~literal here since we are using literal sets
+      [pattern (~literal literal)])
+    (reify-syntax-class class)))
