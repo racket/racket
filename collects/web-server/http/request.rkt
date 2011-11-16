@@ -14,6 +14,7 @@
    (values request? boolean?)))
 
 (provide/contract
+ [parse-bindings (-> bytes? (listof binding?))]
  [read-headers (-> input-port? (listof header?))]
  [rename make-ext:read-request make-read-request
          (->* () (#:connection-close? boolean?) read-request/c)]
