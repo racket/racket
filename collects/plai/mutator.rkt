@@ -234,7 +234,7 @@
     [(_ (a . d))
      (mutator-app collector:cons (mutator-quote a) (mutator-quote d))]
     [(_ s) 
-     (mutator-app collector:alloc-flat 's)]))
+     (mutator-datum . s)]))
 (define-syntax (mutator-datum stx)
   (syntax-case stx ()
     [(_ . e) 
