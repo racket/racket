@@ -3435,7 +3435,8 @@ static Scheme_Object *do_modidx_shift(Scheme_Object *modidx,
         i = 0;
       } else {
         /* May have GCed: */
-        if (cvec && !sbm->shift_cache)
+        if (cvec && !sbm->shift_cache
+            && !SAME_OBJ((Scheme_Object *)sbm, empty_self_modidx))
           sbm->shift_cache = cvec;
 
         if (i >= c) {

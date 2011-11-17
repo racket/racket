@@ -2987,6 +2987,24 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       }
   }
 
+#if 0
+  if (page->size_class < 2) {
+    if (page->page_type == PAGE_TAGGED) {
+      void *q;
+      if (page->size_class)
+        q = MED_OBJHEAD(p, page->size) + 1;
+      else
+        q = p;
+      if (((objhead *)q)[-1].type == PAGE_TAGGED) {
+        if (!((objhead *)q)[-1].moved) {
+          if ((*(short *)q < 0) || (*(short *)q > 1000))
+            abort();
+        }
+      }
+    }
+  }
+#endif
+
 #ifdef NEWGC_BTC_ACCOUNT
   /* toss this over to the BTC mark routine if we're doing accounting */
   if(gc->doing_memory_accounting) { 
