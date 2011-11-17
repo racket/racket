@@ -87,7 +87,7 @@
   ;; buffer after the keypress.  The keypress(es) in question are specified
   ;; independently for the three platforms by the respective 'macos', 'unix',
   ;; and 'windows' fields.
-  (define-struct key-spec (before after macos unix windows))
+  (define-struct key-spec (before after macos unix windows) #:prefab)
   
   ;; an abstraction to use when all platforms have the same sequence of keys
   (define (make-key-spec/allplatforms before after keys)
@@ -96,7 +96,7 @@
   ;; a buff-spec is (make-buff-spec string nat nat)
   ;; a buff-spec represents a buffer state; the content of the buffer,
   ;; and the start and end of the highlighted region.
-  (define-struct buff-spec (string start end))
+  (define-struct buff-spec (string start end) #:prefab)
   
   ;; the keybindings test cases applied to frame:text% editors
   (define global-specs
@@ -257,10 +257,25 @@
      (make-key-spec/allplatforms
       (make-buff-spec "[a]" 3 3)
       (make-buff-spec "[a]" 3 3)
-      (list '((#\c control) (#\[ control))))
-     ))
+      (list '((#\c control) (#\[ control))))))
   
-  (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
+  (define automatic-scheme-specs
+    (list (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
+                                      (make-buff-spec "()" 1 1)
+                                      '(((#\())))
+          (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
+                                      (make-buff-spec "[]" 1 1)
+                                      '(((#\[))))
+          (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
+                                      (make-buff-spec "{}" 1 1)
+                                      '(((#\{))))
+          (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
+                                      (make-buff-spec "\"\"" 1 1)
+                                      '(((#\"))))
+          (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
+                                      (make-buff-spec "||" 1 1)
+                                      '(((#\|))))))
+  
   (queue-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))
   (wait-for-frame "dummy to trick frame group")
   
@@ -307,9 +322,18 @@
       (test-key spec i))
     (queue-sexp-to-mred `(send (get-top-level-focus-window) close)))
   
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #f))
   (test-specs "global keybindings test" 'frame:text% global-specs)
   (test-specs "scheme mode keybindings test" 
               '(class frame:editor%
                  (define/override (get-editor%) scheme:text%)
                  (super-new))
               scheme-specs)
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #t))
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #f))
+  (test-specs "scheme mode automatic-parens on keybindings test" 
+              '(class frame:editor%
+                 (define/override (get-editor%) scheme:text%)
+                 (super-new))
+              automatic-scheme-specs)

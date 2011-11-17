@@ -5,6 +5,10 @@
 
   . DrRacket no longer shows a stacktrace for syntax errors in the REPL.
 
+  . The preference that makes a single "(" keystroke insert "()" 
+    (and similarly for [ { " and |) now only takes effect in Racket mode,
+    instead of taking effect in all of the modes, as it used to.
+
 ------------------------------
         Version 5.2
 ------------------------------

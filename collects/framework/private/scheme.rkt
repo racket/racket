@@ -427,6 +427,8 @@
              get-end-position
              flash-on
              insert
+             is-frozen?
+             is-stopped?
              kill
              last-position
              paragraph-start-position
@@ -1197,18 +1199,6 @@
     [define get-tab-size (λ () tab-size)]
     [define set-tab-size (λ (s) (set! tab-size s))]
     
-    (inherit is-frozen? is-stopped?)
-    (define/public (rewrite-square-paren)
-      (cond
-        [(or (not (preferences:get 'framework:fixup-open-parens))
-             (is-frozen?)
-             (is-stopped?))
-         (insert #\[
-                 (get-start-position)
-                 (get-end-position))]
-        [else 
-         (insert-paren this)]))
-    
     (define/override (get-start-of-line pos)
       (define para (position-paragraph pos))
       (define para-start (paragraph-start-position para))
@@ -1323,160 +1313,208 @@
 (define text-mode% (text-mode-mixin color:text-mode%))
 
 (define (setup-keymap keymap)
-  (let ([add-pos-function
-         (λ (name call-method)
-           (send keymap add-function name
-                 (λ (edit event)
-                   (call-method
-                    edit
-                    (send edit get-start-position)))))])
-    (add-pos-function "remove-sexp" (λ (e p) (send e remove-sexp p)))
-    (add-pos-function "forward-sexp" (λ (e p) (send e forward-sexp p)))
-    (add-pos-function "backward-sexp" (λ (e p) (send e backward-sexp p)))
-    (add-pos-function "up-sexp" (λ (e p) (send e up-sexp p)))
-    (add-pos-function "down-sexp" (λ (e p) (send e down-sexp p)))
-    (add-pos-function "flash-backward-sexp" (λ (e p) (send e flash-backward-sexp p)))
-    (add-pos-function "flash-forward-sexp" (λ (e p) (send e flash-forward-sexp p)))
-    (add-pos-function "remove-parens-forward" (λ (e p) (send e remove-parens-forward p)))
-    (add-pos-function "transpose-sexp" (λ (e p) (send e transpose-sexp p)))
-    (add-pos-function "mark-matching-parenthesis"
-                      (λ (e p) (send e mark-matching-parenthesis p)))
-    (add-pos-function "introduce-let-ans"
-                      (λ (e p) (send e introduce-let-ans p)))
-    (add-pos-function "move-sexp-out"
-                      (λ (e p) (send e move-sexp-out p)))
-    (add-pos-function "kill-enclosing-parens"
-                      (lambda (e p) (send e kill-enclosing-parens p)))
-    (add-pos-function "toggle-round-square-parens"
-                      (lambda (e p) (send e toggle-round-square-parens p)))
-    
-    (let ([add-edit-function
-           (λ (name call-method)
-             (send keymap add-function name
-                   (λ (edit event)
-                     (call-method edit))))])
-      (add-edit-function "select-forward-sexp" 
-                         (λ (x) (send x select-forward-sexp)))
-      (add-edit-function "select-backward-sexp"  
-                         (λ (x) (send x select-backward-sexp)))
-      (add-edit-function "select-down-sexp"  
-                         (λ (x) (send x select-down-sexp)))
-      (add-edit-function "select-up-sexp"  
-                         (λ (x) (send x select-up-sexp)))
-      (add-edit-function "tabify-at-caret"  
-                         (λ (x) (send x tabify-selection)))
-      (add-edit-function "do-return"  
-                         (λ (x) 
-                           (send x insert-return)))
-      (add-edit-function "comment-out"  
-                         (λ (x) (send x comment-out-selection)))
-      (add-edit-function "box-comment-out"  
-                         (λ (x) (send x box-comment-out-selection)))
-      (add-edit-function "uncomment"  
-                         (λ (x) (send x uncomment-selection)))
-      (add-edit-function "rewrite-square-paren"  
-                         (λ (x) (send x rewrite-square-paren)))
-      
-      (let ([add/map-non-clever
-             (λ (name keystroke char)
-               (add-edit-function 
-                name
-                (λ (e) (send e insert char (send e get-start-position) (send e get-end-position))))
-               (send keymap map-function keystroke name))])
-        (add/map-non-clever "non-clever-open-square-bracket" "c:[" #\[)
-        (add/map-non-clever "non-clever-close-square-bracket" "c:]" #\])
-        (add/map-non-clever "non-clever-close-curley-bracket" "c:}" #\})
-        (add/map-non-clever "non-clever-close-round-paren" "c:)" #\))))
-    
-    (send keymap add-function "balance-parens"
+  (define (add-edit-function name f)
+    (send keymap add-function name (λ (edit event) (f edit))))
+  (define (add-pos-function name f)
+    (send keymap add-function name
           (λ (edit event)
-            (send edit balance-parens event)))
-    
-    (send keymap map-function "TAB" "tabify-at-caret")
-    
-    (send keymap map-function "return" "do-return")
-    (send keymap map-function "s:return" "do-return")
-    (send keymap map-function "s:c:return" "do-return")
-    (send keymap map-function "a:return" "do-return")
-    (send keymap map-function "s:a:return" "do-return")
-    (send keymap map-function "c:a:return" "do-return")
-    (send keymap map-function "c:s:a:return" "do-return")
-    (send keymap map-function "c:return" "do-return")
-    (send keymap map-function "d:return" "do-return")
-    
-    (send keymap map-function ")" "balance-parens")
-    (send keymap map-function "]" "balance-parens")
-    (send keymap map-function "}" "balance-parens")
-    
-    (send keymap map-function "[" "rewrite-square-paren")
-    
-    (let ([map-meta
-           (λ (key func)
-             (keymap:send-map-function-meta keymap key func))]
-          [map
-           (λ (key func)
-             (send keymap map-function key func))])
-      
-      (map-meta "up" "up-sexp")
-      (map-meta "c:u" "up-sexp")
-      (map "a:up" "up-sexp")
-      (map-meta "s:up" "select-up-sexp")
-      (map "a:s:up" "select-up-sexp")
-      (map-meta "s:c:u" "select-up-sexp")
-      
-      (map-meta "down" "down-sexp")
-      (map "a:down" "down-sexp")
-      (map-meta "s:down" "select-down-sexp")
-      (map "a:s:down" "select-down-sexp")
-      (map-meta "s:c:down" "select-down-sexp")
-      
-      (map-meta "right" "forward-sexp")
-      (map "a:right" "forward-sexp")
-      (map "m:right" "forward-sexp")
-      (map-meta "s:right" "select-forward-sexp")
-      (map "a:s:right" "select-forward-sexp")
-      (map "m:s:right" "select-forward-sexp")
-      
-      (map-meta "left" "backward-sexp")
-      (map "a:left" "backward-sexp")
-      (map "m:left" "backward-sexp")
-      (map-meta "s:left" "select-backward-sexp")
-      (map "a:s:left" "select-backward-sexp")
-      (map "m:s:left" "select-backward-sexp")
-      
-      (map-meta "return" "do-return")
-      (map-meta "s:return" "do-return")
-      (map-meta "s:c:return" "do-return")
-      (map-meta "a:return" "do-return")
-      (map-meta "s:a:return" "do-return")
-      (map-meta "c:a:return" "do-return")
-      (map-meta "c:s:a:return" "do-return")
-      (map-meta "c:return" "do-return")
-      
-      (map-meta "c:semicolon" "comment-out")
-      (map-meta "c:=" "uncomment")
-      (map-meta "c:k" "remove-sexp")
-      
-      (map-meta "c:f" "forward-sexp")
-      (map-meta "s:c:f" "select-forward-sexp")
-      
-      (map-meta "c:b" "backward-sexp")
-      (map-meta "s:c:b" "select-backward-sexp")
-      
-      (map-meta "c:p" "flash-backward-sexp")
-      (map-meta "s:c:n" "flash-forward-sexp")
-      
-      (map-meta "c:space" "select-forward-sexp")
-      (map-meta "c:t" "transpose-sexp")
+            (f edit (send edit get-start-position)))))
+  (add-pos-function "remove-sexp" (λ (e p) (send e remove-sexp p)))
+  (add-pos-function "forward-sexp" (λ (e p) (send e forward-sexp p)))
+  (add-pos-function "backward-sexp" (λ (e p) (send e backward-sexp p)))
+  (add-pos-function "up-sexp" (λ (e p) (send e up-sexp p)))
+  (add-pos-function "down-sexp" (λ (e p) (send e down-sexp p)))
+  (add-pos-function "flash-backward-sexp" (λ (e p) (send e flash-backward-sexp p)))
+  (add-pos-function "flash-forward-sexp" (λ (e p) (send e flash-forward-sexp p)))
+  (add-pos-function "remove-parens-forward" (λ (e p) (send e remove-parens-forward p)))
+  (add-pos-function "transpose-sexp" (λ (e p) (send e transpose-sexp p)))
+  (add-pos-function "mark-matching-parenthesis"
+                    (λ (e p) (send e mark-matching-parenthesis p)))
+  (add-pos-function "introduce-let-ans"
+                    (λ (e p) (send e introduce-let-ans p)))
+  (add-pos-function "move-sexp-out"
+                    (λ (e p) (send e move-sexp-out p)))
+  (add-pos-function "kill-enclosing-parens"
+                    (lambda (e p) (send e kill-enclosing-parens p)))
+  (add-pos-function "toggle-round-square-parens"
+                    (lambda (e p) (send e toggle-round-square-parens p)))
+  
+  (add-edit-function "select-forward-sexp" 
+                     (λ (x) (send x select-forward-sexp)))
+  (add-edit-function "select-backward-sexp"  
+                     (λ (x) (send x select-backward-sexp)))
+  (add-edit-function "select-down-sexp"  
+                     (λ (x) (send x select-down-sexp)))
+  (add-edit-function "select-up-sexp"  
+                     (λ (x) (send x select-up-sexp)))
+  (add-edit-function "tabify-at-caret"  
+                     (λ (x) (send x tabify-selection)))
+  (add-edit-function "do-return"  
+                     (λ (x) (send x insert-return)))
+  (add-edit-function "comment-out"  
+                     (λ (x) (send x comment-out-selection)))
+  (add-edit-function "box-comment-out"  
+                     (λ (x) (send x box-comment-out-selection)))
+  (add-edit-function "uncomment"  
+                     (λ (x) (send x uncomment-selection)))
+  
+  (let ([add/map-non-clever
+         (λ (name keystroke char)
+           (add-edit-function 
+            name
+            (λ (e) (send e insert char (send e get-start-position) (send e get-end-position))))
+           (send keymap map-function keystroke name))])
+    (add/map-non-clever "non-clever-open-square-bracket" "c:[" #\[)
+    (add/map-non-clever "non-clever-close-square-bracket" "c:]" #\])
+    (add/map-non-clever "non-clever-close-curley-bracket" "c:}" #\})
+    (add/map-non-clever "non-clever-close-round-paren" "c:)" #\)))
+  
+  (send keymap add-function "balance-parens"
+        (λ (edit event)
+          (send edit balance-parens event)))
+  
+  (send keymap map-function "TAB" "tabify-at-caret")
+  
+  (send keymap map-function "return" "do-return")
+  (send keymap map-function "s:return" "do-return")
+  (send keymap map-function "s:c:return" "do-return")
+  (send keymap map-function "a:return" "do-return")
+  (send keymap map-function "s:a:return" "do-return")
+  (send keymap map-function "c:a:return" "do-return")
+  (send keymap map-function "c:s:a:return" "do-return")
+  (send keymap map-function "c:return" "do-return")
+  (send keymap map-function "d:return" "do-return")
+  
+  (send keymap map-function ")" "balance-parens")
+  (send keymap map-function "]" "balance-parens")
+  (send keymap map-function "}" "balance-parens")
+  
+  (define (insert-brace-pair text open-brace close-brace)
+    (define selection-start (send text get-start-position))
+    (send text set-position (send text get-end-position))
+    (send text insert close-brace)
+    (send text set-position selection-start)
+    (send text insert open-brace))
+  
+  (define (maybe-insert-brace-pair text open-brace close-brace)
+    (cond
+      [(preferences:get 'framework:automatic-parens)
+       (insert-brace-pair text open-brace close-brace)]
+      [else
+       (send text insert open-brace)]))
+  
+  (add-edit-function "insert-()-pair" (λ (text) (insert-brace-pair text #\( #\))))
+  (add-edit-function "insert-[]-pair" (λ (text) (insert-brace-pair text #\[ #\])))
+  (add-edit-function "insert-{}-pair" (λ (text) (insert-brace-pair text #\{ #\})))
+  (add-edit-function "insert-\"\"-pair" (λ (text) (insert-brace-pair text #\" #\")))
+  (add-edit-function "insert-||-pair" (λ (text) (insert-brace-pair text #\| #\|)))
+  
+  (add-edit-function "maybe-insert-()-pair" (λ (text) (maybe-insert-brace-pair text #\( #\))))
+  (add-edit-function "maybe-insert-[]-pair" (λ (text) (maybe-insert-brace-pair text #\[ #\])))
+  (add-edit-function "maybe-insert-{}-pair" (λ (text) (maybe-insert-brace-pair text #\{ #\})))
+  (add-edit-function "maybe-insert-\"\"-pair" (λ (text) (maybe-insert-brace-pair text #\" #\")))
+  (add-edit-function "maybe-insert-||-pair" (λ (text) (maybe-insert-brace-pair text #\| #\|)))
+  
+  (add-edit-function "maybe-insert-[]-pair-maybe-fixup-[]"
+                     (λ (text)
+                       (cond
+                         [(or (not (preferences:get 'framework:fixup-open-parens))
+                              (send text is-frozen?)
+                              (send text is-stopped?))
+                          (maybe-insert-brace-pair text #\[ #\])]
+                         [else 
+                          (insert-paren text)])))
+  
+  (define (insert-lambda-template edit)
+    (send edit begin-edit-sequence)
+    (let ([selection-start (send edit get-start-position)])
+      (send edit set-position (send edit get-end-position))
+      (send edit insert ")")
+      (send edit set-position selection-start)
+      (send edit insert ") ")
+      (send edit set-position selection-start)
+      (send edit insert "(λ ("))
+    (send edit end-edit-sequence))
+  
+  (add-edit-function "insert-lambda-template" insert-lambda-template)
+  
+  (define (map-meta key func) (keymap:send-map-function-meta keymap key func))
+  (define (map key func) (send keymap map-function key func))
+  
+  (map-meta "up" "up-sexp")
+  (map-meta "c:u" "up-sexp")
+  (map "a:up" "up-sexp")
+  (map-meta "s:up" "select-up-sexp")
+  (map "a:s:up" "select-up-sexp")
+  (map-meta "s:c:u" "select-up-sexp")
+  
+  (map-meta "down" "down-sexp")
+  (map "a:down" "down-sexp")
+  (map-meta "s:down" "select-down-sexp")
+  (map "a:s:down" "select-down-sexp")
+  (map-meta "s:c:down" "select-down-sexp")
+  
+  (map-meta "right" "forward-sexp")
+  (map "a:right" "forward-sexp")
+  (map "m:right" "forward-sexp")
+  (map-meta "s:right" "select-forward-sexp")
+  (map "a:s:right" "select-forward-sexp")
+  (map "m:s:right" "select-forward-sexp")
+  
+  (map-meta "left" "backward-sexp")
+  (map "a:left" "backward-sexp")
+  (map "m:left" "backward-sexp")
+  (map-meta "s:left" "select-backward-sexp")
+  (map "a:s:left" "select-backward-sexp")
+  (map "m:s:left" "select-backward-sexp")
+  
+  (map-meta "return" "do-return")
+  (map-meta "s:return" "do-return")
+  (map-meta "s:c:return" "do-return")
+  (map-meta "a:return" "do-return")
+  (map-meta "s:a:return" "do-return")
+  (map-meta "c:a:return" "do-return")
+  (map-meta "c:s:a:return" "do-return")
+  (map-meta "c:return" "do-return")
+  
+  (map-meta "c:semicolon" "comment-out")
+  (map-meta "c:=" "uncomment")
+  (map-meta "c:k" "remove-sexp")
+  
+  (map-meta "c:f" "forward-sexp")
+  (map-meta "s:c:f" "select-forward-sexp")
+  
+  (map-meta "c:b" "backward-sexp")
+  (map-meta "s:c:b" "select-backward-sexp")
+  
+  (map-meta "c:p" "flash-backward-sexp")
+  (map-meta "s:c:n" "flash-forward-sexp")
+  
+  (map-meta "c:space" "select-forward-sexp")
+  (map-meta "c:t" "transpose-sexp")
+  
+  ;(map-meta "c:m" "mark-matching-parenthesis")
+  ; this keybinding doesn't interact with the paren colorer
+  
+  (map-meta "(" "insert-()-pair")
+  (map-meta "[" "insert-[]-pair")
+  (map-meta "{" "insert-{}-pair")
+  (map-meta "\"" "insert-\"\"-pair")
+  (map-meta "|" "insert-||-pair")
 
-      ;(map-meta "c:m" "mark-matching-parenthesis")
-      ; this keybinding doesn't interact with the paren colorer
-      )
-    (send keymap map-function "c:c;c:b" "remove-parens-forward")
-    (send keymap map-function "c:c;c:l" "introduce-let-ans")
-    (send keymap map-function "c:c;c:o" "move-sexp-out")
-    (send keymap map-function "c:c;c:e" "kill-enclosing-parens")
-    (send keymap map-function "c:c;c:[" "toggle-round-square-parens")))
+  (map "(" "maybe-insert-()-pair")
+  (map "[" "maybe-insert-[]-pair-maybe-fixup-[]")
+  (map "{" "maybe-insert-{}-pair")
+  (map "\"" "maybe-insert-\"\"-pair")
+  (map "|" "maybe-insert-||-pair")
+
+  (map-meta "s:l" "insert-lambda-template")
+
+  (map "c:c;c:b" "remove-parens-forward")
+  (map "c:c;c:l" "introduce-let-ans")
+  (map "c:c;c:o" "move-sexp-out")
+  (map "c:c;c:e" "kill-enclosing-parens")
+  (map "c:c;c:[" "toggle-round-square-parens"))
 
 (define keymap (make-object keymap:aug-keymap%))
 (setup-keymap keymap)
@@ -1580,7 +1618,17 @@
                 (change-to 6 #\()]))])))
     (send text delete pos (+ pos 1) #f)
     (send text end-edit-sequence)
-    (send text insert real-char start-pos end-pos)))
+    (cond
+      [(preferences:get 'framework:automatic-parens)
+       (send text insert (case real-char
+                           [(#\() #\)]
+                           [(#\[) #\]]
+                           [(#\{) #\}])
+             end-pos end-pos)
+       (send text insert real-char start-pos start-pos)
+       (send text set-position (+ start-pos 1))]
+      [else
+       (send text insert real-char start-pos end-pos)])))
 
 ;; find-keyword-and-distance : -> (union #f (cons string number))
 (define (find-keyword-and-distance before-whitespace-pos text)

@@ -387,29 +387,7 @@
                         bottom-pos)))
               #t)]
            
-           [make-insert-brace-pair
-            (λ (open-brace close-brace)
-              (λ (edit event)
-                (send edit begin-edit-sequence)
-                (let ([selection-start (send edit get-start-position)])
-                  (send edit set-position (send edit get-end-position))
-                  (send edit insert close-brace)
-                  (send edit set-position selection-start)
-                  (send edit insert open-brace))
-                (send edit end-edit-sequence)))]
-           
-           [insert-lambda-template
-            (λ (edit event)
-              (send edit begin-edit-sequence)
-              (let ([selection-start (send edit get-start-position)])
-                (send edit set-position (send edit get-end-position))
-                (send edit insert ")")
-                (send edit set-position selection-start)
-                (send edit insert ") ")
-                (send edit set-position selection-start)
-                (send edit insert "(λ ("))
-              (send edit end-edit-sequence))]
-           
+                      
            [collapse-variable-space
             ;; As per emacs: collapse tabs & spaces around the point,
             ;; perhaps leaving a single space.
@@ -1093,22 +1071,7 @@
           
           (add "ring-bell" ring-bell)
           
-          (add "insert-()-pair" (make-insert-brace-pair "(" ")"))
-          (add "insert-[]-pair" (make-insert-brace-pair "[" "]"))
-          (add "insert-{}-pair" (make-insert-brace-pair "{" "}"))
-          (add "insert-\"\"-pair" (make-insert-brace-pair "\"" "\""))
-          (add "insert-||-pair" (make-insert-brace-pair "|" "|"))
-          (add "insert-lambda-template" insert-lambda-template)
-          ;; HACK: in order to allow disabling of insert-pair bindings,
-          ;; I'm adding functions that simply insert the corresponding
-          ;; character. I bet there's a much cleaner way to do this;
-          ;; there may be existing functions that insert single characters,
-          ;; or a way to "pop" bindings off of a keybindings.
-          (add "insert (" (lambda (txt evt) (send txt insert #\()))
-          (add "insert {" (lambda (txt evt) (send txt insert #\{)))
-          (add "insert \"" (lambda (txt evt) (send txt insert #\")))
-         
-          
+                    
           (add "toggle-anchor" toggle-anchor)
           (add "center-view-on-line" center-view-on-line)
           (add "collapse-space" collapse-space)
@@ -1197,13 +1160,6 @@
           (map "a:c:left" "back-to-prev-embedded-editor")
           
           (map "c:c;c:g" "ring-bell")
-          
-          (map-meta "(" "insert-()-pair")
-          (map-meta "[" "insert-[]-pair")
-          (map-meta "{" "insert-{}-pair")
-          (map-meta "\"" "insert-\"\"-pair")
-          (map-meta "|" "insert-||-pair")
-          (map-meta "s:l" "insert-lambda-template")
           
           (map "c:p" "previous-line")
           (map "up" "previous-line")
@@ -1354,28 +1310,7 @@
           (map "c:x;p" "shift-focus-backwards")
           (map "c:f6" "shift-focus")
           (map "a:tab" "shift-focus")
-          (map "a:s:tab" "shift-focus-backwards")
-          
-          (let ()
-            (define (add-automatic-paren-bindings)
-              (map "~c:s:(" "insert-()-pair")
-              (map "~c:s:{" "insert-{}-pair")
-              (map "~c:s:\"" "insert-\"\"-pair"))
-            (define (remove-automatic-paren-bindings)
-              ;; how the heck is this going to work? we want to "pop" these bindings off...
-              ;; this is a crude approximation:
-              (map "~c:s:(" "insert (")
-              (map "~c:s:{" "insert {")
-              (map "~c:s:\"" "insert \""))
-            (when (preferences:get 'framework:automatic-parens)
-              (add-automatic-paren-bindings))
-            (preferences:add-callback 
-             'framework:automatic-parens
-             (lambda (id new-val)
-               (cond [new-val (add-automatic-paren-bindings)]
-                     [else    (remove-automatic-paren-bindings)])))
-            (void))
-          ))))
+          (map "a:s:tab" "shift-focus-backwards")))))
   
   (define setup-search
     (let* ([send-frame

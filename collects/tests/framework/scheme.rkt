@@ -66,9 +66,11 @@
               [ec (new editor-canvas% [parent f] [editor t])])
          (send f reflow-container)
          (send t insert ,before)
-         (send t rewrite-square-paren)
+         (send (scheme:get-keymap) call-function "maybe-insert-[]-pair-maybe-fixup-[]" t (new event%))
          (send t get-text))))))
 
+(queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #f))
+(queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
 (test-magic-square-bracket 'mt "" "(")
 (test-magic-square-bracket 'mt2 "(() " "(() (")
 (test-magic-square-bracket 'mt3 "([] " "([] [")
