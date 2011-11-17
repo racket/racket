@@ -68,6 +68,16 @@ If the namespace does not, they are colored the unbound color.
 
 (define cs-syncheck-running "Check Syntax Running")
 
+;; This delay should be long enough that the arrow timer doesn't go off if drawing
+;; the editor hitches while scrolling:
+(define syncheck-scroll-arrow-delay 1000)
+
+;; This delay should be longer than the time it takes for a quick mouse motion
+;; to pass vertically through an identifier
+;; It should also be longer than the polling delay for mouse events (which should
+;; be < 50ms)
+(define syncheck-arrow-delay 100)
+
 (preferences:set-default 'drracket:syncheck-mode 'default-mode
                          (λ (x) (memq x '(default-mode 
                                            my-obligations-mode 
@@ -387,9 +397,6 @@ If the namespace does not, they are colored the unbound color.
                  (hash-set! bindings-table k (sort v compare-bindings)))))
             
             (define tacked-hash-table (make-hasheq))
-            (define cursor-location #f)
-            (define cursor-text #f)
-            (define cursor-eles #f)
             
             ;; find-char-box : text number number -> (values number number number number)
             ;; returns the bounding box (left, top, right, bottom) for the text range.
@@ -477,18 +484,17 @@ If the namespace does not, they are colored the unbound color.
               (set! style-mapping (make-hash)))
             
             (define/public (syncheck:arrows-visible?)
-              (or arrow-records cursor-location cursor-text))
+              (or arrow-records cursor-pos cursor-text cursor-eles cursor-tooltip))
             
             ;; syncheck:clear-arrows : -> void
             (define/public (syncheck:clear-arrows)
-              (when (or arrow-records cursor-location cursor-text)
-                (set! last-known-mouse-x #f)
-                (set! last-known-mouse-y #f)
+              (when (syncheck:arrows-visible?)
                 (set! tacked-hash-table #f)
                 (set! arrow-records #f)
+                (when (update-latent-arrows #f #f)
+                  (update-drawn-arrows))
                 (syncheck:clear-coloring)
                 (set! style-mapping #f)
-                (syncheck:update-drawn-arrows)
                 (invalidate-bitmap-cache)))
             
             (define/public (syncheck:clear-coloring)
@@ -777,9 +783,50 @@ If the namespace does not, they are colored the unbound color.
                       (set-arrow-end-x! ele #f)
                       (set-arrow-end-y! ele #f))))))
             
+            (define view-corner-hash (make-weak-hasheq))
+            
+            (define (get-last-view-corner admin)
+              (hash-ref view-corner-hash admin (λ () (cons #f #f))))
+            
+            (define (set-last-view-corner! admin corner)
+              (hash-set! view-corner-hash admin corner))
+            
+            (define (get-view-corner admin)
+              (define new-x (box #f))
+              (define new-y (box #f))
+              (send admin get-view new-x new-y #f #f)
+              (cons (unbox new-x) (unbox new-y)))
+            
+            (define (update-view-corner admin)
+              (define old-corner (get-last-view-corner admin))
+              (define new-corner (get-view-corner admin))
+              (define scrolled? (not (equal? old-corner new-corner)))
+              (set-last-view-corner! admin new-corner)
+              scrolled?)
+            
             (define/override (on-paint before dc left top right bottom dx dy draw-caret)
               (when (and arrow-records (not before))
-                (syncheck:update-drawn-arrows)
+                (define admin (get-admin))
+                ;; update the known editor location for the upper-left corner
+                (define scrolled? (update-view-corner admin))
+                ;; when painting on the canvas the mouse is over...
+                (when (eq? mouse-admin admin)
+                  (define update-tooltip-frame?
+                    (cond
+                      ;; turn off tooltips if scrolling
+                      [scrolled? (set! cursor-tooltip #f)
+                                 #t]
+                      ;; try to update the tooltips if they're wrong
+                      [(eq? cursor-tooltip 'out-of-sync)
+                       (set! cursor-tooltip (get-tooltip cursor-eles))
+                       (not (eq? cursor-tooltip 'out-of-sync))]
+                      [else #f]))
+                  (when update-tooltip-frame?
+                    (update-tooltip-frame))
+                  ;; update on a timer if the arrows changed
+                  (when (update-latent-arrows mouse-x mouse-y)
+                    (start-arrow-draw-timer (cond [scrolled? syncheck-scroll-arrow-delay]
+                                                  [else syncheck-arrow-delay]))))
                 (let ([draw-arrow2
                        (λ (arrow)
                          (unless (arrow-start-x arrow)
@@ -825,12 +872,12 @@ If the namespace does not, they are colored the unbound color.
                                         (send dc set-pen tail-pen)
                                         (send dc set-brush tacked-tail-brush)])
                                       (draw-arrow2 arrow))))
-                  (when (and cursor-location
+                  (when (and cursor-pos
                              cursor-text)
                     (define arrow-record (hash-ref arrow-records cursor-text #f))
                     (define tail-arrows '())
                     (when arrow-record
-                      (for ([ele (in-list (interval-map-ref arrow-record cursor-location null))])
+                      (for ([ele (in-list (interval-map-ref arrow-record cursor-pos null))])
                         (cond [(var-arrow? ele)
                                (if (var-arrow-actual? ele)
                                    (begin (send dc set-pen var-pen)
@@ -889,70 +936,113 @@ If the namespace does not, they are colored the unbound color.
                 (for-each-tail-arrows/to/from tail-arrow-from-pos tail-arrow-from-text
                                               tail-arrow-to-pos tail-arrow-to-text)))
             
-            (define last-known-mouse-x #f)
-            (define last-known-mouse-y #f)
-            (define/override (on-event event)
+            ;; after a short delay, current-* are set to latent-*, and arrows are drawn
+            (define latent-pos #f)
+            (define latent-text #f)
+            (define latent-eles #f)
+            (define latent-tooltip #f)
+            
+            (define cursor-pos #f)
+            (define cursor-text #f)
+            (define cursor-eles #f)
+            (define cursor-tooltip #f)
+            
+            (define arrow-draw-timer #f)
+            
+            (define (stop-arrow-draw-timer)
+              (when arrow-draw-timer
+                (send arrow-draw-timer stop)))
+            
+            (define (start-arrow-draw-timer delay-ms)
               (cond
-                [(send event leaving?)
-                 (set! last-known-mouse-x #f)
-                 (set! last-known-mouse-y #f)]
+                [arrow-draw-timer (send arrow-draw-timer start delay-ms #t)]
                 [else
-                 (set! last-known-mouse-x (send event get-x))
-                 (set! last-known-mouse-y (send event get-y))])
+                 (set! arrow-draw-timer
+                       (make-object timer% update-drawn-arrows delay-ms #t))]))
+            
+            ;; Given a mouse position, updates latent-* variables and tooltips
+            (define (update-latent-arrows x y)
+              (define-values (pos text eles tooltip)
+                (cond
+                  ;; need to check this first so syncheck:clear-arrows will work
+                  [(not arrow-records)
+                   (values #f #f #f #f)]
+                  [(and popup-menu (send popup-menu get-popup-target))
+                   (values latent-pos latent-text latent-eles latent-tooltip)]
+                  [(and x y)
+                   (define-values (pos text) (get-pos/text-dc-location x y))
+                   (define arrow-record (and text pos (hash-ref arrow-records text #f)))
+                   (define eles (and arrow-record (interval-map-ref arrow-record pos null)))
+                   (define tooltip (cond [(equal? latent-eles eles) latent-tooltip]
+                                         [else (get-tooltip eles)]))
+                   (values pos text eles tooltip)]
+                  [else
+                   (values #f #f #f #f)]))
+              (define text-changed? (not (eq? latent-text text)))
+              (define eles-changed? (not (equal? latent-eles eles)))
               
-              (if arrow-records
-                  (cond
-                    [(send event leaving?)
-                     (syncheck:update-drawn-arrows)
-                     (super on-event event)]
-                    [(or (send event moving?)
-                         (send event entering?))
-                     (syncheck:update-drawn-arrows)
-                     (super on-event event)]
-                    [(send event button-down? 'right)
-                     (define menu
-                       (let-values ([(pos text) (get-pos/text event)])
-                         (syncheck:build-popup-menu pos text)))
-                     (cond
-                       [menu
-                        (send (get-canvas) popup-menu menu
-                              (+ 1 (inexact->exact (floor (send event get-x))))
-                              (+ 1 (inexact->exact (floor (send event get-y)))))]
-                       [else
-                        (super on-event event)])]
-                    [else (super on-event event)])
-                  (super on-event event)))
+              (set! latent-pos pos)
+              (set! latent-text text)
+              (set! latent-eles eles)
+              (set! latent-tooltip tooltip)
+              
+              (or text-changed? eles-changed?))
+            
+            (define (update-drawn-arrows)
+              (set! cursor-pos latent-pos)
+              (set! cursor-text latent-text)
+              (set! cursor-eles latent-eles)
+              (set! cursor-tooltip latent-tooltip)
+              
+              (update-tooltip-frame)
+              (update-docs-background cursor-eles)
+              
+              (when cursor-eles
+                (for ([ele (in-list cursor-eles)])
+                  (when (arrow? ele)
+                    (update-arrow-poss ele))))
+              
+              (invalidate-bitmap-cache))
+            
+            (define popup-menu #f)
+            (define mouse-admin #f)  ; editor admin for the last mouse move
+            (define mouse-x #f)      ; last known mouse position
+            (define mouse-y #f)
+            (define/override (on-event event)
+              (define-values (x y)
+                (cond [(send event leaving?) (values #f #f)]
+                      [else (values (send event get-x) (send event get-y))]))
+              
+              (set! mouse-admin (get-admin))
+              (set! mouse-x x)
+              (set! mouse-y y)
+              
+              (when (update-latent-arrows x y)
+                (start-arrow-draw-timer syncheck-arrow-delay))
+              
+              (let/ec break
+                (when (send event button-down? 'right)
+                  (define menu
+                    (let-values ([(pos text) (get-pos/text event)])
+                      (syncheck:build-popup-menu pos text)))
+                  (when menu
+                    (set! popup-menu menu)
+                    (send (get-canvas) popup-menu menu
+                          (+ 1 (inexact->exact (floor x)))
+                          (+ 1 (inexact->exact (floor y))))
+                    (break (void))))
+                (super on-event event)))
             
             (define/public (syncheck:update-drawn-arrows)
-              (define-values (pos text)
-                (if (and last-known-mouse-x last-known-mouse-y arrow-records)
-                    (get-pos/text-dc-location last-known-mouse-x last-known-mouse-y)
-                    (values #f #f)))
-              (define eles 
-                (let ([arrow-record (and text
-                                         pos
-                                         (hash-ref arrow-records text #f))])
-                  (and arrow-record 
-                       (interval-map-ref arrow-record pos null))))
-              (unless (and (equal? cursor-location pos)
-                           (eq? cursor-text text))
-                (set! cursor-location pos)
-                (set! cursor-text text)
-                
-                (unless (equal? cursor-eles eles)
-                  (set! cursor-eles eles)
-                  (update-tooltips cursor-eles)
-                  (update-docs-background cursor-eles)
-                  (when cursor-eles
-                    (for ([ele (in-list cursor-eles)])
-                      (when (arrow? ele)
-                        (update-arrow-poss ele))))
-                  (invalidate-bitmap-cache)))
-              
-              (unless tooltips-in-sync-with-cursor-eles?
-                ;; must be called before cursor-eles is set!'d to be eles
-                (update-tooltips cursor-eles)))
-
+              ;; This will ensure on-paint is called, once for each canvas that
+              ;; is displaying the editor. In the on-paint call for the canvas
+              ;; that the mouse is over, arrows will be updated, arrow-draw-timer
+              ;; will be set, etc.
+              ;; If this were done more directly, the tooltip would show up in
+              ;; the wrong canvas half the time - when the current admin isn't
+              ;; the admin for the canvas the mouse is over.
+              (invalidate-bitmap-cache))
+            
             (define/public (syncheck:build-popup-menu pos text)
               (and pos
                    (is-a? text text%)
@@ -1035,64 +1125,61 @@ If the namespace does not, they are colored the unbound color.
                                
                                  menu)]))))))
             
+            (struct tooltip-spec (strings x y w h) #:transparent)
+            
             (define tooltip-frame #f)
-            (define tooltips-in-sync-with-cursor-eles? #f)
-            (define/private (update-tooltips eles)
-              ;; update-tooltips has to do its own check to compare 'eles'
-              ;; with 'cursor-eles' because sometimes when it is called,
-              ;; the calls to 'tooltip-info->ltrb' fail and we get
-              ;; no information back. when that happens, we set 
-              ;; tooltips-in-sync-with-cursor-eles? to #f and hope that there
-              ;; will be another callback in good time to update us
-              ;; (generally there is because this is called from on-paint
-              ;;  and on-paint gets called each time the cursor blinks...)
-              (cond
-                [(not eles)
-                 (when tooltip-frame 
-                   (when (send tooltip-frame is-shown?)
-                     (send tooltip-frame show #f)))
-                 (set! tooltips-in-sync-with-cursor-eles? #t)]
-                [else
-                 (define tooltip-infos (filter tooltip-info? eles))
-                 (cond
-                   [(null? tooltip-infos)
-                    (when tooltip-frame 
-                      (when (send tooltip-frame is-shown?)
-                        (send tooltip-frame show #f)))
-                    (set! tooltips-in-sync-with-cursor-eles? #t)]
-                   [else
-                    (unless tooltip-frame (set! tooltip-frame (new tooltip-frame%)))
-                    (let/ec k
-                      (let loop ([tooltip-infos tooltip-infos]
-                                 [l #f]
-                                 [t #f]
-                                 [r #f]
-                                 [b #f]
-                                 [strings (set)])
-                        (cond
-                          [(null? tooltip-infos)
-                           (send tooltip-frame set-tooltip 
-                                 (sort (set->list strings) string<=?))
-                           (set! tooltips-in-sync-with-cursor-eles? #t)
-                           (cond
-                             [(and l t r b)
-                              (define-values (dx dy) (get-display-left-top-inset))
-                              (send tooltip-frame show-over (- l dx) (- t dy) (- r l) (- b t))]
-                             [else
-                              (send tooltip-frame show #f)])]
-                          [else
-                           (define-values (tl tt tr tb) (tooltip-info->ltrb (car tooltip-infos)))
-                           (unless (and tl tt tr tb)
-                             (set! tooltips-in-sync-with-cursor-eles? #f)
-                             (k (void)))
-                           (define (min/f x y) (cond [(and x y) (min x y)] [x x] [y y] [else #f]))
-                           (define (max/f x y) (cond [(and x y) (max x y)] [x x] [y y] [else #f]))
-                           (loop (cdr tooltip-infos)
-                                 (min/f tl l)
-                                 (min/f tt t)
-                                 (max/f tr r)
-                                 (max/f tb b)
-                                 (set-add strings (tooltip-info-msg (car tooltip-infos))))])))])]))
+            (define (update-tooltip-frame)
+              (unless tooltip-frame (set! tooltip-frame (new tooltip-frame%)))
+              (match cursor-tooltip
+                [(tooltip-spec strings x y w h)
+                 ;; hiding keeps it from flashing the new tooltip in the old location
+                 (send tooltip-frame show #f)
+                 (send tooltip-frame set-tooltip strings)
+                 (send tooltip-frame show-over x y w h)]
+                ;; #f or 'out-of-sync
+                [_ (send tooltip-frame show #f)]))
+            
+            ;; Sometimes when this is called, the calls to 'tooltip-info->ltrb'
+            ;; fail and we get no information back. When that happens, we return 
+            ;; 'out-of-sync and try again in on-paint (which happens every time
+            ;; the caret blinks).
+            (define/private (get-tooltip eles)
+              (define tooltip-infos (if eles (filter tooltip-info? eles) null))
+              (let loop ([tooltip-infos tooltip-infos]
+                         [l #f] [t #f] [r #f] [b #f]
+                         [strings (set)])
+                (cond
+                  [(null? tooltip-infos)
+                   (cond
+                     [(and l t r b)
+                      (define-values (dx dy) (get-display-left-top-inset))
+                      (tooltip-spec (sort (set->list strings) string<=?)
+                                    (- l dx) (- t dy) (- r l) (- b t))]
+                     [else #f])]
+                  [else
+                   (define-values (tl tt tr tb) (tooltip-info->ltrb (car tooltip-infos)))
+                   (cond
+                     [(and tl tt tr tb)
+                      (define (min/f x y) (cond [(and x y) (min x y)] [x x] [y y] [else #f]))
+                      (define (max/f x y) (cond [(and x y) (max x y)] [x x] [y y] [else #f]))
+                      (loop (cdr tooltip-infos)
+                            (min/f tl l) (min/f tt t) (max/f tr r) (max/f tb b)
+                            (set-add strings (tooltip-info-msg (car tooltip-infos))))]
+                     [else
+                      ;(printf "~a: out of sync~n" (current-milliseconds))
+                      'out-of-sync])])))
+            
+            ;; Given an editor, returns the canvas that the mouse is currently over,
+            ;; as opposed to the one with keyboard focus (which get-canvas usually returns)
+            (define (find-mouse-canvas ed)
+              (define current-admin (send ed get-admin))
+              (let/ec return
+                (for ([canvas  (in-list (send ed get-canvases))])
+                  (define admin (send canvas call-as-primary-owner
+                                      (λ () (send ed get-admin))))
+                  (when (eq? admin current-admin)
+                    (return canvas)))
+                (send ed get-canvas)))
             
             (define/private (tooltip-info->ltrb tooltip)
               (define xlb (box 0))
@@ -1109,7 +1196,7 @@ If the namespace does not, they are colored the unbound color.
               (define window
                 (let loop ([ed text])
                   (cond
-                    [(send ed get-canvas) => values]
+                    [(find-mouse-canvas ed) => values]
                     [else
                      (define admin (send ed get-admin))
                      (if (is-a? admin editor-snip-editor-admin<%>)
