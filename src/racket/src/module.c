@@ -3036,7 +3036,11 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
 void scheme_init_module_path_table()
 {
   REGISTER_SO(modpath_table);
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  modpath_table = scheme_make_nonlock_equal_bucket_table();
+#else
   modpath_table = scheme_make_weak_equal_table();
+#endif
 }
 
 static Scheme_Object *make_resolved_module_path_obj(Scheme_Object *o)
@@ -3108,7 +3112,11 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
 #endif
   b = scheme_bucket_or_null_from_table(modpath_table, (const char *)rmp, 0);
   if (b) {
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+    return (Scheme_Object *)b->key;
+#else
     return (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
+#endif
   }
 
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
@@ -3122,6 +3130,11 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
   scheme_end_atomic_no_swap();
   if (!b->val)
     b->val = scheme_true;
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  if (!place_local_modpath_table)
+    return (Scheme_Object *)b->key;
+#endif
   return(Scheme_Object *)HT_EXTRACT_WEAK(b->key);
 }
 

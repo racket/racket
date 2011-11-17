@@ -1749,6 +1749,18 @@ Scheme_Bucket_Table *scheme_make_weak_equal_table(void)
   return t;
 }
 
+Scheme_Bucket_Table *scheme_make_nonlock_equal_bucket_table(void)
+{
+  Scheme_Bucket_Table *t;
+  
+  t = scheme_make_bucket_table(20, SCHEME_hash_ptr);
+  
+  t->compare = compare_equal;
+  t->make_hash_indices = make_hash_indices_for_equal;
+
+  return t;
+}
+
 Scheme_Bucket_Table *scheme_make_weak_eqv_table(void)
 {
   Scheme_Object *sema;

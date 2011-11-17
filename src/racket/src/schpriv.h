@@ -3603,6 +3603,7 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i,
                           intptr_t bottom, intptr_t len);
 
 Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
+Scheme_Bucket_Table *scheme_make_nonlock_equal_bucket_table(void);
 
 int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2, void *eql);
 int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2, void *eql);

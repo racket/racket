@@ -1132,7 +1132,10 @@ Scheme_Object *scheme_get_home_weak_link(Scheme_Env *e)
 {
   if (!e->weak_self_link) {
     Scheme_Object *wb;
-    wb = scheme_make_weak_box((Scheme_Object *)e);
+    if (scheme_starting_up)
+      wb = scheme_box((Scheme_Object *)e);
+    else
+      wb = scheme_make_weak_box((Scheme_Object *)e);
     e->weak_self_link = wb;
   }
 
