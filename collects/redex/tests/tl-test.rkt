@@ -1117,6 +1117,28 @@
             'failed)
           'passed))
   
+  (let ()
+    (define-language types
+      ((τ σ) int
+             num
+             (τ ... → τ)))
+    
+    (define-relation types
+      subtype ⊆ τ × τ
+      [(subtype int num)]
+      [(subtype (τ_1 ..._1 → τ_2) (σ_1 ..._1 → σ_2))
+       (subtype σ_1 τ_1) ...
+       (subtype τ_2 σ_2)]
+      [(subtype τ τ)])
+    
+    (test (term (subtype int int)) #t)
+    (test (term (subtype int num)) #t)
+    (test (term (subtype (int int int → int) (int int → int))) #f)
+    (test (term (subtype (int int → int) (int num → int))) #f)
+    (test (term (subtype (int num → int) (int int → int))) #t)
+    (test (term (subtype (int int → int) (int int → num))) #t))
+
+  
   (exec-syntax-error-tests "syn-err-tests/relation-definition.rktd")
   
 ;                    ;;                         ;                                        ;;                    ;                 

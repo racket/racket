@@ -1438,7 +1438,7 @@
        (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
                      [(lhs-for-lw ...) (lhs-lws pats)])
          (with-syntax ([((rhs stuff ...) ...) (if relation?
-                                                  #'((,(and (term raw-rhses) ...)) ...)
+                                                  #'(((AND raw-rhses ...)) ...)
                                                   #'((raw-rhses ...) ...))]
                        [(lhs ...) #'((lhs-clauses ...) ...)])
            (parse-extras #'((stuff ...) ...))
@@ -2920,3 +2920,12 @@
          covered-cases
          (rename-out [fresh-coverage make-coverage])
          coverage?)
+
+;; the AND metafunction is defined here to be used
+;; in define-relation so that ellipses work properly
+;; across clauses in relations
+(define-language L)
+(define-metafunction L
+  AND : any ... -> any
+  [(AND any ...) 
+   ,(andmap values (term (any ...)))])
