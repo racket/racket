@@ -1729,8 +1729,6 @@ extern void *scheme_malloc_envunbox(size_t);
 /*                   embedding configuration and hooks                    */
 /*========================================================================*/
 
-typedef void (*Scheme_On_Atomic_Timeout_Proc)(int must_give_up);
-
 #if SCHEME_DIRECT_EMBEDDED
 
 #if defined(_IBMR2)
@@ -1870,8 +1868,6 @@ MZ_EXTERN void scheme_register_static(void *ptr, intptr_t size);
 #else
 # define MZ_REGISTER_STATIC(x) /* empty */
 #endif
-
-MZ_EXTERN Scheme_On_Atomic_Timeout_Proc scheme_on_atomic_timeout;
 
 MZ_EXTERN void scheme_immediate_exit(int status);
 

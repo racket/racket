@@ -225,9 +225,9 @@ HOOK_SHARED_OK void (*scheme_sleep)(float seconds, void *fds);
 HOOK_SHARED_OK void (*scheme_notify_multithread)(int on);
 HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
 HOOK_SHARED_OK int (*scheme_check_for_break)(void);
-HOOK_SHARED_OK Scheme_On_Atomic_Timeout_Proc scheme_on_atomic_timeout;
-HOOK_SHARED_OK static int atomic_timeout_auto_suspend;
-HOOK_SHARED_OK static int atomic_timeout_atomic_level;
+THREAD_LOCAL_DECL(static Scheme_On_Atomic_Timeout_Proc on_atomic_timeout);
+THREAD_LOCAL_DECL(static int atomic_timeout_auto_suspend);
+THREAD_LOCAL_DECL(static int atomic_timeout_atomic_level);
 
 THREAD_LOCAL_DECL(struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_descs);
 
@@ -4344,7 +4344,7 @@ static void call_on_atomic_timeout(int must)
   void **private_kill_next;
 
   /* Save any state that has to do with the thread blocking or 
-     sleeping, in case scheme_on_atomic_timeout() runs Racket code. */
+     sleeping, in case on_atomic_timeout() runs Racket code. */
 
   running = p->running;
   sleep_end = p->sleep_end;
@@ -4364,7 +4364,7 @@ static void call_on_atomic_timeout(int must)
   p->block_check = NULL;
   p->block_needs_wakeup = NULL;
 
-  scheme_on_atomic_timeout(must);
+  on_atomic_timeout(must);
 
   p->running = running;
   p->sleep_end = sleep_end;
@@ -4668,7 +4668,7 @@ void scheme_thread_block(float sleep_time)
     swap_target = next;
     next = NULL;
     do_swap_thread();
-  } else if (do_atomic && scheme_on_atomic_timeout
+  } else if (do_atomic && on_atomic_timeout
              && (atomic_timeout_auto_suspend < 2)) {
     if (!atomic_timeout_auto_suspend
         || (do_atomic <= atomic_timeout_atomic_level)) {
@@ -4950,7 +4950,7 @@ int scheme_wait_until_suspend_ok(void)
 {
   int did = 0;
 
-  if (scheme_on_atomic_timeout) {
+  if (on_atomic_timeout) {
     /* new-style atomic timeout */
     if (do_atomic > atomic_timeout_atomic_level) {
       scheme_log_abort("attempted to wait for suspend in nested atomic mode");
@@ -4958,7 +4958,7 @@ int scheme_wait_until_suspend_ok(void)
     }
   }
 
-  while (do_atomic && scheme_on_atomic_timeout) {
+  while (do_atomic && on_atomic_timeout) {
     did = 1;
     if (atomic_timeout_auto_suspend)
       atomic_timeout_auto_suspend++;
@@ -4979,8 +4979,8 @@ Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Time
 {
   Scheme_On_Atomic_Timeout_Proc old;
 
-  old = scheme_on_atomic_timeout;
-  scheme_on_atomic_timeout = p;
+  old = on_atomic_timeout;
+  on_atomic_timeout = p;
   if (p) {
     atomic_timeout_auto_suspend = 1;
     atomic_timeout_atomic_level = do_atomic;
