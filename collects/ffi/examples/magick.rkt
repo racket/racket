@@ -14,7 +14,7 @@
           (ffi-lib lib version))))))
      
 (define libwand (ffi-try-libs '("libWand" "6.0.1" "6")
-                              '("libMagickWand" "1")))
+                              '("libMagickWand" "1" "3")))
 
 ;; ===== Main Objects =========================================================
 
