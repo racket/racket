@@ -22,6 +22,8 @@
                                  [literal:#%parens #%parens]
                                  [literal:#%braces #%braces]
                                  [literal:#%brackets #%brackets]
+                                 [honu-var var]
+                                 [honu-equal =]
                                  [literal:honu-comma %comma]
                                  [honu--> %arrow]
                                  [honu-syntax syntax])
