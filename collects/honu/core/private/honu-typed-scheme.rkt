@@ -364,8 +364,6 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
            #'rest))])))
 |#
 
-(define true #t)
-(define false #f)
 
 (define (show-top-result v)
   (unless (void? v)
@@ -490,3 +488,10 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      (begin
        (debug "Module begin ~a\n" (pretty-format (syntax->datum #'(forms ...))))
        #'(#%module-begin (honu-unparsed-begin forms ...)))]))
+
+(provide honu-top-interaction)
+(define-syntax (honu-top-interaction stx)
+  (syntax-case stx ()
+    [(_ rest ...)
+     #'(#%top-interaction . (honu-unparsed-begin rest ...))]))
+

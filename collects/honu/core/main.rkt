@@ -1,242 +1,83 @@
 #lang racket/base
 
-(require "private/honu-typed-scheme.rkt"
-         "private/honu2.rkt"
-         "private/macro2.rkt"
-         (for-syntax "private/honu2.rkt")
-         (for-syntax (only-in "private/macro2.rkt" honu-syntax mergeSyntax))
-         "private/class.rkt"
-         (for-meta 2 (prefix-in racket: racket/base))
-         (for-syntax (prefix-in racket: racket/base))
-         (for-syntax (prefix-in class: syntax/parse))
-         (for-syntax (only-in "private/parse2.rkt" honu-expression honu-identifier))
-         (for-syntax (prefix-in literal: "private/literals.rkt"))
-         (prefix-in literal: "private/literals.rkt"))
+(define-syntax-rule (standard-honu meta-level)
+  (begin
+    (require (for-meta meta-level
+                       (prefix-in racket: racket/base)
+                       (prefix-in honu: "private/macro2.rkt")
+                       (prefix-in honu: "private/class.rkt")
+                       (prefix-in literal: "private/literals.rkt")
+                       (prefix-in syntax-parse: syntax/parse)
+                       (prefix-in racket: racket/base)
+                       (prefix-in parse: "private/parse2.rkt")
+                       (prefix-in honu: "private/honu2.rkt")))
+    (provide (for-meta meta-level 
+                       (rename-out [parse:honu-expression expression]
+                                   [parse:honu-identifier identifier]
+                                   [honu:honu-function function]
+                                   [honu:honu-var var]
+                                   [honu:honu-equal =]
+                                   [honu:honu--> %arrow]
+                                   [honu:honu-class class]
+                                   [honu:honu-require require]
+                                   [honu:honu-new new]
+                                   [honu:honu-while while]
+                                   [honu:honu-macro macro]
+                                   [honu:honu-with-input-from-file with_input_from_file]
+                                   [honu:define-make-honu-operator operator]
+                                   [honu:honu-match match]
+                                   [honu:honu-with with]
+                                   [honu:honu-var var]
+                                   [honu:honu-val val]
+                                   [honu:honu-for for]
+                                   [honu:honu-if if]
+                                   [honu:honu-quote quote]
+                                   [honu:honu-quasiquote quasiquote]
+                                   [honu:honu-+ +] [honu:honu-- -]
+                                   [honu:honu-* *] [honu:honu-/ /]
+                                   [honu:honu-modulo %]
+                                   [honu:honu-^ ^]
+                                   [honu:honu-> >] [honu:honu-< <]
+                                   [honu:honu->= >=]
+                                   [honu:honu-<= <=]
+                                   [honu:honu-equal =]
+                                   [honu:honu-assignment :=]
+                                   [honu:honu-map map]
+                                   [honu:honu-flow \|]
+                                   [honu:honu-dot %dot]
+                                   [honu:honu--> %arrow]
+                                   [honu:honu-string=? string_equal]
+                                   [honu:honu-cons ::]
+                                   [honu:honu-and and] [honu:honu-and &&]
+                                   [honu:honu-or or] [honu:honu-or \|\|]
+                                   [honu:honu-not not] [honu:honu-not !]
+                                   [honu:honu-structure structure]
+                                   [honu:honu-structure struct]
+                                   [honu:honu-syntax syntax]
+                                   [literal:honu-prefix prefix]
+                                   [literal:honu-then then]
+                                   [literal:colon %colon]
+                                   [literal:honu-in in]
+                                   [literal:semicolon %semicolon]
+                                   [literal:honu-comma %comma]
+                                   [literal:honu-comma %comma]
+                                   [literal:honu-<- <-]
+                                   [literal:#%brackets #%brackets]
+                                   [literal:#%braces #%braces]
+                                   [literal:#%parens #%parens])
+                       racket:print racket:printf
+                       honu:true honu:false
+                       honu:withSyntax
+                       honu:mergeSyntax
+                       ))))
+
+(require "private/honu-typed-scheme.rkt")
+
+;; Provide standard stuff at phase 1
+(standard-honu 1)
+(standard-honu 0)
 
 (provide #%top
          #%datum
-         print printf true false
-         (for-syntax (rename-out [honu-expression expression]
-                                 [honu-identifier identifier]
-                                 [honu-function function]
-                                 [literal:#%parens #%parens]
-                                 [literal:#%braces #%braces]
-                                 [literal:#%brackets #%brackets]
-                                 [honu-var var]
-                                 [honu-equal =]
-                                 [literal:honu-comma %comma]
-                                 [honu--> %arrow]
-                                 [honu-syntax syntax])
-                     (rename-out [racket:#%datum #%datum])
-                     withSyntax
-                     mergeSyntax)
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
-                     [honu-top-interaction #%top-interaction]
-                     [honu-with-input-from-file with_input_from_file]
-                     [honu-class class]
-                     [honu-new new]
-                     [honu-function function]
-                     [honu-require require]
-                     [honu-macro macro]
-                     [define-make-honu-operator operator]
-                     [honu-syntax syntax]
-                     [honu-while while]
-                     [honu-match match]
-                     [honu-with with]
-                     [honu-var var]
-                     [honu-val val]
-                     [honu-for for]
-                     [honu-if if]
-                     [honu-quote quote]
-                     [honu-quasiquote quasiquote]
-                     [honu-+ +] [honu-- -]
-                     [honu-* *] [honu-/ /]
-                     [honu-modulo %]
-                     [honu-^ ^]
-                     [honu-> >] [honu-< <]
-                     [honu->= >=] [honu-<= <=]
-                     ; [honu-= =]
-                     [honu-equal =]
-                     [honu-assignment :=]
-                     [literal:honu-<- <-]
-                     [honu-map map]
-                     [honu-flow \|]
-                     [honu-dot %dot]
-                     [honu--> %arrow]
-                     [honu-string=? string_equal]
-                     [honu-cons ::]
-                     [honu-and and] [honu-and &&]
-                     [honu-or or] [honu-or \|\|]
-                     [honu-not not] [honu-not !]
-                     [honu-structure structure]
-                     [honu-structure struct]
-                     [literal:honu-prefix prefix]
-                     [literal:honu-then then]
-                     [literal:colon %colon]
-                     [literal:honu-in in]
-                     [literal:semicolon %semicolon]
-                     [literal:honu-comma %comma]
-                     [literal:#%brackets #%brackets]
-                     [literal:#%braces #%braces]
-                     [literal:#%parens #%parens])
-         )
-
-#|
-(require (for-syntax racket/base))
-(require (for-meta 2 racket/base))
-(require racket/class)
-
-(require "private/honu-typed-scheme.rkt"
-         "private/parse.rkt"
-         (for-syntax "private/literals.rkt")
-         (for-syntax "private/honu-typed-scheme.rkt")
-         (for-syntax "private/parse.rkt")
-         (for-syntax "private/canonical.rkt")
-         syntax/parse
-         (for-syntax syntax/parse)
-         "private/literals.rkt"
-         "private/syntax.rkt"
-         "private/more.rkt"
-         (for-template racket/base)
-         (for-template "private/literals.rkt")
-         #;
-         (for-syntax "private/more.rkt")
-         #;
-         (for-syntax "private/syntax.rkt")
-         (prefix-in macro: "private/macro2.rkt")
-         #;
-         (for-syntax "private/macro.rkt")
-         "private/macro.ss")
-
-(define-for-syntax (syntax-to-string stx)
-  (format "original '~a' - ~a" (syntax->datum stx) (to-honu-string stx)))
-
-(define-syntax (honu-struct stx)
-  (syntax-parse stx
-    [(_ name (my-field ...))
-     (with-syntax ([new-name (gensym (syntax->datum #'name))])
-       #'(begin
-           (define new-name
-             (class object%
-                    (init-field my-field ...)
-                    (super-new)))
-           (define name (lambda args (apply make-object new-name args)))))]))
-
-(provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
-                     (semicolon \;
-                                )
-                     (honu-+ +)
-                     (honu-* *)
-                     (+ scheme:+)
-                     (honu-/ /)
-                     (honu-- -)
-                     (honu-< <)
-                     (honu-> >)
-                     (honu->= >=)
-                     (honu-<= <=)
-                     (honu-== ==)
-                     (honu-= =)
-                     (honu-literal literals)
-                     (honu-!= !=)
-                     (honu-? ?)
-                     (honu-: :)
-                     (honu-and and)
-                     (honu-comma |,|)
-                     (honu-. |.|)
-                     [honu-var var]
-                     (expression-comma expression_comma)
-                     )
-
-         (for-syntax (rename-out [syntax-to-string syntax_to_string]))
-
-         #%top
-
-         #%datum
-         (for-template #%datum)
-         datum->syntax
-         #%top-interaction
-         (for-syntax #%datum
-                     display
-                     with-syntax
-                     quote
-                     #%app
-                     #%parens #%brackets #%braces
-                     ...
-                     map
-                     syntax->list
-                     expression
-                     statement
-                     (rename-out (semicolon \;
-                                            )
-                                 (ellipses-comma ec)
-                                 (ellipses-repeat repeat)
-                                 (honu-identifier identifier)
-                                 (expression-comma expression_comma)
-                                 #;
-                                 (honu-macro macro)
-                                 (parse-an-expr parse)
-                                 (... scheme:...)
-                                 (honu-body:class body)
-                                 #;
-                                 (honu-syntax syntax)
-                                 #;
-                                 (honu-expression-syntax expressionSyntax)
-                                 #;
-                                 (honu-+ +)
-                                 #;
-                                 (honu-scheme scheme2)
-                                 #;
-                                 (scheme-syntax scheme:syntax)
-                                 #;
-                                 (scheme-syntax schemeSyntax)
-                                 ))
-         #%braces #%parens #%brackets
-         sqrt
-         true
-         false
-         display
-         display2
-         newline
-         with-syntax
-         honu-unparsed-begin
-         (for-template with-syntax)
-         ;; stuff i done want
-         define
-         let
-         ;; end stuff
-         else
-         lambda
-         #%app
-         (for-template #%app)
-         quote
-         ...
-         expression
-         str
-         in-range
-         honu-struct
-         macro:macro
-         (rename-out
-           (struct scheme-struct)
-           (syntax real-syntax)
-           (for scheme-for)
-           (honu-if if)
-           (honu-provide provide)
-           (honu-macro-item macroItem)
-           #;
-           (honu-macro macro)
-           #;
-           (honu-infix-macro infixMacro)
-           (honu-identifier identifier)
-           (honu-identifier identifier123)
-           (honu-require require)
-           (honu-for-syntax forSyntax)
-           (honu-for-template forTemplate)
-           #;
-           (honu-syntax syntax)
-           #;
-           (honu-pattern pattern)
-           (honu-keywords keywords)
-           #;
-           (scheme-syntax scheme:syntax)
-           ))
-|#
+                     [honu-top-interaction #%top-interaction]))

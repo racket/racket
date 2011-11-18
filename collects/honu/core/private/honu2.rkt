@@ -228,12 +228,6 @@
 
 (define-binary-operator honu-equal 1 'left equal?)
 
-(provide honu-top-interaction)
-(define-syntax (honu-top-interaction stx)
-  (syntax-case stx ()
-    [(_ rest ...)
-     #'(#%top-interaction . (honu-unparsed-begin rest ...))]))
-
 (begin-for-syntax
   (define (fix-module-name name)
     (format-id name "~a" (regexp-replace* #rx"_" (symbol->string (syntax->datum name)) "-")))
@@ -376,3 +370,6 @@
                                 (parse-body code ...))))
        (values out #'rest #t)])))
 
+(provide true false)
+(define true #t)
+(define false #f)
