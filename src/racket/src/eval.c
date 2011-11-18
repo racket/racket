@@ -357,6 +357,9 @@ void scheme_init_eval_places()
   scheme_prefix_finalize = (Scheme_Prefix *)0x1; /* 0x1 acts as a sentenel */
   GC_set_post_propagate_hook(mark_pruned_prefixes);
 #endif
+#ifdef DEBUG_CHECK_STACK_FRAME_SIZE
+  (void)scheme_do_eval(SCHEME_TAIL_CALL_WAITING, 0, NULL, 0);
+#endif
 }
 
 /*========================================================================*/
@@ -1087,8 +1090,21 @@ void scheme_temp_inc_mark_depth()
 /*                         eval-apply helpers                             */
 /*========================================================================*/
 
-/* called in schapp.h */
+/* discourage inlining of functions call ed scheme_do_eval() to keep its frame size smaller */
+MZ_DO_NOT_INLINE(static void unbound_global(Scheme_Object *obj));
+MZ_DO_NOT_INLINE(static void make_tail_buffer_safe());
+MZ_DO_NOT_INLINE(static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, Scheme_Object **runstack));
+MZ_DO_NOT_INLINE(static Scheme_Object *define_values_execute(Scheme_Object *data));
+MZ_DO_NOT_INLINE(static Scheme_Object *set_execute (Scheme_Object *data));
+MZ_DO_NOT_INLINE(static Scheme_Object *ref_execute (Scheme_Object *data));
+MZ_DO_NOT_INLINE(static Scheme_Object *apply_values_execute(Scheme_Object *data));
+MZ_DO_NOT_INLINE(static Scheme_Object *bangboxenv_execute(Scheme_Object *data));
+MZ_DO_NOT_INLINE(static Scheme_Object *begin0_execute(Scheme_Object *obj));
+MZ_DO_NOT_INLINE(static Scheme_Object *splice_execute(Scheme_Object *data));
+MZ_DO_NOT_INLINE(static Scheme_Object *define_syntaxes_execute(Scheme_Object *form));
+MZ_DO_NOT_INLINE(static Scheme_Object *begin_for_syntax_execute(Scheme_Object *form));
 
+/* called in schapp.h */
 static Scheme_Object *do_apply_known_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -1249,6 +1265,32 @@ static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, S
     return rands;
   } else
     return rands;
+}
+
+static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
+                                             int get_value)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = (void *)obj;
+  p->ku.k.i1 = num_rands;
+  if (num_rands >= 0) {
+    /* Copy rands: */
+    GC_CAN_IGNORE void *ra;
+    if (rands == p->tail_buffer)
+      make_tail_buffer_safe();
+    ra = (void *)MALLOC_N(Scheme_Object*, num_rands);
+    p->ku.k.p2 = ra;
+    {
+      int i;
+      for (i = num_rands; i--; ) {
+        ((Scheme_Object **)ra)[i] = rands[i];
+      }
+    }
+  } else
+    p->ku.k.p2 = (void *)rands;
+  p->ku.k.i2 = get_value;
+  return scheme_handle_stack_overflow(do_eval_k);
 }
 
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
@@ -1873,14 +1915,12 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
   return NULL;
 }
 
-static Scheme_Object *
-define_values_execute(Scheme_Object *data)
+static Scheme_Object *define_values_execute(Scheme_Object *data)
 {
   return define_execute_with_dynamic_state(data, 1, 0, NULL, NULL, NULL);
 }
 
-static Scheme_Object *
-set_execute (Scheme_Object *data)
+static Scheme_Object *set_execute (Scheme_Object *data)
 {
   Scheme_Set_Bang *sb = (Scheme_Set_Bang *)data;
   Scheme_Object *val;
@@ -1897,8 +1937,7 @@ set_execute (Scheme_Object *data)
   return scheme_void;
 }
 
-static Scheme_Object *
-ref_execute (Scheme_Object *data)
+static Scheme_Object *ref_execute (Scheme_Object *data)
 {
   Scheme_Prefix *toplevels;
   Scheme_Object *o;
@@ -2046,8 +2085,7 @@ static Scheme_Object *bangboxenv_execute(Scheme_Object *data)
   return _scheme_tail_eval(data);
 }
 
-static Scheme_Object *
-begin0_execute(Scheme_Object *obj)
+static Scheme_Object *begin0_execute(Scheme_Object *obj)
 {
   Scheme_Object *v, **mv;
   int i, mc, apos;
@@ -2187,14 +2225,12 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
   }
 }
 
-static Scheme_Object *
-define_syntaxes_execute(Scheme_Object *form)
+static Scheme_Object *define_syntaxes_execute(Scheme_Object *form)
 {
   return do_define_syntaxes_execute(form, NULL);
 }
 
-static Scheme_Object *
-begin_for_syntax_execute(Scheme_Object *form)
+static Scheme_Object *begin_for_syntax_execute(Scheme_Object *form)
 {
   return do_define_syntaxes_execute(form, NULL);
 }
@@ -2370,25 +2406,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 # define SCHEME_CURRENT_PROCESS p
 # include "mzstkchk.h"
   {
-    p->ku.k.p1 = (void *)obj;
-    p->ku.k.i1 = num_rands;
-    if (num_rands >= 0) {
-      /* Copy rands: */
-      GC_CAN_IGNORE void *ra;
-      if (rands == p->tail_buffer)
-	make_tail_buffer_safe();
-      ra = (void *)MALLOC_N(Scheme_Object*, num_rands);
-      p->ku.k.p2 = ra;
-      {
-	int i;
-	for (i = num_rands; i--; ) {
-	  ((Scheme_Object **)ra)[i] = rands[i];
-	}
-      }
-    } else
-      p->ku.k.p2 = (void *)rands;
-    p->ku.k.i2 = get_value;
-    return scheme_handle_stack_overflow(do_eval_k);
+    return do_eval_stack_overflow(obj, num_rands, rands, get_value);
   }
 #endif
 
@@ -2429,6 +2447,16 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 #define UPDATE_THREAD_RSPTR_FOR_ERROR() UPDATE_THREAD_RSPTR()
 
 #define UPDATE_THREAD_RSPTR_FOR_PROC_MARK() UPDATE_THREAD_RSPTR()
+
+#ifdef DEBUG_CHECK_STACK_FRAME_SIZE
+  if (obj == SCHEME_TAIL_CALL_WAITING) {
+    scheme_do_eval(SCHEME_EVAL_WAITING, 0, &obj, 0);
+    return NULL;
+  } else if (obj == SCHEME_EVAL_WAITING) {
+    printf("%ld\n", (char *)rands - (char *)&obj);
+    return NULL;
+  }
+#endif
 
   MZ_CONT_MARK_POS += 2;
   old_runstack = RUNSTACK;
@@ -3359,7 +3387,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  RUNSTACK_CHANGED();
 
 	  if (SCHEME_LET_AUTOBOX(lv)) {
-	    Scheme_Object **stack = RUNSTACK;
+	    GC_MAYBE_IGNORE_INTERIOR Scheme_Object **stack = RUNSTACK;
 
 	    UPDATE_THREAD_RSPTR_FOR_GC();
 
@@ -3375,8 +3403,10 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       case scheme_letrec_type:
 	{
-	  Scheme_Letrec *l = (Scheme_Letrec *)obj;
-	  Scheme_Object **a, **stack;
+	  /* Macro instead of var for efficient precise GC conversion */
+# define l ((Scheme_Letrec *)obj)
+	  Scheme_Object **a;
+          GC_MAYBE_IGNORE_INTERIOR Scheme_Object **stack;
 	  int i;
 
 	  stack = RUNSTACK;
@@ -3426,6 +3456,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  }
 
 	  obj = l->body;
+# undef l
 	  goto eval_top;
 	}
 
@@ -3471,13 +3502,14 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  }
 
 	  obj = lo->body;
-#undef lo
+# undef lo
 	  goto eval_top;
 	}
       
       case scheme_with_cont_mark_type:
 	{
-	  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)obj;
+	  /* Macro instead of var for efficient precise GC conversion */
+# define wcm ((Scheme_With_Continuation_Mark *)obj)
 	  Scheme_Object *key;
 	  GC_CAN_IGNORE Scheme_Object *val;
 	  
@@ -3492,7 +3524,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  scheme_set_cont_mark(key, val);
 
 	  obj = wcm->body;
-
+# undef wcm
 	  goto eval_top;
 	}
 
