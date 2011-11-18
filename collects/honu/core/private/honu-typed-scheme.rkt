@@ -28,8 +28,8 @@
          ;; "typed-utils.ss"
          )
 
-(require (for-meta 2 scheme/base "util.rkt"))
-(require (for-meta 3 scheme/base))
+(require (for-meta 2 racket/base "util.rkt"))
+(require (for-meta 3 racket/base))
 
 (provide (all-defined-out))
 

@@ -10,12 +10,14 @@
          "compile.rkt"
          (prefix-in transformer: "transformer.rkt")
          (prefix-in fixture: "fixture.rkt")
+         macro-debugger/emit
          racket/pretty
          syntax/stx
          syntax/parse/experimental/splicing
          syntax/parse)
 ;; phase 1
-(require-syntax racket/base)
+(require-syntax racket/base
+                "debug.rkt")
 
 ;; phase -1
 (require (for-template racket/base
@@ -158,6 +160,8 @@
                           (parse-arguments #'(args ...))])
              #'(define (function parsed-arguments ...)
                  (let-syntax ([parse-more (lambda (stx)
+                                            ;; this adds an extra mark, you might not
+                                            ;; want that
                                             (honu->racket (parse-all #'(code ...))))])
                    (parse-more))))])
 
@@ -198,13 +202,17 @@
     (if current
       (values (left current) stream)
       (begin
-        (debug "Honu macro ~a\n" head)
+        (debug "Honu macro at phase ~a: ~a\n" (syntax-local-phase-level) head)
         (let-values ([(parsed unparsed terminate?)
                       ((syntax-local-value head)
                        (with-syntax ([head head]
                                      [(rest ...) rest])
-                         #'(head rest ...))
+                         (datum->syntax #'head (syntax->list #'(head rest ...))
+                                        #'head #'head))
                        #f)])
+          (emit-remark parsed)
+          #;
+          (emit-local-step stream parsed #:id #'do-macro)
           (with-syntax ([parsed parsed]
                         [rest unparsed])
             (debug "Output from macro ~a\n" (pretty-format (syntax->datum #'parsed)))
@@ -215,7 +223,9 @@
                                            (parse #'parsed)])
                                (with-syntax ([(re-parse* ...) re-parse]
                                              [(re-unparse* ...) re-unparse])
-                                 #'(re-parse* ... re-unparse* ...))))
+                                 (datum->syntax re-parse
+                                                (syntax->list #'(re-parse* ... re-unparse* ...))
+                                                re-parse re-parse))))
             (if terminate?
               (values (left re-parse)
                       #'rest)
@@ -282,14 +292,19 @@
           (if (higher new-precedence precedence)
             (let-values ([(parsed unparsed)
                           (do-parse #'(rest ...) new-precedence
-                                    (lambda (stuff)
-                                      (if current
-                                        (if binary-transformer
-                                          (binary-transformer current stuff)
-                                          (error '#'head "cannot be used as a binary operator"))
-                                        (if unary-transformer
-                                          (unary-transformer stuff)
-                                          (error '#'head "cannot be used as a unary operator"))))
+                                      (lambda (stuff)
+                                        (define output
+                                          (if current
+                                            (if binary-transformer
+                                              (binary-transformer current stuff)
+                                              (error '#'head "cannot be used as a binary operator"))
+                                            (if unary-transformer
+                                              (unary-transformer stuff)
+                                              (error '#'head "cannot be used as a unary operator"))))
+                                        (emit-local-step stuff output #:id #'binary-transformer)
+                                        (with-syntax ([out (parse-all output)])
+                                          #'(%racket out)))
+
                                     #f)])
               (do-parse unparsed precedence left parsed))
 
@@ -442,6 +457,7 @@
       (loop (cons parsed all)
             unparsed))))
 
+(provide parsed-things)
 ;; rest will be some subset of full
 (define (parsed-things full rest)
   (define full-datum (syntax->datum full))
@@ -480,3 +496,4 @@
            #:with result #'(let-syntax ([parse-more (lambda (stx)
                                                       (honu->racket (parse-all #'(code ...))))])
                              (parse-more))])
+

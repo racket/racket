@@ -17,14 +17,29 @@
                   %racket)
          (for-syntax syntax/parse
                      syntax/parse/experimental/reflect
+                     syntax/parse/experimental/splicing
                      racket/syntax
+                     racket/pretty
+                     "compile.rkt"
                      "util.rkt"
                      "debug.rkt"
                      "literals.rkt"
                      "parse2.rkt"
-                     racket/base))
+                     racket/base)
+         (for-meta 2 racket/base
+                     syntax/parse
+                     racket/pretty
+                     macro-debugger/emit
+                     "compile.rkt"
+                     "debug.rkt"
+                     "parse2.rkt"))
 
 (provide (all-from-out "struct.rkt"))
+
+(define-syntax (parse-body stx)
+  (syntax-parse stx
+    [(_ stuff ...)
+     (honu->racket (parse-all #'(stuff ...)))]))
 
 (provide honu-function)
 (define-honu-syntax honu-function
@@ -35,9 +50,7 @@
           . rest)
        (values
          #'(%racket (lambda (arg ...)
-                      (let-syntax ([do-parse (lambda (stx)
-                                               (parse-all #'(code ...)))])
-                        (do-parse))))
+                      (parse-body code ...)))
          #'rest
          #f)])))
 
@@ -105,11 +118,11 @@
                                                    (lambda (left right)
                                                      (with-syntax ([left left]
                                                                    [right right])
-                                                       #'(operator left right)))
+                                                       #'(%racket (operator left right))))
                                                    ;; unary
                                                    (lambda (argument)
                                                      (with-syntax ([argument argument])
-                                                       #'(operator argument))))))
+                                                       #'(%racket (operator argument)))))))
 
 (define-syntax-rule (define-unary-operator name precedence associativity operator)
                     (begin
@@ -119,7 +132,51 @@
                                                    ;; unary
                                                    (lambda (argument)
                                                      (with-syntax ([argument argument])
-                                                       #'(operator argument))))))
+                                                       #'(%racket (operator argument)))))))
+(begin-for-syntax
+
+(define-syntax (parse-expression stx)
+  (syntax-parse stx
+    [(_ (syntax-ignore (stuff ...)))
+     (debug "Parse expression ~a\n" (pretty-format (syntax->datum #'(stuff ...))))
+     (define-values (parsed unparsed)
+                    (parse #'(stuff ...)))
+     (with-syntax ([parsed* (honu->racket parsed)]
+                   [unparsed unparsed])
+       (emit-local-step parsed #'parsed* #:id #'honu-parse-expression)
+       (debug "Parsed ~a. Unparsed ~a\n" #'parsed #'unparsed)
+       ;; we need to smuggle our parsed syntaxes through the macro transformer
+       #'(#%datum parsed* unparsed))]))
+
+(define-primitive-splicing-syntax-class (honu-expression/phase+1)
+  #:attributes (result)
+  #:description "expression at phase + 1"
+  (lambda (stx fail)
+    (debug "honu expression phase + 1: ~a\n" (pretty-format (syntax->datum stx)))
+    (define transformed
+      (with-syntax ([stx stx])
+        (local-transformer-expand #'(parse-expression #'stx)
+                                  'expression '())))
+    (debug "Transformed ~a\n" (pretty-format (syntax->datum transformed)))
+    (define-values (parsed unparsed)
+                   (syntax-parse transformed
+                     [(ignore-quote (parsed unparsed)) (values #'parsed
+                                                               #'unparsed)]))
+    (debug "Parsed ~a unparsed ~a\n" parsed unparsed)
+    (list (parsed-things stx unparsed)
+          (with-syntax ([parsed parsed])
+            #'(%racket parsed)))))
+
+) ;; begin-for-syntax
+
+(provide define-make-honu-operator)
+(define-honu-syntax define-make-honu-operator 
+  (lambda (code context)
+    (syntax-parse code
+      [(_ name:id level:number association:honu-expression function:honu-expression/phase+1 . rest)
+       (debug "Operator function ~a\n" (syntax->datum #'function.result))
+       (define out #'(%racket (define-honu-operator/syntax name level association.result function.result)))
+       (values out #'rest #t)])))
 
 (provide honu-dot)
 (define-honu-operator/syntax honu-dot 10000 'left
@@ -141,14 +198,14 @@
   (lambda (left right)
     (with-syntax ([left left]
                   [right right])
-      #'(right left))))
+      #'(%racket (right left)))))
 
 (provide honu-assignment)
 (define-honu-operator/syntax honu-assignment 0.0001 'left
   (lambda (left right)
     (with-syntax ([left left]
                   [right right])
-      #'(set! left right))))
+      #'(%racket (set! left right)))))
 
 (define-binary-operator honu-+ 1 'left +)
 (define-binary-operator honu-- 1 'left -)
@@ -307,4 +364,15 @@
       [(var:honu-declaration . rest)
        (define result #'(%racket (define-values (var.name ...) var.expression)))
        (values result #'rest #t)])))
+
+(provide (rename-out [honu-with-syntax withSyntax]))
+(define-honu-syntax honu-with-syntax
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+                       #:literals (honu-->)
+      [(_ (~seq name:id honu--> data:honu-expression (~optional honu-comma)) ...
+          (#%braces code ...) . rest)
+       (define out #'(%racket (with-syntax ([name data.result] ...)
+                                (parse-body code ...))))
+       (values out #'rest #t)])))
 

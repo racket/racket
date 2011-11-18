@@ -1,6 +1,10 @@
 #lang honu
 
-macro testx () {x:expression} {syntax(x + 1)}
+macro testx () {x:expression} {
+  var out1 = syntax(x)
+  var out2 = syntax(+ 1)
+  mergeSyntax(out1, out2)
+}
 
 testx 5 * 2
 
