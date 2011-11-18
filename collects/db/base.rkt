@@ -9,7 +9,8 @@
 
 (provide (struct-out simple-result)
          (struct-out rows-result)
-         statement-binding?)
+         statement-binding?
+         (struct-out exn:fail:sql))
 
 (provide sql-null
          sql-null?

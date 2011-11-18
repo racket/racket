@@ -618,6 +618,39 @@ rollback invalid transactions.
   is rolled back.
 }
 
+@section{SQL Errors}
+
+SQL errors are represented by the @racket[exn:fail:sql] exception
+type.
+
+@defstruct[(exn:fail:sql exn:fail)
+           ([sqlstate string?]
+            [info (listof (cons/c symbol? any/c))])]{
+
+  Represents a SQL error originating from the database server or
+  native library. The @racket[sqlstate] field contains the SQLSTATE
+  code (a five-character string) of the error; refer to the database
+  system's documentation for the definitions of SQLSTATE codes. The
+  @racket[info] field contains all information available about the
+  error as an association list. The available keys vary, but the
+  @racket['message] key is typically present; its value is a string
+  containing the error message.
+
+@examples/results[
+[(with-handlers ([exn:fail:sql? exn:fail:sql-info])
+   (query pgc "select * from nosuchtable"))
+ '((severity . "ERROR")
+   (code . "42P01")
+   (message . "relation \"nosuchtable\" does not exist")
+   ...)]
+]
+
+  Errors originating from the @racketmodname[db] library, such as
+  arity and contract errors, type conversion errors, etc, are not
+  represented by @racket[exn:fail:sql]. SQLite errors are not
+  represented via @racket[exn:fail:sql], because SQLite does not
+  provide SQLSTATE error codes.
+}
 
 @section{Database Information}
 
