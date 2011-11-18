@@ -8,8 +8,11 @@
                      "literals.rkt"
                      "parse2.rkt"
                      "debug.rkt"
-                     "compile.rkt"
                      racket/base)
+         (for-meta 2 syntax/parse
+                     racket/base
+                     "parse2.rkt"
+                     "compile.rkt")
          "literals.rkt"
          #;
          (for-syntax "honu-typed-scheme.rkt")
@@ -45,10 +48,11 @@
     [(thing:pattern-type ...)
      (filter (lambda (x) (syntax-e x)) (syntax->list #'(thing.result ...)))]))
 
+(begin-for-syntax
 (define-syntax (parse-stuff stx)
   (syntax-parse stx
     [(_ stuff ...)
-     (honu->racket (parse-all #'(stuff ...)))]))
+     (honu->racket (parse-all #'(stuff ...)))])))
 
 (provide honu-macro)
 (define-honu-syntax honu-macro 

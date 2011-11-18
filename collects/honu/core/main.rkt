@@ -3,10 +3,14 @@
 (require "private/honu-typed-scheme.rkt"
          "private/honu2.rkt"
          "private/macro2.rkt"
-         (for-syntax (only-in "private/macro2.rkt" honu-syntax))
+         (for-syntax "private/honu2.rkt")
+         (for-syntax (only-in "private/macro2.rkt" honu-syntax mergeSyntax))
          "private/class.rkt"
+         (for-meta 2 (prefix-in racket: racket/base))
+         (for-syntax (prefix-in racket: racket/base))
          (for-syntax (prefix-in class: syntax/parse))
          (for-syntax (only-in "private/parse2.rkt" honu-expression honu-identifier))
+         (for-syntax (prefix-in literal: "private/literals.rkt"))
          (prefix-in literal: "private/literals.rkt"))
 
 (provide #%top
@@ -14,7 +18,16 @@
          print printf true false
          (for-syntax (rename-out [honu-expression expression]
                                  [honu-identifier identifier]
-                                 [honu-syntax syntax]))
+                                 [honu-function function]
+                                 [literal:#%parens #%parens]
+                                 [literal:#%braces #%braces]
+                                 [literal:#%brackets #%brackets]
+                                 [literal:honu-comma %comma]
+                                 [honu--> %arrow]
+                                 [honu-syntax syntax])
+                     (rename-out [racket:#%datum #%datum])
+                     withSyntax
+                     mergeSyntax)
          (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-top-interaction #%top-interaction]
                      [honu-with-input-from-file with_input_from_file]
@@ -23,6 +36,7 @@
                      [honu-function function]
                      [honu-require require]
                      [honu-macro macro]
+                     [define-make-honu-operator operator]
                      [honu-syntax syntax]
                      [honu-while while]
                      [honu-match match]
