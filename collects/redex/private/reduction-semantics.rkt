@@ -1883,18 +1883,20 @@
                  (define outputs
                    (if mtchs
                        (for/fold ([outputs '()]) ([m mtchs])
-                                 (define os
-                                   (term-let ([names/ellipses (lookup-binding (mtch-bindings m) 'names)] ...)
-                                             #,body))
-                                 (if os (append os outputs) outputs))
+                         (define os
+                           (term-let ([names/ellipses (lookup-binding (mtch-bindings m) 'names)] ...)
+                                     #,body))
+                         (if os (append os outputs) outputs))
                        '()))
                  (for ([output outputs])
-                      (check-judgment-form-contract `#,name output compiled-output-ctcs 'O '#,mode))
+                   (check-judgment-form-contract `#,name output compiled-output-ctcs 'O '#,mode))
                  outputs))))]))
-  (with-syntax ([(clause-proc ...) (map compile-clause clauses)])
-    #'(λ (input)
-        (for/fold ([outputs '()]) ([rule (list clause-proc ...)])
-                  (append (rule input) outputs)))))
+  (with-syntax ([(clause-proc ...) (map compile-clause clauses)]
+                [(clause-proc-ids ...) (generate-temporaries clauses)])
+    (with-syntax ([(backwards-ids ...) (reverse (syntax->list #'(clause-proc-ids ...)))])
+      #'(let ([clause-proc-ids clause-proc] ...)
+          (λ (input)
+            (append (backwards-ids input) ...))))))
 
 (define-for-syntax (do-compile-judgment-form-lws clauses)
   (syntax-case clauses ()
