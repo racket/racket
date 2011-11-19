@@ -638,19 +638,32 @@
     (test (syntax->datum (eval (read i))) values '(#s(foo bar)))))
 
 ;; ----------------------------------------
-;; Check provide of marked names in various phases:
+;; Check require & provide of marked names in various phases:
 
 (module phase-providing-check racket/base
-  (define-syntax-rule (bounce phase)
+  (define-syntax-rule (bounce phase phase+1)
     (begin
       (#%require (for-meta phase racket/base))
-      (#%provide (for-meta phase printf))))
+      (#%provide (for-meta phase printf)
+                 (for-meta phase+1 syntax-rules))
+      (define (expect f v) 
+        (unless (f v)
+          (error 'marks "failure at phase ~s: ~s vs. ~s"
+                 phase f v)))
+      (expect list? (identifier-binding #'printf phase))
+      (expect list? (identifier-binding #'syntax-rules phase+1))
+      (unless (or (eq? phase phase+1)
+                  (eq? phase+1 0))
+        (expect not (identifier-binding #'printf phase+1)))))
 
-  (bounce 0)
-  (bounce 1)
-  (bounce 2)
-  (bounce #f)
+  (bounce 0 1)
+  (bounce 1 2)
+  (bounce 2 3)
+  (bounce -2 -1)
+  (bounce -1 0)
+  (bounce #f #f)
   (define printf 'ok!))
+(require 'phase-providing-check)
 
 ;; ----------------------------------------
 
