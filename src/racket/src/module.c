@@ -8252,9 +8252,17 @@ static Scheme_Object *extract_free_id_name(Scheme_Object *name,
       /* genv is used for tl_id_sym */
     } else {
       int i;
-      for (i = SCHEME_INT_VAL(phase); i--; ) {
-        genv = genv->exp_env;
-        if (!genv) break;
+      i = SCHEME_INT_VAL(phase);
+      if (i > 0) {
+        for (; i--; ) {
+          genv = genv->exp_env;
+          if (!genv) break;
+        }
+      } else if (i < 0) {
+        for (; i++; ) {
+          genv = genv->template_env;
+          if (!genv) break;
+        }
       }
     }
   }
@@ -9269,6 +9277,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name, *rn, *ename = orig_ename;
   Scheme_Hash_Table *orig_onlys;
   int k, skip_rename, do_copy_vars;
+  Scheme_Env *name_env;
 
   if (mark_src) {
     /* Check whether there's context for this import (which
@@ -9313,13 +9322,28 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
         pt = NULL;
     }
 
+    name_env = orig_env;
     if (pt) {
       if (SCHEME_FALSEP(pt->phase_index))
         to_phase = scheme_false;
       else if (SCHEME_FALSEP(src_phase_index))
         to_phase = scheme_false;
-      else
+      else {
+        if (orig_env) {
+          to_phase = pt->phase_index;
+          while (SCHEME_INT_VAL(to_phase) > 0) {
+            scheme_prepare_exp_env(name_env);
+            name_env = name_env->exp_env;
+            to_phase = scheme_bin_minus(to_phase, scheme_make_integer(1));
+          }
+          while (SCHEME_INT_VAL(to_phase) < 0) {
+            scheme_prepare_template_env(name_env);
+            name_env = name_env->template_env;
+            to_phase = scheme_bin_plus(to_phase, scheme_make_integer(1));
+          }
+        }
         to_phase = scheme_bin_plus(pt->phase_index, src_phase_index);
+      }
     } else
       to_phase = NULL;
 
@@ -9422,7 +9446,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           /* The `require' expression has a set of marks in its
              context, which means that we need to generate a name. */
           iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
-          iname = scheme_tl_id_sym(orig_env, iname, scheme_false, skip_rename ? 3 : 2, to_phase, NULL);
+          iname = scheme_tl_id_sym(name_env, iname, scheme_false, skip_rename ? 3 : 2, to_phase, NULL);
           if (all_simple)
             *all_simple = 0;
         }
