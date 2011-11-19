@@ -97,6 +97,7 @@
   (arity-test sequence-filter 2 2)
   (err/rt-test (sequence-filter 2 (in-naturals)) exn:fail?)
   (test 4 'sequence-filter (sequence-ref (sequence-filter even? (in-naturals)) 2))
+  (test 0 sequence-length (sequence-filter (thunk* #t) empty-sequence))
 
   (arity-test sequence-add-between 2 2)
   (test 0 'sequence-add-between
