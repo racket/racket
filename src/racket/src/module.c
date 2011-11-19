@@ -8247,14 +8247,24 @@ static Scheme_Object *extract_free_id_name(Scheme_Object *name,
 {
   *_implicit = 0;
 
+  if (genv) {
+    if (SCHEME_FALSEP(phase)) {
+      /* genv is used for tl_id_sym */
+    } else {
+      int i;
+      for (i = SCHEME_INT_VAL(phase); i--; ) {
+        genv = genv->exp_env;
+        if (!genv) break;
+      }
+    }
+  }
+
   while (1) { /* loop for free-id=? renaming */
     if (SCHEME_STXP(name)) {
       if (genv
-          && (always
-              || SAME_OBJ(phase, scheme_make_integer(0))
-              || SAME_OBJ(phase, scheme_make_integer(1))))
+          && (always || SCHEME_INTP(phase))) {
         name = scheme_tl_id_sym(genv, name, NULL, -1, phase, NULL);
-      else
+      } else
         name = SCHEME_STX_VAL(name); /* shouldn't get here; no `define-for-label' */
     }
     
@@ -8437,8 +8447,12 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
             /* Not defined! */
             char buf[32], *phase_expl;
             if (phase) {
-              sprintf(buf, " for phase %" PRIxPTR, SCHEME_INT_VAL(phase));
-              phase_expl = scheme_strdup(buf);
+              if (SCHEME_FALSEP(phase)) {
+                phase_expl = " for-label";
+              } else {
+                sprintf(buf, " for phase %" PRIxPTR, SCHEME_INT_VAL(phase));
+                phase_expl = scheme_strdup(buf);
+              }
             } else
               phase_expl = "";
             scheme_wrong_syntax("module", prnt_name, form, 

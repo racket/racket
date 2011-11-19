@@ -638,5 +638,20 @@
     (test (syntax->datum (eval (read i))) values '(#s(foo bar)))))
 
 ;; ----------------------------------------
+;; Check provide of marked names in various phases:
+
+(module phase-providing-check racket/base
+  (define-syntax-rule (bounce phase)
+    (begin
+      (#%require (for-meta phase racket/base))
+      (#%provide (for-meta phase printf))))
+
+  (bounce 0)
+  (bounce 1)
+  (bounce 2)
+  (bounce #f)
+  (define printf 'ok!))
+
+;; ----------------------------------------
 
 (report-errs)
