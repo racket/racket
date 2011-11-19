@@ -9331,7 +9331,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       if (single_rn)
         rn = single_rn;
       else
-        rn = scheme_get_module_rename_from_set((has_context ? post_ex_rn_set : rn_set),
+        rn = scheme_get_module_rename_from_set(((has_context && post_ex_rn_set) ? post_ex_rn_set : rn_set),
                                                to_phase,
                                                1);
 
