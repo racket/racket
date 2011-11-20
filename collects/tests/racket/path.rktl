@@ -129,6 +129,8 @@
 (test #f copy-file/tf "tmp5" "down")
 (test #f copy-file/tf "tmp5" (build-path deepdir "moredeep" "tmp5y"))
 (test (file-size "tmp5") file-size "tmp5y")
+(err/rt-test (copy-file "tmp5" "tmp5y") exn:fail:filesystem:exists?)
+(err/rt-test (copy-file "no-such-tmp5" "tmp5y") (lambda (x) (not (exn:fail:filesystem:exists? x))))
 (delete-file "tmp5y")
 
 (test #t rename-file-or-directory/tf "tmp5" "tmp5x")

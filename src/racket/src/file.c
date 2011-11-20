@@ -3908,6 +3908,7 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
     if (!out) {
       scheme_close_input_port(in);
       has_err_val = !!err_val;
+      pre_exists = (err_val == EEXIST);
       goto failed;
     }
 
