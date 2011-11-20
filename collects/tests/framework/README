@@ -66,10 +66,9 @@ signal failures when there aren't any.
   | make sure that mred:the-frame-group records frames correctly.
   | fake user input expected.
 
-- saving tests:
+- number snip: |# number-snip.rkt #|
 
-  | These tests will make sure that the usual checks against a user
-  | losing their work are in place.
+  | some tests for the number-snip% class
 
 - scheme tests:
 

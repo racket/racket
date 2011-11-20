@@ -4,7 +4,8 @@
            mred/mred-sig
            racket/class
            "../preferences.rkt"
-           string-constants)
+           string-constants
+           file/convertible)
   
   (import mred^)
   (export (rename framework:number-snip^
@@ -67,9 +68,32 @@
   ;; cut-off : number
   ;; indicates how many digits to fetch for each click
   (define cut-off 25)
+
+  (define-local-member-name draw-fraction)
+  
+  (define number-snip-convertible<%>
+    (interface* ()
+                ([prop:convertible
+                  (λ (number-snip request default)
+                    (case request
+                      [(png-bytes) 
+                       (define dc (make-object bitmap-dc% (make-bitmap 1 1)))
+                       (define wb (box 0))
+                       (define hb (box 0))
+                       (send number-snip get-extent dc 0 0 wb hb #f #f #f #f)
+                       (define bm (make-bitmap (inexact->exact (ceiling (unbox wb))) 
+                                               (inexact->exact (ceiling (unbox hb)))))
+                       (send dc set-bitmap bm)
+                       (send number-snip draw-fraction dc 0 0)
+                       (define bp (open-output-bytes))
+                       (send bm save-file bp 'png)
+                       (get-output-bytes bp)]
+                      [(text)
+                       (send number-snip get-text 0 1)]
+                      [else default]))])))
   
   (define number-snip%
-    (class* snip% (readable-snip<%>)
+    (class* snip% (readable-snip<%> number-snip-convertible<%>)
       ;; number : number
       ;; this is the number to show
       (init-field number)
@@ -352,12 +376,15 @@
             (when fg-color
               (send dc set-pen fg-color 1 'solid)
               (send dc set-text-foreground fg-color)))) 
+        (draw-fraction dc x y)
+        (send dc set-text-foreground clr)
+        (send dc set-pen pen))
+      
+      (define/public (draw-fraction dc x y)
         (case fraction-view
           [(mixed) (draw-mixed-fraction dc x y)]
           [(improper) (draw-improper-fraction dc x y)]
-          [(decimal) (draw-decimals dc x y)])
-        (send dc set-text-foreground clr)
-        (send dc set-pen pen))
+          [(decimal) (draw-decimals dc x y)]))
       
       (define/private (get-improper-fraction-extent dc x y w h descent space lspace rspace)
         (let* ([style (get-style)]
