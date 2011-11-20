@@ -52,7 +52,7 @@
                                           (define (retract-talk-slide!)
                                             (set! slides (cdr slides)))
                                           (define (most-recent-talk-slide)
-                                            (and (pair? slides) (car slides)))
+                                            (and (pair? slides) (caar slides)))
                                           (define display-progress void)
                                           (define set-init-page! void)
                                           (define set-use-background-frame! void)
