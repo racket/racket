@@ -36,9 +36,10 @@ using 'system' to call out to the tool and then reading its results, etc.
     (when debug? (display (get-output-string sp)))
     (get-output-string sp)))
 
-(unless (regexp-match #rx"No packages" (call-planet "show"))
-  (error 'cmdline-tool.rkt "please clear out all planet packages before running this test"))
-
+(let ([result (call-planet "show")])
+  (unless (regexp-match #rx"No packages" result)
+    (error 'cmdline-tool.rkt "please clear out all planet packages before running this test.\n============================================================\n~a" result)))
+  
 (when (file-exists? test-connection.plt-cache)
   (delete-file test-connection.plt-cache))
 
