@@ -14,38 +14,46 @@
 ;; ===================================================================================================
 ;; Drawing text rotated around an anchor point
 
-(define (draw-text/anchor dc str x y [anchor 'top-left] [combine? #f] [offset 0] [angle 0])
-  (define-values (width height _1 _2) (send dc get-text-extent str #f combine? offset))
-  (define dx (case anchor
-               [(top-left left bottom-left)     0]
-               [(top center bottom)             (* 1/2 width)]
-               [(top-right right bottom-right)  width]
-               [else  (raise-type-error 'draw-text/anchor "anchor/c" anchor)]))
-  (define dy (case anchor
-               [(top-left top top-right)           0]
-               [(left center right)                (* 1/2 height)]
-               [(bottom-left bottom bottom-right)  height]))
-  (define rdx (+ (* (sin angle) dy) (* (cos angle) dx)))
-  (define rdy (- (* (cos angle) dy) (* (sin angle) dx)))
-  
-  (send dc draw-text str (- x rdx) (- y rdy) combine? offset angle))
+(define sin45 (/ 1 (sqrt 2)))
 
-(define (get-text-corners/anchor dc str x y [anchor 'top-left] [combine? #f] [offset 0] [angle 0])
-  (define-values (width height _1 _2) (send dc get-text-extent str #f combine? offset))
-  (define dxs (case anchor
-                [(top-left left bottom-left)     (list 0 width)]
-                [(top center bottom)             (list (* -1/2 width) (* 1/2 width))]
-                [(top-right right bottom-right)  (list (- width) 0)]
-                [else  (raise-type-error 'get-text-corners/anchor "anchor/c" anchor)]))
-  (define dys (case anchor
-                [(top-left top top-right)           (list 0 height)]
-                [(left center right)                (list (* -1/2 height) (* 1/2 width))]
-                [(bottom-left bottom bottom-right)  (list (- height) 0)]))
-  
-  (for*/list ([dx  (in-list dxs)] [dy  (in-list dys)])
+(define (draw-text/anchor dc str x y [anchor 'top-left] [angle 0] [dist 0])
+  (define-values (width height _1 _2) (send dc get-text-extent str #f #t 0))
+  (let ([dist  (case anchor
+                 [(top-left bottom-left top-right bottom-right)  (* sin45 dist)]
+                 [else  dist])])
+    (define dx (case anchor
+                 [(top-left left bottom-left)     (- dist)]
+                 [(top center bottom)             (* 1/2 width)]
+                 [(top-right right bottom-right)  (+ width dist)]
+                 [else  (raise-type-error 'draw-text/anchor "anchor/c" anchor)]))
+    (define dy (case anchor
+                 [(top-left top top-right)           (- dist)]
+                 [(left center right)                (* 1/2 height)]
+                 [(bottom-left bottom bottom-right)  (+ height dist)]))
     (define rdx (+ (* (sin angle) dy) (* (cos angle) dx)))
     (define rdy (- (* (cos angle) dy) (* (sin angle) dx)))
-    (vector (+ x rdx) (+ y rdy))))
+    
+    (send dc draw-text str (- x rdx) (- y rdy) #t 0 angle)))
+
+(define (get-text-corners/anchor dc str x y [anchor 'top-left] [angle 0] [dist 0])
+  (define-values (width height _1 _2) (send dc get-text-extent str #f #t 0))
+  (let ([dist  (case anchor
+                 [(top-left bottom-left top-right bottom-right)  (* sin45 dist)]
+                 [else  dist])])
+    (define dxs (case anchor
+                  [(top-left left bottom-left)     (list (- dist) (- width dist))]
+                  [(top center bottom)             (list (* -1/2 width) (* 1/2 width))]
+                  [(top-right right bottom-right)  (list (- dist width) dist)]
+                  [else  (raise-type-error 'get-text-corners/anchor "anchor/c" anchor)]))
+    (define dys (case anchor
+                  [(top-left top top-right)           (list (- dist) (- height dist))]
+                  [(left center right)                (list (* -1/2 height) (* 1/2 width))]
+                  [(bottom-left bottom bottom-right)  (list (- dist height) dist)]))
+    
+    (for*/list ([dx  (in-list dxs)] [dy  (in-list dys)])
+      (define rdx (+ (* (sin angle) dy) (* (cos angle) dx)))
+      (define rdy (- (* (cos angle) dy) (* (sin angle) dx)))
+      (vector (+ x rdx) (+ y rdy)))))
 
 ;; ===================================================================================================
 ;; Draw paramter normalization

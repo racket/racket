@@ -31,13 +31,10 @@
       (send area put-tick (vector x y) (if major? radius (* 1/2 radius)) (* 1/2 pi))))
   
   (when labels?
-    (define pd (send area get-plot-device))
-    (define offset (vector 0 (+ radius (pen-gap))))
+    (define dist (+ radius (pen-gap)))
     (for ([t  (in-list x-ticks)] #:when (pre-tick-major? t))
       (match-define (tick x _ label) t)
-      (send pd draw-text label
-            ((if far? v- v+) (send area plot->dc (vector x y)) offset)
-            (if far? 'bottom 'top) 0)))
+      (send area put-text label (vector x y) (if far? 'bottom 'top) 0 dist)))
   
   empty)
 
@@ -64,13 +61,10 @@
       (send area put-tick (vector x y) (if major? radius (* 1/2 radius)) 0)))
   
   (when labels?
-    (define pd (send area get-plot-device))
-    (define offset (vector (+ radius (pen-gap)) 0))
+    (define dist (+ radius (pen-gap)))
     (for ([t  (in-list y-ticks)] #:when (pre-tick-major? t))
       (match-define (tick y _ label) t)
-      (send pd draw-text label
-            ((if far? v+ v-) (send area plot->dc (vector x y)) offset)
-            (if far? 'left 'right) 0)))
+      (send area put-text label (vector x y) (if far? 'left 'right) 0 dist)))
   
   empty)
 
@@ -140,7 +134,7 @@
       (match-define (tick r major? label) t)
       (when (and major? (<= mr-min r mr-max))
         (send area put-text label (vector (* r (cos mθ)) (* r (sin mθ)))
-              'center 0 #:outline? #t)))))
+              'center #:outline? #t)))))
 
 (define (draw-polar-axis-lines num area)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
@@ -221,7 +215,7 @@
     ; label
     (send area put-text-foreground color)
     (send area put-font size family)
-    (send area put-text (string-append " " label " ") v anchor angle #:outline? #t)
+    (send area put-text (string-append " " label " ") v anchor angle (* 1/2 point-size) #:outline? #t)
     ; point
     (send area put-pen color 1 'solid)
     (send area put-glyphs (list v) 'fullcircle point-size))

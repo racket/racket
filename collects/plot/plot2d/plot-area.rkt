@@ -92,8 +92,7 @@
                             (vector (fx x) (fy y))))]))
     
     (define view->dc #f)
-    (define (plot->dc* v) (view->dc (plot->view v)))
-    (define/public (plot->dc v) (plot->dc* v))
+    (define (plot->dc v) (view->dc (plot->view v)))
     
     (define-values (view-x-size view-y-size)
       (match-let ([(vector view-x-ivl view-y-ivl)
@@ -125,7 +124,7 @@
     
     (define near-dist^2 (sqr (* 3 (plot-line-width))))
     (define (vnear? v1 v2)
-      ((vmag^2 (v- (plot->dc* v1) (plot->dc* v2))) . <= . near-dist^2))
+      ((vmag^2 (v- (plot->dc v1) (plot->dc v2))) . <= . near-dist^2))
     
     (define ((x-tick-near? y) t1 t2)
       (vnear? (vector (pre-tick-value t1) y)
@@ -159,11 +158,11 @@
     ;; -----------------------------------------------------------------------------------------------
     ;; Tick parameters
     
-    (define (x-tick-value->dc x) (plot->dc* (vector x y-min)))
-    (define (y-tick-value->dc y) (plot->dc* (vector x-min y)))
+    (define (x-tick-value->dc x) (plot->dc (vector x y-min)))
+    (define (y-tick-value->dc y) (plot->dc (vector x-min y)))
     
-    (define (x-far-tick-value->dc x) (plot->dc* (vector x y-max)))
-    (define (y-far-tick-value->dc y) (plot->dc* (vector x-max y)))
+    (define (x-far-tick-value->dc x) (plot->dc (vector x y-max)))
+    (define (y-far-tick-value->dc y) (plot->dc (vector x-max y)))
     
     (define (get-tick-params ticks tick-value->dc angle)
       (for/list ([t  (in-list ticks)])
@@ -377,8 +376,6 @@
     ;; ===============================================================================================
     ;; Public drawing interface (used by renderers)
     
-    (define/public (get-plot-device) pd)
-    
     (define/public (put-alpha alpha) (send pd set-alpha alpha))
     
     (define/public (put-pen color width style) (send pd set-pen color width style))
@@ -411,8 +408,8 @@
                                             clip-y-min clip-y-max))
                        (in-value vs))])
           (when (not (empty? vs))
-            (let ([vs  (if identity-transforms? vs (subdivide-lines plot->dc* vs))])
-              (send pd draw-lines (map (λ (v) (plot->dc* v)) vs)))))))
+            (let ([vs  (if identity-transforms? vs (subdivide-lines plot->dc vs))])
+              (send pd draw-lines (map (λ (v) (plot->dc v)) vs)))))))
     
     (define/public (put-line v1 v2)
       (when (and (vrational? v1) (vrational? v2))
@@ -422,9 +419,9 @@
                                    (values v1 v2))])
           (when (and v1 v2)
             (if identity-transforms?
-                (send pd draw-line (plot->dc* v1) (plot->dc* v2))
-                (send pd draw-lines (map (λ (v) (plot->dc* v))
-                                         (subdivide-line plot->dc* v1 v2))))))))
+                (send pd draw-line (plot->dc v1) (plot->dc v2))
+                (send pd draw-lines (map (λ (v) (plot->dc v))
+                                         (subdivide-line plot->dc v1 v2))))))))
     
     (define/public (put-polygon vs)
       (when (andmap vrational? vs)
@@ -434,31 +431,31 @@
                         vs)])
           (when (not (empty? vs))
             (if identity-transforms?
-                (send pd draw-polygon (map (λ (v) (plot->dc* v)) vs))
-                (send pd draw-polygon (map (λ (v) (plot->dc* v))
-                                           (subdivide-polygon plot->dc* vs))))))))
+                (send pd draw-polygon (map (λ (v) (plot->dc v)) vs))
+                (send pd draw-polygon (map (λ (v) (plot->dc v))
+                                           (subdivide-polygon plot->dc vs))))))))
     
     (define/public (put-rect r)
       (when (rect-rational? r)
         (match-define (vector (ivl x1 x2) (ivl y1 y2)) r)
         (put-polygon (list (vector x1 y1) (vector x2 y1) (vector x2 y2) (vector x1 y2)))))
     
-    (define/public (put-text str v [anchor 'top-left] [angle 0]
+    (define/public (put-text str v [anchor 'top-left] [angle 0] [dist 0]
                              #:outline? [outline? #f])
       (when (and (vrational? v) (in-bounds? v))
-        (send pd draw-text str (plot->dc* v) anchor angle #:outline? outline?)))
+        (send pd draw-text str (plot->dc v) anchor angle dist #:outline? outline?)))
     
     (define/public (put-glyphs vs symbol size)
-      (send pd draw-glyphs (map (λ (v) (plot->dc* v))
+      (send pd draw-glyphs (map (λ (v) (plot->dc v))
                                 (filter (λ (v) (and (vrational? v) (in-bounds? v)))
                                         vs))
             symbol size))
     
     (define/public (put-arrow v1 v2)
       (when (and (vrational? v1) (vrational? v2) (in-bounds? v1))
-        (send pd draw-arrow (plot->dc* v1) (plot->dc* v2))))
+        (send pd draw-arrow (plot->dc v1) (plot->dc v2))))
     
     (define/public (put-tick v r angle)
       (when (and (vrational? v) (in-bounds? v))
-        (send pd draw-tick (plot->dc* v) r angle)))
+        (send pd draw-tick (plot->dc v) r angle)))
     ))

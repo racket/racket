@@ -289,7 +289,7 @@
         (match-define (vector x2 y2) v2)
         (draw-line/pen-style dc x1 y1 x2 y2 pen-style)))
     
-    (define/public (draw-text str v [anchor 'top-left] [angle 0] #:outline? [outline? #f])
+    (define/public (draw-text str v [anchor 'top-left] [angle 0] [dist 0] #:outline? [outline? #f])
       (when (vrational? v)
         (match-define (vector x y) v)
         
@@ -302,17 +302,17 @@
           (for* ([dx  (list -1 0 1)]
                  [dy  (list -1 0 1)]
                  #:when (not (and (zero? dx) (zero? dy))))
-            (draw-text/anchor dc str (+ x dx) (+ y dy) anchor #t 0 angle))
+            (draw-text/anchor dc str (+ x dx) (+ y dy) anchor angle dist))
           ;(send dc set-alpha alpha)
           (send dc set-text-foreground fg))
         
-        (draw-text/anchor dc str x y anchor #t 0 angle)))
+        (draw-text/anchor dc str x y anchor angle dist)))
     
-    (define/public (get-text-corners str v [anchor 'top-left] [angle 0])
+    (define/public (get-text-corners str v [anchor 'top-left] [angle 0] [dist 0])
       (cond [(vrational? v)
              (match-define (vector x y) v)
              (map (λ (v) (vector-map inexact->exact v))
-                  (get-text-corners/anchor dc str x y anchor #t 0 angle))]
+                  (get-text-corners/anchor dc str x y anchor angle dist))]
             [else  empty]))
     
     (define/public (draw-arrow v1 v2)

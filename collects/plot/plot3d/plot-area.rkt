@@ -648,10 +648,10 @@
          (send pd set-pen pen-color pen-width pen-style)
          (send pd draw-line (norm->dc v1) (norm->dc v2))]
         ;; text
-        [(text alpha _ anchor angle str font-size font-family color)
+        [(text alpha _ anchor angle dist str font-size font-family color)
          (send pd set-font font-size font-family)
          (send pd set-text-foreground color)
-         (send pd draw-text str (view->dc center) anchor angle)]
+         (send pd draw-text str (view->dc center) anchor angle dist)]
         ;; glyph
         [(glyph alpha _ symbol size pen-color pen-width pen-style brush-color brush-style)
          (send pd set-pen pen-color pen-width pen-style)
@@ -737,8 +737,6 @@
     
     ;; ===============================================================================================
     ;; Public drawing interface (used by renderers)
-    
-    (define/public (get-plot-device) pd)
     
     (define/public (get-render-list) render-list)
     (define/public (put-render-list shapes) (add-shapes! shapes))
@@ -862,9 +860,9 @@
                                    (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
                                    pen-color pen-width pen-style brush-color brush-style))))))
     
-    (define/public (put-text str v [anchor 'center] [angle 0])
+    (define/public (put-text str v [anchor 'center] [angle 0] [dist 0])
       (when (and (vrational? v) (in-bounds? v))
-        (add-shape! (text alpha (plot->norm v) anchor angle str
+        (add-shape! (text alpha (plot->norm v) anchor angle dist str
                           font-size font-family text-foreground))))
     
     (define/public (put-glyphs vs symbol size)

@@ -10,7 +10,7 @@
 (struct polygon shape (vs normal pen-color pen-width pen-style brush-color brush-style) #:transparent)
 (struct rectangle shape (rect pen-color pen-width pen-style brush-color brush-style) #:transparent)
 (struct line shape (v1 v2 pen-color pen-width pen-style) #:transparent)
-(struct text shape (anchor angle str font-size font-family color) #:transparent)
+(struct text shape (anchor angle dist str font-size font-family color) #:transparent)
 (struct glyph shape (symbol size pen-color pen-width pen-style brush-color brush-style) #:transparent)
 (struct tick-glyph shape (radius angle pen-color pen-width pen-style) #:transparent)
 (struct arrow-glyph shape (start end pen-color pen-width pen-style) #:transparent)
