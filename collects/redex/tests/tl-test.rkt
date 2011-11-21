@@ -2018,8 +2018,8 @@
       (test (judgment-holds (sumo n_1 n_2 z) ([,'n_1 n_1] [,'n_2 n_2]))
             (list (term ([n_1 z] [n_2 z]))))
       (test (judgment-holds (sumo n_1 n_2 (s z)) ([,'n_1 n_1] [,'n_2 n_2]))
-            (list (term ([n_1 z] [n_2 (s z)]))
-                  (term ([n_1 (s z)] [n_2 z]))))
+            (list (term ([n_1 (s z)] [n_2 z]))
+                  (term ([n_1 z] [n_2 (s z)]))))
       
       (define-judgment-form nats
         #:mode (sumo-ls O O I)
@@ -2043,7 +2043,7 @@
         [(member n_i (n_0 ... n_i n_i+1 ...))])
       
       (test (judgment-holds (member n (z (s z) z (s (s z)))) n)
-            (list (term z) (term (s z)) (term z) (term (s (s z)))))
+            (list (term (s (s z))) (term (s z)) (term z)))
       
       (define-judgment-form nats
         #:mode (has-zero I)
@@ -2122,8 +2122,10 @@
         [(map-add-some-noz (n ...) (n_+ ...))
          (add-some-noz n n_+) ...])
       
-      (test (judgment-holds (map-add-some-noz (z (s z) (s (s z))) (n ...))
-                            (n ...))
+      (test (sort (judgment-holds (map-add-some-noz (z (s z) (s (s z))) (n ...))
+                                  (n ...))
+                  string<=?
+                  #:key (λ (x) (format "~s" x)))
             (list (term (z (s (s z)) (s (s (s z)))))
                   (term (z (s (s z)) (s (s z))))
                   (term (z (s z) (s (s (s z)))))

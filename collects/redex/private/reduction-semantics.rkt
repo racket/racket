@@ -1874,8 +1874,10 @@
             [nts (definition-nts lang stx syn-err-name)]
             [judgment (syntax-case stx () [(_ judgment _) #'judgment])])
        (check-judgment-arity judgment)
-       (bind-withs syn-err-name '() lang nts (list judgment)
-                   'flatten #`(list (term #,#'tmpl)) '() '()))]
+       #`(sort #,(bind-withs syn-err-name '() lang nts (list judgment)
+                             'flatten #`(list (term #,#'tmpl)) '() '())
+               string<=?
+               #:key (λ (x) (format "~s" x))))]
     [(_ (not-form-name . _) . _)
      (not (judgment-form-id? #'form-name))
      (raise-syntax-error #f "expected a judgment form name" stx #'not-form-name)]))
@@ -1909,24 +1911,36 @@
                    [compiled-output-ctcs #,(contracts-compilation output-contracts)])
                (λ (input)
                  (check-judgment-form-contract `#,name input compiled-input-ctcs 'I '#,mode)
-                 (define mtchs (match-pattern compiled-lhs input))
-                 (define outputs
-                   (if mtchs
-                       (for/fold ([outputs '()]) ([m mtchs])
-                         (define os
-                           (term-let ([names/ellipses (lookup-binding (mtch-bindings m) 'names)] ...)
-                                     #,body))
-                         (if os (append os outputs) outputs))
-                       '()))
-                 (for ([output outputs])
-                   (check-judgment-form-contract `#,name output compiled-output-ctcs 'O '#,mode))
-                 outputs))))]))
+                 (combine-judgment-rhses
+                  compiled-lhs
+                  input
+                  (λ (m)
+                    (term-let ([names/ellipses (lookup-binding (mtch-bindings m) 'names)] ...)
+                              #,body))
+                  (λ (output)
+                    (check-judgment-form-contract `#,name output compiled-output-ctcs 'O '#,mode)))))))]))
   (with-syntax ([(clause-proc ...) (map compile-clause clauses)]
                 [(clause-proc-ids ...) (generate-temporaries clauses)])
     (with-syntax ([(backwards-ids ...) (reverse (syntax->list #'(clause-proc-ids ...)))])
       #'(let ([clause-proc-ids clause-proc] ...)
           (λ (input)
             (append (backwards-ids input) ...))))))
+
+(define (combine-judgment-rhses compiled-lhs input rhs check-output)
+  (define mtchs (match-pattern compiled-lhs input))
+  (cond
+    [mtchs
+     (define output-table (make-hash))
+     (for ([m (in-list mtchs)])
+       (define os (rhs m))
+       (when os
+         (for ([x (in-list os)])
+           (hash-set! output-table x #t))))
+     (define outputs (hash-map output-table (λ (k v) k)))
+     (for ([output (in-list outputs)])
+       (check-output output))
+     outputs]
+    [else '()]))
 
 (define-for-syntax (do-compile-judgment-form-lws clauses)
   (syntax-case clauses ()
