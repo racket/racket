@@ -113,6 +113,7 @@
       [() (reverse out)])))
 
 ;; removes syntax that causes expression parsing to stop
+#;
 (define (strip-stops code)
   (define-syntax-class stopper #:literal-sets (cruft)
     #;
@@ -152,6 +153,16 @@
   (debug 2 "Comma? ~a ~a\n" what is)
   is)
 
+#;
+(define-syntax (parse-more stx)
+  (syntax-parse stx
+    [(_ stuff ...)
+     (define-values (parsed unparsed)
+                    (parse (strip-stops #'(stuff ...))))
+     (with-syntax ([(parsed-out ...) (honu->racket parsed)]
+                   [(unparsed-out ...) unparsed])
+       #'(begin parsed-out ... (parse-stuff unparsed-out ...)))]))
+
 (provide honu-function)
 (define-splicing-syntax-class honu-function #:literal-sets (cruft)
   [pattern (~seq function:identifier (#%parens args ...) (#%braces code ...))
@@ -159,6 +170,23 @@
            (with-syntax ([(parsed-arguments ...)
                           (parse-arguments #'(args ...))])
              #'(define (function parsed-arguments ...)
+                 (define-syntax (parse-more stx)
+                   (syntax-parse stx
+                     [(_ stuff (... ...))
+                      (define-values (parsed unparsed)
+                                     (parse (strip-stops #'(stuff (... ...)))))
+                      (debug "Parse more: ~a unparsed ~a\n" parsed unparsed)
+                      (define output (if parsed
+                                       (honu->racket parsed)
+                                       #'(begin)))
+                      (debug "Output ~a\n" output)
+                      (with-syntax ([output output]
+                                    [(unparsed-out (... ...)) unparsed])
+                        (if (null? (syntax->datum #'(unparsed-out (... ...))))
+                          #'output
+                          #'(begin output (parse-more unparsed-out (... ...)))))]))
+                 (parse-more code ...)
+                 #;
                  (let-syntax ([parse-more (lambda (stx)
                                             ;; this adds an extra mark, you might not
                                             ;; want that
