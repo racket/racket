@@ -13,3 +13,14 @@
 (#rx"expected a pattern"
  ([cross ×])
  (define-relation syn-err-lang foo ⊆ c cross))
+
+(#rx"found a 'where' clause not at the end"
+ ([first-where (where any_c any_a)]
+  [first-post-where (R () ())])
+ (define-relation syn-err-lang
+   [(R () ())]
+   [(R (any_a) (any_b)) 
+    (R anc_c any_d) 
+    first-where
+    (where any_d any_b)
+    first-post-where]))

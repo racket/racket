@@ -1424,6 +1424,33 @@
                     defs))
                  (syntax defs))))))]))
 
+(define-for-syntax (relation-split-out-rhs raw-rhsss orig-stx)
+  (for/list ([rhss (in-list (syntax->list raw-rhsss))])
+    (define rhses '())
+    (define sc/wheres '())
+    (for ([rhs (in-list (syntax->list rhss))])
+      (define (found-one) 
+        (set! sc/wheres (cons rhs sc/wheres)))
+      (syntax-case rhs (side-condition side-condition/hidden where where/hidden judgment-holds)
+        [(side-condition . stuff) (found-one)]
+        [(side-condition/hidden . stuff) (found-one)]
+        [(where . stuff) (found-one)]
+        [(where/hidden . stuff) (found-one)]
+        [(judgment-holds . stuff) (found-one)]
+        [_ 
+         (cond
+           [(null? sc/wheres)
+            (set! rhses (cons rhs rhses))]
+           [else
+            (raise-syntax-error 'define-relation
+                                (format "found a '~a' clause not at the end; followed by a normal, right-hand side clause"
+                                        (syntax-e (car (syntax-e (car sc/wheres)))))
+                                (last sc/wheres)
+                                #f
+                                (list  rhs))])]))
+    (list (reverse rhses)
+          (reverse sc/wheres))))
+
 (define-syntax (generate-metafunction stx)
   (syntax-case stx ()
     [(_ orig-stx lang prev-metafunction name name-predicate dom-ctcs codom-contracts pats relation? syn-error-name)
@@ -1438,7 +1465,10 @@
        (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
                      [(lhs-for-lw ...) (lhs-lws pats)])
          (with-syntax ([((rhs stuff ...) ...) (if relation?
-                                                  #'(((AND raw-rhses ...)) ...)
+                                                  (with-syntax ([(((rhses ...) (where/sc ...)) ...) 
+                                                                 (relation-split-out-rhs #'((raw-rhses ...) ...)
+                                                                                         #'orig-stx)])
+                                                    #'(((AND rhses ...) where/sc ...) ...))
                                                   #'((raw-rhses ...) ...))]
                        [(lhs ...) #'((lhs-clauses ...) ...)])
            (parse-extras #'((stuff ...) ...))
@@ -2157,7 +2187,9 @@
                                   [(not mtchs) (continue)]
                                   [relation? 
                                    (let ([ans
-                                          (ormap (λ (mtch) (ormap values (rhs traced-metafunc (mtch-bindings mtch))))
+                                          (ormap (λ (mtch) 
+                                                   (define rhs-ans (rhs traced-metafunc (mtch-bindings mtch)))
+                                                   (and rhs-ans (ormap values rhs-ans)))
                                                  mtchs)])
                                      (unless (ormap (λ (codom-compiled-pattern) (match-pattern codom-compiled-pattern ans))
                                                     codom-compiled-patterns)

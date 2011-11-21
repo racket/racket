@@ -701,14 +701,14 @@ otherwise.
                                   shortcuts)
               ([domain (code:line) (code:line #:domain @#,ttpattern)]
                [base-arrow (code:line) (code:line #:arrow base-arrow-name)]
-               [reduction-case (arrow-name @#,ttpattern @#,tttterm extras ...)]
-               [extras rule-name
-                       (fresh fresh-clause ...)
-                       (side-condition racket-expression)
-                       (where @#,ttpattern @#,tttterm)
-                       (judgment-holds (judgment-form-id pat/term ...))
-                       (side-condition/hidden racket-expression)
-                       (where/hidden @#,ttpattern @#,tttterm)]
+               [reduction-case (arrow-name @#,ttpattern @#,tttterm red-extras ...)]
+               [red-extras rule-name
+                           (fresh fresh-clause ...)
+                           (side-condition racket-expression)
+                           (where @#,ttpattern @#,tttterm)
+                           (judgment-holds (judgment-form-id pat/term ...))
+                           (side-condition/hidden racket-expression)
+                           (where/hidden @#,ttpattern @#,tttterm)]
                [shortcuts (code:line)
                           (code:line with shortcut ...)]
                [shortcut [(old-arrow-name @#,ttpattern @#,tttterm)
@@ -974,7 +974,7 @@ reduce it further).
                           judgment-holds)
              (define-metafunction language
                metafunction-contract
-               [(name @#,ttpattern ...) @#,tttterm extras ...] 
+               [(name @#,ttpattern ...) @#,tttterm metafunction-extras ...] 
                ...)
              ([metafunction-contract (code:line) 
                                      (code:line id : @#,ttpattern ... -> range)]
@@ -982,12 +982,12 @@ reduce it further).
                      (code:line @#,ttpattern or range)
                      (code:line @#,ttpattern ∨ range)
                      (code:line @#,ttpattern ∪ range)]
-              [extras (side-condition racket-expression)
-                      (side-condition/hidden racket-expression)
-                      (where pat @#,tttterm)
-                      (where/hidden pat @#,tttterm)
-                      (judgment-holds 
-                       (judgment-form-id pat/term ...))])]{
+              [metafunction-extras (side-condition racket-expression)
+                                   (side-condition/hidden racket-expression)
+                                   (where pat @#,tttterm)
+                                   (where/hidden pat @#,tttterm)
+                                   (judgment-holds 
+                                    (judgment-form-id pat/term ...))])]{
 
 The @racket[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -1061,7 +1061,7 @@ match.
 
 @defform[(define-metafunction/extension f language 
            metafunction-contract
-           [(g @#,ttpattern ...) @#,tttterm extras ...] 
+           [(g @#,ttpattern ...) @#,tttterm metafunction-extras ...] 
            ...)]{
 
 Defines a metafunction @racket[g] as an extension of an existing
@@ -1271,7 +1271,9 @@ is an error elsewhere.
 @defform/subs[#:literals (⊂ ⊆ × x)
               (define-relation language
                 relation-contract
-                [(name @#,ttpattern ...) @#,tttterm ...] ...)
+                [(name @#,ttpattern ...) 
+                 @#,tttterm ...
+                 metafunction-extras ...] ...)
               ([relation-contract (code:line)
                                   (code:line form-id ⊂ @#,ttpattern x ... x @#,ttpattern)
                                   (code:line form-id ⊆ @#,ttpattern × ... × @#,ttpattern)])]{

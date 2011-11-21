@@ -83,7 +83,8 @@
                                (syntax-case stx ()
                                  [(_ loc-name ... non-loc-name ...)
                                   #'body]))])
-                 (subst loc-piece ... non-loc-piece ...)))]))
+                 (subst loc-piece ... non-loc-piece ...)
+                 (void)))]))
 
 (define (source-location stx)
   (list (syntax-source stx) 

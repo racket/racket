@@ -44,7 +44,7 @@
     (extract-names all-nts what bind-names? orig-stx) 
     
     (let loop ([term orig-stx])
-      (syntax-case term (side-condition variable-except variable-prefix hole name in-hole hide-hole side-condition cross unquote)
+      (syntax-case term (side-condition variable-except variable-prefix hole name in-hole hide-hole cross unquote)
         [(side-condition pre-pat (and))
          ;; rewriting metafunctions (and possibly other things) that have no where, etc clauses
          ;; end up with side-conditions that are empty 'and' expressions, so we just toss them here.

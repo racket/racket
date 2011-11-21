@@ -1137,6 +1137,49 @@
     (test (term (subtype (int int → int) (int num → int))) #f)
     (test (term (subtype (int num → int) (int int → int))) #t)
     (test (term (subtype (int int → int) (int int → num))) #t))
+  
+  (let ()
+    (define-relation empty-language
+      [(R () ())]
+      [(R (any_a) (any_b)) 
+       (R any_c any_d) 
+       (where any_c any_a)
+       (where any_d any_b)])
+    
+    (test (term (R () ())) #t)
+    (test (term (R (()) (()))) #t)
+    (test (term (R (()) ())) #f))
+  
+  (let ()
+    (define-relation empty-language
+      [(R () ())]
+      [(R (any_a) (any_b)) 
+       (R any_c any_d) 
+       (where/hidden any_c any_a)
+       (where/hidden any_d any_b)])
+    
+    (test (term (R () ())) #t)
+    (test (term (R (()) (()))) #t)
+    (test (term (R (()) ())) #f))
+  
+  (let ()
+    (define-relation empty-language
+      [(R any_a any_b)
+       (side-condition (equal? (term any_a)
+                               (term any_b)))])
+    
+    (test (term (R (xx) (xx))) #t)
+    (test (term (R (()) ())) #f))
+  
+  (let ()
+    (define-relation empty-language
+      [(R any_a any_b)
+       (side-condition/hidden
+        (equal? (term any_a)
+                (term any_b)))])
+    
+    (test (term (R (xx) (xx))) #t)
+    (test (term (R (()) ())) #f))
 
   
   (exec-syntax-error-tests "syn-err-tests/relation-definition.rktd")
