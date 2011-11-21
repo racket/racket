@@ -163,35 +163,40 @@
                    [(unparsed-out ...) unparsed])
        #'(begin parsed-out ... (parse-stuff unparsed-out ...)))]))
 
+(define (do-parse stx parse-more)
+  (syntax-parse stx
+    [(_ stuff ...)
+     (define-values (parsed unparsed)
+                    (parse (strip-stops #'(stuff ...))))
+     (debug "Parse more: ~a unparsed ~a\n" parsed unparsed)
+     (define output (if parsed
+                      (honu->racket parsed)
+                      #'(begin)))
+     (debug "Output ~a\n" output)
+     (with-syntax ([output output]
+                   [(unparsed-out ...) unparsed]
+                   [parse-more parse-more])
+       (if (null? (syntax->datum #'(unparsed-out ...)))
+         #'output
+         #'(begin output (parse-more unparsed-out ...))))]))
+
+(provide honu-body)
+(define-syntax-class honu-body
+  #:literal-sets (cruft)
+  [pattern (#%braces code ...)
+           #:with result #'(begin
+                             (define-syntax (parse-more stx)
+                               (do-parse stx #'parse-more))
+                             (parse-more code ...))])
+
 (provide honu-function)
 (define-splicing-syntax-class honu-function #:literal-sets (cruft)
-  [pattern (~seq function:identifier (#%parens args ...) (#%braces code ...))
+  [pattern (~seq function:identifier (#%parens args ...) body:honu-body)
            #:with result
            (with-syntax ([(parsed-arguments ...)
                           (parse-arguments #'(args ...))])
              #'(define (function parsed-arguments ...)
-                 (define-syntax (parse-more stx)
-                   (syntax-parse stx
-                     [(_ stuff (... ...))
-                      (define-values (parsed unparsed)
-                                     (parse (strip-stops #'(stuff (... ...)))))
-                      (debug "Parse more: ~a unparsed ~a\n" parsed unparsed)
-                      (define output (if parsed
-                                       (honu->racket parsed)
-                                       #'(begin)))
-                      (debug "Output ~a\n" output)
-                      (with-syntax ([output output]
-                                    [(unparsed-out (... ...)) unparsed])
-                        (if (null? (syntax->datum #'(unparsed-out (... ...))))
-                          #'output
-                          #'(begin output (parse-more unparsed-out (... ...)))))]))
-                 (parse-more code ...)
-                 #;
-                 (let-syntax ([parse-more (lambda (stx)
-                                            ;; this adds an extra mark, you might not
-                                            ;; want that
-                                            (honu->racket (parse-all #'(code ...))))])
-                   (parse-more))))])
+                 body.result))])
 
 ;; E = macro
 ;;   | E operator E
@@ -517,6 +522,7 @@
 (define-splicing-syntax-class honu-expression/comma
   [pattern (~seq x ...) #:with (result ...) (parse-comma-expression #'(x ...))])
 
+#|
 (provide honu-body)
 (define-splicing-syntax-class honu-body
                               #:literal-sets (cruft)
@@ -524,4 +530,5 @@
            #:with result #'(let-syntax ([parse-more (lambda (stx)
                                                       (honu->racket (parse-all #'(code ...))))])
                              (parse-more))])
+|#
 
