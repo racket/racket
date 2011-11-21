@@ -12,24 +12,23 @@
 
 (provide-module "core/main.rkt"
                 "private/common.rkt"
+                "private/common.honu"
                 ;;"private/struct.honu"
                 ;;"private/function.honu"
-                ;;"private/common.honu"
                 )
 
-(provide sqr sqrt sin max else
+(racket:provide sqr sqrt sin max
          number? symbol?
          null
          null?
          length
          substring
-         void
          format
          integer
          cos sin
          random
          values
-         (rename-out [honu-cond cond]
+         (racket:rename-out [honu-cond cond]
                      [null empty]
                      [current-inexact-milliseconds currentMilliseconds]
                      [string-length string_length]

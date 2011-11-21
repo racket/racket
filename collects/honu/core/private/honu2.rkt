@@ -260,6 +260,15 @@
          #'rest
          #f)])))
 
+(provide honu-provide)
+(define-honu-syntax honu-provide
+  (lambda (code context)
+    (syntax-parse code
+      [(_ name:id ...)
+       (values #'(%racket (provide name ...))
+               #'()
+               #f)])))
+
 (provide honu-with-input-from-file)
 (define-honu-syntax honu-with-input-from-file
   (lambda (code context)

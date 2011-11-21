@@ -59,7 +59,7 @@
   (lambda (code context)
     (debug "Macroize ~a\n" code)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ name literals (#%braces pattern ...) (#%braces action ...) . rest)
+      [(_ name (#%parens literal ...) (#%braces pattern ...) (#%braces action ...) . rest)
        (debug "Pattern is ~a\n" #'(pattern ...))
        (debug 2 "Pattern variables ~a\n" (find-pattern-variables #'(pattern ...)))
        (values
@@ -69,7 +69,9 @@
                         (find-pattern-variables #'(pattern ...))])
            #'(%racket (define-honu-syntax name
                         (lambda (stx context-name)
+                          (define-literal-set local-literals (literal ...))
                           (syntax-parse stx
+                            #:literal-sets (cruft local-literals)
                             [(_ syntax-parse-pattern ... . more)
                              (values
                                ;; if the pattern is x:expression then x_result will

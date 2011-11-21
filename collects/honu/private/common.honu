@@ -1,5 +1,11 @@
 #lang honu/core
 
+provide when;
+macro when (then){ condition:expression then body:expression }{
+  syntax(if condition then body else { void() })
+}
+
+/*
 require (forSyntax "with.honu");
 require (forSyntax "function.honu");
 require (forSyntax "patterns.honu");
@@ -36,3 +42,4 @@ macro condition (){ _ clause:condition_clause rest ... ;}
          }
          ); }
 { _ ; } { syntax(1;); }
+*/
