@@ -906,12 +906,11 @@ all of the names in the tools library, for use defining keybindings
  
  (parameter-doc
   drracket:rep:after-expression
-  (parameter/c (or/c #f any/c))
+  (parameter/c (or/c #f (-> void?)))
   top-level-expression
   @{This parameter is used by @method[drracket:rep:text% evaluate-from-port].
-    When it is something other than @racket[#f], then DrRacket passes it to
-    @racket[eval] as the last thing that it does on the user's thread (before
-    cleaning up).})
+    When it is a thunk, then DrRacket invokes the thunk on the user's thread
+    as the last thing it does (before cleaning up).})
   
  
  

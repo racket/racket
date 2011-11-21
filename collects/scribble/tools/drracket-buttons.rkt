@@ -30,24 +30,28 @@
        [fn
         (parameterize ([drracket:rep:after-expression
                         (λ ()
-                          (printf "scribble: loading xref\n")
-                          (define xref ((dynamic-require 'setup/xref 'load-collections-xref)))
-                          (printf "scribble: rendering\n")
-                          (parameterize ([current-input-port (open-input-string "")])
-                            ((dynamic-require 'scribble/render 'render) 
-                             (list (eval 'doc))
-                             (list fn)
-                             #:render-mixin (dynamic-require (if html? 
-                                                                 'scribble/html-render
-                                                                 'scribble/pdf-render)
-                                                             'render-mixin)
-                             #:xrefs (list xref)))
-                          (cond
-                            [html?
-                             (send-url/file (path-replace-suffix fn suffix))]
-                            [else
-                             (parameterize ([current-input-port (open-input-string "")])
-                               (system (format "open \"~a\"" (path->string (path-replace-suffix fn suffix)))))]))]) 
+                          (define doc (with-handlers ((exn:fail? (λ (x) #f))) (eval 'doc)))
+                          ;; if (eval 'doc) goes wrong, then we assume that's because of
+                          ;; an earlier failure, so we just don't do anything.
+                          (when doc
+                            (printf "scribble: loading xref\n")
+                            (define xref ((dynamic-require 'setup/xref 'load-collections-xref)))
+                            (printf "scribble: rendering\n")
+                            (parameterize ([current-input-port (open-input-string "")])
+                              ((dynamic-require 'scribble/render 'render) 
+                               (list doc)
+                               (list fn)
+                               #:render-mixin (dynamic-require (if html? 
+                                                                   'scribble/html-render
+                                                                   'scribble/pdf-render)
+                                                               'render-mixin)
+                               #:xrefs (list xref)))
+                            (cond
+                              [html?
+                               (send-url/file (path-replace-suffix fn suffix))]
+                              [else
+                               (parameterize ([current-input-port (open-input-string "")])
+                                 (system (format "open \"~a\"" (path->string (path-replace-suffix fn suffix)))))])))]) 
           (send drs-frame execute-callback))]
        [else
         (message-box "Scribble" "Cannot render buffer without filename")]))))
