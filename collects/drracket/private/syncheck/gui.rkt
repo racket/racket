@@ -1021,7 +1021,7 @@ If the namespace does not, they are colored the unbound color.
                 (start-arrow-draw-timer syncheck-arrow-delay))
               
               (let/ec break
-                (when (send event button-down? 'right)
+                (when (and arrow-records (send event button-down? 'right))
                   (define menu
                     (let-values ([(pos text) (get-pos/text event)])
                       (syncheck:build-popup-menu pos text)))
