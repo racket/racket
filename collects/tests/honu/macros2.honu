@@ -1,0 +1,25 @@
+#lang honu
+
+macro foo (){ x:identifier }{
+  syntax(macro x (){ e:expression }{
+    syntax(e + 2)
+  })
+}
+
+foo h
+
+h 5
+h 8 * 9
+
+test(z){
+  macro foo (){ x:identifier }{
+    syntax(macro x (){ e:expression }{
+      syntax(e + z)
+    })
+  }
+
+  foo h
+  h 5
+}
+
+test(4)

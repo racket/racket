@@ -153,16 +153,6 @@
   (debug 2 "Comma? ~a ~a\n" what is)
   is)
 
-#;
-(define-syntax (parse-more stx)
-  (syntax-parse stx
-    [(_ stuff ...)
-     (define-values (parsed unparsed)
-                    (parse (strip-stops #'(stuff ...))))
-     (with-syntax ([(parsed-out ...) (honu->racket parsed)]
-                   [(unparsed-out ...) unparsed])
-       #'(begin parsed-out ... (parse-stuff unparsed-out ...)))]))
-
 (define (do-parse stx parse-more)
   (syntax-parse stx
     [(_ stuff ...)
@@ -518,14 +508,3 @@
 (provide honu-expression/comma)
 (define-splicing-syntax-class honu-expression/comma
   [pattern (~seq x ...) #:with (result ...) (parse-comma-expression #'(x ...))])
-
-#|
-(provide honu-body)
-(define-splicing-syntax-class honu-body
-                              #:literal-sets (cruft)
-  [pattern (~seq (#%braces code ...))
-           #:with result #'(let-syntax ([parse-more (lambda (stx)
-                                                      (honu->racket (parse-all #'(code ...))))])
-                             (parse-more))])
-|#
-
