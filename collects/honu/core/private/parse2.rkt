@@ -184,7 +184,7 @@
 (define-syntax-class honu-body
   #:literal-sets (cruft)
   [pattern (#%braces code ...)
-           #:with result #'(begin
+           #:with result #'(let ()
                              (define-syntax (parse-more stx)
                                (do-parse stx #'parse-more))
                              (parse-more code ...))])
@@ -414,13 +414,10 @@
                             (do-parse #'(rest ...) precedence left lookup)
                             (do-parse #'(rest ...) precedence left value))])]
                      ;; block of code
-                     [(#%braces stuff ...)
-                      (if current
+                     [body:honu-body
+                       (if current
                         (values (left current) stream)
-                        (let ()
-                          (define body (parse-all #'(stuff ...)))
-                          (with-syntax ([body body])
-                            (do-parse #'(rest ...) precedence left #'(let () body)))))]
+                        (do-parse #'(rest ...) precedence left #'body.result))] 
                      ;; expression or function application
                      [(#%parens args ...)
                       (if current
