@@ -15,7 +15,7 @@
     ([bounds-rect  (or/c (vectorof ivl?) #f)]
      [bounds-fun   (or/c bounds-fun/c #f)]
      [ticks-fun    (or/c ticks-fun/c #f)]))
-  (struct (non-renderer plot-element)
+  (struct (nonrenderer plot-element)
     ([bounds-rect  (or/c (vectorof ivl?) #f)]
      [bounds-fun   (or/c bounds-fun/c #f)]
      [ticks-fun    (or/c ticks-fun/c #f)]))

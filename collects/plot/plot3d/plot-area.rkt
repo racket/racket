@@ -803,7 +803,7 @@
     
     (define/public (put-line v1 v2 [c (v* (v+ v1 v2) 1/2)])
       (let/ec return
-        (unless (and (vregular? v1) (vregular? v2)) (return (void)))
+        (unless (and (vrational? v1) (vrational? v2)) (return (void)))
         (let-values ([(v1 v2)  (if clipping?
                                    (clip-line v1 v2 clip-x-min clip-x-max
                                               clip-y-min clip-y-max
@@ -820,14 +820,14 @@
                                      pen-color pen-width pen-style)))]))))
     
     (define/public (put-lines vs)
-      (for ([vs  (vregular-sublists vs)])
+      (for ([vs  (vrational-sublists vs)])
         (when (not (empty? vs))
           (for ([v1  (in-list vs)] [v2  (in-list (rest vs))])
             (put-line v1 v2)))))
     
     (define (add-polygon lst vs c)
       (let/ec return
-        (when (or (empty? vs) (not (and (andmap vregular? vs) (vregular? c))))
+        (when (or (empty? vs) (not (and (andmap vrational? vs) (vrational? c))))
           (return lst))
         
         (define normal (vnormal (map plot->norm vs)))
@@ -853,7 +853,7 @@
         (add-shape! (shapes alpha (plot->norm c) lst))))
     
     (define/public (put-rect r [c (rect-center r)])
-      (when (rect-regular? r)
+      (when (rect-rational? r)
         (let ([r  (rect-meet r bounds-rect)])
           (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) r)
           (match-let ([(vector x-min y-min z-min)  (plot->norm (vector x-min y-min z-min))]
@@ -863,19 +863,19 @@
                                    pen-color pen-width pen-style brush-color brush-style))))))
     
     (define/public (put-text str v [anchor 'center] [angle 0])
-      (when (and (vregular? v) (in-bounds? v))
+      (when (and (vrational? v) (in-bounds? v))
         (add-shape! (text alpha (plot->norm v) anchor angle str
                           font-size font-family text-foreground))))
     
     (define/public (put-glyphs vs symbol size)
       (for ([v  (in-list vs)])
-        (when (and (vregular? v) (in-bounds? v))
+        (when (and (vrational? v) (in-bounds? v))
           (add-shape!
            (glyph alpha (plot->norm v) symbol size
                   pen-color pen-width pen-style brush-color brush-style)))))
     
     (define/public (put-arrow v1 v2 [c (v* (v+ v1 v2) 1/2)])
-      (when (and (vregular? v1) (vregular? v2) (in-bounds? v1))
+      (when (and (vrational? v1) (vrational? v2) (in-bounds? v1))
         (cond [(in-bounds? v2)
                (add-shape!
                 (arrow-glyph alpha (plot->norm c) (plot->norm v1) (plot->norm v2)
@@ -886,7 +886,7 @@
               [else  (put-line v1 v2)])))
     
     (define/public (put-tick v radius angle)
-      (when (and (vregular? v) (in-bounds? v))
+      (when (and (vrational? v) (in-bounds? v))
         (add-shape! (tick-glyph alpha (plot->norm v) radius angle
                                 pen-color pen-width pen-style))))
     )) ; end class

@@ -29,14 +29,14 @@
 (define (get-renderer-list renderer-tree)
   (for/list ([r  (flatten (list renderer-tree))])
     (match r
-      [(non-renderer bounds-rect bounds-fun ticks-fun)
+      [(nonrenderer bounds-rect bounds-fun ticks-fun)
        (renderer2d bounds-rect bounds-fun ticks-fun #f)]
       [_  r])))
 
 (define (get-bounds-rect renderer-list x-min x-max y-min y-max)
   (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max)))
   (define plot-bounds-rect (bounds-fixpoint renderer-list given-bounds-rect))
-  (when (or (not (rect-regular? plot-bounds-rect))
+  (when (or (not (rect-rational? plot-bounds-rect))
             (rect-zero-area? plot-bounds-rect))
     (match-define (vector x-ivl y-ivl) plot-bounds-rect)
     (error 'plot "could not determine sensible plot bounds; got x ∈ ~a, y ∈ ~a"
@@ -74,13 +74,11 @@
   
   (send area end-plot))
 
-(defproc (plot/dc [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
+(defproc (plot/dc [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
                   [dc (is-a?/c dc<%>)]
                   [x real?] [y real?] [width (>=/c 0)] [height (>=/c 0)]
-                  [#:x-min x-min (or/c regular-real? #f) #f]
-                  [#:x-max x-max (or/c regular-real? #f) #f]
-                  [#:y-min y-min (or/c regular-real? #f) #f]
-                  [#:y-max y-max (or/c regular-real? #f) #f]
+                  [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                  [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                   [#:title title (or/c string? #f) (plot-title)]
                   [#:x-label x-label (or/c string? #f) (plot-x-label)]
                   [#:y-label y-label (or/c string? #f) (plot-y-label)]
@@ -101,11 +99,9 @@
 ;; Plot to various other backends
 
 ;; Plot to a bitmap
-(defproc (plot-bitmap [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
-                      [#:x-min x-min (or/c regular-real? #f) #f]
-                      [#:x-max x-max (or/c regular-real? #f) #f]
-                      [#:y-min y-min (or/c regular-real? #f) #f]
-                      [#:y-max y-max (or/c regular-real? #f) #f]
+(defproc (plot-bitmap [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
+                      [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                      [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                       [#:width width exact-positive-integer? (plot-width)]
                       [#:height height exact-positive-integer? (plot-height)]
                       [#:title title (or/c string? #f) (plot-title)]
@@ -124,11 +120,9 @@
               #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor))
    width height))
 
-(defproc (plot-pict [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
-                    [#:x-min x-min (or/c regular-real? #f) #f]
-                    [#:x-max x-max (or/c regular-real? #f) #f]
-                    [#:y-min y-min (or/c regular-real? #f) #f]
-                    [#:y-max y-max (or/c regular-real? #f) #f]
+(defproc (plot-pict [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
+                    [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                    [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                     [#:width width exact-positive-integer? (plot-width)]
                     [#:height height exact-positive-integer? (plot-height)]
                     [#:title title (or/c string? #f) (plot-title)]
@@ -146,11 +140,9 @@
       width height))
 
 ;; Plot to a snip
-(defproc (plot-snip [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
-                    [#:x-min x-min (or/c regular-real? #f) #f]
-                    [#:x-max x-max (or/c regular-real? #f) #f]
-                    [#:y-min y-min (or/c regular-real? #f) #f]
-                    [#:y-max y-max (or/c regular-real? #f) #f]
+(defproc (plot-snip [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
+                    [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                    [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                     [#:width width exact-positive-integer? (plot-width)]
                     [#:height height exact-positive-integer? (plot-height)]
                     [#:title title (or/c string? #f) (plot-title)]
@@ -166,11 +158,9 @@
   (make-object image-snip% bm))
 
 ;; Plot to a frame
-(defproc (plot-frame [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
-                     [#:x-min x-min (or/c regular-real? #f) #f]
-                     [#:x-max x-max (or/c regular-real? #f) #f]
-                     [#:y-min y-min (or/c regular-real? #f) #f]
-                     [#:y-max y-max (or/c regular-real? #f) #f]
+(defproc (plot-frame [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
+                     [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                     [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                      [#:width width exact-positive-integer? (plot-width)]
                      [#:height height exact-positive-integer? (plot-height)]
                      [#:title title (or/c string? #f) (plot-title)]
@@ -186,13 +176,11 @@
   (make-snip-frame snip width height (if title (format "Plot: ~a" title) "Plot")))
 
 ;; Plot to a file
-(defproc (plot-file [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
+(defproc (plot-file [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
                     [output (or/c path-string? output-port?)]
                     [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
-                    [#:x-min x-min (or/c regular-real? #f) #f]
-                    [#:x-max x-max (or/c regular-real? #f) #f]
-                    [#:y-min y-min (or/c regular-real? #f) #f]
-                    [#:y-max y-max (or/c regular-real? #f) #f]
+                    [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                    [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                     [#:width width exact-positive-integer? (plot-width)]
                     [#:height height exact-positive-integer? (plot-height)]
                     [#:title title (or/c string? #f) (plot-title)]
@@ -231,11 +219,9 @@
   (void))
 
 ;; Plot to a frame or a snip, depending on (plot-new-window?)
-(defproc (plot [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
-               [#:x-min x-min (or/c regular-real? #f) #f]
-               [#:x-max x-max (or/c regular-real? #f) #f]
-               [#:y-min y-min (or/c regular-real? #f) #f]
-               [#:y-max y-max (or/c regular-real? #f) #f]
+(defproc (plot [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
+               [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+               [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                [#:width width exact-positive-integer? (plot-width)]
                [#:height height exact-positive-integer? (plot-height)]
                [#:title title (or/c string? #f) (plot-title)]
@@ -244,8 +230,7 @@
                [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                [#:out-file out-file (or/c path-string? output-port? #f) #f]
                [#:out-kind out-kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
-               [#:fgcolor fgcolor plot-color/c #f]
-               [#:bgcolor bgcolor plot-color/c #f]
+               [#:fgcolor fgcolor plot-color/c #f] [#:bgcolor bgcolor plot-color/c #f]
                [#:lncolor lncolor plot-color/c #f]  ; unused
                ) (or/c (is-a?/c snip%) void?)
   (when fgcolor

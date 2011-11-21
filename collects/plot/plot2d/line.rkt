@@ -20,17 +20,15 @@
         [else   empty]))
 
 (defproc (lines [vs  (listof (vector/c real? real?))]
-                [#:x-min x-min (or/c regular-real? #f) #f]
-                [#:x-max x-max (or/c regular-real? #f) #f]
-                [#:y-min y-min (or/c regular-real? #f) #f]
-                [#:y-max y-max (or/c regular-real? #f) #f]
+                [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                 [#:color color plot-color/c (line-color)]
                 [#:width width (>=/c 0) (line-width)]
                 [#:style style plot-pen-style/c (line-style)]
                 [#:alpha alpha (real-in 0 1) (line-alpha)]
                 [#:label label (or/c string? #f) #f]
                 ) renderer2d?
-  (define rvs (filter vregular? vs))
+  (define rvs (filter vrational? vs))
   (cond [(empty? rvs)  (renderer2d #f #f #f #f)]
         [else
          (match-define (list (vector rxs rys) ...) rvs)
@@ -42,11 +40,9 @@
                        (lines-render-proc vs color width style alpha label)))]))
 
 (defproc (parametric [f (real? . -> . (vector/c real? real?))]
-                     [t-min regular-real?] [t-max regular-real?]
-                     [#:x-min x-min (or/c regular-real? #f) #f]
-                     [#:x-max x-max (or/c regular-real? #f) #f]
-                     [#:y-min y-min (or/c regular-real? #f) #f]
-                     [#:y-max y-max (or/c regular-real? #f) #f]
+                     [t-min rational?] [t-max rational?]
+                     [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                     [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                      [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                      [#:color color plot-color/c (line-color)]
                      [#:width width (>=/c 0) (line-width)]
@@ -61,10 +57,8 @@
 
 (defproc (polar [f (real? . -> . real?)]
                 [θ-min real? 0] [θ-max real? (* 2 pi)]
-                [#:x-min x-min (or/c regular-real? #f) #f]
-                [#:x-max x-max (or/c regular-real? #f) #f]
-                [#:y-min y-min (or/c regular-real? #f) #f]
-                [#:y-max y-max (or/c regular-real? #f) #f]
+                [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                 [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                 [#:color color plot-color/c (line-color)]
                 [#:width width (>=/c 0) (line-width)]
@@ -93,10 +87,8 @@
         [else   empty]))
 
 (defproc (function [f (real? . -> . real?)]
-                   [x-min (or/c regular-real? #f) #f]
-                   [x-max (or/c regular-real? #f) #f]
-                   [#:y-min y-min (or/c regular-real? #f) #f]
-                   [#:y-max y-max (or/c regular-real? #f) #f]
+                   [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+                   [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                    [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                    [#:color color plot-color/c (line-color)]
                    [#:width width (>=/c 0) (line-width)]
@@ -125,10 +117,8 @@
         [else   empty]))
 
 (defproc (inverse [f (real? . -> . real?)]
-                  [y-min (or/c regular-real? #f) #f]
-                  [y-max (or/c regular-real? #f) #f]
-                  [#:x-min x-min (or/c regular-real? #f) #f]
-                  [#:x-max x-max (or/c regular-real? #f) #f]
+                  [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
+                  [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
                   [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
                   [#:color color plot-color/c (line-color)]
                   [#:width width (>=/c 0) (line-width)]

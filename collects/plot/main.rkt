@@ -22,7 +22,7 @@
          plot-time->seconds seconds->plot-time
          datetime->real)
 
-(require "common/non-renderer.rkt")
+(require "common/nonrenderer.rkt")
 (provide (activate-contract-out x-ticks y-ticks z-ticks invisible-rect invisible-rect3d))
 
 ;; ===================================================================================================

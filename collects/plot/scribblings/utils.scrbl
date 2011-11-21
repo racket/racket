@@ -137,9 +137,6 @@ Integer brush styles repeat starting at @(racket 7).
 
 @subsection{Real Numbers}
 
-@doc-apply[regular-real?]{
-}
-
 @doc-apply[degrees->radians]{
 Converts degrees to radians.
 }
@@ -185,6 +182,7 @@ This is used to generate samples for transformed axes.
 
 @subsection[#:tag "math.vectors"]{Vectors}
 
+
 @subsection[#:tag "math.intervals"]{Intervals}
 
 @doc-apply[bounds->intervals]{
@@ -196,7 +194,22 @@ Use this to construct inputs for @(racket rectangles) and @(racket rectangles3d)
 
 @subsection[#:tag "math.rectangles"]{Rectangles}
 
+
 @section{Dates and Times}
+
+@doc-apply[datetime->real]{
+}
+
+@defstruct[plot-time ([second (and/c (>=/c 0) (</c 60))]
+                      [minute (integer-in 0 59)]
+                      [hour (integer-in 0 23)]
+                      [day exact-integer?])]{
+}
+
+@doc-apply[plot-time->seconds]
+
+@doc-apply[seconds->plot-time]
+
 
 @section{Sampling}
 

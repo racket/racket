@@ -11,7 +11,7 @@
 (provide (all-defined-out))
 
 (struct plot-element (bounds-rect bounds-fun ticks-fun) #:transparent)
-(struct non-renderer plot-element () #:transparent)
+(struct nonrenderer plot-element () #:transparent)
 (struct renderer2d plot-element (render-proc) #:transparent)
 (struct renderer3d plot-element (render-proc) #:transparent)
 

@@ -14,9 +14,6 @@
 (defproc (infinite? [x any/c]) boolean?
   (and (flonum? x) (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0))))
 
-(defproc (special-real? [x any/c]) boolean?
-  (and (flonum? x) (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0) (eqv? x +nan.0))))
-
 (defproc (flblend [x flonum?] [y flonum?] [α flonum?]) flonum?
   (cond [(not (flonum? x))  (raise-type-error 'flblend "flonum" 0 x y α)]
         [(not (flonum? y))  (raise-type-error 'flblend "flonum" 1 x y α)]
@@ -95,16 +92,13 @@
 ;; ===================================================================================================
 ;; Reals
 
-(defproc (regular-real? [x any/c]) boolean?
-  (and (real? x) (not (special-real? x))))
-
-(defproc (maybe-inexact->exact [x (or/c regular-real? #f)]) (or/c regular-real? #f)
-  (cond [x  (unless (regular-real? x)
-              (raise-type-error 'maybe-inexact->exact "regular real or #f" x))
+(defproc (maybe-inexact->exact [x (or/c rational? #f)]) (or/c rational? #f)
+  (cond [x  (unless (rational? x)
+              (raise-type-error 'maybe-inexact->exact "rational or #f" x))
             (inexact->exact x)]
         [else  #f]))
 
-(defproc (flonum-ok-for-range? [x-min regular-real?] [x-max regular-real?]
+(defproc (flonum-ok-for-range? [x-min rational?] [x-max rational?]
                                [size exact-positive-integer?]) boolean?
   (let/ec return
     (let ([x-min  (inexact->exact (min x-min x-max))]
@@ -112,16 +106,16 @@
       (define step-size (/ (- x-max x-min) size))
       
       (define inexact-x-min (exact->inexact x-min))
-      (unless (regular-real? inexact-x-min) (return #f))
+      (unless (rational? inexact-x-min) (return #f))
       
       (define inexact-x-max (exact->inexact x-max))
-      (unless (regular-real? inexact-x-max) (return #f))
+      (unless (rational? inexact-x-max) (return #f))
       
       (define inexact-x-max-prev (flprev inexact-x-max))
-      (unless (regular-real? inexact-x-max-prev) (return #f))
+      (unless (rational? inexact-x-max-prev) (return #f))
       
       (define inexact-x-min-next (flnext inexact-x-min))
-      (unless (regular-real? inexact-x-min-next) (return #f))
+      (unless (rational? inexact-x-min-next) (return #f))
       
       (define max-diff (- x-max (inexact->exact inexact-x-max-prev)))
       (define min-diff (- (inexact->exact inexact-x-min-next) x-min))
@@ -423,27 +417,12 @@
   (cond [(= d 0)  0]
         [else     (/ d (vmag v1) (vmag v2))]))
 
-(define-syntax-rule (unsafe-flspecial? x)
-  (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0) (eqv? x +nan.0)))
-
-(define-syntax-rule (unsafe-flregular? x)
-  (not (unsafe-flspecial? x)))
-
-(defproc (vregular? [v (vectorof real?)]) boolean?
+(defproc (vrational? [v (vectorof real?)]) boolean?
   (match v
-    [(vector (? real? x) (? real? y))
-     (not (or (and (flonum? x) (unsafe-flspecial? x))
-              (and (flonum? y) (unsafe-flspecial? y))))]
-    [(vector (? real? x) (? real? y) (? real? z))
-     (not (or (and (flonum? x) (unsafe-flspecial? x))
-              (and (flonum? y) (unsafe-flspecial? y))
-              (and (flonum? z) (unsafe-flspecial? z))))]
-    [_  (cond [(vector-andmap real? v)  (let/ec break
-                                          (for ([x  (in-vector v)])
-                                            (when (and (flonum? x) (unsafe-flspecial? x))
-                                              (break #f)))
-                                          #t)]
-              [else  (raise-type-error 'vregular? "vector of real numbers" v)])]))
+    [(vector (? rational? x) (? rational? y))  #t]
+    [(vector (? rational? x) (? rational? y) (? rational? z))  #t]
+    [(? vector?)  (vector-andmap rational? v)]
+    [_  (raise-type-error 'vrational? "vector" v)]))
 
 (defproc (v= [v1 (vectorof real?)] [v2 (vectorof real?)]) boolean?
   (match v1
@@ -488,12 +467,12 @@
      (define maxs (vector-map (λ (xs) (apply max xs)) xss))
      (unrolled-vmap2 'vcenter (λ (x1 x2) (* 1/2 (+ x1 x2))) mins maxs)]))
 
-(define (vregular-sublists vs)
+(define (vrational-sublists vs)
   (define res
     (let loop ([vs vs])
       (cond [(null? vs)  (list null)]
-            [(vregular? (car vs))  (define rst (loop (cdr vs)))
-                                   (cons (cons (car vs) (car rst)) (cdr rst))]
+            [(vrational? (car vs))  (define rst (loop (cdr vs)))
+                                    (cons (cons (car vs) (car rst)) (cdr rst))]
             [else  (cons null (loop (cdr vs)))])))
   (cond [(and (not (null? res)) (null? (car res)))  (cdr res)]
         [else  res]))
@@ -554,12 +533,12 @@
   (match-define (ivl a b) i)
   (and a b #t))
 
-(defproc (ivl-regular? [i ivl?]) boolean?
+(defproc (ivl-rational? [i ivl?]) boolean?
   (match-define (ivl a b) i)
-  (and (regular-real? a) (regular-real? b)))
+  (and (rational? a) (rational? b)))
 
-(defproc (regular-ivl? [i any/c]) boolean?
-  (and (ivl? i) (ivl-regular? i)))
+(defproc (rational-ivl? [i any/c]) boolean?
+  (and (ivl? i) (ivl-rational? i)))
 
 (defproc (ivl-singular? [i ivl?]) boolean?
   (match-define (ivl a b) i)
@@ -638,8 +617,11 @@
 (defproc (rect-known? [r (vectorof ivl?)]) boolean?
   (vector-andmap ivl-known? r))
 
-(defproc (rect-regular? [r (vectorof ivl?)]) boolean?
-  (vector-andmap ivl-regular? r))
+(defproc (rect-rational? [r (vectorof ivl?)]) boolean?
+  (vector-andmap ivl-rational? r))
+
+(defproc (rational-rect? [r any/c]) boolean?
+  (and (vector? r) (vector-andmap rational-ivl? r)))
 
 (defproc (rect-area [r (vectorof ivl?)]) (or/c real? #f)
   (let/ec break

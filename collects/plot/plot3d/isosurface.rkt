@@ -36,13 +36,10 @@
                  label color style line-color line-width line-style)]
         [else  empty]))
 
-(defproc (isosurface3d [f (real? real? real? . -> . real?)] [d real?]
-                       [x-min (or/c regular-real? #f) #f]
-                       [x-max (or/c regular-real? #f) #f]
-                       [y-min (or/c regular-real? #f) #f]
-                       [y-max (or/c regular-real? #f) #f]
-                       [z-min (or/c regular-real? #f) #f]
-                       [z-max (or/c regular-real? #f) #f]
+(defproc (isosurface3d [f (real? real? real? . -> . real?)] [d rational?]
+                       [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+                       [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
+                       [z-min (or/c rational? #f) #f] [z-max (or/c rational? #f) #f]
                        [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
                        [#:color color plot-color/c (surface-color)]
                        [#:style style plot-brush-style/c (surface-style)]
@@ -112,10 +109,10 @@
 
 (defproc (isosurfaces3d
           [f (real? real? real? . -> . real?)]
-          [x-min (or/c regular-real? #f) #f] [x-max (or/c regular-real? #f) #f]
-          [y-min (or/c regular-real? #f) #f] [y-max (or/c regular-real? #f) #f]
-          [z-min (or/c regular-real? #f) #f] [z-max (or/c regular-real? #f) #f]
-          [#:d-min d-min (or/c regular-real? #f) #f] [#:d-max d-max (or/c regular-real? #f) #f]
+          [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+          [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
+          [z-min (or/c rational? #f) #f] [z-max (or/c rational? #f) #f]
+          [#:d-min d-min (or/c rational? #f) #f] [#:d-max d-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
           [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (isosurface-levels)]
           [#:colors colors (plot-colors/c (listof real?)) (isosurface-colors)]
@@ -191,9 +188,9 @@
 
 (defproc (polar3d
           [f (real? real? . -> . real?)]
-          [#:x-min x-min (or/c regular-real? #f) #f] [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f] [#:y-max y-max (or/c regular-real? #f) #f]
-          [#:z-min z-min (or/c regular-real? #f) #f] [#:z-max z-max (or/c regular-real? #f) #f]
+          [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+          [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (plot3d-samples)]
           [#:color color plot-color/c (surface-color)]
           [#:style style plot-brush-style/c (surface-style)]
@@ -206,7 +203,7 @@
   (define vs (for*/list ([θ  (in-list (linear-seq 0.0 2pi (* 4 samples)))]
                          [ρ  (in-list (linear-seq (* -1/2 pi) (* 1/2 pi) (* 2 samples)))])
                (3d-polar->3d-cartesian θ ρ (f θ ρ))))
-  (define rvs (filter vregular? vs))
+  (define rvs (filter vrational? vs))
   (cond [(empty? rvs)  (renderer3d #f #f #f #f)]
         [else
          (match-define (list (vector rxs rys rzs) ...) rvs)

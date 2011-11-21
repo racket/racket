@@ -5,32 +5,32 @@
 (require "../common/math.rkt")
 (provide equal?*
          ;; Flonums
-         nan? infinite? special-real?
+         nan? infinite?
          flblend flatan2 flsum flmodulo fldistance
          (activate-contract-out flonum->ordinal ordinal->flonum flstep flnext flprev
                                 flonum-ok-for-range?)
          -max.0 -min.0 +min.0 +max.0
          ;; Reals
-         regular-real? maybe-inexact->exact
+         maybe-inexact->exact
          min* max* degrees->radians radians->degrees blend atan2 sum real-modulo distance
          floor-log/base ceiling-log/base
          polar->cartesian 3d-polar->3d-cartesian
          ;; Vectors
-         vcross vcross2 v+ v- vneg v* v/ vmag^2 vmag vnormalize vdot vcos-angle vregular? v= vcenter)
+         vcross vcross2 v+ v- vneg v* v/ vmag^2 vmag vnormalize vdot vcos-angle vrational? v= vcenter)
 
 ;; Intervals
 (provide (contract-out (struct ivl ([min (or/c real? #f)] [max (or/c real? #f)]))
                        [ivl-meet  (->* () () #:rest (listof ivl?) ivl?)]
                        [ivl-join  (->* () () #:rest (listof ivl?) ivl?)])
-         empty-ivl unknown-ivl regular-ivl?
+         empty-ivl unknown-ivl rational-ivl?
          (activate-contract-out
-          ivl-empty? ivl-known? ivl-regular? ivl-singular? ivl-length ivl-center ivl-zero-length?
+          ivl-empty? ivl-known? ivl-rational? ivl-singular? ivl-length ivl-center ivl-zero-length?
           ivl-inexact->exact ivl-contains? bounds->intervals))
 
 ;; Rectangles
 (provide (contract-out [rect-meet (->* () () #:rest (listof (vectorof ivl?)) (vectorof ivl?))]
                        [rect-join (->* () () #:rest (listof (vectorof ivl?)) (vectorof ivl?))])
          (activate-contract-out
-          empty-rect unknown-rect bounding-rect
-          rect-empty? rect-known? rect-regular? rect-area rect-center rect-zero-area? rect-singular?
+          empty-rect unknown-rect bounding-rect rational-rect?
+          rect-empty? rect-known? rect-rational? rect-area rect-center rect-zero-area? rect-singular?
           rect-inexact->exact rect-contains?))

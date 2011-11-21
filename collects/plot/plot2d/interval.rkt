@@ -35,10 +35,8 @@
 (defproc (lines-interval
           [v1s (listof (vector/c real? real?))]
           [v2s (listof (vector/c real? real?))]
-          [#:x-min x-min (or/c regular-real? #f) #f]
-          [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f]
-          [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:color color plot-color/c (interval-color)]
           [#:style style plot-brush-style/c (interval-style)]
           [#:line1-color line1-color plot-color/c (interval-line1-color)]
@@ -50,7 +48,7 @@
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (define rvs (filter vregular? (append v1s v2s)))
+  (define rvs (filter vrational? (append v1s v2s)))
   (cond
     [(empty? rvs)  (renderer2d #f #f #f #f)]
     [else
@@ -68,11 +66,9 @@
 (defproc (parametric-interval
           [f1 (real? . -> . (vector/c real? real?))]
           [f2 (real? . -> . (vector/c real? real?))]
-          [t-min real?] [t-max real?]
-          [#:x-min x-min (or/c regular-real? #f) #f]
-          [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f]
-          [#:y-max y-max (or/c regular-real? #f) #f]
+          [t-min rational?] [t-max rational?]
+          [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
           [#:color color plot-color/c (interval-color)]
           [#:style style plot-brush-style/c (interval-style)]
@@ -96,11 +92,9 @@
 
 (defproc (polar-interval
           [f1 (real? . -> . real?)] [f2 (real? . -> . real?)]
-          [θ-min real? 0] [θ-max real? (* 2 pi)]
-          [#:x-min x-min (or/c regular-real? #f) #f]
-          [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f]
-          [#:y-max y-max (or/c regular-real? #f) #f]
+          [θ-min rational? 0] [θ-max rational? (* 2 pi)]
+          [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
           [#:color color plot-color/c (interval-color)]
           [#:style style plot-brush-style/c (interval-style)]
@@ -145,10 +139,8 @@
 
 (defproc (function-interval
           [f1 (real? . -> . real?)] [f2 (real? . -> . real?)]
-          [x-min (or/c regular-real? #f) #f]
-          [x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f]
-          [#:y-max y-max (or/c regular-real? #f) #f]
+          [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
           [#:color color plot-color/c (interval-color)]
           [#:style style plot-brush-style/c (interval-style)]
@@ -193,10 +185,8 @@
 
 (defproc (inverse-interval
           [f1 (real? . -> . real?)] [f2 (real? . -> . real?)]
-          [y-min (or/c regular-real? #f) #f]
-          [y-max (or/c regular-real? #f) #f]
-          [#:x-min x-min (or/c regular-real? #f) #f]
-          [#:x-max x-max (or/c regular-real? #f) #f]
+          [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
+          [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
           [#:color color plot-color/c (interval-color)]
           [#:style style plot-brush-style/c (interval-style)]

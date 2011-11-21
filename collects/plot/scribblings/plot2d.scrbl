@@ -7,11 +7,9 @@
 
 @title[#:tag "plot2d"]{2D Plot Procedures}
 
-@defproc[(plot [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
-               [#:x-min x-min (or/c regular-real? #f) #f]
-               [#:x-max x-max (or/c regular-real? #f) #f]
-               [#:y-min y-min (or/c regular-real? #f) #f]
-               [#:y-max y-max (or/c regular-real? #f) #f]
+@defproc[(plot [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
+               [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+               [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                [#:width width exact-positive-integer? (plot-width)]
                [#:height height exact-positive-integer? (plot-height)]
                [#:title title (or/c string? #f) (plot-title)]
@@ -52,14 +50,14 @@ The @(racket #:lncolor) keyword argument is also accepted for backward compatibi
 }
 
 @deftogether[
-(@defproc[(plot-file [renderer-tree (treeof (or/c renderer2d? non-renderer?))]
+(@defproc[(plot-file [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]
                      [output (or/c path-string? output-port?)]
                      [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
                      [#:<plot-keyword> <plot-keyword> <plot-keyword-contract>] ...) void?]
- @defproc[(plot-pict [renderer-tree (treeof (or/c renderer2d? non-renderer?))] ...) pict?]
- @defproc[(plot-bitmap [renderer-tree (treeof (or/c renderer2d? non-renderer?))] ...) (is-a?/c bitmap%)]
- @defproc[(plot-snip [renderer-tree (treeof (or/c renderer2d? non-renderer?))] ...) (is-a?/c image-snip%)]
- @defproc[(plot-frame [renderer-tree (treeof (or/c renderer2d? non-renderer?))] ...) (is-a?/c frame%)])]{
+ @defproc[(plot-pict [renderer-tree (treeof (or/c renderer2d? nonrenderer?))] ...) pict?]
+ @defproc[(plot-bitmap [renderer-tree (treeof (or/c renderer2d? nonrenderer?))] ...) (is-a?/c bitmap%)]
+ @defproc[(plot-snip [renderer-tree (treeof (or/c renderer2d? nonrenderer?))] ...) (is-a?/c image-snip%)]
+ @defproc[(plot-frame [renderer-tree (treeof (or/c renderer2d? nonrenderer?))] ...) (is-a?/c frame%)])]{
 Plot to different backends. Each of these procedures has the same keyword arguments as @(racket plot), except for deprecated keywords.
 
 Use @(racket plot-file) to save a plot to a file.

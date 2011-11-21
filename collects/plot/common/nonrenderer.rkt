@@ -26,22 +26,22 @@
     (cond [(= (vector-length r) 3)  (values empty empty empty empty ts far-ts)]
           [else  (raise-type-error 'z-ticks-fun "3-vector of ivls" r)])))
 
-(defproc (x-ticks [ts (listof tick?)] [#:far? far? boolean? #f]) non-renderer?
-  (non-renderer #f #f (x-ticks-fun ts far?)))
+(defproc (x-ticks [ts (listof tick?)] [#:far? far? boolean? #f]) nonrenderer?
+  (nonrenderer #f #f (x-ticks-fun ts far?)))
 
-(defproc (y-ticks [ts (listof tick?)] [#:far? far? boolean? #f]) non-renderer?
-  (non-renderer #f #f (y-ticks-fun ts far?)))
+(defproc (y-ticks [ts (listof tick?)] [#:far? far? boolean? #f]) nonrenderer?
+  (nonrenderer #f #f (y-ticks-fun ts far?)))
 
-(defproc (z-ticks [ts (listof tick?)] [#:far? far? boolean? #f]) non-renderer?
-  (non-renderer #f #f (z-ticks-fun ts far?)))
+(defproc (z-ticks [ts (listof tick?)] [#:far? far? boolean? #f]) nonrenderer?
+  (nonrenderer #f #f (z-ticks-fun ts far?)))
 
-(defproc (invisible-rect [x-min (or/c regular-real? #f)] [x-max (or/c regular-real? #f)]
-                         [y-min (or/c regular-real? #f)] [y-max (or/c regular-real? #f)]
-                         ) non-renderer?
-  (non-renderer (vector (ivl x-min x-max) (ivl y-min y-max)) #f #f))
+(defproc (invisible-rect [x-min (or/c rational? #f)] [x-max (or/c rational? #f)]
+                         [y-min (or/c rational? #f)] [y-max (or/c rational? #f)]
+                         ) nonrenderer?
+  (nonrenderer (vector (ivl x-min x-max) (ivl y-min y-max)) #f #f))
 
-(defproc (invisible-rect3d [x-min (or/c regular-real? #f)] [x-max (or/c regular-real? #f)]
-                           [y-min (or/c regular-real? #f)] [y-max (or/c regular-real? #f)]
-                           [z-min (or/c regular-real? #f)] [z-max (or/c regular-real? #f)]
-                           ) non-renderer?
-  (non-renderer (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f #f))
+(defproc (invisible-rect3d [x-min (or/c rational? #f)] [x-max (or/c rational? #f)]
+                           [y-min (or/c rational? #f)] [y-max (or/c rational? #f)]
+                           [z-min (or/c rational? #f)] [z-max (or/c rational? #f)]
+                           ) nonrenderer?
+  (nonrenderer (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f #f))

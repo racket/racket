@@ -34,10 +34,8 @@
 
 (defproc (isoline
           [f (real? real? . -> . real?)] [z real?]
-          [x-min (or/c regular-real? #f) #f]
-          [x-max (or/c regular-real? #f) #f]
-          [y-min (or/c regular-real? #f) #f]
-          [y-max (or/c regular-real? #f) #f]
+          [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+          [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (contour-samples)]
           [#:color color plot-color/c (line-color)]
           [#:width width (>=/c 0) (line-width)]
@@ -85,10 +83,8 @@
 
 (defproc (contours
           [f (real? real? . -> . real?)]
-          [x-min (or/c regular-real? #f) #f]
-          [x-max (or/c regular-real? #f) #f]
-          [y-min (or/c regular-real? #f) #f]
-          [y-max (or/c regular-real? #f) #f]
+          [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+          [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (contour-samples)]
           [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
           [#:colors colors (plot-colors/c (listof real?)) (contour-colors)]
@@ -161,10 +157,8 @@
 
 (defproc (contour-intervals
           [f (real? real? . -> . real?)]
-          [x-min (or/c regular-real? #f) #f]
-          [x-max (or/c regular-real? #f) #f]
-          [y-min (or/c regular-real? #f) #f]
-          [y-max (or/c regular-real? #f) #f]
+          [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+          [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
           [#:samples samples (and/c exact-integer? (>=/c 2)) (contour-samples)]
           [#:levels levels (or/c 'auto exact-positive-integer? (listof real?)) (contour-levels)]
           [#:colors colors (plot-colors/c (listof ivl?)) (contour-interval-colors)]

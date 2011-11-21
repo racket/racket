@@ -405,7 +405,7 @@
     ;; Shapes
     
     (define/public (put-lines vs)
-      (for ([vs  (vregular-sublists vs)])
+      (for ([vs  (vrational-sublists vs)])
         (for ([vs  (if clipping?
                        (in-list (clip-lines vs clip-x-min clip-x-max
                                             clip-y-min clip-y-max))
@@ -415,7 +415,7 @@
               (send pd draw-lines (map (λ (v) (plot->dc* v)) vs)))))))
     
     (define/public (put-line v1 v2)
-      (when (and (vregular? v1) (vregular? v2))
+      (when (and (vrational? v1) (vrational? v2))
         (let-values ([(v1 v2)  (if clipping?
                                    (clip-line v1 v2 clip-x-min clip-x-max
                                               clip-y-min clip-y-max)
@@ -427,7 +427,7 @@
                                          (subdivide-line plot->dc* v1 v2))))))))
     
     (define/public (put-polygon vs)
-      (when (andmap vregular? vs)
+      (when (andmap vrational? vs)
         (let* ([vs  (if clipping?
                         (clip-polygon vs clip-x-min clip-x-max
                                       clip-y-min clip-y-max)
@@ -439,26 +439,26 @@
                                            (subdivide-polygon plot->dc* vs))))))))
     
     (define/public (put-rect r)
-      (when (rect-regular? r)
+      (when (rect-rational? r)
         (match-define (vector (ivl x1 x2) (ivl y1 y2)) r)
         (put-polygon (list (vector x1 y1) (vector x2 y1) (vector x2 y2) (vector x1 y2)))))
     
     (define/public (put-text str v [anchor 'top-left] [angle 0]
                              #:outline? [outline? #f])
-      (when (and (vregular? v) (in-bounds? v))
+      (when (and (vrational? v) (in-bounds? v))
         (send pd draw-text str (plot->dc* v) anchor angle #:outline? outline?)))
     
     (define/public (put-glyphs vs symbol size)
       (send pd draw-glyphs (map (λ (v) (plot->dc* v))
-                                (filter (λ (v) (and (vregular? v) (in-bounds? v)))
+                                (filter (λ (v) (and (vrational? v) (in-bounds? v)))
                                         vs))
             symbol size))
     
     (define/public (put-arrow v1 v2)
-      (when (and (vregular? v1) (vregular? v2) (in-bounds? v1))
+      (when (and (vrational? v1) (vrational? v2) (in-bounds? v1))
         (send pd draw-arrow (plot->dc* v1) (plot->dc* v2))))
     
     (define/public (put-tick v r angle)
-      (when (and (vregular? v) (in-bounds? v))
+      (when (and (vrational? v) (in-bounds? v))
         (send pd draw-tick (plot->dc* v) r angle)))
     ))

@@ -11,7 +11,7 @@
          "common/ticks.rkt"
          "common/math.rkt"
          "common/plot-element.rkt"
-         "common/non-renderer.rkt"
+         "common/nonrenderer.rkt"
          "common/format.rkt"
          "common/sample.rkt"
          "common/draw.rkt"
@@ -27,7 +27,7 @@
                        (all-from-out "common/ticks.rkt")
                        (all-from-out "common/math.rkt")
                        (all-from-out "common/plot-element.rkt")
-                       (all-from-out "common/non-renderer.rkt")
+                       (all-from-out "common/nonrenderer.rkt")
                        (all-from-out "common/format.rkt")
                        (all-from-out "common/sample.rkt")
                        (all-from-out "common/draw.rkt")

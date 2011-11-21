@@ -30,14 +30,14 @@
 (define (get-renderer-list renderer-tree)
   (for/list ([r  (flatten (list renderer-tree))])
     (match r
-      [(non-renderer bounds-rect bounds-fun ticks-fun)
+      [(nonrenderer bounds-rect bounds-fun ticks-fun)
        (renderer3d bounds-rect bounds-fun ticks-fun #f)]
       [_  r])))
 
 (define (get-bounds-rect renderer-list x-min x-max y-min y-max z-min z-max)
   (define given-bounds-rect (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)))
   (define plot-bounds-rect (bounds-fixpoint renderer-list given-bounds-rect))
-  (when (or (not (rect-regular? plot-bounds-rect))
+  (when (or (not (rect-rational? plot-bounds-rect))
             (rect-zero-area? plot-bounds-rect))
     (match-define (vector x-ivl y-ivl z-ivl) plot-bounds-rect)
     (error 'plot "could not determine sensible plot bounds; got x ∈ ~a, y ∈ ~a, z ∈ ~a"
@@ -84,15 +84,12 @@
   (send area end-plot))
 
 
-(defproc (plot3d/dc [renderer-tree  (treeof (or/c renderer3d? non-renderer?))]
+(defproc (plot3d/dc [renderer-tree  (treeof (or/c renderer3d? nonrenderer?))]
                     [dc  (is-a?/c dc<%>)]
                     [x real?] [y real?] [width (>=/c 0)] [height (>=/c 0)]
-                    [#:x-min x-min (or/c regular-real? #f) #f]
-                    [#:x-max x-max (or/c regular-real? #f) #f]
-                    [#:y-min y-min (or/c regular-real? #f) #f]
-                    [#:y-max y-max (or/c regular-real? #f) #f]
-                    [#:z-min z-min (or/c regular-real? #f) #f]
-                    [#:z-max z-max (or/c regular-real? #f) #f]
+                    [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                    [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+                    [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
                     [#:angle angle real? (plot3d-angle)] [#:altitude altitude real? (plot3d-altitude)]
                     [#:title title (or/c string? #f) (plot-title)]
                     [#:x-label x-label (or/c string? #f) (plot-x-label)]
@@ -119,13 +116,10 @@
 ;; Plot to various other backends
 
 ;; Plot to a bitmap
-(defproc (plot3d-bitmap [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
-                        [#:x-min x-min (or/c regular-real? #f) #f]
-                        [#:x-max x-max (or/c regular-real? #f) #f]
-                        [#:y-min y-min (or/c regular-real? #f) #f]
-                        [#:y-max y-max (or/c regular-real? #f) #f]
-                        [#:z-min z-min (or/c regular-real? #f) #f]
-                        [#:z-max z-max (or/c regular-real? #f) #f]
+(defproc (plot3d-bitmap [renderer-tree (treeof (or/c renderer3d? nonrenderer?))]
+                        [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                        [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+                        [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
                         [#:width width exact-positive-integer? (plot-width)]
                         [#:height height exact-positive-integer? (plot-height)]
                         [#:angle angle real? (plot3d-angle)]
@@ -144,13 +138,10 @@
                 #:z-label z-label #:legend-anchor legend-anchor))
    width height))
 
-(defproc (plot3d-pict [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
-                      [#:x-min x-min (or/c regular-real? #f) #f]
-                      [#:x-max x-max (or/c regular-real? #f) #f]
-                      [#:y-min y-min (or/c regular-real? #f) #f]
-                      [#:y-max y-max (or/c regular-real? #f) #f]
-                      [#:z-min z-min (or/c regular-real? #f) #f]
-                      [#:z-max z-max (or/c regular-real? #f) #f]
+(defproc (plot3d-pict [renderer-tree (treeof (or/c renderer3d? nonrenderer?))]
+                      [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                      [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+                      [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
                       [#:width width exact-positive-integer? (plot-width)]
                       [#:height height exact-positive-integer? (plot-height)]
                       [#:angle angle real? (plot3d-angle)]
@@ -171,13 +162,10 @@
       width height))
 
 ;; Plot to a snip
-(defproc (plot3d-snip [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
-                      [#:x-min x-min (or/c regular-real? #f) #f]
-                      [#:x-max x-max (or/c regular-real? #f) #f]
-                      [#:y-min y-min (or/c regular-real? #f) #f]
-                      [#:y-max y-max (or/c regular-real? #f) #f]
-                      [#:z-min z-min (or/c regular-real? #f) #f]
-                      [#:z-max z-max (or/c regular-real? #f) #f]
+(defproc (plot3d-snip [renderer-tree (treeof (or/c renderer3d? nonrenderer?))]
+                      [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                      [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+                      [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
                       [#:width width exact-positive-integer? (plot-width)]
                       [#:height height exact-positive-integer? (plot-height)]
                       [#:angle angle real? (plot3d-angle)]
@@ -238,13 +226,10 @@
      angle altitude saved-plot-parameters)))
 
 ;; Plot to a frame
-(defproc (plot3d-frame [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
-                       [#:x-min x-min (or/c regular-real? #f) #f]
-                       [#:x-max x-max (or/c regular-real? #f) #f]
-                       [#:y-min y-min (or/c regular-real? #f) #f]
-                       [#:y-max y-max (or/c regular-real? #f) #f]
-                       [#:z-min z-min (or/c regular-real? #f) #f]
-                       [#:z-max z-max (or/c regular-real? #f) #f]
+(defproc (plot3d-frame [renderer-tree (treeof (or/c renderer3d? nonrenderer?))]
+                       [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                       [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+                       [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
                        [#:width width exact-positive-integer? (plot-width)]
                        [#:height height exact-positive-integer? (plot-height)]
                        [#:angle angle real? (plot3d-angle)]
@@ -264,15 +249,12 @@
   (make-snip-frame snip width height (if title (format "Plot: ~a" title) "Plot")))
 
 ;; Plot to any supported kind of file
-(defproc (plot3d-file [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
+(defproc (plot3d-file [renderer-tree (treeof (or/c renderer3d? nonrenderer?))]
                       [output (or/c path-string? output-port?)]
                       [kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
-                      [#:x-min x-min (or/c regular-real? #f) #f]
-                      [#:x-max x-max (or/c regular-real? #f) #f]
-                      [#:y-min y-min (or/c regular-real? #f) #f]
-                      [#:y-max y-max (or/c regular-real? #f) #f]
-                      [#:z-min z-min (or/c regular-real? #f) #f]
-                      [#:z-max z-max (or/c regular-real? #f) #f]
+                      [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                      [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+                      [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
                       [#:width width exact-positive-integer? (plot-width)]
                       [#:height height exact-positive-integer? (plot-height)]
                       [#:angle angle real? (plot3d-angle)]
@@ -316,13 +298,10 @@
   (void))
 
 ;; Plot to a frame or a snip, depending on the value of plot-new-window?
-(defproc (plot3d [renderer-tree (treeof (or/c renderer3d? non-renderer?))]
-                 [#:x-min x-min (or/c regular-real? #f) #f]
-                 [#:x-max x-max (or/c regular-real? #f) #f]
-                 [#:y-min y-min (or/c regular-real? #f) #f]
-                 [#:y-max y-max (or/c regular-real? #f) #f]
-                 [#:z-min z-min (or/c regular-real? #f) #f]
-                 [#:z-max z-max (or/c regular-real? #f) #f]
+(defproc (plot3d [renderer-tree (treeof (or/c renderer3d? nonrenderer?))]
+                 [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                 [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+                 [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
                  [#:width width exact-positive-integer? (plot-width)]
                  [#:height height exact-positive-integer? (plot-height)]
                  [#:angle angle real? #f] [#:altitude altitude real? #f]
@@ -334,8 +313,7 @@
                  [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                  [#:out-file out-file (or/c path-string? output-port? #f) #f]
                  [#:out-kind out-kind (one-of/c 'auto 'png 'jpeg 'xmb 'xpm 'bmp 'ps 'pdf 'svg) 'auto]
-                 [#:fgcolor fgcolor plot-color/c #f]
-                 [#:bgcolor bgcolor plot-color/c #f]
+                 [#:fgcolor fgcolor plot-color/c #f] [#:bgcolor bgcolor plot-color/c #f]
                  [#:lncolor lncolor plot-color/c #f]  ; unused
                  ) (or/c (is-a?/c snip%) void?)
   (when fgcolor

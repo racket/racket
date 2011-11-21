@@ -19,10 +19,8 @@
   (if label (point-legend-entry label sym color size line-width) empty))
 
 (defproc (points [vs  (listof (vector/c real? real?))]
-                 [#:x-min x-min (or/c regular-real? #f) #f]
-                 [#:x-max x-max (or/c regular-real? #f) #f]
-                 [#:y-min y-min (or/c regular-real? #f) #f]
-                 [#:y-max y-max (or/c regular-real? #f) #f]
+                 [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                 [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                  [#:sym sym point-sym/c (point-sym)]
                  [#:color color plot-color/c (point-color)]
                  [#:size size (>=/c 0) (point-size)]
@@ -30,7 +28,7 @@
                  [#:alpha alpha (real-in 0 1) (point-alpha)]
                  [#:label label (or/c string? #f) #f]
                  ) renderer2d?
-  (let ([vs  (filter vregular? vs)])
+  (let ([vs  (filter vrational? vs)])
     (cond
       [(empty? vs)  (renderer2d #f #f #f #f)]
       [else  (match-define (list (vector xs ys) ...) vs)
@@ -53,7 +51,7 @@
   (define-values (xs ys dxs dys angles mags)
     (for*/lists (xs ys dxs dys angles mags) ([x   (in-list xs0)]
                                              [y   (in-list ys0)]
-                                             [dv  (in-value (f x y))] #:when (vregular? dv))
+                                             [dv  (in-value (f x y))] #:when (vrational? dv))
       (match-define (vector dx dy) dv)
       (values x y dx dy (atan2 dy dx) (sqrt (+ (sqr dx) (sqr dy))))))
   
@@ -88,10 +86,8 @@
 (defproc (vector-field
           [f (or/c (real? real? . -> . (vector/c real? real?))
                    ((vector/c real? real?) . -> . (vector/c real? real?)))]
-          [x-min (or/c regular-real? #f) #f]
-          [x-max (or/c regular-real? #f) #f]
-          [y-min (or/c regular-real? #f) #f]
-          [y-max (or/c regular-real? #f) #f]
+          [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+          [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
           [#:samples samples exact-positive-integer? (vector-field-samples)]
           [#:scale scale (or/c real? (one-of/c 'auto 'normalized)) (vector-field-scale)]
           [#:color color plot-color/c (vector-field-color)]
@@ -126,17 +122,15 @@
 
 (defproc (error-bars
           [bars (listof (vector/c real? real? real?))]
-          [#:x-min x-min (or/c regular-real? #f) #f]
-          [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f]
-          [#:y-max y-max (or/c regular-real? #f) #f]
+          [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:color color plot-color/c (error-bar-color)]
           [#:line-width line-width (>=/c 0) (error-bar-line-width)]
           [#:line-style line-style plot-pen-style/c (error-bar-line-style)]
           [#:width width (>=/c 0) (error-bar-width)]
           [#:alpha alpha (real-in 0 1) (error-bar-alpha)]
           ) renderer2d?
-  (let ([bars  (filter vregular? bars)])
+  (let ([bars  (filter vrational? bars)])
     (cond [(empty? bars)  (renderer2d #f #f #f #f)]
           [else
            (match-define (list (vector xs ys hs) ...) bars)

@@ -18,12 +18,9 @@
 
 (defproc (points3d
           [vs  (listof (vector/c real? real? real?))]
-          [#:x-min x-min (or/c regular-real? #f) #f]
-          [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f]
-          [#:y-max y-max (or/c regular-real? #f) #f]
-          [#:z-min z-min (or/c regular-real? #f) #f]
-          [#:z-max z-max (or/c regular-real? #f) #f]
+          [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+          [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
           [#:sym sym point-sym/c (point-sym)]
           [#:color color plot-color/c (point-color)]
           [#:size size (>=/c 0) (point-size)]
@@ -31,7 +28,7 @@
           [#:alpha alpha (real-in 0 1) (point-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (let ([vs  (filter vregular? vs)])
+  (let ([vs  (filter vrational? vs)])
     (cond [(empty? vs)  (renderer3d #f #f #f #f)]
           [else
            (match-define (list (vector xs ys zs) ...) vs)
@@ -59,7 +56,7 @@
     (for*/lists (vs dxs dys dzs norms mags) ([x   (in-list xs0)]
                                                    [y   (in-list ys0)]
                                                    [z   (in-list zs0)]
-                                                   [dv  (in-value (f x y z))] #:when (vregular? dv))
+                                                   [dv  (in-value (f x y z))] #:when (vrational? dv))
       (match-define (vector dx dy dz) dv)
       (values (vector x y z) dx dy dz (vnormalize dv) (vmag dv))))
   
@@ -94,12 +91,9 @@
 (defproc (vector-field3d
           [f (or/c (real? real? real? . -> . (vector/c real? real? real?))
                    ((vector/c real? real? real?) . -> . (vector/c real? real? real?)))]
-          [x-min (or/c regular-real? #f) #f]
-          [x-max (or/c regular-real? #f) #f]
-          [y-min (or/c regular-real? #f) #f]
-          [y-max (or/c regular-real? #f) #f]
-          [z-min (or/c regular-real? #f) #f]
-          [z-max (or/c regular-real? #f) #f]
+          [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
+          [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
+          [z-min (or/c rational? #f) #f] [z-max (or/c rational? #f) #f]
           [#:samples samples exact-positive-integer? ( vector-field3d-samples)]
           [#:scale scale (or/c real? (one-of/c 'auto 'normalized)) (vector-field-scale)]
           [#:color color plot-color/c (vector-field-color)]

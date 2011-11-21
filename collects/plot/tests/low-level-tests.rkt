@@ -98,8 +98,8 @@
 ;; ===================================================================================================
 ;; Intervals
 
-(check-false (ivl-regular? (ivl #f #f)))
-(check-false (ivl-regular? (ivl +nan.0 +nan.0)))
+(check-false (ivl-rational? (ivl #f #f)))
+(check-false (ivl-rational? (ivl +nan.0 +nan.0)))
 
 (check-true (ivl-empty? (ivl-meet empty-ivl (ivl 0 3))))
 

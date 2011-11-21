@@ -146,10 +146,10 @@
 
 (defproc (ivl->string [i ivl?] [extra-digits exact-integer? 3]) string?
   (match-define (ivl a b) i)
-  (cond [(and (not (regular-real? a)) (not (regular-real? b)))
+  (cond [(and (not (rational? a)) (not (rational? b)))
          (format "[~a,~a]" (format-special a) (format-special b))]
-        [(not (regular-real? a))  (format "[~a,~a]" (format-special a) (real->plot-label b 15))]
-        [(not (regular-real? b))  (format "[~a,~a]" (real->plot-label a 15) (format-special b))]
+        [(not (rational? a))  (format "[~a,~a]" (format-special a) (real->plot-label b 15))]
+        [(not (rational? b))  (format "[~a,~a]" (real->plot-label a 15) (format-special b))]
         [else
          (define digits (digits-for-range a b extra-digits))
          (format "[~a,~a]"

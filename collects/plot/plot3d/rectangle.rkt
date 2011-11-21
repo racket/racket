@@ -25,9 +25,9 @@
 
 (defproc (rectangles3d
           [rects  (listof (vector/c ivl? ivl? ivl?))]
-          [#:x-min x-min (or/c regular-real? #f) #f] [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) #f] [#:y-max y-max (or/c regular-real? #f) #f]
-          [#:z-min z-min (or/c regular-real? #f) #f] [#:z-max z-max (or/c regular-real? #f) #f]
+          [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+          [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
           [#:color color plot-color/c (rectangle-color)]
           [#:style style plot-brush-style/c (rectangle-style)]
           [#:line-color line-color plot-color/c (rectangle-line-color)]
@@ -37,9 +37,9 @@
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
   (match-define (list (vector (ivl x1s x2s) (ivl y1s y2s) (ivl z1s z2s)) ...) rects)
-  (define rxs (filter regular-real? (append x1s x2s)))
-  (define rys (filter regular-real? (append y1s y2s)))
-  (define rzs (filter regular-real? (append z1s z2s)))
+  (define rxs (filter rational? (append x1s x2s)))
+  (define rys (filter rational? (append y1s y2s)))
+  (define rzs (filter rational? (append z1s z2s)))
   (cond
     [(or (empty? rxs) (empty? rys) (empty? rzs))  (renderer3d #f #f #f #f)]
     [else
@@ -78,9 +78,9 @@
 
 (defproc (discrete-histogram3d
           [cat-vals (listof (vector/c any/c any/c (or/c real? ivl? #f)))]
-          [#:x-min x-min (or/c regular-real? #f) 0] [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) 0] [#:y-max y-max (or/c regular-real? #f) #f]
-          [#:z-min z-min (or/c regular-real? #f) 0] [#:z-max z-max (or/c regular-real? #f) #f]
+          [#:x-min x-min (or/c rational? #f) 0] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) 0] [#:y-max y-max (or/c rational? #f) #f]
+          [#:z-min z-min (or/c rational? #f) 0] [#:z-max z-max (or/c rational? #f) #f]
           [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
           [#:color color plot-color/c (rectangle-color)]
           [#:style style plot-brush-style/c (rectangle-style)]
@@ -93,10 +93,10 @@
           [#:y-far-ticks? y-far-ticks? boolean? #f]
           ) renderer3d?
   (match-define (list (vector cat1s cat2s zs) ...) cat-vals)
-  (define rzs (filter regular-real? (append* (for/list ([z  (in-list zs)])
-                                               (match z
-                                                 [(ivl z1 z2)  (list z1 z2)]
-                                                 [_            (list z)])))))
+  (define rzs (filter rational? (append* (for/list ([z  (in-list zs)])
+                                           (match z
+                                             [(ivl z1 z2)  (list z1 z2)]
+                                             [_            (list z)])))))
   (cond
     [(empty? rzs)  (renderer3d #f #f #f #f)]
     [else
@@ -137,9 +137,9 @@
 
 (defproc (stacked-histogram3d
           [cat-vals (listof (vector/c any/c any/c (listof real?)))]
-          [#:x-min x-min (or/c regular-real? #f) 0] [#:x-max x-max (or/c regular-real? #f) #f]
-          [#:y-min y-min (or/c regular-real? #f) 0] [#:y-max y-max (or/c regular-real? #f) #f]
-          [#:z-min z-min (or/c regular-real? #f) 0] [#:z-max z-max (or/c regular-real? #f) #f]
+          [#:x-min x-min (or/c rational? #f) 0] [#:x-max x-max (or/c rational? #f) #f]
+          [#:y-min y-min (or/c rational? #f) 0] [#:y-max y-max (or/c rational? #f) #f]
+          [#:z-min z-min (or/c rational? #f) 0] [#:z-max z-max (or/c rational? #f) #f]
           [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
           [#:colors colors (plot-colors/c nat/c) (stacked-histogram-colors)]
           [#:styles styles (plot-brush-styles/c nat/c) (stacked-histogram-styles)]

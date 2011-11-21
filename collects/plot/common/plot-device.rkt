@@ -254,12 +254,12 @@
       (send dc set-alpha old-alpha))
     
     (define/public (draw-point v)
-      (when (vregular? v)
+      (when (vrational? v)
         (match-define (vector x y) v)
         (send dc draw-point x y)))
     
     (define/public (draw-polygon vs)
-      (when (andmap vregular? vs)
+      (when (andmap vrational? vs)
         (let ([vs  (map coord->cons vs)])
           (cond [(eq? pen-style 'transparent)
                  (send dc set-smoothing 'unsmoothed)
@@ -275,22 +275,22 @@
                  (draw-lines/pen-style dc (cons (last vs) vs) pen-style)]))))
     
     (define/public (draw-rect r)
-      (when (rect-regular? r)
+      (when (rect-rational? r)
         (match-define (vector (ivl x1 x2) (ivl y1 y2)) r)
         (draw-polygon (list (vector x1 y1) (vector x1 y2) (vector x2 y2) (vector x2 y1)))))
     
     (define/public (draw-lines vs)
-      (when (andmap vregular? vs)
+      (when (andmap vrational? vs)
         (draw-lines/pen-style dc (map coord->cons vs) pen-style)))
     
     (define/public (draw-line v1 v2)
-      (when (and (vregular? v1) (vregular? v2))
+      (when (and (vrational? v1) (vrational? v2))
         (match-define (vector x1 y1) v1)
         (match-define (vector x2 y2) v2)
         (draw-line/pen-style dc x1 y1 x2 y2 pen-style)))
     
     (define/public (draw-text str v [anchor 'top-left] [angle 0] #:outline? [outline? #f])
-      (when (vregular? v)
+      (when (vrational? v)
         (match-define (vector x y) v)
         
         (when outline?
@@ -309,14 +309,14 @@
         (draw-text/anchor dc str x y anchor #t 0 angle)))
     
     (define/public (get-text-corners str v [anchor 'top-left] [angle 0])
-      (cond [(vregular? v)
+      (cond [(vrational? v)
              (match-define (vector x y) v)
              (map (λ (v) (vector-map inexact->exact v))
                   (get-text-corners/anchor dc str x y anchor #t 0 angle))]
             [else  empty]))
     
     (define/public (draw-arrow v1 v2)
-      (when (and (vregular? v1) (vregular? v2))
+      (when (and (vrational? v1) (vrational? v2))
         (match-define (vector x1 y1) v1)
         (match-define (vector x2 y2) v2)
         (define dx (- x2 x1))
@@ -337,14 +337,14 @@
     ;; Glyph (point sym) primitives
     
     (define/public ((make-draw-circle-glyph r) v)
-      (when (vregular? v)
+      (when (vrational? v)
         (match-define (vector x y) v)
         (send dc draw-ellipse (- x r -1/2) (- y r -1/2) (* 2 r) (* 2 r))))
     
     (define/public (make-draw-polygon-glyph r sides start-angle)
       (define angles (linear-seq start-angle (+ start-angle (* 2 pi)) (+ 1 sides)))
       (λ (v)
-        (when (vregular? v)
+        (when (vrational? v)
           (match-define (vector x y) v)
           (send dc draw-polygon (map (λ (a) (cons (+ x (* (cos a) r)) (+ y (* (sin a) r))))
                                      angles)))))
@@ -352,7 +352,7 @@
     (define/public (make-draw-star-glyph r sides start-angle)
       (define angles (linear-seq start-angle (+ start-angle (* 2 pi)) (+ 1 (* 2 sides))))
       (λ (v)
-        (when (vregular? v)
+        (when (vrational? v)
           (match-define (vector x y) v)
           (define pts
             (for/list ([a  (in-list angles)] [i  (in-naturals)])
@@ -366,7 +366,7 @@
       (define step (/ (* 2 pi) sticks))
       (define angles (build-list sticks (λ (n) (+ start-angle (* n step)))))
       (λ (v)
-        (when (vregular? v)
+        (when (vrational? v)
           (match-define (vector x y) v)
           (for ([a  (in-list angles)])
             (send dc draw-line x y (+ x (* (cos a) r)) (+ y (* (sin a) r)))))))
@@ -381,7 +381,7 @@
       (define dx (* (cos angle) r))
       (define dy (* (sin angle) r))
       (λ (v)
-        (when (vregular? v)
+        (when (vrational? v)
           (match-define (vector x y) v)
           (send dc draw-line (- x dx) (- y dy) (+ x dx) (+ y dy)))))
     
@@ -398,7 +398,7 @@
       (define dx2 (* (cos (- angle head-angle)) head-r))
       (define dy2 (* (sin (- angle head-angle)) head-r))
       (λ (v)
-        (when (vregular? v)
+        (when (vrational? v)
           (match-define (vector x y) v)
           (define head-x (+ x dx))
           (define head-y (+ y dy))
@@ -416,7 +416,7 @@
       (define dx (* 1/2 x-size))
       (define dy (* 1/2 y-size))
       (λ (v)
-        (when (vregular? v)
+        (when (vrational? v)
           (match-define (vector x y) v)
           (send dc draw-text str (- x dx) (- y dy) #t))))
     

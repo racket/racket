@@ -6,6 +6,8 @@
 
 @declare-exporting[plot/utils]
 
+The following API is provided by @racketmodname[plot/utils].
+
 @section{Plot Elements}
 
 @defstruct[plot-element ([bounds-rect  (or/c (vectorof ivl?) #f)]
@@ -13,7 +15,7 @@
                          [ticks-fun    (or/c ticks-fun/c #f)])]{
 }
 
-@defstruct[(non-renderer plot-element) ()]{
+@defstruct[(nonrenderer plot-element) ()]{
 Examples: @racket[x-ticks], @racket[y-ticks], @racket[z-ticks], @racket[invisible-rect] and @racket[invisible-rect3d]
 }
 
@@ -49,6 +51,37 @@ Examples: @racket[x-ticks], @racket[y-ticks], @racket[z-ticks], @racket[invisibl
                                                            . -> . (treeof legend-entry?))
                                                           #f)])]{
 }
+
+
+@section{Memoized Function Samplers}
+
+@defstruct[sample ([xs (listof real?)]
+                   [ys (listof real?)]
+                   [y-min (or/c rational? #f)]
+                   [y-max (or/c rational? #f)])]{
+}
+
+@defstruct[2d-sample ([xs (listof real?)]
+                      [ys (listof real?)]
+                      [zss (vectorof (vectorof real?))]
+                      [z-min (or/c rational? #f)]
+                      [z-max (or/c rational? #f)])]{
+}
+
+@defstruct[3d-sample ([xs (listof real?)]
+                      [ys (listof real?)]
+                      [zs (listof real?)]
+                      [dsss (vectorof (vectorof (vectorof real?)))]
+                      [d-min (or/c rational? #f)]
+                      [d-max (or/c rational? #f)])]{
+}
+
+@doc-apply[sampler/c]
+
+@doc-apply[2d-sampler/c]
+
+@doc-apply[3d-sampler/c]
+
 
 @section{Legend Entries}
 

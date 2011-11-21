@@ -96,7 +96,7 @@
                  (λ ()
                    (define xs (nonlinear-seq x-min x-max x-samples tx))
                    (define ys (map* f xs))
-                   (define rys (filter regular-real? ys))
+                   (define rys (filter rational? ys))
                    (define-values (y-min y-max)
                      (cond [(empty? rys)  (values #f #f)]
                            [else  (values (apply min* rys) (apply max* rys))]))
@@ -121,7 +121,7 @@
                    (define zss (for/vector #:length y-samples ([y  (in-list ys)])
                                  (for/vector #:length x-samples ([x  (in-list xs)])
                                    (let ([z  (f x y)])
-                                     (when (regular-real? z)
+                                     (when (rational? z)
                                        (unless (and z-min (z . >= . z-min)) (set! z-min z))
                                        (unless (and z-max (z . <= . z-max)) (set! z-max z)))
                                      z))))
@@ -152,7 +152,7 @@
                                   (for/vector #:length y-samples ([y  (in-list ys)])
                                     (for/vector #:length x-samples ([x  (in-list xs)])
                                       (let ([d  (f x y z)])
-                                        (when (regular-real? d)
+                                        (when (rational? d)
                                           (unless (and d-min (d . >= . d-min)) (set! d-min d))
                                           (unless (and d-max (d . <= . d-max)) (set! d-max d)))
                                         d)))))
@@ -227,22 +227,22 @@
                    (exact->inexact d))))
              d-min d-max))
 
-(defproc (flonum-ok-for-2d? [x-min regular-real?] [x-max regular-real?]
-                            [y-min regular-real?] [y-max regular-real?]) boolean?
+(defproc (flonum-ok-for-2d? [x-min rational?] [x-max rational?]
+                            [y-min rational?] [y-max rational?]) boolean?
   (and (flonum-ok-for-range? x-min x-max 10000)
        (flonum-ok-for-range? y-min y-max 10000)))
 
-(defproc (flonum-ok-for-3d? [x-min regular-real?] [x-max regular-real?]
-                            [y-min regular-real?] [y-max regular-real?]
-                            [z-min regular-real?] [z-max regular-real?]) boolean?
+(defproc (flonum-ok-for-3d? [x-min rational?] [x-max rational?]
+                            [y-min rational?] [y-max rational?]
+                            [z-min rational?] [z-max rational?]) boolean?
   (and (flonum-ok-for-range? x-min x-max 10000)
        (flonum-ok-for-range? y-min y-max 10000)
        (flonum-ok-for-range? z-min z-max 10000)))
 
-(defproc (flonum-ok-for-4d? [x-min regular-real?] [x-max regular-real?]
-                            [y-min regular-real?] [y-max regular-real?]
-                            [z-min regular-real?] [z-max regular-real?]
-                            [d-min regular-real?] [d-max regular-real?]) boolean?
+(defproc (flonum-ok-for-4d? [x-min rational?] [x-max rational?]
+                            [y-min rational?] [y-max rational?]
+                            [z-min rational?] [z-max rational?]
+                            [d-min rational?] [d-max rational?]) boolean?
   (and (flonum-ok-for-range? x-min x-max 10000)
        (flonum-ok-for-range? y-min y-max 10000)
        (flonum-ok-for-range? z-min z-max 10000)
