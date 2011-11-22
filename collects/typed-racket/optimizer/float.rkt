@@ -158,11 +158,33 @@
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
   (pattern (#%plain-app (~var op (float-op binary-float-comps))
                         f1:float-expr
+                        f2:float-expr)
+           #:with opt
+           (begin (log-optimization "binary float comp" float-opt-msg this-syntax)
+                  #'(op.unsafe f1.opt f2.opt)))
+  (pattern (#%plain-app (~var op (float-op binary-float-comps))
+                        f1:float-expr
                         f2:float-expr
                         fs:float-expr ...)
            #:with opt
-           (begin (log-optimization "binary float comp" float-opt-msg this-syntax)
-                  (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
+           (begin (log-optimization "multi float comp" float-opt-msg this-syntax)
+                  ;; First, generate temps to bind the result of each f2 fs ...
+                  ;; to avoid computing them multiple times.
+                  (define lifted (map (lambda (x) (unboxed-gensym)) (syntax->list #'(f2 fs ...))))
+                  ;; Second, build the list ((op f1 tmp2) (op tmp2 tmp3) ...)
+                  (define tests
+                    (let loop ([res  (list #`(op.unsafe f1.opt #,(car lifted)))]
+                               [prev (car lifted)]
+                               [l    (cdr lifted)])
+                      (cond [(null? l) (reverse res)]
+                            [else (loop (cons #`(op.unsafe #,prev #,(car l)) res)
+                                        (car l)
+                                        (cdr l))])))
+                  ;; Finally, build the whole thing.
+                  #`(let #,(for/list ([lhs (in-list lifted)]
+                                      [rhs (in-list (syntax->list #'(f2.opt fs.opt ...)))])
+                             #`(#,lhs #,rhs))
+                      (and #,@tests))))
 
   (pattern (#%plain-app (~and op (~literal -)) f:float-expr)
            #:with opt
