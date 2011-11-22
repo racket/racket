@@ -1608,6 +1608,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/fannkuch-redux.rkt" drdr:command-line (racket "-t" * "--" "4")
 "collects/tests/racket/benchmarks/shootout/fannkuch.rkt" drdr:command-line (racket "-t" * "--" "4")
 "collects/tests/racket/benchmarks/shootout/fasta.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/fasta-new.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/hash.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/hash2.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/mandelbrot-futures.rkt" drdr:command-line (racket "-t" * "--" "15")
@@ -1629,6 +1630,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/run.rkt" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/spectralnorm-generic.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/spectralnorm.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/spectralnorm-par.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/spellcheck.rkt" drdr:command-line (mzc *)
 "collects/tests/racket/benchmarks/shootout/strcat.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/thread-ring.rkt" drdr:command-line (racket "-t" * "--" "25")
