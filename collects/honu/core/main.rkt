@@ -72,6 +72,8 @@
                        true false
                        withSyntax
                        mergeSyntax
+                       #%top
+                       #%datum
                        ))))
 
 (require "private/honu-typed-scheme.rkt")
@@ -80,7 +82,5 @@
 (standard-honu 1)
 (standard-honu 0)
 
-(provide #%top
-         #%datum
-         (rename-out [#%dynamic-honu-module-begin #%module-begin]
+(provide (rename-out [#%dynamic-honu-module-begin #%module-begin]
                      [honu-top-interaction #%top-interaction]))
