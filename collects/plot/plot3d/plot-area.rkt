@@ -247,23 +247,29 @@
               (vector x y (pre-tick-value t2))))
     
     (define x-ticks
-      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max))
+                              (map tick-inexact->exact rx-ticks))
                       (x-ticks-near? x-axis-y)))
     (define y-ticks
-      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max))
+                              (map tick-inexact->exact ry-ticks))
                       (y-ticks-near? y-axis-x)))
     (define z-ticks
-      (collapse-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max)) rz-ticks)
+      (collapse-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max))
+                              (map tick-inexact->exact rz-ticks))
                       (z-ticks-near? z-axis-x z-axis-y)))
     
     (define x-far-ticks
-      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max))
+                              (map tick-inexact->exact rx-far-ticks))
                       (x-ticks-near? x-far-axis-y)))
     (define y-far-ticks
-      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max))
+                              (map tick-inexact->exact ry-far-ticks))
                       (y-ticks-near? y-far-axis-x)))
     (define z-far-ticks
-      (collapse-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max)) rz-far-ticks)
+      (collapse-ticks (filter (λ (t) (<= z-min (pre-tick-value t) z-max))
+                              (map tick-inexact->exact rz-far-ticks))
                       (z-ticks-near? z-far-axis-x z-far-axis-y)))
     
     ;; ===============================================================================================

@@ -83,8 +83,8 @@
       (and (equal? (plot-x-transform) id-transform)
            (equal? (plot-y-transform) id-transform)))
     
-    (match-define (invertible-function fx _) (apply-axis-transform (plot-x-transform) x-min x-max))
-    (match-define (invertible-function fy _) (apply-axis-transform (plot-y-transform) y-min y-max))
+    (match-define (invertible-function fx gx) (apply-axis-transform (plot-x-transform) x-min x-max))
+    (match-define (invertible-function fy gy) (apply-axis-transform (plot-y-transform) y-min y-max))
     
     (define plot->view
       (cond [identity-transforms?  (λ (v) v)]
@@ -135,16 +135,20 @@
               (vector x (pre-tick-value t2))))
     
     (define x-ticks
-      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-ticks)
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max))
+                              (map tick-inexact->exact rx-ticks))
                       (x-tick-near? y-min)))
     (define x-far-ticks
-      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max)) rx-far-ticks)
+      (collapse-ticks (filter (λ (t) (<= x-min (pre-tick-value t) x-max))
+                              (map tick-inexact->exact rx-far-ticks))
                       (x-tick-near? y-max)))
     (define y-ticks
-      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-ticks)
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max))
+                              (map tick-inexact->exact ry-ticks))
                       (y-tick-near? x-min)))
     (define y-far-ticks
-      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max)) ry-far-ticks)
+      (collapse-ticks (filter (λ (t) (<= y-min (pre-tick-value t) y-max))
+                              (map tick-inexact->exact ry-far-ticks))
                       (y-tick-near? x-max)))
     
     ;; ===============================================================================================
@@ -304,6 +308,25 @@
     (define area-x-max (- dc-x-max right))
     (define area-y-min (+ dc-y-min top))
     (define area-y-max (- dc-y-max bottom))
+    
+    (define/public (get-area-bounds-rect)
+      (vector (ivl area-x-min area-x-max) (ivl area-y-min area-y-max)))
+    
+    (define view->plot
+      (cond [identity-transforms?  (λ (v) v)]
+            [else  (λ (v) (match-let ([(vector x y)  v])
+                            (vector (gx x) (gy y))))]))
+    
+    (define dc->view
+      (let ([area-per-view-x  (/ (- area-x-max area-x-min) view-x-size)]
+            [area-per-view-y  (/ (- area-y-max area-y-min) view-y-size)])
+        (λ (v)
+          (match-define (vector x y) v)
+          (vector (+ x-min (/ (- x area-x-min) area-per-view-x))
+                  (+ y-min (/ (- area-y-max y) area-per-view-y))))))
+    
+    (define/public (dc->plot v)
+      (view->plot (dc->view v)))
     
     ;; ===============================================================================================
     ;; Plot decoration

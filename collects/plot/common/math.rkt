@@ -589,6 +589,10 @@
   (for/fold ([res  empty-ivl]) ([i  (in-list is)])
     (ivl-join2 res i)))
 
+(defproc (ivl-translate [i ivl?] [d real?]) ivl?
+  (match-define (ivl a b) i)
+  (ivl (and a (+ a d)) (and b (+ b d))))
+
 (defproc (bounds->intervals [xs (listof real?)]) (listof ivl?)
   (cond [((length xs) . < . 2)  (raise-type-error 'bounds->intervals "list with length >= 2" xs)]
         [else
@@ -650,3 +654,6 @@
 
 (define (rect-join . rs)
   (apply vector-map ivl-join rs))
+
+(defproc (rect-translate [r (vectorof ivl?)] [v (vectorof real?)]) (vectorof ivl?)
+  (vector-map ivl-translate r v))

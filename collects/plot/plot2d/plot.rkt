@@ -15,6 +15,7 @@
          "../common/deprecation-warning.rkt"
          "../common/contract-doc.rkt"
          "../common/format.rkt"
+         "snip.rkt"
          "plot-area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
@@ -150,12 +151,56 @@
                     [#:y-label y-label (or/c string? #f) (plot-y-label)]
                     [#:legend-anchor legend-anchor anchor/c (plot-legend-anchor)]
                     ) (is-a?/c image-snip%)
-  (define bm
-    (plot-bitmap
-     renderer-tree
-     #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:width width #:height height
-     #:title title #:x-label x-label #:y-label y-label #:legend-anchor legend-anchor))
-  (make-object image-snip% bm))
+  (parameterize ([plot-title          title]
+                 [plot-x-label        x-label]
+                 [plot-y-label        y-label]
+                 [plot-legend-anchor  legend-anchor])
+    (define saved-plot-parameters (plot-parameters))
+    (define renderer-list (get-renderer-list renderer-tree))
+    (define bounds-rect (get-bounds-rect renderer-list x-min x-max y-min y-max))
+    
+    (define (make-plot bounds-rect)
+      (define area #f)
+      (define bm
+        (parameterize/group ([plot-parameters  saved-plot-parameters])
+          ((if (plot-animating?) draw-bitmap draw-bitmap/supersampling)
+           (λ (dc)
+             (define-values (x-ticks x-far-ticks y-ticks y-far-ticks)
+               (get-ticks renderer-list bounds-rect))
+             (set! area (make-object 2d-plot-area%
+                          bounds-rect x-ticks x-far-ticks y-ticks y-far-ticks
+                          dc 0 0 width height))
+             
+             (send area start-plot)
+             
+             (define legend-entries
+               (flatten (for/list ([rend  (in-list renderer-list)])
+                          (match-define (renderer2d rend-bounds-rect _bf _tf render-proc) rend)
+                          (send area start-renderer
+                                (if rend-bounds-rect rend-bounds-rect (empty-rect 2)))
+                          (if render-proc (render-proc area) empty))))
+             
+             (send area end-renderers)
+             
+             (when (not (empty? legend-entries))
+               (send area draw-legend legend-entries))
+             
+             (send area end-plot))
+           width height)))
+      
+      (define (area-bounds->plot-bounds rect)
+        (match-define (vector (ivl area-x-min area-x-max) (ivl area-y-min area-y-max)) rect)
+        (match-define (vector x-min y-min) (send area dc->plot (vector area-x-min area-y-min)))
+        (match-define (vector x-max y-max) (send area dc->plot (vector area-x-max area-y-max)))
+        (vector (ivl x-min x-max) (ivl y-min y-max)))
+      
+      (values bm (send area get-area-bounds-rect) area-bounds->plot-bounds))
+    
+    (define-values (bm area-bounds-rect area-bounds->plot-bounds) (make-plot bounds-rect))
+    
+    (make-2d-plot-snip
+     bm saved-plot-parameters
+     make-plot bounds-rect area-bounds-rect area-bounds->plot-bounds)))
 
 ;; Plot to a frame
 (defproc (plot-frame [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]

@@ -22,7 +22,7 @@
   #:property prop:procedure
   (λ (t x-min x-max)
     (match-define (ticks layout format) t)
-    (define ts (layout x-min x-max))
+    (define ts (map pre-tick-inexact->exact (layout x-min x-max)))
     (match-define (list (pre-tick xs majors) ...) ts)
     (map tick xs majors (format x-min x-max ts))))
 
@@ -633,9 +633,11 @@
                      (pre-tick x major?))))
          format))
 
-(defproc (linear-scale [m real?] [b real? 0]) invertible-function? #:document-body
-  (invertible-function (λ (x) (+ (* m x) b))
-                       (λ (y) (/ (- y b) m))))
+(defproc (linear-scale [m rational?] [b rational? 0]) invertible-function? #:document-body
+  (let ([m  (inexact->exact m)]
+        [b  (inexact->exact b)])
+    (invertible-function (λ (x) (+ (* m x) b))
+                         (λ (y) (/ (- y b) m)))))
 
 ;; ===================================================================================================
 ;; Tick utils
@@ -665,3 +667,11 @@
              [(m . = . 0)  (list (collapse-equiv-ticks ts near-format-string))]
              [(m . = . 1)  (filter pre-tick-major? ts)]
              [else  (list (collapse-equiv-ticks (filter pre-tick-major? ts) near-format-string))])))))
+
+(defproc (pre-tick-inexact->exact [t tick?]) tick?
+  (match-define (pre-tick x major?) t)
+  (pre-tick (inexact->exact x) major?))
+
+(defproc (tick-inexact->exact [t tick?]) tick?
+  (match-define (tick x major? label) t)
+  (tick (inexact->exact x) major? label))
