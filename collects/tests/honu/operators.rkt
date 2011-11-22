@@ -1,5 +1,6 @@
 #lang honu
 
+/*
 operator gg 2 'left
   function(left right){
     withSyntax left -> left,
@@ -9,3 +10,4 @@ operator gg 2 'left
   }
 
 3 gg 4 gg 5
+*/
