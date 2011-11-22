@@ -3,6 +3,7 @@ Regexps are `equal?' when they have the same source [byte] string
  and mode
 Numbers, characters, strings, byte strings, and regexps are interned by
  read and datum->syntax
+Added read-intern-literal
 
 Version 5.2.0.3
 Added module-predefined?
