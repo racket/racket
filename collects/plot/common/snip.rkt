@@ -13,7 +13,7 @@
   (class image-snip%
     (init bm)
     (init-field saved-plot-parameters)
-    (inherit set-bitmap get-bitmap)
+    (inherit set-bitmap get-bitmap get-admin)
     
     (super-make-object bm)
     
@@ -82,22 +82,40 @@
         (parameterize/group ([plot-parameters  saved-plot-parameters])
           (draw-message dc x y))))
     
+    (define left-down-admin #f)
+    (define/public (get-left-down-here?)
+      (eq? (get-admin) left-down-admin))
+    
     (send this set-flags (list* 'handles-events 'handles-all-mouse-events (send this get-flags)))
     
     (define/override (on-event dc x y editorx editory evt)
-      (define editor (send (send this get-admin) get-editor))
-      (when (member (send evt get-event-type) '(left-down middle-down right-down))
-        ;; The snip has been given caret ownership by now. But we don't want the snip to own the
-        ;; caret because it'll hog all the mouse move events, keeping the other plot snips from
-        ;; showing messages when the mouse hovers over them. Besides, a plot snip has no selectable
-        ;; text or any other reason to own the caret.
-        ;; This gives ownership to the editor:
-        (send editor set-caret-owner #f))
-      (when (eq? (send evt get-event-type) 'right-down)
-        ;; The 'handles-events flag keeps the editor from handling the right-click event, meaning the
-        ;; pop-up menu won't pop up. So we call the "local" event handler, which would have been
-        ;; called had this snip not trapped events:
-         (send editor on-local-event evt)))
+      (define admin (get-admin))
+      (define editor (send admin get-editor))
+      (case (send evt get-event-type)
+        ;; The editor gives ownership to the snip as soon as the mouse left-clicks on it, before the
+        ;; snip handles any events. On one hand, this is good: it means that mouse movement events are
+        ;; sent to the snip even after the mouse leaves. On the other hand, it's bad: we don't want
+        ;; the snip to *retain* ownership after the button is up, because it'll continue to hog all
+        ;; the mouse movement events, keeping other plot snips from displaying hover messages. Also,
+        ;; a plot snip has no selectable text, focusable controls, or any other reason to own the
+        ;; caret.
+        ;; So on left button up, if the left button went down on this snip, we give ownership to the
+        ;; snip's editor.
+        [(left-down)  (set! left-down-admin admin)]
+        [(left-up)    (when (get-left-down-here?)
+                        (set! left-down-admin #f)
+                        (send editor set-caret-owner #f))]
+        ;; The 'handles-events flag keeps the editor from handling right-click events, so the pop-up
+        ;; menu won't pop up. So we call the editor's "local" event handler, which would have been
+        ;; called had this snip not trapped events.
+        ;; We also don't allow right/middle mouse clicks to transfer caret ownership, ever. We would
+        ;; have similar rules to left-up, but the pop-up menu apparently gets right-up events, not
+        ;; the snip.
+        [(right-down middle-down)  (send editor set-caret-owner #f)
+                                   (send editor on-local-event evt)]
+        ;; Just in case (we don't want these events anyway):
+        [(right-up middle-up)  (send editor on-local-event evt)]
+        ))
     
     (define cross-cursor (make-object cursor% 'cross))
     (define/override (adjust-cursor dc x y editorx editory evt) cross-cursor)

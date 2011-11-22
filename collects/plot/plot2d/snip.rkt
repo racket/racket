@@ -20,7 +20,8 @@
     
     (inherit set-bitmap get-bitmap
              get-saved-plot-parameters
-             refresh set-message reset-message-timeout get-admin)
+             refresh set-message reset-message-timeout
+             get-left-down-here?)
     
     (super-make-object bm saved-plot-parameters)
     
@@ -42,7 +43,6 @@
                   (vector (ivl left-click-x left-drag-x) (ivl left-click-y left-drag-y)))))
     
     (define dragging? #f)
-    (define left-down? #f)  ; only #t if left-down happened on this snip
     
     (define zoom-timer #f)
     (define (set-zoom-timer)
@@ -75,12 +75,10 @@
                       (set! left-drag-x mouse-x)
                       (set! left-drag-y mouse-y)
                       (set! dragging? #f)
-                      (set! left-down? #t)
                       (set-message #f)
                       (set-zoom-timer)]
         [(left-up)    (set! left-drag-x mouse-x)
                       (set! left-drag-y mouse-y)
-                      (set! left-down? #f)
                       (cond [dragging?
                              (set! dragging? #f)
                              (define new-rect (area-bounds->plot-bounds (get-area-bounds-rect)))
@@ -95,7 +93,7 @@
                              (set! plot-bounds-rects (rest plot-bounds-rects))
                              (update-plot new-rect)
                              (set! show-zoom-message? #f)])]
-        [(motion)     (cond [left-down?  ; not event's left-down: only #t if clicked on snip
+        [(motion)     (cond [(get-left-down-here?)  ; not event's left-down: only #t if clicked on snip
                              (when (not (and (= left-drag-x mouse-x)
                                              (= left-drag-y mouse-y)))
                                (set! left-drag-x mouse-x)

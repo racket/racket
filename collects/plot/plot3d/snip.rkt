@@ -26,7 +26,9 @@
     (init bm saved-plot-parameters)
     (init-field make-bm angle altitude)
     
-    (inherit set-bitmap get-bitmap get-saved-plot-parameters set-message reset-message-timeout)
+    (inherit set-bitmap get-bitmap
+             get-saved-plot-parameters set-message reset-message-timeout
+             get-left-down-here?)
     
     (super-make-object bm saved-plot-parameters)
     
@@ -50,10 +52,8 @@
       (define dy (- left-drag-y left-click-y))
       (clamp (+ altitude (* dy degrees-per-pixel)) 0 90))
     
-    (define draw? #t)
-    (define left-down? #f)  ; only #t if left-down happened on this snip
-    
     (define rth (make-render-thread make-bm saved-plot-parameters))
+    (define draw? #t)
     (define update-timer #f)
     
     (define (stop-update-timer)
@@ -104,13 +104,11 @@
                       (set! angle (new-angle))
                       (set! altitude (new-altitude))
                       (set-angles-message angle altitude)
-                      (set! left-down? #t)
                       (set! draw? #t)
                       (start-update-timer)]
-        [(left-up)    (when left-down?
+        [(left-up)    (when (get-left-down-here?)
                         (stop-update-timer)
                         (set! draw? #f)
-                        (set! left-down? #f)
                         (worker-thread-wait rth)
                         (set! left-drag-x mouse-x)
                         (set! left-drag-y mouse-y)
@@ -120,7 +118,7 @@
                         (define new-bm (worker-thread-send rth (draw-command #f angle altitude)))
                         (when (is-a? new-bm bitmap%)
                           (set-bitmap new-bm)))]
-        [(motion)     (cond [left-down?
+        [(motion)     (cond [(get-left-down-here?)
                              (when (not (and (= left-drag-x mouse-x)
                                              (= left-drag-y mouse-y)))
                                (set! left-drag-x mouse-x)
