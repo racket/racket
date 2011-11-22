@@ -4342,6 +4342,7 @@ static void call_on_atomic_timeout(int must)
   Scheme_Kill_Action_Func private_on_kill;
   void *private_kill_data;
   void **private_kill_next;
+  Scheme_On_Atomic_Timeout_Proc oat;
 
   /* Save any state that has to do with the thread blocking or 
      sleeping, in case on_atomic_timeout() runs Racket code. */
@@ -4364,7 +4365,11 @@ static void call_on_atomic_timeout(int must)
   p->block_check = NULL;
   p->block_needs_wakeup = NULL;
 
-  on_atomic_timeout(must);
+  /* When on_atomic_timeout is thread-local, need a
+     local variable so that the function call isn't
+     obscured to xform: */
+  oat = on_atomic_timeout;
+  oat(must);
 
   p->running = running;
   p->sleep_end = sleep_end;
