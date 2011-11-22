@@ -80,4 +80,25 @@
       ;(send dc draw-bitmap-section bm x y 0 0 width height)
       (when message
         (parameterize/group ([plot-parameters  saved-plot-parameters])
-          (draw-message dc x y))))))
+          (draw-message dc x y))))
+    
+    (send this set-flags (list* 'handles-events 'handles-all-mouse-events (send this get-flags)))
+    
+    (define/override (on-event dc x y editorx editory evt)
+      (define editor (send (send this get-admin) get-editor))
+      (when (member (send evt get-event-type) '(left-down middle-down right-down))
+        ;; The snip has been given caret ownership by now. But we don't want the snip to own the
+        ;; caret because it'll hog all the mouse move events, keeping the other plot snips from
+        ;; showing messages when the mouse hovers over them. Besides, a plot snip has no selectable
+        ;; text or any other reason to own the caret.
+        ;; This gives ownership to the editor:
+        (send editor set-caret-owner #f))
+      (when (eq? (send evt get-event-type) 'right-down)
+        ;; The 'handles-events flag keeps the editor from handling the right-click event, meaning the
+        ;; pop-up menu won't pop up. So we call the "local" event handler, which would have been
+        ;; called had this snip not trapped events:
+         (send editor on-local-event evt)))
+    
+    (define cross-cursor (make-object cursor% 'cross))
+    (define/override (adjust-cursor dc x y editorx editory evt) cross-cursor)
+    ))

@@ -1,11 +1,6 @@
 #lang racket
 
-(require racket/flonum
-         plot
-         plot/utils
-         plot/common/contract
-         plot/common/contract-doc
-         )
+(require plot plot/utils)
 
 (x-axis-ticks? #f)
 (y-axis-ticks? #f)

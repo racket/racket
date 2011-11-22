@@ -11,6 +11,7 @@
 (provide 2d-plot-snip% make-2d-plot-snip)
 
 (define zoom-delay 16)  ; about 60 fps (just over)
+(define show-zoom-message? #t)
 
 (define 2d-plot-snip%
   (class plot-snip%
@@ -42,22 +43,19 @@
     
     (define dragging? #f)
     (define left-down? #f)  ; only #t if left-down happened on this snip
-    (define zoom-timer #f)
     
+    (define zoom-timer #f)
     (define (set-zoom-timer)
       (when (not zoom-timer)
-        (set! zoom-timer (make-object timer% (λ ()
-                                               (set! zoom-timer #f)
-                                               (refresh))
+        (set! zoom-timer (make-object timer%
+                           (λ ()
+                             (set! zoom-timer #f)
+                             (refresh))
                            zoom-delay #t))))
     
-    (define zoomed? #f)
-    (define unzoomed? #f)
     (define (set-click-message)
-      (cond [(and zoomed? unzoomed?)  (void)]
-            [zoomed?  (set-message "Click to unzoom once")]
-            [unzoomed?  (set-message "Click and drag to zoom")]
-            [else  (set-message "Click and drag to zoom\n Click to unzoom once")]))
+      (when show-zoom-message?
+        (set-message "Click and drag to zoom\n Click to unzoom once")))
     
     (define (update-plot new-plot-bounds-rect)
       (define-values (new-bm new-area-bounds-rect new-area-bounds->plot-bounds)
@@ -90,14 +88,13 @@
                                     #;(printf "~a: new-plot-bounds-rect = ~v~n"
                                             (current-milliseconds) new-rect)
                                     (set! plot-bounds-rects (cons plot-bounds-rect plot-bounds-rects))
-                                    (update-plot new-rect)
-                                    (set! zoomed? #t)]
+                                    (update-plot new-rect)]
                                    [else  (refresh)])]
                             [(not (empty? plot-bounds-rects))
                              (define new-rect (first plot-bounds-rects))
                              (set! plot-bounds-rects (rest plot-bounds-rects))
                              (update-plot new-rect)
-                             (set! unzoomed? #t)])]
+                             (set! show-zoom-message? #f)])]
         [(motion)     (cond [left-down?  ; not event's left-down: only #t if clicked on snip
                              (when (not (and (= left-drag-x mouse-x)
                                              (= left-drag-y mouse-y)))
@@ -108,7 +105,8 @@
                             [(and (not (send evt get-left-down))
                                   (<= 0 mouse-x (send (get-bitmap) get-width))
                                   (<= 0 mouse-y (send (get-bitmap) get-height)))
-                             (set-click-message)])]))
+                             (set-click-message)])])
+      (super on-event dc x y editorx editory evt))
     
     (define/override (draw dc dc-x-min dc-y-min left top right bottom dx dy draw-caret)
       ;(printf "~a: drawing~n" (current-milliseconds))
@@ -128,7 +126,7 @@
           ;; inside of selection box
           (send pd set-pen select-color 1 'transparent)
           (send pd set-brush select-color 'solid)
-          (send pd set-alpha 1/8)
+          (send pd set-alpha 1/4)
           (send pd draw-rect draw-rect)
           
           ;; border of selection box
@@ -176,11 +174,7 @@
                   'center #:outline? #t))
           
           (send pd restore-drawing-params))))
-    
-    (define cross-cursor (make-object cursor% 'cross))
-    (define/override (adjust-cursor dc x y editorx editory evt) cross-cursor)
-    
-    (send this set-flags (list* 'handles-events 'handles-all-mouse-events (send this get-flags)))))
+    ))
 
 (define (make-2d-plot-snip bm saved-plot-parameters
                            make-plot plot-bounds-rect area-bounds-rect area-bounds->plot-bounds)

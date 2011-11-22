@@ -9,6 +9,7 @@
 (provide 3d-plot-snip% make-3d-plot-snip)
 
 (define update-delay 16)  ; about 60 fps (just over)
+(define show-rotate-message? #t)
 
 (struct draw-command (animating? angle altitude) #:transparent)
 
@@ -51,8 +52,9 @@
     
     (define draw? #t)
     (define left-down? #f)  ; only #t if left-down happened on this snip
-    (define update-timer #f)
+    
     (define rth (make-render-thread make-bm saved-plot-parameters))
+    (define update-timer #f)
     
     (define (stop-update-timer)
       (when update-timer
@@ -85,9 +87,8 @@
                            (number->string (inexact->exact (round altitude))))
                    #:refresh? #f))
     
-    (define rotated? #f)
     (define (set-click-message)
-      (unless rotated?
+      (when show-rotate-message?
         (set-message "Click and drag to rotate")))
     
     (define/override (on-event dc x y editorx editory evt)
@@ -125,16 +126,13 @@
                                (set! left-drag-x mouse-x)
                                (set! left-drag-y mouse-y)
                                (set! draw? #t)
-                               (set! rotated? #t))]
+                               (set! show-rotate-message? #f))]
                             [else (and (not (send evt get-left-down))
                                        (<= 0 mouse-x (send (get-bitmap) get-width))
                                        (<= 0 mouse-y (send (get-bitmap) get-height)))
-                                  (set-click-message)])]))
-    
-    (define cross-cursor (make-object cursor% 'cross))
-    (define/override (adjust-cursor dc x y editorx editory evt) cross-cursor)
-    
-    (send this set-flags (list* 'handles-events 'handles-all-mouse-events (send this get-flags)))))
+                                  (set-click-message)])])
+      (super on-event dc x y editorx editory evt))
+    ))
 
 (define (make-3d-plot-snip bm saved-plot-parameters make-bm angle altitude)
   (make-object 3d-plot-snip% bm saved-plot-parameters make-bm angle altitude))
