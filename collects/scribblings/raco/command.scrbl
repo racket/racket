@@ -14,7 +14,7 @@ specifications, where each specification is a list of four values:
 
 @racketblock[
    (list _command-string
-         _implementationmodule-path
+         _implementation-module-path
          _description-string
          _prominence)
 ]
@@ -23,8 +23,8 @@ The @racket[_command-string] is the command name. Any unambiguous
 prefix of a command name can be supplied to @exec{raco} to invoke the
 command.
 
-The @racket[_module-path] names the implementation though a module
-path (in the sense of @racket[module-path?]). The module is loaded and
+The @racket[_implementation-module-path] names the implementation though a
+module path (in the sense of @racket[module-path?]). The module is loaded and
 invoked through @racket[dynamic-require] to run the command. The
 module can access command-line arguments through the
 @racket[current-command-line-arguments] parameter, which is adjusted
@@ -34,7 +34,7 @@ the command name used to load the command. When @exec{raco help} is
 used on a command, the command is launched with an initial
 @DFlag{help} argument in @racket[current-command-line-arguments].
 
-The @racket[description] string is a short string used to describe the
+The @racket[description-string] is a short string used to describe the
 command in response to @exec{raco help}. The description should not be
 capitalized or end with a period.
 
