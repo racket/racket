@@ -1180,6 +1180,11 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       
       return k;
     }
+  case scheme_regexp_type:
+    {
+      o = scheme_regexp_source(o);
+      break;
+    }
   case scheme_structure_type:
   case scheme_proc_struct_type:
     {
@@ -1604,6 +1609,11 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       }
     
       return k;
+    }
+  case scheme_regexp_type:
+    {
+      o = scheme_regexp_source(o);
+      goto top;
     }
   case scheme_structure_type:
   case scheme_proc_struct_type:

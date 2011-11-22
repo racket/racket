@@ -1661,7 +1661,7 @@ static int thread_val_SIZE(void *p, struct NewGC *gc) {
 
 static int thread_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Thread *pr = (Scheme_Thread *)p;
-  
+
   gcMARK2(pr->next, gc);
   gcMARK2(pr->prev, gc);
 
@@ -1775,7 +1775,7 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
 
 static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Thread *pr = (Scheme_Thread *)p;
-  
+
   gcFIXUP2(pr->next, gc);
   gcFIXUP2(pr->prev, gc);
 

@@ -7367,6 +7367,8 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 
     result = (Scheme_Object *)s;
   } else {
+    if (!wraps)
+      o = scheme_read_intern(o);
     result = o;
   }
 

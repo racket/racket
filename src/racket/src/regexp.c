@@ -5949,6 +5949,11 @@ int scheme_regexp_is_byte(Scheme_Object *re)
   return !(((regexp *)re)->flags & REGEXP_IS_UTF8);
 }
 
+int scheme_regexp_is_pregexp(Scheme_Object *re)
+{
+  return !!(((regexp *)re)->flags & REGEXP_IS_PCRE);
+}
+
 #ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
 #include "mzmark_regexp.inc"

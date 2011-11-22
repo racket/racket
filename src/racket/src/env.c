@@ -56,6 +56,9 @@ READ_ONLY static Scheme_Env    *futures_env;
 THREAD_LOCAL_DECL(static int builtin_ref_counter);
 THREAD_LOCAL_DECL(static int intdef_counter);
 
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *literal_string_table);
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *literal_number_table);
+
 /* local functions */
 static void make_kernel_env(void);
 
@@ -488,6 +491,11 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_futures_per_place();
 
   scheme_init_foreign(env);
+
+  REGISTER_SO(literal_string_table);
+  REGISTER_SO(literal_number_table);
+  literal_string_table = scheme_make_weak_equal_table();
+  literal_number_table = scheme_make_weak_eqv_table();
 
   scheme_starting_up = 1; /* in case it's not set already */
 
@@ -1436,6 +1444,36 @@ const char *scheme_look_for_primitive(void *code)
   }
 
   return NULL;
+}
+
+/*========================================================================*/
+/*                  intern literal strings and numbers                    */
+/*========================================================================*/
+
+Scheme_Object *scheme_intern_literal_string(Scheme_Object *str)
+{
+  Scheme_Bucket *b;
+
+  scheme_start_atomic();
+  b = scheme_bucket_from_table(literal_string_table, (const char *)str);
+  scheme_end_atomic_no_swap();
+  if (!b->val)
+    b->val = scheme_true;
+
+  return(Scheme_Object *)HT_EXTRACT_WEAK(b->key);
+}
+
+Scheme_Object *scheme_intern_literal_number(Scheme_Object *num)
+{
+  Scheme_Bucket *b;
+
+  scheme_start_atomic();
+  b = scheme_bucket_from_table(literal_number_table, (const char *)num);
+  scheme_end_atomic_no_swap();
+  if (!b->val)
+    b->val = scheme_true;
+
+  return(Scheme_Object *)HT_EXTRACT_WEAK(b->key);
 }
 
 /*========================================================================*/

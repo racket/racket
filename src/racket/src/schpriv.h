@@ -692,6 +692,9 @@ struct Scheme_Hash_Tree
 
 #define SCHEME_HASHTR_FLAGS(tr) MZ_OPT_HASH_KEY(&(tr)->iso)
 
+Scheme_Object *scheme_intern_literal_string(Scheme_Object *str);
+Scheme_Object *scheme_intern_literal_number(Scheme_Object *num);
+
 /*========================================================================*/
 /*                              structs                                   */
 /*========================================================================*/
@@ -2121,6 +2124,7 @@ void scheme_install_type_reader(Scheme_Type type, Scheme_Type_Reader f);
 void scheme_install_type_writer(Scheme_Type type, Scheme_Type_Writer f);
 
 Scheme_Object *scheme_make_default_readtable(void);
+Scheme_Object *scheme_read_intern(Scheme_Object *o);
 
 Scheme_Object *_scheme_apply_from_native(Scheme_Object *rator,
 					 int argc,
@@ -3603,6 +3607,7 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i,
                           intptr_t bottom, intptr_t len);
 
 Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
+Scheme_Bucket_Table *scheme_make_weak_eqv_table(void);
 Scheme_Bucket_Table *scheme_make_nonlock_equal_bucket_table(void);
 
 int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2, void *eql);
@@ -3619,6 +3624,7 @@ void scheme_reset_hash_table(Scheme_Hash_Table *ht, int *history);
 
 Scheme_Object *scheme_regexp_source(Scheme_Object *re);
 int scheme_regexp_is_byte(Scheme_Object *re);
+int scheme_regexp_is_pregexp(Scheme_Object *re);
 Scheme_Object *scheme_make_regexp(Scheme_Object *str, int byte, int pcre, int * volatile result_is_err_string);
 int scheme_is_pregexp(Scheme_Object *o);
 void scheme_clear_rx_buffers(void);

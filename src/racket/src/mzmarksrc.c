@@ -640,7 +640,7 @@ syntax_compiler {
 thread_val {
  mark:
   Scheme_Thread *pr = (Scheme_Thread *)p;
-  
+
   gcMARK2(pr->next, gc);
   gcMARK2(pr->prev, gc);
 

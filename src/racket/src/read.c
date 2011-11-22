@@ -312,6 +312,8 @@ static Scheme_Object *readtable_mapping(int argc, Scheme_Object **argv);
 static Scheme_Object *current_readtable(int argc, Scheme_Object **argv);
 static Scheme_Object *current_reader_guard(int argc, Scheme_Object **argv);
 
+static Scheme_Object *read_intern(int argc, Scheme_Object **argv);
+
 /* A list stack is used to speed up the creation of intermediate lists
    during .zo reading. */
 
@@ -498,6 +500,8 @@ void scheme_init_read(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("make-readtable",     make_readtable,     1, -1,      env);
   GLOBAL_FOLDING_PRIM("readtable?",         readtable_p,        1, 1, 1,    env);
   GLOBAL_PRIM_W_ARITY2("readtable-mapping", readtable_mapping,  2, 2, 3, 3, env);
+
+  GLOBAL_NONCM_PRIM("read-intern-literal", read_intern, 1, 1, env);
 
   if (getenv("PLT_DELAY_FROM_ZO")) {
     use_perma_cache = 0;
@@ -1465,6 +1469,8 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 				  (char *)str);
 		  return NULL;
 		}
+
+                str = scheme_intern_literal_string(str);
 
 		if (stxsrc)
 		  str = scheme_make_stx_w_offset(str, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
@@ -3007,8 +3013,10 @@ read_string(int is_byte, Scheme_Object *port,
     s[i] = 0;
     result = scheme_make_immutable_sized_byte_string(s, i, 0);
   }
+  result = scheme_intern_literal_string(result);
   if (stxsrc)
     result =  scheme_make_stx_w_offset(result, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
+
   return result;
 }
 
@@ -3097,9 +3105,11 @@ read_here_string(Scheme_Object *port, Scheme_Object *stxsrc,
 
   str = scheme_make_sized_char_string(s, len, 1);
 
+  str = scheme_intern_literal_string(str);
+  
   if (stxsrc)
     str = scheme_make_stx_w_offset(str, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
-  
+
   return str;
 }
 
@@ -3419,6 +3429,8 @@ read_number_or_symbol(int init_ch, int skip_rt, Scheme_Object *port,
 			   port, NULL, 0,
 			   stxsrc, line, col, pos, SPAN(port, pos),
 			   indentation);
+    if (!SCHEME_INTP(o))
+      o = scheme_intern_literal_number(o);
   }
 
   if (SAME_OBJ(o, scheme_false)) {
@@ -3553,6 +3565,14 @@ static int u_strcmp(mzchar *s, const char *_t)
   return 0;
 }
 
+static Scheme_Object *make_interned_char(int ch)
+{
+  if (ch < 256)
+    return scheme_make_character(ch);
+  else
+    return scheme_intern_literal_number(scheme_make_char(ch));
+}
+
 /* "#\" has been read */
 static Scheme_Object *
 read_character(Scheme_Object *port,
@@ -3591,7 +3611,7 @@ read_character(Scheme_Object *port,
 
     ch = ((ch - '0') << 6) + ((next - '0') << 3) + (last - '0');
 
-    return scheme_make_char(ch);
+    return make_interned_char(ch);
   }
 
   if (((ch == 'u') || (ch == 'U')) && NOT_EOF_OR_SPECIAL(next) && scheme_isxdigit(next)) {
@@ -3691,7 +3711,7 @@ read_character(Scheme_Object *port,
 		    "read: expected a character after #\\");
   }
 
-  return scheme_make_char(ch);
+  return make_interned_char(ch);
 }
 
 /*========================================================================*/
@@ -3798,6 +3818,39 @@ static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
 
     return ph;
   }
+}
+
+/*========================================================================*/
+/*                               intern                                   */
+/*========================================================================*/
+
+static Scheme_Object *read_intern(int argc, Scheme_Object **argv)
+{
+  return scheme_read_intern(argv[0]);
+}
+
+Scheme_Object *scheme_read_intern(Scheme_Object *o)
+{
+  if (!SCHEME_INTP(o) && SCHEME_NUMBERP(o))
+    o = scheme_intern_literal_number(o);
+  else if (SCHEME_CHAR_STRINGP(o)) {
+    if (!SCHEME_IMMUTABLEP(o))
+      o = scheme_make_immutable_sized_char_string(SCHEME_CHAR_STR_VAL(o),
+                                                  SCHEME_CHAR_STRLEN_VAL(o),
+                                                  1);
+    o = scheme_intern_literal_string(o);
+  } else if (SCHEME_BYTE_STRINGP(o)) {
+    if (!SCHEME_IMMUTABLEP(o))
+      o = scheme_make_immutable_sized_byte_string(SCHEME_BYTE_STR_VAL(o),
+                                                  SCHEME_BYTE_STRLEN_VAL(o),
+                                                  1);
+    o = scheme_intern_literal_string(o);
+  } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_regexp_type))
+    o = scheme_intern_literal_string(o);
+  else if (SCHEME_CHARP(o) && (SCHEME_CHAR_VAL(o) >= 256))
+    o = scheme_intern_literal_number(o);
+
+  return o;
 }
 
 /*========================================================================*/
@@ -4289,6 +4342,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       RANGE_CHECK_GETS(l);
       s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
       v = scheme_make_immutable_sized_byte_string(s, l, l < BLK_BUF_SIZE);
+      v = scheme_intern_literal_string(v);
       break;
     case CPT_CHAR_STRING:
       {
@@ -4302,6 +4356,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	scheme_utf8_decode_all((const unsigned char *)s, el, us, 0);
 	us[l] = 0;
 	v = scheme_make_immutable_sized_char_string(us, l, 0);
+        v = scheme_intern_literal_string(v);
       }
       break;
     case CPT_CHAR:

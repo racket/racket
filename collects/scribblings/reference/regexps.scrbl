@@ -35,7 +35,7 @@
 @guideintro["regexp"]{regular expressions}
 
 @deftech{Regular expressions} are specified as strings or byte
-strings, using the same pattern language as the Unix utility
+strings, using the same pattern language as either the Unix utility
 @exec{egrep} or Perl. A string-specified pattern produces a character
 regexp matcher, and a byte-string pattern produces a byte regexp
 matcher. If a character regexp is used with a byte string or input
@@ -50,12 +50,15 @@ regexp value using one syntax of regular expressions that is most
 compatible to @exec{egrep}. The @racket[pregexp] and
 @racket[byte-pregexp] procedures produce a regexp value using a
 slightly different syntax of regular expressions that is more
-compatible with Perl.  In addition, Racket constants written with
-@litchar{#rx} or @litchar{#px} (see @secref["reader"]) produce
-compiled regexp values.
+compatible with Perl.
+
+Two regular expressions are @racket[equal?] if they have the same
+source, use the same pattern language, and are both character regexps
+or both byte regexps.
 
 A literal or printed regular expression starts with @litchar{#rx} or
-@litchar{#px}. @see-read-print["regexp"]{regular expressions}
+@litchar{#px}. @see-read-print["regexp"]{regular expressions} Regular
+expressions produced by the default reader are @tech{interned}.
 
 The internal size of a regexp value is limited to 32 kilobytes; this
 limit roughly corresponds to a source string with 32,000 literal

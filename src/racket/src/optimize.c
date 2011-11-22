@@ -2487,27 +2487,47 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
   return (Scheme_Object *)s;
 }
 
+XFORM_NONGCING static int small_inline_number(Scheme_Object *o)
+{
+  if (SCHEME_BIGNUMP(o))
+    return SCHEME_BIGLEN(o) < 32;
+  else if (SCHEME_COMPLEXP(o))
+    return (small_inline_number(scheme_complex_real_part(o))
+            && small_inline_number(scheme_complex_imaginary_part(o)));
+  else if (SCHEME_RATIONALP(o))
+    return (small_inline_number(scheme_rational_numerator(o))
+            && small_inline_number(scheme_rational_denominator(o)));
+  else
+    return 1;
+}
+
+#define STR_INLINE_LIMIT 256
+
 int scheme_compiled_duplicate_ok(Scheme_Object *fb, int cross_module)
 {
   return (SCHEME_VOIDP(fb)
 	  || SAME_OBJ(fb, scheme_true)
 	  || SCHEME_FALSEP(fb)
-	  || (SCHEME_SYMBOLP(fb) && (!cross_module || !SCHEME_SYM_WEIRDP(fb)))
-	  || SCHEME_KEYWORDP(fb)
+	  || (SCHEME_SYMBOLP(fb) 
+              && (!cross_module || (!SCHEME_SYM_WEIRDP(fb)
+                                    && (SCHEME_SYM_LEN(fb) < STR_INLINE_LIMIT))))
+	  || (SCHEME_KEYWORDP(fb)
+              && (!cross_module || (SCHEME_KEYWORD_LEN(fb) < STR_INLINE_LIMIT)))
 	  || SCHEME_EOFP(fb)
 	  || SCHEME_INTP(fb)
 	  || SCHEME_NULLP(fb)
-	  || (SCHEME_CHARP(fb) && (SCHEME_CHAR_VAL(fb) < 256))
 	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type)
-          || (!cross_module
-              &&
-              /* Values that are hashed by the printer to avoid
-                 duplication: */
-              (SCHEME_CHAR_STRINGP(fb)
-               || SCHEME_BYTE_STRINGP(fb)
-               || SAME_TYPE(SCHEME_TYPE(fb), scheme_regexp_type)
-               || SCHEME_NUMBERP(fb)
-               || SCHEME_PRIMP(fb))));
+          || SCHEME_PRIMP(fb)
+          /* Values that are hashed by the printer and/or interned on 
+             read to avoid duplication: */
+	  || SCHEME_CHARP(fb)
+          || (SCHEME_CHAR_STRINGP(fb) 
+              && (!cross_module || (SCHEME_CHAR_STRLEN_VAL(fb) < STR_INLINE_LIMIT)))
+          || (SCHEME_BYTE_STRINGP(fb)
+              && (!cross_module || (SCHEME_BYTE_STRLEN_VAL(fb) < STR_INLINE_LIMIT)))
+          || SAME_TYPE(SCHEME_TYPE(fb), scheme_regexp_type)
+          || (SCHEME_NUMBERP(fb)
+              && (!cross_module || small_inline_number(fb))));
 }
 
 static int equivalent_exprs(Scheme_Object *a, Scheme_Object *b)

@@ -114,7 +114,10 @@ leaving nested syntax structure (if any) in place.  The result of
 
        @item{an immutable @tech{prefab} structure containing @tech{syntax object}s}
 
-       @item{some other kind of datum---usually a number, boolean, or string}
+       @item{some other kind of datum---usually a number, boolean, or
+             string---that is @tech{interned} when
+             @racket[read-intern-literal] would convert the
+             value}
 
     ]
 
@@ -185,7 +188,8 @@ boxes. For any kind of value other than a
 pair, vector, box, immutable @tech{hash table}, immutable
 @tech{prefab} structure, or @tech{syntax object}, conversion means
 wrapping the value with lexical information, source-location
-information, and properties.
+information, and properties after the value is @tech{interned}
+via @racket[read-intern-literal].
 
 Converted objects in @racket[v] are given the lexical context
 information of @racket[ctxt] and the source-location information of

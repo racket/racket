@@ -328,6 +328,8 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Hash_Table *place_local_symbol_table_;
   struct Scheme_Hash_Table *place_local_keyword_table_;
   struct Scheme_Hash_Table *place_local_parallel_symbol_table_;
+  struct Scheme_Bucket_Table *literal_string_table_;
+  struct Scheme_Bucket_Table *literal_number_table_;
   struct FFI_Sync_Queue *ffi_sync_queue_;
   struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_descs_;
   struct Scheme_Hash_Table *place_local_misc_table_;
@@ -674,6 +676,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define place_local_symbol_table XOA (scheme_get_thread_local_variables()->place_local_symbol_table_)
 #define place_local_keyword_table XOA (scheme_get_thread_local_variables()->place_local_keyword_table_)
 #define place_local_parallel_symbol_table XOA (scheme_get_thread_local_variables()->place_local_parallel_symbol_table_)
+#define literal_string_table XOA (scheme_get_thread_local_variables()->literal_string_table_)
+#define literal_number_table XOA (scheme_get_thread_local_variables()->literal_number_table_)
 #define ffi_sync_queue XOA (scheme_get_thread_local_variables()->ffi_sync_queue_)
 #define gc_prepost_callback_descs XOA (scheme_get_thread_local_variables()->gc_prepost_callback_descs_)
 #define place_local_misc_table XOA (scheme_get_thread_local_variables()->place_local_misc_table_)
