@@ -1,6 +1,7 @@
 ;;; Portable implementation of syntax-case
 ;;; Extracted from Chez Scheme Version 7.3 (Feb 26, 2007)
 ;;; Authors: R. Kent Dybvig, Oscar Waddell, Bob Hieb, Carl Bruggeman
+;;; Modifications to reflect "psyntax.sch": see << >>
 
 ;;; Copyright (c) 1992-2002 Cadence Research Systems
 ;;; Permission to copy this software, in whole or in part, to use this
@@ -1050,7 +1051,7 @@
 ;;; labels
 
 ;;; simple labels must be comparable with "eq?" and distinct from symbols
-;;; and pairs.
+;;; and pairs <<and preserve identity through `eval'>>
 
 ;;; indirect labels, which are implemented as pairs, are used to support
 ;;; import aliasing for identifiers exported (explictly or implicitly) from
@@ -1069,10 +1070,10 @@
   (define set-indirect-label! (lambda (x v) (set-indirect-label-label! x v))))
 
 (define gen-label
-  (lambda () (string #\i)))
+  (let ([n 0]) (lambda () (set! n (+ 1 n)) n))) ; <<changed from (string #\i)>>
 (define label?
   (lambda (x)
-    (or (string? x) ; normal lexical labels
+    (or (number? x) ; normal lexical labels <<changed to number>>
         (symbol? x) ; global labels (symbolic names)
         (indirect-label? x))))
 

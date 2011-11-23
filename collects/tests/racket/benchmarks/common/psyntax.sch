@@ -644,7 +644,7 @@
                                       (set-indirect-label-label!358
                                         x2406
                                         v2405)))
-            (gen-label362 (lambda () (string '#\i)))
+            (gen-label362 (let ([n 0]) (lambda () (set! n (+ 1 n)) n)))
             (label?363 (lambda (x2402)
                          ((lambda (t2403)
                             (if t2403
@@ -654,7 +654,7 @@
                                        t2404
                                        (indirect-label?356 x2402)))
                                   (symbol? x2402))))
-                           (string? x2402))))
+                           (number? x2402))))
             (gen-labels364 (lambda (ls2401)
                              (if (null? ls2401)
                                  '()
@@ -4908,7 +4908,7 @@
                                       e1563
                                       (anti-mark400 w1561)
                                       ae1560)))
-                                (string '#\m)))))
+                                (string #\m)))))
             (chi-body503 (lambda (body1547 outer-form1546 r1545 mr1544
                                   w1543 m?1542)
                            ((lambda (ribcage1548)
