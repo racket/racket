@@ -2,6 +2,7 @@
 @(require "web-server.rkt")
 @(require (for-label web-server/servlet
                      web-server/templates
+                     racket/include
                      racket/promise
                      racket/list
                      xml))
@@ -358,8 +359,8 @@ the template to be unescaped, then create a @racket[cdata] structure:
 
 @section{API Details}
 
-@defform[(include-template path)]{
- Compiles the template at @racket[path] using the @at-reader-ref syntax within the enclosing lexical context.
+@defform[(include-template path-spec)]{
+ Compiles the template at @racket[path-spec] using the @at-reader-ref syntax within the enclosing lexical context. The @racket[path-spec] is the same format used by @racket[include].
 
  Example:
  @racketblock[
