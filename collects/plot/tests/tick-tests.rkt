@@ -185,8 +185,9 @@
    (plot (list (function temp/time-trend 0 180 #:style 'long-dash #:color 3
                          #:label "Trend")
                (lines data #:color 2 #:width 2)
-               (points data #:color 1 #:line-width 2 #:label "Measurement")
-               (map (λ (d) (point-label d #:anchor 'bottom-right))
+               (points data #:color 2 #:line-width 2 #:fill-color 0 #:sym 'fullcircle
+                       #:label "Measurement")
+               (map (λ (d) (point-label d #:anchor 'bottom-right #:point-color 2 #:point-size 7))
                     above-data))
          #:y-min -25 #:x-label "Time" #:y-label "Temp."
          #:title "Temp./Time With Applied Heat (Measurement and Trend)")))

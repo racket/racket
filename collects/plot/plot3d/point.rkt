@@ -8,12 +8,13 @@
 
 ;; ===================================================================================================
 
-(define ((points3d-render-proc vs sym color size line-width alpha label) area)
+(define ((points3d-render-proc vs sym color fill-color size line-width alpha label) area)
   (send area put-alpha alpha)
   (send area put-pen color line-width 'solid)
+  (send area put-brush fill-color 'solid)
   (send area put-glyphs vs sym size)
   
-  (cond [label  (point-legend-entry label sym color size line-width)]
+  (cond [label  (point-legend-entry label sym color fill-color size line-width)]
         [else   empty]))
 
 (defproc (points3d
@@ -23,6 +24,7 @@
           [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
           [#:sym sym point-sym/c (point-sym)]
           [#:color color plot-color/c (point-color)]
+          [#:fill-color fill-color (or/c plot-color/c 'auto) 'auto]
           [#:size size (>=/c 0) (point-size)]
           [#:line-width line-width (>=/c 0) (point-line-width)]
           [#:alpha alpha (real-in 0 1) (point-alpha)]
@@ -38,9 +40,11 @@
                  [y-max  (if y-max y-max (apply max* ys))]
                  [z-min  (if z-min z-min (apply min* zs))]
                  [z-max  (if z-max z-max (apply max* zs))])
-             (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
-                         default-ticks-fun
-                         (points3d-render-proc vs sym color size line-width alpha label)))])))
+             (renderer3d
+              (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f default-ticks-fun
+              (points3d-render-proc vs sym color (cond [(eq? fill-color 'auto)  (->pen-color color)]
+                                                       [else  fill-color])
+                                    size line-width alpha label)))])))
 
 ;; ===================================================================================================
 

@@ -204,7 +204,10 @@
   (match-define (list y-str) ((ticks-format (plot-y-ticks)) y-min y-max (list (pre-tick y #t))))
   (format "(~a,~a)" x-str y-str))
 
-(define ((label-render-proc label v color size family anchor angle point-size alpha) area)
+(define ((label-render-proc label v color size family anchor angle
+                            point-color point-fill-color point-size point-line-width point-sym
+                            alpha)
+         area)
   (let ([label  (if label label (format-coordinate v area))])
     (send area put-alpha alpha)
     ; label
@@ -212,8 +215,9 @@
     (send area put-font size family)
     (send area put-text (string-append " " label " ") v anchor angle (* 1/2 point-size) #:outline? #t)
     ; point
-    (send area put-pen color 1 'solid)
-    (send area put-glyphs (list v) 'fullcircle point-size))
+    (send area put-pen point-color point-line-width 'solid)
+    (send area put-brush point-fill-color 'solid)
+    (send area put-glyphs (list v) point-sym point-size))
   
   empty)
 
@@ -224,12 +228,21 @@
           [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
+          [#:point-color point-color plot-color/c (point-color)]
+          [#:point-fill-color point-fill-color (or/c plot-color/c 'auto) 'auto]
           [#:point-size point-size (>=/c 0) (label-point-size)]
+          [#:point-line-width point-line-width (>=/c 0) (point-line-width)]
+          [#:point-sym point-sym point-sym/c 'fullcircle]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (match-define (vector x y) v)
   (renderer2d (vector (ivl x x) (ivl y y)) #f #f
-              (label-render-proc label v color size family anchor angle point-size alpha)))
+              (label-render-proc
+               label v color size family anchor angle
+               point-color (cond [(eq? point-fill-color 'auto)  (->pen-color point-color)]
+                                 [else  point-fill-color])
+               point-size point-line-width point-sym
+               alpha)))
 
 (defproc (parametric-label
           [f (real? . -> . (vector/c real? real?))]
@@ -239,14 +252,20 @@
           [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
+          [#:point-color point-color plot-color/c (point-color)]
+          [#:point-fill-color point-fill-color (or/c plot-color/c 'auto) 'auto]
           [#:point-size point-size (>=/c 0) (label-point-size)]
+          [#:point-line-width point-line-width (>=/c 0) (point-line-width)]
+          [#:point-sym point-sym point-sym/c 'fullcircle]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (match f
                  [(vector fx fy)  (vector (fx t) (fy t))]
                  [(? procedure?)  (f t)])
                label #:color color #:size size #:family family #:anchor anchor #:angle angle
-               #:point-size point-size #:alpha alpha))
+               #:point-color point-color #:point-fill-color point-fill-color #:point-size point-size
+               #:point-line-width point-line-width #:point-sym point-sym
+               #:alpha alpha))
 
 (defproc (polar-label
           [f (real? . -> . real?)] [θ real?] [label (or/c string? #f) #f]
@@ -255,12 +274,18 @@
           [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
+          [#:point-color point-color plot-color/c (point-color)]
+          [#:point-fill-color point-fill-color (or/c plot-color/c 'auto) 'auto]
           [#:point-size point-size (>=/c 0) (label-point-size)]
+          [#:point-line-width point-line-width (>=/c 0) (point-line-width)]
+          [#:point-sym point-sym point-sym/c 'fullcircle]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (polar->cartesian θ (f θ)) label
                #:color color #:size size #:family family #:anchor anchor #:angle angle
-               #:point-size point-size #:alpha alpha))
+               #:point-color point-color #:point-fill-color point-fill-color #:point-size point-size
+               #:point-line-width point-line-width #:point-sym point-sym
+               #:alpha alpha))
 
 (defproc (function-label
           [f  (real? . -> . real?)] [x real?] [label (or/c string? #f) #f]
@@ -269,12 +294,18 @@
           [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
+          [#:point-color point-color plot-color/c (point-color)]
+          [#:point-fill-color point-fill-color (or/c plot-color/c 'auto) 'auto]
           [#:point-size point-size (>=/c 0) (label-point-size)]
+          [#:point-line-width point-line-width (>=/c 0) (point-line-width)]
+          [#:point-sym point-sym point-sym/c 'fullcircle]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (vector x (f x)) label
                #:color color #:size size #:family family #:anchor anchor #:angle angle
-               #:point-size point-size #:alpha alpha))
+               #:point-color point-color #:point-fill-color point-fill-color #:point-size point-size
+               #:point-line-width point-line-width #:point-sym point-sym
+               #:alpha alpha))
 
 (defproc (inverse-label
           [f  (real? . -> . real?)] [y real?] [label (or/c string? #f) #f]
@@ -283,9 +314,15 @@
           [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
+          [#:point-color point-color plot-color/c (point-color)]
+          [#:point-fill-color point-fill-color (or/c plot-color/c 'auto) 'auto]
           [#:point-size point-size (>=/c 0) (label-point-size)]
+          [#:point-line-width point-line-width (>=/c 0) (point-line-width)]
+          [#:point-sym point-sym point-sym/c 'fullcircle]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
   (point-label (vector (f y) y) label
                #:color color #:size size #:family family #:anchor anchor #:angle angle
-               #:point-size point-size #:alpha alpha))
+               #:point-color point-color #:point-fill-color point-fill-color #:point-size point-size
+               #:point-line-width point-line-width #:point-sym point-sym
+               #:alpha alpha))

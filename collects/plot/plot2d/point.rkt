@@ -11,18 +11,20 @@
 ;; ===================================================================================================
 ;; Points (scatter plots)
 
-(define ((points-render-fun vs sym color size line-width alpha label) area)
+(define ((points-render-fun vs sym color fill-color size line-width alpha label) area)
   (send area put-alpha alpha)
   (send area put-pen color line-width 'solid)
+  (send area put-brush fill-color 'solid)
   (send area put-glyphs vs sym size)
   
-  (if label (point-legend-entry label sym color size line-width) empty))
+  (if label (point-legend-entry label sym color fill-color size line-width) empty))
 
 (defproc (points [vs  (listof (vector/c real? real?))]
                  [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
                  [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                  [#:sym sym point-sym/c (point-sym)]
                  [#:color color plot-color/c (point-color)]
+                 [#:fill-color fill-color (or/c plot-color/c 'auto) 'auto]
                  [#:size size (>=/c 0) (point-size)]
                  [#:line-width line-width (>=/c 0) (point-line-width)]
                  [#:alpha alpha (real-in 0 1) (point-alpha)]
@@ -36,8 +38,11 @@
                    [x-max  (if x-max x-max (apply max* xs))]
                    [y-min  (if y-min y-min (apply min* ys))]
                    [y-max  (if y-max y-max (apply max* ys))])
-               (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
-                           (points-render-fun vs sym color size line-width alpha label)))])))
+               (renderer2d
+                (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+                (points-render-fun vs sym color (cond [(eq? fill-color 'auto)  (->pen-color color)]
+                                                      [else  fill-color])
+                                   size line-width alpha label)))])))
 
 ;; ===================================================================================================
 ;; Vector fields

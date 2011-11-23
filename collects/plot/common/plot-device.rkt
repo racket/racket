@@ -144,15 +144,19 @@
     (define pen-hash (make-hash))
     (define transparent-pen (make-pen% 0 0 0 1 'transparent))
     
+    (define pen-color (->pen-color (plot-foreground)))
+    (define pen-width (plot-line-width))
     (define pen-style 'solid)
     
     ;; Sets the pen, using a hash table to avoid making duplicate objects. At time of writing (and for
     ;; the forseeable future) this is much faster than using a pen-list%, because it doesn't have to
     ;; synchronize access. It's also not thread-safe.
     (define/public (set-pen color width style)
+      (set! pen-color (->pen-color color))
       (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
-        (->pen-color color))
+        pen-color)
       (set! pen-style (->pen-style style))
+      (set! pen-width width)
       (let ([style  (if (eq? style 'transparent) 'transparent 'solid)])
         (send dc set-pen (hash-ref! pen-hash (vector r g b width style)
                                     (λ () (make-pen% r g b width style))))))
@@ -167,10 +171,13 @@
     
     (define brush-hash (make-hash))
     
+    (define brush-color (->brush-color (plot-background)))
+    
     ;; Sets the brush. Same idea as set-pen.
     (define/public (set-brush color style)
+      (set! brush-color (->brush-color color))
       (match-define (list (app real->color-byte r) (app real->color-byte g) (app real->color-byte b))
-        (->brush-color color))
+        brush-color)
       (let ([style  (->brush-style style)])
         (send dc set-brush (hash-ref! brush-hash (vector r g b style)
                                       (λ () (make-brush% r g b style))))))
@@ -429,23 +436,20 @@
     
     (define/public (draw-glyphs vs sym size)
       (let-values ([(real-sym size)  (translate-glyph-sym+size sym size)])
-        (define pen (send dc get-pen))
-        (define color (send pen get-color))
-        (define width (send pen get-width))
-        (define style (send pen get-style))
         (define draw-glyph
           (cond
             [(string? real-sym)  (set-font-size (* 2 size))
-                                 (set-text-foreground color)
+                                 (set-text-foreground pen-color)
                                  (make-draw-text-glyph real-sym)]
             [(symbol? real-sym)
              (define r (* 1/2 size))
              (define line-sym
-               (cond [(hash-has-key? full-glyph-hash real-sym)  (set-pen color width 'transparent)
-                                                                (set-brush color 'solid)
-                                                                (hash-ref full-glyph-hash real-sym)]
-                     [else  (set-pen color width 'solid)
-                            (set-brush color 'transparent)
+               (cond [(hash-has-key? full-glyph-hash real-sym)
+                      (when (eq? pen-color brush-color)
+                        (set-pen pen-color 1 'transparent)
+                        (set-brush brush-color 'solid))
+                      (hash-ref full-glyph-hash real-sym)]
+                     [else  (set-brush brush-color 'transparent)
                             real-sym]))
              (case line-sym
                ; circles
@@ -460,23 +464,23 @@
                [(triangleleft)   (make-draw-polygon-glyph r 3 pi)]
                [(triangleright)  (make-draw-polygon-glyph r 3 0)]
                ; dots
-               [(point pixel dot)  (set-pen color (* 1/2 r) 'solid)
+               [(point pixel dot)  (set-pen pen-color (* 1/2 r) 'solid)
                                    (λ (v) (draw-point v))]
-               [(odot)        (set-pen color 1 'solid)
-                              (mix-draw-glyph (make-draw-circle-glyph (+ width r))
+               [(odot)        (set-pen pen-color 1 'solid)
+                              (mix-draw-glyph (make-draw-circle-glyph (+ pen-width r))
                                               (λ (v) (draw-point v)))]
                ; flares
                [(plus)        (make-draw-flare-glyph r 4 0)]
                [(times)       (make-draw-flare-glyph r 4 (* 1/4 pi))]
                [(5asterisk)   (make-draw-flare-glyph r 5 (* -1/2 pi))]
                [(asterisk)    (make-draw-flare-glyph r 6 (* -1/2 pi))]
-               [(oplus)       (mix-draw-glyph (make-draw-circle-glyph (+ width r))
+               [(oplus)       (mix-draw-glyph (make-draw-circle-glyph (+ pen-width r))
                                               (make-draw-flare-glyph r 4 0))]
-               [(otimes)      (mix-draw-glyph (make-draw-circle-glyph (+ width r))
+               [(otimes)      (mix-draw-glyph (make-draw-circle-glyph (+ pen-width r))
                                               (make-draw-flare-glyph r 4 (* 1/4 pi)))]
-               [(o5asterisk)  (mix-draw-glyph (make-draw-circle-glyph (+ width r))
+               [(o5asterisk)  (mix-draw-glyph (make-draw-circle-glyph (+ pen-width r))
                                               (make-draw-flare-glyph r 5 (* -1/2 pi)))]
-               [(oasterisk)   (mix-draw-glyph (make-draw-circle-glyph (+ width r))
+               [(oasterisk)   (mix-draw-glyph (make-draw-circle-glyph (+ pen-width r))
                                               (make-draw-flare-glyph r 6 (* -1/2 pi)))]
                ; arrows
                [(rightarrow)  (make-draw-arrow-glyph (+ 1 r) 0)]

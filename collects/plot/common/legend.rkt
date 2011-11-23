@@ -159,9 +159,11 @@
 ;; Point legends
 
 (defproc (point-legend-entry [label string?] [sym point-sym/c]
-                             [color plot-color/c] [size (>=/c 0)] [line-width (>=/c 0)]) legend-entry?
+                             [color plot-color/c] [fill-color plot-color/c]
+                             [size (>=/c 0)] [line-width (>=/c 0)]) legend-entry?
   (legend-entry label (λ (pd x-size y-size)
                         (send pd set-pen color line-width 'solid)
+                        (send pd set-brush fill-color 'solid)
                         (send pd set-alpha 1)
                         (send pd draw-glyphs (list (vector (* 1/2 x-size) (* 1/2 y-size))) sym size))))
 
