@@ -197,17 +197,12 @@
 ;; ===================================================================================================
 ;; Labeled points
 
-(define (format-x-coordinate x area)
-  (match-define (vector (ivl x-min x-max) y-ivl) (send area get-bounds-rect))
-  (format "~a" (real->plot-label x (digits-for-range x-min x-max))))
-
-(define (format-y-coordinate y area)
-  (match-define (vector x-ivl (ivl y-min y-max)) (send area get-bounds-rect))
-  (format "~a" (real->plot-label y (digits-for-range y-min y-max))))
-
 (define (format-coordinate v area)
   (match-define (vector x y) v)
-  (format "(~a,~a)" (format-x-coordinate x area) (format-y-coordinate y area)))
+  (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
+  (match-define (list x-str) ((ticks-format (plot-x-ticks)) x-min x-max (list (pre-tick x #t))))
+  (match-define (list y-str) ((ticks-format (plot-y-ticks)) y-min y-max (list (pre-tick y #t))))
+  (format "(~a,~a)" x-str y-str))
 
 (define ((label-render-proc label v color size family anchor angle point-size alpha) area)
   (let ([label  (if label label (format-coordinate v area))])

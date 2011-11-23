@@ -191,3 +191,7 @@
          #:y-min -25 #:x-label "Time" #:y-label "Temp."
          #:title "Temp./Time With Applied Heat (Measurement and Trend)")))
 
+(parameterize ([plot-x-ticks  (fraction-ticks)]
+               [plot-y-ticks  (currency-ticks)])
+  (plot (list (function sin -4 4)
+              (function-label sin 1/3))))
