@@ -21,6 +21,13 @@
     
     (define/public (get-saved-plot-parameters) saved-plot-parameters)
     
+    (define x-mid (* 1/2 (send bm get-width)))
+    (define y-mid (* 1/2 (send bm get-height)))
+    
+    (define/public (set-message-center new-x-mid new-y-mid)
+      (set! x-mid new-x-mid)
+      (set! y-mid new-y-mid))
+    
     (define/public (refresh)
       ;(printf "~a: refresh~n" (current-milliseconds))
       (set-bitmap (get-bitmap)))
@@ -58,14 +65,24 @@
       
       (define box-x-size (apply max line-widths))
       (define box-y-size (+ baseline (* (length lines) (+ char-height baseline))))
-      (define box-x-min (+ dc-x-min (* 1/2 (- width box-x-size))))
-      (define box-y-min (+ dc-y-min (* 1/2 (- height box-y-size))))
-      (define box-x-max (+ box-x-min box-x-size))
-      (define box-y-max (+ box-y-min box-y-size))
+      (define box-x-min (+ dc-x-min (- x-mid (* 1/2 box-x-size))))
+      (define box-x-max (+ dc-x-min (+ x-mid (* 1/2 box-x-size))))
+      (define box-y-min (+ dc-y-min (- y-mid (* 1/2 box-y-size))))
+      (define box-y-max (+ dc-y-min (+ y-mid (* 1/2 box-y-size))))
       
-      (send pd set-alpha 2/3)
+      (define box-rect (vector (ivl box-x-min box-x-max) (ivl box-y-min box-y-max)))
+      
+      ;; inside selection
+      (send pd set-pen (plot-foreground) 1 'transparent)
+      (send pd set-brush (plot-background) 'solid)
+      (send pd set-alpha 1/4)
+      (send pd draw-rect box-rect)
+      
+      ;; selection border
       (send pd set-minor-pen)
-      (send pd draw-rect (vector (ivl box-x-min box-x-max) (ivl box-y-min box-y-max)))
+      (send pd set-brush (plot-background) 'transparent)
+      (send pd set-alpha 3/4)
+      (send pd draw-rect box-rect)
       
       (send pd set-alpha 1)
       (for ([line  (in-list lines)] [i  (in-naturals)])

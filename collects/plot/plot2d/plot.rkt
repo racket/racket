@@ -41,7 +41,7 @@
             (rect-zero-area? plot-bounds-rect))
     (match-define (vector x-ivl y-ivl) plot-bounds-rect)
     (error 'plot "could not determine sensible plot bounds; got x ∈ ~a, y ∈ ~a"
-           (ivl->string x-ivl) (ivl->string y-ivl)))
+           (ivl->plot-label x-ivl) (ivl->plot-label y-ivl)))
   plot-bounds-rect)
 
 (define (get-ticks renderer-list bounds-rect)

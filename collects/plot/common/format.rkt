@@ -51,9 +51,10 @@
 
 ;; Returns the number of fractional digits needed to distinguish numbers [x-min..x-max]
 (defproc (digits-for-range [x-min real?] [x-max real?]
+                           [base (and/c exact-integer? (>=/c 2)) 10]
                            [extra-digits exact-integer? 3]) exact-integer?
   (define range (abs (- x-max x-min)))
-  (+ extra-digits (if (zero? range) 0 (- (floor-log/base 10 range)))))
+  (+ extra-digits (if (zero? range) 0 (- (floor-log/base base range)))))
 
 (define (int-str->e-str str)
   (define n (string-length str))
@@ -144,14 +145,14 @@
     [(-inf.0)  "-inf.0"]
     [else  "<unknown>"]))
 
-(defproc (ivl->string [i ivl?] [extra-digits exact-integer? 3]) string?
+(defproc (ivl->plot-label [i ivl?] [extra-digits exact-integer? 3]) string?
   (match-define (ivl a b) i)
   (cond [(and (not (rational? a)) (not (rational? b)))
          (format "[~a,~a]" (format-special a) (format-special b))]
         [(not (rational? a))  (format "[~a,~a]" (format-special a) (real->plot-label b 15))]
         [(not (rational? b))  (format "[~a,~a]" (real->plot-label a 15) (format-special b))]
         [else
-         (define digits (digits-for-range a b extra-digits))
+         (define digits (digits-for-range a b 10 extra-digits))
          (format "[~a,~a]"
                  (real->plot-label a digits)
                  (real->plot-label b digits))]))
@@ -161,6 +162,7 @@
     (cond [(string? a)   a]
           [(symbol? a)   (symbol->string a)]
           [(real? a)     (real->plot-label a digits)]
+          [(ivl? a)      (ivl->plot-label a)]
           [(list? a)     (string-append "(" (string-join (map loop a) " ") ")")]
           [(cons? a)     (string-append "(" (loop (car a)) " . " (loop (cdr a)) ")")]
           [(boolean? a)  (if a "true" "false")]

@@ -593,16 +593,25 @@
                 (let ([x  (- x w)])
                   (format "~a ~a/~a" w (numerator x) (denominator x)))])]))
 
-(defproc (fraction-ticks-format) ticks-format/c
+(defproc (fraction-ticks-format [#:base base (and/c exact-integer? (>=/c 2)) 10]
+                                [#:divisors divisors (listof exact-positive-integer?) '(1 2 3 4 5)]
+                                ) ticks-format/c
+  (define fracs (remove-duplicates (map (λ (d) (/ d base)) divisors)))
   (λ (x-min x-max ts)
+    (define digits (digits-for-range x-min x-max base (ceiling-log/base base 1000)))
+    (define fracs (remove-duplicates (map (λ (d) (* (/ base d) (expt base (- digits)))) divisors)))
     (for/list ([t  (in-list ts)])
-      (format-fraction (pre-tick-value t)))))
+      (define x (inexact->exact (pre-tick-value t)))
+      (define xs
+        (for/list ([frac  (in-list fracs)])
+          (* frac (round (/ x frac)))))
+      (format-fraction (argmin (λ (y) (abs (- x y))) xs)))))
 
 (defproc (fraction-ticks [#:base base (and/c exact-integer? (>=/c 2)) 10]
                          [#:divisors divisors (listof exact-positive-integer?) '(1 2 3 4 5)]
                          ) ticks? #:document-body
   (ticks (linear-ticks #:base base #:divisors divisors)
-         (fraction-ticks-format)))
+         (fraction-ticks-format #:base base #:divisors divisors)))
 
 ;; ===================================================================================================
 ;; Tick combinators
