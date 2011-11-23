@@ -20,7 +20,7 @@
      (url-port in-url)
      (url-path-absolute? in-url)
      new-path
-     empty
+     #f
      (url-fragment in-url))))
 ;; Eli: if it also removes the query, this it's a bad name, and it's
 ;;   questionable whether it is general enough.  Why not make it into a

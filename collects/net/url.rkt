@@ -76,7 +76,11 @@
             ""))
         (combine-path-strings (url-path-absolute? url) path)
         ;; (if query (sa "?" (uri-encode query)) "")
-        (if (null? query) "" (sa "?" (alist->form-urlencoded query)))
+        (if query
+            (if (null? query)
+                "?"
+                (sa "?" (alist->form-urlencoded query)))
+            "")
         (if fragment (sa "#" (uri-encode fragment)) ""))))
 
 ;; url->default-port : url -> num
@@ -259,7 +263,7 @@
 ;; transliteration of code in rfc 3986, section 5.2.2
 (define (combine-url/relative Base string)
   (let ([R (string->url string)]
-        [T (make-url #f #f #f #f #f '() '() #f)])
+        [T (make-url #f #f #f #f #f '() #f #f)])
     (if (url-scheme R)
       (begin
         (set-url-scheme! T (url-scheme R))
@@ -283,7 +287,7 @@
               (begin
                 (set-url-path-absolute?! T (url-path-absolute? Base))
                 (set-url-path! T (url-path Base))
-                (if (not (null? (url-query R)))
+                (if (url-query R)
                   (set-url-query! T (url-query R))
                   (set-url-query! T (url-query Base))))
               (begin
@@ -485,7 +489,7 @@
               [path     (if win-file?
                           (separate-windows-path-strings path)
                           (separate-path-strings path))]
-              [query    (if query (form-urlencoded->alist query) '())]
+              [query    (if query (form-urlencoded->alist query) #f)]
               [fragment (uri-decode/maybe fragment)])
          (make-url scheme user host port abs? path query fragment))))
    (cdr (or (regexp-match url-rx str)
@@ -574,7 +578,7 @@
                   (if (eq? base 'relative)
                     accum
                     (loop base accum)))])))])
-    (make-url "file" #f "" #f (absolute-path? path) url-path '() #f)))
+    (make-url "file" #f "" #f (absolute-path? path) url-path #f #f)))
 
 (define (url->path url [kind (system-path-convention-type)])
   (file://->path url kind))
