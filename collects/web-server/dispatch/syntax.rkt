@@ -16,7 +16,7 @@
                  (list (make-path/param "" empty))
                  (map (lambda (s) (make-path/param s empty))
                       strlist))
-             #f #f)))
+             empty #f)))
 
 (define-syntax (dispatch-case stx)
   (syntax-case stx (else)

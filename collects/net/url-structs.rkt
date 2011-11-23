@@ -13,7 +13,7 @@
               [port (or/c false/c number?)]
               [path-absolute? boolean?]
               [path (listof path/param?)]
-              [query (or/c false/c (listof (cons/c symbol? (or/c string? false/c))))]
+              [query (listof (cons/c symbol? (or/c string? false/c)))]
               [fragment (or/c false/c string?)]))
  (struct path/param ([path (or/c string? (symbols 'up 'same))]
                      [param (listof string?)])))

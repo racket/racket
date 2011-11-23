@@ -177,7 +177,7 @@
                                    (make-binding:form (string->bytes/utf-8 (symbol->string k))
                                                       (string->bytes/utf-8 v))
                                    #f)])
-                            (or (url-query uri) empty))))
+                            (url-query uri))))
              #f)]
     [(bytes-ci=? #"POST" meth)
      (local

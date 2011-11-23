@@ -8,7 +8,7 @@
   (let* ([uri (request-uri req)]
          [qry (url-query uri)])
     (cond
-      [(and qry (assoc 'second qry))
+      [(assoc 'second qry)
        => (lambda (a-pair)
             (response/xexpr
              `(html (head (title "Answer Page"))
@@ -17,7 +17,7 @@
                      (p ,(format "The answer is: ~a"
                                  (+ (string->number (cdr a-pair))
                                     (string->number (cdr (assoc 'first qry))))))))))]
-      [(and qry (assoc 'first qry))
+      [(assoc 'first qry)
        => (lambda (a-pair)
             (response/xexpr
              `(html (head (title "Second Page"))
