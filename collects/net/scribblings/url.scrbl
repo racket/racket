@@ -38,7 +38,7 @@ re-exported by @racketmodname[net/url].}
                 [port (or/c false/c exact-nonnegative-integer?)]
                 [path-absolute? boolean?]
                 [path (listof path/param?)]
-                [query (or/c false/c (listof (cons/c symbol? (or/c false/c string?))))]
+                [query (listof (cons/c symbol? (or/c false/c string?)))]
                 [fragment (or/c false/c string?)])]{
 
 The basic structure for all URLs, which is explained in RFC 3986
