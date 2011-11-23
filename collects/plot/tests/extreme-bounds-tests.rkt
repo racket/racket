@@ -6,11 +6,7 @@
 (plot-y-label #f)
 
 (define stops (list (* 2 (inexact->exact -max.0))
-                    (inexact->exact -max.0)
-                    (inexact->exact -min.0)
-                    0
-                    (inexact->exact +min.0)
-                    (inexact->exact +max.0)
+                    -max.0 -min.0 0 +min.0 +max.0
                     (* 2 (inexact->exact +max.0))))
 
 (define (extreme-real->string x)
@@ -27,7 +23,8 @@
     (list (format "[~a,~a] × [~a,~a]"
                   (extreme-real->string x-min) (extreme-real->string x-max)
                   (extreme-real->string y-min) (extreme-real->string y-max))
-          (time (plot (lines (list (vector x-min y-min) (vector x-max y-max)))))))
+          (time (plot (lines (list (vector (inexact->exact x-min) (inexact->exact y-min))
+                                   (vector (inexact->exact x-max) (inexact->exact y-max))))))))
    (set! num-2d (+ 1 num-2d))))
 
 (printf "Total 2D plots: ~a~n" num-2d)
@@ -49,7 +46,12 @@
                   (extreme-real->string x-min) (extreme-real->string x-max)
                   (extreme-real->string y-min) (extreme-real->string y-max)
                   (extreme-real->string z-min) (extreme-real->string z-max))
-          (time (plot3d (lines3d (list (vector x-min y-min z-min) (vector x-max y-max z-max)))))))
+          (time (plot3d (lines3d (list (vector (inexact->exact x-min)
+                                               (inexact->exact y-min)
+                                               (inexact->exact z-min))
+                                       (vector (inexact->exact x-max)
+                                               (inexact->exact y-max)
+                                               (inexact->exact z-max))))))))
    (set! num-3d (+ 1 num-3d))))
 
 (printf "Total plots: ~a~n" num-3d)

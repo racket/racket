@@ -428,8 +428,9 @@
                                             clip-y-min clip-y-max))
                        (in-value vs))])
           (when (not (empty? vs))
-            (let ([vs  (if identity-transforms? vs (subdivide-lines plot->dc vs))])
-              (send pd draw-lines (map (λ (v) (plot->dc v)) vs)))))))
+            (let* ([vs  (if identity-transforms? vs (subdivide-lines plot->dc vs))]
+                   [vs  (map (λ (v) (plot->dc v)) vs)])
+              (send pd draw-lines vs))))))
     
     (define/public (put-line v1 v2)
       (when (and (vrational? v1) (vrational? v2))

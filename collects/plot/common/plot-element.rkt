@@ -129,7 +129,5 @@
                                (rect-meet bounds-rect (rect-inexact->exact elem-bounds-rect))
                                bounds-rect)])
     (if elem-bounds-fun
-        (let ([new-elem-bounds-rect  (elem-bounds-fun elem-bounds-rect)])
-          ;(printf "new-elem-bounds-rect = ~v~n" new-elem-bounds-rect)
-          (rect-inexact->exact new-elem-bounds-rect))
+        (rect-inexact->exact (elem-bounds-fun elem-bounds-rect))
         elem-bounds-rect)))
