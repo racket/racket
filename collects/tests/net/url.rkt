@@ -1,6 +1,6 @@
 #lang scheme
 (require net/url tests/eli-tester
-         (only-in net/uri-codec current-alist-separator-mode))
+         (only-in net/uri-codec current-alist-separator-mode uri-encode))
 
 (define (url->vec url)
   (vector
@@ -50,29 +50,29 @@
      (current-proxy-servers))
    => '(("http" "proxy.com" 3128)))
 
-  (test-s->u #(#f #f #f #f #t (#("")) () #f)
+  (test-s->u #(#f #f #f #f #t (#("")) #f #f)
              "/")
-  (test-s->u #(#f #f #f #f #f () () #f)
+  (test-s->u #(#f #f #f #f #f () #f #f)
              "")
 
-  (test-s->u #("http" #f #f #f #t (#("")) () #f)
+  (test-s->u #("http" #f #f #f #t (#("")) #f #f)
              "http:/")
 
-  (test-s->u #("http" #f "" #f #t (#("")) () #f)
+  (test-s->u #("http" #f "" #f #t (#("")) #f #f)
              "http:///")
 
-  (test-s->u #("http" #f "www.drscheme.org" #f #f () () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #f () #f #f)
              "http://www.drscheme.org")
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("")) #f #f)
              "http://www.drscheme.org/")
 
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) #f #f)
              "http://www.drscheme.org/a/b/c")
-  (test-s->u #("http" "robby" "www.drscheme.org" #f #t (#("a") #("b") #("c")) () #f)
+  (test-s->u #("http" "robby" "www.drscheme.org" #f #t (#("a") #("b") #("c")) #f #f)
              "http://robby@www.drscheme.org/a/b/c")
-  (test-s->u #("http" #f "www.drscheme.org" 8080 #t (#("a") #("b") #("c")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" 8080 #t (#("a") #("b") #("c")) #f #f)
              "http://www.drscheme.org:8080/a/b/c")
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) () "joe")
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) #f "joe")
              "http://www.drscheme.org/a/b/c#joe")
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tim . "")) #f)
              "http://www.drscheme.org/a/b/c?tim=")
@@ -90,53 +90,53 @@
   (parameterize ([current-alist-separator-mode 'amp])
     (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tam . "tom") (pam . "pom")) "joe")
                "http://www.drscheme.org/a/b/c?tam=tom&pam=pom#joe"))
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c" "b")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c" "b")) #f #f)
              "http://www.drscheme.org/a/b/c;b")
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a" "x") #("b") #("c" "b")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a" "x") #("b") #("c" "b")) #f #f)
              "http://www.drscheme.org/a;x/b/c;b")
 
   ;; test unquoting for %
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((ti#m . "")) "jo e")
              "http://www.drscheme.org/a/b/c?ti%23m=#jo%20e")
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a " " a") #(" b ") #(" c ")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a " " a") #(" b ") #(" c ")) #f #f)
              "http://www.drscheme.org/a%20;%20a/%20b%20/%20c%20")
-  (test-s->u #("http" "robb y" "www.drscheme.org" #f #t (#("")) () #f)
+  (test-s->u #("http" "robb y" "www.drscheme.org" #f #t (#("")) #f #f)
              "http://robb%20y@www.drscheme.org/")
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("%a") #("b/") #("c")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("%a") #("b/") #("c")) #f #f)
              "http://www.drscheme.org/%25a/b%2F/c")
-  (test-s->u #("http" "robby:password" "www.drscheme.org" #f #t (#("")) () #f)
+  (test-s->u #("http" "robby:password" "www.drscheme.org" #f #t (#("")) #f #f)
              "http://robby:password@www.drscheme.org/")
   (test "robby:password" (lambda (x) (url-user (string->url x))) "http://robby%3apassword@www.drscheme.org/")
 
   ;; test the characters that need to be encoded in paths vs those that do not need to
   ;; be encoded in paths
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a:@!$&'()*+,=z") #("/?#[];") #("")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a:@!$&'()*+,=z") #("/?#[];") #("")) #f #f)
              "http://www.drscheme.org/a:@!$&'()*+,=z/%2F%3F%23%5B%5D%3B/")
 
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#(".") #("..") #(same) #(up) #("...") #("abc.def")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#(".") #("..") #(same) #(up) #("...") #("abc.def")) #f #f)
              "http://www.drscheme.org/%2e/%2e%2e/./../.../abc.def")
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("." "") #(".." "") #(same "") #(up "") #("..." "") #("abc.def" "")) () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("." "") #(".." "") #(same "") #(up "") #("..." "") #("abc.def" "")) #f #f)
              "http://www.drscheme.org/%2e;/%2e%2e;/.;/..;/...;/abc.def;")
 
   ;; test other scheme identifiers
-  (test-s->u #("blah" #f "www.foo.com" #f #t (#("")) () #f)
+  (test-s->u #("blah" #f "www.foo.com" #f #t (#("")) #f #f)
              "blah://www.foo.com/")
-  (test-s->u #("blah99" #f "www.foo.com" #f #t (#("")) () #f)
+  (test-s->u #("blah99" #f "www.foo.com" #f #t (#("")) #f #f)
              "blah99://www.foo.com/")
-  (test-s->u #("blah+" #f "www.foo.com" #f #t (#("")) () #f)
+  (test-s->u #("blah+" #f "www.foo.com" #f #t (#("")) #f #f)
              "blah+://www.foo.com/")
-  (test-s->u #("a+b-c456.d" #f "www.foo.com" #f #t (#("")) () #f)
+  (test-s->u #("a+b-c456.d" #f "www.foo.com" #f #t (#("")) #f #f)
              "a+b-c456.d://www.foo.com/")
 
   ;; a colon and other junk (`sub-delims') can appear in usernames
-  (test #("http" "x:!$&'()*+,;=y" "www.drscheme.org" #f #t (#("a")) () #f)
+  (test #("http" "x:!$&'()*+,;=y" "www.drscheme.org" #f #t (#("a")) #f #f)
         string->url/vec
         "http://x:!$&'()*+,;=y@www.drscheme.org/a")
   ;; a colon and atsign can appear in absolute paths
-  (test-s->u #(#f #f #f #f #t (#("x:@y") #("z")) () #f)
+  (test-s->u #(#f #f #f #f #t (#("x:@y") #("z")) #f #f)
              "/x:@y/z")
   ;; and in relative paths as long as it's not in the first element
-  (test-s->u #(#f #f #f #f #f (#("x") #("y:@z")) () #f)
+  (test-s->u #(#f #f #f #f #f (#("x") #("y:@z")) #f #f)
              "x/y:@z")
 
   ;; test bad schemes
@@ -148,38 +148,38 @@
    (string->url "a b://www.foo.com/") =error> url-exception?)
 
   ;; test file: urls
-  (test-s->u #("file" #f "" #f #t (#("abc") #("def.html")) () #f)
+  (test-s->u #("file" #f "" #f #t (#("abc") #("def.html")) #f #f)
              "file:///abc/def.html")
   (test (url->string (string->url "file:///abc/def.html"))
         => "file:///abc/def.html")
   (parameterize ([file-url-path-convention-type 'unix])
     (test (url->string (string->url "file://a/b"))
           => "file://a/b")
-    (test-s->u #("file" #f "localhost" #f #t (#("abc") #("def.html")) () #f)
+    (test-s->u #("file" #f "localhost" #f #t (#("abc") #("def.html")) #f #f)
                "file://localhost/abc/def.html"))
 
   ;; test files: urls with colons, and the different parsing on Windows
-  (test-s->u #("file" #f "localhost" 123 #t (#("abc") #("def.html")) () #f)
+  (test-s->u #("file" #f "localhost" 123 #t (#("abc") #("def.html")) #f #f)
              "file://localhost:123/abc/def.html")
   (parameterize ([file-url-path-convention-type 'unix])
     ;; different parse for file://foo:/...
     (test (string->url/vec "file://foo:/abc/def.html")
-          => #("file" #f "foo" #f #t (#("abc") #("def.html")) () #f)))
+          => #("file" #f "foo" #f #t (#("abc") #("def.html")) #f #f)))
   (parameterize ([file-url-path-convention-type 'windows])
     (test (string->url/vec "file://foo:/abc/def.html")
-          => #("file" #f "" #f #t (#("foo:") #("abc") #("def.html")) () #f)
+          => #("file" #f "" #f #t (#("foo:") #("abc") #("def.html")) #f #f)
           (string->url/vec "file://c:/abc/def.html")
-          => #("file" #f "" #f #t (#("c:") #("abc") #("def.html")) () #f)
+          => #("file" #f "" #f #t (#("c:") #("abc") #("def.html")) #f #f)
           (string->url/vec "file:\\\\d\\c\\abc\\def.html")
-          => #("file" #f "" #f #t (#("") #("d") #("c") #("abc") #("def.html")) () #f)))
+          => #("file" #f "" #f #t (#("") #("d") #("c") #("abc") #("def.html")) #f #f)))
 
   (parameterize ([file-url-path-convention-type 'unix])
     ;; but no effect on http://foo:/...
     (test (string->url/vec "http://foo:/abc/def.html")
-          => #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)))
+          => #("http" #f "foo" #f #t (#("abc") #("def.html")) #f #f)))
   (parameterize ([file-url-path-convention-type 'windows])
     (test (string->url/vec "http://foo:/abc/def.html")
-          => #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)))
+          => #("http" #f "foo" #f #t (#("abc") #("def.html")) #f #f)))
 
   (test (url->string (path->url (bytes->path #"c:\\a\\b" 'windows)))
         => "file:///c:/a/b"
@@ -228,7 +228,7 @@
          "HTTP://ROBBY@WWW.DRSCHEME.ORG:80/INDEX.HTML;XXX?T=P#YYY")
         => #("http" "ROBBY" "www.drscheme.org" 80 #t (#("INDEX.HTML" "XXX")) ((T . "P")) "YYY"))
 
-  (test-s->u #("mailto" #f #f #f #f (#("robby@racket-lang.org")) () #f)
+  (test-s->u #("mailto" #f #f #f #f (#("robby@racket-lang.org")) #f #f)
              "mailto:robby@racket-lang.org")
 
   (test (string->url/vec "http://www.drscheme.org?bar=馨慧")
@@ -238,7 +238,7 @@
         => #("http" #f "www.drscheme.org" #f #f () ((bár . "é")) #f))
 
   (test-c-u/r "http://www.drscheme.org"
-              (make-url #f #f #f #f #f '() '() #f)
+              (make-url #f #f #f #f #f '() #f #f)
               "http://www.drscheme.org")
 
   (test-c-u/r "http://www.drscheme.org"
@@ -350,6 +350,11 @@
      ("http:g"        =  "http:g")         ; for strict parsers
 
      ))
+
+  ;; PR 10497
+  (test
+   (url->string (url #f #f #f #f #f empty empty #f)) => "?"
+   (url->string (url #f #f #f #f #f empty #f #f)) => "")
 
   )
 
