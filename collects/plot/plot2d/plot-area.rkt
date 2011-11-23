@@ -29,12 +29,6 @@
     (define char-height (send pd get-char-height))    
     (define half-char-height (* 1/2 char-height))
     
-    (define dc-x-max (+ dc-x-min dc-x-size))
-    (define dc-y-max (+ dc-y-min dc-y-size))
-    (define title-y-min
-      (cond [(and (plot-decorations?) (plot-title))  (+ dc-y-min (* 3/2 char-height))]
-            [else  dc-y-min]))
-    
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) bounds-rect)
     (define x-size (- x-max x-min))
     (define y-size (- y-max y-min))
@@ -101,10 +95,10 @@
         (values (ivl-length view-x-ivl) (ivl-length view-y-ivl))))
     
     (define (make-view->dc left right top bottom)
-      (define area-x-min (+ dc-x-min left))
-      (define area-x-max (- dc-x-max right))
-      (define area-y-min (+ dc-y-min top))
-      (define area-y-max (- dc-y-max bottom))
+      (define area-x-min left)
+      (define area-x-max (- dc-x-size right))
+      (define area-y-min top)
+      (define area-y-max (- dc-y-size bottom))
       (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
       (define area-per-view-y (/ (- area-y-max area-y-min) view-y-size))
       (λ (v)
@@ -112,8 +106,11 @@
         (vector (+ area-x-min (* (- x x-min) area-per-view-x))
                 (- area-y-max (* (- y y-min) area-per-view-y)))))
     
+    (define init-top-margin
+      (cond [(and (plot-decorations?) (plot-title))  (* 3/2 char-height)]
+            [else  0]))
+    
     ;; Initial view->dc (draws labels and half of every tick off the allotted space on the dc)
-    (define init-top-margin (- title-y-min dc-y-min))
     (set! view->dc (make-view->dc 0 0 init-top-margin 0))
     
     ;; ===============================================================================================
@@ -301,13 +298,13 @@
                             (get-all-tick-params)))))
     
     (define-values (left right top bottom)
-      (margin-fixpoint dc-x-min dc-x-max title-y-min dc-y-max 0 0 init-top-margin 0
+      (margin-fixpoint 0 dc-x-size init-top-margin dc-y-size 0 0 init-top-margin 0
                        get-param-vs/set-view->dc!))
     
-    (define area-x-min (+ dc-x-min left))
-    (define area-x-max (- dc-x-max right))
-    (define area-y-min (+ dc-y-min top))
-    (define area-y-max (- dc-y-max bottom))
+    (define area-x-min left)
+    (define area-x-max (- dc-x-size right))
+    (define area-y-min top)
+    (define area-y-max (- dc-y-size bottom))
     
     (define/public (get-area-bounds-rect)
       (vector (ivl area-x-min area-x-max) (ivl area-y-min area-y-max)))
@@ -333,7 +330,7 @@
     
     (define (draw-title)
       (when (and (plot-decorations?) (plot-title))
-        (send pd draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top)))
+        (send pd draw-text (plot-title) (vector (* 1/2 dc-x-size) 0) 'top)))
     
     (define (draw-axes)
       (when (plot-decorations?)

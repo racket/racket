@@ -30,9 +30,6 @@
     (define char-height (send pd get-char-height))
     (define half-char-height (* 1/2 char-height))
     
-    (define dc-x-max (+ dc-x-min dc-x-size))
-    (define dc-y-max (+ dc-y-min dc-y-size))
-    
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) bounds-rect)
     (define x-size (- x-max x-min))
     (define y-size (- y-max y-min))
@@ -164,10 +161,10 @@
         (values (ivl-length view-x-ivl) (ivl-length view-y-ivl) (ivl-length view-z-ivl))))
     
     (define (make-view->dc left right top bottom)
-      (define area-x-min (+ dc-x-min left))
-      (define area-x-max (- dc-x-max right))
-      (define area-y-min (+ dc-y-min top))
-      (define area-y-max (- dc-y-max bottom))
+      (define area-x-min left)
+      (define area-x-max (- dc-x-size right))
+      (define area-y-min top)
+      (define area-y-max (- dc-y-size bottom))
       (define area-x-mid (* 1/2 (+ area-x-min area-x-max)))
       (define area-y-mid (* 1/2 (+ area-y-min area-y-max)))
       (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
@@ -554,20 +551,19 @@
                             (get-all-tick-params)))))
     
     (define-values (left right top bottom)
-      (margin-fixpoint dc-x-min dc-x-max dc-y-min dc-y-max 0 0 init-top-margin 0
-                       get-param-vs/set-view->dc!))
+      (margin-fixpoint 0 dc-x-size 0 dc-y-size 0 0 init-top-margin 0 get-param-vs/set-view->dc!))
     
-    (define area-x-min (+ dc-x-min left))
-    (define area-x-max (- dc-x-max right))
-    (define area-y-min (+ dc-y-min top))
-    (define area-y-max (- dc-y-max bottom))
+    (define area-x-min left)
+    (define area-x-max (- dc-x-size right))
+    (define area-y-min top)
+    (define area-y-max (- dc-y-size bottom))
     
     ;; ===============================================================================================
     ;; Plot decoration
     
     (define (draw-title)
       (when (and (plot-decorations?) (plot-title))
-        (send pd draw-text (plot-title) (vector (* 1/2 (+ dc-x-min dc-x-max)) dc-y-min) 'top)))
+        (send pd draw-text (plot-title) (vector (* 1/2 dc-x-size) 0) 'top)))
     
     (define (draw-back-axes)
       (when (plot-decorations?)

@@ -128,19 +128,18 @@
         (send pd reset-drawing-params #f)
         
         (define select-color (get-highlight-background-color))
-        (define select-rect (rect-translate rect (vector dc-x-min dc-y-min)))
         
         ;; inside selection
         (send pd set-pen select-color 1 'transparent)
         (send pd set-brush select-color 'solid)
         (send pd set-alpha 1/4)
-        (send pd draw-rect select-rect)
+        (send pd draw-rect rect)
         
         ;; selection border
         (send pd set-minor-pen)
         (send pd set-brush select-color 'transparent)
         (send pd set-alpha 3/4)
-        (send pd draw-rect select-rect)
+        (send pd draw-rect rect)
         
         ;; format side labels
         (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) plot-bounds-rect)
@@ -164,20 +163,13 @@
         
         (send pd set-alpha 1)
         
-        (send pd draw-text new-x-min-str
-              (vector (+ dc-x-min new-area-x-min) (+ dc-y-min new-area-y-mid))
+        (send pd draw-text new-x-min-str (vector new-area-x-min new-area-y-mid)
               'center (* 1/2 pi) #:outline? #t)
-        
-        (send pd draw-text new-x-max-str
-              (vector (+ dc-x-min new-area-x-max) (+ dc-y-min new-area-y-mid))
+        (send pd draw-text new-x-max-str (vector new-area-x-max new-area-y-mid)
               'center (* 1/2 pi) #:outline? #t)
-        
-        (send pd draw-text new-y-min-str
-              (vector (+ dc-x-min new-area-x-mid) (+ dc-y-min new-area-y-max))
+        (send pd draw-text new-y-min-str (vector new-area-x-mid new-area-y-max)
               'center #:outline? #t)
-        
-        (send pd draw-text new-y-max-str
-              (vector (+ dc-x-min new-area-x-mid) (+ dc-y-min new-area-y-min))
+        (send pd draw-text new-y-max-str (vector new-area-x-mid new-area-y-min)
               'center #:outline? #t)
         
         (send pd restore-drawing-params)))

@@ -65,10 +65,10 @@
       
       (define box-x-size (apply max line-widths))
       (define box-y-size (+ baseline (* (length lines) (+ char-height baseline))))
-      (define box-x-min (+ dc-x-min (- x-mid (* 1/2 box-x-size))))
-      (define box-x-max (+ dc-x-min (+ x-mid (* 1/2 box-x-size))))
-      (define box-y-min (+ dc-y-min (- y-mid (* 1/2 box-y-size))))
-      (define box-y-max (+ dc-y-min (+ y-mid (* 1/2 box-y-size))))
+      (define box-x-min (- x-mid (* 1/2 box-x-size)))
+      (define box-x-max (+ x-mid (* 1/2 box-x-size)))
+      (define box-y-min (- y-mid (* 1/2 box-y-size)))
+      (define box-y-max (+ y-mid (* 1/2 box-y-size)))
       
       (define box-rect (vector (ivl box-x-min box-x-max) (ivl box-y-min box-y-max)))
       

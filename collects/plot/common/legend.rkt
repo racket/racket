@@ -20,12 +20,11 @@
 (defproc (line-legend-entry [label string?]
                             [color plot-color/c] [width (>=/c 0)] [style plot-pen-style/c]
                             ) legend-entry?
-  (legend-entry label (λ (pd rect)
-                        (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) rect)
-                        (define y (* 1/2 (+ y-min y-max)))
+  (legend-entry label (λ (pd x-size y-size)
+                        (define y (* 1/2 y-size))
                         (send pd set-pen color width style)
                         (send pd set-alpha 1)
-                        (send pd draw-line (vector x-min y) (vector x-max y)))))
+                        (send pd draw-line (vector 0 y) (vector x-size y)))))
 
 (defproc (line-legend-entries [label string?] [zs (listof real?)] [z-labels (listof string?)]
                               [colors (plot-colors/c (listof real?))]
@@ -55,11 +54,11 @@
                                  [color plot-color/c] [style plot-brush-style/c]
                                  [line-color plot-color/c] [line-width (>=/c 0)]
                                  [line-style plot-pen-style/c]) legend-entry?
-  (legend-entry label (λ (pd rect)
+  (legend-entry label (λ (pd x-size y-size)
                         (send pd set-brush color style)
                         (send pd set-pen line-color line-width line-style)
                         (send pd set-alpha 1)
-                        (send pd draw-rect rect))))
+                        (send pd draw-rect (vector (ivl 0 x-size) (ivl 0 y-size))))))
 
 (defproc (rectangle-legend-entries [label string?] [zs (listof real?)]
                                    [colors (plot-colors/c (listof real?))]
@@ -99,19 +98,18 @@
           [line1-color plot-color/c] [line1-width (>=/c 0)] [line1-style plot-pen-style/c]
           [line2-color plot-color/c] [line2-width (>=/c 0)] [line2-style plot-pen-style/c]
           ) legend-entry?
-  (legend-entry label (λ (pd rect)
-                        (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) rect)
+  (legend-entry label (λ (pd x-size y-size)
                         (send pd set-alpha 1)
                         ;; rectangle
                         (send pd set-pen line-color line-width line-style)
                         (send pd set-brush color style)
-                        (send pd draw-rect rect)
+                        (send pd draw-rect (vector (ivl 0 x-size) (ivl 0 y-size)))
                         ;; bottom line
                         (send pd set-pen line1-color line1-width line1-style)
-                        (send pd draw-line (vector x-min y-max) (vector x-max y-max))
+                        (send pd draw-line (vector 0 y-size) (vector x-size y-size))
                         ;; top line
                         (send pd set-pen line2-color line2-width line2-style)
-                        (send pd draw-line (vector x-min y-min) (vector x-max y-min)))))
+                        (send pd draw-line (vector 0 0) (vector x-size 0)))))
 
 (defproc (interval-legend-entries [label string?] [ivls (listof ivl?)] [ivl-labels (listof string?)]
                                   [colors (plot-colors/c (listof ivl?))]
@@ -162,17 +160,17 @@
 
 (defproc (point-legend-entry [label string?] [sym point-sym/c]
                              [color plot-color/c] [size (>=/c 0)] [line-width (>=/c 0)]) legend-entry?
-  (legend-entry label (λ (pd rect)
-                        (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) rect)
+  (legend-entry label (λ (pd x-size y-size)
                         (send pd set-pen color line-width 'solid)
                         (send pd set-alpha 1)
-                        (send pd draw-glyphs (list (rect-center rect)) sym size))))
+                        (send pd draw-glyphs (list (vector (* 1/2 x-size) (* 1/2 y-size))) sym size))))
 
 (defproc (arrow-legend-entry [label string?] [color plot-color/c]
                              [line-width (>=/c 0)] [line-style plot-pen-style/c]
                              ) legend-entry?
-  (legend-entry label (λ (pd rect)
-                        (match-define (vector (ivl x-min x-max) y-ivl) rect)
+  (legend-entry label (λ (pd x-size y-size)
                         (send pd set-pen color line-width line-style)
                         (send pd set-alpha 1)
-                        (send pd draw-arrow-glyph (rect-center rect) (* 1/4 (- x-max x-min)) 0))))
+                        (send pd draw-arrow-glyph
+                              (vector (* 1/2 x-size) (* 1/2 y-size))
+                              (* 1/4 x-size) 0))))

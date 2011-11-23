@@ -98,6 +98,8 @@
     ;; ===============================================================================================
     ;; Drawing parameters
     
+    (define-values (old-scale-x old-scale-y) (send dc get-scale))
+    (define-values (old-origin-x old-origin-y) (send dc get-origin))
     (define old-smoothing (send dc get-smoothing))
     (define old-text-mode (send dc get-text-mode))
     (define old-clipping-region (send dc get-clipping-region))
@@ -109,6 +111,7 @@
     (define old-alpha (send dc get-alpha))
     
     (define/public (restore-drawing-params)
+      (send dc set-origin old-origin-x old-origin-y)
       (send dc set-smoothing old-smoothing)
       (send dc set-text-mode old-text-mode)
       (send dc set-clipping-region old-clipping-region)
@@ -120,10 +123,13 @@
       (send dc set-alpha old-alpha))
     
     (define/public (reset-drawing-params [clipping-rect? #t])
+      (send dc set-origin
+            (+ old-origin-x (* old-scale-x dc-x-min))
+            (+ old-origin-y (* old-scale-y dc-y-min)))
       (send dc set-smoothing 'smoothed)
       (send dc set-text-mode 'transparent)
       (when clipping-rect?
-        (send dc set-clipping-rect dc-x-min dc-y-min dc-x-size dc-y-size))
+        (send dc set-clipping-rect 0 0 dc-x-size dc-y-size))
       (set-font (plot-font-size) (plot-font-family))
       (set-text-foreground (plot-foreground))
       (set-pen (plot-foreground) (plot-line-width) 'solid)
@@ -169,11 +175,8 @@
         (send dc set-brush (hash-ref! brush-hash (vector r g b style)
                                       (λ () (make-brush% r g b style))))))
     
-    (define alpha (plot-foreground-alpha))
-    
     ;; Sets alpha.
     (define/public (set-alpha a)
-      (set! alpha a)
       (send dc set-alpha a))
     
     ;; Sets the background color.
@@ -498,7 +501,7 @@
     
     (define/public (draw-legend legend-entries rect)
       (define n (length legend-entries))
-      (match-define (list (legend-entry labels draws) ...) legend-entries)
+      (match-define (list (legend-entry labels draw-procs) ...) legend-entries)
       
       (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) rect)
       
@@ -533,31 +536,36 @@
           [(center left right)                (- (* 1/2 (+ y-min y-max))
                                                  (* 1/2 legend-y-size))]))
       
-      (define legend-x-max (+ legend-x-min legend-x-size))
-      (define legend-y-max (+ legend-y-min legend-y-size))
-      (define legend-rect (vector (ivl legend-x-min legend-x-max) (ivl legend-y-min legend-y-max)))
+      (define legend-rect (vector (ivl legend-x-min (+ legend-x-min legend-x-size))
+                                  (ivl legend-y-min (+ legend-y-min legend-y-size))))
       
       (define label-x-min (+ legend-x-min horiz-gap))
       (define draw-x-min (+ legend-x-min (* 2 horiz-gap) labels-x-size horiz-gap))
-      (define draw-x-max (+ draw-x-min draw-x-size))
       
-      (set-alpha (plot-legend-box-alpha))
-      (set-minor-pen)
+      ;; legend background
+      (set-pen (plot-foreground) 1 'transparent)
       (set-brush (plot-background) 'solid)
+      (set-alpha (plot-legend-box-alpha))
       (draw-rect legend-rect)
       
+      ;; legend border
+      (set-minor-pen)
+      (set-brush (plot-background) 'transparent)
+      (set-alpha 3/4)
+      (draw-rect legend-rect)
+      
+      (set-alpha (plot-foreground-alpha))
       (set-clipping-rect legend-rect)
-      (for ([label  (in-list labels)]
-            [draw   (in-list draws)]
-            [i      (in-naturals)])
+      (for ([label  (in-list labels)] [draw-proc  (in-list draw-procs)] [i  (in-naturals)])
         (define label-y-min (+ legend-y-min top-gap (* i baseline-skip)))
-        (define draw-y-min (+ label-y-min (* 1/2 baseline)))
-        (define draw-y-max (+ draw-y-min draw-y-size))
-        (define drawing-rect (vector (ivl draw-x-min draw-x-max) (ivl draw-y-min draw-y-max)))
-        
-        (reset-drawing-params)
         (draw-text label (vector label-x-min label-y-min) #:outline? #t)
-        (draw this drawing-rect))
+        
+        (define draw-y-min (+ label-y-min (* 1/2 baseline)))
+        
+        (define entry-pd (make-object plot-device% dc draw-x-min draw-y-min draw-x-size draw-y-size))
+        (send entry-pd reset-drawing-params #f)
+        (draw-proc this draw-x-size draw-y-size)
+        (send entry-pd restore-drawing-params))
       
       (clear-clipping-rect))
     ))  ; end class
