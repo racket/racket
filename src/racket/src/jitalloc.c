@@ -278,7 +278,7 @@ int scheme_generate_alloc_retry(mz_jit_state *jitter, int i)
 
 #ifdef JIT_USE_FP_OPS
   if (i == 2) {
-    (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR1, JIT_R2);
+    (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR0, JIT_R2);
   }
 #endif
   JIT_UPDATE_THREAD_RSPTR();
@@ -299,7 +299,7 @@ int scheme_generate_alloc_retry(mz_jit_state *jitter, int i)
   }
 #ifdef JIT_USE_FP_OPS
   if (i == 2) {
-    (void)mz_tl_ldi_d_fppush(JIT_FPR1, tl_scheme_jit_save_fp, JIT_R2);
+    (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);
   }
 #endif
   return 1;

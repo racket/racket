@@ -61,8 +61,6 @@
 #define jit_abs_f(rd,rs)		jit_abs_d(rd,rs)
 #define jit_negr_f(rd,rs)		jit_negr_d(rd,rs)
 #define jit_sqrt_f(rd,rs)		jit_sqrt_d(rd,rs)
-#define jit_extr_f_d(rs, rd)
-#define jit_extr_d_f(rs, rd)
 #define jit_extr_i_f(rd, rs)		jit_extr_i_d(rd, rs)
 #define jit_roundr_f_i(rd, rs)		jit_roundr_d_i(rd, rs)
 #define jit_floorr_f_i(rd, rs)		jit_floorr_d_i(rd, rs)

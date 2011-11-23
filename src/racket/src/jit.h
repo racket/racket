@@ -43,11 +43,20 @@ END_XFORM_ARITH;
 #ifdef MZ_USE_JIT_X86_64
 # define MZ_USE_JIT_I386
 # define JIT_X86_64
+# ifndef MZ_NO_JIT_SSE
+#  define JIT_X86_SSE
+# endif
 #endif
 
 #ifdef MZ_USE_JIT_I386
 # ifndef JIT_X86_64
 #  define JIT_X86_PLAIN
+# endif
+#endif
+
+#ifdef MZ_USE_JIT_SSE
+# ifndef JIT_X86_SSE
+#  define JIT_X86_SSE
 # endif
 #endif
 
@@ -275,7 +284,7 @@ extern struct scheme_jit_common_record scheme_jit_common;
 
 #define sjc scheme_jit_common
 
-typedef struct {
+typedef struct mz_jit_state {
   MZTAG_IF_REQUIRED
   GC_CAN_IGNORE jit_state js;
   char *limit;
@@ -835,7 +844,7 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #define __START_TINY_OR_SHORT_JUMPS__(tcond, cond) if (tcond) { __START_TINY_JUMPS__(1); } else { __START_SHORT_JUMPS__(cond); }
 #define __END_TINY_OR_SHORT_JUMPS__(tcond, cond) if (tcond) { __END_TINY_JUMPS__(1); } else { __END_SHORT_JUMPS__(cond); }
 
-#ifdef JIT_X86_64
+#if defined(JIT_X86_64) || defined(JIT_X86_SSE)
 # define __START_TINY_JUMPS_IF_COMPACT__(cond) /* empty */
 # define __END_TINY_JUMPS_IF_COMPACT__(cond) /* empty */
 #else
@@ -941,7 +950,7 @@ static void emit_indentation(mz_jit_state *jitter)
    pushes and pops much balance. The popping branch operations pop
    both arguments before branching. */
 
-#if !defined(MZ_USE_JIT_I386)
+#if !defined(MZ_USE_JIT_I386) || defined(JIT_X86_SSE)
 /* Not FP stack, so use normal variants. */
 #define DIRECT_FPR_ACCESS
 #define jit_movi_d_fppush(rd,immd)    jit_movi_d(rd,immd)
@@ -959,7 +968,7 @@ static void emit_indentation(mz_jit_state *jitter)
 #define jit_abs_d_fppop(rd,rs)        jit_abs_d(rd,rs)
 #define jit_sqrt_d_fppop(rd,rs)       jit_sqrt_d(rd,rs)
 #define jit_sti_d_fppop(id, rs)       jit_sti_d(id, rs)
-#define jit_str_d_fppop(id, rd, rs)   jit_str_d(id, rd, rs)
+#define jit_str_d_fppop(id, rd)       jit_str_d(id, rd)
 #define jit_stxi_d_fppop(id, rd, rs)  jit_stxi_d(id, rd, rs)
 #define jit_stxr_d_fppop(id, rd, rs)  jit_stxr_d(id, rd, rs)
 #define jit_bger_d_fppop(d, s1, s2)   jit_bger_d(d, s1, s2)

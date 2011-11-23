@@ -162,7 +162,9 @@
 # if defined(i386)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-linux"
 #  define REGISTER_POOR_MACHINE
-#  define ASM_DBLPREC_CONTROL_87
+#  ifndef MZ_USE_JIT_SSE
+#   define ASM_DBLPREC_CONTROL_87
+#  endif
 # endif
 # if defined(powerpc)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-linux"
@@ -186,7 +188,9 @@
 # if defined(__x86_64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-linux"
 #  define REGISTER_POOR_MACHINE
-#  define ASM_DBLPREC_CONTROL_87
+#  ifdef MZ_NO_JIT_SSE
+#   define ASM_DBLPREC_CONTROL_87
+#  endif
 # endif
 # ifndef SCHEME_PLATFORM_LIBRARY_SUBPATH
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-linux"
@@ -336,17 +340,21 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_I386
-#  if defined(__FreeBSD_kernel__)
-#   define ASM_DBLPREC_CONTROL_87
-#  else
-#   define FREEBSD_CONTROL_387
+#  ifndef MZ_JIT_X86_SSE
+#    if defined(__FreeBSD_kernel__)
+#     define ASM_DBLPREC_CONTROL_87
+#    else
+#     define FREEBSD_CONTROL_387
+#    endif
 #  endif
 # elif defined(__amd64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "amd64-freebsd"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_X86_64
-#  if defined(__FreeBSD_kernel__)
-#   define ASM_DBLPREC_CONTROL_87
+#  ifdef MZ_NO_JIT_SSE
+#    if defined(__FreeBSD_kernel__)
+#     define ASM_DBLPREC_CONTROL_87
+#    endif
 #  endif
 # elif defined(__sparc64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-freebsd"
@@ -751,7 +759,10 @@
 # define MZ_USE_JIT_X86_64
 #else
 # define MZ_USE_JIT_I386
-# define ASM_DBLPREC_CONTROL_87
+# ifndef MZ_NO_JIT_SSE
+#  define MZ_USE_JIT_SSE
+#  define ASM_DBLPREC_CONTROL_87
+# endif
 #endif
 # define MZ_JIT_USE_MPROTECT
 

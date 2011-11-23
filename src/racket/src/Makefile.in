@@ -298,7 +298,7 @@ JIT_HEADERS = $(srcdir)/../src/jit.h \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
         $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
         $(srcdir)/lightning/i386/funcs.h $(srcdir)/lightning/i386/funcs-common.h \
-        $(srcdir)/lightning/i386/fp.h $(srcdir)/lightning/i386/fp-common.h \
+        $(srcdir)/lightning/i386/fp.h $(srcdir)/lightning/i386/fp-sse.h $(srcdir)/lightning/i386/fp-common.h \
         $(srcdir)/lightning/ppc/core.h $(srcdir)/lightning/ppc/core-common.h \
         $(srcdir)/lightning/ppc/asm.h $(srcdir)/lightning/ppc/asm-common.h \
         $(srcdir)/lightning/ppc/funcs.h $(srcdir)/lightning/ppc/funcs-common.h \
