@@ -57,4 +57,6 @@
  (type-case "foo" "bar") =error> "this must be a type defined with define-type"
  
  (type-case + "bar") =error> "this must be a type defined with define-type"
+
+ (type-case #f [x () 1]) =error> "this must be a type defined with define-type"
  )
