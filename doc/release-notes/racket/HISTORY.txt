@@ -4,6 +4,7 @@ Regexps are `equal?' when they have the same source [byte] string
 Numbers, characters, strings, byte strings, and regexps are interned by
  read and datum->syntax
 Added read-intern-literal
+racket/draw: added get-names to color-database<%>
 mzlib/pconvert: added add-make-prefix-to-constructor parameter,
  which changes the default constructor-style printing in DrRacket
  to avoid a make- prefix; the HtDP languages set the parameter to #t

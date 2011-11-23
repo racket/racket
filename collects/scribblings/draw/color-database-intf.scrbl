@@ -202,10 +202,16 @@ See also @racket[color%].
 
 
 @defmethod[(find-color [color-name string?])
-           (or/c (is-a?/c color%) false/c)]{
+           (or/c (is-a?/c color%) #f)]{
 
 Finds a color by name (character case is ignored). If no color is
- found for the name, @racket[#f] is returned.
+ found for the name, @racket[#f] is returned.}
 
-}}
+
+@defmethod[(get-names) (listof string?)]{
+
+Returns an alphabetically sorted list of case-folded color names for which
+@method[color-database<%> find-color] returns a @racket[color%] value.}
+
+}
 
