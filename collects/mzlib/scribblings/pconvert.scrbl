@@ -74,6 +74,14 @@ the parameter is used as the representation for the value.
 The initial value of the parameter is @racket[(lambda (x) #f)].}
 
 
+@defboolparam[add-make-prefix-to-constructor add-prefix?]{
+
+A parameter that controls whether a @racketidfont{make-} prefix is
+added to a constructor name for a structure instance.  The initial
+value of the parameter is @racket[#f].}
+
+
+
 @defproc[(build-share [v any/c]) ....]{
 
 Takes a value and computes sharing information used for representing

@@ -202,6 +202,7 @@
                   (is-a? val image-snip%)       ;; literal image constant
                   (is-a? val bitmap%)))         ;; works in other places, so include it here too
             (parameterize ([pc:booleans-as-true/false #t]
+                           [pc:add-make-prefix-to-constructor #t]
                            [pc:abbreviate-cons-as-list (get-abbreviate-cons-as-list)]
                            [pc:current-print-convert-hook
                             (let ([ph (pc:current-print-convert-hook)])

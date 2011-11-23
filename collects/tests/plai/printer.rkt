@@ -1,6 +1,8 @@
 #lang racket/base
 (require (only-in plai define-type)
-         racket/contract)
+         racket/contract
+         mzlib/pconvert
+         racket/pretty)
 
 (define-type Foo
   [bar (v any/c)
@@ -32,5 +34,15 @@
 (check (to-string print (list (bar "a" (list 'b)))) "(list (bar \"a\" '(b)))")
 (check (to-string write (list (bar "a" (list 'b)))) "(#(struct:bar \"a\" (b)))")
 (check (to-string display (list (bar "a" (list 'b)))) "(#(struct:bar a (b)))")
+
+;; Check `print-convert' plus `pretty-write'
+;; as used by DrRacket's "constructor" printing mode:
+(constructor-style-printing #t)
+(check (to-string pretty-write (print-convert '(a b))) "(list 'a 'b)\n")
+(check (to-string pretty-write (print-convert (bar "a" 'b))) "(bar \"a\" 'b)\n")
+;; "quasiquote" printing mode:
+(constructor-style-printing #f)
+(check (to-string pretty-write (print-convert '(a b))) "`(a b)\n")
+(check (to-string pretty-write (print-convert (bar "a" 'b))) "(bar \"a\" 'b)\n")
 
 (printf "~a tests passed.\n" success)

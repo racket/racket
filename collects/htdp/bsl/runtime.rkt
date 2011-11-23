@@ -12,6 +12,7 @@
   ;; Set print-convert options:
   (booleans-as-true/false #t)
   (constructor-style-printing #t)
+  (add-make-prefix-to-constructor #f)
   (abbreviate-cons-as-list (memq 'abbreviate-cons-as-list options))
   (current-print-convert-hook
    (let ([ph (current-print-convert-hook)])
