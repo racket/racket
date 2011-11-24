@@ -101,16 +101,18 @@
     (generate/direct ctc fuel)))
 
 ; generate : contract int -> ctc value or error
-(define (contract-generate ctc fuel)
- (let ([def-ctc (coerce-contract 'contract-generate ctc)])
-   (parameterize ([generate-env (make-hash)])
-     ; choose randomly
-     (let ([val (generate/choose def-ctc fuel)])
-       (if (generate-ctc-fail? val)
-         (error 'contract-generate
-                "Unable to construct any generator for contract: ~e"
-                ctc)
-         val)))))
+(define (contract-generate ctc fuel [fail (λ () 
+                                            (error 'contract-generate
+                                                   "Unable to construct any generator for contract: ~s"
+                                                   (contract-struct-name (coerce-contract 'contract-generate ctc))))])
+  (let ([def-ctc (coerce-contract 'contract-generate ctc)])
+    (printf "def-ctc ~s\n" def-ctc)
+    (parameterize ([generate-env (make-hash)])
+      ; choose randomly
+      (let ([val (generate/choose def-ctc fuel)])
+        (if (generate-ctc-fail? val)
+            (fail)
+            val)))))
 
 ; Iterates through generation methods until failure. Returns
 ; generate-ctc-fail if no value could be generated

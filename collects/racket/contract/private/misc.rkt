@@ -598,7 +598,7 @@
 
 (define-syntax (*-listof stx)
   (syntax-case stx ()
-    [(_ predicate? type-name name)
+    [(_ predicate? type-name name generate)
      (identifier? (syntax predicate?))
      (syntax
       (λ (input)
@@ -623,116 +623,25 @@
               #:name ctc-name
               #:first-order fo-check
               #:projection (ho-check (λ (p v) (for-each p v) v))
-              #:generate (listof-generate ctc))]
+              #:generate (generate ctc))]
             [(chaperone-contract? ctc)
              (make-chaperone-contract
               #:name ctc-name
               #:first-order fo-check
               #:projection (ho-check (λ (p v) (map p v)))
-              #:generate (listof-generate ctc))]
+              #:generate (generate ctc))]
             [else
              (make-contract
               #:name ctc-name
               #:first-order fo-check
-              #:projection (ho-check (λ (p v) (map p v)))
-              )]))))]))
+              #:projection (ho-check (λ (p v) (map p v))))]))))]))
 
-(define listof-func (*-listof list? list listof))
+(define listof-func (*-listof list? list listof listof-generate))
 (define/subexpression-pos-prop (listof x) (listof-func x))
 
-#|
-(define (listof element-ctc)
-  ;  (printf "bla")
-  (if (flat-contract? element-ctc)
-      (begin 
-        ;        (printf "flat\n")
-        (make-listof-flat/c element-ctc))
-      (begin 
-        ;        (printf "non-flat\n")
-        (make-listof/c element-ctc))))
-|#
-
-;(*-immutableof list? map andmap list listof))
-
-(define-struct listof-flat/c (element-ctc)
-  #:omit-define-syntaxes
-  #:property prop:flat-contract
-  (build-flat-contract-property
-   #:name 
-   (λ (ctc)
-     (build-compound-type-name 'listof (object-name (listof-flat/c-element-ctc ctc))))
-   #|
-    #:projection
-    (λ (ctc)
-      ;     (let* ([content-pred? (listof-flat/c-element-ctc ctc)])
-      (let* ([content-ctc (listof-flat/c-element-ctc ctc)]
-             [content-pred? (flat-contract-predicate ctc)])
-        (λ (blame)
-          (λ (x)
-            (unless (and (list? x) (andmap content-pred? x))
-              (raise-blame-error
-                 blame
-                 x
-                 "expected <~a>, given: ~e"
-                 'type-name
-                 x))
-            #t))))
- |#
-   #:first-order
-   (λ (ctc)
-     (let ([content-pred? (listof-flat/c-element-ctc ctc)])
-       (λ (val)
-         (and (list? val) (andmap content-pred? val)))))
-   #:generate
-   (λ (ctc)
-     ;     #f)
-     (listof-generate (listof-flat/c-element-ctc ctc)))
-   #:exercise
-   (λ (ctc)
-     ;     #f)))
-     (listof-exercise (listof-flat/c-element-ctc ctc)))))
-
-
-
-
-(define-struct listof/c (element-ctc)
-  #:omit-define-syntaxes
-  #:property prop:contract
-  (build-contract-property
-   #:name 
-   (λ (ctc)
-     (build-compound-type-name 'listof (object-name (listof/c-element-ctc ctc))))
-   #:projection
-   (λ (ctc)
-     (let* ([el-ctc (listof/c-element-ctc ctc)]
-            [proj (contract-projection el-ctc)])
-       (λ (blame)
-         (let ([p-app (proj blame)])
-           (λ (val)
-             (unless (list? val)
-               (raise-blame-error
-                blame
-                val
-                "expected <~a>, given: ~e"
-                'type-name
-                val))
-             (map p-app val))))))
-   #:first-order
-   (λ (ctc)
-     list?)
-   #:generate
-   (λ (ctc)
-     ;     #f)
-     (listof-generate (listof/c-element-ctc ctc)))
-   #:exercise
-   (λ (ctc)
-     ;     #f)))
-     (listof-exercise (listof/c-element-ctc ctc)))))
-
 (define (non-empty-list? x) (and (pair? x) (list (cdr x))))
-(define non-empty-listof-func (*-listof non-empty-list? non-empty-list non-empty-listof))
+(define non-empty-listof-func (*-listof non-empty-list? non-empty-list non-empty-listof (λ (ctc) (make-generate-ctc-fail))))
 (define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
-
 
 (define cons/c-main-function
   (λ (car-c cdr-c)
@@ -994,19 +903,18 @@
    (coerce-contract 'contract-projection ctc)))
 
 (define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
-(define (flat-named-contract name predicate [generate (make-generate-ctc-fail)])
-  (cond
-    [(and (procedure? predicate)
-          (procedure-arity-includes? predicate 1))
-     (make-predicate-contract name predicate generate)]
-    [(flat-contract? predicate)
-     (make-predicate-contract name (flat-contract-predicate predicate) generate)]
-    [else
-     (error 'flat-named-contract 
-            "expected a flat contract or procedure of arity 1 as second argument, got ~e" 
-            predicate)]))
-
-
+(define (flat-named-contract name predicate [generate #f])
+  (let ([generate (or generate (make-generate-ctc-fail))])
+    (cond
+      [(and (procedure? predicate)
+            (procedure-arity-includes? predicate 1))
+       (make-predicate-contract name predicate generate)]
+      [(flat-contract? predicate)
+       (make-predicate-contract name (flat-contract-predicate predicate) generate)]
+      [else
+       (error 'flat-named-contract 
+              "expected a flat contract or procedure of arity 1 as second argument, got ~e" 
+              predicate)])))
 
 (define printable/c
   (flat-named-contract

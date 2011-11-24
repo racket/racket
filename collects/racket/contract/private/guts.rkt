@@ -269,6 +269,8 @@
       (if (symbol? (eq-contract-val ctc))
         `',(eq-contract-val ctc)
         (eq-contract-val ctc)))
+   #:generate
+   (λ (ctc) (λ (fuel) (eq-contract-val ctc)))
    #:stronger
    (λ (this that)
       (and (eq-contract? that)
@@ -282,7 +284,9 @@
    #:stronger
    (λ (this that)
       (and (equal-contract? that)
-           (equal? (equal-contract-val this) (equal-contract-val that))))))
+           (equal? (equal-contract-val this) (equal-contract-val that))))
+   #:generate
+   (λ (ctc) (λ (fuel) (equal-contract-val ctc)))))
 
 (define-struct =-contract (val)
   #:property prop:flat-contract
@@ -292,7 +296,9 @@
    #:stronger
    (λ (this that)
       (and (=-contract? that)
-           (= (=-contract-val this) (=-contract-val that))))))
+           (= (=-contract-val this) (=-contract-val that))))
+   #:generate
+   (λ (ctc) (λ (fuel) (=-contract-val ctc)))))
 
 (define-struct regexp/c (reg)
   #:property prop:flat-contract

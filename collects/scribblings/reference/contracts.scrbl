@@ -86,13 +86,10 @@ satisfies the contract if the predicate returns a true value.}
 
 @defproc[(flat-named-contract [type-name any/c]
                               [predicate (or/c flat-contract? (any/c . -> . any))]
-                              [#:generate generator (-> contract (-> int? 'a-val))])
+                              [generator (or/c #f (-> contract (-> int? any))) #f])
          flat-contract?]{
 
-The generator argument adds a generator for the flat-named-contract. See 
-@racket[contract-generate] for more information.
-
-On predicates like @racket[flat-contract], but the first argument must be the
+On predicates, behaves like @racket[flat-contract], but the first argument must be the
 (quoted) name of a contract used for error reporting. 
 For example, 
 @racketblock[(flat-named-contract
@@ -102,6 +99,9 @@ turns the predicate into a contract with the name @tt{odd-integer}.
 
 On flat contracts, the new flat contract is the same as the old except for
 the name.
+
+The generator argument adds a generator for the flat-named-contract. See 
+@racket[contract-generate] for more information.
 }
 
 @defthing[any/c flat-contract?]{
@@ -2089,9 +2089,13 @@ parts of the contract system.
 }
 @section{Random generation}
 
-@defproc[(contract-generate [ctc contract?] [fuel int?]) any/c]{
+@defproc[(contract-generate [ctc contract?] [fuel int?] [fail (-> any/c) (λ () (error ...))]) any/c]{
 Attempts to randomly generate a value which will match the contract. The fuel
-argument limits the depth that the argument generation can go and thus the
-memory used. In order to know which contracts to generate, it may be necessary
-to add a generator for the generate keyword argument in @racket[struct]
+argument limits how hard the generator tries to generate a contract and is a rough
+limit of the size of the resulting value. 
+
+The generator may fail to generate a contract, either because some contracts
+do not have corresponding generators (for example, not all predicates have 
+generators) or because there is not enough fuel. In either case, the
+thunk @racket[fail] is invoked.
 }

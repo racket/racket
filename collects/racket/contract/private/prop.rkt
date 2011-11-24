@@ -186,7 +186,7 @@
                    get-name get-first-order)])]
          [stronger (or stronger weakest)])
 
-    (mk get-name get-first-order get-projection stronger generate exercise )))
+    (mk get-name get-first-order get-projection stronger generate exercise)))
 
 (define build-contract-property
   (build-property make-contract-property 'anonymous-contract values))
@@ -271,7 +271,7 @@
    #:projection (lambda (c) (make-flat-contract-projection c))
    #:stronger (lambda (a b) ((make-flat-contract-stronger a) a b))
    #:generate (lambda (c) (make-flat-contract-generate c))
-   #:exercise (lambda (c) (make-chaperone-contract-exercise c))))
+   #:exercise (lambda (c) (make-flat-contract-exercise c))))
 
 (define ((build-contract mk default-name)
          #:name [name #f]
