@@ -10,6 +10,7 @@
 
 (constructor-style-printing #t)
 (quasi-read-style-printing #f)
+(add-make-prefix-to-constructor #t)
 
 (define (xl) 1)
 (define (xc) (class object% (sequence (super-init))))
