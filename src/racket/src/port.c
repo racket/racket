@@ -1276,6 +1276,10 @@ void scheme_clean_fd_set(void *fds)
 }
 
 int scheme_get_fd_limit(void *fds)
+  XFORM_SKIP_PROC
+/* This function must not allocate or call GC-cooperating functions.
+   It's constrained because it's used by default_sleep, which
+   must not allocate on Mac OS X. */
 {
   int limit, actual_limit;
   fd_set *rd, *wr, *ex;
