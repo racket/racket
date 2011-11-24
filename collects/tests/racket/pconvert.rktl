@@ -391,6 +391,15 @@
   (test #t (pc #f) #t))
 
 (let ([pc
+       (λ (prefix?)
+         (λ (x)
+           (parameterize ([add-make-prefix-to-constructor prefix?])
+             (print-convert x))))])
+  (struct s (x) #:transparent)
+  (test '(s 1) (pc #f) (s 1))
+  (test '(make-s 1) (pc #t) (s 1)))
+
+(let ([pc
        (lambda (pv)
          (lambda (x)
            (parameterize ([named/undefined-handler (lambda (x) 'whee)]
