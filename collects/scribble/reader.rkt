@@ -154,11 +154,9 @@
                 (+ w (if (eq? 9 (bytes-ref bs i)) (- 8 (modulo w 8)) 1))))))))
 
 ;; a unique eol string
-(define eol-token "\n")
-(define (eol-syntax? x) (and (syntax? x) (eq? eol-token (syntax-e x))))
-;; sanity check, in case this property gets violated in the future
-(unless (eol-syntax? (datum->syntax #f eol-token))
-  (internal-error 'invalid-assumption))
+(define at-exp-prop (gensym 'at-exp-eol))
+(define (eol-syntax? x) 
+  (and (syntax? x) (syntax-property x at-exp-prop)))
 
 ;; A syntax object that has the "original?" property:
 (define orig-stx (read-syntax #f (open-input-string "dummy")))
@@ -265,8 +263,8 @@
     (let* ([2nd  (and (syntax? stx) (syntax-e stx))]
            [stx0 (and (pair? stxs) (car stxs))]
            [1st  (and (syntax? stx0) (syntax-e stx0))])
-      (if (and (string? 1st) (not (eq? eol-token 1st))
-               (string? 2nd) (not (eq? eol-token 2nd)))
+      (if (and (string? 1st) (not (eol-syntax? stx0))
+               (string? 2nd) (not (eol-syntax? stx)))
         (cons (datum->syntax stx0
                 (string-append 1st 2nd)
                 (vector (syntax-source stx0)
@@ -318,7 +316,7 @@
                 (loop lvl (list* ; no merge needed
                            (bytes-width m (cdr n))
                            (syntax-property
-                            (make-stx eol-token)
+                            (syntax-property (make-stx "\n") at-exp-prop #t)
                             'scribble `(newline ,(bytes->string/utf-8 m)))
                            (maybe-drop-marker r)))))]
         [(if re:cmd-pfx

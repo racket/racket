@@ -629,29 +629,6 @@ newlines are read as a @racket["\n"] string
        baz }
 }===|
 
-In the parsed S-expression syntax, a single newline string is used for
-all newlines; you can use @racket[eq?] to identify this line.  This
-can be used to identify newlines in the original @nonterm{text-body}.
-
-@; FIXME: unfortunate code duplication (again):
-@interaction[
-(eval:alts
-  (let ([nl (car @#,tt["@'{"]
-                 @#,tt["  }"])])
-    (for-each (lambda (x) (display (if (eq? x nl) "\n... " x)))
-              @#,tt["@`{foo"]
-              @#,elem[@tt["   @"] @racket[,@(list "bar" "\n" "baz")]]
-              @#,tt["   blah}}"])
-    (newline))
-  (let ([nl (car @'{
-                   })])
-    (for-each (lambda (x) (display (if (eq? x nl) "\n... " x)))
-              @`{foo
-                 @,@(list "bar" "\n" "baz")
-                 blah})
-    (newline)))
-]
-
 Spaces at the beginning of body lines do not appear in the resulting
 S-expressions, but the column of each line is noticed, and all-space
 indentation strings are added so the result has the same indentation.

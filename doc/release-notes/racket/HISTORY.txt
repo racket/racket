@@ -8,6 +8,7 @@ racket/draw: added get-names to color-database<%>
 mzlib/pconvert: added add-make-prefix-to-constructor parameter,
  which changes the default constructor-style printing in DrRacket
  to avoid a make- prefix; the HtDP languages set the parameter to #t
+at-exp, scribble: dropped distinctness of @{}-introduced newline strings
 
 Version 5.2.0.3
 Added module-predefined?

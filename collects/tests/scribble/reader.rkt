@@ -744,18 +744,6 @@ foo
 -@eval->
 "/Note/: *This is _not_ a pipe*."
 ---
-(let ([nl (car @'{
-                 })]
-      [o (open-output-string)])
-  (for-each (lambda (x) (display (if (eq? x nl) "\n... " x) o))
-            @`{foo
-               @,@(list "bar" "\n" "baz")
-               blah})
-  (newline o)
-  (get-output-string o))
--@eval->
-"foo\n... bar\nbaz\n... blah\n"
----
 (require (for-syntax scheme/base))
 (let-syntax ([foo
               (lambda (stx)
