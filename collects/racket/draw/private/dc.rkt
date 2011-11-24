@@ -758,6 +758,16 @@
           (cairo_set_source cr p)
           (cairo_pattern_destroy p))))
 
+    (define/private (install-transformation transformation cr)
+      (when transformation
+        (cairo_identity_matrix cr)
+        (init-cr-matrix cr)
+        (cairo_translate cr scroll-dx scroll-dy)        
+        (cairo_transform cr (vector->matrix (vector-ref transformation 0)))
+        (cairo_translate cr (vector-ref transformation 1) (vector-ref transformation 2))
+        (cairo_scale cr (vector-ref transformation 3) (vector-ref transformation 4))
+        (cairo_rotate cr (- (vector-ref transformation 5)))))
+
     (define/private (make-gradient-pattern cr gradient transformation)
       (define p 
         (if (is-a? gradient linear-gradient%)
@@ -772,14 +782,7 @@
                  [b (norm (color-blue c))]
                  [a (color-alpha c)])
             (cairo_pattern_add_color_stop_rgba p offset r g b a)))
-      (when transformation
-        (cairo_identity_matrix cr)
-        (init-cr-matrix cr)
-        (cairo_translate cr scroll-dx scroll-dy)        
-        (cairo_transform cr (vector->matrix (vector-ref transformation 0)))
-        (cairo_translate cr (vector-ref transformation 1) (vector-ref transformation 2))
-        (cairo_scale cr (vector-ref transformation 3) (vector-ref transformation 4))
-        (cairo_rotate cr (- (vector-ref transformation 5))))
+      (install-transformation transformation cr)
       (cairo_set_source cr p)
       (when transformation
         (do-reset-matrix cr))
@@ -787,7 +790,7 @@
 
     ;; Stroke, fill, and flush the current path
     (define/private (draw cr brush? pen?)
-      (define (install-stipple st col mode get put)
+      (define (install-stipple st col mode transformation get put)
         (let ([s (cond
                   [(get) => (lambda (s) s)]
                   [(and (not (send st is-color?))
@@ -815,7 +818,10 @@
                               get-cairo-surface))])])
           (let* ([p (cairo_pattern_create_for_surface s)])
             (cairo_pattern_set_extend p CAIRO_EXTEND_REPEAT)
+            (install-transformation transformation cr)
             (cairo_set_source cr p)
+            (when transformation
+              (do-reset-matrix cr))
             (cairo_pattern_destroy p))))
       (cairo_set_antialias cr (case (dc-adjust-smoothing smoothing)
                                 [(unsmoothed) CAIRO_ANTIALIAS_NONE]
@@ -831,6 +837,7 @@
                   (make-gradient-pattern cr gradient (send brush get-transformation))
                   (if st
                       (install-stipple st col s 
+                                       (send brush get-transformation)
                                        (lambda () brush-stipple-s)
                                        (lambda (v) (set! brush-stipple-s v) v))
                       (let ([horiz (lambda (cr2)
@@ -896,6 +903,7 @@
                   [col (send pen get-color)])
               (if st
                   (install-stipple st col s
+                                   #f
                                    (lambda () pen-stipple-s)
                                    (lambda (v) (set! pen-stipple-s v) v))
                   (install-color cr 

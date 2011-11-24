@@ -80,7 +80,7 @@
       (raise-type-error (init-name 'brush%)
                         "transformation-vector"
                         _transformation))
-    (when _gradient
+    (when (or _gradient _stipple)
       (set! transformation (transformation-vector->immutable
                             _transformation))))
 
@@ -114,9 +114,11 @@
   (define/public (get-transformation) transformation)
 
   (def/public (get-stipple) stipple)
-  (def/public (set-stipple [(make-or-false bitmap%) s]) 
+  (def/public (set-stipple [(make-or-false bitmap%) s] 
+                           [(make-or-false transformation-vector?) [t #f]])
     (check-immutable 'set-stipple)
-    (set! stipple s)))
+    (set! stipple s)
+    (set! transformation (and s t))))
 
 ;; ----------------------------------------
 

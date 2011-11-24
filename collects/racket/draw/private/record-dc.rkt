@@ -54,12 +54,21 @@
     (if s
         (let ([b (make-object brush% 
                               (send b get-color)
-                              (send b get-style))])
-          (send b set-stipple (clone-bitmap s))
+                              (send b get-style))]
+              [t (send b get-transformation)])
+          (send b set-stipple (clone-bitmap s) t)
           b)
-        (send the-brush-list find-or-create-brush
-              (send b get-color)
-              (send b get-style)))))
+        (let ([g (send b get-gradient)])
+          (if g
+              (make-object brush% 
+                           (send b get-color)
+                           (send b get-style)
+                           #f
+                           g
+                           (send b get-transformation))
+              (send the-brush-list find-or-create-brush
+                    (send b get-color)
+                    (send b get-style)))))))
 
 (define (region-maker r)
   (if (send r internal-get-dc)

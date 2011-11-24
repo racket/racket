@@ -23,10 +23,11 @@ As an alternative to a color, style, and stipple, a brush can have a
  ending colors and starting and ending lines (for a linear gradient)
  or circles (for a radial gradient); a gradient-assigned color is
  applied for each point that is touched when drawing with the brush.
- By default, coordinates in the gradient are transformed by the
+
+By default, coordinates in a stipple or gradient are transformed by the
  drawing context's transformation when the brush is used, but a brush
- can have its own @deftech{gradient transformation} that is used, instead.
- A gradient transformation has the same representation and meaning as for
+ can have its own @deftech{brush transformation} that is used, instead.
+ A brush transformation has the same representation and meaning as for
  @xmethod[dc<%> get-transformation].
 
 A @deftech{brush style} is one of the following (but is ignored if the brush
@@ -102,10 +103,12 @@ To avoid creating multiple brushes with the same characteristics, use
                                                               real? real? real?)
                                                      real? real? real? real? real?))])]{
 
-Creates a brush with the given color, @tech{brush style}, @tech{brush stipple}, @tech{gradient}, and
- @tech{gradient transformation}. For the case that the color is specified
- using a name, see @racket[color-database<%>] for information about
- color names; if the name is not known, the brush's color is black.}
+Creates a brush with the given color, @tech{brush style}, @tech{brush
+ stipple}, @tech{gradient}, and @tech{brush transformation} (which is
+ kept only if the gradient or stipple is non-@racket[#f]). For the
+ case that the color is specified using a name, see
+ @racket[color-database<%>] for information about color names; if the
+ name is not known, the brush's color is black.}
 
 
 @defmethod[(get-color)
@@ -143,12 +146,12 @@ brush styles.}
 @defmethod[(get-transformation) (or/c #f (vector/c (vector/c real? real? real? real? real? real?)
                                                    real? real? real? real? real?))]{
 
-Returns the brush's @tech{gradient transformation}, if any.
+Returns the brush's @tech{brush transformation}, if any.
 
-If a brush with a gradient also has a transformation, then the
-transformation applies to the gradient's coordinates instead of the
+If a brush with a stipple or gradient also has a transformation, then the
+transformation applies to the stipple or gradient's coordinates instead of the
 target drawing context's transformation; otherwise, the target drawing
-context's transformation applies to gradient coordinates.}
+context's transformation applies to stipple and gradient coordinates.}
 
 
 @defmethod*[([(set-color [color (is-a?/c color%)])
@@ -169,12 +172,17 @@ For the case that the color is specified using a string, see
 
 }
 
-@defmethod[(set-stipple [bitmap (or/c (is-a?/c bitmap%) #f)])
+@defmethod[(set-stipple [bitmap (or/c (is-a?/c bitmap%) #f)]
+                 [transformation (or/c #f (vector/c (vector/c real? real? real? 
+                                                              real? real? real?)
+                                                     real? real? real? real? real?))
+                                 #f])
            void?]{
 
-Sets or removes the @tech{brush stipple} bitmap, where @racket[#f] removes the
- stipple. See @racket[brush%] for information about drawing with
- stipples.
+Sets or removes the @tech{brush stipple} bitmap, where @racket[#f]
+ removes the stipple. The @tech{brush transformation} is set at the
+ same time to @racket[transformation]. See @racket[brush%] for
+ information about drawing with stipples.
 
 If @racket[bitmap] is modified while is associated with a brush, the
  effect on the brush is unspecified. A brush cannot be modified if it
