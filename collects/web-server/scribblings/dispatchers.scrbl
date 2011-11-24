@@ -277,7 +277,12 @@ a URL that refreshes the password file, servlet cache, etc.}
  is not authorized and @racket[#f] if the request @emph{is} authorized.
 }
 
-@defproc[(make-basic-denied?/path [password-file path-string?])
+@defproc[(make-basic-denied?/path [authorized? authorized?/c])
+                                  denied?/c]{
+Creates a denied procedure from an authorized procedure.
+}
+
+@defproc[(password-file->authorized? [password-file path-string?])
          (values (-> void)
                  authorized?/c)]{
  Creates an authorization procedure based on the given password
