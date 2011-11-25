@@ -36,7 +36,8 @@
            object% object? externalizable<%> printable<%> writable<%> equal<%>
            object=?
            new make-object instantiate
-           send send/apply send/keyword-apply send* class-field-accessor class-field-mutator with-method
+           send send/apply send/keyword-apply send* dynamic-send
+           class-field-accessor class-field-mutator with-method
            get-field set-field! field-bound? field-names
            private* public*  pubment*
            override* overment*
@@ -3853,6 +3854,13 @@
      ;; send/keyword-apply
      send/keyword-apply)))
 
+(define dynamic-send
+  (make-keyword-procedure
+   (lambda (kws kw-vals obj method-name . args)
+     (unless (object? obj) (raise-type-error 'dynamic-send "object" obj))
+     (unless (symbol? method-name) (raise-type-error 'dynamic-send "symbol" method-name))
+     (keyword-apply (find-method/who 'dynamic-send obj method-name) kws kw-vals obj args))))
+
 (define-syntaxes (send* send*-traced)
   (let* ([core-send*
           (lambda (traced?)
@@ -4818,7 +4826,8 @@
          object% object? object=? externalizable<%> printable<%> writable<%> equal<%>
          new make-object instantiate
          get-field set-field! field-bound? field-names
-         send send/apply send/keyword-apply send* class-field-accessor class-field-mutator with-method
+         send send/apply send/keyword-apply send* dynamic-send
+         class-field-accessor class-field-mutator with-method
          private* public*  pubment*
          override* overment*
          augride* augment*

@@ -1105,6 +1105,15 @@ be any expression.}
 Like @racket[send/apply], but with expressions for keyword and
 argument lists like @racket[keyword-apply].}
 
+@defproc[(dynamic-send [obj object?] 
+                       [method-name symbol?]
+                       [v any/c] ...
+                       [#:<kw> kw-arg any/c] ...) any]{
+
+Calls the method on @racket[obj] whose name matches
+@racket[method-name], passing along all given @racket[v]s and
+@racket[kw-arg]s.}
+
 
 @defform/subs[(send* obj-expr msg ...)
               ([msg (method-id arg ...)

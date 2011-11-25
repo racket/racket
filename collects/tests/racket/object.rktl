@@ -793,6 +793,12 @@
 (test '(2 12) 'dotted (send/keyword-apply dotted h null null (list 2)))
 (test '(3 8) 'dotted (send/keyword-apply dotted h '(#:y) (list 8) (list 3)))
 
+(test '(c b a) dynamic-send dotted 'f 'a 'b 'c)
+(test '(c b a) apply dynamic-send dotted 'f 'a '(b c))
+(test '(e 12) apply dynamic-send dotted 'h '(e))
+(test '(f 13) 'dotted (apply dynamic-send dotted 'h '(f) #:y 13))
+(test '(g 14) keyword-apply dynamic-send '(#:y) '(14) dotted 'h '(g))
+
 (syntax-test #'(send/apply dotted f 2 . l))
 
 ;; ------------------------------------------------------------
