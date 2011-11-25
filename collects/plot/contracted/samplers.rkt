@@ -6,6 +6,4 @@
 (provide (activate-contract-out function->sampler
                                 inverse->sampler
                                 2d-function->sampler
-                                3d-function->sampler
-                                contour-ticks
-                                isosurface-ticks))
+                                3d-function->sampler))

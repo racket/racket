@@ -15,12 +15,12 @@
          "../common/deprecation-warning.rkt"
          "../common/contract-doc.rkt"
          "../common/format.rkt"
-         "snip.rkt"
          "plot-area.rkt")
 
 ;; Require lazily: without this, Racket complains while generating documentation:
 ;;   cannot instantiate `racket/gui/base' a second time in the same process
-(lazy-require ["../common/gui.rkt" (make-snip-frame)])
+(lazy-require ["snip.rkt" (make-2d-plot-snip)]
+              ["../common/gui.rkt" (make-snip-frame)])
 
 (provide (except-out (all-defined-out) get-renderer-list get-bounds-rect get-ticks plot-dc))
 

@@ -535,7 +535,7 @@ Cube vertex numbers:
                               [d real?]
                               [d1 real?] [d2 real?] [d3 real?] [d4 real?]
                               [d5 real?] [d6 real?] [d7 real?] [d8 real?]
-                              ) (listof (vector/c real? real? real?))
+                              ) (listof (listof (vector/c real? real? real?)))
   (cond [(all inexact-real? xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
          (define polys (unsafe-heights->cube-polys d d1 d2 d3 d4 d5 d6 d7 d8))
          (for/list ([poly  (in-list polys)])

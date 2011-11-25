@@ -157,7 +157,7 @@ above.
 
 (defproc (heights->lines [xa real?] [xb real?] [ya real?] [yb real?]
                          [z real?] [z1 real?] [z2 real?] [z3 real?] [z4 real?]
-                         ) (list/c (vector/c real? real? real?) (vector/c real? real? real?))
+                         ) (listof (list/c (vector/c real? real? real?) (vector/c real? real? real?)))
   (cond [(all inexact-real? xa xb ya yb z z1 z2 z3 z4)
          (define lines (unsafe-heights->lines z z1 z2 z3 z4))
          (for/list ([line  (in-list lines)])
@@ -599,7 +599,7 @@ above.
 (defproc (heights->polys [xa real?] [xb real?] [ya real?] [yb real?]
                          [za real?] [zb real?]
                          [z1 real?] [z2 real?] [z3 real?] [z4 real?]
-                         ) (listof (vector/c real? real? real?))
+                         ) (listof (listof (vector/c real? real? real?)))
   (cond [(all inexact-real? xa xb ya yb za zb z1 z2 z3 z4)
          (define polys (unsafe-heights->polys za zb z1 z2 z3 z4))
          (for/list ([poly  (in-list polys)])
@@ -610,8 +610,8 @@ above.
                           (vector (unsafe-unsolve-t xa xb u) (unsafe-unsolve-t ya yb v) z))]))]
         [(find-failure-index real? xa xb ya yb za zb z1 z2 z3 z4)
          => (λ (i) (raise-type-error 'heights->polys "real number" i xa xb ya yb za zb z1 z2 z3 z4))]
-        [(= za zb z1 z2 z3 z4)  (list (vector xa ya z1) (vector xb ya z2)
-                                      (vector xb yb z3) (vector xa yb z4))]
+        [(= za zb z1 z2 z3 z4)  (list (list (vector xa ya z1) (vector xb ya z2)
+                                            (vector xb yb z3) (vector xa yb z4)))]
         [else
          (let-map
           (za zb z1 z2 z3 z4) inexact->exact

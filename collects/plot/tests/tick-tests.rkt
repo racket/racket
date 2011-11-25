@@ -4,11 +4,43 @@
 
 (plot-font-family 'swiss)
 
-(plot (function (λ (x) (count pre-tick-major? ((linear-ticks #:number 8) 0 x)))
-                0.1 10))
+(define (get-isosurface-ticks z-min z-max)
+  (cond [(z-min . >= . z-max)  empty]
+        [else
+         (map pre-tick-value
+              (filter pre-tick-major?
+                      (contour-ticks (plot-d-ticks) z-min z-max 'auto #f)))]))
 
-(plot (function (λ (x) (count pre-tick-major? ((linear-ticks #:number 40) 0 x)))
-                1 100))
+;; try to verify that we always get 3-5 isosurfaces from the isosurfaces3d renderer
+(time
+ (plot (function (λ (x)
+                   (let ([ts  (get-isosurface-ticks 1/10 (+ 1/10 x))])
+                     (if (empty? ts) +nan.0 (length ts))))
+                 #:samples 10000)
+       #:x-min 0 #:x-max 10
+       #:x-label "bounds size (min = 1/10)"
+       #:y-label "number of ticks"))
+
+;; try to verify that we always get 3-5 isosurfaces from the isosurfaces3d renderer
+(time
+ (plot3d (contour-intervals3d (λ (x y)
+                                (let ([ts  (get-isosurface-ticks x (+ x y))])
+                                  (if (empty? ts) +nan.0 (length ts))))
+                              #:samples 101 #:line-styles '(transparent))
+         #:x-min 0 #:x-max 10 #:y-min 0 #:y-max 10
+         #:x-label "bounds min" #:y-label "bounds size"
+         #:z-label "number of ticks"))
+
+(time
+ (plot (contour-intervals (λ (x y)
+                            (let ([ts  (get-isosurface-ticks x (+ x y))])
+                              (if (empty? ts) +nan.0 (length ts))))
+                          #:samples 101)
+       #:x-min 0 #:x-max 10 #:y-min 0 #:y-max 10
+       #:x-label "bounds min" #:y-label "bounds size"))
+
+(plot (function (λ (x) (count pre-tick-major? ((linear-ticks) 0 x))) #e0.1 10))
+(plot (function (λ (x) (count pre-tick-major? ((linear-ticks #:number 40) 0 x))) 1 100))
 
 (parameterize ([plot-x-ticks  (linear-ticks #:base 2 #:divisors '(1 2))]
                #;[plot-y-ticks  (linear-ticks #:base (* 1 2 3 4 5) #:divisors '(1 2 3 4 5))])
@@ -187,7 +219,7 @@
                (lines data #:color 2 #:width 2)
                (points data #:color 2 #:line-width 2 #:fill-color 0 #:sym 'fullcircle
                        #:label "Measurement")
-               (map (λ (d) (point-label d #:anchor 'bottom-right #:point-color 2 #:point-size 7))
+               (map (λ (d) (point-label d #:anchor 'bottom #:point-color 2 #:point-size 7))
                     above-data))
          #:y-min -25 #:x-label "Time" #:y-label "Temp."
          #:title "Temp./Time With Applied Heat (Measurement and Trend)")))

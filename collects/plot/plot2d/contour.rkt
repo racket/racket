@@ -56,30 +56,32 @@
     (define sample (g x-min x-max (animated-samples samples)
                       y-min y-max (animated-samples samples)))
     (match-define (2d-sample xs ys zss z-min z-max) sample)
-    (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
+    (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #f))
     
-    (let* ([colors  (maybe-apply colors zs)]
-           [widths  (maybe-apply widths zs)]
-           [styles  (maybe-apply styles zs)]
-           [alphas  (maybe-apply alphas zs)]
-           [flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
-           [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)]
-           [zs          (if flonum-ok? (map exact->inexact zs) zs)])
-      (for ([z      (in-list zs)]
-            [color  (in-cycle colors)]
-            [width  (in-cycle widths)]
-            [style  (in-cycle styles)]
-            [alpha  (in-cycle alphas)])
-        (send area put-alpha alpha)
-        (send area put-pen color width style)
-        (for-2d-sample
-         (xa xb ya yb z1 z2 z3 z4) sample
-         (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
-           (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
-           (send area put-line v1 v2))))
-      
-      (cond [label  (line-legend-entries label zs labels colors widths styles)]
-            [else   empty]))))
+    ;; need to check this or in-cycle below does an infinite loop (I think it's an in-cycle bug)
+    (unless (empty? zs)
+      (let* ([colors  (maybe-apply colors zs)]
+             [widths  (maybe-apply widths zs)]
+             [styles  (maybe-apply styles zs)]
+             [alphas  (maybe-apply alphas zs)]
+             [flonum-ok?  (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max)]
+             [sample      (if flonum-ok? (2d-sample-exact->inexact sample) sample)]
+             [zs          (if flonum-ok? (map exact->inexact zs) zs)])
+        (for ([z      (in-list zs)]
+              [color  (in-cycle colors)]
+              [width  (in-cycle widths)]
+              [style  (in-cycle styles)]
+              [alpha  (in-cycle alphas)])
+          (send area put-alpha alpha)
+          (send area put-pen color width style)
+          (for-2d-sample
+           (xa xb ya yb z1 z2 z3 z4) sample
+           (for/list ([line  (in-list (heights->lines xa xb ya yb z z1 z2 z3 z4))])
+             (match-define (list v1 v2) (map (λ (v) (vector-take v 2)) line))
+             (send area put-line v1 v2))))))
+    
+    (cond [(and label (not (empty? zs)))  (line-legend-entries label zs labels colors widths styles)]
+          [else  empty])))
 
 (defproc (contours
           [f (real? real? . -> . real?)]
@@ -108,7 +110,7 @@
     (define sample (g x-min x-max (animated-samples samples)
                       y-min y-max (animated-samples samples)))
     (match-define (2d-sample xs ys zss z-min z-max) sample)
-    (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
+    (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #t))
     
     (define-values (z-ivls ivl-labels)
       (for/lists (z-ivls ivl-labels) ([za  (in-list zs)]

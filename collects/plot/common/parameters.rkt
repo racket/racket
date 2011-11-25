@@ -117,9 +117,9 @@
 
 (defparam plot-x-ticks ticks? (linear-ticks))
 (defparam plot-y-ticks ticks? (linear-ticks))
-(defparam plot-z-ticks ticks? (linear-ticks #:number 8))
-(defparam plot-d-ticks ticks? (linear-ticks #:number 6 #:divisors '(1 2 4 5)))
-(defparam plot-r-ticks ticks? (linear-ticks #:number 8))
+(defparam plot-z-ticks ticks? (linear-ticks))
+(defparam plot-d-ticks ticks? (linear-ticks))
+(defparam plot-r-ticks ticks? (linear-ticks))
 
 (defparam plot-x-far-ticks ticks? (ticks-mimic plot-x-ticks))
 (defparam plot-y-far-ticks ticks? (ticks-mimic plot-y-ticks))

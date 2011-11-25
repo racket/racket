@@ -70,42 +70,43 @@
   (define d-min (if rd-min rd-min fd-min))
   (define d-max (if rd-max rd-max fd-max))
   
+  (match-define (list (tick ds _ labels) ...)
+    (cond [(and d-min d-max)  (contour-ticks (plot-d-ticks) d-min d-max levels #f)]
+          [else  empty]))
+  
+  ;; need to check this or in-cycle below does an infinite loop (I think it's an in-cycle bug)
+  (unless (empty? ds)
+    (let* ([colors  (maybe-apply colors ds)]
+           [styles  (maybe-apply styles ds)]
+           [alphas  (maybe-apply alphas ds)]
+           [line-colors  (maybe-apply line-colors ds)]
+           [line-widths  (maybe-apply line-widths ds)]
+           [line-styles  (maybe-apply line-styles ds)]
+           [flonum-ok?  (flonum-ok-for-4d? x-min x-max y-min y-max z-min z-max d-min d-max)]
+           [sample      (if flonum-ok? (3d-sample-exact->inexact sample) sample)]
+           [ds          (if flonum-ok? (map exact->inexact ds) ds)])
+      (for ([d      (in-list ds)]
+            [color  (in-cycle colors)]
+            [style  (in-cycle styles)]
+            [alpha  (in-cycle alphas)]
+            [line-color  (in-cycle line-colors)]
+            [line-width  (in-cycle line-widths)]
+            [line-style  (in-cycle line-styles)])
+        (send area put-alpha alpha)
+        (send area put-brush color style)
+        (send area put-pen line-color line-width line-style)
+        (for-3d-sample
+         (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
+         (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
+         (when (not (empty? polys))
+           (send area put-polygons polys
+                 (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))))
+  
+  
   (cond
-    [(not (and d-min d-max))  empty]
-    [else
-     (match-define (list (tick ds _ labels) ...) (isosurface-ticks d-min d-max levels))
-     #;(define ds (linear-seq d-min d-max levels #:start? (and rd-min #t) #:end? (and rd-max #t)))
-     
-     (let* ([colors  (maybe-apply colors ds)]
-            [styles  (maybe-apply styles ds)]
-            [alphas  (maybe-apply alphas ds)]
-            [line-colors  (maybe-apply line-colors ds)]
-            [line-widths  (maybe-apply line-widths ds)]
-            [line-styles  (maybe-apply line-styles ds)]
-            [flonum-ok?  (flonum-ok-for-4d? x-min x-max y-min y-max z-min z-max d-min d-max)]
-            [sample      (if flonum-ok? (3d-sample-exact->inexact sample) sample)]
-            [ds          (if flonum-ok? (map exact->inexact ds) ds)])
-       (for ([d      (in-list ds)]
-             [color  (in-cycle colors)]
-             [style  (in-cycle styles)]
-             [alpha  (in-cycle alphas)]
-             [line-color  (in-cycle line-colors)]
-             [line-width  (in-cycle line-widths)]
-             [line-style  (in-cycle line-styles)])
-         (send area put-alpha alpha)
-         (send area put-brush color style)
-         (send area put-pen line-color line-width line-style)
-         (for-3d-sample
-          (xa xb ya yb za zb d1 d2 d3 d4 d5 d6 d7 d8) sample
-          (define polys (heights->cube-polys xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8))
-          (when (not (empty? polys))
-            (send area put-polygons polys
-                  (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))
-       
-       (cond
-         [label  (rectangle-legend-entries
-                  label ds colors styles line-colors line-widths line-styles)]
-         [else  empty]))]))
+    [(and label (not (empty? ds)))  (rectangle-legend-entries
+                                     label ds colors styles line-colors line-widths line-styles)]
+    [else  empty]))
 
 (defproc (isosurfaces3d
           [f (real? real? real? . -> . real?)]

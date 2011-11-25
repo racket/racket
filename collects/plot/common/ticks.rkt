@@ -29,14 +29,14 @@
 (defcontract ticks-layout/c (real? real? . -> . (listof pre-tick?)))
 (defcontract ticks-format/c (real? real? (listof pre-tick?) . -> . (listof string?)))
 
-(defparam ticks-default-number exact-positive-integer? 5)
+(defparam ticks-default-number exact-positive-integer? 4)
 
 ;; ===================================================================================================
 ;; Helpers
 
 (define-syntax-rule (with-exact-bounds x-min x-max body ...)
-  (cond [(x-min . >= . x-max)
-         (error 'bounds-check "expected min < max; given min = ~e and max = ~e" x-min x-max)]
+  (cond [(x-min . > . x-max)
+         (error 'bounds-check "expected min <= max; given min = ~e and max = ~e" x-min x-max)]
         [else  (let ([x-min  (inexact->exact x-min)]
                      [x-max  (inexact->exact x-max)])
                  body ...)]))
@@ -70,46 +70,63 @@
 ;; ===================================================================================================
 ;; Linear ticks (default tick function, evenly spaced)
 
-(defproc (linear-tick-step+divisor [x-min real?] [x-max real?]
-                                   [max-ticks exact-positive-integer?]
-                                   [base (and/c exact-integer? (>=/c 2))]
-                                   [divisors (listof exact-positive-integer?)]
-                                   ) (values real? exact-positive-integer?)
+(defproc (linear-tick-step [x-min real?] [x-max real?]
+                           [num-ticks exact-positive-integer?]
+                           [base (and/c exact-integer? (>=/c 2))]
+                           [divisors (listof exact-positive-integer?)]) real?
   (define range (- x-max x-min))
   (define mag (expt base (floor-log/base base range)))
-  (define ds (sort divisors >))
-  (let/ec break
-    (for* ([e  (in-range (floor-log/base base max-ticks) -2 -1)]
-           [d  (in-list ds)])
-      ;(printf "new-d = ~v~n" (* d (expt base e)))
-      (define step (/ mag d (expt base e)))
-      (define-values (_start _end num) (linear-seq-args x-min x-max step))
-      (when (num . <= . max-ticks)
-        (break step d)))
-    ;(printf "default!~n")
-    (values (/ range max-ticks) max-ticks)))
+  (define epsilon (expt 10 (- (digits-for-range x-min x-max))))
+  (define e-start (floor-log/base base num-ticks))
+  (define-values (step diff)
+    (for*/fold ([step #f] [diff +inf.0]) ([e  (in-range e-start -2 -1)]
+                                          [d  (in-list (sort divisors <))])
+      ;; when num-ticks > base, we sometimes must divide by (expt base e) instead of just base
+      (define new-step (/ mag d (expt base e)))
+      ;; find the start, end and number of ticks with this step size
+      (define-values (new-start new-end new-num) (linear-seq-args x-min x-max new-step))
+      ;; endpoints don't count in the number of ticks (a concession for contour-ticks, which
+      ;; seems to work well outside of contour plots anyway)
+      (let* ([new-num  (if ((abs (- new-start x-min)) . < . epsilon) (- new-num 1) new-num)]
+             [new-num  (if ((abs (- new-end x-max)) . < . epsilon) (- new-num 1) new-num)])
+        ;; keep the step size that generates the number of ticks closest to num-ticks
+        (define new-diff (abs (- new-num num-ticks)))
+        (cond [(new-diff . <= . diff)  (values new-step new-diff)]
+              [else  (values step diff)]))))
+  (if step step (/ range num-ticks)))
 
 (defproc (linear-tick-values [x-min real?] [x-max real?]
-                             [max-ticks exact-positive-integer?]
+                             [num-ticks exact-positive-integer?]
                              [base (and/c exact-integer? (>=/c 2))]
                              [divisors (listof exact-positive-integer?)]
                              ) (values (listof real?) (listof real?))
   (with-exact-bounds
    x-min x-max
-   (define-values (step d) (linear-tick-step+divisor x-min x-max max-ticks base divisors))
-   (define major-xs (linear-major-values/step x-min x-max step))
-   (define major-ticks (length major-xs))
-   
-   (define ns (filter (λ (n) (zero? (remainder (* n d) base))) divisors))
-   (define n
-     (cond [(empty? ns)  1]
-           [else  (argmin (λ (n) (abs (- (* n major-ticks) max-ticks))) (sort ns <))]))
-   (define minor-xs (linear-minor-values/step major-xs step (- n 1)))
-   (values major-xs (filter (λ (x) (<= x-min x x-max)) minor-xs))))
+   (cond
+     [(= x-min x-max)  (values empty empty)]
+     [else
+      (define major-step (linear-tick-step x-min x-max num-ticks base divisors))
+      (define major-xs (linear-major-values/step x-min x-max major-step))
+      (define num-major-ticks (length major-xs))
+      
+      (define minor-xs
+        (let loop ([mult 2])
+          (cond [(mult . > . 4)  empty]
+                [else
+                 (define minor-step (linear-tick-step x-min x-max (* mult num-ticks) base divisors))
+                 (define minor-xs (linear-major-values/step x-min x-max minor-step))
+                 (cond [(empty? (remove* minor-xs major-xs))
+                        ;; this covers the major ticks as well; check for additional minor ticks
+                        (define real-minor-xs (remove* major-xs minor-xs))
+                        (cond [(empty? real-minor-xs)  (loop (+ 1 mult))]
+                              [else  real-minor-xs])]
+                       [else  (loop (+ 1 mult))])])))
+      
+      (values major-xs minor-xs)])))
 
 (defproc (linear-ticks-layout [#:number number exact-positive-integer? (ticks-default-number)]
                               [#:base base (and/c exact-integer? (>=/c 2)) 10]
-                              [#:divisors divisors (listof exact-positive-integer?) '(1 2 5)]
+                              [#:divisors divisors (listof exact-positive-integer?) '(1 2 4 5)]
                               ) ticks-layout/c
   (λ (x-min x-max)
     (define-values (major-xs minor-xs) (linear-tick-values x-min x-max number base divisors))
@@ -125,7 +142,7 @@
 
 (defproc (linear-ticks [#:number number exact-positive-integer? (ticks-default-number)]
                        [#:base base (and/c exact-integer? (>=/c 2)) 10]
-                       [#:divisors divisors (listof exact-positive-integer?) '(1 2 5)]
+                       [#:divisors divisors (listof exact-positive-integer?) '(1 2 4 5)]
                        ) ticks? #:document-body
   (ticks (linear-ticks-layout #:number number #:base base
                               #:divisors divisors)
@@ -195,16 +212,22 @@
 ;; ===================================================================================================
 ;; Date/time helpers
 
-(defproc (find-linear-tick-step [x-min real?] [x-max real?] [max-ticks exact-positive-integer?]
+(defproc (find-linear-tick-step [x-min real?] [x-max real?]
+                                [num-ticks exact-positive-integer?]
                                 [steps (listof real?)]) real?
   (with-exact-bounds
    x-min x-max
-   (let/ec break
-     (for ([step  (in-list (sort steps <))])
-       (define-values (_start _end num) (linear-seq-args x-min x-max step))
-       (when (num . <= . max-ticks)
-         (break step)))
-     #f)))
+   (define epsilon (expt 10 (- (digits-for-range x-min x-max))))
+   (define-values (step diff)
+    (for/fold ([step #f] [diff +inf.0]) ([new-step  (in-list (sort steps <))])
+      (define-values (new-start new-end new-num) (linear-seq-args x-min x-max new-step))
+      ;; endpoints don't count in number of ticks (see linear-tick-step)
+      (let* ([new-num  (if ((abs (- new-start x-min)) . < . epsilon) (- new-num 1) new-num)]
+             [new-num  (if ((abs (- new-end x-max)) . < . epsilon) (- new-num 1) new-num)])
+        (define new-diff (abs (- new-num num-ticks)))
+        (cond [(new-diff . <= . diff)  (values new-step new-diff)]
+              [else  (values step diff)]))))
+   step))
 
 (define (count-changing-fields formatter fmt-list xs)
   (let ([fmt-list  (filter symbol? fmt-list)])
@@ -264,14 +287,16 @@
 
 ;; Tick steps to try, in seconds
 (define date-steps
-  (list 1 2 5 10 15 20 30 40 45
+  (list 1 2 4 5 10 15 20 30 40 45
         seconds-per-minute
         (* 2 seconds-per-minute)
+        (* 4 seconds-per-minute)
         (* 5 seconds-per-minute)
         (* 10 seconds-per-minute)
         (* 15 seconds-per-minute)
         (* 20 seconds-per-minute)
         (* 30 seconds-per-minute)
+        (* 45 seconds-per-minute)
         seconds-per-hour
         (* 2 seconds-per-hour)
         (* 3 seconds-per-hour)
@@ -279,8 +304,10 @@
         (* 6 seconds-per-hour)
         (* 8 seconds-per-hour)
         (* 12 seconds-per-hour)
+        (* 18 seconds-per-hour)
         seconds-per-day
         (* 2 seconds-per-day)
+        (* 4 seconds-per-day)
         (* 5 seconds-per-day)
         (* 10 seconds-per-day)
         seconds-per-week
@@ -294,30 +321,29 @@
         (* 9 avg-seconds-per-month)
         avg-seconds-per-year
         (* 2 avg-seconds-per-year)
+        (* 4 avg-seconds-per-year)
         (* 5 avg-seconds-per-year)))
 
-(define (date-tick-values x-min x-max max-ticks)
+(define (date-tick-values x-min x-max num-ticks)
   (with-exact-bounds
    x-min x-max
-   (define range (- x-max x-min))
-   (define step
-     (cond [(range . < . (* max-ticks (first date-steps)))
-            (define-values (step _)
-              (linear-tick-step+divisor x-min x-max max-ticks 10 '(1 2 5)))
-            step]
-           [(range . > . (* max-ticks (last date-steps)))
-            (define-values (step _)
-              (linear-tick-step+divisor (/ x-min avg-seconds-per-year)
-                                        (/ x-max avg-seconds-per-year)
-                                        max-ticks 10 '(1 2 5)))
-            (* step avg-seconds-per-year)]
-           [else  (find-linear-tick-step x-min x-max max-ticks date-steps)]))
-   (define date-round
-     (cond [(step . >= . avg-seconds-per-year)   utc-seconds-round-year]
-           [(step . >= . avg-seconds-per-month)  utc-seconds-round-month]
-           [else  (λ (d) d)]))
-   (define major-xs (linear-major-values/step x-min x-max step))
-   (values (map date-round major-xs) empty)))
+   (cond [(= x-min x-max)  (values empty empty)]
+         [else
+          (define range (- x-max x-min))
+          (define step
+            (cond [(range . < . (* num-ticks (first date-steps)))
+                   (linear-tick-step x-min x-max num-ticks 10 '(1 2 4 5))]
+                  [(range . > . (* num-ticks (last date-steps)))
+                   (* avg-seconds-per-year
+                      (linear-tick-step (/ x-min avg-seconds-per-year) (/ x-max avg-seconds-per-year)
+                                        num-ticks 10 '(1 2 4 5)))]
+                  [else  (find-linear-tick-step x-min x-max num-ticks date-steps)]))
+          (define date-round
+            (cond [(step . >= . avg-seconds-per-year)   utc-seconds-round-year]
+                  [(step . >= . avg-seconds-per-month)  utc-seconds-round-month]
+                  [else  (λ (d) d)]))
+          (define major-xs (linear-major-values/step x-min x-max step))
+          (values (map date-round major-xs) empty)])))
 
 (defproc (date-ticks-layout [#:number number exact-positive-integer? (ticks-default-number)]
                             ) ticks-layout/c
@@ -377,9 +403,10 @@
 
 ;; Tick steps to try, in seconds
 (define time-steps
-  (list 1 2 5 10 15 20 30 40 45
+  (list 1 2 4 5 10 15 20 30 40 45
         seconds-per-minute
         (* 2 seconds-per-minute)
+        (* 4 seconds-per-minute)
         (* 5 seconds-per-minute)
         (* 10 seconds-per-minute)
         (* 15 seconds-per-minute)
@@ -396,6 +423,7 @@
         (* 18 seconds-per-hour)
         seconds-per-day
         (* 2 seconds-per-day)
+        (* 4 seconds-per-day)
         (* 5 seconds-per-day)
         (* 10 seconds-per-day)
         (* 15 seconds-per-day)
@@ -403,25 +431,23 @@
         (* 60 seconds-per-day)
         (* 90 seconds-per-day)))
 
-(define (time-tick-values x-min x-max max-ticks)
+(define (time-tick-values x-min x-max num-ticks)
   (with-exact-bounds
    x-min x-max
-   (define range (- x-max x-min))
-   (define step
-     (cond [(range . < . (* max-ticks (first time-steps)))
-            (define-values (step _)
-              (linear-tick-step+divisor x-min x-max max-ticks 10 '(1 2 5)))
-            step]
-           [(range . > . (* max-ticks (last time-steps)))
-            (define-values (step _)
-              (linear-tick-step+divisor (/ x-min seconds-per-day)
-                                        (/ x-max seconds-per-day)
-                                        max-ticks 10 '(1 2 5)))
-            (* step seconds-per-day)]
-           [else
-            (find-linear-tick-step x-min x-max max-ticks time-steps)]))
-   (define major-xs (linear-major-values/step x-min x-max step))
-   (values major-xs empty)))
+   (cond [(= x-min x-max)  (values empty empty)]
+         [else
+          (define range (- x-max x-min))
+          (define step
+            (cond [(range . < . (* num-ticks (first time-steps)))
+                   (linear-tick-step x-min x-max num-ticks 10 '(1 2 4 5))]
+                  [(range . > . (* num-ticks (last time-steps)))
+                   (* seconds-per-day
+                      (linear-tick-step (/ x-min seconds-per-day) (/ x-max seconds-per-day)
+                                        num-ticks 10 '(1 2 4 5)))]
+                  [else
+                   (find-linear-tick-step x-min x-max num-ticks time-steps)]))
+          (define major-xs (linear-major-values/step x-min x-max step))
+          (values major-xs empty)])))
 
 (defproc (time-ticks-layout [#:number number exact-positive-integer? (ticks-default-number)]
                             ) ticks-layout/c
@@ -486,7 +512,7 @@
                          ) ticks? #:document-body
   (define si? (eq? kind 'SI))
   (ticks (linear-ticks-layout #:number number #:base (if si? 10 2)
-                              #:divisors (if si? '(1 2 5) '(1 2)))
+                              #:divisors (if si? '(1 2 4 5) '(1 2)))
          (bit/byte-ticks-format #:size size #:kind kind)))
 
 ;; ===================================================================================================
@@ -572,8 +598,7 @@
                          [#:scales scales (listof string?) (currency-ticks-scales)]
                          [#:formats formats (list/c string? string? string?) (currency-ticks-formats)]
                          ) ticks? #:document-body
-  (ticks (linear-ticks-layout #:number number #:base 10
-                              #:divisors '(1 2 4 5))
+  (ticks (linear-ticks-layout #:number number)
          (currency-ticks-format #:kind kind #:scales scales
                                 #:formats formats)))
 
@@ -643,10 +668,8 @@
          format))
 
 (defproc (linear-scale [m rational?] [b rational? 0]) invertible-function? #:document-body
-  (let ([m  (inexact->exact m)]
-        [b  (inexact->exact b)])
-    (invertible-function (λ (x) (+ (* m x) b))
-                         (λ (y) (/ (- y b) m)))))
+  (invertible-function (λ (x) (+ (* m x) b))
+                       (λ (y) (/ (- y b) m))))
 
 ;; ===================================================================================================
 ;; Tick utils
@@ -684,3 +707,45 @@
 (defproc (tick-inexact->exact [t tick?]) tick?
   (match-define (tick x major? label) t)
   (tick (inexact->exact x) major? label))
+
+(defproc (contour-ticks [z-ticks ticks?] [z-min real?] [z-max real?]
+                        [levels (or/c 'auto exact-positive-integer? (listof real?))]
+                        [intervals? boolean?]) (listof tick?)
+  (define epsilon (expt 10 (- (digits-for-range z-min z-max))))
+  (match-define (ticks layout format) z-ticks)
+  ;; initial tick layout
+  (define ts
+    (cond [(eq? levels 'auto)  (filter pre-tick-major? (layout z-min z-max))]
+          [else  (define zs (cond [(list? levels)  (filter (λ (z) (<= z-min z z-max)) levels)]
+                                  [else  (linear-seq z-min z-max levels #:start? #f #:end? #f)]))
+                 (map (λ (z) (pre-tick z #t)) zs)]))
+  (let* (;; remove z-min tick (or the one close to it) if present
+         [ts  (if (and (not (empty? ts))
+                       ((abs (- z-min (pre-tick-value (first ts)))) . < . epsilon))
+                  (rest ts)
+                  ts)]
+         ;; remove z-max tick (or the one close to it) if present
+         [ts  (if (and (not (empty? ts))
+                       ((abs (- z-max (pre-tick-value (last ts)))) . < . epsilon))
+                  (drop-right ts 1)
+                  ts)]
+         ;; add z-min and z-max if doing intervals
+         [ts  (cond [(not intervals?)  ts]
+                    [else  (append (list (pre-tick z-min #t)) ts (list (pre-tick z-max #t)))])])
+    ;; format the ticks
+    (match-define (list (pre-tick zs majors) ...) ts)
+    (define labels (format z-min z-max ts))
+    (map tick zs majors labels)))
+
+(defproc (format-tick-labels [x-ticks ticks?] [x-min real?] [x-max real?] [xs (listof real?)]
+                             ) (listof string?)
+  (match-define (ticks layout format) x-ticks)
+  (let* ([tick-xs  (map pre-tick-value (filter pre-tick-major? (layout x-min x-max)))]
+         [tick-xs  (remove* xs tick-xs)]
+         [tick-xs  (if (empty? tick-xs) empty (list (apply min tick-xs) (apply max tick-xs)))]
+         [tick-xs  (sort (append xs tick-xs) <)])
+    (define ts (map (λ (x) (pre-tick x #t)) tick-xs))
+    (for/list ([x  (in-list tick-xs)]
+               [l  (in-list (format x-min x-max ts))]
+               #:when (member x xs))
+      l)))

@@ -1152,6 +1152,7 @@ path/s is either such a string or a list of them.
 "collects/plai/private/gc-gui.rkt" drdr:command-line (gracket "-t" *)
 "collects/planet" responsible (robby)
 "collects/plot" responsible (ntoronto)
+"collects/plot/tests/extreme-bounds-tests.rkt" drdr:timeout 150
 "collects/plot/tests/slideshow-test.rkt" drdr:command-line #f
 "collects/preprocessor" responsible (eli)
 "collects/profile" responsible (eli)

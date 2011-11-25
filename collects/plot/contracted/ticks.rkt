@@ -23,4 +23,5 @@
                         currency-ticks-scales currency-ticks-formats
                         currency-ticks-format currency-ticks
                         fraction-ticks-format fraction-ticks
-                        collapse-ticks))
+                        collapse-ticks
+                        contour-ticks format-tick-labels))

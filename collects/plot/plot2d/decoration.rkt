@@ -200,8 +200,8 @@
 (define (format-coordinate v area)
   (match-define (vector x y) v)
   (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
-  (match-define (list x-str) ((ticks-format (plot-x-ticks)) x-min x-max (list (pre-tick x #t))))
-  (match-define (list y-str) ((ticks-format (plot-y-ticks)) y-min y-max (list (pre-tick y #t))))
+  (match-define (list x-str) (format-tick-labels (plot-x-ticks) x-min x-max (list x)))
+  (match-define (list y-str) (format-tick-labels (plot-y-ticks) y-min y-max (list y)))
   (format "(~a,~a)" x-str y-str))
 
 (define ((label-render-proc label v color size family anchor angle

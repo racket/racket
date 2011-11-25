@@ -147,12 +147,10 @@
           (area-bounds->plot-bounds rect))
         
         (match-define (list new-x-min-str new-x-max-str)
-          ((ticks-format (plot-x-ticks))
-           x-min x-max (list (pre-tick new-x-min #t) (pre-tick new-x-max #t))))
+          (format-tick-labels (plot-x-ticks) x-min x-max (list new-x-min new-x-max)))
         
         (match-define (list new-y-min-str new-y-max-str)
-          ((ticks-format (plot-y-ticks))
-           y-min y-max (list (pre-tick new-y-min #t) (pre-tick new-y-max #t))))
+          (format-tick-labels (plot-y-ticks) y-min y-max (list new-y-min new-y-max)))
         
         ;; draw side labels
         (match-define (vector (ivl new-area-x-min new-area-x-max)

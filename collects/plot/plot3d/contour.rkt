@@ -60,7 +60,8 @@
     (send area get-bounds-rect))
   (define sample (f x-min x-max (animated-samples samples)
                     y-min y-max (animated-samples samples)))
-  (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #f))
+  ;; can't use the actual z ticks because some or all could be collapsed
+  (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #f))
   
   (let* ([colors  (maybe-apply colors zs)]
          [widths  (maybe-apply widths zs)]
@@ -117,7 +118,8 @@
     (send area get-bounds-rect))
   (define sample (f x-min x-max (animated-samples samples)
                     y-min y-max (animated-samples samples)))
-  (match-define (list (tick zs _ labels) ...) (contour-ticks z-min z-max levels #t))
+  ;; can't use the actual z ticks because some or all could be collapsed
+  (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #t))
   
   (define-values (z-ivls ivl-labels)
     (for/lists (z-ivls ivl-labels) ([za  (in-list zs)]
