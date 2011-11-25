@@ -2089,10 +2089,10 @@ parts of the contract system.
 }
 @section{Random generation}
 
-@defproc[(contract-generate [ctc contract?] [fuel int?] [fail (-> any/c) (λ () (error ...))]) any/c]{
+@defproc[(contract-random-generate [ctc contract?] [fuel int?] [fail (-> any/c) (λ () (error ...))]) any/c]{
 Attempts to randomly generate a value which will match the contract. The fuel
-argument limits how hard the generator tries to generate a contract and is a rough
-limit of the size of the resulting value. 
+argument limits how hard the generator tries to generate a value matching the
+contract and is a rough limit of the size of the resulting value. 
 
 The generator may fail to generate a contract, either because some contracts
 do not have corresponding generators (for example, not all predicates have 

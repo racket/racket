@@ -9,7 +9,7 @@
 (provide generate-env
          env-stash
 
-         contract-generate
+         contract-random-generate
 
          generate/direct
          generate/choose
@@ -101,11 +101,13 @@
     (generate/direct ctc fuel)))
 
 ; generate : contract int -> ctc value or error
-(define (contract-generate ctc fuel [fail (λ () 
-                                            (error 'contract-generate
-                                                   "Unable to construct any generator for contract: ~s"
-                                                   (contract-struct-name (coerce-contract 'contract-generate ctc))))])
-  (let ([def-ctc (coerce-contract 'contract-generate ctc)])
+(define (contract-random-generate ctc fuel
+                                  [fail (λ () 
+                                          (error 'contract-random-generate
+                                                 "Unable to construct any generator for contract: ~s"
+                                                 (contract-struct-name 
+                                                  (coerce-contract 'contract-random-generate ctc))))])
+  (let ([def-ctc (coerce-contract 'contract-random-generate ctc)])
     (printf "def-ctc ~s\n" def-ctc)
     (parameterize ([generate-env (make-hash)])
       ; choose randomly

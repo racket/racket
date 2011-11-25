@@ -548,7 +548,7 @@ v4 todo:
             [gen-if-fun (λ (c v)
                            ; If v is a function we need to gen the domain and call
                            (if (procedure? v)
-                             (let ([newargs (map (λ (c) (contract-generate c new-fuel))
+                             (let ([newargs (map (λ (c) (contract-random-generate c new-fuel))
                                                  (base->-doms/c c))])
                                (let* ([result (call-with-values 
                                                 (λ () (apply v newargs))
