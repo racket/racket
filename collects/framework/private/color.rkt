@@ -470,6 +470,8 @@ added get-regions
         (with-handlers ((exn:fail?
                          (λ (exn)
                             (parameterize ((print-struct #t))
+                              (when (getenv "PLTDRDRTEST")
+                                (printf "colorer-driver: error ~a\n" (and (exn? exn) (exn-message exn))))
                               ((error-display-handler) 
                                (format "exception in colorer thread: ~s" exn)
                                exn))
