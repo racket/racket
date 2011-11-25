@@ -2877,6 +2877,19 @@ void GC_gcollect(void)
     garbage_collect(gc, 1, 0, NULL);
 }
 
+void GC_gcollect_minor(void)
+{
+  NewGC *gc = GC_get_GC();
+
+  if (gc->dumping_avoid_collection) return;
+
+#ifdef MZ_USE_PLACES
+  if (postmaster_and_master_gc(gc)) return;
+#endif
+
+  garbage_collect(gc, 0, 0, NULL);
+}
+
 void GC_enable_collection(int on)
 {
   NewGC *gc = GC_get_GC();

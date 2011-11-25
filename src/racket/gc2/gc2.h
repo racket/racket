@@ -159,8 +159,9 @@ GC2_EXTERN uintptr_t GC_get_account_memory_limit(void *c1);
   or 0 if none is set. */
 
 GC2_EXTERN void GC_gcollect(void);
+GC2_EXTERN void GC_gcollect_minor(void);
 /*
-   Performs an immediate (full) collection. */
+   Performs an immediate [full] collection. */
 
 GC2_EXTERN void GC_enable_collection(int on);
 /*
