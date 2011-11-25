@@ -119,7 +119,7 @@ added get-regions
        ;; Paren-matching
        parens 
        )
-      #:mutable)
+      #:mutable #:transparent)
 
     ;; The lexer
     (define get-token #f)
@@ -448,6 +448,9 @@ added get-regions
                 (coroutine
                  (λ (enable-suspend)
                     (parameterize ((port-count-lines-enabled #t))
+                      (when (getenv "PLTDRDRTEST")
+                        (printf "colorer-driver: lexer-states ~s\n" lexer-states)
+                        (printf "colorer-driver: text ~s\n" (send this get-text)))
                       (for-each
                        (lambda (ls)
                          (re-tokenize ls
