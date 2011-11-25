@@ -8,8 +8,7 @@
 (define (test-contract-generation ctc 
                                   [monkey-with values] 
                                   #:size [size 10])
-  ;; generator : number[of tests] number[size bound] ??[env] -> any
-  (define example-vals (contract-generate ctc size))
+  (define example-vals (contract-random-generate ctc size))
   (monkey-with (contract ctc example-vals 'pos 'neg)))
 
 (define pred-tests
@@ -48,14 +47,7 @@
                              (-> (-> integer? 
                                      integer?)
                                  boolean?)) 
-                            +)))
-    ;(check-not-exn (λ () (test-contract-generation (-> (or/c bytes string?)
-    ;                                                   url?)
-    ;                                               "test")))
-    ))
-
-;(define net/url-tests
-;  (test-suite "net/url contracts"
+                            +)))))
 
 (define ctc-gen-tests
   (test-suite
