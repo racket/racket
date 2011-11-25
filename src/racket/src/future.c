@@ -2787,6 +2787,17 @@ static void send_special_result(future_t *f, Scheme_Object *retval)
     f->num_tail_rands = p->ku.apply.tail_num_rands;
     p->ku.apply.tail_rator = NULL;
     p->ku.apply.tail_rands = NULL;
+
+    if (p->ku.apply.tail_rands == p->tail_buffer) {
+      /* This only happens in the runtime thread; we need to
+         disconnect the tail buffer from `f->tail_rands' in
+         case of a GC. Beware that XFORM is disabled here. */
+      Scheme_Object **tb;
+      p->tail_buffer = NULL; /* so args aren't zeroed */
+      tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
+      p = scheme_current_thread; /* in case GC moves the thread */
+      p->tail_buffer = tb;
+    }
   }
 }
 
