@@ -82,9 +82,7 @@
     (if (procedure? generate)
       ; FIXME: Call needs to take multiple arguments
         (generate c)
-        (begin
-          (count-missing-generate (contract-struct-name c))
-          (make-generate-ctc-fail)))))
+        (make-generate-ctc-fail))))
 
 (define (contract-struct-exercise c)
   (let* ([prop (contract-struct-property c)]

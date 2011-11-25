@@ -1,16 +1,11 @@
 #lang racket/base
+(require "rand.rkt")
 
 (provide
   make-generate-ctc-fail
   generate-ctc-fail?
   find-generate
-  add-generate
-
-  print-freq
-  get-freq
-  merge-freq
-  count-missing-generate
-
+  
   get-arg-names-space
   gen-arg-names
   env-item
@@ -24,20 +19,77 @@
 ;; generate failure type
 (define-struct generate-ctc-fail ())
 
-;; hash tables
-(define freq-hash (make-hash))
-(define gen-hash (make-hash))
+(define (gen-char fuel)
+  (let* ([gen (oneof (list (rand-range 0 55295)
+                           (rand-range 57344 1114111)))])
+    (integer->char gen)))
+(define gen-hash 
+  (hash
+   ;; generate integer? 
+   integer?
+   (λ (fuel)
+     (rand-choice
+      [1/10 0]
+      [1/10 1]
+      [1/10 -1]
+      [1/10 2147483647]
+      [1/10 -2147483648]
+      [3/10 (rand-range -100 200)]
+      [else (rand-range -1000000000 2000000000)]))
+   
+   exact-nonnegative-integer?
+   (λ (fuel)
+     (abs ((find-generate integer?) fuel)))
+   
+   positive?
+   (λ (fuel)
+     (rand-choice
+      [1/10 1]
+      [1/10 1/3]
+      [1/10 0.12]
+      [1/10 2147483647]
+      [else 4]))
+   
+   boolean?
+   (λ (fuel)
+     (rand-choice
+      [1/2 #t]
+      [else #f]))
+   
+   char?
+   gen-char
+   
+   string?
+   (λ (fuel)
+     (let* ([len (rand-choice [1/10 0]
+                              [1/10 1]
+                              [else (rand-range 2 260)])]
+            [strl (build-list len (λ (x) (gen-char fuel)))])
+       (apply string strl)))
+   
+   
+   byte?
+   (λ (fuel)
+     (rand 256))
+  
+  bytes?
+  (λ (fuel)
+    (let* ([len (rand-choice
+                 [1/10 0]
+                 [1/10 1]
+                 [else (+ 2 (rand 260))])]
+           [bstr (build-list len
+                             (λ (x)
+                               (rand 256)))])
+      (apply bytes bstr)))))
+
 
 ;; thread-cell
 (define arg-names-count (make-thread-cell 0))
 
 ;; given a predicate returns a generate for this predicate or generate-ctc-fail
 (define (find-generate func [name "internal"])
-  (hash-ref gen-hash func (make-generate-ctc-fail)))
-
-(define (add-generate ctc gen)
-  (hash-set! gen-hash ctc gen))
-  
+  (hash-ref gen-hash func make-generate-ctc-fail))
 
 (define (get-arg-names-space space-needed)
   (let ([rv (thread-cell-ref arg-names-count)])
@@ -50,33 +102,4 @@
     [else (cons (string->symbol (string-append "x-" (number->string st-num)))
                 (gen-arg-names (+ st-num 1) (- size 1)))]))
 
-(define (print-freq)
-  (let* ([l (hash-map freq-hash (λ (k v)
-                                 (list k v)))]
-         [l-s (sort l (λ (e1 e2)
-                        (> (list-ref e1 1)
-                           (list-ref e2 1))))])
-    (map (λ (x)
-           (printf "# ~a : ~a\n" 
-                   (list-ref x 1)
-                   (list-ref x 0)))
-         l-s))
-  null)
-
-(define (count-missing-generate ctc)
-  (hash-update! freq-hash 
-               ctc 
-               (λ (x)
-                 (+ x 1))
-               0))
-
-    
-
-(define (get-freq)
-  freq-hash)
-
-(define (merge-freq h)
-  (hash-for-each h (λ (k v)
-                     (hash-set! freq-hash k (+ (hash-ref freq-hash k 0)
-                                               v)))))
 
