@@ -16,6 +16,9 @@
 
 (error-test #'(send 7) (lambda (x) (and (exn:fail:syntax? x) (regexp-match "method" (exn-message x)))))
 (error-test #'(send/apply 7) (lambda (x) (and (exn:fail:syntax? x) (regexp-match "method" (exn-message x)))))
+(error-test #'(send/keyword-apply 7) (lambda (x) (and (exn:fail:syntax? x) (regexp-match "method" (exn-message x)))))
+(error-test #'(send/keyword-apply 7 method) (lambda (x) (and (exn:fail:syntax? x) (regexp-match "list of keywords" (exn-message x)))))
+(error-test #'(send/keyword-apply 7 method 8) (lambda (x) (and (exn:fail:syntax? x) (regexp-match "list of keyword arguments" (exn-message x)))))
 
 (define (test-init/field init)
   (teval #`(test #t class? (class object% (#,init))))
@@ -766,12 +769,14 @@
 ;; Test send/apply dotted send and method-call forms:
 
 (define dotted% (class object%
-		  (public f g)
+		  (public f g h)
 		  (define (f x y z)
 		    (list z y x))
 		  (define (g x)
 		    (let ([w (list x (add1 x) (+ x 2))])
 		      (f . w)))
+		  (define (h x #:y [y 12])
+		    (list x y))
 		  (super-make-object)))
 (define dotted (make-object dotted%))
 (test '(3 2 1) 'dotted (send dotted f 1 2 3))
@@ -784,6 +789,9 @@
   (test '(8 6 2) 'dotted (send dotted f 2 . l))
   (test '(8 6 2) 'dotted (send/apply dotted f 2 l))
   (test '(9 7 3) 'dotted (send/apply dotted f 3 '(7 9))))
+(test '(1 12) 'dotted (send/apply dotted h (list 1)))
+(test '(2 12) 'dotted (send/keyword-apply dotted h null null (list 2)))
+(test '(3 8) 'dotted (send/keyword-apply dotted h '(#:y) (list 8) (list 3)))
 
 (syntax-test #'(send/apply dotted f 2 . l))
 

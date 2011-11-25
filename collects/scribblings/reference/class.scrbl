@@ -1076,8 +1076,8 @@ This form calls the method in a way analogous to @racket[(apply
 _method-id _arg ... _arg-list-expr)]. The @racket[arg-list-expr]
 must not be a parenthesized expression.
 
-Methods are called from outside a class with the @racket[send] and 
-@racket[send/apply] forms.
+Methods are called from outside a class with the @racket[send],
+@racket[send/apply], and @racket[send/keyword-apply] forms.
 
 @defform*[[(send obj-expr method-id arg ...)
            (send obj-expr method-id arg ... . arg-list-expr)]]{
@@ -1097,6 +1097,13 @@ If @racket[obj-expr] does not produce an object, the
 
 Like the dotted form of @racket[send], but @racket[arg-list-expr] can
 be any expression.}
+
+@defform[(send/keyword-apply obj-expr method-id 
+                             keyword-list-expr value-list-expr 
+                             arg ... arg-list-expr)]{
+
+Like @racket[send/apply], but with expressions for keyword and
+argument lists like @racket[keyword-apply].}
 
 
 @defform/subs[(send* obj-expr msg ...)

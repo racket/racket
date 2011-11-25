@@ -298,7 +298,8 @@
             method-stx
             (syntax (quote id))
             flat-args-stx
-            (not proper?)))]
+            (not proper?)
+            #f))]
         [id
          (identifier? (syntax id))
          (raise-syntax-error 
@@ -354,7 +355,8 @@
        (class-context? (car ctx))))
 
 (define (make-method-call traced? source-stx object-stx
-                          method-proc-stx method-name-stx args-stx rest-arg?)
+                          method-proc-stx method-name-stx args-stx 
+                          rest-arg? kw-args)
   
   (define-syntax (qstx stx)
     (syntax-case stx ()
@@ -363,7 +365,12 @@
   (class-syntax-protect
    (with-syntax ([object object-stx]
                  [method method-proc-stx]
-                 [app (if rest-arg? (qstx apply) (qstx #%app))]
+                 [app (if rest-arg? 
+                          (if kw-args
+                              (qstx keyword-apply)
+                              (qstx apply))
+                          (qstx #%app))]
+                 [(kw-arg ...) (or kw-args'())]
                  [args args-stx])
      (if traced?
          (with-syntax ([(mth obj) (generate-temporaries
@@ -378,7 +385,7 @@
                     obj name (app list var ...))
                    (call-with-values (lambda () (app mth obj var ...))
                      finalize-call-event))))
-         (qstx (app method object . args))))))
+         (qstx (app method kw-arg ... object . args))))))
 
 (provide (protect-out make-this-map make-this%-map make-field-map make-method-map 
                       make-direct-method-map 

@@ -36,7 +36,7 @@
            object% object? externalizable<%> printable<%> writable<%> equal<%>
            object=?
            new make-object instantiate
-           send send/apply send* class-field-accessor class-field-mutator with-method
+           send send/apply send/keyword-apply send* class-field-accessor class-field-mutator with-method
            get-field set-field! field-bound? field-names
            private* public*  pubment*
            override* overment*
@@ -3783,10 +3783,10 @@
 ;;  methods and fields
 ;;--------------------------------------------------------------------
 
-(define-syntaxes (send send/apply send-traced send/apply-traced)
+(define-syntaxes (send send/apply send-traced send/apply-traced send/keyword-apply)
   (let ()
     
-    (define (do-method traced? stx form obj name args rest-arg?)
+    (define (do-method traced? stx form obj name args rest-arg? kw-args)
       (with-syntax ([(sym method receiver)
                      (generate-temporaries (syntax (1 2 3)))])
         (quasisyntax/loc stx
@@ -3801,39 +3801,57 @@
               (syntax/loc stx method)
               (syntax/loc stx sym)
               args
-              rest-arg?))))))
+              rest-arg?
+              kw-args))))))
     
-    (define (core-send traced? apply?)
+    (define (core-send traced? apply? kws?)
       (lambda (stx)
         (syntax-case stx ()
           [(form obj name . args)
            (identifier? (syntax name))
            (if (stx-list? (syntax args))
                ;; (send obj name arg ...) or (send/apply obj name arg ...)
-               (do-method traced? stx #'form #'obj #'name #'args apply?)
+               (do-method traced? stx #'form #'obj #'name 
+                          (if kws? (cddr (syntax->list #'args)) #'args)
+                          apply? 
+                          (and kws? 
+                               (let ([l (syntax->list #'args)])
+                                 (list (car l) (cadr l)))))
                (if apply?
                    ;; (send/apply obj name arg ... . rest)
                    (raise-syntax-error
                     #f "bad syntax (illegal use of `.')" stx)
                    ;; (send obj name arg ... . rest)
                    (do-method traced? stx #'form #'obj #'name
-                              (flatten-args #'args) #t)))]
+                              (flatten-args #'args) #t #f)))]
           [(form obj name . args)
            (raise-syntax-error
             #f "method name is not an identifier" stx #'name)]
           [(form obj)
            (raise-syntax-error
             #f "expected a method name" stx)])))
+
+    (define (send/keyword-apply stx)
+      (syntax-case stx ()
+        [(form obj name)
+         (identifier? (syntax name))
+         (raise-syntax-error #f "missing expression for list of keywords" stx)]
+        [(form obj name a)
+         (identifier? (syntax name))
+         (raise-syntax-error #f "missing expression for list of keyword arguments" stx)]
+        [else ((core-send #f #t #t) stx)]))
     
     (values
      ;; send
-     (core-send #f #f)
+     (core-send #f #f #f)
      ;; send/apply
-     (core-send #f #t)
+     (core-send #f #t #f)
      ;; send-traced
-     (core-send #t #f)
+     (core-send #t #f #f)
      ;; send/apply-traced
-     (core-send #t #t))))
+     (core-send #t #t #f)
+     ;; send/keyword-apply
+     send/keyword-apply)))
 
 (define-syntaxes (send* send*-traced)
   (let* ([core-send*
@@ -3972,7 +3990,8 @@
                      (syntax/loc stx ((generic-applicable gen) obj))
                      (syntax/loc stx (generic-name gen))
                      flat-stx
-                     (not proper?)))))))])))
+                     (not proper?)
+                     #f))))))])))
     (values (core-send-generic #f) (core-send-generic #t))))
 
 (define-syntaxes (class-field-accessor class-field-mutator generic/form)
@@ -4799,7 +4818,7 @@
          object% object? object=? externalizable<%> printable<%> writable<%> equal<%>
          new make-object instantiate
          get-field set-field! field-bound? field-names
-         send send/apply send* class-field-accessor class-field-mutator with-method
+         send send/apply send/keyword-apply send* class-field-accessor class-field-mutator with-method
          private* public*  pubment*
          override* overment*
          augride* augment*
