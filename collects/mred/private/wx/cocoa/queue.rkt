@@ -75,7 +75,8 @@
       #t]
   [-a _BOOL (application: [_id theApplication] openFile: [_NSString filename])
       (set! got-file? #t)
-      (queue-file-event (string->path filename))]
+      (queue-file-event (string->path filename))
+      (post-dummy-event)]
   [-a _void (applicationDidFinishLaunching: [_id notification])
       (unless got-file?
         (queue-start-empty-event))]
