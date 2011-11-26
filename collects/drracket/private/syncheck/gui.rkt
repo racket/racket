@@ -68,9 +68,9 @@ If the namespace does not, they are colored the unbound color.
 
 (define cs-syncheck-running "Check Syntax Running")
 
-;; This delay should be long enough that the arrow timer doesn't go off if drawing
+;; This delay should be long enough that the arrows won't be drawn if drawing
 ;; the editor hitches while scrolling:
-(define syncheck-scroll-arrow-delay 1000)
+(define syncheck-scroll-arrow-cooldown 500)
 
 ;; This delay should be longer than the time it takes for a quick mouse motion
 ;; to pass vertically through an identifier
@@ -813,8 +813,13 @@ If the namespace does not, they are colored the unbound color.
                 (when (eq? mouse-admin admin)
                   (define update-tooltip-frame?
                     (cond
-                      ;; turn off tooltips if scrolling
+                      ;; turn off arrows immediately if scrolling
                       [scrolled? (set! cursor-tooltip #f)
+                                 (set! cursor-pos #f)
+                                 (set! cursor-text #f)
+                                 (set! cursor-eles #f)
+                                 (update-docs-background #f)
+                                 (start-arrow-draw-cooldown syncheck-scroll-arrow-cooldown)
                                  #t]
                       ;; try to update the tooltips if they're wrong
                       [(eq? cursor-tooltip 'out-of-sync)
@@ -825,8 +830,7 @@ If the namespace does not, they are colored the unbound color.
                     (update-tooltip-frame))
                   ;; update on a timer if the arrows changed
                   (when (update-latent-arrows mouse-x mouse-y)
-                    (start-arrow-draw-timer (cond [scrolled? syncheck-scroll-arrow-delay]
-                                                  [else syncheck-arrow-delay]))))
+                    (start-arrow-draw-timer syncheck-arrow-delay)))
                 (let ([draw-arrow2
                        (λ (arrow)
                          (unless (arrow-start-x arrow)
@@ -947,18 +951,29 @@ If the namespace does not, they are colored the unbound color.
             (define cursor-eles #f)
             (define cursor-tooltip #f)
             
+            ;; this gives errors if constructed immediately
             (define arrow-draw-timer #f)
-            
-            (define (stop-arrow-draw-timer)
-              (when arrow-draw-timer
-                (send arrow-draw-timer stop)))
-            
+            ;; Starts or restarts a one-shot arrow draw timer
             (define (start-arrow-draw-timer delay-ms)
+              (unless arrow-draw-timer
+                (set! arrow-draw-timer (make-object timer% maybe-update-drawn-arrows)))
+              (send arrow-draw-timer start delay-ms #t))
+            
+            ;; this will be set to a time in the future if arrows shouldn't be drawn until then
+            (define arrow-draw-cooldown-time (current-milliseconds))
+            ;; Starts an arrow draw cooldown
+            (define (start-arrow-draw-cooldown delay-ms)
+              (set! arrow-draw-cooldown-time (+ (current-milliseconds) delay-ms)))
+            
+            ;; The arrow-draw-timer proc
+            (define (maybe-update-drawn-arrows)
               (cond
-                [arrow-draw-timer (send arrow-draw-timer start delay-ms #t)]
+                [(arrow-draw-cooldown-time . > . (current-milliseconds))
+                 ;; keep restarting the timer until we pass cooldown-time
+                 ;; (should happen < 5 times for a scroll, which is cheaper than mouse move)
+                 (start-arrow-draw-timer 100)]
                 [else
-                 (set! arrow-draw-timer
-                       (make-object timer% update-drawn-arrows delay-ms #t))]))
+                 (update-drawn-arrows)]))
             
             ;; Given a mouse position, updates latent-* variables and tooltips
             (define (update-latent-arrows x y)
@@ -1017,6 +1032,11 @@ If the namespace does not, they are colored the unbound color.
               (set! mouse-x x)
               (set! mouse-y y)
               
+              ;; mouse motion cancels arrow draw cooldown
+              (when (eq? 'motion (send event get-event-type))
+                (set! arrow-draw-cooldown-time (current-milliseconds)))
+              
+              ;; if the arrows changed, start the draw timer
               (when (update-latent-arrows x y)
                 (start-arrow-draw-timer syncheck-arrow-delay))
               
