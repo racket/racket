@@ -3791,14 +3791,15 @@ designates the character that triggers autocompletion
     ;; handle-mouse-movement : int int -> bool
     ;; takes an editor coordinate, returns whether it has intercept
     (define/public (handle-mouse-movement x y)
-      (let*-values ([(mx my w h) (get-menu-coordinates)])
-        (when (and (<= mx x (+ mx w))
-                   (< (+ my menu-padding-y)
-                      y 
-                      (+ my (vector-length (geometry-mouse->menu-item-vector geometry)))))
-          (set! highlighted-menu-item (vector-ref (geometry-mouse->menu-item-vector geometry)
-                                                  (inexact->exact (- y my))))
-          (redraw))))
+      (define-values (mx my w h) (get-menu-coordinates))
+      (define index (floor (inexact->exact (- y my))))
+      (when (and (<= mx x (+ mx w))
+                 (< menu-padding-y
+                    index
+                    (vector-length (geometry-mouse->menu-item-vector geometry))))
+        (set! highlighted-menu-item (vector-ref (geometry-mouse->menu-item-vector geometry)
+                                                index))
+        (redraw)))
     
     ;; get-current-selection : -> string
     ;; returns the selected string
