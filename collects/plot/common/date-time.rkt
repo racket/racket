@@ -1,10 +1,9 @@
 #lang racket/base
 
-(require racket/date racket/contract racket/match
+(require racket/date racket/contract racket/match unstable/latent-contract/defthing
          (prefix-in srfi-date: srfi/19)
          db
          "contract.rkt"
-         "contract-doc.rkt"
          "math.rkt"
          "format.rkt")
 

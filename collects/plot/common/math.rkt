@@ -1,7 +1,6 @@
 #lang racket
 
-(require racket/contract racket/unsafe/ops
-         "contract-doc.rkt")
+(require racket/contract racket/unsafe/ops unstable/flonum unstable/latent-contract/defthing)
 
 (provide (all-defined-out))
 
@@ -20,21 +19,11 @@
         [(not (flonum? α))  (raise-type-error 'flblend "flonum" 2 x y α)]
         [else  (unsafe-fl+ (unsafe-fl* α x) (unsafe-fl* (unsafe-fl- 1.0 α) y))]))
 
-(defproc (flatan2 [y flonum?] [x flonum?]) flonum?
-  (cond [(not (flonum? y))  (raise-type-error 'flatan2 "flonum" 0 x y)]
-        [(not (flonum? x))  (raise-type-error 'flatan2 "flonum" 1 x y)]
-        [else  (exact->inexact (atan2 y x))]))
-
 (defproc (flsum [f (any/c . -> . flonum?)] [xs (listof any/c)]) flonum?
   (define ys (map f xs))
   (cond [(not (andmap flonum? ys))  (raise-type-error 'sum "any -> flonum" f)]
         [else  (for/fold ([sum 0.0]) ([y  (in-list ys)])
                  (unsafe-fl+ sum y))]))
-
-(defproc (flmodulo [x flonum?] [y flonum?]) flonum?
-  (cond [(not (flonum? x))  (raise-type-error 'flmodulo "flonum" 0 x y)]
-        [(not (flonum? y))  (raise-type-error 'flmodulo "flonum" 1 x y)]
-        [else  (unsafe-fl- x (unsafe-fl* y (unsafe-flfloor (unsafe-fl/ x y))))]))
 
 (define fldistance
   (case-lambda
@@ -50,53 +39,6 @@
                                                       (unsafe-fl* z z)))])]
     [xs  (cond [(not (andmap flonum? xs))  (raise-type-error 'fldistance "flonums" xs)]
                [else  (unsafe-flsqrt (flsum (λ (x) (unsafe-fl* x x)) xs))])]))
-
-(define (flonum->bit-field x)
-  (integer-bytes->integer (real->floating-point-bytes x 8) #f))
-
-(define (bit-field->flonum i)
-  (floating-point-bytes->real (integer->integer-bytes i 8 #f)))
-
-(defproc (flonum->ordinal [x flonum?]) integer?
-  (cond [(x . < . 0)  (- (flonum->bit-field (- x)))]
-        [else         (flonum->bit-field (abs x))]))
-
-(defproc (ordinal->flonum [i (integer-in #x-7FFFFFFFFFFFFFFF #x7FFFFFFFFFFFFFFF)]) flonum?
-  (cond [(i . < . 0)  (- (bit-field->flonum (- i)))]
-        [else         (bit-field->flonum i)]))
-
-(define +inf-ordinal (flonum->ordinal +inf.0))
-(define -inf-ordinal (flonum->ordinal -inf.0))
-
-(defproc (flstep [x flonum?] [n exact-integer?]) flonum?
-  (cond [(eqv? x +nan.0)  +nan.0]
-        [(and (eqv? x +inf.0) (n . >= . 0))  +inf.0]
-        [(and (eqv? x -inf.0) (n . <= . 0))  -inf.0]
-        [else
-         (define i (+ n (flonum->ordinal x)))
-         (cond [(i . < . -inf-ordinal)  -inf.0]
-               [(i . > . +inf-ordinal)  +inf.0]
-               [else  (ordinal->flonum i)])]))
-
-(defproc (flnext [x flonum?]) flonum? #:document-body
-  (flstep x 1))
-
-(defproc (flprev [x flonum?]) flonum? #:document-body
-  (flstep x -1))
-
-(defthing +min.0 flonum? #:document-value (flnext 0.0))
-(defthing -min.0 flonum? #:document-value (flprev 0.0))
-(defthing +max.0 flonum? #:document-value (flprev +inf.0))
-(defthing -max.0 flonum? #:document-value (flnext -inf.0))
-
-;; ===================================================================================================
-;; Reals
-
-(defproc (maybe-inexact->exact [x (or/c rational? #f)]) (or/c rational? #f)
-  (cond [x  (unless (rational? x)
-              (raise-type-error 'maybe-inexact->exact "rational or #f" x))
-            (inexact->exact x)]
-        [else  #f]))
 
 (defproc (flonum-ok-for-range? [x-min rational?] [x-max rational?]
                                [size exact-positive-integer?]) boolean?
@@ -120,6 +62,15 @@
       (define max-diff (- x-max (inexact->exact inexact-x-max-prev)))
       (define min-diff (- (inexact->exact inexact-x-min-next) x-min))
       (and (max-diff . < . step-size) (min-diff . < . step-size)))))
+
+;; ===================================================================================================
+;; Reals
+
+(defproc (maybe-inexact->exact [x (or/c rational? #f)]) (or/c rational? #f)
+  (cond [x  (unless (rational? x)
+              (raise-type-error 'maybe-inexact->exact "rational or #f" x))
+            (inexact->exact x)]
+        [else  #f]))
 
 (define equal?*
   (case-lambda

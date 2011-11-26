@@ -1,7 +1,6 @@
 #lang racket
 
-(require racket/async-channel
-         "contract-doc.rkt")
+(require racket/async-channel)
 
 (provide make-worker-thread worker-thread? worker-thread-working? worker-thread-waiting?
          worker-thread-put worker-thread-try-put

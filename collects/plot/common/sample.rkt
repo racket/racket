@@ -3,7 +3,7 @@
 ;; Functions that sample from functions, and functions that create memoized samplers.
 
 (require racket/match racket/flonum racket/math racket/contract racket/list racket/vector
-         "contract-doc.rkt"
+         unstable/latent-contract/defthing
          "math.rkt"
          "axis-transform.rkt")
 

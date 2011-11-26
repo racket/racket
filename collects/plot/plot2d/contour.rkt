@@ -3,8 +3,8 @@
 ;; Renderers for contour lines and contour intervals
 
 (require racket/contract racket/class racket/match racket/list racket/flonum racket/vector racket/math
+         unstable/latent-contract/defthing
          plot/utils
-         "../common/contract-doc.rkt"
          "../common/utils.rkt")
 
 (provide (all-defined-out))

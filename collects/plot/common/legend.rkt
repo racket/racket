@@ -3,9 +3,9 @@
 ;; Functions that create legend entries and lists of legend entries.
 
 (require racket/class racket/match racket/list racket/string racket/sequence racket/contract
+         unstable/latent-contract/defthing
          "math.rkt"
          "contract.rkt"
-         "contract-doc.rkt"
          "format.rkt"
          "draw.rkt"
          "utils.rkt")

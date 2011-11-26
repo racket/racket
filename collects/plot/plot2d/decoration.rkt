@@ -3,8 +3,8 @@
 ;; Renderers for plot decorations: axes, grids, labeled points, etc.
 
 (require racket/contract racket/class racket/match racket/math racket/list
+         unstable/latent-contract/defthing
          plot/utils
-         "../common/contract-doc.rkt"
          "line.rkt"
          "interval.rkt"
          "point.rkt"

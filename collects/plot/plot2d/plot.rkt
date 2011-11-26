@@ -6,6 +6,7 @@
          slideshow/pict
          unstable/parameter-group
          unstable/lazy-require
+         unstable/latent-contract/defthing
          "../common/contract.rkt"
          "../common/math.rkt"
          "../common/draw.rkt"
@@ -13,7 +14,6 @@
          "../common/plot-element.rkt"
          "../common/file-type.rkt"
          "../common/deprecation-warning.rkt"
-         "../common/contract-doc.rkt"
          "../common/format.rkt"
          "plot-area.rkt")
 

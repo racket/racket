@@ -3,8 +3,8 @@
 ;; Line renderers.
 
 (require racket/contract racket/class racket/match racket/math racket/list
-         plot/utils
-         "../common/contract-doc.rkt")
+         unstable/latent-contract/defthing
+         plot/utils)
 
 (provide (all-defined-out))
 

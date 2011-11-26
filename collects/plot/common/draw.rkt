@@ -3,10 +3,10 @@
 ;; Extra drawing, font, color and style functions.
 
 (require racket/draw racket/class racket/match racket/list racket/contract racket/math racket/flonum
+         unstable/latent-contract/defthing
          "math.rkt"
          "utils.rkt"
          "contract.rkt"
-         "contract-doc.rkt"
          "sample.rkt")
 
 (provide (all-defined-out))

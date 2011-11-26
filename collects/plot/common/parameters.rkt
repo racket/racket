@@ -2,9 +2,8 @@
 
 ;; Parameters that control the look and behavior of plots.
 
-(require racket/contract unstable/parameter-group unstable/latent-contract
+(require racket/contract unstable/parameter-group unstable/latent-contract/defthing
          "contract.rkt"
-         "contract-doc.rkt"
          "draw.rkt"
          "axis-transform.rkt"
          "ticks.rkt"

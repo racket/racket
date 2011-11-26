@@ -3,11 +3,10 @@
 ;; A compatibility module for the old 'plot'.
 
 (require racket/contract racket/class racket/snip racket/draw racket/vector
-         unstable/latent-contract
+         unstable/latent-contract unstable/latent-contract/defthing
          ;; Plotting
          "common/math.rkt"
          "common/contract.rkt"
-         "common/contract-doc.rkt"
          "common/plot-element.rkt"
          "plot2d/plot-area.rkt"
          "plot3d/plot-area.rkt"

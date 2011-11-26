@@ -3,11 +3,9 @@
 ;; Functions that sample from functions, and functions that create memoized samplers.
 
 (require racket/match racket/flonum racket/math racket/contract racket/list
+         unstable/latent-contract/defthing
          "parameters.rkt"
-         "sample.rkt"
-         "ticks.rkt"
-         "format.rkt"
-         "contract-doc.rkt")
+         "sample.rkt")
 
 (provide (all-defined-out))
 

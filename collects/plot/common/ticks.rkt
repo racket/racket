@@ -3,9 +3,9 @@
 ;; Data structure that represents a tick, and functions that produce ticks.
 
 (require racket/string racket/list racket/contract racket/pretty racket/match racket/sequence
+         unstable/latent-contract/defthing
          "math.rkt"
          "contract.rkt"
-         "contract-doc.rkt"
          "format.rkt"
          "utils.rkt"
          "axis-transform.rkt"

@@ -1,9 +1,8 @@
 #lang racket/base
 
-(require racket/math racket/flonum racket/contract racket/match
+(require racket/math racket/flonum racket/contract racket/match unstable/latent-contract/defthing
          "math.rkt"
-         "contract.rkt"
-         "contract-doc.rkt")
+         "contract.rkt")
 
 (provide (all-defined-out))
 

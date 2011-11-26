@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/flonum racket/contract
-         plot/utils
-         "../common/contract-doc.rkt")
+         unstable/latent-contract/defthing
+         plot/utils)
 
 (provide (all-defined-out))
 

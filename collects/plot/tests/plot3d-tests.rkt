@@ -1,6 +1,6 @@
 #lang racket
 
-(require plot plot/utils)
+(require plot plot/utils unstable/flonum)
 
 ;(plot-new-window? #t)
 

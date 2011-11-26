@@ -2,9 +2,8 @@
 
 ;; Functions to create renderers for 3D histograms
 
-(require racket/match racket/list racket/contract racket/class
+(require racket/match racket/list racket/contract racket/class unstable/latent-contract/defthing
          plot/utils
-         "../common/contract-doc.rkt"
          "../common/utils.rkt")
 
 (provide (all-defined-out))

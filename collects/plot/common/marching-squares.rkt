@@ -1,11 +1,11 @@
 #lang racket/base
 
 (require racket/flonum racket/fixnum racket/list racket/match racket/unsafe/ops racket/contract
+         unstable/latent-contract/defthing
          (for-syntax racket/base)
          "math.rkt"
          "utils.rkt"
-         "marching-utils.rkt"
-         "contract-doc.rkt")
+         "marching-utils.rkt")
 
 (provide heights->lines heights->polys
          heights->lines:doc heights->polys:doc)

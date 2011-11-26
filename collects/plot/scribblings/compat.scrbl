@@ -3,7 +3,7 @@
                      racket/gui/base
                      plot/compat)
           plot/compat
-          (only-in plot/common/contract-doc
+          (only-in unstable/latent-contract/defthing
                    doc-apply))
 
 @title[#:tag "compat"]{Compatibility Module}

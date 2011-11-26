@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "common/contract-doc.rkt")
+(require unstable/latent-contract/defthing)
 
 ;; ===================================================================================================
 ;; Common exports

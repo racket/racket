@@ -1,6 +1,6 @@
 #lang racket
 
-(require plot plot/utils)
+(require plot plot/utils unstable/flonum)
 
 (time
  (plot3d (isosurface3d (λ (x y z) (sqrt (+ (sqr x) (sqr y) (sqr z)))) 1

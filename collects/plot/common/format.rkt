@@ -3,8 +3,8 @@
 ;; Functions to format numbers, and data structures containing numbers.
 
 (require racket/string racket/list racket/pretty racket/contract racket/match
+         unstable/latent-contract/defthing
          "contract.rkt"
-         "contract-doc.rkt"
          "math.rkt")
 
 (provide (all-defined-out))

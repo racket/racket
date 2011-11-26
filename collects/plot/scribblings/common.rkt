@@ -9,7 +9,7 @@
          plot
          plot/utils
          plot/doc
-         plot/common/contract-doc)
+         unstable/latent-contract/defthing)
 
 (provide (all-defined-out)
          (all-from-out scribble/eval)

@@ -5,11 +5,7 @@
 (require "../common/math.rkt")
 (provide equal?*
          ;; Flonums
-         nan? infinite?
-         flblend flatan2 flsum flmodulo fldistance
-         (activate-contract-out flonum->ordinal ordinal->flonum flstep flnext flprev
-                                flonum-ok-for-range?)
-         -max.0 -min.0 +min.0 +max.0
+         nan? infinite? flblend flsum fldistance (activate-contract-out flonum-ok-for-range?)
          ;; Reals
          maybe-inexact->exact
          min* max* degrees->radians radians->degrees blend atan2 sum real-modulo distance

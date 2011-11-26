@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require racket/contract racket/draw racket/class unstable/latent-contract unstable/contract
-         "contract-doc.rkt")
+(require racket/contract racket/draw racket/class unstable/contract unstable/latent-contract
+         unstable/latent-contract/defthing)
 
 (provide (except-out (all-defined-out)
                      treeof

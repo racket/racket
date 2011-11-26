@@ -1,10 +1,9 @@
 #lang racket/base
 
-(require racket/list racket/contract racket/match
+(require racket/list racket/contract racket/match unstable/latent-contract/defthing
          "math.rkt"
          "ticks.rkt"
          "contract.rkt"
-         "contract-doc.rkt"
          "parameters.rkt"
          "sample.rkt")
 
@@ -117,17 +116,22 @@
 ;; bounds containing all the new bounds. This function is monotone and increasing regardless of
 ;; whether any element's bounds function is. If iterating it is bounded, a fixpoint exists.
 (define (apply-bounds* elems bounds-rect)
-  (apply rect-join bounds-rect (for/list ([elem  (in-list elems)])
-                                 (apply-bounds elem bounds-rect))))
+  (rect-inexact->exact
+   (apply rect-join bounds-rect (for/list ([elem  (in-list elems)])
+                                  (apply-bounds elem bounds-rect)))))
 
 ;; Applies the plot element's bounds function. Asks this question: If these are your allowed bounds,
 ;; what bounds will you try to use?
 (define (apply-bounds elem bounds-rect)
   (match-define (plot-element elem-bounds-rect elem-bounds-fun _) elem)
   ;(printf "elem-bounds-rect = ~v~n" elem-bounds-rect)
-  (let ([elem-bounds-rect  (if elem-bounds-rect
-                               (rect-meet bounds-rect (rect-inexact->exact elem-bounds-rect))
-                               bounds-rect)])
-    (if elem-bounds-fun
-        (rect-inexact->exact (elem-bounds-fun elem-bounds-rect))
-        elem-bounds-rect)))
+  (let* ([new-bounds-rect  (if elem-bounds-rect
+                               (rect-meet bounds-rect elem-bounds-rect)
+                               bounds-rect)]
+         [new-bounds-rect  (if elem-bounds-fun
+                               (elem-bounds-fun (rect-inexact->exact new-bounds-rect))
+                               new-bounds-rect)]
+         [new-bounds-rect  (if elem-bounds-rect
+                               (rect-join new-bounds-rect elem-bounds-rect)
+                               new-bounds-rect)])
+    new-bounds-rect))

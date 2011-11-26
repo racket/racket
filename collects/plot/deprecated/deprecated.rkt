@@ -1,8 +1,7 @@
 #lang racket/base
 
-(require racket/contract plot/utils
+(require racket/contract plot/utils unstable/latent-contract/defthing
          "../common/deprecation-warning.rkt"
-         "../common/contract-doc.rkt"
          "renderers.rkt")
 
 (provide (all-defined-out))

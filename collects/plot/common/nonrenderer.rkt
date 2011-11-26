@@ -1,9 +1,8 @@
 #lang racket/base
 
-(require racket/list racket/contract
+(require racket/list racket/contract unstable/latent-contract/defthing
          "math.rkt"
          "contract.rkt"
-         "contract-doc.rkt"
          "ticks.rkt"
          "plot-element.rkt")
 
