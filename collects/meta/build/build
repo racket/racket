@@ -104,7 +104,8 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-karmic" "moveto=/proj/racket"
 defbuild "blisses1" "x86_64-linux-debian-lenny"
 defbuild "blisses2" "x86_64-linux-debian-squeeze"
 # And this is from Stephen De Gabrielle <stephen.degabrielle at acm dot org>
-defbuild "osx64" "x86_64-osx-mac"
+# --- skipped for now, since the machine apparently has an issue with `curl'
+# defbuild "osx64" "x86_64-osx-mac"
 # Start the main build last
 defbuild "$workmachine" "x86_64-linux-f14" "copytobak=$maindir" "test_gui=yes"
 msets "/"
