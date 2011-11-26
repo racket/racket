@@ -144,6 +144,7 @@
                       (hash-table-for-each 
                        expr
                        (lambda (key value)
+                         (build key)
                          (build value))))]
                    [(pair? expr)  
                     (unless (build-sub expr)
