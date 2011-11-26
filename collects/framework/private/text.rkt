@@ -7,6 +7,7 @@
          "sig.rkt"
          "../gui-utils.rkt"
          "../preferences.rkt"
+         "autocomplete.rkt"
          mred/mred-sig
          mrlib/interactive-value-port
          racket/list)
@@ -3374,17 +3375,6 @@ designates the character that triggers autocompletion
     
     (super-new)))
 
-;; ============================================================
-;; autocompletion-cursor<%> implementations
-
-(define autocompletion-cursor<%>
-  (interface ()
-    get-completions  ;      -> (listof string) 
-    get-length       ;      -> int
-    empty?           ;      -> boolean
-    narrow           ; char -> autocompletion-cursor<%>
-    widen))          ;      -> autocompletion-cursor<%> | #f
-
 (define scrolling-cursor<%>
   (interface (autocompletion-cursor<%>)
     items-are-hidden?
@@ -3392,73 +3382,6 @@ designates the character that triggers autocompletion
     get-visible-length
     scroll-down
     scroll-up))
-
-(define autocompletion-cursor%
-  (class* object% (autocompletion-cursor<%>)
-    
-    (init-field word all-words)
-    
-    ;; string -> (values (string -> real) natural)
-    ;; produce a ranking function and a max normal score
-    ;; the ranking function is as follows:
-    ;; w |-> +inf.0 if `prefix' is a prefix of w
-    ;; w |-> 1000 if `prefix' appears in w
-    ;; w |-> n if n parts of `prefix' appear in w
-    ;; the max normal score is the largest n that the last clause can produce
-    (define/private (rank prefix)      
-      (define parts (regexp-split "[-/:_!]" prefix))
-      (define re (regexp (string-append "^" (regexp-quote prefix))))
-      (values (λ (w) (cond [(regexp-match re w) +inf.0]
-                           [(regexp-match (regexp-quote prefix) w) 1000]
-                           [else
-                            (for/fold ([c 0]) 
-                              ([r parts]
-                               #:when (regexp-match (regexp-quote r) w))
-                              (add1 c))]))
-              (length parts)))
-    
-    ;; all the possible completions for `word', in ranked order
-    (define all-completions 
-      (let ()
-        (define-values (rnk max-count) (rank word))
-        ;; this determines the fuzziness
-        ;; if we set mx to +inf.0, we get just the prefix matches
-        ;; if we set mx to 1000, we get just the matches somewhere in the word
-        ;; this definition is fuzzier the more parts there are in the word
-        (define mx (cond
-                     [(<= max-count 2) max-count]
-                     [(<= max-count 4) (- max-count 1)]
-                     [else (- max-count 2)]))
-        (map car (sort
-                  ;; we don't use `rnk' as the key to avoid
-                  ;; constructing a huge list
-                  (for*/list ([w (in-list all-words)]
-                              [r (in-value (rnk w))]
-                              #:when (>= r mx))
-                    (list w r))
-                  >
-                  #:key cadr))))
-    (define all-completions-length (length all-completions))
-    
-    (define/public (narrow c)
-      (new autocompletion-cursor%
-           [word (string-append word (list->string (list c)))]
-           [all-words all-words]))
-    
-    (define/public (widen)
-      (let ([strlen (string-length word)])
-        (cond
-          [(< strlen 2) #f]
-          [else 
-           (new autocompletion-cursor%
-                [word (substring word 0 (- (string-length word) 1))]
-                [all-words all-words])])))
-    
-    (define/public (get-completions) all-completions)
-    (define/public (get-length) all-completions-length)
-    (define/public (empty?) (eq? (get-length) 0))
-    
-    (super-new)))
 
 (define scroll-manager% 
   (class* object% ()
