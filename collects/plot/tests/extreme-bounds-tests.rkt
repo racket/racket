@@ -1,12 +1,12 @@
 #lang racket
 
-(require plot plot/utils)
+(require plot plot/utils unstable/flonum)
 
 (plot-x-label #f)
 (plot-y-label #f)
 
 (define stops (list (* 2 (inexact->exact -max.0))
-                    -max.0 -min.0 0 +min.0 +max.0
+                    -max.0 -min.0 0.0 +min.0 +max.0
                     (* 2 (inexact->exact +max.0))))
 
 (define (extreme-real->string x)
