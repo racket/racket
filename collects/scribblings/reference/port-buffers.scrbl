@@ -81,26 +81,27 @@ If @racket[mode] is not provided, the current mode is returned, or
 
 Returns or sets the current read/write position of @racket[port]. 
 
-Calling @racket[file-position] without a position on a
-non-file/non-string input port returns the number of bytes that have
+Calling @racket[file-position] without a position on a port other
+than a @tech{file-stream port} or @tech{string port}
+returns the number of bytes that have
 been read from that port if the position is known (see
 @secref["linecol"]), otherwise the @exnraise[exn:fail:filesystem].
 
-For @tech{file-stream ports} and string ports, the position-setting
+For @tech{file-stream ports} and @tech{string ports}, the position-setting
 variant sets the read/write position to @racket[pos] relative to the
-beginning of the file/string if @racket[pos] is a number, or to the
-current end of the file/string if @racket[pos] is @racket[eof]. In
+beginning of the file or (byte) string if @racket[pos] is a number, or to the
+current end of the file or (byte) string if @racket[pos] is @racket[eof]. In
 position-setting mode, @racket[file-position] raises the
 @racket[exn:fail:contract] exception for port kinds other than
-file-stream and string ports. Furthermore, not all @tech{file-stream
+@tech{file-stream ports} and @tech{string ports}. Furthermore, not all @tech{file-stream
 ports} support setting the position; if @racket[file-position] is
 called with a position argument on such a @tech{file-stream port}, the
 @exnraise[exn:fail:filesystem].
 
 When @racket[file-position] sets the position @racket[pos] beyond the
-current size of an output file or string, the file/string is enlarged
+current size of an output file or (byte) string, the file/string is enlarged
 to size @racket[pos] and the new region is filled with @racket[0]
-bytes.  If @racket[pos] is beyond the end of an input file or string,
+bytes.  If @racket[pos] is beyond the end of an input file or (byte) string,
 then reading thereafter returns @racket[eof] without changing the
 port's position.
 
