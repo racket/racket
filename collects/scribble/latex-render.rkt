@@ -40,6 +40,9 @@
       (define/override (render-part-depth) n)
       (super-new))))
 
+(define-runtime-path skull-tex "scribble-skull.tex")
+(define skull-style (make-style #f (list (tex-addition skull-tex))))
+
 (define (render-mixin %)
   (class %
     (inherit-field prefix-file style-file style-extra-files)
@@ -706,6 +709,12 @@
         [else (display-protected (format "~s" i))])
       null)
 
+    (define/override (string-to-implicit-styles e)
+      (for/fold ([ses null]) ([ch (in-string e)])
+        (case ch
+          [(#\☠) (cons skull-style ses)]
+          [else ses])))
+
     (define/private (display-protected s)
       (if (eq? (rendering-tt) 'exact)
           (display s)
@@ -892,7 +901,7 @@
                             [(#\∝) "$\\propto$"]
                             [(#\⊢) "$\\vdash$"]
                             [(#\⊣) "$\\dashv$"]    
-                            [(#\☠) "$\\skull$"] 
+                            [(#\☠) "$\\skull$"]
                             [(#\☺) "$\\smiley$"]
                             [(#\☻) "$\\blacksmiley$"]
                             [(#\☹) "$\\frownie$"]

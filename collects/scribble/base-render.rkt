@@ -117,8 +117,14 @@
          (extract-style-style-files (paragraph-style p) ht pred extract)
          (extract-content-style-files (paragraph-content p) d ri ht pred extract)]))
 
+    (define/public (string-to-implicit-styles e) null)
+
     (define/private (extract-content-style-files e d ri ht pred extract)
       (cond
+       [(string? e) (let ([ses (string-to-implicit-styles e)])
+                      (when (pair? ses)
+                        (for ([s (in-list ses)])
+                          (extract-style-style-files s ht pred extract))))]
        [(element? e)
         (when (style? (element-style e))
           (extract-style-style-files (element-style e) ht pred extract))
