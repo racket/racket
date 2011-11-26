@@ -18,9 +18,11 @@ In syntax specifications, text with a gray background, such as
 @litchar{#lang}, represents literal text. Whitespace must appear
 between such literals and nonterminals like @nonterm{id},
 except that whitespace is not required before or after @litchar{(},
-@litchar{)}, @litchar{[}, or @litchar{]}.  A comment, which starts
+@litchar{)}, @litchar{[}, or @litchar{]}.  A @index['("comments")]{comment}, which starts
 with @litchar{;} and runs until the end of the line, is treated the
 same as whitespace.
+
+@refdetails["parse-comment"]{different forms of comments}
 
 Following the usual conventions, @kleenestar{} in a grammar means zero
 or more repetitions of the preceding element, @kleeneplus{} means one
