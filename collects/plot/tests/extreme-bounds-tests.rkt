@@ -2,6 +2,14 @@
 
 (require plot plot/utils unstable/flonum)
 
+(plot (points '(#(0 0)))
+      #:x-min +min.0 #:x-max (flstep +min.0 1000)
+      #:y-min 0 #:y-max 1)
+
+(plot3d (points3d '(#(0 0 0)))
+      #:x-min +min.0 #:x-max (flstep +min.0 1000)
+      #:y-min 0 #:y-max 1 #:z-min 0 #:z-max 1)
+
 (plot-x-label #f)
 (plot-y-label #f)
 

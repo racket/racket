@@ -42,7 +42,7 @@
     (match-define (vector x-ivl y-ivl) plot-bounds-rect)
     (error 'plot "could not determine sensible plot bounds; got x ∈ ~a, y ∈ ~a"
            (ivl->plot-label x-ivl) (ivl->plot-label y-ivl)))
-  plot-bounds-rect)
+  (rect-inexact->exact plot-bounds-rect))
 
 (define (get-ticks renderer-list bounds-rect)
   (define-values (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks)
@@ -65,7 +65,9 @@
   (define legend-entries
     (flatten (for/list ([rend  (in-list renderer-list)])
                (match-define (renderer2d rend-bounds-rect _bf _tf render-proc) rend)
-               (send area start-renderer (if rend-bounds-rect rend-bounds-rect (empty-rect 2)))
+               (send area start-renderer (if rend-bounds-rect
+                                             (rect-inexact->exact rend-bounds-rect)
+                                             (unknown-rect 2)))
                (if render-proc (render-proc area) empty))))
   
   (send area end-renderers)
@@ -176,8 +178,9 @@
              (define legend-entries
                (flatten (for/list ([rend  (in-list renderer-list)])
                           (match-define (renderer2d rend-bounds-rect _bf _tf render-proc) rend)
-                          (send area start-renderer
-                                (if rend-bounds-rect rend-bounds-rect (empty-rect 2)))
+                          (send area start-renderer (if rend-bounds-rect
+                                                        (rect-inexact->exact rend-bounds-rect)
+                                                        (unknown-rect 2)))
                           (if render-proc (render-proc area) empty))))
              
              (send area end-renderers)

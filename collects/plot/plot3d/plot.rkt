@@ -42,7 +42,7 @@
     (match-define (vector x-ivl y-ivl z-ivl) plot-bounds-rect)
     (error 'plot "could not determine sensible plot bounds; got x ∈ ~a, y ∈ ~a, z ∈ ~a"
            (ivl->plot-label x-ivl) (ivl->plot-label y-ivl) (ivl->plot-label z-ivl)))
-  plot-bounds-rect)
+  (rect-inexact->exact plot-bounds-rect))
 
 (define (get-ticks renderer-list bounds-rect)
   (define-values (all-x-ticks all-x-far-ticks all-y-ticks all-y-far-ticks all-z-ticks all-z-far-ticks)
@@ -73,7 +73,9 @@
   (define legend-entries
     (flatten (for/list ([rend  (in-list renderer-list)])
                (match-define (renderer3d rend-bounds-rect _bf _tf render-proc) rend)
-               (send area start-renderer (if rend-bounds-rect rend-bounds-rect (empty-rect 3)))
+               (send area start-renderer (if rend-bounds-rect
+                                             (rect-inexact->exact rend-bounds-rect)
+                                             (unknown-rect 3)))
                (if render-proc (render-proc area) empty))))
   
   (send area end-renderers)
@@ -207,8 +209,9 @@
                    legend-entries-hash (plot-animating?)
                    (flatten (for/list ([rend  (in-list renderer-list)])
                               (match-define (renderer3d rend-bounds-rect _bf _tf render-proc) rend)
-                              (send area start-renderer (cond [rend-bounds-rect  rend-bounds-rect]
-                                                              [else  (empty-rect 3)]))
+                              (send area start-renderer (if rend-bounds-rect
+                                                            (rect-inexact->exact rend-bounds-rect)
+                                                            (unknown-rect 3)))
                               (if render-proc (render-proc area) empty))))
                   
                   (hash-set! render-list-hash (plot-animating?) (send area get-render-list))]

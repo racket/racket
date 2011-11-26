@@ -291,6 +291,7 @@
     ;; Fixpoint margin computation
     
     (define (get-param-vs/set-view->dc! left right top bottom)
+      ;(printf "margins = ~v ~v ~v ~v~n" left right top bottom)
       (set! view->dc (make-view->dc left right top bottom))
       (append (append* (map (λ (params) (send/apply pd get-text-corners params))
                             (get-all-label-params)))
@@ -372,9 +373,10 @@
       (draw-axes)
       (draw-ticks)
       (draw-labels)
+      (define lw (plot-line-width))
       (send pd set-clipping-rect
-            (vector (ivl (+ 1/2 (- area-x-min (plot-line-width))) (+ area-x-max (plot-line-width)))
-                    (ivl (+ 1/2 (- area-y-min (plot-line-width))) (+ area-y-max (plot-line-width))))))
+            (vector (ivl (+ 1/2 (- area-x-min lw)) (+ area-x-max lw))
+                    (ivl (+ 1/2 (- area-y-min lw)) (+ area-y-max lw)))))
     
     (define/public (start-renderer rend-bounds-rect)
       (reset-drawing-params)
