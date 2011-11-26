@@ -291,23 +291,34 @@
                            (values #f #f)))]
                     [else (values #f #f)])))))
           
-          ;; text% start end -> (values left top right bottom)
+          ;; text% start -> (values left top right bottom)
           ;; (four numbers that indicate the locations in pixels of the
           ;;  box bounding the text between start and end
-          (define/private (find-char-box text left-pos right-pos)
+          (define/private (find-char-box text pos)
+            (define start-pos (max 0 (- pos 1)))
+            (define end-pos (+ start-pos 1))
             (let ([xlb (box 0)]
                   [ylb (box 0)]
                   [xrb (box 0)]
                   [yrb (box 0)])
-              (send text position-location left-pos xlb ylb #t)
-              (send text position-location right-pos xrb yrb #f)
+              (send text position-location start-pos xlb ylb #t)
+              (send text position-location end-pos xrb yrb #f)
               (let*-values ([(xl-off yl-off) (send text editor-location-to-dc-location
                                                    (unbox xlb) (unbox ylb))]
                             [(xl yl) (dc-location-to-editor-location xl-off yl-off)]
                             [(xr-off yr-off) (send text editor-location-to-dc-location
                                                    (unbox xrb) (unbox yrb))]
                             [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
-                (values xl yl xr yr))))
+                (cond
+                  [(= (send text position-line start-pos)
+                      (send text position-line end-pos))
+                   (values xl yl xr yr)]
+                  [else
+                   ;; in this case, the open paren we want to draw on top of is on
+                   ;; a different line from the operator following it, so we just 
+                   ;; give ourselves a little space and draw something, instead of
+                   ;; returning strange results (and possibly crashing)
+                   (values xl yl (+ 10 xl) (+ yl 10))]))))
           
           (define/private (render v)
             (send (get-tab) render v))
@@ -490,7 +501,7 @@
                  breakpoints
                  (lambda (pos enabled?)
                    (when (and (>= pos 0) (or enabled? (and mouse-over-pos (= mouse-over-pos pos))))
-                     (let*-values ([(xl yl xr yr) (find-char-box this (sub1 pos) pos)]
+                     (let*-values ([(xl yl xr yr) (find-char-box this pos)]
                                    [(diameter) (- xr xl)]
                                    [(yoff) (/ (- yr yl diameter) 2)])
                        (let ([op (send dc get-pen)]
@@ -515,9 +526,9 @@
                      [frame-num (send (get-tab) get-frame-num)]
                      [break-status (send (get-tab) get-break-status)])
                 (when (and (eq? frame-defs this) start end)
-                  (let*-values ([(xl yl xr yr) (find-char-box this (sub1 start) start)]
+                  (let*-values ([(xl yl xr yr) (find-char-box this start)]
                                 [(ym) (average yl yr)]
-                                [(xa ya xb yb) (find-char-box this (sub1 end) end)]
+                                [(xa ya xb yb) (find-char-box this end)]
                                 [(diameter) (- xb xa)]
                                 [(yoff) (/ (- yb ya diameter) 2)]
                                 [(ym2) (average ya yb)])
