@@ -52,6 +52,7 @@
 (define PangoLayout (_cpointer 'PangoLayout))
 (define PangoFontDescription (_cpointer 'PangoFontDescription))
 (define PangoFontFamily (_cpointer 'PangoFontFamily))
+(define PangoFontFace (_cpointer 'PangoFontFace))
 (define PangoFont (_cpointer 'PangoFont))
 (define PangoFontMap (_cpointer 'PangoFontMap))
 (define PangoFontMetrics (_cpointer 'PangoFontMetrics))
@@ -270,6 +271,15 @@
                                                       (for/list ([i (in-range len)])
                                                         (ptr-ref fams PangoFontFamily i))
                                                       (g_free fams))))
+(define-pango pango_font_family_list_faces (_pfun PangoFontFamily
+                                                  (faces : (_ptr o _pointer))
+                                                  (len : (_ptr o _int))
+                                                  -> _void
+                                                  -> (begin0
+                                                      (for/list ([i (in-range len)])
+                                                        (ptr-ref faces PangoFontFace i))
+                                                      (g_free faces))))
+(define-pango pango_font_face_get_face_name (_pfun PangoFontFace -> _string))
 
 (define-pango pango_font_description_free (_pfun PangoFontDescription -> _void) 
   #:wrap (deallocator))

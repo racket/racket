@@ -133,27 +133,27 @@
           (and desc
                (install! desc)
                desc))
-        (let* ([desc (pango_font_description_new)])
-          (pango_font_description_set_family desc 
-                                             (if ps?
-                                                 (send the-font-name-directory
-                                                       get-post-script-name
-                                                       id
-                                                       weight
-                                                       style)
-                                                 (send the-font-name-directory
-                                                       get-screen-name
-                                                       id
-                                                       weight
-                                                       style)))
-          (pango_font_description_set_style desc (case style
-                                                   [(normal) PANGO_STYLE_NORMAL]
-                                                   [(italic) PANGO_STYLE_ITALIC]
-                                                   [(slant) PANGO_STYLE_OBLIQUE]))
-          (pango_font_description_set_weight desc (case weight
-                                                    [(normal) PANGO_WEIGHT_MEDIUM]
-                                                    [(light) PANGO_WEIGHT_LIGHT]
-                                                    [(bold) PANGO_WEIGHT_BOLD]))
+        (let* ([desc (pango_font_description_from_string (if ps?
+                                                             (send the-font-name-directory
+                                                                   get-post-script-name
+                                                                   id
+                                                                   weight
+                                                                   style)
+                                                             (send the-font-name-directory
+                                                                   get-screen-name
+                                                                   id
+                                                                   weight
+                                                                   style)))])
+          (unless (eq? style 'normal)
+            (pango_font_description_set_style desc (case style
+                                                     [(normal) PANGO_STYLE_NORMAL]
+                                                     [(italic) PANGO_STYLE_ITALIC]
+                                                     [(slant) PANGO_STYLE_OBLIQUE])))
+          (unless (eq? weight 'normal)
+            (pango_font_description_set_weight desc (case weight
+                                                      [(normal) PANGO_WEIGHT_MEDIUM]
+                                                      [(light) PANGO_WEIGHT_LIGHT]
+                                                      [(bold) PANGO_WEIGHT_BOLD])))
           (if size-in-pixels?
               (pango_font_description_set_absolute_size desc (* size PANGO_SCALE))
               (pango_font_description_set_size desc (inexact->exact (floor (* size PANGO_SCALE)))))
@@ -287,14 +287,25 @@
 
 (define the-font-list (new font-list%))
 
-(define (get-face-list [mode 'all])
+(define (get-face-list [mode 'all] #:all-variants? [all-variants? #f])
+  (unless (or (eq? mode 'all) (eq? mode 'mono))
+    (raise-type-error get-face-list "'all or 'mono" mode))
   (sort
-   (map pango_font_family_get_name
-	(let ([fams (pango_font_map_list_families
-		     (pango_cairo_font_map_get_default))])
-	  (if (eq? mode 'mono)
-	      (filter pango_font_family_is_monospace fams)
-	      fams)))
+   (apply
+    append
+    (for/list ([fam (in-list
+                     (let ([fams (pango_font_map_list_families
+                                  (pango_cairo_font_map_get_default))])
+                       (if (eq? mode 'mono)
+                           (filter pango_font_family_is_monospace fams)
+                           fams)))])
+      (if (not all-variants?)
+          (list (pango_font_family_get_name fam))
+          (for/list ([face (in-list (pango_font_family_list_faces fam))])
+            (string-append
+             (pango_font_family_get_name fam)
+             " "
+             (pango_font_face_get_face_name face))))))
    string<?))
 
 (define (make-font #:size [size 12]

@@ -28,11 +28,15 @@ A @defterm{font} is an object which determines the appearance of text,
                                  but see @racket[normal-control-font])}
  ]
 
- @margin-note{The terminology ``family'' and ``face'' is mangled relative
-              to its usual meaning. A @racket[font%] ``face'' is really
-              a font family in the usual terminology, while a @racket[font%]
-              ``family'' is a kind of abstract font family that is mapped to a
-              particular font family on a given platform.}}
+ @margin-note{The terminology ``family'' and ``face'' is mangled
+              relative to its usual meaning. A @racket[font%] ``face''
+              is really used more like a font family in the usual
+              terminology, or more generally as a face-description
+              string that is combined with other @racket[font%]
+              attributes to arrive at a face. A @racket[font%]
+              ``family'' is a kind of abstract font family that is
+              mapped to a particular font family on a given
+              platform.}}
 
  @item{face --- A string face name, such as @racket["Courier"]. The format
                 and meaning of a face name is platform- and

@@ -26,11 +26,20 @@ To extract mapping information from @racket[the-font-name-directory],
 For a family without a face string, the corresponding font ID has a
  useful built-in mapping for every platform and device. For a family with a
  face string, @racket[the-font-name-directory] interprets the string
- (in a platform-specific way) to generate a mapping for ``screen''
+ (in a platform-specific way) to generate a mapping for
  drawing (to a canvas's @racket[dc<%>], a @racket[bitmap-dc%], or a
- @racket[printer-dc%]). When drawing to a @racket[post-script-dc%]
- object, the face-specific mapping defaults to the family's mapping.
+ @racket[printer-dc%]).
 
+Currently, on all platforms, a face string is interpreted as a
+ @hyperlink["http://www.pango.org"]{Pango} font description. A
+ description can be a family name such as @racket["Helvetica"], a face
+ name such as @racket["Helvetica Bold"], or a list of comma-separated
+ families followed by space-separated font options such as
+ @racket["Helvetica,Arial bold italic"]. Any size in a font
+ description is overridden by a given @racket[font%]'s size. Any
+ (slant) style or weight options in a font description are overridden
+ by a non-@racket['normal] value for a given @racket[font%]'s style
+ or weight, respectively.
 
 @defmethod[(find-family-default-font-id [family (one-of/c 'default 'decorative 'roman 'script 
                                                           'swiss 'modern 'symbol 'system)])
@@ -91,7 +100,7 @@ Font ID are useful only as mapping indices for
                                  [style (one-of/c 'normal 'italic 'slant)])
            (or/c string? false/c)]{
 
-Gets a PostScript font name for a font ID, weight, and style
+Gets a PostScript font description for a font ID, weight, and style
  combination.
 
 See @racket[font%] for information about @racket[weight] and
@@ -104,7 +113,7 @@ See @racket[font%] for information about @racket[weight] and
                             [style (one-of/c 'normal 'italic 'slant)])
            (or/c string? false/c)]{
 
-Gets a platform-dependent screen font name (used for drawing to a
+Gets a platform-dependent screen font description (used for drawing to a
  canvas's @racket[dc<%>], a @racket[bitmap-dc%], or a
  @racket[printer-dc%]) for a font ID, weight, and style combination.
 
@@ -119,7 +128,7 @@ See @racket[font%] for information about @racket[weight] and
                                  [name string?])
            void?]{
 
-Sets a PostScript font name for a font ID, weight, and style
+Sets a PostScript font description for a font ID, weight, and style
  combination. See also @method[font-name-directory<%>
  get-post-script-name].
 
@@ -133,7 +142,7 @@ See @racket[font%] for information about @racket[weight] and @racket[style].
                             [name string?])
            void?]{
 
-Sets a platform-dependent screen font name (used for drawing to a
+Sets a platform-dependent screen font description (used for drawing to a
  canvas's @racket[dc<%>], a @racket[bitmap-dc%], or a
  @racket[printer-dc%]) for a font ID, weight, and style combination.
 

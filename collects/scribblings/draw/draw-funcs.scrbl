@@ -8,18 +8,22 @@
 @defparam[current-ps-setup pss (is-a?/c ps-setup%)]{
 
 A parameter that determines the current PostScript configuration
- settings. See @racket[post-script-dc%] and @racket[printer-dc%].
+ settings. See @racket[post-script-dc%] and @racket[printer-dc%].}
 
-}
 
-@defproc[(get-face-list [family (one-of/c 'mono 'all) 'all])
+@defproc[(get-face-list [kind (one-of/c 'mono 'all) 'all]
+                        [#:all-variants? all-variants? any/c #f])
          (listof string?)]{
 
-Returns a list of font face names available on the current system. If
- @racket['mono] is provided as the argument, then only faces that are
- known to correspond to monospace fonts are included in the list.
+Returns a list of font face names available on the current system.  If
+ @racket[kind] is @racket['mono], then only faces that are known to
+ correspond to monospace fonts are included in the list.
 
-}
+If @racket[all-variants?] is @racket[#f] (the default), then the
+ result is in more standard terminology a list of font
+ family names, which are combined with style and weight options to
+ arrive at a face; if @racket[all-variants?] is true, then the result
+ includes a string for each available face in the family.}
 
 
 @defproc[(get-family-builtin-face [family (one-of/c 'default 'decorative 'roman 'script 
@@ -29,9 +33,7 @@ Returns a list of font face names available on the current system. If
 Returns the built-in default face mapping for a particular font
  family.
 
-See @racket[font%] for information about @racket[family].
-
-}
+See @racket[font%] for information about @racket[family].}
 
 
 @defproc[(make-bitmap [width exact-positive-integer?]
