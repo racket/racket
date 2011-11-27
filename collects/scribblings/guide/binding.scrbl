@@ -47,7 +47,7 @@ y)]. The environment of @racket[(+ x y)] includes bindings for
 @racketmodname[racket].
 
 A module-level @racket[define] can bind only identifiers that are not
-already defined or @racket[require]s into the module. A local
+already defined or @racket[require]d into the module. A local
 @racket[define] or other binding forms, however, can give a new local
 binding for an identifier that already has a binding; such a binding
 @deftech{shadows} the existing binding.
