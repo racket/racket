@@ -183,7 +183,7 @@ day only if @racket[time?]. See also @racket[date-display-format].}
 Parameter that determines the date string format. The initial format
 is @racket['american].}
 
-@defproc[(date->seconds [date date?][local-time? any/c #f]) exact-integer?]{
+@defproc[(date->seconds [date date?] [local-time? any/c #t]) exact-integer?]{
 Finds the representation of a date in platform-specific seconds. 
 The @racket[time-zone-offset] field of @racket[date] is ignored;
 the date is assumed to be in local time by default or in UTC
