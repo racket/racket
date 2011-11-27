@@ -674,13 +674,13 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
   intptr_t retval = 0;
 
   if (argc) {
-    if(SAME_TYPE(SCHEME_TYPE(args[0]), scheme_custodian_type)) {
+    if (SCHEME_FALSEP(args[0])) {
       arg = args[0];
-    } else if(SCHEME_PROCP(args[0])) {
+    } else if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_custodian_type)) {
       arg = args[0];
     } else {
       scheme_wrong_type("current-memory-use", 
-			"custodian or memory-trace-function", 
+			"custodian or #f", 
 			0, argc, args);
     }
   }

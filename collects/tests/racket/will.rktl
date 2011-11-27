@@ -3,6 +3,10 @@
 
 (Section 'wills)
 
+(test #t exact-nonnegative-integer? (current-memory-use))
+(test #t exact-nonnegative-integer? (current-memory-use #f))
+(test #t exact-nonnegative-integer? (current-memory-use (current-custodian)))
+
 (test #f will-executor? 5)
 (test #t will-executor? (make-will-executor))
 
