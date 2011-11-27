@@ -4992,12 +4992,22 @@ Scheme_Object *scheme_open_output_file_with_mode(const char *name, const char *w
   return scheme_do_open_output_file((char *)who, 0, 3, a, 0, 0, NULL, NULL);
 }
 
+#ifdef WINDOWS_FILE_HANDLES
+static int win_seekable(int fd)
+{
+  /* SetFilePointer() requires " a file stored on a seeking device".
+     I'm not sure how to test that, so we approximate as "regular
+     file". */
+  return GetFileType((HANDLE)fd) == FILE_TYPE_DISK;
+}
+#endif
+
 Scheme_Object *
 scheme_file_position(int argc, Scheme_Object *argv[])
 {
   FILE *f;
   Scheme_Indexed_String *is;
-  int fd;
+  intptr_t fd;
 #ifdef MZ_FDS
   int had_fd;
 #endif
@@ -5118,13 +5128,14 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 #ifdef MZ_FDS
     } else if (had_fd) {
       intptr_t lv;
+      int errid = 0;
       
       if (!SCHEME_INPUT_PORTP(argv[0])) {
 	flush_fd(scheme_output_port_record(argv[0]), NULL, 0, 0, 0, 0);
       }
       
 # ifdef WINDOWS_FILE_HANDLES
-      {
+      if (win_seekable(fd)) {
 	DWORD r;
 	LONG lo_w, hi_w;
 	lo_w = (LONG)(nll & 0xFFFFFFFF);
@@ -5132,24 +5143,24 @@ scheme_file_position(int argc, Scheme_Object *argv[])
         r = SetFilePointer((HANDLE)fd, lo_w, &hi_w,
 			   ((whence == SEEK_SET) ? FILE_BEGIN : FILE_END));
 	if ((r == INVALID_SET_FILE_POINTER)
-	    && GetLastError() != NO_ERROR)
+	    && GetLastError() != NO_ERROR) {
+	  errid = GetLastError();
           lv = -1;
-	else
+	} else
 	  lv = 0;
+      } else {
+	lv = -1;
+	errid = ERROR_UNSUPPORTED_TYPE;
       }
 # else
       lv = BIG_OFF_T_IZE(lseek)(fd, nll, whence);
+      if (lv < 0) errid = errno;
 # endif
 
       if (lv < 0) {
-# ifdef WINDOWS_FILE_HANDLES
-	int errid;
-	errid = GetLastError();
-	errno = errid;
-# endif
 	scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
 			 "file-position: position change failed on stream (" FILENAME_EXN_E ")",
-			 errno);
+			 errid);
       }
 
       if (SCHEME_INPUT_PORTP(argv[0])) {
@@ -5231,7 +5242,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 #ifdef MZ_FDS
     } else if (had_fd) {
 # ifdef WINDOWS_FILE_HANDLES
-      {
+      if (win_seekable(fd)) {
 	DWORD lo_w, hi_w;
 	hi_w = 0;
         lo_w = SetFilePointer((HANDLE)fd, 0, &hi_w, FILE_CURRENT);
@@ -5240,7 +5251,8 @@ scheme_file_position(int argc, Scheme_Object *argv[])
           pll = -1;
         else
           pll = ((mzlonglong)hi_w << 32) | lo_w;
-      }
+      } else
+	pll = -1;
 # else
       pll = BIG_OFF_T_IZE(lseek)(fd, 0, 1);
 # endif
