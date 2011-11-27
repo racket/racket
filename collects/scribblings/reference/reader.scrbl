@@ -883,7 +883,7 @@ is equivalent to
 
 where @racket[_name-id] is derived from the source input port's name:
 if the port name is a filename path, the filename without its
-directory path and extension is used for @racket[_name-in], otherwise
+directory path and extension is used for @racket[_name-id], otherwise
 @racket[_name-id] is @racket[anonymous-module].
 
 @subsection{Chaining Reader Language}
