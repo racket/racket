@@ -78,6 +78,11 @@ is read as
     (#%module-begin ....))
 ]
 
+where @racket[_name-id] is derived from the source input port's name:
+if the port name is a filename path, the filename without its
+directory path and extension is used for @racket[_name-in], otherwise
+@racket[_name-id] is @racket[anonymous-module].
+
 Keyword-based @racket[reader-option]s allow further customization, as
 listed below. Additional @racket[form]s are as in the body of
 @racket[scheme/base] module; they can import bindings and define
@@ -401,9 +406,10 @@ various keywords to arbitrary readers; please use it instead.}
 
 Repeatedly calls @racket[read] on @racket[in] until an end of file,
 collecting the results in order into @racket[_lst], and derives a
-@racket[_name-id] from @racket[(object-name in)].  The last five
-arguments are used to construct the syntax object for the language
-position of the module.  The result is roughly
+@racket[_name-id] from @racket[(object-name in)] in the same way as
+@racketmodname[syntax/module-reader].  The last five arguments are
+used to construct the syntax object for the language position of the
+module.  The result is roughly
 
 @racketblock[
   `(module ,_name-id ,mod-path ,@_lst)

@@ -877,9 +877,14 @@ _form ...
 is equivalent to
 
 @racketblock[
-(module _name _module-path
+(module _name-id _module-path
   _form ...)
 ]
+
+where @racket[_name-id] is derived from the source input port's name:
+if the port name is a filename path, the filename without its
+directory path and extension is used for @racket[_name-in], otherwise
+@racket[_name-id] is @racket[anonymous-module].
 
 @subsection{Chaining Reader Language}
 
