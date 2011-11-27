@@ -1,0 +1,7 @@
+ #reader scribble/manual
+
+  #lang scribble/manual
+  (λ x x)              
+  @interaction[1       
+                       
+               42]     

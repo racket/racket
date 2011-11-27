@@ -23,7 +23,7 @@
           (hash-set! rx-keys rx (make-ephemeron rx bstr))
           rx))))
 
-(define (scribble-inside-lexer in offset mode)
+(define (scribble-inside-lexer orig-in offset mode)
   (let ([mode (or mode
                   (list
                    (make-text #rx"^@"
@@ -32,10 +32,13 @@
                               #rx".*?(?:(?=[@\r\n])|$)"
                               #f
                               #f)))]
-        [in (special-filter-input-port in
+        [in (special-filter-input-port orig-in
                                        (lambda (v s)
                                          (bytes-set! s 0 (char->integer #\.))
                                          1))])
+    (let-values ([(line col pos) (port-next-location orig-in)])
+      (when line 
+        (port-count-lines! in)))
   (let-values ([(line col pos) (port-next-location in)]
                [(l) (car mode)])
 

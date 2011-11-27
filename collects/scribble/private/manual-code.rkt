@@ -55,9 +55,10 @@
                       #:line-numbers [line-numbers #f]
                       #:block? [block? #t]
                       . strs)
-  (let* ([str (apply string-append strs)]
-         [bstr (string->bytes/utf-8 (regexp-replace* #rx"(?m:^$)" str "\xA0"))]
-         [in (open-input-bytes bstr)])
+  (let* ([xstr (apply string-append strs)]
+         [bstr (regexp-replace* #rx"(?m:^$)" xstr "\xA0")]
+         [in (open-input-string bstr)])
+    (port-count-lines! in)
     (let* ([tokens
             (let loop ([mode #f])
               (let-values ([(lexeme type data start end backup-delta mode)
@@ -66,15 +67,14 @@
                     null
                     (cons (list type (sub1 start) (sub1 end) 0)
                           (loop mode)))))]
-           [substring* (lambda (bstr start [end (bytes-length bstr)])
-                         (bytes->string/utf-8 (subbytes bstr start end)))]
            [e (parameterize ([read-accept-reader #t])
                 ((or expand 
                      (lambda (stx) 
                        (if context
                            (replace-context context stx)
                            stx)))
-                 (let ([p (open-input-bytes bstr)])
+                 (let ([p (open-input-string bstr)])
+                   (port-count-lines! p)
                    (let loop ()
                      (let ([v (read-syntax 'prog p)])
                        (cond
@@ -138,8 +138,8 @@
                                (link-mod
                                 #:orig? #t
                                 (datum->syntax #f
-                                               (string->symbol (bytes->string/utf-8 (cadr m)))
-                                               (vector 'in 1 6 7 (bytes-length (cadr m))))
+                                               (string->symbol (cadr m))
+                                               (vector 'in 1 6 7 (string-length (cadr m))))
                                 3)
                                null))
                          null)]
@@ -166,12 +166,12 @@
          (let loop ([pos 0]
                     [tokens tokens])
            (cond
-            [(null? tokens) (split-lines default-color (substring* bstr pos))]
+            [(null? tokens) (split-lines default-color (substring bstr pos))]
             [(eq? (caar tokens) 'white-space) (loop pos (cdr tokens))]
             [(= pos (cadar tokens))
              (append (let ([style (caar tokens)]
                            [get-str (lambda ()
-                                      (substring* bstr (cadar tokens) (caddar tokens)))])
+                                      (substring bstr (cadar tokens) (caddar tokens)))])
                        (cond
                         [(symbol? style)
                          (let ([scribble-style
@@ -189,7 +189,7 @@
             [(> pos (cadar tokens))
              (loop pos (cdr tokens))]
             [else (append
-                   (split-lines default-color (substring* bstr pos (cadar tokens)))
+                   (split-lines default-color (substring bstr pos (cadar tokens)))
                    (loop (cadar tokens) tokens))]))))))))
 
 (define (typeset-code-line context expand lang-line . strs)
