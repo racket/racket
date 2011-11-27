@@ -185,7 +185,7 @@
    (lambda (in)
      (read-elf
       in
-      (lambda () (values #f #f #f))
+      (lambda () (values #f #f #f #f))
       (lambda (elf sections programs str-section strs)
         (let ([new-sec-pos (+ (elf-sh-offset elf)
                               (* (elf-sh-esize elf) (elf-sh-ecount elf)))]
