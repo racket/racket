@@ -23,7 +23,7 @@ A bitmap is convertible to @racket['png-bytes] through the
                                         'xbm 'xbm/alpha 'xpm 'xpm/alpha
                                         'bmp 'bmp/alpha)
                               'unknown]
-                        [bg-color (or/c (is-a?/c color%) false/c) #f]
+                        [bg-color (or/c (is-a?/c color%) #f) #f]
                         [complain-on-failure? any/c #f])
                        ([bits bytes?]
                         [width exact-positive-integer?]
@@ -90,7 +90,7 @@ Gets the height of the bitmap in pixels.
 }
 
 @defmethod[(get-loaded-mask)
-           (or/c (is-a?/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) #f)]{
 
 Returns a mask bitmap that is stored with this bitmap.
 
@@ -155,7 +155,7 @@ Returns @racket[#f] if the bitmap is monochrome, @racket[#t] otherwise.
                                       'xbm 'xbm/alpha 'xpm 'xpm/alpha
                                       'bmp 'bmp/alpha)
                             'unknown]
-                      [bg-color (or/c (is-a?/c color%) false/c) #f]
+                      [bg-color (or/c (is-a?/c color%) #f) #f]
                       [complain-on-failure? any/c #f])
            boolean?]{
 

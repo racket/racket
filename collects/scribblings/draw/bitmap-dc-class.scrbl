@@ -17,7 +17,7 @@ Drawing to a @racket[bitmap-dc%] with a color bitmap is guaranteed to
  can be used for offscreen staging of canvas content.
 
 
-@defconstructor[([bitmap (or/c (is-a?/c bitmap%) false/c)])]{
+@defconstructor[([bitmap (or/c (is-a?/c bitmap%) #f)])]{
 
 Creates a new memory DC. If @racket[bitmap] is not @racket[#f], it is
  installed into the DC so that drawing commands on the DC draw to
@@ -36,7 +36,9 @@ Creates a new memory DC. If @racket[bitmap] is not @racket[#f], it is
                                        [src-y real?]
                                        [src-width (and/c real? (not/c negative?))]
                                        [src-height (and/c real? (not/c negative?))]
-                                       [mask (or/c (is-a?/c bitmap%) false/c)])
+                                       [style (one-of/c 'solid 'opaque 'xor) 'solid]
+                                       [color (is-a?/c color%) (send the-color-database find-color "black")]
+                                       [mask (or/c (is-a?/c bitmap%) #f) #f])
            boolean?]{
 
 The same as @method[dc<%> draw-bitmap-section], except that
@@ -91,7 +93,7 @@ If @racket[pre-multiplied?] is true, @racket[just-alpha?] is false,
 }
 
 @defmethod[(get-bitmap)
-           (or/c (is-a?/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) #f)]{
 
 Gets the bitmap currently installed in the DC, or @racket[#f] if no
  bitmap is installed. See @method[bitmap-dc% set-bitmap] for more
@@ -153,7 +155,7 @@ If @racket[pre-multiplied?] is true, @racket[just-alpha?] is false,
 
 }
 
-@defmethod[(set-bitmap [bitmap (or/c (is-a?/c bitmap%) false/c)])
+@defmethod[(set-bitmap [bitmap (or/c (is-a?/c bitmap%) #f)])
            void?]{
 
 Installs a bitmap into the DC, so that drawing operations on the bitmap

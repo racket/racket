@@ -85,7 +85,7 @@ If both the pen and brush are non-transparent, the wedge is filled
                         [dest-y real?]
                         [style (one-of/c 'solid 'opaque 'xor) 'solid]
                         [color (is-a?/c color%) (send the-color-database find-color "black")]
-                        [mask (or/c (is-a?/c bitmap%) false/c) #f])
+                        [mask (or/c (is-a?/c bitmap%) #f) #f])
            boolean?]{
 
 Displays the @racket[source] bitmap. The @racket[dest-x] and @racket[dest-y] arguments
@@ -157,7 +157,7 @@ See also @method[dc<%> draw-bitmap-section].
                                 [src-height (and/c real? (not/c negative?))]
                                 [style (one-of/c 'solid 'opaque 'xor) 'solid]
                                 [color (is-a?/c color%) (send the-color-database find-color "black")]
-                                [mask (or/c (is-a?/c bitmap%) false/c) #f])
+                                [mask (or/c (is-a?/c bitmap%) #f) #f])
            boolean?]{
 
 Displays part of a bitmap.
@@ -532,7 +532,7 @@ Unlike most methods, this method can be called for a
 }
 
 @defmethod[(get-clipping-region)
-           (or/c (is-a?/c region%) false/c)]{
+           (or/c (is-a?/c region%) #f)]{
 
 Gets the current clipping region, returning @racket[#f] if the drawing
  context is not clipped (i.e., the clipping region is the entire
@@ -563,7 +563,7 @@ Gets the current font. See also @method[dc<%> set-font].
 }
 
 @defmethod[(get-gl-context)
-           (or/c (is-a?/c gl-context<%>) false/c)]{
+           (or/c (is-a?/c gl-context<%>) #f)]{
 
 Returns a @racket[gl-context<%>] object for this drawing context
  if it supports OpenGL, @racket[#f] otherwise.
@@ -673,7 +673,7 @@ set-text-background].
 }
 
 @defmethod[(get-text-extent [string string?]
-                            [font (or/c (is-a?/c font%) false/c) #f]
+                            [font (or/c (is-a?/c font%) #f) #f]
                             [combine? any/c #f]
                             [offset exact-nonnegative-integer? 0])
            (values (and/c real? (not/c negative?)) 
@@ -887,7 +887,7 @@ get-clipping-region].
 
 }
 
-@defmethod[(set-clipping-region [rgn (or/c (is-a?/c region%) false/c)])
+@defmethod[(set-clipping-region [rgn (or/c (is-a?/c region%) #f)])
            void?]{
 
 Sets the clipping region for the drawing area, turning off all
