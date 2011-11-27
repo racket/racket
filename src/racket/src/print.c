@@ -608,7 +608,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       if (vals[i]) {
         key = keys[i];
         if (!SAME_OBJ((Scheme_Object *)t, obj))
-          val = scheme_chaperone_hash_traversal_get(obj, key);
+          val = scheme_chaperone_hash_traversal_get(obj, key, &key);
         else
           val = vals[i];
         if (val) {
@@ -639,7 +639,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
     while (i != -1) {
       scheme_hash_tree_index(t, i, &key, &val);
       if (!SAME_OBJ((Scheme_Object *)t, obj))
-        val = scheme_chaperone_hash_traversal_get(obj, key);
+        val = scheme_chaperone_hash_traversal_get(obj, key, &key);
       res2 = check_cycles(key, for_write, ht, pp);
       res |= res2;
       if ((for_write < 3) && res)
@@ -876,7 +876,7 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
       if (vals[i]) {
         key = keys[i];
         if (!SAME_OBJ((Scheme_Object *)t, obj))
-          val = scheme_chaperone_hash_traversal_get(obj, key);
+          val = scheme_chaperone_hash_traversal_get(obj, key, &key);
         else
           val = vals[i];
         if (val) {
@@ -900,7 +900,7 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
     while (i != -1) {
       scheme_hash_tree_index(t, i, &key, &val);
       if (!SAME_OBJ((Scheme_Object *)t, obj))
-        val = scheme_chaperone_hash_traversal_get(obj, key);
+        val = scheme_chaperone_hash_traversal_get(obj, key, &key);
       setup_graph_table(key, for_write, ht, counter, pp);
       setup_graph_table(val, for_write, ht, counter, pp);
       i = scheme_hash_tree_next(t, i);
@@ -2109,13 +2109,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           if (!vals) {
             scheme_hash_tree_index(tr, i, &key, &val);
             if (!SAME_OBJ(obj, orig))
-              val = scheme_chaperone_hash_traversal_get(orig, key);
+              val = scheme_chaperone_hash_traversal_get(orig, key, &key);
           } else {
             if (i < t->size) {
               val = vals[i];
               key = keys[i];
               if (!SAME_OBJ(obj, orig))
-                val = scheme_chaperone_hash_traversal_get(orig, key);
+                val = scheme_chaperone_hash_traversal_get(orig, key, &key);
             } else
               val = 0;
           }

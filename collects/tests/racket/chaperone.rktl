@@ -1219,5 +1219,25 @@
        #:a "x"))
 
 ;; ----------------------------------------
+;; Check that importantor transformations are applied for printing:
+
+(let ()
+  (define ht 
+    (impersonate-hash 
+     (let ([h (make-hash)])
+       (hash-set! h 'x' y)
+       h)
+     (lambda (hash key) 
+       (values (car key) (lambda (hash key val) (list val))))
+     (lambda (hash key val)
+       (values (car key) (list val)))
+     (lambda (hash key) (car key))
+     (lambda (hash key) (list key))))
+  (test '(y) hash-ref ht '(x))
+  (test "'#hash(((x) . (y)))" 'print (let ([o (open-output-bytes)])
+                                       (print ht o)
+                                       (get-output-string o))))
+
+;; ----------------------------------------
 
 (report-errs)

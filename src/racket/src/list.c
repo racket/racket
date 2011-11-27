@@ -2046,7 +2046,7 @@ static Scheme_Object *hash_table_copy(int argc, Scheme_Object *argv[])
     for (i = t->count; i--; ) {
       scheme_hash_tree_index(t, i, &k, &val);
       if (!SAME_OBJ((Scheme_Object *)t, v))
-        val = scheme_chaperone_hash_traversal_get(v, k);
+        val = scheme_chaperone_hash_traversal_get(v, k, &k);
       if (val)
         scheme_hash_set(naya, k, val);
     }
@@ -3012,9 +3012,11 @@ static Scheme_Object *chaperone_hash_key(const char *name, Scheme_Object *table,
   return chaperone_hash_op(name, table, key, NULL, 3);
 }
 
-Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key)
+Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key,
+                                                   Scheme_Object **alt_key)
 {
   key = chaperone_hash_key("hash-table-iterate-key", table, key);
+  *alt_key = key;
   return chaperone_hash_op("hash-ref", table, key, NULL, 0);
 }
 
