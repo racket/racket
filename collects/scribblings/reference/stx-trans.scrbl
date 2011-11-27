@@ -317,7 +317,8 @@ expressions are not expanded, but instead left as provided in the
 @defproc[(local-transformer-expand/capture-lifts [stx syntax?]
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
                        [stop-ids (or/c (listof identifier?) #f)]
-                       [intdef-ctx (or/c internal-definition-context? #f) #f])
+                       [intdef-ctx (or/c internal-definition-context? #f) #f]
+                       [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
 Like @racket[local-expand/capture-lifts], but @racket[stx] is expanded
