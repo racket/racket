@@ -440,8 +440,10 @@ profile todo:
                 (λ ()
                   (cond
                     [(path? src)
-                     (display (path->string (find-relative-path (current-directory)
-                                                                (normalize-path src)))
+                     (define-values (n-cd n-src)
+                       (with-handlers ([exn:fail? (λ (x) (values (current-directory) src))])
+                         (values (normalize-path (current-directory)) (normalize-path src))))
+                     (display (path->string (find-relative-path n-cd n-src))
                               (current-error-port))]
                     [else
                      (display "<unsaved editor>" (current-error-port))]))]

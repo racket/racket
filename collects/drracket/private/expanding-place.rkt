@@ -89,10 +89,9 @@
                                          module-language-parallel-lock-client
                                          #:use-use-current-security-guard? #t)
          (log-info "expanding-place.rkt: 04 setting directories")
-         (when path
-           (let-values ([(base name dir?) (split-path path)])
-             (current-directory base)
-             (current-load-relative-directory base)))
+         (let ([init-dir (get-init-dir path)])
+           (current-directory init-dir)
+           (current-load-relative-directory init-dir))
          (define sp (open-input-string program-as-string))
          (port-count-lines! sp)
          (log-info "expanding-place.rkt: 05 installing security guard")

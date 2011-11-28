@@ -36,6 +36,7 @@ module browser threading seems wrong.
          "insert-large-letters.rkt"
          "get-defs.rkt"
          "local-member-names.rkt"
+         "eval-helpers.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
          
          mred
@@ -1200,12 +1201,10 @@ module browser threading seems wrong.
                   (send (send frame get-current-tab) clear-execution-state)))))
       
       (define/public (get-directory)
-        (let ([filename (send defs get-filename)])
-          (if (and (path? filename)
-                   (file-exists? filename))
-              (let-values ([(base _1 _2) (split-path (normalize-path filename))])
-                base)
-              #f)))
+        (define bx (box #f))
+        (define filename (send defs get-filename bx))
+        (get-init-dir 
+         (and (not (unbox bx)) filename)))
       
       (define/pubment (can-close?)
         (and (send defs can-close?)
@@ -3370,13 +3369,11 @@ module browser threading seems wrong.
       ;; sets the current-directory and current-load-relative-directory
       ;; based on the file saved in the definitions-text
       (define/private (set-directory definitions-text)
-        (let* ([tmp-b (box #f)]
-               [fn (send definitions-text get-filename tmp-b)])
-          (unless (unbox tmp-b)
-            (when fn
-              (let-values ([(base name dir?) (split-path fn)])
-                (current-directory base)
-                (current-load-relative-directory base))))))
+        (define tmp-b (box #f))
+        (define fn (send definitions-text get-filename tmp-b))
+        (define dir (get-init-dir (and (not (unbox tmp-b)) fn)))
+        (current-directory dir)
+        (current-load-relative-directory dir))
       
       
       ;                                            

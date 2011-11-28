@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/place
+         "../../private/eval-helpers.rkt"
          "traversals.rkt"
          "local-member-names.rkt"
          "intf.rkt"
@@ -64,10 +65,7 @@
     (define obj (new obj% [src the-source]))
     (define-values (expanded-expression expansion-completed) 
       (make-traversal (current-namespace)
-                      (if path
-                          (let-values ([(base name dir) (split-path path)])
-                            base)
-                          (current-directory))))
+                      (get-init-dir path)))
     (parameterize ([current-annotations obj])
       (expanded-expression expanded)
       (expansion-completed))

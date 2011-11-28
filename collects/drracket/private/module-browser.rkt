@@ -8,6 +8,7 @@
          string-constants
          mrlib/graph
          "drsig.rkt"
+         "eval-helpers.rkt"
          racket/unit
          racket/async-channel
          setup/private/lib-roots
@@ -855,11 +856,8 @@
     (define init-dir
       (let* ([bx (box #f)]
              [filename (send (drracket:language:text/pos-text text/pos) get-filename bx)])
-        (if (and filename
-                 (not (unbox bx)))
-            (let-values ([(base name dir) (split-path filename)])
-              base)
-            (current-directory))))
+        (get-init-dir 
+         (and (not (unbox bx)) filename))))
     
     (define (init)
       (set! user-custodian (current-custodian))

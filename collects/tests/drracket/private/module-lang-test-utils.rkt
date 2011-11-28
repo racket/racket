@@ -1,12 +1,12 @@
 #lang racket/base
 (require "drracket-test-util.rkt"
-         mzlib/etc
          framework
          racket/string
          (for-syntax racket/base)
          racket/class)
 
-(provide test t rx run-test in-here write-test-modules)
+(provide test t rx run-test 
+         in-here in-here/path write-test-modules)
 
 ;; utilities to use with scribble/reader
 (define t string-append)
@@ -15,7 +15,7 @@
 
 (define-struct test (definitions   ; string
                      interactions  ; (union #f string)
-                     result        ; string
+                     result        ; (or/c string regexp)
                      all?          ; boolean (#t => compare all of the text between the 3rd and n-1-st line)
                      error-ranges  ; (or/c 'dont-test
                                    ;       (-> (is-a?/c text)
@@ -26,9 +26,8 @@
                       
   #:omit-define-syntaxes)
 
-(define in-here
-  (let ([here (this-expression-source-directory)])
-    (lambda (file) (format "~s" (path->string (build-path (find-system-path 'temp-dir) file))))))
+(define (in-here/path file) (path->string (build-path (find-system-path 'temp-dir) file)))
+(define (in-here file) (format "~s" (in-here/path file)))
 
 (define tests '())
 (define-syntax (test stx)

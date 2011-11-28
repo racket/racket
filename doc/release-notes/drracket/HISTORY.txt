@@ -1,13 +1,19 @@
-
 ------------------------------
        Version 5.2.1
 ------------------------------
 
+  . The initial current-directory and current-load-relative-directory
+    for unsaved programs in DrRacket is now the user's home directory,
+    instead of whatever the current-directory was for the underlying
+    OS process.
+
   . DrRacket no longer shows a stacktrace for syntax errors in the REPL.
 
-  . The preference that makes a single "(" keystroke insert "()" 
-    (and similarly for [ { " and |) now only takes effect in Racket mode,
-    instead of taking effect in all of the modes, as it used to.
+  . The preference that makes a single "(" keystroke insert "()" (and
+    similarly for [ { " and |) now only takes effect in Racket mode,
+    instead of taking effect in all of the modes, as it used to. This
+    change is in service to a bugfix that makes the automatic opening
+    parentheses adjustment cooperate with the automatic balancing.
 
 ------------------------------
         Version 5.2

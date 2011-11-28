@@ -21,7 +21,9 @@
    (provide #%module-begin [rename bug-datum #%datum]))
  (module module-lang-test-tmp4 racket/base
    (/ 888 2)
-   (provide (except-out (all-from-out racket/base) #%top-interaction))))
+   (provide (except-out (all-from-out racket/base) #%top-interaction)))
+ (module module-lang-test-syn-error racket/base
+   (lambda)))
 
 (test @t{}
       #f
@@ -370,6 +372,11 @@
          (current-namespace (make-base-empty-namespace))}
       "(+ 1 2)"
       "3")
+(test @t{#lang racket/base}
+     @t{(parameterize ([current-directory "/does/not/exists/well/it/better/not/anwyays"])
+         (load @in-here{module-lang-test-syn-error.rkt}))}
+     ;; test to make sure that we don't get "exception raised by error display handler"
+     #rx"module-lang-test-syn-error.rkt:[0-9]+:[0-9]+: lambda: bad syntax in: \\(lambda\\)")
 
 (printf "starting drracket\n")
 (fire-up-drscheme-and-run-tests run-test)

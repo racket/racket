@@ -41,6 +41,7 @@ If the namespace does not, they are colored the unbound color.
          (for-syntax racket/base)
          (only-in ffi/unsafe register-finalizer)
          "../../syncheck-drracket-button.rkt"
+         "../../private/eval-helpers.rkt"
          "intf.rkt"
          "local-member-names.rkt"
          "colors.rkt"
@@ -2018,13 +2019,11 @@ If the namespace does not, they are colored the unbound color.
         ;; sets the current-directory and current-load-relative-directory
         ;; based on the file saved in the definitions-text
         (define/private (set-directory definitions-text)
-          (let* ([tmp-b (box #f)]
-                 [fn (send definitions-text get-filename tmp-b)])
-            (unless (unbox tmp-b)
-              (when fn
-                (let-values ([(base name dir?) (split-path fn)])
-                  (current-directory base)
-                  (current-load-relative-directory base))))))
+          (define tmp-b (box #f))
+          (define fn (send definitions-text get-filename tmp-b))
+          (define dir (get-init-dir (and (not (unbox tmp-b)) fn)))
+          (current-directory dir)
+          (current-load-relative-directory dir))
         
         ;; with-lock/edit-sequence : text (-> void) -> void
         ;; sets and restores some state of the definitions text

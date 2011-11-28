@@ -1297,7 +1297,8 @@ This produces an ACK message
                        (fprintf (current-error-port)
                                 "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
                                 short-filename
-                                program load-answer received-load)))))])
+                                program load-answer received-load)
+                       (semaphore-wait (make-semaphore 0))))))])
           (load-test tmp-load-short-filename (make-load-answer in-vector language-cust #f))
           (when (file-exists? tmp-load3-filename)
             (delete-file tmp-load3-filename))

@@ -11,7 +11,20 @@
 (provide set-basic-parameters/no-gui
          set-module-language-parameters
          (struct-out prefab-module-settings)
-         transform-module)
+         transform-module
+         get-init-dir)
+
+;; get-init-dir : (or/c path? #f) -> path?
+;; returns the initial directory for a program
+;; that is saved in 'path/f' (with #f indicating
+;; an unsaved file)
+(define (get-init-dir path/f)
+  (cond
+    [path/f
+     (let-values ([(base name dir?) (split-path path/f)])
+       base)]
+    [else
+     (find-system-path 'home-dir)]))
 
 (struct prefab-module-settings
   (command-line-args
