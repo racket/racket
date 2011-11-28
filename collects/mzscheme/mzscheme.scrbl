@@ -13,6 +13,11 @@
                               make-hash make-hasheq make-weak-hash make-weak-hasheq
                               make-immutable-hash
                               make-immutable-hasheq
+                              hash-ref hash-set! hash-remove!
+                              hash-count hash-copy hash-map hash-for-each
+                              hash-iterate-first hash-iterate-next 
+                              hash-iterate-value hash-iterate-key
+                              cleanse-path
 			      exn:fail exn:fail:contract)))
 
 @(define-syntax-rule (def-base base-define base-define-syntax base-define-for-syntax
@@ -70,12 +75,14 @@ with @racketmodname[scheme/base]. It renames a few bindings, such as
 @racket[syntax-object->datum] instead of @racket[syntax->datum], and
 it provides old versions of some syntactic forms, such as
 @racket[lambda] without support for keyword and optional arguments.
+In addition, @racketmodname[mzscheme] includes all of the exports of
+@racketmodname[racket/tcp] and @racketmodname[racket/udp].
 
 @table-of-contents[]
 
 @; ----------------------------------------
 
-@section{Old Syntactic Forms}
+@section[#:tag "Old_Syntactic_Forms"]{Old Syntactic Forms}
 
 @defform[(#%module-begin form ...)]{
 
@@ -85,7 +92,7 @@ of the @racket[form] sequence, thus importing @racketmodname[mzscheme]
 into the transformer environment for the module body. (In contrast,
 @racketmodname[scheme/base] exports @racket[for-syntax] minimal
 transformer support, while @racketmodname[scheme] exports all of
-@racketmodname[scheme/base] @racket[for-syntax].}
+@racketmodname[scheme/base] @racket[for-syntax].)}
 
 
 @defform[(#%plain-module-begin form ...)]{
@@ -396,6 +403,35 @@ Like @racket[make-immutable-hash], @racket[make-immutable-hasheq], or
 @racket[make-immutable-hasheqv], depending on whether an
 @racket['equal] or @racket['eqv] @racket[flag] is provided.}
 
+@deftogether[(
+@defthing[hash-table-get procedure?]
+@defthing[hash-table-put! procedure?]
+@defthing[hash-table-remove! procedure?]
+@defthing[hash-table-count procedure?]
+@defthing[hash-table-copy procedure?]
+@defthing[hash-table-map procedure?]
+@defthing[hash-table-for-each procedure?]
+@defthing[hash-table-iterate-first procedure?]
+@defthing[hash-table-iterate-next procedure?]
+@defthing[hash-table-iterate-value procedure?]
+@defthing[hash-table-iterate-key procedure?]
+)]{
+
+The same as @racket[hash-ref], @racket[hash-set!], @racket[hash-remove!],
+@racket[hash-count],@racket[hash-copy], @racket[hash-map], @racket[hash-for-each],
+@racket[hash-iterate-first], @racket[hash-iterate-next], @racket[hash-iterate-value],
+and @racket[hash-iterate-key], respectively.}
+
+@defthing[expand-path procedure?]{
+
+The same as @racket[cleanse-path].}
+
+@defthing[list-immutable procedure?]{
+
+The same as @racket[list].}
+
+
+
 @; ----------------------------------------
 
 @section{Extra Libraries}
@@ -406,10 +442,11 @@ The @racketmodname[mzscheme] library re-exports
 
 @; ----------------------------------------
 
-@section{Omitted Functions}
+@section{Omitted Forms and Functions}
 
-In addition to functions that have replacements listed in
-@secref["Old_Functions"], the following functions are exported by
+In addition to forms and functions that have replacements listed in
+@secref["Old_Syntactic_Forms"] and @secref["Old_Functions"], the
+following forms and functions are exported by
 @racketmodname[racket/base] but not @racketmodname[mzscheme]:
 
 @additionals[ racket/base
@@ -417,4 +454,10 @@ compose filter sort foldl foldr
 remv remq remove remv* remq* remove* memf assf findf 
 build-vector build-string build-list
 hash-keys hash-values hash->list hash-set* hash-set*!
+hash-update hash-update!
+vector-copy! 
+thread-send thread-receive thread-try-receive thread-receive-evt
+log-fatal log-error log-warning log-info log-debug
+log-message log-level? make-logger logger? 
+current-logger logger-name make-log-receiver log-receiver?
 ]
