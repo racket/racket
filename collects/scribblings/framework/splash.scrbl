@@ -13,6 +13,7 @@ that counts how many files are loaded (until @racket[shutdown-splash] is called)
 that number to control the gauge along the bottom of the splash screen.
 
 @defproc[(start-splash [draw-spec (or/c path-string?
+                                        (is-a?/c bitmap%)
                                         (vector/c (or/c (-> (is-a?/c dc<%>) void?)
                                                         (-> (is-a?/c dc<%>) 
                                                             exact-nonnegative-integer?
@@ -49,7 +50,8 @@ that number to control the gauge along the bottom of the splash screen.
   is reset based on the number of files that were loaded that time.
   
   If the @racket[draw-spec] is a @racket[path-string?], then the path is expected to be a file
-  that contains a bitmap that is drawn as the contents of the splash screen. If @racket[draw-spec]
+  that contains a bitmap that is drawn as the contents of the splash screen. If it is
+  a bitmap, then that bitmap is used directly. If @racket[draw-spec]
   is a vector, then the vector's first element is a procedure that is called to draw
   the splash screen and the other two integers are the size of the splash screen, width followed by height.
   If the procedure accepts only one argument, then it is called with a @racket[dc<%>] object where the

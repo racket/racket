@@ -123,7 +123,9 @@
 ;; the function bound to the variable should only be called on the splash-eventspace main thread
 (define (splash-paint-callback dc)
   (if splash-bitmap
-      (send dc draw-bitmap splash-bitmap 0 0)
+      (begin
+        (send dc clear)
+        (send dc draw-bitmap splash-bitmap 0 0))
       (send dc clear)))
 
 (define (splash-event-callback evt) (void))
@@ -165,12 +167,19 @@
      
      (cond
        [(or (path? splash-draw-spec)
-            (string? splash-draw-spec))
-        (unless (file-exists? splash-draw-spec)
-          (fprintf (current-error-port) "WARNING: bitmap path ~s not found\n" splash-draw-spec)
-          (no-splash))
+            (string? splash-draw-spec)
+            (is-a? splash-draw-spec bitmap%))
+        (cond
+          [(or (path? splash-draw-spec)
+               (string? splash-draw-spec))
+           (unless (file-exists? splash-draw-spec)
+             (fprintf (current-error-port) "WARNING: bitmap path ~s not found\n" splash-draw-spec)
+             (no-splash))
+           
+           (set! splash-bitmap (make-object bitmap% splash-draw-spec))]
+          [else
+           (set! splash-bitmap splash-draw-spec)])
         
-        (set! splash-bitmap (make-object bitmap% splash-draw-spec))
         (unless (send splash-bitmap ok?)
           (fprintf (current-error-port) "WARNING: bad bitmap ~s\n" splash-draw-spec)
           (no-splash))
