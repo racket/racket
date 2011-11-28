@@ -867,7 +867,8 @@ Reads and returns a number datum from @racket[s] (see
 parse exactly as a number datum (with no whitespace). The optional
 @racket[radix] argument specifies the default base for the number,
 which can be overridden by @litchar{#b}, @litchar{#o}, @litchar{#d}, or
-@litchar{#x} in the string.
+@litchar{#x} in the string. The @racket[read-decimal-as-inexact]
+parameter affects @racket[string->number] in the same as way as @racket[read].
 
 @mz-examples[(string->number "3.0+2.5i") (string->number "hello")
           (string->number "111" 7)  (string->number "#b111" 7)]
