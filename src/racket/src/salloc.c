@@ -383,7 +383,7 @@ void scheme_init_os_thread_like(void *other) XFORM_SKIP_PROC
 #endif
 }
 
-void scheme_init_os_thread() XFORM_SKIP_PROC
+void scheme_init_os_thread(void) XFORM_SKIP_PROC
 {
   scheme_init_os_thread_like(NULL);
 }

@@ -71,7 +71,7 @@ extern "C" {
 # define MZ_THREAD_EXTERN MZ_EXTERN
 #endif
 
-MZ_EXTERN void scheme_init_os_thread();
+MZ_EXTERN void scheme_init_os_thread(void);
 
 /* **************************************************************** */
 /* Declarations that we wish were elsewhere, but are needed here to */
@@ -367,8 +367,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC;
 #  ifdef MZ_XFORM
 START_XFORM_SKIP;
 #  endif
-static inline Thread_Local_Variables *scheme_get_thread_local_variables() __attribute__((used));
-static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
+static inline Thread_Local_Variables *scheme_get_thread_local_variables(void) __attribute__((used));
+static inline Thread_Local_Variables *scheme_get_thread_local_variables(void) {
   Thread_Local_Variables *x = NULL;
 #  if defined(__APPLE__) && defined(__MACH__)
 #   if defined(__x86_64__)
@@ -401,7 +401,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
 # endif
 #elif defined(IMPLEMENT_THREAD_LOCAL_VIA_PROCEDURE)
 /* Using external scheme_get_thread_local_variables() procedure */
-MZ_EXTERN Thread_Local_Variables *scheme_get_thread_local_variables();
+MZ_EXTERN Thread_Local_Variables *scheme_get_thread_local_variables(void);
 # ifdef MZ_XFORM
 XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
 # endif
@@ -409,14 +409,14 @@ XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
 # ifdef MZ_XFORM
 START_XFORM_SKIP;
 # endif
-MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables();
+MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables(void);
 # ifdef __mzscheme_private__
 /* In the Racket DLL, need thread-local to be fast: */
 MZ_EXTERN uintptr_t scheme_tls_delta;
 #  ifdef MZ_USE_WIN_TLS_VIA_DLL
 MZ_EXTERN int scheme_tls_index;
 #  endif
-static __inline Thread_Local_Variables **scheme_get_thread_local_variables_ptr() {
+static __inline Thread_Local_Variables **scheme_get_thread_local_variables_ptr(void) {
   __asm { mov eax, FS:[0x2C]
 #  ifdef MZ_USE_WIN_TLS_VIA_DLL
           add eax, scheme_tls_index
@@ -425,12 +425,12 @@ static __inline Thread_Local_Variables **scheme_get_thread_local_variables_ptr()
           add eax, scheme_tls_delta }
   /* result is in eax */
 }
-static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
+static __inline Thread_Local_Variables *scheme_get_thread_local_variables(void) {
   return *scheme_get_thread_local_variables_ptr();
 }
 # else
 /* Outside the Racket DLL, slower thread-local is ok: */
-static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
+static __inline Thread_Local_Variables *scheme_get_thread_local_variables(void) {
   return scheme_external_get_thread_local_variables();
 }
 # endif
@@ -444,8 +444,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
 #  ifdef MZ_XFORM
 START_XFORM_SKIP;
 #  endif
-MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables();
-static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
+MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables(void);
+static __inline Thread_Local_Variables *scheme_get_thread_local_variables(void) {
   return scheme_external_get_thread_local_variables();
 }
 #  ifdef MZ_XFORM
