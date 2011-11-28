@@ -1373,12 +1373,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
   int basetype = 0; /* 1=int, 2=char, 3=void, 4=float, 5=double */
   int intsize = 0;  /* "short" => decrement, "long" => increment */
   int stars = 0;    /* number of "*"s */
+  int must_list = 0;
   Scheme_Object *l = argv[0], *p;
   while (!SAME_OBJ(l, scheme_null)) {
-    if (SCHEME_PAIRP(l)) { p = SCHEME_CAR(l); l = SCHEME_CDR(l); }
+    if (SCHEME_PAIRP(l)) { p = SCHEME_CAR(l); l = SCHEME_CDR(l); must_list = 1;}
+    else if (must_list) { p = scheme_false; l = scheme_null; }
     else { p = l; l = scheme_null; }
     if (!SCHEME_SYMBOLP(p)) {
-      scheme_wrong_type(MYNAME, "list of symbols", 0, argc, argv);
+      scheme_wrong_type(MYNAME, "symbol or list of symbols", 0, argc, argv);
     } else if (!strcmp(SCHEME_SYM_VAL(p),"int")) {
       if (basetype==0) basetype=1;
       else scheme_signal_error(MYNAME": extraneous type: %V", p);
@@ -1405,7 +1407,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
     } else if (!strcmp(SCHEME_SYM_VAL(p),"*")) {
       stars++;
     } else {
-      scheme_wrong_type(MYNAME, "list of C type symbols", 0, argc, argv);
+      scheme_wrong_type(MYNAME, "C type symbol or list of C type symbols", 0, argc, argv);
     }
   }
   if (stars > 1)

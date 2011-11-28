@@ -37,6 +37,7 @@ foreign.@LTO@: $(srcdir)/foreign.c \
            $(srcdir)/../racket/include/scheme.h \
            $(srcdir)/../racket/include/schthread.h \
            $(srcdir)/../racket/src/schemef.h \
+           $(srcdir)/../racket/src/stypes.h \
            $(srcdir)/../racket/src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/foreign.c -o foreign.@LTO@
 

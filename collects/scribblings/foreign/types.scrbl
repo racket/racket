@@ -67,11 +67,12 @@ list. Finally, the result can be a vector of size 2 containing an
 element representation followed by an exact-integer count.}
 
 
-@defproc[(compiler-sizeof [sym symbol?]) exact-nonnegative-integer?]{
+@defproc[(compiler-sizeof [sym (or/c symbol? (listof symbol?))]) exact-nonnegative-integer?]{
 
-Possible values for @racket[symbol] are @racket['int], @racket['char],
+Possible values for @racket[sym] are @racket['int], @racket['char],
 @racket['short], @racket['long], @racket['*], @racket['void],
-@racket['float], @racket['double]. The result is the size of the
+@racket['float], @racket['double], or lists of symbols, such as 
+@racket['(long long)]. The result is the size of the
 corresponding type according to the C @cpp{sizeof} operator for the
 current platform. The @racket[compiler-sizeof] operation should be
 used to gather information about the current platform, such as
