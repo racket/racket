@@ -5,11 +5,13 @@
          "atomic.rkt"
          "define.rkt")
 
-(define objc-lib (ffi-lib "libobjc"))
+(define objc-lib (ffi-lib "libobjc" #:fail (lambda () #f)))
 
 (define-ffi-definer define-objc objc-lib
-  #:provide provide-protected)
-(define-ffi-definer define-objc/private objc-lib)
+  #:provide provide-protected
+  #:default-make-fail make-not-available)
+(define-ffi-definer define-objc/private objc-lib
+  #:default-make-fail make-not-available)
 
 ;; ----------------------------------------
 
