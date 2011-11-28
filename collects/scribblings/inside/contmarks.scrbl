@@ -25,4 +25,4 @@ Creates a new continuation frame. The @var{data} record need not be
 @function[(void scheme_pop_continuation_frame
            [Scheme_Cont_Frame_Data* data])]{
 
-Removes a continuation frame created by  @cpp{scheme_pop_continuation_frame}.}
+Removes a continuation frame created by  @cpp{scheme_push_continuation_frame}.}
