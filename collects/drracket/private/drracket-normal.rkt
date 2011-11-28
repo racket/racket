@@ -6,10 +6,12 @@
          racket/list
          framework/private/bday
          framework/splash
+         racket/runtime-path
          racket/file
-         "dock-icon.rkt"
          "frame-icon.rkt"
          "eb.rkt")
+
+(define-runtime-path doc-icon.rkt "dock-icon.rkt")
 
 (define files-to-open (command-line #:args filenames filenames))
 
@@ -95,6 +97,8 @@
 
 (when (eb-bday?) (install-eb))
 
+(define weekend-bitmap-spec (collection-file-path "plt-logo-red-shiny.png" "icons"))
+
 (define normal-bitmap-spec
   (cond
     [(and valentines-day? high-color?)
@@ -110,7 +114,7 @@
     [(and halloween? high-color?)
      (collection-file-path "PLT-pumpkin.png" "icons")]
     [(and high-color? weekend?)
-     (collection-file-path "plt-logo-red-shiny.png" "icons")]
+     weekend-bitmap-spec]
     [high-color?
      (collection-file-path "plt-logo-red-diffuse.png" "icons")]
     [(= (get-display-depth) 1)
@@ -119,8 +123,10 @@
      (collection-file-path "plt-flat.gif" "icons")]))
 (define normal-bitmap (read-bitmap normal-bitmap-spec))
 (set-splash-char-observer drracket-splash-char-observer)
-(when (and high-color? weekend?)
-  (set-dock-tile-bitmap normal-bitmap))
+(when (eq? (system-type) 'macosx)
+  (when (equal? normal-bitmap-spec weekend-bitmap-spec)
+    (define set-doc-tile-bitmap (dynamic-require doc-icon.rkt 'set-dock-tile-bitmap))
+    (set-doc-tile-bitmap normal-bitmap)))
 (start-splash normal-bitmap
               "DrRacket"
               700

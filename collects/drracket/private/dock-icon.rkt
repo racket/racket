@@ -9,14 +9,13 @@
               NSImageView)
 
 (define (set-dock-tile-bitmap bm)
-  (when (eq? (system-type) 'macosx)
-    (unless old-cocoa?
-      (define dock-tile (tell (tell NSApplication sharedApplication) dockTile))
-      (start-atomic)
-      (define view (tell (tell NSImageView alloc) init))
-      (tellv view setImage: (bitmap->image bm))
-      
-      (tellv dock-tile setContentView: view)
-      (tellv dock-tile display)
-      (tellv view release)
-      (end-atomic))))
+  (unless old-cocoa?
+    (define dock-tile (tell (tell NSApplication sharedApplication) dockTile))
+    (start-atomic)
+    (define view (tell (tell NSImageView alloc) init))
+    (tellv view setImage: (bitmap->image bm))
+    
+    (tellv dock-tile setContentView: view)
+    (tellv dock-tile display)
+    (tellv view release)
+    (end-atomic)))
