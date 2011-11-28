@@ -7,6 +7,7 @@
          framework/private/bday
          framework/splash
          racket/file
+         "dock-icon.rkt"
          "frame-icon.rkt"
          "eb.rkt")
 
@@ -30,7 +31,6 @@
 
 (define high-color? ((get-display-depth) . > . 8))
 (define special-state #f)
-(define normal-bitmap #f) ; set by load-magic-images
 
 (define (icons-bitmap name)
   (make-object bitmap% (collection-file-path name "icons")))
@@ -48,13 +48,6 @@
 
 (define (load-magic-images)
   (set! load-magic-images void) ; run only once
-  (unless normal-bitmap 
-    (set! normal-bitmap
-          (cond
-            [(path? normal-bitmap-spec)
-             (make-object bitmap% normal-bitmap-spec)]
-            [else
-             (make-object bitmap% (collection-file-path "plt-logo-red-diffuse.png" "icons"))])))
   (for-each (λ (magic-image)
               (unless (magic-image-bitmap magic-image)
                 (set-magic-image-bitmap!
@@ -81,25 +74,24 @@
   (when ((length key-codes) . > . longest-magic-string)
     (set! key-codes (take key-codes longest-magic-string))))
 
-(set-splash-char-observer
- (λ (evt)
-   (let ([ch (send evt get-key-code)])
-     (when (and (eq? ch #\q)
-                (send evt get-control-down))
-       (exit))
-     (when (char? ch)
-       ;; as soon as something is typed, load the bitmaps
-       (load-magic-images)
-       (add-key-code ch)
-       (let ([match (find-magic-image)])
-         (when match
-           (set! key-codes null)
-           (set-splash-bitmap
-            (if (eq? special-state match)
-                (begin (set! special-state #f) normal-bitmap)
-                (begin (set! special-state match)
-                       (magic-image-bitmap match))))
-           (refresh-splash)))))))
+(define (drracket-splash-char-observer evt)
+  (let ([ch (send evt get-key-code)])
+    (when (and (eq? ch #\q)
+               (send evt get-control-down))
+      (exit))
+    (when (char? ch)
+      ;; as soon as something is typed, load the bitmaps
+      (load-magic-images)
+      (add-key-code ch)
+      (let ([match (find-magic-image)])
+        (when match
+          (set! key-codes null)
+          (set-splash-bitmap
+           (if (eq? special-state match)
+               (begin (set! special-state #f) normal-bitmap)
+               (begin (set! special-state match)
+                      (magic-image-bitmap match))))
+          (refresh-splash))))))
 
 (when (eb-bday?) (install-eb))
 
@@ -125,7 +117,11 @@
      (collection-file-path "pltbw.gif" "icons")]
     [else
      (collection-file-path "plt-flat.gif" "icons")]))
-(start-splash normal-bitmap-spec
+(define normal-bitmap (read-bitmap normal-bitmap-spec))
+(set-splash-char-observer drracket-splash-char-observer)
+(when (and high-color? weekend?)
+  (set-dock-tile-bitmap normal-bitmap))
+(start-splash normal-bitmap
               "DrRacket"
               700
               #:allow-funny? #t
