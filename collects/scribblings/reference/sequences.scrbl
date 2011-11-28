@@ -283,13 +283,20 @@ in the sequence.
   with @racket[0].  The elements of @racket[seq] must be single-valued.}
 
 @defproc[(in-sequences [seq sequence?] ...) sequence?]{
-  Returns a sequence that is made of all input sequences, one after the
-  other.  The elements of each @racket[seq] must all have the same
-  number of values.}
+  Returns a sequence that is made of all input sequences, one after
+  the other. Each @racket[seq] is @tech{initiate}d only after the
+  preceding @racket[seq] is exhausted. If a single @racket[seq] is
+  provided, then @racket[seq] is returned; otherwise, the elements of
+  each @racket[seq] must all have the same number of values.}
 
 @defproc[(in-cycle [seq sequence?] ...) sequence?]{
-  Similar to @racket[in-sequences], but the sequences are repeated in an
-  infinite cycle.}
+  Similar to @racket[in-sequences], but the sequences are repeated in
+  an infinite cycle, where each @racket[seq] is @tech{initiate}d
+  afresh in each iteration. Beware that if no @racket[seq]s are
+  provided or if all @racket[seq]s become empty, then the sequence
+  produced by @racket[in-cycle] never returns when an element is
+  demanded---or even when the sequence is @tech{initiate}d, if all 
+  @racket[seq]s are initially empty.}
 
 @defproc[(in-parallel [seq sequence?] ...) sequence?]{
   Returns a sequence where each element has as many values as the number

@@ -68,6 +68,10 @@
 (test-sequence [(0 1 2 3 #\a #\b #\c) (10 11 12 13 #\A #\B #\C)]
                 (in-sequences (in-parallel (in-range 0 4) (in-range 10 14))
                               (in-parallel "abc" "ABC")))
+;; Check empty sequences:
+(test '() 'empty-seq (for/list ([v (in-sequences)]) v))
+(test '() 'empty-seq (for/list ([v (in-sequences '())]) v))
+(test '() 'empty-seq (for/list ([v (in-sequences '() '())]) v))
 
 ;; use in-parallel to get a finite number of items
 (test-sequence [(0 1 2 3 0 1 2 3) (0 1 2 3 4 5 6 7)]
@@ -76,6 +80,9 @@
                 (in-parallel (in-range 0 8) (in-cycle (in-range 0 3))))
 (test-sequence [(0 1 2 3 2 1 0 1) (0 1 2 3 4 5 6 7)]
                 (in-parallel (in-cycle (in-range 0 4) (in-range 2 0 -1)) (in-range 0 8)))
+;; `in-cycle' accepts 0 arguments, but it never produces a value if asked:
+(test #t sequence? (in-cycle))
+(test #t sequence? (in-cycle '()))
 
 (test-sequence [(0 1 2) (a b c)] (in-parallel (in-range 3) (in-list '(a b c))))
 (test-sequence [(0 1 2) (a b c)] (in-parallel (in-range 10) (in-list '(a b c))))
