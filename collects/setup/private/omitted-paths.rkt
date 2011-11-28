@@ -92,7 +92,7 @@
                      (let ([r (relative-from dir* (car root+table))])
                        (and r (cons (reverse r) root+table))))
                    (if root-dir
-                       (list (list (explode-path root-dir)
+                       (list (list (explode-path (simple-form-path root-dir))
                                    (make-hash)
                                    #t))
                        (force roots)))]
