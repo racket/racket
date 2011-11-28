@@ -2,10 +2,12 @@
        Version 5.2.1
 ------------------------------
 
-  . The initial current-directory and current-load-relative-directory
-    for unsaved programs in DrRacket is now the user's home directory,
-    instead of whatever the current-directory was for the underlying
-    OS process.
+  . The initial current-directory for unsaved programs in DrRacket is
+    now the user's home directory, instead of whatever the
+    current-directory was for the underlying OS process.
+
+  . The current-load-relative-directory is now set to #f initially in
+    DrRacket (to better match what Racket does).
 
   . DrRacket no longer shows a stacktrace for syntax errors in the REPL.
 

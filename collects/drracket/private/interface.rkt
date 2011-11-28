@@ -105,8 +105,7 @@ remain the same for tools that use them.
     
     get-directory      ;; (-> (union #f string[existing directory]))
     ;; returns the directory that should be the default for
-    ;; the `current-directory' and `current-load-relative-directory'
-    ;; parameters in the repl.
+    ;; the `current-directory' parameter in the repl.
     ))
 
 (define unit:tab<%>

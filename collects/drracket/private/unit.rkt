@@ -3365,16 +3365,6 @@ module browser threading seems wrong.
             (send module-browser-name-length-choice enable #t)
             (close-status-line 'plt:module-browser))))
       
-      ;; set-directory : text -> void
-      ;; sets the current-directory and current-load-relative-directory
-      ;; based on the file saved in the definitions-text
-      (define/private (set-directory definitions-text)
-        (define tmp-b (box #f))
-        (define fn (send definitions-text get-filename tmp-b))
-        (define dir (get-init-dir (and (not (unbox tmp-b)) fn)))
-        (current-directory dir)
-        (current-load-relative-directory dir))
-      
       
       ;                                            
       ;                                            

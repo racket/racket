@@ -1867,6 +1867,7 @@ If the namespace does not, they are colored the unbound color.
               (λ () ; =user=
                 (send the-tab set-breakables (current-thread) (current-custodian))
                 (set-directory definitions-text)
+                (current-load-relative-directory #f)
                 (current-error-port error-port)
                 (current-output-port output-port)
                 (error-display-handler 
@@ -2016,14 +2017,12 @@ If the namespace does not, they are colored the unbound color.
 
         
         ;; set-directory : text -> void
-        ;; sets the current-directory and current-load-relative-directory
-        ;; based on the file saved in the definitions-text
+        ;; sets the current-directory based on the file saved in the definitions-text
         (define/private (set-directory definitions-text)
           (define tmp-b (box #f))
           (define fn (send definitions-text get-filename tmp-b))
           (define dir (get-init-dir (and (not (unbox tmp-b)) fn)))
-          (current-directory dir)
-          (current-load-relative-directory dir))
+          (current-directory dir))
         
         ;; with-lock/edit-sequence : text (-> void) -> void
         ;; sets and restores some state of the definitions text

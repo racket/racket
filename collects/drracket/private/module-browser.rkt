@@ -876,7 +876,7 @@
                p))))
       (current-output-port (swallow-specials original-output-port))
       (current-error-port (swallow-specials original-error-port))
-      (current-load-relative-directory init-dir)
+      (current-load-relative-directory #f)
       (current-directory init-dir)
       (error-display-handler (λ (str exn) (set! error-str str)))
       
@@ -1041,7 +1041,9 @@
                    (build-module-filename
                     (if (regexp-match #rx"^," name)
                         (substring name 1 (string-length name))
-                        (build-path (current-load-relative-directory) name)))])
+                        (build-path (or (current-load-relative-directory) 
+                                        (current-directory))
+                                    name)))])
              (add-module-code-connections base module-code))))
        module-codes)))
   
