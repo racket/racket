@@ -96,7 +96,7 @@
   [on-release DEFAULT #f (function-with-arity 2)]
   ;; (U #f (World S-expression -> World))
   ;; -- on-receive must specify a receive handler 
-  [on-receive DEFAULT #'#f (function-with-arity 2)]
+  [on-receive DEFAULT #'(lambda (w m) w) (function-with-arity 2)]
   ;; World -> Boolean 
   ;; -- stop-when must specify a predicate; it may specify a rendering function
   [stop-when DEFAULT #'False

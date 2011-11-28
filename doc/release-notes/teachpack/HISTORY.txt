@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+
+* on-receive doesn't have to exist for universe/world interactions 
+  -- fixed
+
+------------------------------------------------------------------------
 Version 5.2				  [Tue Oct 18 12:34:16 EDT 2011]
 
 * bug fixes in 2htdp/universe 
