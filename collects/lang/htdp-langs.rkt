@@ -143,7 +143,8 @@
                   [scheme-test-module-name
                    ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
                   [scheme-signature-module-name
-                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-english.rkt") #f #f)])
+                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-english.rkt") #f #f)]
+                  [tests-on? (preferences:get 'test-engine:enable?)])
               (run-in-user-thread
                (lambda ()
                  (when (getenv "PLTDRHTDPNOCOMPILED") (use-compiled-file-paths '()))
@@ -171,7 +172,7 @@
                             (send (send engine get-info) signature-failed
                                   obj signature message blame))))))
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
-                 (test-execute (get-preference 'tests:enable? (lambda () #t)))
+                 (test-execute tests-on?)
 		 (signature-checking-enabled? (get-preference 'signatures:enable-checking? (lambda () #t)))
                  (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40)))))))
             (super on-execute settings run-in-user-thread)

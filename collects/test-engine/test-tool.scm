@@ -181,7 +181,7 @@
                           (when enabled?
                             (set! enabled? #f)
                             (send this set-label enable-label)
-                            (preferences:set 'test-engine:enable? #t)))
+                            (preferences:set 'test-engine:enable? #f)))
                         (super-instantiate ()))]
                      [enable? (preferences:get 'test-engine:enable?)]
                      [enable-menu-item (make-object enable-menu-item%

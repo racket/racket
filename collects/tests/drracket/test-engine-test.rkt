@@ -39,11 +39,11 @@
 		   (list (make-signature-violation "\"bar\"" 1 7)))
   (test-expression "(: foo (Integer -> Integer)) (define (foo x) x) (foo \"foo\")"
 		   "\"foo\""
-		   #:repl-expected "foo: this name was defined previously and cannot be re-defined\n\"foo\""
+		   #:repl-expected "foo: this name was defined previously and cannot be re-defined\n"
 		   #:signature-violations-expected
 		   (list (make-signature-violation "\"foo\" at line 1, column 48 " 1 8))
 		   #:repl-signature-violations-expected
-		   (list (make-signature-violation "\"foo\" at line 4, column 50 " 1 8)))
+                   (list))
   (test-expression "(: foo (Integer -> Integer)) (define foo (lambda (x) x))"
 		   ""
 		   #:repl-expression "(foo \"foo\")"
@@ -62,11 +62,11 @@
 		   (list (make-signature-violation "\"bar\"" 1 7)))
   (test-expression "(: foo (integer -> integer)) (define foo (lambda (x) x)) (foo \"foo\")"
 		   "\"foo\""
-		   #:repl-expected "define: Zweite Definition für denselben Namen\n\"foo\""
+                   #:repl-expected "define: Zweite Definition für denselben Namen"
 		   #:signature-violations-expected
 		   (list (make-signature-violation "\"foo\" at line 1, column 57 " 1 8))
 		   #:repl-signature-violations-expected
-		   (list (make-signature-violation "\"foo\" at line 4, column 59 " 1 8)))
+		   (list))
   (test-expression "(: foo (integer -> integer)) (define foo (lambda (x) x))"
 		   ""
 		   #:repl-expression "(foo \"foo\")"
@@ -459,8 +459,21 @@
     (check-failures (append signature-violations-expected repl-signature-violations-expected)
 		    (append check-failures-expected repl-check-failures-expected))))
 
-
-
+(define (test-disabling-tests)
+  (define drs (wait-for-drscheme-frame))
+  
+  (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")]) 
+    (prepare-for-test-expression)
+    (test:menu-select "Racket" "Disable Tests")
+    (test-expression "(check-expect 1 2)" "Tests disabled.")
+    (test:menu-select "Racket" "Enable Tests"))
+  
+  (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion - Anfänger(;|$)")])
+    (prepare-for-test-expression)
+    (test:menu-select "Racket" "Disable Tests")
+    (test-expression "(check-expect 1 2)" "Tests disabled.")
+    (test:menu-select "Racket" "Enable Tests")))
+  
 (define-syntax (go stx)
   (syntax-case stx ()
     [(_ arg)
@@ -479,6 +492,7 @@
   (go DMdA-beginner)
   (go DMdA-vanilla)
   (go DMdA-assignments)
-  (go DMdA-advanced))
+  (go DMdA-advanced)
+  (go test-disabling-tests))
 
 (fire-up-drscheme-and-run-tests run-test)

@@ -6,6 +6,7 @@
          racket/gui/base
          drracket/tool
          string-constants
+         framework/preferences
          (only-in test-engine/scheme-gui make-formatter)
          (only-in test-engine/scheme-tests
                   scheme-test-data test-format test-execute)
@@ -151,7 +152,8 @@
         (let* ([drracket-namespace (current-namespace)]
                [test-engine-path
                 ((current-module-name-resolver)
-                 'test-engine/scheme-tests #f #f)])
+                 'test-engine/scheme-tests #f #f)]
+               [tests-on? (preferences:get 'test-engine:enable?)])
           (run-in-user-thread
            (lambda ()
              (namespace-attach-module drracket-namespace test-engine-path)
@@ -160,7 +162,7 @@
               (list (drracket:rep:current-rep)
                     drracket-eventspace
                     test-display%))
-             (test-execute (get-preference 'tests:enable? (lambda () #t)))
+             (test-execute tests-on?)
              (test-format
               (make-formatter
                (lambda (v o) (render-value/format v settings o 40))))))
