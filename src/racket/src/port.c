@@ -4732,12 +4732,12 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   if (fd == -1) {
     if (errno == EISDIR) {
       if (err) {
-        *err = "destination exists as a directory";
+        *err = "destination is a directory path";
         *eerrno = errno;
         return NULL;
       } else
         scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_EXISTS,
-                         "%s: \"%q\" exists as a directory",
+                         "%s: \"%q\" is a directory path",
                          name, filename);
     } else if (errno == EEXIST) {
       if (!existsok) {
@@ -4851,7 +4851,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
     if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
       CloseHandle(fd);
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_EXISTS,
-		       "%s: \"%q\" exists as a directory",
+		       "%s: \"%q\" is a directory path",
 		       name, filename);
       return NULL;
     }
@@ -4877,11 +4877,11 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 # else
   if (scheme_directory_exists(filename)) {
     if (err) {
-      *err = "destination exists as a directory";
+      *err = "destination is a directory path";
       *eerrno = 0;
     } else if (!existsok)
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_EXISTS,
-		       "%s: \"%q\" exists as a directory",
+		       "%s: \"%q\" is a directory path",
 		       name, filename);
     else
       filename_exn(name, "cannot open directory as a file", filename, errno);
