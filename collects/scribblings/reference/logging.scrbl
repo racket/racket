@@ -43,7 +43,7 @@ through environment variables:
        defined and is not overridden by a command-line flag, it
        determines the level of the @tech{log receiver} that propagates
        events to the system log. The possible values are the
-       same as for @envvar{PLTSYSLOG}.
+       same as for @envvar{PLTSTDERR}.
 
        The default is @racket["none"] for Unix or @racket["error"] for
        Windows and Mac OS X.}
