@@ -610,7 +610,8 @@
       (define/private (show-autosave-error exn orig-name)
         (message-box 
          (string-constant warning)
-         (string-append
+         (apply
+          string-append
           (format (string-constant error-autosaving)
                   (or orig-name (string-constant untitled)))
           "\n"
@@ -618,7 +619,14 @@
           "\n\n"
           (if (exn? exn)
               (format "~a" (exn-message exn))
-              (format "~s" exn)))
+              (format "~s" exn))
+          "\n\n"
+          (if (and (exn? exn)
+                   (continuation-mark-set? (exn-continuation-marks exn)))
+              (for/list ([fr (in-list (continuation-mark-set->context 
+                                       (exn-continuation-marks exn)))])
+                (format "   ~s\n" fr))
+              '()))
          #f
          '(caution ok)))
       
