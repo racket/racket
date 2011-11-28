@@ -19,7 +19,12 @@
 ;; to open. See also main.rkt.
 (current-command-line-arguments (apply vector files-to-open))
 
-(define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween? valentines-day? weekend?)
+(define (currently-the-weekend?)
+  (define date (seconds->date (current-seconds)))
+  (define dow (date-week-day date))
+  (or (= dow 6) (= dow 0)))
+
+(define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween? valentines-day?)
   (let* ([date (seconds->date (current-seconds))]
          [month (date-month date)]
          [day (date-day date)]
@@ -28,10 +33,9 @@
             (and (= 3 month) (= 26 day))
             (and (= 6 month) (= 11 day))
             (and (= 10 month) (= 31 day))
-            (and (= 2 month) (= 14 day))
-            (or (= dow 6) (= dow 0)))))
+            (and (= 2 month) (= 14 day)))))
 
-(define high-color? ((get-display-depth) . > . 8))
+
 (define special-state #f)
 
 (define (icons-bitmap name)
@@ -90,7 +94,7 @@
           (set! key-codes null)
           (set-splash-bitmap
            (if (eq? special-state match)
-               (begin (set! special-state #f) normal-bitmap)
+               (begin (set! special-state #f) the-splash-bitmap)
                (begin (set! special-state match)
                       (magic-image-bitmap match))))
           (refresh-splash))))))
@@ -98,12 +102,13 @@
 (when (eb-bday?) (install-eb))
 
 (define weekend-bitmap-spec (collection-file-path "plt-logo-red-shiny.png" "icons"))
+(define normal-bitmap-spec (collection-file-path "plt-logo-red-diffuse.png" "icons"))
 
-(define normal-bitmap-spec
+(define the-bitmap-spec
   (cond
-    [(and valentines-day? high-color?)
+    [valentines-day?
      (collection-file-path "heart.png" "icons")]
-    [(and (or prince-kuhio-day? kamehameha-day?) high-color?)
+    [(or prince-kuhio-day? kamehameha-day?)
      (set-splash-progress-bar?! #f)
      (let ([size ((dynamic-require 'drracket/private/palaka 'palaka-pattern-size) 4)])
        (vector (dynamic-require 'drracket/private/honu-logo 'draw-honu) 
@@ -111,23 +116,41 @@
                size))]
     [texas-independence-day?
      (collection-file-path "texas-plt-bw.gif" "icons")]
-    [(and halloween? high-color?)
+    [halloween?
      (collection-file-path "PLT-pumpkin.png" "icons")]
-    [(and high-color? weekend?)
+    [(currently-the-weekend?)
      weekend-bitmap-spec]
-    [high-color?
-     (collection-file-path "plt-logo-red-diffuse.png" "icons")]
-    [(= (get-display-depth) 1)
-     (collection-file-path "pltbw.gif" "icons")]
-    [else
-     (collection-file-path "plt-flat.gif" "icons")]))
-(define normal-bitmap (read-bitmap normal-bitmap-spec))
+    [else normal-bitmap-spec]))
+(define the-splash-bitmap (read-bitmap the-bitmap-spec))
 (set-splash-char-observer drracket-splash-char-observer)
+
 (when (eq? (system-type) 'macosx)
-  (when (equal? normal-bitmap-spec weekend-bitmap-spec)
-    (define set-doc-tile-bitmap (dynamic-require doc-icon.rkt 'set-dock-tile-bitmap))
-    (set-doc-tile-bitmap normal-bitmap)))
-(start-splash normal-bitmap
+  (define initially-the-weekend? (currently-the-weekend?))
+  (define weekend-bitmap (if (equal? the-bitmap-spec weekend-bitmap-spec)
+                             the-splash-bitmap
+                             #f))
+  (define weekday-bitmap (if (equal? the-bitmap-spec normal-bitmap-spec)
+                             the-splash-bitmap
+                             #f))
+  (define set-doc-tile-bitmap (dynamic-require doc-icon.rkt 'set-dock-tile-bitmap))
+  (define (set-weekend)
+    (unless weekend-bitmap (set! weekend-bitmap (read-bitmap weekend-bitmap-spec)))
+    (set-doc-tile-bitmap weekend-bitmap))
+  (define (set-weekday)
+    (unless weekday-bitmap (set! weekday-bitmap (read-bitmap normal-bitmap-spec)))
+    (set-doc-tile-bitmap weekday-bitmap))
+  (when initially-the-weekend? (set-weekend))
+  (void
+   (thread
+    (λ ()
+      (let loop ([last-check-weekend? initially-the-weekend?])
+        (sleep 10)
+        (define this-check-weekend? (currently-the-weekend?))
+        (unless (equal? last-check-weekend? this-check-weekend?)
+          (if this-check-weekend? (set-weekend) (set-weekday)))
+        (loop this-check-weekend?))))))
+
+(start-splash the-splash-bitmap
               "DrRacket"
               700
               #:allow-funny? #t
