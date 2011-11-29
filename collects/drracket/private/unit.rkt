@@ -38,6 +38,7 @@ module browser threading seems wrong.
          "local-member-names.rkt"
          "eval-helpers.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
+         (prefix-in icons: icons)
          
          mred
          (prefix-in mred: mred)
@@ -385,8 +386,9 @@ module browser threading seems wrong.
                    frame
                    program-filename)))])))
   
-  (define execute-bitmap (make-object bitmap% (collection-file-path "run.png" "icons") 'png/mask))
-  (define break-bitmap (make-object bitmap% (collection-file-path "break.png" "icons") 'png/mask))
+  (define execute-bitmap (icons:go-icon 'green (icons:toolbar-icon-height)))
+  (define break-bitmap (icons:stop-icon 'red (icons:toolbar-icon-height)))
+  
   (define save-bitmap (make-object bitmap% (collection-file-path "save.png" "icons") 'png/mask))
   
   (define-values (get-program-editor-mixin add-to-program-editor-mixin)

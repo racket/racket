@@ -178,6 +178,7 @@ If the namespace does not, they are colored the unbound color.
          (new switchable-button%
               (label (string-constant check-syntax))
               (bitmap syncheck-bitmap)
+              (alternate-bitmap syncheck-small-bitmap)
               (parent parent)
               (callback (λ (button) (send frame syncheck:button-callback)))))
        'drracket:syncheck)
@@ -2046,6 +2047,7 @@ If the namespace does not, they are colored the unbound color.
           (new switchable-button%
                (label (string-constant check-syntax))
                (bitmap syncheck-bitmap)
+               (alternate-bitmap syncheck-small-bitmap)
                (parent check-syntax-button-parent-panel)
                (callback (λ (button) (syncheck:button-callback)))))
         (inherit register-toolbar-button)

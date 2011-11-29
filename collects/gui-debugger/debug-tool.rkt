@@ -14,7 +14,8 @@
            "load-sandbox.rkt"
            framework
            string-constants
-           lang/debugger-language-interface)
+           lang/debugger-language-interface
+           icons)
   
   (provide tool@)
   
@@ -1080,10 +1081,7 @@
           
           (super-new)))
       
-      (define debug-bitmap 
-        (make-object bitmap%
-          (build-path (collection-path "gui-debugger" "icons") "clanbomber-16x16.png")
-          'png/mask))
+      (define debug-bitmap (step-icon 'green (toolbar-icon-height)))
       
       (define make-pause-label
         (bitmap-label-maker

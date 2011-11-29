@@ -9,7 +9,8 @@
          "view/frame.rkt"
          (only-in "view/view.rkt" macro-stepper-director%)
          "view/stepper.rkt"
-         "view/prefs.rkt")
+         "view/prefs.rkt"
+         icons)
 
 ;; Capability name: 'macro-stepper:enabled
 
@@ -106,16 +107,9 @@
 
     (define-local-member-name check-language)
     
-    (define macro-debugger-bitmap
-      (make-object bitmap%
-        (build-path (collection-path "icons") "macro-stepper.png")
-        'png/mask))
-
-    (define macro-debugger-up-bitmap
-      (make-object bitmap%
-        (build-path (collection-path "icons") "macro-stepper-narrow.png")
-        'png/mask))
-
+    (define macro-debugger-up-bitmap (step-icon 'blue (toolbar-icon-height)))
+    (define macro-debugger-bitmap (macro-stepper-icon (toolbar-icon-height)))
+    
     (define (macro-debugger-unit-frame-mixin %)
       (class* % (frame/supports-macro-stepper<%>)
         (super-new)
