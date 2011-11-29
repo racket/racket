@@ -4,7 +4,8 @@
           unstable/latent-contract/defthing
           (for-label icons
                      slideshow/pict
-                     mrlib/switchable-button)
+                     mrlib/switchable-button
+                     racket)
           icons/private/doc
           icons
           slideshow/pict)
@@ -124,14 +125,16 @@ These return typical ``playback control'' icons.
                                                    go-icon step-icon
                                                    continue-icon fast-forward-icon)])
                         (make-icon color 32 style)))]
+
+The remaining icon @(bar-icon 'red 14 'diffuse), returned by @racket[bar-icon], is not a playback icon @italic{per se}, but is used to build the others.
 }
 
 @doc-apply[stop-sign-icon]{
-@examples[#:eval icon-eval (stop-sign-icon 'red 24 'diffuse)]
+@examples[#:eval icon-eval (map (λ (color) (stop-sign-icon color 23 'diffuse)) icon-colors)]
 }
 
 @doc-apply[check-icon]{
-@examples[#:eval icon-eval (check-icon 'cyan 48 'shiny)]
+@examples[#:eval icon-eval (map (λ (color) (check-icon color 29 'shiny)) icon-colors)]
 }
 
 @doc-apply[magnifying-glass-icon]{
@@ -224,7 +227,7 @@ These return typical ``playback control'' icons, as @racket[pict]s.
                                               pause-icon-pict stop-icon-pict
                                               go-icon-pict step-icon-pict
                                               continue-icon-pict fast-forward-icon-pict)])
-                      (hc-append icon (make-icon-pict 'red 32 'shiny) (blank 16)))]
+                      (hc-append icon (make-icon-pict 'black 32 'shiny) (blank 16)))]
 }
 
 @doc-apply[stop-sign-icon-pict]{ Corresponds to @racket[stop-sign-icon]. }
