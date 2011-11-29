@@ -71,7 +71,7 @@
 
 (rb-superimpose (check-icon-pict 'green (toolbar-icon-height) 'diffuse)
                 (scale (magnifying-glass-icon-pict
-                        #f (toolbar-icon-height) (racket-icon-style))
+                        #f (toolbar-icon-height) (default-icon-style))
                        3/4))
 
 (define not-blurry

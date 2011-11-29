@@ -10,7 +10,7 @@
           icon-styles
           icon-style/c
           toolbar-icon-height
-          racket-icon-style
+          default-icon-style
           icon->pict
           pict->icon
           load-icon-pict
