@@ -507,7 +507,7 @@ and @racket[big-bang] will close down all event handling.}
          #:contracts
          ([r-expr any/c])]{
  tells DrRacket to enable a visual replay of the interaction, 
- unless @racket[#false].
+ unless @racket[#f].
  The replay action generates one png image per scene and
  an animated gif for the entire sequence in the directory of the user's
  choice.  If @racket[r-expr] evaluates to the name of an existing
@@ -1749,7 +1749,7 @@ Finally, here is the third function, which renders the state as a scene:
 	   (register LOCALHOST)))
 ))
 
- Now you can use @racket[(create-world 'carl)] and @racket[(create-world 'same)],
+ Now you can use @racket[(create-world 'carl)] and @racket[(create-world 'sam)],
  respectively, to run two different worlds, after launching a @tech{server}
  first. 
 

@@ -7,7 +7,7 @@
 
 (define prgm 
   '("(universe UniState_0"
-    "  (on-new register)"
+    "  (on-new sign-up)"
     "  (on-msg process)"
     "  (on-dis disconnect)"
     "  (on-tick tock)"
@@ -79,7 +79,7 @@
 (define K (rb-superimpose MessageK (blank DELTA  DELTA)))
 
 (define (make-arrows M)
-  (define Tock (h-labeled-arrow "register"))
+  (define Tock (h-labeled-arrow "sign-up"))
   (define Click (h-labeled-arrow "tock"))
   (define Clack (h-labeled-arrow "disconnect"))
   (define Receive (h-labeled-arrow "process"))

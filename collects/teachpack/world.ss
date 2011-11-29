@@ -13,7 +13,8 @@
     "  (on-key react)"
     "  (on-receive receive)"
     "  (stop-when done)"
-    "  (register LOCALHOST 'jimbob))"))
+    "  (name 'jimbob)"
+    "  (register LOCALHOST))"))
 
 
 (define program 
