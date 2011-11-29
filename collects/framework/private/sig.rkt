@@ -383,7 +383,9 @@
      call/text-keymap-initializer
      
      add-user-keybindings-file
-     remove-user-keybindings-file))
+     remove-user-keybindings-file
+     
+     region-click))
   
   (define-signature color-class^
     (text<%>

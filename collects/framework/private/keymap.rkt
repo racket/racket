@@ -623,39 +623,20 @@
                 (let ([start-box (box sel-start)])
                   (send edit find-wordbreak start-box #f 'caret)
                   (send edit kill 0 (unbox start-box) sel-end))))]
-           
-           [region-click
-            (λ (edit event f)
-              (when (and (send event button-down?)
-                         (is-a? edit text%))
-                (let ([x-box (box (send event get-x))]
-                      [y-box (box (send event get-y))]
-                      [eol-box (box #f)])
-                  (send edit global-to-local x-box y-box)
-                  (let ([click-pos (send edit find-position 
-                                         (unbox x-box)
-                                         (unbox y-box)
-                                         eol-box)]
-                        [start-pos (send edit get-start-position)]
-                        [end-pos (send edit get-end-position)])
-                    (let ([eol (unbox eol-box)])
-                      (if (< start-pos click-pos)
-                          (f click-pos eol start-pos click-pos)
-                          (f click-pos eol click-pos end-pos)))))))]
            [copy-click-region
             (λ (edit event)
-              (region-click edit event
+              (region-click/internal edit event
                             (λ (click eol start end)
                               (send edit flash-on start end)
                               (send edit copy #f 0 start end))))]
            [cut-click-region
             (λ (edit event)
-              (region-click edit event
+              (region-click/internal edit event
                             (λ (click eol start end)
                               (send edit cut #f 0 start end))))]
            [paste-click-region
             (λ (edit event)
-              (region-click edit event
+              (region-click/internal edit event
                             (λ (click eol start end)
                               (send edit set-position click)
                               (send edit paste-x-selection 0 click))))]
@@ -675,7 +656,7 @@
            [select-click-word
             (λ (edit event)
               (region-click edit event
-                            (λ (click eol start end)
+                            (λ (click eol)
                               (let ([start-box (box click)]
                                     [end-box (box click)])
                                 (send edit find-wordbreak 
@@ -688,7 +669,7 @@
            [select-click-line
             (λ (edit event)
               (region-click edit event
-                            (λ (click eol start end)
+                            (λ (click eol)
                               (let* ([line (send edit position-line 
                                                  click eol)]
                                      [start (send edit line-start-position
@@ -1473,3 +1454,27 @@
                         (send keymap chain-to-keymap global #t)
                         (ctki keymap))])
         (thunk))))
+
+  (define (region-click text event f)
+    (region-click/internal text event 
+                           (λ (click-pos eol start end) (f click-pos eol))))
+  
+  (define (region-click/internal text event f)
+    (when (and (is-a? event mouse-event%)
+               (send event button-down?)
+               (is-a? text text%))
+      (define x-box (box (send event get-x)))
+      (define y-box (box (send event get-y)))
+      (define eol-box (box #f))
+      (send text global-to-local x-box y-box)
+      (define click-pos (send text find-position 
+                              (unbox x-box)
+                              (unbox y-box)
+                              eol-box))
+      (define start-pos (send text get-start-position))
+      (define end-pos (send text get-end-position))
+      (define eol (unbox eol-box))
+      (if (< start-pos click-pos)
+          (f click-pos eol start-pos click-pos)
+          (f click-pos eol click-pos end-pos))))
+  

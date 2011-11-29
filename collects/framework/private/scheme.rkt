@@ -34,7 +34,9 @@
 (init-depend mred^ framework:keymap^ framework:color^ framework:mode^
              framework:text^ framework:editor^)
 
-(define-local-member-name stick-to-next-sexp?)
+(define-local-member-name 
+  stick-to-next-sexp?
+  get-private-scheme-container-keymap)
 
 (define (scheme-paren:get-paren-pairs)
   '(("(" . ")")
@@ -409,7 +411,7 @@
     (send style-list find-named-style "Matching Parenthesis Style")))
 
 (define text-mixin
-  (mixin (text:basic<%> mode:host-text<%> color:text<%> text:autocomplete<%>) (-text<%>)
+  (mixin (text:basic<%> mode:host-text<%> color:text<%> text:autocomplete<%> editor:keymap<%>) (-text<%>)
     (inherit begin-edit-sequence
              delete
              end-edit-sequence
@@ -451,6 +453,13 @@
     (inherit get-styles-fixed)
     (inherit has-focus? find-snip split-snip
              position-location get-dc)
+    
+    (define private-scheme-container-keymap (new keymap%))
+    (define/public (get-private-scheme-container-keymap) private-scheme-container-keymap) 
+    
+    (define/override (get-keymaps)
+      (editor:add-after-user-keymap private-scheme-container-keymap 
+                                    (super get-keymaps)))
     
     (define/override (get-word-at current-pos)
       (let ([no-word ""])
@@ -1216,7 +1225,6 @@
           [else first-non-whitespace]))
       new-pos)
 
-    
     (super-new)))
 
 (define -text-mode<%>
@@ -1233,9 +1241,7 @@
     (define/override (on-enable-surrogate text)
       (send text begin-edit-sequence)
       (super on-enable-surrogate text)
-      (let ([km (send text get-keymap)])
-        (when km
-          (send km chain-to-keymap keymap #f)))
+      (send (send text get-private-scheme-container-keymap) chain-to-keymap keymap #f)
       
       ;; I don't know about these editor flag settings.
       ;; maybe they belong in drscheme?
@@ -1356,6 +1362,37 @@
   (add-edit-function "uncomment"  
                      (λ (x) (send x uncomment-selection)))
   
+  (send keymap add-function "paren-double-select"
+        (λ (text event)
+          (keymap:region-click
+           text event 
+           (λ (click-pos eol?)
+             (define str1 (string (send text get-character click-pos)))
+             (define sexp-based-start/end
+               (cond
+                 [(ormap (λ (pr) (equal? (cdr pr) str1))
+                         (scheme-paren:get-paren-pairs))
+                  (define start (send text get-backward-sexp (+ click-pos 1)))
+                  (and start 
+                       (cons start (+ click-pos 1)))]
+                 [else
+                  (let ([end (send text get-forward-sexp click-pos)])
+                    (and end 
+                         (let ([beginning (send text get-backward-sexp end)])
+                           (and beginning
+                                (cons beginning end)))))]))
+             (cond
+               [sexp-based-start/end
+                (send text set-position
+                      (car sexp-based-start/end)
+                      (cdr sexp-based-start/end))]
+               [else
+                (define start-box (box click-pos))
+                (define end-box (box click-pos))
+                (send text find-wordbreak start-box end-box 'selection)
+                (send text set-position (unbox start-box) (unbox end-box))])))))
+  
+
   (let ([add/map-non-clever
          (λ (name keystroke char)
            (add-edit-function 
@@ -1386,6 +1423,8 @@
   (send keymap map-function ")" "balance-parens")
   (send keymap map-function "]" "balance-parens")
   (send keymap map-function "}" "balance-parens")
+  
+  (send keymap map-function "leftbuttondouble" "paren-double-select")
   
   (define (insert-brace-pair text open-brace close-brace)
     (define selection-start (send text get-start-position))

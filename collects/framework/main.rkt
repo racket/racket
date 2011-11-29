@@ -1359,6 +1359,23 @@
     to some keymap attached to the editor.})
 
  (proc-doc/names
+  keymap:region-click
+  (-> any/c any/c (-> number? boolean? number? number? any)
+      any)
+  (text mouse-event f)
+  @{Calls @racket[f] after computing where the @racket[event]
+    corresponds to in the @racket[text]. If @racket[event] is
+    not a @racket[mouse-event%] object or if @racket[text] is not a
+    @racket[text%] object, this function does nothing, returning
+    @racket[(void)]. 
+    
+    The arguments to @racket[f] are:
+    @itemize[@item{the position where the click occurred}
+             @item{a boolean indicating if the position is at
+                   the right-hand edge of the screen (to
+                   cover the eol ambiguity)}]})
+ 
+ (proc-doc/names
   scheme:text-balanced?
   (->* ((is-a?/c text%))
        (number? (or/c false/c number?))

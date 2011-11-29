@@ -17,6 +17,9 @@
     change is in service to a bugfix that makes the automatic opening
     parentheses adjustment cooperate with the automatic balancing.
 
+  . The scheme:text-mixin now requires input classes that implement
+    the editor:keymap<%> interface.
+
 ------------------------------
         Version 5.2
 ------------------------------
