@@ -169,7 +169,6 @@
 ;; split/collapse-text : (instanceof menu%) (instanceof editor<%>) (instanceof mouse-event%) -> void
 (define (split/collapse-text menu text event)
   (when (and (is-a? text -text<%>)
-             (not (send text is-frozen?))
              (not (send text is-stopped?)))
     (let* ([on-it-box (box #f)]
            [click-pos 
@@ -427,7 +426,6 @@
              get-end-position
              flash-on
              insert
-             is-frozen?
              is-stopped?
              kill
              last-position
@@ -457,7 +455,7 @@
     (define/override (get-word-at current-pos)
       (let ([no-word ""])
         (cond
-          [(or (is-stopped?) (is-frozen?))
+          [(is-stopped?)
            no-word]
           [else
            (let ([type (classify-position (max 0 (- current-pos 1)))])
@@ -493,7 +491,7 @@
     
     (define/public (tabify-on-return?) #t)
     (define/public (tabify [pos (get-start-position)])
-      (unless (or (is-stopped?) (is-frozen?))
+      (unless (is-stopped?)
       (let* ([tabify-prefs (preferences:get 'framework:tabify)]
              [last-pos (last-position)]
              [para (position-paragraph pos)]
@@ -701,7 +699,7 @@
     
     (define/public (tabify-selection [start-pos (get-start-position)]
                                      [end-pos (get-end-position)])
-      (unless (or (is-frozen?) (is-stopped?)) 
+      (unless (is-stopped?) 
         (define first-para (position-paragraph start-pos))
         (define end-para (position-paragraph end-pos))
         (with-handlers ([exn:break?
@@ -1419,7 +1417,6 @@
                      (λ (text)
                        (cond
                          [(or (not (preferences:get 'framework:fixup-open-parens))
-                              (send text is-frozen?)
                               (send text is-stopped?))
                           (maybe-insert-brace-pair text #\[ #\])]
                          [else 

@@ -204,8 +204,7 @@ module browser threading seems wrong.
   (define (find-symbol text pos)
     (cond
       [(and (is-a? text scheme:text<%>)
-            (not (send text is-stopped?))
-            (not (send text is-frozen?)))
+            (not (send text is-stopped?)))
        (let* ([before (send text get-backward-sexp pos)]
               [before+ (and before (send text get-forward-sexp before))]
               [after (send text get-forward-sexp pos)]

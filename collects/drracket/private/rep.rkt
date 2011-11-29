@@ -436,7 +436,6 @@ TODO
                insert-before
                insert-between
                invalidate-bitmap-cache
-               is-frozen?
                is-locked?
                last-position
                line-location
