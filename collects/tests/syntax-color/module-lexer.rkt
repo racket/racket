@@ -62,7 +62,7 @@
               `(("#lang" other 1 25 #f)
                 (,eof eof 25 25 ((proc scribble-lexer) . #f))))
 (check-equal? (lex "#lang at-exp racket/baseBOGUS" #t)
-              `(("#lang at-exp" error 1 31 #f)
+              `(("#lang at-exp" error 1 30 #f)
                 (,eof eof #f #f no-lang-line)))
 (check same?
        (lex "#lang at-exp racket/base\n1\n" #t)
