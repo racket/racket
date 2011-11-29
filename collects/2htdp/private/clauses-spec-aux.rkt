@@ -3,7 +3,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; provides constants and functions for specifying the shape of clauses in big-bang and universe 
 
-(provide nat> nat? proc> bool> num> ip> string> symbol> any> K False True)
+(provide nat> nat? proc> bool> num> ip> string> symbol> string-or-symbol> any> K False True)
 
 (require htdp/error "check-aux.rkt")
                              
@@ -11,22 +11,27 @@
 (define (False w) #f)
 (define (True w) #t)
 
-;; Symbol X -> X
+;; Symbol X -> X : boolean? 
 (define (bool> tag x)
   (check-arg tag (boolean? x) "boolean" "first" x)
   x)
 
-;; Symbol X -> X
+;; Symbol X -> X : string?
 (define (string> tag x)
   (check-arg tag (string? x) "string" "first" x)
   x)
 
-(define ip> string>)
-
-;; Symbol X -> X
+;; Symbol X -> X : symbol? 
 (define (symbol> tag x)
   (check-arg tag (symbol? x) "symbol" "second" x)
   x)
+
+;; Symbol X -> X : symbol?  or string? 
+(define (string-or-symbol> tag x)
+  (check-arg tag (or (symbol? x) (string? x)) "symbol or string" "first" x)
+  x)
+
+(define ip> string>)
 
 ;; Symbol X Nat -> X
 (define (proc> tag f ar)

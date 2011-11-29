@@ -112,7 +112,7 @@
   [record? DEFAULT #'#f (expr-with-check any> "")]
   ;; (U #f String)
   ;; -- name specifies one string 
-  [name DEFAULT #'#f (expr-with-check string> "expected a string")]
+  [name DEFAULT #'#f (expr-with-check string-or-symbol> "expected a string")]
   ;; (U #f IP)  
   ;; -- register must specify the internet address of a host (e.g., LOCALHOST)
   [register DEFAULT #'#f (expr-with-check ip> "expected a host (ip address)")])

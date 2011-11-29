@@ -1,7 +1,9 @@
 ------------------------------------------------------------------------
 
-* on-receive doesn't have to exist for universe/world interactions 
-  -- fixed
+* fixed
+  -- on-receive doesn't have to exist for universe/world interactions 
+  -- name clause accepts strings and symbols 
+  -- doc typos 
 
 ------------------------------------------------------------------------
 Version 5.2				  [Tue Oct 18 12:34:16 EDT 2011]

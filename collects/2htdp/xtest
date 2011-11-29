@@ -38,4 +38,5 @@ run on-tick-with-limit.rkt
 run on-release-no-key.rkt
 run struct-universe.rkt
 run universe-receive.rkt
+run name.rkt
 
