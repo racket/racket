@@ -636,6 +636,7 @@ path/s is either such a string or a list of them.
 "collects/drracket/private/bindings-browser.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/drracket/private/bitmap-message.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/drracket/private/debug.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/drracket/private/dock-icon.rkt" drdr:command-line (raco "make" *)
 "collects/drracket/private/drracket-normal.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/eb.rkt" drdr:command-line (gracket-text *)
 "collects/drracket/private/embedded-snip-utils.rkt" drdr:command-line (gracket-text "-t" *)
