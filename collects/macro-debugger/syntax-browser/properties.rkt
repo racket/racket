@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/class
+         racket/match
          racket/gui/base
          framework
          unstable/class-iop
@@ -174,28 +175,44 @@
 
     ;; display-bindings : syntax -> void
     (define/private (display-bindings stx)
+      (define phases-to-search '(0 1 -1 #f 2 3 4 5 -2 -3 -4 -5))
       (unless (identifier? stx)
         (display "Not applicable\n\n" n/a-sd))
       (when (identifier? stx)
-        (if (eq? (identifier-binding stx) 'lexical)
-            (display "lexical (all phases)\n" #f)
-            (for-each (lambda (p) (display-binding-kvs (car p) ((cdr p) stx)))
-                      binding-properties))
+        (cond [(eq? (identifier-binding stx) 'lexical)
+               (display "lexical (all phases)\n" #f)]
+              [else
+               (let ([bindings (for/hash ([phase (in-list phases-to-search)])
+                                 (values phase (identifier-binding stx phase)))])
+                 (cond [(for/or ([(p b) (in-hash bindings)]) b)
+                        (for ([phase (in-list phases-to-search)])
+                          (display-binding-kvs phase (hash-ref bindings phase #f) stx))]
+                       [else (display "none\n" #f)]))])
         (display "\n" #f)))
 
-    ;; display-binding-kvs : string bindinginfo -> void
-    (define/private (display-binding-kvs k v)
-      (display k sub-key-sd)
-      (display "\n" #f)
-      (cond [(eq? v #f)
-             (display "  top-level or unbound\n" #f)]
-            [(list? v)
-             (display-subkv "  defined in" (mpi->string (list-ref v 0)))
-             (display-subkv "  as" (list-ref v 1))
-             (display-subkv "  imported from" (mpi->string (list-ref v 2)))
-             (display-subkv "  as" (list-ref v 3))
-             (when (list-ref v 4)
-               (display "  via define-for-syntax\n" sub-key-sd))]))
+    ;; display-binding-kvs : phase bindinginfo identifier -> void
+    (define/private (display-binding-kvs phase v stx)
+      (when v
+        (display (format "in phase ~a~a:"
+                         phase
+                         (case phase
+                           ((1) " (transformer phase)")
+                           ((-1) " (template phase)")
+                           ((#f) " (label phase)")
+                           (else "")))
+                 sub-key-sd)
+        (display "\n" #f)
+        (match v
+          [(list* def-mpi def-sym imp-mpi imp-sym defined-at-phase _)
+           (display-subkv "  defined in" (mpi->string def-mpi))
+           (unless (eq? def-sym (syntax-e stx))
+             (display-subkv "    as" def-sym))
+           (display-subkv "  imported from" (mpi->string imp-mpi))
+           (unless (eq? imp-sym (syntax-e stx))
+             (display-subkv "    provided as" (list-ref v 3)))
+           (unless (zero? defined-at-phase)
+             (display-subkv "  defined at phase" defined-at-phase))]
+          [_ (void)])))
 
     ;; display-stxobj-info : syntax -> void
     (define/public (display-stxobj-info stx)
@@ -303,15 +320,6 @@
 ;; lift/id : (identifier -> void) 'a -> void
 (define (lift/id f)
   (lambda (stx) (when (identifier? stx) (f stx))))
-
-;; binding-properties : (listof (cons string (syntax -> any)))
-(define binding-properties
-  (list (cons "in the standard phase"
-              (lift/id identifier-binding))
-        (cons "in the transformer phase (\"for-syntax\")"
-              (lift/id identifier-transformer-binding))
-        (cons "in the template phase (\"for-template\")"
-              (lift/id identifier-template-binding))))
 
 (define (uninterned? s)
   (not (eq? s (string->symbol (symbol->string s)))))
