@@ -454,7 +454,7 @@
     (inherit has-focus? find-snip split-snip
              position-location get-dc)
     
-    (define private-scheme-container-keymap (new keymap%))
+    (define private-scheme-container-keymap (new keymap:aug-keymap%))
     (define/public (get-private-scheme-container-keymap) private-scheme-container-keymap) 
     
     (define/override (get-keymaps)
