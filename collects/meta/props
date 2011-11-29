@@ -963,7 +963,9 @@ path/s is either such a string or a list of them.
 "collects/htdp/tests/world.rkt" drdr:command-line (gracket "-t" *)
 "collects/htdp/world.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/html" responsible (jay)
+"collects/icons" responsible (ntoronto)
 "collects/icons/private/mkheart.rkt" drdr:command-line #f
+"collects/icons/private/svg/render-png.rkt" drdr:command-line #f
 "collects/lang" responsible (mflatt robby matthias)
 "collects/lang/htdp-langs.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/lang/plt-pretty-big.rkt" drdr:command-line (gracket-text "-t" *)
