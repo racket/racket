@@ -2,9 +2,9 @@
 
 ;;;; Processing of mzc inliner logs.
 
-(require "utilities.rkt"
-         typed-racket/optimizer/logging
-         unstable/syntax racket/match unstable/match racket/list racket/string)
+(require typed-racket/optimizer/logging
+         unstable/syntax racket/match unstable/match racket/list racket/string
+         unstable/list)
 
 (provide log-message-from-mzc-opt?
          mzc-opt-log-message->log-entry
