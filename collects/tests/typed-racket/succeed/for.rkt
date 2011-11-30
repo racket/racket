@@ -160,3 +160,26 @@
                       ([i : Integer (in-range 1 10)])
                       i)
        362880)
+
+
+;; Integers as sequences.
+(check =
+       (for/sum: : Integer
+                 ([i : Byte 4])
+                 i)
+       6)
+(check =
+       (for/sum: : Integer
+                 ([i : Index (ann 4 Index)])
+                 i)
+       6)
+(check =
+       (for/sum: : Integer
+                 ([i : Nonnegative-Fixnum (ann 4 Fixnum)])
+                 i)
+       6)
+(check =
+       (for/sum: : Integer
+                 ([i : Natural (ann 4 Integer)])
+                 i)
+       6)

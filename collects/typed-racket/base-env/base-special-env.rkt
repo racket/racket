@@ -64,6 +64,11 @@
                              (Un (->* a Univ) (-val #f))
                              (Un (->* (cons Univ a) Univ) (-val #f)))))])
             (cl->*
+             (-> Univ -Byte         (seq-vals (list -Byte)))
+             (-> Univ -Index        (seq-vals (list -Index)))
+             ;; Generous. Negative numbers aren't allowed.
+             (-> Univ -Fixnum       (seq-vals (list -NonNegFixnum)))
+             (-> Univ -Int          (seq-vals (list -Nat)))
              (-> Univ (-seq a) (seq-vals (list a)))
              (-> Univ (-seq a b) (seq-vals (list a b))))))]
   ;; in-range
