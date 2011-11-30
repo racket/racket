@@ -1,7 +1,8 @@
 #lang scribble/doc
 
-@(require (for-label framework framework/framework-unit framework/framework-sig racket/gui))
-@(require scribble/manual)
+@(require (for-label framework framework/framework-unit framework/framework-sig racket/gui)
+          (for-syntax framework/private/scheme racket/base)
+          scribble/manual)
 
 @title{Framework: Racket GUI Application Framework}
 @(defmodule framework)
@@ -103,11 +104,21 @@ the @secref["editor-snip"] section.
 @include-section["path-utils.scrbl"]
 @include-section["preferences.scrbl"]
 @include-section["preferences-text.scrbl"]
-@include-section["scheme.scrbl"]
+@include-section["racket.scrbl"]
 @include-section["text.scrbl"]
 @include-section["splash.scrbl"]
 @include-section["test.scrbl"]
 @include-section["version.scrbl"]
+
+@section{Backwards Compatibility}
+
+@(define-syntax (scheme:-docs stx)
+   #`(begin
+       #,@(for/list ([suffix (in-list racket:ids)])
+            (define scheme:id (string->symbol (format "scheme:~a" suffix)))
+            (define racket:id (string->symbol (format "racket:~a" suffix)))
+            #`@defidform[#,scheme:id]{An alias for @racket[#,racket:id].})))
+@(scheme:-docs)
 
 @section{Signatures}
 

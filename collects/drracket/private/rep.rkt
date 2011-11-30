@@ -65,7 +65,7 @@ TODO
     (interface ((class->interface text%)
                 text:ports<%>
                 editor:file<%>
-                scheme:text<%>
+                racket:text<%>
                 color:text<%>)
       reset-highlighting
       highlight-errors
@@ -390,7 +390,7 @@ TODO
     (mixin ((class->interface text%)
             text:ports<%>
             editor:file<%>
-            scheme:text<%>
+            racket:text<%>
             color:text<%>
             text:ports<%>)
       (-text<%>)
@@ -2017,7 +2017,7 @@ TODO
      ;; (previous and next error))
      (drs-bindings-keymap-mixin
       (text:ports-mixin
-       (scheme:text-mixin
+       (racket:text-mixin
         (color:text-mixin
          (text:info-mixin
           (editor:info-mixin

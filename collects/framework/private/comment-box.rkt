@@ -15,7 +15,7 @@
 (define-unit comment-box@
   
   (import [prefix text: framework:text^]
-          [prefix scheme: framework:scheme^]
+          [prefix racket: framework:racket^]
           [prefix keymap: framework:keymap^])
   (export (rename framework:comment-box^
                   (-snip% snip%)))
@@ -36,7 +36,7 @@
   (define (get-scheme+copy-self%)
     (unless scheme+copy-self%
       (set! scheme+copy-self%
-            (class scheme:text%
+            (class racket:text%
               (inherit copy-self-to)
               (define/override (copy-self)
                 (let ([ed (new scheme+copy-self%)])

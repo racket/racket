@@ -257,8 +257,8 @@
 
 (drracket:font:setup-preferences)
 (color-prefs:add-background-preferences-panel)
-(scheme:add-preferences-panel)
-(scheme:add-coloring-preferences-panel)
+(racket:add-preferences-panel)
+(racket:add-coloring-preferences-panel)
 (preferences:add-editor-checkbox-panel)
 (preferences:add-warnings-checkbox-panel)
 (preferences:add-scheme-checkbox-panel)

@@ -89,7 +89,7 @@
            (send (get-editor) lock #t)))))
     
     (super-new
-     [editor (new scheme:text%)]
+     [editor (new racket:text%)]
      [with-border? #f]
      [left-margin 0]
      [right-margin 0]

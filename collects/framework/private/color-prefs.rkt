@@ -9,7 +9,7 @@
           [prefix editor: framework:editor^]
           [prefix panel: framework:panel^]
           [prefix canvas: framework:canvas^]
-          [prefix scheme: framework:scheme^]
+          [prefix racket: framework:racket^]
           [prefix color: framework:color^])
   (export framework:color-prefs^)
   (init-depend framework:editor^)

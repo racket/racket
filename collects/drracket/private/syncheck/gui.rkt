@@ -1483,7 +1483,7 @@ If the namespace does not, they are colored the unbound color.
       (mixin (drracket:unit:tab<%>) ()
         (inherit is-current-tab? get-defs get-frame)
         
-        (define report-error-text (new (fw:text:ports-mixin fw:scheme:text%)))
+        (define report-error-text (new (fw:text:ports-mixin fw:racket:text%)))
         (define error-report-visible? #f)
         (send report-error-text auto-wrap #t)
         (send report-error-text set-autowrap-bitmap #f)

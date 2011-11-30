@@ -7,7 +7,7 @@
 }
 
 
-@defclass[drracket:rep:text% scheme:text% (drracket:rep:text<%>)]{
+@defclass[drracket:rep:text% racket:text% (drracket:rep:text<%>)]{
 
 This class implements a read-eval-print loop for DrRacket.  User
 submitted evaluations in DrRacket are evaluated asynchronously, in an

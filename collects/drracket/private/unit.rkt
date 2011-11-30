@@ -203,7 +203,7 @@ module browser threading seems wrong.
   ;; finds the symbol around the position `pos' (approx)
   (define (find-symbol text pos)
     (cond
-      [(and (is-a? text scheme:text<%>)
+      [(and (is-a? text racket:text<%>)
             (not (send text is-stopped?)))
        (let* ([before (send text get-backward-sexp pos)]
               [before+ (and before (send text get-forward-sexp before))]
@@ -485,7 +485,7 @@ module browser threading seems wrong.
             (text:line-numbers-mixin
              (text:first-line-mixin
               (drracket:module-language:module-language-put-file-mixin
-               (scheme:text-mixin
+               (racket:text-mixin
                 (color:text-mixin
                  (drracket:rep:drs-bindings-keymap-mixin
                   (mode:host-text-mixin
@@ -3665,7 +3665,7 @@ module browser threading seems wrong.
                 (λ (method)
                   (λ (_1 _2)
                     (let ([text (get-focus-object)])
-                      (when (is-a? text scheme:text<%>)
+                      (when (is-a? text racket:text<%>)
                         (method text)))))]
                [show/hide-capability-menus
                 (λ ()
@@ -3889,7 +3889,7 @@ module browser threading seems wrong.
                             (let ([es-admin (send es get-admin)])
                               (when es-admin
                                 (let ([ed (send es-admin get-editor)])
-                                  (when (is-a? ed scheme:text<%>)
+                                  (when (is-a? ed racket:text<%>)
                                     (send ed uncomment-box/selection)))))]
                            [else (send text uncomment-selection)]))]
                       [else (send text uncomment-selection)]))))))

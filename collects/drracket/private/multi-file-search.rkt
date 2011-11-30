@@ -67,7 +67,7 @@
                           (λ (x y) (stop-callback))))
     (define grow-box-pane (make-object grow-box-spacer-pane% button-panel))
     
-    (define zoom-text (make-object scheme:text%))
+    (define zoom-text (make-object racket:text%))
     (define results-text (make-object results-text% zoom-text))
     (define results-ec (instantiate searching-canvas% ()
                          (parent panel)

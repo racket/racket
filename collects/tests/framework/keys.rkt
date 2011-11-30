@@ -137,7 +137,7 @@
                    (list (list (list #\[)))
                    (list (list (list #\[)))))
   
-  ;; the keybindings test cases applied to scheme:text% editors
+  ;; the keybindings test cases applied to racket:text% editors
   (define scheme-specs
     (list 
      (make-key-spec (make-buff-spec "(abc (def))" 4 4)
@@ -327,13 +327,13 @@
   (test-specs "global keybindings test" 'frame:text% global-specs)
   (test-specs "scheme mode keybindings test" 
               '(class frame:editor%
-                 (define/override (get-editor%) scheme:text%)
+                 (define/override (get-editor%) racket:text%)
                  (super-new))
               scheme-specs)
   (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #t))
   (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #f))
   (test-specs "scheme mode automatic-parens on keybindings test" 
               '(class frame:editor%
-                 (define/override (get-editor%) scheme:text%)
+                 (define/override (get-editor%) racket:text%)
                  (super-new))
               automatic-scheme-specs)

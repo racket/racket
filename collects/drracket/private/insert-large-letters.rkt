@@ -16,7 +16,7 @@
 
 (provide insert-large-letters)
 
-(: insert-large-letters (String Char (Instance Scheme:Text%) Any -> Void))
+(: insert-large-letters (String Char (Instance Racket:Text%) Any -> Void))
 (define (insert-large-letters comment-prefix comment-character edit parent)
   (let ([str (make-large-letters-dialog comment-prefix comment-character #f)])
     (when (and str
@@ -90,8 +90,8 @@
   (: pane2 (Instance Horizontal-Pane%))
   (define pane2 (new horizontal-pane% (parent info-bar)))
                                 
-  (: txt (Instance Scheme:Text%))
-  (define txt (new scheme:text%))
+  (: txt (Instance Racket:Text%))
+  (define txt (new racket:text%))
   (: ec (Instance Editor-Canvas%))
   (define ec (new editor-canvas% [parent dlg] [editor txt]))
   (: button-panel (Instance Horizontal-Panel%))
@@ -145,7 +145,7 @@
       (format " (~a)" (floor (inexact->exact w))))))
   
 
-(: get-max-line-width ((Instance Scheme:Text%) -> Real))
+(: get-max-line-width ((Instance Racket:Text%) -> Real))
 (define (get-max-line-width txt)
   (let loop ([i (+ (send txt last-paragraph) 1)]
              [#{m : Integer} 0])
@@ -156,7 +156,7 @@
                             (send txt paragraph-start-position (- i 1)))))])))
       
 
-(: render-large-letters (String Char (Instance Font%) String (Instance Scheme:Text%) -> (Instance Bitmap%)))
+(: render-large-letters (String Char (Instance Font%) String (Instance Racket:Text%) -> (Instance Bitmap%)))
 (define (render-large-letters comment-prefix comment-character the-font str edit)
   (define bdc (make-object bitmap-dc% (make-object bitmap% 1 1 #t)))
   (define-values (tw raw-th td ta) (send bdc get-text-extent str the-font))

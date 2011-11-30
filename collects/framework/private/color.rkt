@@ -20,7 +20,7 @@ added get-regions
         [prefix mode: framework:mode^]
         [prefix text: framework:text^]
         [prefix color-prefs: framework:color-prefs^]
-        [prefix scheme: framework:scheme^])
+        [prefix racket: framework:racket^])
 
 (export (rename framework:color^
                 (-text<%> text<%>)

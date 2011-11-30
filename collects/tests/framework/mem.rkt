@@ -152,7 +152,7 @@
 (test-editor-allocate 'pasteboard:backup-autosave%)
 (test-editor-allocate 'pasteboard:info%)
 
-(test-editor-allocate 'scheme:text%)
+(test-editor-allocate 'racket:text%)
 
 (test-allocate "text:return%"
                '(lambda () (make-object text:return% void))

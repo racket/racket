@@ -4,19 +4,19 @@
 @(require (for-label scheme/gui))
 @title{Racket}
 
-@definterface[scheme:sexp-snip<%> ()]{
+@definterface[racket:sexp-snip<%> ()]{
   @defmethod*[(((get-saved-snips) (listof (is-a?/c snip%))))]{
     This returns the list of snips hidden by the sexp snip.
   }
 }
-@defclass[scheme:sexp-snip% snip% (scheme:sexp-snip<%> readable-snip<%>)]{
+@defclass[racket:sexp-snip% snip% (racket:sexp-snip<%> readable-snip<%>)]{
   @defmethod*[#:mode override
               (((get-text (offset number?) (num number?)
                           (flattened? boolean? #f))
                 string?))]{
     Returns the concatenation of the text for all of the hidden snips.
   }
-  @defmethod*[#:mode override (((copy) (is-a?/c scheme:sexp-snip%)))]{
+  @defmethod*[#:mode override (((copy) (is-a?/c racket:sexp-snip%)))]{
     Returns a copy of this snip that includes the hidden snips.
   }
   @defmethod*[#:mode override (((write (stream-out (is-a?/c editor-stream-out%))) void?))]{
@@ -41,7 +41,7 @@
     Returns a size corresponding to what this snip draws.
   }
 }
-@definterface[scheme:text<%> (text:basic<%> mode:host-text<%> color:text<%>)]{
+@definterface[racket:text<%> (text:basic<%> mode:host-text<%> color:text<%>)]{
   Texts matching this interface support Racket mode operations.
 
   @defmethod*[(((get-limit (start exact-integer?)) exact-integer?))]{
@@ -84,7 +84,7 @@
   }
 
   @defmethod*[(((insert-return) void?))]{
-    Inserts a newline into the buffer.  If @method[scheme:text<%>
+    Inserts a newline into the buffer.  If @method[racket:text<%>
     tabify-on-return?] returns @racket[#t], this will tabify the new line.
   }
 
@@ -209,7 +209,7 @@
 
   @defmethod*[(((get-tab-size) exact-integer?))]{
     This method returns the current size of the tabs for scheme mode.
-    See also @method[scheme:text<%> set-tab-size].
+    See also @method[racket:text<%> set-tab-size].
   }
 
   @defmethod*[(((set-tab-size (new-size exact-integer?)) void?))]{
@@ -226,9 +226,9 @@
     sexpression following the insertion point.
   }
 }
-@defmixin[scheme:text-mixin
+@defmixin[racket:text-mixin
           (text:basic<%> mode:host-text<%> color:text<%> text:autocomplete<%>)
-          (scheme:text<%>)]{
+          (racket:text<%>)]{
   This mixin adds functionality for editing Racket files.
 
   The result of this mixin uses the same initialization arguments as the
@@ -248,41 +248,41 @@
   }
 }
 
-@definterface[scheme:text-mode<%> ()]{
-  The result of @racket[scheme:text-mode-mixin] implements this
+@definterface[racket:text-mode<%> ()]{
+  The result of @racket[racket:text-mode-mixin] implements this
   interface.
 }
 
-@defmixin[scheme:text-mode-mixin
+@defmixin[racket:text-mode-mixin
           (color:text-mode<%> mode:surrogate-text<%>)
-          (scheme:text-mode<%>)]{
+          (racket:text-mode<%>)]{
   This mixin adds Racket mode functionality to the mode that it is mixed into.
   The resulting mode assumes that it is only set to an editor that is the
-  result of @racket[scheme:text-mixin].
+  result of @racket[racket:text-mixin].
 
   @defmethod*[#:mode override (((on-disable-surrogate) void?))]{
-    Removes the scheme keymap (see also @racket[scheme:get-keymap]) and
+    Removes the scheme keymap (see also @racket[racket:get-keymap]) and
     disables any parenthesis highlighting in the host editor.
   }
 
   @defmethod*[#:mode override (((on-enable-surrogate) void?))]{
-    Adds the scheme keymap (see also @racket[scheme:get-keymap]) and enables a
+    Adds the scheme keymap (see also @racket[racket:get-keymap]) and enables a
     parenthesis highlighting in the host editor.
   }
 }
 
-@defmixin[scheme:set-mode-mixin (scheme:text<%> mode:host-text<%>) ()]{
-  This mixin creates a new instance of @racket[scheme:text-mode%] and installs
+@defmixin[racket:set-mode-mixin (racket:text<%> mode:host-text<%>) ()]{
+  This mixin creates a new instance of @racket[racket:text-mode%] and installs
   it, by calling its own @method[mode:host-text<%> set-surrogate] method with
   the object.
 }
 
-@defclass[scheme:text%
-          (scheme:set-mode-mixin
-           (scheme:text-mixin
+@defclass[racket:text%
+          (racket:set-mode-mixin
+           (racket:text-mixin
             (text:autocomplete-mixin (mode:host-text-mixin color:text%))))
           ()]{}
 
-@defclass[scheme:text-mode% (scheme:text-mode-mixin color:text-mode%) ()]{}
+@defclass[racket:text-mode% (racket:text-mode-mixin color:text-mode%) ()]{}
 
-@(include-previously-extracted "main-extracts.rkt" #rx"^scheme:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^racket:")

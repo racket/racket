@@ -197,7 +197,7 @@
           (set! scheme-box-text%
                 (class ((drracket:unit:get-program-editor-mixin)
                         (add-file-keymap-mixin
-                         scheme:text%))
+                         racket:text%))
                   (inherit copy-self-to)
                   (define/override (copy-self)
                     (let ([t (new scheme-box-text%)])

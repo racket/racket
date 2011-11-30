@@ -74,7 +74,7 @@ signal failures when there aren't any.
 
   | Tests the scheme: section
 
-  |# scheme.rkt #|
+  |# racket.rkt #|
 
 - panel tests:
 

@@ -471,7 +471,7 @@
 
     When it is set, all of the snips are copied from this object to
     @racket[delegate]. Additionally, if this object implements
-    @racket[scheme:text<%>] the tab settings of @racket[delegate] are updated
+    @racket[racket:text<%>] the tab settings of @racket[delegate] are updated
     to match this objects.
   }
 }

@@ -746,7 +746,7 @@ that the button is not referenced by this frame and thus can be gc'd.
 
 @defclass[drracket:unit:definitions-text%
           (drracket:rep:drs-bindings-keymap-mixin
-           (drracket:unit:program-editor-mixin (scheme:text-mixin text:info%)))
+           (drracket:unit:program-editor-mixin (racket:text-mixin text:info%)))
           (drracket:unit:definitions-text<%>)]{
 
 @defconstructor[()]{

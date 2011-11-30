@@ -8,7 +8,8 @@
          framework/framework-unit
          framework/private/sig
          (for-syntax scheme/base)
-         scribble/srcdoc) 
+         scribble/srcdoc
+         (for-syntax "private/scheme.rkt")) 
 
 ;; these next two lines do a little dance to make the
 ;; require/doc setup work out properly
@@ -54,7 +55,7 @@
  (prefix panel: framework:panel-class^)
  (prefix frame: framework:frame-class^)
  (prefix handler: framework:handler-class^)
- (prefix scheme: framework:scheme-class^)
+ (prefix racket: framework:racket-class^)
  (prefix main: framework:main-class^))
 
 (define-values/invoke-unit/infer
@@ -1376,7 +1377,7 @@
                    cover the eol ambiguity)}]})
  
  (proc-doc/names
-  scheme:text-balanced?
+  racket:text-balanced?
   (->* ((is-a?/c text%))
        (number? (or/c false/c number?))
        boolean?)
@@ -1395,78 +1396,78 @@
     range of the buffer.})
 
  (proc-doc/names
-  scheme:add-preferences-panel
+  racket:add-preferences-panel
   (-> void?)
   ()
   @{Adds a tabbing preferences panel to the preferences dialog.})
 
  (proc-doc/names
-  scheme:get-keymap
+  racket:get-keymap
   (-> (is-a?/c keymap%))
   ()
   @{Returns a keymap with binding suitable for Racket.})
 
  (proc-doc/names
-  scheme:add-coloring-preferences-panel
+  racket:add-coloring-preferences-panel
   (-> any)
   ()
   @{Installs the ``Racket'' preferences panel in the ``Syntax Coloring''
     section.})
 
  (proc-doc/names
-  scheme:get-color-prefs-table
+  racket:get-color-prefs-table
   (-> (listof (list/c symbol? (is-a?/c color%))))
   ()
   @{Returns a table mapping from symbols (naming the categories that the online
     colorer uses for Racket mode coloring) to their colors.
     
     These symbols are suitable for input to
-    @racket[scheme:short-sym->pref-name] and
-    @racket[scheme:short-sym->style-name].
+    @racket[racket:short-sym->pref-name] and
+    @racket[racket:short-sym->style-name].
     
-    See also @racket[scheme:get-white-on-black-color-prefs-table].})
+    See also @racket[racket:get-white-on-black-color-prefs-table].})
 
  (proc-doc/names
-  scheme:get-white-on-black-color-prefs-table
+  racket:get-white-on-black-color-prefs-table
   (-> (listof (list/c symbol? (is-a?/c color%))))
   ()
   @{Returns a table mapping from symbols (naming the categories that the online
     colorer uses for Racket mode coloring) to their colors when the user
     chooses the white-on-black mode in the preferences dialog.
     
-    See also @racket[scheme:get-color-prefs-table].})
+    See also @racket[racket:get-color-prefs-table].})
 
  (proc-doc/names
-  scheme:short-sym->pref-name
+  racket:short-sym->pref-name
   (symbol? . -> . symbol?)
   (short-sym)
   @{Builds the symbol naming the preference from one of the symbols in the
-    table returned by @racket[scheme:get-color-prefs-table].})
+    table returned by @racket[racket:get-color-prefs-table].})
 
  (proc-doc/names
-  scheme:short-sym->style-name
+  racket:short-sym->style-name
   (symbol? . -> . string?)
   (short-sym)
   @{Builds the symbol naming the editor style from one of the symbols in the
-    table returned by @racket[scheme:get-color-prefs-table].  This style is a
+    table returned by @racket[racket:get-color-prefs-table].  This style is a
     named style in the style list returned by
     @racket[editor:get-standard-style-list].})
 
  (proc-doc/names
-  scheme:get-wordbreak-map
+  racket:get-wordbreak-map
   (-> (is-a?/c editor-wordbreak-map%))
   ()
   @{This method returns a @racket[editor-wordbreak-map%] that is suitable for
     Racket.})
 
  (proc-doc/names
-  scheme:init-wordbreak-map
+  racket:init-wordbreak-map
   ((is-a?/c keymap%) . -> . void?)
   (key)
   @{Initializes the workdbreak map for @racket[keymap].})
 
  (proc-doc/names
-  scheme:setup-keymap
+  racket:setup-keymap
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
   @{Initializes @racket[keymap] with Racket-mode keybindings.})
@@ -1716,3 +1717,11 @@
   ()
   @{Sets the colors registered by @racket[color-prefs:register-color-preference]
     to their black-on-white variety.}))
+
+(define-syntax (racket:-reprovides stx)
+  #`(provide
+     (rename-out #,@(for/list ([suffix (in-list racket:ids)])
+                      (define rkt (string->symbol (format "racket:~a" suffix)))
+                      (define scm (string->symbol (format "scheme:~a" suffix)))
+                      #`[#,rkt #,scm]))))
+(racket:-reprovides)

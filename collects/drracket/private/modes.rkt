@@ -32,8 +32,8 @@
     ;; since predicate matches everything
     (add-mode 
      (string-constant scheme-mode)
-     (new scheme:text-mode%)
-     (λ (text prompt-position) (scheme:text-balanced? text prompt-position))
+     (new racket:text-mode%)
+     (λ (text prompt-position) (racket:text-balanced? text prompt-position))
      (λ (l) #t))
     
     (add-mode 

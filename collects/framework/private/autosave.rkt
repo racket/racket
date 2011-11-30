@@ -11,7 +11,7 @@
   (import mred^
           [prefix exit: framework:exit^]
           [prefix frame: framework:frame^]
-          [prefix scheme: framework:scheme^]
+          [prefix racket: framework:racket^]
           [prefix editor: framework:editor^]
           [prefix text: framework:text^]
           [prefix finder: framework:finder^]

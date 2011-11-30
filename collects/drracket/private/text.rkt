@@ -6,13 +6,13 @@
   (import)
   (export drracket:text^)
   (define text<%>
-    (interface (scheme:text<%>)
+    (interface (racket:text<%>)
       printing-on
       printing-off
       is-printing-on?))
   
   (define text%
-    (class* scheme:text% (text<%>)
+    (class* racket:text% (text<%>)
       (define printing? #f)
       (define/public (is-printing-on?) printing?)
       (define/public (printing-on) (set! printing? #t))

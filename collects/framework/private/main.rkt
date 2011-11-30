@@ -11,11 +11,11 @@
         [prefix handler: framework:handler^]
         [prefix editor: framework:editor^]
         [prefix color-prefs: framework:color-prefs^]
-        [prefix scheme: framework:scheme^]
+        [prefix racket: framework:racket^]
         [prefix early-init: framework:early-init^])
 (export framework:main^)
 (init-depend framework:preferences^ framework:exit^ framework:editor^
-             framework:color-prefs^ framework:scheme^ framework:early-init^)
+             framework:color-prefs^ framework:racket^ framework:early-init^)
 
 (preferences:low-level-get-preference preferences:get-preference/gui)
 (preferences:low-level-put-preferences preferences:put-preferences/gui)
@@ -344,12 +344,12 @@
                   [color (cadr line)]
                   [white-on-black-color (cadr white-on-black-line)])
               (color-prefs:register-color-preference
-               (scheme:short-sym->pref-name sym)
-               (scheme:short-sym->style-name sym)
+               (racket:short-sym->pref-name sym)
+               (racket:short-sym->style-name sym)
                color
                white-on-black-color)))
-          (scheme:get-color-prefs-table)
-          (scheme:get-white-on-black-color-prefs-table))
+          (racket:get-color-prefs-table)
+          (racket:get-white-on-black-color-prefs-table))
 (preferences:set-default 'framework:coloring-active #t boolean?)
 
 (color-prefs:set-default/color-scheme 'framework:default-text-color "black" "white")

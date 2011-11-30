@@ -28,7 +28,7 @@
         [prefix editor: framework:editor^]
         [prefix canvas: framework:canvas^]
         [prefix menu: framework:menu^]
-        [prefix scheme: framework:scheme^]
+        [prefix racket: framework:racket^]
         [prefix exit: framework:exit^]
         [prefix comment-box: framework:comment-box^])
 

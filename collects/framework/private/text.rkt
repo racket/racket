@@ -20,7 +20,7 @@
         [prefix keymap: framework:keymap^]
         [prefix color-model: framework:color-model^]
         [prefix frame: framework:frame^]
-        [prefix scheme: framework:scheme^]
+        [prefix racket: framework:racket^]
         [prefix number-snip: framework:number-snip^]
         [prefix finder: framework:finder^])
 (export (rename framework:text^
@@ -1564,7 +1564,7 @@
     (define/private (refresh-delegate/do-work)
       (send delegate begin-edit-sequence)
       (send delegate lock #f)
-      (when (is-a? this scheme:text<%>)
+      (when (is-a? this racket:text<%>)
         (send delegate set-tabs null (send this get-tab-size) #f))
       (send delegate hide-caret #t)
       (send delegate erase)

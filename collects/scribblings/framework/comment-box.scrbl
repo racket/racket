@@ -10,7 +10,7 @@
 
   @defmethod*[#:mode override (((make-editor) (is-a?/c text%)))]{
     Makes an instance of
-    @racketblock[(scheme:text-mixin text:keymap%)]}
+    @racketblock[(racket:text-mixin text:keymap%)]}
 
   @defmethod*[#:mode override (((make-snip) (is-a?/c comment-snip%)))]{
     Returns an instance of the @racket[comment-snip%] class.}

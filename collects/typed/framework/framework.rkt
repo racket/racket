@@ -9,7 +9,7 @@
                                                      ()
                                                      ([get-font (-> (Instance Font%))]))))])))
 
-(dt Scheme:Text% (Class ()
+(dt Racket:Text% (Class ()
                         ()
                         ([begin-edit-sequence (-> Void)]
                          [end-edit-sequence (-> Void)]
@@ -30,7 +30,7 @@
  [preferences:set (Symbol Sexp -> Void)]
  [editor:get-standard-style-list
   (-> (Instance Style-List%))]
- [scheme:text% Scheme:Text%]
+ [racket:text% Racket:Text%]
  [gui-utils:ok/cancel-buttons
   ((Instance Horizontal-Panel%) ((Instance Button%) (Instance Event%) -> Void) ((Instance Button%) (Instance Event%) -> Void) -> (values Any Any))])
 

@@ -10,14 +10,14 @@
 
 (define (test-text-balanced? number str start end expected)
   (test
-   (string->symbol (format "scheme:text-balanced?-~a" number))
+   (string->symbol (format "racket:text-balanced?-~a" number))
    (lambda (x) 
      (equal? x expected))
    (λ ()
      (queue-sexp-to-mred
-      `(let ([t (new scheme:text%)])
+      `(let ([t (new racket:text%)])
          (send t insert ,str)
-         (scheme:text-balanced? t ,start ,end))))))
+         (racket:text-balanced? t ,start ,end))))))
 
 (test-text-balanced? 0 "" 0 #f #f)
 (test-text-balanced? 1 "  \n " 0 #f #f)
@@ -32,11 +32,11 @@
 
 (define (test-indentation which before after)
   (test
-   (string->symbol (format "scheme:test-indentation-~a" which))
+   (string->symbol (format "racket:test-indentation-~a" which))
    (λ (x) (equal? x after))
    (λ ()
      (queue-sexp-to-mred
-      `(let* ([t (new scheme:text%)]
+      `(let* ([t (new racket:text%)]
               [f (new frame% [label ""] [width 600] [height 600])]
               [ec (new editor-canvas% [parent f] [editor t])])
          (send f reflow-container)
@@ -57,16 +57,16 @@
 
 (define (test-magic-square-bracket which before after)
   (test
-   (string->symbol (format "scheme:test-magic-square-bracket-~a" which))
+   (string->symbol (format "racket:test-magic-square-bracket-~a" which))
    (λ (x) (equal? x after))
    (λ ()
      (queue-sexp-to-mred
-      `(let* ([t (new scheme:text%)]
+      `(let* ([t (new racket:text%)]
               [f (new frame% [label ""] [width 600] [height 600])]
               [ec (new editor-canvas% [parent f] [editor t])])
          (send f reflow-container)
          (send t insert ,before)
-         (send (scheme:get-keymap) call-function "maybe-insert-[]-pair-maybe-fixup-[]" t (new event%))
+         (send (racket:get-keymap) call-function "maybe-insert-[]-pair-maybe-fixup-[]" t (new event%))
          (send t get-text))))))
 
 (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #f))

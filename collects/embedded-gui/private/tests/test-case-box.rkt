@@ -161,7 +161,7 @@
   ;; a locked text hightlighted to show that it is inactive
   (define actual-text%
     (class (grey-editor-mixin
-            (text:hide-caret/selection-mixin scheme:text%))
+            (text:hide-caret/selection-mixin racket:text%))
       (inherit hide-caret lock)
       (super-new)
       (hide-caret true)

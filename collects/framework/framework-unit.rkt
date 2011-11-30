@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require racket/unit
          mred/mred-sig)
@@ -27,7 +27,7 @@
          "private/canvas.rkt"
          "private/panel.rkt"
          "private/frame.rkt"
-         "private/scheme.rkt"
+         "private/racket.rkt"
          "private/main.rkt"
          "private/mode.rkt"
          "private/early-init.rkt")
@@ -60,14 +60,14 @@
           framework:panel^
           framework:frame^ 
           framework:handler^
-          framework:scheme^ 
+          framework:racket^ 
           framework:main^)
   (link
    preferences@ early-init@
    application@ version@ color-model@ mode@ exit@ menu@
    number-snip@ autosave@ path-utils@ icon@ keymap@
    editor@ pasteboard@ text@ color@ color-prefs@ comment-box@ 
-   finder@ group@ canvas@ panel@ frame@ handler@ scheme@ main@))
+   finder@ group@ canvas@ panel@ frame@ handler@ racket@ main@))
 
 (define-unit/new-import-export framework@ (import mred^) (export framework^)
   (((prefix application: framework:application^)
@@ -94,6 +94,6 @@
     (prefix panel: framework:panel^)
     (prefix frame: framework:frame^)
     (prefix handler: framework:handler^)
-    (prefix scheme: framework:scheme^)
+    (prefix racket: framework:racket^)
     (prefix main: framework:main^))
    framework-separate@ mred^))
