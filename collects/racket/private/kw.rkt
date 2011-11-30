@@ -441,7 +441,9 @@
                              [with-kw-max-arg (if (null? (syntax-e #'rest))
                                                   (+ 2 (length plain-ids) (length opts))
                                                   #f)]
-                             [core (car (generate-temporaries '(core)))]
+                             [core (car (generate-temporaries (if (identifier? local-name)
+                                                                  (list local-name)
+                                                                  '(core))))]
                              [unpack (car (generate-temporaries '(unpack)))])
                  (let ([mk-core
                         (lambda (kw-core?)
