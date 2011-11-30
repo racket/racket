@@ -329,6 +329,9 @@
 (define (read-module-wrap v)
   v)
 
+(define (read-inline-variant v)
+  (make-inline-variant (car v) (cdr v)))
+
 ;; ----------------------------------------
 ;; Unmarshal dispatch for various types
 
@@ -355,10 +358,11 @@
     [(24) 'apply-values-type]
     [(25) 'case-lambda-sequence-type]
     [(26) 'module-type]
-    [(34) 'variable-type]
-    [(35) 'module-variable-type]
-    [(112) 'resolve-prefix-type]
-    [(161) 'free-id-info-type]
+    [(27) 'inline-variant-type]
+    [(35) 'variable-type]
+    [(36) 'module-variable-type]
+    [(113) 'resolve-prefix-type]
+    [(162) 'free-id-info-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers
@@ -378,6 +382,7 @@
     (cons 'case-lambda-sequence-type read-case-lambda)
     (cons 'begin0-sequence-type read-begin0)
     (cons 'module-type read-module)
+    (cons 'inline-variant-type read-inline-variant)
     (cons 'resolve-prefix-type read-resolve-prefix)
     (cons 'free-id-info-type read-free-id-info)
     (cons 'define-values-type read-define-values)

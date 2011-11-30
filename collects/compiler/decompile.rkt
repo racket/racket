@@ -193,7 +193,12 @@
                                [(struct toplevel (depth pos const? set-const?))
                                 (list-ref/protect (glob-desc-vars globs) pos 'def-vals)]))
                            ids)
-        ,(decompile-expr rhs globs stack closed))]
+        ,(if (inline-variant? rhs)
+             `(begin
+                ,(list 'quote '%%inline-variant%%)
+                ,(decompile-expr (inline-variant-inline rhs) globs stack closed)
+                ,(decompile-expr (inline-variant-direct rhs) globs stack closed))
+             (decompile-expr rhs globs stack closed)))]
     [(struct def-syntaxes (ids rhs prefix max-let-depth dummy))
      `(define-syntaxes ,ids
         ,(let-values ([(globs defns) (decompile-prefix prefix stx-ht)])

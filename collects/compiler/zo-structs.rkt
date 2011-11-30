@@ -94,9 +94,12 @@
                                            [max-let-depth exact-nonnegative-integer?]
                                            [dummy (or/c toplevel? #f)]))
 
+(define-form-struct (inline-variant form) ([direct expr?]
+                                           [inline expr?]))
+
 ;; Definitions (top level or within module):
 (define-form-struct (def-values form) ([ids (listof (or/c toplevel? symbol?))]
-                                       [rhs (or/c expr? seq? any/c)])) 
+                                       [rhs (or/c expr? seq? inline-variant? any/c)])) 
 (define-form-struct (def-syntaxes form) ([ids (listof (or/c toplevel? symbol?))]
                                          [rhs (or/c expr? seq? any/c)] 
                                          [prefix prefix?] 
