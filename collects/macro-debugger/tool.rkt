@@ -3,14 +3,16 @@
          racket/gui/base
          racket/class
          framework
-         drscheme/tool
+         drracket/tool
          mrlib/switchable-button
          "model/trace.rkt"
          "view/frame.rkt"
          (only-in "view/view.rkt" macro-stepper-director%)
          "view/stepper.rkt"
          "view/prefs.rkt"
-         icons)
+         icons
+         ;; FIXME:
+         drracket/private/syncheck/local-member-names)
 
 ;; Capability name: 'macro-stepper:enabled
 
@@ -24,7 +26,7 @@
     allow-macro-stepper?
     run-macro-stepper))
 
-(define (drscheme-macro-stepper-frame-mixin %)
+(define (drracket-macro-stepper-frame-mixin %)
   (class %
     (define/override (get-macro-stepper-widget%)
       (macro-stepper-widget/process-mixin
@@ -32,12 +34,12 @@
     (super-new)))
 
 (define macro-stepper-frame%
-  (drscheme-macro-stepper-frame-mixin
+  (drracket-macro-stepper-frame-mixin
    (macro-stepper-frame-mixin
     (frame:standard-menus-mixin
      frame:basic%))))
 
-(define drscheme-macro-stepper-director%
+(define drracket-macro-stepper-director%
   (class macro-stepper-director%
     (init-field filename)
     (inherit-field stepper-frames)
@@ -83,11 +85,11 @@
 
 (define tool@
   (unit
-    (import drscheme:tool^)
-    (export drscheme:tool-exports^)
+    (import drracket:tool^)
+    (export drracket:tool-exports^)
 
     (define (phase1)
-      (drscheme:module-language-tools:add-opt-out-toolbar-button
+      (drracket:module-language-tools:add-opt-out-toolbar-button
        (λ (frame parent)
          (new switchable-button%
                (label macro-stepper-button-label)
@@ -96,27 +98,30 @@
                (parent parent)
                (callback (lambda (button) (send frame run-macro-stepper)))))
        'macro-stepper)
-      (drscheme:language:register-capability
+      (drracket:language:register-capability
        'macro-stepper:enabled
        boolean?
        #f))
     (define (phase2) (void))
 
-    (define drscheme-eventspace (current-eventspace))
-    (define drscheme-custodian (current-custodian))
+    (define drracket-eventspace (current-eventspace))
+    (define drracket-custodian (current-custodian))
 
     (define-local-member-name check-language)
     
     (define macro-debugger-up-bitmap (step-icon 'blue (toolbar-icon-height)))
     (define macro-debugger-bitmap (macro-stepper-icon (toolbar-icon-height)))
-    
+
     (define (macro-debugger-unit-frame-mixin %)
       (class* % (frame/supports-macro-stepper<%>)
         (super-new)
         (inherit get-button-panel
                  get-language-menu
                  get-interactions-text
-                 get-definitions-text)
+                 get-definitions-text
+                 get-top-level-window
+                 ensure-rep-hidden
+                 get-current-tab)
 
         (define macro-debug-panel
           (new horizontal-pane%
@@ -148,16 +153,6 @@
                  (parent lang-menu)
                  (callback (lambda _ (run-macro-stepper))))))
 
-        (define/public-final (run-macro-stepper)
-          (execute #t))
-
-        (define/override (execute-callback)
-          (execute #f))
-
-        (define/private (execute debugging?)
-          (send (get-interactions-text) enable-macro-debugging debugging?)
-          (super execute-callback))
-
         ;; Hide button for inappropriate languages
 
         (define/augment (on-tab-change old new)
@@ -169,7 +164,7 @@
 
         (define/public (allow-macro-stepper?)
           (let ([lang
-                 (drscheme:language-configuration:language-settings-language
+                 (drracket:language-configuration:language-settings-language
                   (send (get-definitions-text) get-next-settings))])
             (send lang capability-value 'macro-stepper:enabled)))
 
@@ -189,8 +184,205 @@
                 (cons macro-debug-panel
                       (remq macro-debug-panel _))))
         (check-language)
-        ))
 
+        ;; ----
+
+        (define current-stepper-director #f)
+
+        (define/public (obsolete-macro-debugger)
+          (when current-stepper-director
+            (send current-stepper-director add-obsoleted-warning))
+          (when current-stepper-director
+            (send current-stepper-director add-obsoleted-warning)
+            (send current-stepper-director shutdown)
+            (set! current-stepper-director #f)))
+
+        ;; --
+
+        (define/public-final (run-macro-stepper)
+
+          ;; FIXME!!! Lots of this is copied out of drracket/private/syncheck/gui.rkt
+          ;; except some of the code (eg error handling) thrown away to avoid pulling
+          ;; in lots more. Need to abstract.
+
+          (ensure-rep-hidden)
+          (define definitions-text (get-definitions-text))
+          (define interactions-text (get-interactions-text))
+          (define drs-eventspace (current-eventspace))
+          (define drs-custodian (current-custodian))
+          (define the-tab (get-current-tab))
+          (define-values (old-break-thread old-custodian) (send the-tab get-breakables))
+          (define error-port (send (send the-tab get-error-report-text) get-err-port))
+          (define output-port (send (send the-tab get-error-report-text) get-out-port))
+          (send the-tab disable-evaluation) ;; this locks the editor, so must be outside.
+          (define settings (send definitions-text get-next-settings))
+          (define module-language?
+            (is-a? (drracket:language-configuration:language-settings-language settings)
+                   drracket:module-language:module-language<%>))
+          (define error-display-semaphore (make-semaphore 0))
+
+          ;; --
+
+          (define user-custodian #f)
+          (define normal-termination? #f)
+          (define original-module-name-resolver #f)
+
+          ;; --
+
+          (define director
+            (parameterize ((current-eventspace drs-eventspace)
+                           (current-custodian drs-custodian))
+              (let ([filename (send definitions-text get-filename/untitled-name)])
+                (new drracket-macro-stepper-director% (filename filename)))))
+          (set! current-stepper-director director)
+
+          (define (the-module-name-resolver . args)
+            (parameterize ((current-expand-observe void))
+              (apply original-module-name-resolver args)))
+
+          ;; --
+
+          (define (init-proc) ;; =user=
+            (set! original-module-name-resolver (current-module-name-resolver))
+            (current-module-name-resolver the-module-name-resolver)
+
+            (send the-tab set-breakables (current-thread) (current-custodian))
+            ;; (set-directory definitions-text)
+            (current-load-relative-directory #f)
+            (current-error-port error-port)
+            (current-output-port output-port)
+            (error-display-handler 
+             (λ (msg exn) ;; =user=
+                (parameterize ([current-eventspace drs-eventspace])
+                  (queue-callback
+                   (λ () ;; =drs=
+                      ;; this has to come first or else the positioning
+                      ;; computations in the highlight-errors/exn method
+                      ;; will be wrong by the size of the error report box
+                      (show-error-report/tab)
+                      ;; a call like this one also happens in 
+                      ;; drracket:debug:error-display-handler/stacktrace
+                      ;; but that call won't happen here, because
+                      ;; the rep is not in the current-rep parameter
+                      (send interactions-text highlight-errors/exn exn))))
+                (drracket:debug:error-display-handler/stacktrace
+                 msg exn '()
+                 #:definitions-text definitions-text)
+                (semaphore-post error-display-semaphore)))
+            (error-print-source-location #f) ; need to build code to render error first
+            (uncaught-exception-handler
+             (let ([oh (uncaught-exception-handler)])
+               (λ (exn)
+                  (uncaught-exception-raised)
+                  (oh exn))))
+            (set! user-custodian (current-custodian)))
+
+          (define (uncaught-exception-raised) ;; =user=
+            (set! normal-termination? #t)
+            (parameterize ([current-eventspace drs-eventspace])
+              (queue-callback
+               (λ () ;;  =drs=
+                  (yield error-display-semaphore) ;; let error display go first
+                  (send the-tab syncheck:clear-highlighting)
+                  (cleanup)
+                  (custodian-shutdown-all user-custodian)))))
+          (define (show-error-report/tab) ;; =drs=
+            (send the-tab turn-on-error-report)
+            (send (send the-tab get-error-report-text) scroll-to-position 0)
+            (when (eq? (get-current-tab) the-tab)
+              ;; (show-error-report)
+              (void)))
+          (define (cleanup) ;; =drs=
+            (send the-tab set-breakables old-break-thread old-custodian)
+            (send the-tab enable-evaluation)
+            ;; do this with some lag ... not great, but should be okay.
+            (let ([err-port (send (send the-tab get-error-report-text) get-err-port)])
+              (thread
+               (λ ()
+                  (flush-output err-port)
+                  (queue-callback
+                   (λ ()
+                      (unless (= 0 (send (send the-tab get-error-report-text) last-position))
+                        (show-error-report/tab))))))))
+          (define (kill-termination)
+            (unless normal-termination?
+              (parameterize ([current-eventspace drs-eventspace])
+                (queue-callback
+                 (λ ()
+                    (send the-tab syncheck:clear-highlighting)
+                    (cleanup)
+                    (custodian-shutdown-all user-custodian))))))
+
+          (with-lock/edit-sequence definitions-text
+            (lambda ()
+              (send the-tab clear-annotations)
+              (send the-tab reset-offer-kill)
+              (define get-terms
+                (drracket:eval:traverse-program/multiple
+                 settings init-proc kill-termination
+                 #:gui-modules? #f))
+              (get-terms
+               (drracket:language:make-text/pos definitions-text
+                                                0
+                                                (send definitions-text last-position))
+               (λ (sexp loop) ; =user=
+                  (cond [(eof-object? sexp)
+                         (set! normal-termination? #t)
+                         (parameterize ([current-eventspace drs-eventspace])
+                           (queue-callback
+                            (λ () ; =drs=
+                               (cleanup)
+                               (custodian-shutdown-all user-custodian))))]
+                        [(syntax? sexp)
+                         (let-values ([(e-expr events derivp) (expand+trace sexp)])
+                           (send director add-trace events)
+                           (cond [(syntax? e-expr)
+                                  ;; FIXME: eval compile-time parts?
+                                  (void)]
+                                 [else (raise e-expr)]))
+                         (loop)]
+                        [else
+                         (eprintf "Got non-syntax: ~e" sexp)
+                         (loop)]))
+               #t)))
+          (void))
+
+        ;; with-lock/edit-sequence : text (-> void) -> void
+        ;; sets and restores some state of the definitions text
+        ;; so that edits to the definitions text work out.
+        (define/private (with-lock/edit-sequence definitions-text thnk)
+          (let* ([locked? (send definitions-text is-locked?)])
+            (send definitions-text begin-edit-sequence)
+            (send definitions-text lock #f)
+            (thnk)
+            (send definitions-text end-edit-sequence)
+            (send definitions-text lock locked?)))
+
+        (define/private (expand+trace expr)
+          (define (handle-macro-limit c)
+            (define option
+              (message-box/custom
+               "Macro stepper"
+               (string-append "Macro expansion has taken a suspiciously large number of steps.\n"
+                              "\n"
+                              "Click Stop to stop macro expansion and see the steps taken "
+                              "so far, or click Continue to let it run a bit longer.")
+               "Continue"
+               "Stop"
+               #f
+               (get-top-level-window)))
+            (case option
+              ((2) (error "Macro expansion was stopped because it took too many steps."))
+              (else (* 2 c))))
+          (parameterize ((trace-macro-limit (pref:macro-step-limit))
+                         (trace-limit-handler handle-macro-limit))
+            (trace* expr)))
+
+        ))
+    
+;; ============================================================
+    
+    ;; Catch modifications => obsolete macro stepper
     (define (macro-debugger-definitions-text-mixin %)
       (class %
         (inherit get-top-level-window)
@@ -203,6 +395,10 @@
         ;; Borrowed from stepper/stepper-tool
         (define metadata-changing-now? #f)
 
+        (define modified-since-macro-stepper? #f) ;; mutable
+        (define/public (modified-since-macro-stepper ?)
+          (set! modified-since-macro-stepper? ?))
+
         ;; don't pay attention to changes that occur on metadata.
         ;; this assumes that metadata changes cannot be nested.
         (define/augment (begin-metadata-changes)
@@ -214,11 +410,12 @@
           (inner (void) end-metadata-changes))
 
         (define/private (notify-macro-stepper-of-change)
-          (let ([win (get-top-level-window)])
-            ;; should only be #f when win is #f
-            (when (is-a? win drscheme:unit:frame<%>)
-              (let ([interactions (send win get-interactions-text)])
-                (send interactions obsolete-macro-debugger)))))
+          (unless modified-since-macro-stepper?
+            (set! modified-since-macro-stepper? #f)
+            (let ([win (get-top-level-window)])
+              ;; should only be #f when win is #f
+              (when (is-a? win drracket:unit:frame<%>)
+                (send win obsolete-macro-debugger)))))
 
         ;; Catch program changes and mark macro stepper obsolete.
         (define/augment (on-insert x y)
@@ -233,120 +430,26 @@
 
         (super-new)))
 
+    ;; Catch reset => obsolete macro stepper
     (define (macro-debugger-interactions-text-mixin %)
       (class %
         (super-new)
-        (inherit run-in-evaluation-thread
-                 get-top-level-window)
-
-        (define debugging? #f)
-
-        (define current-stepper-director #f)
-        
-        (define/public (enable-macro-debugging ?)
-          (set! debugging? ?))
-
-        (define/public (obsolete-macro-debugger)
-          (when current-stepper-director
-            (send current-stepper-director add-obsoleted-warning)))
+        (inherit get-top-level-window)
 
         (define/override (reset-console)
           (super reset-console)
-          (when current-stepper-director
-            (send current-stepper-director add-obsoleted-warning)
-            (send current-stepper-director shutdown)
-            (set! current-stepper-director #f))
-
-          ;; setting the eval handler at this point disables CM,
-          ;; so only do it when we are debugging
-          (when debugging?
-            (run-in-evaluation-thread
-             (lambda ()
-               (let-values ([(e mnr) 
-                             (make-handlers (current-eval)
-                                            (current-module-name-resolver))])
-                 (current-eval e)
-                 (current-module-name-resolver mnr))))))
-
-        (define/private (make-stepper filename)
-          (parameterize ((current-eventspace drscheme-eventspace)
-                         (current-custodian drscheme-custodian))
-            (new drscheme-macro-stepper-director% (filename filename))))
-
-        (define/private (inner-eval original-eval-handler e-expr)
-          (original-eval-handler e-expr))
-
-        (define/private (expand+trace expr)
-          (parameterize ((trace-macro-limit (pref:macro-step-limit))
-                         (trace-limit-handler
-                          (lambda (c) (handle-macro-limit c))))
-            (trace* expr)))
-
-        (define/private (handle-macro-limit c)
-          (define option
-            (message-box/custom
-             "Macro stepper"
-             (string-append
-              "Macro expansion has taken a suspiciously large number of steps.\n"
-              "\n"
-              "Click Stop to stop macro expansion and see the steps taken "
-              "so far, or click Continue to let it run a bit longer.")
-             "Continue"
-             "Stop"
-             #f
-             (get-top-level-window)))
-          (case option
-            ((2)
-             (error "Macro expansion was stopped because it took too many steps."))
-            (else (* 2 c))))
-
-        (define/private (make-handlers original-eval-handler
-                                       original-module-name-resolver)
-          (define filename (send (send (get-top-level-window) get-definitions-text)
-                                 get-filename/untitled-name))
-          (define director (make-stepper filename))
-          (define local-debugging? debugging?)
-          (define (call-without-debugging thunk)
-            (let ([eo (current-expand-observe)]
-                  [saved-debugging? local-debugging?])
-              (dynamic-wind
-                  (lambda ()
-                    (set! local-debugging? #f)
-                    (when eo (current-expand-observe void)))
-                  thunk
-                  (lambda ()
-                    (set! local-debugging? saved-debugging?)
-                    (when eo (current-expand-observe eo))))))
-          (define (the-eval expr)
-            (if (and local-debugging? (syntax? expr))
-                (let-values ([(e-expr events derivp) (expand+trace expr)])
-                  (show-deriv director events)
-                  (if (syntax? e-expr)
-                      (inner-eval e-expr)
-                      (raise e-expr)))
-                (original-eval-handler expr)))
-          (define (inner-eval e-expr)
-            (if #f ;; fixme: turn into parameter/preference???
-                (call-without-debugging (lambda () (original-eval-handler e-expr)))
-                (original-eval-handler e-expr)))
-          (define (the-module-resolver . args)
-            (call-without-debugging
-             (lambda () (apply original-module-name-resolver args))))
-          (set! current-stepper-director director)
-          (values the-eval
-                  the-module-resolver))
-
-        (define/private (show-deriv director events)
-          (send director add-trace events))
+          (let ([win (get-top-level-window)])
+            (when (is-a? win drracket:unit:frame<%>)
+              (send win obsolete-macro-debugger))))
         ))
 
     ;; Macro debugger code
 
-    (drscheme:get/extend:extend-unit-frame
+    (drracket:get/extend:extend-unit-frame
      macro-debugger-unit-frame-mixin)
-    (drscheme:get/extend:extend-interactions-text 
+    (drracket:get/extend:extend-interactions-text 
      macro-debugger-interactions-text-mixin)
-    (drscheme:get/extend:extend-definitions-text
+    (drracket:get/extend:extend-definitions-text
      macro-debugger-definitions-text-mixin)
 
     (define (add-macro-stepper-key-bindings keymap)
@@ -362,5 +465,5 @@
                           (send frame run-macro-stepper)))))))))
       (send keymap map-function "c:c;c:m" "macro stepper"))
 
-    (add-macro-stepper-key-bindings (drscheme:rep:get-drs-bindings-keymap))
+    (add-macro-stepper-key-bindings (drracket:rep:get-drs-bindings-keymap))
     ))

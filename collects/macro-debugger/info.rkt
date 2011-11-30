@@ -1,5 +1,5 @@
 #lang setup/infotab
 
-(define tools '(["tool.rkt"]))
-(define tool-names '("Macro Stepper"))
+(define drracket-tools '(["tool.rkt"]))
+(define drracket-tool-names '("Macro Stepper"))
 (define scribblings '(("macro-debugger.scrbl" () (tool-library))))
