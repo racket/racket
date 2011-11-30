@@ -118,6 +118,7 @@
     ;; Evaluation
     ;; Answer = (listof LocalAction)
     (Eval
+     (#:skipped null)
      [((? LocalActions)) $1])
 
     ;; Prepare env for compilation

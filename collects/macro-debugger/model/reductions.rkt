@@ -221,7 +221,7 @@
 
     [(Wrap p:provide (e1 e2 rs ?1 inners ?2))
      (let ([wrapped-inners
-            (for/list ([inner inners])
+            (for/list ([inner (in-list inners)])
               (match inner
                 [(Wrap deriv (e1 e2))
                  (make local-expansion e1 e2
