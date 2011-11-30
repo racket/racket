@@ -94,7 +94,7 @@ structures that are produced by @racket[zo-parse] and consumed by
 
 @defstruct+[(def-values form)
             ([ids (listof toplevel?)]
-             [rhs (or/c expr? seq? any/c)])]{
+             [rhs (or/c expr? seq? inline-variant? any/c)])]{
   Represents a @racket[define-values] form.  Each element of
   @racket[ids] will reference via the prefix either a top-level variable
   or a local module variable.
@@ -145,6 +145,13 @@ structures that are produced by @racket[zo-parse] and consumed by
 
   After each form in @racket[forms] is evaluated, the stack is restored
   to its depth from before evaluating the form.}
+
+@defstruct+[(inline-variant form) ([direct expr?]
+                                   [inline expr?])]{
+ Represents a function that is bound by @racket[define-values], where the
+ function has two variants.
+ The first variant is used for normal calls to the function. The second may
+ be used for cross-module inlining of the function.}
 
 @defstruct+[(mod form)
             ([name symbol?]

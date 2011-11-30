@@ -2163,6 +2163,7 @@ typedef struct Comp_Prefix
   MZTAG_IF_REQUIRED
   int num_toplevels, num_stxes;
   Scheme_Hash_Table *toplevels; /* buckets for toplevel/module variables */
+  Scheme_Hash_Table *inline_variants; /* position -> inline_variant */
   Scheme_Object *unbound; /* identifiers (and lists of phase-1 shifted unbounds) that were unbound at compile */
   Scheme_Hash_Table *stxes;     /* syntax objects */
   Scheme_Object *uses_unsafe;   /* NULL, inspector, or hashtree of inspectors */
@@ -2471,7 +2472,8 @@ Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env);
 Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *in_modidx, 
 				     Scheme_Env **_menv, int *_protected,
-                                     Scheme_Object **_lexical_binding_id);
+                                     Scheme_Object **_lexical_binding_id,
+                                     Scheme_Object **_inline_variant);
 int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o);
@@ -2532,7 +2534,9 @@ int scheme_check_top_identifier_bound(Scheme_Object *symbol, Scheme_Env *genv, i
 
 Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 						  Scheme_Compile_Info *rec, int drec,
-                                                  int imported);
+                                                  int imported, Scheme_Object *inline_variant);
+Scheme_Object *scheme_register_toplevel_in_comp_prefix(Scheme_Object *var, Comp_Prefix *cp,
+                                                       int imported, Scheme_Object *inline_variant);
 void scheme_register_unbound_toplevel(Scheme_Comp_Env *env, Scheme_Object *id);
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 					     Scheme_Compile_Info *rec, int drec);
@@ -2602,6 +2606,7 @@ Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);
 
 Scheme_Object *scheme_resolve_expr(Scheme_Object *, Resolve_Info *);
 Scheme_Object *scheme_resolve_list(Scheme_Object *, Resolve_Info *);
+Scheme_Object *scheme_unresolve(Scheme_Object *);
 
 int scheme_is_compiled_procedure(Scheme_Object *o, int can_be_closed, int can_be_liftable);
 
@@ -2618,7 +2623,7 @@ int scheme_resolve_info_use_jit(Resolve_Info *ri);
 void scheme_enable_expression_resolve_lifts(Resolve_Info *ri);
 Scheme_Object *scheme_merge_expression_resolve_lifts(Scheme_Object *expr, Resolve_Prefix *rp, Resolve_Info *ri);
 
-Optimize_Info *scheme_optimize_info_create(void);
+Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp);
 void scheme_optimize_info_enforce_const(Optimize_Info *, int enforce_const);
 void scheme_optimize_info_set_context(Optimize_Info *, Scheme_Object *ctx);
 void scheme_optimize_info_never_inline(Optimize_Info *);

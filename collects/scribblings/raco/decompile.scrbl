@@ -21,7 +21,7 @@ Many forms in the decompiled code, such as @racket[module],
 
 @itemize[
 
- @item{Top-level variables, variables defined within the module, and
+@item{Top-level variables, variables defined within the module, and
  variables imported from other modules are prefixed with @litchar{_},
  which helps expose the difference between uses of local variables
  versus other variables. Variables imported from other modules,
@@ -37,7 +37,7 @@ Many forms in the decompiled code, such as @racket[module],
  Uses of core primitives are shown without a leading @litchar{_}, and
  they are never wrapped with @racketidfont{#%checked}.}
 
- @item{Local-variable access may be wrapped with
+@item{Local-variable access may be wrapped with
  @racketidfont{#%sfs-clear}, which indicates that the variable-stack
  location holding the variable will be cleared to prevent the
  variable's value from being retained by the garbage collector.
@@ -61,7 +61,7 @@ Many forms in the decompiled code, such as @racket[module],
  how closures capture values in variable-stack locations, as opposed
  to stack locations.}
 
- @item{In a @racket[lambda] form, if the procedure produced by the
+@item{In a @racket[lambda] form, if the procedure produced by the
  @racket[lambda] has a name (accessible via @racket[object-name])
  and/or source-location information, then it is shown as a quoted
  constant at the start of the procedure's body. Afterward, if the
@@ -79,11 +79,18 @@ Many forms in the decompiled code, such as @racket[module],
  it may even contain cyclic references to itself or other constant
  closures.}
 
- @item{A form @racket[(#%apply-values _proc _expr)] is equivalent to
+@item{A form @racket[(#%apply-values _proc _expr)] is equivalent to
  @racket[(call-with-values (lambda () _expr) _proc)], but the run-time
  system avoids allocating a closure for @racket[_expr].}
 
- @item{Some applications of core primitives are annotated with
+@item{A @racket[define-values] form may have @racket[(begin
+ '%%inline-variant%% _expr1 _expr2)] for its expression, in which case
+ @racket[_expr2] is the normal result, but @racket[_expr1] may be
+ inlined for calls to the definition from other modules. Definitions
+ of functions without an @racket['%%inline-variant%%] are never
+ inlined across modules.}
+
+@item{Some applications of core primitives are annotated with
  @racketidfont{#%in}, which indicates that the JIT compiler will
  inline the operation. (Inlining information is not part of the
  bytecode, but is instead based on an enumeration of primitives that
@@ -91,7 +98,7 @@ Many forms in the decompiled code, such as @racket[module],
  @racketmodname[racket/flonum] and @racketmodname[racket/unsafe/ops]
  are always inlined, so @racketidfont{#%in} is not shown for them.}
 
- @item{Some applications of flonum operations from @racketmodname[racket/flonum] 
+@item{Some applications of flonum operations from @racketmodname[racket/flonum] 
  and @racketmodname[racket/unsafe/ops] are annotated with
  @racketidfont{#%flonum}, indicating a place where the JIT compiler
  might avoid allocation for intermediate flonum results. A single
@@ -104,9 +111,8 @@ Many forms in the decompiled code, such as @racket[module],
  which indicates a local binding that can avoid boxing (when used as
  an argument to an operation that can work with unboxed values).}
 
- @item{A @racketidfont{#%decode-syntax} form corresponds to a syntax
- object. Future improvements to the decompiler will convert such
- syntax objects to a readable form.}
+@item{A @racketidfont{#%decode-syntax} form corresponds to a syntax
+ object.}
 
 ]
 

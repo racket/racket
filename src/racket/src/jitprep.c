@@ -288,6 +288,16 @@ static Scheme_Object *jit_wcm(Scheme_Object *o)
 /*                            other syntax                                */
 /*========================================================================*/
 
+static Scheme_Object *clone_inline_variant(Scheme_Object *obj, Scheme_Object *naya)
+{
+  Scheme_Object *naya2;
+  naya2 = scheme_make_vector(3, scheme_false);
+  naya2->type = scheme_inline_variant_type;
+  SCHEME_VEC_ELS(naya2)[0] = naya;
+  SCHEME_VEC_ELS(naya2)[1] = SCHEME_VEC_ELS(obj)[1];
+  return naya2;
+}
+
 static Scheme_Object *define_values_jit(Scheme_Object *data)
 {
   Scheme_Object *orig = SCHEME_VEC_ELS(data)[0], *naya;
@@ -295,7 +305,13 @@ static Scheme_Object *define_values_jit(Scheme_Object *data)
   if (SAME_TYPE(SCHEME_TYPE(orig), scheme_unclosed_procedure_type)
       && (SCHEME_VEC_SIZE(data) == 2))
     naya = scheme_jit_closure(orig, SCHEME_VEC_ELS(data)[1]);
-  else
+  else if (SAME_TYPE(SCHEME_TYPE(orig), scheme_inline_variant_type)
+           && SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(orig)[0]), scheme_unclosed_procedure_type)
+           && (SCHEME_VEC_SIZE(data) == 2)) {
+    naya = scheme_jit_closure(SCHEME_VEC_ELS(orig)[0], SCHEME_VEC_ELS(data)[1]);
+    if (!SAME_OBJ(naya, SCHEME_VEC_ELS(orig)[0]))
+      naya = clone_inline_variant(orig, naya);
+  } else
     naya = scheme_jit_expr(orig);
 
   if (SAME_OBJ(naya, orig))
@@ -306,6 +322,18 @@ static Scheme_Object *define_values_jit(Scheme_Object *data)
     SCHEME_VEC_ELS(naya)[0] = orig;
     return naya;
   }
+}
+
+static Scheme_Object *inline_variant_jit(Scheme_Object *data)
+{
+  Scheme_Object *a, *orig;
+
+  orig = SCHEME_VEC_ELS(data)[0];
+  a = scheme_jit_expr(orig);
+  if (!SAME_OBJ(a, orig))
+    return clone_inline_variant(data, a);
+  else
+    return data;
 }
 
 static Scheme_Object *set_jit(Scheme_Object *data)
@@ -601,6 +629,8 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
     return scheme_case_lambda_jit(expr);
   case scheme_module_type:
     return scheme_module_jit(expr);
+  case scheme_inline_variant_type:
+    return inline_variant_jit(expr);
   default:
     return expr;
   }

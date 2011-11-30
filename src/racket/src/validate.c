@@ -346,6 +346,29 @@ static void apply_values_validate(Scheme_Object *data, Mz_CPort *port,
                        NULL, 0, 0, vc, 0, 0, procs);
 }
 
+static void inline_variant_validate(Scheme_Object *data, Mz_CPort *port, 
+                                    char *stack, Validate_TLS tls,
+                                    int depth, int letlimit, int delta, 
+                                    int num_toplevels, int num_stxes, int num_lifts,
+                                    void *tl_use_map, int result_ignored,
+                                    struct Validate_Clearing *vc, int tailpos,
+                                    Scheme_Hash_Tree *procs)
+{
+  Scheme_Object *f1, *f2;
+
+  f1 = SCHEME_VEC_ELS(data)[0];
+  f2 = SCHEME_VEC_ELS(data)[1];
+  
+  scheme_validate_expr(port, f1, stack, tls,
+                       depth, letlimit, delta, 
+                       num_toplevels, num_stxes, num_lifts, tl_use_map,
+                       NULL, 0, 0, vc, 0, 0, procs);
+  scheme_validate_expr(port, f2, stack, tls,
+                       depth, letlimit, delta, 
+                       num_toplevels, num_stxes, num_lifts, tl_use_map,
+                       NULL, 0, 0, vc, 0, 0, procs);
+}
+
 static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Validate_TLS tls,
 				 int depth, int letlimit, int delta, 
                                  int num_toplevels, int num_stxes, int num_lifts, 
@@ -1500,6 +1523,12 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
     module_validate(expr, port, stack, tls, depth, letlimit, delta, 
                     num_toplevels, num_stxes, num_lifts, tl_use_map, 
                     result_ignored, vc, tailpos, procs);
+    break;
+  case scheme_inline_variant_type:
+    no_flo(need_flonum, port);
+    inline_variant_validate(expr, port, stack, tls, depth, letlimit, delta, 
+                            num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                            result_ignored, vc, tailpos, procs);
     break;
   default:
     /* All values are definitely ok, except pre-closed closures. 

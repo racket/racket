@@ -782,6 +782,17 @@ define_values_sfs(Scheme_Object *data, SFS_Info *info)
 }
 
 static Scheme_Object *
+inline_variant_sfs(Scheme_Object *data, SFS_Info *info)
+{
+  Scheme_Object *e;
+  scheme_sfs_start_sequence(info, 1, 0);
+  e = scheme_sfs_expr(SCHEME_VEC_ELS(data)[0], info, -1);
+  SCHEME_VEC_ELS(data)[0] = e;
+  /* we don't bother with inlinable variant, since it isn't called directly */
+  return data;
+}
+
+static Scheme_Object *
 set_sfs(Scheme_Object *data, SFS_Info *info)
 {
   Scheme_Set_Bang *sb = (Scheme_Set_Bang *)data;
@@ -1249,6 +1260,9 @@ Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_
     break;
   case scheme_module_type:
     expr = module_sfs(expr, info);
+    break;
+  case scheme_inline_variant_type:
+    expr = inline_variant_sfs(expr, info);
     break;
   default:
     break;

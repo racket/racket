@@ -41,6 +41,7 @@
 #define OPT_DELAY_GROUP_PROPAGATE   0
 
 #define MAX_PROC_INLINE_SIZE 256
+#define CROSS_MODULE_INLINE_SIZE 8
 
 #define SCHEME_PRIM_IS_UNSAFE_NONMUTATING (SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL | SCHEME_PRIM_IS_UNSAFE_OMITABLE)
 
@@ -51,6 +52,7 @@ struct Optimize_Info
   struct Optimize_Info *next;
   int original_frame, new_frame;
   Scheme_Object *consts;
+  Comp_Prefix *cp;
 
   /* Propagated up and down the chain: */
   int size, vclock, psize;
@@ -110,7 +112,7 @@ static Scheme_Object *no_potential_size(Scheme_Object *value);
 #define IS_COMPILED_PROC(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_unclosed_procedure_type) \
                                      || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
 
-static int compiled_proc_body_size(Scheme_Object *o);
+static int compiled_proc_body_size(Scheme_Object *o, int less_args);
 
 typedef struct Scheme_Once_Used {
   Scheme_Object so;
@@ -222,6 +224,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
           && (SCHEME_LOCAL_POS(o) > deeper_than))
       || (vtype == scheme_unclosed_procedure_type)
       || (vtype == scheme_compiled_unclosed_procedure_type)
+      || (vtype == scheme_inline_variant_type)
       || (vtype == scheme_case_lambda_sequence_type)
       || (vtype == scheme_case_lambda_sequence_type)
       || (vtype == scheme_quote_syntax_type)
@@ -953,10 +956,25 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (le) {
     while (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_toplevel_type)) {
+      int pos;
+      pos = SCHEME_TOPLEVEL_POS(le);
       single_use = 0;
+      if (info->cp->inline_variants) {
+        Scheme_Object *iv;
+        iv = scheme_hash_get(info->cp->inline_variants, scheme_make_integer(pos));
+        if (iv) {
+          if (SAME_TYPE(SCHEME_TYPE(iv), scheme_inline_variant_type)) {
+            iv = scheme_unresolve(iv);
+            // printf("un: %p\n", iv);
+            scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), iv);
+          }
+          if (iv) {
+            le = iv;
+            break;
+          }
+        }
+      }
       if (info->top_level_consts) {
-        int pos;
-        pos = SCHEME_TOPLEVEL_POS(le);
         le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
         if (le && SCHEME_BOXP(le)) {
           psize = SCHEME_INT_VAL(SCHEME_BOX_VAL(le));
@@ -2516,7 +2534,7 @@ int scheme_compiled_duplicate_ok(Scheme_Object *fb, int cross_module)
 	  || SCHEME_EOFP(fb)
 	  || SCHEME_INTP(fb)
 	  || SCHEME_NULLP(fb)
-	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type)
+	  || (!cross_module && SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type))
           || SCHEME_PRIMP(fb)
           /* Values that are hashed by the printer and/or interned on 
              read to avoid duplication: */
@@ -3032,7 +3050,7 @@ static Scheme_Object *do_define_syntaxes_optimize(Scheme_Object *data, Optimize_
 
   val = SCHEME_VEC_ELS(data)[3];
 
-  einfo = scheme_optimize_info_create();
+  einfo = scheme_optimize_info_create(info->cp);
   if (info->inline_fuel < 0)
     einfo->inline_fuel = -1;
 
@@ -3056,7 +3074,7 @@ static Scheme_Object *begin_for_syntax_optimize(Scheme_Object *data, Optimize_In
   l = SCHEME_VEC_ELS(data)[2];
 
   while (!SCHEME_NULLP(l)) {
-    einfo = scheme_optimize_info_create();
+    einfo = scheme_optimize_info_create(info->cp);
     if (info->inline_fuel < 0)
       einfo->inline_fuel = -1;
     
@@ -3411,15 +3429,24 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
   return flags;
 }
 
-static int compiled_proc_body_size(Scheme_Object *o)
+static int compiled_proc_body_size(Scheme_Object *o, int less_args)
 {
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_compiled_unclosed_procedure_type))
-    return closure_body_size((Scheme_Closure_Data *)o, 0, NULL, NULL);
-  else if (SAME_TYPE(SCHEME_TYPE(o), scheme_case_lambda_sequence_type)) {
+  int bsz;
+
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_compiled_unclosed_procedure_type)) {
+    bsz = closure_body_size((Scheme_Closure_Data *)o, 0, NULL, NULL);
+    if (less_args) bsz -= ((Scheme_Closure_Data *)o)->num_params;
+    return bsz;
+  } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_case_lambda_sequence_type)) {
     Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)o;
     int i, sz = 0;
     for (i = cl->count; i--; ) {
-      sz += closure_body_size((Scheme_Closure_Data *)cl->array[i], 0, NULL, NULL);
+      bsz = closure_body_size((Scheme_Closure_Data *)cl->array[i], 0, NULL, NULL);
+      if (less_args) {
+        bsz -= ((Scheme_Closure_Data *)cl->array[i])->num_params;
+        if (bsz > sz) sz = bsz;
+      } else
+        sz += bsz;
     }
     return sz;
   } else
@@ -3428,7 +3455,7 @@ static int compiled_proc_body_size(Scheme_Object *o)
 
 static int expr_size(Scheme_Object *o, Optimize_Info *info)
 {
-  return compiled_proc_body_size(o) + 1;
+  return compiled_proc_body_size(o, 0) + 1;
 }
 
 int scheme_might_invoke_call_cc(Scheme_Object *value)
@@ -4014,7 +4041,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	    self_value = SCHEME_CDR(cl_first);
 
             /* Drop old size, and remove old inline fuel: */
-            sz = compiled_proc_body_size(value);
+            sz = compiled_proc_body_size(value, 0);
             rhs_info->size -= (sz + 1);
 
             /* Setting letrec_not_twice prevents inlinining
@@ -4040,7 +4067,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
                    maybe only if it didn't grow too much: */
                 int new_sz;
                 if (OPT_DELAY_GROUP_PROPAGATE || OPT_LIMIT_FUNCTION_RESIZE)
-                  new_sz = compiled_proc_body_size(value);
+                  new_sz = compiled_proc_body_size(value, 0);
                 else
                   new_sz = 0;
                 if (new_sz <= sz)
@@ -4550,6 +4577,16 @@ static int set_code_closure_flags(Scheme_Object *clones,
   return flags;
 }
 
+static Scheme_Object *is_cross_module_inline_candidiate(Scheme_Object *e, Optimize_Info *info)
+{
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
+    if (compiled_proc_body_size(e, 1) < CROSS_MODULE_INLINE_SIZE)
+      return scheme_optimize_clone(0, e, info, 0, 0);
+  }
+
+  return NULL;
+}
+
 static Scheme_Object *
 module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
@@ -4557,11 +4594,15 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   Scheme_Object *e, *vars, *old_context;
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
-  Scheme_Hash_Table *consts = NULL, *fixed_table = NULL, *re_consts = NULL;
+  Scheme_Hash_Table *consts = NULL, *fixed_table = NULL, *re_consts = NULL, *originals = NULL;
   int cont, next_pos_ready = -1, inline_fuel, is_proc_def;
+  Comp_Prefix *prev_cp;
 
   old_context = info->context;
   info->context = (Scheme_Object *)m;
+
+  prev_cp = info->cp;
+  info->cp = m->comp_prefix;
 
   cnt = SCHEME_VEC_SIZE(m->bodies[0]);
 
@@ -4769,7 +4810,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
               Scheme_Object *sub_e;
               sub_e = SCHEME_VEC_ELS(e)[1];
-              old_sz = compiled_proc_body_size(sub_e);
+              old_sz = compiled_proc_body_size(sub_e, 0);
             } else
               old_sz = 0;
           } else
@@ -4784,13 +4825,21 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             Scheme_Object *rpos;
             rpos = scheme_hash_get(re_consts, scheme_make_integer(start_simltaneous));
             if (rpos) {
+              Scheme_Object *old_e;
+
               e = SCHEME_VEC_ELS(e)[1];
+
+              old_e = scheme_hash_get(info->top_level_consts, rpos);
+              if (old_e && IS_COMPILED_PROC(old_e))  {
+                if (!originals)
+                  originals = scheme_make_hash_table(SCHEME_hash_ptr);
+                scheme_hash_set(originals, scheme_make_integer(start_simltaneous), old_e);
+              }
+
               if (!scheme_compiled_propagate_ok(e, info)
                   && scheme_is_statically_proc(e, info)) {
                 /* If we previously installed a procedure for inlining,
                    don't replace that with a worse approximation. */
-                Scheme_Object *old_e;
-                old_e = scheme_hash_get(info->top_level_consts, rpos);
                 if (IS_COMPILED_PROC(old_e))
                   e = NULL;
                 else
@@ -4799,7 +4848,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
               if (e) {
                 if (OPT_DELAY_GROUP_PROPAGATE || OPT_LIMIT_FUNCTION_RESIZE)
-                  new_sz = compiled_proc_body_size(e);
+                  new_sz = compiled_proc_body_size(e, 0);
                 else
                   new_sz = 0;
 
@@ -4850,6 +4899,35 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     }
   }
 
+  /* For functions that are potentially inlineable, perhaps 
+     before optimization, insert inline_variant records: */
+  for (i_m = 0; i_m < cnt; i_m++) {
+    /* Optimize this expression: */
+    e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
+    if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
+      Scheme_Object *sub_e, *alt_e;
+      sub_e = SCHEME_VEC_ELS(e)[1];
+      if (IS_COMPILED_PROC(sub_e)) {
+        alt_e = is_cross_module_inline_candidiate(sub_e, info);
+        if (!alt_e && originals) {
+          alt_e = scheme_hash_get(originals, scheme_make_integer(i_m));
+          if (SAME_OBJ(alt_e, sub_e))
+            alt_e = NULL;
+          else if (alt_e)
+            alt_e = is_cross_module_inline_candidiate(alt_e, info);
+        }
+        if (alt_e) {
+          Scheme_Object *iv;
+          iv = scheme_make_vector(3, scheme_false);
+          iv->type = scheme_inline_variant_type;
+          SCHEME_VEC_ELS(iv)[0] = sub_e;
+          SCHEME_VEC_ELS(iv)[1] = alt_e;
+          SCHEME_VEC_ELS(e)[1] = iv;
+        }
+      }
+    }
+  }
+
   /* Check one more time for expressions that we can omit: */
   {
     int can_omit = 0;
@@ -4873,9 +4951,11 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       }
       m->bodies[0] = vec;
     }
+    cnt -= can_omit;
   }
 
   info->context = old_context;
+  info->cp = prev_cp;
 
   /* Exp-time body was optimized during compilation */
 
@@ -5458,7 +5538,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
 /*                 compile-time env for optimization                      */
 /*========================================================================*/
 
-Optimize_Info *scheme_optimize_info_create()
+Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp)
 {
   Optimize_Info *info;
 
@@ -5467,6 +5547,7 @@ Optimize_Info *scheme_optimize_info_create()
   info->type = scheme_rt_optimize_info;
 #endif
   info->inline_fuel = 32;
+  info->cp = cp;
 
   return info;
 }
@@ -5990,7 +6071,7 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
 {
   Optimize_Info *naya;
 
-  naya = scheme_optimize_info_create();
+  naya = scheme_optimize_info_create(info->cp);
   naya->flags = (short)flags;
   naya->next = info;
   naya->original_frame = orig;

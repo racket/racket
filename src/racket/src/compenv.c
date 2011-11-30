@@ -599,18 +599,11 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int resolved, i
   return (Scheme_Object *)tl;
 }
 
-Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
-						  Scheme_Compile_Info *rec, int drec,
-                                                  int imported)
+Scheme_Object *scheme_register_toplevel_in_comp_prefix(Scheme_Object *var, Comp_Prefix *cp,
+                                                       int imported, Scheme_Object *inline_variant)
 {
-  Comp_Prefix *cp = env->prefix;
   Scheme_Hash_Table *ht;
   Scheme_Object *o;
-
-  if (rec && rec[drec].dont_mark_local_use) {
-    /* Make up anything; it's going to be ignored. */
-    return scheme_make_toplevel(0, 0, 0, 0);
-  }
 
   ht = cp->toplevels;
   if (!ht) {
@@ -631,10 +624,34 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
                                   : SCHEME_TOPLEVEL_READY))
                             : 0));
 
-  cp->num_toplevels++;
   scheme_hash_set(ht, var, o);
 
+  if (inline_variant) {
+    ht = cp->inline_variants;
+    if (!ht) {
+      ht = scheme_make_hash_table(SCHEME_hash_ptr);
+      cp->inline_variants = ht;
+    }
+    scheme_hash_set(ht, scheme_make_integer(cp->num_toplevels), inline_variant);
+  }
+  
+  cp->num_toplevels++;
+
   return o;
+}
+
+Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
+						  Scheme_Compile_Info *rec, int drec,
+                                                  int imported, Scheme_Object *inline_variant)
+{
+  Comp_Prefix *cp = env->prefix;
+
+  if (rec && rec[drec].dont_mark_local_use) {
+    /* Make up anything; it's going to be ignored. */
+    return scheme_make_toplevel(0, 0, 0, 0);
+  }
+
+  return scheme_register_toplevel_in_comp_prefix(var, cp, imported, inline_variant);
 }
 
 void scheme_register_unbound_toplevel(Scheme_Comp_Env *env, Scheme_Object *id)
@@ -1659,7 +1676,8 @@ Scheme_Object *
 scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 		      Scheme_Object *in_modidx,
 		      Scheme_Env **_menv, int *_protected,
-                      Scheme_Object **_lexical_binding_id)
+                      Scheme_Object **_lexical_binding_id,
+                      Scheme_Object **_inline_variant)
 {
   Scheme_Comp_Env *frame;
   int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0, is_constant;
@@ -1963,7 +1981,11 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       is_constant = 2;
     else if (SAME_OBJ(mod_constant, scheme_fixed_key))
       is_constant = 1;
-    else {
+    else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type)) {
+      if (_inline_variant)
+        *_inline_variant = mod_constant;
+      is_constant = 2;
+    } else {
       if (flags & SCHEME_ELIM_CONST) 
         return mod_constant;
       is_constant = 2;
@@ -2350,7 +2372,8 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   init_compile_data((Scheme_Comp_Env *)&inlined_e);
   inlined_e.base.prefix = NULL;
 
-  v = scheme_lookup_binding(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, NULL, NULL, NULL, NULL);
+  v = scheme_lookup_binding(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, 
+                            NULL, NULL, NULL, NULL, NULL);
   if (v) {
     if (!SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type)) {
       *_use_map = -1;

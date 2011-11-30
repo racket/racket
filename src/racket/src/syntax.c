@@ -4261,6 +4261,8 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
     } else if (SCHEME_PRUNEP(WRAP_POS_FIRST(wraps))) {
       if (!is_member(SCHEME_STX_VAL(a), SCHEME_BOX_VAL(WRAP_POS_FIRST(wraps)))) {
         /* Doesn't match pruned-to sym; already produce #f */
+        if (_depends_on_unsealed_rib)
+          *_depends_on_unsealed_rib = depends_on_unsealed_rib;
         return scheme_false;
       }
     }
@@ -4505,7 +4507,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
                 /* Has a relevant-looking free-id mapping. 
                    Give up on the "fast" traversal. */
                 Scheme_Object *modname, *names[7];
-                int rib_dep;
+                int rib_dep = 0;
 
                 names[0] = NULL;
                 names[1] = NULL;

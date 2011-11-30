@@ -45,3 +45,34 @@ static int mark_resolve_info_FIXUP(void *p, struct NewGC *gc) {
 #define mark_resolve_info_IS_CONST_SIZE 1
 
 
+static int mark_unresolve_info_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Unresolve_Info));
+}
+
+static int mark_unresolve_info_MARK(void *p, struct NewGC *gc) {
+  Unresolve_Info *i = (Unresolve_Info *)p;
+  
+  gcMARK2(i->flags, gc);
+  gcMARK2(i->depths, gc);
+  gcMARK2(i->prefix, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Unresolve_Info));
+}
+
+static int mark_unresolve_info_FIXUP(void *p, struct NewGC *gc) {
+  Unresolve_Info *i = (Unresolve_Info *)p;
+  
+  gcFIXUP2(i->flags, gc);
+  gcFIXUP2(i->depths, gc);
+  gcFIXUP2(i->prefix, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Unresolve_Info));
+}
+
+#define mark_unresolve_info_IS_ATOMIC 0
+#define mark_unresolve_info_IS_CONST_SIZE 1
+
+

@@ -168,10 +168,10 @@
 (define apply-values-type-num 24)
 (define case-lambda-sequence-type-num 25)
 (define module-type-num 26)
-(define variable-type-num 34)
-(define top-type-num 99)
-(define prefix-type-num 112)
-(define free-id-info-type-num 161)
+(define inline-variants-type-num 27)
+(define variable-type-num 35)
+(define prefix-type-num 113)
+(define free-id-info-type-num 162)
 
 (define-syntax define-enum
   (syntax-rules ()

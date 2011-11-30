@@ -3604,6 +3604,11 @@ static void setup_accessible_table(Scheme_Module *m)
                             && scheme_compiled_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
                           /* record simple constant from cross-module propagation: */
                           v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
+                        } else if (SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(form)[0]), scheme_inline_variant_type)) {
+                          /* record a potentially inlineable function */
+                          if (SCHEME_VEC_ELS(SCHEME_VEC_ELS(form)[0])[2] != (Scheme_Object *)m->prefix)
+                            SCHEME_VEC_ELS(SCHEME_VEC_ELS(form)[0])[2] = (Scheme_Object *)m->prefix;
+                          v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
                         } else if (is_procedure_expression(SCHEME_VEC_ELS(form)[0])) {
                           /* record that it's constant across all instantiations: */
                           v = scheme_make_pair(v, scheme_constant_key);
@@ -4861,6 +4866,9 @@ static int needs_prompt(Scheme_Object *e)
     case scheme_case_lambda_sequence_type:
       return 0;
     case scheme_define_values_type:
+      e = SCHEME_VEC_ELS(e)[0];
+      break;
+    case scheme_inline_variant_type:
       e = SCHEME_VEC_ELS(e)[0];
       break;
     default:
@@ -7082,7 +7090,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           if (!for_stx)
             lifted_reqs = scheme_append(scheme_frame_get_require_lifts(eenv), lifted_reqs);
 
-	  oi = scheme_optimize_info_create();
+	  oi = scheme_optimize_info_create(eenv->prefix);
           scheme_optimize_info_set_context(oi, (Scheme_Object *)env->genv->module);
           if (!(rec[drec].comp_flags & COMP_CAN_INLINE))
             scheme_optimize_info_never_inline(oi);

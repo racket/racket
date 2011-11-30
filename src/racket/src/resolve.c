@@ -623,6 +623,22 @@ static void resolve_lift_definition(Resolve_Info *info, Scheme_Object *var, Sche
 }
 
 static Scheme_Object *
+inline_variant_resolve(Scheme_Object *data, Resolve_Info *rslv)
+{
+  Scheme_Object *a;
+
+  a = SCHEME_VEC_ELS(data)[0];
+  a = scheme_resolve_expr(a, rslv);
+  SCHEME_VEC_ELS(data)[0] = a;
+
+  a = SCHEME_VEC_ELS(data)[1];
+  a = scheme_resolve_expr(a, rslv);
+  SCHEME_VEC_ELS(data)[1] = a;
+  
+  return data;
+}
+
+static Scheme_Object *
 set_resolve(Scheme_Object *data, Resolve_Info *rslv)
 {
   Scheme_Set_Bang *sb = (Scheme_Set_Bang *)data;
@@ -2326,6 +2342,8 @@ Scheme_Object *scheme_resolve_expr(Scheme_Object *expr, Resolve_Info *info)
     return 0;
   case scheme_define_values_type:
     return define_values_resolve(expr, info);
+  case scheme_inline_variant_type:
+    return inline_variant_resolve(expr, info);
   case scheme_define_syntaxes_type:
     return define_syntaxes_resolve(expr, info);
   case scheme_begin_for_syntax_type:
@@ -2984,6 +3002,338 @@ static int resolving_in_procedure(Resolve_Info *info)
 }
 
 /*========================================================================*/
+/*                             uresolve                                   */
+/*========================================================================*/
+
+typedef struct Unresolve_Info {
+  MZTAG_IF_REQUIRED
+  int stack_pos; /* stack in resolved coordinates */
+  int depth;     /* stack in unresolved coordinates */
+  int stack_size;
+  int *flags;
+  mzshort *depths;
+  Scheme_Prefix *prefix;
+  int fail_after_all;
+} Unresolve_Info;
+
+static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui);
+
+static Unresolve_Info *new_unresolve_info(Scheme_Prefix *prefix)
+{
+  Unresolve_Info *ui;
+  int *f, *d;
+
+  ui = MALLOC_ONE_RT(Unresolve_Info);
+  SET_REQUIRED_TAG(ui->type = scheme_rt_unresolve_info);
+
+  ui->stack_pos = 0;
+  ui->stack_size = 10;
+  f = (int *)scheme_malloc_atomic(sizeof(int) * ui->stack_size);
+  ui->flags = f;
+  d = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * ui->stack_size);
+  ui->depths = d;
+
+  return ui;
+}
+
+static int unresolve_stack_push(Unresolve_Info *ui, int n, int r_only)
+{
+  int pos, *f, i;
+  mzshort *d;
+
+  pos = ui->stack_pos;
+
+  if (pos + n > ui->stack_size) {
+    f = (int *)scheme_malloc_atomic(sizeof(int) * ((2 * ui->stack_size) + n));
+    memcpy(f, ui->flags, sizeof(int) * pos);
+    
+    d = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * ((2 * ui->stack_size) + n));
+    memcpy(d, ui->depths, sizeof(mzshort) * pos);
+
+    ui->stack_size = (2 * ui->stack_size) + n;
+  }
+  memset(ui->flags + pos, 0, sizeof(int) * n);
+  if (!r_only) {
+    for (i = 0; i < n; i++) {
+      ui->depths[pos + i] = ui->depth++;
+    }
+  }
+
+  ui->stack_pos += n;
+
+  return pos;
+}
+
+static int *unresolve_stack_pop(Unresolve_Info *ui, int pos, int n)
+{
+  int *f;
+
+  ui->stack_pos = pos;
+
+  if (n) {
+    f = (int *)scheme_malloc_atomic(sizeof(int) * n);
+    memcpy(f, ui->flags + pos, n * sizeof(int));
+    ui->depth -= n;
+  } else
+    f = NULL;
+
+  return f;
+}
+
+static int unresolve_set_flag(Unresolve_Info *ui, int pos, int flag)
+{
+  int i = ui->stack_pos - pos - 1;
+
+  if (pos >= ui->stack_pos) scheme_signal_error("internal error: unresolve too far");
+
+  flag |= ui->flags[i];
+  if (((flag & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT) < SCHEME_USE_COUNT_INF)
+    flag += (1 << SCHEME_USE_COUNT_SHIFT);
+  ui->flags[i] = flag;
+
+  return ui->depth - ui->depths[i] - 1;
+}
+
+Scheme_Object *unresolve_closure(Scheme_Closure_Data *rdata, Unresolve_Info *ui)
+{
+  Scheme_Closure_Data *data;
+  Scheme_Object *body;
+  Closure_Info *cl;
+  int pos, data_pos, *flags;
+
+  scheme_delay_load_closure(rdata);
+
+  if (rdata->closure_size)
+    return 0; /* won't work, yet */
+
+  data  = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
+  
+  data->iso.so.type = scheme_compiled_unclosed_procedure_type;
+
+  SCHEME_CLOSURE_DATA_FLAGS(data) = (SCHEME_CLOSURE_DATA_FLAGS(rdata) 
+                                     & (CLOS_HAS_REST | CLOS_IS_METHOD));
+
+  data->num_params = rdata->num_params;
+  data->name = rdata->name;
+
+  pos = unresolve_stack_push(ui, data->num_params, 0);
+
+  if (rdata->closure_size)
+    data_pos = unresolve_stack_push(ui, data->closure_size, 0);
+
+  body = unresolve_expr(rdata->code, ui);
+  if (!body) return NULL;
+
+  data->code = body;
+
+  cl = MALLOC_ONE_RT(Closure_Info);
+  SET_REQUIRED_TAG(cl->type = scheme_rt_closure_info);
+  data->closure_map = (mzshort *)cl;
+
+  if (rdata->closure_size)
+    (void)unresolve_stack_pop(ui, data_pos, 0);
+
+  flags = unresolve_stack_pop(ui, pos, data->num_params);
+  cl->local_flags = flags;
+
+  return (Scheme_Object *)data;
+}
+
+static Scheme_Object *unresolve_expr_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *e = (Scheme_Object *)p->ku.k.p1;
+  Unresolve_Info *ui = (Unresolve_Info *)p->ku.k.p2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  return unresolve_expr(e, ui);
+}
+
+
+static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui)
+{
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+
+      p->ku.k.p1 = (void *)e;
+      p->ku.k.p2 = (void *)ui;
+
+      return scheme_handle_stack_overflow(unresolve_expr_k);
+    }
+  }
+#endif
+
+  switch (SCHEME_TYPE(e)) {
+  case scheme_local_type:
+    return scheme_make_local(scheme_local_type,
+                             unresolve_set_flag(ui, SCHEME_LOCAL_POS(e), SCHEME_WAS_USED),
+                             0);
+  case scheme_local_unbox_type:
+    return scheme_make_local(scheme_local_type,
+                             unresolve_set_flag(ui, SCHEME_LOCAL_POS(e), 
+                                                (SCHEME_WAS_SET_BANGED | SCHEME_WAS_USED)),
+                             0);
+  case scheme_application_type:
+    {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)e, *app2;
+      Scheme_Object *a;
+      int pos, i;
+
+      pos = unresolve_stack_push(ui, app->num_args, 1);
+
+      app2 = scheme_malloc_application(app->num_args+1);
+
+      for (i = app->num_args + 1; i--; ) {
+        a = unresolve_expr(app->args[i], ui);
+        if (!a) return NULL;
+        app2->args[i] = a;
+      }
+
+      (void)unresolve_stack_pop(ui, pos, 0);
+
+      return (Scheme_Object *)app2;
+    }
+  case scheme_application2_type:
+    {
+      Scheme_App2_Rec *app = (Scheme_App2_Rec *)e, *app2;
+      Scheme_Object *rator, *rand;
+      int pos;
+
+      pos = unresolve_stack_push(ui, 1, 1);
+
+      rator = unresolve_expr(app->rator, ui);
+      if (!rator) return NULL;
+      rand = unresolve_expr(app->rand, ui);
+      if (!rand) return NULL;
+
+      (void)unresolve_stack_pop(ui, pos, 0);
+
+      app2 = MALLOC_ONE_TAGGED(Scheme_App2_Rec);
+      app2->iso.so.type = scheme_application2_type;
+      app2->rator = rator;
+      app2->rand = rand;
+
+      return (Scheme_Object *)app2;
+    }
+  case scheme_application3_type:
+    {
+      Scheme_App3_Rec *app = (Scheme_App3_Rec *)e, *app2;
+      Scheme_Object *rator, *rand1, *rand2;
+      int pos;
+
+      pos = unresolve_stack_push(ui, 2, 1);
+
+      rator = unresolve_expr(app->rator, ui);
+      if (!rator) return NULL;
+      rand1 = unresolve_expr(app->rand1, ui);
+      if (!rand1) return NULL;
+      rand2 = unresolve_expr(app->rand2, ui);
+      if (!rand2) return NULL;
+
+      (void)unresolve_stack_pop(ui, pos, 0);
+
+      app2 = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
+      app2->iso.so.type = scheme_application3_type;
+      app2->rator = rator;
+      app2->rand1 = rand1;
+      app2->rand2 = rand2;
+
+      return (Scheme_Object *)app2;
+    }
+  case scheme_branch_type:
+    {
+      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)e, *b2;
+      Scheme_Object *tst, *thn, *els;
+
+      tst = unresolve_expr(b->test, ui);
+      if (!tst) return NULL;
+      thn = unresolve_expr(b->tbranch, ui);
+      if (!thn) return NULL;
+      els = unresolve_expr(b->fbranch, ui);
+      if (!els) return NULL;
+
+      b2 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
+      b2->so.type = scheme_branch_type;
+      b2->test = tst;
+      b2->tbranch = thn;
+      b2->fbranch = els;
+
+      return (Scheme_Object *)b2;
+    }
+  case scheme_let_one_type:
+    {
+      Scheme_Let_One *lo = (Scheme_Let_One *)e;
+      Scheme_Object *rhs, *body;
+      Scheme_Let_Header *lh;
+      Scheme_Compiled_Let_Value *lv;
+      int *flags, pos;
+
+      ui->fail_after_all = 1;
+
+      pos = unresolve_stack_push(ui, 1, 1 /* => pre-bind RHS */);
+      rhs = unresolve_expr(lo->value, ui);
+      if (!rhs) return NULL;
+      (void)unresolve_stack_pop(ui, pos, 0);
+
+      pos = unresolve_stack_push(ui, 1, 0);
+      body = unresolve_expr(lo->body, ui);
+      if (!body) return NULL;
+      flags = unresolve_stack_pop(ui, pos, 1);
+
+      lh = MALLOC_ONE_TAGGED(Scheme_Let_Header);
+      lh->iso.so.type = scheme_compiled_let_void_type;
+      lh->count = 1;
+      lh->num_clauses = 1;
+
+      lv = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
+      lv->iso.so.type = scheme_compiled_let_value_type;
+      lv->count = 1;
+      lv->position = 0;
+      lv->value = rhs;
+      lv->flags = flags;
+      lv->body = body;
+
+      lh->body = (Scheme_Object *)lv;
+
+      return (Scheme_Object *)lh;
+    }
+  default:
+    if (SCHEME_TYPE(e) > _scheme_values_types_) {
+      if (scheme_compiled_duplicate_ok(e, 1))
+        return e;
+    }
+    // printf("no %d\n", SCHEME_TYPE(e));
+    return NULL;
+  }
+}
+
+Scheme_Object *scheme_unresolve(Scheme_Object *iv)
+{
+  Scheme_Object *o;
+
+  o = SCHEME_VEC_ELS(iv)[1];
+
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_closure_type)) {
+    o = (Scheme_Object *)((Scheme_Closure *)o)->code;
+    if (((Scheme_Closure_Data *)o)->closure_size)
+      return NULL;
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_unclosed_procedure_type)) {
+    /* convert an optimized & resolved closure back to compiled form: */
+    return unresolve_closure((Scheme_Closure_Data *)o, 
+                             new_unresolve_info((Scheme_Prefix *)SCHEME_VEC_ELS(iv)[2]));
+  }
+
+  return NULL;
+}
+
+/*========================================================================*/
 /*                         precise GC traversers                          */
 /*========================================================================*/
 
@@ -2996,6 +3346,7 @@ START_XFORM_SKIP;
 static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_rt_resolve_info, mark_resolve_info);
+  GC_REG_TRAV(scheme_rt_unresolve_info, mark_unresolve_info);
 }
 
 END_XFORM_SKIP;

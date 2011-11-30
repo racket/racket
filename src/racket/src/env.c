@@ -1913,7 +1913,7 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
 			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
 			      scheme_current_thread->current_local_modidx, 
-			      &menv, NULL, NULL);
+			      &menv, NULL, NULL, NULL);
 
     SCHEME_EXPAND_OBSERVE_RESOLVE(observer, sym);
 
@@ -2327,7 +2327,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
 			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
 			      scheme_current_thread->current_local_modidx, 
-			      NULL, NULL, &binder);
+			      NULL, NULL, &binder, NULL);
     
     /* Deref globals */
     if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type))

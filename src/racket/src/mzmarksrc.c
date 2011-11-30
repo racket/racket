@@ -958,6 +958,7 @@ comp_prefix_val {
  mark:
   Comp_Prefix *cp = (Comp_Prefix *)p;
   gcMARK2(cp->toplevels, gc);
+  gcMARK2(cp->inline_variants, gc);
   gcMARK2(cp->unbound, gc);
   gcMARK2(cp->stxes, gc);
   gcMARK2(cp->uses_unsafe, gc);
@@ -1232,6 +1233,18 @@ mark_resolve_info {
   gcBYTES_TO_WORDS(sizeof(Resolve_Info));
 }
 
+mark_unresolve_info {
+ mark:
+  Unresolve_Info *i = (Unresolve_Info *)p;
+  
+  gcMARK2(i->flags, gc);
+  gcMARK2(i->depths, gc);
+  gcMARK2(i->prefix, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Unresolve_Info));
+}
+
 END resolve;
 
 /**********************************************************************/
@@ -1265,6 +1278,7 @@ mark_optimize_info {
   gcMARK2(i->next, gc);
   gcMARK2(i->use, gc);
   gcMARK2(i->consts, gc);
+  gcMARK2(i->cp, gc);
   gcMARK2(i->top_level_consts, gc);
   gcMARK2(i->transitive_use, gc);
   gcMARK2(i->transitive_use_len, gc);

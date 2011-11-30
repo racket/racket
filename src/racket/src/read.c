@@ -3103,7 +3103,7 @@ read_here_string(Scheme_Object *port, Scheme_Object *stxsrc,
   if (len < 0)
     len = 0;
 
-  str = scheme_make_sized_char_string(s, len, 1);
+  str = scheme_make_immutable_sized_char_string(s, len, 1);
 
   str = scheme_intern_literal_string(str);
   
@@ -4361,7 +4361,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_CHAR:
       l = read_compact_number(port);
-      return scheme_make_character(l);
+      return make_interned_char(l);
       break;
     case CPT_INT:
       return scheme_make_integer(read_compact_number(port));

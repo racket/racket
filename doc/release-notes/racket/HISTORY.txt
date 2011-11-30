@@ -1,3 +1,7 @@
+Version 5.2.0.5
+Cross-module inlining of trivial functions
+compiler/zo-structs: added inline-variant
+
 Version 5.2.0.4
 Regexps are `equal?' when they have the same source [byte] string
  and mode

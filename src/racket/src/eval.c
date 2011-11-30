@@ -3555,6 +3555,11 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
           v = define_values_execute(obj);
           break;
         }
+      case scheme_inline_variant_type:
+        {
+          obj = SCHEME_VEC_ELS(obj)[0];
+          goto eval_top;
+        }
       case scheme_define_syntaxes_type:
         {
           UPDATE_THREAD_RSPTR();
@@ -3894,7 +3899,7 @@ static void *compile_k(void)
 	  break;
       }
 
-      oi = scheme_optimize_info_create();
+      oi = scheme_optimize_info_create(cenv->prefix);
       scheme_optimize_info_enforce_const(oi, enforce_consts);
       if (!(comp_flags & COMP_CAN_INLINE))
         scheme_optimize_info_never_inline(oi);

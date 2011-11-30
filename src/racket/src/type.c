@@ -562,6 +562,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_module_type, module_val);
   GC_REG_TRAV(scheme_rt_export_info, exp_info_val);
   GC_REG_TRAV(scheme_require_form_type, twoptr_obj);
+  GC_REG_TRAV(scheme_inline_variant_type, vector_obj);
 
   GC_REG_TRAV(_scheme_values_types_, bad_trav);
   

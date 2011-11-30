@@ -2389,6 +2389,7 @@ static int comp_prefix_val_SIZE(void *p, struct NewGC *gc) {
 static int comp_prefix_val_MARK(void *p, struct NewGC *gc) {
   Comp_Prefix *cp = (Comp_Prefix *)p;
   gcMARK2(cp->toplevels, gc);
+  gcMARK2(cp->inline_variants, gc);
   gcMARK2(cp->unbound, gc);
   gcMARK2(cp->stxes, gc);
   gcMARK2(cp->uses_unsafe, gc);
@@ -2400,6 +2401,7 @@ static int comp_prefix_val_MARK(void *p, struct NewGC *gc) {
 static int comp_prefix_val_FIXUP(void *p, struct NewGC *gc) {
   Comp_Prefix *cp = (Comp_Prefix *)p;
   gcFIXUP2(cp->toplevels, gc);
+  gcFIXUP2(cp->inline_variants, gc);
   gcFIXUP2(cp->unbound, gc);
   gcFIXUP2(cp->stxes, gc);
   gcFIXUP2(cp->uses_unsafe, gc);

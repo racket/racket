@@ -55,6 +55,8 @@ static Scheme_Object *read_varref(Scheme_Object *obj);
 static Scheme_Object *write_varref(Scheme_Object *obj);
 static Scheme_Object *read_apply_values(Scheme_Object *obj);
 static Scheme_Object *write_apply_values(Scheme_Object *obj);
+static Scheme_Object *read_inline_variant(Scheme_Object *obj);
+static Scheme_Object *write_inline_variant(Scheme_Object *obj);
 
 static Scheme_Object *write_application(Scheme_Object *obj);
 static Scheme_Object *read_application(Scheme_Object *obj);
@@ -135,6 +137,8 @@ void scheme_init_marshal(Scheme_Env *env)
   scheme_install_type_reader(scheme_varref_form_type, read_varref);
   scheme_install_type_writer(scheme_apply_values_type, write_apply_values);
   scheme_install_type_reader(scheme_apply_values_type, read_apply_values);
+  scheme_install_type_writer(scheme_inline_variant_type, write_inline_variant);
+  scheme_install_type_reader(scheme_inline_variant_type, read_inline_variant);
 
   scheme_install_type_writer(scheme_compilation_top_type, write_top);
   scheme_install_type_reader(scheme_compilation_top_type, read_top);
@@ -517,6 +521,28 @@ Scheme_Object *read_boxenv(Scheme_Object *o)
   
   return data;
 }
+
+static Scheme_Object *read_inline_variant(Scheme_Object *obj)
+{
+  Scheme_Object *data;
+
+  if (!SCHEME_PAIRP(obj)) return NULL;
+
+  data = scheme_make_vector(3, scheme_false);
+  data->type = scheme_inline_variant_type;
+  SCHEME_VEC_ELS(data)[0] = SCHEME_CAR(obj);
+  SCHEME_VEC_ELS(data)[1] = SCHEME_CDR(obj);
+  /* third slot is filled when module->accessible table is made */
+  
+  return data;
+}
+
+static Scheme_Object *write_inline_variant(Scheme_Object *obj)
+{
+  return scheme_make_pair(SCHEME_VEC_ELS(obj)[0],
+                          SCHEME_VEC_ELS(obj)[1]);
+}
+
 
 #define BOOL(x) (x ? scheme_true : scheme_false)
 
