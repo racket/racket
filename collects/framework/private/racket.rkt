@@ -1367,31 +1367,31 @@
           (keymap:region-click
            text event 
            (λ (click-pos eol?)
-             (define str1 (string (send text get-character click-pos)))
-             (define sexp-based-start/end
+             (define (word-based)
+               (define start-box (box click-pos))
+               (define end-box (box click-pos))
+               (send text find-wordbreak start-box end-box 'selection)
+               (values (unbox start-box) (unbox end-box)))
+             (define token (send text classify-position click-pos))
+             (define-values (start end)
                (cond
-                 [(ormap (λ (pr) (equal? (cdr pr) str1))
-                         (racket-paren:get-paren-pairs))
+                 [(equal? token 'string) (word-based)]
+                 [(and (equal? token 'parenthesis)
+                       (ormap (λ (pr) (equal? (cdr pr) (string (send text get-character click-pos))))
+                              (racket-paren:get-paren-pairs)))
                   (define start (send text get-backward-sexp (+ click-pos 1)))
-                  (and start 
-                       (cons start (+ click-pos 1)))]
+                  (if start 
+                      (values start (+ click-pos 1))
+                      (word-based))]
                  [else
                   (let ([end (send text get-forward-sexp click-pos)])
-                    (and end 
-                         (let ([beginning (send text get-backward-sexp end)])
-                           (and beginning
-                                (cons beginning end)))))]))
-             (cond
-               [sexp-based-start/end
-                (send text set-position
-                      (car sexp-based-start/end)
-                      (cdr sexp-based-start/end))]
-               [else
-                (define start-box (box click-pos))
-                (define end-box (box click-pos))
-                (send text find-wordbreak start-box end-box 'selection)
-                (send text set-position (unbox start-box) (unbox end-box))])))))
-  
+                    (if end 
+                        (let ([beginning (send text get-backward-sexp end)])
+                          (if beginning
+                              (values beginning end)
+                              (word-based)))
+                        (word-based)))]))
+             (send text set-position start end)))))
 
   (let ([add/map-non-clever
          (λ (name keystroke char)
