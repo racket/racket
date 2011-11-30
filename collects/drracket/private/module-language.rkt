@@ -1221,6 +1221,7 @@
                  (send tmr stop)
                  (send tmr start 250 #t))]
               [else
+               (send (get-tab) show-bkg-running 'nothing #f)
                (hide-module-language-error-panel)]))))
       
       (define/public (restart-place)
