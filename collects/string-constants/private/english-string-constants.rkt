@@ -1225,7 +1225,7 @@ please adhere to these guidelines:
   (program-ran-out-of-memory "The program ran out of memory.")
   
   (show-evaluation-terminated-dialog "Show the ‘evaluation terminated’ dialog")
-  (evaluation-terminated-ask "Show this dialog next time?")
+  (evaluation-terminated-ask "Show this dialog next time")
   
   (last-stack-frame "show the last stack frame")
   (last-stack-frames "show the last ~a stack frames")
