@@ -180,9 +180,10 @@
 (define size-text%
   (scheme:set-mode-mixin
    (scheme:text-mixin
-    (color:text-mixin
-     (text:autocomplete-mixin
-      (mode:host-text-mixin
-       (editor:standard-style-list-mixin
-        text:basic%)))))))
+    (editor:keymap-mixin
+     (color:text-mixin
+      (text:autocomplete-mixin
+       (mode:host-text-mixin
+        (editor:standard-style-list-mixin
+         text:basic%))))))))
 
