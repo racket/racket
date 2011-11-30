@@ -154,3 +154,31 @@
                (remf f (cdr ls)))]))
 
 (provide/contract [remf (-> procedure? list? list?)])
+
+
+;; stamourv added:
+
+;; (y y -> bool) (listof x) #:key (x -> y) -> (listof (listof x))
+;; groups together elements that are considered equal
+;; =? should be reflexive, transitive and commutative
+(define (group-by =? l #:key [key values])
+  (for/fold ([res '()]) ; list of lists
+      ([elt (in-list l)])
+    (let loop ([classes     res] ; "zipper" of the equivalence classes
+               [rev-classes '()])
+      (cond [(null? classes)
+             ;; did not find an equivalence class, create a new one
+             (cons (list elt) res)]
+            [(=? (key elt) (key (car (car classes))))
+             ;; found the equivalence class
+             (append rev-classes ; we keep what we skipped
+                     ;; we extend the current class
+                     (list (cons elt (car classes)))
+                     (cdr classes))] ; and add the rest
+            [else ; keep going
+             (loop (cdr classes)
+                   (cons (car classes) rev-classes))]))))
+
+(provide/contract
+ [group-by (->* (procedure? list?) (#:key procedure?)
+                list?)])
