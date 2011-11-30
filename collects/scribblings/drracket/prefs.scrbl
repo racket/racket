@@ -17,7 +17,7 @@ This panel controls the main font used by DrRacket.
 
 The @onscreen{Colors} panel has several sub-panels that let you
 configure the colors that DrRacket uses for the editor background, for
-highlighting matching parentheses, for the online coloring for Racket
+highlighting matching parentheses, for the syntax coloring for Racket
 and Java modes, for @onscreen{Check Syntax}, and for the colors of the
 text in the @tech{interactions window}.
 
