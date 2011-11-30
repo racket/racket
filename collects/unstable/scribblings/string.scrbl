@@ -27,3 +27,12 @@
          string?]{
  @racket[write]s @racket[v] to a string and returns it.
 }
+
+
+@addition{Vincent St-Amour}
+
+@defproc[(regexp-filter [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                        [lst (listof (or/c string? bytes? path? input-port?))])
+         (listof (or/c string? bytes? path? input-port?))]{
+Keeps only the elements of @racket[lst] that match @racket[pattern].
+}
