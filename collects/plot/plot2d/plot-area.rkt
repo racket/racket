@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/draw racket/class racket/contract racket/match racket/math racket/list racket/string
+         racket/flonum
          "../common/plot-device.rkt"
          "../common/ticks.rkt"
          "../common/contract.rkt"
@@ -30,8 +31,6 @@
     (define half-char-height (* 1/2 char-height))
     
     (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) bounds-rect)
-    (define x-size (- x-max x-min))
-    (define y-size (- y-max y-min))
     (define x-mid (* 1/2 (+ x-min x-max)))
     (define y-mid (* 1/2 (+ y-min y-max)))
     
@@ -73,17 +72,45 @@
       (cond [clipping?  (vector (ivl clip-x-min clip-x-max) (ivl clip-y-min clip-y-max))]
             [else       bounds-rect]))
     
-    (define identity-transforms?
-      (and (equal? (plot-x-transform) id-transform)
-           (equal? (plot-y-transform) id-transform)))
+    ;; There are three coordinate systems:
+    ;;  1. Plot coordinates (original, user-facing coordinate system)
+    ;;  2. View coordinates (from plot coordinates: transform for each axis)
+    ;;  3. Device context coordinates (from view coordinates: scale to plot area)
     
     (match-define (invertible-function fx gx) (apply-axis-transform (plot-x-transform) x-min x-max))
     (match-define (invertible-function fy gy) (apply-axis-transform (plot-y-transform) y-min y-max))
     
+    (define identity-transforms?
+      (and (equal? (plot-x-transform) id-transform)
+           (equal? (plot-y-transform) id-transform)))
+    
+    (define flonum-ok? (flonum-ok-for-2d? x-min x-max y-min y-max))
+    (when flonum-ok?
+      (set! x-min (exact->inexact x-min))
+      (set! x-max (exact->inexact x-max))
+      (set! y-min (exact->inexact y-min))
+      (set! y-max (exact->inexact y-max))
+      (set! x-mid (exact->inexact x-mid))
+      (set! y-mid (exact->inexact y-mid)))
+    
     (define plot->view
-      (cond [identity-transforms?  (λ (v) v)]
-            [else  (λ (v) (match-let ([(vector x y)  v])
-                            (vector (fx x) (fy y))))]))
+      (if flonum-ok?
+          (if identity-transforms?
+              (match-lambda
+                [(vector x y)  (vector (exact->inexact x) (exact->inexact y))])
+              (match-lambda
+                [(vector (? rational? x) (? rational? y))
+                 (vector (exact->inexact (fx x)) (exact->inexact (fy y)))]
+                [(vector x y)  (vector +nan.0 +nan.0)]))
+          (if identity-transforms?
+              (match-lambda
+                [(vector (? rational? x) (? rational? y))
+                 (vector (inexact->exact x) (inexact->exact y))]
+                [(vector x y)  (vector +nan.0 +nan.0)])
+              (match-lambda
+                [(vector (? rational? x) (? rational? y))
+                 (vector (inexact->exact (fx x)) (inexact->exact (fy y)))]
+                [(vector x y)  (vector +nan.0 +nan.0)]))))
     
     (define view->dc #f)
     (define (plot->dc v) (view->dc (plot->view v)))
@@ -101,10 +128,17 @@
       (define area-y-max (- dc-y-size bottom))
       (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
       (define area-per-view-y (/ (- area-y-max area-y-min) view-y-size))
-      (λ (v)
-        (match-define (vector x y) v)
-        (vector (+ area-x-min (* (- x x-min) area-per-view-x))
-                (- area-y-max (* (- y y-min) area-per-view-y)))))
+      (if flonum-ok?
+          (let-map
+           (area-x-min area-per-view-x x-min area-y-max y-min area-per-view-y) exact->inexact
+           (λ (v)
+             (match-define (vector x y) v)
+             (vector (fl+ area-x-min (fl* (fl- x x-min) area-per-view-x))
+                     (fl- area-y-max (fl* (fl- y y-min) area-per-view-y)))))
+          (λ (v)
+            (match-define (vector x y) v)
+            (vector (+ area-x-min (* (- x x-min) area-per-view-x))
+                    (- area-y-max (* (- y y-min) area-per-view-y))))))
     
     (define init-top-margin
       (cond [(and (plot-decorations?) (plot-title))  (* 3/2 char-height)]

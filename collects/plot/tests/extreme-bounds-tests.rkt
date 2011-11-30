@@ -10,6 +10,14 @@
       #:x-min +min.0 #:x-max (flstep +min.0 1000)
       #:y-min 0 #:y-max 1 #:z-min 0 #:z-max 1)
 
+;; this should go all the way from the bottom to the top
+(plot (function exact->inexact (flstep 0.0 -1) (flstep 0.0 2)))
+
+;; this should go all the way from the bottom to the top
+(plot3d (surface3d (λ (x y) (exact->inexact x))
+                   (flstep 0.0 -1) (flstep 0.0 2)
+                   (flstep 0.0 -1) (flstep 0.0 2)))
+
 (plot-x-label #f)
 (plot-y-label #f)
 
@@ -31,8 +39,8 @@
     (list (format "[~a,~a] × [~a,~a]"
                   (extreme-real->string x-min) (extreme-real->string x-max)
                   (extreme-real->string y-min) (extreme-real->string y-max))
-          (time (plot (lines (list (vector (inexact->exact x-min) (inexact->exact y-min))
-                                   (vector (inexact->exact x-max) (inexact->exact y-max))))))))
+          (time (plot (lines (list (vector x-min y-min)
+                                   (vector x-max y-max)))))))
    (set! num-2d (+ 1 num-2d))))
 
 (printf "Total 2D plots: ~a~n" num-2d)
@@ -54,12 +62,8 @@
                   (extreme-real->string x-min) (extreme-real->string x-max)
                   (extreme-real->string y-min) (extreme-real->string y-max)
                   (extreme-real->string z-min) (extreme-real->string z-max))
-          (time (plot3d (lines3d (list (vector (inexact->exact x-min)
-                                               (inexact->exact y-min)
-                                               (inexact->exact z-min))
-                                       (vector (inexact->exact x-max)
-                                               (inexact->exact y-max)
-                                               (inexact->exact z-max))))))))
+          (time (plot3d (lines3d (list (vector x-min y-min z-min)
+                                       (vector x-max y-max z-max)))))))
    (set! num-3d (+ 1 num-3d))))
 
 (printf "Total plots: ~a~n" num-3d)

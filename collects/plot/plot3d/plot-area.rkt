@@ -115,27 +115,36 @@
     (define flonum-ok? (flonum-ok-for-3d? x-min x-max y-min y-max z-min z-max))
     
     (define plot->norm
-      (cond [identity-transforms?
-             (cond [flonum-ok?
-                    (let-map
-                     (x-mid y-mid z-mid x-size y-size z-size) exact->inexact
-                     (λ (v)
-                       (match-define (vector x y z) v)
-                       (vector (fl/ (fl- (exact->inexact x) x-mid) x-size)
-                               (fl/ (fl- (exact->inexact y) y-mid) y-size)
-                               (fl/ (fl- (exact->inexact z) z-mid) z-size))))]
-                   [else
-                    (λ (v)
-                      (match-define (vector x y z) v)
-                      (vector (exact->inexact (/ (- x x-mid) x-size))
-                              (exact->inexact (/ (- y y-mid) y-size))
-                              (exact->inexact (/ (- z z-mid) z-size))))])]
-            [else
-             (λ (v)
-               (match-define (vector x y z) v)
-               (vector (exact->inexact (/ (- (fx x) x-mid) x-size))
-                       (exact->inexact (/ (- (fy y) y-mid) y-size))
-                       (exact->inexact (/ (- (fz z) z-mid) z-size))))]))
+      (if flonum-ok?
+          (let-map
+           (x-mid y-mid z-mid x-size y-size z-size) exact->inexact
+           (if identity-transforms?
+               (match-lambda
+                 [(vector x y z)
+                  (vector (fl/ (fl- (exact->inexact x) x-mid) x-size)
+                          (fl/ (fl- (exact->inexact y) y-mid) y-size)
+                          (fl/ (fl- (exact->inexact z) z-mid) z-size))])
+               (match-lambda
+                 [(vector (? rational? x) (? rational? y) (? rational? z))
+                  (vector (fl/ (fl- (exact->inexact (fx x)) x-mid) x-size)
+                          (fl/ (fl- (exact->inexact (fy y)) y-mid) y-size)
+                          (fl/ (fl- (exact->inexact (fz z)) z-mid) z-size))]
+                 [(vector x y z)  (vector +nan.0 +nan.0 +nan.0)])))
+          (if identity-transforms?
+              (match-lambda
+                [(vector (? rational? x) (? rational? y) (? rational? z))
+                 (vector (exact->inexact (/ (- (inexact->exact x) x-mid) x-size))
+                         (exact->inexact (/ (- (inexact->exact y) y-mid) y-size))
+                         (exact->inexact (/ (- (inexact->exact z) z-mid) z-size)))]
+                [(vector x y z)
+                 (vector +nan.0 +nan.0 +nan.0)])
+              (match-lambda
+                [(vector (? rational? x) (? rational? y) (? rational? z))
+                 (vector (exact->inexact (/ (- (inexact->exact (fx x)) x-mid) x-size))
+                         (exact->inexact (/ (- (inexact->exact (fy y)) y-mid) y-size))
+                         (exact->inexact (/ (- (inexact->exact (fz z)) z-mid) z-size)))]
+                [(vector x y z)
+                 (vector +nan.0 +nan.0 +nan.0)]))))
     
     (define rotate-theta-matrix (m3-rotate-z theta))
     (define rotate-rho-matrix (m3-rotate-x rho))
