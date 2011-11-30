@@ -118,14 +118,10 @@
                              (state-uses state)
                              (state-frontier state))))
 
-    ;; separator : Step -> void
-    (define/private (separator step)
-      (insert-step-separator (step-type->string (protostep-type step))))
-
-    ;; separator/small : Step -> void
-    (define/private (separator/small step)
-      (insert-step-separator/small
-       (step-type->string (protostep-type step))))
+    ;; separator : Step [...] -> void
+    (define/private (separator step #:compact? [compact? #f])
+      (insert-step-separator (step-type->string (protostep-type step))
+                             #:compact? compact?))
 
     ;; show-step : Step -> void
     (define/private (show-step step shift-table)
@@ -192,21 +188,20 @@
 
     ;; show-prestep : Step -> void
     (define/private (show-prestep step shift-table)
-      (separator/small step)
+      (separator step #:compact? #t)
       (show-state/redex (protostep-s1 step) shift-table)
       (show-lctx step shift-table))
 
     ;; show-poststep : Step -> void
     (define/private (show-poststep step shift-table)
-      (separator/small step)
+      (separator step #:compact? #t)
       (show-state/contractum (protostep-s1 step) shift-table)
       (show-lctx step shift-table))
 
     ;; show-misstep : Step -> void
     (define/private (show-misstep step shift-table)
       (define state (protostep-s1 step))
-      (show-state/redex state shift-table)
-      (separator step)
+      (separator step #:compact? #t)
       (send*/i sbview sb:syntax-browser<%>
         (add-error-text (exn-message (misstep-exn step)))
         (add-text "\n"))
@@ -261,33 +256,14 @@
                            definites frontier "LightCyan"))
 
     ;; insert-step-separator : string -> void
-    (define/private (insert-step-separator text)
+    (define/private (insert-step-separator text #:compact? compact?)
       (send*/i sbview sb:syntax-browser<%>
-        (add-text "\n    ")
+        (add-text (if compact? "" "\n"))
         (add-text
          (make-object image-snip% 
                       (build-path (collection-path "icons")
                                   "red-arrow.bmp")))
-        (add-text "  ")
+        (add-text "  [")
         (add-text text)
-        (add-text "\n\n")))
-
-    ;; insert-as-separator : string -> void
-    (define/private (insert-as-separator text)
-      (send*/i sbview sb:syntax-browser<%>
-        (add-text "\n    ")
-        (add-text text)
-        (add-text "\n\n")))
-
-    ;; insert-step-separator/small : string -> void
-    (define/private (insert-step-separator/small text)
-      (send*/i sbview sb:syntax-browser<%>
-        (add-text "    ")
-        (add-text
-         (make-object image-snip% 
-                      (build-path (collection-path "icons")
-                                  "red-arrow.bmp")))
-        (add-text "  ")
-        (add-text text)
-        (add-text "\n\n")))
+        (add-text "]\n\n")))
     ))

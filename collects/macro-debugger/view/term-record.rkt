@@ -189,8 +189,7 @@
                   (make poststep type s2)
                   (loop rs))]
           [(cons (struct misstep (type s1 exn)) rs)
-           (list* (make prestep type s1)
-                  (make misstep type s1 exn)
+           (list* (make misstep type s1 exn)
                   (loop rs))]
           ['()
            null])))
