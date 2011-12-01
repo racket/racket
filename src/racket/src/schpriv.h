@@ -3728,6 +3728,7 @@ typedef struct Scheme_Place_Object {
   mzrt_sema *pause;
 #endif
   char die;
+  char dead;
   char pbreak;
   char pausing;
   intptr_t refcount;

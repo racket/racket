@@ -225,6 +225,7 @@ Scheme_Object *scheme_make_place_object() {
   place_obj->so.type = scheme_place_object_type;
   mzrt_mutex_create(&place_obj->lock);
   place_obj->die = 0;
+  place_obj->dead = 0;
   place_obj->refcount = 1;
   place_obj->pbreak = 0;
   place_obj->result = 1;
@@ -579,7 +580,7 @@ static int place_deadp(Scheme_Object *place) {
   {
     mzrt_mutex_lock(place_obj->lock);
 
-    dead = place_obj->die;
+    dead = place_obj->die | place_obj->dead;
 
     mzrt_mutex_unlock(place_obj->lock);
   }
@@ -2193,6 +2194,7 @@ static void place_set_result(Scheme_Object *result)
   scheme_signal_received_at(place_object->parent_signal_handle);
   place_object->parent_signal_handle = NULL;
   place_object->signal_handle = NULL;
+  place_object->dead = 1;
   mzrt_mutex_unlock(place_object->lock);
 }
 
