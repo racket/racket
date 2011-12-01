@@ -5,6 +5,7 @@
            racket/draw
            racket/math
            racket/gui/dynamic
+           racket/snip
            "mrpict.rkt")
 
   ;; Utilities for use with mrpict
@@ -44,7 +45,6 @@
 	   add-arrow-line
 	   add-arrows-line
 
-	   bitmap
 	   bitmap-draft-mode
 
            find-pen
@@ -99,7 +99,12 @@
                            boolean?
                            #:style (or/c false/c symbol?)
                            #:hide-arrowhead? any/c)
-                          pict?)])
+                          pict?)]
+   [bitmap (-> (or/c path-string?
+                     (is-a?/c bitmap%)
+                     (is-a?/c image-snip%))
+               pict?)]
+   )
 
 
 
