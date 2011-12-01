@@ -10,8 +10,7 @@ A @racket[menu-item%] is a plain string-labelled menu item. Its
 
 @defconstructor[([label label-string?]
                  [parent (or/c (is-a?/c menu%) (is-a?/c popup-menu%))]
-                 [callback ((is-a?/c menu-item%) (is-a?/c control-event%) . -> . any) 
-                           (lambda (i e) (void))]
+                 [callback ((is-a?/c menu-item%) (is-a?/c control-event%) . -> . any)]
                  [shortcut (or/c char? symbol? false/c) #f]
                  [help-string (or/c label-string? false/c) #f]
                  [demand-callback ((is-a?/c menu-item%) . -> . any) 
