@@ -108,7 +108,7 @@
     (define drracket-custodian (current-custodian))
 
     (define-local-member-name check-language)
-    
+
     (define macro-debugger-up-bitmap (step-icon 'blue (toolbar-icon-height)))
     (define macro-debugger-bitmap (macro-stepper-icon (toolbar-icon-height)))
 
@@ -187,18 +187,6 @@
 
         ;; ----
 
-        (define current-stepper-director #f)
-
-        (define/public (obsolete-macro-debugger)
-          (when current-stepper-director
-            (send current-stepper-director add-obsoleted-warning))
-          (when current-stepper-director
-            (send current-stepper-director add-obsoleted-warning)
-            (send current-stepper-director shutdown)
-            (set! current-stepper-director #f)))
-
-        ;; --
-
         (define/public-final (run-macro-stepper)
 
           ;; FIXME!!! Lots of this is copied out of drracket/private/syncheck/gui.rkt
@@ -230,11 +218,11 @@
           ;; --
 
           (define director
-            (parameterize ((current-eventspace drs-eventspace)
-                           (current-custodian drs-custodian))
+            (parameterize ((current-eventspace drracket-eventspace)
+                           (current-custodian drracket-custodian))
               (let ([filename (send definitions-text get-filename/untitled-name)])
                 (new drracket-macro-stepper-director% (filename filename)))))
-          (set! current-stepper-director director)
+          (send interactions-text set-macro-stepper-director director)
 
           (define (the-module-name-resolver . args)
             (parameterize ((current-expand-observe void))
@@ -379,9 +367,9 @@
             (trace* expr)))
 
         ))
-    
-;; ============================================================
-    
+
+    ;; ============================================================
+
     ;; Catch modifications => obsolete macro stepper
     (define (macro-debugger-definitions-text-mixin %)
       (class %
@@ -415,7 +403,8 @@
             (let ([win (get-top-level-window)])
               ;; should only be #f when win is #f
               (when (is-a? win drracket:unit:frame<%>)
-                (send win obsolete-macro-debugger)))))
+                (send (send win get-interactions-text)
+                      obsolete-macro-stepper)))))
 
         ;; Catch program changes and mark macro stepper obsolete.
         (define/augment (on-insert x y)
@@ -433,14 +422,23 @@
     ;; Catch reset => obsolete macro stepper
     (define (macro-debugger-interactions-text-mixin %)
       (class %
-        (super-new)
+        (define current-stepper-director #f)
         (inherit get-top-level-window)
+        (super-new)
 
         (define/override (reset-console)
-          (super reset-console)
-          (let ([win (get-top-level-window)])
-            (when (is-a? win drracket:unit:frame<%>)
-              (send win obsolete-macro-debugger))))
+          (obsolete-macro-stepper)
+          (when current-stepper-director
+            (send current-stepper-director shutdown)
+            (set! current-stepper-director #f))
+          (super reset-console))
+
+        (define/public (obsolete-macro-stepper)
+          (when current-stepper-director
+            (send current-stepper-director add-obsoleted-warning)))
+
+        (define/public (set-macro-stepper-director director)
+          (set! current-stepper-director director))
         ))
 
     ;; Macro debugger code
