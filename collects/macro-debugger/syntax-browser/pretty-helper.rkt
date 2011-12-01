@@ -20,6 +20,9 @@
 ;; If they were always wrapped, the pretty-printer would screw up
 ;; list printing (I think).
 
+;; UPDATE: In fact, want to treat all atomic values as confusable. The recent
+;; reader change (interning strings, etc) highlights the issue.
+
 (define (pretty-print/defaults datum [port (current-output-port)])
   (parameterize
     (;; Printing parameters (defaults from MzScheme and DrScheme 4.2.2.2)
@@ -103,30 +106,30 @@
                  (hash-set! flat=>stx lp-datum obj)
                  (hash-set! stx=>flat obj lp-datum)
                  lp-datum)]
+              ;; -- Traversable structures
               [(pair? obj)
                (pairloop obj)]
-              [(struct? obj)
-               ;; Only traverse prefab structs
-               (let ([pkey (prefab-struct-key obj)])
-                 (if pkey
-                     (let-values ([(refold fields) (unfold-pstruct obj)])
-                       (refold (map loop fields)))
-                     obj))]
-              [(symbol? obj)
-               (make-id-syntax-dummy obj obj)]
-              [(null? obj)
-               (make-syntax-dummy obj)]
-              [(boolean? obj)
-               (make-syntax-dummy obj)]
-              [(number? obj)
-               (make-syntax-dummy obj)]
-              [(keyword? obj)
-               (make-syntax-dummy obj)]
+              [(prefab-struct-key obj)
+               => (lambda (pkey)
+                    (let-values ([(refold fields) (unfold-pstruct obj)])
+                      (refold (map loop fields))))]
               [(vector? obj) 
                (list->vector (map loop (vector->list obj)))]
               [(box? obj)
                (box (loop (unbox obj)))]
-              [else obj]))
+              [(hash? obj)
+               (let ([constructor
+                      (cond [(hash-equal? obj) make-immutable-hash]
+                            [(hash-eqv? obj) make-immutable-hasheqv]
+                            [(hash-eq? obj) make-immutable-hasheq])])
+                 (constructor
+                  (for/list ([(k v) (in-hash obj)])
+                    (cons k (loop v)))))]
+              ;; -- Atoms ("confusable")
+              [(symbol? obj)
+               (make-id-syntax-dummy obj obj)]
+              [else ;; null, boolean, number, keyword, string, bytes, char, regexp, 3D vals
+               (make-syntax-dummy obj)]))
       (define (pairloop obj)
         (cond [(pair? obj)
                (cons (loop (car obj))
