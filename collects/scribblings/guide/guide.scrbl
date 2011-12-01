@@ -82,6 +82,7 @@ precise details to @|Racket| and other reference manuals.
              #:author "Matthew Flatt, Robert Bruce Findler, and Matthias Felleisen"
              #:title "Scheme with Classes, Mixins, and Traits (invited tutorial)"
              #:location "Asian Symposium on Programming Languages and Systems"
+             #:url "http://www.cs.utah.edu/plt/publications/aplas06-fff.pdf"
              #:date "2006")
  
  (bib-entry #:key "Mitchell02"
