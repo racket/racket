@@ -75,21 +75,23 @@ v4 todo:
          [else #,(call-gen rng-checkers)]))))
 
 (define tail-marks-match?
-  (case-lambda
-    [(m) (and m (null? m))]
-    [(m rng-ctc) (and m
-                      (not (null? m))
-                      (null? (cdr m))
-                      (procedure-closure-contents-eq? (car m) rng-ctc))]
-    [(m rng-ctc1 rng-ctc2)
-     (and m
-          (= (length m) 2)
-          (procedure-closure-contents-eq? (car m) rng-ctc1)
-          (procedure-closure-contents-eq? (cadr m) rng-ctc1))]
-    [(m . rng-ctcs)
-     (and m
-          (= (length m) (length rng-ctcs))
-          (andmap procedure-closure-contents-eq? m rng-ctcs))]))
+  (begin
+    'compiler-hint:cross-module-inline
+    (case-lambda
+      [(m) (and m (null? m))]
+      [(m rng-ctc) (and m
+                        (not (null? m))
+                        (null? (cdr m))
+                        (procedure-closure-contents-eq? (car m) rng-ctc))]
+      [(m rng-ctc1 rng-ctc2)
+       (and m
+            (= (length m) 2)
+            (procedure-closure-contents-eq? (car m) rng-ctc1)
+            (procedure-closure-contents-eq? (cadr m) rng-ctc1))]
+      [(m . rng-ctcs)
+       (and m
+            (= (length m) (length rng-ctcs))
+            (andmap procedure-closure-contents-eq? m rng-ctcs))])))
 
 (define-syntax (unconstrained-domain-> stx)
   (syntax-case stx ()
