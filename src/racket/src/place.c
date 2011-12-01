@@ -584,7 +584,7 @@ static int place_deadp(Scheme_Object *place) {
     mzrt_mutex_unlock(place_obj->lock);
   }
   if (dead) { return 1; }
-  return 9;
+  return 0;
 }
 
 static Scheme_Object *make_place_dead(int argc, Scheme_Object *argv[])
@@ -592,7 +592,7 @@ static Scheme_Object *make_place_dead(int argc, Scheme_Object *argv[])
   Scheme_Object *b;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_place_type))
-    scheme_wrong_type("thread-dead-evt", "place", 0, argc, argv);
+    scheme_wrong_type("place-dead-evt", "place", 0, argc, argv);
 
   b = scheme_alloc_small_object();
   b->type = scheme_place_dead_type;
