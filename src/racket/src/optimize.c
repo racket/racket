@@ -904,6 +904,23 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
     return p;
 }
 
+int scheme_check_leaf_rator(Scheme_Object *le, int *_flags)
+{
+  if (le && SCHEME_PRIMP(le)) {
+    int opt;
+    opt = ((Scheme_Prim_Proc_Header *)le)->flags & SCHEME_PRIM_OPT_MASK;
+    if (opt >= SCHEME_PRIM_OPT_NONCM) {
+      if (_flags)
+        *_flags = (CLOS_PRESERVES_MARKS | CLOS_SINGLE_RESULT);
+      if (opt >= SCHEME_PRIM_OPT_IMMEDIATE) {
+        return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
 #if 0
 # define LOG_INLINE(x) x
 #else
@@ -964,8 +981,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         iv = scheme_hash_get(info->cp->inline_variants, scheme_make_integer(pos));
         if (iv) {
           if (SAME_TYPE(SCHEME_TYPE(iv), scheme_inline_variant_type)) {
-            iv = scheme_unresolve(iv);
-            // printf("un: %p\n", iv);
+            iv = scheme_unresolve(iv, argc);
             scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), iv);
           }
           if (iv) {
@@ -1083,16 +1099,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     }
   }
 
-  if (le && SCHEME_PRIMP(le)) {
-    int opt;
-    opt = ((Scheme_Prim_Proc_Header *)le)->flags & SCHEME_PRIM_OPT_MASK;
-    if (opt >= SCHEME_PRIM_OPT_NONCM) {
-      *_flags = (CLOS_PRESERVES_MARKS | CLOS_SINGLE_RESULT);
-      if (opt >= SCHEME_PRIM_OPT_IMMEDIATE) {
-        nonleaf = 0;
-      }
-    }
-  }
+  if (scheme_check_leaf_rator(le, _flags))
+    nonleaf = 0;
 
   if (le && SCHEME_PROCP(le) && (app || app2 || app3)) {
     Scheme_Object *a[1];
@@ -4577,14 +4585,51 @@ static int set_code_closure_flags(Scheme_Object *clones,
   return flags;
 }
 
-static Scheme_Object *is_cross_module_inline_candidiate(Scheme_Object *e, Optimize_Info *info)
+static Scheme_Object *is_cross_module_inline_candidiate(Scheme_Object *e, Optimize_Info *info,
+                                                        int size_override)
 {
-  if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
-    if (compiled_proc_body_size(e, 1) < CROSS_MODULE_INLINE_SIZE)
+  if (IS_COMPILED_PROC(e)) {
+    if (size_override || (compiled_proc_body_size(e, 1) < CROSS_MODULE_INLINE_SIZE))
       return scheme_optimize_clone(0, e, info, 0, 0);
   }
 
   return NULL;
+}
+
+static int is_general_compiled_proc(Scheme_Object *e)
+{
+  /* recognize (begin <omitable>* <proc>) */
+  if (SCHEME_TYPE(e) == scheme_sequence_type) {
+    Scheme_Sequence *seq = (Scheme_Sequence *)e;
+    if (seq->count > 0) {
+      int i;
+      for (i = seq->count - 1; i--; ) {
+        if (!scheme_omittable_expr(seq->array[i], -1, 20, 0, NULL, -1))
+          return 0;
+      }
+    }
+    e = seq->array[seq->count - 1];
+  }
+
+  /* recognize (let ([x <proc>]) x) */
+  if (SCHEME_TYPE(e) == scheme_compiled_let_void_type) {
+    Scheme_Let_Header *lh = (Scheme_Let_Header *)e;
+    if (!(SCHEME_LET_FLAGS(lh) & SCHEME_LET_RECURSIVE)
+        && (lh->count == 1) 
+        && (lh->num_clauses == 1)
+        && SAME_TYPE(SCHEME_TYPE(lh->body), scheme_compiled_let_value_type)) {
+      Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+      if (IS_COMPILED_PROC(lv->value)) {
+        if (SAME_TYPE(SCHEME_TYPE(lv->body), scheme_local_type))
+          return (SCHEME_LOCAL_POS(lv->body) == 0);
+      }
+    }
+  }
+
+  if (IS_COMPILED_PROC(e))
+    return 1;
+
+  return 0;
 }
 
 static Scheme_Object *
@@ -4594,7 +4639,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   Scheme_Object *e, *vars, *old_context;
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
-  Scheme_Hash_Table *consts = NULL, *fixed_table = NULL, *re_consts = NULL, *originals = NULL;
+  Scheme_Hash_Table *consts = NULL, *fixed_table = NULL, *re_consts = NULL;
+  Scheme_Hash_Table *originals = NULL, *size_overrides = NULL;
   int cont, next_pos_ready = -1, inline_fuel, is_proc_def;
   Comp_Prefix *prev_cp;
 
@@ -4651,13 +4697,31 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     /* Optimize this expression: */
     e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
 
+    /* detect (define-values ... (begin 'compiler-hint:cross-module-inline <proc>)) */
+    if (info->enforce_const 
+        && SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
+      Scheme_Object *e2;
+      e2 = SCHEME_VEC_ELS(e)[1];
+      if (SAME_TYPE(SCHEME_TYPE(e2), scheme_sequence_type)) {
+        Scheme_Sequence *seq = (Scheme_Sequence *)e2;
+        if (seq->count == 2) {
+          if (SCHEME_SYMBOLP(seq->array[0])
+              && !SCHEME_SYM_WEIRDP(seq->array[0])
+              && !strcmp(SCHEME_SYM_VAL(seq->array[0]), "compiler-hint:cross-module-inline")) {
+            if (!size_overrides) 
+              size_overrides = scheme_make_hash_table(SCHEME_hash_ptr);
+            scheme_hash_set(size_overrides, scheme_make_integer(i_m), scheme_true);
+          }
+        }
+      }
+    }
+
     is_proc_def = 0;
     if (OPT_DISCOURAGE_EARLY_INLINE && info->enforce_const) {
       if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
         Scheme_Object *e2;
-        e2 = (Scheme_Object *)e;
-        e2 = SCHEME_VEC_ELS(e2)[1];
-        if (IS_COMPILED_PROC(e2))
+        e2 = SCHEME_VEC_ELS(e)[1];
+        if (is_general_compiled_proc(e2))
           is_proc_def = 1;
       }
     }
@@ -4830,7 +4894,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               e = SCHEME_VEC_ELS(e)[1];
 
               old_e = scheme_hash_get(info->top_level_consts, rpos);
-              if (old_e && IS_COMPILED_PROC(old_e))  {
+              if (old_e && IS_COMPILED_PROC(old_e)) {
                 if (!originals)
                   originals = scheme_make_hash_table(SCHEME_hash_ptr);
                 scheme_hash_set(originals, scheme_make_integer(start_simltaneous), old_e);
@@ -4901,28 +4965,38 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   /* For functions that are potentially inlineable, perhaps 
      before optimization, insert inline_variant records: */
-  for (i_m = 0; i_m < cnt; i_m++) {
-    /* Optimize this expression: */
-    e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
-    if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
-      Scheme_Object *sub_e, *alt_e;
-      sub_e = SCHEME_VEC_ELS(e)[1];
-      if (IS_COMPILED_PROC(sub_e)) {
-        alt_e = is_cross_module_inline_candidiate(sub_e, info);
-        if (!alt_e && originals) {
-          alt_e = scheme_hash_get(originals, scheme_make_integer(i_m));
-          if (SAME_OBJ(alt_e, sub_e))
-            alt_e = NULL;
-          else if (alt_e)
-            alt_e = is_cross_module_inline_candidiate(alt_e, info);
-        }
-        if (alt_e) {
-          Scheme_Object *iv;
-          iv = scheme_make_vector(3, scheme_false);
-          iv->type = scheme_inline_variant_type;
-          SCHEME_VEC_ELS(iv)[0] = sub_e;
-          SCHEME_VEC_ELS(iv)[1] = alt_e;
-          SCHEME_VEC_ELS(e)[1] = iv;
+  if (info->enforce_const) {
+    for (i_m = 0; i_m < cnt; i_m++) {
+      /* Optimize this expression: */
+      e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
+        vars = SCHEME_VEC_ELS(e)[0];
+        if (SCHEME_PAIRP(vars) && SCHEME_NULLP(SCHEME_CDR(vars))) {
+          Scheme_Object *sub_e, *alt_e;
+          sub_e = SCHEME_VEC_ELS(e)[1];
+          alt_e = is_cross_module_inline_candidiate(sub_e, info, 0);
+          alt_e = NULL;
+          if (!alt_e && originals) {
+            alt_e = scheme_hash_get(originals, scheme_make_integer(i_m));
+            if (SAME_OBJ(alt_e, sub_e) && !size_overrides)
+              alt_e = NULL;
+            else if (alt_e) {
+              int size_override;
+              if (size_overrides && scheme_hash_get(size_overrides, scheme_make_integer(i_m)))
+                size_override = 1;
+              else
+                size_override = 0;
+              alt_e = is_cross_module_inline_candidiate(alt_e, info, size_override);
+            }
+          }
+          if (alt_e) {
+            Scheme_Object *iv;
+            iv = scheme_make_vector(3, scheme_false);
+            iv->type = scheme_inline_variant_type;
+            SCHEME_VEC_ELS(iv)[0] = sub_e;
+            SCHEME_VEC_ELS(iv)[1] = alt_e;
+            SCHEME_VEC_ELS(e)[1] = iv;
+          }
         }
       }
     }

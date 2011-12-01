@@ -1240,6 +1240,7 @@ mark_unresolve_info {
   gcMARK2(i->flags, gc);
   gcMARK2(i->depths, gc);
   gcMARK2(i->prefix, gc);
+  gcMARK2(i->closures, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Unresolve_Info));

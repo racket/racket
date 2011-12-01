@@ -1372,6 +1372,41 @@
               (require racket/bool)
               (list #t)))
 
+(test-comp `(module m racket/base 
+              (require racket/list)
+              empty?
+              (empty? 10))
+           `(module m racket/base 
+              (require racket/list)
+              empty? ; so that it counts as imported
+              (null? 10)))
+
+(module check-inline-request racket/base
+  (provide loop)
+  (define loop
+    (begin
+      'compiler-hint:cross-module-inline
+      ;; large enough that the compiler wouldn't infer inlining:
+      (lambda (f n)
+        (let loop ([i n])
+          (if (zero? i)
+              10
+              (cons (f i) (loop (sub1 n)))))))))
+
+(test-comp `(module m racket/base 
+              (require 'check-inline-request)
+              loop
+              (loop list 1)) ; 1 is small enough to fully unroll
+           `(module m racket/base 
+              (require 'check-inline-request)
+              loop ; so that it counts as imported
+              (let ([f list]
+                    [n 1])
+                (let loop ([i n])
+                  (if (zero? i)
+                      10
+                      (cons (f i) (loop (sub1 n))))))))
+
 ;; check omit & reorder possibilities for unsafe
 ;; operations on mutable values:
 (let ()

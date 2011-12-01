@@ -2780,7 +2780,7 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
   } else {
     Scheme_Object *body;
     body = compile_block(forms, env, rec, drec);
-    return scheme_make_sequence_compilation(body, 1);
+    return scheme_make_sequence_compilation(body, 2);
   }
 }
 
@@ -2852,7 +2852,7 @@ do_begin_syntax(char *name,
     body = scheme_compile_list(forms, env, rec, drec);
   }
 
-  forms = scheme_make_sequence_compilation(body, zero ? -1 : 1);
+  forms = scheme_make_sequence_compilation(body, zero ? -1 : 2);
 
   if (!zero
       && SAME_TYPE(SCHEME_TYPE(forms), scheme_sequence_type)
@@ -2883,6 +2883,15 @@ Scheme_Sequence *scheme_malloc_sequence(int count)
 						 * sizeof(Scheme_Object *));
 }
 
+static int scheme_is_compiler_hint(Scheme_Object *v, int opt)
+{
+  /* Yes, this is a hack! */
+  return ((opt == 2)
+          && SCHEME_SYMBOLP(v) 
+          && !scheme_strncmp(SCHEME_SYM_VAL(v), "compiler-hint:", 14));
+}
+
+
 Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
 {
   /* We have to be defensive in processing `seq'; it might be bad due
@@ -2911,7 +2920,8 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       total++;
     } else if (opt 
 	       && (((opt > 0) && !last) || ((opt < 0) && !first))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)
+               && !scheme_is_compiler_hint(v, opt)) {
       /* A value that is not the result. We'll drop it. */
       total++;
     } else {
@@ -2971,7 +2981,8 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
     } else if (opt 
 	       && (((opt > 0) && (k < total))
 		   || ((opt < 0) && k))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)
+               && !scheme_is_compiler_hint(v, opt)) {
       /* Value not the result. Do nothing. */
     } else
       o->array[i++] = v;

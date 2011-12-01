@@ -110,9 +110,11 @@ disables the @tech{JIT} compiler's assumptions about module
 definitions when interactive exploration is more important. See
 @secref["module-set"] for more information.
 
-Currently, the compiler does not attempt to inline or propagate
-constants across module boundaries, except for exports of the built-in
-modules (such as the one that originally provides @racket[+]).
+The compiler may inline functions or propagate constants across module
+boundaries. To avoid generating too much code in the case of function
+inlining, the compiler is conservative when choosing candidates for
+cross-module inlining; see @secref["func-call-performance"] for
+information on providing inlining hints to the compiler.
 
 The later section @secref["letrec-performance"] provides some
 additional caveats concerning inlining of module bindings.
@@ -151,6 +153,25 @@ therefore permit call optimizations, so
 ]
 
 within a module would perform the same as the @racket[letrec] version.
+
+For direct calls to functions with keyword arguments, the compiler can
+typically check keyword arguments statically and generate a direct
+call to a non-keyword variant of the function, which reduces the
+run-time overhead of keyword checking. This optimization applies only
+for keyword-accepting procedures that are bound with @racket[define].
+
+For immediate calls to functions that are small enough, the compiler
+may inline the function call by replacing the call with the body of
+the function. In addition to the size of the target function's body,
+the compiler's heuristics take into account the amount of inlining
+already performed at the call site and whether the called function
+itself calls functions other than simple primitive operations. When a
+module is compiled, some functions defined at the module level are
+determined to be candidates for inlining into other modules; normally,
+only trivial functions are considered candidates for cross-module
+inlining, but a programmer can use the pattern @racket[(define _id
+(begin @#,indexed-racket['compiler-hint:cross-module-inline]
+_proc-expr))] to encourage the compiler to inline larger functions.
 
 Primitive operations like @racket[pair?], @racket[car], and
 @racket[cdr] are inlined at the machine-code level by the @tech{JIT}

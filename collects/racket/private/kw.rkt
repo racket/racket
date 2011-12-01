@@ -796,42 +796,56 @@
   (define-syntax (new-define stx)
     (let-values ([(id rhs)
                   (normalize-definition stx #'new-lambda #t #t)])
-      (let ([plain (lambda (rhs)
-                     (quasisyntax/loc stx
-                       (define #,id #,rhs)))])
-        (syntax-case rhs ()
+      (let* ([plain (lambda (rhs)
+                      (quasisyntax/loc stx
+                        (define #,id #,rhs)))]
+             [can-opt? (lambda (lam-id)
+                         (and (identifier? lam-id)
+                              (or (free-identifier=? lam-id #'new-lambda)
+                                  (free-identifier=? lam-id #'new-λ))
+                              (let ([ctx (syntax-local-context)])
+                                (or (and (memq ctx '(module module-begin))
+                                         (compile-enforce-module-constants))
+                                    (and (list? ctx)
+                                         (andmap liberal-define-context? ctx))))))]
+             [opt (lambda (rhs core-wrap plain)
+                    (parse-lambda rhs
+                                  id
+                                  plain
+                                  (lambda (impl kwimpl wrap 
+                                                core-id unpack-id
+                                                n-req n-opt rest? req-kws all-kws)
+                                    (with-syntax ([proc (car (generate-temporaries (list id)))])
+                                      (syntax-protect
+                                       (quasisyntax/loc stx
+                                         (begin
+                                           #,(quasisyntax/loc stx
+                                               (define-syntax #,id 
+                                                 (make-keyword-syntax (lambda () 
+                                                                        (values (quote-syntax #,core-id)
+                                                                                (quote-syntax proc)))
+                                                                      #,n-req #,n-opt #,rest? 
+                                                                      '#,req-kws '#,all-kws)))
+                                           #,(quasisyntax/loc stx 
+                                               (define #,core-id #,(core-wrap impl)))
+                                           #,(quasisyntax/loc stx 
+                                               (define #,unpack-id #,kwimpl))
+                                           #,(quasisyntax/loc stx 
+                                               (define proc #,wrap)))))))))])
+        (syntax-case rhs (begin quote)
           [(lam-id . _)
-           (and (let ([ctx (syntax-local-context)])
-                  (or (and (memq ctx '(module module-begin))
-                           (compile-enforce-module-constants))
-                      (and (list? ctx)
-                           (andmap liberal-define-context? ctx))))
-                (identifier? #'lam-id)
-                (or (free-identifier=? #'lam-id #'new-lambda)
-                    (free-identifier=? #'lam-id #'new-λ)))
-           (parse-lambda rhs
-                         id
-                         plain
-                         (lambda (impl kwimpl wrap 
-                                       core-id unpack-id
-                                       n-req n-opt rest? req-kws all-kws)
-                           (with-syntax ([proc (car (generate-temporaries (list id)))])
-                             (syntax-protect
-                              (quasisyntax/loc stx
-                                (begin
-                                  #,(quasisyntax/loc stx
-                                      (define-syntax #,id 
-                                        (make-keyword-syntax (lambda () 
-                                                               (values (quote-syntax #,core-id)
-                                                                       (quote-syntax proc)))
-                                                             #,n-req #,n-opt #,rest? 
-                                                             '#,req-kws '#,all-kws)))
-                                  #,(quasisyntax/loc stx 
-                                      (define #,core-id #,impl))
-                                  #,(quasisyntax/loc stx 
-                                      (define #,unpack-id #,kwimpl))
-                                  #,(quasisyntax/loc stx 
-                                      (define proc #,wrap))))))))]
+           (can-opt? #'lam-id)
+           (opt rhs values plain)]
+          [(begin (quote sym) (lam-id . _))
+           ;; looks like a compiler hint
+           (and (can-opt? #'lam-id)
+                (identifier? #'sym))
+           (syntax-case rhs ()
+             [(_ _ sub-rhs)
+              (let ([wrap (lambda (stx) #`(begin (quote sym) #,stx))])
+                (opt #'sub-rhs 
+                     wrap
+                     (lambda (rhs) (plain (wrap rhs)))))])]
           [_ (plain rhs)]))))
   
   ;; ----------------------------------------
