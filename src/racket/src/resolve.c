@@ -3063,6 +3063,9 @@ static int unresolve_stack_push(Unresolve_Info *ui, int n, int r_only)
     d = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * ((2 * ui->stack_size) + n));
     memcpy(d, ui->depths, sizeof(mzshort) * pos);
 
+    ui->flags = f;
+    ui->depths = d;
+
     ui->stack_size = (2 * ui->stack_size) + n;
   }
   memset(ui->flags + pos, 0, sizeof(int) * n);
