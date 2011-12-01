@@ -13,13 +13,8 @@
 (defthing icon-styles (listof symbol?) #:document-value '(diffuse shiny))
 (defcontract icon-style/c (or/c 'diffuse 'shiny))
 
-(define weekend?
-  (let* ([date (seconds->date (current-seconds))]
-         [dow (date-week-day date)])
-    (or (= dow 6) (= dow 0))))
-
 (defparam toolbar-icon-height (>/c 0) 16)
-(defparam default-icon-style (or/c 'diffuse 'shiny) (if weekend? 'shiny 'diffuse))
+(defparam default-icon-style (or/c 'diffuse 'shiny) 'diffuse)
 
 (defproc (icon->pict [icon (is-a?/c bitmap%)]) pict?
   (bitmap icon))
