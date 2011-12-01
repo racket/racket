@@ -21,7 +21,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (provide (except-out (all-defined-out) dtsi* let-internal: define-for-variants define-for*-variants with-handlers: for/annotation for*/annotation)
          :
-	 (rename-out [define-typed-struct define-struct:]
+         (rename-out [define-typed-struct define-struct:]
                      [lambda: λ:]
                      [with-handlers: with-handlers]
                      [define-typed-struct/exec define-struct/exec:]
@@ -42,11 +42,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
           racket/base
           racket/struct-info
           syntax/struct
-          "../rep/type-rep.rkt"          
+          "../rep/type-rep.rkt"
           "annotate-classes.rkt"
           "internal.rkt"
           "../utils/tc-utils.rkt"
-          "../env/type-name-env.rkt"          
+          "../env/type-name-env.rkt"
           "for-clauses.rkt")
          "../types/numeric-predicates.rkt")
 (provide index?) ; useful for assert, and racket doesn't have it
@@ -66,8 +66,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (pattern nm:id
              #:with spec #'nm)
     (pattern (orig-nm:id internal-nm:id)
-	     #:with spec #'(orig-nm internal-nm)
-	     #:with nm #'internal-nm))
+             #:with spec #'(orig-nm internal-nm)
+             #:with nm #'internal-nm))
 
   (define-syntax-class opt-parent
     #:attributes (nm parent)
@@ -471,7 +471,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                          (require (only-in lib type-des (nm orig-struct-info)))
 
                          (define-for-syntax si
-                           (let () 
+                           (let ()
                             (define-values (orig-type-des orig-maker orig-pred orig-sels orig-muts orig-parent)
                              (apply values (extract-struct-info (syntax-local-value (quote-syntax orig-struct-info)))))
 
@@ -484,7 +484,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                 ((not (car sels)) (values sels muts))
                                 (else (id-drop (cdr sels) (cdr muts) (sub1 num)))))
                               (else (int-err "id-drop: Not a list"))))
-                            
+
                            (make-struct-info
                             (lambda ()
                               #,(if (syntax-e #'parent)
@@ -824,7 +824,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
               [else body ...]))]))
 
 (define-syntax (typecheck-fail stx)
-  (syntax-parse stx    
+  (syntax-parse stx
     [(_ orig msg:str #:covered-id var:id)
      #'(quote-syntax (typecheck-fail-internal orig msg var))]
     [(_ orig msg:str)
