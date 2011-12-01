@@ -1088,12 +1088,10 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   Resolve_Prefix *rp;
   Scheme_Object *tv, *sv, **a, *stx;
   intptr_t i;
-  int uses_unsafe = 0;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
 
   if (!SCHEME_INTP(SCHEME_CAR(obj))) {
-    uses_unsafe = 1;
     obj = SCHEME_CDR(obj);
   }
 

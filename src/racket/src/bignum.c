@@ -1306,7 +1306,7 @@ char *scheme_bignum_to_string(const Scheme_Object *b, int radix)
 
 Scheme_Object *scheme_read_bignum(const mzchar *str, int offset, int radix)
 {
-  intptr_t len, negate, stri, alloc, i, test;
+  intptr_t len, negate, stri, alloc, i;
   Scheme_Object* o;
   bigdig* digs;
   unsigned char* istring;
@@ -1368,7 +1368,7 @@ Scheme_Object *scheme_read_bignum(const mzchar *str, int offset, int radix)
 
   SCHEME_SET_BIGPOS(o, !negate);
 
-  test = mpn_set_str(digs, istring, len, radix);
+  (void)mpn_set_str(digs, istring, len, radix);
 
   FREE_PROTECT(istring);
   FINISH_RESULT(digs, alloc);

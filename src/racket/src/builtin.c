@@ -38,9 +38,6 @@ Scheme_Object *scheme_eval_compiled_sized_string_with_magic(const char *str, int
 							    int multi_ok)
 {
   Scheme_Object *port, *expr;
-  Scheme_Config *config;
-
-  config = scheme_current_config();
 
   port = scheme_make_sized_byte_string_input_port(str, -len); /* negative means it's constant */
 

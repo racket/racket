@@ -1374,7 +1374,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
   Scheme_Hash_Table *checked, *next_checked, *prev_checked;
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains, *past_todos;
   Scheme_Module *m2;
-  int same_namespace, set_env_for_notify = 0, phase, orig_phase, max_phase, first_iteration;
+  int same_namespace, set_env_for_notify = 0, phase, orig_phase, max_phase;
   int just_declare;
   Scheme_Object *nophase_todo;
   Scheme_Hash_Table *nophase_checked;
@@ -1433,7 +1433,6 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
     scheme_hash_set(nophase_checked, name, scheme_false);
   }
 
-  first_iteration = 1;
   max_phase = phase;
 
   checked = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -3674,9 +3673,6 @@ static void check_certified(Scheme_Object *stx,
 			    int var, int prot, int *_would_complain)
 {
   int need_cert = 1;
-  Scheme_Object *midx;
-
-  midx = (env->link_midx ? env->link_midx : env->module->me->src_modidx);
     
   if (need_cert && insp)
     need_cert = scheme_module_protected_wrt(env->insp, insp);
@@ -4662,7 +4658,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     - If `eval_exp' is 1, then visit at phase P => run phase P+1. */
 {
   Scheme_Env *menv;
-  Scheme_Object *l, *new_cycle_list;
+  Scheme_Object *l;
   int prep_namespace = 0, i;
 
   if (is_builtin_modname(m->modname))
@@ -4675,8 +4671,6 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
 		       m->modsrc);
     }
   }
-
-  new_cycle_list = scheme_make_pair(m->modname, cycle_list);
 
   menv = instantiate_module(m, env, restart, syntax_idx, not_new);
 
@@ -5675,7 +5669,7 @@ Scheme_Object *scheme_module_eval_clone(Scheme_Object *data)
 static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env, 
 				Scheme_Compile_Expand_Info *rec, int drec)
 {
-  Scheme_Object *fm, *nm, *ii, *rn, *et_rn, *iidx, *self_modidx, *rmp, *rn_set;
+  Scheme_Object *fm, *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set;
   Scheme_Module *iim;
   Scheme_Env *menv, *top_env;
   Scheme_Comp_Env *benv;
@@ -5789,8 +5783,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   scheme_prepare_env_renames(menv, mzMOD_RENAME_NORMAL);
 
   rn_set = menv->rename_set;
-  rn = scheme_get_module_rename_from_set(rn_set, scheme_make_integer(0), 1);
-  et_rn = scheme_get_module_rename_from_set(rn_set, scheme_make_integer(1), 1);
 
   {
     Scheme_Object *insp;
@@ -6883,9 +6875,6 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       fst = SCHEME_STX_CAR(e);
 
       if (SCHEME_STX_SYMBOLP(fst)) {
-
-	Scheme_Object *n;
-	n = SCHEME_STX_CAR(e);
 	if (scheme_stx_module_eq(define_values_stx, fst, phase)) {
 	  /************ define-values *************/
 	  Scheme_Object *vars, *val;
@@ -7894,13 +7883,11 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
 
           for (i = required->size; i--; ) {
             if (required->vals[i]) {
-              Scheme_Object *nominal_modidx, *name, *modidx, *srcname, *outname, *nml, *orig_nml, *mark_src;
+              Scheme_Object *nominal_modidx, *name, *outname, *nml, *orig_nml, *mark_src;
               int break_outer = 0;
 	
               name = required->keys[i]; /* internal symbolic name */
               orig_nml = SCHEME_VEC_ELS(required->vals[i])[0];
-              modidx = SCHEME_VEC_ELS(required->vals[i])[1];
-              srcname = SCHEME_VEC_ELS(required->vals[i])[2];
               outname = SCHEME_VEC_ELS(required->vals[i])[4];
               mark_src = SCHEME_VEC_ELS(required->vals[i])[6];
 
@@ -9156,7 +9143,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         Scheme_Object *f;
         f = SCHEME_STX_CAR(mode_stx);
         a = scheme_make_pair(for_meta_symbol, 
-                             scheme_make_pair(mode, 
+                             scheme_make_pair(f, 
                                               scheme_make_pair(a, scheme_null)));
         a = scheme_datum_to_syntax(a, mode_stx, mode_stx, 0, 0);
       }

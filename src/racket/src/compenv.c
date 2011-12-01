@@ -999,7 +999,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
 /* The `env' argument can actually be a hash table. */
 {
   Scheme_Object *marks = NULL, *sym, *map, *l, *a, *amarks, *m, *best_match, *cm, *abdg;
-  int best_match_skipped, ms, one_mark;
+  int best_match_skipped, ms;
   Scheme_Hash_Table *marked_names, *temp_marked_names, *dest_marked_names;
 
   sym = SCHEME_STX_SYM(id);
@@ -1078,9 +1078,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        Since the list is otherwise marshaled into .zo, etc.,
        simplify by extracting just the mark: */
     marks = SCHEME_CAR(marks);
-    one_mark = 1;
-  } else
-    one_mark = 0;
+  }
 
   if (!SCHEME_TRUEP(bdg))
     bdg = NULL;
@@ -2134,7 +2132,6 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
 Scheme_Object *
 scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object *argv[])
 {
-  Scheme_Env *menv;
   Scheme_Comp_Env *env, *orig_env;
   Scheme_Object *id, *ids, *rev_ids, *local_mark, *expr, *data, *vec, *id_sym;
   Scheme_Lift_Capture_Proc cp;  
@@ -2202,8 +2199,6 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
   vec = COMPILE_DATA(env)->lifts;
   cp = *(Scheme_Lift_Capture_Proc *)SCHEME_VEC_ELS(vec)[1];
   data = SCHEME_VEC_ELS(vec)[2];
-
-  menv = scheme_current_thread->current_local_menv;
 
   orig_expr = expr;
 

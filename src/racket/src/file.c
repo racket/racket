@@ -2531,7 +2531,9 @@ static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr
    `offset' is always 0. */
 {
   char *s2;
+#if DROP_REDUNDANT_SLASHES
   int not_a_sep = 0;
+#endif
 
   if (kind == SCHEME_WINDOWS_PATH_KIND) {
     int slash_dir_sep = 1;
@@ -2563,7 +2565,9 @@ static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr
         slash_dir_sep = 0;
         /* Any "." or ".." at the end is a literal path element,
            not an up- or same-directory indicator: */
+#if DROP_REDUNDANT_SLASHES
         not_a_sep = 1;
+#endif
       } else {
 #if DROP_REDUNDANT_SLASHES
         /* A slash after C: is not strictly necessary: */
@@ -3848,7 +3852,10 @@ failed:
 
 static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 {
-  char *src, *dest, *reason = NULL;
+  char *reason = NULL;
+#ifdef DOS_FILE_SYSTEM
+  char *src, *dest;
+#endif 
   int pre_exists = 0, has_err_val = 0, err_val = 0, exists_ok = 0;
   Scheme_Object *bss, *bsd;
 
@@ -3861,14 +3868,21 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
   bsd = argv[1];
   exists_ok = ((argc > 2) && SCHEME_TRUEP(argv[2]));
 
-  src = scheme_expand_string_filename(bss,
-				      "copy-file",
-				      NULL,
-				      SCHEME_GUARD_FILE_READ);
-  dest = scheme_expand_string_filename(bsd,
-				       "copy-file",
-				       NULL, 
-				       SCHEME_GUARD_FILE_WRITE | SCHEME_GUARD_FILE_DELETE);
+#ifdef DOS_FILE_SYSTEM
+  src = 
+#endif 
+    scheme_expand_string_filename(bss,
+                                  "copy-file",
+                                  NULL,
+                                  SCHEME_GUARD_FILE_READ);
+
+#ifdef DOS_FILE_SYSTEM
+  dest = 
+#endif 
+    scheme_expand_string_filename(bsd,
+                                  "copy-file",
+                                  NULL, 
+                                  SCHEME_GUARD_FILE_WRITE | SCHEME_GUARD_FILE_DELETE);
 
 #ifdef UNIX_FILE_SYSTEM
   {

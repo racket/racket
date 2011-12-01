@@ -4429,13 +4429,13 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
   int fd;
   struct stat buf;
 #else
+  char *mode = "rb";
 # ifdef WINDOWS_FILE_HANDLES
   HANDLE fd;
 # else
   FILE *fp;
 # endif
 #endif
-  char *mode = "rb";
   char *filename;
   int regfile, i;
   int m_set = 0;
@@ -4449,7 +4449,9 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
       scheme_wrong_type(name, "symbol", i, argc, argv);
 
     if (SAME_OBJ(argv[i], text_symbol)) {
+#ifndef USE_FD_PORTS
       mode = "rt";
+#endif
       m_set++;
     } else if (SAME_OBJ(argv[i], binary_symbol)) {
       /* This is the default */
@@ -9383,8 +9385,8 @@ static void close_fds_after_fork(int skip1, int skip2, int skip3)
 static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
 {
   int show;
-  char *dir;
 #ifdef WINDOWS_PROCESSES
+  char *dir;
 # define mzseSHOW(x) x
 #else
 # define mzseSHOW(x) 1
@@ -9422,9 +9424,12 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
       scheme_wrong_type("shell-execute", "show-mode symbol", 4, c, argv);
   }
 
-  dir = scheme_expand_string_filename(argv[3],
-				      "shell-execute", NULL,
-				      SCHEME_GUARD_FILE_EXISTS);
+#ifdef WINDOWS_PROCESSES
+  dir = 
+#endif
+    scheme_expand_string_filename(argv[3],
+                                  "shell-execute", NULL,
+                                  SCHEME_GUARD_FILE_EXISTS);
 #ifdef WINDOWS_PROCESSES
   {
     SHELLEXECUTEINFOW se;
@@ -10017,7 +10022,6 @@ static void start_green_thread_timer(intptr_t usec)
 
 static void kill_green_thread_timer() 
 {
-  void *rc;
   pthread_mutex_lock(&itimerdata->mutex);
   itimerdata->die = 1;
   if (!itimerdata->state) {
@@ -10030,7 +10034,7 @@ static void kill_green_thread_timer()
        asked it to continue */
   }
   pthread_mutex_unlock(&itimerdata->mutex);
-  rc = mz_proc_thread_wait(itimerdata->thread);
+  (void)mz_proc_thread_wait(itimerdata->thread);
   free(itimerdata);
   itimerdata = NULL;
 }

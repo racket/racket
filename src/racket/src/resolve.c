@@ -1016,7 +1016,6 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       num_rec_procs = 0;
   } else {
     /* Sequence of single-value, non-assigned lets? */
-    int some_used = 0;
 
     clv = (Scheme_Compiled_Let_Value *)head->body;
     for (i = head->num_clauses; i--; clv = (Scheme_Compiled_Let_Value *)clv->body) {
@@ -1024,8 +1023,6 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 	break;
       if (clv->flags[0] & SCHEME_WAS_SET_BANGED)
 	break;
-      if (clv->flags[0] & SCHEME_WAS_USED)
-        some_used = 1;
     }
 
     if (i < 0) {
@@ -1297,10 +1294,9 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
         resolve_info_add_mapping(linfo, opos, 0, 0, NULL);
       } else {
         for (j = 0; j < clv->count; j++) {
-          int p, skip;
+          int p;
           Scheme_Object *lift;
 
-          skip = 0;
           if (num_rec_procs 
               && (clv->count == 1)
               && is_nonconstant_procedure(clv->value, info, head->count)) {
@@ -3135,7 +3131,8 @@ static int unresolve_set_flag(Unresolve_Info *ui, int pos, int flag)
 {
   int old_flag, i = ui->stack_pos - pos - 1;
 
-  if (pos >= ui->stack_pos) scheme_signal_error("internal error: unresolve too far");
+  if ((pos < 0) || (pos >= ui->stack_pos))
+    scheme_signal_error("internal error: unresolve out of bounds");
 
   old_flag = ui->flags[i];
   flag = combine_flags(flag | (1 << SCHEME_USE_COUNT_SHIFT), old_flag);

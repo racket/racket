@@ -192,8 +192,7 @@ static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
   {
     Scheme_Object **ba;
 #ifdef MZ_PRECISE_GC
-    ba = (Scheme_Object **)GC_malloc_weak_array(sizeof(Scheme_Object *) * newsize,
-                                                SYMTAB_LOST_CELL);
+    ba = (Scheme_Object **)GC_malloc_weak_array(asize, SYMTAB_LOST_CELL);
 #else
     ba = MALLOC_N_ATOMIC(Scheme_Object *, newsize);
     memset((char *)ba, 0, asize);

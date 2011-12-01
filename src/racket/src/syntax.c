@@ -4281,7 +4281,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
         we can normally cache the result. */
 {
   WRAP_POS wraps;
-  Scheme_Object *result, *result_from;
+  Scheme_Object *result;
   int is_in_module = 0, skip_other_mods = 0, sealed = STX_SEAL_ALL, floating_checked = 0;
   int no_lexical = !free_id_recur, unsealed_reason = 0;
   Scheme_Object *phase = orig_phase;
@@ -4430,8 +4430,6 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	    } else
 	      result = glob_id;
 	  }
-
-          result_from = WRAP_POS_FIRST(wraps);
 	}
       }
     } else if (SCHEME_BOXP(WRAP_POS_FIRST(wraps))) {
@@ -8364,12 +8362,11 @@ static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv)
   while (!WRAP_POS_END_P(w)) {
     if (SCHEME_BOXP(WRAP_POS_FIRST(w))) {
       /* Phase shift: */
-      Scheme_Object *vec, *dest, *src;
+      Scheme_Object *vec, *src;
 
       vec = SCHEME_PTR_VAL(WRAP_POS_FIRST(w));
       
       src = SCHEME_VEC_ELS(vec)[1];
-      dest = SCHEME_VEC_ELS(vec)[2];
 
       /* If src is #f, shift is just for phase; no redirection */
       if (!SCHEME_FALSEP(src)) {

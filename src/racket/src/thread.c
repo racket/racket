@@ -4849,11 +4849,10 @@ int scheme_block_until_enable_break(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun
 
 static int ready_unless(Scheme_Object *o)
 {
-  Scheme_Object *unless_evt, *data;
+  Scheme_Object *data;
   Scheme_Ready_Fun f;
 
   data = (Scheme_Object *)((void **)o)[0];
-  unless_evt = (Scheme_Object *)((void **)o)[1];
   f = (Scheme_Ready_Fun)((void **)o)[2];
 
   return f(data);

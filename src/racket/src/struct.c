@@ -1092,7 +1092,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   Scheme_Struct_Property *p;
   Scheme_Object *a[1], *v, *supers = scheme_null;
   char *name;
-  int len, can_impersonate = 0;
+  int len;
   const char *who;
 
   if (type == scheme_struct_property_type)
@@ -1105,10 +1105,9 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   if (argc > 1) {
     if (SCHEME_SYMBOLP(argv[1])
         && !SCHEME_SYM_WEIRDP(argv[1])
-        && !strcmp("can-impersonate", SCHEME_SYM_VAL(argv[1])))
-      can_impersonate = 1;
-    else if (SCHEME_TRUEP(argv[1])
-        && !scheme_check_proc_arity(NULL, 2, 1, argc, argv))
+        && !strcmp("can-impersonate", SCHEME_SYM_VAL(argv[1]))) {
+    } else if (SCHEME_TRUEP(argv[1])
+               && !scheme_check_proc_arity(NULL, 2, 1, argc, argv))
       scheme_wrong_type(who, "procedure (arity 2), #f, or 'can-impersonate", 1, argc, argv);
 
     if (argc > 2) {

@@ -3683,7 +3683,6 @@ void scheme_init_exn(Scheme_Env *env)
   for (i = 0; i < MZEXN_OTHER; i++) {
     if (exn_table[i].count) {
       Scheme_Object **values;
-      int sp;
 
       values = scheme_make_struct_values(exn_table[i].type,
 					 exn_table[i].names,
@@ -3694,8 +3693,6 @@ void scheme_init_exn(Scheme_Env *env)
 					  values[j],
 					  env);
       }
-
-      sp = exn_table[i].super_pos;
     }
   }
 

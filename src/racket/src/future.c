@@ -655,10 +655,9 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   fts->thread = skeleton;
 
   {
-    Scheme_Object **rs_start, **rs;
+    Scheme_Object **rs_start;
     intptr_t init_runstack_size = FUTURE_RUNSTACK_SIZE;
     rs_start = scheme_alloc_runstack(init_runstack_size);
-    rs = rs_start XFORM_OK_PLUS init_runstack_size;
     runstack_start = rs_start;
     fts->runstack_size = init_runstack_size;
   }
@@ -1277,7 +1276,7 @@ Scheme_Object *scheme_make_fsemaphore_inl(Scheme_Object *ready)
   sema->so.type = scheme_fsemaphore_type;
   
   mzrt_mutex_create(&sema->mut);
-  sema->ready = SCHEME_INT_VAL(ready);
+  sema->ready = v;
 
   scheme_register_finalizer((void*)sema, fsemaphore_finalize, NULL, NULL, NULL);
 
@@ -1790,11 +1789,7 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
       } 
     else if (ft->status == FINISHED)
       {
-        int id;
-
         retval = ft->retval;
-
-        id = ft->id;
 
         mzrt_mutex_unlock(fs->future_mutex);
         

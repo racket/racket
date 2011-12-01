@@ -1771,7 +1771,7 @@ regranges(int parse_flags, int at_start)
 {
   int c;
   rxpos ret, save_regparse = 0;
-  int count, all_ci, num_ci, off_ranges, on_ranges, now_on, last_on, prev_last_on, use_ci;
+  int count, all_ci, num_ci, off_ranges, on_ranges, now_on, last_on, prev_last_on;
   char *new_map = NULL, *accum_map = NULL;
 
   count = 0;
@@ -1869,7 +1869,6 @@ regranges(int parse_flags, int at_start)
   if (!accum_map)
     FAIL("should have found one range!");
 
-  use_ci = 0;
   while (1) {
     /* Collect stats to pick the best run-time implementation for a range.
        We may do this twice if we decide to use a _CI variant. */
@@ -2658,7 +2657,6 @@ regexec(const char *who,
 	if (!peek) {
 	  /* Need to consume matched chars: */
 	  char *drain;
-	  intptr_t got;
 
 	  if (discard_oport && *startp)
 	    scheme_put_byte_string(who, discard_oport, *stringp, 0, *startp, 0);
@@ -2668,7 +2666,7 @@ regexec(const char *who,
 	  else
 	    /* Allocate fresh in case we get different results from previous peek: */
 	    drain = (char *)scheme_malloc_atomic(*endp);
-	  got = scheme_get_byte_string(who, port, drain, 0, *endp, 0, 0, 0);
+	  (void)scheme_get_byte_string(who, port, drain, 0, *endp, 0, 0, 0);
 	}
 
 	*_dropped = dropped;

@@ -7580,7 +7580,6 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
 int scheme_push_marks_from_lightweight_continuation(Scheme_Lightweight_Continuation *lw, 
                                                     Scheme_Cont_Frame_Data *d)
 {
-  Scheme_Thread *p;
   intptr_t pos, len, delta;
   Scheme_Cont_Mark *seg;
 
@@ -7590,7 +7589,6 @@ int scheme_push_marks_from_lightweight_continuation(Scheme_Lightweight_Continuat
   if (len) {
     scheme_push_continuation_frame(d);
 
-    p = scheme_current_thread;
     seg = lw->cont_mark_stack_slice;
 
     delta = MZ_CONT_MARK_POS + 2 - lw->saved_lwc->cont_mark_pos_start;
@@ -7610,14 +7608,11 @@ int scheme_push_marks_from_lightweight_continuation(Scheme_Lightweight_Continuat
 
 int scheme_push_marks_from_thread(Scheme_Thread *p2, Scheme_Cont_Frame_Data *d)
 {
-  Scheme_Thread *p;
   intptr_t i, pos, delta;
   Scheme_Cont_Mark *seg;
 
   if (p2->cont_mark_stack) {
     scheme_push_continuation_frame(d);
-
-    p = scheme_current_thread;
 
     delta = MZ_CONT_MARK_POS - p2->cont_mark_pos;
     if (delta < 0) delta = 0;

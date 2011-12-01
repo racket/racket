@@ -2190,7 +2190,6 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
     Scheme_Dynamic_State dyn_state;
     Scheme_Cont_Frame_Data cframe;
     Scheme_Config *config;
-    Scheme_Object *result;
 
     scheme_prepare_exp_env(dm_env);
 
@@ -2203,7 +2202,7 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
     scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, scheme_false, dm_env, dm_env->link_midx);
 
     if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_syntaxes_type)) {
-      result = define_execute_with_dynamic_state(form, 4, 1, rp, dm_env, &dyn_state);
+      (void)define_execute_with_dynamic_state(form, 4, 1, rp, dm_env, &dyn_state);
     } else {
       Scheme_Object **save_runstack;
 
@@ -4022,6 +4021,7 @@ static void *eval_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *v, **save_runstack;
+  Resolve_Prefix *rp;
   Scheme_Env *env;
   int isexpr, multi, use_jit, as_tail;
 
@@ -4046,7 +4046,6 @@ static void *eval_k(void)
       v = _scheme_eval_linked_expr_wp(v, p);
   } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_compilation_top_type)) {
     Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)v;
-    Resolve_Prefix *rp;
     int depth;
 
     if (!top->prefix)
@@ -4075,7 +4074,7 @@ static void *eval_k(void)
         v = scheme_eval_clone(v);
       rp = scheme_prefix_eval_clone(top->prefix);
 
-      save_runstack = scheme_push_prefix(env, top->prefix, NULL, NULL, 0, env->phase, NULL, scheme_false);
+      save_runstack = scheme_push_prefix(env, rp, NULL, NULL, 0, env->phase, NULL, scheme_false);
 
       if (as_tail) {
         /* Cons up a closure to capture the prefix */
@@ -4635,7 +4634,6 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   Scheme_Comp_Env *env, *orig_env, **ip;
   Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind;
-  int nonempty_stop_list = 0;
   int bad_sub_env = 0, bad_intdef = 0;
   Scheme_Object *observer, *catch_lifts_key = NULL;
 
@@ -4752,7 +4750,6 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     if (cnt > 0) {
       cnt += NUM_CORE_EXPR_STOP_FORMS;
       scheme_add_local_syntax(cnt, env);
-      nonempty_stop_list = 1;
     }
     pos = 0;
 

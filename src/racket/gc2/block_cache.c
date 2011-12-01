@@ -150,7 +150,9 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
 static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect, void **src_block, ssize_t *size_diff) {
   block_group *bg = (expect_mprotect ? &bc->non_atomic : &bc->atomic);
   GCList *free_head = &bg->free;
+#if BC_ASSERTS
   int newbl = 0;
+#endif
 
   tryagain:
   if (!gclist_is_empty(free_head)) {
@@ -161,7 +163,9 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
   }
   else {
     block_desc *bd;
+#if BC_ASSERTS
     newbl = 1;
+#endif
     bd = bc_alloc_std_block(bg);
     if (!bd) return NULL;
     gclist_add(free_head, &(bd->gclist));
