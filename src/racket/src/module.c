@@ -236,7 +236,6 @@ THREAD_LOCAL_DECL(static Scheme_Object *global_shift_cache);
 # define SHIFT_CACHE_NULLP(x) !(x)
 #endif
 
-#define SCHEME_MODNAMEP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_resolved_module_path_type)
 #define SCHEME_RMP_VAL(obj)  SCHEME_PTR_VAL(obj)
 
 typedef void (*Check_Func)(Scheme_Object *prnt_name, Scheme_Object *name, 

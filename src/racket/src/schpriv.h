@@ -3176,6 +3176,8 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 				   Scheme_Object *shift_to_modidx);
 
 #define SCHEME_RMPP(o) (SAME_TYPE(SCHEME_TYPE((o)), scheme_resolved_module_path_type))
+#define SCHEME_MODNAMEP(obj)  (SAME_TYPE(SCHEME_TYPE(obj), scheme_resolved_module_path_type))
+
 Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o);
 Scheme_Object *scheme_resolved_module_path_value(Scheme_Object *rmp);
 int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object *o);

@@ -881,7 +881,6 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
 
   m = (Scheme_Module *)data;
 
-# define SCHEME_MODNAMEP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_resolved_module_path_type)
   if (!SCHEME_MODNAMEP(m->modname))
     scheme_ill_formed_code(port);
 
