@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual "guide-utils.rkt"
-          (for-label racket/flonum racket/unsafe/ops))
+          (for-label racket/flonum
+                     racket/unsafe/ops
+                     racket/performance-hint))
 
 @title[#:tag "performance"]{Performance}
 
@@ -169,10 +171,8 @@ itself calls functions other than simple primitive operations. When a
 module is compiled, some functions defined at the module level are
 determined to be candidates for inlining into other modules; normally,
 only trivial functions are considered candidates for cross-module
-inlining, but a programmer can attach a
-@indexed-racket['compiler-hint:cross-module-inline] @tech[#:doc '(lib
-"scribblings/reference/reference.scrbl")]{syntax property} (with a
-true value) to a function's definition form to encourage inlining
+inlining, but a programmer can wrap a function definition with
+@racket[begin-encourage-inline] to encourage inlining
 of the function.
 
 Primitive operations like @racket[pair?], @racket[car], and

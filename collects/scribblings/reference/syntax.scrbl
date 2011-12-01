@@ -10,7 +10,8 @@
                      racket/provide
                      racket/package
                      racket/splicing
-                     racket/runtime-path))
+                     racket/runtime-path
+                     racket/performance-hint))
 
 @(define require-eval (make-base-eval))
 @(define syntax-eval
@@ -2084,9 +2085,9 @@ z
 If a @racket[define-values] form for a function definition in a module
 body has a @indexed-racket['compiler-hint:cross-module-inline]
 @tech{syntax property} with a true value, then the Racket treats the
-property as a performance hint. See
+property as a performance hint.  See
 @guidesecref["func-call-performance"] in @|Guide| for more
-information.}
+information, and see also @racket[begin-encourage-inline].}
 
 
 @defform*[[(define-syntax id expr)
@@ -2591,3 +2592,14 @@ syntactic forms or languages that supply a more limited kind of
 
 @close-eval[require-eval]
 @close-eval[meta-in-eval]
+
+@;------------------------------------------------------------------------
+@section[#:tag "performance-hint"]{Performance Hints: @racket[begin-encourage-inline]}
+
+@note-lib-only[racket/performance-hint]
+
+@defform[(begin-encourage-inline form ...)]{
+
+Attaches a @racket['compiler-hint:cross-module-inline]
+@tech{syntax property} to each @racket[form], which is useful when a
+@racket[form] is a function definition. See @racket[define-values].}

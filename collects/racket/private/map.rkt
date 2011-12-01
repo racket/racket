@@ -5,7 +5,7 @@
 (module map '#%kernel
   (#%require '#%utils ; built into mzscheme
              "small-scheme.rkt" "define.rkt"
-             (for-syntax '#%kernel))
+             "../performance-hint.rkt")
 
   (#%provide (rename map2 map)
              (rename for-each2 for-each)
@@ -14,17 +14,8 @@
   
   ;; -------------------------------------------------------------------------
 
-  ;; Attach a property to encourage the bytecode compiler to inline
-  ;; `map', etc.:
-  (define-syntax hint-inline
-    (lambda (stx)
-      (syntax-property (cadr (syntax->list stx))
-                       'compiler-hint:cross-module-inline 
-                       #t)))
+  (begin-encourage-inline
 
-  ;; -------------------------------------------------------------------------
-
-  (hint-inline
    (define map2
       (let ([map
              (case-lambda
@@ -50,9 +41,8 @@
                                   (loop (cdr l1) (cdr l2)))]))
                    (map f l1 l2))]
               [(f . args) (apply map f args)])])
-        map)))
+        map))
   
-  (hint-inline
    (define for-each2
       (let ([for-each
              (case-lambda
@@ -78,9 +68,8 @@
                                    (loop (cdr l1) (cdr l2)))]))
                    (for-each f l1 l2))]
               [(f . args) (apply for-each f args)])])
-        for-each)))
+        for-each))
 
-  (hint-inline
    (define andmap2
       (let ([andmap
              (case-lambda
@@ -110,9 +99,8 @@
                                      (loop (cdr l1) (cdr l2)))])))
                    (andmap f l1 l2))]
               [(f . args) (apply andmap f args)])])
-        andmap)))
+        andmap))
 
-  (hint-inline
    (define ormap2
       (let ([ormap
              (case-lambda

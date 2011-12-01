@@ -1382,16 +1382,16 @@
               (null? 10)))
 
 (module check-inline-request racket/base
+  (require racket/performance-hint)
   (provide loop)
-  (define loop
-    (begin
-      'compiler-hint:cross-module-inline
-      ;; large enough that the compiler wouldn't infer inlining:
-      (lambda (f n)
-        (let loop ([i n])
-          (if (zero? i)
-              10
-              (cons (f i) (loop (sub1 n)))))))))
+  (begin-encourage-inline
+   (define loop
+     ;; large enough that the compiler wouldn't infer inlining:
+     (lambda (f n)
+       (let loop ([i n])
+         (if (zero? i)
+             10
+             (cons (f i) (loop (sub1 n)))))))))
 
 (test-comp `(module m racket/base 
               (require 'check-inline-request)

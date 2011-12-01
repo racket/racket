@@ -24,7 +24,8 @@ v4 todo:
          "prop.rkt"
          "misc.rkt"
          "generate.rkt"
-         racket/stxparam)
+         racket/stxparam
+         racket/performance-hint)
 (require (for-syntax racket/base)
          (for-syntax "helpers.rkt")
          (for-syntax syntax/stx)
@@ -74,14 +75,7 @@ v4 todo:
           #,(call-gen #'())]
          [else #,(call-gen rng-checkers)]))))
 
-(define-syntax (cross-module-inline stx)
-  (syntax-case stx ()
-    [(_ defn)
-     (syntax-property #'defn
-                      'compiler-hint:cross-module-inline 
-                      #t)]))
-
-(cross-module-inline
+(begin-encourage-inline
  (define tail-marks-match?
     (case-lambda
       [(m) (and m (null? m))]
