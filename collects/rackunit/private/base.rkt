@@ -11,7 +11,7 @@
 ;; struct exn:test exn : ()
 ;;
 ;; The exception throw by test failures
-(define-struct (exn:test exn) ())
+(define-struct (exn:test exn:fail) ())
 ;; struct (exn:test:check struct:exn:test) : (list-of check-info)
 ;;
 ;; The exception thrown to indicate a check has failed

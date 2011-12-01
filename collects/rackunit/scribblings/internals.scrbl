@@ -81,7 +81,7 @@ custom UIs can be created.
 
 @subsection{Result Types}
 
-@defstruct[(exn:test exn) ()]{
+@defstruct[(exn:test exn:fail) ()]{
 
 The base structure for RackUnit exceptions.  You should
 never catch instances of this type, only the subtypes
