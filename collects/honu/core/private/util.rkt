@@ -124,7 +124,13 @@
   (let ()
     (define-literal-set set (literal))
     (define-syntax-class class
-      #:literal-sets (set)
-      ;; BUG! shouldn't need ~literal here since we are using literal sets
-      [pattern (~literal literal)])
+      ;; The problem is that 'literal' is unmarked but 'set' is marked.
+      ;; The #:literal-sets option is kind of like a binding form: only identifiers
+      ;; having the same marks are treated as literals.
+      ;; The fix is
+      ;;   #:literal-sets ([set #:at literal])
+      ;; which means treat any identifier whose name is listed in 'set' and whose lexical context matches 'literal' as a literal.
+      ;; - Ryan
+      #:literal-sets ([set #:at literal])
+      [pattern literal])
     (reify-syntax-class class)))

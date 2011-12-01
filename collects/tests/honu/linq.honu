@@ -36,16 +36,16 @@ starts_with(start, what){
 
 var xml = loadXml("test.xml")
 printf("xml ~a\n", xml)
-printf("data: ~a\n", xml.getData())
-printf("table1: ~a\n", xml.Descendants("Table1"))
+printf("data: ~a\n", xml->getData())
+printf("table1: ~a\n", xml->Descendants("Table1"))
 
 struct test{name, address}
 
-var addresses = linq from add in xml.Descendants("Table1")
+var addresses = linq from add in xml->Descendants("Table1")
                      where true
-                     orderby add.Element("familyName").Value()
-                     select test(add.Element("familyName").Value(),
-                                 add.Element("address").Value())
+                     orderby add->Element("familyName")->Value()
+                     select test(add->Element("familyName")->Value(),
+                                 add->Element("address")->Value())
 
 printf("addresses ~a\n", addresses)
 
@@ -53,8 +53,8 @@ for add in addresses do {
   printf("name ~a address ~a\n", add.name, add.address)
 }
 
-for xs in linq from foo in xml.Descendants("Table1")
-               where starts_with("x", foo.Element("familyName").Value())
-               select foo.Element("familyName").Value() do {
+for xs in linq from foo in xml->Descendants("Table1")
+               where starts_with("x", foo->Element("familyName")->Value())
+               select foo->Element("familyName")->Value() do {
   printf("only x: ~a\n", xs)
 }
