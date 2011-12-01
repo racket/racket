@@ -4640,7 +4640,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
   Scheme_Hash_Table *consts = NULL, *fixed_table = NULL, *re_consts = NULL;
-  Scheme_Hash_Table *originals = NULL, *size_overrides = NULL;
+  Scheme_Hash_Table *originals = NULL;
   int cont, next_pos_ready = -1, inline_fuel, is_proc_def;
   Comp_Prefix *prev_cp;
 
@@ -4696,25 +4696,6 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   for (i_m = 0; i_m < cnt; i_m++) {
     /* Optimize this expression: */
     e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
-
-    /* detect (define-values ... (begin 'compiler-hint:cross-module-inline <proc>)) */
-    if (info->enforce_const 
-        && SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
-      Scheme_Object *e2;
-      e2 = SCHEME_VEC_ELS(e)[1];
-      if (SAME_TYPE(SCHEME_TYPE(e2), scheme_sequence_type)) {
-        Scheme_Sequence *seq = (Scheme_Sequence *)e2;
-        if (seq->count == 2) {
-          if (SCHEME_SYMBOLP(seq->array[0])
-              && !SCHEME_SYM_WEIRDP(seq->array[0])
-              && !strcmp(SCHEME_SYM_VAL(seq->array[0]), "compiler-hint:cross-module-inline")) {
-            if (!size_overrides) 
-              size_overrides = scheme_make_hash_table(SCHEME_hash_ptr);
-            scheme_hash_set(size_overrides, scheme_make_integer(i_m), scheme_true);
-          }
-        }
-      }
-    }
 
     is_proc_def = 0;
     if (OPT_DISCOURAGE_EARLY_INLINE && info->enforce_const) {
@@ -4970,24 +4951,19 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       /* Optimize this expression: */
       e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
       if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
+        int size_override;
+        size_override = SCHEME_IMMUTABLEP(e);
         vars = SCHEME_VEC_ELS(e)[0];
         if (SCHEME_PAIRP(vars) && SCHEME_NULLP(SCHEME_CDR(vars))) {
           Scheme_Object *sub_e, *alt_e;
           sub_e = SCHEME_VEC_ELS(e)[1];
           alt_e = is_cross_module_inline_candidiate(sub_e, info, 0);
-          alt_e = NULL;
           if (!alt_e && originals) {
             alt_e = scheme_hash_get(originals, scheme_make_integer(i_m));
-            if (SAME_OBJ(alt_e, sub_e) && !size_overrides)
+            if (SAME_OBJ(alt_e, sub_e) && !size_override)
               alt_e = NULL;
-            else if (alt_e) {
-              int size_override;
-              if (size_overrides && scheme_hash_get(size_overrides, scheme_make_integer(i_m)))
-                size_override = 1;
-              else
-                size_override = 0;
+            else if (alt_e)
               alt_e = is_cross_module_inline_candidiate(alt_e, info, size_override);
-            }
           }
           if (alt_e) {
             Scheme_Object *iv;

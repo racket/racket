@@ -4,7 +4,8 @@
 
 (module map '#%kernel
   (#%require '#%utils ; built into mzscheme
-             "small-scheme.rkt" "define.rkt")
+             "small-scheme.rkt" "define.rkt"
+             (for-syntax '#%kernel))
 
   (#%provide (rename map2 map)
              (rename for-each2 for-each)
@@ -13,9 +14,18 @@
   
   ;; -------------------------------------------------------------------------
 
-  (define map2
-    (begin
-      'compiler-hint:cross-module-inline
+  ;; Attach a property to encourage the bytecode compiler to inline
+  ;; `map', etc.:
+  (define-syntax hint-inline
+    (lambda (stx)
+      (syntax-property (cadr (syntax->list stx))
+                       'compiler-hint:cross-module-inline 
+                       #t)))
+
+  ;; -------------------------------------------------------------------------
+
+  (hint-inline
+   (define map2
       (let ([map
              (case-lambda
               [(f l)
@@ -42,9 +52,8 @@
               [(f . args) (apply map f args)])])
         map)))
   
-  (define for-each2
-    (begin
-      'compiler-hint:cross-module-inline
+  (hint-inline
+   (define for-each2
       (let ([for-each
              (case-lambda
               [(f l)
@@ -71,9 +80,8 @@
               [(f . args) (apply for-each f args)])])
         for-each)))
 
-  (define andmap2
-    (begin
-      'compiler-hint:cross-module-inline
+  (hint-inline
+   (define andmap2
       (let ([andmap
              (case-lambda
               [(f l)
@@ -104,9 +112,8 @@
               [(f . args) (apply andmap f args)])])
         andmap)))
 
-  (define ormap2
-    (begin
-      'compiler-hint:cross-module-inline
+  (hint-inline
+   (define ormap2
       (let ([ormap
              (case-lambda
               [(f l)

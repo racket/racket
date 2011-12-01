@@ -54,6 +54,7 @@ ROSYM static Scheme_Object *let_star_values_symbol;
 ROSYM static Scheme_Object *let_values_symbol;
 ROSYM static Scheme_Object *begin_symbol;
 ROSYM static Scheme_Object *disappeared_binding_symbol;
+ROSYM static Scheme_Object *compiler_inline_hint_symbol;
 ROSYM static Scheme_Object *app_symbol;
 ROSYM static Scheme_Object *datum_symbol;
 ROSYM static Scheme_Object *top_symbol;
@@ -164,6 +165,7 @@ void scheme_init_compile (Scheme_Env *env)
   REGISTER_SO(let_values_symbol);
   REGISTER_SO(begin_symbol);
   REGISTER_SO(disappeared_binding_symbol);
+  REGISTER_SO(compiler_inline_hint_symbol);
 
   scheme_undefined->type = scheme_undefined_type;
   
@@ -176,6 +178,7 @@ void scheme_init_compile (Scheme_Env *env)
   begin_symbol = scheme_intern_symbol("begin");
 
   disappeared_binding_symbol = scheme_intern_symbol("disappeared-binding");
+  compiler_inline_hint_symbol = scheme_intern_symbol("compiler-hint:cross-module-inline");
 
   scheme_define_values_syntax = scheme_make_compiled_syntax(define_values_syntax, 
 							    define_values_expand);
@@ -795,6 +798,11 @@ define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
   SCHEME_VEC_ELS(vec)[0] = targets;
   SCHEME_VEC_ELS(vec)[1] = val;
   vec->type = scheme_define_values_type;
+
+  if (SCHEME_TRUEP(scheme_stx_property(form, compiler_inline_hint_symbol, NULL))) {
+    /* use "immutable" bit to mark compiler-inline hint: */
+    SCHEME_SET_IMMUTABLE(vec);
+  }
 
   return vec;
 }
@@ -2780,7 +2788,7 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
   } else {
     Scheme_Object *body;
     body = compile_block(forms, env, rec, drec);
-    return scheme_make_sequence_compilation(body, 2);
+    return scheme_make_sequence_compilation(body, 1);
   }
 }
 
@@ -2852,7 +2860,7 @@ do_begin_syntax(char *name,
     body = scheme_compile_list(forms, env, rec, drec);
   }
 
-  forms = scheme_make_sequence_compilation(body, zero ? -1 : 2);
+  forms = scheme_make_sequence_compilation(body, zero ? -1 : 1);
 
   if (!zero
       && SAME_TYPE(SCHEME_TYPE(forms), scheme_sequence_type)
@@ -2883,15 +2891,6 @@ Scheme_Sequence *scheme_malloc_sequence(int count)
 						 * sizeof(Scheme_Object *));
 }
 
-static int scheme_is_compiler_hint(Scheme_Object *v, int opt)
-{
-  /* Yes, this is a hack! */
-  return ((opt == 2)
-          && SCHEME_SYMBOLP(v) 
-          && !scheme_strncmp(SCHEME_SYM_VAL(v), "compiler-hint:", 14));
-}
-
-
 Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
 {
   /* We have to be defensive in processing `seq'; it might be bad due
@@ -2920,8 +2919,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       total++;
     } else if (opt 
 	       && (((opt > 0) && !last) || ((opt < 0) && !first))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)
-               && !scheme_is_compiler_hint(v, opt)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)) {
       /* A value that is not the result. We'll drop it. */
       total++;
     } else {
@@ -2981,8 +2979,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
     } else if (opt 
 	       && (((opt > 0) && (k < total))
 		   || ((opt < 0) && k))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)
-               && !scheme_is_compiler_hint(v, opt)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)) {
       /* Value not the result. Do nothing. */
     } else
       o->array[i++] = v;

@@ -74,9 +74,15 @@ v4 todo:
           #,(call-gen #'())]
          [else #,(call-gen rng-checkers)]))))
 
-(define tail-marks-match?
-  (begin
-    'compiler-hint:cross-module-inline
+(define-syntax (cross-module-inline stx)
+  (syntax-case stx ()
+    [(_ defn)
+     (syntax-property #'defn
+                      'compiler-hint:cross-module-inline 
+                      #t)]))
+
+(cross-module-inline
+ (define tail-marks-match?
     (case-lambda
       [(m) (and m (null? m))]
       [(m rng-ctc) (and m

@@ -169,9 +169,11 @@ itself calls functions other than simple primitive operations. When a
 module is compiled, some functions defined at the module level are
 determined to be candidates for inlining into other modules; normally,
 only trivial functions are considered candidates for cross-module
-inlining, but a programmer can use the pattern @racket[(define _id
-(begin @#,indexed-racket['compiler-hint:cross-module-inline]
-_proc-expr))] to encourage the compiler to inline larger functions.
+inlining, but a programmer can attach a
+@indexed-racket['compiler-hint:cross-module-inline] @tech[#:doc '(lib
+"scribblings/reference/reference.scrbl")]{syntax property} (with a
+true value) to a function's definition form to encourage inlining
+of the function.
 
 Primitive operations like @racket[pair?], @racket[car], and
 @racket[cdr] are inlined at the machine-code level by the @tech{JIT}

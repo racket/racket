@@ -2080,7 +2080,13 @@ the binding at the same time.
 (define-values (x y z) (values 1 2 3))
 z
 ]
-}
+
+If a @racket[define-values] form for a function definition in a module
+body has a @indexed-racket['compiler-hint:cross-module-inline]
+@tech{syntax property} with a true value, then the Racket treats the
+property as a performance hint. See
+@guidesecref["func-call-performance"] in @|Guide| for more
+information.}
 
 
 @defform*[[(define-syntax id expr)
