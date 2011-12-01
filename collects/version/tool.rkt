@@ -120,7 +120,7 @@
           (thread-wait t)))
       (cond
         [(and (pair? result) (eq? 'newer (car result)))
-         (when (equal? 2 (message 'newer "PLT Scheme v~a ~a ~a"
+         (when (equal? 2 (message 'newer "Racket v~a ~a ~a"
                                   (cadr result)
                                   (string-constant version:now-available-at)
                                   download-url))
