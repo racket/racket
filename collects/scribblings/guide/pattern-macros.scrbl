@@ -140,7 +140,7 @@ and function calls.
 The @racket[define-syntax-rule] form binds a macro that matches a
 single pattern, but Racket's macro system supports transformers that
 match multiple patterns starting with the same identifier. To write
-such macros, the programmer much use the more general
+such macros, the programmer must use the more general
 @racket[define-syntax] form along with the @racket[syntax-rules]
 transformer form:
 
