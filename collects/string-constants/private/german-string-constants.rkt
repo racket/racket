@@ -1126,7 +1126,7 @@
   (program-ran-out-of-memory "Dem Programm ist der Speicher ausgegangen.")
   
   (show-evaluation-terminated-dialog "Den Dialog ‘Auswertung abgebrochen’ zeigen")
-  (evaluation-terminated-ask "Diesen Dialog das nächste Mal anzeigen?")
+  (evaluation-terminated-ask "Diesen Dialog das nächste Mal anzeigen")
   
   (last-stack-frame "letzten Stack-Frame anzeigen")
   (last-stack-frames "die letzten ~a Stack-Frames anzeigen")
