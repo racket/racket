@@ -157,22 +157,32 @@
               ;; Must be EOF
               [else (void)])))))
 
-(define (download file size)
+(define (download* file target)
   (define src (format "~a~a/~a" url-path architecture file))
   (define-values [i o] (tcp-connect url-host 80))
   (fprintf o "GET ~a HTTP/1.0\r\nHost: ~a\r\n\r\n" src url-host)
   (flush-output o) (tcp-abandon-port o)
   (purify-port i)
+  (call-with-output-file target #:exists 'truncate/replace
+    (λ (out) (copy-port i out))))
+
+(define (download file size)
   (define tmp (format "~a.download" file))
-  (call-with-output-file tmp #:exists 'truncate/replace
-    (lambda (out) (copy-port i out)))
+  (let loop ([n 0])
+    (when (> n 0) (printf " retry #~a," n) (flush-output))
+    (define thd (thread (λ () (download* file tmp))))
+    (unless (sync/timeout (+ 10 (* 5 n)) thd)
+      (kill-thread thd)
+      (when (> n 3) (raise-user-error 'download "could not retrieve ~a" file))
+      (when (zero? n) (printf " timeout,"))
+      (loop (add1 n))))
   (rename-file-or-directory tmp file #t)
-  (let ([sz (file-size file)])
-    (unless (= size sz)
-      (eprintf "\n")
-      (raise-user-error 'get-libs
-                        "size of ~a is ~a; doesn't match expected size ~a"
-                        file sz size))))
+  (define sz (file-size file))
+  (unless (= size sz)
+    (eprintf "\n")
+    (raise-user-error 'get-libs
+                      "size of ~a is ~a; doesn't match expected size ~a"
+                      file sz size)))
 
 (define (unpack-tgz tgz)
   (printf " unpacking...") (flush-output)
@@ -216,8 +226,7 @@
   (unless (directory-exists? dest-dir) (make-directory dest-dir))
   (parameterize ([current-directory dest-dir])
     (define needed (needed-files+sizes))
-    (define really-needed
-      (filter (lambda (n) (not (apply got-path? n))) needed))
+    (define really-needed (filter (λ (n) (not (apply got-path? n))) needed))
     (printf (if (null? needed)
               ">> No ~a libraries to download for ~a\n"
               ">> Getting ~a libraries for ~a\n")
