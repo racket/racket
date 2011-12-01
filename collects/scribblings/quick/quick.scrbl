@@ -485,7 +485,7 @@ is @racket[(hc-append 10 expr (code expr))].  In particular,
 @racket[(circle 10)] as @racket[expr], so it is replaced with
 @racket[(hc-append 10 (circle 10) (code (circle 10)))].
 
-Of course, the sword of syntactic extension cuts both ways: inventing
+Of course, this sort of syntactic extension cuts both ways: inventing
 a new language can make it easier to say what you want, but harder for
 others to understand. As it happens, the developers of Racket are
 constantly giving talks and writing papers that involve Racket code,
