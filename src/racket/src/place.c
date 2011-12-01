@@ -1549,7 +1549,6 @@ static MZ_INLINE Scheme_Object *inf_pop(Scheme_Object **instack, uintptr_t *inde
   Scheme_Object **stack = (Scheme_Object **) *instack;
   Scheme_Object *val;
   if (*indepth == IFS_SEGMENT_BOTTOM) {
-    Scheme_Object *item;
     if (stack[IFS_CACHE_SLOT]) { /* already have cached segment, free it*/
       free_infinite_stack((Scheme_Object **) stack[IFS_CACHE_SLOT], -1, gcable);
       stack[IFS_CACHE_SLOT] = NULL;
@@ -2243,8 +2242,6 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   Scheme_Object *place_main;
   Scheme_Object *a[2], *channel;
   intptr_t mem_limit;
-  mzrt_thread_id ptid;
-  ptid = mz_proc_thread_self();
   
   place_data = (Place_Start_Data *) data_arg;
   data_arg = NULL;
