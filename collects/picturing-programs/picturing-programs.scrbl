@@ -220,8 +220,7 @@ randomly chosen pixel near it.}
          [width natural-number/c]
          [height natural-number/c]
          [f (-> natural-number/c natural-number/c any/c color?)] [extra any/c]) image?]{
-Equivalent to @racketblock[(build-image width height (lambda (x y) (f x y extra)))]
-In other words, it passes the @racket[extra] argument in as a third argument in each call
+Passes the @racket[extra] argument in as a third argument in each call
 to @racket[f].  This allows students who haven't learned closures yet to do pixel-by-pixel image
 manipulations inside a function depending on a parameter of that function.
 
@@ -260,49 +259,73 @@ should return an integer from 0 through 255 to determine that color component.}
 Just like @racket[build4-image], but without specifying the alpha component
 (which defaults to 255, fully opaque).}
 
-@defproc[(map-image [f (-> natural-number/c natural-number/c color? color?)] [img image?])
-         image?]{
+@defproc*[([(map-image [f (-> color? color?)] [img image?]) image?]
+           [(map-image [f (-> natural-number/c natural-number/c color?  color?)] [img image?]) image?])]{
+Applies the given function to each pixel in a given image, producing a
+new image the same size and shape.  The color of each pixel in the
+result is the result of calling f on the corresponding
+pixel in the input.  If f accepts 3 parameters, it will be given the x
+and y coordinates and the color of the old pixel; if it accepts 1, it
+will be given only the color of the old pixel.
 
-Applies the given function to each pixel in a given image, producing a new image the same
-size and shape.  For example,
+An example with a 1-parameter function:
 @codeblock|{
-; lose-red : num(x) num(y) color -> color
-(define (lose-red x y old-color)
+; lose-red : color -> color
+(define (lose-red old-color)
   (make-color 0 (color-green old-color) (color-blue old-color)))
 
 (map-image lose-red my-picture)}|
 produces a copy of @racket[my-picture] with all the red leached out,
 leaving only the blue and green components.
 
-Since @racket[make-color] with three arguments defaults alpha to 255,
+Since @racket[make-color] defaults alpha to 255,
 this definition of @racket[lose-red] discards any alpha information (including edge-dithering)
 that was in the original image.  To preserve this information, one could write
 @racketblock[
-(define (lose-red-but-not-alpha x y old-color)
+(define (lose-red-but-not-alpha old-color)
   (make-color 0 (color-green old-color) (color-blue old-color) (color-alpha
 old-color)))]
 
-Another example:
+An example with a 3-parameter (location-sensitive) function:
 @codeblock|{
 ; apply-gradient : num(x) num(y) color -> color
 (define (apply-gradient x y old-color)
   (make-color (min (* 3 x) 255)
-              0
-              (min (* 3 y) 255)))
+              (color-green old-color)
+              (color-blue old-color)))
 
 (map-image apply-gradient my-picture)}|
 produces a picture the size of @racket[my-picture]'s bounding rectangle,
-with a smooth color gradient with red increasing from left to
-right and blue increasing from top to bottom.}
+replacing the red component with a smooth color gradient increasing
+from left to right, but with the green and blue components unchanged.}
 
-@defproc[(map-image/extra
-         [f (-> natural-number/c natural-number/c color? any/c color?)] [img image?] [extra any/c]) image?]{
-Equivalent to @racketblock[(map-image (lambda (x y c) (f x y c extra)) img)]
-In other words, it passes the @racket[extra] argument in as a fourth argument in each call
+@defproc*[([(map-image/extra [f (-> color? any/c color?)] [img image?] [extra any/c]) image?]
+	  [(map-image/extra [f (-> natural-number/c natural-number/c color? any/c color?)] [img image?] [extra any/c]) image?])]{
+Passes the @racket[extra] argument in as an additional argument in each call
 to @racket[f].  This allows students who haven't learned closures yet to do pixel-by-pixel image
 manipulations inside a function depending on a parameter of that function.
 
 For example,
+@codeblock|{
+; clip-color : color number -> color
+(check-expect (clip-color (make-color 30 60 90) 100)
+	      (make-color 30 60 90))
+(check-expect (clip-color (make-color 30 60 90) 50)
+	      (make-color 30 50 50))
+(define (clip-color c limit)
+    (make-color (min limit (color-red c))
+		(min limit (color-green c))
+		(min limit (color-blue c))))
+
+; clip-picture-colors : number(limit) image -> image
+(define (clip-picture-colors limit pic)
+    (map-image/extra clip-color pic limit))
+}|
+
+This @racket[clip-picture-colors] function clips each of the
+color components at most to the specified limit.
+
+Another example, using x and y coordinates as well:
 @codeblock|{
 ; new-pixel : number(x) number(y) color height -> color
 (check-expect (new-pixel 36 100 (make-color 30 60 90) 100)

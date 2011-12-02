@@ -151,8 +151,8 @@
 ; Test cases for map-image:
 ;(check-error (map-image 5 pic:bloch)
 ;             "map-image: Expected a function with contract num(x) num(y) color -> color as first argument")
-(check-error (map-image sqrt pic:bloch)
-             "map-image: Expected a function with contract num(x) num(y) color -> color as first argument")
+(check-error (map-image make-posn pic:bloch)
+             "map-image: Expected a function of one or three parameters as first argument")
 (check-error (map-image + 5)
              "map-image: Expected an image as second argument, but received 5")
 
@@ -164,6 +164,8 @@
 (define (kill-red x y c)
   (make-color 0 (color-green c) (color-blue c)))
 (define (kill-red-preserving-alpha x y c)
+  (make-color 0 (color-green c) (color-blue c) (color-alpha c)))
+(define (kill-red-without-xy c)
   (make-color 0 (color-green c) (color-blue c) (color-alpha c)))
 
 ; make-gradient : x y color -> color
@@ -177,6 +179,8 @@
 (define ex2 (map-image kill-red tri)) ex2
 "(map-image kill-red-preserving-alpha tri):"
 (define ex2prime (map-image kill-red-preserving-alpha tri)) ex2prime
+"(map-image kill-red-ignoring-xy tri):"
+(define ex2again (map-image kill-red-without-xy tri)) ex2again
 "(map-image make-gradient tri):"
 (define ex3 (map-image make-gradient tri)) ex3
 "(map-image kill-red hieroglyphics): should be on an opaque background with no red"
@@ -185,6 +189,9 @@
 (define ex5 (map-image kill-red scheme-logo)) ex5
 "(map-image kill-red bloch):"
 (define ex6 (map-image kill-red bloch)) ex6
+"(map-image kill-red-without-xy bloch) (should look the same):"
+(define ex7 (map-image kill-red-without-xy bloch)) ex7
+
 (define (return-5 x y c) 5)
 
 (check-error (map-image return-5 bloch) "colorize: Expected a color, but received 5")
@@ -236,6 +243,13 @@
 "(build-image (image-width bloch) (image-height bloch) other-bloch-pixel): should be flipped vertically"
 (build-image (image-width bloch) (image-height bloch) other-bloch-pixel)
 
+(define (other-pixel x y pic)
+  (get-pixel-color x (- (image-height pic) y 1) pic))
+(define (my-flip pic)
+  (build-image/extra (image-width pic) (image-height pic) other-pixel pic))
+
+"(my-flip pic:hieroglyphics):"
+(my-flip pic:hieroglyphics)
 
 
 (define RADIUS 3)
@@ -273,8 +287,9 @@ fuzzy-bloch
 fuzzy-tri
 
 ; Convert all white pixels to transparent
-(define (white-pixel->trans x y old-color)
-  (if (color=? old-color "white")
+(define (white-pixel->trans old-color)
+  (if (> (+ (color-red old-color) (color-green old-color) (color-blue old-color))
+         750)
       false
       old-color))
 (define (white->trans pic)
@@ -287,9 +302,9 @@ fuzzy-tri
 (overlay hier (rectangle 100 100 "solid" "blue"))
 
 ; pixel->gray : x y color -> color
-(check-expect (pixel->gray 3 17 (make-color 0 0 0)) (make-color 0 0 0))
-(check-expect (pixel->gray 92 4 (make-color 50 100 150)) (make-color 100 100 100))
-(define (pixel->gray x y c)
+(check-expect (pixel->gray (make-color 0 0 0)) (make-color 0 0 0))
+(check-expect (pixel->gray (make-color 50 100 150)) (make-color 100 100 100))
+(define (pixel->gray c)
   (make-gray (quotient (+ (color-red c)
                           (color-green c) 
                           (color-blue c))
@@ -312,9 +327,9 @@ fuzzy-tri
 (overlay (color->gray (white->trans hieroglyphics)) bluebox)
 
 ; invert-pixel : x y color -> color
-(check-expect (invert-pixel 3 17 (make-color 0 0 0)) (make-color 255 255 255))
-(check-expect (invert-pixel 92 4 (make-color 50 100 150)) (make-color 205 155 105))
-(define (invert-pixel x y color)
+(check-expect (invert-pixel (make-color 0 0 0)) (make-color 255 255 255))
+(check-expect (invert-pixel (make-color 50 100 150)) (make-color 205 155 105))
+(define (invert-pixel color)
   (make-color (- 255 (color-red color))
               (- 255 (color-green color))
               (- 255 (color-blue color))))
@@ -329,6 +344,31 @@ fuzzy-tri
 
 ; Test cases for map-image/extra and build-image/extra:
 ; Exercise 27.4.1:
+
+; apply-threshold : number threshold -> number
+(check-expect (apply-threshold 100 200) 0)
+(check-expect (apply-threshold 100 100) 255)
+(check-expect (apply-threshold 100 75) 255)
+(define (apply-threshold component threshold)
+  (if (< component threshold)
+      0
+      255))
+; simple-new-pixel : color number(threshold) -> color
+; Converts color components below threshold to 0, and those >= threshold to 255.
+(check-expect (simple-new-pixel  (make-color 50 100 200) 150)
+              (make-color 0 0 255))
+(check-expect (simple-new-pixel (make-color 50 100 200) 90)
+              (make-color 0 255 255))
+(define (simple-new-pixel c threshold)
+  (make-color (apply-threshold (color-red c) threshold)
+              (apply-threshold (color-green c) threshold)
+              (apply-threshold (color-blue c) threshold)))
+"map-image/extra simple-new-pixel..."
+(map-image/extra simple-new-pixel pic:bloch 200)
+(map-image/extra simple-new-pixel pic:bloch 150)
+(map-image/extra simple-new-pixel pic:bloch 100)
+
+
 ; new-pixel : number(x) number(y) color height -> color
 (check-expect (new-pixel 36 100 (make-color 30 60 90) 100)
               (make-color 30 60 255))
@@ -402,3 +442,24 @@ fuzzy-tri
               (make-color 133 56 35))
 (check-expect (get-pixel-color 30 50 red-bloch)
               (make-color 255 173 149))
+
+; clip-color : color number -> color
+(check-expect (clip-color (make-color 30 60 90) 100)
+              (make-color 30 60 90))
+(check-expect (clip-color (make-color 30 60 90) 50)
+              (make-color 30 50 50))
+(define (clip-color c limit)
+    (make-color (min limit (color-red c))
+                (min limit (color-green c))
+                (min limit (color-blue c))))
+ 
+; clip-picture-colors : number(limit) image -> image
+(define (clip-picture-colors limit pic)
+    (map-image/extra clip-color pic limit))
+
+pic:bloch
+"clip-picture-colors..."
+(clip-picture-colors 240 pic:bloch)
+(clip-picture-colors 200 pic:bloch)
+(clip-picture-colors 150 pic:bloch)
+(clip-picture-colors 100 pic:bloch)

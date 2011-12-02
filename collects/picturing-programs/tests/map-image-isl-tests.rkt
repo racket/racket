@@ -68,7 +68,7 @@
 ; Convert all white pixels to transparent
 (define (white->trans pic)
   (local [(define white (name->color "white"))
-          (define (new-color x y old-color)
+          (define (new-color #; x #; y old-color) ; leave out x & y (dec2011)
             (if (equal? old-color white)
                 false
                 old-color))]

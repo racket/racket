@@ -10,6 +10,10 @@
 ; Dec. 28, 2010: Robby added alphas into the "color" type, and provided an implementation
 ; of map-image.  He recommends using racket/draw bitmaps rather than 2htdp/image bitmaps.
 ; May 10, 2011: added build-image/extra and map-image/extra.
+; Dec 1, 2011: allowed map-image and map-image/extra to give their
+; function x and y or not, depending on their arity.  This way one
+; can write a function from color to color, and immediately map it
+; onto an image.
 
 (require racket/draw
         racket/snip
@@ -288,21 +292,27 @@
 
 ; map-image : (int int color -> broad-color) image -> image
 (define (map-image f img)
-  (check-procedure-arity f 3 'map-image "Expected a function with contract num(x) num(y) color -> color as first argument")
   (unless (image? img)
     (error 'map-image
 	(format "Expected an image as second argument, but received ~v" img)))
-  (map-image-internal (colorize-func f) img))
+  (cond [(procedure-arity-includes? f 3)
+         (map-image-internal (colorize-func f) img)]
+        [(procedure-arity-includes? f 1)            ; allow f : color->color as a simple case
+         (map-image-internal (colorize-func (lambda (x y c) (f c))) img)]
+        [else (error 'map-image "Expected a function of one or three parameters as first argument")]))
 
 ; map-image/extra : (nat nat color X -> broad-color) image X -> image
 ; Like map-image, but passes a fixed extra argument to every call of the function.
 ; For students who don't yet know function closures.
 (define (map-image/extra f img extra)
-  (check-procedure-arity f 4 'map-image/extra "Expected a function with contract num(x) num(y) color other -> color as first argument")
   (unless (image? img)
     (error 'map-image/extra
 	(format "Expected an image as second argument, but received ~v" img)))
-  (map-image-internal (colorize-func (lambda (x y c) (f x y c extra))) img))
+  (cond [(procedure-arity-includes? f 4)
+         (map-image-internal (colorize-func (lambda (x y c) (f x y c extra))) img)]
+        [(procedure-arity-includes? f 2)
+         (map-image-internal (colorize-func (lambda (x y c) (f c extra))) img)]
+        [else (error 'map-image/extra "Expected a function taking two or four parameters as first argument")]))
 
 
 
