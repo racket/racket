@@ -1608,7 +1608,7 @@ static void complete_rtcall(Scheme_Future_State *fs, future_t *future)
   } else {
     /* Signal the waiting worker thread that it
        can continue running machine code */
-    future->want_lw = 0;
+    future->want_lw = 0; /* needed if we get here via direct_future_to_future_touch() */
     if (future->can_continue_sema) {
       mzrt_sema_post(future->can_continue_sema);
       future->can_continue_sema = NULL;
@@ -1801,6 +1801,7 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
            Release the lock so other threads can manipulate the queue
            while the runtime call executes. */
         ft->status = HANDLING_PRIM;
+        ft->want_lw = 0;
         mzrt_mutex_unlock(fs->future_mutex);
         LOG("Invoking primitive on behalf of future %d...", ft->id);
         invoke_rtcall(fs, ft, 0);
@@ -3003,6 +3004,9 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
   Scheme_Thread *p = scheme_current_thread;
   mz_jmp_buf newbuf, * volatile savebuf;
 
+  /* future->want_lw should have been cleared (while holding the future-queue lock)
+     by the time we get here */
+
   savebuf = p->error_buf;
   p->error_buf = &newbuf;
   if (scheme_setjmp(newbuf)) {
@@ -3018,7 +3022,6 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
     } else {
       /* Signal the waiting worker thread that it
          can continue running machine code */
-      future->want_lw = 0;
       mzrt_sema_post(future->can_continue_sema);
       future->can_continue_sema = NULL;
       mzrt_mutex_unlock(fs->future_mutex);
