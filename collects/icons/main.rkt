@@ -17,46 +17,25 @@
           icon-categories
           icon-names
           
-          go-icon-pict
-          bar-icon-pict
-          back-icon-pict
-          stop-icon-pict
-          step-icon-pict
-          step-back-icon-pict
-          continue-icon-pict
-          continue-back-icon-pict
-          fast-forward-icon-pict
-          rewind-icon-pict
-          pause-icon-pict
-          stop-sign-icon-pict
-          check-icon-pict
-          magnifying-glass-icon-pict
-          magnifying-glass-left-icon-pict
-          stop-signs-icon-pict
-          macro-stepper-icon-pict
-          check-syntax-icon-pict
-          check-syntax-small-icon-pict
-          plt-logo-pict
-          planet-logo-pict
-          
-          go-icon
-          bar-icon
-          back-icon
-          stop-icon
-          step-icon
-          step-back-icon
-          continue-icon
-          continue-back-icon
-          fast-forward-icon
-          rewind-icon
-          pause-icon
-          stop-sign-icon
-          check-icon
-          magnifying-glass-icon
-          magnifying-glass-left-icon
-          stop-signs-icon
-          macro-stepper-icon
-          check-syntax-icon
-          check-syntax-small-icon
-          plt-logo
-          planet-logo))
+          go-icon go-icon-pict
+          bar-icon bar-icon-pict
+          back-icon back-icon-pict
+          stop-icon stop-icon-pict
+          step-icon step-icon-pict
+          step-back-icon step-back-icon-pict
+          continue-icon continue-icon-pict
+          continue-back-icon continue-back-icon-pict
+          fast-forward-icon fast-forward-icon-pict
+          rewind-icon rewind-icon-pict
+          pause-icon pause-icon-pict
+          stop-sign-icon stop-sign-icon-pict
+          check-icon check-icon-pict
+          magnifying-glass-icon magnifying-glass-icon-pict
+          magnifying-glass-left-icon magnifying-glass-left-icon-pict
+          disk-icon disk-icon-pict
+          stop-signs-icon stop-signs-icon-pict
+          macro-stepper-icon macro-stepper-icon-pict
+          check-syntax-icon check-syntax-icon-pict
+          check-syntax-small-icon check-syntax-small-icon-pict
+          plt-logo plt-logo-pict
+          planet-logo planet-logo-pict))

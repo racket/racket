@@ -129,11 +129,17 @@ The remaining icon @(bar-icon 'red 14 'diffuse), returned by @racket[bar-icon], 
 }
 
 @doc-apply[stop-sign-icon]{
-@examples[#:eval icon-eval (map (λ (color) (stop-sign-icon color 23 'diffuse)) icon-colors)]
+@examples[#:eval icon-eval
+                 (for/list ([color  icon-colors]
+                            [style  (in-cycle icon-styles)])
+                   (stop-sign-icon color 24 style))]
 }
 
 @doc-apply[check-icon]{
-@examples[#:eval icon-eval (map (λ (color) (check-icon color 29 'shiny)) icon-colors)]
+@examples[#:eval icon-eval
+                 (for/list ([color  icon-colors]
+                            [style  (in-cycle icon-styles)])
+                   (check-icon color 29 style))]
 }
 
 @doc-apply[magnifying-glass-icon]{
@@ -147,6 +153,13 @@ Note that the uncolorized magnifying glass has a brown handle.
 @examples[#:eval icon-eval
                  (map (λ (color) (magnifying-glass-left-icon color 31 'shiny))
                       icon-colors)]
+}
+
+@doc-apply[disk-icon]{
+@examples[#:eval icon-eval
+                 (for/list ([color  icon-colors]
+                            [style  (in-cycle icon-styles)])
+                   (disk-icon color 33 style))]
 }
 
 @subsection{Tool Icons and Other Special Icons}
@@ -166,13 +179,16 @@ Note that the uncolorized magnifying glass has a brown handle.
 }
 
 @doc-apply[plt-logo]{
-@examples[#:eval icon-eval (plt-logo 256 'shiny)]
+@examples[#:eval icon-eval
+                 (list (plt-logo 128 'diffuse) (plt-logo 128 'shiny))]
 }
 
 @doc-apply[planet-logo]{
 @examples[#:eval icon-eval
-                 (list (planet-logo #f 64)
-                       (planet-logo 'black 64 'shiny))]
+                 (for/list ([color  icon-colors])
+                     (planet-logo color 40 'diffuse))
+                 (for/list ([color  icon-colors])
+                     (planet-logo color 40 'shiny))]
 }
 
 
@@ -281,6 +297,7 @@ These return typical ``playback control'' icons, as @racket[pict]s.
 @doc-apply[check-icon-pict]{ Corresponds to @racket[check-icon]. }
 @doc-apply[magnifying-glass-icon-pict]{ Corresponds to @racket[magnifying-glass-icon]. }
 @doc-apply[magnifying-glass-left-icon-pict]{ Corresponds to @racket[magnifying-glass-left-icon]. }
+@doc-apply[disk-icon-pict]{ Corresponds to @racket[disk-icon]. }
 
 @doc-apply[stop-signs-icon-pict]{ Corresponds to @racket[stop-signs-icon]. }
 @doc-apply[macro-stepper-icon-pict]{ Corresponds to @racket[macro-stepper-icon]. }

@@ -38,6 +38,11 @@
 (for/list ([height  icon-heights])
   (for*/list ([color   icon-colors]
               [style   icon-styles])
+    (disk-icon-pict color height style)))
+
+(for/list ([height  icon-heights])
+  (for*/list ([color   icon-colors]
+              [style   icon-styles])
     (hc-append (magnifying-glass-icon-pict color height style)
                (check-icon-pict color height style))))
 
@@ -86,6 +91,7 @@
 (list not-blurry (pict-width not-blurry) (pict-height not-blurry))
 
 (plt-logo-pict 48 'shiny)
-(planet-logo-pict 'black 48 'shiny)
-(planet-logo-pict #f 24 'diffuse)
-(planet-logo-pict #f 16 'diffuse)
+
+(list (planet-logo-pict 'black 48 'shiny)
+      (planet-logo-pict #f 24 'diffuse)
+      (planet-logo-pict #f 16 'diffuse))

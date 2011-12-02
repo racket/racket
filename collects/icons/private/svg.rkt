@@ -129,6 +129,10 @@
                                           [style icon-style/c (default-icon-style)]) pict?
   (load-icon-pict "misc" (format-icon-name "magnifying-glass-left" color style) height))
 
+(defproc (disk-icon-pict [color icon-color/c] [height (>=/c 0)]
+                         [style icon-style/c (default-icon-style)]) pict?
+  (load-icon-pict "misc" (format-icon-name "disk" color style) height))
+
 ;; Icons for tools and other special uses
 
 (defproc (stop-signs-icon-pict [height (>=/c 0)] [style icon-style/c (default-icon-style)]) pict?
@@ -202,6 +206,7 @@
   check-icon
   magnifying-glass-icon
   magnifying-glass-left-icon
+  disk-icon
   planet-logo)
 
 (define-wrapped-icon-fun/no-color

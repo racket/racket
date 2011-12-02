@@ -387,8 +387,7 @@ module browser threading seems wrong.
   
   (define execute-bitmap (icons:go-icon 'green (icons:toolbar-icon-height)))
   (define break-bitmap (icons:stop-icon 'red (icons:toolbar-icon-height)))
-  
-  (define save-bitmap (make-object bitmap% (collection-file-path "save.png" "icons") 'png/mask))
+  (define save-bitmap (icons:disk-icon #f (icons:toolbar-icon-height)))
   
   (define-values (get-program-editor-mixin add-to-program-editor-mixin)
     (let* ([program-editor-mixin
