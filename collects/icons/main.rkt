@@ -37,6 +37,7 @@
           check-syntax-icon-pict
           check-syntax-small-icon-pict
           plt-logo-pict
+          planet-logo-pict
           
           go-icon
           bar-icon
@@ -57,4 +58,5 @@
           macro-stepper-icon
           check-syntax-icon
           check-syntax-small-icon
-          plt-logo))
+          plt-logo
+          planet-logo))

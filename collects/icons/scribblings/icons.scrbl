@@ -171,6 +171,12 @@ Note that the uncolorized magnifying glass has a brown handle.
 @examples[#:eval icon-eval (plt-logo 256 'shiny)]
 }
 
+@doc-apply[planet-logo]{
+@examples[#:eval icon-eval
+                 (list (planet-logo #f 64)
+                       (planet-logo 'black 64 'shiny))]
+}
+
 
 @section{Icon Constants and Contracts}
 
@@ -283,7 +289,7 @@ These return typical ``playback control'' icons, as @racket[pict]s.
 @doc-apply[check-syntax-icon-pict]{ Corresponds to @racket[check-syntax-icon]. }
 @doc-apply[check-syntax-small-icon-pict]{ Corresponds to @racket[check-syntax-small-icon]. }
 @doc-apply[plt-logo-pict]{ Corresponds to @racket[plt-logo]. }
-
+@doc-apply[planet-logo-pict]{ Corresponds to @racket[planet-logo]. }
 
 @section[#:tag "new-icons"]{Making New SVG Icons}
 

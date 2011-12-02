@@ -70,21 +70,11 @@
     <linearGradient
        inkscape:collect="always"
        xlink:href="#diffuseColorGradient"
-       id="linearGradient3845"
-       x1="150.82085"
-       y1="-0.13264218"
-       x2="37.269558"
-       y2="613.63605"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(5.665239,0,0,1.036903,-70.719674,-34.374712)" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#diffuseColorGradient"
        id="linearGradient3849"
-       x1="37.269558"
-       y1="613.63605"
-       x2="150.82085"
-       y2="-0.13264218"
+       x1="67.225159"
+       y1="549.53357"
+       x2="88.912605"
+       y2="33.964413"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(5.665239,0,0,1.036903,-70.719674,-34.374712)" />
     <linearGradient
@@ -158,6 +148,15 @@
          stdDeviation="25.960271"
          id="feGaussianBlur3780" />
     </filter>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#diffuseColorGradient"
+       id="linearGradient3784"
+       x1="203.25826"
+       y1="595.97729"
+       x2="205.69901"
+       y2="631.33264"
+       gradientUnits="userSpaceOnUse" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -169,15 +168,15 @@
      objecttolerance="10"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.25"
-     inkscape:cx="316.89029"
-     inkscape:cy="655.04298"
+     inkscape:zoom="0.70710678"
+     inkscape:cx="408.04357"
+     inkscape:cy="348.89761"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="1024"
      inkscape:window-height="719"
-     inkscape:window-x="251"
+     inkscape:window-x="258"
      inkscape:window-y="85"
      inkscape:window-maximized="0" />
   <metadata
@@ -204,7 +203,7 @@
        x="50.741573"
        y="68.437782" />
     <rect
-       style="fill:url(#linearGradient3849);fill-opacity:1;stroke:url(#linearGradient3845);stroke-width:12;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:url(#linearGradient3849);fill-opacity:1;stroke:url(#linearGradient3784);stroke-width:12;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="rect3051"
        width="520.77081"
        height="517.64001"

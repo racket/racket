@@ -4688,7 +4688,7 @@ module browser threading seems wrong.
         [(null? l) '()]
         [else (cons (car l) (loop (cdr l) (- n 1)))])))
   
-  (define very-small-planet-bitmap (include-bitmap (lib "icons/very-small-planet.png") 'png/mask))
+  (define very-small-planet-bitmap (icons:planet-logo #f 16))
   
   (define saved-bug-reports-window #f)
   (define saved-bug-reports-panel #f)

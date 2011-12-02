@@ -26,6 +26,7 @@ profile todo:
          net/url
          racket/match
          mrlib/include-bitmap
+         icons
          (for-syntax racket/base))
 
 (define orig (current-output-port))
@@ -186,10 +187,10 @@ profile todo:
                      (super-make-object bitmap))])
            note%)))
   
-  (define bug-note% (make-note% "stop-multi.png" (include-bitmap (lib "icons/stop-multi.png") 'png/mask)))
+  (define bug-note% (make-note% "stop-multi.png" (stop-signs-icon 24)))
   (define mf-note% (make-note% "mf.gif" (include-bitmap (lib "icons/mf.gif") 'gif)))
-  (define file-note% (make-note% "stop-22x22.png" (include-bitmap (lib "icons/stop-22x22.png") 'png/mask)))
-  (define small-planet-bitmap (include-bitmap (lib "icons/small-planet.png") 'png/mask))
+  (define file-note% (make-note% "stop-22x22.png" (stop-sign-icon 'red 24)))
+  (define small-planet-bitmap (planet-logo #f 24))
   (define planet-note% (make-note% "small-planet.png" small-planet-bitmap))
   
   ;; display-stats : (syntax -> syntax)

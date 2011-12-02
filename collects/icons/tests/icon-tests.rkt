@@ -84,3 +84,8 @@
          [64x  (compose 32x 32x)])
     (64x (magnifying-glass-icon-pict 'green 31.5 'shiny))))
 (list not-blurry (pict-width not-blurry) (pict-height not-blurry))
+
+(plt-logo-pict 48 'shiny)
+(planet-logo-pict 'black 48 'shiny)
+(planet-logo-pict #f 24 'diffuse)
+(planet-logo-pict #f 16 'diffuse)

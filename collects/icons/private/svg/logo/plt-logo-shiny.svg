@@ -189,8 +189,8 @@
      showgrid="false"
      inkscape:window-width="1024"
      inkscape:window-height="719"
-     inkscape:window-x="723"
-     inkscape:window-y="302"
+     inkscape:window-x="553"
+     inkscape:window-y="296"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata3998">
@@ -268,13 +268,13 @@
        inkscape:export-ydpi="5.23" />
     <path
        style="fill:url(#linearGradient3963);fill-opacity:1;fill-rule:evenodd;stroke:none"
-       d="m 321.84702,60.85989 c -75.87704,0 -143.20476,34.489975 -189.26404,88.40759 -9.73462,17.83385 -15.76817,36.72732 -15.76817,56.82547 0,91.61023 110.42175,165.95444 246.48451,165.95444 87.9663,0 165.20485,-31.08594 208.82799,-77.81216 C 561.61838,163.60498 453.51418,60.85989 321.84702,60.85989 z"
+       d="m 321.84702,60.85989 c -75.87704,0 -143.20476,34.489975 -189.26404,88.40759 C 98.542357,323.09433 453.2813,407.15744 572.12731,294.23523 561.61838,163.60498 453.51418,60.85989 321.84702,60.85989 z"
        id="path3641"
        inkscape:export-filename="/home/neil/Documents/Misc/Images/path3949.png"
        inkscape:export-xdpi="5.23"
        inkscape:export-ydpi="5.23"
        transform="matrix(1.0021963,0,0,0.9903595,4.2997892,-33.283339)"
-       sodipodi:nodetypes="ccsscc"
+       sodipodi:nodetypes="cccc"
        inkscape:connector-curvature="0" />
     <path
        style="fill:url(#radialGradient3206);fill-opacity:1;fill-rule:evenodd;stroke:none"

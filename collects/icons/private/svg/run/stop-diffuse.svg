@@ -49,20 +49,20 @@
        inkscape:collect="always"
        xlink:href="#diffuseColorGradient"
        id="linearGradient3845"
-       x1="150.82085"
-       y1="-0.13264218"
-       x2="37.269558"
-       y2="613.63605"
+       x1="94.404465"
+       y1="40.783825"
+       x2="71.219238"
+       y2="552.26135"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(5.665239,0,0,1.036903,-72.133887,-32.960499)" />
     <linearGradient
        inkscape:collect="always"
        xlink:href="#diffuseColorGradient"
        id="linearGradient3849"
-       x1="37.269558"
-       y1="613.63605"
-       x2="150.82085"
-       y2="-0.13264218"
+       x1="71.219238"
+       y1="552.26135"
+       x2="94.404465"
+       y2="40.783825"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(5.665239,0,0,1.036903,-72.133887,-32.960499)" />
     <radialGradient
@@ -107,7 +107,7 @@
      showgrid="false"
      inkscape:window-width="1024"
      inkscape:window-height="719"
-     inkscape:window-x="346"
+     inkscape:window-x="353"
      inkscape:window-y="130"
      inkscape:window-maximized="0" />
   <metadata

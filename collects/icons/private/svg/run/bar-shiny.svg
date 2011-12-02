@@ -37,16 +37,6 @@
     <linearGradient
        inkscape:collect="always"
        xlink:href="#diffuseColorGradient"
-       id="linearGradient3845"
-       x1="150.82085"
-       y1="-0.13264218"
-       x2="37.269558"
-       y2="613.63605"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1.0304915,0,0,1.036903,44.47865,-32.960499)" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#diffuseColorGradient"
        id="linearGradient3849"
        x1="37.269558"
        y1="613.63605"
@@ -128,6 +118,15 @@
          stdDeviation="12.192591"
          id="feGaussianBlur3775" />
     </filter>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#diffuseColorGradient"
+       id="linearGradient3779"
+       x1="54.710678"
+       y1="631.77924"
+       x2="45.437454"
+       y2="697.77924"
+       gradientUnits="userSpaceOnUse" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -140,14 +139,14 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.5"
-     inkscape:cx="209.67039"
+     inkscape:cx="-138.32961"
      inkscape:cy="419.51512"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="1024"
      inkscape:window-height="719"
-     inkscape:window-x="435"
+     inkscape:window-x="442"
      inkscape:window-y="133"
      inkscape:window-maximized="0" />
   <metadata
@@ -175,7 +174,7 @@
        y="83.994133"
        transform="matrix(1.6210546,0,0,1,5.5280936,-7.0710683)" />
     <rect
-       style="fill:url(#linearGradient3849);fill-opacity:1;stroke:url(#linearGradient3845);stroke-width:12;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:url(#linearGradient3849);fill-opacity:1;stroke:url(#linearGradient3779);stroke-width:12;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="rect3051"
        width="94.726784"
        height="517.64001"

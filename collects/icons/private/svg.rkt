@@ -157,6 +157,10 @@
 (defproc (plt-logo-pict [height (>=/c 0)] [style icon-style/c (default-icon-style)]) pict?
   (load-icon-pict "logo" (format-icon-name "plt-logo" #f style) height))
 
+(defproc (planet-logo-pict [color icon-color/c] [height (>=/c 0)]
+                           [style icon-style/c (default-icon-style)]) pict?
+  (load-icon-pict "logo" (format-icon-name "planet-logo" color style) height))
+
 ;; ===================================================================================================
 ;; Common icon contructors
 
@@ -197,7 +201,8 @@
   stop-sign-icon
   check-icon
   magnifying-glass-icon
-  magnifying-glass-left-icon)
+  magnifying-glass-left-icon
+  planet-logo)
 
 (define-wrapped-icon-fun/no-color
   stop-signs-icon

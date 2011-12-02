@@ -66,16 +66,6 @@
        y2="586.76599"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(1.0729386,0,0,1.0465072,-9.2491347,-15.484273)" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#diffuseColorGradient"
-       id="linearGradient3862"
-       x1="195.66145"
-       y1="586.76599"
-       x2="351.63919"
-       y2="45.122181"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1.0729386,0,0,1.0465072,-9.2491347,-15.484273)" />
     <filter
        inkscape:collect="always"
        id="filter3819"
@@ -136,6 +126,15 @@
        r="253.375"
        gradientTransform="matrix(0.42075207,-0.41707365,0.76474731,0.73394947,-200.5992,253.11643)"
        gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#diffuseColorGradient"
+       id="linearGradient3781"
+       x1="167.98341"
+       y1="705.03375"
+       x2="189.64124"
+       y2="621.03375"
+       gradientUnits="userSpaceOnUse" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -148,14 +147,14 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.5"
-     inkscape:cx="372.93808"
+     inkscape:cx="24.93808"
      inkscape:cy="291.78399"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="1243"
      inkscape:window-height="760"
-     inkscape:window-x="333"
+     inkscape:window-x="340"
      inkscape:window-y="96"
      inkscape:window-maximized="0" />
   <metadata
@@ -182,7 +181,7 @@
        sodipodi:nodetypes="ccccccc"
        transform="matrix(1.0729386,0,0,1.0465072,-25.940143,-6.6043652)" />
     <path
-       style="fill:url(#linearGradient3808);fill-opacity:1;stroke:url(#linearGradient3862);stroke-width:12.71568489;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:url(#linearGradient3808);fill-opacity:1;stroke:url(#linearGradient3781);stroke-width:12.71568489000000035;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        d="m 42.341251,318.11343 c 0,0 123.363159,95.90296 235.191469,241.23749 C 407.56941,322.84944 605.2834,187.87479 605.2834,187.87479 L 435.33861,14.716594 c 0,0 -97.28116,108.260366 -162.35798,275.277116 C 223.91918,211.55453 151.59148,144.95523 151.59148,144.95523 z"
        id="path3800"
        inkscape:connector-curvature="0"
