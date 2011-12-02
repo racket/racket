@@ -2344,26 +2344,28 @@
 		       (identifier? (syntax id))
 		       (let ([exprs (syntax->list (syntax (expr ...)))])
 			 ;; Check that id isn't syntax, and not lexical.
-			 (when ((with-handlers ([exn:fail? (lambda (exn) (lambda () #t))])
-				  ;; First try syntax:
-				  (let ([binding (syntax-local-value (syntax id))])
-				    ;; If it's a transformer binding, then it can take care of itself...
-				    (if (set!-transformer? binding)
-					(lambda () #f) ;; no lex check wanted
-					(lambda ()
-					  (teach-syntax-error
-					   'set!
-					   stx
-					   (syntax id)
-					   "expected a variable after set!, but found a ~a" (syntax-e #'id)))))))
-			   ;; Now try lexical:
-			   (when (eq? 'lexical (identifier-binding (syntax id)))
-			     (teach-syntax-error
-			      'set!
-			      stx
-			      (syntax id)
-                              "expected a mutable variable after set!, but found a variable that cannot be modified: ~a"
-                              (syntax-e #'id))))
+                         ;; First try syntax:
+                         (let ([binding (syntax-local-value (syntax id) (lambda () #f))])
+                           ;; If it's a transformer binding, then it can take care of itself...
+                           (cond
+                            [(set!-transformer? binding)
+                             ;; no lex check wanted
+                             (void)]
+                            [(not binding)
+                             ;; Now try lexical:
+                             (when (eq? 'lexical (identifier-binding (syntax id)))
+                               (teach-syntax-error
+                                'set!
+                                stx
+                                (syntax id)
+                                "expected a mutable variable after set!, but found a variable that cannot be modified: ~a"
+                                (syntax-e #'id)))]
+                            [else 
+                             (teach-syntax-error
+                              'set!
+                              stx
+                              (syntax id)
+                              "expected a variable after set!, but found a ~a" (syntax-e #'id))]))
 			 ;; If we're in a module, we'd like to check here whether
 			 ;;  the identier is bound, but we need to delay that check
 			 ;;  in case the id is defined later in the module. So only
