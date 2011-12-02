@@ -250,6 +250,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Custodian *main_custodian_;
   struct Scheme_Custodian *last_custodian_;
   struct Scheme_Hash_Table *limited_custodians_;
+  struct Scheme_Config *initial_config_;
   struct Scheme_Thread *swap_target_;
   struct Scheme_Object *scheduled_kills_;
   int do_atomic_;
@@ -598,6 +599,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define main_custodian XOA (scheme_get_thread_local_variables()->main_custodian_)
 #define last_custodian XOA (scheme_get_thread_local_variables()->last_custodian_)
 #define limited_custodians XOA (scheme_get_thread_local_variables()->limited_custodians_)
+#define initial_config XOA (scheme_get_thread_local_variables()->initial_config_)
 #define swap_target XOA (scheme_get_thread_local_variables()->swap_target_)
 #define scheduled_kills XOA (scheme_get_thread_local_variables()->scheduled_kills_)
 #define do_atomic XOA (scheme_get_thread_local_variables()->do_atomic_)

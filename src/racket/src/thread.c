@@ -581,6 +581,7 @@ void scheme_init_thread_places(void) {
   REGISTER_SO(gc_prepost_callback_descs);
   REGISTER_SO(place_local_misc_table);
   REGISTER_SO(gc_info_prefab);
+  REGISTER_SO(initial_config);
   gc_info_prefab = scheme_lookup_prefab_type(scheme_intern_symbol("gc-info"), 10);
 }
 
@@ -6622,6 +6623,11 @@ void scheme_thread_cell_set(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells
   scheme_add_to_table(cells, (const char *)cell, (void *)v, 0);
 }
 
+Scheme_Thread_Cell_Table *scheme_empty_cell_table(void)
+{
+  return scheme_make_bucket_table(20, SCHEME_hash_weak_ptr);
+}
+
 static Scheme_Thread_Cell_Table *inherit_cells(Scheme_Thread_Cell_Table *cells,
 					       Scheme_Thread_Cell_Table *t,
 					       int inherited)
@@ -6634,7 +6640,7 @@ static Scheme_Thread_Cell_Table *inherit_cells(Scheme_Thread_Cell_Table *cells,
     cells = scheme_current_thread->cell_values;
   
   if (!t)
-    t = scheme_make_bucket_table(20, SCHEME_hash_weak_ptr);
+    t = scheme_empty_cell_table();
   
   for (i = cells->size; i--; ) {
     bucket = cells->buckets[i];
@@ -7275,6 +7281,13 @@ static void make_initial_config(Scheme_Thread *p)
 	init_param(cells, paramz, i, scheme_false);      
     }
   }
+
+  initial_config = config;
+}
+
+Scheme_Config *scheme_minimal_config(void)
+{
+  return initial_config;
 }
 
 void scheme_set_startup_load_on_demand(int on)

@@ -2,17 +2,22 @@
 
 ;; Check for a leak via multiple `racket/draw' instantiations.
 
-(define-values (incs m)
-  (for/fold ([incs 0] [prev-mem 0]) ([i 10])
-    (parameterize ([current-namespace (make-base-namespace)])
+(define my-ns-channel (make-parameter #f))
+
+(define-values (incs m ns)
+  (for/fold ([incs 0] [max-mem 0] [ns #f]) ([i 10])
+    (define ns (make-base-namespace))
+    (parameterize ([current-namespace ns]
+                   [my-ns-channel ns])
       (dynamic-require 'racket/draw #f))
     (collect-garbage)
     (sync (system-idle-evt))
     (collect-garbage)
     (let ([m (current-memory-use)])
-      (if (m . > . (+ prev-mem (* 100 1024)))
-          (values (add1 incs) m)
-          (values incs m)))))
+      (printf "~s\n" m)
+      (if (m . > . max-mem)
+          (values (add1 incs) m 'ns)
+          (values incs max-mem 'ns)))))
 
 (unless (incs . < . 5)
   (error "multiple `racket/draw' instantiations seem to accumulate memory"))

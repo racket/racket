@@ -55,6 +55,7 @@ MZ_EXTERN Scheme_Jumpup_Buf_Holder *scheme_new_jmpupbuf_holder(void);
 /*========================================================================*/
 
 MZ_EXTERN Scheme_Config *scheme_current_config(void);
+MZ_EXTERN Scheme_Config *scheme_minimal_config(void);
 MZ_EXTERN Scheme_Config *scheme_extend_config(Scheme_Config *c, int pos, Scheme_Object *init_val);
 MZ_EXTERN void scheme_install_config(Scheme_Config *);
 
@@ -66,6 +67,7 @@ MZ_EXTERN void scheme_set_thread_param(Scheme_Config *c, Scheme_Thread_Cell_Tabl
 
 MZ_EXTERN Scheme_Env *scheme_get_env(Scheme_Config *config);
 
+MZ_EXTERN Scheme_Thread_Cell_Table *scheme_empty_cell_table();
 MZ_EXTERN Scheme_Thread_Cell_Table *scheme_inherit_cells(Scheme_Thread_Cell_Table *cells);
 
 MZ_EXTERN Scheme_Object *scheme_current_break_cell();

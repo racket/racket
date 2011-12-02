@@ -31,6 +31,7 @@ Scheme_Jumpup_Buf_Holder *(*scheme_new_jmpupbuf_holder)(void);
 /*                                parameters                              */
 /*========================================================================*/
 Scheme_Config *(*scheme_current_config)(void);
+Scheme_Config *(*scheme_minimal_config)(void);
 Scheme_Config *(*scheme_extend_config)(Scheme_Config *c, int pos, Scheme_Object *init_val);
 void (*scheme_install_config)(Scheme_Config *);
 Scheme_Object *(*scheme_get_param)(Scheme_Config *c, int pos);
@@ -38,6 +39,7 @@ void (*scheme_set_param)(Scheme_Config *c, int pos, Scheme_Object *o);
 Scheme_Object *(*scheme_get_thread_param)(Scheme_Config *c, Scheme_Thread_Cell_Table *cells, int pos);
 void (*scheme_set_thread_param)(Scheme_Config *c, Scheme_Thread_Cell_Table *cells, int pos, Scheme_Object *o);
 Scheme_Env *(*scheme_get_env)(Scheme_Config *config);
+Scheme_Thread_Cell_Table *(*scheme_empty_cell_table)();
 Scheme_Thread_Cell_Table *(*scheme_inherit_cells)(Scheme_Thread_Cell_Table *cells);
 Scheme_Object *(*scheme_current_break_cell)();
 /*========================================================================*/

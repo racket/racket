@@ -9,6 +9,7 @@
 #define scheme_clear_escape (scheme_extension_table->scheme_clear_escape)
 #define scheme_new_jmpupbuf_holder (scheme_extension_table->scheme_new_jmpupbuf_holder)
 #define scheme_current_config (scheme_extension_table->scheme_current_config)
+#define scheme_minimal_config (scheme_extension_table->scheme_minimal_config)
 #define scheme_extend_config (scheme_extension_table->scheme_extend_config)
 #define scheme_install_config (scheme_extension_table->scheme_install_config)
 #define scheme_get_param (scheme_extension_table->scheme_get_param)
@@ -16,6 +17,7 @@
 #define scheme_get_thread_param (scheme_extension_table->scheme_get_thread_param)
 #define scheme_set_thread_param (scheme_extension_table->scheme_set_thread_param)
 #define scheme_get_env (scheme_extension_table->scheme_get_env)
+#define scheme_empty_cell_table (scheme_extension_table->scheme_empty_cell_table)
 #define scheme_inherit_cells (scheme_extension_table->scheme_inherit_cells)
 #define scheme_current_break_cell (scheme_extension_table->scheme_current_break_cell)
 #ifndef USE_THREAD_LOCAL
@@ -560,6 +562,7 @@
 #define scheme_get_port_fd (scheme_extension_table->scheme_get_port_fd)
 #define scheme_get_port_socket (scheme_extension_table->scheme_get_port_socket)
 #define scheme_socket_to_ports (scheme_extension_table->scheme_socket_to_ports)
+#define scheme_fd_to_semaphore (scheme_extension_table->scheme_fd_to_semaphore)
 #define scheme_set_type_printer (scheme_extension_table->scheme_set_type_printer)
 #define scheme_print_bytes (scheme_extension_table->scheme_print_bytes)
 #define scheme_print_utf8 (scheme_extension_table->scheme_print_utf8)

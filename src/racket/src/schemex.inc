@@ -9,6 +9,7 @@
   scheme_extension_table->scheme_clear_escape = scheme_clear_escape;
   scheme_extension_table->scheme_new_jmpupbuf_holder = scheme_new_jmpupbuf_holder;
   scheme_extension_table->scheme_current_config = scheme_current_config;
+  scheme_extension_table->scheme_minimal_config = scheme_minimal_config;
   scheme_extension_table->scheme_extend_config = scheme_extend_config;
   scheme_extension_table->scheme_install_config = scheme_install_config;
   scheme_extension_table->scheme_get_param = scheme_get_param;
@@ -16,6 +17,7 @@
   scheme_extension_table->scheme_get_thread_param = scheme_get_thread_param;
   scheme_extension_table->scheme_set_thread_param = scheme_set_thread_param;
   scheme_extension_table->scheme_get_env = scheme_get_env;
+  scheme_extension_table->scheme_empty_cell_table = scheme_empty_cell_table;
   scheme_extension_table->scheme_inherit_cells = scheme_inherit_cells;
   scheme_extension_table->scheme_current_break_cell = scheme_current_break_cell;
 #ifndef USE_THREAD_LOCAL
@@ -560,6 +562,7 @@
   scheme_extension_table->scheme_get_port_fd = scheme_get_port_fd;
   scheme_extension_table->scheme_get_port_socket = scheme_get_port_socket;
   scheme_extension_table->scheme_socket_to_ports = scheme_socket_to_ports;
+  scheme_extension_table->scheme_fd_to_semaphore = scheme_fd_to_semaphore;
   scheme_extension_table->scheme_set_type_printer = scheme_set_type_printer;
   scheme_extension_table->scheme_print_bytes = scheme_print_bytes;
   scheme_extension_table->scheme_print_utf8 = scheme_print_utf8;
