@@ -64,6 +64,9 @@
       [(symbol? s) (make-wrap s)]
       [(null? s) (make-wrap s)]
       [(boolean? s) (make-wrap s)]
+      [(string? s) (make-wrap s)]
+      [(bytes? s) (make-wrap s)]
+      [(regexp? s) (make-wrap s)]
       [else s])))
 
 (define-struct wrap (content) #:inspector (make-inspector))
