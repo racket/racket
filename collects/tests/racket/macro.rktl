@@ -666,5 +666,20 @@
 (require 'phase-providing-check)
 
 ;; ----------------------------------------
+;; Check reconstruction of `provide' forms:
+
+(test #t
+      'provide
+      (syntax-case (expand '(module m racket 
+                              (define-for-syntax x 8) 
+                              (provide (for-meta 1 x)))) ()
+        [(module m racket
+           (#%module-begin
+            defn
+            (#%provide (for-meta 1 x))))
+         #t]
+        [else #f]))
+
+;; ----------------------------------------
 
 (report-errs)

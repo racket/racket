@@ -9141,7 +9141,8 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
       }
       if (!SAME_OBJ(mode, scheme_make_integer(0))) {
         Scheme_Object *f;
-        f = SCHEME_STX_CAR(mode_stx);
+        f = SCHEME_STX_CDR(mode_stx);
+        f = SCHEME_STX_CAR(f);
         a = scheme_make_pair(for_meta_symbol, 
                              scheme_make_pair(f, 
                                               scheme_make_pair(a, scheme_null)));
