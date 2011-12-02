@@ -74,8 +74,6 @@ Icon sizes are given as heights to make it easier to append them horizontally.
 In the following example, applying @racket[load-icon] is equivalent to @racket[(plt-logo 100 'diffuse)]:
 @interaction[#:eval icon-eval (load-icon "logo" "plt-logo-diffuse" 100)]
 
-(In the interactions window, you would have to send the result of applying @racket[load-icon] to @racket[bitmap] to see it.)
-
 @doc-apply[icon-categories]{
 Returns a list of all the icon categories.
 

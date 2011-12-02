@@ -920,12 +920,12 @@ This produces an ACK message
                (namespace-set-variable-value! 'd (disk 3)))
             'd)
            
-           ("#<pict>"
-            "#<pict>"
-            "#<pict>"
-            "#<pict>"
-            "#<pict>"
-            "#<pict>")
+           ("{image}"
+            "{image}"
+            "{image}"
+            "{image}"
+            "{image}"
+            "{image}")
            'interactions
            #f
            void

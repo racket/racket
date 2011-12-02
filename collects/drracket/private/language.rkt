@@ -25,6 +25,7 @@
          mrlib/syntax-browser
          compiler/distribute
          compiler/bundle-dist
+         file/convertible
          "rep.rkt")
   
   (import [prefix drracket:debug: drracket:debug^]
@@ -368,14 +369,7 @@
                   (exact? x)
                   (real? x)
                   (not (integer? x))))])
-      (parameterize (
-                     ;; these three handlers aren't used, but are set to override the user's settings
-                     [pretty-print-print-line (λ (line-number op old-line dest-columns) 
-                                                (when (and (not (equal? line-number 0))
-                                                           (not (equal? dest-columns 'infinity)))
-                                                  (newline op))
-                                                0)]
-                     [pretty-print-pre-print-hook (λ (val port) (void))]
+      (parameterize ([pretty-print-pre-print-hook (λ (val port) (void))]
                      [pretty-print-post-print-hook (λ (val port) (void))]
                      [pretty-print-exact-as-decimal #f]
                      [pretty-print-depth #f]
@@ -390,7 +384,7 @@
                                    (not (eq? 0 line)))
                           (newline port))
                         0)]
-                          
+                     
                      [pretty-print-columns width]
                      [pretty-print-size-hook
                       (let ([oh (pretty-print-size-hook)])
@@ -401,6 +395,7 @@
                             [(use-number-snip? value) 1]
                             [(syntax? value) 1]
                             [(to-snip-value? value) 1]
+                            [(convertible? value) 1]
                             [else (oh value display? port)])))]
                      [pretty-print-print-hook
                       (let ([oh (pretty-print-print-hook)])
@@ -436,6 +431,15 @@
                              (write-special (render-syntax/snip value) port)]
                             [(to-snip-value? value)
                              (write-special (value->snip value) port)]
+                            [(convertible? value)
+                             (define bytes (convert value 'png-bytes #f))
+                             (if bytes
+                                 (write-special
+                                  (make-object image-snip%
+                                    (read-bitmap (open-input-bytes bytes)))
+                                  port)
+                                 (display (format (if display? "~a" "~s") value)
+                                          port))]
                             [else (oh value display? port)])))]
                      [print-graph
                       ;; only turn on print-graph when using `write' or `print' printing 
