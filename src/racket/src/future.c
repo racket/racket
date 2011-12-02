@@ -1454,7 +1454,6 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object **argv)
       scheme_fill_lwc_end();
       future->lwc = scheme_current_lwc;
       future->fts = fts;
-      future->arg_p = scheme_current_thread;   
 
       /* Try to capture it locally (on this thread) */
       if (GC_gen0_alloc_page_ptr 
@@ -2186,7 +2185,8 @@ static Scheme_Object *apply_future_lw(future_t *ft)
 
 static int capture_future_continuation(Scheme_Future_State *fs, future_t *ft, void **storage, int need_lock)
   XFORM_SKIP_PROC
-/* This function explicitly cooperates with the GC by storing the
+/* The lock is *not* help when calling this function.
+   This function explicitly cooperates with the GC by storing the
    pointers it needs to save across a collection in `storage', so
    it can be used in a future thread. If future-thread-local 
    allocation fails, the result is 0. */
@@ -2196,7 +2196,7 @@ static int capture_future_continuation(Scheme_Future_State *fs, future_t *ft, vo
 
   storage[2] = ft;
 
-  lw = scheme_capture_lightweight_continuation(ft->arg_p, ft->lwc, storage);
+  lw = scheme_capture_lightweight_continuation(ft->fts->thread, ft->lwc, storage);
   if (!lw) return 0;
        
   ft = (future_t *)storage[2];
@@ -2212,9 +2212,10 @@ static int capture_future_continuation(Scheme_Future_State *fs, future_t *ft, vo
          continuation. */
       return 1;
     }
+
+    ft->want_lw = 0;
   }
    
-  ft->want_lw = 0;
   ft->fts->thread->current_ft = NULL; /* tells worker thread that it no longer
                                          needs to handle the future */
   
@@ -2392,7 +2393,6 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   scheme_fill_lwc_end();
   future->lwc = scheme_current_lwc;
   future->fts = fts;
-  future->arg_p = scheme_current_thread;
 
   fid = future->id;
 
@@ -2744,8 +2744,8 @@ static int push_marks(future_t *f, Scheme_Cont_Frame_Data *d)
 {
   if (f->suspended_lw) {
     return scheme_push_marks_from_lightweight_continuation(f->suspended_lw, d);
-  } else if (f->arg_p) {
-    return scheme_push_marks_from_thread(f->arg_p, d);
+  } else if (f->fts->thread) {
+    return scheme_push_marks_from_thread(f->fts->thread, d);
   }
 
   return 0;
@@ -2866,7 +2866,6 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
     need_pop = push_marks(future, &mark_d);
   else
     need_pop = 0;
-  future->arg_p = NULL;
 
   switch (future->prim_protocol)
     {

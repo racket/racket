@@ -2444,7 +2444,6 @@ future {
   gcMARK2(f->arg_S1, gc);
   gcMARK2(f->arg_s2, gc);
   gcMARK2(f->arg_S2, gc);
-  gcMARK2(f->arg_p, gc);
   gcMARK2(f->arg_S4, gc);
   gcMARK2(f->retval_s, gc);
   gcMARK2(f->retval, gc);

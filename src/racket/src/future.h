@@ -59,13 +59,16 @@ typedef struct future_t {
   int id;
   int thread_short_id;
 
+  int status;
   /* The status field is the main locking mechanism. It
      should only be read and written when holding a lock
      (and all associated fields for a status should be 
      set at the same time). */
-  int status;
 
   mzrt_sema *can_continue_sema;
+  /* this semcpahore is non_NULL when a future thread is blocked
+     while trying to run the future; th want_lw flag may be set in
+     that case */
 
   Scheme_Object *orig_lambda;
   void *code;
@@ -74,11 +77,34 @@ typedef struct future_t {
                              thread if this custodian is shut down */
 
   /* Runtime call stuff */
-  int want_lw; /* flag to indicate waiting for lw capture */
-  /* flag to indicate whether the future is in the "waiting for lwc" queue */
-  int in_queue_waiting_for_lwc;   
+
+  int want_lw; 
+  /* flag to indicate waiting for lw capture; if this flag is set,
+     then the future thread currently running the future must be
+     blocked, and the runtime thread must not already be working on
+     behalf of the future; since a future thread is blocked on this
+     future, then can_continue_sema is normally set, but the runtime
+     thread sets can_continue_sema to NULL while trying to capture the
+     continuation --- in case anoter thread tries to let the original
+     future thread continue because it was blocked on a touch for a
+     future that completed; the `want_lw' flag should be changed only
+     while holding a lock */
+
+  int in_queue_waiting_for_lwc;
+  /* flag to indicate whether the future is in the "waiting for lwc"
+     queue; the future might be in the queue even if want_lw is set to
+     0, and so this flag just prevents  */
+
   int in_touch_queue;   
+  /* like `in_queue_waiting_for_lwc' but for being in a `touch'
+     future */
+
   int rt_prim_is_atomic;
+  /* when a future thread is blocked on this future, it sets
+     `rt_prim_is_atomic' if the blocking operation can run
+     in any thread atomically (i.e., it's a "synchronizing" 
+     operation insteda of a general blocking operation) */
+
   double time_of_request;
   const char *source_of_request;
   int source_type;
@@ -113,11 +139,25 @@ typedef struct future_t {
   Scheme_Object **arg_S4;
 
   Scheme_Thread *arg_p;
+  /* when a future thread is blocked while running this future,
+     `arg_p' s set along with the blocking-operation arguments to
+     indicate the future thread's (fake) Racket thread, which has the
+     runstack, etc. */
   struct Scheme_Current_LWC *lwc;
+  /* when a future thread is blocked while running this future,
+     if `want_lw' is set, then `lwc' points to information for
+     capturing a lightweight continuation */
   struct Scheme_Future_Thread_State *fts;
+  /* when a future thread is blocked while running this future,
+     `fts' is set to identify the future thread */
 
   struct Scheme_Lightweight_Continuation *suspended_lw;
-  int maybe_suspended_lw; /* set to 1 with suspended_lw untl test in runtime thread */
+  /* holds a lightweight continuation captured for the operation,
+     if any */
+  int maybe_suspended_lw;
+  /* set to 1 with suspended_lw untl test in runtime thread; this
+     extra flag avoids spinning if the suspended continuation
+     cannot be resumed in the main thread for some reason */
 
   Scheme_Object *retval_s;
   void *retval_p; /* use only with conservative GC */
