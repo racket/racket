@@ -162,6 +162,10 @@ static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *r
     base[already + i] = argv[i];
   }
 
+  /* In futures mode, it's important that the argument array matches
+     runstack: */
+  MZ_RUNSTACK = base;
+
   return ts__scheme_tail_apply_from_native(rator, argc + already, base);
 }
 
