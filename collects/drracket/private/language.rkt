@@ -369,6 +369,7 @@
                   (exact? x)
                   (real? x)
                   (not (integer? x))))])
+      (define convert-table (make-hasheq))
       (parameterize ([pretty-print-pre-print-hook (λ (val port) (void))]
                      [pretty-print-post-print-hook (λ (val port) (void))]
                      [pretty-print-exact-as-decimal #f]
@@ -395,7 +396,12 @@
                             [(use-number-snip? value) 1]
                             [(syntax? value) 1]
                             [(to-snip-value? value) 1]
-                            [(convertible? value) 1]
+                            [(and (convertible? value)
+                                  (convert value 'png-bytes #f))
+                             =>
+                             (λ (converted)
+                               (hash-set! convert-table value converted)
+                               1)]
                             [else (oh value display? port)])))]
                      [pretty-print-print-hook
                       (let ([oh (pretty-print-print-hook)])
@@ -431,15 +437,13 @@
                              (write-special (render-syntax/snip value) port)]
                             [(to-snip-value? value)
                              (write-special (value->snip value) port)]
-                            [(convertible? value)
-                             (define bytes (convert value 'png-bytes #f))
-                             (if bytes
-                                 (write-special
-                                  (make-object image-snip%
-                                    (read-bitmap (open-input-bytes bytes)))
-                                  port)
-                                 (display (format (if display? "~a" "~s") value)
-                                          port))]
+                            [(hash-ref convert-table value #f)
+                             =>
+                             (λ (bytes)
+                               (write-special
+                                (make-object image-snip%
+                                  (read-bitmap (open-input-bytes bytes)))
+                                port))]
                             [else (oh value display? port)])))]
                      [print-graph
                       ;; only turn on print-graph when using `write' or `print' printing 
