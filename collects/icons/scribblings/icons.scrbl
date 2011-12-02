@@ -74,7 +74,7 @@ Icon sizes are given as heights to make it easier to append them horizontally.
 In the following example, applying @racket[load-icon] is equivalent to @racket[(plt-logo 100 'diffuse)]:
 @interaction[#:eval icon-eval (load-icon "logo" "plt-logo-diffuse" 100)]
 
-(In the interactions window, you would have to send the result of applying @racket[load-icon] to @racket[icon->pict] to see it.)
+(In the interactions window, you would have to send the result of applying @racket[load-icon] to @racket[bitmap] to see it.)
 
 @doc-apply[icon-categories]{
 Returns a list of all the icon categories.
@@ -221,36 +221,33 @@ A contract that identifies icon styles.
 
 It is more flexible, but a little more complicated, to load icons as @racket[pict]s.
 As picts, icons can easily be appended, inset, superimposed, blurred, and more.
-
-To use these functions effectively, you should require @racketmodname[icons] and @racketmodname[slideshow/pict] together.
-
-Almost all of the functions in preceeding sections are defined in terms of the functions documented in this section.
+Almost all of the functions in preceeding sections are defined in terms of the @racket[pict]-producing functions documented in this section.
 
 @interaction-eval[#:eval icon-eval (require slideshow/pict)]
 
-@doc-apply[load-icon-pict]{
-Corresponds to @racket[load-icon]. In fact, @racket[load-icon] uses @racket[load-icon-pict] to load the icon as a @racket[pict], and passes it to @racket[pict->icon].
-}
+To use these functions effectively, you should require @racketmodname[icons] and @racketmodname[slideshow/pict] together.
+Use @racket[bitmap] to convert a @racket[bitmap%] (e.g. an icon) to a @racket[pict], and @racket[pict->bitmap] to convert back.
 
-@doc-apply[icon->pict]
-@doc-apply[pict->icon]{
-Convert from an icon to a @racket[pict], and back.
-
-The conversion from @racket[pict]s to icons can be lossy because it renders vector graphics as a bitmap. For example, converting text can look especially horrible:
+Converting from @racket[pict]s to bitmaps can be lossy. For example, converting text can look especially horrible:
 @interaction[#:eval icon-eval
                     (scale (text "Hello" null 10) 5)
-                    (scale (icon->pict (pict->icon (text "Hello" null 10))) 5)]
+                    (scale (bitmap (pict->bitmap (text "Hello" null 10))) 5)]
 
-Therefore, when composing icons from parts, work only with @racket[pict]s, and convert to an icon as the last step.
+Therefore, when composing icons from parts, try to work only with @racket[pict]s, and convert to an icon using @racket[pict->bitmap] as the last step.
 
-On the other hand, @racket[(compose pict->icon icon->pict)] always returns an equivalent icon:
+When composing icons from parts, it is fine to use @racket[pict]s converted from @racket[bitmap%]s.
+Without scaling or rotating, the conversion is lossless:
 @interaction[#:eval icon-eval
                     (define not-blurry (magnifying-glass-icon 'green 64 'shiny))
                     not-blurry
-                    (define still-not-blurry
-                      (for/fold ([icon not-blurry]) ([i  (in-range 30)])
-                        (pict->icon (icon->pict icon))))
-                    still-not-blurry]
+                    (for/fold ([icon not-blurry]) ([i  (in-range 30)])
+                      (pict->bitmap (bitmap icon)))]
+
+Avoid converting between @racket[pict]s and @racket[bitmap%]s more than once if bitmap-backed @racket[pict]s are scaled, rotated by angles that are not multiples of 90 degrees, or superimposed or appended at non-integer coordinates.
+Avoid scaling up in general.
+
+@doc-apply[load-icon-pict]{
+Corresponds to @racket[load-icon]. In fact, @racket[load-icon] uses @racket[load-icon-pict] to load the icon as a @racket[pict], and passes it to @racket[pict->bitmap].
 }
 
 @doc-apply[go-icon-pict]
@@ -360,5 +357,5 @@ For convenience, write functions to load the icon; for example,
                   height))
                                                                             
 (define (silly-walk-icon color height [style (default-icon-style)])
-  (pict->icon (silly-walk-icon-pict color height style)))
+  (pict->bitmap (silly-walk-icon-pict color height style)))
 ]

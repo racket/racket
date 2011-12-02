@@ -11,8 +11,6 @@
           icon-style/c
           toolbar-icon-height
           default-icon-style
-          icon->pict
-          pict->icon
           load-icon-pict
           load-icon
           format-icon-name

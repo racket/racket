@@ -1074,6 +1074,12 @@ Draws @racket[pict] to @racket[dc], with its top-left corner at offset
  (@racket[x], @racket[y]).}
 
 
+@defproc[(pict->bitmap [pict pict?])
+         (is-a?/c bitmap%)]{
+
+Returns a @racket[bitmap%] with an alpha channel, no larger than @racket[pict], with @racket[pict] drawn on it in the top-left corner (@racket[0], @racket[0]).}
+
+
 @defproc[(make-pict-drawer [pict pict?])
          ((is-a?/c dc<%>) real? real? . -> . void?)]{
 

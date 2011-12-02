@@ -75,7 +75,7 @@
                        3/4))
 
 (define not-blurry
-  (let* ([1x   (compose icon->pict pict->icon)]
+  (let* ([1x   (compose bitmap pict->bitmap)]
          [2x   (compose 1x 1x)]
          [4x   (compose 2x 2x)]
          [8x   (compose 4x 4x)]

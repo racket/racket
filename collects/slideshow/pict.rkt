@@ -7,8 +7,9 @@
                       [pin-line t:pin-line]
                       [pin-arrow-line t:pin-arrow-line]
                       [pin-arrows-line t:pin-arrows-line])
-           (only-in racket/draw dc-path%)
-           (only-in racket/class new send))
+           (only-in racket/draw dc-path% make-bitmap bitmap% bitmap-dc%)
+           (only-in racket/class new send make-object is-a?/c)
+           racket/contract)
 
   (define (hline w h #:segment [seg #f])
     (if seg
@@ -200,6 +201,16 @@
              (standard-fish w h direction color eye-color open-mouth))])
       standard-fish))
 
+  (define (pict->bitmap p)
+    (define w (pict-width p))
+    (define h (pict-height p))
+    (define bm (make-bitmap (max 1 (inexact->exact (ceiling w)))
+                            (max 1 (inexact->exact (ceiling h)))))
+    (define dc (make-object bitmap-dc% bm))
+    (send dc set-smoothing 'smoothed)
+    (draw-pict p dc 0 0)
+    bm)
+
   (provide hline vline
            frame
            pict-path?
@@ -262,4 +273,6 @@
                        standard-fish
 
                        find-pen find-brush)
-           (rename-out [fish standard-fish])))
+           (rename-out [fish standard-fish])
+           (contract-out [pict->bitmap (pict? . -> . (is-a?/c bitmap%))])
+           ))

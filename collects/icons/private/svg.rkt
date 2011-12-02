@@ -16,32 +16,17 @@
 (defparam toolbar-icon-height (>/c 0) 16)
 (defparam default-icon-style (or/c 'diffuse 'shiny) 'diffuse)
 
-(defproc (icon->pict [icon (is-a?/c bitmap%)]) pict?
-  (bitmap icon))
-
-(defproc (pict->icon [p pict?]) (is-a?/c bitmap%)
-  (define w (pict-width p))
-  (define h (pict-height p))
-  (define bm (make-bitmap (max 1 (inexact->exact (ceiling w)))
-                          (max 1 (inexact->exact (ceiling h)))))
-  (define dc (make-object bitmap-dc% bm))
-  (send dc set-smoothing 'smoothed)
-  (draw-pict p dc 0 0)
-  bm)
-
 (defproc (load-icon-pict [category string?] [name string?] [height (>=/c 0)]) pict?
   (define hs (icon-category-heights category))
   (define icon-height
     (let ([h  (for/first ([h  (in-list hs)] #:when (height . <= . h)) h)])
       (if h h (last hs))))
-  (define icon
-    (make-object bitmap%
-      (build-path svg-icons-base-path (format "~a/~a/~a.png" category icon-height name))
-      'png/alpha))
-  (scale (icon->pict icon) (/ height icon-height)))
+  (define icon-path
+    (build-path svg-icons-base-path (format "~a/~a/~a.png" category icon-height name)))
+  (scale (bitmap icon-path) (/ height icon-height)))
 
 (defproc (load-icon [category string?] [name string?] [height (>=/c 0)]) (is-a?/c bitmap%)
-  (pict->icon (load-icon-pict category name height)))
+  (pict->bitmap (load-icon-pict category name height)))
 
 (defproc (format-icon-name [name string?] [color icon-color/c]
                            [style (or/c icon-style/c #f) (default-icon-style)]) string?
@@ -183,7 +168,7 @@
        (syntax/loc stx
          (begin (defproc (f [color icon-color/c] [height (>=/c 0)]
                             [style icon-style/c (default-icon-style)]) (is-a?/c bitmap%)
-                  (pict->icon (f-pict color height style)))
+                  (pict->bitmap (f-pict color height style)))
                 ...)))]))
 
 (define-syntax (define-wrapped-icon-fun/no-color stx)
@@ -194,7 +179,7 @@
        (syntax/loc stx
          (begin (defproc (f [height (>=/c 0)]
                             [style icon-style/c (default-icon-style)]) (is-a?/c bitmap%)
-                  (pict->icon (f-pict height style)))
+                  (pict->bitmap (f-pict height style)))
                 ...)))]))
 
 (define-wrapped-icon-fun
