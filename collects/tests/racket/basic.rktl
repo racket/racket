@@ -2504,6 +2504,7 @@
   (test (equal-hash-code ht) values (equal-hash-code ht2))
   (test (equal-hash-code wht) values (equal-hash-code wht2))
   (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2))
+  (test (equal-secondary-hash-code wht) values (equal-secondary-hash-code wht2))
 
   (let ([ht (for/hash ([i (in-list l)])
               (values (a i) (a (a i))))]

@@ -1759,7 +1759,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 	  if (key) {
 	    k += equal_hash_key2((Scheme_Object *)bucket->val, hi);
 	    k += equal_hash_key2((Scheme_Object *)key, hi);
-            old_depth = hi->depth;
+            hi->depth = old_depth;
 	  }
 	}
       }
