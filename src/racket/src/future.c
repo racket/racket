@@ -2343,15 +2343,13 @@ void scheme_check_future_work()
 
       if (capture_future_continuation(fs, ft, storage, 1)) {
         /* capture performs mzrt_mutex_lock(fs->future_mutex) on success. */
-        /* Signal the waiting worker thread that it
-           can continue doing other things: */
-        ft->can_continue_sema = can_continue_sema;
-        if (ft->can_continue_sema) {
-          mzrt_sema_post(ft->can_continue_sema);
-          ft->can_continue_sema = NULL;
-        }
         mzrt_mutex_unlock(fs->future_mutex);
       }
+      /* Signal the waiting worker thread that it can continue, since
+         we either captured the continuation or the result became
+         available meanwhile: */
+      if (can_continue_sema)
+        mzrt_sema_post(can_continue_sema);
     } else
       break;
   }
@@ -3020,6 +3018,7 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
     } else {
       /* Signal the waiting worker thread that it
          can continue running machine code */
+      future->want_lw = 0;
       mzrt_sema_post(future->can_continue_sema);
       future->can_continue_sema = NULL;
       mzrt_mutex_unlock(fs->future_mutex);
