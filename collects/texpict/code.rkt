@@ -499,6 +499,7 @@
             [(a b i ... c)
              (let ([pos (for/fold ([pos (syntax-position #'b)]) ([i (in-list (syntax->list #'(i ... c)))])
                           (and pos 
+                               (syntax-position i)
                                ((syntax-position i) . > . pos)
                                (syntax-position i)))])
                (and pos 
