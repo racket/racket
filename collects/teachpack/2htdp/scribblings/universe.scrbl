@@ -1018,7 +1018,7 @@ The mandatory clauses of a @racket[universe] server description are
  universe. The event handler is called with the current state and the
  joining iworld, which isn't on the list yet. In particular, the handler may
  reject a @tech{world} program from participating in a @tech{universe},
- by simply including it in the resulting @racket[bundle] structure (third field).}
+ by simply omitting it from the resulting @racket[bundle] structure (third field).}
 }
 
 @item{
