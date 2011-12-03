@@ -66,6 +66,8 @@
        (error 'build-graph "Doesn't handle syntax")]
       [(? seq-for-syntax?)
        (error 'build-graph "Doesn't handle syntax")]
+      [(struct inline-variant (direct inline))
+       (build-graph! lhs direct)]
       [(struct req (reqs dummy))
        (build-graph! lhs dummy)]
       [(? mod?)

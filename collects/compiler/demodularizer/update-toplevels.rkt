@@ -12,6 +12,8 @@
        (error 'increment "Doesn't handle syntax")]
       [(? seq-for-syntax?)
        (error 'increment "Doesn't handle syntax")]
+      [(struct inline-variant (direct inline))
+       (update direct)]
       [(struct req (reqs dummy))
        (make-req reqs (update dummy))]
       [(? mod?)
