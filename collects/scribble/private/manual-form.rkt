@@ -55,7 +55,7 @@
                    (syntax->list #'(lit ...)))
          #'(with-togetherable-racket-variables
             (lit ...)
-            ([form spec] [form spec1] ...
+            ([form [defined-id spec]] [form [defined-id spec1]] ...
              [non-term (non-term-id non-term-form ...)] ...)
             (*defforms defined-id-expr
                        '(spec spec1 ...)
