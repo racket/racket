@@ -1048,11 +1048,19 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       if (rand2) {
         simple_rand = (scheme_ok_to_move_local(rand)
                        || SCHEME_INTP(rand));
-        if (!simple_rand)
-          simple_rand2 = (SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type)
-                          && (SCHEME_GET_LOCAL_FLAGS(rand2) != SCHEME_LOCAL_FLONUM));
-        else
-          simple_rand2 = 0;
+        simple_rand2 = (SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type)
+                        && (SCHEME_GET_LOCAL_FLAGS(rand2) != SCHEME_LOCAL_FLONUM));
+        if (simple_rand && simple_rand2) {
+          if (mz_CURRENT_REG_STATUS_VALID()
+              && (jitter->r0_status >= 0)
+              && !(SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
+                   && SCHEME_LOCAL_POS(rand) == SCHEME_LOCAL_POS(rand2))) {
+            /* prefer to evaluate the rand2 second, so that we can use R0 if 
+               it's helpful to set up R1 as rand */
+            simple_rand = 0;
+          } else
+            simple_rand2 = 0;
+        }
       } else {
         simple_rand = 0;
         simple_rand2 = 0;
@@ -1628,14 +1636,19 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         /* If second is constant, first arg is in JIT_R0. */
         /* Otherwise, first arg is in JIT_R1, second is in JIT_R0 */
         /* Jump to ref3 to produce false */
+        int rs_valid, rs_can_keep = 0;
+
         if (for_branch) {
           scheme_prepare_branch_jump(jitter, for_branch);
           CHECK_LIMIT();
         }
 
+        rs_valid = mz_CURRENT_REG_STATUS_VALID();
+
         switch (cmp) {
         case CMP_ODDP:
           ref3 = jit_bmci_l(jit_forward(), JIT_R0, 0x2);
+          rs_can_keep = 1;
           break;
         case -CMP_BIT:
           if (rand2) {
@@ -1660,6 +1673,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           } else {
             ref3 = jit_bgei_l(jit_forward(), JIT_R0, (intptr_t)scheme_make_integer(v));
           }
+          rs_can_keep = 1;
           break;
         case CMP_LEQ:
           if (rand2) {
@@ -1667,6 +1681,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           } else {
             ref3 = jit_bgti_l(jit_forward(), JIT_R0, (intptr_t)scheme_make_integer(v));
           }
+          rs_can_keep = 1;
           break;
         case CMP_EQUAL:
           if (rand2) {
@@ -1674,6 +1689,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           } else {
             ref3 = jit_bnei_l(jit_forward(), JIT_R0, (intptr_t)scheme_make_integer(v));
           }
+          rs_can_keep = 1;
           break;
         case CMP_GEQ:
           if (rand2) {
@@ -1681,6 +1697,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           } else {
             ref3 = jit_blti_l(jit_forward(), JIT_R0, (intptr_t)scheme_make_integer(v));
           }
+          rs_can_keep = 1;
           break;
         case CMP_GT:
           if (rand2) {
@@ -1688,6 +1705,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           } else {
             ref3 = jit_blei_l(jit_forward(), JIT_R0, (intptr_t)scheme_make_integer(v));
           }
+          rs_can_keep = 1;
           break;
         default:
         case CMP_BIT:
@@ -1703,12 +1721,16 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
             ref3 = jit_bmcr_l(jit_forward(), JIT_R1, JIT_R0);
           } else {
             ref3 = jit_bmci_l(jit_forward(), JIT_R0, 1 << (v+1));
+            rs_can_keep = 1;
           }
           break;
         case CMP_EVENP:
           ref3 = jit_bmsi_l(jit_forward(), JIT_R0, 0x2);
+          rs_can_keep = 1;
           break;
         }
+
+        mz_SET_REG_STATUS_VALID(rs_valid && rs_can_keep);
       }
     } else {
       ref3 = NULL;
