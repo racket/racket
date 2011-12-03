@@ -5,6 +5,7 @@
 
 (require racket/flonum
          racket/fixnum
+         racket/unsafe/ops
          compiler/zo-parse)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1363,6 +1364,34 @@
               (require racket/fixnum)
               (- (expt 2 31) 2))
            #f)
+
+;; don't duplicate an operation by moving it into a lambda':
+(test-comp '(lambda (x)
+              (let ([y (unsafe-flvector-length x)])
+                (let ([f (lambda () y)])
+                  (+ (f) (f)))))
+           '(lambda (x)
+              (+ (unsafe-flvector-length x) (unsafe-flvector-length x)))
+           #f)
+
+;; don't delay an unsafe car, because it might be space-unsafe
+(test-comp '(lambda (f x)
+              (let ([y (unsafe-car x)])
+                (f)
+                y))
+           '(lambda (f x)
+              (f)
+              (unsafe-car x))
+           #f)
+
+;; it's ok to delay `list', because there's no space-safety issue
+(test-comp '(lambda (f x)
+              (let ([y (list x)])
+                (f)
+                y))
+           '(lambda (f x)
+              (f)
+              (list x)))
 
 ;; simple cross-module inlining
 (test-comp `(module m racket/base 

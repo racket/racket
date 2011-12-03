@@ -528,16 +528,24 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
 }
 
 static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
+/* A -1 return means that the arguments must be movable without
+   changing space complexity. */
 {
   if (rator && SCHEME_PRIMP(rator)) {
-    if (((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)
-      return 1;
+    if (((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
+      /* Although it's semantically ok to return -1 even when cross_lambda,
+         doing so risks duplicating a computation of the relevant `lambda'
+         is later inlined. */
+      return -1;
+    }
   }
 
   if (SAME_OBJ(scheme_void_proc, rator))
-    return 1;
+    return -1;
 
   if (!cross_lambda
+      /* Note that none of these have space-safety issues, since they
+         return values that contain all arguments: */
       && (SAME_OBJ(scheme_list_proc, rator)
           || (SAME_OBJ(scheme_cons_proc, rator) && (n == 2))
           || SAME_OBJ(scheme_list_star_proc, rator)
@@ -549,44 +557,66 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
   return 0;
 }
 
-static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delta, int cross_lambda, int fuel)
+static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delta, int cross_lambda, 
+                              int check_space, int fuel)
 /* An expression that can't necessarily be constant-folded,
    but can be delayed because it has no side-effects (or is unsafe);
    also not sensitive to being in tail position */
 {
+  int can_move;
+
   if (fuel < 0) return 0;
 
   switch (SCHEME_TYPE(expr)) {
+  case scheme_toplevel_type:
+    return ((SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED);
+  case scheme_compiled_quote_syntax_type:
+    return 1;
   case scheme_local_type:
     {
       /* Ok if not mutable */
       int pos = SCHEME_LOCAL_POS(expr);
       if (pos + delta < 0)
         return 1;
-      else if (!optimize_is_mutated(info, pos + delta))
+      else if (!optimize_is_mutated(info, pos + delta)) {
+        if (check_space) {
+          if (optimize_is_flonum_valued(info, pos + delta))
+            return 1;
+          /* the value of the identifier might be something that would
+             retain significant memory, so we can't delay evaluation */
+          return 0;
+        }
         return 1;
+      }
     }
     break;
   case scheme_application_type:
-    if (is_movable_prim(((Scheme_App_Rec *)expr)->args[0], ((Scheme_App_Rec *)expr)->num_args, cross_lambda)) {
+    can_move = is_movable_prim(((Scheme_App_Rec *)expr)->args[0], ((Scheme_App_Rec *)expr)->num_args, cross_lambda);
+    if (can_move) {
       int i;
       for (i = ((Scheme_App_Rec *)expr)->num_args; i--; ) {
-        if (!movable_expression(((Scheme_App_Rec *)expr)->args[i+1], info, delta, cross_lambda, fuel - 1))
+        if (!movable_expression(((Scheme_App_Rec *)expr)->args[i+1], info, delta, cross_lambda, 
+                                check_space || (can_move < 0), fuel - 1))
           return 0;
       }
       return 1;
     }
     break;
   case scheme_application2_type:
-    if (is_movable_prim(((Scheme_App2_Rec *)expr)->rator, 1, cross_lambda)) {
-      if (movable_expression(((Scheme_App2_Rec *)expr)->rand, info, delta, cross_lambda, fuel - 1))
+    can_move = is_movable_prim(((Scheme_App2_Rec *)expr)->rator, 1, cross_lambda);
+    if (can_move) {
+      if (movable_expression(((Scheme_App2_Rec *)expr)->rand, info, delta, cross_lambda, 
+                             check_space || (can_move < 0), fuel - 1))
         return 1;
     }
     break;
   case scheme_application3_type:
-    if (is_movable_prim(((Scheme_App3_Rec *)expr)->rator, 2, cross_lambda)) {
-      if (movable_expression(((Scheme_App3_Rec *)expr)->rand1, info, delta, cross_lambda, fuel - 1)
-          && movable_expression(((Scheme_App3_Rec *)expr)->rand2, info, delta, cross_lambda, fuel - 1))
+    can_move = is_movable_prim(((Scheme_App3_Rec *)expr)->rator, 2, cross_lambda);
+    if (can_move) {
+      if (movable_expression(((Scheme_App3_Rec *)expr)->rand1, info, delta, cross_lambda, 
+                             check_space || (can_move < 0), fuel - 1)
+          && movable_expression(((Scheme_App3_Rec *)expr)->rand2, info, delta, cross_lambda, 
+                                check_space || (can_move < 0), fuel - 1))
         return 1;
     }
     break;
@@ -3226,7 +3256,6 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
     return 1;
   }
 
-
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_toplevel_type)) {
     if ((SCHEME_TOPLEVEL_FLAGS(value) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED)
       return 1;
@@ -5075,7 +5104,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
           if (((o->vclock == info->vclock)
                && single_valued_noncm_expression(o->expr, 5))
               || ((o->vclock != info->vclock)
-                  && movable_expression(o->expr, info, o->delta, o->cross_lambda, 5))) {
+                  && movable_expression(o->expr, info, o->delta, o->cross_lambda, 0, 5))) {
             val = scheme_optimize_clone(1, o->expr, info, o->delta, 0);
             if (val) {
               info->size -= 1;

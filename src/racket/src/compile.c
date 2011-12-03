@@ -2078,8 +2078,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   Scheme_Compiled_Let_Value *last = NULL, *lv;
   DupCheckRecord r;
   int rec_env_already = rec[drec].env_already;
-  int rev_bind_order = recursive;
-  int post_bind = !recursive && !star;
+  int rev_bind_order,  post_bind;
   Scheme_Let_Header *head;
     
   form = scheme_stx_taint_disarm(form, NULL);
@@ -2102,6 +2101,11 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 
   if (num_clauses < 0)
     scheme_wrong_syntax(NULL, bindings, form, NULL);
+
+  if (num_clauses < 2) star = 0;
+
+  post_bind = !recursive && !star;
+  rev_bind_order = recursive;
 
   forms = SCHEME_STX_CDR(form);
   forms = SCHEME_STX_CDR(forms);
