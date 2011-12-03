@@ -1626,6 +1626,7 @@ static void direct_future_to_future_touch(Scheme_Future_State *fs, future_t *ft,
   send_special_result(t_ft, retval);
 
   t_ft->arg_S1 = NULL;
+  t_ft->status = HANDLING_PRIM; /* handled as if by runtime thread */
 
   complete_rtcall(fs, t_ft);
 }
@@ -1882,7 +1883,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
               if (ft->touching)
                 SCHEME_CDR(pr) = ft->touching;
               ft->touching = pr;
-              current_ft->in_touch_queue = 1;
+              current_ft->in_future_specific_touch_queue = 1;
               mzrt_mutex_unlock(fs->future_mutex);
             } else {
               /* `ft' switched to FINISHED while we were trying add,
@@ -2288,6 +2289,7 @@ void scheme_check_future_work()
     if (ft) {
       fs->future_waiting_touch = ft->next_waiting_touch;
       ft->next_waiting_touch = NULL;
+      ft->in_touch_queue = 0;
       other_ft = get_future_for_touch(ft);
       more = 1;
     } else {
@@ -2306,7 +2308,6 @@ void scheme_check_future_work()
       mzrt_mutex_lock(fs->future_mutex);
       if (other_ft->status == FINISHED) {
         /* Completed while we tried to allocate a chain link. */
-        ft->status = HANDLING_PRIM;
         direct_future_to_future_touch(fs, other_ft, ft);
       } else {
         /* enqueue */
@@ -2460,13 +2461,16 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   }
 
   if (func == touch) {
-    if (!future->in_touch_queue) {
+    if (!future->in_future_specific_touch_queue) {
       /* Ask the runtime thread to put this future on the queue
          of the future being touched: */
-      future->next_waiting_touch = fs->future_waiting_touch;
-      fs->future_waiting_touch = future;
+      if (!future->in_touch_queue) {
+        future->next_waiting_touch = fs->future_waiting_touch;
+        fs->future_waiting_touch = future;
+        future->in_touch_queue = 1;
+      }
     } else {
-      future->in_touch_queue = 0; /* done with back-door argument */
+      future->in_future_specific_touch_queue = 0; /* done with back-door argument */
     }
   }
 

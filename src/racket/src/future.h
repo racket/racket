@@ -78,7 +78,7 @@ typedef struct future_t {
 
   /* Runtime call stuff */
 
-  int want_lw; 
+  char want_lw; 
   /* flag to indicate waiting for lw capture; if this flag is set,
      then the future thread currently running the future must be
      blocked, and the runtime thread must not already be working on
@@ -90,16 +90,18 @@ typedef struct future_t {
      future that completed; the `want_lw' flag should be changed only
      while holding a lock */
 
-  int in_queue_waiting_for_lwc;
+  char in_queue_waiting_for_lwc;
   /* flag to indicate whether the future is in the "waiting for lwc"
      queue; the future might be in the queue even if want_lw is set to
      0, and so this flag just prevents  */
 
-  int in_touch_queue;   
+  char in_touch_queue;   
   /* like `in_queue_waiting_for_lwc' but for being in a `touch'
      future */
 
-  int rt_prim_is_atomic;
+  char in_future_specific_touch_queue; /* a back-door argument */
+
+  char rt_prim_is_atomic;
   /* when a future thread is blocked on this future, it sets
      `rt_prim_is_atomic' if the blocking operation can run
      in any thread atomically (i.e., it's a "synchronizing" 
