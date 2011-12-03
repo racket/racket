@@ -589,7 +589,7 @@ plt-extras :+= (package: "lazy")
 plt-extras :+= (collects: "combinator-parser")
 
 ;; -------------------- icons
-dr-extras :+= (package: "icons/*.{jpg|png|gif|bmp|xbm|xpm}")
+dr-extras :+= (collects: "icons/*.{jpg|png|gif|bmp|xbm|xpm}")
 plt-extras :+= (package: "icons/")
 
 ;; -------------------- string
