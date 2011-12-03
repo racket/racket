@@ -3180,7 +3180,8 @@ Scheme_Object *unresolve_closure(Scheme_Closure_Data *rdata, Unresolve_Info *ui)
       mp = ui->depths[pos - rdata->closure_map[i] - 1];
       ui->depths[ui->stack_pos - i - 1] = mp;
     }
-  }
+  } else
+    data_pos = 0;
 
   init_size = ui->body_size;
   has_non_leaf = ui->has_non_leaf;
