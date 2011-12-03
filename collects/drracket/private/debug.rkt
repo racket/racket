@@ -187,10 +187,10 @@ profile todo:
                      (super-make-object bitmap))])
            note%)))
   
-  (define bug-note% (make-note% "stop-multi.png" (stop-signs-icon 24)))
+  (define bug-note% (make-note% "stop-multi.png" (stop-signs-icon)))
   (define mf-note% (make-note% "mf.gif" (include-bitmap (lib "icons/mf.gif") 'gif)))
-  (define file-note% (make-note% "stop-22x22.png" (stop-sign-icon 'red 24)))
-  (define small-planet-bitmap (planet-logo #f 24))
+  (define file-note% (make-note% "stop-22x22.png" (stop-sign-icon)))
+  (define small-planet-bitmap (earth-icon))
   (define planet-note% (make-note% "small-planet.png" small-planet-bitmap))
   
   ;; display-stats : (syntax -> syntax)

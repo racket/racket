@@ -19,7 +19,7 @@
 ;; size typically needed
 ;; Make sure these are sorted
 (define icon-heights '(16 32 64))
-(define logo-heights '(16 32 64 128 256 512))
+(define logo-heights '(32 64 128 256 512))
 
 (define (icon-category-heights category)
   (cond [(equal? category "logo")  logo-heights]

@@ -21,14 +21,13 @@
             [style   icon-styles])
   (tape-deck color height style))
 
-(for/list ([height  icon-heights])
-  (for*/list ([color   icon-colors]
-              [style   icon-styles])
-    (stop-sign-icon-pict color height style)))
+(for*/list ([height  icon-heights]
+            [style   icon-styles])
+  (stop-sign-icon-pict height style))
 
-(for/list ([height  icon-heights])
-  (for/list ([style   icon-styles])
-    (stop-signs-icon-pict height style)))
+(for*/list ([height  icon-heights]
+            [style   icon-styles])
+  (stop-signs-icon-pict height style))
 
 (for/list ([height  icon-heights])
   (for*/list ([color   icon-colors]
@@ -43,18 +42,21 @@
 (for/list ([height  icon-heights])
   (for*/list ([color   icon-colors]
               [style   icon-styles])
-    (hc-append (magnifying-glass-icon-pict color height style)
+    (for/list ([make-icon-pict  (list up-arrow-icon-pict down-arrow-icon-pict
+                                      left-arrow-icon-pict right-arrow-icon-pict)])
+      (make-icon-pict color height style))))
+
+(for/list ([height  icon-heights])
+  (for*/list ([color   icon-colors]
+              [style   icon-styles])
+    (hc-append (magnifying-glass-icon-pict height style)
                (check-icon-pict color height style))))
 
 (for/list ([height  icon-heights])
   (for*/list ([color   icon-colors]
               [style   icon-styles])
     (lt-superimpose (check-icon-pict color height style)
-                    (magnifying-glass-icon-pict #f height style))))
-
-(for*/list ([height  icon-heights]
-            [style   icon-styles])
-  (macro-stepper-icon-pict height style))
+                    (magnifying-glass-icon-pict height style))))
 
 (ht-append (go-icon-pict 'red 24 'diffuse)
            (back-icon-pict 'blue 32 'shiny))
@@ -75,9 +77,7 @@
                 (go-icon-pict 'red 24 'diffuse))
 
 (rb-superimpose (check-icon-pict 'green (toolbar-icon-height) 'diffuse)
-                (scale (magnifying-glass-icon-pict
-                        #f (toolbar-icon-height) (default-icon-style))
-                       3/4))
+                (scale (magnifying-glass-icon-pict (toolbar-icon-height)) 3/4))
 
 (define not-blurry
   (let* ([1x   (compose bitmap pict->bitmap)]
@@ -87,11 +87,16 @@
          [16x  (compose 8x 8x)]
          [32x  (compose 16x 16x)]
          [64x  (compose 32x 32x)])
-    (64x (magnifying-glass-icon-pict 'green 31.5 'shiny))))
+    (64x (magnifying-glass-icon-pict 31.5 'shiny))))
 (list not-blurry (pict-width not-blurry) (pict-height not-blurry))
 
 (plt-logo-pict 48 'shiny)
+(planet-logo-pict 48 'shiny)
 
-(list (planet-logo-pict 'black 48 'shiny)
-      (planet-logo-pict #f 24 'diffuse)
-      (planet-logo-pict #f 16 'diffuse))
+(list (earth-icon-pict 48 'shiny)
+      (earth-icon-pict 24 'diffuse)
+      (earth-icon-pict 16 'diffuse))
+
+(list (moon-icon-pict 48 'shiny)
+      (moon-icon-pict 24 'diffuse)
+      (moon-icon-pict 16 'diffuse))

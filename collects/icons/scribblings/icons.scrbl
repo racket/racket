@@ -33,13 +33,14 @@ The @racketmodname[icons] module is intended to make it possible to do all of th
 
 An icon communicates. Its shape and color are a visual metaphor for an action or a message. Icons should be easily recognizable, distinguishable, visually consistent, and metaphorically appropriate for the actions and messages they are used with. This is difficult to do well, but good examples, good abstractions, and an existing icon library help considerably.
 
-@(define (hash-quote) (load-icon "misc" (format-icon-name "hash-quote" #f 'diffuse) 14))
-@(define (step) (step-icon 'blue 14 'diffuse))
-
-Example: The Macro Stepper tool composes a new icon @(hash-quote) and an existing icon @(step), resulting in @(macro-stepper-icon 14 'diffuse) for its toolbar icon.
+@(define (hash-quote) (hash-quote-icon-pict 16))
+@(define (step) (step-icon-pict 'blue 16 'diffuse))
+@(define (macro-stepper) (ht-append (hash-quote) (step)))
+   
+Example: The Macro Stepper tool composes a new icon @(hash-quote) and an existing icon @(step), resulting in @(macro-stepper) for its toolbar icon.
 The @(hash-quote) icon connotes syntax, and is the color of a syntax-quote as rendered by DrRacket by default.
 The @(step) icon is colored like DrRacket colors identifier syntax by default, and is shaped using metaphors used in debugger toolbars, TV remotes, and music players around the world.
-It is composed of @(go-icon 'blue 14 'diffuse) to connote starting and @(bar-icon 'blue 14 'diffuse) to connote immediately stopping---a ``step.''
+It is composed of @(go-icon 'blue 16 'diffuse) to connote starting and @(bar-icon 'blue 16 'diffuse) to connote immediately stopping---a ``step.''
 
 The author of this collection is available to adapt or create SVG icons for DrRacket tools, and charges no more than your immortal soul.
 
@@ -54,10 +55,12 @@ Use @racket[(toolbar-icon-height)] as the @racket[height] argument when loading 
 If you cannot, as with the Macro Stepper, send a thinner icon as the @racket[alternate-bitmap] argument to a @racket[switchable-button%].)
 }
 
-@doc-apply[default-icon-style]{
-The style of DrRacket icons. Its value is the default style argument for the functions in @secref["common-icons"].
+@doc-apply[default-icon-height]{
+The height of standard (e.g. not toolbar) DrRacket icons, used as a default argument through the @racketmodname[icons] module.
+}
 
-If you use @racket[load-icon] to load icons in a DrRacket tool, to keep the tool's icons visually consistent with DrRacket's, format the file name using @racket[format-icon-name] without supplying a @racket[style] argument.
+@doc-apply[default-icon-style]{
+The style of DrRacket icons, used as a default argument throughout the @racketmodname[icons] module.
 }
 
 @section{Loading Icons}
@@ -71,8 +74,8 @@ Before using this general loading function, check @secref["common-icons"] for a 
 The icon is looked up in a cache of colorized SVG source files rendered as PNGs, and then resized to be @racket[height] pixels tall.
 Icon sizes are given as heights to make it easier to append them horizontally.
 
-In the following example, applying @racket[load-icon] is equivalent to @racket[(plt-logo 100 'diffuse)]:
-@interaction[#:eval icon-eval (load-icon "logo" "plt-logo-diffuse" 100)]
+The following is equivalent to @racket[(plt-logo 100 'diffuse)]:
+@interaction[#:eval icon-eval (load-icon "logo" "plt" #f 100 'diffuse)]
 
 @doc-apply[icon-categories]{
 Returns a list of all the icon categories.
@@ -86,21 +89,10 @@ Returns a list of all the names of icons in the given @racket[category].
 @examples[#:eval icon-eval (icon-names "logo")]
 }
 
-@doc-apply[format-icon-name]
-
-Formats an icon file name.
-
-@examples[#:eval icon-eval
-                 (format-icon-name "go" 'red 'diffuse)
-                 (format-icon-name "go" #f 'diffuse)
-                 (format-icon-name "go" 'red #f)
-                 (format-icon-name "go" #f #f)]
-
-The functions in @secref["common-icons"] use this to turn their arguments into file names.
 
 @section[#:tag "common-icons"]{Common Icon Constructors}
 
-@subsection{Playback Control Icons}
+@subsection{Control Icons}
 
 @doc-apply[go-icon]
 @doc-apply[bar-icon]
@@ -113,27 +105,48 @@ The functions in @secref["common-icons"] use this to turn their arguments into f
 @doc-apply[fast-forward-icon]
 @doc-apply[rewind-icon]
 @doc-apply[pause-icon]{
-These return typical ``playback control'' icons.
+These return typical ``playback'' icons.
 
 @interaction[#:eval icon-eval 
-                    (for*/list ([color  '(blue orange)]
-                                [style  icon-styles])
-                      (for/list ([make-icon  (list rewind-icon continue-back-icon
-                                                   step-back-icon back-icon
-                                                   pause-icon stop-icon
-                                                   go-icon step-icon
-                                                   continue-icon fast-forward-icon)])
-                        (make-icon color 32 style)))]
+                    (for/list ([make-icon  (list rewind-icon continue-back-icon
+                                                 step-back-icon back-icon
+                                                 pause-icon stop-icon
+                                                 go-icon step-icon
+                                                 continue-icon fast-forward-icon)]
+                               [color  (in-cycle icon-colors)]
+                               [style  (in-cycle icon-styles)])
+                      (make-icon color 32 style))]
 
-The remaining icon @(bar-icon 'red 14 'diffuse), returned by @racket[bar-icon], is not a playback icon @italic{per se}, but is used to build the others.
+The remaining icon @(bar-icon #f 16), returned by @racket[bar-icon], is not a playback icon @italic{per se}, but is used to build the others.
 }
+
+@subsection{Arrow Icons}
+
+@doc-apply[up-arrow-icon]
+@doc-apply[down-arrow-icon]
+@doc-apply[left-arrow-icon]
+@doc-apply[right-arrow-icon]{
+@examples[#:eval icon-eval
+                 (for/list ([make-icon  (list up-arrow-icon down-arrow-icon
+                                              left-arrow-icon right-arrow-icon)])
+                   (for/list ([color  icon-colors]
+                              [style  (in-cycle icon-styles)])
+                     (make-icon color (default-icon-height) style)))]
+}
+
+@subsection{Sign Icons}
 
 @doc-apply[stop-sign-icon]{
-@examples[#:eval icon-eval
-                 (for/list ([color  icon-colors]
-                            [style  (in-cycle icon-styles)])
-                   (stop-sign-icon color 24 style))]
+@examples[#:eval icon-eval (list (stop-sign-icon (default-icon-height) 'diffuse)
+                                 (stop-sign-icon (default-icon-height) 'shiny))]
 }
+
+@doc-apply[stop-signs-icon]{
+@examples[#:eval icon-eval (list (stop-signs-icon (default-icon-height) 'diffuse)
+                                 (stop-signs-icon (default-icon-height) 'shiny))]
+}
+
+@subsection{Check Icons}
 
 @doc-apply[check-icon]{
 @examples[#:eval icon-eval
@@ -142,17 +155,24 @@ The remaining icon @(bar-icon 'red 14 'diffuse), returned by @racket[bar-icon], 
                    (check-icon color 29 style))]
 }
 
-@doc-apply[magnifying-glass-icon]{
+@doc-apply[x-icon]{
 @examples[#:eval icon-eval
-                 (map (λ (color) (magnifying-glass-icon color 31 'diffuse))
-                      icon-colors)]
+                 (for/list ([color  icon-colors]
+                            [style  (in-cycle icon-styles)])
+                   (x-icon color 29 style))]
+}
+
+@subsection{Miscellaneous Icons}
+
+@doc-apply[magnifying-glass-icon]{
+@examples[#:eval icon-eval (list (magnifying-glass-icon 31 'diffuse)
+                                 (magnifying-glass-icon 31 'shiny))]
 Note that the uncolorized magnifying glass has a brown handle.
 }
 
 @doc-apply[magnifying-glass-left-icon]{
-@examples[#:eval icon-eval
-                 (map (λ (color) (magnifying-glass-left-icon color 31 'shiny))
-                      icon-colors)]
+@examples[#:eval icon-eval (list (magnifying-glass-left-icon 31 'diffuse)
+                                 (magnifying-glass-left-icon 31 'shiny))]
 }
 
 @doc-apply[disk-icon]{
@@ -162,21 +182,31 @@ Note that the uncolorized magnifying glass has a brown handle.
                    (disk-icon color 33 style))]
 }
 
-@subsection{Tool Icons and Other Special Icons}
-
-@doc-apply[stop-signs-icon]{
-@examples[#:eval icon-eval (stop-signs-icon 24 'diffuse)]
+@doc-apply[earth-icon]{
+@examples[#:eval icon-eval (list (earth-icon 48 'diffuse)
+                                 (earth-icon 48 'shiny))]
 }
 
-@doc-apply[macro-stepper-icon]{
-@examples[#:eval icon-eval (macro-stepper-icon (toolbar-icon-height) 'diffuse)]
+@doc-apply[moon-icon]{
+@examples[#:eval icon-eval (list (moon-icon 48 'diffuse)
+                                 (moon-icon 48 'shiny))]
 }
 
-@doc-apply[check-syntax-icon]
-@doc-apply[check-syntax-small-icon]{
-@examples[#:eval icon-eval (list (check-syntax-icon (toolbar-icon-height) 'diffuse)
-                                 (check-syntax-small-icon (toolbar-icon-height) 'diffuse))]
+@subsection{Symbols}
+
+@doc-apply[hash-quote-icon]{
+@examples[#:eval icon-eval (list (hash-quote-icon (toolbar-icon-height) 'diffuse)
+                                 (hash-quote-icon (toolbar-icon-height) 'shiny))]
 }
+
+@doc-apply[plus-icon]{
+@examples[#:eval icon-eval
+                 (for/list ([color  icon-colors]
+                            [style  (in-cycle icon-styles)])
+                   (plus-icon color 24 style))]
+}
+
+@subsection{Logos}
 
 @doc-apply[plt-logo]{
 @examples[#:eval icon-eval
@@ -184,11 +214,8 @@ Note that the uncolorized magnifying glass has a brown handle.
 }
 
 @doc-apply[planet-logo]{
-@examples[#:eval icon-eval
-                 (for/list ([color  icon-colors])
-                     (planet-logo color 40 'diffuse))
-                 (for/list ([color  icon-colors])
-                     (planet-logo color 40 'shiny))]
+@examples[#:eval icon-eval (list (planet-logo 128 'diffuse)
+                                 (planet-logo 128 'shiny))]
 }
 
 
@@ -258,7 +285,7 @@ Therefore, when composing icons from parts, try to work only with @racket[pict]s
 When composing icons from parts, it is fine to use @racket[pict]s converted from @racket[bitmap%]s.
 Without scaling or rotating, the conversion is lossless:
 @interaction[#:eval icon-eval
-                    (define not-blurry (magnifying-glass-icon 'green 64 'shiny))
+                    (define not-blurry (magnifying-glass-icon 64 'shiny))
                     not-blurry
                     (for/fold ([icon not-blurry]) ([i  (in-range 30)])
                       (pict->bitmap (bitmap icon)))]
@@ -281,7 +308,7 @@ Corresponds to @racket[load-icon]. In fact, @racket[load-icon] uses @racket[load
 @doc-apply[fast-forward-icon-pict]
 @doc-apply[rewind-icon-pict]
 @doc-apply[pause-icon-pict]{
-These return typical ``playback control'' icons, as @racket[pict]s.
+These return typical ``playback'' icons, as @racket[pict]s.
 
 @interaction[#:eval icon-eval
                     (for/fold ([icon (blank)])
@@ -293,16 +320,21 @@ These return typical ``playback control'' icons, as @racket[pict]s.
                       (hc-append icon (make-icon-pict 'black 32 'shiny) (blank 16)))]
 }
 
+@doc-apply[up-arrow-icon-pict]{ Corresponds to @racket[up-arrow-icon]. }
+@doc-apply[down-arrow-icon-pict]{ Corresponds to @racket[down-arrow-icon]. }
+@doc-apply[left-arrow-icon-pict]{ Corresponds to @racket[left-arrow-icon]. }
+@doc-apply[right-arrow-icon-pict]{ Corresponds to @racket[right-arrow-icon]. }
+
 @doc-apply[stop-sign-icon-pict]{ Corresponds to @racket[stop-sign-icon]. }
+@doc-apply[stop-signs-icon-pict]{ Corresponds to @racket[stop-signs-icon]. }
 @doc-apply[check-icon-pict]{ Corresponds to @racket[check-icon]. }
+@doc-apply[x-icon-pict]{ Corresponds to @racket[x-icon]. }
 @doc-apply[magnifying-glass-icon-pict]{ Corresponds to @racket[magnifying-glass-icon]. }
 @doc-apply[magnifying-glass-left-icon-pict]{ Corresponds to @racket[magnifying-glass-left-icon]. }
 @doc-apply[disk-icon-pict]{ Corresponds to @racket[disk-icon]. }
-
-@doc-apply[stop-signs-icon-pict]{ Corresponds to @racket[stop-signs-icon]. }
-@doc-apply[macro-stepper-icon-pict]{ Corresponds to @racket[macro-stepper-icon]. }
-@doc-apply[check-syntax-icon-pict]{ Corresponds to @racket[check-syntax-icon]. }
-@doc-apply[check-syntax-small-icon-pict]{ Corresponds to @racket[check-syntax-small-icon]. }
+@doc-apply[earth-icon-pict]{ Corresponds to @racket[earth-icon]. }
+@doc-apply[moon-icon-pict]{ Corresponds to @racket[moon-icon]. }
+@doc-apply[hash-quote-icon-pict]{ Corresponds to @racket[hash-quote-icon]. }
 @doc-apply[plt-logo-pict]{ Corresponds to @racket[plt-logo]. }
 @doc-apply[planet-logo-pict]{ Corresponds to @racket[planet-logo]. }
 
@@ -352,7 +384,7 @@ This will delete every PNG rendering, and re-render every SVG source file in @tt
 
 Renderings are done at specific power-of-two heights.
 For non-logo icons, the heights are currently 16, 32 and 64.
-Logos are rendered at 16, 32, 64, 128, 256 and 512.
+Logos are rendered at 32, 64, 128, 256 and 512.
 
 Uncolorized renders are put in a subdirectory named after their size.
 For example, a render of @tt{run/silly/walks-diffuse.svg} at height 64 will have the name @tt{run/silly/64/walks-diffuse.png}.
@@ -363,20 +395,18 @@ For example, a red render of @tt{run/silly/walks-diffuse.svg} at height 64 will 
 @bold{5. Load the icon.}
 For example, to load a red render of @tt{walks-diffuse.svg} at height 50, do
 
-@racketblock[(load-icon-pict "run/silly"
-                             (format-icon-name "walks" 'red 'diffuse)
-                             50)]
+@racketblock[(load-icon-pict "run/silly" "walks" 'red 50 'diffuse)]
 
-For this, @racket[format-icon-name] returns @racket["red/walks-diffuse"].
-Then @racket[load-icon-pict] finds the first rendered height not less than @racket[50], which is @racket[64], loads a bitmap from @racket["run/silly/64/red/walks-diffuse.png"], converts it to a @racket[pict], and scales it by @racket[(/ 50 64)].
+For this, @racket[load-icon-pict] finds the first rendered height not less than @racket[50], which is @racket[64], loads a bitmap from @racket["run/silly/64/red/walks-diffuse.png"], converts it to a @racket[pict], and scales it by @racket[(/ 50 64)].
 
 For convenience, write functions to load the icon; for example,
 @racketblock[
-(define (silly-walk-icon-pict color height [style (default-icon-style)])
-  (load-icon-pict "run/silly"
-                  (format-icon-name "walk" color style)
-                  height))
-                                                                            
-(define (silly-walk-icon color height [style (default-icon-style)])
-  (pict->bitmap (silly-walk-icon-pict color height style)))
-]
+(define (silly-walk-icon-pict color
+                              [height (default-icon-height)]
+                              [style (default-icon-style)])
+  (load-icon-pict "run/silly" "walk" color height style))
+
+(define (silly-walk-icon color
+                         [height (default-icon-height)]
+                         [style (default-icon-style)])
+  (pict->bitmap (silly-walk-icon-pict color height style)))]

@@ -10,7 +10,7 @@
          (only-in "view/view.rkt" macro-stepper-director%)
          "view/stepper.rkt"
          "view/prefs.rkt"
-         icons
+         icons slideshow/pict
          ;; FIXME:
          drracket/private/syncheck/local-member-names)
 
@@ -108,10 +108,13 @@
     (define drracket-custodian (current-custodian))
 
     (define-local-member-name check-language)
-
-    (define macro-debugger-up-bitmap (step-icon 'blue (toolbar-icon-height)))
-    (define macro-debugger-bitmap (macro-stepper-icon (toolbar-icon-height)))
-
+    
+    (define macro-debugger-up-pict (step-icon-pict 'blue (toolbar-icon-height)))
+    (define macro-debugger-up-bitmap (pict->bitmap macro-debugger-up-pict))
+    (define macro-debugger-bitmap
+      (pict->bitmap (ht-append (hash-quote-icon-pict (toolbar-icon-height))
+                               macro-debugger-up-pict)))
+    
     (define (macro-debugger-unit-frame-mixin %)
       (class* % (frame/supports-macro-stepper<%>)
         (super-new)

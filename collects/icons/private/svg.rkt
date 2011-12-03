@@ -11,29 +11,38 @@
 (provide (all-defined-out))
 
 (defthing icon-styles (listof symbol?) #:document-value '(diffuse shiny))
-(defcontract icon-style/c (or/c 'diffuse 'shiny))
+(defcontract icon-style/c (or/c #f 'diffuse 'shiny))
 
-(defparam toolbar-icon-height (>/c 0) 16)
+(defparam toolbar-icon-height (>/c 1) 16)
+(defparam default-icon-height (>/c 1) 24)
 (defparam default-icon-style (or/c 'diffuse 'shiny) 'diffuse)
 
-(defproc (load-icon-pict [category string?] [name string?] [height (>=/c 0)]) pict?
+(define (icon-file-name category name color height style) string?
+  (define cs-name (cond [(and color style)  (format "~a/~a-~a" color name style)]
+                        [color  (format "~a/~a" color name)]
+                        [style  (format "~a-~a" name style)]
+                        [else   (format "~a" name)]))
+  (format "~a/~a/~a.png" category height cs-name))
+
+(defproc (load-icon-pict [category string?]
+                         [name string?]
+                         [color icon-color/c]
+                         [height (>=/c 0) (default-icon-height)]
+                         [style icon-style/c (default-icon-style)]) pict?
   (define hs (icon-category-heights category))
   (define icon-height
     (let ([h  (for/first ([h  (in-list hs)] #:when (height . <= . h)) h)])
       (if h h (last hs))))
   (define icon-path
-    (build-path svg-icons-base-path category (format "~a" icon-height) (format "~a.png" name)))
+    (build-path svg-icons-base-path (icon-file-name category name color icon-height style)))
   (scale (bitmap icon-path) (/ height icon-height)))
 
-(defproc (load-icon [category string?] [name string?] [height (>=/c 0)]) (is-a?/c bitmap%)
-  (pict->bitmap (load-icon-pict category name height)))
-
-(defproc (format-icon-name [name string?] [color icon-color/c]
-                           [style (or/c icon-style/c #f) (default-icon-style)]) string?
-  (cond [(and color style)  (format "~a/~a-~a" color name style)]
-        [color  (format "~a/~a" color name)]
-        [style  (format "~a-~a" name style)]
-        [else   (format "~a" name)]))
+(defproc (load-icon [category string?]
+                    [name string?]
+                    [color icon-color/c]
+                    [height (>=/c 0) (default-icon-height)]
+                    [style icon-style/c (default-icon-style)]) (is-a?/c bitmap%)
+  (pict->bitmap (load-icon-pict category name color height style)))
 
 (defproc (icon-categories) (listof string?)
   (remove-duplicates
@@ -59,138 +68,123 @@
     (path->string (path-replace-suffix dir-path ""))))
 
 ;; ===================================================================================================
-;; Common icon pict contructors
+;; Icon pict contructors
 
-(defproc (go-icon-pict [color icon-color/c] [height (>=/c 0)]
-                       [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "run" (format-icon-name "go" color style) height))
-
-(defproc (bar-icon-pict [color icon-color/c] [height (>=/c 0)]
-                        [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "run" (format-icon-name "bar" color style) height))
-
-(defproc (back-icon-pict [color icon-color/c] [height (>=/c 0)]
-                         [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "run" (format-icon-name "back" color style) height))
-
-(defproc (stop-icon-pict [color icon-color/c] [height (>=/c 0)]
-                         [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "run" (format-icon-name "stop" color style) height))
-
-(defproc (step-icon-pict [color icon-color/c] [height (>=/c 0)]
-                         [style icon-style/c (default-icon-style)]) pict?
-  (hc-append (go-icon-pict color height style)
-             (bar-icon-pict color height style)))
-
-(defproc (step-back-icon-pict [color icon-color/c] [height (>=/c 0)]
-                              [style icon-style/c (default-icon-style)]) pict?
-  (hc-append (bar-icon-pict color height style)
-             (back-icon-pict color height style)))
-
-(defproc (continue-icon-pict [color icon-color/c] [height (>=/c 0)]
+(define-syntax-rule (define-make-colorized-icon-pict [make-icon-pict category name] ...)
+  (begin
+    (defproc (make-icon-pict [color icon-color/c]
+                             [height (>=/c 0) (default-icon-height)]
                              [style icon-style/c (default-icon-style)]) pict?
-  (hc-append (bar-icon-pict color height style)
-             (go-icon-pict color height style)))
+      (load-icon-pict category name color height style))
+    ...))
 
-(defproc (continue-back-icon-pict [color icon-color/c] [height (>=/c 0)]
+(define-syntax-rule (define-make-icon-pict [make-icon-pict category name] ...)
+  (begin
+    (defproc (make-icon-pict [height (>=/c 0) (default-icon-height)]
+                             [style icon-style/c (default-icon-style)]) pict?
+      (load-icon-pict category name #f height style))
+    ...))
+
+(define-make-colorized-icon-pict
+  [go-icon-pict "control" "go"]
+  [bar-icon-pict "control" "bar"]
+  [back-icon-pict "control" "back"]
+  [stop-icon-pict "control" "stop"]
+  [check-icon-pict "check" "check"]
+  [x-icon-pict "check" "x"]
+  [disk-icon-pict "misc" "disk"]
+  [plus-icon-pict "symbol" "plus"]
+  [up-arrow-icon-pict "arrow" "up"]
+  [down-arrow-icon-pict "arrow" "down"]
+  [left-arrow-icon-pict "arrow" "left"]
+  [right-arrow-icon-pict "arrow" "right"]
+  )
+
+(define-make-icon-pict
+  [stop-sign-icon-pict "sign" "stop"]
+  [magnifying-glass-icon-pict "misc" "magnifying-glass"]
+  [magnifying-glass-left-icon-pict "misc" "magnifying-glass-left"]
+  [earth-icon-pict "misc" "earth"]
+  [moon-icon-pict "misc" "moon"]
+  [hash-quote-icon-pict "symbol" "hash-quote"]
+  [plt-logo-pict "logo" "plt"]
+  [planet-logo-pict "logo" "planet"]
+  )
+
+(defproc (step-icon-pict [color icon-color/c]
+                         [height (>=/c 0) (default-icon-height)]
+                         [style icon-style/c (default-icon-style)]) pict?
+  (hc-append (go-icon-pict color height style) (bar-icon-pict color height style)))
+
+(defproc (step-back-icon-pict [color icon-color/c]
+                              [height (>=/c 0) (default-icon-height)]
+                              [style icon-style/c (default-icon-style)]) pict?
+  (hc-append (bar-icon-pict color height style) (back-icon-pict color height style)))
+
+(defproc (continue-icon-pict [color icon-color/c]
+                             [height (>=/c 0) (default-icon-height)]
+                             [style icon-style/c (default-icon-style)]) pict?
+  (hc-append (bar-icon-pict color height style) (go-icon-pict color height style)))
+
+(defproc (continue-back-icon-pict [color icon-color/c]
+                                  [height (>=/c 0) (default-icon-height)]
                                   [style icon-style/c (default-icon-style)]) pict?
-  (hc-append (back-icon-pict color height style)
-             (bar-icon-pict color height style)))
+  (hc-append (back-icon-pict color height style) (bar-icon-pict color height style)))
 
-(defproc (fast-forward-icon-pict [color icon-color/c] [height (>=/c 0)]
+(defproc (fast-forward-icon-pict [color icon-color/c]
+                                 [height (>=/c 0) (default-icon-height)]
                                  [style icon-style/c (default-icon-style)]) pict?
   (define go (go-icon-pict color height style))
   (scale (hc-append go go) 3/4 1))
 
-(defproc (rewind-icon-pict [color icon-color/c] [height (>=/c 0)]
+(defproc (rewind-icon-pict [color icon-color/c]
+                           [height (>=/c 0) (default-icon-height)]
                            [style icon-style/c (default-icon-style)]) pict?
   (define back (back-icon-pict color height style))
   (scale (hc-append back back) 3/4 1))
 
-(defproc (pause-icon-pict [color icon-color/c] [height (>=/c 0)]
+(defproc (pause-icon-pict [color icon-color/c]
+                          [height (>=/c 0) (default-icon-height)]
                           [style icon-style/c (default-icon-style)]) pict?
   (define gap (blank (* 1/16 height)))
   (define bar (bar-icon-pict color height style))
   (hc-append gap bar gap bar gap))
 
-(defproc (stop-sign-icon-pict [color icon-color/c] [height (>=/c 0)]
-                              [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "sign" (format-icon-name "stop-sign" color style) height))
-
-(defproc (check-icon-pict [color icon-color/c] [height (>=/c 0)]
-                          [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "check" (format-icon-name "check" color style) height))
-
-(defproc (magnifying-glass-icon-pict [color icon-color/c] [height (>=/c 0)]
-                                     [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "misc" (format-icon-name "magnifying-glass" color style) height))
-
-(defproc (magnifying-glass-left-icon-pict [color icon-color/c] [height (>=/c 0)]
-                                          [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "misc" (format-icon-name "magnifying-glass-left" color style) height))
-
-(defproc (disk-icon-pict [color icon-color/c] [height (>=/c 0)]
-                         [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "misc" (format-icon-name "disk" color style) height))
-
-;; Icons for tools and other special uses
-
-(defproc (stop-signs-icon-pict [height (>=/c 0)] [style icon-style/c (default-icon-style)]) pict?
+(defproc (stop-signs-icon-pict [height (>=/c 0) (default-icon-height)]
+                               [style icon-style/c (default-icon-style)]) pict?
   (define h (* 2/3 height))
-  (define s1 (inset (stop-sign-icon-pict 'red h style) (* 1/4 h) (* 1/2 h) 0 0))
-  (define s2 (inset (stop-sign-icon-pict 'orange h style) (* 1/8 h) (* 1/4 h) 0 0))
-  (define s3 (stop-sign-icon-pict 'cyan h style))
+  (define s1 (inset (stop-sign-icon-pict h style) (* 1/4 h) (* 1/2 h) 0 0))
+  (define s2 (inset (stop-sign-icon-pict h style) (* 1/8 h) (* 1/4 h) 0 0))
+  (define s3 (stop-sign-icon-pict h style))
   (inset (lt-superimpose s3 s2 s1) (* 1/8 h) 0 (* 1/8 h) 0))
 
-(defproc (macro-stepper-icon-pict [height (>=/c 0)] [style icon-style/c (default-icon-style)]) pict?
-  (ht-append (load-icon-pict "misc" (format-icon-name "hash-quote" #f style) height)
-             (step-icon-pict 'blue height style)))
-
-(defproc (check-syntax-icon-pict [height (>=/c 0)] [style icon-style/c (default-icon-style)]) pict?
-  (hb-append
-   (magnifying-glass-left-icon-pict #f (* 7/8 height) style)
-   (check-icon-pict 'green height style)))
-
-(defproc (check-syntax-small-icon-pict [height (>=/c 0)] [style icon-style/c (default-icon-style)]
-                                       ) pict?
-  (rb-superimpose
-   (hc-append (check-icon-pict 'green height style)
-              (blank (* 1/4 height)))
-   (magnifying-glass-icon-pict #f (* 3/4 height) style)))
-
-(defproc (plt-logo-pict [height (>=/c 0)] [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "logo" (format-icon-name "plt-logo" #f style) height))
-
-(defproc (planet-logo-pict [color icon-color/c] [height (>=/c 0)]
-                           [style icon-style/c (default-icon-style)]) pict?
-  (load-icon-pict "logo" (format-icon-name "planet-logo" color style) height))
-
 ;; ===================================================================================================
-;; Common icon contructors
+;; Icon contructors
 
-(define-syntax (define-wrapped-icon-fun stx)
+(define-syntax (define-make-colorized-icon stx)
   (syntax-case stx ()
     [(_ f ...)
      (with-syntax ([(f-pict ...)  (map (λ (f) (format-id f "~a-pict" f))
                                        (syntax->list #'(f ...)))])
        (syntax/loc stx
-         (begin (defproc (f [color icon-color/c] [height (>=/c 0)]
+         (begin (defproc (f [color icon-color/c]
+                            [height (>=/c 0) (default-icon-height)]
                             [style icon-style/c (default-icon-style)]) (is-a?/c bitmap%)
                   (pict->bitmap (f-pict color height style)))
                 ...)))]))
 
-(define-syntax (define-wrapped-icon-fun/no-color stx)
+(define-syntax (define-make-icon stx)
   (syntax-case stx ()
     [(_ f ...)
      (with-syntax ([(f-pict ...)  (map (λ (f) (format-id f "~a-pict" f))
                                        (syntax->list #'(f ...)))])
        (syntax/loc stx
-         (begin (defproc (f [height (>=/c 0)]
+         (begin (defproc (f [height (>=/c 0) (default-icon-height)]
                             [style icon-style/c (default-icon-style)]) (is-a?/c bitmap%)
                   (pict->bitmap (f-pict height style)))
                 ...)))]))
 
-(define-wrapped-icon-fun
+(define-make-colorized-icon
   go-icon
   bar-icon
   back-icon
@@ -202,16 +196,24 @@
   fast-forward-icon
   rewind-icon
   pause-icon
-  stop-sign-icon
   check-icon
+  x-icon
+  disk-icon
+  plus-icon
+  up-arrow-icon
+  down-arrow-icon
+  left-arrow-icon
+  right-arrow-icon
+  )
+
+(define-make-icon
+  stop-sign-icon
+  stop-signs-icon
   magnifying-glass-icon
   magnifying-glass-left-icon
-  disk-icon
-  planet-logo)
-
-(define-wrapped-icon-fun/no-color
-  stop-signs-icon
-  macro-stepper-icon
-  check-syntax-icon
-  check-syntax-small-icon
-  plt-logo)
+  earth-icon
+  moon-icon
+  hash-quote-icon
+  plt-logo
+  planet-logo
+  )
