@@ -670,7 +670,7 @@
          [else (printf "\\end{~a}" kind)])
         null))
 
-    (define/override (render-nested-flow t part ri)
+    (define/override (render-nested-flow t part ri starting-item?)
       (do-render-nested-flow t part ri #f #f))
 
     (define/override (render-compound-paragraph t part ri starting-item?)

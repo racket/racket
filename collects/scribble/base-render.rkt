@@ -666,7 +666,7 @@
                        (render-auxiliary-table p part ri)
                        (render-table p part ri starting-item?))]
        [(itemization? p) (render-itemization p part ri)]
-       [(nested-flow? p) (render-nested-flow p part ri)]
+       [(nested-flow? p) (render-nested-flow p part ri starting-item?)]
        [(compound-paragraph? p) (render-compound-paragraph p part ri starting-item?)]
        [(delayed-block? p) 
         (render-block (delayed-block-blocks p ri) part ri starting-item?)]
@@ -685,9 +685,10 @@
       (map (lambda (d) (render-flow d part ri #t))
            (itemization-blockss i)))
 
-    (define/public (render-nested-flow i part ri)
-      (map (lambda (d) (render-block d part ri #f))
-           (nested-flow-blocks i)))
+    (define/public (render-nested-flow i part ri starting-item?)
+      (for/list ([b (in-list (nested-flow-blocks i))]
+                 [pos (in-naturals)])
+        (render-block b part ri (and starting-item? (zero? pos)))))
 
     (define/public (render-content i part ri)
       (cond

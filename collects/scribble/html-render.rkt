@@ -1311,7 +1311,7 @@
                      (table-blockss t)
                      (extract-table-cell-styles t))))))
 
-    (define/override (render-nested-flow t part ri)
+    (define/override (render-nested-flow t part ri starting-item?)
       `((blockquote [,@(combine-class
                         (cond
                          [(eq? 'code-inset (style-name (nested-flow-style t)))
@@ -1323,8 +1323,8 @@
                           `([class "SubFlow"])]
                          [else null])
                         (style->attribs (nested-flow-style t)))]
-                    ,@(append-map (lambda (i) (render-block i part ri #f))
-                                  (nested-flow-blocks t)))))
+                    ,@(apply append
+                             (super render-nested-flow t part ri starting-item?)))))
 
     (define/override (render-compound-paragraph t part ri starting-item?)
       (let ([style (compound-paragraph-style t)])

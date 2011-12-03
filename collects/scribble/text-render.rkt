@@ -175,7 +175,7 @@
               (super render-content i part ri))
             (super render-content i part ri)))
 
-      (define/override (render-nested-flow i part ri)
+      (define/override (render-nested-flow i part ri starting-item?)
         (let ([s (nested-flow-style i)])
           (if (and s
                    (or (eq? (style-name s) 'inset)
@@ -183,8 +183,8 @@
               (begin
                 (printf "  ")
                 (parameterize ([current-indent (make-indent 2)])
-                  (super render-nested-flow i part ri)))
-              (super render-nested-flow i part ri))))
+                  (super render-nested-flow i part ri starting-item?)))
+              (super render-nested-flow i part ri starting-item?))))
       
       (define/override (render-other i part ht)
         (cond
