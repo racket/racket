@@ -2486,6 +2486,13 @@
                                   (where any_y x)))
          'x)
         '(x1))
+  
+  (test (let ([not-and
+               (λ () #f)])
+          (redex-match empty-language
+                       (side-condition any_1 (not-and))
+                       1))
+        #f)
 
   (let ()
     ;; tests where's ability to have redex patterns, not just syntax-case patterns
