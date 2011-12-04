@@ -25,8 +25,11 @@
   (set-racket-tree! racket/ racket-base/ racket/-name null)
 
   (set-bin-files-delayed-lists!
-   ;; FIXME: hard-wired list of binary-specific files
-   '())
+   ;; FIXME: hard-wired list of binary-specific files;
+   ;; we assume there are none. This value is a list of
+   ;; lists, where a given file must appear in every list
+   ;; to be ok for the distribution.
+   '(()))
 
   (expand-spec 'distributions)
 

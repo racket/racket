@@ -398,11 +398,15 @@
 ;; contents is still marked.
 (define (primitive-spec->filter spec)
   (define (add-query-cache! t r)
-    (prop-set! (tree-path t) 'queries
-               (cons (cons spec r) (prop-get (tree-path t) 'queries '()))))
+    (hash-set! (prop-get (tree-path t) 'queries 
+                         (lambda () (let ([ht (make-hash)])
+                                      (prop-set! (tree-path t) 'queries ht)
+                                      ht)))
+               spec
+               r))
   (define (make-cached filter)
     (lambda (t)
-      (cond [(assoc spec (prop-get (tree-path t) 'queries '())) => cdr]
+      (cond [(hash-ref (prop-get (tree-path t) 'queries #hash()) spec #f)]
             [else (let ([r (filter t)])
                     (case r
                       [(+ -) (let loop ([t t])
