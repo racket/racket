@@ -3045,35 +3045,18 @@ void scheme_add_swap_out_callback(Scheme_Closure_Func f, Scheme_Object *data)
 
 #ifdef DO_STACK_CHECK
 # define THREAD_STACK_SPACE (STACK_SAFETY_MARGIN / 2)
-void scheme_check_stack_ok(char *s); /* prototype, needed for PalmOS */
-
-void scheme_check_stack_ok(char *s) {
-# include "mzstkchk.h"
-  {
-    s[THREAD_STACK_SPACE] = 1;
-  } else {
-    s[THREAD_STACK_SPACE] = 0;
-  }
-}
-
-static int is_stack_too_shallow2(void)
-{
-  char s[THREAD_STACK_SPACE+1];
-  
-  scheme_check_stack_ok(s);
-  return s[THREAD_STACK_SPACE];
-}
 
 int scheme_is_stack_too_shallow(void)
 /* Make sure this function insn't inlined, mainly because
    is_stack_too_shallow2() can get inlined, and it adds a lot
    to the stack. */
 {
-#  include "mzstkchk.h"
+# define SCHEME_PLUS_STACK_DELTA(x) ((x) - THREAD_STACK_SPACE)
+# include "mzstkchk.h"
   {
     return 1;
   }
-  return is_stack_too_shallow2();
+  return 0;
 }
 
 static Scheme_Object *thread_k(void)
