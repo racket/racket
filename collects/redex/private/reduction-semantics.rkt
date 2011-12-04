@@ -18,7 +18,7 @@
                      "underscore-allowed.rkt"
                      syntax/boundmap
                      syntax/id-table
-                     scheme/base
+                     racket/base
                      racket/list
                      racket/match
                      racket/syntax
@@ -2368,14 +2368,14 @@
                  (define-syntax lang-name
                    (make-set!-transformer
                     (make-language-id
-                     (case-lambda
-                       [(stx)
-                        (syntax-case stx (set!)
-                          [(set! x e) (raise-syntax-error (syntax-e #'form-name) "cannot set! identifier" stx #'e)]
-                          [(x e (... ...)) #'(define-language-name e (... ...))]
-                          [x 
-                           (identifier? #'x)
-                           #'define-language-name])])
+                     (λ (stx)
+                       (syntax-case stx (set!)
+                         [(set! x e) (raise-syntax-error (syntax-e #'form-name) "cannot set! identifier" stx #'e)]
+                         [(x e (... ...))
+                          #'(define-language-name e (... ...))]
+                         [x 
+                          (identifier? #'x)
+                          #'define-language-name]))
                      '(all-names ...))))
                  (define define-language-name (language form-name lang-name (all-names ...) (names prods ...) ...))))))))]))
 
