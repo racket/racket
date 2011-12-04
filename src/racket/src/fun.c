@@ -7487,7 +7487,9 @@ static void *apply_lwc_k()
   return scheme_apply_lightweight_continuation(lw, result, p->ku.k.i1, p->ku.k.i2);
 }
 
-int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw)
+static Scheme_Object *can_apply_lwc_k(void);
+
+static int can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw, int did_overflow)
 {
 #ifdef DO_STACK_CHECK
   /* enough room on C stack? */
@@ -7498,7 +7500,15 @@ int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *l
 # define SCHEME_PLUS_STACK_DELTA(x) ((x) - size)
 # include "mzstkchk.h"
     {
-      return 0;
+      if (did_overflow)
+        return 0;
+      else {
+        scheme_current_thread->ku.k.p1 = lw;
+        if (SCHEME_TRUEP(scheme_handle_stack_overflow(can_apply_lwc_k)))
+          return 2;
+        else
+          return 0;
+      }
     }
   }
 
@@ -7506,6 +7516,31 @@ int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *l
 #else
   return 0;
 #endif
+}
+
+int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw, int check_overflow)
+/* result value 2 => need to handle stack overflow to have enough room */
+{
+  if (check_overflow)
+    return can_apply_lightweight_continuation(lw, 0);
+  else
+    /* assume that we can apply the continuation, though 
+       overflow handling may be needed (i.e., assume that the runtime
+       thread's stack size is > than a future thread's stack) */
+    return 1;
+}
+
+static Scheme_Object *can_apply_lwc_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Lightweight_Continuation *lwc = (Scheme_Lightweight_Continuation *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  if (can_apply_lightweight_continuation(lwc, 1))
+    return scheme_true;
+  else
+    return scheme_false;
 }
 
 Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw,

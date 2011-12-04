@@ -291,7 +291,7 @@ static void future_do_runtimecall(struct Scheme_Future_Thread_State *fts,
                                   int can_suspend);
 static int capture_future_continuation(struct Scheme_Future_State *fs, future_t *ft, void **storage, int need_lock);
 
-#define INITIAL_C_STACK_SIZE 500000
+#define FUTURE_C_STACK_SIZE 500000
 #define FUTURE_RUNSTACK_SIZE 2000
 
 #define FEVENT_BUFFER_SIZE    512
@@ -667,7 +667,7 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   params.runstack_start = runstack_start;
 
   mzrt_sema_create(&params.ready_sema, 0);
-  t = mz_proc_thread_create_w_stacksize(worker_thread_future_loop, &params, INITIAL_C_STACK_SIZE);
+  t = mz_proc_thread_create_w_stacksize(worker_thread_future_loop, &params, FUTURE_C_STACK_SIZE);
   mzrt_sema_wait(params.ready_sema);
   mzrt_sema_destroy(params.ready_sema);
 
@@ -823,7 +823,7 @@ void scheme_future_block_until_gc()
       *(fs->pool_threads[i]->need_gc_pointer) = 1;
       if (*(fs->pool_threads[i]->fuel_pointer)) {
         *(fs->pool_threads[i]->fuel_pointer) = 0;
-        *(fs->pool_threads[i]->stack_boundary_pointer) += INITIAL_C_STACK_SIZE;
+        *(fs->pool_threads[i]->stack_boundary_pointer) += FUTURE_C_STACK_SIZE;
       }
     }
   }
@@ -888,7 +888,7 @@ void scheme_future_continue_after_gc()
       if (!fs->pool_threads[i]->thread->current_ft
           || scheme_custodian_is_available(fs->pool_threads[i]->thread->current_ft->cust)) {
         *(fs->pool_threads[i]->fuel_pointer) = 1;
-        *(fs->pool_threads[i]->stack_boundary_pointer) -= INITIAL_C_STACK_SIZE;
+        *(fs->pool_threads[i]->stack_boundary_pointer) -= FUTURE_C_STACK_SIZE;
       } else {
         /* leave fuel exhausted, which will force the thread into a slow 
            path when it resumes to suspend the computation */
@@ -1665,6 +1665,16 @@ static void trigger_added_touches(Scheme_Future_State *fs, future_t *ft)
   }
 }
 
+static Scheme_Object *shallower_apply_future_lw_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  future_t *ft = (future_t *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return apply_future_lw(ft);
+}
+
 static void future_in_runtime(Scheme_Future_State *fs, future_t * volatile ft, int what)
 {    
   mz_jmp_buf newbuf, * volatile savebuf;
@@ -1685,7 +1695,11 @@ static void future_in_runtime(Scheme_Future_State *fs, future_t * volatile ft, i
     retval = NULL;
   } else {
     if (ft->suspended_lw) {
-      retval = apply_future_lw(ft);
+      if (scheme_can_apply_lightweight_continuation(ft->suspended_lw, 1) > 1) {
+        p->ku.k.p1 = ft;
+        retval = scheme_handle_stack_overflow(shallower_apply_future_lw_k);
+      } else
+        retval = apply_future_lw(ft);
     } else {
       retval = scheme_apply_multi(ft->orig_lambda, 0, NULL);
     }
@@ -1742,45 +1756,37 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
   dump_state();
 #endif
 
-  mzrt_mutex_lock(fs->future_mutex);
-  if ((((ft->status == PENDING) 
-        && prefer_to_apply_future_in_runtime())
-       || (ft->status == PENDING_OVERSIZE)
-       || (ft->status == SUSPENDED))
-      && (!ft->suspended_lw
-          || scheme_can_apply_lightweight_continuation(ft->suspended_lw))) {
-    int what = FEVENT_START_WORK;
-    if (ft->status == PENDING_OVERSIZE) {
-      what = FEVENT_START_RTONLY_WORK;
-    } else if (ft->status != SUSPENDED) {
-      dequeue_future(fs, ft);
-    }
-    ft->status = RUNNING;
-    mzrt_mutex_unlock(fs->future_mutex);
-
-    future_in_runtime(fs, ft, what);
-
-    retval = ft->retval;
-    
-    receive_special_result(ft, retval, 0);
-
-    flush_future_logs(fs);
-
-    return retval;
-  }
-  mzrt_mutex_unlock(fs->future_mutex);
-
   /* Spin waiting for primitive calls or a return value from
      the worker thread */
   while (1) {
-    if (!future_ready((Scheme_Object *)ft)) {
-      record_fevent(FEVENT_TOUCH_PAUSE, ft->id);
-      scheme_block_until(future_ready, NULL, (Scheme_Object*)ft, 0);
-      record_fevent(FEVENT_TOUCH_RESUME, ft->id);
-    }
-
     mzrt_mutex_lock(fs->future_mutex);
-    if ((ft->status == RUNNING)
+    if ((((ft->status == PENDING) 
+          && prefer_to_apply_future_in_runtime())
+         || (ft->status == PENDING_OVERSIZE)
+         || (ft->status == SUSPENDED))
+        && (!ft->suspended_lw
+            || scheme_can_apply_lightweight_continuation(ft->suspended_lw, 0))) 
+      {
+        int what = FEVENT_START_WORK;
+        if (ft->status == PENDING_OVERSIZE) {
+          what = FEVENT_START_RTONLY_WORK;
+        } else if (ft->status != SUSPENDED) {
+          dequeue_future(fs, ft);
+        }
+        ft->status = RUNNING;
+        mzrt_mutex_unlock(fs->future_mutex);
+
+        future_in_runtime(fs, ft, what);
+
+        retval = ft->retval;
+    
+        receive_special_result(ft, retval, 0);
+
+        flush_future_logs(fs);
+
+        return retval;
+      } 
+    else if ((ft->status == RUNNING)
         || (ft->status == WAITING_FOR_FSEMA)
         || (ft->status == HANDLING_PRIM)) 
       {
@@ -1811,7 +1817,7 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
       {
         ft->maybe_suspended_lw = 0;
         if (ft->suspended_lw) {
-          if (scheme_can_apply_lightweight_continuation(ft->suspended_lw)
+          if (scheme_can_apply_lightweight_continuation(ft->suspended_lw, 0)
               && prefer_to_apply_future_in_runtime()) {
             if (ft->status != SUSPENDED)
               dequeue_future(fs, ft);
@@ -1833,6 +1839,12 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
       {
         mzrt_mutex_unlock(fs->future_mutex);
       }
+
+    scheme_thread_block(0.0); /* to ensure check for futures work */
+
+    record_fevent(FEVENT_TOUCH_PAUSE, ft->id);
+    scheme_block_until(future_ready, NULL, (Scheme_Object*)ft, 0);
+    record_fevent(FEVENT_TOUCH_RESUME, ft->id);
   }
 
   if (!retval) {
@@ -2008,7 +2020,7 @@ void *worker_thread_future_loop(void *arg)
   scheme_current_thread = fts->thread;
 
   scheme_fuel_counter = 1;
-  scheme_jit_stack_boundary = ((uintptr_t)&v) - INITIAL_C_STACK_SIZE;
+  scheme_jit_stack_boundary = ((uintptr_t)&v) - FUTURE_C_STACK_SIZE;
 
   fts->need_gc_pointer = &scheme_future_need_gc_pause;
   fts->fuel_pointer = &scheme_fuel_counter;
@@ -2369,7 +2381,7 @@ void scheme_check_future_work()
         if (!*(fs->pool_threads[i]->fuel_pointer)
             && !fs->pool_threads[i]->thread->current_ft) {
           *(fs->pool_threads[i]->fuel_pointer) = 1;
-          *(fs->pool_threads[i]->stack_boundary_pointer) -= INITIAL_C_STACK_SIZE;
+          *(fs->pool_threads[i]->stack_boundary_pointer) -= FUTURE_C_STACK_SIZE;
         }
       }
     }

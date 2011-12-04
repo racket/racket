@@ -3,27 +3,6 @@
 
 #ifdef MZ_USE_FUTURES
 
-#ifndef UNIT_TEST
-#include "schpriv.h"
-typedef Scheme_Object*(*prim_t)(int, Scheme_Object**);
-#else
-#define Scheme_Object void
-#define Scheme_Bucket void
-#define Scheme_Env void
-#define Scheme_Type int
-#define scheme_void NULL
-#define scheme_false 0x0
-#define START_XFORM_SKIP
-#define END_XFORM_SKIP 
-#define MZ_MARK_STACK_TYPE intptr_t
-#define Scheme_Native_Closure_Data void
-typedef Scheme_Object*(*prim_t)(int, Scheme_Object**);
-void scheme_add_global(char *name, int arity, Scheme_Env *env);
-int scheme_make_prim_w_arity(prim_t func, char *name, int arg1, int arg2);
-#endif
-
-#include <stdio.h>
-
 typedef Scheme_Object **(*prim_on_demand_t)(Scheme_Object **, Scheme_Object **);
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
@@ -197,7 +176,6 @@ typedef struct fsemaphore_t {
   future_t *queue_end;
 } fsemaphore_t;
 
-
 /* Primitive instrumentation stuff */
 
 /* Exceptions */ 
@@ -222,16 +200,6 @@ void scheme_wrong_type_from_ft(const char *who, const char *expected_type, int w
 
 extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 
-/* Helper macros for argument marshaling */
-#ifdef MZ_USE_FUTURES
-
-#define IS_WORKER_THREAD (g_rt_threadid != 0 && pthread_self() != g_rt_threadid)
-#define ASSERT_CORRECT_THREAD if (g_rt_threadid != 0 && pthread_self() != g_rt_threadid) \
-															{ \
-																printf("%s invoked on wrong thread!\n", __FUNCTION__); \
-																/*GDB_BREAK;*/ \
-															}
-
 extern Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_demand_t f, Scheme_Object **argv);
 extern uintptr_t scheme_rtcall_alloc(const char *who, int src_type);
 extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
@@ -239,12 +207,6 @@ extern void scheme_rtcall_allocate_values(const char *who, int src_type, int cou
                                           prim_allocate_values_t f);
 extern Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Scheme_Object *ready);
 extern Scheme_Object *scheme_rtcall_make_future(const char *who, int src_type, Scheme_Object *proc);
-#else
-
-#define IS_WORKER_THREAD 0
-#define ASSERT_CORRECT_THREAD 
-
-#endif 
 
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();
@@ -252,15 +214,6 @@ void scheme_check_future_work();
 void scheme_future_gc_pause();
 void scheme_future_check_custodians();
 
-#ifdef UNIT_TEST
-/* These forwarding decls only need to be here to make 
-   primitives visible to test cases written in C */
-extern int future_begin_invoke(void *code);
-extern Scheme_Object *touch(int argc, Scheme_Object **argv);
-extern Scheme_Object *future_touch(int futureid);
-#endif
-
-#else 
 #endif /* MZ_USE_FUTURES */
 
 /* always defined: */

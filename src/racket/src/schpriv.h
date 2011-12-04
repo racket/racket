@@ -2397,7 +2397,8 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
 Scheme_Object **scheme_adjust_runstack_argument(Scheme_Lightweight_Continuation *captured,
                                                 Scheme_Object **arg);
 
-int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *captured);
+int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *captured,
+                                              int check_overflow);
 
 int scheme_push_marks_from_thread(Scheme_Thread *p2, Scheme_Cont_Frame_Data *d);
 int scheme_push_marks_from_lightweight_continuation(Scheme_Lightweight_Continuation *captured, 
