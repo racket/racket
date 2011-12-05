@@ -27,6 +27,8 @@
 
 #include "jit.h"
 
+static Scheme_Object *extract_one_cc_mark_to_tag(Scheme_Object *, Scheme_Object *, Scheme_Object *);
+
 #define JITINLINE_TS_PROCS
 #ifndef CAN_INLINE_ALLOC
 # define JIT_BOX_TS_PROCS
@@ -47,10 +49,21 @@ static Scheme_Object *ts_scheme_make_fsemaphore(int argc, Scheme_Object **argv)
 # define ts_scheme_make_fsemaphore scheme_make_fsemaphore
 #endif
 
+static Scheme_Object *extract_one_cc_mark_to_tag(Scheme_Object *mark_set, 
+                                                 Scheme_Object *key,
+                                                 Scheme_Object *prompt_tag)
+  XFORM_SKIP_PROC
+{
+  /* wrapper on scheme_extract_one_cc_mark_to_tag() to convert NULL to false */
+  Scheme_Object *r;
+  r = scheme_extract_one_cc_mark_to_tag(mark_set, key, prompt_tag);
+  if (!r) return scheme_false;
+  return r;
+}
+
 static Scheme_Object *cont_mark_set_first_try_fast(Scheme_Object *cms, Scheme_Object *key)
   XFORM_SKIP_PROC
 {
-  Scheme_Object *r;
   Scheme_Object *nullableCms;
   Scheme_Object *prompt_tag; 
   
@@ -95,11 +108,9 @@ static Scheme_Object *cont_mark_set_first_try_fast(Scheme_Object *cms, Scheme_Ob
     }
   }
 
-  /* Otherwise, slow path */
-  r = ts_scheme_extract_one_cc_mark_to_tag(nullableCms, key, prompt_tag);
-  if (!r) r = scheme_false;
-
-  return r;
+  /* Otherwise, slow path. This must be a "tail call", because the
+     calling context may be captured as a lightweight continuation. */
+  return ts_extract_one_cc_mark_to_tag(nullableCms, key, prompt_tag);
 }
 
 static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, 
