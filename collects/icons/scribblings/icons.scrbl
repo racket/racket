@@ -98,6 +98,7 @@ Returns a list of all the names of icons in the given @racket[category].
 @doc-apply[bar-icon]
 @doc-apply[back-icon]
 @doc-apply[stop-icon]
+@doc-apply[record-icon]
 @doc-apply[step-icon]
 @doc-apply[step-back-icon]
 @doc-apply[continue-icon]
@@ -112,12 +113,13 @@ These return typical ``playback'' icons.
                                                  step-back-icon back-icon
                                                  pause-icon stop-icon
                                                  go-icon step-icon
-                                                 continue-icon fast-forward-icon)]
+                                                 continue-icon fast-forward-icon
+                                                 record-icon)]
                                [color  (in-cycle icon-colors)]
                                [style  (in-cycle icon-styles)])
                       (make-icon color 32 style))]
 
-The remaining icon @(bar-icon #f 16), returned by @racket[bar-icon], is not a playback icon @italic{per se}, but is used to build the others.
+The remaining icon @(bar-icon #f 16), returned by @racket[bar-icon], is used to build the others.
 }
 
 @subsection{Arrow Icons}
@@ -206,6 +208,13 @@ Note that the uncolorized magnifying glass has a brown handle.
                    (plus-icon color 24 style))]
 }
 
+@doc-apply[times-icon]{
+@examples[#:eval icon-eval
+                 (for/list ([color  icon-colors]
+                            [style  (in-cycle icon-styles)])
+                   (times-icon color 24 style))]
+}
+
 @subsection{Logos}
 
 @doc-apply[plt-logo]{
@@ -266,11 +275,21 @@ A contract that identifies icon styles.
 
 @section{Icon @racket[pict]s}
 
+@interaction-eval[#:eval icon-eval (require slideshow/pict)]
+
 It is more flexible, but a little more complicated, to load icons as @racket[pict]s.
 As picts, icons can easily be appended, inset, superimposed, blurred, and more.
-Almost all of the functions in preceeding sections are defined in terms of the @racket[pict]-producing functions documented in this section.
+For example, it is easy to make modern-looking media player controls using @racket[cc-superimpose] and the @racket['shiny] style:
+@interaction[#:eval icon-eval
+                    (define media-icon-background (record-icon-pict 'green 64 'shiny))
+                    (list (cc-superimpose media-icon-background
+                                          (step-back-icon-pict 'white 32 'shiny))
+                          (cc-superimpose media-icon-background
+                                          (pause-icon-pict 'white 32 'shiny))
+                          (cc-superimpose media-icon-background
+                                          (step-icon-pict 'white 32 'shiny)))]
 
-@interaction-eval[#:eval icon-eval (require slideshow/pict)]
+Almost all of the functions in preceeding sections are defined in terms of the @racket[pict]-producing functions documented in this section.
 
 To use these functions effectively, you should require @racketmodname[icons] and @racketmodname[slideshow/pict] together.
 Use @racket[bitmap] to convert a @racket[bitmap%] (e.g. an icon) to a @racket[pict], and @racket[pict->bitmap] to convert back.
@@ -301,6 +320,7 @@ Corresponds to @racket[load-icon]. In fact, @racket[load-icon] uses @racket[load
 @doc-apply[bar-icon-pict]
 @doc-apply[back-icon-pict]
 @doc-apply[stop-icon-pict]
+@doc-apply[record-icon-pict]
 @doc-apply[step-icon-pict]
 @doc-apply[step-back-icon-pict]
 @doc-apply[continue-icon-pict]
@@ -316,8 +336,9 @@ These return typical ``playback'' icons, as @racket[pict]s.
                                               step-back-icon-pict back-icon-pict
                                               pause-icon-pict stop-icon-pict
                                               go-icon-pict step-icon-pict
-                                              continue-icon-pict fast-forward-icon-pict)])
-                      (hc-append icon (make-icon-pict 'black 32 'shiny) (blank 16)))]
+                                              continue-icon-pict fast-forward-icon-pict
+                                              record-icon-pict)])
+                      (hc-append icon (make-icon-pict 'black 32 'shiny) (blank 12)))]
 }
 
 @doc-apply[up-arrow-icon-pict]{ Corresponds to @racket[up-arrow-icon]. }
@@ -335,6 +356,8 @@ These return typical ``playback'' icons, as @racket[pict]s.
 @doc-apply[earth-icon-pict]{ Corresponds to @racket[earth-icon]. }
 @doc-apply[moon-icon-pict]{ Corresponds to @racket[moon-icon]. }
 @doc-apply[hash-quote-icon-pict]{ Corresponds to @racket[hash-quote-icon]. }
+@doc-apply[plus-icon-pict]{ Corresponds to @racket[plus-icon]. }
+@doc-apply[times-icon-pict]{ Corresponds to @racket[times-icon]. }
 @doc-apply[plt-logo-pict]{ Corresponds to @racket[plt-logo]. }
 @doc-apply[planet-logo-pict]{ Corresponds to @racket[planet-logo]. }
 
@@ -342,7 +365,7 @@ These return typical ``playback'' icons, as @racket[pict]s.
 
 This section is intended for Racket developers, who have permission to add SVG icon sources to the repository.
 
-Take the following steps to add an SVG icon to Racket's repository.
+Take the following steps to add an SVG icon to the @racketmodname[icons] collection.
 
 @bold{1. Create an SVG file.}
 The author of this module uses @link["http://inkscape.org"]{Inkscape}, a free software vector graphics program.
@@ -355,8 +378,9 @@ Set @racket[plot-decorations?] to @racket[#f] and @racket[plot-background-alpha]
 
 If the icon (or part of it) can be otherwise generated programmatically, use Racket to draw on an @racket[svg-dc%], or use @link["http://www.imagemagick.org"]{ImageMagick} and its MVG or MagickWand languages.
 
-Use @tt{collects/icons/private/svg/run/stop-diffuse.svg} and @tt{collects/icons/private/svg/run/stop-shiny.svg} as simple examples of icons in diffuse and shiny styles.
-Note that the light source is apparently above and slightly to the left.
+Use @tt{collects/icons/private/svg/control/stop-diffuse.svg} and @tt{collects/icons/private/svg/control/stop-shiny.svg} as simple examples of icons in diffuse and shiny styles.
+Note that the light source is apparently above and slightly to the right.
+However, to make it easy to center the icons, and to keep them looking symmetric at very small sizes, the blurry shadow is directly underneath.
 
 @bold{2. Make SVG gradients colorizable.}
 Do this by editing the SVG file to change the names of gradients.
@@ -364,49 +388,50 @@ It cannot currently be done in Inkscape, but a text editor's find-and-replace-al
 
 If part of the icon should be colorizable, find the gradient for that part and change its name to @tt{diffuseColorGradient}.
 Make sure the first stop is a dark version of the default color and the second stop is the default color.
-For specular highlights, do not use @tt{diffuseColorGradient}, but overlay the image with partially transparent gradients.
+For specular highlights, do not use @tt{diffuseColorGradient}.
+Instead, overlay the image with partially transparent gradients.
+Keeping the lighting and coloring in separate layers is good practice besides.
 
 For shiny icons, change undershine gradients (the bright spots opposite the light source that make icons look like candy or transparent plastic) to have the name @tt{undershineGradient}.
 Make sure the first stop is fully opaque with a hue close to the default color's, and the second stop is fully transparent.
 
 @bold{3. Place the SVG file in the @racketmodname[icons] collection.}
 Put it in the directory @tt{collects/icons/private/svg/<category>} where @tt{<category>} is a category appropriate for the icon.
+Feel free to make new category directories to keep things organized.
 
-Feel free to make new category directories or even subcategories (by making subdirectories).
-For example, to make a subcategory of @racket["run"] called @racket["silly"], create a subdirectory @tt{silly} in the @tt{run} directory.
-The icon can then be loaded from category @racket["run/silly"].
-
-If the icon has diffuse and shiny versions, name them @tt{<name>-diffuse.svg} and @tt{<name>-shiny.svg}.
+If the icon has diffuse and shiny styles, name them @tt{<name>-diffuse.svg} and @tt{<name>-shiny.svg}.
 
 @bold{4. Re-render PNGs.}
 Install Inkscape, then run the program @tt{collects/icons/private/svg/render-png.rkt}.
-This will delete every PNG rendering, and re-render every SVG source file in @tt{collects/icons/private/svg}.
+This will render every modified SVG source file in @tt{collects/icons/private/svg}.
+Be aware that it will @italic{not} delete any PNGs whose source files are deleted.
 
-Renderings are done at specific power-of-two heights.
+Because Cairo, which backs Racket's drawing library, draws bitmaps downscaled past half size poorly, renderings are done at power-of-two heights.
 For non-logo icons, the heights are currently 16, 32 and 64.
 Logos are rendered at 32, 64, 128, 256 and 512.
 
 Uncolorized renders are put in a subdirectory named after their size.
-For example, a render of @tt{run/silly/walks-diffuse.svg} at height 64 will have the name @tt{run/silly/64/walks-diffuse.png}.
+For example, a render of @tt{silly/walks-diffuse.svg} at height 64 will have the name @tt{silly/64/walks-diffuse.png}.
 
 Colorized renders are put in a further subdirectory named after their color.
-For example, a red render of @tt{run/silly/walks-diffuse.svg} at height 64 will have the name @tt{run/silly/64/red/walks-diffuse.png}.
+For example, a red render of @tt{silly/walks-diffuse.svg} at height 64 will have the name @tt{silly/64/red/walks-diffuse.png}.
 
 @bold{5. Load the icon.}
 For example, to load a red render of @tt{walks-diffuse.svg} at height 50, do
 
-@racketblock[(load-icon-pict "run/silly" "walks" 'red 50 'diffuse)]
+@racketblock[(load-icon-pict "silly" "walks" 'red 50 'diffuse)]
 
-For this, @racket[load-icon-pict] finds the first rendered height not less than @racket[50], which is @racket[64], loads a bitmap from @racket["run/silly/64/red/walks-diffuse.png"], converts it to a @racket[pict], and scales it by @racket[(/ 50 64)].
+For this, @racket[load-icon-pict] finds the first rendered height not less than @racket[50], which is @racket[64], loads the bitmap from @racket["silly/64/red/walks-diffuse.png"], converts it to a @racket[pict], and scales it by @racket[(/ 50 64)].
 
 For convenience, write functions to load the icon; for example,
 @racketblock[
 (define (silly-walk-icon-pict color
                               [height (default-icon-height)]
                               [style (default-icon-style)])
-  (load-icon-pict "run/silly" "walk" color height style))
+  (load-icon-pict "silly" "walk" color height style))
 
 (define (silly-walk-icon color
                          [height (default-icon-height)]
                          [style (default-icon-style)])
   (pict->bitmap (silly-walk-icon-pict color height style)))]
+Please export them with a contract.

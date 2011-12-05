@@ -21,6 +21,7 @@
           bar-icon bar-icon-pict
           back-icon back-icon-pict
           stop-icon stop-icon-pict
+          record-icon record-icon-pict
           step-icon step-icon-pict
           step-back-icon step-back-icon-pict
           continue-icon continue-icon-pict
@@ -34,6 +35,8 @@
           magnifying-glass-icon magnifying-glass-icon-pict
           magnifying-glass-left-icon magnifying-glass-left-icon-pict
           disk-icon disk-icon-pict
+          standing-icon standing-icon-pict
+          running-icon running-icon-pict
           up-arrow-icon up-arrow-icon-pict
           down-arrow-icon down-arrow-icon-pict
           left-arrow-icon left-arrow-icon-pict
@@ -43,5 +46,6 @@
           moon-icon moon-icon-pict
           hash-quote-icon hash-quote-icon-pict
           plus-icon plus-icon-pict
+          times-icon times-icon-pict
           plt-logo plt-logo-pict
           planet-logo planet-logo-pict))

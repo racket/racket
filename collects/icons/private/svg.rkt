@@ -88,28 +88,43 @@
 (define-make-colorized-icon-pict
   [go-icon-pict "control" "go"]
   [bar-icon-pict "control" "bar"]
-  [back-icon-pict "control" "back"]
   [stop-icon-pict "control" "stop"]
+  [record-icon-pict "control" "record"]
   [check-icon-pict "check" "check"]
   [x-icon-pict "check" "x"]
   [disk-icon-pict "misc" "disk"]
+  [standing-icon-pict "misc" "standing"]
+  [running-icon-pict "misc" "running"]
   [plus-icon-pict "symbol" "plus"]
+  [times-icon-pict "symbol" "times"]
   [up-arrow-icon-pict "arrow" "up"]
   [down-arrow-icon-pict "arrow" "down"]
-  [left-arrow-icon-pict "arrow" "left"]
   [right-arrow-icon-pict "arrow" "right"]
   )
 
 (define-make-icon-pict
   [stop-sign-icon-pict "sign" "stop"]
   [magnifying-glass-icon-pict "misc" "magnifying-glass"]
-  [magnifying-glass-left-icon-pict "misc" "magnifying-glass-left"]
   [earth-icon-pict "misc" "earth"]
   [moon-icon-pict "misc" "moon"]
   [hash-quote-icon-pict "symbol" "hash-quote"]
   [plt-logo-pict "logo" "plt"]
   [planet-logo-pict "logo" "planet"]
   )
+
+(defproc (back-icon-pict [color icon-color/c]
+                         [height (>=/c 0) (default-icon-height)]
+                         [style icon-style/c (default-icon-style)]) pict?
+  (pict-mirror-x (go-icon-pict color height style)))
+
+(defproc (left-arrow-icon-pict [color icon-color/c]
+                               [height (>=/c 0) (default-icon-height)]
+                               [style icon-style/c (default-icon-style)]) pict?
+  (pict-mirror-x (right-arrow-icon-pict color height style)))
+
+(defproc (magnifying-glass-left-icon-pict [height (>=/c 0) (default-icon-height)]
+                                          [style icon-style/c (default-icon-style)]) pict?
+  (pict-mirror-x (magnifying-glass-icon-pict height style)))
 
 (defproc (step-icon-pict [color icon-color/c]
                          [height (>=/c 0) (default-icon-height)]
@@ -189,6 +204,7 @@
   bar-icon
   back-icon
   stop-icon
+  record-icon
   step-icon
   step-back-icon
   continue-icon
@@ -199,7 +215,10 @@
   check-icon
   x-icon
   disk-icon
+  standing-icon
+  running-icon
   plus-icon
+  times-icon
   up-arrow-icon
   down-arrow-icon
   left-arrow-icon

@@ -3,12 +3,10 @@
 (require racket/class racket/string racket/match racket/list
          racket/system
          racket/file
+         slideshow/pict
          xml
-         racket/draw
-         racket/unsafe/ops
          racket/contract
-         unstable/latent-contract/defthing
-         unstable/gui/pict)
+         unstable/latent-contract/defthing)
 
 (provide (all-defined-out))
 
@@ -98,3 +96,15 @@
            "-e" dest-path
            "-h" (number->string height)
            src-path))
+
+;; ===================================================================================================
+;; Pict stuff
+
+(define (pict-mirror-x p)
+  (dc (λ (dc x y)
+        (define-values (sx sy) (send dc get-scale))
+        (define-values (ox oy) (send dc get-origin))
+        (send dc set-scale (- sx) sy)
+        (draw-pict p dc (- ox x (pict-width p)) y)
+        (send dc set-scale sx sy))
+      (pict-width p) (pict-height p)))

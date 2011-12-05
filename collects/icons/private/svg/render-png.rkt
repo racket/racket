@@ -25,25 +25,33 @@
          (define src-path (build-path src-dir src-file))
          (define dest-dir (build-path src-dir (format "~a/~a" (number->string height) color)))
          (define dest-file (path-replace-suffix src-file ".png"))
-         (define doc (call-with-input-file* src-path read-xml))
-         (define new-doc (colorize-svg doc
-                                       (hash-ref diffuse-gradient-stops color)
-                                       (hash-ref undershine-gradient-stops color)))
-         (when new-doc
-           (define temp-path (make-temporary-file (format "~a-~~a.svg"
-                                                          (path-replace-suffix src-file ""))))
-           (dynamic-wind
-            (λ () (void))
-            (λ ()
-              (call-with-output-file* temp-path (λ (out) (write-xml new-doc out))
-                                      #:exists 'truncate)
-              ((render-icon) temp-path dest-dir dest-file height))
-            (λ () (delete-file temp-path))))]
+         (define dest-path (build-path dest-dir dest-file))
+         (when (or (not (file-exists? dest-path))
+                   ((file-or-directory-modify-seconds dest-path)
+                    . < . (file-or-directory-modify-seconds src-path)))
+           (define doc (call-with-input-file* src-path read-xml))
+           (define new-doc (colorize-svg doc
+                                         (hash-ref diffuse-gradient-stops color)
+                                         (hash-ref undershine-gradient-stops color)))
+           (when new-doc
+             (define temp-path (make-temporary-file (format "~a-~~a.svg"
+                                                            (path-replace-suffix src-file ""))))
+             (dynamic-wind
+              (λ () (void))
+              (λ ()
+                (call-with-output-file* temp-path (λ (out) (write-xml new-doc out))
+                                        #:exists 'truncate)
+                ((render-icon) temp-path dest-dir dest-file height))
+              (λ () (delete-file temp-path)))))]
         [else
          (define src-path (build-path src-dir src-file))
          (define dest-dir (build-path src-dir (number->string height)))
          (define dest-file (path-replace-suffix src-file ".png"))
-         ((render-icon) src-path dest-dir dest-file height)]))
+         (define dest-path (build-path dest-dir dest-file))
+         (when (or (not (file-exists? dest-path))
+                   ((file-or-directory-modify-seconds dest-path)
+                    . < . (file-or-directory-modify-seconds src-path)))
+           ((render-icon) src-path dest-dir dest-file height))]))
 
 (define (render-icons dir)
   (printf "Rendering icons in ~a~n" dir)
@@ -59,5 +67,7 @@
                   [color   (in-list icon-colors)])
              (render-icon/color dir file color height))])))
 
-(clean-icons svg-icons-base-path)
+;; Probably shouldn't ever do this
+;(clean-icons svg-icons-base-path)
+
 (render-icons svg-icons-base-path)

@@ -110,24 +110,12 @@
        xlink:href="#linearGradient3200"
        id="radialGradient3778"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(-1.1758716,-0.1281717,0.10256546,-0.9449456,-25.667602,1167.4453)"
-       cx="16.264048"
-       cy="605.29633"
-       fx="16.264048"
-       fy="605.29633"
+       gradientTransform="matrix(-1.1826921,-0.0201729,0.01509833,-0.92907577,27.373475,1155.975)"
+       cx="17.297106"
+       cy="605.06274"
+       fx="17.297106"
+       fy="605.06274"
        r="11.127187" />
-    <filter
-       inkscape:collect="always"
-       id="filter3784"
-       x="-0.12"
-       width="1.24"
-       y="-0.12"
-       height="1.24">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.131935"
-         id="feGaussianBlur3786" />
-    </filter>
     <radialGradient
        inkscape:collect="always"
        xlink:href="#linearGradient3200"
@@ -139,6 +127,53 @@
        fx="15.453752"
        fy="614.0354"
        r="11.127187" />
+    <filter
+       inkscape:collect="always"
+       id="filter3776">
+      <feGaussianBlur
+         inkscape:collect="always"
+         stdDeviation="0.79235451"
+         id="feGaussianBlur3778" />
+    </filter>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#diffuseColorGradient"
+       id="linearGradient3780"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.1308307,0,0,1.1308307,-0.97416834,-81.395977)"
+       x1="13.847656"
+       y1="614.55664"
+       x2="18.554688"
+       y2="593.55664" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#diffuseColorGradient"
+       id="linearGradient3782"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.1308307,0,0,1.1308307,-0.97416834,-81.395977)"
+       x1="18.554688"
+       y1="593.55664"
+       x2="13.847656"
+       y2="614.55664" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#diffuseColorGradient"
+       id="linearGradient3010"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.1308307,0,0,1.1308307,-1.9464402,-78.921104)"
+       x1="13.847656"
+       y1="614.55664"
+       x2="13.864948"
+       y2="593.47845" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#diffuseColorGradient"
+       id="linearGradient3781"
+       x1="9.8583775"
+       y1="617.97101"
+       x2="9.809"
+       y2="622.8324"
+       gradientUnits="userSpaceOnUse" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -150,9 +185,9 @@
      objecttolerance="10"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.656854"
-     inkscape:cx="-46.750604"
-     inkscape:cy="0.48080299"
+     inkscape:zoom="11.313708"
+     inkscape:cx="-22.134449"
+     inkscape:cy="5.8053729"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -178,28 +213,18 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-588)">
-    <text
-       sodipodi:linespacing="125%"
-       id="text3780"
-       y="620.09875"
-       x="2.7857161"
-       style="font-size:45.23322678000000252px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:0.78431374;stroke:none;filter:url(#filter3784);font-family:Arial;-inkscape-font-specification:Arial Bold"
-       xml:space="preserve"><tspan
-         style="fill:#000000;fill-opacity:0.78431374;stroke:none"
-         y="620.09875"
-         x="2.7857161"
-         id="tspan3782"
-         sodipodi:role="line">+</tspan></text>
+    <path
+       inkscape:connector-curvature="0"
+       d="m 13.35953,615.41338 0,-8.41497 -8.4812302,0 0,-5.80876 8.4812302,0 0,-8.41497 5.654153,0 0,8.41497 8.503317,0 0,5.80876 -8.503317,0 0,8.41497 -5.654153,0"
+       style="font-size:45.23322678px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;filter:url(#filter3776);font-family:Arial;-inkscape-font-specification:Arial Bold"
+       id="path3006" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path3005"
+       style="font-size:45.23322678000000252px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:url(#linearGradient3010);fill-opacity:1;stroke:url(#linearGradient3781);stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;font-family:Arial;-inkscape-font-specification:Arial Bold"
+       d="m 13.35953,615.41338 0,-8.41497 -8.4812302,0 0,-5.80876 8.4812302,0 0,-8.41497 5.654153,0 0,8.41497 8.503317,0 0,5.80876 -8.503317,0 0,8.41497 -5.654153,0" />
     <g
-       style="font-size:45.23322678px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:url(#linearGradient3790);fill-opacity:1;stroke:url(#linearGradient3806);stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;font-family:Arial;-inkscape-font-specification:Arial Bold"
-       id="text3012">
-      <path
-         d="m 14.331802,612.9385 0,-8.41497 -8.4812303,0 0,-5.80876 8.4812303,0 0,-8.41497 5.654153,0 0,8.41497 8.503317,0 0,5.80876 -8.503317,0 0,8.41497 -5.654153,0"
-         style=""
-         id="path3005" />
-    </g>
-    <g
-       transform="matrix(0.99898042,0,0,1.0010206,1.4375001,-1.9375001)"
+       transform="matrix(0.99898042,0,0,1.0010206,0.46522828,0.53737378)"
        style="font-size:43.28032684px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:url(#radialGradient3788);fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial Bold"
        id="text2997">
       <path

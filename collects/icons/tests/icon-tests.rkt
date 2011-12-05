@@ -6,15 +6,15 @@
 
 (define (tape-deck color height style)
   (list
-   (rewind-icon-pict color height style)
-   (continue-back-icon-pict color height style)
-   (step-back-icon-pict color height style)
-   (pause-icon-pict color height style)
-   (stop-icon-pict color height style)
-   (go-icon-pict color height style)
-   (step-icon-pict color height style)
-   (continue-icon-pict color height style)
-   (fast-forward-icon-pict color height style)))
+   (rewind-icon color height style)
+   (continue-back-icon color height style)
+   (step-back-icon color height style)
+   (pause-icon color height style)
+   (stop-icon color height style)
+   (go-icon color height style)
+   (step-icon color height style)
+   (continue-icon color height style)
+   (fast-forward-icon color height style)))
 
 (for*/list ([height  icon-heights]
             [color   icon-colors]
@@ -23,28 +23,28 @@
 
 (for*/list ([height  icon-heights]
             [style   icon-styles])
-  (stop-sign-icon-pict height style))
+  (stop-sign-icon height style))
 
 (for*/list ([height  icon-heights]
             [style   icon-styles])
-  (stop-signs-icon-pict height style))
+  (stop-signs-icon height style))
 
 (for/list ([height  icon-heights])
   (for*/list ([color   icon-colors]
               [style   icon-styles])
-    (check-icon-pict color height style)))
+    (check-icon color height style)))
 
 (for/list ([height  icon-heights])
   (for*/list ([color   icon-colors]
               [style   icon-styles])
-    (disk-icon-pict color height style)))
+    (disk-icon color height style)))
 
 (for/list ([height  icon-heights])
   (for*/list ([color   icon-colors]
               [style   icon-styles])
-    (for/list ([make-icon-pict  (list up-arrow-icon-pict down-arrow-icon-pict
-                                      left-arrow-icon-pict right-arrow-icon-pict)])
-      (make-icon-pict color height style))))
+    (for/list ([make-icon  (list up-arrow-icon down-arrow-icon
+                                 left-arrow-icon right-arrow-icon)])
+      (make-icon color height style))))
 
 (for/list ([height  icon-heights])
   (for*/list ([color   icon-colors]
@@ -90,13 +90,19 @@
     (64x (magnifying-glass-icon-pict 31.5 'shiny))))
 (list not-blurry (pict-width not-blurry) (pict-height not-blurry))
 
-(plt-logo-pict 48 'shiny)
-(planet-logo-pict 48 'shiny)
+(plt-logo 48 'shiny)
+(planet-logo 48 'shiny)
 
-(list (earth-icon-pict 48 'shiny)
-      (earth-icon-pict 24 'diffuse)
-      (earth-icon-pict 16 'diffuse))
+(list (earth-icon 48 'shiny)
+      (earth-icon 24 'diffuse)
+      (earth-icon 16 'diffuse))
 
-(list (moon-icon-pict 48 'shiny)
-      (moon-icon-pict 24 'diffuse)
-      (moon-icon-pict 16 'diffuse))
+(list (moon-icon 48 'shiny)
+      (moon-icon 24 'diffuse)
+      (moon-icon 16 'diffuse))
+
+(for/list ([height  icon-heights])
+  (for/list ([pose    '("running" "standing")])
+    (for*/list ([color   icon-colors]
+                [style   icon-styles])
+      (load-icon "misc" pose color height style))))
