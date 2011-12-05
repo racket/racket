@@ -10,6 +10,7 @@
 (test #f stream? '#(1 2))
 
 (test 1 'stream-length (stream-length (stream-cons 1 empty-stream)))
+(test 1 'stream-length (stream-length (stream 1)))
 
 (define infinite-ones (stream-cons 1 infinite-ones))
 
@@ -26,5 +27,13 @@
 
 (test "hello" stream-first (sequence->stream (in-producer (lambda () "hello") (void))))
 (test 65 stream-first (sequence->stream (in-port read-byte (open-input-string "A"))))
+
+(define one-to-four (stream 1 2 3 4))
+(test 1 stream-first one-to-four)
+(test 2 stream-ref one-to-four 1)
+(test 3 stream-ref one-to-four 2)
+(test 4 stream-ref one-to-four 3)
+(test 2 'stream (stream-length (stream 1 (/ 0))))
+(test 'a 'stream (stream-first (stream 'a (/ 0))))
 
 (report-errs)

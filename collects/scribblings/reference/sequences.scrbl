@@ -595,6 +595,11 @@ The first element of the stream as produced by @racket[first-expr]
 must be a single value. The @racket[rest-expr] must produce a stream
 when it is evaluated, otherwise the @exnraise[exn:fail:contract?].}
 
+@defform[(stream expr ...)]{ 
+
+A shorthand for nested @racket[stream-cons]es ending with
+@racket[empty-stream].}
+
 @defproc[(in-stream [s stream?]) sequence?]{
   Returns a sequence that is equivalent to @racket[s].
   @speed[in-stream "streams"]}
