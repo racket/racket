@@ -976,6 +976,10 @@
                    (init-hook-for-language lang)
                    (append (extract-required (or (decode-language lang) lang)
                                              reqs)
+                           (if (and (= 1 (length input-program))
+                                    (path? (car input-program)))
+                             (list (car input-program))
+                             '())
                            allow)
                    (lambda () (build-program lang reqs input-program))))
 
